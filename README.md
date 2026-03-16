@@ -46,6 +46,9 @@ Implemented:
   - `HALT`
 - Labels plus `.memory` and `.init` directives
 - CLI runner and sample programs
+- `JNZ` (jump if not zero) conditional branch
+- Criterion benchmarks proving O(log n) hull query scaling
+- Property tests via proptest
 - Strict verification with `cargo test` and `cargo clippy -D warnings`
 
 Not implemented yet:
@@ -182,6 +185,7 @@ The model is deterministic. There is no sampling, no stochastic decoding, and no
 | `SUBM <addr>` | `ACC -= MEM[addr]` |
 | `JMP <label|pc>` | Unconditional jump |
 | `JZ <label|pc>` | Jump when zero flag is set |
+| `JNZ <label|pc>` | Jump when zero flag is not set |
 | `HALT` | Stop execution |
 
 ### Example: counter
@@ -224,17 +228,29 @@ Result:
 | `src/runtime.rs` | Execution loop and trace capture |
 | `src/state.rs` | 36-dimensional machine state encoding |
 | `src/bin/tvm.rs` | CLI entrypoint |
-| `programs/*.tvm` | Runnable sample programs |
+| `programs/*.tvm` | Runnable sample programs (addition, counter, fibonacci, multiply, memory_roundtrip) |
+| `benches/hull_benchmark.rs` | Criterion benchmarks for hull operations |
 | `tests/` | Unit, integration, and CLI coverage |
 
 ## Testing
 
 The shipped test suite covers:
 
-- State encode/decode round-trip correctness
-- Randomized hull argmax correctness vs brute force
-- Program execution for addition, memory round-trips, branching, overflow, and looping
+- State encode/decode round-trip correctness (including proptest)
+- Randomized hull argmax correctness vs brute force (including proptest)
+- Hull edge cases: collinear points, duplicate x, single/two-point, empty, monotonic vs general
+- Program execution for addition, memory round-trips, branching, overflow, looping, fibonacci, multiply
+- JNZ branch-taken and fall-through paths
+- Deterministic execution: same program always produces same output
 - Full CLI execution against a real program file
+
+Benchmarks (run with `cargo bench`):
+
+| Size | Hull query | Brute force | Speedup |
+| --- | --- | --- | --- |
+| 100 | 21 ns | 264 ns | 12x |
+| 1,000 | 35 ns | 4.1 µs | 118x |
+| 10,000 | 30 ns | 39.8 µs | 1,327x |
 
 Current verification commands:
 

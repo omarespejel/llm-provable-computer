@@ -1,0 +1,26 @@
+; Compute 6 * 7 = 42 via repeated addition
+; MEM[0] = multiplicand (7), MEM[1] = result, MEM[2] = counter, MEM[3] = multiplier (6)
+.memory 4
+.init 0 7
+.init 1 0
+.init 2 0
+.init 3 6
+
+loop:
+LOAD 2
+SUBM 3
+JZ done
+
+LOAD 1
+ADDM 0
+STORE 1
+
+LOAD 2
+ADD 1
+STORE 2
+
+JMP loop
+
+done:
+LOAD 1
+HALT

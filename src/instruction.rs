@@ -12,6 +12,7 @@ pub enum Instruction {
     SubMemory(u8),
     Jump(u8),
     JumpIfZero(u8),
+    JumpIfNotZero(u8),
     Halt,
 }
 
@@ -28,6 +29,7 @@ impl Instruction {
             Instruction::SubMemory(_) => "SUBM",
             Instruction::Jump(_) => "JMP",
             Instruction::JumpIfZero(_) => "JZ",
+            Instruction::JumpIfNotZero(_) => "JNZ",
             Instruction::Halt => "HALT",
         }
     }

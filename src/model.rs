@@ -182,6 +182,14 @@ impl GatedFeedForward {
                 halted: false,
                 memory_write: None,
             },
+            Instruction::JumpIfNotZero(target) => Transition {
+                pc: if !state.zero_flag { target } else { next_pc },
+                acc: state.acc,
+                zero_flag: state.zero_flag,
+                carry_flag: state.carry_flag,
+                halted: false,
+                memory_write: None,
+            },
             Instruction::Halt => Transition {
                 pc: state.pc,
                 acc: state.acc,

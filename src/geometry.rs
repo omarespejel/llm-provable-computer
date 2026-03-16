@@ -13,11 +13,37 @@ struct Entry {
     value: Vec<f32>,
 }
 
-#[derive(Debug, Clone, Default)]
+/// Convex Hull KV Cache for O(log n) attention lookups in 2D.
+///
+/// Maintains the convex hull of all inserted keys incrementally. For the
+/// common case where keys arrive with monotonically increasing x-coordinates
+/// (memory writes where x = step number), insertion is amortized O(1).
+///
+/// Queries find the key maximizing `dot(query, key)` in O(log h) via ternary
+/// search on the hull, where h is the hull size.
+#[derive(Debug, Clone)]
 pub struct HullKvCache {
     entries: Vec<Entry>,
+    /// Upper hull indices, sorted by ascending x-coordinate.
     upper_hull: Vec<usize>,
+    /// Lower hull indices, sorted by ascending x-coordinate.
     lower_hull: Vec<usize>,
+    /// Largest x-coordinate seen so far.
+    max_x_seen: f32,
+    /// True while all insertions have had non-decreasing x-coordinates.
+    monotonic: bool,
+}
+
+impl Default for HullKvCache {
+    fn default() -> Self {
+        Self {
+            entries: Vec::new(),
+            upper_hull: Vec::new(),
+            lower_hull: Vec::new(),
+            max_x_seen: f32::NEG_INFINITY,
+            monotonic: true,
+        }
+    }
 }
 
 impl HullKvCache {
@@ -25,27 +51,53 @@ impl HullKvCache {
         Self::default()
     }
 
+    /// Insert a new key-value pair and maintain the convex hull.
+    ///
+    /// When x-coordinates are monotonically non-decreasing (the normal case
+    /// for memory-write histories where x = step number): amortized O(1).
+    /// For general insertion order: O(n log n) full rebuild.
     pub fn insert(&mut self, key: [f32; 2], value: &[f32]) -> usize {
         let id = self.entries.len();
+        let point = Point2D {
+            x: key[0],
+            y: key[1],
+            id,
+        };
         self.entries.push(Entry {
-            point: Point2D {
-                x: key[0],
-                y: key[1],
-                id,
-            },
+            point,
             value: value.to_vec(),
         });
-        self.rebuild_hulls();
+
+        // The fast append path requires strictly increasing x-coordinates.
+        // Equal x causes collinear points (cross = 0) where the append
+        // logic can't distinguish which point should stay on the hull.
+        if id > 0 && key[0] <= self.max_x_seen {
+            self.monotonic = false;
+        }
+        if key[0] > self.max_x_seen {
+            self.max_x_seen = key[0];
+        }
+
+        if self.monotonic {
+            append_to_lower_hull(&self.entries, &mut self.lower_hull, id);
+            append_to_upper_hull(&self.entries, &mut self.upper_hull, id);
+        } else {
+            self.rebuild_hulls();
+        }
+
         id
     }
 
+    /// Find the key that maximizes `dot(query, key)` among all inserted keys.
+    ///
+    /// O(log h) where h is the hull size, via ternary search.
     pub fn query_argmax(&self, query: [f32; 2]) -> Result<(Point2D, &[f32])> {
         if self.entries.is_empty() {
             return Err(VmError::EmptyHull);
         }
 
-        let best_upper = self.best_on_chain(&self.upper_hull, query);
-        let best_lower = self.best_on_chain(&self.lower_hull, query);
+        let best_upper = best_on_chain(&self.entries, &self.upper_hull, query);
+        let best_lower = best_on_chain(&self.entries, &self.lower_hull, query);
         let upper_score = dot(query, self.entries[best_upper].point);
         let lower_score = dot(query, self.entries[best_lower].point);
         let best = if upper_score >= lower_score {
@@ -58,6 +110,7 @@ impl HullKvCache {
         Ok((entry.point, entry.value.as_slice()))
     }
 
+    /// Brute-force O(n) argmax scan for testing and comparison.
     pub fn query_argmax_bruteforce(&self, query: [f32; 2]) -> Result<(Point2D, &[f32])> {
         let best = self
             .entries
@@ -73,6 +126,7 @@ impl HullKvCache {
         Ok((best.point, best.value.as_slice()))
     }
 
+    /// Number of distinct points currently on the convex hull.
     pub fn hull_size(&self) -> usize {
         let mut ids = self
             .upper_hull
@@ -85,10 +139,17 @@ impl HullKvCache {
         ids.len()
     }
 
+    /// Total number of KV pairs inserted.
     pub fn total_size(&self) -> usize {
         self.entries.len()
     }
 
+    /// Whether all insertions so far have had non-decreasing x-coordinates.
+    pub fn is_monotonic(&self) -> bool {
+        self.monotonic
+    }
+
+    /// All points currently on the hull (deduplicated, sorted by id).
     pub fn hull_points(&self) -> Vec<Point2D> {
         let mut ids = self
             .upper_hull
@@ -108,79 +169,122 @@ impl HullKvCache {
             return;
         }
 
-        let mut ordered = self
-            .entries
-            .iter()
-            .map(|entry| entry.point)
-            .collect::<Vec<_>>();
-        ordered.sort_by(|left, right| {
-            left.x
-                .partial_cmp(&right.x)
+        let mut ordered: Vec<Point2D> = self.entries.iter().map(|e| e.point).collect();
+        ordered.sort_by(|a, b| {
+            a.x.partial_cmp(&b.x)
                 .unwrap_or(std::cmp::Ordering::Equal)
-                .then_with(|| {
-                    left.y
-                        .partial_cmp(&right.y)
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                })
-                .then_with(|| left.id.cmp(&right.id))
+                .then_with(|| a.y.partial_cmp(&b.y).unwrap_or(std::cmp::Ordering::Equal))
+                .then_with(|| a.id.cmp(&b.id))
         });
 
-        self.lower_hull = build_chain(&ordered);
-        ordered.reverse();
-        self.upper_hull = build_chain(&ordered);
-    }
-
-    fn best_on_chain(&self, chain: &[usize], query: [f32; 2]) -> usize {
-        match chain.len() {
-            0 => unreachable!("empty chains are filtered by query_argmax"),
-            1 => chain[0],
-            _ => {
-                let mut lo = 0usize;
-                let mut hi = chain.len() - 1;
-
-                while hi.saturating_sub(lo) > 3 {
-                    let third = (hi - lo) / 3;
-                    let mid_left = lo + third;
-                    let mid_right = hi - third;
-                    let left_score = dot(query, self.entries[chain[mid_left]].point);
-                    let right_score = dot(query, self.entries[chain[mid_right]].point);
-                    if left_score <= right_score {
-                        lo = mid_left;
-                    } else {
-                        hi = mid_right;
-                    }
-                }
-
-                let mut best = chain[lo];
-                let mut best_score = dot(query, self.entries[best].point);
-                for candidate in chain.iter().take(hi + 1).skip(lo).copied() {
-                    let score = dot(query, self.entries[candidate].point);
-                    if score > best_score {
-                        best = candidate;
-                        best_score = score;
-                    }
-                }
-                best
-            }
-        }
+        self.lower_hull = build_lower_chain(&ordered);
+        self.upper_hull = build_upper_chain(&ordered);
     }
 }
 
-fn build_chain(points: &[Point2D]) -> Vec<usize> {
+/// Append a point at the right end of the lower hull (ascending x).
+/// Removes intermediate points that violate the lower-hull convexity.
+fn append_to_lower_hull(entries: &[Entry], hull: &mut Vec<usize>, id: usize) {
+    let point = entries[id].point;
+    while hull.len() >= 2 {
+        let a = entries[hull[hull.len() - 2]].point;
+        let b = entries[hull[hull.len() - 1]].point;
+        if cross(a, b, point) <= 0.0 {
+            hull.pop();
+        } else {
+            break;
+        }
+    }
+    hull.push(id);
+}
+
+/// Append a point at the right end of the upper hull (ascending x).
+/// Removes intermediate points that violate the upper-hull convexity.
+fn append_to_upper_hull(entries: &[Entry], hull: &mut Vec<usize>, id: usize) {
+    let point = entries[id].point;
+    while hull.len() >= 2 {
+        let a = entries[hull[hull.len() - 2]].point;
+        let b = entries[hull[hull.len() - 1]].point;
+        if cross(a, b, point) >= 0.0 {
+            hull.pop();
+        } else {
+            break;
+        }
+    }
+    hull.push(id);
+}
+
+/// Build the lower hull chain from points sorted by ascending x.
+fn build_lower_chain(points: &[Point2D]) -> Vec<usize> {
     let mut chain: Vec<Point2D> = Vec::new();
-    for point in points {
+    for &point in points {
         while chain.len() >= 2 {
-            let second = chain[chain.len() - 1];
-            let first = chain[chain.len() - 2];
-            if cross(first, second, *point) <= 0.0 {
+            let a = chain[chain.len() - 2];
+            let b = chain[chain.len() - 1];
+            if cross(a, b, point) <= 0.0 {
                 chain.pop();
             } else {
                 break;
             }
         }
-        chain.push(*point);
+        chain.push(point);
     }
-    chain.into_iter().map(|point| point.id).collect()
+    chain.into_iter().map(|p| p.id).collect()
+}
+
+/// Build the upper hull chain from points sorted by ascending x.
+fn build_upper_chain(points: &[Point2D]) -> Vec<usize> {
+    let mut chain: Vec<Point2D> = Vec::new();
+    for &point in points {
+        while chain.len() >= 2 {
+            let a = chain[chain.len() - 2];
+            let b = chain[chain.len() - 1];
+            if cross(a, b, point) >= 0.0 {
+                chain.pop();
+            } else {
+                break;
+            }
+        }
+        chain.push(point);
+    }
+    chain.into_iter().map(|p| p.id).collect()
+}
+
+/// Ternary search on a hull chain for the point maximizing dot(query, point).
+/// O(log h) where h is the chain length.
+fn best_on_chain(entries: &[Entry], chain: &[usize], query: [f32; 2]) -> usize {
+    match chain.len() {
+        0 => unreachable!("empty chains filtered by query_argmax"),
+        1 => chain[0],
+        _ => {
+            let mut lo = 0usize;
+            let mut hi = chain.len() - 1;
+
+            while hi.saturating_sub(lo) > 3 {
+                let third = (hi - lo) / 3;
+                let mid_left = lo + third;
+                let mid_right = hi - third;
+                let left_score = dot(query, entries[chain[mid_left]].point);
+                let right_score = dot(query, entries[chain[mid_right]].point);
+                if left_score <= right_score {
+                    lo = mid_left;
+                } else {
+                    hi = mid_right;
+                }
+            }
+
+            let mut best = chain[lo];
+            let mut best_score = dot(query, entries[best].point);
+            for &candidate in &chain[lo..=hi] {
+                let score = dot(query, entries[candidate].point);
+                if score > best_score {
+                    best = candidate;
+                    best_score = score;
+                }
+            }
+            best
+        }
+    }
 }
 
 fn cross(a: Point2D, b: Point2D, c: Point2D) -> f32 {

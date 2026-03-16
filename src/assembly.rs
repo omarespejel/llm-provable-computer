@@ -148,6 +148,7 @@ fn parse_instruction(
         "SUBM" => Instruction::SubMemory(parse_u8_operand(line, operands)?),
         "JMP" => Instruction::Jump(parse_target(line, operands, labels)?),
         "JZ" => Instruction::JumpIfZero(parse_target(line, operands, labels)?),
+        "JNZ" => Instruction::JumpIfNotZero(parse_target(line, operands, labels)?),
         "HALT" => expect_arity(line, operands, 0).map(|_| Instruction::Halt)?,
         _ => {
             return Err(VmError::Parse {

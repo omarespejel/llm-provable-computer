@@ -1,0 +1,35 @@
+; Compute Fibonacci(8) = 21
+; MEM[0] = F(n-2), MEM[1] = F(n-1), MEM[2] = temp
+; MEM[3] = loop counter, MEM[4] = iteration target
+.memory 5
+.init 0 0
+.init 1 1
+.init 3 0
+.init 4 7
+
+loop:
+LOAD 3
+SUBM 4
+JZ done
+
+; F(n) = F(n-2) + F(n-1)
+LOAD 0
+ADDM 1
+STORE 2
+
+; Shift: MEM[0] = old MEM[1], MEM[1] = new F(n)
+LOAD 1
+STORE 0
+LOAD 2
+STORE 1
+
+; Increment counter
+LOAD 3
+ADD 1
+STORE 3
+
+JMP loop
+
+done:
+LOAD 1
+HALT
