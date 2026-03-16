@@ -1,0 +1,8 @@
+.memory 4
+
+LOADI 41
+STORE 2
+LOADI 0
+LOAD 2
+ADD 1
+HALT

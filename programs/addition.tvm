@@ -1,0 +1,5 @@
+.memory 4
+
+LOADI 5
+ADD 3
+HALT

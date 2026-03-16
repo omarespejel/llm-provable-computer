@@ -1,0 +1,16 @@
+.memory 4
+.init 1 5
+
+LOADI 0
+STORE 0
+loop:
+LOAD 0
+ADD 1
+STORE 0
+LOAD 0
+SUBM 1
+JZ done
+JMP loop
+done:
+LOAD 0
+HALT

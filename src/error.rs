@@ -1,0 +1,19 @@
+use thiserror::Error;
+
+pub type Result<T> = std::result::Result<T, VmError>;
+
+#[derive(Debug, Error)]
+pub enum VmError {
+    #[error("invalid config: {0}")]
+    InvalidConfig(String),
+    #[error("parse error on line {line}: {message}")]
+    Parse { line: usize, message: String },
+    #[error("unknown label `{label}` referenced on line {line}")]
+    UnknownLabel { line: usize, label: String },
+    #[error("program counter {pc} is out of bounds for program length {len}")]
+    ProgramCounterOutOfBounds { pc: usize, len: usize },
+    #[error("memory address {addr} is out of bounds for memory size {size}")]
+    MemoryOutOfBounds { addr: usize, size: usize },
+    #[error("hull cache is empty")]
+    EmptyHull,
+}
