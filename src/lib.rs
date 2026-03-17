@@ -8,6 +8,7 @@ pub mod memory;
 pub mod model;
 pub mod runtime;
 pub mod state;
+pub mod tui;
 
 pub use assembly::parse_program;
 pub use compiler::ProgramCompiler;
@@ -16,6 +17,7 @@ pub use error::{Result, VmError};
 pub use geometry::{HullKvCache, Point2D};
 pub use instruction::{Instruction, Program};
 pub use memory::AddressedMemory;
-pub use model::TransformerVm;
-pub use runtime::{ExecutionResult, ExecutionRuntime};
+pub use model::{DispatchInfo, TransformerVm};
+pub use runtime::{ExecutionResult, ExecutionRuntime, ExecutionTraceEntry};
 pub use state::{decode_state, encode_state, MachineState, MIN_D_MODEL};
+pub use tui::run_execution_tui;

@@ -1,8 +1,11 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use clap::{Parser, Subcommand};
-use transformer_vm_rs::{ExecutionRuntime, ProgramCompiler, TransformerVmConfig};
+use transformer_vm_rs::{
+    run_execution_tui, ExecutionRuntime, ProgramCompiler, TransformerVmConfig, VmError,
+};
 
 #[derive(Debug, Parser)]
 #[command(name = "tvm", about = "Run deterministic transformer-vm programs.")]
@@ -19,6 +22,17 @@ enum Command {
         max_steps: usize,
         #[arg(long)]
         trace: bool,
+        #[arg(long, default_value_t = 1)]
+        layers: usize,
+    },
+    Tui {
+        program: PathBuf,
+        #[arg(long, default_value_t = 512)]
+        max_steps: usize,
+        #[arg(long, default_value_t = 1)]
+        layers: usize,
+        #[arg(long, default_value_t = 60)]
+        tick_ms: u64,
     },
 }
 
@@ -36,16 +50,9 @@ fn run() -> transformer_vm_rs::Result<()> {
             program,
             max_steps,
             trace,
+            layers,
         } => {
-            let source = fs::read_to_string(&program).map_err(|io_error| {
-                transformer_vm_rs::VmError::InvalidConfig(format!(
-                    "failed to read program {}: {io_error}",
-                    program.display()
-                ))
-            })?;
-
-            let model = ProgramCompiler.compile_source(&source, TransformerVmConfig::default())?;
-            let mut runtime = ExecutionRuntime::new(model, max_steps);
+            let mut runtime = load_runtime(&program, max_steps, layers)?;
             let result = runtime.run()?;
 
             println!("program: {}", program.display());
@@ -56,24 +63,66 @@ fn run() -> transformer_vm_rs::Result<()> {
             println!("zero_flag: {}", result.final_state.zero_flag);
             println!("carry_flag: {}", result.final_state.carry_flag);
             println!("memory: {:?}", result.final_state.memory);
+            println!("layers: {}", layers);
             println!("elapsed_ms: {:.3}", result.elapsed.as_secs_f64() * 1000.0);
             println!("throughput_steps_per_sec: {:.2}", result.tokens_per_sec);
 
             if trace {
-                for (idx, state) in runtime.trace().iter().enumerate() {
+                println!(
+                    "trace[000] init pc={} acc={} zero={} carry={} halted={} memory={:?}",
+                    runtime.trace()[0].pc,
+                    runtime.trace()[0].acc,
+                    runtime.trace()[0].zero_flag,
+                    runtime.trace()[0].carry_flag,
+                    runtime.trace()[0].halted,
+                    runtime.trace()[0].memory
+                );
+                for event in runtime.events() {
                     println!(
-                        "trace[{idx:03}] pc={} acc={} zero={} carry={} halted={} memory={:?}",
-                        state.pc,
-                        state.acc,
-                        state.zero_flag,
-                        state.carry_flag,
-                        state.halted,
-                        state.memory
+                        "trace[{step:03}] layer={layer} instr=\"{instr}\" pc={pc} acc={acc} zero={zero} carry={carry} halted={halted} memory={memory:?}",
+                        step = event.step,
+                        layer = event.layer_idx,
+                        instr = event.instruction,
+                        pc = event.state_after.pc,
+                        acc = event.state_after.acc,
+                        zero = event.state_after.zero_flag,
+                        carry = event.state_after.carry_flag,
+                        halted = event.state_after.halted,
+                        memory = event.state_after.memory
                     );
                 }
             }
         }
+        Command::Tui {
+            program,
+            max_steps,
+            layers,
+            tick_ms,
+        } => {
+            let mut runtime = load_runtime(&program, max_steps, layers)?;
+            run_execution_tui(&program, &mut runtime, Duration::from_millis(tick_ms))?;
+        }
     }
 
     Ok(())
+}
+
+fn load_runtime(
+    program: &Path,
+    max_steps: usize,
+    layers: usize,
+) -> transformer_vm_rs::Result<ExecutionRuntime> {
+    let source = fs::read_to_string(program).map_err(|io_error| {
+        VmError::InvalidConfig(format!(
+            "failed to read program {}: {io_error}",
+            program.display()
+        ))
+    })?;
+
+    let config = TransformerVmConfig {
+        num_layers: layers,
+        ..TransformerVmConfig::default()
+    };
+    let model = ProgramCompiler.compile_source(&source, config)?;
+    Ok(ExecutionRuntime::new(model, max_steps))
 }

@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use transformer_vm_rs::{
     decode_state, encode_state, parse_program, ExecutionRuntime, MachineState, ProgramCompiler,
     TransformerVmConfig,
@@ -309,4 +311,161 @@ fn deterministic_execution_same_output() {
 
     assert_eq!(result1.final_state, result2.final_state);
     assert_eq!(result1.steps, result2.steps);
+}
+
+#[test]
+fn multi_layer_dispatch_executes_across_multiple_blocks() {
+    let source = r#"
+        LOADI 5
+        ADD 3
+        MUL 2
+        XOR 6
+        HALT
+    "#;
+    let config = TransformerVmConfig {
+        num_layers: 3,
+        ..TransformerVmConfig::default()
+    };
+    let model = ProgramCompiler
+        .compile_source(source, config)
+        .expect("compile");
+
+    let declared_layers = (0..model.program().len())
+        .map(|pc| model.dispatch_info(pc as u8).expect("dispatch").layer_idx)
+        .collect::<BTreeSet<_>>();
+    assert!(
+        declared_layers.len() > 1,
+        "expected multiple compiled layers, got {declared_layers:?}"
+    );
+
+    let mut runtime = ExecutionRuntime::new(model, 32);
+    let result = runtime.run().expect("run");
+
+    assert!(result.halted);
+    assert_eq!(result.final_state.acc, 22, "((5 + 3) * 2) xor 6 = 22");
+
+    let executed_layers = runtime
+        .events()
+        .iter()
+        .map(|event| event.layer_idx)
+        .collect::<BTreeSet<_>>();
+    assert!(
+        executed_layers.len() > 1,
+        "expected execution to visit multiple blocks, got {executed_layers:?}"
+    );
+}
+
+#[test]
+fn mulm_instruction_multiplies_by_memory_operand() {
+    let source = r#"
+        .memory 2
+        .init 0 7
+        LOADI 6
+        MULM 0
+        HALT
+    "#;
+    let model = ProgramCompiler
+        .compile_source(source, TransformerVmConfig::default())
+        .expect("compile");
+    let mut runtime = ExecutionRuntime::new(model, 16);
+    let result = runtime.run().expect("run");
+
+    assert!(result.halted);
+    assert_eq!(result.final_state.acc, 42);
+    assert!(!result.final_state.zero_flag);
+}
+
+#[test]
+fn and_immediate_masks_accumulator_bits() {
+    let source = r#"
+        LOADI 13
+        AND 10
+        HALT
+    "#;
+    let model = ProgramCompiler
+        .compile_source(source, TransformerVmConfig::default())
+        .expect("compile");
+    let mut runtime = ExecutionRuntime::new(model, 16);
+    let result = runtime.run().expect("run");
+
+    assert!(result.halted);
+    assert_eq!(result.final_state.acc, 8, "0b1101 & 0b1010 = 0b1000");
+}
+
+#[test]
+fn orm_instruction_reads_memory_for_bitwise_or() {
+    let source = r#"
+        .memory 2
+        .init 1 12
+        LOADI 3
+        ORM 1
+        HALT
+    "#;
+    let model = ProgramCompiler
+        .compile_source(source, TransformerVmConfig::default())
+        .expect("compile");
+    let mut runtime = ExecutionRuntime::new(model, 16);
+    let result = runtime.run().expect("run");
+
+    assert!(result.halted);
+    assert_eq!(result.final_state.acc, 15, "0b0011 | 0b1100 = 0b1111");
+}
+
+#[test]
+fn xorm_instruction_reads_memory_for_bitwise_xor() {
+    let source = r#"
+        .memory 2
+        .init 0 9
+        LOADI 15
+        XORM 0
+        HALT
+    "#;
+    let model = ProgramCompiler
+        .compile_source(source, TransformerVmConfig::default())
+        .expect("compile");
+    let mut runtime = ExecutionRuntime::new(model, 16);
+    let result = runtime.run().expect("run");
+
+    assert!(result.halted);
+    assert_eq!(result.final_state.acc, 6, "0b1111 xor 0b1001 = 0b0110");
+}
+
+#[test]
+fn cmp_instruction_sets_difference_and_less_than_carry() {
+    let source = r#"
+        LOADI 10
+        CMP 12
+        HALT
+    "#;
+    let model = ProgramCompiler
+        .compile_source(source, TransformerVmConfig::default())
+        .expect("compile");
+    let mut runtime = ExecutionRuntime::new(model, 16);
+    let result = runtime.run().expect("run");
+
+    assert!(result.halted);
+    assert_eq!(result.final_state.acc, -2);
+    assert!(!result.final_state.zero_flag);
+    assert!(result.final_state.carry_flag);
+}
+
+#[test]
+fn cmpm_instruction_detects_equality() {
+    let source = r#"
+        .memory 1
+        .init 0 12
+        LOADI 12
+        CMPM 0
+        HALT
+    "#;
+    let model = ProgramCompiler
+        .compile_source(source, TransformerVmConfig::default())
+        .expect("compile");
+    let mut runtime = ExecutionRuntime::new(model, 16);
+    let result = runtime.run().expect("run");
+
+    assert!(result.halted);
+    assert_eq!(result.final_state.acc, 0);
+    assert!(result.final_state.zero_flag);
+    assert!(!result.final_state.carry_flag);
 }

@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::error::{Result, VmError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -10,6 +12,16 @@ pub enum Instruction {
     AddMemory(u8),
     SubImmediate(i16),
     SubMemory(u8),
+    MulImmediate(i16),
+    MulMemory(u8),
+    AndImmediate(i16),
+    AndMemory(u8),
+    OrImmediate(i16),
+    OrMemory(u8),
+    XorImmediate(i16),
+    XorMemory(u8),
+    CmpImmediate(i16),
+    CmpMemory(u8),
     Jump(u8),
     JumpIfZero(u8),
     JumpIfNotZero(u8),
@@ -27,10 +39,50 @@ impl Instruction {
             Instruction::AddMemory(_) => "ADDM",
             Instruction::SubImmediate(_) => "SUB",
             Instruction::SubMemory(_) => "SUBM",
+            Instruction::MulImmediate(_) => "MUL",
+            Instruction::MulMemory(_) => "MULM",
+            Instruction::AndImmediate(_) => "AND",
+            Instruction::AndMemory(_) => "ANDM",
+            Instruction::OrImmediate(_) => "OR",
+            Instruction::OrMemory(_) => "ORM",
+            Instruction::XorImmediate(_) => "XOR",
+            Instruction::XorMemory(_) => "XORM",
+            Instruction::CmpImmediate(_) => "CMP",
+            Instruction::CmpMemory(_) => "CMPM",
             Instruction::Jump(_) => "JMP",
             Instruction::JumpIfZero(_) => "JZ",
             Instruction::JumpIfNotZero(_) => "JNZ",
             Instruction::Halt => "HALT",
+        }
+    }
+}
+
+impl fmt::Display for Instruction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Instruction::Nop | Instruction::Halt => f.write_str(self.mnemonic()),
+            Instruction::LoadImmediate(value)
+            | Instruction::AddImmediate(value)
+            | Instruction::SubImmediate(value)
+            | Instruction::MulImmediate(value)
+            | Instruction::AndImmediate(value)
+            | Instruction::OrImmediate(value)
+            | Instruction::XorImmediate(value)
+            | Instruction::CmpImmediate(value) => write!(f, "{} {}", self.mnemonic(), value),
+            Instruction::Load(address)
+            | Instruction::Store(address)
+            | Instruction::AddMemory(address)
+            | Instruction::SubMemory(address)
+            | Instruction::MulMemory(address)
+            | Instruction::AndMemory(address)
+            | Instruction::OrMemory(address)
+            | Instruction::XorMemory(address)
+            | Instruction::CmpMemory(address)
+            | Instruction::Jump(address)
+            | Instruction::JumpIfZero(address)
+            | Instruction::JumpIfNotZero(address) => {
+                write!(f, "{} {}", self.mnemonic(), address)
+            }
         }
     }
 }

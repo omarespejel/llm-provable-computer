@@ -4,6 +4,8 @@ pub type Result<T> = std::result::Result<T, VmError>;
 
 #[derive(Debug, Error)]
 pub enum VmError {
+    #[error("i/o error: {0}")]
+    Io(#[from] std::io::Error),
     #[error("invalid config: {0}")]
     InvalidConfig(String),
     #[error("parse error on line {line}: {message}")]

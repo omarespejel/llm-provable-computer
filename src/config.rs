@@ -48,6 +48,11 @@ impl TransformerVmConfig {
                 "num_heads must be greater than zero".to_string(),
             ));
         }
+        if self.num_layers == 0 {
+            return Err(VmError::InvalidConfig(
+                "num_layers must be greater than zero".to_string(),
+            ));
+        }
         if !self.d_model.is_multiple_of(self.num_heads) {
             return Err(VmError::InvalidConfig(format!(
                 "d_model {} must be divisible by num_heads {}",
