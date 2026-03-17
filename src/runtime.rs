@@ -121,6 +121,10 @@ impl ExecutionRuntime {
         &self.model
     }
 
+    pub fn memory(&self) -> &AddressedMemory {
+        &self.memory
+    }
+
     pub fn next_dispatch(&self) -> Result<Option<DispatchInfo>> {
         if self.state.halted || self.step_count >= self.max_steps {
             return Ok(None);
