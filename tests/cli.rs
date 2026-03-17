@@ -44,3 +44,17 @@ fn cli_runs_subroutine_program() {
         .stdout(predicate::str::contains("acc: 42"))
         .stdout(predicate::str::contains("memory: [0, 0, 0, 0, 0, 0, 0, 2]"));
 }
+
+#[test]
+fn cli_accepts_attention_mode_flag() {
+    let mut command = Command::cargo_bin("tvm").expect("binary");
+    command
+        .arg("run")
+        .arg("programs/soft_attention_memory.tvm")
+        .arg("--attention-mode")
+        .arg("hard-softmax:10")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("attention_mode: hard-softmax:10"))
+        .stdout(predicate::str::contains("acc: 4"));
+}

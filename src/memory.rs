@@ -1,3 +1,4 @@
+use crate::config::Attention2DMode;
 use crate::error::{Result, VmError};
 use crate::geometry::HullKvCache;
 
@@ -28,6 +29,10 @@ impl AddressedMemory {
     }
 
     pub fn load(&self, address: u8) -> Result<i16> {
+        self.load_with_mode(address, &Attention2DMode::AverageHard)
+    }
+
+    pub fn load_with_mode(&self, address: u8, mode: &Attention2DMode) -> Result<i16> {
         let idx = address as usize;
         let history = self.histories.get(idx).ok_or(VmError::MemoryOutOfBounds {
             addr: idx,
@@ -38,8 +43,12 @@ impl AddressedMemory {
             return Ok(self.cells[idx]);
         }
 
-        let (_, value) = history.query_argmax([1.0, 0.0])?;
-        Ok(value[0].round() as i16)
+        let value = history.query_value([1.0, 0.0], mode)?;
+        Ok(value
+            .first()
+            .copied()
+            .unwrap_or(self.cells[idx] as f32)
+            .round() as i16)
     }
 
     pub fn store(&mut self, address: u8, value: i16, step: usize) -> Result<()> {

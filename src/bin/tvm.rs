@@ -1,10 +1,12 @@
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::time::Duration;
 
 use clap::{Parser, Subcommand};
 use transformer_vm_rs::{
-    run_execution_tui, ExecutionRuntime, ProgramCompiler, TransformerVmConfig, VmError,
+    run_execution_tui, Attention2DMode, ExecutionRuntime, ProgramCompiler, TransformerVmConfig,
+    VmError,
 };
 
 #[derive(Debug, Parser)]
@@ -24,6 +26,12 @@ enum Command {
         trace: bool,
         #[arg(long, default_value_t = 1)]
         layers: usize,
+        #[arg(
+            long,
+            default_value = "average-hard",
+            value_parser = parse_attention_mode
+        )]
+        attention_mode: Attention2DMode,
     },
     Tui {
         program: PathBuf,
@@ -33,6 +41,12 @@ enum Command {
         layers: usize,
         #[arg(long, default_value_t = 60)]
         tick_ms: u64,
+        #[arg(
+            long,
+            default_value = "average-hard",
+            value_parser = parse_attention_mode
+        )]
+        attention_mode: Attention2DMode,
     },
 }
 
@@ -51,8 +65,9 @@ fn run() -> transformer_vm_rs::Result<()> {
             max_steps,
             trace,
             layers,
+            attention_mode,
         } => {
-            let mut runtime = load_runtime(&program, max_steps, layers)?;
+            let mut runtime = load_runtime(&program, max_steps, layers, attention_mode.clone())?;
             let result = runtime.run()?;
 
             println!("program: {}", program.display());
@@ -65,6 +80,7 @@ fn run() -> transformer_vm_rs::Result<()> {
             println!("carry_flag: {}", result.final_state.carry_flag);
             println!("memory: {:?}", result.final_state.memory);
             println!("layers: {}", layers);
+            println!("attention_mode: {}", attention_mode);
             println!("elapsed_ms: {:.3}", result.elapsed.as_secs_f64() * 1000.0);
             println!("throughput_steps_per_sec: {:.2}", result.tokens_per_sec);
 
@@ -101,8 +117,9 @@ fn run() -> transformer_vm_rs::Result<()> {
             max_steps,
             layers,
             tick_ms,
+            attention_mode,
         } => {
-            let mut runtime = load_runtime(&program, max_steps, layers)?;
+            let mut runtime = load_runtime(&program, max_steps, layers, attention_mode)?;
             run_execution_tui(&program, &mut runtime, Duration::from_millis(tick_ms))?;
         }
     }
@@ -114,6 +131,7 @@ fn load_runtime(
     program: &Path,
     max_steps: usize,
     layers: usize,
+    attention_mode: Attention2DMode,
 ) -> transformer_vm_rs::Result<ExecutionRuntime> {
     let source = fs::read_to_string(program).map_err(|io_error| {
         VmError::InvalidConfig(format!(
@@ -124,8 +142,13 @@ fn load_runtime(
 
     let config = TransformerVmConfig {
         num_layers: layers,
+        attention_mode,
         ..TransformerVmConfig::default()
     };
     let model = ProgramCompiler.compile_source(&source, config)?;
     Ok(ExecutionRuntime::new(model, max_steps))
+}
+
+fn parse_attention_mode(input: &str) -> Result<Attention2DMode, String> {
+    Attention2DMode::from_str(input)
 }

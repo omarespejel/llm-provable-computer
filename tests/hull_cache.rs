@@ -1,5 +1,5 @@
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use transformer_vm_rs::HullKvCache;
+use transformer_vm_rs::{Attention2DMode, HullKvCache};
 
 #[test]
 fn hull_query_matches_bruteforce_for_random_inputs() {
@@ -177,4 +177,45 @@ fn memory_pattern_latest_write_wins() {
     let (pt, val) = cache.query_argmax([1.0, 0.0]).unwrap();
     assert_eq!(pt.x, 7.0);
     assert_eq!(val[0], 99.0);
+}
+
+#[test]
+fn softmax_query_blends_values_by_recency() {
+    let mut cache = HullKvCache::new();
+    cache.insert([0.0, 0.0], &[0.0]);
+    cache.insert([2.0, 0.0], &[0.0]);
+    cache.insert([4.0, 10.0], &[10.0]);
+
+    let value = cache
+        .query_value([1.0, 0.0], &Attention2DMode::Softmax)
+        .unwrap();
+
+    assert!(
+        (value[0] - 8.668_133).abs() < 1e-4,
+        "softmax value={value:?}"
+    );
+}
+
+#[test]
+fn hard_softmax_temperature_controls_sharpness() {
+    let mut cache = HullKvCache::new();
+    cache.insert([0.0, 0.0], &[0.0]);
+    cache.insert([2.0, 0.0], &[0.0]);
+    cache.insert([4.0, 10.0], &[10.0]);
+
+    let sharp = cache
+        .query_value(
+            [1.0, 0.0],
+            &Attention2DMode::HardSoftmax { temperature: 0.5 },
+        )
+        .unwrap();
+    let smooth = cache
+        .query_value(
+            [1.0, 0.0],
+            &Attention2DMode::HardSoftmax { temperature: 10.0 },
+        )
+        .unwrap();
+
+    assert!(sharp[0] > smooth[0], "sharp={sharp:?} smooth={smooth:?}");
+    assert!(smooth[0] > 0.0, "expected blending, got {smooth:?}");
 }

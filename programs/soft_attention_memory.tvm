@@ -1,0 +1,8 @@
+.memory 1
+
+LOADI 0
+STORE 0
+LOADI 10
+STORE 0
+LOAD 0
+HALT

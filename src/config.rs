@@ -1,3 +1,6 @@
+use std::fmt;
+use std::str::FromStr;
+
 use crate::error::{Result, VmError};
 use crate::state::MIN_D_MODEL;
 
@@ -6,6 +9,45 @@ pub enum Attention2DMode {
     AverageHard,
     HardSoftmax { temperature: f32 },
     Softmax,
+}
+
+impl fmt::Display for Attention2DMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::AverageHard => f.write_str("average-hard"),
+            Self::HardSoftmax { temperature } => write!(f, "hard-softmax:{temperature}"),
+            Self::Softmax => f.write_str("softmax"),
+        }
+    }
+}
+
+impl FromStr for Attention2DMode {
+    type Err = String;
+
+    fn from_str(input: &str) -> std::result::Result<Self, Self::Err> {
+        let normalized = input.trim().to_ascii_lowercase();
+        match normalized.as_str() {
+            "average-hard" | "average_hard" | "averagehard" | "hard" => Ok(Self::AverageHard),
+            "softmax" => Ok(Self::Softmax),
+            "hard-softmax" | "hard_softmax" | "hardsoftmax" => {
+                Ok(Self::HardSoftmax { temperature: 1.0 })
+            }
+            _ => {
+                if let Some((prefix, raw_temperature)) = normalized.split_once(':') {
+                    if matches!(prefix, "hard-softmax" | "hard_softmax" | "hardsoftmax") {
+                        let temperature = raw_temperature.parse::<f32>().map_err(|_| {
+                            format!("invalid hard-softmax temperature `{raw_temperature}`")
+                        })?;
+                        return Ok(Self::HardSoftmax { temperature });
+                    }
+                }
+
+                Err(format!(
+                    "unknown attention mode `{input}`; expected average-hard, softmax, or hard-softmax[:temperature]"
+                ))
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -69,6 +111,13 @@ impl TransformerVmConfig {
             return Err(VmError::InvalidConfig(
                 "ff_dim must be greater than zero".to_string(),
             ));
+        }
+        if let Attention2DMode::HardSoftmax { temperature } = self.attention_mode {
+            if !temperature.is_finite() || temperature <= 0.0 {
+                return Err(VmError::InvalidConfig(format!(
+                    "hard-softmax temperature must be finite and > 0, got {temperature}"
+                )));
+            }
         }
         Ok(())
     }

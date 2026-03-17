@@ -30,7 +30,10 @@ The code in `main` now implements the smallest version of that vision that is fu
 Implemented:
 
 - `d_model = 36`, `18` logical heads, `head_dim = 2`
-- Deterministic "average-hard" style memory access
+- Selectable memory attention modes:
+  - `average-hard` for deterministic latest-write argmax
+  - `softmax` for full-history weighted reads
+  - `hard-softmax:<temperature>` for temperature-controlled interpolation
 - `HullKvCache` with convex hull maintenance and argmax queries
 - Compact ISA with arithmetic, logic, stack, and subroutine control flow:
   - `NOP`
@@ -83,6 +86,7 @@ cargo run --bin tvm -- run programs/memory_roundtrip.tvm
 cargo run --bin tvm -- run programs/subroutine_addition.tvm
 cargo run --bin tvm -- run programs/stack_roundtrip.tvm
 cargo run --bin tvm -- run programs/counter.tvm --max-steps 128 --trace
+cargo run --bin tvm -- run programs/soft_attention_memory.tvm --attention-mode hard-softmax:10
 ```
 
 ### 2. Expected output shape
@@ -97,6 +101,8 @@ acc: 8
 zero_flag: false
 carry_flag: false
 memory: [0, 0, 0, 0]
+layers: 1
+attention_mode: average-hard
 elapsed_ms: 0.0
 throughput_steps_per_sec: ...
 ```
@@ -180,6 +186,16 @@ The runtime is intentionally shaped like a transformer pipeline:
 5. The runtime repeats until `HALT` or `max_steps`.
 
 The model is deterministic. There is no sampling, no stochastic decoding, and no external tool invocation during execution.
+
+## Attention Modes
+
+The runtime now honors the configured attention mode end to end:
+
+- `average-hard` keeps the hull-backed `O(log n)` latest-write lookup path.
+- `softmax` blends the full write history using softmax over write-step scores.
+- `hard-softmax:<temperature>` uses the same weighted read with explicit temperature control.
+
+Lower hard-softmax temperatures approach argmax behavior; higher temperatures smooth toward an average over the address history. The softer modes are implemented as full-history scans in this MVP, which makes them useful comparison and validation modes rather than performance paths.
 
 ## Assembly Language
 

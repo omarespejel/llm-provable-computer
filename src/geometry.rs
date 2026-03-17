@@ -1,3 +1,4 @@
+use crate::config::Attention2DMode;
 use crate::error::{Result, VmError};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -110,6 +111,22 @@ impl HullKvCache {
         Ok((entry.point, entry.value.as_slice()))
     }
 
+    /// Query the cache according to the selected attention mode.
+    ///
+    /// `AverageHard` uses the convex hull argmax path. Softer modes scan the
+    /// full history so they can blend values by score.
+    pub fn query_value(&self, query: [f32; 2], mode: &Attention2DMode) -> Result<Vec<f32>> {
+        match mode {
+            Attention2DMode::AverageHard => {
+                self.query_argmax(query).map(|(_, value)| value.to_vec())
+            }
+            Attention2DMode::HardSoftmax { temperature } => {
+                self.query_weighted(query, *temperature)
+            }
+            Attention2DMode::Softmax => self.query_weighted(query, 1.0),
+        }
+    }
+
     /// Brute-force O(n) argmax scan for testing and comparison.
     pub fn query_argmax_bruteforce(&self, query: [f32; 2]) -> Result<(Point2D, &[f32])> {
         let best = self
@@ -179,6 +196,39 @@ impl HullKvCache {
 
         self.lower_hull = build_lower_chain(&ordered);
         self.upper_hull = build_upper_chain(&ordered);
+    }
+
+    fn query_weighted(&self, query: [f32; 2], temperature: f32) -> Result<Vec<f32>> {
+        if self.entries.is_empty() {
+            return Err(VmError::EmptyHull);
+        }
+        if !temperature.is_finite() || temperature <= 0.0 {
+            return Err(VmError::InvalidConfig(format!(
+                "soft attention temperature must be finite and > 0, got {temperature}"
+            )));
+        }
+
+        let scores = self
+            .entries
+            .iter()
+            .map(|entry| dot(query, entry.point) / temperature)
+            .collect::<Vec<_>>();
+        let max_score = scores.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+        let weights = scores
+            .iter()
+            .map(|score| (*score - max_score).exp())
+            .collect::<Vec<_>>();
+        let weight_sum = weights.iter().sum::<f32>();
+
+        let mut blended = vec![0.0; self.entries[0].value.len()];
+        for (entry, weight) in self.entries.iter().zip(weights.iter().copied()) {
+            let normalized = weight / weight_sum;
+            for (slot, value) in blended.iter_mut().zip(entry.value.iter().copied()) {
+                *slot += normalized * value;
+            }
+        }
+
+        Ok(blended)
     }
 }
 

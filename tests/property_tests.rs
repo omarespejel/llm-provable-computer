@@ -1,5 +1,5 @@
 use proptest::prelude::*;
-use transformer_vm_rs::{decode_state, encode_state, HullKvCache, MachineState};
+use transformer_vm_rs::{decode_state, encode_state, Attention2DMode, HullKvCache, MachineState};
 
 proptest! {
     #[test]
@@ -139,5 +139,25 @@ proptest! {
                 "query={query:?}, fast_score={fast_score}, slow_score={slow_score}"
             );
         }
+    }
+
+    #[test]
+    fn softmax_query_stays_within_inserted_value_range(
+        values in prop::collection::vec(-1000.0f32..1000.0f32, 2..64),
+        temperature in 0.1f32..20.0f32,
+    ) {
+        let mut cache = HullKvCache::new();
+        for (step, &value) in values.iter().enumerate() {
+            cache.insert([step as f32, value], &[value]);
+        }
+
+        let blended = cache
+            .query_value([1.0, 0.0], &Attention2DMode::HardSoftmax { temperature })
+            .unwrap()[0];
+        let min_value = values.iter().copied().fold(f32::INFINITY, f32::min);
+        let max_value = values.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+
+        prop_assert!(blended >= min_value - 1e-3);
+        prop_assert!(blended <= max_value + 1e-3);
     }
 }

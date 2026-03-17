@@ -77,8 +77,8 @@ impl Attention2D {
     ) -> Result<AttentionContext> {
         let memory_value = match memory_read {
             MemoryRead::None => None,
-            MemoryRead::Direct(addr) => Some(memory.load(addr)?),
-            MemoryRead::StackTop => Some(memory.load(state.sp)?),
+            MemoryRead::Direct(addr) => Some(memory.load_with_mode(addr, &self.mode)?),
+            MemoryRead::StackTop => Some(memory.load_with_mode(state.sp, &self.mode)?),
         };
         Ok(AttentionContext { memory_value })
     }

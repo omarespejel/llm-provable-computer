@@ -1,8 +1,8 @@
 use std::collections::BTreeSet;
 
 use transformer_vm_rs::{
-    decode_state, encode_state, parse_program, ExecutionRuntime, MachineState, ProgramCompiler,
-    TransformerVmConfig, VmError,
+    decode_state, encode_state, parse_program, Attention2DMode, ExecutionRuntime, MachineState,
+    ProgramCompiler, TransformerVmConfig, VmError,
 };
 
 #[test]
@@ -576,4 +576,54 @@ fn cmpm_instruction_detects_equality() {
     assert_eq!(result.final_state.acc, 0);
     assert!(result.final_state.zero_flag);
     assert!(!result.final_state.carry_flag);
+}
+
+#[test]
+fn attention_modes_change_memory_read_semantics() {
+    let source = std::fs::read_to_string("programs/soft_attention_memory.tvm").expect("fixture");
+
+    let run = |attention_mode| {
+        let model = ProgramCompiler
+            .compile_source(
+                &source,
+                TransformerVmConfig {
+                    attention_mode,
+                    ..TransformerVmConfig::default()
+                },
+            )
+            .expect("compile");
+        let mut runtime = ExecutionRuntime::new(model, 16);
+        runtime.run().expect("run")
+    };
+
+    let average_hard = run(Attention2DMode::AverageHard);
+    let softmax = run(Attention2DMode::Softmax);
+    let hard_softmax = run(Attention2DMode::HardSoftmax { temperature: 10.0 });
+
+    assert_eq!(average_hard.final_state.acc, 10);
+    assert_eq!(softmax.final_state.acc, 9);
+    assert_eq!(hard_softmax.final_state.acc, 4);
+}
+
+#[test]
+fn invalid_hard_softmax_temperature_is_rejected() {
+    let error = ProgramCompiler
+        .compile_source(
+            "LOADI 1\nHALT\n",
+            TransformerVmConfig {
+                attention_mode: Attention2DMode::HardSoftmax { temperature: 0.0 },
+                ..TransformerVmConfig::default()
+            },
+        )
+        .expect_err("temperature=0 should be rejected");
+
+    match error {
+        VmError::InvalidConfig(message) => {
+            assert!(
+                message.contains("temperature"),
+                "unexpected message: {message}"
+            );
+        }
+        other => panic!("expected invalid config, got {other:?}"),
+    }
 }
