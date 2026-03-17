@@ -16,6 +16,14 @@ pub enum VmError {
     ProgramCounterOutOfBounds { pc: usize, len: usize },
     #[error("memory address {addr} is out of bounds for memory size {size}")]
     MemoryOutOfBounds { addr: usize, size: usize },
+    #[error("stack underflow: sp {sp} is invalid for memory size {size}")]
+    StackUnderflow { sp: usize, size: usize },
+    #[error("stack overflow: sp {sp} cannot grow downward within memory size {size}")]
+    StackOverflow { sp: usize, size: usize },
+    #[error("stack pointer {sp} is out of bounds for memory size {size}")]
+    InvalidStackPointer { sp: usize, size: usize },
+    #[error("compiled transition produced invalid {field} value {value}")]
+    InvalidTransitionField { field: &'static str, value: i64 },
     #[error("hull cache is empty")]
     EmptyHull,
 }

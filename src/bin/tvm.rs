@@ -59,6 +59,7 @@ fn run() -> transformer_vm_rs::Result<()> {
             println!("steps: {}", result.steps);
             println!("halted: {}", result.halted);
             println!("pc: {}", result.final_state.pc);
+            println!("sp: {}", result.final_state.sp);
             println!("acc: {}", result.final_state.acc);
             println!("zero_flag: {}", result.final_state.zero_flag);
             println!("carry_flag: {}", result.final_state.carry_flag);
@@ -69,8 +70,9 @@ fn run() -> transformer_vm_rs::Result<()> {
 
             if trace {
                 println!(
-                    "trace[000] init pc={} acc={} zero={} carry={} halted={} memory={:?}",
+                    "trace[000] init pc={} sp={} acc={} zero={} carry={} halted={} memory={:?}",
                     runtime.trace()[0].pc,
+                    runtime.trace()[0].sp,
                     runtime.trace()[0].acc,
                     runtime.trace()[0].zero_flag,
                     runtime.trace()[0].carry_flag,
@@ -79,11 +81,12 @@ fn run() -> transformer_vm_rs::Result<()> {
                 );
                 for event in runtime.events() {
                     println!(
-                        "trace[{step:03}] layer={layer} instr=\"{instr}\" pc={pc} acc={acc} zero={zero} carry={carry} halted={halted} memory={memory:?}",
+                        "trace[{step:03}] layer={layer} instr=\"{instr}\" pc={pc} sp={sp} acc={acc} zero={zero} carry={carry} halted={halted} memory={memory:?}",
                         step = event.step,
                         layer = event.layer_idx,
                         instr = event.instruction,
                         pc = event.state_after.pc,
+                        sp = event.state_after.sp,
                         acc = event.state_after.acc,
                         zero = event.state_after.zero_flag,
                         carry = event.state_after.carry_flag,

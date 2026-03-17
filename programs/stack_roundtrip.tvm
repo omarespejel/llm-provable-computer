@@ -1,0 +1,7 @@
+.memory 8
+
+LOADI 42
+PUSH
+LOADI 0
+POP
+HALT

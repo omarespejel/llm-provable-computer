@@ -18,7 +18,7 @@ impl MachineState {
         Self {
             pc: 0,
             acc: 0,
-            sp: 0,
+            sp: memory_size.min(usize::from(u8::MAX)) as u8,
             zero_flag: true,
             carry_flag: false,
             halted: false,
@@ -27,9 +27,10 @@ impl MachineState {
     }
 
     pub fn with_memory(memory: Vec<i16>) -> Self {
+        let memory_size = memory.len();
         Self {
             memory,
-            ..Self::new(0)
+            ..Self::new(memory_size)
         }
     }
 }

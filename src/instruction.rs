@@ -8,6 +8,8 @@ pub enum Instruction {
     LoadImmediate(i16),
     Load(u8),
     Store(u8),
+    Push,
+    Pop,
     AddImmediate(i16),
     AddMemory(u8),
     SubImmediate(i16),
@@ -22,6 +24,8 @@ pub enum Instruction {
     XorMemory(u8),
     CmpImmediate(i16),
     CmpMemory(u8),
+    Call(u8),
+    Ret,
     Jump(u8),
     JumpIfZero(u8),
     JumpIfNotZero(u8),
@@ -35,6 +39,8 @@ impl Instruction {
             Instruction::LoadImmediate(_) => "LOADI",
             Instruction::Load(_) => "LOAD",
             Instruction::Store(_) => "STORE",
+            Instruction::Push => "PUSH",
+            Instruction::Pop => "POP",
             Instruction::AddImmediate(_) => "ADD",
             Instruction::AddMemory(_) => "ADDM",
             Instruction::SubImmediate(_) => "SUB",
@@ -49,6 +55,8 @@ impl Instruction {
             Instruction::XorMemory(_) => "XORM",
             Instruction::CmpImmediate(_) => "CMP",
             Instruction::CmpMemory(_) => "CMPM",
+            Instruction::Call(_) => "CALL",
+            Instruction::Ret => "RET",
             Instruction::Jump(_) => "JMP",
             Instruction::JumpIfZero(_) => "JZ",
             Instruction::JumpIfNotZero(_) => "JNZ",
@@ -60,7 +68,11 @@ impl Instruction {
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Instruction::Nop | Instruction::Halt => f.write_str(self.mnemonic()),
+            Instruction::Nop
+            | Instruction::Push
+            | Instruction::Pop
+            | Instruction::Ret
+            | Instruction::Halt => f.write_str(self.mnemonic()),
             Instruction::LoadImmediate(value)
             | Instruction::AddImmediate(value)
             | Instruction::SubImmediate(value)
@@ -78,6 +90,7 @@ impl fmt::Display for Instruction {
             | Instruction::OrMemory(address)
             | Instruction::XorMemory(address)
             | Instruction::CmpMemory(address)
+            | Instruction::Call(address)
             | Instruction::Jump(address)
             | Instruction::JumpIfZero(address)
             | Instruction::JumpIfNotZero(address) => {
@@ -102,6 +115,13 @@ impl Program {
     }
 
     pub fn with_initial_memory(mut self, initial_memory: Vec<i16>) -> Result<Self> {
+        if initial_memory.len() > usize::from(u8::MAX) {
+            return Err(VmError::InvalidConfig(format!(
+                "memory size {} exceeds the encoded stack/address limit of {} cells",
+                initial_memory.len(),
+                u8::MAX
+            )));
+        }
         if initial_memory.len() != self.initial_memory.len() {
             return Err(VmError::InvalidConfig(format!(
                 "initial memory length {} does not match configured memory size {}",

@@ -1327,6 +1327,7 @@ fn instruction_mood(instruction: Instruction) -> &'static str {
     match instruction {
         Instruction::Load(_) | Instruction::LoadImmediate(_) => "lifting values into the spotlight",
         Instruction::Store(_) => "stitching a fresh write into memory",
+        Instruction::Push | Instruction::Pop => "stack fabric folding through the frame",
         Instruction::AddImmediate(_)
         | Instruction::AddMemory(_)
         | Instruction::SubImmediate(_)
@@ -1341,6 +1342,7 @@ fn instruction_mood(instruction: Instruction) -> &'static str {
         | Instruction::XorMemory(_)
         | Instruction::CmpImmediate(_)
         | Instruction::CmpMemory(_) => "logic panels snapping into place",
+        Instruction::Call(_) | Instruction::Ret => "subroutines looping through the catwalk",
         Instruction::Jump(_) | Instruction::JumpIfZero(_) | Instruction::JumpIfNotZero(_) => {
             "branch work with a dramatic turn"
         }

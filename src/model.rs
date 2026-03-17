@@ -6,8 +6,8 @@ use crate::state::{decode_state, encode_state, MachineState};
 
 type Scalar = f64;
 
-const INPUT_DIM: usize = 40;
-const OUTPUT_DIM: usize = 5;
+const INPUT_DIM: usize = 41;
+const OUTPUT_DIM: usize = 6;
 const MIN_COMPILED_FF_DIM: usize = 49;
 
 const IN_CONST: usize = 0;
@@ -17,15 +17,17 @@ const IN_ACC: usize = 3;
 const IN_ZERO: usize = 4;
 const IN_CARRY: usize = 5;
 const IN_HALTED: usize = 6;
-const IN_OPERAND: usize = 7;
-const ACC_BITS_START: usize = 8;
-const OPERAND_BITS_START: usize = 24;
+const IN_SP: usize = 7;
+const IN_OPERAND: usize = 8;
+const ACC_BITS_START: usize = 9;
+const OPERAND_BITS_START: usize = 25;
 
 const OUT_NEXT_PC: usize = 0;
 const OUT_RAW_ACC: usize = 1;
-const OUT_MEM_WRITE_ENABLE: usize = 2;
-const OUT_MEM_WRITE_ADDR: usize = 3;
-const OUT_MEM_WRITE_VALUE: usize = 4;
+const OUT_NEXT_SP: usize = 2;
+const OUT_MEM_WRITE_ENABLE: usize = 3;
+const OUT_MEM_WRITE_ADDR: usize = 4;
+const OUT_MEM_WRITE_VALUE: usize = 5;
 
 fn acc_bit(bit: usize) -> usize {
     ACC_BITS_START + bit
@@ -52,6 +54,14 @@ pub struct AttentionContext {
     pub memory_value: Option<i16>,
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+enum MemoryRead {
+    #[default]
+    None,
+    Direct(u8),
+    StackTop,
+}
+
 #[derive(Debug, Clone)]
 pub struct Attention2D {
     pub head_idx: usize,
@@ -61,10 +71,15 @@ pub struct Attention2D {
 impl Attention2D {
     fn gather(
         &self,
-        memory_read: Option<u8>,
+        state: &MachineState,
+        memory_read: MemoryRead,
         memory: &AddressedMemory,
     ) -> Result<AttentionContext> {
-        let memory_value = memory_read.map(|addr| memory.load(addr)).transpose()?;
+        let memory_value = match memory_read {
+            MemoryRead::None => None,
+            MemoryRead::Direct(addr) => Some(memory.load(addr)?),
+            MemoryRead::StackTop => Some(memory.load(state.sp)?),
+        };
         Ok(AttentionContext { memory_value })
     }
 }
@@ -87,11 +102,12 @@ impl MultiHead2DAttention {
 
     fn gather(
         &self,
-        memory_read: Option<u8>,
+        state: &MachineState,
+        memory_read: MemoryRead,
         memory: &AddressedMemory,
     ) -> Result<AttentionContext> {
         for head in &self.heads {
-            let context = head.gather(memory_read, memory)?;
+            let context = head.gather(state, memory_read, memory)?;
             if context.memory_value.is_some() {
                 return Ok(context);
             }
@@ -102,12 +118,13 @@ impl MultiHead2DAttention {
 
 #[derive(Debug, Clone, Copy)]
 struct Transition {
-    pc: u8,
+    pc: i64,
     acc: i16,
+    sp: i64,
     zero_flag: bool,
     carry_flag: bool,
     halted: bool,
-    memory_write: Option<(u8, i16)>,
+    memory_write: Option<(i64, i16)>,
 }
 
 #[derive(Debug, Clone)]
@@ -339,7 +356,7 @@ impl TransitionControls {
 
 #[derive(Debug, Clone)]
 struct CompiledInstruction {
-    memory_read: Option<u8>,
+    memory_read: MemoryRead,
     ff_weights: FeedForwardWeights,
     controls: TransitionControls,
 }
@@ -374,8 +391,9 @@ impl GatedFeedForward {
         let less_than = state.acc < compare_rhs;
 
         Transition {
-            pc: output[OUT_NEXT_PC].round() as i64 as u8,
+            pc: output[OUT_NEXT_PC].round() as i64,
             acc,
+            sp: output[OUT_NEXT_SP].round() as i64,
             zero_flag: blend_bool(
                 compiled.controls.zero.prev_weight * bool_to_scalar(state.zero_flag)
                     + compiled.controls.zero.result_weight * bool_to_scalar(result_zero)
@@ -394,7 +412,7 @@ impl GatedFeedForward {
             ),
             memory_write: (output[OUT_MEM_WRITE_ENABLE] >= 0.5).then(|| {
                 (
-                    output[OUT_MEM_WRITE_ADDR].round() as i64 as u8,
+                    output[OUT_MEM_WRITE_ADDR].round() as i64,
                     output[OUT_MEM_WRITE_VALUE].round() as i64 as i16,
                 )
             }),
@@ -426,6 +444,8 @@ impl InstructionCompiler {
             Instruction::LoadImmediate(value) => self.compile_load_immediate(instruction, value),
             Instruction::Load(address) => self.compile_load(instruction, address),
             Instruction::Store(address) => self.compile_store(instruction, address),
+            Instruction::Push => self.compile_push(instruction),
+            Instruction::Pop => self.compile_pop(instruction),
             Instruction::AddImmediate(value) => self.compile_add_immediate(instruction, value),
             Instruction::AddMemory(address) => self.compile_add_memory(instruction, address),
             Instruction::SubImmediate(value) => self.compile_sub_immediate(instruction, value),
@@ -452,6 +472,8 @@ impl InstructionCompiler {
             }
             Instruction::CmpImmediate(value) => self.compile_cmp_immediate(instruction, value),
             Instruction::CmpMemory(address) => self.compile_cmp_memory(instruction, address),
+            Instruction::Call(target) => self.compile_call(instruction, target),
+            Instruction::Ret => self.compile_ret(instruction),
             Instruction::Jump(target) => self.compile_jump(instruction, target),
             Instruction::JumpIfZero(target) => self.compile_jump_if_zero(instruction, target),
             Instruction::JumpIfNotZero(target) => {
@@ -465,11 +487,21 @@ impl InstructionCompiler {
         FeedForwardBuilder::new(self.ff_dim)
     }
 
+    fn preserve_sp(&self, builder: &mut FeedForwardBuilder) -> Result<()> {
+        builder.emit_linear(OUT_NEXT_SP, 1.0, IN_SP)
+    }
+
     fn compile_nop(&self, instruction: Instruction) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
         builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC)?;
-        self.finish(instruction, None, builder, TransitionControls::preserve())
+        self.finish(
+            instruction,
+            MemoryRead::None,
+            builder,
+            TransitionControls::preserve(),
+        )
     }
 
     fn compile_load_immediate(
@@ -478,11 +510,12 @@ impl InstructionCompiler {
         value: i16,
     ) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
         builder.add_output_bias(OUT_RAW_ACC, Scalar::from(value));
         self.finish(
             instruction,
-            None,
+            MemoryRead::None,
             builder,
             TransitionControls {
                 zero: TransitionControls::zero_from_result(),
@@ -494,11 +527,12 @@ impl InstructionCompiler {
 
     fn compile_load(&self, instruction: Instruction, address: u8) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
         builder.emit_linear(OUT_RAW_ACC, 1.0, IN_OPERAND)?;
         self.finish(
             instruction,
-            Some(address),
+            MemoryRead::Direct(address),
             builder,
             TransitionControls {
                 zero: TransitionControls::zero_from_result(),
@@ -510,12 +544,54 @@ impl InstructionCompiler {
 
     fn compile_store(&self, instruction: Instruction, address: u8) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
         builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC)?;
         builder.add_output_bias(OUT_MEM_WRITE_ENABLE, 1.0);
         builder.add_output_bias(OUT_MEM_WRITE_ADDR, Scalar::from(address));
         builder.emit_linear(OUT_MEM_WRITE_VALUE, 1.0, IN_ACC)?;
-        self.finish(instruction, None, builder, TransitionControls::preserve())
+        self.finish(
+            instruction,
+            MemoryRead::None,
+            builder,
+            TransitionControls::preserve(),
+        )
+    }
+
+    fn compile_push(&self, instruction: Instruction) -> Result<CompiledInstruction> {
+        let mut builder = self.builder();
+        builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
+        builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC)?;
+        builder.emit_linear(OUT_NEXT_SP, 1.0, IN_SP)?;
+        builder.add_output_bias(OUT_NEXT_SP, -1.0);
+        builder.add_output_bias(OUT_MEM_WRITE_ENABLE, 1.0);
+        builder.emit_linear(OUT_MEM_WRITE_ADDR, 1.0, IN_SP)?;
+        builder.add_output_bias(OUT_MEM_WRITE_ADDR, -1.0);
+        builder.emit_linear(OUT_MEM_WRITE_VALUE, 1.0, IN_ACC)?;
+        self.finish(
+            instruction,
+            MemoryRead::None,
+            builder,
+            TransitionControls::preserve(),
+        )
+    }
+
+    fn compile_pop(&self, instruction: Instruction) -> Result<CompiledInstruction> {
+        let mut builder = self.builder();
+        builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
+        builder.emit_linear(OUT_RAW_ACC, 1.0, IN_OPERAND)?;
+        builder.emit_linear(OUT_NEXT_SP, 1.0, IN_SP)?;
+        builder.add_output_bias(OUT_NEXT_SP, 1.0);
+        self.finish(
+            instruction,
+            MemoryRead::StackTop,
+            builder,
+            TransitionControls {
+                zero: TransitionControls::zero_from_result(),
+                carry: CarryBlend::default(),
+                halted: TransitionControls::halted_const(false),
+            },
+        )
     }
 
     fn compile_add_immediate(
@@ -524,10 +600,16 @@ impl InstructionCompiler {
         value: i16,
     ) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
         builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC)?;
         builder.add_output_bias(OUT_RAW_ACC, Scalar::from(value));
-        self.finish(instruction, None, builder, arithmetic_controls())
+        self.finish(
+            instruction,
+            MemoryRead::None,
+            builder,
+            arithmetic_controls(),
+        )
     }
 
     fn compile_add_memory(
@@ -536,10 +618,16 @@ impl InstructionCompiler {
         address: u8,
     ) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
         builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC)?;
         builder.emit_linear(OUT_RAW_ACC, 1.0, IN_OPERAND)?;
-        self.finish(instruction, Some(address), builder, arithmetic_controls())
+        self.finish(
+            instruction,
+            MemoryRead::Direct(address),
+            builder,
+            arithmetic_controls(),
+        )
     }
 
     fn compile_sub_immediate(
@@ -548,10 +636,16 @@ impl InstructionCompiler {
         value: i16,
     ) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
         builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC)?;
         builder.add_output_bias(OUT_RAW_ACC, -Scalar::from(value));
-        self.finish(instruction, None, builder, arithmetic_controls())
+        self.finish(
+            instruction,
+            MemoryRead::None,
+            builder,
+            arithmetic_controls(),
+        )
     }
 
     fn compile_sub_memory(
@@ -560,10 +654,16 @@ impl InstructionCompiler {
         address: u8,
     ) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
         builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC)?;
         builder.emit_linear(OUT_RAW_ACC, -1.0, IN_OPERAND)?;
-        self.finish(instruction, Some(address), builder, arithmetic_controls())
+        self.finish(
+            instruction,
+            MemoryRead::Direct(address),
+            builder,
+            arithmetic_controls(),
+        )
     }
 
     fn compile_mul_immediate(
@@ -572,9 +672,15 @@ impl InstructionCompiler {
         value: i16,
     ) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
         builder.emit_linear(OUT_RAW_ACC, Scalar::from(value), IN_ACC)?;
-        self.finish(instruction, None, builder, arithmetic_controls())
+        self.finish(
+            instruction,
+            MemoryRead::None,
+            builder,
+            arithmetic_controls(),
+        )
     }
 
     fn compile_mul_memory(
@@ -583,9 +689,15 @@ impl InstructionCompiler {
         address: u8,
     ) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
         builder.emit_product(OUT_RAW_ACC, 1.0, IN_ACC, IN_OPERAND)?;
-        self.finish(instruction, Some(address), builder, arithmetic_controls())
+        self.finish(
+            instruction,
+            MemoryRead::Direct(address),
+            builder,
+            arithmetic_controls(),
+        )
     }
 
     fn compile_bitwise_immediate(
@@ -595,6 +707,7 @@ impl InstructionCompiler {
         op: BitwiseOp,
     ) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
         let rhs_bits = value as u16;
 
@@ -625,7 +738,7 @@ impl InstructionCompiler {
             }
         }
 
-        self.finish(instruction, None, builder, logical_controls())
+        self.finish(instruction, MemoryRead::None, builder, logical_controls())
     }
 
     fn compile_bitwise_memory(
@@ -635,6 +748,7 @@ impl InstructionCompiler {
         op: BitwiseOp,
     ) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
 
         for bit in 0..16 {
@@ -661,7 +775,12 @@ impl InstructionCompiler {
             }
         }
 
-        self.finish(instruction, Some(address), builder, logical_controls())
+        self.finish(
+            instruction,
+            MemoryRead::Direct(address),
+            builder,
+            logical_controls(),
+        )
     }
 
     fn compile_cmp_immediate(
@@ -670,12 +789,13 @@ impl InstructionCompiler {
         value: i16,
     ) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
         builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC)?;
         builder.add_output_bias(OUT_RAW_ACC, -Scalar::from(value));
         self.finish(
             instruction,
-            None,
+            MemoryRead::None,
             builder,
             compare_controls(Scalar::from(value), 0.0),
         )
@@ -687,22 +807,61 @@ impl InstructionCompiler {
         address: u8,
     ) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
         builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC)?;
         builder.emit_linear(OUT_RAW_ACC, -1.0, IN_OPERAND)?;
         self.finish(
             instruction,
-            Some(address),
+            MemoryRead::Direct(address),
             builder,
             compare_controls(0.0, 1.0),
         )
     }
 
-    fn compile_jump(&self, instruction: Instruction, target: u8) -> Result<CompiledInstruction> {
+    fn compile_call(&self, instruction: Instruction, target: u8) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
         builder.add_output_bias(OUT_NEXT_PC, Scalar::from(target));
         builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC)?;
-        self.finish(instruction, None, builder, TransitionControls::preserve())
+        builder.emit_linear(OUT_NEXT_SP, 1.0, IN_SP)?;
+        builder.add_output_bias(OUT_NEXT_SP, -1.0);
+        builder.add_output_bias(OUT_MEM_WRITE_ENABLE, 1.0);
+        builder.emit_linear(OUT_MEM_WRITE_ADDR, 1.0, IN_SP)?;
+        builder.add_output_bias(OUT_MEM_WRITE_ADDR, -1.0);
+        builder.emit_linear(OUT_MEM_WRITE_VALUE, 1.0, IN_PC_NEXT)?;
+        self.finish(
+            instruction,
+            MemoryRead::None,
+            builder,
+            TransitionControls::preserve(),
+        )
+    }
+
+    fn compile_ret(&self, instruction: Instruction) -> Result<CompiledInstruction> {
+        let mut builder = self.builder();
+        builder.emit_linear(OUT_NEXT_PC, 1.0, IN_OPERAND)?;
+        builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC)?;
+        builder.emit_linear(OUT_NEXT_SP, 1.0, IN_SP)?;
+        builder.add_output_bias(OUT_NEXT_SP, 1.0);
+        self.finish(
+            instruction,
+            MemoryRead::StackTop,
+            builder,
+            TransitionControls::preserve(),
+        )
+    }
+
+    fn compile_jump(&self, instruction: Instruction, target: u8) -> Result<CompiledInstruction> {
+        let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
+        builder.add_output_bias(OUT_NEXT_PC, Scalar::from(target));
+        builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC)?;
+        self.finish(
+            instruction,
+            MemoryRead::None,
+            builder,
+            TransitionControls::preserve(),
+        )
     }
 
     fn compile_jump_if_zero(
@@ -711,11 +870,17 @@ impl InstructionCompiler {
         target: u8,
     ) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC_NEXT)?;
         builder.emit_linear(OUT_NEXT_PC, Scalar::from(target), IN_ZERO)?;
         builder.emit_product(OUT_NEXT_PC, -1.0, IN_ZERO, IN_PC_NEXT)?;
         builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC)?;
-        self.finish(instruction, None, builder, TransitionControls::preserve())
+        self.finish(
+            instruction,
+            MemoryRead::None,
+            builder,
+            TransitionControls::preserve(),
+        )
     }
 
     fn compile_jump_if_not_zero(
@@ -724,20 +889,27 @@ impl InstructionCompiler {
         target: u8,
     ) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.add_output_bias(OUT_NEXT_PC, Scalar::from(target));
         builder.emit_linear(OUT_NEXT_PC, -Scalar::from(target), IN_ZERO)?;
         builder.emit_product(OUT_NEXT_PC, 1.0, IN_ZERO, IN_PC_NEXT)?;
         builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC)?;
-        self.finish(instruction, None, builder, TransitionControls::preserve())
+        self.finish(
+            instruction,
+            MemoryRead::None,
+            builder,
+            TransitionControls::preserve(),
+        )
     }
 
     fn compile_halt(&self, instruction: Instruction) -> Result<CompiledInstruction> {
         let mut builder = self.builder();
+        self.preserve_sp(&mut builder)?;
         builder.emit_linear(OUT_NEXT_PC, 1.0, IN_PC)?;
         builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC)?;
         self.finish(
             instruction,
-            None,
+            MemoryRead::None,
             builder,
             TransitionControls {
                 zero: BoolBlend {
@@ -756,7 +928,7 @@ impl InstructionCompiler {
     fn finish(
         &self,
         _instruction: Instruction,
-        memory_read: Option<u8>,
+        memory_read: MemoryRead,
         builder: FeedForwardBuilder,
         controls: TransitionControls,
     ) -> Result<CompiledInstruction> {
@@ -816,6 +988,7 @@ fn build_input_vector(state: &MachineState, operand: i16) -> Vec<Scalar> {
     input[IN_ZERO] = bool_to_scalar(state.zero_flag);
     input[IN_CARRY] = bool_to_scalar(state.carry_flag);
     input[IN_HALTED] = bool_to_scalar(state.halted);
+    input[IN_SP] = Scalar::from(state.sp);
     input[IN_OPERAND] = Scalar::from(operand);
 
     let acc_bits = state.acc as u16;
@@ -830,6 +1003,36 @@ fn build_input_vector(state: &MachineState, operand: i16) -> Vec<Scalar> {
 
 fn blend_bool(value: Scalar) -> bool {
     value >= 0.5
+}
+
+fn checked_transition_u8(field: &'static str, value: i64) -> Result<u8> {
+    u8::try_from(value).map_err(|_| VmError::InvalidTransitionField { field, value })
+}
+
+fn validate_stack_pointer(sp: u8, memory_size: usize) -> Result<()> {
+    if usize::from(sp) > memory_size {
+        return Err(VmError::InvalidStackPointer {
+            sp: usize::from(sp),
+            size: memory_size,
+        });
+    }
+    Ok(())
+}
+
+fn validate_stack_precondition(instruction: Instruction, sp: u8, memory_size: usize) -> Result<()> {
+    match instruction {
+        Instruction::Push | Instruction::Call(_) if sp == 0 => Err(VmError::StackOverflow {
+            sp: usize::from(sp),
+            size: memory_size,
+        }),
+        Instruction::Pop | Instruction::Ret if usize::from(sp) >= memory_size => {
+            Err(VmError::StackUnderflow {
+                sp: usize::from(sp),
+                size: memory_size,
+            })
+        }
+        _ => Ok(()),
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -863,7 +1066,7 @@ impl TransformerVmBlock {
 
     fn forward(&self, state: &MachineState, memory: &AddressedMemory) -> Result<Transition> {
         let compiled = self.compiled_instruction(state.pc)?;
-        let context = self.attention.gather(compiled.memory_read, memory)?;
+        let context = self.attention.gather(state, compiled.memory_read, memory)?;
         Ok(self.ff.apply(state, compiled, context))
     }
 }
@@ -883,6 +1086,13 @@ impl TransformerVm {
             return Err(VmError::InvalidConfig(
                 "num_layers must be greater than zero".to_string(),
             ));
+        }
+        if program.memory_size() > usize::from(u8::MAX) {
+            return Err(VmError::InvalidConfig(format!(
+                "program memory size {} exceeds the encoded stack/address limit of {} cells",
+                program.memory_size(),
+                u8::MAX
+            )));
         }
 
         let compiler = InstructionCompiler::new(&config)?;
@@ -947,16 +1157,23 @@ impl TransformerVm {
         let input_token = encode_state(state, self.config.d_model)?;
         let decoded = decode_state(&input_token, memory.snapshot())?;
         let dispatch = self.dispatch_info(decoded.pc)?;
+        validate_stack_pointer(decoded.sp, memory.len())?;
+        validate_stack_precondition(dispatch.instruction, decoded.sp, memory.len())?;
         let transition = self.blocks[dispatch.layer_idx].forward(&decoded, memory)?;
 
         if let Some((address, value)) = transition.memory_write {
+            let address = checked_transition_u8("memory address", address)?;
             memory.store(address, value, step_number)?;
         }
 
+        let next_pc = checked_transition_u8("pc", transition.pc)?;
+        let next_sp = checked_transition_u8("sp", transition.sp)?;
+        validate_stack_pointer(next_sp, memory.len())?;
+
         let next_state = MachineState {
-            pc: transition.pc,
+            pc: next_pc,
             acc: transition.acc,
-            sp: decoded.sp,
+            sp: next_sp,
             zero_flag: transition.zero_flag,
             carry_flag: transition.carry_flag,
             halted: transition.halted,

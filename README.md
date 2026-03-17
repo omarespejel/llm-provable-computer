@@ -32,21 +32,35 @@ Implemented:
 - `d_model = 36`, `18` logical heads, `head_dim = 2`
 - Deterministic "average-hard" style memory access
 - `HullKvCache` with convex hull maintenance and argmax queries
-- Compact ISA:
+- Compact ISA with arithmetic, logic, stack, and subroutine control flow:
   - `NOP`
   - `LOADI`
   - `LOAD`
   - `STORE`
+  - `PUSH`
+  - `POP`
   - `ADD`
   - `ADDM`
   - `SUB`
   - `SUBM`
+  - `MUL`
+  - `MULM`
+  - `AND`
+  - `ANDM`
+  - `OR`
+  - `ORM`
+  - `XOR`
+  - `XORM`
+  - `CMP`
+  - `CMPM`
+  - `CALL`
+  - `RET`
   - `JMP`
   - `JZ`
+  - `JNZ`
   - `HALT`
 - Labels plus `.memory` and `.init` directives
 - CLI runner and sample programs
-- `JNZ` (jump if not zero) conditional branch
 - Criterion benchmarks proving O(log n) hull query scaling
 - Property tests via proptest
 - Strict verification with `cargo test` and `cargo clippy -D warnings`
@@ -66,6 +80,8 @@ Not implemented yet:
 ```bash
 cargo run --bin tvm -- run programs/addition.tvm
 cargo run --bin tvm -- run programs/memory_roundtrip.tvm
+cargo run --bin tvm -- run programs/subroutine_addition.tvm
+cargo run --bin tvm -- run programs/stack_roundtrip.tvm
 cargo run --bin tvm -- run programs/counter.tvm --max-steps 128 --trace
 ```
 
@@ -76,6 +92,7 @@ program: programs/addition.tvm
 steps: 3
 halted: true
 pc: 2
+sp: 4
 acc: 8
 zero_flag: false
 carry_flag: false
@@ -171,6 +188,14 @@ The model is deterministic. There is no sampling, no stochastic decoding, and no
 - `.memory <size>` sets the memory size
 - `.init <address> <value>` seeds initial memory
 
+### Stack Semantics
+
+- `SP` is encoded in machine state and initializes to `.memory` size.
+- The stack grows downward from the highest address, so `PUSH` and `CALL` decrement `SP` before writing.
+- `POP` and `RET` read `MEM[SP]`, then increment `SP`.
+- Stack and data share the same memory array; reserve high addresses for call frames if you also use low addresses as data.
+- `.memory` is capped at `255` cells because addresses and `SP` are 8-bit encoded in the current MVP.
+
 ### Instructions
 
 | Instruction | Meaning |
@@ -179,10 +204,24 @@ The model is deterministic. There is no sampling, no stochastic decoding, and no
 | `LOADI <imm>` | `ACC = imm` |
 | `LOAD <addr>` | `ACC = MEM[addr]` |
 | `STORE <addr>` | `MEM[addr] = ACC` |
+| `PUSH` | Decrement `SP`, then write `ACC` to the stack |
+| `POP` | Load `ACC` from `MEM[SP]`, then increment `SP` |
 | `ADD <imm>` | `ACC += imm` |
 | `ADDM <addr>` | `ACC += MEM[addr]` |
 | `SUB <imm>` | `ACC -= imm` |
 | `SUBM <addr>` | `ACC -= MEM[addr]` |
+| `MUL <imm>` | `ACC *= imm` |
+| `MULM <addr>` | `ACC *= MEM[addr]` |
+| `AND <imm>` | `ACC &= imm` |
+| `ANDM <addr>` | `ACC &= MEM[addr]` |
+| `OR <imm>` | `ACC \|= imm` |
+| `ORM <addr>` | `ACC \|= MEM[addr]` |
+| `XOR <imm>` | `ACC ^= imm` |
+| `XORM <addr>` | `ACC ^= MEM[addr]` |
+| `CMP <imm>` | `ACC = ACC - imm`, `carry_flag = ACC < imm` |
+| `CMPM <addr>` | `ACC = ACC - MEM[addr]`, `carry_flag = ACC < MEM[addr]` |
+| `CALL <label|pc>` | Push return address, then jump |
+| `RET` | Pop return address and jump back |
 | `JMP <label|pc>` | Unconditional jump |
 | `JZ <label|pc>` | Jump when zero flag is set |
 | `JNZ <label|pc>` | Jump when zero flag is not set |
@@ -228,7 +267,7 @@ Result:
 | `src/runtime.rs` | Execution loop and trace capture |
 | `src/state.rs` | 36-dimensional machine state encoding |
 | `src/bin/tvm.rs` | CLI entrypoint |
-| `programs/*.tvm` | Runnable sample programs (addition, counter, fibonacci, multiply, memory_roundtrip) |
+| `programs/*.tvm` | Runnable sample programs (addition, counter, fibonacci, memory_roundtrip, multiply, stack_roundtrip, subroutine_addition) |
 | `benches/hull_benchmark.rs` | Criterion benchmarks for hull operations |
 | `tests/` | Unit, integration, and CLI coverage |
 
@@ -240,6 +279,7 @@ The shipped test suite covers:
 - Randomized hull argmax correctness vs brute force (including proptest)
 - Hull edge cases: collinear points, duplicate x, single/two-point, empty, monotonic vs general
 - Program execution for addition, memory round-trips, branching, overflow, looping, fibonacci, multiply
+- Stack behavior: `PUSH`/`POP`, `CALL`/`RET`, nested calls, overflow, underflow
 - JNZ branch-taken and fall-through paths
 - Deterministic execution: same program always produces same output
 - Full CLI execution against a real program file

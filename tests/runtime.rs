@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use transformer_vm_rs::{
     decode_state, encode_state, parse_program, ExecutionRuntime, MachineState, ProgramCompiler,
-    TransformerVmConfig,
+    TransformerVmConfig, VmError,
 };
 
 #[test]
@@ -311,6 +311,114 @@ fn deterministic_execution_same_output() {
 
     assert_eq!(result1.final_state, result2.final_state);
     assert_eq!(result1.steps, result2.steps);
+}
+
+#[test]
+fn push_and_pop_round_trip_value_and_restore_stack_pointer() {
+    let source = std::fs::read_to_string("programs/stack_roundtrip.tvm").expect("fixture");
+    let model = ProgramCompiler
+        .compile_source(&source, TransformerVmConfig::default())
+        .expect("compile");
+    let mut runtime = ExecutionRuntime::new(model, 16);
+    let result = runtime.run().expect("run");
+
+    assert!(result.halted);
+    assert_eq!(result.final_state.acc, 42);
+    assert_eq!(result.final_state.sp, 8);
+    assert_eq!(result.final_state.memory[7], 42);
+}
+
+#[test]
+fn call_and_ret_execute_subroutine_and_restore_stack_pointer() {
+    let source = std::fs::read_to_string("programs/subroutine_addition.tvm").expect("fixture");
+    let model = ProgramCompiler
+        .compile_source(&source, TransformerVmConfig::default())
+        .expect("compile");
+    let mut runtime = ExecutionRuntime::new(model, 16);
+    let result = runtime.run().expect("run");
+
+    assert!(result.halted);
+    assert_eq!(result.final_state.acc, 42);
+    assert_eq!(result.final_state.sp, 8);
+    assert_eq!(
+        result.final_state.memory[7], 2,
+        "return address is pushed on call"
+    );
+}
+
+#[test]
+fn nested_calls_use_lifo_stack() {
+    let source = r#"
+        .memory 8
+        LOADI 10
+        CALL outer
+        HALT
+    outer:
+        ADD 5
+        CALL inner
+        RET
+    inner:
+        ADD 27
+        RET
+    "#;
+    let model = ProgramCompiler
+        .compile_source(source, TransformerVmConfig::default())
+        .expect("compile");
+    let mut runtime = ExecutionRuntime::new(model, 32);
+    let result = runtime.run().expect("run");
+
+    assert!(result.halted);
+    assert_eq!(result.final_state.acc, 42);
+    assert_eq!(result.final_state.sp, 8);
+    assert_eq!(result.final_state.memory[7], 2, "outer return address");
+    assert_eq!(result.final_state.memory[6], 5, "inner return address");
+}
+
+#[test]
+fn pop_on_empty_stack_returns_underflow() {
+    let source = r#"
+        .memory 4
+        POP
+        HALT
+    "#;
+    let model = ProgramCompiler
+        .compile_source(source, TransformerVmConfig::default())
+        .expect("compile");
+    let mut runtime = ExecutionRuntime::new(model, 16);
+    let error = runtime.run().expect_err("pop should underflow");
+
+    match error {
+        VmError::StackUnderflow { sp, size } => {
+            assert_eq!(sp, 4);
+            assert_eq!(size, 4);
+        }
+        other => panic!("expected stack underflow, got {other:?}"),
+    }
+}
+
+#[test]
+fn push_on_full_stack_returns_overflow() {
+    let source = r#"
+        .memory 1
+        LOADI 7
+        PUSH
+        LOADI 9
+        PUSH
+        HALT
+    "#;
+    let model = ProgramCompiler
+        .compile_source(source, TransformerVmConfig::default())
+        .expect("compile");
+    let mut runtime = ExecutionRuntime::new(model, 16);
+    let error = runtime.run().expect_err("second push should overflow");
+
+    match error {
+        VmError::StackOverflow { sp, size } => {
+            assert_eq!(sp, 0);
+            assert_eq!(size, 1);
+        }
+        other => panic!("expected stack overflow, got {other:?}"),
+    }
 }
 
 #[test]

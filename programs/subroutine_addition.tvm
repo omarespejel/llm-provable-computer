@@ -1,0 +1,9 @@
+.memory 8
+
+LOADI 20
+CALL add_twenty_two
+HALT
+
+add_twenty_two:
+ADD 22
+RET
