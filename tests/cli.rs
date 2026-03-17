@@ -58,3 +58,19 @@ fn cli_accepts_attention_mode_flag() {
         .stdout(predicate::str::contains("attention_mode: hard-softmax:10"))
         .stdout(predicate::str::contains("acc: 4"));
 }
+
+#[test]
+fn cli_can_verify_against_native_interpreter() {
+    let mut command = Command::cargo_bin("tvm").expect("binary");
+    command
+        .arg("run")
+        .arg("programs/fibonacci.tvm")
+        .arg("--layers")
+        .arg("3")
+        .arg("--verify-native")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_against_native: true"))
+        .stdout(predicate::str::contains("verified_steps:"))
+        .stdout(predicate::str::contains("acc: 21"));
+}

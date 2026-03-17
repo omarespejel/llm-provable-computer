@@ -5,8 +5,8 @@ use std::time::Duration;
 
 use clap::{Parser, Subcommand};
 use transformer_vm_rs::{
-    run_execution_tui, Attention2DMode, ExecutionRuntime, ProgramCompiler, TransformerVmConfig,
-    VmError,
+    run_execution_tui, verify_model_against_native, Attention2DMode, ExecutionRuntime,
+    ProgramCompiler, TransformerVmConfig, VmError,
 };
 
 #[derive(Debug, Parser)]
@@ -26,6 +26,8 @@ enum Command {
         trace: bool,
         #[arg(long, default_value_t = 1)]
         layers: usize,
+        #[arg(long)]
+        verify_native: bool,
         #[arg(
             long,
             default_value = "average-hard",
@@ -65,6 +67,7 @@ fn run() -> transformer_vm_rs::Result<()> {
             max_steps,
             trace,
             layers,
+            verify_native,
             attention_mode,
         } => {
             let mut runtime = load_runtime(&program, max_steps, layers, attention_mode.clone())?;
@@ -83,6 +86,19 @@ fn run() -> transformer_vm_rs::Result<()> {
             println!("attention_mode: {}", attention_mode);
             println!("elapsed_ms: {:.3}", result.elapsed.as_secs_f64() * 1000.0);
             println!("throughput_steps_per_sec: {:.2}", result.tokens_per_sec);
+            if verify_native {
+                let comparison = verify_model_against_native(runtime.model().clone(), max_steps)?;
+                println!("verified_against_native: true");
+                println!("verified_steps: {}", comparison.checked_steps);
+                println!(
+                    "native_elapsed_ms: {:.3}",
+                    comparison.native.elapsed.as_secs_f64() * 1000.0
+                );
+                println!(
+                    "native_throughput_steps_per_sec: {:.2}",
+                    comparison.native.tokens_per_sec
+                );
+            }
 
             if trace {
                 println!(

@@ -1,5 +1,50 @@
 use proptest::prelude::*;
-use transformer_vm_rs::{decode_state, encode_state, Attention2DMode, HullKvCache, MachineState};
+use transformer_vm_rs::{
+    decode_state, encode_state, verify_model_against_native, Attention2DMode, HullKvCache,
+    Instruction, MachineState, Program, ProgramCompiler, TransformerVmConfig,
+};
+
+const RANDOM_MEMORY_SIZE: usize = 8;
+
+fn build_random_program(specs: &[(u8, i16, u8, u8)]) -> Program {
+    let len = specs.len();
+    let mut instructions = specs
+        .iter()
+        .map(|&(opcode, immediate, address, target)| {
+            let address = address % RANDOM_MEMORY_SIZE as u8;
+            let target = target % len as u8;
+            match opcode % 20 {
+                0 => Instruction::Nop,
+                1 => Instruction::LoadImmediate(immediate),
+                2 => Instruction::Load(address),
+                3 => Instruction::Store(address),
+                4 => Instruction::AddImmediate(immediate),
+                5 => Instruction::AddMemory(address),
+                6 => Instruction::SubImmediate(immediate),
+                7 => Instruction::SubMemory(address),
+                8 => Instruction::MulImmediate(immediate),
+                9 => Instruction::MulMemory(address),
+                10 => Instruction::AndImmediate(immediate),
+                11 => Instruction::AndMemory(address),
+                12 => Instruction::OrImmediate(immediate),
+                13 => Instruction::OrMemory(address),
+                14 => Instruction::XorImmediate(immediate),
+                15 => Instruction::XorMemory(address),
+                16 => Instruction::CmpImmediate(immediate),
+                17 => Instruction::CmpMemory(address),
+                18 => Instruction::JumpIfZero(target),
+                19 => Instruction::JumpIfNotZero(target),
+                _ => unreachable!(),
+            }
+        })
+        .collect::<Vec<_>>();
+
+    if let Some(last) = instructions.last_mut() {
+        *last = Instruction::Halt;
+    }
+
+    Program::new(instructions, RANDOM_MEMORY_SIZE)
+}
 
 proptest! {
     #[test]
@@ -159,5 +204,60 @@ proptest! {
 
         prop_assert!(blended >= min_value - 1e-3);
         prop_assert!(blended <= max_value + 1e-3);
+    }
+
+    #[test]
+    fn transformer_matches_native_on_random_average_hard_programs(
+        specs in prop::collection::vec((0u8..20u8, any::<i16>(), any::<u8>(), any::<u8>()), 1..24),
+        initial_memory in prop::collection::vec(any::<i16>(), RANDOM_MEMORY_SIZE..=RANDOM_MEMORY_SIZE),
+        layers in 1usize..=4,
+        max_steps in 1usize..=64,
+    ) {
+        let program = build_random_program(&specs)
+            .with_initial_memory(initial_memory)
+            .unwrap();
+        let model = ProgramCompiler
+            .compile_program(
+                program,
+                TransformerVmConfig {
+                    num_layers: layers,
+                    attention_mode: Attention2DMode::AverageHard,
+                    ..TransformerVmConfig::default()
+                },
+            )
+            .unwrap();
+
+        let comparison = verify_model_against_native(model, max_steps).unwrap();
+        prop_assert_eq!(comparison.transformer.final_state, comparison.native.final_state);
+        prop_assert_eq!(comparison.transformer.steps, comparison.native.steps);
+        prop_assert_eq!(comparison.transformer.halted, comparison.native.halted);
+    }
+
+    #[test]
+    fn transformer_matches_native_on_random_soft_attention_programs(
+        specs in prop::collection::vec((0u8..20u8, any::<i16>(), any::<u8>(), any::<u8>()), 1..24),
+        initial_memory in prop::collection::vec(any::<i16>(), RANDOM_MEMORY_SIZE..=RANDOM_MEMORY_SIZE),
+        layers in 1usize..=4,
+        max_steps in 1usize..=64,
+        temperature in 0.1f32..20.0f32,
+    ) {
+        let program = build_random_program(&specs)
+            .with_initial_memory(initial_memory)
+            .unwrap();
+        let model = ProgramCompiler
+            .compile_program(
+                program,
+                TransformerVmConfig {
+                    num_layers: layers,
+                    attention_mode: Attention2DMode::HardSoftmax { temperature },
+                    ..TransformerVmConfig::default()
+                },
+            )
+            .unwrap();
+
+        let comparison = verify_model_against_native(model, max_steps).unwrap();
+        prop_assert_eq!(comparison.transformer.final_state, comparison.native.final_state);
+        prop_assert_eq!(comparison.transformer.steps, comparison.native.steps);
+        prop_assert_eq!(comparison.transformer.halted, comparison.native.halted);
     }
 }

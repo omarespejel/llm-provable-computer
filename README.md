@@ -9,6 +9,7 @@ This repository now ships a complete MVP:
 - A transformer-shaped execution model with 2D attention and gated feed-forward blocks
 - A convex-hull-backed KV cache for latest-write memory lookups
 - A runtime that records execution traces
+- A native reference interpreter plus lockstep differential verification
 - A CLI that runs end-to-end programs from disk
 - Unit, integration, property-style, and CLI tests
 
@@ -64,6 +65,8 @@ Implemented:
   - `HALT`
 - Labels plus `.memory` and `.init` directives
 - CLI runner and sample programs
+- Native ISA interpreter for semantic reference execution
+- Lockstep verification of transformer execution against the native interpreter
 - Criterion benchmarks proving O(log n) hull query scaling
 - Property tests via proptest
 - Strict verification with `cargo test` and `cargo clippy -D warnings`
@@ -87,6 +90,7 @@ cargo run --bin tvm -- run programs/subroutine_addition.tvm
 cargo run --bin tvm -- run programs/stack_roundtrip.tvm
 cargo run --bin tvm -- run programs/counter.tvm --max-steps 128 --trace
 cargo run --bin tvm -- run programs/soft_attention_memory.tvm --attention-mode hard-softmax:10
+cargo run --bin tvm -- run programs/fibonacci.tvm --layers 3 --verify-native
 ```
 
 ### 2. Expected output shape
@@ -113,6 +117,14 @@ throughput_steps_per_sec: ...
 cargo fmt --all
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test
+```
+
+### 4. Differential verification
+
+`--verify-native` runs the same program through a separate native interpreter and checks every traced state transition against the transformer runtime.
+
+```bash
+cargo run --bin tvm -- run programs/subroutine_addition.tvm --verify-native
 ```
 
 ## Architecture

@@ -24,6 +24,8 @@ pub enum VmError {
     InvalidStackPointer { sp: usize, size: usize },
     #[error("compiled transition produced invalid {field} value {value}")]
     InvalidTransitionField { field: &'static str, value: i64 },
+    #[error("execution mismatch at step {step}: {message}")]
+    ExecutionMismatch { step: usize, message: String },
     #[error("hull cache is empty")]
     EmptyHull,
 }
