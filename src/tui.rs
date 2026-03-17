@@ -341,7 +341,7 @@ fn draw_ui(
 
     frame.render_widget(footer_panel(runtime, viewer, theme), root[3]);
 
-    if viewer.paused || runtime.state().halted || runtime.step_count() >= runtime.max_steps() {
+    if viewer.paused && !run_finished(runtime) {
         render_overlay(frame, runtime, viewer, theme);
     }
 }
@@ -1187,26 +1187,12 @@ fn render_overlay(
     viewer: &ViewerState,
     theme: Theme,
 ) {
-    let title = if runtime.state().halted {
-        "Final Pose"
-    } else if runtime.step_count() >= runtime.max_steps() {
-        "Max Steps"
-    } else {
-        "Intermission"
-    };
-    let subtitle = if runtime.state().halted {
-        "execution finished cleanly"
-    } else if runtime.step_count() >= runtime.max_steps() {
-        "the runway hit its step budget"
-    } else {
-        "paused with the lights still on"
-    };
     let area = centered_rect(frame.area(), 58, 24);
     frame.render_widget(Clear, area);
     frame.render_widget(
         Paragraph::new(vec![
             Line::from(Span::styled(
-                title.to_uppercase(),
+                "INTERMISSION",
                 Style::default()
                     .fg(theme.bg)
                     .bg(theme.accent)
@@ -1215,7 +1201,7 @@ fn render_overlay(
             .centered(),
             Line::from(""),
             Line::from(Span::styled(
-                subtitle,
+                "paused with the lights still on",
                 Style::default().fg(theme.text).add_modifier(Modifier::BOLD),
             ))
             .centered(),
@@ -1245,6 +1231,10 @@ fn render_overlay(
         .alignment(Alignment::Center),
         area,
     );
+}
+
+fn run_finished(runtime: &ExecutionRuntime) -> bool {
+    runtime.state().halted || runtime.step_count() >= runtime.max_steps()
 }
 
 fn panel_block(title: &str, theme: Theme) -> Block<'static> {
