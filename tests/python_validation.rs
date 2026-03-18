@@ -38,6 +38,17 @@ fn python_command() -> String {
     std::env::var("TVM_PYTHON").unwrap_or_else(|_| "python3".to_string())
 }
 
+fn python_validation_available() -> bool {
+    Command::new(python_command())
+        .arg("-B")
+        .arg("-c")
+        .arg("import numpy, onnxruntime")
+        .env("PYTHONDONTWRITEBYTECODE", "1")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
 fn run_python_validation(
     export_dir: &Path,
     program_name: &str,
@@ -76,6 +87,11 @@ fn run_python_validation(
 
 #[test]
 fn python_validator_matches_native_trace_for_shipped_programs() {
+    if !python_validation_available() {
+        eprintln!("skipping python validation test: numpy and onnxruntime are not installed");
+        return;
+    }
+
     for (path, expected_acc, max_steps) in [
         ("programs/addition.tvm", 8i16, 64usize),
         ("programs/counter.tvm", 5i16, 256usize),

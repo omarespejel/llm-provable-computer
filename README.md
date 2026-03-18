@@ -130,13 +130,13 @@ The execution model maps directly onto transformer components:
 ## Quick Start
 
 ```bash
-# Run a program
-cargo run --bin tvm -- run programs/fibonacci.tvm
+# Run a program through the default transformer engine
+cargo run --bin tvm -- programs/fibonacci.tvm
 
 # Run with execution trace
 cargo run --bin tvm -- run programs/counter.tvm --max-steps 128 --trace
 
-# Verify transformer matches native interpreter (lockstep differential check)
+# Verify transformer matches the native interpreter
 cargo run --bin tvm -- run programs/fibonacci.tvm --layers 3 --verify-native
 
 # Interactive TUI
@@ -145,6 +145,80 @@ cargo run --bin tvm -- tui programs/fibonacci.tvm --layers 3 --max-steps 128
 # Tests and benchmarks
 cargo test
 cargo bench
+```
+
+### Feature Flags
+
+| Feature | Enables | Example |
+|------|------|------|
+| default | Native interpreter, transformer runtime, TUI, native verification | `cargo run --bin tvm -- programs/addition.tvm` |
+| `burn-model` | Burn model build + Burn execution engine + `--verify-burn` | `cargo run --features burn-model --bin tvm -- run programs/fibonacci.tvm --engine burn` |
+| `onnx-export` | `export-onnx`, ONNX/Tract execution engine, Python validation workflow | `cargo run --features onnx-export --bin tvm -- export-onnx programs/fibonacci.tvm -o compiled/fibonacci` |
+| `full` | Burn + ONNX together, including `--verify-all` | `cargo run --features full --bin tvm -- run programs/fibonacci.tvm --verify-all` |
+
+### Engine Selection
+
+The `run` subcommand stays additive. `tvm <program.tvm>` is a shorthand for `tvm run <program.tvm>`, and you can select the execution backend explicitly:
+
+```bash
+# Direct ISA semantics
+cargo run --bin tvm -- run programs/addition.tvm --engine native
+
+# Compiled transformer runtime
+cargo run --bin tvm -- run programs/addition.tvm --engine transformer
+
+# Burn tensor runtime
+cargo run --features burn-model --bin tvm -- run programs/addition.tvm --engine burn
+
+# Exported ONNX models executed through Tract
+cargo run --features onnx-export --bin tvm -- run programs/addition.tvm --engine onnx
+```
+
+### Burn Runtime Workflow
+
+```bash
+# Execute through Burn
+cargo run --features burn-model --bin tvm -- run programs/fibonacci.tvm --engine burn
+
+# Lockstep verification: transformer + native + burn
+cargo run --features burn-model --bin tvm -- run programs/fibonacci.tvm --verify-burn
+```
+
+For the library API path, see `examples/burn_execution.rs`.
+
+### ONNX Export Workflow
+
+```bash
+# Export one ONNX model per instruction plus metadata.json
+cargo run --features onnx-export --bin tvm -- export-onnx programs/fibonacci.tvm -o compiled/fibonacci
+
+# Execute the exported program via Tract from the CLI
+cargo run --features onnx-export --bin tvm -- run programs/fibonacci.tvm --engine onnx
+
+# Lockstep verification: transformer + native + ONNX/Tract
+cargo run --features onnx-export --bin tvm -- run programs/fibonacci.tvm --verify-onnx
+```
+
+The export directory contains `metadata.json` and `instr_<pc>.onnx` files. The CLI output is deterministic key-value text so it is easy to script around.
+For the library API path, see `examples/export_onnx.rs`.
+
+### Python Validation Workflow
+
+```bash
+python3 -m pip install -r scripts/requirements.txt
+
+# Reproduce the exported execution in Python with onnxruntime only
+python3 scripts/validate_onnx.py \
+  compiled/fibonacci \
+  --program-name fibonacci \
+  --expected-acc 21 \
+  --expected-halted true
+```
+
+For the full four-engine proof path:
+
+```bash
+cargo run --features full --bin tvm -- run programs/fibonacci.tvm --verify-all
 ```
 
 ### Attention Modes
@@ -224,18 +298,42 @@ Result: `ACC = 5`, `MEM[0] = 5`, `halted = true`.
 
 ## Differential Verification
 
-The repo has two execution engines that must agree on every step:
+The repo now has four execution engines:
 
-1. **TransformerVm** --- the transformer-shaped runtime (encode, attend, transition, decode)
-2. **NativeInterpreter** --- a direct ISA interpreter with identical semantics
+1. **NativeInterpreter** --- direct ISA semantics, used as the semantic oracle
+2. **TransformerVm** --- the transformer-shaped runtime (encode, attend, transition, decode)
+3. **BurnExecutionRuntime** --- the same compiled weights executed through Burn tensors
+4. **OnnxExecutionRuntime** --- exported ONNX weights executed through Tract
 
-The verifier runs both lockstep and fails on the first divergence: instruction mismatch, pre-state mismatch, post-state mismatch, final state mismatch, or step count mismatch.
+The verifier runs them in lockstep and fails on the first divergence: instruction mismatch, pre-state mismatch, post-state mismatch, final state mismatch, or step count mismatch.
 
 ```bash
+# Transformer vs native
 cargo run --bin tvm -- run programs/subroutine_addition.tvm --verify-native
+
+# Transformer + native + burn
+cargo run --features burn-model --bin tvm -- run programs/subroutine_addition.tvm --verify-burn
+
+# Transformer + native + ONNX/Tract
+cargo run --features onnx-export --bin tvm -- run programs/subroutine_addition.tvm --verify-onnx
+
+# Transformer + native + burn + ONNX/Tract
+cargo run --features full --bin tvm -- run programs/subroutine_addition.tvm --verify-all
 ```
 
-This is one of the most important properties of the system. It means the transformer path is tested against an independent semantic reference --- not trusted by inspection.
+This is the main reproducibility claim of the repo: the same compiled program produces the same trace in the hand-written runtime, a native interpreter, a Burn model, and portable ONNX execution.
+
+## Proving It's a Real Transformer
+
+The strongest claim here is no longer "the Rust code looks transformer-like." It is:
+
+1. The VM compiler produces standard transformer weights.
+2. Those weights execute correctly in the native transformer runtime.
+3. The same weights run through Burn's tensor operations without changing the trace.
+4. The same weights export to standard ONNX files.
+5. The ONNX files reproduce the same execution in Tract and in Python via `onnxruntime`.
+
+That combination is the practical proof. If `tvm run --verify-all` passes and `scripts/validate_onnx.py` reproduces the result from the exported files, the computation is not trapped inside custom Rust structs anymore. It is a real, portable transformer computation with independent cross-checks.
 
 ---
 
@@ -267,16 +365,22 @@ This is what makes long execution traces tractable. At step 1,000,000, each memo
 | `src/compiler.rs` | Program-to-model compilation |
 | `src/config.rs` | Model configuration, attention mode parsing |
 | `src/geometry.rs` | `Point2D` and `HullKvCache` |
+| `src/burn_model.rs` | Burn `Module` definitions for compiled transformer execution |
+| `src/burn_runtime.rs` | Burn execution loop and trace capture |
 | `src/memory.rs` | Addressed memory with per-address write histories |
 | `src/model.rs` | 2D attention, feed-forward transitions, transformer blocks |
+| `src/onnx_export.rs` | ONNX graph generation and `metadata.json` export |
+| `src/onnx_runtime.rs` | ONNX/Tract execution runtime |
 | `src/state.rs` | Machine state encoding / decoding (d_model = 36) |
 | `src/runtime.rs` | Transformer execution loop and trace capture |
 | `src/interpreter.rs` | Native reference interpreter |
-| `src/verification.rs` | Lockstep transformer-vs-native comparison |
+| `src/verification.rs` | Lockstep multi-engine differential verification |
 | `src/tui.rs` | Interactive terminal viewer |
 | `src/bin/tvm.rs` | CLI entrypoint |
 | `tests/` | Unit, integration, property, CLI, and differential tests |
 | `programs/` | Example `.tvm` programs |
+| `scripts/validate_onnx.py` | Python ONNX Runtime validator |
+| `scripts/requirements.txt` | Python validator dependencies |
 | `benches/` | Criterion benchmarks (hull argmax vs brute-force) |
 
 ---
