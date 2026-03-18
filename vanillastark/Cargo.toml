@@ -4,3 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+blake2 = "0.10"
+sha3 = "0.10"
