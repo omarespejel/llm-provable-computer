@@ -28,6 +28,8 @@ pub enum VmError {
     ExecutionMismatch { step: usize, message: String },
     #[error("serialization error: {0}")]
     Serialization(String),
+    #[error("unsupported proof construction: {0}")]
+    UnsupportedProof(String),
     #[error("onnx error: {0}")]
     Onnx(String),
     #[error("hull cache is empty")]

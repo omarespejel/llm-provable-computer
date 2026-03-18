@@ -14,9 +14,10 @@ use transformer_vm_rs::verify_engines;
 #[cfg(feature = "onnx-export")]
 use transformer_vm_rs::{export_program_onnx, OnnxExecutionRuntime};
 use transformer_vm_rs::{
-    run_execution_tui, verify_model_against_native, Attention2DMode, ExecutionResult,
-    ExecutionRuntime, ExecutionTraceEntry, MachineState, NativeInterpreter, ProgramCompiler,
-    TransformerVm, TransformerVmConfig, VmError,
+    load_execution_stark_proof, prove_execution_stark, run_execution_tui,
+    save_execution_stark_proof, verify_execution_stark, verify_model_against_native,
+    Attention2DMode, ExecutionResult, ExecutionRuntime, ExecutionTraceEntry, MachineState,
+    NativeInterpreter, ProgramCompiler, TransformerVm, TransformerVmConfig, VmError,
 };
 #[cfg(feature = "burn-model")]
 use transformer_vm_rs::{BurnExecutionRuntime, BurnTransformerVm};
@@ -89,6 +90,24 @@ enum Command {
             value_parser = parse_attention_mode
         )]
         attention_mode: Attention2DMode,
+    },
+    ProveStark {
+        program: PathBuf,
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+        #[arg(long, default_value_t = 512)]
+        max_steps: usize,
+        #[arg(long, default_value_t = 1)]
+        layers: usize,
+        #[arg(
+            long,
+            default_value = "average-hard",
+            value_parser = parse_attention_mode
+        )]
+        attention_mode: Attention2DMode,
+    },
+    VerifyStark {
+        proof: PathBuf,
     },
 }
 
@@ -199,6 +218,14 @@ fn run() -> transformer_vm_rs::Result<()> {
             layers,
             attention_mode,
         } => export_onnx_command(&program, &output_dir, layers, attention_mode)?,
+        Command::ProveStark {
+            program,
+            output,
+            max_steps,
+            layers,
+            attention_mode,
+        } => prove_stark_command(&program, &output, max_steps, layers, attention_mode)?,
+        Command::VerifyStark { proof } => verify_stark_command(&proof)?,
     }
 
     Ok(())
@@ -280,6 +307,59 @@ fn export_onnx_command(
 ) -> transformer_vm_rs::Result<()> {
     let model = compile_model(program, layers, attention_mode)?;
     export_onnx_command_impl(program, output_dir, &model)
+}
+
+fn prove_stark_command(
+    program: &Path,
+    output: &Path,
+    max_steps: usize,
+    layers: usize,
+    attention_mode: Attention2DMode,
+) -> transformer_vm_rs::Result<()> {
+    let model = compile_model(program, layers, attention_mode)?;
+    let proof = prove_execution_stark(&model, max_steps)?;
+    save_execution_stark_proof(&proof, output)?;
+
+    println!("program: {}", program.display());
+    println!("proof: {}", output.display());
+    println!("steps: {}", proof.claim.steps);
+    println!("halted: {}", proof.claim.final_state.halted);
+    println!("pc: {}", proof.claim.final_state.pc);
+    println!("sp: {}", proof.claim.final_state.sp);
+    println!("acc: {}", proof.claim.final_state.acc);
+    println!("zero_flag: {}", proof.claim.final_state.zero_flag);
+    println!("carry_flag: {}", proof.claim.final_state.carry_flag);
+    println!("memory: {:?}", proof.claim.final_state.memory);
+    println!("attention_mode: {}", proof.claim.attention_mode);
+    println!("proof_bytes: {}", proof.proof.len());
+
+    Ok(())
+}
+
+fn verify_stark_command(proof_path: &Path) -> transformer_vm_rs::Result<()> {
+    let proof = load_execution_stark_proof(proof_path)?;
+    if !verify_execution_stark(&proof)? {
+        return Err(VmError::InvalidConfig(format!(
+            "stark proof verification failed for {}",
+            proof_path.display()
+        )));
+    }
+
+    println!("proof: {}", proof_path.display());
+    println!("verified_stark: true");
+    println!("steps: {}", proof.claim.steps);
+    println!("halted: {}", proof.claim.final_state.halted);
+    println!("pc: {}", proof.claim.final_state.pc);
+    println!("sp: {}", proof.claim.final_state.sp);
+    println!("acc: {}", proof.claim.final_state.acc);
+    println!("zero_flag: {}", proof.claim.final_state.zero_flag);
+    println!("carry_flag: {}", proof.claim.final_state.carry_flag);
+    println!("memory: {:?}", proof.claim.final_state.memory);
+    println!("attention_mode: {}", proof.claim.attention_mode);
+    println!("instructions: {}", proof.claim.program.instructions().len());
+    println!("proof_bytes: {}", proof.proof.len());
+
+    Ok(())
 }
 
 fn compile_model(
@@ -617,7 +697,11 @@ where
 }
 
 fn needs_run_subcommand(first_arg: &str) -> bool {
-    !first_arg.starts_with('-') && !matches!(first_arg, "run" | "tui" | "export-onnx" | "help")
+    !first_arg.starts_with('-')
+        && !matches!(
+            first_arg,
+            "run" | "tui" | "export-onnx" | "prove-stark" | "verify-stark" | "help"
+        )
 }
 
 fn parse_attention_mode(input: &str) -> Result<Attention2DMode, String> {

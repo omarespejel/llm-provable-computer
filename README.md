@@ -63,7 +63,10 @@ A working implementation of the Percepta architecture in Rust:
 
 ### Milestone 2: Vanilla STARK Proof
 
-*Status: planned.*
+*Status: implemented for the average-hard execution path and the current arithmetic / control-flow VM subset. Unsupported instructions are rejected explicitly.*
+
+The in-repo prototype now lives under `src/vanillastark/` and is exposed as
+`transformer_vm_rs::vanillastark`.
 
 Build a minimal, self-contained STARK prover from scratch over the execution trace. No dependencies on production proving systems --- the goal is to understand and validate the proof construction end to end.
 
@@ -138,6 +141,12 @@ cargo run --bin tvm -- run programs/counter.tvm --max-steps 128 --trace
 
 # Verify transformer matches the native interpreter
 cargo run --bin tvm -- run programs/fibonacci.tvm --layers 3 --verify-native
+
+# Produce a standalone vanilla STARK proof for a program execution
+cargo run --bin tvm -- prove-stark programs/fibonacci.tvm -o fibonacci.proof.json
+
+# Verify a saved vanilla STARK proof without re-running the program
+cargo run --bin tvm -- verify-stark fibonacci.proof.json
 
 # Interactive TUI
 cargo run --bin tvm -- tui programs/fibonacci.tvm --layers 3 --max-steps 128
@@ -389,9 +398,9 @@ This is what makes long execution traces tractable. At step 1,000,000, each memo
 
 This is an MVP. Intentionally narrow, intentionally correct.
 
-**Implemented:** compact ISA, transformer execution, hull-backed memory, multiple attention modes, native interpreter, differential verification, CLI, TUI, benchmarks.
+**Implemented:** compact ISA, transformer execution, hull-backed memory, multiple attention modes, native interpreter, differential verification, CLI, TUI, benchmarks, vanilla STARK proofs for the current average-hard arithmetic / control-flow subset.
 
-**Not implemented:** WASM frontend, learned/trained weights, GPU acceleration, shared-address attention, STARK proof generation.
+**Not implemented:** WASM frontend, learned/trained weights, GPU acceleration, shared-address attention, full-ISA STARK AIR (bitwise / compare), non-average-hard proof paths, production STWO prover integration.
 
 The narrowness is the point. The semantics are small enough to inspect, strong enough to test, and structured enough to prove over.
 

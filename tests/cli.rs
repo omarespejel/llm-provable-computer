@@ -111,6 +111,36 @@ fn cli_can_verify_against_native_interpreter() {
         .stdout(predicate::str::contains("acc: 21"));
 }
 
+#[test]
+fn cli_can_prove_and_verify_stark_execution() {
+    let proof_path = unique_temp_dir("cli-stark-proof").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stark")
+        .arg("programs/addition.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("proof_bytes:"))
+        .stdout(predicate::str::contains("acc: 8"));
+
+    assert!(proof_path.exists());
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stark")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains("acc: 8"))
+        .stdout(predicate::str::contains("instructions: 3"));
+
+    let _ = std::fs::remove_file(proof_path);
+}
+
 #[cfg(not(feature = "burn-model"))]
 #[test]
 fn cli_reports_missing_burn_feature_for_burn_engine() {
