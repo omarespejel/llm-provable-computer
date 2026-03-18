@@ -235,7 +235,109 @@ Option B is more portable but loses the O(log n) hull optimization. For correctn
 
 ---
 
-## 6. Sources
+## 6. Giannou Reference Implementation Analysis
+
+The closest open-source reference to what Percepta describes is the Giannou et al. "Looped Transformers as Programmable Computers" implementation at `github.com/jysohn1108/Looped-Transformer`. A detailed code analysis reveals the exact compilation pattern.
+
+### 6.1 Architecture (the TF class)
+
+The transformer block (`subleq.py:710-760`) has this exact structure:
+
+```python
+class TF:
+    Q  = np.zeros((num_rows_Q, num_rows_X))   # Query projection
+    K  = np.zeros((num_rows_Q, num_rows_X))   # Key projection
+    V  = np.zeros((num_rows_X, num_rows_X))   # Value projection
+    W1 = np.zeros((num_rows_W, num_rows_X))   # FF layer 1 weight
+    b1 = np.zeros((num_rows_W, num_cols_X))   # FF layer 1 bias
+    W2 = np.zeros((num_rows_X, num_rows_W))   # FF layer 2 weight
+    b2 = np.zeros((num_rows_X, num_cols_X))   # FF layer 2 bias
+
+    def forward(self, X):
+        # Attention: X' = X + V @ X @ softmax(X^T K^T Q X, temperature=lambda)
+        softmax_output = numpy_softmax(X.T @ K.T @ Q @ X, lam=lambda)
+        attn = X + V @ X @ softmax_output
+
+        # Feed-forward: output = attn + W2 @ ReLU(W1 @ attn + b1) + b2
+        output = attn + W2 @ numpy_relu(W1 @ attn + b1) + b2
+        return output
+```
+
+Key observations:
+- **Residual connections** are used (`X +` and `attn +`)
+- **No LayerNorm** — error correction layer serves as substitute
+- **ReLU activation** in FF (not gated `gate * value` — Percepta's gating is different from Giannou's)
+- **State is a 2D matrix** `(num_rows_X, n)`, not a 1D token vector
+- **Biases are 2D** `(rows, cols)`, allowing per-column bias (critical for selective writes)
+- **Large lambda** (10-100) makes softmax approach hard argmax
+
+### 6.2 How Instructions Compile to Weights
+
+Each SUBLEQ instruction cycle uses **13 transformer blocks** across 6 logical steps:
+
+| Step | Blocks | Attention? | What it does |
+|------|--------|-----------|-------------|
+| `read_inst` | 1 | 1 head | Q/K match PC against positional encodings → selects current instruction column |
+| `read_mem` | 1 | 2 heads | Q/K match address pointers against column positions → reads mem[a] and mem[b] |
+| `subtract_mem` | 3 | None | ReLU carry circuits compute mem[b] - mem[a] in binary (6 neurons per bit) |
+| `write_mem` | 1 | 1 head | Attention selects target column, FF writes result with indicator-row gating |
+| `conditional_branch` | 3 | None | Compute branch flag, conditionally update PC |
+| `error_correction` | 1 | None | Snap all {-1, +1} encoded values back to exact {-1, +1} to fix softmax drift |
+
+The weight-setting pattern is always:
+1. Instantiate `TF(...)` with zero weights
+2. Set Q, K, V entries (identity sub-matrices for address matching)
+3. Set W1, b1, W2, b2 entries (identity, scaled identity, or carry-circuit weights)
+4. Return the configured block
+
+### 6.3 Attention as Address Lookup
+
+Attention implements memory addressing via positional encoding matching:
+
+```
+score(col_i, col_j) = x_i^T @ K^T @ Q @ x_j
+```
+
+When Q and K extract the PC bits and positional encoding bits respectively, the score is maximized for the column whose positional encoding matches the current PC — implementing an argmax selector.
+
+With large lambda (hard softmax), this is equivalent to our HullKvCache argmax. The mathematical difference: Giannou uses softmax-with-temperature approaching hard, we use actual geometric argmax on the convex hull. Both produce the same result.
+
+### 6.4 Binary Arithmetic via ReLU Circuits
+
+The most complex weight structures implement binary addition with carry propagation. For N-bit numbers, `subtract_mem` uses 6*N ReLU neurons per bit position:
+
+```python
+# For each bit i, 6 neurons compute carry chain:
+f.W1[6*(N-i),   ref+N-j] = (2**(j-1)) / 2
+f.W1[6*(N-i)+1, ref+N-j] = (2**(j-1)) / 2
+# ... (pattern from Lemma C.1 of the paper)
+f.W2[output_row, 6*(N-i):6*(N-i+1)] = 2*np.array([1,-1,1,-1,1,-1])
+```
+
+This is directly analogous to our bitwise instruction compilation in `model.rs`, where we decompose AND/OR/XOR into per-bit operations in the gated FF.
+
+### 6.5 Key Differences from Our Approach
+
+| Aspect | Giannou | transformer-vm-rs |
+|--------|---------|-------------------|
+| State shape | 2D matrix (rows × columns) | 1D vector (d_model=36) |
+| ISA | SUBLEQ (1 instruction) | 26-instruction ISA |
+| Arithmetic | ReLU carry circuits (6N neurons/bit) | Direct i16 arithmetic via gated FF |
+| Memory model | Column-based (each addr = column) | Per-address HullKvCache |
+| Attention | Softmax with high temperature | True argmax via convex hull |
+| Error correction | Explicit snap-back layer | Not needed (exact integer arithmetic) |
+| FF activation | ReLU | Gated (gate * value) |
+| Framework | NumPy | Rust |
+
+### 6.6 Implications for Our ONNX Export
+
+The Giannou implementation validates that **the compilation approach works**: you CAN populate transformer weight matrices to execute arbitrary programs. Their forward pass uses standard ops (MatMul, Softmax, ReLU, Add) — exactly what we need for ONNX export.
+
+The key insight for our ONNX export: since our gated FF uses `gate * value` instead of `ReLU`, the ONNX graph needs `Mul` (element-wise) instead of `Relu`. Both are standard ONNX ops.
+
+---
+
+## 7. Sources
 
 - Percepta blog: percepta.ai/blog/can-llms-be-computers
 - HN discussion: news.ycombinator.com/item?id=47348275
