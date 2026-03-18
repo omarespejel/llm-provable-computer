@@ -92,22 +92,128 @@ fn python_validator_matches_native_trace_for_shipped_programs() {
         return;
     }
 
-    for (path, expected_acc, max_steps) in [
-        ("programs/addition.tvm", 8i16, 64usize),
-        ("programs/counter.tvm", 5i16, 256usize),
-        ("programs/fibonacci.tvm", 21i16, 512usize),
-        ("programs/multiply.tvm", 42i16, 256usize),
-        ("programs/subroutine_addition.tvm", 42i16, 128usize),
+    for (path, config, program_name, expected_acc, max_steps, use_metadata_path) in [
+        (
+            "programs/addition.tvm",
+            TransformerVmConfig::default(),
+            "addition",
+            8i16,
+            64usize,
+            false,
+        ),
+        (
+            "programs/counter.tvm",
+            TransformerVmConfig {
+                num_layers: 2,
+                ..TransformerVmConfig::default()
+            },
+            "counter",
+            5i16,
+            256usize,
+            false,
+        ),
+        (
+            "programs/fibonacci.tvm",
+            TransformerVmConfig {
+                num_layers: 3,
+                ..TransformerVmConfig::default()
+            },
+            "fibonacci",
+            21i16,
+            512usize,
+            false,
+        ),
+        (
+            "programs/memory_roundtrip.tvm",
+            TransformerVmConfig {
+                num_layers: 2,
+                ..TransformerVmConfig::default()
+            },
+            "memory_roundtrip",
+            42i16,
+            128usize,
+            true,
+        ),
+        (
+            "programs/multiply.tvm",
+            TransformerVmConfig {
+                num_layers: 2,
+                ..TransformerVmConfig::default()
+            },
+            "multiply",
+            42i16,
+            256usize,
+            false,
+        ),
+        (
+            "programs/stack_roundtrip.tvm",
+            TransformerVmConfig {
+                num_layers: 2,
+                ..TransformerVmConfig::default()
+            },
+            "stack_roundtrip",
+            42i16,
+            128usize,
+            true,
+        ),
+        (
+            "programs/subroutine_addition.tvm",
+            TransformerVmConfig {
+                num_layers: 2,
+                ..TransformerVmConfig::default()
+            },
+            "subroutine_addition",
+            42i16,
+            128usize,
+            false,
+        ),
+        (
+            "programs/soft_attention_memory.tvm",
+            TransformerVmConfig {
+                num_layers: 2,
+                ..TransformerVmConfig::default()
+            },
+            "soft_attention_memory_average_hard",
+            10i16,
+            64usize,
+            true,
+        ),
+        (
+            "programs/soft_attention_memory.tvm",
+            TransformerVmConfig {
+                num_layers: 2,
+                attention_mode: transformer_vm_rs::Attention2DMode::HardSoftmax {
+                    temperature: 10.0,
+                },
+                ..TransformerVmConfig::default()
+            },
+            "soft_attention_memory_hard_softmax",
+            4i16,
+            64usize,
+            false,
+        ),
+        (
+            "programs/soft_attention_memory.tvm",
+            TransformerVmConfig {
+                num_layers: 2,
+                attention_mode: transformer_vm_rs::Attention2DMode::Softmax,
+                ..TransformerVmConfig::default()
+            },
+            "soft_attention_memory_softmax",
+            9i16,
+            64usize,
+            true,
+        ),
     ] {
         let source = std::fs::read_to_string(path).expect("fixture");
-        let model = compile_model(&source, TransformerVmConfig::default());
+        let model = compile_model(&source, config);
         let export_dir = unique_temp_dir("python-validation");
         export_program_onnx(&model, &export_dir).expect("export program");
-
-        let program_name = Path::new(path)
-            .file_stem()
-            .and_then(|stem| stem.to_str())
-            .expect("program stem");
+        let validation_path = if use_metadata_path {
+            export_dir.join("metadata.json")
+        } else {
+            export_dir.clone()
+        };
         let mut native = NativeInterpreter::new(
             model.program().clone(),
             model.config().attention_mode.clone(),
@@ -115,7 +221,7 @@ fn python_validator_matches_native_trace_for_shipped_programs() {
         );
         let native_result = native.run().expect("run native interpreter");
         let python_report =
-            run_python_validation(&export_dir, program_name, expected_acc, max_steps);
+            run_python_validation(&validation_path, program_name, expected_acc, max_steps);
 
         assert_eq!(
             python_report.steps, native_result.steps,
@@ -137,4 +243,46 @@ fn python_validator_matches_native_trace_for_shipped_programs() {
 
         let _ = std::fs::remove_dir_all(export_dir);
     }
+}
+
+#[test]
+fn python_validator_reports_expectation_mismatch() {
+    if !python_validation_available() {
+        eprintln!("skipping python validation test: numpy and onnxruntime are not installed");
+        return;
+    }
+
+    let source = std::fs::read_to_string("programs/addition.tvm").expect("fixture");
+    let model = compile_model(&source, TransformerVmConfig::default());
+    let export_dir = unique_temp_dir("python-validation-mismatch");
+    let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("scripts/validate_onnx.py");
+    export_program_onnx(&model, &export_dir).expect("export program");
+
+    let output = Command::new(python_command())
+        .arg("-B")
+        .arg(script)
+        .arg(export_dir.join("metadata.json"))
+        .arg("--program-name")
+        .arg("addition")
+        .arg("--expected-acc")
+        .arg("99")
+        .arg("--expected-halted")
+        .arg("true")
+        .arg("--max-steps")
+        .arg("64")
+        .env("PYTHONDONTWRITEBYTECODE", "1")
+        .output()
+        .expect("run python validator");
+
+    assert!(
+        !output.status.success(),
+        "validator should fail when expectations are wrong"
+    );
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("expected ACC=99, got 8"),
+        "unexpected stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let _ = std::fs::remove_dir_all(export_dir);
 }
