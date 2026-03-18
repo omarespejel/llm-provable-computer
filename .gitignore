@@ -1,6 +1,8 @@
 /target
 **/*.rs.bk
 .DS_Store
+__pycache__/
+*.pyc
 .claude/tsc-cache/
 .tldr/
 .tldrignore
