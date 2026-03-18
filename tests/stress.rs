@@ -213,7 +213,10 @@ fn stress_long_execution_fibonacci_large() {
     let comparison = verify_model_against_native(model, 1000).expect("verify");
 
     assert!(comparison.transformer.halted);
-    assert_eq!(comparison.transformer.final_state.acc, 610, "Fibonacci(15) = 610");
+    assert_eq!(
+        comparison.transformer.final_state.acc, 610,
+        "Fibonacci(15) = 610"
+    );
 }
 
 #[test]
@@ -245,7 +248,8 @@ fn stress_repeated_memory_write_read_cycles() {
     assert!(comparison.transformer.halted);
     assert_eq!(comparison.transformer.final_state.acc, 100);
     assert_eq!(
-        comparison.transformer.final_state, comparison.native.final_state
+        comparison.transformer.final_state,
+        comparison.native.final_state
     );
 }
 
@@ -272,10 +276,7 @@ fn stress_multi_layer_4_fibonacci() {
 #[test]
 fn stress_soft_attention_multiple_memory_writes() {
     // Write to the same address 50 times, then read with soft attention
-    let mut lines = vec![
-        ".memory 2".to_string(),
-        "LOADI 0".to_string(),
-    ];
+    let mut lines = vec![".memory 2".to_string(), "LOADI 0".to_string()];
 
     // Write values 1..=50 to address 0
     for i in 1..=50 {

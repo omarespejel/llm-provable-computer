@@ -4,10 +4,10 @@ use crate::instruction::{Instruction, Program};
 use crate::memory::AddressedMemory;
 use crate::state::{decode_state, encode_state, MachineState};
 
-type Scalar = f64;
+pub(crate) type Scalar = f64;
 
-const INPUT_DIM: usize = 41;
-const OUTPUT_DIM: usize = 6;
+pub(crate) const INPUT_DIM: usize = 41;
+pub(crate) const OUTPUT_DIM: usize = 6;
 const MIN_COMPILED_FF_DIM: usize = 49;
 
 const IN_CONST: usize = 0;
@@ -55,7 +55,7 @@ pub struct AttentionContext {
 }
 
 #[derive(Debug, Clone, Copy, Default)]
-enum MemoryRead {
+pub(crate) enum MemoryRead {
     #[default]
     None,
     Direct(u8),
@@ -117,25 +117,25 @@ impl MultiHead2DAttention {
 }
 
 #[derive(Debug, Clone, Copy)]
-struct Transition {
-    pc: i64,
-    acc: i16,
-    sp: i64,
-    zero_flag: bool,
-    carry_flag: bool,
-    halted: bool,
-    memory_write: Option<(i64, i16)>,
+pub(crate) struct Transition {
+    pub(crate) pc: i64,
+    pub(crate) acc: i16,
+    pub(crate) sp: i64,
+    pub(crate) zero_flag: bool,
+    pub(crate) carry_flag: bool,
+    pub(crate) halted: bool,
+    pub(crate) memory_write: Option<(i64, i16)>,
 }
 
 #[derive(Debug, Clone)]
-struct Matrix {
-    rows: usize,
-    cols: usize,
-    data: Vec<Scalar>,
+pub(crate) struct Matrix {
+    pub(crate) rows: usize,
+    pub(crate) cols: usize,
+    pub(crate) data: Vec<Scalar>,
 }
 
 impl Matrix {
-    fn zeros(rows: usize, cols: usize) -> Self {
+    pub(crate) fn zeros(rows: usize, cols: usize) -> Self {
         Self {
             rows,
             cols,
@@ -143,11 +143,11 @@ impl Matrix {
         }
     }
 
-    fn add(&mut self, row: usize, col: usize, value: Scalar) {
+    pub(crate) fn add(&mut self, row: usize, col: usize, value: Scalar) {
         self.data[row * self.cols + col] += value;
     }
 
-    fn mul_vec(&self, input: &[Scalar]) -> Vec<Scalar> {
+    pub(crate) fn mul_vec(&self, input: &[Scalar]) -> Vec<Scalar> {
         debug_assert_eq!(self.cols, input.len());
         let mut output = vec![0.0; self.rows];
         for (row_idx, row) in self.data.chunks(self.cols).enumerate() {
@@ -162,17 +162,17 @@ impl Matrix {
 }
 
 #[derive(Debug, Clone)]
-struct FeedForwardWeights {
-    gate: Matrix,
-    gate_bias: Vec<Scalar>,
-    value: Matrix,
-    value_bias: Vec<Scalar>,
-    out: Matrix,
-    out_bias: Vec<Scalar>,
+pub(crate) struct FeedForwardWeights {
+    pub(crate) gate: Matrix,
+    pub(crate) gate_bias: Vec<Scalar>,
+    pub(crate) value: Matrix,
+    pub(crate) value_bias: Vec<Scalar>,
+    pub(crate) out: Matrix,
+    pub(crate) out_bias: Vec<Scalar>,
 }
 
 impl FeedForwardWeights {
-    fn evaluate(&self, input: &[Scalar]) -> Vec<Scalar> {
+    pub(crate) fn evaluate(&self, input: &[Scalar]) -> Vec<Scalar> {
         let gate = self
             .gate
             .mul_vec(input)
@@ -301,27 +301,27 @@ impl FeedForwardBuilder {
 }
 
 #[derive(Debug, Clone, Copy, Default)]
-struct BoolBlend {
-    prev_weight: Scalar,
-    result_weight: Scalar,
-    constant: Scalar,
+pub(crate) struct BoolBlend {
+    pub(crate) prev_weight: Scalar,
+    pub(crate) result_weight: Scalar,
+    pub(crate) constant: Scalar,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
-struct CarryBlend {
-    prev_weight: Scalar,
-    overflow_weight: Scalar,
-    less_than_weight: Scalar,
-    constant: Scalar,
-    rhs_constant: Scalar,
-    rhs_operand_weight: Scalar,
+pub(crate) struct CarryBlend {
+    pub(crate) prev_weight: Scalar,
+    pub(crate) overflow_weight: Scalar,
+    pub(crate) less_than_weight: Scalar,
+    pub(crate) constant: Scalar,
+    pub(crate) rhs_constant: Scalar,
+    pub(crate) rhs_operand_weight: Scalar,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
-struct TransitionControls {
-    zero: BoolBlend,
-    carry: CarryBlend,
-    halted: BoolBlend,
+pub(crate) struct TransitionControls {
+    pub(crate) zero: BoolBlend,
+    pub(crate) carry: CarryBlend,
+    pub(crate) halted: BoolBlend,
 }
 
 impl TransitionControls {
@@ -355,10 +355,10 @@ impl TransitionControls {
 }
 
 #[derive(Debug, Clone)]
-struct CompiledInstruction {
-    memory_read: MemoryRead,
-    ff_weights: FeedForwardWeights,
-    controls: TransitionControls,
+pub(crate) struct CompiledInstruction {
+    pub(crate) memory_read: MemoryRead,
+    pub(crate) ff_weights: FeedForwardWeights,
+    pub(crate) controls: TransitionControls,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -380,53 +380,17 @@ impl GatedFeedForward {
         let operand = attention.memory_value.unwrap_or_default();
         let input = build_input_vector(state, operand);
         let output = compiled.ff_weights.evaluate(&input);
-
-        let raw_acc = output[OUT_RAW_ACC].round() as i64;
-        let acc = raw_acc as i16;
-        let result_zero = acc == 0;
-        let overflow = raw_acc < i16::MIN as i64 || raw_acc > i16::MAX as i64;
-        let compare_rhs = (compiled.controls.carry.rhs_constant
-            + compiled.controls.carry.rhs_operand_weight * Scalar::from(operand))
-        .round() as i16;
-        let less_than = state.acc < compare_rhs;
-
-        Transition {
-            pc: output[OUT_NEXT_PC].round() as i64,
-            acc,
-            sp: output[OUT_NEXT_SP].round() as i64,
-            zero_flag: blend_bool(
-                compiled.controls.zero.prev_weight * bool_to_scalar(state.zero_flag)
-                    + compiled.controls.zero.result_weight * bool_to_scalar(result_zero)
-                    + compiled.controls.zero.constant,
-            ),
-            carry_flag: blend_bool(
-                compiled.controls.carry.prev_weight * bool_to_scalar(state.carry_flag)
-                    + compiled.controls.carry.overflow_weight * bool_to_scalar(overflow)
-                    + compiled.controls.carry.less_than_weight * bool_to_scalar(less_than)
-                    + compiled.controls.carry.constant,
-            ),
-            halted: blend_bool(
-                compiled.controls.halted.prev_weight * bool_to_scalar(state.halted)
-                    + compiled.controls.halted.result_weight * bool_to_scalar(false)
-                    + compiled.controls.halted.constant,
-            ),
-            memory_write: (output[OUT_MEM_WRITE_ENABLE] >= 0.5).then(|| {
-                (
-                    output[OUT_MEM_WRITE_ADDR].round() as i64,
-                    output[OUT_MEM_WRITE_VALUE].round() as i64 as i16,
-                )
-            }),
-        }
+        transition_from_output(state, operand, &compiled.controls, &output)
     }
 }
 
 #[derive(Debug, Clone)]
-struct InstructionCompiler {
+pub(crate) struct InstructionCompiler {
     ff_dim: usize,
 }
 
 impl InstructionCompiler {
-    fn new(config: &TransformerVmConfig) -> Result<Self> {
+    pub(crate) fn new(config: &TransformerVmConfig) -> Result<Self> {
         if config.ff_dim < MIN_COMPILED_FF_DIM {
             return Err(VmError::InvalidConfig(format!(
                 "ff_dim must be at least {MIN_COMPILED_FF_DIM} to compile the extended ISA, got {}",
@@ -438,7 +402,10 @@ impl InstructionCompiler {
         })
     }
 
-    fn compile_instruction(&self, instruction: Instruction) -> Result<CompiledInstruction> {
+    pub(crate) fn compile_instruction(
+        &self,
+        instruction: Instruction,
+    ) -> Result<CompiledInstruction> {
         match instruction {
             Instruction::Nop => self.compile_nop(instruction),
             Instruction::LoadImmediate(value) => self.compile_load_immediate(instruction, value),
@@ -979,7 +946,51 @@ fn compare_controls(rhs_constant: Scalar, rhs_operand_weight: Scalar) -> Transit
     }
 }
 
-fn build_input_vector(state: &MachineState, operand: i16) -> Vec<Scalar> {
+pub(crate) fn transition_from_output(
+    state: &MachineState,
+    operand: i16,
+    controls: &TransitionControls,
+    output: &[Scalar],
+) -> Transition {
+    let raw_acc = output[OUT_RAW_ACC].round() as i64;
+    let acc = raw_acc as i16;
+    let result_zero = acc == 0;
+    let overflow = raw_acc < i16::MIN as i64 || raw_acc > i16::MAX as i64;
+    let compare_rhs = (controls.carry.rhs_constant
+        + controls.carry.rhs_operand_weight * Scalar::from(operand))
+    .round() as i16;
+    let less_than = state.acc < compare_rhs;
+
+    Transition {
+        pc: output[OUT_NEXT_PC].round() as i64,
+        acc,
+        sp: output[OUT_NEXT_SP].round() as i64,
+        zero_flag: blend_bool(
+            controls.zero.prev_weight * bool_to_scalar(state.zero_flag)
+                + controls.zero.result_weight * bool_to_scalar(result_zero)
+                + controls.zero.constant,
+        ),
+        carry_flag: blend_bool(
+            controls.carry.prev_weight * bool_to_scalar(state.carry_flag)
+                + controls.carry.overflow_weight * bool_to_scalar(overflow)
+                + controls.carry.less_than_weight * bool_to_scalar(less_than)
+                + controls.carry.constant,
+        ),
+        halted: blend_bool(
+            controls.halted.prev_weight * bool_to_scalar(state.halted)
+                + controls.halted.result_weight * bool_to_scalar(false)
+                + controls.halted.constant,
+        ),
+        memory_write: (output[OUT_MEM_WRITE_ENABLE] >= 0.5).then(|| {
+            (
+                output[OUT_MEM_WRITE_ADDR].round() as i64,
+                output[OUT_MEM_WRITE_VALUE].round() as i64 as i16,
+            )
+        }),
+    }
+}
+
+pub(crate) fn build_input_vector(state: &MachineState, operand: i16) -> Vec<Scalar> {
     let mut input = vec![0.0; INPUT_DIM];
     input[IN_CONST] = 1.0;
     input[IN_PC] = Scalar::from(state.pc);
@@ -1001,15 +1012,15 @@ fn build_input_vector(state: &MachineState, operand: i16) -> Vec<Scalar> {
     input
 }
 
-fn blend_bool(value: Scalar) -> bool {
+pub(crate) fn blend_bool(value: Scalar) -> bool {
     value >= 0.5
 }
 
-fn checked_transition_u8(field: &'static str, value: i64) -> Result<u8> {
+pub(crate) fn checked_transition_u8(field: &'static str, value: i64) -> Result<u8> {
     u8::try_from(value).map_err(|_| VmError::InvalidTransitionField { field, value })
 }
 
-fn validate_stack_pointer(sp: u8, memory_size: usize) -> Result<()> {
+pub(crate) fn validate_stack_pointer(sp: u8, memory_size: usize) -> Result<()> {
     if usize::from(sp) > memory_size {
         return Err(VmError::InvalidStackPointer {
             sp: usize::from(sp),
@@ -1019,7 +1030,11 @@ fn validate_stack_pointer(sp: u8, memory_size: usize) -> Result<()> {
     Ok(())
 }
 
-fn validate_stack_precondition(instruction: Instruction, sp: u8, memory_size: usize) -> Result<()> {
+pub(crate) fn validate_stack_precondition(
+    instruction: Instruction,
+    sp: u8,
+    memory_size: usize,
+) -> Result<()> {
     match instruction {
         Instruction::Push | Instruction::Call(_) if sp == 0 => Err(VmError::StackOverflow {
             sp: usize::from(sp),
@@ -1036,7 +1051,7 @@ fn validate_stack_precondition(instruction: Instruction, sp: u8, memory_size: us
 }
 
 #[derive(Debug, Clone)]
-pub struct TransformerVmBlock {
+pub(crate) struct TransformerVmBlock {
     attention: MultiHead2DAttention,
     ff: GatedFeedForward,
     instruction_bank: Vec<Option<CompiledInstruction>>,
@@ -1054,7 +1069,7 @@ impl TransformerVmBlock {
         }
     }
 
-    fn compiled_instruction(&self, pc: u8) -> Result<&CompiledInstruction> {
+    pub(crate) fn compiled_instruction(&self, pc: u8) -> Result<&CompiledInstruction> {
         self.instruction_bank
             .get(pc as usize)
             .and_then(Option::as_ref)
@@ -1142,6 +1157,16 @@ impl TransformerVm {
             instruction,
             layer_idx,
         })
+    }
+
+    #[cfg_attr(
+        not(any(feature = "burn-model", feature = "onnx-export")),
+        allow(dead_code)
+    )]
+    pub(crate) fn compiled_instruction(&self, pc: u8) -> Result<(&CompiledInstruction, usize)> {
+        let dispatch = self.dispatch_info(pc)?;
+        let compiled = self.blocks[dispatch.layer_idx].compiled_instruction(pc)?;
+        Ok((compiled, dispatch.layer_idx))
     }
 
     pub fn step(
@@ -1301,7 +1326,9 @@ mod tests {
     #[test]
     fn feedforward_builder_emits_product_term() {
         let mut builder = FeedForwardBuilder::new(8);
-        builder.emit_product(OUT_RAW_ACC, 1.0, IN_ACC, IN_OPERAND).unwrap();
+        builder
+            .emit_product(OUT_RAW_ACC, 1.0, IN_ACC, IN_OPERAND)
+            .unwrap();
         let weights = builder.finalize().unwrap();
 
         let mut input = vec![0.0; INPUT_DIM];
@@ -1315,7 +1342,9 @@ mod tests {
     fn feedforward_builder_exceeding_ff_dim_fails() {
         let mut builder = FeedForwardBuilder::new(1);
         builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC).unwrap();
-        let err = builder.emit_linear(OUT_RAW_ACC, 1.0, IN_OPERAND).unwrap_err();
+        let err = builder
+            .emit_linear(OUT_RAW_ACC, 1.0, IN_OPERAND)
+            .unwrap_err();
         assert!(err.to_string().contains("exceeds ff_dim"));
     }
 
@@ -1359,7 +1388,9 @@ mod tests {
     fn compile_add_immediate_adds_value() {
         let config = TransformerVmConfig::default();
         let compiler = InstructionCompiler::new(&config).unwrap();
-        let compiled = compiler.compile_instruction(Instruction::AddImmediate(7)).unwrap();
+        let compiled = compiler
+            .compile_instruction(Instruction::AddImmediate(7))
+            .unwrap();
 
         let state = MachineState {
             acc: 35,
@@ -1374,7 +1405,9 @@ mod tests {
     fn compile_sub_immediate_subtracts_value() {
         let config = TransformerVmConfig::default();
         let compiler = InstructionCompiler::new(&config).unwrap();
-        let compiled = compiler.compile_instruction(Instruction::SubImmediate(8)).unwrap();
+        let compiled = compiler
+            .compile_instruction(Instruction::SubImmediate(8))
+            .unwrap();
 
         let state = MachineState {
             acc: 50,
@@ -1389,7 +1422,9 @@ mod tests {
     fn compile_load_immediate_sets_acc() {
         let config = TransformerVmConfig::default();
         let compiler = InstructionCompiler::new(&config).unwrap();
-        let compiled = compiler.compile_instruction(Instruction::LoadImmediate(99)).unwrap();
+        let compiled = compiler
+            .compile_instruction(Instruction::LoadImmediate(99))
+            .unwrap();
 
         let state = MachineState::new(8);
         let transition = GatedFeedForward.apply(&state, &compiled, AttentionContext::default());
@@ -1413,7 +1448,9 @@ mod tests {
     fn compile_jz_takes_branch_when_zero() {
         let config = TransformerVmConfig::default();
         let compiler = InstructionCompiler::new(&config).unwrap();
-        let compiled = compiler.compile_instruction(Instruction::JumpIfZero(7)).unwrap();
+        let compiled = compiler
+            .compile_instruction(Instruction::JumpIfZero(7))
+            .unwrap();
 
         let state = MachineState {
             pc: 2,
@@ -1429,7 +1466,9 @@ mod tests {
     fn compile_jz_falls_through_when_not_zero() {
         let config = TransformerVmConfig::default();
         let compiler = InstructionCompiler::new(&config).unwrap();
-        let compiled = compiler.compile_instruction(Instruction::JumpIfZero(7)).unwrap();
+        let compiled = compiler
+            .compile_instruction(Instruction::JumpIfZero(7))
+            .unwrap();
 
         let state = MachineState {
             pc: 2,
@@ -1479,7 +1518,9 @@ mod tests {
     fn compile_mul_immediate_multiplies() {
         let config = TransformerVmConfig::default();
         let compiler = InstructionCompiler::new(&config).unwrap();
-        let compiled = compiler.compile_instruction(Instruction::MulImmediate(6)).unwrap();
+        let compiled = compiler
+            .compile_instruction(Instruction::MulImmediate(6))
+            .unwrap();
 
         let state = MachineState {
             acc: 7,
@@ -1513,7 +1554,11 @@ mod tests {
     #[test]
     fn dispatch_info_returns_correct_instruction() {
         let program = Program::new(
-            vec![Instruction::Nop, Instruction::AddImmediate(5), Instruction::Halt],
+            vec![
+                Instruction::Nop,
+                Instruction::AddImmediate(5),
+                Instruction::Halt,
+            ],
             4,
         );
         let config = TransformerVmConfig::default();

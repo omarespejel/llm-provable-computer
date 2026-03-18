@@ -115,7 +115,7 @@ fn run() -> transformer_vm_rs::Result<()> {
                     println!(
                         "trace[{step:03}] layer={layer} instr=\"{instr}\" pc={pc} sp={sp} acc={acc} zero={zero} carry={carry} halted={halted} memory={memory:?}",
                         step = event.step,
-                        layer = event.layer_idx,
+                        layer = event.layer_idx.unwrap_or(0),
                         instr = event.instruction,
                         pc = event.state_after.pc,
                         sp = event.state_after.sp,

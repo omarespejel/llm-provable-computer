@@ -346,10 +346,7 @@ mod tests {
     #[test]
     fn parse_label_resolution() {
         let program = parse_program("JMP end\nNOP\nend: HALT\n").unwrap();
-        assert_eq!(
-            program.instruction_at(0).unwrap(),
-            Instruction::Jump(2)
-        );
+        assert_eq!(program.instruction_at(0).unwrap(), Instruction::Jump(2));
     }
 
     #[test]

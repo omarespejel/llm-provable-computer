@@ -1,8 +1,10 @@
+use serde::{Deserialize, Serialize};
+
 use crate::error::{Result, VmError};
 
 pub const MIN_D_MODEL: usize = 36;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MachineState {
     pub pc: u8,
     pub acc: i16,

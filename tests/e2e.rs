@@ -166,12 +166,12 @@ fn e2e_each_arithmetic_instruction() {
 #[test]
 fn e2e_each_bitwise_instruction() {
     let cases = [
-        ("LOADI 15\nAND 9\nHALT\n", 9),      // 0b1111 & 0b1001 = 0b1001
-        ("LOADI 5\nOR 10\nHALT\n", 15),        // 0b0101 | 0b1010 = 0b1111
-        ("LOADI 15\nXOR 9\nHALT\n", 6),        // 0b1111 ^ 0b1001 = 0b0110
-        ("LOADI 255\nAND 0\nHALT\n", 0),       // anything & 0 = 0
-        ("LOADI 0\nOR 42\nHALT\n", 42),        // 0 | x = x
-        ("LOADI 42\nXOR 42\nHALT\n", 0),       // x ^ x = 0
+        ("LOADI 15\nAND 9\nHALT\n", 9),  // 0b1111 & 0b1001 = 0b1001
+        ("LOADI 5\nOR 10\nHALT\n", 15),  // 0b0101 | 0b1010 = 0b1111
+        ("LOADI 15\nXOR 9\nHALT\n", 6),  // 0b1111 ^ 0b1001 = 0b0110
+        ("LOADI 255\nAND 0\nHALT\n", 0), // anything & 0 = 0
+        ("LOADI 0\nOR 42\nHALT\n", 42),  // 0 | x = x
+        ("LOADI 42\nXOR 42\nHALT\n", 0), // x ^ x = 0
     ];
 
     for (source, expected_acc) in cases {
@@ -513,12 +513,12 @@ fn e2e_native_trace_has_one_entry_per_step() {
 
 #[test]
 fn e2e_parse_error_propagates() {
-    let result = ProgramCompiler.compile_source(
-        "INVALID_OP 42\n",
-        TransformerVmConfig::default(),
-    );
+    let result = ProgramCompiler.compile_source("INVALID_OP 42\n", TransformerVmConfig::default());
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("unknown instruction"));
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("unknown instruction"));
 }
 
 #[test]

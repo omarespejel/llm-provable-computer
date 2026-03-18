@@ -665,7 +665,7 @@ fn dispatch_panel(
             format!(
                 "#{} L{} {}  pc {}->{}  acc {}->{}",
                 event.step,
-                event.layer_idx,
+                event.layer_idx.unwrap_or(0),
                 event.instruction,
                 event.state_before.pc,
                 event.state_after.pc,
@@ -915,7 +915,7 @@ fn trace_list(runtime: &ExecutionRuntime, theme: Theme, limit: usize) -> List<'s
                     ),
                     Span::styled("  ", Style::default().fg(theme.muted)),
                     Span::styled(
-                        format!("L{}", event.layer_idx),
+                        format!("L{}", event.layer_idx.unwrap_or(0)),
                         Style::default().fg(theme.accent_alt),
                     ),
                     Span::styled("  ", Style::default().fg(theme.muted)),
@@ -1353,7 +1353,7 @@ fn latest_write_cell(runtime: &ExecutionRuntime) -> Option<usize> {
     runtime.events().last().and_then(event_write_index)
 }
 
-fn event_write_index(event: &crate::runtime::ExecutionTraceEntry) -> Option<usize> {
+fn event_write_index(event: &crate::ExecutionTraceEntry) -> Option<usize> {
     event
         .state_before
         .memory
@@ -1385,8 +1385,10 @@ fn memory_pressure(runtime: &ExecutionRuntime) -> f64 {
 fn layer_bars(runtime: &ExecutionRuntime, theme: Theme) -> Vec<Bar<'static>> {
     let mut hits = vec![0u64; runtime.model().config().num_layers];
     for event in runtime.events() {
-        if let Some(slot) = hits.get_mut(event.layer_idx) {
-            *slot += 1;
+        if let Some(layer_idx) = event.layer_idx {
+            if let Some(slot) = hits.get_mut(layer_idx) {
+                *slot += 1;
+            }
         }
     }
 

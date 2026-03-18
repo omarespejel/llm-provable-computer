@@ -4,6 +4,13 @@ use transformer_vm_rs::{
     Instruction, MachineState, Program, ProgramCompiler, TransformerVmConfig,
 };
 
+#[cfg(feature = "burn-model")]
+use burn::backend::NdArray;
+#[cfg(feature = "burn-model")]
+use transformer_vm_rs::{
+    verify_engines, BurnExecutionRuntime, BurnTransformerVm, ExecutionRuntime, NativeInterpreter,
+};
+
 const RANDOM_MEMORY_SIZE: usize = 8;
 
 fn build_random_program(specs: &[(u8, i16, u8, u8)]) -> Program {
@@ -259,5 +266,50 @@ proptest! {
         prop_assert_eq!(comparison.transformer.final_state, comparison.native.final_state);
         prop_assert_eq!(comparison.transformer.steps, comparison.native.steps);
         prop_assert_eq!(comparison.transformer.halted, comparison.native.halted);
+    }
+
+    #[cfg(feature = "burn-model")]
+    #[test]
+    fn burn_matches_native_on_random_average_hard_programs(
+        specs in prop::collection::vec((0u8..20u8, any::<i16>(), any::<u8>(), any::<u8>()), 1..24),
+        initial_memory in prop::collection::vec(any::<i16>(), RANDOM_MEMORY_SIZE..=RANDOM_MEMORY_SIZE),
+        layers in 1usize..=4,
+        max_steps in 1usize..=64,
+    ) {
+        type TestBackend = NdArray<f64>;
+
+        let device = Default::default();
+        let program = build_random_program(&specs)
+            .with_initial_memory(initial_memory)
+            .unwrap();
+        let model = ProgramCompiler
+            .compile_program(
+                program,
+                TransformerVmConfig {
+                    num_layers: layers,
+                    attention_mode: Attention2DMode::AverageHard,
+                    ..TransformerVmConfig::default()
+                },
+            )
+            .unwrap();
+        let burn = BurnTransformerVm::<TestBackend>::from_compiled(&model, &device).unwrap();
+
+        let mut transformer = ExecutionRuntime::new(model.clone(), max_steps);
+        let mut native = NativeInterpreter::new(
+            model.program().clone(),
+            model.config().attention_mode.clone(),
+            max_steps,
+        );
+        let mut burn = BurnExecutionRuntime::new(burn, device, max_steps);
+
+        let verification = verify_engines(&mut [&mut transformer, &mut native, &mut burn]).unwrap();
+        prop_assert_eq!(
+            &verification.engines[0].result.final_state,
+            &verification.engines[2].result.final_state
+        );
+        prop_assert_eq!(
+            &verification.engines[1].result.final_state,
+            &verification.engines[2].result.final_state
+        );
     }
 }

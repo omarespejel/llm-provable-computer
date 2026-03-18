@@ -1,6 +1,7 @@
+use crate::engine::{ExecutionEngine, ExecutionResult, VerificationResult, VerifiedEngine};
 use crate::error::{Result, VmError};
-use crate::interpreter::{NativeExecutionResult, NativeInterpreter};
-use crate::runtime::{ExecutionResult, ExecutionRuntime};
+use crate::interpreter::NativeInterpreter;
+use crate::runtime::ExecutionRuntime;
 use crate::state::MachineState;
 use crate::TransformerVm;
 
@@ -8,7 +9,7 @@ use crate::TransformerVm;
 pub struct ExecutionComparison {
     pub checked_steps: usize,
     pub transformer: ExecutionResult,
-    pub native: NativeExecutionResult,
+    pub native: ExecutionResult,
 }
 
 pub fn verify_model_against_native(
@@ -21,102 +22,213 @@ pub fn verify_model_against_native(
         model.config().attention_mode.clone(),
         max_steps,
     );
+    let verification = verify_engines(&mut [&mut transformer, &mut native])?;
 
-    compare_state(0, "initial state", transformer.state(), native.state())?;
+    Ok(ExecutionComparison {
+        checked_steps: verification.checked_steps,
+        transformer: verification.engines[0].result.clone(),
+        native: verification.engines[1].result.clone(),
+    })
+}
+
+pub fn verify_engines(engines: &mut [&mut dyn ExecutionEngine]) -> Result<VerificationResult> {
+    if engines.len() < 2 {
+        return Err(VmError::InvalidConfig(
+            "verify_engines requires at least two engines".to_string(),
+        ));
+    }
+
+    let reference_name = engines[0].name().to_string();
+    let reference_state = engines[0].state().clone();
+    compare_state(
+        0,
+        "initial state",
+        &reference_name,
+        &reference_state,
+        &engines[1..],
+    )?;
+
+    let mut checked_steps = 0usize;
 
     loop {
-        let transformer_finished =
-            transformer.state().halted || transformer.step_count() >= transformer.max_steps();
-        let native_finished = native.state().halted || native.step_count() >= native.max_steps();
-
-        if transformer_finished || native_finished {
-            if transformer_finished != native_finished {
-                return Err(VmError::ExecutionMismatch {
-                    step: transformer.step_count().max(native.step_count()),
-                    message: format!(
-                        "engine completion diverged: transformer_finished={transformer_finished}, native_finished={native_finished}"
-                    ),
-                });
+        let reference_halted = engines[0].is_halted();
+        for engine in &engines[1..] {
+            if engine.is_halted() != reference_halted {
+                return Err(mismatch(
+                    engines
+                        .iter()
+                        .map(|engine| engine.step_count())
+                        .max()
+                        .unwrap_or(0),
+                    format_completion_mismatch(engines),
+                ));
             }
+        }
+
+        if reference_halted {
             break;
         }
 
-        transformer.step()?;
-        native.step()?;
+        let expected_instruction = engines[0].next_instruction()?;
+        let reference_step = engines[0].step_count();
+        let reference_name = engines[0].name().to_string();
+        for engine in &engines[1..] {
+            let actual_instruction = engine.next_instruction()?;
+            if actual_instruction != expected_instruction {
+                return Err(mismatch(
+                    reference_step.max(engine.step_count()),
+                    format!(
+                        "next instruction mismatch: {}={:?}, {}={:?}",
+                        reference_name,
+                        expected_instruction,
+                        engine.name(),
+                        actual_instruction
+                    ),
+                ));
+            }
+        }
 
-        let step = transformer.step_count();
-        let transformer_event = transformer
+        for engine in engines.iter_mut() {
+            engine.step()?;
+        }
+
+        checked_steps = engines[0].step_count();
+        compare_last_event(checked_steps, engines)?;
+    }
+
+    let mut results = Vec::with_capacity(engines.len());
+    for engine in engines.iter_mut() {
+        results.push(VerifiedEngine {
+            name: engine.name().to_string(),
+            result: engine.run()?,
+        });
+    }
+
+    let reference_result = results[0].result.clone();
+    let reference_name = results[0].name.clone();
+    for engine in &results[1..] {
+        if engine.result.steps != reference_result.steps {
+            return Err(mismatch(
+                reference_result.steps.max(engine.result.steps),
+                format!(
+                    "step count mismatch: {}={}, {}={}",
+                    reference_name, reference_result.steps, engine.name, engine.result.steps
+                ),
+            ));
+        }
+        if engine.result.halted != reference_result.halted {
+            return Err(mismatch(
+                reference_result.steps.max(engine.result.steps),
+                format!(
+                    "halt flag mismatch: {}={}, {}={}",
+                    reference_name, reference_result.halted, engine.name, engine.result.halted
+                ),
+            ));
+        }
+        compare_result_state(
+            &reference_result,
+            &reference_name,
+            &engine.result,
+            &engine.name,
+        )?;
+    }
+
+    Ok(VerificationResult {
+        checked_steps,
+        engines: results,
+    })
+}
+
+fn compare_last_event(step: usize, engines: &[&mut dyn ExecutionEngine]) -> Result<()> {
+    let reference_name = engines[0].name().to_string();
+    let reference = engines[0]
+        .events()
+        .last()
+        .cloned()
+        .ok_or_else(|| mismatch(step, format!("{reference_name} produced no trace event")))?;
+
+    for engine in &engines[1..] {
+        let event = engine
             .events()
             .last()
-            .ok_or_else(|| mismatch(step, "transformer runtime produced no trace event"))?;
-        let native_event = native
-            .events()
-            .last()
-            .ok_or_else(|| mismatch(step, "native interpreter produced no trace event"))?;
+            .ok_or_else(|| mismatch(step, format!("{} produced no trace event", engine.name())))?;
 
-        if transformer_event.instruction != native_event.instruction {
+        if event.instruction != reference.instruction {
             return Err(mismatch(
                 step,
                 format!(
-                    "instruction mismatch: transformer=`{}`, native=`{}`",
-                    transformer_event.instruction, native_event.instruction
+                    "instruction mismatch: {}=`{}`, {}=`{}`",
+                    reference_name,
+                    reference.instruction,
+                    engine.name(),
+                    event.instruction
                 ),
             ));
         }
 
-        compare_state(
+        compare_state_pair(
             step,
             "state before instruction",
-            &transformer_event.state_before,
-            &native_event.state_before,
+            &reference_name,
+            &reference.state_before,
+            engine.name(),
+            &event.state_before,
         )?;
-        compare_state(
+        compare_state_pair(
             step,
             "state after instruction",
-            &transformer_event.state_after,
-            &native_event.state_after,
+            &reference_name,
+            &reference.state_after,
+            engine.name(),
+            &event.state_after,
         )?;
     }
 
-    let transformer_result = transformer.run()?;
-    let native_result = native.run()?;
-
-    if transformer_result.steps != native_result.steps {
-        return Err(mismatch(
-            transformer_result.steps.max(native_result.steps),
-            format!(
-                "step count mismatch: transformer={}, native={}",
-                transformer_result.steps, native_result.steps
-            ),
-        ));
-    }
-    if transformer_result.halted != native_result.halted {
-        return Err(mismatch(
-            transformer_result.steps.max(native_result.steps),
-            format!(
-                "halt flag mismatch: transformer={}, native={}",
-                transformer_result.halted, native_result.halted
-            ),
-        ));
-    }
-    compare_state(
-        transformer_result.steps.max(native_result.steps),
-        "final state",
-        &transformer_result.final_state,
-        &native_result.final_state,
-    )?;
-
-    Ok(ExecutionComparison {
-        checked_steps: transformer_result.steps,
-        transformer: transformer_result,
-        native: native_result,
-    })
+    Ok(())
 }
 
 fn compare_state(
     step: usize,
     label: &str,
+    reference_name: &str,
+    reference_state: &MachineState,
+    engines: &[&mut dyn ExecutionEngine],
+) -> Result<()> {
+    for engine in engines {
+        compare_state_pair(
+            step,
+            label,
+            reference_name,
+            reference_state,
+            engine.name(),
+            engine.state(),
+        )?;
+    }
+    Ok(())
+}
+
+fn compare_result_state(
+    reference: &ExecutionResult,
+    reference_name: &str,
+    actual: &ExecutionResult,
+    actual_name: &str,
+) -> Result<()> {
+    compare_state_pair(
+        reference.steps.max(actual.steps),
+        "final state",
+        reference_name,
+        &reference.final_state,
+        actual_name,
+        &actual.final_state,
+    )
+}
+
+fn compare_state_pair(
+    step: usize,
+    label: &str,
+    left_name: &str,
     left: &MachineState,
+    right_name: &str,
     right: &MachineState,
 ) -> Result<()> {
     if left == right {
@@ -126,7 +238,7 @@ fn compare_state(
     Err(mismatch(
         step,
         format!(
-            "{label} mismatch:\ntransformer={}\nnative={}",
+            "{label} mismatch:\n{left_name}={}\n{right_name}={}",
             describe_state(left),
             describe_state(right)
         ),
@@ -144,6 +256,15 @@ fn describe_state(state: &MachineState) -> String {
         state.halted,
         state.memory
     )
+}
+
+fn format_completion_mismatch(engines: &[&mut dyn ExecutionEngine]) -> String {
+    let summary = engines
+        .iter()
+        .map(|engine| format!("{}={}", engine.name(), engine.is_halted()))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("engine completion diverged: {summary}")
 }
 
 fn mismatch(step: usize, message: impl Into<String>) -> VmError {

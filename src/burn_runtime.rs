@@ -1,16 +1,19 @@
 use std::time::Instant;
 
-use crate::engine::ExecutionEngine;
-pub use crate::engine::{ExecutionResult, ExecutionTraceEntry};
+use burn::prelude::Backend;
+
+use crate::burn_model::BurnTransformerVm;
+use crate::engine::{ExecutionEngine, ExecutionResult, ExecutionTraceEntry};
 use crate::error::Result;
 use crate::instruction::Instruction;
 use crate::memory::AddressedMemory;
-use crate::model::{DispatchInfo, TransformerVm};
+use crate::model::DispatchInfo;
 use crate::state::MachineState;
 
 #[derive(Debug, Clone)]
-pub struct ExecutionRuntime {
-    model: TransformerVm,
+pub struct BurnExecutionRuntime<B: Backend> {
+    model: BurnTransformerVm<B>,
+    device: B::Device,
     memory: AddressedMemory,
     state: MachineState,
     trace: Vec<MachineState>,
@@ -19,20 +22,22 @@ pub struct ExecutionRuntime {
     max_steps: usize,
 }
 
-impl ExecutionRuntime {
-    pub fn new(model: TransformerVm, max_steps: usize) -> Self {
+impl<B: Backend> BurnExecutionRuntime<B> {
+    pub fn new(model: BurnTransformerVm<B>, device: B::Device, max_steps: usize) -> Self {
         let initial_memory = model.program().initial_memory().to_vec();
         let memory = AddressedMemory::from_initial(&initial_memory);
         let state = MachineState {
             memory: initial_memory,
             ..MachineState::new(model.program().memory_size())
         };
+
         Self {
             model,
+            device,
             memory,
-            trace: vec![state.clone()],
+            state: state.clone(),
+            trace: vec![state],
             events: Vec::new(),
-            state,
             step_count: 0,
             max_steps,
         }
@@ -45,9 +50,12 @@ impl ExecutionRuntime {
 
         let before = self.state.clone();
         let dispatch = self.model.dispatch_info(self.state.pc)?;
-        let next = self
-            .model
-            .step(&self.state, &mut self.memory, self.step_count + 1)?;
+        let next = self.model.step(
+            &self.state,
+            &mut self.memory,
+            self.step_count + 1,
+            &self.device,
+        )?;
         self.state = next;
         self.step_count += 1;
         self.trace.push(self.state.clone());
@@ -66,6 +74,7 @@ impl ExecutionRuntime {
         while self.step_count < self.max_steps && !self.state.halted {
             self.step()?;
         }
+
         let elapsed = start.elapsed();
         let elapsed_secs = elapsed.as_secs_f64();
         Ok(ExecutionResult {
@@ -101,7 +110,7 @@ impl ExecutionRuntime {
         self.max_steps
     }
 
-    pub fn model(&self) -> &TransformerVm {
+    pub fn model(&self) -> &BurnTransformerVm<B> {
         &self.model
     }
 
@@ -117,33 +126,33 @@ impl ExecutionRuntime {
     }
 }
 
-impl ExecutionEngine for ExecutionRuntime {
+impl<B: Backend> ExecutionEngine for BurnExecutionRuntime<B> {
     fn name(&self) -> &'static str {
-        "transformer"
+        "burn"
     }
 
     fn step(&mut self) -> Result<&MachineState> {
-        ExecutionRuntime::step(self)
+        BurnExecutionRuntime::step(self)
     }
 
     fn run(&mut self) -> Result<ExecutionResult> {
-        ExecutionRuntime::run(self)
+        BurnExecutionRuntime::run(self)
     }
 
     fn state(&self) -> &MachineState {
-        ExecutionRuntime::state(self)
+        BurnExecutionRuntime::state(self)
     }
 
     fn step_count(&self) -> usize {
-        ExecutionRuntime::step_count(self)
+        BurnExecutionRuntime::step_count(self)
     }
 
     fn max_steps(&self) -> usize {
-        ExecutionRuntime::max_steps(self)
+        BurnExecutionRuntime::max_steps(self)
     }
 
     fn events(&self) -> &[ExecutionTraceEntry] {
-        ExecutionRuntime::events(self)
+        BurnExecutionRuntime::events(self)
     }
 
     fn next_instruction(&self) -> Result<Option<Instruction>> {

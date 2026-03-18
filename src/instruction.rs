@@ -1,8 +1,10 @@
 use std::fmt;
 
+use serde::{Deserialize, Serialize};
+
 use crate::error::{Result, VmError};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Instruction {
     Nop,
     LoadImmediate(i16),
@@ -100,7 +102,7 @@ impl fmt::Display for Instruction {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Program {
     instructions: Vec<Instruction>,
     initial_memory: Vec<i16>,
@@ -170,10 +172,7 @@ mod tests {
 
     #[test]
     fn program_new_stores_instructions_and_memory() {
-        let program = Program::new(
-            vec![Instruction::Nop, Instruction::Halt],
-            4,
-        );
+        let program = Program::new(vec![Instruction::Nop, Instruction::Halt], 4);
         assert_eq!(program.len(), 2);
         assert!(!program.is_empty());
         assert_eq!(program.memory_size(), 4);
@@ -190,11 +189,18 @@ mod tests {
     #[test]
     fn instruction_at_returns_correct_instruction() {
         let program = Program::new(
-            vec![Instruction::Nop, Instruction::AddImmediate(5), Instruction::Halt],
+            vec![
+                Instruction::Nop,
+                Instruction::AddImmediate(5),
+                Instruction::Halt,
+            ],
             4,
         );
         assert_eq!(program.instruction_at(0).unwrap(), Instruction::Nop);
-        assert_eq!(program.instruction_at(1).unwrap(), Instruction::AddImmediate(5));
+        assert_eq!(
+            program.instruction_at(1).unwrap(),
+            Instruction::AddImmediate(5)
+        );
         assert_eq!(program.instruction_at(2).unwrap(), Instruction::Halt);
     }
 

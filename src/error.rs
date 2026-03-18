@@ -26,6 +26,10 @@ pub enum VmError {
     InvalidTransitionField { field: &'static str, value: i64 },
     #[error("execution mismatch at step {step}: {message}")]
     ExecutionMismatch { step: usize, message: String },
+    #[error("serialization error: {0}")]
+    Serialization(String),
+    #[error("onnx error: {0}")]
+    Onnx(String),
     #[error("hull cache is empty")]
     EmptyHull,
 }

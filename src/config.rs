@@ -1,10 +1,12 @@
 use std::fmt;
 use std::str::FromStr;
 
+use serde::{Deserialize, Serialize};
+
 use crate::error::{Result, VmError};
 use crate::state::MIN_D_MODEL;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Attention2DMode {
     AverageHard,
     HardSoftmax { temperature: f32 },
@@ -50,7 +52,7 @@ impl FromStr for Attention2DMode {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransformerVmConfig {
     pub d_model: usize,
     pub num_heads: usize,
@@ -143,12 +145,17 @@ mod tests {
 
     #[test]
     fn default_equals_percepta_reference() {
-        assert_eq!(TransformerVmConfig::default(), TransformerVmConfig::percepta_reference());
+        assert_eq!(
+            TransformerVmConfig::default(),
+            TransformerVmConfig::percepta_reference()
+        );
     }
 
     #[test]
     fn validate_accepts_percepta_reference() {
-        TransformerVmConfig::percepta_reference().validate().unwrap();
+        TransformerVmConfig::percepta_reference()
+            .validate()
+            .unwrap();
     }
 
     #[test]
@@ -169,7 +176,9 @@ mod tests {
             ..TransformerVmConfig::default()
         };
         let err = config.validate().unwrap_err();
-        assert!(err.to_string().contains("num_heads must be greater than zero"));
+        assert!(err
+            .to_string()
+            .contains("num_heads must be greater than zero"));
     }
 
     #[test]
@@ -179,7 +188,9 @@ mod tests {
             ..TransformerVmConfig::default()
         };
         let err = config.validate().unwrap_err();
-        assert!(err.to_string().contains("num_layers must be greater than zero"));
+        assert!(err
+            .to_string()
+            .contains("num_layers must be greater than zero"));
     }
 
     #[test]

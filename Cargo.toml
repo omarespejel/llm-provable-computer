@@ -12,11 +12,23 @@ categories = ["compilers", "algorithms", "science"]
 name = "tvm"
 path = "src/bin/tvm.rs"
 
+[features]
+default = []
+burn-model = ["dep:burn", "dep:serde_json"]
+onnx-export = ["dep:onnx-protobuf", "dep:protobuf", "dep:serde_json", "dep:tract-onnx"]
+full = ["burn-model", "onnx-export"]
+
 [dependencies]
+burn = { version = "=0.20.1", features = ["ndarray"], optional = true }
 clap = { version = "4.5.38", features = ["derive"] }
 crossterm = "0.28.1"
+onnx-protobuf = { version = "0.2.3", optional = true }
+protobuf = { version = "=3.4.0", optional = true }
 ratatui = "0.29.0"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = { version = "1.0.140", optional = true }
 thiserror = "2.0.12"
+tract-onnx = { version = "0.23.0-dev.2", optional = true }
 
 [dev-dependencies]
 assert_cmd = "2.0.17"

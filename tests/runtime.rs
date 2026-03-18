@@ -455,7 +455,7 @@ fn multi_layer_dispatch_executes_across_multiple_blocks() {
     let executed_layers = runtime
         .events()
         .iter()
-        .map(|event| event.layer_idx)
+        .filter_map(|event| event.layer_idx)
         .collect::<BTreeSet<_>>();
     assert!(
         executed_layers.len() > 1,

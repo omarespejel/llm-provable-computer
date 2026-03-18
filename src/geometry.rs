@@ -351,20 +351,47 @@ mod tests {
 
     #[test]
     fn cross_product_sign_determines_turn_direction() {
-        let a = Point2D { x: 0.0, y: 0.0, id: 0 };
-        let b = Point2D { x: 1.0, y: 0.0, id: 1 };
-        let c_left = Point2D { x: 1.0, y: 1.0, id: 2 };
-        let c_right = Point2D { x: 1.0, y: -1.0, id: 3 };
-        let c_straight = Point2D { x: 2.0, y: 0.0, id: 4 };
+        let a = Point2D {
+            x: 0.0,
+            y: 0.0,
+            id: 0,
+        };
+        let b = Point2D {
+            x: 1.0,
+            y: 0.0,
+            id: 1,
+        };
+        let c_left = Point2D {
+            x: 1.0,
+            y: 1.0,
+            id: 2,
+        };
+        let c_right = Point2D {
+            x: 1.0,
+            y: -1.0,
+            id: 3,
+        };
+        let c_straight = Point2D {
+            x: 2.0,
+            y: 0.0,
+            id: 4,
+        };
 
         assert!(cross(a, b, c_left) > 0.0, "left turn should be positive");
         assert!(cross(a, b, c_right) < 0.0, "right turn should be negative");
-        assert!((cross(a, b, c_straight)).abs() < 1e-6, "collinear should be zero");
+        assert!(
+            (cross(a, b, c_straight)).abs() < 1e-6,
+            "collinear should be zero"
+        );
     }
 
     #[test]
     fn dot_product_computes_correctly() {
-        let point = Point2D { x: 3.0, y: 4.0, id: 0 };
+        let point = Point2D {
+            x: 3.0,
+            y: 4.0,
+            id: 0,
+        };
         assert_eq!(dot([1.0, 0.0], point), 3.0);
         assert_eq!(dot([0.0, 1.0], point), 4.0);
         assert_eq!(dot([1.0, 1.0], point), 7.0);
@@ -383,7 +410,11 @@ mod tests {
         cache.insert([0.5, 0.5], &[4.0]);
 
         let hull = cache.hull_points();
-        assert_eq!(hull.len(), 4, "only corners should be on hull, got {hull:?}");
+        assert_eq!(
+            hull.len(),
+            4,
+            "only corners should be on hull, got {hull:?}"
+        );
     }
 
     #[test]
@@ -421,7 +452,9 @@ mod tests {
         cache.insert([0.0, 5.0], &[5.0]);
         cache.insert([10.0, 0.0], &[10.0]);
 
-        let value = cache.query_value([1.0, 0.0], &Attention2DMode::AverageHard).unwrap();
+        let value = cache
+            .query_value([1.0, 0.0], &Attention2DMode::AverageHard)
+            .unwrap();
         assert_eq!(value, vec![10.0], "average-hard should return argmax point");
     }
 
@@ -431,9 +464,15 @@ mod tests {
         cache.insert([0.0, 0.0], &[0.0]);
         cache.insert([10.0, 0.0], &[10.0]);
 
-        let value = cache.query_value([1.0, 0.0], &Attention2DMode::Softmax).unwrap();
+        let value = cache
+            .query_value([1.0, 0.0], &Attention2DMode::Softmax)
+            .unwrap();
         // Softmax blends, so result should be between 0 and 10
-        assert!(value[0] > 0.0 && value[0] <= 10.0, "softmax value={:?}", value);
+        assert!(
+            value[0] > 0.0 && value[0] <= 10.0,
+            "softmax value={:?}",
+            value
+        );
     }
 
     #[test]

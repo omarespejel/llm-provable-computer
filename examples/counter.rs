@@ -14,7 +14,9 @@
 use std::io::IsTerminal;
 use std::time::Duration;
 
-use transformer_vm_rs::{run_execution_tui, ExecutionRuntime, ProgramCompiler, TransformerVmConfig};
+use transformer_vm_rs::{
+    run_execution_tui, ExecutionRuntime, ProgramCompiler, TransformerVmConfig,
+};
 
 fn main() {
     let tick_ms: u64 = std::env::args()
@@ -23,8 +25,8 @@ fn main() {
         .and_then(|val| val.parse().ok())
         .unwrap_or(60);
 
-    let headless = std::env::args().any(|arg| arg == "--headless")
-        || !std::io::stdout().is_terminal();
+    let headless =
+        std::env::args().any(|arg| arg == "--headless") || !std::io::stdout().is_terminal();
 
     let source = std::fs::read_to_string("programs/counter.tvm").expect("programs/counter.tvm");
 
@@ -45,10 +47,7 @@ fn main() {
         println!("halted: {}", result.halted);
         println!("acc: {}", result.final_state.acc);
         println!("memory: {:?}", result.final_state.memory);
-        println!(
-            "throughput_steps_per_sec: {:.2}",
-            result.tokens_per_sec
-        );
+        println!("throughput_steps_per_sec: {:.2}", result.tokens_per_sec);
     } else {
         let path = std::path::Path::new("programs/counter.tvm");
         run_execution_tui(path, &mut runtime, Duration::from_millis(tick_ms)).expect("tui");
