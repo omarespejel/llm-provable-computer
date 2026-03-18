@@ -1,321 +1,169 @@
 # transformer-vm-rs
 
-Deterministic program execution in a transformer-shaped runtime, written in Rust.
+**Can LLMs be provable computers?**
 
-This repository is a working MVP of a specific idea: parts of program execution can be expressed in transformer-like primitives instead of a conventional interpreter loop. The code here does that for a compact assembly language with:
+This project takes the ideas from [*Can LLMs Be Computers?*](https://www.percepta.ai/blog/can-llms-be-computers) by Percepta and pushes them further. The original work showed that a transformer can deterministically execute arbitrary programs inside its forward pass using 2D attention and compiled feed-forward layers. We implement that system in Rust --- and then ask the next question: can you *prove* the execution is correct, to anyone, without revealing the program?
 
-- a fixed-width machine-state token (`d_model = 36`)
-- 2D attention heads (`head_dim = 2`)
-- hull-backed memory lookup for latest-write reads
-- deterministic feed-forward transitions
-- a native reference interpreter for differential verification
+The answer is yes. A transformer-shaped execution trace is a sequence of finite-field-friendly state transitions. That is exactly the object a STARK proves over.
 
-The result is not a language model pretending to be a VM. It is a small, explicit, testable machine whose execution path is shaped like `encode -> attention -> transition -> decode`.
+---
 
-## What This Repo Actually Implements
+## The Idea
 
-Implemented today:
+A standard transformer predicts the next token. This one *computes* it.
 
-- a parser for `.tvm` assembly programs
-- a compact ISA with arithmetic, logic, branches, stack operations, and subroutines
-- a transformer-shaped execution model
-- per-address `HullKvCache` histories for memory lookup
-- selectable attention modes:
-  - `average-hard`
-  - `softmax`
-  - `hard-softmax:<temperature>`
-- a CLI runner
-- a TUI execution viewer
-- a native interpreter
-- lockstep transformer-vs-native verification
-- unit, integration, property, CLI, and benchmark coverage
+The insight from Percepta's work is that if you restrict attention heads to two dimensions, the key that maximizes a dot-product query always lies on the convex hull of all keys. That turns an O(n) scan into an O(log n) binary search --- making million-step execution traces tractable. Pair that with gated feed-forward layers that encode deterministic instruction logic, and the transformer becomes a machine: encode state, attend to memory, transition, decode.
 
-Not implemented yet:
+No sampling. No stochastic output. The same input always produces the same output.
 
-- Burn integration
-- learned weights or training
-- a full WASM-to-transformer compiler
-- GPU kernels
-- a single shared memory-address selection mechanism across all writes
+This is interesting on its own. But it becomes *powerful* when you realize what it implies for verifiability.
 
-That last point matters. The current MVP keeps one write history per memory address. This preserves the geometric lookup mechanism while avoiding the harder problem of representing address selection inside one shared attention structure.
+### From Computation to Proof
 
-## Why This Is Interesting
+A program executed inside a transformer produces an **execution trace** --- a table of machine states, one row per step:
 
-If you come from machine learning:
+| Step | PC | ACC | SP | Flags | Memory snapshot |
+|------|-----|------|-----|--------|------------------|
+| 0    | 0   | 0    | 4   | 00     | [0, 5, 0, 0]    |
+| 1    | 1   | 0    | 4   | 00     | [0, 5, 0, 0]    |
+| 2    | 2   | 5    | 4   | 00     | [0, 5, 0, 0]    |
+| ...  | ... | ...  | ... | ...    | ...              |
 
-- the repo shows a concrete case where transformer-style components are used for exact execution rather than prediction
-- it makes the 2D-attention idea tangible instead of leaving it at the level of theory
-- it gives you a deterministic reference point for later experiments with soft or learned variants
+Each row is derived from the previous row by a fixed transition function (the compiled instruction at that PC). This is an **algebraic intermediate representation (AIR)** --- the same structure that STARKs are designed to prove.
 
-If you come from PL, compilers, or systems:
+The core insight:
 
-- the repo treats execution as a state transition system with explicit invariants
-- it uses geometry for memory lookup rather than hash tables or linear scans
-- it includes a second execution engine so semantic drift is caught immediately
+> **A transformer that executes programs deterministically already produces the witness for a STARK proof. The transition constraints are the instruction semantics. The trace is the execution. You don't need to retrofit provability --- it falls out of the architecture.**
 
-## Quick Start
+This means an LLM doesn't just compute. It can *prove it computed correctly*, to a skeptical verifier, with:
 
-### Run a program
+- **zero knowledge** --- the verifier learns the result, not the program or inputs
+- **O(log^2 n) verification** --- exponentially cheaper than re-execution
+- **no trusted setup** --- STARKs are transparent
+- **post-quantum security** --- hash-based, no elliptic curves
 
-```bash
-cargo run --bin tvm -- run programs/addition.tvm
-```
+That is the thesis of this project: **native, provable computation inside a transformer.**
 
-### Run with a trace
+---
 
-```bash
-cargo run --bin tvm -- run programs/counter.tvm --max-steps 128 --trace
-```
+## Roadmap
 
-### Compare transformer execution against the native interpreter
+### Milestone 1: Can LLMs Be Computers --- Rust Implementation
 
-```bash
-cargo run --bin tvm -- run programs/fibonacci.tvm --layers 3 --verify-native
-```
+*Status: complete.*
 
-### Open the TUI
+A working implementation of the Percepta architecture in Rust:
 
-```bash
-cargo run --bin tvm -- tui programs/fibonacci.tvm --layers 3 --max-steps 128
-```
+- Assembly parser and compact ISA (arithmetic, logic, branches, stack, subroutines)
+- Transformer-shaped execution: `encode -> attention -> transition -> decode`
+- Per-address `HullKvCache` with convex-hull-backed O(log n) memory lookup
+- Selectable attention modes: `average-hard`, `softmax`, `hard-softmax:<temperature>`
+- Native reference interpreter with lockstep differential verification
+- CLI runner, TUI execution viewer, benchmarks
 
-### Validate the repo
+### Milestone 2: Vanilla STARK Proof
 
-```bash
-cargo fmt --all
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test
-```
+*Status: planned.*
 
-### Run benchmarks
+Build a minimal, self-contained STARK prover from scratch over the execution trace. No dependencies on production proving systems --- the goal is to understand and validate the proof construction end to end.
 
-```bash
-cargo bench
-```
+The approach follows the STARK protocol described in [*Scalable, Transparent, and Post-Quantum Secure Computational Integrity*](https://eprint.iacr.org/2018/046) (Ben-Sasson et al., 2018):
 
-## Example Output
+1. **Arithmetize** the VM transition function into polynomial constraints over a finite field
+2. **Interpolate** the execution trace columns into polynomials via Reed-Solomon encoding
+3. **Commit** to the trace and constraint polynomials using a Merkle tree
+4. **Prove** low-degree proximity via FRI (Fast Reed-Solomon Interactive Oracle Proof of Proximity)
+5. **Apply** Fiat-Shamir to make the proof non-interactive
 
-`cargo run --bin tvm -- run programs/addition.tvm`
+This milestone produces a proof object that a standalone verifier can check in O(log^2 n) time without access to the program, the inputs, or the full trace.
 
-```text
-program: programs/addition.tvm
-steps: 3
-halted: true
-pc: 2
-sp: 4
-acc: 8
-zero_flag: false
-carry_flag: false
-memory: [0, 0, 0, 0]
-layers: 1
-attention_mode: average-hard
-elapsed_ms: ...
-throughput_steps_per_sec: ...
-```
+### Milestone 3: Production STARK Prover (STWO)
 
-With native verification enabled, the CLI also reports whether every checked step matched the reference interpreter.
+*Status: planned.*
 
-## Core Idea
+Replace the vanilla prover with [**STWO**](https://github.com/starkware-libs/stwo), StarkWare's production Rust prover based on the [Circle STARK](https://eprint.iacr.org/2024/278) construction (Haböck et al., 2024).
 
-The runtime keeps a machine state:
+Circle STARKs operate over the circle group of a Mersenne prime field, which eliminates the need for extension fields and enables smaller, faster proofs. STWO is the proving backend for Starknet and is designed for real-world proof generation at scale.
 
-- `PC`
-- `ACC`
-- `SP`
-- `zero_flag`
-- `carry_flag`
-- `halted`
-- memory cells
+This milestone targets:
 
-Each execution step looks like this:
+- Encoding the VM's AIR as STWO trace columns and constraints
+- Generating production-grade proofs over real execution traces
+- Benchmarking proof generation and verification against the vanilla implementation
 
-1. Encode the machine state into a fixed 36-dimensional token.
-2. Use attention to retrieve any memory operand needed by the current instruction.
-3. Apply a deterministic feed-forward transition compiled for that instruction.
-4. Decode the next machine state.
-5. Append the step to the trace and continue.
-
-That is the whole loop. No sampling. No hidden control flow. No external side effects beyond the explicit memory model.
-
-## Memory As Geometry
-
-This is the part that makes the project different.
-
-For each memory address, the runtime stores a history of writes as 2D points:
-
-- `x = execution step`
-- `y = value written at that step`
-
-For a latest-write read, the query direction is:
-
-- `q = [1, 0]`
-
-The score of a point `k = [x, y]` is the dot product:
-
-```text
-score(q, k) = q_x * k_x + q_y * k_y
-            = 1 * x + 0 * y
-            = x
-```
-
-So the best match is simply the write with the largest step index. In 2D, the maximizer of a dot product lies on the convex hull, which means the runtime can answer the query from a hull-backed structure instead of scanning the full history.
-
-That gives the MVP a clean geometric story:
-
-- writes append points to a per-address history
-- `average-hard` reads use hull argmax
-- soft variants read the same history with weighted blending
-
-This repo uses one hull per address. That keeps the idea simple and correct. A fuller design would tackle shared memory addressing directly.
-
-## Attention Modes
-
-| Mode | Semantics | Intended use |
-| --- | --- | --- |
-| `average-hard` | Deterministic latest-write lookup via hull argmax | Main execution path |
-| `softmax` | Weighted read over the full write history | Comparison baseline |
-| `hard-softmax:<temperature>` | Weighted read with explicit temperature control | Interpolation between hard and soft behavior |
-
-Lower temperatures make `hard-softmax` behave more like argmax. Higher temperatures make it smoother and less local.
-
-In this MVP:
-
-- `average-hard` is the geometric fast path
-- `softmax` and `hard-softmax` are full-history scans
-
-That is intentional. The softer modes exist to study semantics and continuity, not to claim equal performance.
+---
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    A[.tvm program] --> B[Parser]
-    B --> C[ProgramCompiler]
-    C --> D[TransformerVm]
-    D --> E[ExecutionRuntime]
-    D --> F[NativeInterpreter]
-    E --> G[Trace]
-    E --> H[CLI / TUI]
-    E -. verify .-> F
-    D --> I[TransformerVmBlock]
-    I --> J[MultiHead2DAttention]
-    I --> K[GatedFeedForward]
-    J --> L[AddressedMemory]
-    L --> M[Per-address HullKvCache]
+The execution model maps directly onto transformer components:
+
+```
+                    ┌─────────────────────────────────────────┐
+                    │           Transformer VM Block           │
+                    │                                          │
+  Machine    ┌─────┴──────┐    ┌────────────┐    ┌──────────┐ │
+  State  ───>│   Encode   │───>│  Attention  │───>│   FFN    │─┼──> Next State
+  (d=36)     │  (state →  │    │  (2D heads  │    │ (compiled│ │    (d=36)
+             │   token)   │    │  + hull KV) │    │  instr.) │ │
+             └────────────┘    └──────┬──────┘    └──────────┘ │
+                                      │                        │
+                               ┌──────┴──────┐                 │
+                               │ HullKvCache  │                 │
+                               │ O(log n)     │                 │
+                               │ memory read  │                 │
+                               └─────────────┘                 │
+                    └──────────────────────────────────────────┘
+                                      │
+                                      ▼
+                              Execution Trace
+                           (= STARK AIR witness)
 ```
 
-### Execution path
+**Attention** retrieves memory. Each memory address maintains a history of writes as 2D points `(step, value)`. The query direction `[1, 0]` selects the latest write via argmax on the convex hull.
 
-```mermaid
-sequenceDiagram
-    participant R as Runtime
-    participant M as TransformerVm
-    participant A as Attention
-    participant H as HullKvCache
-    participant F as FeedForward
+**Feed-forward layers** execute instructions. Each compiled instruction becomes a deterministic gate-and-transform operation: `output = gate(x) * value(x)`.
 
-    R->>M: encode_state(state)
-    M->>A: inspect instruction at PC
-    A->>H: read memory operand if needed
-    H-->>A: latest or weighted value
-    A-->>F: attention context
-    F-->>M: next PC / ACC / SP / flags / optional write
-    M-->>R: decode_state(next_token)
-    R->>R: append trace
-```
+**The trace** is the sequence of all machine states. It is the algebraic witness over which Milestone 2 constructs a STARK proof.
 
-## What "Compiled" Means Here
+---
 
-The project compiles each instruction into deterministic transition logic inside the model implementation. The feed-forward path applies explicit matrices and control rules for the current instruction and produces:
-
-- next `PC`
-- next `ACC`
-- next `SP`
-- next flags
-- optional memory write
-
-So this is already compiled execution in a real sense, but it is still an MVP:
-
-- the ISA is compact
-- the compiler target is internal Rust data structures, not a serialized model format
-- there is no WASM front-end yet
-- there is no learned or Burn-backed backend yet
-
-## Differential Verification
-
-This repo has two execution engines:
-
-1. `ExecutionRuntime`
-   A transformer-shaped runtime that executes through encode, attention, and compiled transition logic.
-
-2. `NativeInterpreter`
-   A direct ISA interpreter with the same machine semantics.
-
-The verifier runs both engines step by step and fails on the first mismatch:
-
-- instruction mismatch
-- state-before mismatch
-- state-after mismatch
-- final-state mismatch
-- step-count mismatch
-
-This is one of the most important pieces in the repository. It means changes to the transformer path can be tested against an independent semantic reference instead of trusted by inspection.
-
-Run it from the CLI:
+## Quick Start
 
 ```bash
-cargo run --bin tvm -- run programs/subroutine_addition.tvm --verify-native
+# Run a program
+cargo run --bin tvm -- run programs/fibonacci.tvm
+
+# Run with execution trace
+cargo run --bin tvm -- run programs/counter.tvm --max-steps 128 --trace
+
+# Verify transformer matches native interpreter (lockstep differential check)
+cargo run --bin tvm -- run programs/fibonacci.tvm --layers 3 --verify-native
+
+# Interactive TUI
+cargo run --bin tvm -- tui programs/fibonacci.tvm --layers 3 --max-steps 128
+
+# Tests and benchmarks
+cargo test
+cargo bench
 ```
 
-## Assembly Language
+### Attention Modes
 
-### Directives
+| Mode | Behavior | Use |
+|------|----------|-----|
+| `average-hard` | Deterministic argmax via hull | Default execution path |
+| `softmax` | Weighted read over full history | Comparison baseline |
+| `hard-softmax:<T>` | Temperature-controlled interpolation | Study continuity between hard and soft |
 
-- `.memory <size>` sets the number of memory cells
-- `.init <address> <value>` seeds initial memory
+```bash
+cargo run --bin tvm -- run programs/soft_attention_memory.tvm --attention-mode hard-softmax:10
+```
 
-### Stack model
+---
 
-- `SP` initializes to `.memory` size
-- the stack grows downward
-- `PUSH` and `CALL` decrement `SP` before writing
-- `POP` and `RET` read from `MEM[SP]` and then increment `SP`
-- stack and data share one memory array
-- memory is capped at `255` cells because addresses and `SP` are encoded as 8-bit values in the current MVP
+## The ISA
 
-### Instruction set
-
-| Instruction | Effect |
-| --- | --- |
-| `NOP` | No operation |
-| `LOADI <imm>` | `ACC = imm` |
-| `LOAD <addr>` | `ACC = MEM[addr]` |
-| `STORE <addr>` | `MEM[addr] = ACC` |
-| `PUSH` | `SP -= 1`, then `MEM[SP] = ACC` |
-| `POP` | `ACC = MEM[SP]`, then `SP += 1` |
-| `ADD <imm>` | `ACC += imm` |
-| `ADDM <addr>` | `ACC += MEM[addr]` |
-| `SUB <imm>` | `ACC -= imm` |
-| `SUBM <addr>` | `ACC -= MEM[addr]` |
-| `MUL <imm>` | `ACC *= imm` |
-| `MULM <addr>` | `ACC *= MEM[addr]` |
-| `AND <imm>` | `ACC &= imm` |
-| `ANDM <addr>` | `ACC &= MEM[addr]` |
-| `OR <imm>` | `ACC \|= imm` |
-| `ORM <addr>` | `ACC \|= MEM[addr]` |
-| `XOR <imm>` | `ACC ^= imm` |
-| `XORM <addr>` | `ACC ^= MEM[addr]` |
-| `CMP <imm>` | `ACC = ACC - imm`, `carry_flag = ACC < imm` |
-| `CMPM <addr>` | `ACC = ACC - MEM[addr]`, `carry_flag = ACC < MEM[addr]` |
-| `CALL <label|pc>` | Push return address, then jump |
-| `RET` | Pop return address and jump |
-| `JMP <label|pc>` | Unconditional jump |
-| `JZ <label|pc>` | Jump if `zero_flag` is set |
-| `JNZ <label|pc>` | Jump if `zero_flag` is not set |
-| `HALT` | Stop execution |
-
-### Example program
+A compact assembly language with `.tvm` source files.
 
 ```asm
 .memory 4
@@ -324,152 +172,135 @@ cargo run --bin tvm -- run programs/subroutine_addition.tvm --verify-native
 LOADI 0
 STORE 0
 loop:
-LOAD 0
-ADD 1
-STORE 0
-LOAD 0
-SUBM 1
-JZ done
-JMP loop
+  LOAD 0
+  ADD 1
+  STORE 0
+  LOAD 0
+  SUBM 1
+  JZ done
+  JMP loop
 done:
-LOAD 0
-HALT
+  LOAD 0
+  HALT
 ```
 
-Expected final state:
+Result: `ACC = 5`, `MEM[0] = 5`, `halted = true`.
 
-- `ACC = 5`
-- `MEM[0] = 5`
-- `halted = true`
+<details>
+<summary><strong>Full instruction set</strong></summary>
 
-## Sample Programs
+| Instruction | Effect |
+|---|---|
+| `NOP` | No operation |
+| `LOADI imm` | `ACC = imm` |
+| `LOAD addr` | `ACC = MEM[addr]` |
+| `STORE addr` | `MEM[addr] = ACC` |
+| `PUSH` | `SP -= 1; MEM[SP] = ACC` |
+| `POP` | `ACC = MEM[SP]; SP += 1` |
+| `ADD imm` | `ACC += imm` |
+| `ADDM addr` | `ACC += MEM[addr]` |
+| `SUB imm` | `ACC -= imm` |
+| `SUBM addr` | `ACC -= MEM[addr]` |
+| `MUL imm` | `ACC *= imm` |
+| `MULM addr` | `ACC *= MEM[addr]` |
+| `AND imm` | `ACC &= imm` |
+| `ANDM addr` | `ACC &= MEM[addr]` |
+| `OR imm` | `ACC \|= imm` |
+| `ORM addr` | `ACC \|= MEM[addr]` |
+| `XOR imm` | `ACC ^= imm` |
+| `XORM addr` | `ACC ^= MEM[addr]` |
+| `CMP imm` | `ACC = ACC - imm; carry_flag = ACC < imm` |
+| `CMPM addr` | `ACC = ACC - MEM[addr]; carry_flag = ACC < MEM[addr]` |
+| `CALL label` | Push return address, jump |
+| `RET` | Pop return address, jump |
+| `JMP label` | Unconditional jump |
+| `JZ label` | Jump if `zero_flag` |
+| `JNZ label` | Jump if not `zero_flag` |
+| `HALT` | Stop execution |
 
-| Program | What it demonstrates |
-| --- | --- |
-| `programs/addition.tvm` | Straight-line arithmetic |
-| `programs/memory_roundtrip.tvm` | Store then latest-write readback |
-| `programs/counter.tvm` | Looping and zero-based branch termination |
-| `programs/multiply.tvm` | Repeated arithmetic over memory state |
-| `programs/fibonacci.tvm` | Multi-step stateful computation |
-| `programs/stack_roundtrip.tvm` | `PUSH` and `POP` behavior |
-| `programs/subroutine_addition.tvm` | `CALL` and `RET` |
-| `programs/soft_attention_memory.tvm` | Difference between hard and soft memory read modes |
+</details>
 
-## CLI and TUI
+---
 
-### CLI
+## Differential Verification
 
-`run` executes a program from disk and prints the final machine state.
+The repo has two execution engines that must agree on every step:
 
-Useful flags:
+1. **TransformerVm** --- the transformer-shaped runtime (encode, attend, transition, decode)
+2. **NativeInterpreter** --- a direct ISA interpreter with identical semantics
 
-- `--max-steps <N>`
-- `--trace`
-- `--layers <N>`
-- `--attention-mode average-hard|softmax|hard-softmax:<temperature>`
-- `--verify-native`
-
-Examples:
+The verifier runs both lockstep and fails on the first divergence: instruction mismatch, pre-state mismatch, post-state mismatch, final state mismatch, or step count mismatch.
 
 ```bash
-cargo run --bin tvm -- run programs/memory_roundtrip.tvm
-cargo run --bin tvm -- run programs/soft_attention_memory.tvm --attention-mode hard-softmax:10
-cargo run --bin tvm -- run programs/fibonacci.tvm --layers 3 --trace --verify-native
+cargo run --bin tvm -- run programs/subroutine_addition.tvm --verify-native
 ```
 
-### TUI
+This is one of the most important properties of the system. It means the transformer path is tested against an independent semantic reference --- not trusted by inspection.
 
-`tui` runs the same execution engine in an interactive terminal UI.
+---
 
-```bash
-cargo run --bin tvm -- tui programs/fibonacci.tvm --layers 3 --max-steps 128
+## Memory as Geometry
+
+For each memory address, the runtime stores a write history as 2D points:
+
+```
+key = (execution_step, value_written)
 ```
 
-Keys:
+A latest-write read uses query direction `q = [1, 0]`:
 
-- `q` quit
-- `space` pause/resume
-- `n` single-step while paused
-- `1`, `2`, `3` switch views
-- `t` switch theme
-- `+`, `-` adjust playback rate
-
-## Testing and Benchmarks
-
-The test suite covers:
-
-- state encode/decode round trips
-- parser behavior and label resolution
-- hull argmax correctness against brute force
-- hull edge cases such as duplicates, collinearity, and non-monotonic insertion
-- runtime execution of arithmetic, memory, branching, stack, and subroutine programs
-- native interpreter behavior
-- lockstep parity between transformer execution and the native interpreter
-- randomized differential checks in both `average-hard` and `hard-softmax` modes
-- CLI behavior
-
-Criterion benchmarks live in [`benches/hull_benchmark.rs`](benches/hull_benchmark.rs). They compare:
-
-- hull-backed argmax vs brute-force argmax
-- monotonic insertion cost
-- insert-then-query pipeline cost
-
-Run them with:
-
-```bash
-cargo bench
 ```
+score(q, k) = 1 * step + 0 * value = step
+```
+
+The argmax is the most recent write. In 2D, the maximizer of any linear objective lies on the convex hull --- so the runtime answers memory queries from a hull-backed cache in O(log n) instead of scanning the full history.
+
+This is what makes long execution traces tractable. At step 1,000,000, each memory read still costs O(log n).
+
+---
 
 ## Repository Layout
 
-| Path | Responsibility |
-| --- | --- |
-| `src/assembly.rs` | Assembly parsing, directives, label resolution |
-| `src/compiler.rs` | Program-to-model compilation entrypoints |
-| `src/config.rs` | Model configuration and attention-mode parsing |
-| `src/error.rs` | Error types used across parser, runtime, and verifier |
+| Path | Role |
+|------|------|
+| `src/assembly.rs` | Parser, directives, label resolution |
+| `src/compiler.rs` | Program-to-model compilation |
+| `src/config.rs` | Model configuration, attention mode parsing |
 | `src/geometry.rs` | `Point2D` and `HullKvCache` |
-| `src/memory.rs` | Addressed memory plus per-address write histories |
-| `src/model.rs` | Attention path, feed-forward transitions, transformer VM blocks |
+| `src/memory.rs` | Addressed memory with per-address write histories |
+| `src/model.rs` | 2D attention, feed-forward transitions, transformer blocks |
+| `src/state.rs` | Machine state encoding / decoding (d_model = 36) |
 | `src/runtime.rs` | Transformer execution loop and trace capture |
 | `src/interpreter.rs` | Native reference interpreter |
 | `src/verification.rs` | Lockstep transformer-vs-native comparison |
-| `src/state.rs` | Machine-state encoding and decoding |
 | `src/tui.rs` | Interactive terminal viewer |
 | `src/bin/tvm.rs` | CLI entrypoint |
-| `tests/` | Integration, property, hull, runtime, interpreter, and CLI tests |
-| `programs/` | Runnable example programs |
-| `benches/` | Criterion benchmarks |
+| `tests/` | Unit, integration, property, CLI, and differential tests |
+| `programs/` | Example `.tvm` programs |
+| `benches/` | Criterion benchmarks (hull argmax vs brute-force) |
 
-## Current Limits
+---
 
-The current MVP is intentionally narrow.
+## Current Scope
 
-- It uses a compact assembly language, not WASM input.
-- It uses deterministic compiled transitions, not learned parameters.
-- It keeps one write history per memory address.
-- It does not attempt GPU acceleration.
-- It does not claim to be a useful general-purpose VM.
+This is an MVP. Intentionally narrow, intentionally correct.
 
-That narrowness is a feature. The repository is useful because the semantics are small enough to inspect and strong enough to test.
+**Implemented:** compact ISA, transformer execution, hull-backed memory, multiple attention modes, native interpreter, differential verification, CLI, TUI, benchmarks.
 
-## Where To Go Next
+**Not implemented:** WASM frontend, learned/trained weights, GPU acceleration, shared-address attention, STARK proof generation.
 
-The most important next steps are:
+The narrowness is the point. The semantics are small enough to inspect, strong enough to test, and structured enough to prove over.
 
-1. WASM lowering into the current machine model.
-2. A stronger treatment of memory addressing beyond per-address histories.
-3. Burn-backed or serialized model representations for the compiled transition path.
-4. More ambitious demonstrations that stress long traces and richer control flow.
+---
 
-## Further Reading
+## References
 
-- [Percepta: Can LLMs Be Computers?](https://www.percepta.ai/blog/can-llms-be-computers)
-- [`SPEC.md`](SPEC.md)
-- [`RFC-001-hull-kv-cache.md`](RFC-001-hull-kv-cache.md)
-- [`RFC-002-2d-attention.md`](RFC-002-2d-attention.md)
-- [`RFC-003-state-encoding-compiler.md`](RFC-003-state-encoding-compiler.md)
-- [`RFC-004-005-runtime-hybrid.md`](RFC-004-005-runtime-hybrid.md)
+- [Can LLMs Be Computers?](https://www.percepta.ai/blog/can-llms-be-computers) --- Percepta. The original idea that inspired this project.
+- [Scalable, Transparent, and Post-Quantum Secure Computational Integrity](https://eprint.iacr.org/2018/046) --- Ben-Sasson et al., 2018. The STARK protocol.
+- [Circle STARKs](https://eprint.iacr.org/2024/278) --- Haböck, Levit, Papini, 2024. STARKs over the circle group of Mersenne prime fields.
+- [STWO Prover](https://github.com/starkware-libs/stwo) --- StarkWare's production Circle STARK prover in Rust.
+- [`SPEC.md`](SPEC.md) --- Technical specification for this repository.
+- [`RFC-001` through `RFC-005`](RFC-001-hull-kv-cache.md) --- Component design documents.
 
 ## License
 
