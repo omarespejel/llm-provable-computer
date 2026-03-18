@@ -116,3 +116,131 @@ fn encode_bit(value: bool) -> f32 {
 fn decode_bit(value: f32) -> bool {
     value >= 0.0
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_state_has_zero_defaults() {
+        let state = MachineState::new(8);
+        assert_eq!(state.pc, 0);
+        assert_eq!(state.acc, 0);
+        assert_eq!(state.sp, 8);
+        assert!(state.zero_flag);
+        assert!(!state.carry_flag);
+        assert!(!state.halted);
+        assert_eq!(state.memory, vec![0; 8]);
+    }
+
+    #[test]
+    fn new_state_sp_capped_at_u8_max() {
+        let state = MachineState::new(300);
+        assert_eq!(state.sp, 255);
+    }
+
+    #[test]
+    fn with_memory_preserves_values() {
+        let state = MachineState::with_memory(vec![1, 2, 3]);
+        assert_eq!(state.memory, vec![1, 2, 3]);
+        assert_eq!(state.sp, 3);
+    }
+
+    #[test]
+    fn encode_decode_round_trips_zero_state() {
+        let state = MachineState::new(4);
+        let token = encode_state(&state, 36).unwrap();
+        let decoded = decode_state(&token, state.memory.clone()).unwrap();
+        assert_eq!(decoded, state);
+    }
+
+    #[test]
+    fn encode_decode_round_trips_max_values() {
+        let state = MachineState {
+            pc: 255,
+            acc: i16::MAX,
+            sp: 255,
+            zero_flag: true,
+            carry_flag: true,
+            halted: true,
+            memory: vec![0; 4],
+        };
+        let token = encode_state(&state, 36).unwrap();
+        let decoded = decode_state(&token, state.memory.clone()).unwrap();
+        assert_eq!(decoded, state);
+    }
+
+    #[test]
+    fn encode_decode_round_trips_negative_acc() {
+        let state = MachineState {
+            pc: 0,
+            acc: -1,
+            sp: 4,
+            zero_flag: false,
+            carry_flag: false,
+            halted: false,
+            memory: vec![0; 4],
+        };
+        let token = encode_state(&state, 36).unwrap();
+        let decoded = decode_state(&token, state.memory.clone()).unwrap();
+        assert_eq!(decoded, state);
+    }
+
+    #[test]
+    fn encode_decode_round_trips_min_acc() {
+        let state = MachineState {
+            pc: 42,
+            acc: i16::MIN,
+            sp: 8,
+            zero_flag: false,
+            carry_flag: true,
+            halted: false,
+            memory: vec![0; 8],
+        };
+        let token = encode_state(&state, 36).unwrap();
+        let decoded = decode_state(&token, state.memory.clone()).unwrap();
+        assert_eq!(decoded, state);
+    }
+
+    #[test]
+    fn encode_rejects_d_model_too_small() {
+        let state = MachineState::new(4);
+        let err = encode_state(&state, 35).unwrap_err();
+        assert!(err.to_string().contains("d_model must be at least"));
+    }
+
+    #[test]
+    fn decode_rejects_token_too_short() {
+        let token = vec![0.0; 35];
+        let err = decode_state(&token, vec![0; 4]).unwrap_err();
+        assert!(err.to_string().contains("at least"));
+    }
+
+    #[test]
+    fn encode_accepts_larger_d_model() {
+        let state = MachineState::new(4);
+        let token = encode_state(&state, 64).unwrap();
+        assert_eq!(token.len(), 64);
+        // Extra dimensions should be zero
+        for &val in &token[36..] {
+            assert_eq!(val, 0.0);
+        }
+        let decoded = decode_state(&token, state.memory.clone()).unwrap();
+        assert_eq!(decoded, state);
+    }
+
+    #[test]
+    fn encode_bit_maps_correctly() {
+        assert_eq!(encode_bit(true), 1.0);
+        assert_eq!(encode_bit(false), -1.0);
+    }
+
+    #[test]
+    fn decode_bit_threshold_at_zero() {
+        assert!(decode_bit(0.0));
+        assert!(decode_bit(0.5));
+        assert!(decode_bit(1.0));
+        assert!(!decode_bit(-0.001));
+        assert!(!decode_bit(-1.0));
+    }
+}

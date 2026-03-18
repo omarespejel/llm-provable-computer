@@ -344,3 +344,140 @@ fn cross(a: Point2D, b: Point2D, c: Point2D) -> f32 {
 fn dot(query: [f32; 2], point: Point2D) -> f32 {
     query[0] * point.x + query[1] * point.y
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cross_product_sign_determines_turn_direction() {
+        let a = Point2D { x: 0.0, y: 0.0, id: 0 };
+        let b = Point2D { x: 1.0, y: 0.0, id: 1 };
+        let c_left = Point2D { x: 1.0, y: 1.0, id: 2 };
+        let c_right = Point2D { x: 1.0, y: -1.0, id: 3 };
+        let c_straight = Point2D { x: 2.0, y: 0.0, id: 4 };
+
+        assert!(cross(a, b, c_left) > 0.0, "left turn should be positive");
+        assert!(cross(a, b, c_right) < 0.0, "right turn should be negative");
+        assert!((cross(a, b, c_straight)).abs() < 1e-6, "collinear should be zero");
+    }
+
+    #[test]
+    fn dot_product_computes_correctly() {
+        let point = Point2D { x: 3.0, y: 4.0, id: 0 };
+        assert_eq!(dot([1.0, 0.0], point), 3.0);
+        assert_eq!(dot([0.0, 1.0], point), 4.0);
+        assert_eq!(dot([1.0, 1.0], point), 7.0);
+        assert_eq!(dot([-1.0, 0.0], point), -3.0);
+    }
+
+    #[test]
+    fn hull_points_returns_deduplicated_hull() {
+        let mut cache = HullKvCache::new();
+        // Square corners
+        cache.insert([0.0, 0.0], &[0.0]);
+        cache.insert([1.0, 0.0], &[1.0]);
+        cache.insert([1.0, 1.0], &[2.0]);
+        cache.insert([0.0, 1.0], &[3.0]);
+        // Interior point (should not be on hull)
+        cache.insert([0.5, 0.5], &[4.0]);
+
+        let hull = cache.hull_points();
+        assert_eq!(hull.len(), 4, "only corners should be on hull, got {hull:?}");
+    }
+
+    #[test]
+    fn query_weighted_rejects_zero_temperature() {
+        let mut cache = HullKvCache::new();
+        cache.insert([1.0, 1.0], &[1.0]);
+        let err = cache.query_weighted([1.0, 0.0], 0.0).unwrap_err();
+        assert!(err.to_string().contains("temperature"));
+    }
+
+    #[test]
+    fn query_weighted_rejects_negative_temperature() {
+        let mut cache = HullKvCache::new();
+        cache.insert([1.0, 1.0], &[1.0]);
+        let err = cache.query_weighted([1.0, 0.0], -1.0).unwrap_err();
+        assert!(err.to_string().contains("temperature"));
+    }
+
+    #[test]
+    fn query_weighted_rejects_nan_temperature() {
+        let mut cache = HullKvCache::new();
+        cache.insert([1.0, 1.0], &[1.0]);
+        assert!(cache.query_weighted([1.0, 0.0], f32::NAN).is_err());
+    }
+
+    #[test]
+    fn query_weighted_empty_cache() {
+        let cache = HullKvCache::new();
+        assert!(cache.query_weighted([1.0, 0.0], 1.0).is_err());
+    }
+
+    #[test]
+    fn query_value_dispatches_to_argmax_for_average_hard() {
+        let mut cache = HullKvCache::new();
+        cache.insert([0.0, 5.0], &[5.0]);
+        cache.insert([10.0, 0.0], &[10.0]);
+
+        let value = cache.query_value([1.0, 0.0], &Attention2DMode::AverageHard).unwrap();
+        assert_eq!(value, vec![10.0], "average-hard should return argmax point");
+    }
+
+    #[test]
+    fn query_value_dispatches_to_weighted_for_softmax() {
+        let mut cache = HullKvCache::new();
+        cache.insert([0.0, 0.0], &[0.0]);
+        cache.insert([10.0, 0.0], &[10.0]);
+
+        let value = cache.query_value([1.0, 0.0], &Attention2DMode::Softmax).unwrap();
+        // Softmax blends, so result should be between 0 and 10
+        assert!(value[0] > 0.0 && value[0] <= 10.0, "softmax value={:?}", value);
+    }
+
+    #[test]
+    fn query_argmax_bruteforce_matches_for_known_points() {
+        let mut cache = HullKvCache::new();
+        cache.insert([1.0, 0.0], &[1.0]);
+        cache.insert([0.0, 5.0], &[5.0]);
+        cache.insert([-3.0, 0.0], &[-3.0]);
+
+        // Query [0, 1] should find point with max y
+        let (pt, val) = cache.query_argmax_bruteforce([0.0, 1.0]).unwrap();
+        assert_eq!(pt.y, 5.0);
+        assert_eq!(val, &[5.0]);
+    }
+
+    #[test]
+    fn rebuild_hulls_handles_empty() {
+        let mut cache = HullKvCache::new();
+        cache.rebuild_hulls();
+        assert!(cache.upper_hull.is_empty());
+        assert!(cache.lower_hull.is_empty());
+    }
+
+    #[test]
+    fn total_size_tracks_all_insertions() {
+        let mut cache = HullKvCache::new();
+        assert_eq!(cache.total_size(), 0);
+        cache.insert([1.0, 1.0], &[1.0]);
+        assert_eq!(cache.total_size(), 1);
+        cache.insert([2.0, 2.0], &[2.0]);
+        assert_eq!(cache.total_size(), 2);
+    }
+
+    #[test]
+    fn is_monotonic_initially_true() {
+        let cache = HullKvCache::new();
+        assert!(cache.is_monotonic());
+    }
+
+    #[test]
+    fn equal_x_breaks_monotonic() {
+        let mut cache = HullKvCache::new();
+        cache.insert([1.0, 0.0], &[0.0]);
+        cache.insert([1.0, 1.0], &[1.0]); // equal x
+        assert!(!cache.is_monotonic());
+    }
+}

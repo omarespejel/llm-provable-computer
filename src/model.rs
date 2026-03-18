@@ -1184,3 +1184,378 @@ impl TransformerVm {
         decode_state(&output_token, next_state.memory)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn matrix_zeros_has_correct_dimensions() {
+        let m = Matrix::zeros(3, 4);
+        assert_eq!(m.rows, 3);
+        assert_eq!(m.cols, 4);
+        assert_eq!(m.data.len(), 12);
+        assert!(m.data.iter().all(|&v| v == 0.0));
+    }
+
+    #[test]
+    fn matrix_add_accumulates() {
+        let mut m = Matrix::zeros(2, 2);
+        m.add(0, 0, 3.0);
+        m.add(0, 0, 2.0);
+        assert_eq!(m.data[0], 5.0);
+    }
+
+    #[test]
+    fn matrix_mul_vec_identity() {
+        let mut m = Matrix::zeros(2, 2);
+        m.add(0, 0, 1.0);
+        m.add(1, 1, 1.0);
+        let result = m.mul_vec(&[3.0, 7.0]);
+        assert_eq!(result, vec![3.0, 7.0]);
+    }
+
+    #[test]
+    fn matrix_mul_vec_scales() {
+        let mut m = Matrix::zeros(1, 3);
+        m.add(0, 0, 2.0);
+        m.add(0, 1, 3.0);
+        m.add(0, 2, 4.0);
+        let result = m.mul_vec(&[1.0, 1.0, 1.0]);
+        assert_eq!(result, vec![9.0]);
+    }
+
+    #[test]
+    fn blend_bool_threshold() {
+        assert!(blend_bool(0.5));
+        assert!(blend_bool(1.0));
+        assert!(!blend_bool(0.49));
+        assert!(!blend_bool(0.0));
+    }
+
+    #[test]
+    fn bool_to_scalar_maps_correctly() {
+        assert_eq!(bool_to_scalar(true), 1.0);
+        assert_eq!(bool_to_scalar(false), 0.0);
+    }
+
+    #[test]
+    fn build_input_vector_has_correct_layout() {
+        let state = MachineState {
+            pc: 5,
+            acc: -3,
+            sp: 10,
+            zero_flag: false,
+            carry_flag: true,
+            halted: false,
+            memory: vec![0; 16],
+        };
+        let input = build_input_vector(&state, 42);
+
+        assert_eq!(input[IN_CONST], 1.0);
+        assert_eq!(input[IN_PC], 5.0);
+        assert_eq!(input[IN_PC_NEXT], 6.0);
+        assert_eq!(input[IN_ACC], -3.0);
+        assert_eq!(input[IN_ZERO], 0.0); // false
+        assert_eq!(input[IN_CARRY], 1.0); // true
+        assert_eq!(input[IN_HALTED], 0.0); // false
+        assert_eq!(input[IN_SP], 10.0);
+        assert_eq!(input[IN_OPERAND], 42.0);
+    }
+
+    #[test]
+    fn build_input_vector_acc_bits_correct() {
+        let state = MachineState {
+            pc: 0,
+            acc: 5, // binary: 0000_0000_0000_0101
+            sp: 4,
+            zero_flag: false,
+            carry_flag: false,
+            halted: false,
+            memory: vec![0; 4],
+        };
+        let input = build_input_vector(&state, 0);
+
+        // bit 0 of acc = 1
+        assert_eq!(input[acc_bit(0)], 1.0);
+        // bit 1 of acc = 0
+        assert_eq!(input[acc_bit(1)], 0.0);
+        // bit 2 of acc = 1
+        assert_eq!(input[acc_bit(2)], 1.0);
+        // bit 3 of acc = 0
+        assert_eq!(input[acc_bit(3)], 0.0);
+    }
+
+    #[test]
+    fn feedforward_builder_emits_linear_term() {
+        let mut builder = FeedForwardBuilder::new(8);
+        builder.emit_linear(OUT_RAW_ACC, 2.0, IN_ACC).unwrap();
+        let weights = builder.finalize().unwrap();
+
+        let mut input = vec![0.0; INPUT_DIM];
+        input[IN_ACC] = 10.0;
+        let output = weights.evaluate(&input);
+        assert!((output[OUT_RAW_ACC] - 20.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn feedforward_builder_emits_product_term() {
+        let mut builder = FeedForwardBuilder::new(8);
+        builder.emit_product(OUT_RAW_ACC, 1.0, IN_ACC, IN_OPERAND).unwrap();
+        let weights = builder.finalize().unwrap();
+
+        let mut input = vec![0.0; INPUT_DIM];
+        input[IN_ACC] = 6.0;
+        input[IN_OPERAND] = 7.0;
+        let output = weights.evaluate(&input);
+        assert!((output[OUT_RAW_ACC] - 42.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn feedforward_builder_exceeding_ff_dim_fails() {
+        let mut builder = FeedForwardBuilder::new(1);
+        builder.emit_linear(OUT_RAW_ACC, 1.0, IN_ACC).unwrap();
+        let err = builder.emit_linear(OUT_RAW_ACC, 1.0, IN_OPERAND).unwrap_err();
+        assert!(err.to_string().contains("exceeds ff_dim"));
+    }
+
+    #[test]
+    fn compile_nop_preserves_acc_and_advances_pc() {
+        let config = TransformerVmConfig::default();
+        let compiler = InstructionCompiler::new(&config).unwrap();
+        let compiled = compiler.compile_instruction(Instruction::Nop).unwrap();
+
+        let state = MachineState {
+            pc: 3,
+            acc: 42,
+            sp: 8,
+            zero_flag: false,
+            carry_flag: true,
+            halted: false,
+            memory: vec![0; 8],
+        };
+        let _memory = AddressedMemory::from_initial(&state.memory);
+        let transition = GatedFeedForward.apply(&state, &compiled, AttentionContext::default());
+
+        assert_eq!(transition.pc, 4);
+        assert_eq!(transition.acc, 42);
+        assert!(!transition.halted);
+    }
+
+    #[test]
+    fn compile_halt_sets_halted_flag() {
+        let config = TransformerVmConfig::default();
+        let compiler = InstructionCompiler::new(&config).unwrap();
+        let compiled = compiler.compile_instruction(Instruction::Halt).unwrap();
+
+        let state = MachineState::new(8);
+        let transition = GatedFeedForward.apply(&state, &compiled, AttentionContext::default());
+
+        assert!(transition.halted);
+        assert_eq!(transition.pc, 0); // stays at same PC
+    }
+
+    #[test]
+    fn compile_add_immediate_adds_value() {
+        let config = TransformerVmConfig::default();
+        let compiler = InstructionCompiler::new(&config).unwrap();
+        let compiled = compiler.compile_instruction(Instruction::AddImmediate(7)).unwrap();
+
+        let state = MachineState {
+            acc: 35,
+            ..MachineState::new(8)
+        };
+        let transition = GatedFeedForward.apply(&state, &compiled, AttentionContext::default());
+
+        assert_eq!(transition.acc, 42);
+    }
+
+    #[test]
+    fn compile_sub_immediate_subtracts_value() {
+        let config = TransformerVmConfig::default();
+        let compiler = InstructionCompiler::new(&config).unwrap();
+        let compiled = compiler.compile_instruction(Instruction::SubImmediate(8)).unwrap();
+
+        let state = MachineState {
+            acc: 50,
+            ..MachineState::new(8)
+        };
+        let transition = GatedFeedForward.apply(&state, &compiled, AttentionContext::default());
+
+        assert_eq!(transition.acc, 42);
+    }
+
+    #[test]
+    fn compile_load_immediate_sets_acc() {
+        let config = TransformerVmConfig::default();
+        let compiler = InstructionCompiler::new(&config).unwrap();
+        let compiled = compiler.compile_instruction(Instruction::LoadImmediate(99)).unwrap();
+
+        let state = MachineState::new(8);
+        let transition = GatedFeedForward.apply(&state, &compiled, AttentionContext::default());
+
+        assert_eq!(transition.acc, 99);
+    }
+
+    #[test]
+    fn compile_jump_sets_pc_to_target() {
+        let config = TransformerVmConfig::default();
+        let compiler = InstructionCompiler::new(&config).unwrap();
+        let compiled = compiler.compile_instruction(Instruction::Jump(10)).unwrap();
+
+        let state = MachineState::new(8);
+        let transition = GatedFeedForward.apply(&state, &compiled, AttentionContext::default());
+
+        assert_eq!(transition.pc, 10);
+    }
+
+    #[test]
+    fn compile_jz_takes_branch_when_zero() {
+        let config = TransformerVmConfig::default();
+        let compiler = InstructionCompiler::new(&config).unwrap();
+        let compiled = compiler.compile_instruction(Instruction::JumpIfZero(7)).unwrap();
+
+        let state = MachineState {
+            pc: 2,
+            zero_flag: true,
+            ..MachineState::new(8)
+        };
+        let transition = GatedFeedForward.apply(&state, &compiled, AttentionContext::default());
+
+        assert_eq!(transition.pc, 7);
+    }
+
+    #[test]
+    fn compile_jz_falls_through_when_not_zero() {
+        let config = TransformerVmConfig::default();
+        let compiler = InstructionCompiler::new(&config).unwrap();
+        let compiled = compiler.compile_instruction(Instruction::JumpIfZero(7)).unwrap();
+
+        let state = MachineState {
+            pc: 2,
+            acc: 1,
+            zero_flag: false,
+            ..MachineState::new(8)
+        };
+        let transition = GatedFeedForward.apply(&state, &compiled, AttentionContext::default());
+
+        assert_eq!(transition.pc, 3); // pc + 1
+    }
+
+    #[test]
+    fn compile_store_emits_memory_write() {
+        let config = TransformerVmConfig::default();
+        let compiler = InstructionCompiler::new(&config).unwrap();
+        let compiled = compiler.compile_instruction(Instruction::Store(5)).unwrap();
+
+        let state = MachineState {
+            acc: 42,
+            ..MachineState::new(8)
+        };
+        let transition = GatedFeedForward.apply(&state, &compiled, AttentionContext::default());
+
+        assert!(transition.memory_write.is_some());
+        let (addr, val) = transition.memory_write.unwrap();
+        assert_eq!(addr, 5);
+        assert_eq!(val, 42);
+    }
+
+    #[test]
+    fn compile_load_reads_from_attention_context() {
+        let config = TransformerVmConfig::default();
+        let compiler = InstructionCompiler::new(&config).unwrap();
+        let compiled = compiler.compile_instruction(Instruction::Load(3)).unwrap();
+
+        let state = MachineState::new(8);
+        let context = AttentionContext {
+            memory_value: Some(99),
+        };
+        let transition = GatedFeedForward.apply(&state, &compiled, context);
+
+        assert_eq!(transition.acc, 99);
+    }
+
+    #[test]
+    fn compile_mul_immediate_multiplies() {
+        let config = TransformerVmConfig::default();
+        let compiler = InstructionCompiler::new(&config).unwrap();
+        let compiled = compiler.compile_instruction(Instruction::MulImmediate(6)).unwrap();
+
+        let state = MachineState {
+            acc: 7,
+            zero_flag: false,
+            ..MachineState::new(8)
+        };
+        let transition = GatedFeedForward.apply(&state, &compiled, AttentionContext::default());
+
+        assert_eq!(transition.acc, 42);
+    }
+
+    #[test]
+    fn transformer_vm_new_rejects_too_small_ff_dim() {
+        let config = TransformerVmConfig {
+            ff_dim: 10,
+            ..TransformerVmConfig::default()
+        };
+        let program = Program::new(vec![Instruction::Halt], 4);
+        let err = TransformerVm::new(config, program).unwrap_err();
+        assert!(err.to_string().contains("ff_dim must be at least"));
+    }
+
+    #[test]
+    fn transformer_vm_new_rejects_memory_exceeding_u8() {
+        let config = TransformerVmConfig::default();
+        let program = Program::new(vec![Instruction::Halt], 256);
+        let err = TransformerVm::new(config, program).unwrap_err();
+        assert!(err.to_string().contains("encoded stack/address limit"));
+    }
+
+    #[test]
+    fn dispatch_info_returns_correct_instruction() {
+        let program = Program::new(
+            vec![Instruction::Nop, Instruction::AddImmediate(5), Instruction::Halt],
+            4,
+        );
+        let config = TransformerVmConfig::default();
+        let vm = TransformerVm::new(config, program).unwrap();
+
+        assert_eq!(vm.dispatch_info(0).unwrap().instruction, Instruction::Nop);
+        assert_eq!(
+            vm.dispatch_info(1).unwrap().instruction,
+            Instruction::AddImmediate(5)
+        );
+        assert_eq!(vm.dispatch_info(2).unwrap().instruction, Instruction::Halt);
+    }
+
+    #[test]
+    fn dispatch_info_out_of_bounds() {
+        let program = Program::new(vec![Instruction::Halt], 4);
+        let vm = TransformerVm::new(TransformerVmConfig::default(), program).unwrap();
+        assert!(vm.dispatch_info(1).is_err());
+    }
+
+    #[test]
+    fn multi_layer_distributes_instructions() {
+        let program = Program::new(
+            vec![
+                Instruction::Nop,
+                Instruction::Nop,
+                Instruction::Nop,
+                Instruction::Halt,
+            ],
+            4,
+        );
+        let config = TransformerVmConfig {
+            num_layers: 2,
+            ..TransformerVmConfig::default()
+        };
+        let vm = TransformerVm::new(config, program).unwrap();
+
+        let layer0 = vm.dispatch_info(0).unwrap().layer_idx;
+        let layer1 = vm.dispatch_info(2).unwrap().layer_idx;
+        // With 4 instructions and 2 layers, chunk_size=2
+        // PC 0,1 → layer 0; PC 2,3 → layer 1
+        assert_eq!(layer0, 0);
+        assert_eq!(layer1, 1);
+    }
+}

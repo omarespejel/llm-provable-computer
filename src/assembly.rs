@@ -228,3 +228,200 @@ fn parse_usize(token: &str, line: usize, subject: &str) -> Result<usize> {
         message: format!("invalid {subject} `{token}`"),
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::instruction::Instruction;
+
+    #[test]
+    fn strip_comment_removes_semicolon() {
+        assert_eq!(strip_comment("LOADI 5 ; comment"), "LOADI 5 ");
+    }
+
+    #[test]
+    fn strip_comment_removes_hash() {
+        assert_eq!(strip_comment("HALT # done"), "HALT ");
+    }
+
+    #[test]
+    fn strip_comment_handles_both() {
+        assert_eq!(strip_comment("NOP ; comment # nested"), "NOP ");
+        assert_eq!(strip_comment("NOP # comment ; nested"), "NOP ");
+    }
+
+    #[test]
+    fn strip_comment_no_comment() {
+        assert_eq!(strip_comment("LOADI 42"), "LOADI 42");
+    }
+
+    #[test]
+    fn split_label_extracts_label() {
+        let (label, rest) = split_label("loop: NOP", 1).unwrap().unwrap();
+        assert_eq!(label, "loop");
+        assert_eq!(rest, " NOP");
+    }
+
+    #[test]
+    fn split_label_returns_none_for_no_label() {
+        assert!(split_label("NOP", 1).unwrap().is_none());
+    }
+
+    #[test]
+    fn split_label_rejects_empty_label() {
+        let err = split_label(": NOP", 1).unwrap_err();
+        assert!(err.to_string().contains("empty label"));
+    }
+
+    #[test]
+    fn split_label_rejects_invalid_characters() {
+        let err = split_label("foo bar: NOP", 1).unwrap_err();
+        assert!(err.to_string().contains("invalid label"));
+    }
+
+    #[test]
+    fn parse_empty_program() {
+        let program = parse_program("").unwrap();
+        assert!(program.is_empty());
+    }
+
+    #[test]
+    fn parse_comment_only_lines() {
+        let program = parse_program("; comment\n# another comment\n").unwrap();
+        assert!(program.is_empty());
+    }
+
+    #[test]
+    fn parse_all_instruction_mnemonics() {
+        let source = r#"
+            NOP
+            LOADI 1
+            LOAD 0
+            STORE 0
+            PUSH
+            POP
+            ADD 1
+            ADDM 0
+            SUB 1
+            SUBM 0
+            MUL 2
+            MULM 0
+            AND 1
+            ANDM 0
+            OR 1
+            ORM 0
+            XOR 1
+            XORM 0
+            CMP 1
+            CMPM 0
+            CALL 0
+            RET
+            JMP 0
+            JZ 0
+            JNZ 0
+            HALT
+        "#;
+        let program = parse_program(source).unwrap();
+        assert_eq!(program.len(), 26);
+    }
+
+    #[test]
+    fn parse_memory_directive() {
+        let program = parse_program(".memory 32\nHALT\n").unwrap();
+        assert_eq!(program.memory_size(), 32);
+    }
+
+    #[test]
+    fn parse_init_directive() {
+        let program = parse_program(".memory 4\n.init 2 42\nHALT\n").unwrap();
+        assert_eq!(program.initial_memory()[2], 42);
+    }
+
+    #[test]
+    fn parse_init_out_of_bounds_rejected() {
+        let err = parse_program(".memory 4\n.init 10 42\nHALT\n").unwrap_err();
+        assert!(err.to_string().contains("out of bounds"));
+    }
+
+    #[test]
+    fn parse_label_resolution() {
+        let program = parse_program("JMP end\nNOP\nend: HALT\n").unwrap();
+        assert_eq!(
+            program.instruction_at(0).unwrap(),
+            Instruction::Jump(2)
+        );
+    }
+
+    #[test]
+    fn parse_duplicate_label_rejected() {
+        let err = parse_program("foo: NOP\nfoo: HALT\n").unwrap_err();
+        assert!(err.to_string().contains("duplicate label"));
+    }
+
+    #[test]
+    fn parse_unknown_label_rejected() {
+        let err = parse_program("JMP nowhere\nHALT\n").unwrap_err();
+        assert!(err.to_string().contains("unknown label"));
+    }
+
+    #[test]
+    fn parse_unknown_instruction_rejected() {
+        let err = parse_program("DANCE 5\n").unwrap_err();
+        assert!(err.to_string().contains("unknown instruction"));
+    }
+
+    #[test]
+    fn parse_wrong_arity_rejected() {
+        let err = parse_program("HALT 1\n").unwrap_err();
+        assert!(err.to_string().contains("expected 0 operand"));
+    }
+
+    #[test]
+    fn parse_invalid_immediate_rejected() {
+        let err = parse_program("LOADI abc\n").unwrap_err();
+        assert!(err.to_string().contains("invalid"));
+    }
+
+    #[test]
+    fn parse_memory_wrong_arity_rejected() {
+        let err = parse_program(".memory\nHALT\n").unwrap_err();
+        assert!(err.to_string().contains("expects exactly one"));
+    }
+
+    #[test]
+    fn parse_init_wrong_arity_rejected() {
+        let err = parse_program(".memory 4\n.init 0\nHALT\n").unwrap_err();
+        assert!(err.to_string().contains("expects"));
+    }
+
+    #[test]
+    fn parse_negative_immediate() {
+        let program = parse_program("LOADI -100\nHALT\n").unwrap();
+        assert_eq!(
+            program.instruction_at(0).unwrap(),
+            Instruction::LoadImmediate(-100)
+        );
+    }
+
+    #[test]
+    fn parse_comma_separated_operands_stripped() {
+        // Comma at end of operand should be stripped
+        let program = parse_program("LOADI 5,\nHALT\n").unwrap();
+        assert_eq!(
+            program.instruction_at(0).unwrap(),
+            Instruction::LoadImmediate(5)
+        );
+    }
+
+    #[test]
+    fn parse_label_with_hyphens_and_underscores() {
+        let program = parse_program("my-label_1: HALT\n").unwrap();
+        assert_eq!(program.len(), 1);
+    }
+
+    #[test]
+    fn parse_label_only_line_followed_by_instruction() {
+        let program = parse_program("start:\nHALT\n").unwrap();
+        assert_eq!(program.len(), 1);
+    }
+}

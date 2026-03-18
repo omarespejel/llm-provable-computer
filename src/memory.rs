@@ -81,3 +81,87 @@ impl AddressedMemory {
             })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn from_initial_preserves_values() {
+        let mem = AddressedMemory::from_initial(&[10, 20, 30]);
+        assert_eq!(mem.len(), 3);
+        assert!(!mem.is_empty());
+        assert_eq!(mem.snapshot(), vec![10, 20, 30]);
+    }
+
+    #[test]
+    fn empty_memory() {
+        let mem = AddressedMemory::from_initial(&[]);
+        assert!(mem.is_empty());
+        assert_eq!(mem.len(), 0);
+    }
+
+    #[test]
+    fn load_returns_initial_value() {
+        let mem = AddressedMemory::from_initial(&[42, 99]);
+        assert_eq!(mem.load(0).unwrap(), 42);
+        assert_eq!(mem.load(1).unwrap(), 99);
+    }
+
+    #[test]
+    fn load_out_of_bounds_returns_error() {
+        let mem = AddressedMemory::from_initial(&[1, 2]);
+        let err = mem.load(2).unwrap_err();
+        assert!(err.to_string().contains("out of bounds"));
+    }
+
+    #[test]
+    fn store_updates_cell_and_snapshot() {
+        let mut mem = AddressedMemory::from_initial(&[0, 0]);
+        mem.store(0, 42, 1).unwrap();
+        assert_eq!(mem.load(0).unwrap(), 42);
+        assert_eq!(mem.snapshot(), vec![42, 0]);
+    }
+
+    #[test]
+    fn store_out_of_bounds_returns_error() {
+        let mut mem = AddressedMemory::from_initial(&[0]);
+        let err = mem.store(1, 42, 1).unwrap_err();
+        assert!(err.to_string().contains("out of bounds"));
+    }
+
+    #[test]
+    fn multiple_stores_returns_latest() {
+        let mut mem = AddressedMemory::from_initial(&[0]);
+        mem.store(0, 10, 1).unwrap();
+        mem.store(0, 20, 2).unwrap();
+        mem.store(0, 30, 3).unwrap();
+        assert_eq!(mem.load(0).unwrap(), 30);
+    }
+
+    #[test]
+    fn history_len_tracks_insertions() {
+        let mut mem = AddressedMemory::from_initial(&[0]);
+        assert_eq!(mem.history_len(0).unwrap(), 1); // initial value
+        mem.store(0, 10, 1).unwrap();
+        assert_eq!(mem.history_len(0).unwrap(), 2);
+        mem.store(0, 20, 2).unwrap();
+        assert_eq!(mem.history_len(0).unwrap(), 3);
+    }
+
+    #[test]
+    fn history_len_out_of_bounds() {
+        let mem = AddressedMemory::from_initial(&[0]);
+        assert!(mem.history_len(1).is_err());
+    }
+
+    #[test]
+    fn load_with_softmax_mode_blends_values() {
+        let mut mem = AddressedMemory::from_initial(&[0]);
+        mem.store(0, 10, 2).unwrap();
+        // Softmax blends across all history entries
+        let value = mem.load_with_mode(0, &Attention2DMode::Softmax).unwrap();
+        // Should be between 0 and 10 (blended)
+        assert!((0..=10).contains(&value), "softmax value={value}");
+    }
+}
