@@ -2,6 +2,8 @@
 
 ## Version: 0.1.0-draft | March 2026
 
+Status: implemented in the repository. Burn execution, ONNX export, Tract/ONNX execution, Python validation, multi-engine verification, CLI integration, and CI enforcement are all present.
+
 ---
 
 ## 1. Problem Statement

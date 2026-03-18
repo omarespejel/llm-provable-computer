@@ -6,6 +6,8 @@
 
 Four phases, ordered by dependency. Each phase produces a working, testable artifact.
 
+Status: complete in the repository. Phases 1-4 are implemented, the README documents the shipped workflow, and CI enforcement lives in `.github/workflows/milestone-1.yml`. The unchecked task lists below are retained as the original implementation plan rather than live work tracking.
+
 | Phase | Deliverable | Depends on | Estimated effort |
 |-------|------------|------------|-----------------|
 | 1 | Burn model + differential verification | — | Core work |
@@ -206,3 +208,5 @@ The milestone is complete when:
 2. `scripts/validate_onnx.py compiled/fibonacci/` produces `ACC: 21`
 3. A person with only Python can reproduce the Fibonacci execution from the ONNX files
 4. The README documents how to do this
+
+Current repository status: satisfied.
