@@ -1,108 +1,81 @@
 /// Finite field arithmetic over the prime field F_p where p = 1 + 407 * 2^119.
-/// Ported from stark-anatomy/code/algebra.py.
+/// Uses ark-ff Montgomery multiplication for fast field operations.
+/// API-compatible wrapper preserving the interface from the manual implementation.
 
 use std::fmt;
 use std::ops::{Add, Sub, Mul, Div, Neg};
+use ark_ff::{Fp128, MontBackend, MontConfig, Field, PrimeField, BigInt, AdditiveGroup, Zero};
 
 /// The field prime: p = 1 + 407 * 2^119
 pub const P: u128 = 1 + 407 * (1u128 << 119);
 
-/// Known generator of the multiplicative group
-const GENERATOR: u128 = 85408008396924667383611388730472331217;
+/// The known root of order 2^119 (used as "generator" in stark-anatomy).
+const ROOT_OF_UNITY: u128 = 85408008396924667383611388730472331217;
 
-/// A field element in F_p, represented as a u128 value in [0, p).
+/// ark-ff Montgomery configuration for our prime field.
+#[derive(MontConfig)]
+#[modulus = "270497897142230380135924736767050121217"]
+#[generator = "3"]
+pub struct FqConfig;
+
+/// The inner ark-ff field type (128-bit prime, 2 limbs).
+pub type Fq = Fp128<MontBackend<FqConfig, 2>>;
+
+/// A field element in F_p. Wraps ark-ff's Montgomery-form representation
+/// for fast arithmetic while preserving the original API.
 #[derive(Clone, Copy, Debug, Eq)]
-pub struct FieldElement(pub u128);
+pub struct FieldElement(pub Fq);
 
-// ── helpers for modular arithmetic on u128 ──
+// ── helpers ──
 
-#[inline]
-fn addmod(a: u128, b: u128) -> u128 {
-    let (sum, overflow) = a.overflowing_add(b);
-    if overflow {
-        // a + b wrapped around 2^128. True value = sum + 2^128.
-        // Result = (a+b) - P = sum + (2^128 - P).
-        sum + (u128::MAX - P + 1)
-    } else if sum >= P {
-        sum - P
-    } else {
-        sum
-    }
+fn u128_to_fq(v: u128) -> Fq {
+    let v = v % P;
+    Fq::from_bigint(BigInt::new([v as u64, (v >> 64) as u64])).unwrap()
 }
 
-#[inline]
-fn submod(a: u128, b: u128) -> u128 {
-    if a >= b { a - b } else { P - b + a }
-}
-
-/// Modular multiplication via Russian-peasant (double-and-add).
-/// O(128) iterations — correct and simple.
-#[inline]
-fn mulmod(a: u128, b: u128) -> u128 {
-    let mut a = a % P;
-    let mut b = b % P;
-    let mut result: u128 = 0;
-    while b > 0 {
-        if b & 1 == 1 {
-            result = addmod(result, a);
-        }
-        a = addmod(a, a);
-        b >>= 1;
-    }
-    result
-}
-
-/// Modular exponentiation via square-and-multiply.
-fn powmod(base: u128, exp: u128) -> u128 {
-    if exp == 0 {
-        return 1;
-    }
-    let bits = 128 - exp.leading_zeros();
-    let mut acc: u128 = 1;
-    for i in (0..bits).rev() {
-        acc = mulmod(acc, acc);
-        if (exp >> i) & 1 == 1 {
-            acc = mulmod(acc, base);
-        }
-    }
-    acc
+fn fq_to_u128(f: Fq) -> u128 {
+    let bigint = f.into_bigint();
+    (bigint.0[0] as u128) | ((bigint.0[1] as u128) << 64)
 }
 
 impl FieldElement {
     pub fn new(value: u128) -> Self {
-        FieldElement(value % P)
+        FieldElement(u128_to_fq(value))
     }
 
     pub fn zero() -> Self {
-        FieldElement(0)
+        FieldElement(Fq::ZERO)
     }
 
     pub fn one() -> Self {
-        FieldElement(1)
+        FieldElement(Fq::ONE)
     }
 
     pub fn is_zero(&self) -> bool {
-        self.0 == 0
+        self.0.is_zero()
     }
 
+    /// Get the canonical u128 value in [0, p).
     pub fn value(&self) -> u128 {
-        self.0
+        fq_to_u128(self.0)
     }
 
-    /// Multiplicative inverse via Fermat's little theorem: a^{-1} = a^{p-2} mod p.
+    /// Multiplicative inverse.
     pub fn inverse(&self) -> Self {
         assert!(!self.is_zero(), "cannot invert zero");
-        FieldElement(powmod(self.0, P - 2))
+        FieldElement(Field::inverse(&self.0).unwrap())
     }
 
     /// Modular exponentiation.
     pub fn pow(&self, exp: u128) -> Self {
-        FieldElement(powmod(self.0, exp))
+        FieldElement(self.0.pow([exp as u64, (exp >> 64) as u64]))
     }
 
-    /// Generator of the multiplicative group of F_p.
+    /// The element used as coset offset and root-of-unity base in stark-anatomy.
+    /// This is a primitive 2^119-th root of unity (NOT a generator of the full
+    /// multiplicative group).
     pub fn generator() -> Self {
-        FieldElement(GENERATOR)
+        Self::new(ROOT_OF_UNITY)
     }
 
     /// Primitive n-th root of unity where n must be a power of two and n <= 2^119.
@@ -111,7 +84,7 @@ impl FieldElement {
             n <= (1u128 << 119) && (n & (n - 1)) == 0,
             "Field does not have nth root of unity where n > 2^119 or not power of two."
         );
-        let mut root = FieldElement(GENERATOR);
+        let mut root = Self::new(ROOT_OF_UNITY);
         let mut order = 1u128 << 119;
         while order != n {
             root = root.pow(2);
@@ -120,18 +93,20 @@ impl FieldElement {
         root
     }
 
-    /// Sample a field element from a byte array (big-endian accumulation, then reduce mod p).
+    /// Sample a field element from a byte array (big-endian accumulation, reduce mod p).
     pub fn sample(bytes: &[u8]) -> Self {
-        let mut acc: u128 = 0;
+        let two56 = u128_to_fq(256);
+        let mut acc = Fq::ZERO;
         for &b in bytes {
-            acc = addmod(mulmod(acc, 256), (b as u128) % P);
+            acc = acc * two56 + Fq::from(b as u64);
         }
         FieldElement(acc)
     }
 
-    /// Convert to bytes via decimal string representation (matches Python's `bytes(str(self).encode())`).
+    /// Convert to bytes via decimal string representation.
+    /// Matches Python's `bytes(str(self).encode())`.
     pub fn to_bytes_str(&self) -> Vec<u8> {
-        self.0.to_string().into_bytes()
+        self.value().to_string().into_bytes()
     }
 }
 
@@ -146,21 +121,21 @@ impl PartialEq for FieldElement {
 impl Add for FieldElement {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
-        FieldElement(addmod(self.0, rhs.0))
+        FieldElement(self.0 + rhs.0)
     }
 }
 
 impl Sub for FieldElement {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
-        FieldElement(submod(self.0, rhs.0))
+        FieldElement(self.0 - rhs.0)
     }
 }
 
 impl Mul for FieldElement {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self {
-        FieldElement(mulmod(self.0, rhs.0))
+        FieldElement(self.0 * rhs.0)
     }
 }
 
@@ -175,13 +150,13 @@ impl Div for FieldElement {
 impl Neg for FieldElement {
     type Output = Self;
     fn neg(self) -> Self {
-        if self.0 == 0 { self } else { FieldElement(P - self.0) }
+        FieldElement(-self.0)
     }
 }
 
 impl fmt::Display for FieldElement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.value())
     }
 }
 
@@ -192,31 +167,32 @@ mod tests {
     #[test]
     fn test_field_constants() {
         assert_eq!(P, 270497897142230380135924736767050121217);
-        assert_eq!(GENERATOR, 85408008396924667383611388730472331217);
     }
 
     #[test]
     fn test_basic_arithmetic() {
         let a = FieldElement::new(42);
         let b = FieldElement::new(17);
-        assert_eq!((a + b).0, 59);
-        assert_eq!((a - b).0, 25);
-        assert_eq!((a * b).0, 714);
+        assert_eq!((a + b).value(), 59);
+        assert_eq!((a - b).value(), 25);
+        assert_eq!((a * b).value(), 714);
     }
 
     #[test]
     fn test_inverse() {
         let a = FieldElement::new(42);
-        assert_eq!((a * a.inverse()).0, 1);
+        assert_eq!((a * a.inverse()).value(), 1);
 
         let g = FieldElement::generator();
-        assert_eq!((g * g.inverse()).0, 1);
+        assert_eq!((g * g.inverse()).value(), 1);
     }
 
     #[test]
     fn test_generator_order() {
         let g = FieldElement::generator();
-        // g^(p-1) should equal 1 (Fermat's little theorem)
+        // g is a primitive 2^119-th root of unity, so g^(2^119) = 1
+        assert_eq!(g.pow(1u128 << 119), FieldElement::one());
+        // But g^(p-1) should also equal 1 (any element satisfies Fermat)
         assert_eq!(g.pow(P - 1), FieldElement::one());
     }
 
@@ -232,10 +208,8 @@ mod tests {
 
     #[test]
     fn test_sample() {
-        // Match Python: Field.main().sample(bytes(b'0xdeadbeef'))
         let input = b"0xdeadbeef";
         let fe = FieldElement::sample(input);
-        // Value computed from Python reference
         assert!(!fe.is_zero());
     }
 
@@ -250,5 +224,13 @@ mod tests {
     fn test_pow_zero() {
         let a = FieldElement::new(42);
         assert_eq!(a.pow(0), FieldElement::one());
+    }
+
+    #[test]
+    fn test_value_roundtrip() {
+        let vals = [0u128, 1, 42, P - 1, 85408008396924667383611388730472331217];
+        for &v in &vals {
+            assert_eq!(FieldElement::new(v).value(), v, "roundtrip failed for {}", v);
+        }
     }
 }

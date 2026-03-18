@@ -33,14 +33,14 @@ impl ProofObject {
                 out.push(1);
                 out.extend_from_slice(&(elements.len() as u32).to_le_bytes());
                 for e in elements {
-                    out.extend_from_slice(&e.0.to_le_bytes());
+                    out.extend_from_slice(&e.value().to_le_bytes());
                 }
             }
             ProofObject::Triple(a, b, c) => {
                 out.push(2);
-                out.extend_from_slice(&a.0.to_le_bytes());
-                out.extend_from_slice(&b.0.to_le_bytes());
-                out.extend_from_slice(&c.0.to_le_bytes());
+                out.extend_from_slice(&a.value().to_le_bytes());
+                out.extend_from_slice(&b.value().to_le_bytes());
+                out.extend_from_slice(&c.value().to_le_bytes());
             }
             ProofObject::Path(path) => {
                 out.push(3);
@@ -52,7 +52,7 @@ impl ProofObject {
             }
             ProofObject::Element(e) => {
                 out.push(4);
-                out.extend_from_slice(&e.0.to_le_bytes());
+                out.extend_from_slice(&e.value().to_le_bytes());
             }
         }
         out
@@ -77,7 +77,7 @@ impl ProofObject {
                 for _ in 0..count {
                     let val = u128::from_le_bytes(data[offset..offset + 16].try_into().unwrap());
                     offset += 16;
-                    elements.push(FieldElement(val));
+                    elements.push(FieldElement::new(val));
                 }
                 (ProofObject::Codeword(elements), offset)
             }
@@ -88,7 +88,7 @@ impl ProofObject {
                 offset += 16;
                 let c = u128::from_le_bytes(data[offset..offset + 16].try_into().unwrap());
                 offset += 16;
-                (ProofObject::Triple(FieldElement(a), FieldElement(b), FieldElement(c)), offset)
+                (ProofObject::Triple(FieldElement::new(a), FieldElement::new(b), FieldElement::new(c)), offset)
             }
             3 => {
                 let count = u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap()) as usize;
@@ -106,7 +106,7 @@ impl ProofObject {
             4 => {
                 let val = u128::from_le_bytes(data[offset..offset + 16].try_into().unwrap());
                 offset += 16;
-                (ProofObject::Element(FieldElement(val)), offset)
+                (ProofObject::Element(FieldElement::new(val)), offset)
             }
             _ => panic!("unknown proof object tag: {}", tag),
         }
@@ -200,7 +200,7 @@ mod tests {
     fn test_proof_stream_push_pull() {
         let mut ps = ProofStream::new();
         ps.push(ProofObject::Bytes(vec![1, 2, 3]));
-        ps.push(ProofObject::Element(FieldElement(42)));
+        ps.push(ProofObject::Element(FieldElement::new(42)));
 
         if let ProofObject::Bytes(data) = ps.pull() {
             assert_eq!(data, vec![1, 2, 3]);
@@ -208,7 +208,7 @@ mod tests {
             panic!("expected Bytes");
         }
         if let ProofObject::Element(e) = ps.pull() {
-            assert_eq!(e, FieldElement(42));
+            assert_eq!(e, FieldElement::new(42));
         } else {
             panic!("expected Element");
         }
@@ -218,8 +218,8 @@ mod tests {
     fn test_proof_stream_serialize_deserialize() {
         let mut ps = ProofStream::new();
         ps.push(ProofObject::Bytes(vec![1, 2, 3]));
-        ps.push(ProofObject::Element(FieldElement(42)));
-        ps.push(ProofObject::Triple(FieldElement(1), FieldElement(2), FieldElement(3)));
+        ps.push(ProofObject::Element(FieldElement::new(42)));
+        ps.push(ProofObject::Triple(FieldElement::new(1), FieldElement::new(2), FieldElement::new(3)));
 
         let serialized = ps.serialize();
         let ps2 = ProofStream::deserialize(&serialized);
