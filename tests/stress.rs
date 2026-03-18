@@ -82,6 +82,39 @@ fn stress_hull_random_inserts_stays_correct() {
 }
 
 #[test]
+fn stress_hull_1m_monotonic_inserts() {
+    let mut rng = StdRng::seed_from_u64(1_000_000);
+    let mut cache = HullKvCache::new();
+
+    for i in 0..1_000_000 {
+        let y = rng.gen_range(-10_000.0f32..10_000.0f32);
+        cache.insert([i as f32, y], &[y]);
+    }
+
+    assert!(cache.is_monotonic());
+    assert_eq!(cache.total_size(), 1_000_000);
+    assert!(cache.hull_size() <= cache.total_size());
+
+    // Verify 50 random queries match brute force
+    for _ in 0..50 {
+        let query = [
+            rng.gen_range(-10.0f32..10.0f32),
+            rng.gen_range(-10.0f32..10.0f32),
+        ];
+        let (fast_pt, _) = cache.query_argmax(query).unwrap();
+        let (slow_pt, _) = cache.query_argmax_bruteforce(query).unwrap();
+
+        let fast_score = query[0] * fast_pt.x + query[1] * fast_pt.y;
+        let slow_score = query[0] * slow_pt.x + query[1] * slow_pt.y;
+
+        assert!(
+            (fast_score - slow_score).abs() < 1.0,
+            "query={query:?}, fast_score={fast_score}, slow_score={slow_score}"
+        );
+    }
+}
+
+#[test]
 fn stress_hull_many_duplicate_x_coordinates() {
     let mut cache = HullKvCache::new();
     // Insert 1000 points, all at x=5.0 with varying y
@@ -102,12 +135,12 @@ fn stress_hull_many_duplicate_x_coordinates() {
 
 #[test]
 fn stress_long_execution_counter_10k_steps() {
-    // Count from 0 to N where N is large enough to require 10K+ steps
-    // Each iteration: LOAD, ADD, STORE, LOAD, SUBM, JZ, JMP = 7 steps
-    // For 1500 iterations: ~10500 steps
+    // Count from 0 to 2000 to guarantee 10,000+ execution steps.
+    // Each iteration: LOAD + ADD + STORE + LOAD + SUBM + JZ + JMP = 7 steps
+    // 2000 iterations * 7 + 4 (setup + teardown) = 14,004 steps
     let source = r#"
         .memory 4
-        .init 1 250
+        .init 1 2000
 
         LOADI 0
         STORE 0
@@ -133,15 +166,15 @@ fn stress_long_execution_counter_10k_steps() {
     let comparison = verify_model_against_native(model, 20_000).expect("verify");
 
     assert!(comparison.transformer.halted);
-    assert_eq!(comparison.transformer.final_state.acc, 250);
+    assert_eq!(comparison.transformer.final_state.acc, 2000);
     assert!(
-        comparison.checked_steps > 1000,
-        "expected many steps, got {}",
+        comparison.checked_steps > 10_000,
+        "expected 10K+ steps, got {}",
         comparison.checked_steps
     );
     assert_eq!(
         comparison.transformer.final_state, comparison.native.final_state,
-        "no drift after long execution"
+        "no drift after 10K+ step execution"
     );
 }
 
