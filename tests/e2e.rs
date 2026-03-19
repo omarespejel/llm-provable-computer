@@ -61,6 +61,15 @@ fn e2e_fibonacci_program() {
 }
 
 #[test]
+fn e2e_factorial_recursive_program() {
+    let source = std::fs::read_to_string("programs/factorial_recursive.tvm").expect("fixture");
+    let state = run_and_verify(&source, 128, 2);
+    assert!(state.halted);
+    assert_eq!(state.acc, 120, "5! = 120");
+    assert_eq!(state.sp, 11, "stack pointer restored after recursion unwinds");
+}
+
+#[test]
 fn e2e_multiply_program() {
     let source = std::fs::read_to_string("programs/multiply.tvm").expect("fixture");
     let state = run_and_verify(&source, 256, 2);

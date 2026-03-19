@@ -132,6 +132,21 @@ fn fibonacci_program_computes_fib_8() {
 }
 
 #[test]
+fn factorial_recursive_program_computes_5_factorial() {
+    let source = std::fs::read_to_string("programs/factorial_recursive.tvm").expect("fixture");
+    let program = parse_program(&source).expect("parse");
+    let model = ProgramCompiler
+        .compile_program(program, TransformerVmConfig::default())
+        .expect("compile");
+    let mut runtime = ExecutionRuntime::new(model, 128);
+    let result = runtime.run().expect("run");
+
+    assert!(result.halted);
+    assert_eq!(result.final_state.acc, 120, "5! = 120");
+    assert_eq!(result.final_state.sp, 11, "stack pointer restored after recursion");
+}
+
+#[test]
 fn multiply_program_computes_6_times_7() {
     let source = std::fs::read_to_string("programs/multiply.tvm").expect("fixture");
     let program = parse_program(&source).expect("parse");

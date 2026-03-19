@@ -1,0 +1,22 @@
+; Compute 5! = 120 using recursion.
+; MEM[0] stores the child result while the current frame restores its saved n.
+; 11 cells is the smallest stack that safely fits the full call tree for n = 5.
+.memory 11
+
+LOADI 5
+CALL fact
+HALT
+
+fact:
+JZ fact_base
+PUSH
+SUB 1
+CALL fact
+STORE 0
+POP
+MULM 0
+RET
+
+fact_base:
+LOADI 1
+RET

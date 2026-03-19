@@ -32,9 +32,17 @@ The strongest article we can build now is a two-level showcase:
    - lockstep agreement across `transformer,native,burn,onnx`
    - STARK proof generation and verification outside the model
 
+3. A **computer-like recursion demo** that stays honest about current scope:
+   - `programs/factorial_recursive.tvm`
+   - visible `CALL` / `RET` / `PUSH` / `POP` behavior
+   - a real recursive trace inside the transformer runtime
+   - still proof-supported by the current vanilla STARK path
+
 If we only build one full end-to-end visual, it should be **Fibonacci**, not addition.
 
 If we build two visuals, addition should come first as the intuition pump, then Fibonacci as the proof-backed hero.
+
+If we build a third "this really is a computer" moment, it should be the recursive factorial demo, not Sudoku.
 
 The mirror article should explicitly distinguish:
 
@@ -123,6 +131,47 @@ This is the article's real differentiator.
 ## One Crucial Honesty Boundary
 
 This needs to be stated plainly in both the article and the visual plan.
+
+### First: what this does **not** mean about milestone 1
+
+This boundary does **not** mean milestone 1 is missing or fake.
+
+Milestone 1 in this repository is real and already demonstrated:
+
+- the compiled `TransformerVm` executes the `.tvm` program internally
+- the execution loop goes through the transformer-side runtime, not the native interpreter
+- that runtime is checked against the canonical VM semantics by lockstep differential verification
+
+Concretely:
+
+- [src/runtime.rs](/Users/abdel/dev/me/machine-learning/transformer-vm-rs/src/runtime.rs) drives execution by calling `model.step(...)`
+- [src/model.rs](/Users/abdel/dev/me/machine-learning/transformer-vm-rs/src/model.rs) performs the transformer-side step logic
+- [tests/e2e.rs](/Users/abdel/dev/me/machine-learning/transformer-vm-rs/tests/e2e.rs) and [tests/property_tests.rs](/Users/abdel/dev/me/machine-learning/transformer-vm-rs/tests/property_tests.rs) check that the transformer runtime agrees with the native semantic oracle
+
+So the right distinction is **not**:
+
+> "the VM is not really running inside the transformer"
+
+The right distinction is:
+
+> "the VM really is running inside the transformer runtime, but the current STARK does not directly prove transformer activations."
+
+That is a proof-boundary clarification, not a milestone-1 rollback.
+
+### Second: what *is* narrower than Percepta's article today
+
+Our current repository scope is narrower than Percepta's full article claim in one important way:
+
+- Percepta presents a path centered on arbitrary C/WASM execution
+- this repository currently implements a custom `.tvm` ISA and compiler pipeline
+
+So the honest comparison is:
+
+- **same core direction**: computation happens inside a transformer-shaped runtime
+- **narrower frontend scope**: custom VM ISA rather than full WASM/C
+- **stronger verification story**: supported executions can be checked by an external STARK verifier
+
+That is the right sequel position for the mirror article.
 
 ### What is directly proven today
 
@@ -276,6 +325,7 @@ This means the article should not promise:
 | `programs/addition.tvm` | minimal, immediate, perfect mirror of the tool-use example | yes | micro-demo |
 | `programs/multiply.tvm` | loop + memory + direct human meaning (`6 * 7 = 42`) | yes | optional secondary |
 | `programs/fibonacci.tvm` | richer loop, memory state, longer trace, multi-layer-friendly, still easy to explain | yes | recommended hero |
+| `programs/factorial_recursive.tvm` | recursion + stack frames + `CALL` / `RET` + multiplication, with a visibly "computer-like" execution story | yes | recommended secondary / recursion demo |
 | `programs/subroutine_addition.tvm` | shows stack and `CALL` / `RET` | yes | optional VM richness sidebar |
 | `programs/soft_attention_memory.tvm` | interesting attention story | no | not for the proof-backed main story |
 
@@ -285,6 +335,7 @@ Use this exact ladder:
 
 - **Micro-demo:** `addition.tvm`
 - **Hero demo:** `fibonacci.tvm`
+- **Recursion demo:** `factorial_recursive.tvm`
 - **Optional sidebar:** `subroutine_addition.tvm`
 
 Why Fibonacci wins:
@@ -293,6 +344,34 @@ Why Fibonacci wins:
 - it exercises loop + memory + branch structure
 - it stays inside the current proof boundary
 - it gives us a long enough trace to make the proof handoff feel earned
+- in practice, the current vanilla STARK backend is much more ergonomic on this loop-heavy shape than on stack-heavy recursive traces
+
+Why recursive factorial is the right "Sudoku replacement" for the repo today:
+
+- it proves we can do more than straight-line arithmetic and simple loops
+- it shows a real call stack, not just one-off subroutines
+- it stays inside the proof-supported instruction subset
+- it is honest about our current ISA, unlike a Sudoku solver would be
+
+### Sudoku Verdict
+
+A Sudoku-style showcase is too ambitious for the current system if the goal is an honest end-to-end proof-backed demo.
+
+The main blockers are structural:
+
+- no indirect memory addressing, so puzzle traversal has to be manually unrolled
+- `pc` and jump targets are encoded as `u8`, so large solver programs run into the current instruction-address ceiling
+- the vanilla STARK path still rejects `CMP` and bitwise instructions, which are exactly the kind of helpers a clean constraint-checking program wants
+- backtracking search would create a much longer and much less ergonomic trace than the repo currently presents well
+
+What is likely doable later:
+
+- a fixed-board checker
+- a tiny hand-unrolled 4x4 puzzle validator
+
+What is not the right current target:
+
+- a full Sudoku solver that we can honestly present as the flagship proof-backed example
 
 ---
 
