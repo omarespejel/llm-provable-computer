@@ -1,6 +1,6 @@
 ---
 name: spec-rfc-sync
-description: Activate when editing architecture docs, RFCs, README claims, dependency notes, or implementation plans in transformer-vm-rs. Use this whenever a change could create drift between SPEC.md, RFC-*.md, README.md, RESOURCES.md, PAPER_DIGEST.md, or IMPLEMENTATION_PLAN.md, and whenever code work must be reflected back into the docs.
+description: Activate when editing architecture docs, RFCs, README claims, dependency notes, or implementation plans in llm-provable-computer. Use this whenever a change could create drift between SPEC.md, RFC-*.md, README.md, RESOURCES.md, PAPER_DIGEST.md, or IMPLEMENTATION_PLAN.md, and whenever code work must be reflected back into the docs.
 prerequisites: rg, git, repository markdown files
 ---
 

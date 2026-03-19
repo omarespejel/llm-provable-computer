@@ -1,6 +1,6 @@
 ---
 name: execution-validation
-description: Activate when implementing or reviewing MachineState encoding, instruction compilation, runtime stepping, determinism checks, or benchmark claims in transformer-vm-rs. Use this whenever a change touches RFC-003 or RFC-004 behavior, or when sourced performance claims need to become measured results.
+description: Activate when implementing or reviewing MachineState encoding, instruction compilation, runtime stepping, determinism checks, or benchmark claims in llm-provable-computer. Use this whenever a change touches RFC-003 or RFC-004 behavior, or when sourced performance claims need to become measured results.
 prerequisites: rg, git, RFC-003, RFC-004-005, willingness to build reference oracles
 ---
 

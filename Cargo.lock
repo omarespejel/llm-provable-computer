@@ -6814,7 +6814,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "transformer-vm-rs"
+name = "llm-provable-computer"
 version = "0.1.0"
 dependencies = [
  "ark-ff",

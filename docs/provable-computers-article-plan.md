@@ -228,8 +228,8 @@ Observed result:
 Commands:
 
 ```bash
-cargo run --bin tvm -- prove-stark programs/addition.tvm -o /tmp/transformer-vm-rs-addition-proof.json
-cargo run --bin tvm -- verify-stark /tmp/transformer-vm-rs-addition-proof.json
+cargo run --bin tvm -- prove-stark programs/addition.tvm -o /tmp/llm-provable-computer-addition-proof.json
+cargo run --bin tvm -- verify-stark /tmp/llm-provable-computer-addition-proof.json
 ```
 
 Observed result:
@@ -273,8 +273,8 @@ Observed result:
 Commands:
 
 ```bash
-cargo run --bin tvm -- prove-stark programs/fibonacci.tvm -o /tmp/transformer-vm-rs-fibonacci-proof.json
-cargo run --bin tvm -- verify-stark /tmp/transformer-vm-rs-fibonacci-proof.json
+cargo run --bin tvm -- prove-stark programs/fibonacci.tvm -o /tmp/llm-provable-computer-fibonacci-proof.json
+cargo run --bin tvm -- verify-stark /tmp/llm-provable-computer-fibonacci-proof.json
 ```
 
 Observed result:

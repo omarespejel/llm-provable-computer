@@ -435,7 +435,7 @@ fn export_instruction_onnx(
         version: ONNX_OPSET_VERSION,
         ..OperatorSetIdProto::new()
     });
-    model.producer_name = "transformer-vm-rs".to_string();
+    model.producer_name = "llm-provable-computer".to_string();
     model.producer_version = env!("CARGO_PKG_VERSION").to_string();
     model.domain = "com.transformer_vm_rs".to_string();
     model.model_version = FORMAT_VERSION as i64;
@@ -817,7 +817,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("clock")
             .as_nanos();
-        let dir = std::env::temp_dir().join(format!("transformer-vm-rs-{name}-{suffix}"));
+        let dir = std::env::temp_dir().join(format!("llm-provable-computer-{name}-{suffix}"));
         fs::create_dir_all(&dir).expect("create temp dir");
         dir
     }

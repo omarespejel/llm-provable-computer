@@ -1,6 +1,6 @@
 ---
 name: rust-workspace-bootstrap
-description: Activate when a task requires creating Cargo.toml, src/, tests/, examples/, or benches/ in transformer-vm-rs, or translating the written spec into the first Rust workspace. Use this only after explicit approval, because the repository currently contains no Cargo project and bootstrap is a structural change.
+description: Activate when a task requires creating Cargo.toml, src/, tests/, examples/, or benches/ in llm-provable-computer, or translating the written spec into the first Rust workspace. Use this only after explicit approval, because the repository currently contains no Cargo project and bootstrap is a structural change.
 prerequisites: explicit approval, Rust toolchain, rg, git
 ---
 

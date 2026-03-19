@@ -818,7 +818,7 @@ HALT
     fn proof_serialization_round_trip() {
         let proof = prove_program("programs/addition.tvm", 32);
         let path = std::env::temp_dir().join(format!(
-            "transformer-vm-rs-proof-{}.json",
+            "llm-provable-computer-proof-{}.json",
             std::process::id()
         ));
 

@@ -28,7 +28,7 @@ fn unique_temp_dir(name: &str) -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .expect("clock")
         .as_nanos();
-    let dir = std::env::temp_dir().join(format!("transformer-vm-rs-{name}-{suffix}"));
+    let dir = std::env::temp_dir().join(format!("llm-provable-computer-{name}-{suffix}"));
     std::fs::create_dir_all(&dir).expect("create temp dir");
     dir
 }

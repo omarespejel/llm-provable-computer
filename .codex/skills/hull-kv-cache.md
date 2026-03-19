@@ -1,6 +1,6 @@
 ---
 name: hull-kv-cache
-description: Activate when implementing, testing, reviewing, or debugging the convex-hull KV cache, 2D attention lookup path, or any O(log n) argmax-attention claim in transformer-vm-rs. Use this for geometry-heavy work where correctness and complexity claims both matter.
+description: Activate when implementing, testing, reviewing, or debugging the convex-hull KV cache, 2D attention lookup path, or any O(log n) argmax-attention claim in llm-provable-computer. Use this for geometry-heavy work where correctness and complexity claims both matter.
 prerequisites: rg, git, RFC-001, RFC-002, property-test mindset
 ---
 

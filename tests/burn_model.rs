@@ -39,7 +39,7 @@ fn unique_temp_base(name: &str) -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .expect("clock")
         .as_nanos();
-    std::env::temp_dir().join(format!("transformer-vm-rs-{name}-{suffix}"))
+    std::env::temp_dir().join(format!("llm-provable-computer-{name}-{suffix}"))
 }
 
 #[test]

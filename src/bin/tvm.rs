@@ -150,7 +150,7 @@ impl ScopedTempDir {
             .map_err(|err| VmError::InvalidConfig(format!("system clock error: {err}")))?
             .as_nanos();
         let path = std::env::temp_dir().join(format!(
-            "transformer-vm-rs-{prefix}-{}-{suffix}",
+            "llm-provable-computer-{prefix}-{}-{suffix}",
             std::process::id()
         ));
         fs::create_dir_all(&path)?;

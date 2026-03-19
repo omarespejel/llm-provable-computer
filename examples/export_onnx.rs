@@ -22,7 +22,7 @@ fn main() {
             .duration_since(UNIX_EPOCH)
             .expect("clock")
             .as_nanos();
-        std::env::temp_dir().join(format!("transformer-vm-rs-{prefix}-{suffix}"))
+        std::env::temp_dir().join(format!("llm-provable-computer-{prefix}-{suffix}"))
     }
 
     let mut args = std::env::args().skip(1);

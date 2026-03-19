@@ -1,5 +1,5 @@
 [package]
-name = "transformer-vm-rs"
+name = "llm-provable-computer"
 version = "0.1.0"
 edition = "2021"
 description = "A deterministic transformer-shaped virtual machine with 2D hull-backed memory lookups."
