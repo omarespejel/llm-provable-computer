@@ -153,7 +153,7 @@ cargo run --bin tvm -- prove-stark programs/fibonacci.tvm -o fibonacci.proof.jso
 cargo run --bin tvm -- verify-stark fibonacci.proof.json
 
 # Recursive stack / call-frame showcase
-cargo run --features full --bin tvm -- run programs/factorial_recursive.tvm --verify-all
+cargo run --bin tvm -- run programs/factorial_recursive.tvm --verify-native
 
 # Interactive TUI
 cargo run --bin tvm -- tui programs/fibonacci.tvm --layers 3 --max-steps 128

@@ -1,9 +1,20 @@
 use std::collections::BTreeSet;
 
 use transformer_vm_rs::{
-    decode_state, encode_state, parse_program, Attention2DMode, ExecutionRuntime, MachineState,
-    ProgramCompiler, TransformerVmConfig, VmError,
+    decode_state, encode_state, parse_program, Attention2DMode, ExecutionResult, ExecutionRuntime,
+    MachineState, ProgramCompiler, TransformerVmConfig, VmError,
 };
+
+/// Load a `.tvm` fixture, compile with default config, and run.
+fn run_fixture(path: &str, max_steps: usize) -> ExecutionResult {
+    let source = std::fs::read_to_string(path).expect("fixture");
+    let program = parse_program(&source).expect("parse");
+    let model = ProgramCompiler
+        .compile_program(program, TransformerVmConfig::default())
+        .expect("compile");
+    let mut runtime = ExecutionRuntime::new(model, max_steps);
+    runtime.run().expect("run")
+}
 
 #[test]
 fn state_encoding_round_trips() {
@@ -86,14 +97,7 @@ fn branch_program_takes_zero_path() {
 
 #[test]
 fn counter_program_halts_with_expected_value() {
-    let source = std::fs::read_to_string("programs/counter.tvm").expect("fixture");
-    let program = parse_program(&source).expect("parse");
-    let model = ProgramCompiler
-        .compile_program(program, TransformerVmConfig::default())
-        .expect("compile");
-    let mut runtime = ExecutionRuntime::new(model, 128);
-    let result = runtime.run().expect("run");
-
+    let result = run_fixture("programs/counter.tvm", 128);
     assert!(result.halted);
     assert_eq!(result.final_state.acc, 5);
     assert_eq!(result.final_state.memory[0], 5);
@@ -119,28 +123,14 @@ fn overflow_sets_carry_flag() {
 
 #[test]
 fn fibonacci_program_computes_fib_8() {
-    let source = std::fs::read_to_string("programs/fibonacci.tvm").expect("fixture");
-    let program = parse_program(&source).expect("parse");
-    let model = ProgramCompiler
-        .compile_program(program, TransformerVmConfig::default())
-        .expect("compile");
-    let mut runtime = ExecutionRuntime::new(model, 512);
-    let result = runtime.run().expect("run");
-
+    let result = run_fixture("programs/fibonacci.tvm", 512);
     assert!(result.halted);
     assert_eq!(result.final_state.acc, 21, "Fibonacci(8) = 21");
 }
 
 #[test]
 fn factorial_recursive_program_computes_5_factorial() {
-    let source = std::fs::read_to_string("programs/factorial_recursive.tvm").expect("fixture");
-    let program = parse_program(&source).expect("parse");
-    let model = ProgramCompiler
-        .compile_program(program, TransformerVmConfig::default())
-        .expect("compile");
-    let mut runtime = ExecutionRuntime::new(model, 128);
-    let result = runtime.run().expect("run");
-
+    let result = run_fixture("programs/factorial_recursive.tvm", 128);
     assert!(result.halted);
     assert_eq!(result.final_state.acc, 120, "5! = 120");
     assert_eq!(result.final_state.sp, 11, "stack pointer restored after recursion");
@@ -148,14 +138,7 @@ fn factorial_recursive_program_computes_5_factorial() {
 
 #[test]
 fn multiply_program_computes_6_times_7() {
-    let source = std::fs::read_to_string("programs/multiply.tvm").expect("fixture");
-    let program = parse_program(&source).expect("parse");
-    let model = ProgramCompiler
-        .compile_program(program, TransformerVmConfig::default())
-        .expect("compile");
-    let mut runtime = ExecutionRuntime::new(model, 256);
-    let result = runtime.run().expect("run");
-
+    let result = run_fixture("programs/multiply.tvm", 256);
     assert!(result.halted);
     assert_eq!(result.final_state.acc, 42, "6 * 7 = 42");
 }

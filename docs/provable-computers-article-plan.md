@@ -144,9 +144,9 @@ Milestone 1 in this repository is real and already demonstrated:
 
 Concretely:
 
-- [src/runtime.rs](/Users/abdel/dev/me/machine-learning/transformer-vm-rs/src/runtime.rs) drives execution by calling `model.step(...)`
-- [src/model.rs](/Users/abdel/dev/me/machine-learning/transformer-vm-rs/src/model.rs) performs the transformer-side step logic
-- [tests/e2e.rs](/Users/abdel/dev/me/machine-learning/transformer-vm-rs/tests/e2e.rs) and [tests/property_tests.rs](/Users/abdel/dev/me/machine-learning/transformer-vm-rs/tests/property_tests.rs) check that the transformer runtime agrees with the native semantic oracle
+- `src/runtime.rs` drives execution by calling `model.step(...)`
+- `src/model.rs` performs the transformer-side step logic
+- `tests/e2e.rs` and `tests/property_tests.rs` check that the transformer runtime agrees with the native semantic oracle
 
 So the right distinction is **not**:
 

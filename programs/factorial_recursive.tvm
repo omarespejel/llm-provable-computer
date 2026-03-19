@@ -1,5 +1,6 @@
 ; Compute 5! = 120 using recursion.
-; MEM[0] stores the child result while the current frame restores its saved n.
+; MEM[0] is a shared scratch cell: after each recursive CALL returns, the frame
+; stores its partial product there (STORE 0) before restoring its saved n (POP).
 ; 11 cells is the smallest stack that safely fits the full call tree for n = 5.
 .memory 11
 
