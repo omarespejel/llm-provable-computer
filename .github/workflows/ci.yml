@@ -1,4 +1,4 @@
-name: milestone-1
+name: CI
 
 on:
   push:
