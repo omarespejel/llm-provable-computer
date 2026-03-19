@@ -1,365 +1,349 @@
 # transformer-vm-rs — Technical Specification
 
-## Rust Implementation of "Can LLMs Be Computers?" using Burn & Tract
+## Current Baseline
 
-**Version 0.1.0-draft | March 2026**
+**Version 0.1.0 | March 18, 2026**
 
----
+This document describes the repository as it exists today. Milestone 1 and Milestone 2 are complete in the checked-in codebase. Milestone 3, production proving with STWO, is the next major target.
 
-## 1. Project Overview
-
-transformer-vm-rs implements the key architectural innovations from Percepta's "Can LLMs Be Computers?" in Rust: 2D attention heads with HullKVCache for O(log n) lookups, the gated feed-forward compilation target, and a WASM-to-transformer weight compiler. The goal is to provide the first open-source implementation of a transformer that can deterministically execute programs inside its forward pass.
-
-### 1.1 What We Build
-
-1. **2D Attention Engine:** Attention heads restricted to 2 dimensions with convex-hull-based O(log n) KV lookup (HullKVCache)
-2. **Gated Feed-Forward Compiler:** A module that compiles deterministic operations (WASM instructions) into gated FF layer weights
-3. **WASM → Transformer Compiler:** A toolchain that takes .wasm bytecode and produces transformer weight matrices
-4. **Execution Runtime:** An autoregressive inference loop that executes programs token-by-token through the transformer's forward pass
-5. **Hybrid Architecture Scaffold:** Support for mixing compiled (deterministic) and trained (probabilistic) layers
-
-### 1.2 What We Do NOT Build (Phase 1)
-
-- Full WASM interpreter compilation (start with a simpler instruction set)
-- Differentiable attention variants (start with average-hard attention)
-- Training integration (start with compiled-only)
-- GPU-optimized HullKVCache kernels
+Historical RFCs remain useful context, but this file is the baseline for current behavior.
 
 ---
 
-## 2. Core Architecture
+## 1. Scope
 
-### 2.1 Model Configuration
+### 1.1 Implemented
 
-```rust
-#[derive(Config, Debug, Clone)]
-pub struct TransformerVmConfig {
-    /// Model hidden dimension. Must be divisible by num_heads.
-    /// Percepta uses d_model=36, 18 heads → 2 dims/head.
-    pub d_model: usize,
-    /// Number of attention heads. d_model / num_heads MUST equal 2.
-    pub num_heads: usize,
-    /// Number of transformer layers
-    pub num_layers: usize,
-    /// Vocabulary size (state encoding alphabet)
-    pub vocab_size: usize,
-    /// Maximum sequence length (execution trace length)
-    pub max_seq_len: usize,
-    /// Feed-forward intermediate dimension
-    pub ff_dim: usize,
-    /// Attention type
-    #[config(default = "AverageHard")]
-    pub attention_type: AttentionType,
-}
+- Deterministic transformer-shaped execution for `.tvm` assembly programs
+- 2D attention with `HullKvCache`-backed memory reads
+- Compiled feed-forward transitions for the current ISA
+- Multi-layer model configuration with layer-local instruction dispatch
+- Native semantic oracle via `NativeInterpreter`
+- Lockstep differential verification across transformer, native, Burn, and ONNX runtimes
+- CLI runner, TUI execution viewer, examples, benchmarks, and shipped sample programs
+- In-repo vanilla STARK prover/verifier over the current average-hard deterministic execution subset
 
-#[derive(Debug, Clone)]
-pub enum AttentionType {
-    /// Average-hard attention: argmax lookup, not differentiable.
-    /// Used in the original Percepta work.
-    AverageHard,
-    /// Softmax with temperature → 0: differentiable approximation.
-    /// For future training integration.
-    HardSoftmax { temperature: f64 },
-    /// Standard softmax attention (baseline comparison).
-    StandardSoftmax,
-}
+### 1.2 Not Yet Implemented
 
-impl TransformerVmConfig {
-    pub fn head_dim(&self) -> usize {
-        assert_eq!(self.d_model / self.num_heads, 2,
-            "transformer-vm requires exactly 2 dimensions per head");
-        2
-    }
-
-    /// Percepta's reference configuration
-    pub fn percepta_reference() -> Self {
-        Self {
-            d_model: 36,
-            num_heads: 18,
-            num_layers: 7,
-            vocab_size: 256,  // byte-level state encoding
-            max_seq_len: 1_000_000,
-            ff_dim: 72,
-            attention_type: AttentionType::AverageHard,
-        }
-    }
-}
-```
-
-### 2.2 2D Attention Head
-
-The central innovation. Each head operates on 2D key-value pairs, enabling convex-hull-based O(log n) lookups.
-
-```rust
-/// A single 2D attention head.
-///
-/// Unlike standard attention (d_head = 64-128), this head has exactly
-/// 2 dimensions. This enables geometric algorithms (convex hull) for
-/// efficient argmax computation.
-///
-/// Standard attention: O(n) per query (scan all keys)
-/// 2D attention + HullKVCache: O(log n) per query (binary search on hull)
-pub struct Attention2D<B: Backend> {
-    /// Query projection: d_model → 2
-    w_q: Linear<B>,
-    /// Key projection: d_model → 2
-    w_k: Linear<B>,
-    /// Value projection: d_model → 2
-    w_v: Linear<B>,
-    /// Output projection: 2 → d_model/num_heads contribution
-    w_o: Linear<B>,
-    /// Head index (for output slice assignment)
-    head_idx: usize,
-}
-
-impl<B: Backend> Attention2D<B> {
-    /// Compute attention for this head.
-    ///
-    /// With AverageHard attention: finds the key with maximum dot product
-    /// with the query (argmax), returns the corresponding value.
-    /// With HullKVCache: this is O(log n) instead of O(n).
-    pub fn forward(
-        &self,
-        x: &Tensor<B, 3>,           // [B, T, d_model]
-        kv_cache: &HullKvCache<B>,   // maintained incrementally
-        attention_type: &AttentionType,
-    ) -> Tensor<B, 3>;  // [B, 1, 2] for the current step
-}
-```
-
-### 2.3 HullKVCache
-
-The data structure that makes million-step execution tractable.
-
-```rust
-/// Convex Hull KV Cache for O(log n) attention lookups in 2D.
-///
-/// In 2D, the key that maximizes dot product with any query lies on
-/// the convex hull of all keys. The convex hull of n 2D points has
-/// O(n) vertices in the worst case but can be maintained incrementally,
-/// and querying (finding the tangent point for a given direction)
-/// takes O(log h) where h is the hull size.
-///
-/// For program execution, keys encode memory addresses / state indices.
-/// The convex hull structure enables O(log n) "memory lookups" where
-/// standard attention would require O(n) scans.
-pub struct HullKvCache {
-    /// Upper hull points (sorted by x-coordinate)
-    upper_hull: Vec<Point2D>,
-    /// Lower hull points (sorted by x-coordinate)
-    lower_hull: Vec<Point2D>,
-    /// Associated values for each hull point
-    values: HashMap<PointId, Vec<f32>>,
-    /// Total number of KV pairs inserted
-    size: usize,
-}
-
-#[derive(Clone, Copy)]
-pub struct Point2D {
-    pub x: f32,
-    pub y: f32,
-    pub id: PointId,
-}
-
-impl HullKvCache {
-    /// Insert a new key-value pair. Maintains the convex hull incrementally.
-    /// Amortized O(log n) per insertion.
-    pub fn insert(&mut self, key: Point2D, value: &[f32]);
-
-    /// Query: find the key that maximizes dot(query, key) on the hull.
-    /// O(log h) where h is the hull size, via binary search on the hull.
-    pub fn query_argmax(&self, query: Point2D) -> (Point2D, &[f32]);
-
-    /// Number of points currently on the convex hull
-    pub fn hull_size(&self) -> usize;
-
-    /// Total number of KV pairs
-    pub fn total_size(&self) -> usize;
-}
-```
-
-### 2.4 Multi-Head 2D Attention
-
-```rust
-/// Multi-head attention where every head is 2D.
-/// d_model = num_heads × 2.
-pub struct MultiHead2DAttention<B: Backend> {
-    heads: Vec<Attention2D<B>>,
-    /// Per-head HullKVCache instances
-    caches: Vec<HullKvCache>,
-    /// Output projection: d_model → d_model
-    out_proj: Linear<B>,
-    num_heads: usize,
-}
-```
-
-### 2.5 Gated Feed-Forward Layer
-
-```rust
-/// Gated feed-forward layer used as the compilation target.
-///
-/// output = gate(x) * value(x)
-///
-/// For compiled weights: gate encodes condition logic,
-/// value encodes the transformation to apply.
-/// For trained weights: standard gated FF (SwiGLU-like).
-pub struct GatedFeedForward<B: Backend> {
-    /// Projects input to gate + value (2 × ff_dim)
-    ff_in: Linear<B>,
-    /// Projects back to d_model
-    ff_out: Linear<B>,
-    ff_dim: usize,
-}
-
-impl<B: Backend> GatedFeedForward<B> {
-    pub fn forward(&self, x: Tensor<B, 3>) -> Tensor<B, 3> {
-        let projected = self.ff_in.forward(x);  // [B, T, 2*ff_dim]
-        let chunks = projected.chunk(2, 2);      // gate: [B,T,ff_dim], val: [B,T,ff_dim]
-        let gated = chunks[0].clone() * chunks[1].clone();
-        self.ff_out.forward(gated)
-    }
-}
-```
-
-### 2.6 Transformer Block
-
-```rust
-pub struct TransformerVmBlock<B: Backend> {
-    attention: MultiHead2DAttention<B>,
-    ff: GatedFeedForward<B>,
-    norm1: LayerNorm<B>,
-    norm2: LayerNorm<B>,
-}
-```
-
-### 2.7 Full Model
-
-```rust
-pub struct TransformerVm<B: Backend> {
-    embedding: Embedding<B>,
-    blocks: Vec<TransformerVmBlock<B>>,
-    final_norm: LayerNorm<B>,
-    lm_head: Linear<B>,
-    config: TransformerVmConfig,
-}
-
-impl<B: Backend> TransformerVm<B> {
-    /// Execute one step: given current state token, produce next state token.
-    /// This is deterministic — same input always produces same output.
-    pub fn step(&mut self, token: usize) -> usize;
-
-    /// Execute a program for N steps from initial state.
-    pub fn execute(&mut self, initial_state: &[usize], max_steps: usize) -> Vec<usize>;
-}
-```
+- WASM frontend or wasm-to-weights compiler
+- Learned or hybrid trained/compiled layers
+- GPU kernels or production throughput optimization
+- Zero-knowledge hiding for proof claims
+- Vanilla STARK support for softmax or hard-softmax attention
+- Vanilla STARK support for bitwise or compare instructions
+- Vanilla STARK support for public claims with `carry_flag = true`
+- STWO / Circle STARK integration
 
 ---
 
-## 3. WASM-to-Weights Compiler
+## 2. Workspace and Features
 
-### 3.1 Compilation Pipeline
+The package exposes one CLI binary, `tvm`, and a library API from `src/lib.rs`.
 
-```
-C source → (Clang/Emscripten) → WASM bytecode → (compiler) → TransformerVm weights
-```
+| Feature set | Surface | Purpose |
+|-------------|---------|---------|
+| default | Parser, compiler, transformer runtime, native interpreter, proof system, TUI | Core deterministic VM and milestone-2 proof path |
+| `burn-model` | `burn_model.rs`, `burn_runtime.rs` | Execute compiled weights through Burn tensors |
+| `onnx-export` | `onnx_export.rs`, `onnx_runtime.rs` | Export per-instruction ONNX graphs and run them through Tract |
+| `full` | Burn + ONNX together | Full multi-engine validation workflow |
 
-### 3.2 Instruction Encoding Strategy
-
-Each WASM instruction is encoded as a pattern in the transformer's weight matrices such that:
-
-1. **Attention layers** implement memory read/write operations (the 2D hull structure maps address → value)
-2. **FF layers** implement ALU operations (arithmetic, logic, comparison) via the gated structure
-3. **The autoregressive loop** provides the program counter advancement
-
-### 3.3 State Token Encoding
-
-The program state (registers, memory, PC) is encoded into a fixed-size token representation of dimension d_model. For d_model=36:
-
-- Bits 0-7: Program counter (instruction pointer)
-- Bits 8-15: Stack pointer
-- Bits 16-23: Accumulator / current value
-- Bits 24-35: Flags, addressing mode, auxiliary
-
-### 3.4 Simplified Instruction Set (Phase 1)
-
-Before compiling full WASM, start with a minimal instruction set to validate the architecture:
-
-| Instruction | Encoding | Operation |
-|-------------|----------|-----------|
-| NOP | 0x00 | No operation (PC += 1) |
-| LOAD addr | 0x01 | ACC = MEM[addr] |
-| STORE addr | 0x02 | MEM[addr] = ACC |
-| ADD imm | 0x03 | ACC = ACC + imm |
-| SUB imm | 0x04 | ACC = ACC - imm |
-| JMP addr | 0x05 | PC = addr |
-| JZ addr | 0x06 | if ACC == 0: PC = addr |
-| HALT | 0xFF | Stop execution |
+The default build already includes the transformer runtime, native interpreter, CLI, TUI, and vanilla STARK prover/verifier.
 
 ---
 
-## 4. Testing Strategy
+## 3. Machine Model
 
-### Unit Tests
+### 3.1 State Representation
 
-- HullKVCache: insertion maintains valid convex hull
-- HullKVCache: query_argmax returns correct point for all query directions
-- HullKVCache: O(log n) scaling verified empirically
-- 2D attention head: argmax attention matches brute-force scan
-- Gated FF: correct gating behavior with compiled weights
-- State encoding: round-trip encode/decode preserves state
+The machine state is:
 
-### Integration Tests
+```rust
+pub struct MachineState {
+    pub pc: u8,
+    pub acc: i16,
+    pub sp: u8,
+    pub zero_flag: bool,
+    pub carry_flag: bool,
+    pub halted: bool,
+    pub memory: Vec<i16>,
+}
+```
 
-- Simple program (counter: increment ACC until overflow) executes correctly
-- Addition program produces correct results for random inputs
-- Comparison with native execution: same program, same output
-- Million-step execution: no drift, no errors
+Operational notes:
 
-### Property Tests
+- `pc` and `sp` are encoded as `u8`, so program length and effective memory/stack addressability are capped at 255.
+- `MachineState::new(memory_size)` initializes `sp` to `memory_size.min(255)`.
+- Memory is public VM state, not hidden side data.
 
-- Determinism: same input always produces same output sequence
-- Hull invariant: after every insertion, hull property holds
-- State conservation: state encoding is bijective (no information loss)
+### 3.2 Token Encoding
+
+`encode_state` and `decode_state` map machine state to a fixed-size token vector.
+
+- Minimum `d_model`: 36
+- Layout:
+  - dimensions `0..8`: `pc`
+  - dimensions `8..24`: `acc` as 16-bit two's-complement
+  - dimensions `24..32`: `sp`
+  - dimension `32`: `zero_flag`
+  - dimension `33`: `carry_flag`
+  - dimension `34`: `halted`
+  - dimension `35`: reserved, currently zero
+- Any dimensions beyond 36 are zero-filled and ignored by decoding
+- Bits are encoded as `1.0` or `-1.0`
+
+### 3.3 Configuration Invariants
+
+`TransformerVmConfig` enforces:
+
+- `d_model >= 36`
+- `num_heads > 0`
+- `num_layers > 0`
+- `ff_dim > 0`
+- `d_model % num_heads == 0`
+- `head_dim == 2`
+- hard-softmax temperature must be finite and strictly positive
+
+The default configuration is `TransformerVmConfig::percepta_reference()`:
+
+- `d_model = 36`
+- `num_heads = 18`
+- `num_layers = 1`
+- `vocab_size = 256`
+- `max_seq_len = 1_000_000`
+- `ff_dim = 72`
+- `attention_mode = AverageHard`
+
+### 3.4 Attention Modes
+
+| Mode | Semantics | Current status |
+|------|-----------|----------------|
+| `average-hard` | Latest-write style argmax via hull-backed lookup | Default execution mode and only proof-supported mode |
+| `hard-softmax:<T>` | Temperature-controlled interpolation between hard and soft behavior | Implemented for execution, not supported by proof |
+| `softmax` | Weighted read over write history | Implemented for execution, not supported by proof |
+
+### 3.5 Instruction Set
+
+The parser accepts labels, `.memory`, and `.init` directives, then lowers labels to `u8` instruction addresses.
+
+Implemented instruction groups:
+
+- Data and memory:
+  - `NOP`
+  - `LOADI imm`
+  - `LOAD addr`
+  - `STORE addr`
+  - `PUSH`
+  - `POP`
+- Arithmetic:
+  - `ADD imm`, `ADDM addr`
+  - `SUB imm`, `SUBM addr`
+  - `MUL imm`, `MULM addr`
+- Bitwise:
+  - `AND imm`, `ANDM addr`
+  - `OR imm`, `ORM addr`
+  - `XOR imm`, `XORM addr`
+- Compare:
+  - `CMP imm`
+  - `CMPM addr`
+- Control flow:
+  - `CALL label`
+  - `RET`
+  - `JMP label`
+  - `JZ label`
+  - `JNZ label`
+  - `HALT`
+
+Execution semantics are defined twice and kept in sync:
+
+- compiled transformer transition logic in `src/model.rs`
+- native oracle semantics in `src/interpreter.rs`
 
 ---
 
-## 5. Module Structure
+## 4. Execution Architecture
 
+### 4.1 Compilation Pipeline
+
+The current pipeline is:
+
+```text
+.tvm source -> parser -> Program -> ProgramCompiler -> TransformerVm
 ```
-transformer-vm-rs/
-├── Cargo.toml
-├── README.md
-├── LICENSE                          # MIT
-├── src/
-│   ├── lib.rs                       # Public API
-│   ├── config.rs                    # TransformerVmConfig
-│   ├── attention_2d.rs              # 2D attention head
-│   ├── hull_kv_cache.rs             # HullKVCache (convex hull data structure)
-│   ├── convex_hull.rs               # 2D convex hull algorithms
-│   ├── multi_head_2d.rs             # Multi-head 2D attention
-│   ├── gated_ff.rs                  # Gated feed-forward (compilation target)
-│   ├── transformer_block.rs         # TransformerVmBlock
-│   ├── model.rs                     # TransformerVm (full model)
-│   ├── state_encoding.rs            # Program state ↔ token encoding
-│   ├── compiler/
-│   │   ├── mod.rs
-│   │   ├── instruction_set.rs       # Simplified ISA
-│   │   ├── isa_to_weights.rs        # Instruction → weight matrix compilation
-│   │   └── wasm_compiler.rs         # WASM bytecode → weights (Phase 2)
-│   ├── runtime.rs                   # Execution loop
-│   └── diagnostics.rs               # Execution trace analysis
-├── tests/
-│   ├── hull_tests.rs
-│   ├── attention_2d_tests.rs
-│   ├── compiler_tests.rs
-│   ├── execution_tests.rs
-│   └── property_tests.rs
-├── examples/
-│   ├── addition.rs                  # Compile and run an addition program
-│   ├── counter.rs                   # Simple counting loop
-│   ├── sudoku.rs                    # Backtracking Sudoku solver (Phase 2)
-│   └── demo_tui.rs                  # TUI showing execution trace
-└── benches/
-    ├── hull_benchmark.rs
-    └── execution_benchmark.rs
+
+`ProgramCompiler` compiles the parsed program into a deterministic transformer-shaped model. The resulting `TransformerVm` owns:
+
+- compiled instruction dispatch metadata
+- model configuration
+- per-layer transition logic
+- access to the original `Program`
+
+### 4.2 Memory and Attention
+
+`AddressedMemory` stores one write history per address. Each history is queried according to the active `Attention2DMode`.
+
+For `average-hard`, histories are backed by `HullKvCache`, which uses 2D geometry to answer argmax queries from the convex hull instead of scanning all writes.
+
+### 4.3 Runtimes
+
+Core runtimes:
+
+- `ExecutionRuntime`: transformer-shaped execution loop
+- `NativeInterpreter`: direct ISA semantics, used as the semantic oracle
+
+Optional runtimes:
+
+- `BurnExecutionRuntime`: compiled weights executed through Burn tensors
+- `OnnxExecutionRuntime`: exported ONNX graphs executed through Tract
+
+All runtimes expose shared execution artifacts through `ExecutionEngine`:
+
+- `ExecutionResult`
+- `ExecutionTraceEntry`
+- per-step state and instruction traces
+
+### 4.4 Differential Verification
+
+Verification surfaces:
+
+- `verify_model_against_native(model, max_steps)`
+- `verify_engines(&mut [&mut dyn ExecutionEngine])`
+
+Lockstep verification compares:
+
+- initial state
+- next instruction before each step
+- state before each instruction
+- state after each instruction
+- final step count, halt flag, and final state
+
+This is the main correctness contract for the non-proof execution surface.
+
+---
+
+## 5. Proof System (Milestone 2)
+
+### 5.1 Components
+
+Milestone 2 lives in:
+
+- `src/proof.rs`
+- `src/vanillastark/field.rs`
+- `src/vanillastark/polynomial.rs`
+- `src/vanillastark/multivariate.rs`
+- `src/vanillastark/merkle.rs`
+- `src/vanillastark/proof_stream.rs`
+- `src/vanillastark/fri.rs`
+- `src/vanillastark/rescue_prime.rs`
+- `src/vanillastark/stark.rs`
+
+`src/proof.rs` converts VM execution into an AIR over:
+
+- machine registers
+- memory columns
+- auxiliary inverse columns needed by the constraint system
+
+The proof flow is:
+
+```text
+compiled model -> native execution trace -> AIR columns -> vanilla STARK proof
 ```
+
+### 5.2 Public Claim Shape
+
+`VanillaStarkExecutionProof` contains:
+
+- the `Program`
+- the `Attention2DMode`
+- executed step count
+- final machine state
+- proof options
+- proof bytes
+
+This is a transparent proof, not a zero-knowledge proof. The verifier checks that the public program and public final state are consistent with a valid execution trace, but the claim itself is not hidden.
+
+### 5.3 Current Proof Support
+
+Proofs currently support:
+
+- `average-hard` attention only
+- non-empty programs
+- halted final states
+- final claims with `carry_flag = false`
+- the following instructions:
+  - `NOP`
+  - `LOADI`, `LOAD`, `STORE`
+  - `PUSH`, `POP`
+  - `ADD`, `ADDM`
+  - `SUB`, `SUBM`
+  - `MUL`, `MULM`
+  - `CALL`, `RET`
+  - `JMP`, `JZ`, `JNZ`
+  - `HALT`
+
+Proof generation rejects:
+
+- `softmax` and `hard-softmax` attention modes
+- `AND`, `ANDM`, `OR`, `ORM`, `XOR`, `XORM`
+- `CMP`, `CMPM`
+- public claims that do not halt
+- public claims with `carry_flag = true`
+
+### 5.4 CLI Surface
+
+The proof workflow is exposed through:
+
+- `tvm prove-stark <program> -o <proof.json>`
+- `tvm verify-stark <proof.json>`
+
+Proof files are serialized as JSON through `save_execution_stark_proof` and `load_execution_stark_proof`.
+
+---
+
+## 6. Source Layout
+
+| Path | Role |
+|------|------|
+| `src/assembly.rs` | Parser, directives, and label resolution |
+| `src/compiler.rs` | Program-to-model compilation |
+| `src/config.rs` | Runtime and attention configuration |
+| `src/engine.rs` | Shared execution traits and result types |
+| `src/error.rs` | Error types |
+| `src/geometry.rs` | `Point2D` and `HullKvCache` |
+| `src/instruction.rs` | Instruction enum and `Program` |
+| `src/interpreter.rs` | Native execution oracle |
+| `src/memory.rs` | Per-address history-backed memory |
+| `src/model.rs` | Transformer VM and compiled transitions |
+| `src/runtime.rs` | Transformer execution runtime |
+| `src/state.rs` | Machine-state encoding/decoding |
+| `src/proof.rs` | VM AIR and proof orchestration |
+| `src/vanillastark/*` | STARK internals |
+| `src/verification.rs` | Cross-engine differential verification |
+| `src/burn_model.rs` | Optional Burn model bridge |
+| `src/burn_runtime.rs` | Optional Burn runtime |
+| `src/onnx_export.rs` | Optional ONNX export |
+| `src/onnx_runtime.rs` | Optional ONNX/Tract runtime |
+| `src/tui.rs` | Terminal UI |
+| `src/bin/tvm.rs` | CLI entrypoint |
+
+---
+
+## 7. Validation Surface
+
+Current validation layers:
+
+- `cargo test`
+  - parser and ISA tests
+  - runtime and interpreter tests
+  - property tests
+  - stress tests
+  - CLI tests
+  - vanilla STARK proof tests
+- `cargo test --features full`
+  - Burn model and Burn runtime tests
+  - ONNX export and Tract runtime tests
+  - Python ONNX Runtime validator tests
+  - full cross-engine workflow tests
+- `cargo bench`
+  - hull and vanilla STARK benchmarks under `benches/`
+
+The repository now has working code, working tests, and a working milestone-2 proof path. Future documentation should treat that as the baseline, not as a plan.

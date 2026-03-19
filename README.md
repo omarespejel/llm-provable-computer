@@ -2,9 +2,11 @@
 
 **Can LLMs be provable computers?**
 
-This project takes the ideas from [*Can LLMs Be Computers?*](https://www.percepta.ai/blog/can-llms-be-computers) by Percepta and pushes them further. The original work showed that a transformer can deterministically execute arbitrary programs inside its forward pass using 2D attention and compiled feed-forward layers. We implement that system in Rust --- and then ask the next question: can you *prove* the execution is correct, to anyone, without revealing the program?
+This project takes the ideas from [*Can LLMs Be Computers?*](https://www.percepta.ai/blog/can-llms-be-computers) by Percepta and pushes them further. The original work showed that a transformer can deterministically execute arbitrary programs inside its forward pass using 2D attention and compiled feed-forward layers. We implement that system in Rust --- and then ask the next question: can you *prove* the execution is correct, to anyone, with a transparent proof system?
 
-The answer is yes. A transformer-shaped execution trace is a sequence of finite-field-friendly state transitions. That is exactly the object a STARK proves over.
+The current answer is yes for a public claim. A transformer-shaped execution trace is a sequence of finite-field-friendly state transitions, and that is exactly the object a STARK proves over.
+
+Status on March 18, 2026: milestone 2 is complete. The repository now ships a working vanilla STARK prover/verifier for the average-hard deterministic VM subset, alongside the existing transformer, native, Burn, and ONNX execution paths.
 
 ---
 
@@ -35,12 +37,14 @@ The core insight:
 
 > **A transformer that executes programs deterministically already produces the witness for a STARK proof. The transition constraints are the instruction semantics. The trace is the execution. You don't need to retrofit provability --- it falls out of the architecture.**
 
-This means an LLM doesn't just compute. It can *prove it computed correctly*, to a skeptical verifier, with:
+This means the system doesn't just compute. It can *prove it computed correctly*, to a skeptical verifier, with:
 
-- **zero knowledge** --- the verifier learns the result, not the program or inputs
+- **public verifiability today** --- the current vanilla proof exposes the program and final state in the claim
 - **O(log^2 n) verification** --- exponentially cheaper than re-execution
 - **no trusted setup** --- STARKs are transparent
 - **post-quantum security** --- hash-based, no elliptic curves
+
+Zero-knowledge hiding is future work. The current milestone-2 proof is transparent rather than private.
 
 That is the thesis of this project: **native, provable computation inside a transformer.**
 
@@ -63,7 +67,7 @@ A working implementation of the Percepta architecture in Rust:
 
 ### Milestone 2: Vanilla STARK Proof
 
-*Status: implemented for the average-hard execution path and the current arithmetic / control-flow VM subset. Unsupported instructions are rejected explicitly.*
+*Status: complete for milestone-2 scope. The current prover/verifier covers the average-hard execution path for arithmetic, memory, control-flow, stack, and subroutine instructions. Bitwise ops, compare ops, non-average-hard attention, and carry-flag public claims are rejected explicitly.*
 
 The in-repo prototype now lives under `src/vanillastark/` and is exposed as
 `transformer_vm_rs::vanillastark`.
@@ -78,7 +82,7 @@ The approach follows the STARK protocol described in [*Scalable, Transparent, an
 4. **Prove** low-degree proximity via FRI (Fast Reed-Solomon Interactive Oracle Proof of Proximity)
 5. **Apply** Fiat-Shamir to make the proof non-interactive
 
-This milestone produces a proof object that a standalone verifier can check in O(log^2 n) time without access to the program, the inputs, or the full trace.
+This milestone now produces a proof object that a standalone verifier can check in O(log^2 n) time without access to the full execution trace. The current public claim includes the program, attention mode, step count, and final state.
 
 ### Milestone 3: Production STARK Prover (STWO)
 
@@ -373,6 +377,8 @@ This is what makes long execution traces tractable. At step 1,000,000, each memo
 | `src/assembly.rs` | Parser, directives, label resolution |
 | `src/compiler.rs` | Program-to-model compilation |
 | `src/config.rs` | Model configuration, attention mode parsing |
+| `src/engine.rs` | Shared execution traits, trace events, and result types |
+| `src/error.rs` | Error types and result aliases |
 | `src/geometry.rs` | `Point2D` and `HullKvCache` |
 | `src/burn_model.rs` | Burn `Module` definitions for compiled transformer execution |
 | `src/burn_runtime.rs` | Burn execution loop and trace capture |
@@ -380,17 +386,19 @@ This is what makes long execution traces tractable. At step 1,000,000, each memo
 | `src/model.rs` | 2D attention, feed-forward transitions, transformer blocks |
 | `src/onnx_export.rs` | ONNX graph generation and `metadata.json` export |
 | `src/onnx_runtime.rs` | ONNX/Tract execution runtime |
+| `src/proof.rs` | Execution-proof plumbing and VM AIR construction |
 | `src/state.rs` | Machine state encoding / decoding (d_model = 36) |
 | `src/runtime.rs` | Transformer execution loop and trace capture |
 | `src/interpreter.rs` | Native reference interpreter |
 | `src/verification.rs` | Lockstep multi-engine differential verification |
+| `src/vanillastark/` | In-repo field, Merkle, FRI, and STARK components |
 | `src/tui.rs` | Interactive terminal viewer |
 | `src/bin/tvm.rs` | CLI entrypoint |
 | `tests/` | Unit, integration, property, CLI, and differential tests |
 | `programs/` | Example `.tvm` programs |
 | `scripts/validate_onnx.py` | Python ONNX Runtime validator |
 | `scripts/requirements.txt` | Python validator dependencies |
-| `benches/` | Criterion benchmarks (hull argmax vs brute-force) |
+| `benches/` | Criterion benchmarks for hull operations and vanilla STARK components |
 
 ---
 
@@ -398,9 +406,9 @@ This is what makes long execution traces tractable. At step 1,000,000, each memo
 
 This is an MVP. Intentionally narrow, intentionally correct.
 
-**Implemented:** compact ISA, transformer execution, hull-backed memory, multiple attention modes, native interpreter, differential verification, CLI, TUI, benchmarks, vanilla STARK proofs for the current average-hard arithmetic / control-flow subset.
+**Implemented:** compact ISA, transformer execution, hull-backed memory, multiple attention modes, native interpreter, differential verification, CLI, TUI, benchmarks, feature-gated Burn and ONNX runtimes, Python ONNX replay, and vanilla STARK proofs for the current average-hard arithmetic / memory / control-flow / stack / subroutine subset.
 
-**Not implemented:** WASM frontend, learned/trained weights, GPU acceleration, shared-address attention, full-ISA STARK AIR (bitwise / compare), non-average-hard proof paths, production STWO prover integration.
+**Not implemented:** WASM frontend, learned/trained weights, GPU acceleration, zero-knowledge proof claims, full-ISA STARK AIR for bitwise and compare instructions, non-average-hard proof paths, public carry-flag claims, production STWO prover integration.
 
 The narrowness is the point. The semantics are small enough to inspect, strong enough to test, and structured enough to prove over.
 
