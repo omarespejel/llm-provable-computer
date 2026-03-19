@@ -3,7 +3,7 @@
 //! Every test runs the full pipeline through both the transformer model and
 //! the native interpreter, then compares results.
 
-use transformer_vm_rs::{
+use llm_provable_computer::{
     parse_program, verify_model_against_native, Attention2DMode, ExecutionRuntime, MachineState,
     NativeInterpreter, ProgramCompiler, TransformerVmConfig,
 };

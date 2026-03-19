@@ -437,7 +437,7 @@ fn export_instruction_onnx(
     });
     model.producer_name = "llm-provable-computer".to_string();
     model.producer_version = env!("CARGO_PKG_VERSION").to_string();
-    model.domain = "com.transformer_vm_rs".to_string();
+    model.domain = "com.llm_provable_computer".to_string();
     model.model_version = FORMAT_VERSION as i64;
     model.doc_string =
         "Per-instruction transformer-vm feed-forward export with explicit flag outputs".to_string();

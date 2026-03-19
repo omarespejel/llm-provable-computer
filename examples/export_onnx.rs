@@ -15,7 +15,7 @@ fn main() {
     use std::path::{Path, PathBuf};
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    use transformer_vm_rs::{export_program_onnx, ProgramCompiler, TransformerVmConfig};
+    use llm_provable_computer::{export_program_onnx, ProgramCompiler, TransformerVmConfig};
 
     fn unique_temp_dir(prefix: &str) -> PathBuf {
         let suffix = SystemTime::now()

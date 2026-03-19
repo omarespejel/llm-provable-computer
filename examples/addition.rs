@@ -13,7 +13,7 @@
 use std::io::IsTerminal;
 use std::time::Duration;
 
-use transformer_vm_rs::{
+use llm_provable_computer::{
     run_execution_tui, ExecutionRuntime, ProgramCompiler, TransformerVmConfig,
 };
 

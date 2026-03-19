@@ -1,7 +1,7 @@
 //! Stress tests: large scale execution and hull operations.
 
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use transformer_vm_rs::{
+use llm_provable_computer::{
     verify_model_against_native, Attention2DMode, ExecutionRuntime, HullKvCache, ProgramCompiler,
     TransformerVmConfig,
 };

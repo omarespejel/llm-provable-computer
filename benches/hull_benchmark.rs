@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use transformer_vm_rs::HullKvCache;
+use llm_provable_computer::HullKvCache;
 
 fn bench_query_scaling(c: &mut Criterion) {
     let mut group = c.benchmark_group("hull_query_vs_bruteforce");

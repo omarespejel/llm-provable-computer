@@ -1,4 +1,4 @@
-use transformer_vm_rs::{
+use llm_provable_computer::{
     parse_program, verify_model_against_native, Attention2DMode, NativeInterpreter,
     ProgramCompiler, TransformerVmConfig, VmError,
 };

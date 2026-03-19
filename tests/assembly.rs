@@ -1,4 +1,4 @@
-use transformer_vm_rs::{parse_program, Instruction, VmError};
+use llm_provable_computer::{parse_program, Instruction, VmError};
 
 #[test]
 fn parser_resolves_stack_and_subroutine_instructions() {

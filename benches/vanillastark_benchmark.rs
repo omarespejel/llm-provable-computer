@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use transformer_vm_rs::vanillastark::{FieldElement, MPolynomial, RescuePrime, Stark};
+use llm_provable_computer::vanillastark::{FieldElement, MPolynomial, RescuePrime, Stark};
 
 /// Shared setup: build the Stark instance, trace, AIR, and boundary once.
 struct StarkFixture {
@@ -134,7 +134,7 @@ fn bench_field_ops(c: &mut Criterion) {
 }
 
 fn bench_polynomial_ops(c: &mut Criterion) {
-    use transformer_vm_rs::vanillastark::Polynomial;
+    use llm_provable_computer::vanillastark::Polynomial;
 
     let coeffs: Vec<FieldElement> = (0..64).map(|i| FieldElement::new(i + 1)).collect();
     let poly = Polynomial::new(coeffs);
@@ -152,7 +152,7 @@ fn bench_polynomial_ops(c: &mut Criterion) {
 }
 
 fn bench_fri(c: &mut Criterion) {
-    use transformer_vm_rs::vanillastark::{Fri, Polynomial, ProofStream};
+    use llm_provable_computer::vanillastark::{Fri, Polynomial, ProofStream};
 
     let degree = 63;
     let expansion_factor = 4;

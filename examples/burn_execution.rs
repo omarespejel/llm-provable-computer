@@ -13,7 +13,7 @@ fn main() {
 #[cfg(feature = "burn-model")]
 fn main() {
     use burn::backend::NdArray;
-    use transformer_vm_rs::{
+    use llm_provable_computer::{
         BurnExecutionRuntime, BurnTransformerVm, ProgramCompiler, TransformerVmConfig,
     };
 

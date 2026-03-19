@@ -10,17 +10,17 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use burn::backend::NdArray;
 use clap::{Parser, Subcommand};
 #[cfg(any(feature = "burn-model", feature = "onnx-export"))]
-use transformer_vm_rs::verify_engines;
+use llm_provable_computer::verify_engines;
 #[cfg(feature = "onnx-export")]
-use transformer_vm_rs::{export_program_onnx, OnnxExecutionRuntime};
-use transformer_vm_rs::{
+use llm_provable_computer::{export_program_onnx, OnnxExecutionRuntime};
+use llm_provable_computer::{
     load_execution_stark_proof, prove_execution_stark, run_execution_tui,
     save_execution_stark_proof, verify_execution_stark, verify_model_against_native,
     Attention2DMode, ExecutionResult, ExecutionRuntime, ExecutionTraceEntry, MachineState,
     NativeInterpreter, ProgramCompiler, TransformerVm, TransformerVmConfig, VmError,
 };
 #[cfg(feature = "burn-model")]
-use transformer_vm_rs::{BurnExecutionRuntime, BurnTransformerVm};
+use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
 
 #[cfg(feature = "burn-model")]
 type CliBurnBackend = NdArray<f64>;
@@ -144,7 +144,7 @@ struct ScopedTempDir {
 
 #[cfg(feature = "onnx-export")]
 impl ScopedTempDir {
-    fn new(prefix: &str) -> transformer_vm_rs::Result<Self> {
+    fn new(prefix: &str) -> llm_provable_computer::Result<Self> {
         let suffix = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_err(|err| VmError::InvalidConfig(format!("system clock error: {err}")))?
@@ -176,7 +176,7 @@ fn main() {
     }
 }
 
-fn run() -> transformer_vm_rs::Result<()> {
+fn run() -> llm_provable_computer::Result<()> {
     let cli = Cli::parse_from(normalize_args(std::env::args_os()));
     match cli.command {
         Command::Run {
@@ -242,7 +242,7 @@ fn run_program_command(
     verify_onnx: bool,
     verify_all: bool,
     attention_mode: Attention2DMode,
-) -> transformer_vm_rs::Result<()> {
+) -> llm_provable_computer::Result<()> {
     let model = compile_model(program, layers, attention_mode.clone())?;
     let executed = execute_engine(&model, engine, max_steps)?;
 
@@ -304,7 +304,7 @@ fn export_onnx_command(
     output_dir: &Path,
     layers: usize,
     attention_mode: Attention2DMode,
-) -> transformer_vm_rs::Result<()> {
+) -> llm_provable_computer::Result<()> {
     let model = compile_model(program, layers, attention_mode)?;
     export_onnx_command_impl(program, output_dir, &model)
 }
@@ -315,7 +315,7 @@ fn prove_stark_command(
     max_steps: usize,
     layers: usize,
     attention_mode: Attention2DMode,
-) -> transformer_vm_rs::Result<()> {
+) -> llm_provable_computer::Result<()> {
     let model = compile_model(program, layers, attention_mode)?;
     let proof = prove_execution_stark(&model, max_steps)?;
     save_execution_stark_proof(&proof, output)?;
@@ -336,7 +336,7 @@ fn prove_stark_command(
     Ok(())
 }
 
-fn verify_stark_command(proof_path: &Path) -> transformer_vm_rs::Result<()> {
+fn verify_stark_command(proof_path: &Path) -> llm_provable_computer::Result<()> {
     let proof = load_execution_stark_proof(proof_path)?;
     if !verify_execution_stark(&proof)? {
         return Err(VmError::InvalidConfig(format!(
@@ -366,7 +366,7 @@ fn compile_model(
     program: &Path,
     layers: usize,
     attention_mode: Attention2DMode,
-) -> transformer_vm_rs::Result<TransformerVm> {
+) -> llm_provable_computer::Result<TransformerVm> {
     let source = fs::read_to_string(program).map_err(|io_error| {
         VmError::InvalidConfig(format!(
             "failed to read program {}: {io_error}",
@@ -387,7 +387,7 @@ fn load_runtime(
     max_steps: usize,
     layers: usize,
     attention_mode: Attention2DMode,
-) -> transformer_vm_rs::Result<ExecutionRuntime> {
+) -> llm_provable_computer::Result<ExecutionRuntime> {
     Ok(ExecutionRuntime::new(
         compile_model(program, layers, attention_mode)?,
         max_steps,
@@ -398,7 +398,7 @@ fn execute_engine(
     model: &TransformerVm,
     engine: CliExecutionEngine,
     max_steps: usize,
-) -> transformer_vm_rs::Result<EngineRunOutput> {
+) -> llm_provable_computer::Result<EngineRunOutput> {
     match engine {
         CliExecutionEngine::Transformer => {
             let mut runtime = ExecutionRuntime::new(model.clone(), max_steps);
@@ -431,7 +431,7 @@ fn execute_engine(
 fn execute_burn_engine(
     model: &TransformerVm,
     max_steps: usize,
-) -> transformer_vm_rs::Result<EngineRunOutput> {
+) -> llm_provable_computer::Result<EngineRunOutput> {
     let device = Default::default();
     let burn_model = BurnTransformerVm::<CliBurnBackend>::from_compiled(model, &device)?;
     let mut runtime = BurnExecutionRuntime::new(burn_model, device, max_steps);
@@ -447,7 +447,7 @@ fn execute_burn_engine(
 fn execute_burn_engine(
     _model: &TransformerVm,
     _max_steps: usize,
-) -> transformer_vm_rs::Result<EngineRunOutput> {
+) -> llm_provable_computer::Result<EngineRunOutput> {
     Err(feature_required_error("engine `burn`", &["burn-model"]))
 }
 
@@ -455,7 +455,7 @@ fn execute_burn_engine(
 fn execute_onnx_engine(
     model: &TransformerVm,
     max_steps: usize,
-) -> transformer_vm_rs::Result<EngineRunOutput> {
+) -> llm_provable_computer::Result<EngineRunOutput> {
     let export_dir = ScopedTempDir::new("run-onnx")?;
     export_program_onnx(model, export_dir.path())?;
     let mut runtime = OnnxExecutionRuntime::from_export_dir(export_dir.path(), max_steps)?;
@@ -471,14 +471,14 @@ fn execute_onnx_engine(
 fn execute_onnx_engine(
     _model: &TransformerVm,
     _max_steps: usize,
-) -> transformer_vm_rs::Result<EngineRunOutput> {
+) -> llm_provable_computer::Result<EngineRunOutput> {
     Err(feature_required_error("engine `onnx`", &["onnx-export"]))
 }
 
 fn verify_burn_engines(
     model: &TransformerVm,
     max_steps: usize,
-) -> transformer_vm_rs::Result<transformer_vm_rs::VerificationResult> {
+) -> llm_provable_computer::Result<llm_provable_computer::VerificationResult> {
     verify_burn_engines_impl(model, max_steps)
 }
 
@@ -486,7 +486,7 @@ fn verify_burn_engines(
 fn verify_burn_engines_impl(
     model: &TransformerVm,
     max_steps: usize,
-) -> transformer_vm_rs::Result<transformer_vm_rs::VerificationResult> {
+) -> llm_provable_computer::Result<llm_provable_computer::VerificationResult> {
     let device = Default::default();
     let burn_model = BurnTransformerVm::<CliBurnBackend>::from_compiled(model, &device)?;
     let mut transformer = ExecutionRuntime::new(model.clone(), max_steps);
@@ -503,14 +503,14 @@ fn verify_burn_engines_impl(
 fn verify_burn_engines_impl(
     _model: &TransformerVm,
     _max_steps: usize,
-) -> transformer_vm_rs::Result<transformer_vm_rs::VerificationResult> {
+) -> llm_provable_computer::Result<llm_provable_computer::VerificationResult> {
     Err(feature_required_error("`--verify-burn`", &["burn-model"]))
 }
 
 fn verify_onnx_engines(
     model: &TransformerVm,
     max_steps: usize,
-) -> transformer_vm_rs::Result<transformer_vm_rs::VerificationResult> {
+) -> llm_provable_computer::Result<llm_provable_computer::VerificationResult> {
     verify_onnx_engines_impl(model, max_steps)
 }
 
@@ -518,7 +518,7 @@ fn verify_onnx_engines(
 fn verify_onnx_engines_impl(
     model: &TransformerVm,
     max_steps: usize,
-) -> transformer_vm_rs::Result<transformer_vm_rs::VerificationResult> {
+) -> llm_provable_computer::Result<llm_provable_computer::VerificationResult> {
     let export_dir = ScopedTempDir::new("verify-onnx")?;
     export_program_onnx(model, export_dir.path())?;
     let mut transformer = ExecutionRuntime::new(model.clone(), max_steps);
@@ -535,14 +535,14 @@ fn verify_onnx_engines_impl(
 fn verify_onnx_engines_impl(
     _model: &TransformerVm,
     _max_steps: usize,
-) -> transformer_vm_rs::Result<transformer_vm_rs::VerificationResult> {
+) -> llm_provable_computer::Result<llm_provable_computer::VerificationResult> {
     Err(feature_required_error("`--verify-onnx`", &["onnx-export"]))
 }
 
 fn verify_all_engines(
     model: &TransformerVm,
     max_steps: usize,
-) -> transformer_vm_rs::Result<transformer_vm_rs::VerificationResult> {
+) -> llm_provable_computer::Result<llm_provable_computer::VerificationResult> {
     verify_all_engines_impl(model, max_steps)
 }
 
@@ -550,7 +550,7 @@ fn verify_all_engines(
 fn verify_all_engines_impl(
     model: &TransformerVm,
     max_steps: usize,
-) -> transformer_vm_rs::Result<transformer_vm_rs::VerificationResult> {
+) -> llm_provable_computer::Result<llm_provable_computer::VerificationResult> {
     let device = Default::default();
     let export_dir = ScopedTempDir::new("verify-all")?;
     export_program_onnx(model, export_dir.path())?;
@@ -571,7 +571,7 @@ fn verify_all_engines_impl(
 fn verify_all_engines_impl(
     _model: &TransformerVm,
     _max_steps: usize,
-) -> transformer_vm_rs::Result<transformer_vm_rs::VerificationResult> {
+) -> llm_provable_computer::Result<llm_provable_computer::VerificationResult> {
     Err(feature_required_error(
         "`--verify-all`",
         &["burn-model", "onnx-export"],
@@ -583,7 +583,7 @@ fn export_onnx_command_impl(
     program: &Path,
     output_dir: &Path,
     model: &TransformerVm,
-) -> transformer_vm_rs::Result<()> {
+) -> llm_provable_computer::Result<()> {
     let metadata = export_program_onnx(model, output_dir)?;
 
     println!("program: {}", program.display());
@@ -603,7 +603,7 @@ fn export_onnx_command_impl(
     _program: &Path,
     _output_dir: &Path,
     _model: &TransformerVm,
-) -> transformer_vm_rs::Result<()> {
+) -> llm_provable_computer::Result<()> {
     Err(feature_required_error("`export-onnx`", &["onnx-export"]))
 }
 
@@ -633,7 +633,7 @@ fn print_verification_summary(
     status_key: &str,
     prefix: &str,
     checked_steps: &str,
-    engines: &[transformer_vm_rs::VerifiedEngine],
+    engines: &[llm_provable_computer::VerifiedEngine],
 ) {
     println!("{status_key}: true");
     println!("{prefix}_steps: {checked_steps}");

@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use burn::backend::NdArray;
-use transformer_vm_rs::{
+use llm_provable_computer::{
     load_burn_model, parse_program, save_burn_model, verify_engines, Attention2DMode,
     BurnExecutionRuntime, BurnTransformerVm, ExecutionRuntime, NativeInterpreter, ProgramCompiler,
     TransformerVmConfig,
@@ -15,7 +15,7 @@ type TestBackend = NdArray<f64>;
 fn compile_native_model(
     source: &str,
     config: TransformerVmConfig,
-) -> transformer_vm_rs::TransformerVm {
+) -> llm_provable_computer::TransformerVm {
     ProgramCompiler
         .compile_source(source, config)
         .expect("compile program")
@@ -25,7 +25,7 @@ fn compile_burn_model(
     source: &str,
     config: TransformerVmConfig,
 ) -> (
-    transformer_vm_rs::TransformerVm,
+    llm_provable_computer::TransformerVm,
     BurnTransformerVm<TestBackend>,
 ) {
     let device = Default::default();

@@ -1,4 +1,4 @@
-use transformer_vm_rs::vanillastark::{FieldElement, RescuePrime, Stark};
+use llm_provable_computer::vanillastark::{FieldElement, RescuePrime, Stark};
 
 #[test]
 fn vanillastark_round_trip_proof_verifies() {

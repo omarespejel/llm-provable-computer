@@ -5,7 +5,7 @@ use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::Deserialize;
-use transformer_vm_rs::{
+use llm_provable_computer::{
     export_program_onnx, MachineState, NativeInterpreter, ProgramCompiler, TransformerVm,
     TransformerVmConfig,
 };
@@ -182,7 +182,7 @@ fn python_validator_matches_native_trace_for_shipped_programs() {
             "programs/soft_attention_memory.tvm",
             TransformerVmConfig {
                 num_layers: 2,
-                attention_mode: transformer_vm_rs::Attention2DMode::HardSoftmax {
+                attention_mode: llm_provable_computer::Attention2DMode::HardSoftmax {
                     temperature: 10.0,
                 },
                 ..TransformerVmConfig::default()
@@ -196,7 +196,7 @@ fn python_validator_matches_native_trace_for_shipped_programs() {
             "programs/soft_attention_memory.tvm",
             TransformerVmConfig {
                 num_layers: 2,
-                attention_mode: transformer_vm_rs::Attention2DMode::Softmax,
+                attention_mode: llm_provable_computer::Attention2DMode::Softmax,
                 ..TransformerVmConfig::default()
             },
             "soft_attention_memory_softmax",

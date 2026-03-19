@@ -5,19 +5,19 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 #[cfg(feature = "burn-model")]
 use burn::backend::NdArray;
-use transformer_vm_rs::{
+use llm_provable_computer::{
     export_program_onnx, load_onnx_program_metadata, verify_engines, Attention2DMode,
     ExecutionRuntime, NativeInterpreter, OnnxExecutionRuntime, ProgramCompiler,
     TransformerVmConfig,
 };
 
 #[cfg(feature = "burn-model")]
-use transformer_vm_rs::{BurnExecutionRuntime, BurnTransformerVm};
+use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
 
 #[cfg(feature = "burn-model")]
 type TestBackend = NdArray<f64>;
 
-fn compile_model(source: &str, config: TransformerVmConfig) -> transformer_vm_rs::TransformerVm {
+fn compile_model(source: &str, config: TransformerVmConfig) -> llm_provable_computer::TransformerVm {
     ProgramCompiler
         .compile_source(source, config)
         .expect("compile model")

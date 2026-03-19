@@ -1,5 +1,5 @@
 use proptest::prelude::*;
-use transformer_vm_rs::{
+use llm_provable_computer::{
     decode_state, encode_state, verify_model_against_native, Attention2DMode, HullKvCache,
     Instruction, MachineState, Program, ProgramCompiler, TransformerVmConfig,
 };
@@ -7,7 +7,7 @@ use transformer_vm_rs::{
 #[cfg(feature = "burn-model")]
 use burn::backend::NdArray;
 #[cfg(feature = "burn-model")]
-use transformer_vm_rs::{
+use llm_provable_computer::{
     verify_engines, BurnExecutionRuntime, BurnTransformerVm, ExecutionRuntime, NativeInterpreter,
 };
 

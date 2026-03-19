@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use transformer_vm_rs::{
+use llm_provable_computer::{
     decode_state, encode_state, parse_program, Attention2DMode, ExecutionResult, ExecutionRuntime,
     MachineState, ProgramCompiler, TransformerVmConfig, VmError,
 };
