@@ -26,7 +26,7 @@ use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
 type CliBurnBackend = NdArray<f64>;
 
 #[derive(Debug, Parser)]
-#[command(name = "tvm", about = "Run deterministic transformer-vm programs.")]
+#[command(name = "tvm", about = "Run deterministic llm-provable-computer programs.")]
 struct Cli {
     #[command(subcommand)]
     command: Command,

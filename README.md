@@ -75,7 +75,7 @@ The proof is **transparent** (no trusted setup), **post-quantum** (hash-based, n
 ## Quick Start
 
 ```bash
-git clone https://github.com/abdel/transformer-vm-rs && cd transformer-vm-rs
+git clone https://github.com/AbdelStark/llm-provable-computer && cd llm-provable-computer
 
 # Run a program
 cargo run --bin tvm -- programs/fibonacci.tvm

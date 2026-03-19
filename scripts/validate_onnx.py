@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate exported transformer-vm ONNX programs with ONNX Runtime."""
+"""Validate exported llm-provable-computer ONNX programs with ONNX Runtime."""
 
 from __future__ import annotations
 
@@ -357,7 +357,7 @@ def parse_bool(value: str) -> bool:
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Validate transformer-vm ONNX exports with onnxruntime."
+        description="Validate llm-provable-computer ONNX exports with onnxruntime."
     )
     parser.add_argument("export_path", help="Export directory or metadata.json path")
     parser.add_argument("--max-steps", type=int, default=4096, help="Maximum execution steps")

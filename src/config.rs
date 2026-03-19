@@ -105,7 +105,7 @@ impl TransformerVmConfig {
         }
         if self.head_dim() != 2 {
             return Err(VmError::InvalidConfig(format!(
-                "transformer-vm requires head_dim=2, got {}",
+                "llm-provable-computer requires head_dim=2, got {}",
                 self.head_dim()
             )));
         }
