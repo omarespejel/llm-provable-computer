@@ -371,6 +371,17 @@ fn prove_stark_command(
     println!("carry_flag: {}", proof.claim.final_state.carry_flag);
     println!("memory: {:?}", proof.claim.final_state.memory);
     println!("attention_mode: {}", proof.claim.attention_mode);
+    if let Some(equivalence) = &proof.claim.equivalence {
+        println!("equivalence_checked_steps: {}", equivalence.checked_steps);
+        println!(
+            "equivalence_transformer_fingerprint: {}",
+            equivalence.transformer_fingerprint
+        );
+        println!(
+            "equivalence_native_fingerprint: {}",
+            equivalence.native_fingerprint
+        );
+    }
     println!("proof_bytes: {}", proof.proof.len());
 
     Ok(())
@@ -396,6 +407,17 @@ fn verify_stark_command(proof_path: &Path) -> llm_provable_computer::Result<()> 
     println!("carry_flag: {}", proof.claim.final_state.carry_flag);
     println!("memory: {:?}", proof.claim.final_state.memory);
     println!("attention_mode: {}", proof.claim.attention_mode);
+    if let Some(equivalence) = &proof.claim.equivalence {
+        println!("equivalence_checked_steps: {}", equivalence.checked_steps);
+        println!(
+            "equivalence_transformer_fingerprint: {}",
+            equivalence.transformer_fingerprint
+        );
+        println!(
+            "equivalence_native_fingerprint: {}",
+            equivalence.native_fingerprint
+        );
+    }
     println!("instructions: {}", proof.claim.program.instructions().len());
     println!("proof_bytes: {}", proof.proof.len());
 

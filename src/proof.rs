@@ -1,15 +1,18 @@
 use std::fs;
 use std::path::Path;
 
+use blake2::{Blake2b512, Digest};
 use serde::{Deserialize, Serialize};
 
 use crate::config::Attention2DMode;
+use crate::engine::ExecutionResult;
 use crate::error::{Result, VmError};
 use crate::instruction::{Instruction, Program};
 use crate::interpreter::NativeInterpreter;
 use crate::model::TransformerVm;
 use crate::state::MachineState;
 use crate::vanillastark::{FieldElement, MPolynomial, Stark};
+use crate::verification::verify_model_against_native;
 
 const PC: usize = 0;
 const ACC: usize = 1;
@@ -43,12 +46,21 @@ pub struct VanillaStarkExecutionClaim {
     pub steps: usize,
     pub final_state: MachineState,
     pub options: VanillaStarkProofOptions,
+    #[serde(default)]
+    pub equivalence: Option<ExecutionEquivalenceMetadata>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct VanillaStarkExecutionProof {
     pub claim: VanillaStarkExecutionClaim,
     pub proof: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ExecutionEquivalenceMetadata {
+    pub checked_steps: usize,
+    pub transformer_fingerprint: String,
+    pub native_fingerprint: String,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -499,6 +511,20 @@ pub fn prove_execution_stark_with_options(
     options: VanillaStarkProofOptions,
 ) -> Result<VanillaStarkExecutionProof> {
     validate_proof_inputs(model.program(), &model.config().attention_mode)?;
+    let comparison = verify_model_against_native(model.clone(), max_steps)?;
+    let equivalence = ExecutionEquivalenceMetadata {
+        checked_steps: comparison.checked_steps,
+        transformer_fingerprint: execution_fingerprint_from_result(
+            "transformer",
+            comparison.checked_steps,
+            &comparison.transformer,
+        ),
+        native_fingerprint: execution_fingerprint_from_result(
+            "native",
+            comparison.checked_steps,
+            &comparison.native,
+        ),
+    };
 
     let mut interpreter = NativeInterpreter::new(
         model.program().clone(),
@@ -526,6 +552,7 @@ pub fn prove_execution_stark_with_options(
         steps: result.steps,
         final_state: result.final_state.clone(),
         options: options.clone(),
+        equivalence: Some(equivalence),
     };
     let stark = Stark::new(
         options.expansion_factor,
@@ -547,6 +574,7 @@ pub fn prove_execution_stark_with_options(
 pub fn verify_execution_stark(proof: &VanillaStarkExecutionProof) -> Result<bool> {
     validate_proof_inputs(&proof.claim.program, &proof.claim.attention_mode)?;
     validate_public_state(&proof.claim.program, &proof.claim.final_state)?;
+    validate_equivalence_metadata(&proof.claim)?;
 
     if !proof.claim.final_state.halted {
         return Err(VmError::UnsupportedProof(
@@ -640,6 +668,47 @@ fn validate_public_state(program: &Program, final_state: &MachineState) -> Resul
     Ok(())
 }
 
+fn validate_equivalence_metadata(claim: &VanillaStarkExecutionClaim) -> Result<()> {
+    let Some(metadata) = &claim.equivalence else {
+        return Ok(());
+    };
+
+    if metadata.checked_steps != claim.steps {
+        return Err(VmError::InvalidConfig(format!(
+            "equivalence checked_steps {} does not match claim steps {}",
+            metadata.checked_steps, claim.steps
+        )));
+    }
+
+    let expected_transformer = execution_fingerprint(
+        "transformer",
+        metadata.checked_steps,
+        claim.steps,
+        claim.final_state.halted,
+        &claim.final_state,
+    );
+    if metadata.transformer_fingerprint != expected_transformer {
+        return Err(VmError::InvalidConfig(
+            "invalid transformer equivalence fingerprint".to_string(),
+        ));
+    }
+
+    let expected_native = execution_fingerprint(
+        "native",
+        metadata.checked_steps,
+        claim.steps,
+        claim.final_state.halted,
+        &claim.final_state,
+    );
+    if metadata.native_fingerprint != expected_native {
+        return Err(VmError::InvalidConfig(
+            "invalid native equivalence fingerprint".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
 fn execution_trace_rows(layout: &ColumnLayout, trace: &[MachineState]) -> Vec<Vec<FieldElement>> {
     trace
         .iter()
@@ -722,6 +791,53 @@ fn inverse_or_zero(value: FieldElement) -> FieldElement {
     } else {
         value.inverse()
     }
+}
+
+fn execution_fingerprint_from_result(
+    engine: &str,
+    checked_steps: usize,
+    result: &ExecutionResult,
+) -> String {
+    execution_fingerprint(
+        engine,
+        checked_steps,
+        result.steps,
+        result.halted,
+        &result.final_state,
+    )
+}
+
+fn execution_fingerprint(
+    engine: &str,
+    checked_steps: usize,
+    steps: usize,
+    halted: bool,
+    final_state: &MachineState,
+) -> String {
+    #[derive(Serialize)]
+    struct FingerprintPayload<'a> {
+        engine: &'a str,
+        checked_steps: usize,
+        steps: usize,
+        halted: bool,
+        final_state: &'a MachineState,
+    }
+
+    let payload = FingerprintPayload {
+        engine,
+        checked_steps,
+        steps,
+        halted,
+        final_state,
+    };
+    let encoded = serde_json::to_vec(&payload).expect("fingerprint payload serialization");
+    let digest = Blake2b512::digest(encoded);
+    digest
+        .as_slice()
+        .iter()
+        .take(8)
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }
 
 trait IsZeroExt {
@@ -833,5 +949,32 @@ HALT
 
         assert_eq!(loaded, proof);
         assert!(verify_execution_stark(&loaded).expect("verify"));
+    }
+
+    #[test]
+    fn proof_claim_includes_equivalence_metadata() {
+        let proof = prove_program("programs/addition.tvm", 32);
+        let metadata = proof.claim.equivalence.expect("equivalence metadata");
+        assert_eq!(metadata.checked_steps, proof.claim.steps);
+        assert_eq!(
+            metadata.transformer_fingerprint,
+            execution_fingerprint(
+                "transformer",
+                metadata.checked_steps,
+                proof.claim.steps,
+                proof.claim.final_state.halted,
+                &proof.claim.final_state,
+            )
+        );
+        assert_eq!(
+            metadata.native_fingerprint,
+            execution_fingerprint(
+                "native",
+                metadata.checked_steps,
+                proof.claim.steps,
+                proof.claim.final_state.halted,
+                &proof.claim.final_state,
+            )
+        );
     }
 }

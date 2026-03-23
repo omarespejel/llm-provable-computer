@@ -273,6 +273,9 @@ cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proo
 cargo run --bin tvm -- verify-stark fact.proof.json
 ```
 
+`prove-stark` first runs transformer/native lockstep verification and aborts on any divergence before emitting a proof.
+Proof claims now also include equivalence metadata (`equivalence_checked_steps`, transformer fingerprint, native fingerprint) in the CLI output.
+
 The proof is transparent and public. The claim includes the program, attention mode, step count, and final state. Zero-knowledge hiding is out of scope.
 
 ---
