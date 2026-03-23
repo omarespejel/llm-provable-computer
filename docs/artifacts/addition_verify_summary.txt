@@ -1,0 +1,13 @@
+proof: /Users/abdel/dev/me/machine-learning/transformer-vm-rs/docs/artifacts/addition.proof.json
+verified_stark: true
+steps: 3
+halted: true
+pc: 2
+sp: 4
+acc: 8
+zero_flag: false
+carry_flag: false
+memory: [0, 0, 0, 0]
+attention_mode: average-hard
+instructions: 3
+proof_bytes: 70057

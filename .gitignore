@@ -9,3 +9,4 @@ __pycache__/
 **/.tldr/
 **/.tldrignore
 compiled/
+docs/artifacts/*.proof.json

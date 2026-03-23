@@ -1,0 +1,12 @@
+program: programs/fibonacci.tvm
+proof: /Users/abdel/dev/me/machine-learning/transformer-vm-rs/docs/artifacts/fibonacci.proof.json
+steps: 103
+halted: true
+pc: 15
+sp: 5
+acc: 21
+zero_flag: false
+carry_flag: false
+memory: [13, 21, 21, 7, 7]
+attention_mode: average-hard
+proof_bytes: 159007

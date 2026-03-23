@@ -1,0 +1,61 @@
+program: programs/factorial_recursive.tvm
+engine: transformer
+steps: 46
+halted: true
+pc: 2
+sp: 11
+acc: 120
+zero_flag: false
+carry_flag: false
+memory: [24, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+layers: 1
+attention_mode: average-hard
+elapsed_ms: 4.441
+throughput_steps_per_sec: 10359.00
+trace[000] init pc=0 sp=11 acc=0 zero=true carry=false halted=false memory=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+trace[001] layer=0 instr="LOADI 5" pc=1 sp=11 acc=5 zero=false carry=false halted=false memory=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+trace[002] layer=0 instr="CALL 3" pc=3 sp=10 acc=5 zero=false carry=false halted=false memory=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]
+trace[003] layer=0 instr="JZ 11" pc=4 sp=10 acc=5 zero=false carry=false halted=false memory=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]
+trace[004] layer=0 instr="PUSH" pc=5 sp=9 acc=5 zero=false carry=false halted=false memory=[0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 2]
+trace[005] layer=0 instr="SUB 1" pc=6 sp=9 acc=4 zero=false carry=false halted=false memory=[0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 2]
+trace[006] layer=0 instr="CALL 3" pc=3 sp=8 acc=4 zero=false carry=false halted=false memory=[0, 0, 0, 0, 0, 0, 0, 0, 7, 5, 2]
+trace[007] layer=0 instr="JZ 11" pc=4 sp=8 acc=4 zero=false carry=false halted=false memory=[0, 0, 0, 0, 0, 0, 0, 0, 7, 5, 2]
+trace[008] layer=0 instr="PUSH" pc=5 sp=7 acc=4 zero=false carry=false halted=false memory=[0, 0, 0, 0, 0, 0, 0, 4, 7, 5, 2]
+trace[009] layer=0 instr="SUB 1" pc=6 sp=7 acc=3 zero=false carry=false halted=false memory=[0, 0, 0, 0, 0, 0, 0, 4, 7, 5, 2]
+trace[010] layer=0 instr="CALL 3" pc=3 sp=6 acc=3 zero=false carry=false halted=false memory=[0, 0, 0, 0, 0, 0, 7, 4, 7, 5, 2]
+trace[011] layer=0 instr="JZ 11" pc=4 sp=6 acc=3 zero=false carry=false halted=false memory=[0, 0, 0, 0, 0, 0, 7, 4, 7, 5, 2]
+trace[012] layer=0 instr="PUSH" pc=5 sp=5 acc=3 zero=false carry=false halted=false memory=[0, 0, 0, 0, 0, 3, 7, 4, 7, 5, 2]
+trace[013] layer=0 instr="SUB 1" pc=6 sp=5 acc=2 zero=false carry=false halted=false memory=[0, 0, 0, 0, 0, 3, 7, 4, 7, 5, 2]
+trace[014] layer=0 instr="CALL 3" pc=3 sp=4 acc=2 zero=false carry=false halted=false memory=[0, 0, 0, 0, 7, 3, 7, 4, 7, 5, 2]
+trace[015] layer=0 instr="JZ 11" pc=4 sp=4 acc=2 zero=false carry=false halted=false memory=[0, 0, 0, 0, 7, 3, 7, 4, 7, 5, 2]
+trace[016] layer=0 instr="PUSH" pc=5 sp=3 acc=2 zero=false carry=false halted=false memory=[0, 0, 0, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[017] layer=0 instr="SUB 1" pc=6 sp=3 acc=1 zero=false carry=false halted=false memory=[0, 0, 0, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[018] layer=0 instr="CALL 3" pc=3 sp=2 acc=1 zero=false carry=false halted=false memory=[0, 0, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[019] layer=0 instr="JZ 11" pc=4 sp=2 acc=1 zero=false carry=false halted=false memory=[0, 0, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[020] layer=0 instr="PUSH" pc=5 sp=1 acc=1 zero=false carry=false halted=false memory=[0, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[021] layer=0 instr="SUB 1" pc=6 sp=1 acc=0 zero=true carry=false halted=false memory=[0, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[022] layer=0 instr="CALL 3" pc=3 sp=0 acc=0 zero=true carry=false halted=false memory=[7, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[023] layer=0 instr="JZ 11" pc=11 sp=0 acc=0 zero=true carry=false halted=false memory=[7, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[024] layer=0 instr="LOADI 1" pc=12 sp=0 acc=1 zero=false carry=false halted=false memory=[7, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[025] layer=0 instr="RET" pc=7 sp=1 acc=1 zero=false carry=false halted=false memory=[7, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[026] layer=0 instr="STORE 0" pc=8 sp=1 acc=1 zero=false carry=false halted=false memory=[1, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[027] layer=0 instr="POP" pc=9 sp=2 acc=1 zero=false carry=false halted=false memory=[1, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[028] layer=0 instr="MULM 0" pc=10 sp=2 acc=1 zero=false carry=false halted=false memory=[1, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[029] layer=0 instr="RET" pc=7 sp=3 acc=1 zero=false carry=false halted=false memory=[1, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[030] layer=0 instr="STORE 0" pc=8 sp=3 acc=1 zero=false carry=false halted=false memory=[1, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[031] layer=0 instr="POP" pc=9 sp=4 acc=2 zero=false carry=false halted=false memory=[1, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[032] layer=0 instr="MULM 0" pc=10 sp=4 acc=2 zero=false carry=false halted=false memory=[1, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[033] layer=0 instr="RET" pc=7 sp=5 acc=2 zero=false carry=false halted=false memory=[1, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[034] layer=0 instr="STORE 0" pc=8 sp=5 acc=2 zero=false carry=false halted=false memory=[2, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[035] layer=0 instr="POP" pc=9 sp=6 acc=3 zero=false carry=false halted=false memory=[2, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[036] layer=0 instr="MULM 0" pc=10 sp=6 acc=6 zero=false carry=false halted=false memory=[2, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[037] layer=0 instr="RET" pc=7 sp=7 acc=6 zero=false carry=false halted=false memory=[2, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[038] layer=0 instr="STORE 0" pc=8 sp=7 acc=6 zero=false carry=false halted=false memory=[6, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[039] layer=0 instr="POP" pc=9 sp=8 acc=4 zero=false carry=false halted=false memory=[6, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[040] layer=0 instr="MULM 0" pc=10 sp=8 acc=24 zero=false carry=false halted=false memory=[6, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[041] layer=0 instr="RET" pc=7 sp=9 acc=24 zero=false carry=false halted=false memory=[6, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[042] layer=0 instr="STORE 0" pc=8 sp=9 acc=24 zero=false carry=false halted=false memory=[24, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[043] layer=0 instr="POP" pc=9 sp=10 acc=5 zero=false carry=false halted=false memory=[24, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[044] layer=0 instr="MULM 0" pc=10 sp=10 acc=120 zero=false carry=false halted=false memory=[24, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[045] layer=0 instr="RET" pc=2 sp=11 acc=120 zero=false carry=false halted=false memory=[24, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]
+trace[046] layer=0 instr="HALT" pc=2 sp=11 acc=120 zero=false carry=false halted=true memory=[24, 1, 7, 2, 7, 3, 7, 4, 7, 5, 2]

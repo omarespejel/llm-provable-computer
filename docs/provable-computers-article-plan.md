@@ -764,3 +764,71 @@ If we want one article that is both compelling and honest today, the plan should
 5. Be explicit that the current proof is transparent, subset-scoped, and connected back to the transformer through lockstep equivalence rather than direct activation proving.
 
 That is enough to make the mirror article feel like a real sequel instead of a marketing echo.
+
+---
+
+## Addendum: Percepta Article Details (Confirmed March 23, 2026)
+
+### Publication Details
+
+- **Title:** Can LLMs Be Computers?
+- **Author:** Christos Tzamos, Percepta
+- **Published:** March 11, 2026
+- **URL:** https://www.percepta.ai/blog/can-llms-be-computers
+
+### Confirmed Structure (9 sections)
+
+1. TL;DR
+2. Motivation: LLMs cannot compute
+3. How we turned LLMs to computers (WASM interpreter compiled into weights)
+4. What does computation mean? (deterministic vs. probabilistic)
+5. More demos: Sudoku (world's hardest Sudoku, ~3 min)
+6. How can computation be encoded? (WASM instructions → token sequences)
+7. The key unlock: Exponentially Fast Attention (2D attention + convex hull + HullKVCache)
+8. So what is next? (hybrid deterministic/probabilistic future)
+9. Closing thoughts
+
+### Confirmed Technical Details
+
+- Architecture: 7 layers, d_model=36, 18 heads × 2 dimensions per head
+- Performance: 31,037 tokens/sec on CPU
+- Approach: Weights are compiled from a WASM interpreter, not learned via gradient descent
+- HullKVCache: O(log n) memory reads via convex hull binary search
+
+### Reception and Coverage
+
+- Andrej Karpathy praised the work publicly
+- Covered by Hacker News, OpenAI Developer Community, multiple AI news outlets
+- The "trust the compiler" gap is noted in community discussions — exactly our entry point
+
+### Key Insight for Our Sequel
+
+The biggest unresolved tension in both the article and community discussion is **verification**. The weights are compiled, but there is no mechanism for an external party to check that a claimed execution actually happened correctly. This is the precise gap our STARK proof fills.
+
+---
+
+## Addendum: Fresh Demo Numbers (March 23, 2026)
+
+All demos re-verified on this date.
+
+| Program | Steps | Result | Proof size | 4-Engine Verified | STARK Verified |
+|---|---|---|---|---|---|
+| `addition.tvm` | 3 | acc=8 | 70,057 bytes | — | true |
+| `fibonacci.tvm` | 103 | acc=21 | 159,007 bytes | true (transformer,native,burn,onnx) | true |
+| `factorial_recursive.tvm` | 46 | acc=120 | 206,581 bytes | — | true |
+
+Throughput: ~9,700–10,900 steps/sec on CPU across all programs.
+
+---
+
+## Addendum: Article Prep Materials
+
+The following prep files now exist:
+
+| File | Purpose |
+|---|---|
+| `docs/article-writing-context.md` | Complete writing context: positioning, numbers, honesty boundaries, structure |
+| `docs/artifacts/` | Generated demo outputs (execution traces, proof summaries, proof files) |
+| `scripts/generate_article_artifacts.sh` | Reproducible artifact generation script |
+
+These materials, combined with this plan, provide everything needed to begin article writing.
