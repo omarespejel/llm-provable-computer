@@ -19,9 +19,10 @@ llm-provable-computer is an implemented Rust workspace for a deterministic trans
 <status>
 - Milestone 1: complete.
 - Milestone 2: complete for the current proof scope.
-- Verified locally on 2026-03-18:
-  - `cargo test`
-  - `cargo test --features full`
+- Verified locally on 2026-03-19:
+  - `cargo fmt --all --check`
+  - `cargo clippy --all-targets --all-features -- -D warnings`
+  - `cargo test --all-features`
 - Current vanilla STARK scope:
   - supported: `NOP`, `LOADI`, `LOAD`, `STORE`, `PUSH`, `POP`, `ADD`, `ADDM`, `SUB`, `SUBM`, `MUL`, `MULM`, `CALL`, `RET`, `JMP`, `JZ`, `JNZ`, `HALT`
   - rejected: softmax and hard-softmax proof paths, bitwise instructions, compare instructions, non-halted public claims, public claims with `carry_flag = true`
@@ -36,7 +37,6 @@ Cargo.toml
 Cargo.lock
 README.md
 CLAUDE.md
-LICENSE
 src/
   assembly.rs           # .tvm parser, directives, labels
   compiler.rs           # ProgramCompiler
@@ -74,14 +74,16 @@ scripts/
 | Inventory files | `rg --files` | Fastest repo scan |
 | Check repo state | `git status --short` | Separate your edits from unrelated files |
 | Run default suite | `cargo test` | Core milestone-1 and milestone-2 validation |
-| Run full engine suite | `cargo test --features full` | Burn + ONNX + Python validator + CLI workflow |
+| Check formatting | `cargo fmt --all --check` | Matches CI-ready rustfmt output |
+| Run strict lint pass | `cargo clippy --all-targets --all-features -- -D warnings` | Keep the full tree warning-free |
+| Run full engine suite | `cargo test --all-features` | Burn + ONNX + Python validator + CLI workflow |
 | Run a program | `cargo run --bin tvm -- programs/fibonacci.tvm` | Shortcut for `tvm run` |
 | Trace execution | `cargo run --bin tvm -- run programs/counter.tvm --trace` | Emits trace and summary |
 | Verify transformer vs native | `cargo run --bin tvm -- run programs/fibonacci.tvm --verify-native` | Lockstep comparison |
 | Verify all engines | `cargo run --features full --bin tvm -- run programs/fibonacci.tvm --verify-all` | Transformer + native + Burn + ONNX |
 | Create a proof | `cargo run --bin tvm -- prove-stark programs/fibonacci.tvm -o /tmp/fib.proof.json` | Uses current vanilla STARK path |
 | Verify a proof | `cargo run --bin tvm -- verify-stark /tmp/fib.proof.json` | Re-checks a saved proof |
-| Review doc drift | `git diff -- README.md SPEC.md IMPLEMENTATION_PLAN.md CLAUDE.md` | Use before finishing doc/context work |
+| Review doc drift | `git diff -- README.md CLAUDE.md docs/` | Use before finishing doc/context work |
 </commands>
 
 <workflows>
@@ -94,8 +96,8 @@ scripts/
 
   <proof_change>
   1. Read `src/proof.rs` and `src/vanillastark/**`.
-  2. Update support and limitation language in `SPEC.md` and `README.md`.
-  3. Re-run at least `cargo test` and, when Burn or ONNX paths are affected, `cargo test --features full`.
+  2. Update support and limitation language in `README.md`, `CLAUDE.md`, and matching files under `docs/`.
+  3. Re-run at least `cargo test` and, when Burn or ONNX paths are affected, `cargo test --all-features`.
   </proof_change>
 
   <engine_change>
@@ -123,7 +125,7 @@ scripts/
   |---------|--------------|-----|
   | `prove-stark` rejects a program | Unsupported instruction, attention mode, or claim shape | Check `src/proof.rs::validate_proof_inputs` and the carry/halted restrictions |
   | Burn or ONNX commands are unavailable | Missing feature flag | Re-run with `--features burn-model`, `--features onnx-export`, or `--features full` |
-  | Docs mention WASM compilation as current behavior | Stale pre-implementation text | Prefer `SPEC.md` and the source tree over old planning language |
+  | Docs mention WASM compilation as current behavior | Stale pre-implementation text | Prefer `README.md`, `CLAUDE.md`, and the source tree over old planning language |
   | An engine mismatch appears during verification | Trace divergence across runtimes | Inspect `ExecutionTraceEntry` output and compare instruction/state pairs |
   </known_issues>
 </troubleshooting>

@@ -70,7 +70,7 @@ impl Merkle {
                 return root == hash(&combined).as_slice();
             }
         }
-        if index % 2 == 0 {
+        if index.is_multiple_of(2) {
             let mut combined = leaf.to_vec();
             combined.extend_from_slice(&path[0]);
             Self::verify_(root, index >> 1, &path[1..], &hash(&combined))
@@ -110,7 +110,7 @@ mod tests {
         let root = Merkle::commit_(&leafs);
 
         let path = Merkle::open_(0, &leafs);
-        assert!(!Merkle::verify_(&root, 0, &path, &vec![255u8; 32]));
+        assert!(!Merkle::verify_(&root, 0, &path, &[255u8; 32]));
     }
 
     #[test]

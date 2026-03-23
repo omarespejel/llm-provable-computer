@@ -17,7 +17,10 @@ use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
 #[cfg(feature = "burn-model")]
 type TestBackend = NdArray<f64>;
 
-fn compile_model(source: &str, config: TransformerVmConfig) -> llm_provable_computer::TransformerVm {
+fn compile_model(
+    source: &str,
+    config: TransformerVmConfig,
+) -> llm_provable_computer::TransformerVm {
     ProgramCompiler
         .compile_source(source, config)
         .expect("compile model")

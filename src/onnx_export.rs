@@ -440,7 +440,8 @@ fn export_instruction_onnx(
     model.domain = "com.llm_provable_computer".to_string();
     model.model_version = FORMAT_VERSION as i64;
     model.doc_string =
-        "Per-instruction llm-provable-computer feed-forward export with explicit flag outputs".to_string();
+        "Per-instruction llm-provable-computer feed-forward export with explicit flag outputs"
+            .to_string();
     model.graph = MessageField::some(graph);
     model
 }

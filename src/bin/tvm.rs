@@ -26,7 +26,10 @@ use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
 type CliBurnBackend = NdArray<f64>;
 
 #[derive(Debug, Parser)]
-#[command(name = "tvm", about = "Run deterministic llm-provable-computer programs.")]
+#[command(
+    name = "tvm",
+    about = "Run deterministic llm-provable-computer programs."
+)]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -34,28 +37,39 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    /// Run a program and print the final machine state.
     Run {
+        /// Path to the source `.tvm` program.
         program: PathBuf,
+        /// Maximum number of execution steps before stopping.
         #[arg(long, default_value_t = 512)]
         max_steps: usize,
+        /// Emit the full step-by-step execution trace.
         #[arg(long)]
         trace: bool,
+        /// Number of transformer layers to distribute instructions across.
         #[arg(long, default_value_t = 1)]
         layers: usize,
+        /// Execution backend to use for the run.
         #[arg(
             long,
             default_value = "transformer",
             value_parser = parse_execution_engine
         )]
         engine: CliExecutionEngine,
+        /// Verify the transformer runtime against the native interpreter.
         #[arg(long)]
         verify_native: bool,
+        /// Verify the transformer and native runtimes against Burn.
         #[arg(long)]
         verify_burn: bool,
+        /// Verify the transformer and native runtimes against ONNX.
         #[arg(long)]
         verify_onnx: bool,
+        /// Verify all available runtimes in lockstep.
         #[arg(long, conflicts_with_all = ["verify_native", "verify_burn", "verify_onnx"])]
         verify_all: bool,
+        /// Attention mode to use for memory reads.
         #[arg(
             long,
             default_value = "average-hard",
@@ -63,14 +77,20 @@ enum Command {
         )]
         attention_mode: Attention2DMode,
     },
+    /// Run the interactive terminal viewer for a program.
     Tui {
+        /// Path to the source `.tvm` program.
         program: PathBuf,
+        /// Maximum number of execution steps before stopping.
         #[arg(long, default_value_t = 512)]
         max_steps: usize,
+        /// Number of transformer layers to distribute instructions across.
         #[arg(long, default_value_t = 1)]
         layers: usize,
+        /// UI refresh interval in milliseconds.
         #[arg(long, default_value_t = 60)]
         tick_ms: u64,
+        /// Attention mode to use for memory reads.
         #[arg(
             long,
             default_value = "average-hard",
@@ -78,12 +98,17 @@ enum Command {
         )]
         attention_mode: Attention2DMode,
     },
+    /// Export the compiled program as per-instruction ONNX graphs.
     ExportOnnx {
+        /// Path to the source `.tvm` program.
         program: PathBuf,
+        /// Directory where ONNX models and metadata will be written.
         #[arg(short = 'o', long = "output-dir")]
         output_dir: PathBuf,
+        /// Number of transformer layers to distribute instructions across.
         #[arg(long, default_value_t = 1)]
         layers: usize,
+        /// Attention mode to use for memory reads.
         #[arg(
             long,
             default_value = "average-hard",
@@ -91,14 +116,20 @@ enum Command {
         )]
         attention_mode: Attention2DMode,
     },
+    /// Produce a STARK proof for a supported execution.
     ProveStark {
+        /// Path to the source `.tvm` program.
         program: PathBuf,
+        /// File where the serialized proof JSON will be written.
         #[arg(short = 'o', long = "output")]
         output: PathBuf,
+        /// Maximum number of execution steps before stopping.
         #[arg(long, default_value_t = 512)]
         max_steps: usize,
+        /// Number of transformer layers to distribute instructions across.
         #[arg(long, default_value_t = 1)]
         layers: usize,
+        /// Attention mode to use for memory reads.
         #[arg(
             long,
             default_value = "average-hard",
@@ -106,7 +137,9 @@ enum Command {
         )]
         attention_mode: Attention2DMode,
     },
+    /// Verify a previously generated STARK proof.
     VerifyStark {
+        /// Path to the serialized proof JSON file.
         proof: PathBuf,
     },
 }
@@ -135,6 +168,20 @@ struct EngineRunOutput {
     result: ExecutionResult,
     trace: Vec<MachineState>,
     events: Vec<ExecutionTraceEntry>,
+}
+
+#[derive(Debug, Clone)]
+struct RunCommandOptions {
+    program: PathBuf,
+    max_steps: usize,
+    trace: bool,
+    layers: usize,
+    engine: CliExecutionEngine,
+    verify_native: bool,
+    verify_burn: bool,
+    verify_onnx: bool,
+    verify_all: bool,
+    attention_mode: Attention2DMode,
 }
 
 #[cfg(feature = "onnx-export")]
@@ -190,8 +237,8 @@ fn run() -> llm_provable_computer::Result<()> {
             verify_onnx,
             verify_all,
             attention_mode,
-        } => run_program_command(
-            &program,
+        } => run_program_command(RunCommandOptions {
+            program,
             max_steps,
             trace,
             layers,
@@ -201,7 +248,7 @@ fn run() -> llm_provable_computer::Result<()> {
             verify_onnx,
             verify_all,
             attention_mode,
-        )?,
+        })?,
         Command::Tui {
             program,
             max_steps,
@@ -231,25 +278,18 @@ fn run() -> llm_provable_computer::Result<()> {
     Ok(())
 }
 
-fn run_program_command(
-    program: &Path,
-    max_steps: usize,
-    trace: bool,
-    layers: usize,
-    engine: CliExecutionEngine,
-    verify_native: bool,
-    verify_burn: bool,
-    verify_onnx: bool,
-    verify_all: bool,
-    attention_mode: Attention2DMode,
-) -> llm_provable_computer::Result<()> {
-    let model = compile_model(program, layers, attention_mode.clone())?;
-    let executed = execute_engine(&model, engine, max_steps)?;
+fn run_program_command(options: RunCommandOptions) -> llm_provable_computer::Result<()> {
+    let model = compile_model(
+        &options.program,
+        options.layers,
+        options.attention_mode.clone(),
+    )?;
+    let executed = execute_engine(&model, options.engine, options.max_steps)?;
 
-    print_execution_summary(program, engine, &model, &executed.result);
+    print_execution_summary(&options.program, options.engine, &model, &executed.result);
 
-    if verify_native {
-        let comparison = verify_model_against_native(model.clone(), max_steps)?;
+    if options.verify_native {
+        let comparison = verify_model_against_native(model.clone(), options.max_steps)?;
         println!("verified_against_native: true");
         println!("verified_steps: {}", comparison.checked_steps);
         println!(
@@ -262,8 +302,8 @@ fn run_program_command(
         );
     }
 
-    if verify_burn {
-        let verification = verify_burn_engines(&model, max_steps)?;
+    if options.verify_burn {
+        let verification = verify_burn_engines(&model, options.max_steps)?;
         print_verification_summary(
             "verified_against_burn",
             "verified_burn",
@@ -272,8 +312,8 @@ fn run_program_command(
         );
     }
 
-    if verify_onnx {
-        let verification = verify_onnx_engines(&model, max_steps)?;
+    if options.verify_onnx {
+        let verification = verify_onnx_engines(&model, options.max_steps)?;
         print_verification_summary(
             "verified_against_onnx",
             "verified_onnx",
@@ -282,8 +322,8 @@ fn run_program_command(
         );
     }
 
-    if verify_all {
-        let verification = verify_all_engines(&model, max_steps)?;
+    if options.verify_all {
+        let verification = verify_all_engines(&model, options.max_steps)?;
         print_verification_summary(
             "verified_all",
             "verified_all",
@@ -292,7 +332,7 @@ fn run_program_command(
         );
     }
 
-    if trace {
+    if options.trace {
         print_trace(&executed.trace, &executed.events);
     }
 

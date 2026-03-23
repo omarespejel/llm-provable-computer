@@ -304,6 +304,21 @@ cargo test --features full    # Everything
 cargo bench                   # Hull + STARK benchmarks
 ```
 
+## Development Checks
+
+```bash
+cargo fmt --all --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all-features
+```
+
+The CLI is self-documenting:
+
+```bash
+cargo run --bin tvm -- --help
+cargo run --bin tvm -- run --help
+```
+
 ---
 
 ## Repository Structure

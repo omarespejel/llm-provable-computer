@@ -98,8 +98,8 @@ impl Stark {
             .iter()
             .map(|a| {
                 a.dictionary
-                    .iter()
-                    .map(|(k, _v)| {
+                    .keys()
+                    .map(|k| {
                         k.iter()
                             .zip(point_degrees.iter())
                             .map(|(&r, &l)| (r as isize) * l)
@@ -235,18 +235,19 @@ impl Stark {
         // Subtract boundary interpolants and divide out boundary zerofiers
         let boundary_interpolants = self.boundary_interpolants(boundary);
         let boundary_zerofiers = self.boundary_zerofiers(boundary);
-        let mut boundary_quotients = Vec::new();
-        for s in 0..self.num_registers {
-            let quotient = (trace_polynomials[s].clone() - boundary_interpolants[s].clone())
-                / boundary_zerofiers[s].clone();
-            boundary_quotients.push(quotient);
-        }
+        let boundary_quotients: Vec<Polynomial> = trace_polynomials
+            .iter()
+            .zip(boundary_interpolants.iter().zip(boundary_zerofiers.iter()))
+            .map(|(trace_polynomial, (interpolant, zerofier))| {
+                (trace_polynomial.clone() - interpolant.clone()) / zerofier.clone()
+            })
+            .collect();
 
         // Commit to boundary quotients
         let fri_domain = self.fri.eval_domain();
         let mut boundary_quotient_codewords = Vec::new();
-        for s in 0..self.num_registers {
-            let codeword = boundary_quotients[s].evaluate_domain(&fri_domain);
+        for quotient in boundary_quotients.iter().take(self.num_registers) {
+            let codeword = quotient.evaluate_domain(&fri_domain);
             let codeword_bytes: Vec<Vec<u8>> = codeword.iter().map(|e| e.to_bytes_str()).collect();
             let merkle_root = Merkle::commit(&codeword_bytes);
             proof_stream.push(ProofObject::Bytes(merkle_root));
@@ -412,7 +413,7 @@ impl Stark {
         duplicated_indices.dedup();
 
         let mut leafs: Vec<std::collections::HashMap<usize, FieldElement>> = Vec::new();
-        for r in 0..boundary_quotient_roots.len() {
+        for root in &boundary_quotient_roots {
             let mut leaf_map = std::collections::HashMap::new();
             for &i in &duplicated_indices {
                 let element = if let ProofObject::Element(e) = proof_stream.pull() {
@@ -425,12 +426,7 @@ impl Stark {
                 } else {
                     return false;
                 };
-                if !Merkle::verify(
-                    &boundary_quotient_roots[r],
-                    i,
-                    &path,
-                    &element.to_bytes_str(),
-                ) {
+                if !Merkle::verify(root, i, &path, &element.to_bytes_str()) {
                     return false;
                 }
                 leaf_map.insert(i, element);

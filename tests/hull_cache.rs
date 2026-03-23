@@ -1,5 +1,5 @@
-use rand::{rngs::StdRng, Rng, SeedableRng};
 use llm_provable_computer::{Attention2DMode, HullKvCache};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 #[test]
 fn hull_query_matches_bruteforce_for_random_inputs() {

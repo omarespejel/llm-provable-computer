@@ -66,7 +66,10 @@ fn e2e_factorial_recursive_program() {
     let state = run_and_verify(&source, 128, 2);
     assert!(state.halted);
     assert_eq!(state.acc, 120, "5! = 120");
-    assert_eq!(state.sp, 11, "stack pointer restored after recursion unwinds");
+    assert_eq!(
+        state.sp, 11,
+        "stack pointer restored after recursion unwinds"
+    );
 }
 
 #[test]

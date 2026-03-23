@@ -222,7 +222,7 @@ impl<B: Backend> BurnTransformerVm<B> {
         let mut banks = vec![vec![None; model.program().len()]; model.config().num_layers];
         let mut layer_for_pc = Vec::with_capacity(model.program().len());
 
-        for pc in 0..model.program().len() {
+        for (pc, _) in model.program().instructions().iter().enumerate() {
             let (compiled, layer_idx) = model.compiled_instruction(pc as u8)?;
             layer_for_pc.push(layer_idx);
             banks[layer_idx][pc] = Some(BurnCompiledInstruction::from_compiled(compiled, device));

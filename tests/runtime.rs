@@ -133,7 +133,10 @@ fn factorial_recursive_program_computes_5_factorial() {
     let result = run_fixture("programs/factorial_recursive.tvm", 128);
     assert!(result.halted);
     assert_eq!(result.final_state.acc, 120, "5! = 120");
-    assert_eq!(result.final_state.sp, 11, "stack pointer restored after recursion");
+    assert_eq!(
+        result.final_state.sp, 11,
+        "stack pointer restored after recursion"
+    );
 }
 
 #[test]

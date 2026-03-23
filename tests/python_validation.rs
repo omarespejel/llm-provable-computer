@@ -4,11 +4,11 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use serde::Deserialize;
 use llm_provable_computer::{
     export_program_onnx, MachineState, NativeInterpreter, ProgramCompiler, TransformerVm,
     TransformerVmConfig,
 };
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 struct PythonValidationReport {

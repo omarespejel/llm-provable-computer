@@ -339,15 +339,15 @@ mod tests {
         let two = fe(2);
         let five = fe(5);
 
-        let values = vec![five, two, two, one, five, zero];
-        let domain: Vec<FieldElement> = (1..=5).map(|i| fe(i)).collect();
+        let values = [five, two, two, one, five];
+        let domain: Vec<FieldElement> = (1..=5).map(fe).collect();
 
-        let poly = Polynomial::interpolate_domain(&domain, &values[..5]);
+        let poly = Polynomial::interpolate_domain(&domain, &values);
 
-        for i in 0..domain.len() {
+        for (i, (&point, &expected)) in domain.iter().zip(values.iter()).enumerate() {
             assert_eq!(
-                poly.evaluate(domain[i]),
-                values[i],
+                poly.evaluate(point),
+                expected,
                 "interpolate test 1 at i={}",
                 i
             );

@@ -132,6 +132,12 @@ pub struct ProofStream {
     pub read_index: usize,
 }
 
+impl Default for ProofStream {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 fn shake256(data: &[u8], num_bytes: usize) -> Vec<u8> {
     let mut hasher = Shake256::default();
     hasher.update(data);
@@ -151,7 +157,7 @@ fn serialize_objects(objects: &[ProofObject]) -> Vec<u8> {
 
 impl ProofStream {
     pub fn new() -> Self {
-        ProofStream {
+        Self {
             objects: Vec::new(),
             read_index: 0,
         }
@@ -207,7 +213,7 @@ impl ProofStream {
             offset += obj_len;
             objects.push(obj);
         }
-        ProofStream {
+        Self {
             objects,
             read_index: 0,
         }

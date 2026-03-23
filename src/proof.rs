@@ -418,19 +418,20 @@ impl VmAir {
             }
         }
 
-        let mut constraints = Vec::new();
-        constraints.push(valid_pc);
-        constraints.push(valid_sp);
-        constraints.push(current_zero.clone() * (current_zero.clone() - one.clone()));
-        constraints.push(current[HALTED].clone());
-        constraints.push(current[CARRY].clone());
-        constraints.push(next_pc - expected_next_pc);
-        constraints.push(next_acc.clone() - expected_next_acc);
-        constraints.push(next_sp - expected_next_sp);
-        constraints.push(next_halted - expected_next_halted);
-        constraints.push(next_carry);
-        constraints.push(next_acc.clone() * next_acc_inv - (one.clone() - next_zero.clone()));
-        constraints.push(next_zero * next_acc);
+        let mut constraints = vec![
+            valid_pc,
+            valid_sp,
+            current_zero.clone() * (current_zero.clone() - one.clone()),
+            current[HALTED].clone(),
+            current[CARRY].clone(),
+            next_pc - expected_next_pc,
+            next_acc.clone() - expected_next_acc,
+            next_sp - expected_next_sp,
+            next_halted - expected_next_halted,
+            next_carry,
+            next_acc.clone() * next_acc_inv - (one.clone() - next_zero.clone()),
+            next_zero * next_acc,
+        ];
 
         if !self.layout.memory_size.is_zero() {
             constraints.push(

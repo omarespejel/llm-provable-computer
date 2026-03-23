@@ -15,6 +15,12 @@ pub struct RescuePrime {
     pub round_constants: Vec<FieldElement>,
 }
 
+impl Default for RescuePrime {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RescuePrime {
     pub fn new() -> Self {
         let fe = |v: u128| FieldElement::new(v);
@@ -151,42 +157,48 @@ impl RescuePrime {
         }
     }
 
+    fn apply_sbox(&self, state: &mut [FieldElement; 2], exponent: u128) {
+        for value in state.iter_mut().take(self.m) {
+            *value = value.pow(exponent);
+        }
+    }
+
+    fn apply_mds(&self, state: &[FieldElement; 2]) -> [FieldElement; 2] {
+        let mut mixed = [FieldElement::zero(); 2];
+        for (row_index, row) in self.mds.iter().enumerate().take(self.m) {
+            mixed[row_index] = row
+                .iter()
+                .zip(state.iter())
+                .take(self.m)
+                .fold(FieldElement::zero(), |acc, (&coefficient, &value)| {
+                    acc + coefficient * value
+                });
+        }
+        mixed
+    }
+
+    fn add_round_constants(&self, state: &mut [FieldElement; 2], offset: usize) {
+        for (index, value) in state.iter_mut().enumerate().take(self.m) {
+            *value = *value + self.round_constants[offset + index];
+        }
+    }
+
+    fn apply_round(&self, state: &mut [FieldElement; 2], round: usize) {
+        self.apply_sbox(state, self.alpha);
+        *state = self.apply_mds(state);
+        self.add_round_constants(state, 2 * round * self.m);
+
+        self.apply_sbox(state, self.alphainv);
+        *state = self.apply_mds(state);
+        self.add_round_constants(state, 2 * round * self.m + self.m);
+    }
+
     /// Rescue-Prime hash function.
     pub fn hash(&self, input_element: FieldElement) -> FieldElement {
-        let mut state = vec![input_element, FieldElement::zero()];
+        let mut state = [input_element, FieldElement::zero()];
 
-        for r in 0..self.n {
-            // Forward half-round: S-box
-            for i in 0..self.m {
-                state[i] = state[i].pow(self.alpha);
-            }
-            // Matrix
-            let mut temp = vec![FieldElement::zero(); self.m];
-            for i in 0..self.m {
-                for j in 0..self.m {
-                    temp[i] = temp[i] + self.mds[i][j] * state[j];
-                }
-            }
-            // Constants
-            for i in 0..self.m {
-                state[i] = temp[i] + self.round_constants[2 * r * self.m + i];
-            }
-
-            // Backward half-round: S-box
-            for i in 0..self.m {
-                state[i] = state[i].pow(self.alphainv);
-            }
-            // Matrix
-            let mut temp = vec![FieldElement::zero(); self.m];
-            for i in 0..self.m {
-                for j in 0..self.m {
-                    temp[i] = temp[i] + self.mds[i][j] * state[j];
-                }
-            }
-            // Constants
-            for i in 0..self.m {
-                state[i] = temp[i] + self.round_constants[2 * r * self.m + self.m + i];
-            }
+        for round in 0..self.n {
+            self.apply_round(&mut state, round);
         }
 
         state[0]
@@ -194,40 +206,13 @@ impl RescuePrime {
 
     /// Compute the algebraic execution trace.
     pub fn trace(&self, input_element: FieldElement) -> Vec<Vec<FieldElement>> {
-        let mut trace = Vec::new();
-        let mut state = vec![input_element, FieldElement::zero()];
-        trace.push(state.clone());
+        let mut trace = Vec::with_capacity(self.n + 1);
+        let mut state = [input_element, FieldElement::zero()];
+        trace.push(state.to_vec());
 
-        for r in 0..self.n {
-            // Forward half-round
-            for i in 0..self.m {
-                state[i] = state[i].pow(self.alpha);
-            }
-            let mut temp = vec![FieldElement::zero(); self.m];
-            for i in 0..self.m {
-                for j in 0..self.m {
-                    temp[i] = temp[i] + self.mds[i][j] * state[j];
-                }
-            }
-            for i in 0..self.m {
-                state[i] = temp[i] + self.round_constants[2 * r * self.m + i];
-            }
-
-            // Backward half-round
-            for i in 0..self.m {
-                state[i] = state[i].pow(self.alphainv);
-            }
-            let mut temp = vec![FieldElement::zero(); self.m];
-            for i in 0..self.m {
-                for j in 0..self.m {
-                    temp[i] = temp[i] + self.mds[i][j] * state[j];
-                }
-            }
-            for i in 0..self.m {
-                state[i] = temp[i] + self.round_constants[2 * r * self.m + self.m + i];
-            }
-
-            trace.push(state.clone());
+        for round in 0..self.n {
+            self.apply_round(&mut state, round);
+            trace.push(state.to_vec());
         }
 
         trace
@@ -249,9 +234,11 @@ impl RescuePrime {
         &self,
         omicron: FieldElement,
     ) -> (Vec<MPolynomial>, Vec<MPolynomial>) {
+        let domain: Vec<FieldElement> = (0..self.n)
+            .map(|round| omicron.pow(round as u128))
+            .collect();
         let mut first_step_constants = Vec::new();
         for i in 0..self.m {
-            let domain: Vec<FieldElement> = (0..self.n).map(|r| omicron.pow(r as u128)).collect();
             let values: Vec<FieldElement> = (0..self.n)
                 .map(|r| self.round_constants[2 * r * self.m + i])
                 .collect();
@@ -262,7 +249,6 @@ impl RescuePrime {
 
         let mut second_step_constants = Vec::new();
         for i in 0..self.m {
-            let domain: Vec<FieldElement> = (0..self.n).map(|r| omicron.pow(r as u128)).collect();
             let values: Vec<FieldElement> = (0..self.n)
                 .map(|r| self.round_constants[2 * r * self.m + self.m + i])
                 .collect();
@@ -285,22 +271,22 @@ impl RescuePrime {
         let next_state = &variables[1 + self.m..1 + 2 * self.m];
 
         let mut air = Vec::new();
-        for i in 0..self.m {
+        for (i, first_step_constant) in first_step_constants.iter().enumerate().take(self.m) {
             // LHS: sum(MDS[i][k] * prev_state[k]^alpha) + first_step_constants[i]
             let mut lhs = MPolynomial::constant(FieldElement::zero());
-            for k in 0..self.m {
+            for (k, previous_value) in previous_state.iter().enumerate().take(self.m) {
                 lhs = lhs
                     + MPolynomial::constant(self.mds[i][k])
-                        * previous_state[k].pow(self.alpha as usize);
+                        * previous_value.clone().pow(self.alpha as usize);
             }
-            lhs = lhs + first_step_constants[i].clone();
+            lhs = lhs + first_step_constant.clone();
 
             // RHS: (sum(MDSinv[i][k] * (next_state[k] - second_step_constants[k])))^alpha
             let mut rhs = MPolynomial::constant(FieldElement::zero());
-            for k in 0..self.m {
+            for (k, next_value) in next_state.iter().enumerate().take(self.m) {
                 rhs = rhs
                     + MPolynomial::constant(self.mds_inv[i][k])
-                        * (next_state[k].clone() - second_step_constants[k].clone());
+                        * (next_value.clone() - second_step_constants[k].clone());
             }
             rhs = rhs.pow(self.alpha as usize);
 

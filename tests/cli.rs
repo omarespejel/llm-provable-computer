@@ -37,6 +37,40 @@ fn cli_supports_program_path_shortcut() {
 }
 
 #[test]
+fn cli_help_describes_subcommands() {
+    let mut command = Command::cargo_bin("tvm").expect("binary");
+    command
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "Run a program and print the final machine state",
+        ))
+        .stdout(predicate::str::contains(
+            "Produce a STARK proof for a supported execution",
+        ));
+}
+
+#[test]
+fn cli_run_help_describes_core_flags() {
+    let mut command = Command::cargo_bin("tvm").expect("binary");
+    command
+        .arg("run")
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "Maximum number of execution steps before stopping",
+        ))
+        .stdout(predicate::str::contains(
+            "Execution backend to use for the run",
+        ))
+        .stdout(predicate::str::contains(
+            "Attention mode to use for memory reads",
+        ));
+}
+
+#[test]
 fn cli_supports_multi_layer_trace_output() {
     let mut command = Command::cargo_bin("tvm").expect("binary");
     command

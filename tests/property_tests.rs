@@ -1,8 +1,8 @@
-use proptest::prelude::*;
 use llm_provable_computer::{
     decode_state, encode_state, verify_model_against_native, Attention2DMode, HullKvCache,
     Instruction, MachineState, Program, ProgramCompiler, TransformerVmConfig,
 };
+use proptest::prelude::*;
 
 #[cfg(feature = "burn-model")]
 use burn::backend::NdArray;
