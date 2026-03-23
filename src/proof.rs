@@ -579,6 +579,13 @@ pub fn verify_execution_stark(proof: &VanillaStarkExecutionProof) -> Result<bool
     ))
 }
 
+pub(crate) fn validate_execution_stark_support(
+    program: &Program,
+    attention_mode: &Attention2DMode,
+) -> Result<()> {
+    validate_proof_inputs(program, attention_mode)
+}
+
 pub fn save_execution_stark_proof(proof: &VanillaStarkExecutionProof, path: &Path) -> Result<()> {
     let bytes =
         serde_json::to_vec_pretty(proof).map_err(|err| VmError::Serialization(err.to_string()))?;

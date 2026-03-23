@@ -1,4 +1,6 @@
 use std::path::Path;
+use std::sync::mpsc::{self, Receiver, TryRecvError};
+use std::thread;
 use std::time::{Duration, Instant};
 
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
@@ -16,8 +18,13 @@ use ratatui::widgets::{
     ListItem, Padding, Paragraph, Row, Table, Tabs, Wrap,
 };
 use ratatui::{Frame, Terminal};
+use sha3::{Digest, Sha3_256};
 
-use crate::{DispatchInfo, ExecutionRuntime, Instruction, Result};
+use crate::proof::validate_execution_stark_support;
+use crate::{
+    prove_execution_stark, verify_execution_stark, Attention2DMode, DispatchInfo, ExecutionRuntime,
+    Instruction, Result, VanillaStarkExecutionProof,
+};
 
 const HISTORY_LIMIT: usize = 96;
 const TRACE_LIMIT: usize = 18;
@@ -88,26 +95,34 @@ enum ViewMode {
     Runway,
     Memory,
     Backtrace,
+    Attestation,
 }
 
 impl ViewMode {
-    fn all() -> [Self; 3] {
-        [Self::Runway, Self::Memory, Self::Backtrace]
+    fn all() -> [Self; 4] {
+        [
+            Self::Runway,
+            Self::Memory,
+            Self::Backtrace,
+            Self::Attestation,
+        ]
     }
 
     fn next(self) -> Self {
         match self {
             Self::Runway => Self::Memory,
             Self::Memory => Self::Backtrace,
-            Self::Backtrace => Self::Runway,
+            Self::Backtrace => Self::Attestation,
+            Self::Attestation => Self::Runway,
         }
     }
 
     fn previous(self) -> Self {
         match self {
-            Self::Runway => Self::Backtrace,
+            Self::Runway => Self::Attestation,
             Self::Memory => Self::Runway,
             Self::Backtrace => Self::Memory,
+            Self::Attestation => Self::Backtrace,
         }
     }
 
@@ -116,11 +131,218 @@ impl ViewMode {
             Self::Runway => "Runway",
             Self::Memory => "Atelier",
             Self::Backtrace => "Backtrace",
+            Self::Attestation => "Attestation",
         }
     }
 }
 
-#[derive(Debug, Clone)]
+enum ProofWorkerMessage {
+    Proved(std::result::Result<VanillaStarkExecutionProof, String>),
+    Verified {
+        proof: VanillaStarkExecutionProof,
+        result: std::result::Result<bool, String>,
+    },
+}
+
+enum ProofPhase {
+    Idle,
+    Proving {
+        started_at: Instant,
+        proof_budget_steps: usize,
+        auto_verify: bool,
+    },
+    Ready {
+        proof: VanillaStarkExecutionProof,
+        minted_at: Instant,
+    },
+    Verifying {
+        proof: VanillaStarkExecutionProof,
+        started_at: Instant,
+    },
+    Verified {
+        proof: VanillaStarkExecutionProof,
+        verified_at: Instant,
+    },
+    Failed {
+        stage: &'static str,
+        message: String,
+        proof: Option<VanillaStarkExecutionProof>,
+    },
+}
+
+struct ProofShowcase {
+    phase: ProofPhase,
+    receiver: Option<Receiver<ProofWorkerMessage>>,
+}
+
+impl ProofShowcase {
+    fn new() -> Self {
+        Self {
+            phase: ProofPhase::Idle,
+            receiver: None,
+        }
+    }
+
+    fn is_busy(&self) -> bool {
+        matches!(
+            self.phase,
+            ProofPhase::Proving { .. } | ProofPhase::Verifying { .. }
+        )
+    }
+
+    fn current_proof(&self) -> Option<&VanillaStarkExecutionProof> {
+        match &self.phase {
+            ProofPhase::Ready { proof, .. }
+            | ProofPhase::Verifying { proof, .. }
+            | ProofPhase::Verified { proof, .. } => Some(proof),
+            ProofPhase::Failed {
+                proof: Some(proof), ..
+            } => Some(proof),
+            ProofPhase::Idle
+            | ProofPhase::Proving { .. }
+            | ProofPhase::Failed { proof: None, .. } => None,
+        }
+    }
+
+    fn poll(&mut self) {
+        let Some(receiver) = &self.receiver else {
+            return;
+        };
+
+        match receiver.try_recv() {
+            Ok(message) => {
+                let auto_verify = matches!(
+                    self.phase,
+                    ProofPhase::Proving {
+                        auto_verify: true,
+                        ..
+                    }
+                );
+                self.receiver = None;
+                match message {
+                    ProofWorkerMessage::Proved(result) => match result {
+                        Ok(proof) => {
+                            if auto_verify {
+                                self.start_verifying_with_proof(proof);
+                            } else {
+                                self.phase = ProofPhase::Ready {
+                                    proof,
+                                    minted_at: Instant::now(),
+                                };
+                            }
+                        }
+                        Err(message) => {
+                            self.phase = ProofPhase::Failed {
+                                stage: "prove",
+                                message,
+                                proof: None,
+                            };
+                        }
+                    },
+                    ProofWorkerMessage::Verified { proof, result } => match result {
+                        Ok(true) => {
+                            self.phase = ProofPhase::Verified {
+                                proof,
+                                verified_at: Instant::now(),
+                            };
+                        }
+                        Ok(false) => {
+                            self.phase = ProofPhase::Failed {
+                                stage: "verify",
+                                message: "the verifier rejected the generated proof".to_string(),
+                                proof: Some(proof),
+                            };
+                        }
+                        Err(message) => {
+                            self.phase = ProofPhase::Failed {
+                                stage: "verify",
+                                message,
+                                proof: Some(proof),
+                            };
+                        }
+                    },
+                }
+            }
+            Err(TryRecvError::Empty) => {}
+            Err(TryRecvError::Disconnected) => {
+                self.receiver = None;
+                let proof = match std::mem::replace(&mut self.phase, ProofPhase::Idle) {
+                    ProofPhase::Verifying { proof, .. } => Some(proof),
+                    ProofPhase::Ready { proof, minted_at } => {
+                        self.phase = ProofPhase::Ready { proof, minted_at };
+                        return;
+                    }
+                    ProofPhase::Verified { proof, verified_at } => {
+                        self.phase = ProofPhase::Verified { proof, verified_at };
+                        return;
+                    }
+                    ProofPhase::Failed {
+                        stage,
+                        message,
+                        proof,
+                    } => {
+                        self.phase = ProofPhase::Failed {
+                            stage,
+                            message,
+                            proof,
+                        };
+                        return;
+                    }
+                    ProofPhase::Idle | ProofPhase::Proving { .. } => None,
+                };
+                self.phase = ProofPhase::Failed {
+                    stage: "worker",
+                    message: "the proof worker disconnected before returning a result".to_string(),
+                    proof,
+                };
+            }
+        }
+    }
+
+    fn start_proving(
+        &mut self,
+        runtime: &ExecutionRuntime,
+        proof_budget_steps: usize,
+        auto_verify: bool,
+    ) {
+        let model = runtime.model().clone();
+        let (sender, receiver) = mpsc::channel();
+        self.receiver = Some(receiver);
+        self.phase = ProofPhase::Proving {
+            started_at: Instant::now(),
+            proof_budget_steps,
+            auto_verify,
+        };
+
+        thread::spawn(move || {
+            let result = prove_execution_stark(&model, proof_budget_steps)
+                .map_err(|error| error.to_string());
+            let _ = sender.send(ProofWorkerMessage::Proved(result));
+        });
+    }
+
+    fn start_verifying(&mut self) {
+        let Some(proof) = self.current_proof().cloned() else {
+            return;
+        };
+        self.start_verifying_with_proof(proof);
+    }
+
+    fn start_verifying_with_proof(&mut self, proof: VanillaStarkExecutionProof) {
+        let (sender, receiver) = mpsc::channel();
+        self.receiver = Some(receiver);
+        self.phase = ProofPhase::Verifying {
+            proof: proof.clone(),
+            started_at: Instant::now(),
+        };
+
+        thread::spawn(move || {
+            let result = verify_execution_stark(&proof).map_err(|error| error.to_string());
+            let _ = sender.send(ProofWorkerMessage::Verified { proof, result });
+        });
+    }
+}
+
 struct ViewerState {
     paused: bool,
     mode: ViewMode,
@@ -132,6 +354,8 @@ struct ViewerState {
     last_seen_step: usize,
     last_rate_at: Instant,
     last_rate_step: usize,
+    proof_budget_steps: usize,
+    proof: ProofShowcase,
 }
 
 impl ViewerState {
@@ -147,6 +371,8 @@ impl ViewerState {
             last_seen_step: runtime.step_count(),
             last_rate_at: Instant::now(),
             last_rate_step: runtime.step_count(),
+            proof_budget_steps: initial_proof_budget(runtime),
+            proof: ProofShowcase::new(),
         }
     }
 
@@ -182,6 +408,14 @@ impl ViewerState {
         self.tick_ms = self.tick_ms.saturating_add(10).min(500);
     }
 
+    fn increase_proof_budget(&mut self) {
+        self.proof_budget_steps = self.proof_budget_steps.saturating_mul(2).min(1_048_576);
+    }
+
+    fn decrease_proof_budget(&mut self) {
+        self.proof_budget_steps = (self.proof_budget_steps / 2).max(32);
+    }
+
     fn refresh(&mut self, runtime: &ExecutionRuntime, now: Instant) {
         if runtime.step_count() != self.last_seen_step {
             push_limited(&mut self.acc_history, runtime.state().acc as i64);
@@ -201,6 +435,25 @@ impl ViewerState {
             self.last_rate_at = now;
             self.last_rate_step = runtime.step_count();
         }
+
+        self.proof.poll();
+    }
+
+    fn try_start_proving(&mut self, runtime: &ExecutionRuntime) {
+        self.mode = ViewMode::Attestation;
+        if self.proof.is_busy() || !proof_can_start(runtime) {
+            return;
+        }
+        self.proof
+            .start_proving(runtime, self.proof_budget_steps, true);
+    }
+
+    fn try_start_verifying(&mut self) {
+        self.mode = ViewMode::Attestation;
+        if self.proof.is_busy() || self.proof.current_proof().is_none() {
+            return;
+        }
+        self.proof.start_verifying();
     }
 }
 
@@ -278,6 +531,13 @@ fn run_loop(
                         KeyCode::Char('1') => viewer.set_mode(ViewMode::Runway),
                         KeyCode::Char('2') => viewer.set_mode(ViewMode::Memory),
                         KeyCode::Char('3') => viewer.set_mode(ViewMode::Backtrace),
+                        KeyCode::Char('4') => viewer.set_mode(ViewMode::Attestation),
+                        KeyCode::Enter | KeyCode::Char('a') | KeyCode::Char('p') => {
+                            viewer.try_start_proving(runtime)
+                        }
+                        KeyCode::Char('[') | KeyCode::Char('{') => viewer.decrease_proof_budget(),
+                        KeyCode::Char(']') | KeyCode::Char('}') => viewer.increase_proof_budget(),
+                        KeyCode::Char('v') => viewer.try_start_verifying(),
                         KeyCode::Tab | KeyCode::Right | KeyCode::Char('l') => viewer.next_mode(),
                         KeyCode::BackTab | KeyCode::Left | KeyCode::Char('h') => {
                             viewer.previous_mode()
@@ -337,6 +597,7 @@ fn draw_ui(
         ViewMode::Backtrace => {
             render_backtrace(frame, root[2], runtime, next_dispatch, viewer, theme)
         }
+        ViewMode::Attestation => render_attestation(frame, root[2], runtime, viewer, theme),
     }
 
     frame.render_widget(footer_panel(runtime, viewer, theme), root[3]);
@@ -460,6 +721,7 @@ fn status_panel(
     let dispatch = next_dispatch
         .map(|item| format!("L{} {}", item.layer_idx, item.instruction))
         .unwrap_or_else(|| "complete".to_string());
+    let (proof_label, proof_color, proof_detail) = proof_status_summary(runtime, viewer, theme);
 
     Paragraph::new(vec![
         badge_line(
@@ -512,6 +774,17 @@ fn status_panel(
                 Style::default().fg(theme.text),
             ),
         ]),
+        Line::from(vec![
+            Span::styled("proof ", Style::default().fg(theme.muted)),
+            Span::styled(
+                proof_label,
+                Style::default()
+                    .fg(proof_color)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled("  •  ", Style::default().fg(theme.muted)),
+            Span::styled(proof_detail, Style::default().fg(theme.text)),
+        ]),
     ])
     .block(panel_block("Stage Monitor", theme))
     .alignment(Alignment::Left)
@@ -532,6 +805,7 @@ fn tab_panel(viewer: &ViewerState, theme: Theme) -> Tabs<'static> {
             ViewMode::Runway => 0,
             ViewMode::Memory => 1,
             ViewMode::Backtrace => 2,
+            ViewMode::Attestation => 3,
         })
         .block(panel_block("Modes", theme))
         .divider(" ")
@@ -651,6 +925,460 @@ fn render_backtrace(
     );
     frame.render_widget(recent_event_panel(runtime, theme), right[1]);
     render_history_chart(frame, right[2], runtime, viewer, theme);
+}
+
+fn render_attestation(
+    frame: &mut Frame,
+    area: Rect,
+    runtime: &ExecutionRuntime,
+    viewer: &ViewerState,
+    theme: Theme,
+) {
+    if area.width < 100 || area.height < 16 {
+        let columns = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(54), Constraint::Percentage(46)])
+            .split(area);
+        frame.render_widget(attestation_deck_panel(runtime, viewer, theme), columns[0]);
+        frame.render_widget(
+            attestation_compact_panel(runtime, viewer, theme),
+            columns[1],
+        );
+        return;
+    }
+
+    let columns = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(56), Constraint::Percentage(44)])
+        .split(area);
+    let left = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(8), Constraint::Min(0)])
+        .split(columns[0]);
+    let right = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(8), Constraint::Min(0)])
+        .split(columns[1]);
+
+    frame.render_widget(attestation_deck_panel(runtime, viewer, theme), left[0]);
+    frame.render_widget(proof_eligibility_panel(runtime, viewer, theme), left[1]);
+    frame.render_widget(proof_artifact_panel(viewer, theme), right[0]);
+    frame.render_widget(public_claim_panel(runtime, viewer, theme), right[1]);
+}
+
+fn attestation_deck_panel(
+    runtime: &ExecutionRuntime,
+    viewer: &ViewerState,
+    theme: Theme,
+) -> Paragraph<'static> {
+    let (label, color, detail) = proof_status_summary(runtime, viewer, theme);
+    let action_hint = proof_action_hint(runtime, viewer);
+    let status_line = match &viewer.proof.phase {
+        ProofPhase::Proving {
+            started_at,
+            proof_budget_steps,
+            ..
+        } => format!(
+            "worker status  replaying to HALT and constructing a proof  •  budget {}  •  {:.1}s elapsed",
+            proof_budget_steps,
+            started_at.elapsed().as_secs_f64()
+        ),
+        ProofPhase::Verifying { started_at, .. } => format!(
+            "worker status  replaying the verifier  •  {:.1}s elapsed",
+            started_at.elapsed().as_secs_f64()
+        ),
+        ProofPhase::Ready { minted_at, .. } => format!(
+            "worker status  proof minted {:.1}s ago",
+            minted_at.elapsed().as_secs_f64()
+        ),
+        ProofPhase::Verified { verified_at, .. } => format!(
+            "worker status  verified {:.1}s ago",
+            verified_at.elapsed().as_secs_f64()
+        ),
+        ProofPhase::Failed { stage, .. } => format!("worker status  last {stage} attempt failed"),
+        ProofPhase::Idle => "worker status  standing by".to_string(),
+    };
+
+    Paragraph::new(vec![
+        badge_line(
+            &[
+                (format!(" {} ", label), theme.bg, color),
+                (
+                    format!(" {} ", runtime.model().config().attention_mode),
+                    theme.bg,
+                    theme.accent_soft,
+                ),
+                (
+                    format!(" budget {} ", viewer.proof_budget_steps),
+                    theme.bg,
+                    theme.accent_alt,
+                ),
+            ],
+            theme,
+        ),
+        Line::from(vec![
+            Span::styled("detail ", Style::default().fg(theme.muted)),
+            Span::styled(detail, Style::default().fg(theme.text)),
+        ]),
+        workflow_step_line(viewer, theme),
+        Line::from(vec![
+            Span::styled("action ", Style::default().fg(theme.muted)),
+            Span::styled(action_hint, Style::default().fg(theme.accent)),
+        ]),
+        Line::from(vec![
+            Span::styled("claim ", Style::default().fg(theme.muted)),
+            Span::styled(
+                format!(
+                    "{} instructions  •  {} layers  •  {} memory cells",
+                    runtime.model().program().len(),
+                    runtime.model().config().num_layers,
+                    runtime.state().memory.len()
+                ),
+                Style::default().fg(theme.text),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled("flow ", Style::default().fg(theme.muted)),
+            Span::styled(status_line, Style::default().fg(theme.accent_alt)),
+        ]),
+    ])
+    .block(panel_block("Attestation Deck", theme))
+    .wrap(Wrap { trim: true })
+}
+
+fn attestation_compact_panel(
+    runtime: &ExecutionRuntime,
+    viewer: &ViewerState,
+    theme: Theme,
+) -> Paragraph<'static> {
+    let proof = viewer.proof.current_proof();
+    let fingerprint = proof
+        .map(|proof| proof_fingerprint(&proof.proof))
+        .unwrap_or_else(|| "pending".to_string());
+    let steps = proof
+        .map(|proof| proof.claim.steps)
+        .unwrap_or_else(|| runtime.step_count());
+    let state = proof
+        .map(|proof| &proof.claim.final_state)
+        .unwrap_or_else(|| runtime.state());
+    let verification = match &viewer.proof.phase {
+        ProofPhase::Verified { .. } => "verified",
+        ProofPhase::Verifying { .. } => "verifying",
+        ProofPhase::Ready { .. } => "ready",
+        ProofPhase::Failed {
+            stage: "verify", ..
+        } => "verify failed",
+        _ => "not minted",
+    };
+
+    Paragraph::new(vec![
+        Line::from(vec![
+            Span::styled("proof id ", Style::default().fg(theme.muted)),
+            Span::styled(
+                fingerprint,
+                Style::default().fg(theme.text).add_modifier(Modifier::BOLD),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled("status ", Style::default().fg(theme.muted)),
+            Span::styled(verification, Style::default().fg(theme.accent)),
+            Span::styled("  •  steps ", Style::default().fg(theme.muted)),
+            Span::styled(steps.to_string(), Style::default().fg(theme.text)),
+        ]),
+        Line::from(vec![
+            Span::styled("final ", Style::default().fg(theme.muted)),
+            Span::styled(
+                format!("pc {}  acc {}  sp {}", state.pc, state.acc, state.sp),
+                Style::default().fg(theme.text),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled("flags ", Style::default().fg(theme.muted)),
+            Span::styled(
+                format!(
+                    "halt {}  zero {}  carry {}",
+                    on_off(state.halted),
+                    on_off(state.zero_flag),
+                    on_off(state.carry_flag)
+                ),
+                Style::default().fg(theme.text),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled("keys ", Style::default().fg(theme.muted)),
+            Span::styled(
+                "enter/p attest  •  v re-verify  •  [/] budget",
+                Style::default().fg(theme.accent_soft),
+            ),
+        ]),
+    ])
+    .block(panel_block("Proof Snapshot", theme))
+    .wrap(Wrap { trim: true })
+}
+
+fn proof_artifact_panel(viewer: &ViewerState, theme: Theme) -> Paragraph<'static> {
+    if let Some(proof) = viewer.proof.current_proof() {
+        let verification = match &viewer.proof.phase {
+            ProofPhase::Verified { .. } => "verified",
+            ProofPhase::Verifying { .. } => "verifying",
+            ProofPhase::Failed {
+                stage: "verify", ..
+            } => "verify failed",
+            _ => "ready",
+        };
+
+        Paragraph::new(vec![
+            badge_line(
+                &[
+                    (
+                        format!(" {} bytes ", proof.proof.len()),
+                        theme.bg,
+                        theme.accent,
+                    ),
+                    (
+                        format!(" {} ", verification),
+                        theme.bg,
+                        if matches!(&viewer.proof.phase, ProofPhase::Verified { .. }) {
+                            theme.success
+                        } else {
+                            theme.accent_alt
+                        },
+                    ),
+                ],
+                theme,
+            ),
+            Line::from(vec![
+                Span::styled("fingerprint ", Style::default().fg(theme.muted)),
+                Span::styled(
+                    proof_fingerprint(&proof.proof),
+                    Style::default().fg(theme.text).add_modifier(Modifier::BOLD),
+                ),
+            ]),
+            Line::from(vec![
+                Span::styled("fri ", Style::default().fg(theme.muted)),
+                Span::styled(
+                    format!(
+                        "expansion {}  •  colinearity {}  •  security {}",
+                        proof.claim.options.expansion_factor,
+                        proof.claim.options.num_colinearity_checks,
+                        proof.claim.options.security_level
+                    ),
+                    Style::default().fg(theme.text),
+                ),
+            ]),
+            Line::from(vec![
+                Span::styled("artifact ", Style::default().fg(theme.muted)),
+                Span::styled(
+                    "held in memory for instant re-verification",
+                    Style::default().fg(theme.accent_soft),
+                ),
+            ]),
+        ])
+        .block(panel_block("Proof Artifact", theme))
+        .wrap(Wrap { trim: true })
+    } else {
+        Paragraph::new(vec![
+            Line::from(vec![
+                Span::styled("artifact ", Style::default().fg(theme.muted)),
+                Span::styled(
+                    "none yet",
+                    Style::default().fg(theme.text).add_modifier(Modifier::BOLD),
+                ),
+            ]),
+            Line::from(vec![
+                Span::styled("launch ", Style::default().fg(theme.muted)),
+                Span::styled(
+                    "press enter or p to run replay -> prove -> verify",
+                    Style::default().fg(theme.accent),
+                ),
+            ]),
+            Line::from(vec![
+                Span::styled("budget ", Style::default().fg(theme.muted)),
+                Span::styled(
+                    format!(
+                        "current worker budget is {} steps  •  adjust with [ or ]",
+                        viewer.proof_budget_steps
+                    ),
+                    Style::default().fg(theme.accent_soft),
+                ),
+            ]),
+        ])
+        .block(panel_block("Proof Artifact", theme))
+        .wrap(Wrap { trim: true })
+    }
+}
+
+fn proof_eligibility_panel(
+    runtime: &ExecutionRuntime,
+    viewer: &ViewerState,
+    theme: Theme,
+) -> Paragraph<'static> {
+    let attention_supported = matches!(
+        runtime.model().config().attention_mode,
+        Attention2DMode::AverageHard
+    );
+    let static_support = validate_execution_stark_support(
+        runtime.model().program(),
+        &runtime.model().config().attention_mode,
+    );
+    let carry_free = !trace_has_carry(runtime);
+
+    Paragraph::new(vec![
+        proof_state_line(
+            "attention",
+            if attention_supported { "PASS" } else { "FAIL" },
+            if attention_supported {
+                theme.success
+            } else {
+                theme.danger
+            },
+            if attention_supported {
+                "average-hard"
+            } else {
+                "non-proof attention mode"
+            },
+            theme,
+        ),
+        proof_state_line(
+            "air rules",
+            if static_support.is_ok() {
+                "PASS"
+            } else {
+                "FAIL"
+            },
+            if static_support.is_ok() {
+                theme.success
+            } else {
+                theme.danger
+            },
+            static_support
+                .as_ref()
+                .map(|_| "instruction set supported")
+                .unwrap_or("unsupported for current AIR"),
+            theme,
+        ),
+        proof_state_line(
+            "preview",
+            if runtime.state().halted {
+                "HALTED"
+            } else if runtime.step_count() >= runtime.max_steps() {
+                "LIMIT"
+            } else {
+                "LIVE"
+            },
+            if runtime.state().halted {
+                theme.success
+            } else if runtime.step_count() >= runtime.max_steps() {
+                theme.accent_soft
+            } else {
+                theme.accent_alt
+            },
+            if runtime.state().halted {
+                "the current preview already produced a halted claim"
+            } else if runtime.step_count() >= runtime.max_steps() {
+                "preview stopped early; the attestation worker can still rerun from scratch"
+            } else {
+                "preview is still live; attestation will replay independently"
+            },
+            theme,
+        ),
+        proof_state_line(
+            "budget",
+            "WORKER",
+            theme.accent,
+            &format!(
+                "{} steps  •  enter/p launches the full attestation flow",
+                viewer.proof_budget_steps
+            ),
+            theme,
+        ),
+        proof_state_line(
+            "carry",
+            if carry_free { "CLEAN" } else { "BLOCK" },
+            if carry_free {
+                theme.success
+            } else {
+                theme.danger
+            },
+            if carry_free {
+                "no overflow seen in the preview trace so far"
+            } else {
+                "carry observed; proof blocked"
+            },
+            theme,
+        ),
+    ])
+    .block(panel_block("Eligibility", theme))
+    .wrap(Wrap { trim: true })
+}
+
+fn public_claim_panel(
+    runtime: &ExecutionRuntime,
+    viewer: &ViewerState,
+    theme: Theme,
+) -> Paragraph<'static> {
+    let proof = viewer.proof.current_proof();
+    let state = proof
+        .map(|proof| &proof.claim.final_state)
+        .unwrap_or_else(|| runtime.state());
+    let steps = proof
+        .map(|proof| proof.claim.steps)
+        .unwrap_or_else(|| runtime.step_count());
+    let attention = proof
+        .map(|proof| proof.claim.attention_mode.to_string())
+        .unwrap_or_else(|| runtime.model().config().attention_mode.to_string());
+    let seal = if proof.is_some() {
+        "sealed"
+    } else {
+        "candidate"
+    };
+
+    Paragraph::new(vec![
+        Line::from(vec![
+            Span::styled("claim ", Style::default().fg(theme.muted)),
+            Span::styled(
+                seal,
+                Style::default()
+                    .fg(theme.accent)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled("  •  steps ", Style::default().fg(theme.muted)),
+            Span::styled(steps.to_string(), Style::default().fg(theme.text)),
+        ]),
+        Line::from(vec![
+            Span::styled("state ", Style::default().fg(theme.muted)),
+            Span::styled(
+                format!("pc {}  acc {}  sp {}", state.pc, state.acc, state.sp),
+                Style::default().fg(theme.text),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled("flags ", Style::default().fg(theme.muted)),
+            Span::styled(
+                format!(
+                    "halt {}  zero {}  carry {}",
+                    on_off(state.halted),
+                    on_off(state.zero_flag),
+                    on_off(state.carry_flag)
+                ),
+                Style::default().fg(theme.text),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled("shape ", Style::default().fg(theme.muted)),
+            Span::styled(
+                format!(
+                    "{} instructions  •  {} memory  •  {}",
+                    runtime.model().program().len(),
+                    state.memory.len(),
+                    attention
+                ),
+                Style::default().fg(theme.text),
+            ),
+        ]),
+    ])
+    .block(panel_block("Public Claim", theme))
+    .wrap(Wrap { trim: true })
 }
 
 fn dispatch_panel(
@@ -1145,12 +1873,33 @@ fn footer_panel(
         ),
         Span::styled(" step  ", Style::default().fg(theme.muted)),
         Span::styled(
-            "1/2/3",
+            "1-4",
             Style::default()
                 .fg(theme.accent)
                 .add_modifier(Modifier::BOLD),
         ),
         Span::styled(" view  ", Style::default().fg(theme.muted)),
+        Span::styled(
+            "p",
+            Style::default()
+                .fg(theme.accent)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(" attest  ", Style::default().fg(theme.muted)),
+        Span::styled(
+            "v",
+            Style::default()
+                .fg(theme.accent)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(" verify  ", Style::default().fg(theme.muted)),
+        Span::styled(
+            "[/]",
+            Style::default()
+                .fg(theme.accent)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(" budget  ", Style::default().fg(theme.muted)),
         Span::styled(
             "t",
             Style::default()
@@ -1221,7 +1970,9 @@ fn render_overlay(
             ))
             .centered(),
             Line::from(""),
-            Line::from("space to resume  •  n to single-step  •  q to quit").centered(),
+            Line::from("space to resume  •  n to single-step  •  p to launch attestation").centered(),
+            Line::from("4 for attestation view  •  v to re-verify  •  [/] adjust worker budget  •  q to quit")
+                .centered(),
         ])
         .block(
             panel_block("Spotlight", theme)
@@ -1289,6 +2040,177 @@ fn gauge_line(label: &str, ratio: f64, fill: Color, unfilled: Color) -> Line<'st
     Line::from(spans)
 }
 
+enum ProofAvailability {
+    Ready,
+    Blocked(String),
+}
+
+fn proof_status_summary(
+    runtime: &ExecutionRuntime,
+    viewer: &ViewerState,
+    theme: Theme,
+) -> (&'static str, Color, String) {
+    match &viewer.proof.phase {
+        ProofPhase::Proving {
+            started_at,
+            proof_budget_steps,
+            auto_verify,
+        } => (
+            if *auto_verify { "ATTESTING" } else { "PROVING" },
+            theme.accent,
+            format!(
+                "replaying up to {} steps, then constructing {} ({:.1}s)",
+                proof_budget_steps,
+                if *auto_verify {
+                    "and verifying a proof"
+                } else {
+                    "a proof"
+                },
+                started_at.elapsed().as_secs_f64()
+            ),
+        ),
+        ProofPhase::Verifying { started_at, .. } => (
+            "VERIFYING",
+            theme.accent_alt,
+            format!(
+                "checking the generated proof against its public claim ({:.1}s)",
+                started_at.elapsed().as_secs_f64()
+            ),
+        ),
+        ProofPhase::Ready { .. } => (
+            "PROOF READY",
+            theme.accent_soft,
+            "press v to verify the in-memory artifact".to_string(),
+        ),
+        ProofPhase::Verified { .. } => (
+            "VERIFIED",
+            theme.success,
+            "the worker completed replay, proving, and verification".to_string(),
+        ),
+        ProofPhase::Failed { message, .. } => ("ERROR", theme.danger, message.clone()),
+        ProofPhase::Idle => match proof_availability(runtime) {
+            ProofAvailability::Ready => (
+                "READY",
+                theme.accent_soft,
+                if runtime.state().halted {
+                    format!(
+                        "preview is already halted; press p to attest with a {}-step worker budget",
+                        viewer.proof_budget_steps
+                    )
+                } else if runtime.step_count() >= runtime.max_steps() {
+                    format!(
+                        "preview hit its {}-step limit; press p to rerun and attest with budget {}",
+                        runtime.max_steps(),
+                        viewer.proof_budget_steps
+                    )
+                } else {
+                    format!(
+                        "press p to run replay -> prove -> verify with a {}-step worker budget",
+                        viewer.proof_budget_steps
+                    )
+                },
+            ),
+            ProofAvailability::Blocked(message) => ("BLOCKED", theme.danger, message),
+        },
+    }
+}
+
+fn proof_action_hint(runtime: &ExecutionRuntime, viewer: &ViewerState) -> &'static str {
+    if viewer.proof.is_busy() {
+        "the worker is driving the full flow; you can stay here or browse the other views"
+    } else if viewer.proof.current_proof().is_some() {
+        "press p to regenerate the full flow, or v to re-run verification only"
+    } else if proof_can_start(runtime) {
+        "press enter or p to launch the end-to-end attestation workflow"
+    } else {
+        "the current program shape is outside the supported vanilla STARK scope"
+    }
+}
+
+fn proof_can_start(runtime: &ExecutionRuntime) -> bool {
+    matches!(proof_availability(runtime), ProofAvailability::Ready)
+}
+
+fn proof_availability(runtime: &ExecutionRuntime) -> ProofAvailability {
+    if let Err(error) = validate_execution_stark_support(
+        runtime.model().program(),
+        &runtime.model().config().attention_mode,
+    ) {
+        return ProofAvailability::Blocked(error.to_string());
+    }
+
+    if trace_has_carry(runtime) {
+        return ProofAvailability::Blocked(
+            "carry_flag appeared in the trace; overflowing arithmetic is outside the current AIR"
+                .to_string(),
+        );
+    }
+
+    ProofAvailability::Ready
+}
+
+fn workflow_step_line(viewer: &ViewerState, theme: Theme) -> Line<'static> {
+    let (replay_color, prove_color, verify_color) = match &viewer.proof.phase {
+        ProofPhase::Idle => (theme.accent_soft, theme.border, theme.border),
+        ProofPhase::Proving { .. } => (theme.accent, theme.accent, theme.border),
+        ProofPhase::Ready { .. } => (theme.success, theme.success, theme.border),
+        ProofPhase::Verifying { .. } => (theme.success, theme.success, theme.accent_alt),
+        ProofPhase::Verified { .. } => (theme.success, theme.success, theme.success),
+        ProofPhase::Failed { stage, .. } => match *stage {
+            "prove" => (theme.success, theme.danger, theme.border),
+            "verify" => (theme.success, theme.success, theme.danger),
+            _ => (theme.accent_soft, theme.danger, theme.border),
+        },
+    };
+
+    Line::from(vec![
+        Span::styled("path ", Style::default().fg(theme.muted)),
+        Span::styled(
+            "[1 replay]",
+            Style::default()
+                .fg(replay_color)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(" -> ", Style::default().fg(theme.muted)),
+        Span::styled(
+            "[2 prove]",
+            Style::default()
+                .fg(prove_color)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(" -> ", Style::default().fg(theme.muted)),
+        Span::styled(
+            "[3 verify]",
+            Style::default()
+                .fg(verify_color)
+                .add_modifier(Modifier::BOLD),
+        ),
+    ])
+}
+
+fn proof_state_line(
+    label: &str,
+    status: &str,
+    color: Color,
+    detail: &str,
+    theme: Theme,
+) -> Line<'static> {
+    Line::from(vec![
+        Span::styled(
+            format!("{label:<10}"),
+            Style::default()
+                .fg(theme.muted)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(
+            status.to_string(),
+            Style::default().fg(color).add_modifier(Modifier::BOLD),
+        ),
+        Span::styled("  ", Style::default().fg(theme.muted)),
+        Span::styled(detail.to_string(), Style::default().fg(theme.text)),
+    ])
+}
+
 fn viewer_status(runtime: &ExecutionRuntime, viewer: &ViewerState) -> &'static str {
     if runtime.state().halted {
         "HALTED"
@@ -1347,6 +2269,19 @@ fn on_off(value: bool) -> &'static str {
     } else {
         "OFF"
     }
+}
+
+fn trace_has_carry(runtime: &ExecutionRuntime) -> bool {
+    runtime.trace().iter().any(|state| state.carry_flag)
+}
+
+fn proof_fingerprint(bytes: &[u8]) -> String {
+    let digest = Sha3_256::digest(bytes);
+    digest
+        .iter()
+        .take(6)
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }
 
 fn latest_write_cell(runtime: &ExecutionRuntime) -> Option<usize> {
@@ -1439,6 +2374,10 @@ fn sparkline_string(data: &[u64], width: usize) -> String {
         .collect()
 }
 
+fn initial_proof_budget(runtime: &ExecutionRuntime) -> usize {
+    runtime.max_steps().max(256)
+}
+
 fn centered_rect(area: Rect, percent_x: u16, percent_y: u16) -> Rect {
     let [area] = Layout::vertical([Constraint::Percentage(percent_y)])
         .flex(Flex::Center)
@@ -1454,4 +2393,114 @@ fn push_limited<T>(items: &mut Vec<T>, value: T) {
         items.remove(0);
     }
     items.push(value);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Program, TransformerVm, TransformerVmConfig};
+
+    fn runtime_for(
+        program: Program,
+        attention_mode: Attention2DMode,
+        max_steps: usize,
+    ) -> ExecutionRuntime {
+        let config = TransformerVmConfig {
+            attention_mode,
+            ..TransformerVmConfig::default()
+        };
+        let model = TransformerVm::new(config, program).expect("model");
+        ExecutionRuntime::new(model, max_steps)
+    }
+
+    #[test]
+    fn proof_availability_is_ready_before_preview_halts() {
+        let runtime = runtime_for(
+            Program::new(vec![Instruction::LoadImmediate(1), Instruction::Halt], 4),
+            Attention2DMode::AverageHard,
+            8,
+        );
+
+        assert!(matches!(
+            proof_availability(&runtime),
+            ProofAvailability::Ready
+        ));
+    }
+
+    #[test]
+    fn proof_availability_is_ready_after_supported_halted_run() {
+        let mut runtime = runtime_for(
+            Program::new(vec![Instruction::LoadImmediate(1), Instruction::Halt], 4),
+            Attention2DMode::AverageHard,
+            8,
+        );
+
+        runtime.run().expect("run");
+
+        assert!(matches!(
+            proof_availability(&runtime),
+            ProofAvailability::Ready
+        ));
+    }
+
+    #[test]
+    fn proof_availability_blocks_traces_that_raise_carry() {
+        let mut runtime = runtime_for(
+            Program::new(
+                vec![
+                    Instruction::LoadImmediate(i16::MAX),
+                    Instruction::AddImmediate(1),
+                    Instruction::Halt,
+                ],
+                4,
+            ),
+            Attention2DMode::AverageHard,
+            8,
+        );
+
+        runtime.run().expect("run");
+
+        match proof_availability(&runtime) {
+            ProofAvailability::Blocked(message) => assert!(message.contains("carry_flag")),
+            ProofAvailability::Ready => {
+                panic!("expected carry-bearing trace to block proving")
+            }
+        }
+    }
+
+    #[test]
+    fn proof_availability_blocks_unsupported_attention_modes() {
+        let mut runtime = runtime_for(
+            Program::new(vec![Instruction::LoadImmediate(1), Instruction::Halt], 4),
+            Attention2DMode::Softmax,
+            8,
+        );
+
+        runtime.run().expect("run");
+
+        match proof_availability(&runtime) {
+            ProofAvailability::Blocked(message) => assert!(message.contains("average-hard")),
+            ProofAvailability::Ready => {
+                panic!("expected unsupported attention mode to block proving")
+            }
+        }
+    }
+
+    #[test]
+    fn initial_proof_budget_has_floor_above_small_preview_limits() {
+        let runtime = runtime_for(
+            Program::new(vec![Instruction::LoadImmediate(1), Instruction::Halt], 4),
+            Attention2DMode::AverageHard,
+            64,
+        );
+
+        assert_eq!(initial_proof_budget(&runtime), 256);
+    }
+
+    #[test]
+    fn proof_fingerprint_is_short_hex() {
+        let fingerprint = proof_fingerprint(&[1, 2, 3, 4]);
+        assert_eq!(fingerprint.len(), 12);
+        assert!(fingerprint.chars().all(|ch| ch.is_ascii_hexdigit()));
+    }
 }
