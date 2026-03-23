@@ -33,11 +33,8 @@ impl AddressedMemory {
     }
 
     pub fn load_with_mode(&self, address: u8, mode: &Attention2DMode) -> Result<i16> {
-        let idx = address as usize;
-        let history = self.histories.get(idx).ok_or(VmError::MemoryOutOfBounds {
-            addr: idx,
-            size: self.cells.len(),
-        })?;
+        let idx = self.checked_index(address)?;
+        let history = &self.histories[idx];
 
         if history.total_size() == 0 {
             return Ok(self.cells[idx]);
@@ -52,14 +49,8 @@ impl AddressedMemory {
     }
 
     pub fn store(&mut self, address: u8, value: i16, step: usize) -> Result<()> {
-        let idx = address as usize;
-        let history = self
-            .histories
-            .get_mut(idx)
-            .ok_or(VmError::MemoryOutOfBounds {
-                addr: idx,
-                size: self.cells.len(),
-            })?;
+        let idx = self.checked_index(address)?;
+        let history = &mut self.histories[idx];
 
         self.cells[idx] = value;
         history.insert([step as f32, value as f32], &[value as f32]);
@@ -71,14 +62,20 @@ impl AddressedMemory {
     }
 
     pub fn history_len(&self, address: u8) -> Result<usize> {
-        let idx = address as usize;
-        self.histories
-            .get(idx)
-            .map(HullKvCache::total_size)
-            .ok_or(VmError::MemoryOutOfBounds {
+        let idx = self.checked_index(address)?;
+        Ok(self.histories[idx].total_size())
+    }
+
+    fn checked_index(&self, address: u8) -> Result<usize> {
+        let idx = usize::from(address);
+        if idx < self.cells.len() {
+            Ok(idx)
+        } else {
+            Err(VmError::MemoryOutOfBounds {
                 addr: idx,
                 size: self.cells.len(),
             })
+        }
     }
 }
 

@@ -45,6 +45,57 @@ pub trait ExecutionEngine {
     fn next_instruction(&self) -> Result<Option<Instruction>>;
 
     fn is_halted(&self) -> bool {
-        self.state().halted || self.step_count() >= self.max_steps()
+        execution_complete(self.state(), self.step_count(), self.max_steps())
+    }
+}
+
+pub(crate) fn execution_complete(
+    state: &MachineState,
+    step_count: usize,
+    max_steps: usize,
+) -> bool {
+    state.halted || step_count >= max_steps
+}
+
+pub(crate) fn build_execution_result(
+    final_state: &MachineState,
+    steps: usize,
+    elapsed: Duration,
+) -> ExecutionResult {
+    ExecutionResult {
+        final_state: final_state.clone(),
+        steps,
+        halted: final_state.halted,
+        elapsed,
+        tokens_per_sec: tokens_per_sec(steps, elapsed),
+    }
+}
+
+pub(crate) fn record_execution_step(
+    trace: &mut Vec<MachineState>,
+    events: &mut Vec<ExecutionTraceEntry>,
+    step: usize,
+    layer_idx: Option<usize>,
+    instruction: Instruction,
+    state_before: MachineState,
+    state_after: &MachineState,
+) {
+    let state_after = state_after.clone();
+    trace.push(state_after.clone());
+    events.push(ExecutionTraceEntry {
+        step,
+        layer_idx,
+        instruction,
+        state_before,
+        state_after,
+    });
+}
+
+fn tokens_per_sec(steps: usize, elapsed: Duration) -> f64 {
+    let elapsed_secs = elapsed.as_secs_f64();
+    if elapsed_secs > 0.0 {
+        steps as f64 / elapsed_secs
+    } else {
+        0.0
     }
 }

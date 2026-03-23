@@ -6,7 +6,10 @@ use tract_onnx::prelude::{
     tvec, Framework, InferenceModelExt, RunOptions, Tensor, TypedRunnableModel,
 };
 
-use crate::engine::{ExecutionEngine, ExecutionResult, ExecutionTraceEntry};
+use crate::engine::{
+    build_execution_result, execution_complete, record_execution_step, ExecutionEngine,
+    ExecutionResult, ExecutionTraceEntry,
+};
 use crate::error::{Result, VmError};
 use crate::instruction::Instruction;
 use crate::memory::AddressedMemory;
@@ -63,10 +66,7 @@ impl OnnxExecutionRuntime {
 
         let initial_memory = metadata.program.initial_memory().to_vec();
         let memory = AddressedMemory::from_initial(&initial_memory);
-        let state = MachineState {
-            memory: initial_memory,
-            ..MachineState::new(metadata.program.memory_size())
-        };
+        let state = MachineState::with_memory(initial_memory);
 
         Ok(Self {
             metadata,
@@ -81,7 +81,7 @@ impl OnnxExecutionRuntime {
     }
 
     pub fn step(&mut self) -> Result<&MachineState> {
-        if self.state.halted || self.step_count >= self.max_steps {
+        if execution_complete(&self.state, self.step_count, self.max_steps) {
             return Ok(&self.state);
         }
 
@@ -107,37 +107,29 @@ impl OnnxExecutionRuntime {
         let next = self.apply_output(&instruction_model, &output)?;
         self.state = next;
         self.step_count += 1;
-        self.trace.push(self.state.clone());
-        self.events.push(ExecutionTraceEntry {
-            step: self.step_count,
-            layer_idx: Some(instruction_model.layer_idx),
-            instruction: instruction_model.instruction,
-            state_before: before,
-            state_after: self.state.clone(),
-        });
+        record_execution_step(
+            &mut self.trace,
+            &mut self.events,
+            self.step_count,
+            Some(instruction_model.layer_idx),
+            instruction_model.instruction,
+            before,
+            &self.state,
+        );
 
         Ok(&self.state)
     }
 
     pub fn run(&mut self) -> Result<ExecutionResult> {
         let start = Instant::now();
-        while self.step_count < self.max_steps && !self.state.halted {
+        while !execution_complete(&self.state, self.step_count, self.max_steps) {
             self.step()?;
         }
-
-        let elapsed = start.elapsed();
-        let elapsed_secs = elapsed.as_secs_f64();
-        Ok(ExecutionResult {
-            final_state: self.state.clone(),
-            steps: self.step_count,
-            halted: self.state.halted,
-            elapsed,
-            tokens_per_sec: if elapsed_secs > 0.0 {
-                self.step_count as f64 / elapsed_secs
-            } else {
-                0.0
-            },
-        })
+        Ok(build_execution_result(
+            &self.state,
+            self.step_count,
+            start.elapsed(),
+        ))
     }
 
     pub fn metadata(&self) -> &OnnxProgramMetadata {
@@ -258,7 +250,7 @@ impl ExecutionEngine for OnnxExecutionRuntime {
     }
 
     fn next_instruction(&self) -> Result<Option<Instruction>> {
-        if self.state.halted || self.step_count >= self.max_steps {
+        if execution_complete(&self.state, self.step_count, self.max_steps) {
             return Ok(None);
         }
         self.metadata

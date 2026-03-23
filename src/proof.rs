@@ -118,10 +118,7 @@ impl VmAir {
         final_state: &MachineState,
     ) -> Vec<(usize, usize, FieldElement)> {
         let mut boundary = Vec::new();
-        let initial = MachineState {
-            memory: self.program.initial_memory().to_vec(),
-            ..MachineState::new(self.program.memory_size())
-        };
+        let initial = MachineState::with_memory(self.program.initial_memory().to_vec());
 
         for (register, value) in state_public_registers(&self.layout, &initial)
             .into_iter()

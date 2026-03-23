@@ -23,11 +23,18 @@ pub fn verify_model_against_native(
         max_steps,
     );
     let verification = verify_engines(&mut [&mut transformer, &mut native])?;
+    let (transformer, peers) = verification
+        .engines
+        .split_first()
+        .expect("verify_engines always returns at least one result");
+    let native = peers
+        .first()
+        .expect("verify_engines returned fewer than two engine results");
 
     Ok(ExecutionComparison {
         checked_steps: verification.checked_steps,
-        transformer: verification.engines[0].result.clone(),
-        native: verification.engines[1].result.clone(),
+        transformer: transformer.result.clone(),
+        native: native.result.clone(),
     })
 }
 
@@ -38,29 +45,22 @@ pub fn verify_engines(engines: &mut [&mut dyn ExecutionEngine]) -> Result<Verifi
         ));
     }
 
-    let reference_name = engines[0].name().to_string();
-    let reference_state = engines[0].state().clone();
-    compare_state(
-        0,
-        "initial state",
-        &reference_name,
-        &reference_state,
-        &engines[1..],
-    )?;
+    let (reference, peers) = engines
+        .split_first_mut()
+        .expect("verified at least one reference engine");
+    let reference_name = reference.name().to_string();
+    let reference_state = reference.state().clone();
+    compare_state(0, "initial state", &reference_name, &reference_state, peers)?;
 
     let mut checked_steps = 0usize;
 
     loop {
-        let reference_halted = engines[0].is_halted();
-        for engine in &engines[1..] {
+        let reference_halted = reference.is_halted();
+        for engine in peers.iter() {
             if engine.is_halted() != reference_halted {
                 return Err(mismatch(
-                    engines
-                        .iter()
-                        .map(|engine| engine.step_count())
-                        .max()
-                        .unwrap_or(0),
-                    format_completion_mismatch(engines),
+                    max_step_count(&**reference, peers),
+                    format_completion_mismatch(&**reference, peers),
                 ));
             }
         }
@@ -69,10 +69,10 @@ pub fn verify_engines(engines: &mut [&mut dyn ExecutionEngine]) -> Result<Verifi
             break;
         }
 
-        let expected_instruction = engines[0].next_instruction()?;
-        let reference_step = engines[0].step_count();
-        let reference_name = engines[0].name().to_string();
-        for engine in &engines[1..] {
+        let expected_instruction = reference.next_instruction()?;
+        let reference_step = reference.step_count();
+        let reference_name = reference.name().to_string();
+        for engine in peers.iter() {
             let actual_instruction = engine.next_instruction()?;
             if actual_instruction != expected_instruction {
                 return Err(mismatch(
@@ -88,46 +88,58 @@ pub fn verify_engines(engines: &mut [&mut dyn ExecutionEngine]) -> Result<Verifi
             }
         }
 
-        for engine in engines.iter_mut() {
+        reference.step()?;
+        for engine in peers.iter_mut() {
             engine.step()?;
         }
 
-        checked_steps = engines[0].step_count();
-        compare_last_event(checked_steps, engines)?;
+        checked_steps = reference.step_count();
+        compare_last_event(checked_steps, &**reference, peers)?;
     }
 
-    let mut results = Vec::with_capacity(engines.len());
-    for engine in engines.iter_mut() {
+    let mut results = Vec::with_capacity(peers.len() + 1);
+    results.push(VerifiedEngine {
+        name: reference.name().to_string(),
+        result: reference.run()?,
+    });
+    for engine in peers.iter_mut() {
         results.push(VerifiedEngine {
             name: engine.name().to_string(),
             result: engine.run()?,
         });
     }
 
-    let reference_result = results[0].result.clone();
-    let reference_name = results[0].name.clone();
-    for engine in &results[1..] {
-        if engine.result.steps != reference_result.steps {
+    let (reference_result, peers) = results
+        .split_first()
+        .expect("reference result should always be present");
+    for engine in peers {
+        if engine.result.steps != reference_result.result.steps {
             return Err(mismatch(
-                reference_result.steps.max(engine.result.steps),
+                reference_result.result.steps.max(engine.result.steps),
                 format!(
                     "step count mismatch: {}={}, {}={}",
-                    reference_name, reference_result.steps, engine.name, engine.result.steps
+                    reference_result.name,
+                    reference_result.result.steps,
+                    engine.name,
+                    engine.result.steps
                 ),
             ));
         }
-        if engine.result.halted != reference_result.halted {
+        if engine.result.halted != reference_result.result.halted {
             return Err(mismatch(
-                reference_result.steps.max(engine.result.steps),
+                reference_result.result.steps.max(engine.result.steps),
                 format!(
                     "halt flag mismatch: {}={}, {}={}",
-                    reference_name, reference_result.halted, engine.name, engine.result.halted
+                    reference_result.name,
+                    reference_result.result.halted,
+                    engine.name,
+                    engine.result.halted
                 ),
             ));
         }
         compare_result_state(
-            &reference_result,
-            &reference_name,
+            &reference_result.result,
+            &reference_result.name,
             &engine.result,
             &engine.name,
         )?;
@@ -139,15 +151,19 @@ pub fn verify_engines(engines: &mut [&mut dyn ExecutionEngine]) -> Result<Verifi
     })
 }
 
-fn compare_last_event(step: usize, engines: &[&mut dyn ExecutionEngine]) -> Result<()> {
-    let reference_name = engines[0].name().to_string();
-    let reference = engines[0]
+fn compare_last_event(
+    step: usize,
+    reference: &dyn ExecutionEngine,
+    peers: &[&mut dyn ExecutionEngine],
+) -> Result<()> {
+    let reference_name = reference.name().to_string();
+    let reference = reference
         .events()
         .last()
         .cloned()
         .ok_or_else(|| mismatch(step, format!("{reference_name} produced no trace event")))?;
 
-    for engine in &engines[1..] {
+    for engine in peers {
         let event = engine
             .events()
             .last()
@@ -258,13 +274,27 @@ fn describe_state(state: &MachineState) -> String {
     )
 }
 
-fn format_completion_mismatch(engines: &[&mut dyn ExecutionEngine]) -> String {
-    let summary = engines
-        .iter()
-        .map(|engine| format!("{}={}", engine.name(), engine.is_halted()))
-        .collect::<Vec<_>>()
-        .join(", ");
+fn format_completion_mismatch(
+    reference: &dyn ExecutionEngine,
+    peers: &[&mut dyn ExecutionEngine],
+) -> String {
+    let mut summary = Vec::with_capacity(peers.len() + 1);
+    summary.push(format!("{}={}", reference.name(), reference.is_halted()));
+    summary.extend(
+        peers
+            .iter()
+            .map(|engine| format!("{}={}", engine.name(), engine.is_halted())),
+    );
+    let summary = summary.join(", ");
     format!("engine completion diverged: {summary}")
+}
+
+fn max_step_count(reference: &dyn ExecutionEngine, peers: &[&mut dyn ExecutionEngine]) -> usize {
+    peers
+        .iter()
+        .fold(reference.step_count(), |max_steps, engine| {
+            max_steps.max(engine.step_count())
+        })
 }
 
 fn mismatch(step: usize, message: impl Into<String>) -> VmError {

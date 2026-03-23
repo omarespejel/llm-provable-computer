@@ -1,6 +1,8 @@
 use std::time::Instant;
 
-use crate::engine::ExecutionEngine;
+use crate::engine::{
+    build_execution_result, execution_complete, record_execution_step, ExecutionEngine,
+};
 pub use crate::engine::{ExecutionResult, ExecutionTraceEntry};
 use crate::error::Result;
 use crate::instruction::Instruction;
@@ -23,10 +25,7 @@ impl ExecutionRuntime {
     pub fn new(model: TransformerVm, max_steps: usize) -> Self {
         let initial_memory = model.program().initial_memory().to_vec();
         let memory = AddressedMemory::from_initial(&initial_memory);
-        let state = MachineState {
-            memory: initial_memory,
-            ..MachineState::new(model.program().memory_size())
-        };
+        let state = MachineState::with_memory(initial_memory);
         Self {
             model,
             memory,
@@ -39,7 +38,7 @@ impl ExecutionRuntime {
     }
 
     pub fn step(&mut self) -> Result<&MachineState> {
-        if self.state.halted || self.step_count >= self.max_steps {
+        if execution_complete(&self.state, self.step_count, self.max_steps) {
             return Ok(&self.state);
         }
 
@@ -50,35 +49,28 @@ impl ExecutionRuntime {
             .step(&self.state, &mut self.memory, self.step_count + 1)?;
         self.state = next;
         self.step_count += 1;
-        self.trace.push(self.state.clone());
-        self.events.push(ExecutionTraceEntry {
-            step: self.step_count,
-            layer_idx: Some(dispatch.layer_idx),
-            instruction: dispatch.instruction,
-            state_before: before,
-            state_after: self.state.clone(),
-        });
+        record_execution_step(
+            &mut self.trace,
+            &mut self.events,
+            self.step_count,
+            Some(dispatch.layer_idx),
+            dispatch.instruction,
+            before,
+            &self.state,
+        );
         Ok(&self.state)
     }
 
     pub fn run(&mut self) -> Result<ExecutionResult> {
         let start = Instant::now();
-        while self.step_count < self.max_steps && !self.state.halted {
+        while !execution_complete(&self.state, self.step_count, self.max_steps) {
             self.step()?;
         }
-        let elapsed = start.elapsed();
-        let elapsed_secs = elapsed.as_secs_f64();
-        Ok(ExecutionResult {
-            final_state: self.state.clone(),
-            steps: self.step_count,
-            halted: self.state.halted,
-            elapsed,
-            tokens_per_sec: if elapsed_secs > 0.0 {
-                self.step_count as f64 / elapsed_secs
-            } else {
-                0.0
-            },
-        })
+        Ok(build_execution_result(
+            &self.state,
+            self.step_count,
+            start.elapsed(),
+        ))
     }
 
     pub fn trace(&self) -> &[MachineState] {
@@ -110,7 +102,7 @@ impl ExecutionRuntime {
     }
 
     pub fn next_dispatch(&self) -> Result<Option<DispatchInfo>> {
-        if self.state.halted || self.step_count >= self.max_steps {
+        if execution_complete(&self.state, self.step_count, self.max_steps) {
             return Ok(None);
         }
         self.model.dispatch_info(self.state.pc).map(Some)
