@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::Path;
 
+use blake2::{Blake2b512, Digest};
 use serde::{Deserialize, Serialize};
 
 use crate::config::Attention2DMode;
@@ -12,6 +13,7 @@ use crate::model::TransformerVm;
 use crate::runtime::ExecutionRuntime;
 use crate::state::MachineState;
 use crate::vanillastark::{FieldElement, MPolynomial, Stark};
+use crate::verification::verify_model_against_native;
 
 const PC: usize = 0;
 const ACC: usize = 1;
@@ -1198,6 +1200,53 @@ fn inverse_or_zero(value: FieldElement) -> FieldElement {
     } else {
         value.inverse()
     }
+}
+
+fn execution_fingerprint_from_result(
+    engine: &str,
+    checked_steps: usize,
+    result: &ExecutionResult,
+) -> String {
+    execution_fingerprint(
+        engine,
+        checked_steps,
+        result.steps,
+        result.halted,
+        &result.final_state,
+    )
+}
+
+fn execution_fingerprint(
+    engine: &str,
+    checked_steps: usize,
+    steps: usize,
+    halted: bool,
+    final_state: &MachineState,
+) -> String {
+    #[derive(Serialize)]
+    struct FingerprintPayload<'a> {
+        engine: &'a str,
+        checked_steps: usize,
+        steps: usize,
+        halted: bool,
+        final_state: &'a MachineState,
+    }
+
+    let payload = FingerprintPayload {
+        engine,
+        checked_steps,
+        steps,
+        halted,
+        final_state,
+    };
+    let encoded = serde_json::to_vec(&payload).expect("fingerprint payload serialization");
+    let digest = Blake2b512::digest(encoded);
+    digest
+        .as_slice()
+        .iter()
+        .take(8)
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }
 
 trait IsZeroExt {
