@@ -7,6 +7,23 @@ on:
   pull_request:
 
 jobs:
+  statement-spec:
+    name: statement spec contract
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Validate statement spec constants contract
+        run: cargo test --quiet statement_spec_contract_is_synced_with_constants
+
   cargo-test:
     name: cargo test (${{ matrix.name }})
     runs-on: ubuntu-latest
@@ -84,3 +101,12 @@ jobs:
 
       - name: Validate exported ONNX in Python
         run: python scripts/validate_onnx.py compiled/fibonacci --program-name fibonacci --expected-acc 21 --expected-halted true
+
+      - name: Generate research v2 one-step semantic artifact
+        run: cargo run --features onnx-export --bin tvm -- research-v2-step programs/addition.tvm -o compiled/research-v2-addition-step.json --max-steps 1
+
+      - name: Generate research v2 prefix-trace semantic artifact
+        run: cargo run --features onnx-export --bin tvm -- research-v2-trace programs/addition.tvm -o compiled/research-v2-addition-trace.json --max-steps 8
+
+      - name: Generate research v2 matrix semantic artifact
+        run: cargo run --features onnx-export --bin tvm -- research-v2-matrix -o compiled/research-v2-matrix.json --program programs/addition.tvm --program programs/counter.tvm --max-steps 8

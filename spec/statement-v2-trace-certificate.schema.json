@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://llm-provable-computer/spec/statement-v2-trace-certificate.schema.json",
+  "title": "Statement V2 Prefix Trace Semantic Certificate",
+  "type": "object",
+  "required": [
+    "statement_version",
+    "semantic_scope",
+    "fixed_point_profile",
+    "onnx_op_subset_version",
+    "program_path",
+    "requested_max_steps",
+    "checked_steps",
+    "matched",
+    "commitments"
+  ],
+  "properties": {
+    "statement_version": { "type": "string" },
+    "semantic_scope": { "type": "string" },
+    "fixed_point_profile": { "type": "string" },
+    "onnx_op_subset_version": { "type": "string" },
+    "program_path": { "type": "string" },
+    "requested_max_steps": { "type": "integer", "minimum": 1 },
+    "checked_steps": { "type": "integer", "minimum": 0 },
+    "matched": { "type": "boolean" },
+    "first_mismatch_step": { "type": ["integer", "null"] },
+    "mismatch_reason": { "type": ["string", "null"] },
+    "commitments": {
+      "type": "object",
+      "required": [
+        "hash_function",
+        "statement_spec_hash",
+        "fixed_point_spec_hash",
+        "onnx_op_subset_hash",
+        "artifact_schema_hash",
+        "program_hash",
+        "transformer_config_hash",
+        "onnx_metadata_hash",
+        "transformer_trace_hash",
+        "onnx_trace_hash",
+        "transformer_final_state_hash",
+        "onnx_final_state_hash"
+      ],
+      "properties": {
+        "hash_function": { "type": "string" },
+        "statement_spec_hash": { "type": "string" },
+        "fixed_point_spec_hash": { "type": "string" },
+        "onnx_op_subset_hash": { "type": "string" },
+        "artifact_schema_hash": { "type": "string" },
+        "program_hash": { "type": "string" },
+        "transformer_config_hash": { "type": "string" },
+        "onnx_metadata_hash": { "type": "string" },
+        "transformer_trace_hash": { "type": "string" },
+        "onnx_trace_hash": { "type": "string" },
+        "transformer_final_state_hash": { "type": "string" },
+        "onnx_final_state_hash": { "type": "string" }
+      }
+    }
+  }
+}

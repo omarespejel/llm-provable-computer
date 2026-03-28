@@ -39,6 +39,7 @@ predicates = "3.1.3"
 rand = "0.8.5"
 criterion = { version = "0.5", features = ["html_reports"] }
 proptest = "1.6"
+jsonschema = { version = "0.17.1", default-features = false, features = ["draft202012"] }
 
 [[bench]]
 name = "hull_benchmark"

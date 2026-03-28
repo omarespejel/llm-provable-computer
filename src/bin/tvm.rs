@@ -6,21 +6,28 @@ use std::time::Duration;
 #[cfg(feature = "onnx-export")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
+#[cfg(feature = "onnx-export")]
+use blake2::{Blake2b512, Digest};
 #[cfg(feature = "burn-model")]
 use burn::backend::NdArray;
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 #[cfg(any(feature = "burn-model", feature = "onnx-export"))]
 use llm_provable_computer::verify_engines;
+use llm_provable_computer::{
+    conjectured_security_bits, load_execution_stark_proof, production_v1_stark_options,
+    prove_execution_stark_with_options, run_execution_tui, save_execution_stark_proof,
+    verify_execution_stark_with_policy, verify_execution_stark_with_reexecution_and_policy,
+    verify_model_against_native, Attention2DMode, ExecutionResult, ExecutionRuntime,
+    ExecutionTraceEntry, MachineState, NativeInterpreter, ProgramCompiler, StarkVerificationPolicy,
+    TransformerVm, TransformerVmConfig, VanillaStarkProofOptions, VmError,
+    PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS, PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS,
+};
 #[cfg(feature = "onnx-export")]
 use llm_provable_computer::{export_program_onnx, OnnxExecutionRuntime};
-use llm_provable_computer::{
-    load_execution_stark_proof, prove_execution_stark, run_execution_tui,
-    save_execution_stark_proof, verify_execution_stark, verify_model_against_native,
-    Attention2DMode, ExecutionResult, ExecutionRuntime, ExecutionTraceEntry, MachineState,
-    NativeInterpreter, ProgramCompiler, TransformerVm, TransformerVmConfig, VmError,
-};
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
+#[cfg(feature = "onnx-export")]
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "burn-model")]
 type CliBurnBackend = NdArray<f64>;
@@ -136,11 +143,114 @@ enum Command {
             value_parser = parse_attention_mode
         )]
         attention_mode: Attention2DMode,
+        /// Named STARK profile (recommended for repeatable proving policy).
+        #[arg(long, value_enum, default_value_t = CliStarkProfile::Default)]
+        stark_profile: CliStarkProfile,
+        /// STARK blowup factor (must be power of two and >= 4).
+        ///
+        /// Overrides the selected profile.
+        #[arg(long)]
+        stark_expansion_factor: Option<usize>,
+        /// Number of FRI colinearity checks.
+        ///
+        /// Overrides the selected profile.
+        #[arg(long)]
+        stark_num_colinearity_checks: Option<usize>,
+        /// Requested STARK security level.
+        ///
+        /// Overrides the selected profile.
+        #[arg(long)]
+        stark_security_level: Option<usize>,
     },
     /// Verify a previously generated STARK proof.
     VerifyStark {
         /// Path to the serialized proof JSON file.
         proof: PathBuf,
+        /// Verification policy profile.
+        #[arg(long, value_enum, default_value_t = CliStarkProfile::Default)]
+        verification_profile: CliStarkProfile,
+        /// Re-execute transformer/native runtimes from claim data and check equivalence metadata.
+        #[arg(long)]
+        reexecute: bool,
+        /// Minimum required conjectured security bits.
+        #[arg(long, default_value_t = 0)]
+        min_conjectured_security: u32,
+        /// Apply strict verifier policy (enforces at least 80-bit conjectured security and reexecution).
+        #[arg(long)]
+        strict: bool,
+    },
+    /// Generate a research v2 one-step semantic equivalence artifact (transformer vs ONNX).
+    ResearchV2Step {
+        /// Path to the source `.tvm` program.
+        program: PathBuf,
+        /// File where the semantic artifact JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+        /// Maximum number of execution steps before stopping (must be >= 1).
+        #[arg(long, default_value_t = 1)]
+        max_steps: usize,
+        /// Number of transformer layers to distribute instructions across.
+        #[arg(long, default_value_t = 1)]
+        layers: usize,
+        /// Attention mode to use for memory reads.
+        #[arg(
+            long,
+            default_value = "average-hard",
+            value_parser = parse_attention_mode
+        )]
+        attention_mode: Attention2DMode,
+    },
+    /// Generate a research v2 prefix-trace semantic equivalence artifact (transformer vs ONNX).
+    ResearchV2Trace {
+        /// Path to the source `.tvm` program.
+        program: PathBuf,
+        /// File where the semantic artifact JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+        /// Maximum number of execution steps to check in the prefix.
+        #[arg(long, default_value_t = 32)]
+        max_steps: usize,
+        /// Number of transformer layers to distribute instructions across.
+        #[arg(long, default_value_t = 1)]
+        layers: usize,
+        /// Attention mode to use for memory reads.
+        #[arg(
+            long,
+            default_value = "average-hard",
+            value_parser = parse_attention_mode
+        )]
+        attention_mode: Attention2DMode,
+        /// When set, write artifact and exit success even if a mismatch is found.
+        #[arg(long)]
+        allow_mismatch: bool,
+    },
+    /// Generate a research v2 multi-program prefix-trace matrix artifact.
+    ResearchV2Matrix {
+        /// File where the matrix artifact JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+        /// Program paths to include in the matrix (repeatable).
+        #[arg(long = "program")]
+        programs: Vec<PathBuf>,
+        /// Include the built-in default suite (addition, counter, fibonacci, multiply, factorial).
+        #[arg(long)]
+        include_default_suite: bool,
+        /// Maximum number of execution steps to check per program.
+        #[arg(long, default_value_t = 32)]
+        max_steps: usize,
+        /// Number of transformer layers to distribute instructions across.
+        #[arg(long, default_value_t = 1)]
+        layers: usize,
+        /// Attention mode to use for memory reads.
+        #[arg(
+            long,
+            default_value = "average-hard",
+            value_parser = parse_attention_mode
+        )]
+        attention_mode: Attention2DMode,
+        /// When set, write artifact and exit success even if mismatches are found.
+        #[arg(long)]
+        allow_mismatch: bool,
     },
 }
 
@@ -152,6 +262,46 @@ enum CliExecutionEngine {
     Onnx,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+enum CliStarkProfile {
+    Default,
+    ProductionV1,
+}
+
+impl CliStarkProfile {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Default => "default",
+            Self::ProductionV1 => "production-v1",
+        }
+    }
+
+    fn proof_options(self) -> VanillaStarkProofOptions {
+        match self {
+            Self::Default => VanillaStarkProofOptions::default(),
+            Self::ProductionV1 => production_v1_stark_options(),
+        }
+    }
+
+    fn min_conjectured_security_bits(self) -> u32 {
+        match self {
+            Self::Default => 0,
+            Self::ProductionV1 => PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS,
+        }
+    }
+
+    fn target_max_proving_seconds(self) -> Option<u64> {
+        match self {
+            Self::Default => None,
+            Self::ProductionV1 => Some(PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS),
+        }
+    }
+
+    fn enforces_reexecution(self) -> bool {
+        matches!(self, Self::ProductionV1)
+    }
+}
+
 impl std::fmt::Display for CliExecutionEngine {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -160,6 +310,12 @@ impl std::fmt::Display for CliExecutionEngine {
             Self::Burn => f.write_str("burn"),
             Self::Onnx => f.write_str("onnx"),
         }
+    }
+}
+
+impl std::fmt::Display for CliStarkProfile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
     }
 }
 
@@ -182,6 +338,176 @@ struct RunCommandOptions {
     verify_onnx: bool,
     verify_all: bool,
     attention_mode: Attention2DMode,
+}
+
+#[cfg(feature = "onnx-export")]
+const STATEMENT_V2_STEP_SPEC_PATH: &str = "spec/statement-v2-research.json";
+#[cfg(feature = "onnx-export")]
+const STATEMENT_V2_TRACE_SPEC_PATH: &str = "spec/statement-v2-trace-research.json";
+#[cfg(feature = "onnx-export")]
+const STATEMENT_V2_MATRIX_SPEC_PATH: &str = "spec/statement-v2-matrix-research.json";
+#[cfg(feature = "onnx-export")]
+const FIXED_POINT_SPEC_PATH: &str = "spec/fixed-point-semantics-v2.json";
+#[cfg(feature = "onnx-export")]
+const ONNX_OP_SUBSET_SPEC_PATH: &str = "spec/onnx-op-subset-v2.json";
+#[cfg(feature = "onnx-export")]
+const STATEMENT_V2_STEP_ARTIFACT_SCHEMA_PATH: &str =
+    "spec/statement-v2-one-step-certificate.schema.json";
+#[cfg(feature = "onnx-export")]
+const STATEMENT_V2_TRACE_ARTIFACT_SCHEMA_PATH: &str =
+    "spec/statement-v2-trace-certificate.schema.json";
+#[cfg(feature = "onnx-export")]
+const STATEMENT_V2_MATRIX_ARTIFACT_SCHEMA_PATH: &str =
+    "spec/statement-v2-matrix-certificate.schema.json";
+#[cfg(feature = "onnx-export")]
+const RESEARCH_V2_HASH_FUNCTION: &str = "blake2b-256";
+
+#[cfg(feature = "onnx-export")]
+#[derive(Debug, Deserialize)]
+struct StatementV2ResearchSpec {
+    statement_version: String,
+    semantic_scope: String,
+    fixed_point_profile_ref: String,
+    onnx_op_subset_ref: String,
+    artifact_schema_ref: String,
+}
+
+#[cfg(feature = "onnx-export")]
+#[derive(Debug, Deserialize)]
+struct FixedPointSemanticsSpec {
+    profile_id: String,
+}
+
+#[cfg(feature = "onnx-export")]
+#[derive(Debug, Deserialize)]
+struct OnnxOpSubsetSpec {
+    version: String,
+    operators: Vec<String>,
+}
+
+#[cfg(feature = "onnx-export")]
+#[derive(Debug, Clone)]
+struct ResearchV2SpecBundle {
+    statement_version: String,
+    semantic_scope: String,
+    fixed_point_profile: String,
+    onnx_op_subset_version: String,
+    onnx_op_subset_size: usize,
+    statement_spec_hash: String,
+    fixed_point_spec_hash: String,
+    onnx_op_subset_hash: String,
+    artifact_schema_hash: String,
+}
+
+#[cfg(feature = "onnx-export")]
+#[derive(Debug, Serialize)]
+struct ResearchV2OneStepCommitments {
+    hash_function: String,
+    statement_spec_hash: String,
+    fixed_point_spec_hash: String,
+    onnx_op_subset_hash: String,
+    artifact_schema_hash: String,
+    program_hash: String,
+    transformer_config_hash: String,
+    onnx_metadata_hash: String,
+    state_before_hash: String,
+    transformer_state_after_hash: String,
+    onnx_state_after_hash: String,
+}
+
+#[cfg(feature = "onnx-export")]
+#[derive(Debug, Serialize)]
+struct ResearchV2OneStepArtifact {
+    statement_version: String,
+    semantic_scope: String,
+    fixed_point_profile: String,
+    onnx_op_subset_version: String,
+    onnx_op_subset_size: usize,
+    program_path: String,
+    checked_steps: usize,
+    instruction: String,
+    layer_idx: Option<usize>,
+    matched: bool,
+    state_before: MachineState,
+    transformer_state_after: MachineState,
+    onnx_state_after: MachineState,
+    commitments: ResearchV2OneStepCommitments,
+}
+
+#[cfg(feature = "onnx-export")]
+#[derive(Debug, Serialize)]
+struct ResearchV2TraceCommitments {
+    hash_function: String,
+    statement_spec_hash: String,
+    fixed_point_spec_hash: String,
+    onnx_op_subset_hash: String,
+    artifact_schema_hash: String,
+    program_hash: String,
+    transformer_config_hash: String,
+    onnx_metadata_hash: String,
+    transformer_trace_hash: String,
+    onnx_trace_hash: String,
+    transformer_final_state_hash: String,
+    onnx_final_state_hash: String,
+}
+
+#[cfg(feature = "onnx-export")]
+#[derive(Debug, Serialize)]
+struct ResearchV2TraceArtifact {
+    statement_version: String,
+    semantic_scope: String,
+    fixed_point_profile: String,
+    onnx_op_subset_version: String,
+    onnx_op_subset_size: usize,
+    program_path: String,
+    requested_max_steps: usize,
+    checked_steps: usize,
+    matched: bool,
+    first_mismatch_step: Option<usize>,
+    mismatch_reason: Option<String>,
+    transformer_final_state: MachineState,
+    onnx_final_state: MachineState,
+    commitments: ResearchV2TraceCommitments,
+}
+
+#[cfg(feature = "onnx-export")]
+#[derive(Debug, Serialize)]
+struct ResearchV2MatrixEntry {
+    program_path: String,
+    checked_steps: usize,
+    matched: bool,
+    first_mismatch_step: Option<usize>,
+    mismatch_reason: Option<String>,
+    transformer_final_state: MachineState,
+    onnx_final_state: MachineState,
+    commitments: ResearchV2TraceCommitments,
+}
+
+#[cfg(feature = "onnx-export")]
+#[derive(Debug, Serialize)]
+struct ResearchV2MatrixCommitments {
+    hash_function: String,
+    statement_spec_hash: String,
+    fixed_point_spec_hash: String,
+    onnx_op_subset_hash: String,
+    artifact_schema_hash: String,
+    matrix_entries_hash: String,
+}
+
+#[cfg(feature = "onnx-export")]
+#[derive(Debug, Serialize)]
+struct ResearchV2MatrixArtifact {
+    statement_version: String,
+    semantic_scope: String,
+    fixed_point_profile: String,
+    onnx_op_subset_version: String,
+    onnx_op_subset_size: usize,
+    requested_max_steps: usize,
+    total_programs: usize,
+    matched_programs: usize,
+    mismatched_programs: usize,
+    entries: Vec<ResearchV2MatrixEntry>,
+    commitments: ResearchV2MatrixCommitments,
 }
 
 #[cfg(feature = "onnx-export")]
@@ -271,8 +597,83 @@ fn run() -> llm_provable_computer::Result<()> {
             max_steps,
             layers,
             attention_mode,
-        } => prove_stark_command(&program, &output, max_steps, layers, attention_mode)?,
-        Command::VerifyStark { proof } => verify_stark_command(&proof)?,
+            stark_profile,
+            stark_expansion_factor,
+            stark_num_colinearity_checks,
+            stark_security_level,
+        } => {
+            let mut options = stark_profile.proof_options();
+            if let Some(value) = stark_expansion_factor {
+                options.expansion_factor = value;
+            }
+            if let Some(value) = stark_num_colinearity_checks {
+                options.num_colinearity_checks = value;
+            }
+            if let Some(value) = stark_security_level {
+                options.security_level = value;
+            }
+            prove_stark_command(
+                &program,
+                &output,
+                max_steps,
+                layers,
+                attention_mode,
+                stark_profile,
+                options,
+            )?
+        }
+        Command::VerifyStark {
+            proof,
+            verification_profile,
+            reexecute,
+            min_conjectured_security,
+            strict,
+        } => verify_stark_command(
+            &proof,
+            verification_profile,
+            reexecute,
+            min_conjectured_security,
+            strict,
+        )?,
+        Command::ResearchV2Step {
+            program,
+            output,
+            max_steps,
+            layers,
+            attention_mode,
+        } => research_v2_step_command(&program, &output, max_steps, layers, attention_mode)?,
+        Command::ResearchV2Trace {
+            program,
+            output,
+            max_steps,
+            layers,
+            attention_mode,
+            allow_mismatch,
+        } => research_v2_trace_command(
+            &program,
+            &output,
+            max_steps,
+            layers,
+            attention_mode,
+            allow_mismatch,
+        )?,
+        Command::ResearchV2Matrix {
+            output,
+            programs,
+            include_default_suite,
+            max_steps,
+            layers,
+            attention_mode,
+            allow_mismatch,
+        } => research_v2_matrix_command(
+            &output,
+            &programs,
+            include_default_suite,
+            max_steps,
+            layers,
+            attention_mode,
+            allow_mismatch,
+        )?,
     }
 
     Ok(())
@@ -355,9 +756,11 @@ fn prove_stark_command(
     max_steps: usize,
     layers: usize,
     attention_mode: Attention2DMode,
+    stark_profile: CliStarkProfile,
+    stark_options: VanillaStarkProofOptions,
 ) -> llm_provable_computer::Result<()> {
     let model = compile_model(program, layers, attention_mode)?;
-    let proof = prove_execution_stark(&model, max_steps)?;
+    let proof = prove_execution_stark_with_options(&model, max_steps, stark_options)?;
     save_execution_stark_proof(&proof, output)?;
 
     println!("program: {}", program.display());
@@ -371,14 +774,98 @@ fn prove_stark_command(
     println!("carry_flag: {}", proof.claim.final_state.carry_flag);
     println!("memory: {:?}", proof.claim.final_state.memory);
     println!("attention_mode: {}", proof.claim.attention_mode);
+    println!("statement_version: {}", proof.claim.statement_version);
+    println!("semantic_scope: {}", proof.claim.semantic_scope);
+    println!(
+        "stark_expansion_factor: {}",
+        proof.claim.options.expansion_factor
+    );
+    println!(
+        "stark_num_colinearity_checks: {}",
+        proof.claim.options.num_colinearity_checks
+    );
+    println!(
+        "stark_security_level: {}",
+        proof.claim.options.security_level
+    );
+    println!(
+        "conjectured_security_bits: {}",
+        conjectured_security_bits(&proof.claim.options)
+    );
+    println!("stark_profile: {stark_profile}");
+    if let Some(target) = stark_profile.target_max_proving_seconds() {
+        println!("profile_target_max_proving_seconds: {target}");
+    }
+    let profile_security_floor = stark_profile.min_conjectured_security_bits();
+    if profile_security_floor > 0 {
+        println!("profile_min_conjectured_security_bits: {profile_security_floor}");
+    }
+    if let Some(equivalence) = &proof.claim.equivalence {
+        println!("equivalence_checked_steps: {}", equivalence.checked_steps);
+        println!(
+            "equivalence_transformer_fingerprint: {}",
+            equivalence.transformer_fingerprint
+        );
+        println!(
+            "equivalence_native_fingerprint: {}",
+            equivalence.native_fingerprint
+        );
+    }
+    if let Some(commitments) = &proof.claim.commitments {
+        println!("commitment_scheme_version: {}", commitments.scheme_version);
+        println!("commitment_hash_function: {}", commitments.hash_function);
+        println!("commitment_program_hash: {}", commitments.program_hash);
+        println!(
+            "commitment_transformer_config_hash: {}",
+            commitments.transformer_config_hash
+        );
+        println!(
+            "commitment_deterministic_model_hash: {}",
+            commitments.deterministic_model_hash
+        );
+        println!(
+            "commitment_stark_options_hash: {}",
+            commitments.stark_options_hash
+        );
+        println!(
+            "commitment_prover_build_info: {}",
+            commitments.prover_build_info
+        );
+        println!(
+            "commitment_prover_build_hash: {}",
+            commitments.prover_build_hash
+        );
+    }
     println!("proof_bytes: {}", proof.proof.len());
 
     Ok(())
 }
 
-fn verify_stark_command(proof_path: &Path) -> llm_provable_computer::Result<()> {
+fn verify_stark_command(
+    proof_path: &Path,
+    verification_profile: CliStarkProfile,
+    reexecute: bool,
+    min_conjectured_security: u32,
+    strict: bool,
+) -> llm_provable_computer::Result<()> {
     let proof = load_execution_stark_proof(proof_path)?;
-    if !verify_execution_stark(&proof)? {
+    let policy = StarkVerificationPolicy {
+        min_conjectured_security_bits: {
+            let mut floor =
+                min_conjectured_security.max(verification_profile.min_conjectured_security_bits());
+            if strict {
+                floor = floor.max(StarkVerificationPolicy::strict().min_conjectured_security_bits);
+            }
+            floor
+        },
+    };
+    let effective_reexecute = reexecute || strict || verification_profile.enforces_reexecution();
+    let verified = if effective_reexecute {
+        verify_execution_stark_with_reexecution_and_policy(&proof, policy)?
+    } else {
+        verify_execution_stark_with_policy(&proof, policy)?
+    };
+    if !verified {
         return Err(VmError::InvalidConfig(format!(
             "stark proof verification failed for {}",
             proof_path.display()
@@ -396,10 +883,747 @@ fn verify_stark_command(proof_path: &Path) -> llm_provable_computer::Result<()> 
     println!("carry_flag: {}", proof.claim.final_state.carry_flag);
     println!("memory: {:?}", proof.claim.final_state.memory);
     println!("attention_mode: {}", proof.claim.attention_mode);
+    println!("statement_version: {}", proof.claim.statement_version);
+    println!("semantic_scope: {}", proof.claim.semantic_scope);
+    println!(
+        "stark_expansion_factor: {}",
+        proof.claim.options.expansion_factor
+    );
+    println!(
+        "stark_num_colinearity_checks: {}",
+        proof.claim.options.num_colinearity_checks
+    );
+    println!(
+        "stark_security_level: {}",
+        proof.claim.options.security_level
+    );
+    println!(
+        "conjectured_security_bits: {}",
+        conjectured_security_bits(&proof.claim.options)
+    );
+    println!(
+        "required_conjectured_security_bits: {}",
+        policy.min_conjectured_security_bits
+    );
+    println!("verification_profile: {verification_profile}");
+    println!("strict_policy: {}", strict);
+    println!("reexecuted_equivalence: {}", effective_reexecute);
+    if let Some(equivalence) = &proof.claim.equivalence {
+        println!("equivalence_checked_steps: {}", equivalence.checked_steps);
+        println!(
+            "equivalence_transformer_fingerprint: {}",
+            equivalence.transformer_fingerprint
+        );
+        println!(
+            "equivalence_native_fingerprint: {}",
+            equivalence.native_fingerprint
+        );
+    }
+    if let Some(commitments) = &proof.claim.commitments {
+        println!("commitment_scheme_version: {}", commitments.scheme_version);
+        println!("commitment_hash_function: {}", commitments.hash_function);
+        println!("commitment_program_hash: {}", commitments.program_hash);
+        println!(
+            "commitment_transformer_config_hash: {}",
+            commitments.transformer_config_hash
+        );
+        println!(
+            "commitment_deterministic_model_hash: {}",
+            commitments.deterministic_model_hash
+        );
+        println!(
+            "commitment_stark_options_hash: {}",
+            commitments.stark_options_hash
+        );
+        println!(
+            "commitment_prover_build_info: {}",
+            commitments.prover_build_info
+        );
+        println!(
+            "commitment_prover_build_hash: {}",
+            commitments.prover_build_hash
+        );
+    }
     println!("instructions: {}", proof.claim.program.instructions().len());
     println!("proof_bytes: {}", proof.proof.len());
 
     Ok(())
+}
+
+fn research_v2_step_command(
+    program: &Path,
+    output: &Path,
+    max_steps: usize,
+    layers: usize,
+    attention_mode: Attention2DMode,
+) -> llm_provable_computer::Result<()> {
+    research_v2_step_command_impl(program, output, max_steps, layers, attention_mode)
+}
+
+fn research_v2_trace_command(
+    program: &Path,
+    output: &Path,
+    max_steps: usize,
+    layers: usize,
+    attention_mode: Attention2DMode,
+    allow_mismatch: bool,
+) -> llm_provable_computer::Result<()> {
+    research_v2_trace_command_impl(
+        program,
+        output,
+        max_steps,
+        layers,
+        attention_mode,
+        allow_mismatch,
+    )
+}
+
+fn research_v2_matrix_command(
+    output: &Path,
+    programs: &[PathBuf],
+    include_default_suite: bool,
+    max_steps: usize,
+    layers: usize,
+    attention_mode: Attention2DMode,
+    allow_mismatch: bool,
+) -> llm_provable_computer::Result<()> {
+    research_v2_matrix_command_impl(
+        output,
+        programs,
+        include_default_suite,
+        max_steps,
+        layers,
+        attention_mode,
+        allow_mismatch,
+    )
+}
+
+#[cfg(feature = "onnx-export")]
+fn research_v2_step_command_impl(
+    program: &Path,
+    output: &Path,
+    max_steps: usize,
+    layers: usize,
+    attention_mode: Attention2DMode,
+) -> llm_provable_computer::Result<()> {
+    if max_steps < 1 {
+        return Err(VmError::InvalidConfig(
+            "research-v2-step requires max_steps >= 1".to_string(),
+        ));
+    }
+
+    let statement_spec_bytes = read_repo_file(STATEMENT_V2_STEP_SPEC_PATH)?;
+    let fixed_point_spec_bytes = read_repo_file(FIXED_POINT_SPEC_PATH)?;
+    let onnx_op_subset_spec_bytes = read_repo_file(ONNX_OP_SUBSET_SPEC_PATH)?;
+    let artifact_schema_bytes = read_repo_file(STATEMENT_V2_STEP_ARTIFACT_SCHEMA_PATH)?;
+
+    let statement_spec: StatementV2ResearchSpec = serde_json::from_slice(&statement_spec_bytes)
+        .map_err(|err| {
+            VmError::Serialization(format!(
+                "failed to parse {}: {err}",
+                STATEMENT_V2_STEP_SPEC_PATH
+            ))
+        })?;
+    let fixed_point_spec: FixedPointSemanticsSpec = serde_json::from_slice(&fixed_point_spec_bytes)
+        .map_err(|err| {
+            VmError::Serialization(format!("failed to parse {}: {err}", FIXED_POINT_SPEC_PATH))
+        })?;
+    let onnx_op_subset_spec: OnnxOpSubsetSpec = serde_json::from_slice(&onnx_op_subset_spec_bytes)
+        .map_err(|err| {
+            VmError::Serialization(format!(
+                "failed to parse {}: {err}",
+                ONNX_OP_SUBSET_SPEC_PATH
+            ))
+        })?;
+
+    if statement_spec.fixed_point_profile_ref != FIXED_POINT_SPEC_PATH {
+        return Err(VmError::InvalidConfig(format!(
+            "{} references `{}` but expected `{}`",
+            STATEMENT_V2_STEP_SPEC_PATH,
+            statement_spec.fixed_point_profile_ref,
+            FIXED_POINT_SPEC_PATH
+        )));
+    }
+    if statement_spec.onnx_op_subset_ref != ONNX_OP_SUBSET_SPEC_PATH {
+        return Err(VmError::InvalidConfig(format!(
+            "{} references `{}` but expected `{}`",
+            STATEMENT_V2_STEP_SPEC_PATH,
+            statement_spec.onnx_op_subset_ref,
+            ONNX_OP_SUBSET_SPEC_PATH
+        )));
+    }
+    if statement_spec.artifact_schema_ref != STATEMENT_V2_STEP_ARTIFACT_SCHEMA_PATH {
+        return Err(VmError::InvalidConfig(format!(
+            "{} references `{}` but expected `{}`",
+            STATEMENT_V2_STEP_SPEC_PATH,
+            statement_spec.artifact_schema_ref,
+            STATEMENT_V2_STEP_ARTIFACT_SCHEMA_PATH
+        )));
+    }
+
+    let model = compile_model(program, layers, attention_mode)?;
+    let export_dir = ScopedTempDir::new("research-v2-step")?;
+    let onnx_metadata = export_program_onnx(&model, export_dir.path())?;
+
+    let mut transformer = ExecutionRuntime::new(model.clone(), max_steps);
+    let mut onnx = OnnxExecutionRuntime::from_export_dir(export_dir.path(), max_steps)?;
+
+    let state_before = transformer.state().clone();
+    if state_before != onnx.state().clone() {
+        return Err(VmError::InvalidConfig(
+            "research-v2-step initial state mismatch between transformer and ONNX runtimes"
+                .to_string(),
+        ));
+    }
+    if state_before.halted {
+        return Err(VmError::InvalidConfig(
+            "research-v2-step requires a non-halted initial state".to_string(),
+        ));
+    }
+
+    transformer.step()?;
+    onnx.step()?;
+
+    let transformer_event = transformer
+        .events()
+        .last()
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "research-v2-step transformer runtime produced no execution event".to_string(),
+            )
+        })?
+        .clone();
+    let onnx_event = onnx
+        .events()
+        .last()
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "research-v2-step ONNX runtime produced no execution event".to_string(),
+            )
+        })?
+        .clone();
+    if transformer_event.instruction != onnx_event.instruction {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v2-step instruction mismatch: transformer=`{}` onnx=`{}`",
+            transformer_event.instruction, onnx_event.instruction
+        )));
+    }
+
+    let transformer_state_after = transformer.state().clone();
+    let onnx_state_after = onnx.state().clone();
+    let matched = transformer_state_after == onnx_state_after;
+
+    let commitments = ResearchV2OneStepCommitments {
+        hash_function: RESEARCH_V2_HASH_FUNCTION.to_string(),
+        statement_spec_hash: hash_bytes_hex(&statement_spec_bytes),
+        fixed_point_spec_hash: hash_bytes_hex(&fixed_point_spec_bytes),
+        onnx_op_subset_hash: hash_bytes_hex(&onnx_op_subset_spec_bytes),
+        artifact_schema_hash: hash_bytes_hex(&artifact_schema_bytes),
+        program_hash: hash_json_hex(model.program())?,
+        transformer_config_hash: hash_json_hex(model.config())?,
+        onnx_metadata_hash: hash_json_hex(&onnx_metadata)?,
+        state_before_hash: hash_json_hex(&state_before)?,
+        transformer_state_after_hash: hash_json_hex(&transformer_state_after)?,
+        onnx_state_after_hash: hash_json_hex(&onnx_state_after)?,
+    };
+
+    let artifact = ResearchV2OneStepArtifact {
+        statement_version: statement_spec.statement_version,
+        semantic_scope: statement_spec.semantic_scope,
+        fixed_point_profile: fixed_point_spec.profile_id,
+        onnx_op_subset_version: onnx_op_subset_spec.version,
+        onnx_op_subset_size: onnx_op_subset_spec.operators.len(),
+        program_path: program.display().to_string(),
+        checked_steps: transformer.step_count(),
+        instruction: transformer_event.instruction.to_string(),
+        layer_idx: transformer_event.layer_idx,
+        matched,
+        state_before,
+        transformer_state_after,
+        onnx_state_after,
+        commitments,
+    };
+
+    if !matched {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v2-step mismatch for instruction `{}`",
+            artifact.instruction
+        )));
+    }
+
+    let bytes = serde_json::to_vec_pretty(&artifact)
+        .map_err(|err| VmError::Serialization(format!("failed to serialize artifact: {err}")))?;
+    fs::write(output, bytes)?;
+
+    println!("research_v2_artifact: {}", output.display());
+    println!("statement_version: {}", artifact.statement_version);
+    println!("semantic_scope: {}", artifact.semantic_scope);
+    println!("fixed_point_profile: {}", artifact.fixed_point_profile);
+    println!(
+        "onnx_op_subset_version: {}",
+        artifact.onnx_op_subset_version
+    );
+    println!("checked_steps: {}", artifact.checked_steps);
+    println!("instruction: {}", artifact.instruction);
+    println!("matched: {}", artifact.matched);
+    println!(
+        "commitment_program_hash: {}",
+        artifact.commitments.program_hash
+    );
+    println!(
+        "commitment_onnx_metadata_hash: {}",
+        artifact.commitments.onnx_metadata_hash
+    );
+
+    Ok(())
+}
+
+#[cfg(feature = "onnx-export")]
+fn research_v2_trace_command_impl(
+    program: &Path,
+    output: &Path,
+    max_steps: usize,
+    layers: usize,
+    attention_mode: Attention2DMode,
+    allow_mismatch: bool,
+) -> llm_provable_computer::Result<()> {
+    let bundle = load_research_v2_spec_bundle(
+        STATEMENT_V2_TRACE_SPEC_PATH,
+        STATEMENT_V2_TRACE_ARTIFACT_SCHEMA_PATH,
+    )?;
+    let artifact = compute_research_v2_trace_artifact_for_program(
+        program,
+        max_steps,
+        layers,
+        &attention_mode,
+        &bundle,
+    )?;
+
+    let bytes = serde_json::to_vec_pretty(&artifact)
+        .map_err(|err| VmError::Serialization(format!("failed to serialize artifact: {err}")))?;
+    fs::write(output, bytes)?;
+
+    println!("research_v2_trace_artifact: {}", output.display());
+    println!("statement_version: {}", artifact.statement_version);
+    println!("semantic_scope: {}", artifact.semantic_scope);
+    println!("fixed_point_profile: {}", artifact.fixed_point_profile);
+    println!(
+        "onnx_op_subset_version: {}",
+        artifact.onnx_op_subset_version
+    );
+    println!("requested_max_steps: {}", artifact.requested_max_steps);
+    println!("checked_steps: {}", artifact.checked_steps);
+    println!("matched: {}", artifact.matched);
+    if let Some(step) = artifact.first_mismatch_step {
+        println!("first_mismatch_step: {step}");
+    }
+    if let Some(reason) = artifact.mismatch_reason.as_ref() {
+        println!("mismatch_reason: {reason}");
+    }
+    println!(
+        "commitment_program_hash: {}",
+        artifact.commitments.program_hash
+    );
+    println!(
+        "commitment_onnx_metadata_hash: {}",
+        artifact.commitments.onnx_metadata_hash
+    );
+
+    if !artifact.matched && !allow_mismatch {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v2-trace mismatch at step {:?}: {}",
+            artifact.first_mismatch_step,
+            artifact
+                .mismatch_reason
+                .as_deref()
+                .unwrap_or("unspecified mismatch")
+        )));
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "onnx-export")]
+fn research_v2_matrix_command_impl(
+    output: &Path,
+    programs: &[PathBuf],
+    include_default_suite: bool,
+    max_steps: usize,
+    layers: usize,
+    attention_mode: Attention2DMode,
+    allow_mismatch: bool,
+) -> llm_provable_computer::Result<()> {
+    let bundle = load_research_v2_spec_bundle(
+        STATEMENT_V2_MATRIX_SPEC_PATH,
+        STATEMENT_V2_MATRIX_ARTIFACT_SCHEMA_PATH,
+    )?;
+
+    let mut selected = Vec::<PathBuf>::new();
+    if include_default_suite {
+        selected.extend(research_v2_default_program_suite());
+    }
+    selected.extend(programs.iter().cloned());
+
+    if selected.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "research-v2-matrix requires at least one --program or --include-default-suite"
+                .to_string(),
+        ));
+    }
+
+    let mut deduped = Vec::<PathBuf>::new();
+    for path in selected {
+        if !deduped.iter().any(|existing| existing == &path) {
+            deduped.push(path);
+        }
+    }
+
+    let mut entries = Vec::<ResearchV2MatrixEntry>::with_capacity(deduped.len());
+    for program in deduped {
+        let trace = compute_research_v2_trace_artifact_for_program(
+            &program,
+            max_steps,
+            layers,
+            &attention_mode,
+            &bundle,
+        )?;
+        entries.push(ResearchV2MatrixEntry {
+            program_path: trace.program_path,
+            checked_steps: trace.checked_steps,
+            matched: trace.matched,
+            first_mismatch_step: trace.first_mismatch_step,
+            mismatch_reason: trace.mismatch_reason,
+            transformer_final_state: trace.transformer_final_state,
+            onnx_final_state: trace.onnx_final_state,
+            commitments: trace.commitments,
+        });
+    }
+
+    let matched_programs = entries.iter().filter(|entry| entry.matched).count();
+    let mismatched_programs = entries.len() - matched_programs;
+    let matrix_entries_hash = hash_json_hex(&entries)?;
+
+    let artifact = ResearchV2MatrixArtifact {
+        statement_version: bundle.statement_version.clone(),
+        semantic_scope: bundle.semantic_scope.clone(),
+        fixed_point_profile: bundle.fixed_point_profile.clone(),
+        onnx_op_subset_version: bundle.onnx_op_subset_version.clone(),
+        onnx_op_subset_size: bundle.onnx_op_subset_size,
+        requested_max_steps: max_steps,
+        total_programs: entries.len(),
+        matched_programs,
+        mismatched_programs,
+        entries,
+        commitments: ResearchV2MatrixCommitments {
+            hash_function: RESEARCH_V2_HASH_FUNCTION.to_string(),
+            statement_spec_hash: bundle.statement_spec_hash.clone(),
+            fixed_point_spec_hash: bundle.fixed_point_spec_hash.clone(),
+            onnx_op_subset_hash: bundle.onnx_op_subset_hash.clone(),
+            artifact_schema_hash: bundle.artifact_schema_hash.clone(),
+            matrix_entries_hash,
+        },
+    };
+
+    let bytes = serde_json::to_vec_pretty(&artifact)
+        .map_err(|err| VmError::Serialization(format!("failed to serialize artifact: {err}")))?;
+    fs::write(output, bytes)?;
+
+    println!("research_v2_matrix_artifact: {}", output.display());
+    println!("statement_version: {}", artifact.statement_version);
+    println!("semantic_scope: {}", artifact.semantic_scope);
+    println!("requested_max_steps: {}", artifact.requested_max_steps);
+    println!("total_programs: {}", artifact.total_programs);
+    println!("matched_programs: {}", artifact.matched_programs);
+    println!("mismatched_programs: {}", artifact.mismatched_programs);
+    println!(
+        "commitment_matrix_entries_hash: {}",
+        artifact.commitments.matrix_entries_hash
+    );
+
+    if artifact.mismatched_programs > 0 && !allow_mismatch {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v2-matrix found {} mismatched program(s)",
+            artifact.mismatched_programs
+        )));
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "onnx-export")]
+fn load_research_v2_spec_bundle(
+    statement_spec_path: &str,
+    artifact_schema_path: &str,
+) -> llm_provable_computer::Result<ResearchV2SpecBundle> {
+    let statement_spec_bytes = read_repo_file(statement_spec_path)?;
+    let fixed_point_spec_bytes = read_repo_file(FIXED_POINT_SPEC_PATH)?;
+    let onnx_op_subset_spec_bytes = read_repo_file(ONNX_OP_SUBSET_SPEC_PATH)?;
+    let artifact_schema_bytes = read_repo_file(artifact_schema_path)?;
+
+    let statement_spec: StatementV2ResearchSpec = serde_json::from_slice(&statement_spec_bytes)
+        .map_err(|err| {
+            VmError::Serialization(format!("failed to parse {}: {err}", statement_spec_path))
+        })?;
+    let fixed_point_spec: FixedPointSemanticsSpec = serde_json::from_slice(&fixed_point_spec_bytes)
+        .map_err(|err| {
+            VmError::Serialization(format!("failed to parse {}: {err}", FIXED_POINT_SPEC_PATH))
+        })?;
+    let onnx_op_subset_spec: OnnxOpSubsetSpec = serde_json::from_slice(&onnx_op_subset_spec_bytes)
+        .map_err(|err| {
+            VmError::Serialization(format!(
+                "failed to parse {}: {err}",
+                ONNX_OP_SUBSET_SPEC_PATH
+            ))
+        })?;
+
+    if statement_spec.fixed_point_profile_ref != FIXED_POINT_SPEC_PATH {
+        return Err(VmError::InvalidConfig(format!(
+            "{} references `{}` but expected `{}`",
+            statement_spec_path, statement_spec.fixed_point_profile_ref, FIXED_POINT_SPEC_PATH
+        )));
+    }
+    if statement_spec.onnx_op_subset_ref != ONNX_OP_SUBSET_SPEC_PATH {
+        return Err(VmError::InvalidConfig(format!(
+            "{} references `{}` but expected `{}`",
+            statement_spec_path, statement_spec.onnx_op_subset_ref, ONNX_OP_SUBSET_SPEC_PATH
+        )));
+    }
+    if statement_spec.artifact_schema_ref != artifact_schema_path {
+        return Err(VmError::InvalidConfig(format!(
+            "{} references `{}` but expected `{}`",
+            statement_spec_path, statement_spec.artifact_schema_ref, artifact_schema_path
+        )));
+    }
+
+    Ok(ResearchV2SpecBundle {
+        statement_version: statement_spec.statement_version,
+        semantic_scope: statement_spec.semantic_scope,
+        fixed_point_profile: fixed_point_spec.profile_id,
+        onnx_op_subset_version: onnx_op_subset_spec.version,
+        onnx_op_subset_size: onnx_op_subset_spec.operators.len(),
+        statement_spec_hash: hash_bytes_hex(&statement_spec_bytes),
+        fixed_point_spec_hash: hash_bytes_hex(&fixed_point_spec_bytes),
+        onnx_op_subset_hash: hash_bytes_hex(&onnx_op_subset_spec_bytes),
+        artifact_schema_hash: hash_bytes_hex(&artifact_schema_bytes),
+    })
+}
+
+#[cfg(feature = "onnx-export")]
+fn compute_research_v2_trace_artifact_for_program(
+    program: &Path,
+    max_steps: usize,
+    layers: usize,
+    attention_mode: &Attention2DMode,
+    bundle: &ResearchV2SpecBundle,
+) -> llm_provable_computer::Result<ResearchV2TraceArtifact> {
+    if max_steps < 1 {
+        return Err(VmError::InvalidConfig(
+            "research-v2 trace computation requires max_steps >= 1".to_string(),
+        ));
+    }
+
+    let model = compile_model(program, layers, attention_mode.clone())?;
+    let export_dir = ScopedTempDir::new("research-v2-trace")?;
+    let onnx_metadata = export_program_onnx(&model, export_dir.path())?;
+
+    let mut transformer = ExecutionRuntime::new(model.clone(), max_steps);
+    let mut onnx = OnnxExecutionRuntime::from_export_dir(export_dir.path(), max_steps)?;
+
+    let mut matched = true;
+    let mut first_mismatch_step: Option<usize> = None;
+    let mut mismatch_reason: Option<String> = None;
+
+    if transformer.state() != onnx.state() {
+        matched = false;
+        first_mismatch_step = Some(0);
+        mismatch_reason =
+            Some("initial state mismatch between transformer and ONNX runtimes".to_string());
+    }
+
+    while matched && transformer.step_count() < max_steps {
+        let t_halted = transformer.state().halted;
+        let o_halted = onnx.state().halted;
+        if t_halted || o_halted {
+            if t_halted != o_halted {
+                matched = false;
+                first_mismatch_step = Some(transformer.step_count());
+                mismatch_reason = Some(format!(
+                    "halted flag mismatch before step {}: transformer={}, onnx={}",
+                    transformer.step_count() + 1,
+                    t_halted,
+                    o_halted
+                ));
+            }
+            break;
+        }
+
+        transformer.step()?;
+        onnx.step()?;
+        let step = transformer.step_count();
+        if step != onnx.step_count() {
+            matched = false;
+            first_mismatch_step = Some(step.min(onnx.step_count()));
+            mismatch_reason = Some(format!(
+                "step counter mismatch: transformer={}, onnx={}",
+                step,
+                onnx.step_count()
+            ));
+            break;
+        }
+
+        let transformer_event = transformer.events().last().ok_or_else(|| {
+            VmError::InvalidConfig("transformer runtime produced no execution event".to_string())
+        })?;
+        let onnx_event = onnx.events().last().ok_or_else(|| {
+            VmError::InvalidConfig("onnx runtime produced no execution event".to_string())
+        })?;
+
+        if transformer_event.instruction != onnx_event.instruction {
+            matched = false;
+            first_mismatch_step = Some(step);
+            mismatch_reason = Some(format!(
+                "instruction mismatch at step {}: transformer=`{}` onnx=`{}`",
+                step, transformer_event.instruction, onnx_event.instruction
+            ));
+            break;
+        }
+        if transformer_event.state_before != onnx_event.state_before {
+            matched = false;
+            first_mismatch_step = Some(step);
+            mismatch_reason = Some(format!("state_before mismatch at step {}", step));
+            break;
+        }
+        if transformer_event.state_after != onnx_event.state_after {
+            matched = false;
+            first_mismatch_step = Some(step);
+            mismatch_reason = Some(format!("state_after mismatch at step {}", step));
+            break;
+        }
+    }
+
+    let checked_steps = transformer.step_count().min(onnx.step_count());
+    let transformer_final_state = transformer.state().clone();
+    let onnx_final_state = onnx.state().clone();
+    if matched && transformer_final_state != onnx_final_state {
+        matched = false;
+        first_mismatch_step = Some(checked_steps);
+        mismatch_reason = Some("final state mismatch".to_string());
+    }
+
+    let commitments = ResearchV2TraceCommitments {
+        hash_function: RESEARCH_V2_HASH_FUNCTION.to_string(),
+        statement_spec_hash: bundle.statement_spec_hash.clone(),
+        fixed_point_spec_hash: bundle.fixed_point_spec_hash.clone(),
+        onnx_op_subset_hash: bundle.onnx_op_subset_hash.clone(),
+        artifact_schema_hash: bundle.artifact_schema_hash.clone(),
+        program_hash: hash_json_hex(model.program())?,
+        transformer_config_hash: hash_json_hex(model.config())?,
+        onnx_metadata_hash: hash_json_hex(&onnx_metadata)?,
+        transformer_trace_hash: hash_json_hex(transformer.trace())?,
+        onnx_trace_hash: hash_json_hex(onnx.trace())?,
+        transformer_final_state_hash: hash_json_hex(&transformer_final_state)?,
+        onnx_final_state_hash: hash_json_hex(&onnx_final_state)?,
+    };
+
+    Ok(ResearchV2TraceArtifact {
+        statement_version: bundle.statement_version.clone(),
+        semantic_scope: bundle.semantic_scope.clone(),
+        fixed_point_profile: bundle.fixed_point_profile.clone(),
+        onnx_op_subset_version: bundle.onnx_op_subset_version.clone(),
+        onnx_op_subset_size: bundle.onnx_op_subset_size,
+        program_path: program.display().to_string(),
+        requested_max_steps: max_steps,
+        checked_steps,
+        matched,
+        first_mismatch_step,
+        mismatch_reason,
+        transformer_final_state,
+        onnx_final_state,
+        commitments,
+    })
+}
+
+#[cfg(feature = "onnx-export")]
+fn research_v2_default_program_suite() -> Vec<PathBuf> {
+    vec![
+        PathBuf::from("programs/addition.tvm"),
+        PathBuf::from("programs/counter.tvm"),
+        PathBuf::from("programs/fibonacci.tvm"),
+        PathBuf::from("programs/multiply.tvm"),
+        PathBuf::from("programs/factorial_recursive.tvm"),
+    ]
+}
+
+#[cfg(not(feature = "onnx-export"))]
+fn research_v2_step_command_impl(
+    _program: &Path,
+    _output: &Path,
+    _max_steps: usize,
+    _layers: usize,
+    _attention_mode: Attention2DMode,
+) -> llm_provable_computer::Result<()> {
+    Err(feature_required_error(
+        "`research-v2-step`",
+        &["onnx-export"],
+    ))
+}
+
+#[cfg(not(feature = "onnx-export"))]
+fn research_v2_trace_command_impl(
+    _program: &Path,
+    _output: &Path,
+    _max_steps: usize,
+    _layers: usize,
+    _attention_mode: Attention2DMode,
+    _allow_mismatch: bool,
+) -> llm_provable_computer::Result<()> {
+    Err(feature_required_error(
+        "`research-v2-trace`",
+        &["onnx-export"],
+    ))
+}
+
+#[cfg(not(feature = "onnx-export"))]
+fn research_v2_matrix_command_impl(
+    _output: &Path,
+    _programs: &[PathBuf],
+    _include_default_suite: bool,
+    _max_steps: usize,
+    _layers: usize,
+    _attention_mode: Attention2DMode,
+    _allow_mismatch: bool,
+) -> llm_provable_computer::Result<()> {
+    Err(feature_required_error(
+        "`research-v2-matrix`",
+        &["onnx-export"],
+    ))
+}
+
+#[cfg(feature = "onnx-export")]
+fn read_repo_file(relative_path: &str) -> llm_provable_computer::Result<Vec<u8>> {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(relative_path);
+    fs::read(&path).map_err(|io_error| {
+        VmError::InvalidConfig(format!("failed to read {}: {io_error}", path.display()))
+    })
+}
+
+#[cfg(feature = "onnx-export")]
+fn hash_json_hex<T: Serialize + ?Sized>(value: &T) -> llm_provable_computer::Result<String> {
+    let bytes = serde_json::to_vec(value).map_err(|err| {
+        VmError::Serialization(format!("failed to serialize hash payload: {err}"))
+    })?;
+    Ok(hash_bytes_hex(&bytes))
+}
+
+#[cfg(feature = "onnx-export")]
+fn hash_bytes_hex(bytes: &[u8]) -> String {
+    let digest = Blake2b512::digest(bytes);
+    digest
+        .as_slice()
+        .iter()
+        .take(32)
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }
 
 fn compile_model(
@@ -740,7 +1964,15 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
     !first_arg.starts_with('-')
         && !matches!(
             first_arg,
-            "run" | "tui" | "export-onnx" | "prove-stark" | "verify-stark" | "help"
+            "run"
+                | "tui"
+                | "export-onnx"
+                | "prove-stark"
+                | "verify-stark"
+                | "research-v2-step"
+                | "research-v2-trace"
+                | "research-v2-matrix"
+                | "help"
         )
 }
 
