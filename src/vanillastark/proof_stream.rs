@@ -62,68 +62,64 @@ impl ProofObject {
     }
 
     /// Deserialize a single proof object from bytes. Returns (object, bytes_consumed).
-    fn deserialize(data: &[u8]) -> (Self, usize) {
-        let tag = data[0];
+    fn deserialize(data: &[u8]) -> Option<(Self, usize)> {
+        let tag = *data.first()?;
         let mut offset = 1;
         match tag {
             0 => {
-                let len = u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap()) as usize;
-                offset += 4;
-                let bytes = data[offset..offset + len].to_vec();
-                offset += len;
-                (ProofObject::Bytes(bytes), offset)
+                let len = read_u32(data, &mut offset)? as usize;
+                let end = offset.checked_add(len)?;
+                let bytes = data.get(offset..end)?.to_vec();
+                offset = end;
+                Some((ProofObject::Bytes(bytes), offset))
             }
             1 => {
-                let count =
-                    u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap()) as usize;
-                offset += 4;
+                let count = read_u32(data, &mut offset)? as usize;
                 let mut elements = Vec::with_capacity(count);
                 for _ in 0..count {
-                    let val = u128::from_le_bytes(data[offset..offset + 16].try_into().unwrap());
-                    offset += 16;
-                    elements.push(FieldElement::new(val));
+                    elements.push(FieldElement::new(read_u128(data, &mut offset)?));
                 }
-                (ProofObject::Codeword(elements), offset)
+                Some((ProofObject::Codeword(elements), offset))
             }
             2 => {
-                let a = u128::from_le_bytes(data[offset..offset + 16].try_into().unwrap());
-                offset += 16;
-                let b = u128::from_le_bytes(data[offset..offset + 16].try_into().unwrap());
-                offset += 16;
-                let c = u128::from_le_bytes(data[offset..offset + 16].try_into().unwrap());
-                offset += 16;
-                (
-                    ProofObject::Triple(
-                        FieldElement::new(a),
-                        FieldElement::new(b),
-                        FieldElement::new(c),
-                    ),
-                    offset,
-                )
+                let a = FieldElement::new(read_u128(data, &mut offset)?);
+                let b = FieldElement::new(read_u128(data, &mut offset)?);
+                let c = FieldElement::new(read_u128(data, &mut offset)?);
+                Some((ProofObject::Triple(a, b, c), offset))
             }
             3 => {
-                let count =
-                    u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap()) as usize;
-                offset += 4;
+                let count = read_u32(data, &mut offset)? as usize;
                 let mut path = Vec::with_capacity(count);
                 for _ in 0..count {
-                    let len =
-                        u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap()) as usize;
-                    offset += 4;
-                    let segment = data[offset..offset + len].to_vec();
-                    offset += len;
+                    let len = read_u32(data, &mut offset)? as usize;
+                    let end = offset.checked_add(len)?;
+                    let segment = data.get(offset..end)?.to_vec();
+                    offset = end;
                     path.push(segment);
                 }
-                (ProofObject::Path(path), offset)
+                Some((ProofObject::Path(path), offset))
             }
             4 => {
-                let val = u128::from_le_bytes(data[offset..offset + 16].try_into().unwrap());
-                offset += 16;
-                (ProofObject::Element(FieldElement::new(val)), offset)
+                let val = read_u128(data, &mut offset)?;
+                Some((ProofObject::Element(FieldElement::new(val)), offset))
             }
-            _ => panic!("unknown proof object tag: {}", tag),
+            _ => None,
         }
     }
+}
+
+fn read_u32(data: &[u8], offset: &mut usize) -> Option<u32> {
+    let end = offset.checked_add(4)?;
+    let bytes: [u8; 4] = data.get(*offset..end)?.try_into().ok()?;
+    *offset = end;
+    Some(u32::from_le_bytes(bytes))
+}
+
+fn read_u128(data: &[u8], offset: &mut usize) -> Option<u128> {
+    let end = offset.checked_add(16)?;
+    let bytes: [u8; 16] = data.get(*offset..end)?.try_into().ok()?;
+    *offset = end;
+    Some(u128::from_le_bytes(bytes))
 }
 
 #[derive(Clone, Debug)]
@@ -167,14 +163,13 @@ impl ProofStream {
         self.objects.push(obj);
     }
 
-    pub fn pull(&mut self) -> ProofObject {
-        assert!(
-            self.read_index < self.objects.len(),
-            "ProofStream: cannot pull object; queue empty."
-        );
+    pub fn pull(&mut self) -> Option<ProofObject> {
+        if self.read_index >= self.objects.len() {
+            return None;
+        }
         let obj = self.objects[self.read_index].clone();
         self.read_index += 1;
-        obj
+        Some(obj)
     }
 
     /// Serialize the entire proof stream to bytes.
@@ -202,21 +197,28 @@ impl ProofStream {
     }
 
     /// Deserialize a proof stream from bytes.
-    pub fn deserialize(data: &[u8]) -> Self {
-        let count = u32::from_le_bytes(data[0..4].try_into().unwrap()) as usize;
-        let mut offset = 4;
+    pub fn deserialize(data: &[u8]) -> Option<Self> {
+        let mut offset = 0;
+        let count = read_u32(data, &mut offset)? as usize;
         let mut objects = Vec::with_capacity(count);
         for _ in 0..count {
-            let obj_len = u32::from_le_bytes(data[offset..offset + 4].try_into().unwrap()) as usize;
-            offset += 4;
-            let (obj, _) = ProofObject::deserialize(&data[offset..offset + obj_len]);
-            offset += obj_len;
+            let obj_len = read_u32(data, &mut offset)? as usize;
+            let end = offset.checked_add(obj_len)?;
+            let object_bytes = data.get(offset..end)?;
+            let (obj, consumed) = ProofObject::deserialize(object_bytes)?;
+            if consumed != object_bytes.len() {
+                return None;
+            }
+            offset = end;
             objects.push(obj);
         }
-        Self {
+        if offset != data.len() {
+            return None;
+        }
+        Some(Self {
             objects,
             read_index: 0,
-        }
+        })
     }
 }
 
@@ -230,12 +232,12 @@ mod tests {
         ps.push(ProofObject::Bytes(vec![1, 2, 3]));
         ps.push(ProofObject::Element(FieldElement::new(42)));
 
-        if let ProofObject::Bytes(data) = ps.pull() {
+        if let Some(ProofObject::Bytes(data)) = ps.pull() {
             assert_eq!(data, vec![1, 2, 3]);
         } else {
             panic!("expected Bytes");
         }
-        if let ProofObject::Element(e) = ps.pull() {
+        if let Some(ProofObject::Element(e)) = ps.pull() {
             assert_eq!(e, FieldElement::new(42));
         } else {
             panic!("expected Element");
@@ -254,8 +256,13 @@ mod tests {
         ));
 
         let serialized = ps.serialize();
-        let ps2 = ProofStream::deserialize(&serialized);
+        let ps2 = ProofStream::deserialize(&serialized).expect("deserialize");
         assert_eq!(ps2.objects.len(), 3);
+    }
+
+    #[test]
+    fn test_deserialize_rejects_truncated_stream() {
+        assert!(ProofStream::deserialize(&[0, 1, 2]).is_none());
     }
 
     #[test]
