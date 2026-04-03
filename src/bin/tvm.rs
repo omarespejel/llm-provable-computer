@@ -7,7 +7,9 @@ use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[cfg(feature = "onnx-export")]
-use blake2::{Blake2b512, Digest};
+use blake2::digest::{Update, VariableOutput};
+#[cfg(feature = "onnx-export")]
+use blake2::Blake2bVar;
 #[cfg(feature = "burn-model")]
 use burn::backend::NdArray;
 use clap::{Parser, Subcommand, ValueEnum};
@@ -1617,13 +1619,13 @@ fn hash_json_hex<T: Serialize + ?Sized>(value: &T) -> llm_provable_computer::Res
 
 #[cfg(feature = "onnx-export")]
 fn hash_bytes_hex(bytes: &[u8]) -> String {
-    let digest = Blake2b512::digest(bytes);
-    digest
-        .as_slice()
-        .iter()
-        .take(32)
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
+    let mut output = [0u8; 32];
+    let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
+    hasher.update(bytes);
+    hasher
+        .finalize_variable(&mut output)
+        .expect("blake2b-256 finalization");
+    output.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 fn compile_model(

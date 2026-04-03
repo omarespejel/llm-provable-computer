@@ -3,7 +3,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use assert_cmd::Command;
 #[cfg(feature = "onnx-export")]
-use blake2::{Blake2b512, Digest};
+use blake2::digest::{Update, VariableOutput};
+#[cfg(feature = "onnx-export")]
+use blake2::Blake2bVar;
 #[cfg(feature = "onnx-export")]
 use jsonschema::{Draft, JSONSchema};
 use predicates::prelude::*;
@@ -53,13 +55,13 @@ fn read_repo_file(relative_path: &str) -> Vec<u8> {
 
 #[cfg(feature = "onnx-export")]
 fn blake2b_256_hex(bytes: &[u8]) -> String {
-    let digest = Blake2b512::digest(bytes);
-    digest
-        .as_slice()
-        .iter()
-        .take(32)
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
+    let mut output = [0u8; 32];
+    let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
+    hasher.update(bytes);
+    hasher
+        .finalize_variable(&mut output)
+        .expect("blake2b-256 finalization");
+    output.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 #[cfg(feature = "onnx-export")]
