@@ -26,7 +26,14 @@ llm-provable-computer is an implemented Rust workspace for a deterministic trans
 - Current vanilla STARK scope:
   - supported: `NOP`, `LOADI`, `LOAD`, `STORE`, `PUSH`, `POP`, `ADD`, `ADDM`, `SUB`, `SUBM`, `MUL`, `MULM`, `CALL`, `RET`, `JMP`, `JZ`, `JNZ`, `HALT`
   - rejected: softmax and hard-softmax proof paths, bitwise instructions, compare instructions, non-halted public claims, public claims with `carry_flag = true`
-- Current proof is transparent, not zero-knowledge: the public claim includes the program, attention mode, step count, and final state.
+- Current proof is transparent, not zero-knowledge.
+- Current public claim fields include:
+  - statement metadata: `statement_version`, `semantic_scope`
+  - execution data: `program`, `attention_mode`, `transformer_config`, `steps`, `final_state`
+  - equivalence metadata: `checked_steps`, transformer/native fingerprints
+  - commitments: program/config/model/options/build hashes
+- Verification behavior:
+  - `verify-stark` checks STARK validity and enforces transformer/native equivalence for `statement-v1` by re-executing lockstep and validating claim consistency.
 </status>
 
 <structure>

@@ -269,11 +269,13 @@ The AIR encodes each supported instruction as polynomial transition constraints 
 # Prove
 cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proof.json
 
-# Verify (does not re-execute the program)
+# Verify
 cargo run --bin tvm -- verify-stark fact.proof.json
 ```
 
-The proof is transparent and public. The claim includes the program, attention mode, step count, and final state. Zero-knowledge hiding is out of scope.
+Verification checks STARK validity and (for the current `statement-v1` semantic scope) re-executes transformer/native lockstep to enforce equivalence against claim outputs.
+
+The proof is transparent and public. The claim includes statement metadata (`statement_version`, `semantic_scope`), the program, attention mode/configuration, step count, final state, equivalence metadata, and claim commitments. Zero-knowledge hiding is out of scope.
 
 ---
 
