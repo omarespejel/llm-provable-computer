@@ -670,7 +670,9 @@ fn validate_public_state(program: &Program, final_state: &MachineState) -> Resul
 
 fn validate_equivalence_metadata(claim: &VanillaStarkExecutionClaim) -> Result<()> {
     let Some(metadata) = &claim.equivalence else {
-        return Ok(());
+        return Err(VmError::InvalidConfig(
+            "missing equivalence metadata in STARK claim".to_string(),
+        ));
     };
 
     if metadata.checked_steps != claim.steps {
@@ -975,6 +977,19 @@ HALT
                 proof.claim.final_state.halted,
                 &proof.claim.final_state,
             )
+        );
+    }
+
+    #[test]
+    fn verify_rejects_claim_without_equivalence_metadata() {
+        let mut proof = prove_program("programs/addition.tvm", 32);
+        proof.claim.equivalence = None;
+        let err = verify_execution_stark(&proof).unwrap_err();
+        assert!(matches!(err, VmError::InvalidConfig(_)));
+        assert!(
+            err.to_string()
+                .contains("missing equivalence metadata in STARK claim"),
+            "unexpected error: {err}"
         );
     }
 }

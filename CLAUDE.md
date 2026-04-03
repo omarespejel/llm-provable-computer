@@ -26,7 +26,7 @@ llm-provable-computer is an implemented Rust workspace for a deterministic trans
 - Current vanilla STARK scope:
   - supported: `NOP`, `LOADI`, `LOAD`, `STORE`, `PUSH`, `POP`, `ADD`, `ADDM`, `SUB`, `SUBM`, `MUL`, `MULM`, `CALL`, `RET`, `JMP`, `JZ`, `JNZ`, `HALT`
   - rejected: softmax and hard-softmax proof paths, bitwise instructions, compare instructions, non-halted public claims, public claims with `carry_flag = true`
-- Current proof is transparent, not zero-knowledge: the public claim includes the program, attention mode, step count, and final state.
+- Current proof is transparent, not zero-knowledge: the public claim includes the program, attention mode, step count, final state, and lockstep equivalence metadata (checked steps plus transformer/native fingerprints).
 </status>
 
 <structure>
