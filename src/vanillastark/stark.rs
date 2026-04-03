@@ -522,6 +522,10 @@ impl Stark {
             }
         }
 
+        if proof_stream.pull().is_some() {
+            return false;
+        }
+
         true
     }
 }
@@ -567,5 +571,39 @@ mod tests {
         let wrong_boundary = rp.boundary_constraints(wrong_output);
         let verdict = stark.verify(&proof, &air, &wrong_boundary);
         assert!(!verdict, "invalid stark proof should not verify");
+    }
+
+    #[test]
+    fn test_stark_rejects_trailing_proof_objects() {
+        let expansion_factor = 4;
+        let num_colinearity_checks = 2;
+        let security_level = 2;
+
+        let rp = RescuePrime::new();
+        let input_element = FieldElement::sample(b"0xdeadbeef");
+        let output_element = rp.hash(input_element);
+        let num_cycles = rp.n + 1;
+        let state_width = rp.m;
+
+        let stark = Stark::new(
+            expansion_factor,
+            num_colinearity_checks,
+            security_level,
+            state_width,
+            num_cycles,
+            2,
+        );
+
+        let trace = rp.trace(input_element);
+        let air = rp.transition_constraints(stark.omicron);
+        let boundary = rp.boundary_constraints(output_element);
+        let proof = stark.prove(&trace, &air, &boundary);
+
+        let mut stream = ProofStream::deserialize(&proof).expect("deserialize proof");
+        stream.push(ProofObject::Bytes(vec![0u8]));
+        let tampered = stream.serialize();
+
+        let verdict = stark.verify(&tampered, &air, &boundary);
+        assert!(!verdict, "proof with trailing objects should not verify");
     }
 }

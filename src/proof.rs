@@ -848,6 +848,21 @@ fn validate_statement_metadata(claim: &VanillaStarkExecutionClaim) -> Result<()>
             claim.semantic_scope, CLAIM_SEMANTIC_SCOPE_V1
         )));
     }
+    let commitments = claim.commitments.as_ref().ok_or_else(|| {
+        VmError::UnsupportedProof("proof claim is missing artifact commitments".to_string())
+    })?;
+    if commitments.scheme_version != CLAIM_COMMITMENT_SCHEME_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported commitment_scheme_version `{}` (expected `{}`)",
+            commitments.scheme_version, CLAIM_COMMITMENT_SCHEME_VERSION_V1
+        )));
+    }
+    if commitments.hash_function != CLAIM_COMMITMENT_HASH_FUNCTION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported commitment_hash_function `{}` (expected `{}`)",
+            commitments.hash_function, CLAIM_COMMITMENT_HASH_FUNCTION_V1
+        )));
+    }
     Ok(())
 }
 
@@ -1504,6 +1519,36 @@ HALT
         proof.claim.semantic_scope = "native_isa_execution_only".to_string();
         let err = verify_execution_stark(&proof).unwrap_err();
         assert!(err.to_string().contains("unsupported semantic_scope"));
+    }
+
+    #[test]
+    fn verify_rejects_commitment_scheme_version_mismatch() {
+        let mut proof = prove_program("programs/addition.tvm", 32);
+        proof
+            .claim
+            .commitments
+            .as_mut()
+            .expect("artifact commitments")
+            .scheme_version = "v2".to_string();
+        let err = verify_execution_stark(&proof).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("unsupported commitment_scheme_version"));
+    }
+
+    #[test]
+    fn verify_rejects_commitment_hash_function_mismatch() {
+        let mut proof = prove_program("programs/addition.tvm", 32);
+        proof
+            .claim
+            .commitments
+            .as_mut()
+            .expect("artifact commitments")
+            .hash_function = "sha256".to_string();
+        let err = verify_execution_stark(&proof).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("unsupported commitment_hash_function"));
     }
 
     #[test]
