@@ -1,7 +1,8 @@
 use std::fs;
 use std::path::Path;
 
-use blake2::{Blake2b512, Digest};
+use blake2::digest::{Update, VariableOutput};
+use blake2::{Blake2b512, Blake2bVar, Digest};
 use serde::{Deserialize, Serialize};
 
 use crate::config::Attention2DMode;
@@ -679,11 +680,17 @@ pub fn verify_execution_stark_with_policy(
         air.transition_degree_bound(),
     );
 
-    Ok(stark.verify(
+    let is_valid = stark.verify(
         &proof.proof,
         &air.transition_constraints(),
         &air.boundary_constraints(proof.claim.steps, &proof.claim.final_state),
-    ))
+    );
+    if !is_valid {
+        return Ok(false);
+    }
+
+    enforce_equivalence_scope(&proof.claim)?;
+    Ok(true)
 }
 
 pub fn verify_execution_stark_with_reexecution(proof: &VanillaStarkExecutionProof) -> Result<bool> {
@@ -694,19 +701,7 @@ pub fn verify_execution_stark_with_reexecution_and_policy(
     proof: &VanillaStarkExecutionProof,
     policy: StarkVerificationPolicy,
 ) -> Result<bool> {
-    if !verify_execution_stark_with_policy(proof, policy)? {
-        return Ok(false);
-    }
-
-    let config = proof.claim.transformer_config.clone().ok_or_else(|| {
-        VmError::UnsupportedProof(
-            "proof claim is missing transformer configuration for re-execution".to_string(),
-        )
-    })?;
-    let model = TransformerVm::new(config, proof.claim.program.clone())?;
-    let comparison = verify_model_against_native(model, proof.claim.steps)?;
-    validate_reexecution_matches_claim(&proof.claim, &comparison)?;
-    Ok(true)
+    verify_execution_stark_with_policy(proof, policy)
 }
 
 pub(crate) fn validate_execution_stark_support(
@@ -853,6 +848,23 @@ fn validate_statement_metadata(claim: &VanillaStarkExecutionClaim) -> Result<()>
             claim.semantic_scope, CLAIM_SEMANTIC_SCOPE_V1
         )));
     }
+    Ok(())
+}
+
+fn enforce_equivalence_scope(claim: &VanillaStarkExecutionClaim) -> Result<()> {
+    if claim.semantic_scope != CLAIM_SEMANTIC_SCOPE_V1 {
+        return Ok(());
+    }
+
+    let config = claim.transformer_config.clone().ok_or_else(|| {
+        VmError::UnsupportedProof(
+            "proof claim is missing transformer configuration for equivalence re-execution"
+                .to_string(),
+        )
+    })?;
+    let model = TransformerVm::new(config, claim.program.clone())?;
+    let comparison = verify_model_against_native(model, claim.steps)?;
+    validate_reexecution_matches_claim(claim, &comparison)?;
     Ok(())
 }
 
@@ -1103,13 +1115,13 @@ fn hash_serialized_payload_hex<T: Serialize>(label: &str, value: &T) -> Result<S
 }
 
 fn hash_bytes_hex(bytes: &[u8]) -> String {
-    let digest = Blake2b512::digest(bytes);
-    digest
-        .as_slice()
-        .iter()
-        .take(32)
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
+    let mut output = [0u8; 32];
+    let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
+    hasher.update(bytes);
+    hasher
+        .finalize_variable(&mut output)
+        .expect("blake2b-256 finalization");
+    output.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 #[derive(Serialize)]
@@ -1522,6 +1534,14 @@ HALT
         assert_eq!(
             spec.commitment_hash_function,
             CLAIM_COMMITMENT_HASH_FUNCTION_V1
+        );
+    }
+
+    #[test]
+    fn commitment_hash_matches_blake2b_256_test_vector() {
+        assert_eq!(
+            hash_bytes_hex(b""),
+            "0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8"
         );
     }
 }

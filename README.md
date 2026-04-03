@@ -278,7 +278,7 @@ cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proo
   --stark-profile production-v1 \
   --stark-expansion-factor 8 --stark-num-colinearity-checks 16 --stark-security-level 32
 
-# Verify (does not re-execute the program)
+# Verify
 cargo run --bin tvm -- verify-stark fact.proof.json
 
 # Verify and re-execute transformer/native runtimes from claim data
@@ -328,7 +328,9 @@ Measured reference (local release build):
 | production-v1 | `(4, 16, 32)` | 32 | ~29s |
 | heavier | `(8, 16, 32)` | 48 | ~61s |
 
-The proof is transparent and public. The claim includes the program, attention mode, step count, and final state. Zero-knowledge hiding is out of scope.
+Verification checks STARK validity and (for the current `statement-v1` semantic scope) re-executes transformer/native lockstep to enforce equivalence against claim outputs.
+
+The proof is transparent and public. The claim includes statement metadata (`statement_version`, `semantic_scope`), the program, attention mode/configuration, step count, final state, equivalence metadata, and claim commitments. Zero-knowledge hiding is out of scope.
 
 ### Research V2 One-Step Semantic Artifact
 

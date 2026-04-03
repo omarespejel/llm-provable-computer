@@ -7,6 +7,12 @@ use sha3::{
 
 use super::field::FieldElement;
 
+const MAX_STREAM_OBJECTS: usize = 1_000_000;
+const MAX_OBJECT_BYTES: usize = 64 * 1024 * 1024;
+const MAX_CODEWORD_ELEMENTS: usize = 1_000_000;
+const MAX_PATH_SEGMENTS: usize = 1_000_000;
+const MAX_PATH_SEGMENT_BYTES: usize = 1024 * 1024;
+
 /// Objects that can be pushed/pulled from the proof stream.
 #[derive(Clone, Debug)]
 pub enum ProofObject {
@@ -75,7 +81,11 @@ impl ProofObject {
             }
             1 => {
                 let count = read_u32(data, &mut offset)? as usize;
-                let mut elements = Vec::with_capacity(count);
+                let max_count_from_len = data.len().saturating_sub(offset) / 16;
+                if count > MAX_CODEWORD_ELEMENTS || count > max_count_from_len {
+                    return None;
+                }
+                let mut elements = Vec::new();
                 for _ in 0..count {
                     elements.push(FieldElement::new(read_u128(data, &mut offset)?));
                 }
@@ -89,9 +99,16 @@ impl ProofObject {
             }
             3 => {
                 let count = read_u32(data, &mut offset)? as usize;
-                let mut path = Vec::with_capacity(count);
+                let max_count_from_len = data.len().saturating_sub(offset) / 4;
+                if count > MAX_PATH_SEGMENTS || count > max_count_from_len {
+                    return None;
+                }
+                let mut path = Vec::new();
                 for _ in 0..count {
                     let len = read_u32(data, &mut offset)? as usize;
+                    if len > MAX_PATH_SEGMENT_BYTES {
+                        return None;
+                    }
                     let end = offset.checked_add(len)?;
                     let segment = data.get(offset..end)?.to_vec();
                     offset = end;
@@ -200,9 +217,16 @@ impl ProofStream {
     pub fn deserialize(data: &[u8]) -> Option<Self> {
         let mut offset = 0;
         let count = read_u32(data, &mut offset)? as usize;
-        let mut objects = Vec::with_capacity(count);
+        let max_count_from_len = data.len().saturating_sub(offset) / 5;
+        if count > MAX_STREAM_OBJECTS || count > max_count_from_len {
+            return None;
+        }
+        let mut objects = Vec::new();
         for _ in 0..count {
             let obj_len = read_u32(data, &mut offset)? as usize;
+            if obj_len == 0 || obj_len > MAX_OBJECT_BYTES {
+                return None;
+            }
             let end = offset.checked_add(obj_len)?;
             let object_bytes = data.get(offset..end)?;
             let (obj, consumed) = ProofObject::deserialize(object_bytes)?;
@@ -263,6 +287,27 @@ mod tests {
     #[test]
     fn test_deserialize_rejects_truncated_stream() {
         assert!(ProofStream::deserialize(&[0, 1, 2]).is_none());
+    }
+
+    #[test]
+    fn test_deserialize_rejects_huge_object_count() {
+        let mut data = Vec::new();
+        data.extend_from_slice(&(u32::MAX).to_le_bytes());
+        assert!(ProofStream::deserialize(&data).is_none());
+    }
+
+    #[test]
+    fn test_deserialize_rejects_huge_segment_length() {
+        // stream count = 1
+        // object length = 1 (tag) + 4 (count) + 4 (segment len)
+        // object: Path with 1 segment declaring huge length
+        let mut data = Vec::new();
+        data.extend_from_slice(&1u32.to_le_bytes());
+        data.extend_from_slice(&9u32.to_le_bytes());
+        data.push(3u8);
+        data.extend_from_slice(&1u32.to_le_bytes());
+        data.extend_from_slice(&(MAX_PATH_SEGMENT_BYTES as u32 + 1).to_le_bytes());
+        assert!(ProofStream::deserialize(&data).is_none());
     }
 
     #[test]
