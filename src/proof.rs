@@ -4,6 +4,7 @@ use std::path::Path;
 use blake2::digest::{Update, VariableOutput};
 use blake2::{Blake2b512, Blake2bVar, Digest};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::config::Attention2DMode;
 use crate::config::TransformerVmConfig;
@@ -137,6 +138,7 @@ pub const CLAIM_COMMITMENT_HASH_FUNCTION_V1: &str = "blake2b-256";
 pub const CLAIM_STATEMENT_VERSION_V1: &str = "statement-v1";
 pub const CLAIM_SEMANTIC_SCOPE_V1: &str =
     "native_isa_execution_with_transformer_native_equivalence_check";
+const COMMITMENT_PAYLOAD_VERSION_V1: &str = "v1";
 
 #[derive(Debug, Clone, Copy)]
 struct ColumnLayout {
@@ -1043,16 +1045,35 @@ fn validate_claim_commitments(claim: &VanillaStarkExecutionClaim) -> Result<()> 
         ));
     }
 
-    let expected_program_hash = hash_serialized_payload_hex("program", &claim.program)?;
-    let expected_config_hash = hash_serialized_payload_hex("transformer config", config)?;
+    let expected_program_hash = hash_serialized_payload_hex(
+        "program",
+        &ProgramCommitmentPayloadV1 {
+            version: COMMITMENT_PAYLOAD_VERSION_V1,
+            program: &claim.program,
+        },
+    )?;
+    let expected_config_hash = hash_serialized_payload_hex(
+        "transformer config",
+        &TransformerConfigCommitmentPayloadV1 {
+            version: COMMITMENT_PAYLOAD_VERSION_V1,
+            transformer_config: config,
+        },
+    )?;
     let expected_model_hash = hash_serialized_payload_hex(
         "deterministic model",
-        &DeterministicModelCommitmentPayload {
+        &DeterministicModelCommitmentPayloadV1 {
+            version: COMMITMENT_PAYLOAD_VERSION_V1,
             program: &claim.program,
             transformer_config: config,
         },
     )?;
-    let expected_options_hash = hash_serialized_payload_hex("stark options", &claim.options)?;
+    let expected_options_hash = hash_serialized_payload_hex(
+        "stark options",
+        &StarkOptionsCommitmentPayloadV1 {
+            version: COMMITMENT_PAYLOAD_VERSION_V1,
+            stark_options: &claim.options,
+        },
+    )?;
     let expected_build_hash = hash_bytes_hex(commitments.prover_build_info.as_bytes());
 
     validate_commitment_field(
@@ -1101,16 +1122,35 @@ fn build_claim_commitments(
     let prover_build_info = prover_build_info();
     let prover_build_hash = hash_bytes_hex(prover_build_info.as_bytes());
 
-    let program_hash = hash_serialized_payload_hex("program", program)?;
-    let transformer_config_hash = hash_serialized_payload_hex("transformer config", config)?;
+    let program_hash = hash_serialized_payload_hex(
+        "program",
+        &ProgramCommitmentPayloadV1 {
+            version: COMMITMENT_PAYLOAD_VERSION_V1,
+            program,
+        },
+    )?;
+    let transformer_config_hash = hash_serialized_payload_hex(
+        "transformer config",
+        &TransformerConfigCommitmentPayloadV1 {
+            version: COMMITMENT_PAYLOAD_VERSION_V1,
+            transformer_config: config,
+        },
+    )?;
     let deterministic_model_hash = hash_serialized_payload_hex(
         "deterministic model",
-        &DeterministicModelCommitmentPayload {
+        &DeterministicModelCommitmentPayloadV1 {
+            version: COMMITMENT_PAYLOAD_VERSION_V1,
             program,
             transformer_config: config,
         },
     )?;
-    let stark_options_hash = hash_serialized_payload_hex("stark options", options)?;
+    let stark_options_hash = hash_serialized_payload_hex(
+        "stark options",
+        &StarkOptionsCommitmentPayloadV1 {
+            version: COMMITMENT_PAYLOAD_VERSION_V1,
+            stark_options: options,
+        },
+    )?;
 
     Ok(ExecutionClaimCommitments {
         scheme_version: CLAIM_COMMITMENT_SCHEME_VERSION_V1.to_string(),
@@ -1131,9 +1171,54 @@ fn prover_build_info() -> String {
 }
 
 fn hash_serialized_payload_hex<T: Serialize>(label: &str, value: &T) -> Result<String> {
-    let payload = serde_json::to_vec(value)
-        .map_err(|err| VmError::Serialization(format!("failed to serialize {label}: {err}")))?;
+    let payload = canonical_json_bytes(label, value)?;
     Ok(hash_bytes_hex(&payload))
+}
+
+fn canonical_json_bytes<T: Serialize>(label: &str, value: &T) -> Result<Vec<u8>> {
+    let json = serde_json::to_value(value)
+        .map_err(|err| VmError::Serialization(format!("{label}: {err}")))?;
+    let mut out = Vec::new();
+    write_canonical_json_value(&json, &mut out)
+        .map_err(|err| VmError::Serialization(format!("{label}: {err}")))?;
+    Ok(out)
+}
+
+fn write_canonical_json_value(
+    value: &Value,
+    out: &mut Vec<u8>,
+) -> std::result::Result<(), serde_json::Error> {
+    match value {
+        Value::Null => out.extend_from_slice(b"null"),
+        Value::Bool(v) => out.extend_from_slice(if *v { b"true" } else { b"false" }),
+        Value::Number(v) => out.extend_from_slice(v.to_string().as_bytes()),
+        Value::String(v) => out.extend_from_slice(serde_json::to_string(v)?.as_bytes()),
+        Value::Array(values) => {
+            out.push(b'[');
+            for (index, item) in values.iter().enumerate() {
+                if index > 0 {
+                    out.push(b',');
+                }
+                write_canonical_json_value(item, out)?;
+            }
+            out.push(b']');
+        }
+        Value::Object(map) => {
+            out.push(b'{');
+            let mut entries: Vec<_> = map.iter().collect();
+            entries.sort_by(|(left, _), (right, _)| left.cmp(right));
+            for (index, (key, item)) in entries.iter().enumerate() {
+                if index > 0 {
+                    out.push(b',');
+                }
+                out.extend_from_slice(serde_json::to_string(key)?.as_bytes());
+                out.push(b':');
+                write_canonical_json_value(item, out)?;
+            }
+            out.push(b'}');
+        }
+    }
+    Ok(())
 }
 
 fn hash_bytes_hex(bytes: &[u8]) -> String {
@@ -1147,9 +1232,28 @@ fn hash_bytes_hex(bytes: &[u8]) -> String {
 }
 
 #[derive(Serialize)]
-struct DeterministicModelCommitmentPayload<'a> {
+struct ProgramCommitmentPayloadV1<'a> {
+    version: &'static str,
+    program: &'a Program,
+}
+
+#[derive(Serialize)]
+struct TransformerConfigCommitmentPayloadV1<'a> {
+    version: &'static str,
+    transformer_config: &'a TransformerVmConfig,
+}
+
+#[derive(Serialize)]
+struct DeterministicModelCommitmentPayloadV1<'a> {
+    version: &'static str,
     program: &'a Program,
     transformer_config: &'a TransformerVmConfig,
+}
+
+#[derive(Serialize)]
+struct StarkOptionsCommitmentPayloadV1<'a> {
+    version: &'static str,
+    stark_options: &'a VanillaStarkProofOptions,
 }
 
 fn execution_trace_rows(layout: &ColumnLayout, trace: &[MachineState]) -> Vec<Vec<FieldElement>> {
@@ -1623,5 +1727,29 @@ HALT
             conjectured_security_bits(&options),
             VANILLA_STARK_FIELD_SECURITY_BITS
         );
+    }
+
+    #[test]
+    fn canonical_json_hash_is_key_order_invariant() {
+        let ordered = serde_json::json!({
+            "a": 1,
+            "b": {
+                "x": true,
+                "y": [2, 3]
+            }
+        });
+
+        let mut inner = serde_json::Map::new();
+        inner.insert("y".to_string(), serde_json::json!([2, 3]));
+        inner.insert("x".to_string(), serde_json::json!(true));
+        let mut outer = serde_json::Map::new();
+        outer.insert("b".to_string(), Value::Object(inner));
+        outer.insert("a".to_string(), serde_json::json!(1));
+        let reordered = Value::Object(outer);
+
+        let ordered_hash = hash_serialized_payload_hex("ordered", &ordered).expect("hash ordered");
+        let reordered_hash =
+            hash_serialized_payload_hex("reordered", &reordered).expect("hash reordered");
+        assert_eq!(ordered_hash, reordered_hash);
     }
 }
