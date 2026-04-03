@@ -1,0 +1,32 @@
+{
+  "files": [
+    {
+      "path": "README.md",
+      "description": "Canonical user-facing behavior and claim wording."
+    },
+    {
+      "path": "CLAUDE.md",
+      "description": "Repository architecture, implemented boundaries, and workflow constraints."
+    },
+    {
+      "path": "spec/statement-v1.json",
+      "description": "Canonical v1 statement contract for STARK claim metadata.",
+      "scope": ["src/proof.rs", "src/bin/tvm.rs", "tests/**", "spec/**"]
+    },
+    {
+      "path": "spec/statement-v2-research.json",
+      "description": "Research v2 one-step semantic statement contract.",
+      "scope": ["src/bin/tvm.rs", "tests/**", "spec/**"]
+    },
+    {
+      "path": "spec/statement-v2-trace-research.json",
+      "description": "Research v2 prefix-trace semantic statement contract.",
+      "scope": ["src/bin/tvm.rs", "tests/**", "spec/**"]
+    },
+    {
+      "path": "spec/statement-v2-matrix-research.json",
+      "description": "Research v2 matrix semantic statement contract across programs.",
+      "scope": ["src/bin/tvm.rs", "tests/**", "spec/**"]
+    }
+  ]
+}
