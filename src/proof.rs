@@ -82,6 +82,12 @@ impl Default for StarkVerificationPolicy {
     }
 }
 
+pub fn production_v1_verification_policy() -> StarkVerificationPolicy {
+    StarkVerificationPolicy {
+        min_conjectured_security_bits: PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS,
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct VanillaStarkExecutionClaim {
     #[serde(default)]
@@ -571,7 +577,7 @@ pub fn prove_execution_stark(
     model: &TransformerVm,
     max_steps: usize,
 ) -> Result<VanillaStarkExecutionProof> {
-    prove_execution_stark_with_options(model, max_steps, VanillaStarkProofOptions::default())
+    prove_execution_stark_with_options(model, max_steps, production_v1_stark_options())
 }
 
 pub fn prove_execution_stark_with_options(
@@ -643,7 +649,7 @@ pub fn prove_execution_stark_with_options(
 }
 
 pub fn verify_execution_stark(proof: &VanillaStarkExecutionProof) -> Result<bool> {
-    verify_execution_stark_with_policy(proof, StarkVerificationPolicy::default())
+    verify_execution_stark_with_policy(proof, production_v1_verification_policy())
 }
 
 pub fn verify_execution_stark_with_policy(
@@ -694,7 +700,7 @@ pub fn verify_execution_stark_with_policy(
 }
 
 pub fn verify_execution_stark_with_reexecution(proof: &VanillaStarkExecutionProof) -> Result<bool> {
-    verify_execution_stark_with_reexecution_and_policy(proof, StarkVerificationPolicy::default())
+    verify_execution_stark_with_reexecution_and_policy(proof, production_v1_verification_policy())
 }
 
 pub fn verify_execution_stark_with_reexecution_and_policy(
@@ -728,7 +734,8 @@ pub fn conjectured_security_bits(options: &VanillaStarkProofOptions) -> u32 {
         return 0;
     }
     let query_bits = (options.expansion_factor.trailing_zeros() as u64)
-        * (options.num_colinearity_checks as u64);
+        .checked_mul(options.num_colinearity_checks as u64)
+        .unwrap_or(u64::MAX);
     query_bits.min(VANILLA_STARK_FIELD_SECURITY_BITS as u64) as u32
 }
 
@@ -1305,7 +1312,8 @@ mod tests {
         let model = ProgramCompiler
             .compile_source(&source, TransformerVmConfig::default())
             .expect("compile");
-        prove_execution_stark(&model, max_steps).expect("prove")
+        prove_execution_stark_with_options(&model, max_steps, production_v1_stark_options())
+            .expect("prove")
     }
 
     #[test]
@@ -1338,7 +1346,8 @@ HALT
         let model = ProgramCompiler
             .compile_source(source, TransformerVmConfig::default())
             .expect("compile");
-        let proof = prove_execution_stark(&model, 128).expect("prove");
+        let proof = prove_execution_stark_with_options(&model, 128, production_v1_stark_options())
+            .expect("prove");
         assert!(verify_execution_stark(&proof).expect("verify"));
         assert_eq!(proof.claim.final_state.acc, 2);
     }
@@ -1477,7 +1486,20 @@ HALT
 
     #[test]
     fn policy_rejects_low_security_proof_options() {
-        let proof = prove_program("programs/addition.tvm", 32);
+        let source = std::fs::read_to_string("programs/addition.tvm").expect("program source");
+        let model = ProgramCompiler
+            .compile_source(&source, TransformerVmConfig::default())
+            .expect("compile");
+        let proof = prove_execution_stark_with_options(
+            &model,
+            32,
+            VanillaStarkProofOptions {
+                expansion_factor: 4,
+                num_colinearity_checks: 2,
+                security_level: 2,
+            },
+        )
+        .expect("prove");
         let err = verify_execution_stark_with_policy(
             &proof,
             StarkVerificationPolicy {
@@ -1587,6 +1609,19 @@ HALT
         assert_eq!(
             hash_bytes_hex(b""),
             "0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8"
+        );
+    }
+
+    #[test]
+    fn conjectured_security_bits_handles_large_query_counts() {
+        let options = VanillaStarkProofOptions {
+            expansion_factor: 1 << 63,
+            num_colinearity_checks: usize::MAX,
+            security_level: 1,
+        };
+        assert_eq!(
+            conjectured_security_bits(&options),
+            VANILLA_STARK_FIELD_SECURITY_BITS
         );
     }
 }
