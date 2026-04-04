@@ -202,9 +202,18 @@ Suggested additions:
 - `proof_backend: vanilla | stwo`
 - `proof_backend_version`
 - `backend_fingerprint`
-- `claim_statement_version`
 
-If an S-two proof requires materially different statement fields, fork into `statement-v2` rather than mutating `statement-v1` silently.
+These fields should live in `ExecutionClaimCommitments`, not as new semantic fields on
+`VanillaStarkExecutionClaim`. They belong to the proof-artifact and prover-metadata layer, alongside
+existing commitment metadata such as `scheme_version`, `hash_function`, and `prover_build_info`.
+
+Because these additions do not change the meaning of the claimed computation, they are
+backward-compatible commitment metadata only. They should therefore be introduced with
+`#[serde(default)]` compatibility where needed and do **not** require forking to `statement-v2`.
+
+Reserve `statement-v2` for material semantic changes to the statement itself, such as changing the
+meaning of `VanillaStarkExecutionClaim`, altering required semantic fields, or widening the proved
+relation beyond the current `statement-v1` scope.
 
 ## Testing strategy
 
