@@ -763,6 +763,11 @@ fn prove_stark_command(
 ) -> llm_provable_computer::Result<()> {
     let model = compile_model(program, layers, attention_mode)?;
     let proof = prove_execution_stark_with_options(&model, max_steps, stark_options)?;
+    let equivalence = proof.claim.equivalence.as_ref().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "prove-stark produced a claim without equivalence metadata".to_string(),
+        )
+    })?;
     save_execution_stark_proof(&proof, output)?;
 
     println!("program: {}", program.display());
@@ -802,17 +807,15 @@ fn prove_stark_command(
     if profile_security_floor > 0 {
         println!("profile_min_conjectured_security_bits: {profile_security_floor}");
     }
-    if let Some(equivalence) = &proof.claim.equivalence {
-        println!("equivalence_checked_steps: {}", equivalence.checked_steps);
-        println!(
-            "equivalence_transformer_fingerprint: {}",
-            equivalence.transformer_fingerprint
-        );
-        println!(
-            "equivalence_native_fingerprint: {}",
-            equivalence.native_fingerprint
-        );
-    }
+    println!("equivalence_checked_steps: {}", equivalence.checked_steps);
+    println!(
+        "equivalence_transformer_fingerprint: {}",
+        equivalence.transformer_fingerprint
+    );
+    println!(
+        "equivalence_native_fingerprint: {}",
+        equivalence.native_fingerprint
+    );
     if let Some(commitments) = &proof.claim.commitments {
         println!("commitment_scheme_version: {}", commitments.scheme_version);
         println!("commitment_hash_function: {}", commitments.hash_function);
@@ -910,17 +913,18 @@ fn verify_stark_command(
     println!("verification_profile: {verification_profile}");
     println!("strict_policy: {}", strict);
     println!("reexecuted_equivalence: {}", effective_reexecute);
-    if let Some(equivalence) = &proof.claim.equivalence {
-        println!("equivalence_checked_steps: {}", equivalence.checked_steps);
-        println!(
-            "equivalence_transformer_fingerprint: {}",
-            equivalence.transformer_fingerprint
-        );
-        println!(
-            "equivalence_native_fingerprint: {}",
-            equivalence.native_fingerprint
-        );
-    }
+    let equivalence = proof.claim.equivalence.as_ref().ok_or_else(|| {
+        VmError::InvalidConfig("verified claim is missing equivalence metadata".to_string())
+    })?;
+    println!("equivalence_checked_steps: {}", equivalence.checked_steps);
+    println!(
+        "equivalence_transformer_fingerprint: {}",
+        equivalence.transformer_fingerprint
+    );
+    println!(
+        "equivalence_native_fingerprint: {}",
+        equivalence.native_fingerprint
+    );
     if let Some(commitments) = &proof.claim.commitments {
         println!("commitment_scheme_version: {}", commitments.scheme_version);
         println!("commitment_hash_function: {}", commitments.hash_function);

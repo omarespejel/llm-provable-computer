@@ -4,6 +4,7 @@ use std::path::Path;
 use blake2::digest::{Update, VariableOutput};
 use blake2::{Blake2b512, Blake2bVar, Digest};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::config::Attention2DMode;
 use crate::config::TransformerVmConfig;
@@ -82,6 +83,12 @@ impl Default for StarkVerificationPolicy {
     }
 }
 
+pub fn production_v1_verification_policy() -> StarkVerificationPolicy {
+    StarkVerificationPolicy {
+        min_conjectured_security_bits: PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS,
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct VanillaStarkExecutionClaim {
     #[serde(default)]
@@ -131,6 +138,7 @@ pub const CLAIM_COMMITMENT_HASH_FUNCTION_V1: &str = "blake2b-256";
 pub const CLAIM_STATEMENT_VERSION_V1: &str = "statement-v1";
 pub const CLAIM_SEMANTIC_SCOPE_V1: &str =
     "native_isa_execution_with_transformer_native_equivalence_check";
+const COMMITMENT_PAYLOAD_VERSION_V1: &str = "v1";
 
 #[derive(Debug, Clone, Copy)]
 struct ColumnLayout {
@@ -571,7 +579,7 @@ pub fn prove_execution_stark(
     model: &TransformerVm,
     max_steps: usize,
 ) -> Result<VanillaStarkExecutionProof> {
-    prove_execution_stark_with_options(model, max_steps, VanillaStarkProofOptions::default())
+    prove_execution_stark_with_options(model, max_steps, production_v1_stark_options())
 }
 
 pub fn prove_execution_stark_with_options(
@@ -643,13 +651,19 @@ pub fn prove_execution_stark_with_options(
 }
 
 pub fn verify_execution_stark(proof: &VanillaStarkExecutionProof) -> Result<bool> {
-    verify_execution_stark_with_policy(proof, StarkVerificationPolicy::default())
+    verify_execution_stark_with_policy(proof, production_v1_verification_policy())
 }
 
 pub fn verify_execution_stark_with_policy(
     proof: &VanillaStarkExecutionProof,
     policy: StarkVerificationPolicy,
 ) -> Result<bool> {
+    let trace_length = proof
+        .claim
+        .steps
+        .checked_add(1)
+        .ok_or_else(|| VmError::InvalidConfig("proof steps overflow".to_string()))?;
+
     validate_statement_metadata(&proof.claim)?;
     validate_proof_inputs(&proof.claim.program, &proof.claim.attention_mode)?;
     validate_stark_options(&proof.claim.options)?;
@@ -676,7 +690,7 @@ pub fn verify_execution_stark_with_policy(
         proof.claim.options.num_colinearity_checks,
         proof.claim.options.security_level,
         air.register_count(),
-        proof.claim.steps + 1,
+        trace_length,
         air.transition_degree_bound(),
     );
 
@@ -694,7 +708,7 @@ pub fn verify_execution_stark_with_policy(
 }
 
 pub fn verify_execution_stark_with_reexecution(proof: &VanillaStarkExecutionProof) -> Result<bool> {
-    verify_execution_stark_with_reexecution_and_policy(proof, StarkVerificationPolicy::default())
+    verify_execution_stark_with_reexecution_and_policy(proof, production_v1_verification_policy())
 }
 
 pub fn verify_execution_stark_with_reexecution_and_policy(
@@ -728,7 +742,8 @@ pub fn conjectured_security_bits(options: &VanillaStarkProofOptions) -> u32 {
         return 0;
     }
     let query_bits = (options.expansion_factor.trailing_zeros() as u64)
-        * (options.num_colinearity_checks as u64);
+        .checked_mul(options.num_colinearity_checks as u64)
+        .unwrap_or(u64::MAX);
     query_bits.min(VANILLA_STARK_FIELD_SECURITY_BITS as u64) as u32
 }
 
@@ -846,6 +861,21 @@ fn validate_statement_metadata(claim: &VanillaStarkExecutionClaim) -> Result<()>
         return Err(VmError::InvalidConfig(format!(
             "unsupported semantic_scope `{}` (expected `{}`)",
             claim.semantic_scope, CLAIM_SEMANTIC_SCOPE_V1
+        )));
+    }
+    let commitments = claim.commitments.as_ref().ok_or_else(|| {
+        VmError::UnsupportedProof("proof claim is missing artifact commitments".to_string())
+    })?;
+    if commitments.scheme_version != CLAIM_COMMITMENT_SCHEME_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported commitment_scheme_version `{}` (expected `{}`)",
+            commitments.scheme_version, CLAIM_COMMITMENT_SCHEME_VERSION_V1
+        )));
+    }
+    if commitments.hash_function != CLAIM_COMMITMENT_HASH_FUNCTION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported commitment_hash_function `{}` (expected `{}`)",
+            commitments.hash_function, CLAIM_COMMITMENT_HASH_FUNCTION_V1
         )));
     }
     Ok(())
@@ -1021,16 +1051,35 @@ fn validate_claim_commitments(claim: &VanillaStarkExecutionClaim) -> Result<()> 
         ));
     }
 
-    let expected_program_hash = hash_serialized_payload_hex("program", &claim.program)?;
-    let expected_config_hash = hash_serialized_payload_hex("transformer config", config)?;
+    let expected_program_hash = hash_serialized_payload_hex(
+        "program",
+        &ProgramCommitmentPayloadV1 {
+            version: COMMITMENT_PAYLOAD_VERSION_V1,
+            program: &claim.program,
+        },
+    )?;
+    let expected_config_hash = hash_serialized_payload_hex(
+        "transformer config",
+        &TransformerConfigCommitmentPayloadV1 {
+            version: COMMITMENT_PAYLOAD_VERSION_V1,
+            transformer_config: config,
+        },
+    )?;
     let expected_model_hash = hash_serialized_payload_hex(
         "deterministic model",
-        &DeterministicModelCommitmentPayload {
+        &DeterministicModelCommitmentPayloadV1 {
+            version: COMMITMENT_PAYLOAD_VERSION_V1,
             program: &claim.program,
             transformer_config: config,
         },
     )?;
-    let expected_options_hash = hash_serialized_payload_hex("stark options", &claim.options)?;
+    let expected_options_hash = hash_serialized_payload_hex(
+        "stark options",
+        &StarkOptionsCommitmentPayloadV1 {
+            version: COMMITMENT_PAYLOAD_VERSION_V1,
+            stark_options: &claim.options,
+        },
+    )?;
     let expected_build_hash = hash_bytes_hex(commitments.prover_build_info.as_bytes());
 
     validate_commitment_field(
@@ -1079,16 +1128,35 @@ fn build_claim_commitments(
     let prover_build_info = prover_build_info();
     let prover_build_hash = hash_bytes_hex(prover_build_info.as_bytes());
 
-    let program_hash = hash_serialized_payload_hex("program", program)?;
-    let transformer_config_hash = hash_serialized_payload_hex("transformer config", config)?;
+    let program_hash = hash_serialized_payload_hex(
+        "program",
+        &ProgramCommitmentPayloadV1 {
+            version: COMMITMENT_PAYLOAD_VERSION_V1,
+            program,
+        },
+    )?;
+    let transformer_config_hash = hash_serialized_payload_hex(
+        "transformer config",
+        &TransformerConfigCommitmentPayloadV1 {
+            version: COMMITMENT_PAYLOAD_VERSION_V1,
+            transformer_config: config,
+        },
+    )?;
     let deterministic_model_hash = hash_serialized_payload_hex(
         "deterministic model",
-        &DeterministicModelCommitmentPayload {
+        &DeterministicModelCommitmentPayloadV1 {
+            version: COMMITMENT_PAYLOAD_VERSION_V1,
             program,
             transformer_config: config,
         },
     )?;
-    let stark_options_hash = hash_serialized_payload_hex("stark options", options)?;
+    let stark_options_hash = hash_serialized_payload_hex(
+        "stark options",
+        &StarkOptionsCommitmentPayloadV1 {
+            version: COMMITMENT_PAYLOAD_VERSION_V1,
+            stark_options: options,
+        },
+    )?;
 
     Ok(ExecutionClaimCommitments {
         scheme_version: CLAIM_COMMITMENT_SCHEME_VERSION_V1.to_string(),
@@ -1109,9 +1177,54 @@ fn prover_build_info() -> String {
 }
 
 fn hash_serialized_payload_hex<T: Serialize>(label: &str, value: &T) -> Result<String> {
-    let payload = serde_json::to_vec(value)
-        .map_err(|err| VmError::Serialization(format!("failed to serialize {label}: {err}")))?;
+    let payload = canonical_json_bytes(label, value)?;
     Ok(hash_bytes_hex(&payload))
+}
+
+fn canonical_json_bytes<T: Serialize>(label: &str, value: &T) -> Result<Vec<u8>> {
+    let json = serde_json::to_value(value)
+        .map_err(|err| VmError::Serialization(format!("{label}: {err}")))?;
+    let mut out = Vec::new();
+    write_canonical_json_value(&json, &mut out)
+        .map_err(|err| VmError::Serialization(format!("{label}: {err}")))?;
+    Ok(out)
+}
+
+fn write_canonical_json_value(
+    value: &Value,
+    out: &mut Vec<u8>,
+) -> std::result::Result<(), serde_json::Error> {
+    match value {
+        Value::Null => out.extend_from_slice(b"null"),
+        Value::Bool(v) => out.extend_from_slice(if *v { b"true" } else { b"false" }),
+        Value::Number(v) => out.extend_from_slice(v.to_string().as_bytes()),
+        Value::String(v) => out.extend_from_slice(serde_json::to_string(v)?.as_bytes()),
+        Value::Array(values) => {
+            out.push(b'[');
+            for (index, item) in values.iter().enumerate() {
+                if index > 0 {
+                    out.push(b',');
+                }
+                write_canonical_json_value(item, out)?;
+            }
+            out.push(b']');
+        }
+        Value::Object(map) => {
+            out.push(b'{');
+            let mut entries: Vec<_> = map.iter().collect();
+            entries.sort_by(|(left, _), (right, _)| left.cmp(right));
+            for (index, (key, item)) in entries.iter().enumerate() {
+                if index > 0 {
+                    out.push(b',');
+                }
+                out.extend_from_slice(serde_json::to_string(key)?.as_bytes());
+                out.push(b':');
+                write_canonical_json_value(item, out)?;
+            }
+            out.push(b'}');
+        }
+    }
+    Ok(())
 }
 
 fn hash_bytes_hex(bytes: &[u8]) -> String {
@@ -1125,9 +1238,28 @@ fn hash_bytes_hex(bytes: &[u8]) -> String {
 }
 
 #[derive(Serialize)]
-struct DeterministicModelCommitmentPayload<'a> {
+struct ProgramCommitmentPayloadV1<'a> {
+    version: &'static str,
+    program: &'a Program,
+}
+
+#[derive(Serialize)]
+struct TransformerConfigCommitmentPayloadV1<'a> {
+    version: &'static str,
+    transformer_config: &'a TransformerVmConfig,
+}
+
+#[derive(Serialize)]
+struct DeterministicModelCommitmentPayloadV1<'a> {
+    version: &'static str,
     program: &'a Program,
     transformer_config: &'a TransformerVmConfig,
+}
+
+#[derive(Serialize)]
+struct StarkOptionsCommitmentPayloadV1<'a> {
+    version: &'static str,
+    stark_options: &'a VanillaStarkProofOptions,
 }
 
 fn execution_trace_rows(layout: &ColumnLayout, trace: &[MachineState]) -> Vec<Vec<FieldElement>> {
@@ -1290,7 +1422,8 @@ mod tests {
         let model = ProgramCompiler
             .compile_source(&source, TransformerVmConfig::default())
             .expect("compile");
-        prove_execution_stark(&model, max_steps).expect("prove")
+        prove_execution_stark_with_options(&model, max_steps, production_v1_stark_options())
+            .expect("prove")
     }
 
     #[test]
@@ -1323,7 +1456,8 @@ HALT
         let model = ProgramCompiler
             .compile_source(source, TransformerVmConfig::default())
             .expect("compile");
-        let proof = prove_execution_stark(&model, 128).expect("prove");
+        let proof = prove_execution_stark_with_options(&model, 128, production_v1_stark_options())
+            .expect("prove");
         assert!(verify_execution_stark(&proof).expect("verify"));
         assert_eq!(proof.claim.final_state.acc, 2);
     }
@@ -1462,7 +1596,20 @@ HALT
 
     #[test]
     fn policy_rejects_low_security_proof_options() {
-        let proof = prove_program("programs/addition.tvm", 32);
+        let source = std::fs::read_to_string("programs/addition.tvm").expect("program source");
+        let model = ProgramCompiler
+            .compile_source(&source, TransformerVmConfig::default())
+            .expect("compile");
+        let proof = prove_execution_stark_with_options(
+            &model,
+            32,
+            VanillaStarkProofOptions {
+                expansion_factor: 4,
+                num_colinearity_checks: 2,
+                security_level: 2,
+            },
+        )
+        .expect("prove");
         let err = verify_execution_stark_with_policy(
             &proof,
             StarkVerificationPolicy {
@@ -1481,6 +1628,14 @@ HALT
         proof.claim.options.expansion_factor = 3;
         let err = verify_execution_stark(&proof).unwrap_err();
         assert!(err.to_string().contains("power of two"));
+    }
+
+    #[test]
+    fn verify_rejects_step_overflow_without_panic() {
+        let mut proof = prove_program("programs/addition.tvm", 32);
+        proof.claim.steps = usize::MAX;
+        let err = verify_execution_stark(&proof).unwrap_err();
+        assert!(err.to_string().contains("proof steps overflow"));
     }
 
     #[test]
@@ -1504,6 +1659,36 @@ HALT
         proof.claim.semantic_scope = "native_isa_execution_only".to_string();
         let err = verify_execution_stark(&proof).unwrap_err();
         assert!(err.to_string().contains("unsupported semantic_scope"));
+    }
+
+    #[test]
+    fn verify_rejects_commitment_scheme_version_mismatch() {
+        let mut proof = prove_program("programs/addition.tvm", 32);
+        proof
+            .claim
+            .commitments
+            .as_mut()
+            .expect("artifact commitments")
+            .scheme_version = "v2".to_string();
+        let err = verify_execution_stark(&proof).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("unsupported commitment_scheme_version"));
+    }
+
+    #[test]
+    fn verify_rejects_commitment_hash_function_mismatch() {
+        let mut proof = prove_program("programs/addition.tvm", 32);
+        proof
+            .claim
+            .commitments
+            .as_mut()
+            .expect("artifact commitments")
+            .hash_function = "sha256".to_string();
+        let err = verify_execution_stark(&proof).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("unsupported commitment_hash_function"));
     }
 
     #[test]
@@ -1543,5 +1728,42 @@ HALT
             hash_bytes_hex(b""),
             "0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8"
         );
+    }
+
+    #[test]
+    fn conjectured_security_bits_handles_large_query_counts() {
+        let options = VanillaStarkProofOptions {
+            expansion_factor: 1 << 63,
+            num_colinearity_checks: usize::MAX,
+            security_level: 1,
+        };
+        assert_eq!(
+            conjectured_security_bits(&options),
+            VANILLA_STARK_FIELD_SECURITY_BITS
+        );
+    }
+
+    #[test]
+    fn canonical_json_hash_is_key_order_invariant() {
+        let ordered = serde_json::json!({
+            "a": 1,
+            "b": {
+                "x": true,
+                "y": [2, 3]
+            }
+        });
+
+        let mut inner = serde_json::Map::new();
+        inner.insert("y".to_string(), serde_json::json!([2, 3]));
+        inner.insert("x".to_string(), serde_json::json!(true));
+        let mut outer = serde_json::Map::new();
+        outer.insert("b".to_string(), Value::Object(inner));
+        outer.insert("a".to_string(), serde_json::json!(1));
+        let reordered = Value::Object(outer);
+
+        let ordered_hash = hash_serialized_payload_hex("ordered", &ordered).expect("hash ordered");
+        let reordered_hash =
+            hash_serialized_payload_hex("reordered", &reordered).expect("hash reordered");
+        assert_eq!(ordered_hash, reordered_hash);
     }
 }

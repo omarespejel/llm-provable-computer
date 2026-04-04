@@ -68,7 +68,7 @@ The transition constraints **are** the instruction semantics. The boundary const
                            (= STARK AIR witness)
 ```
 
-The proof is **transparent** (no trusted setup), **post-quantum** (hash-based, no elliptic curves), and verification is **O(log^2 n)** --- exponentially cheaper than re-execution.
+The proof is **transparent** (no trusted setup) and **post-quantum** (hash-based, no elliptic curves). STARK verification itself is **O(log^2 n)**, while the current `statement-v1` verifier also performs transformer/native lockstep re-execution to enforce semantic equivalence.
 
 ---
 
@@ -86,7 +86,7 @@ cargo run --bin tvm -- run programs/fibonacci.tvm --trace
 # Prove execution with a vanilla STARK
 cargo run --bin tvm -- prove-stark programs/fibonacci.tvm -o fib.proof.json
 
-# Verify without re-running
+# Verify (statement-v1 includes lockstep re-execution)
 cargo run --bin tvm -- verify-stark fib.proof.json
 
 # Verify transformer matches native interpreter (lockstep)
@@ -278,7 +278,7 @@ cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proo
   --stark-profile production-v1 \
   --stark-expansion-factor 8 --stark-num-colinearity-checks 16 --stark-security-level 32
 
-# Verify
+# Verify (statement-v1 includes lockstep re-execution)
 cargo run --bin tvm -- verify-stark fact.proof.json
 
 # Verify and re-execute transformer/native runtimes from claim data
