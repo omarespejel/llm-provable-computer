@@ -25,6 +25,34 @@ const CARRY: usize = 4;
 const HALTED: usize = 5;
 const MACHINE_STATE_PREFIX: usize = 6;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "kebab-case")]
+pub enum StarkProofBackend {
+    #[default]
+    Vanilla,
+    Stwo,
+}
+
+impl std::fmt::Display for StarkProofBackend {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Vanilla => f.write_str("vanilla"),
+            Self::Stwo => f.write_str("stwo"),
+        }
+    }
+}
+
+const VANILLA_STARK_BACKEND_VERSION_V1: &str = "vanilla-v1";
+const STWO_BACKEND_VERSION_PHASE0: &str = "stwo-phase0";
+
+fn default_stark_proof_backend() -> StarkProofBackend {
+    StarkProofBackend::Vanilla
+}
+
+fn default_stark_proof_backend_version() -> String {
+    VANILLA_STARK_BACKEND_VERSION_V1.to_string()
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VanillaStarkProofOptions {
     pub expansion_factor: usize,
@@ -110,6 +138,10 @@ pub struct VanillaStarkExecutionClaim {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct VanillaStarkExecutionProof {
+    #[serde(default = "default_stark_proof_backend")]
+    pub proof_backend: StarkProofBackend,
+    #[serde(default = "default_stark_proof_backend_version")]
+    pub proof_backend_version: String,
     pub claim: VanillaStarkExecutionClaim,
     pub proof: Vec<u8>,
 }
@@ -575,11 +607,120 @@ impl VmAir {
     }
 }
 
+struct PreparedExecutionWitness {
+    air: VmAir,
+    trace: Vec<Vec<FieldElement>>,
+    claim: VanillaStarkExecutionClaim,
+}
+
+trait ProofBackendDriver {
+    fn backend_kind(&self) -> StarkProofBackend;
+    fn backend_version(&self) -> &'static str;
+    fn prove(&self, witness: PreparedExecutionWitness) -> Result<VanillaStarkExecutionProof>;
+    fn verify(&self, proof: &VanillaStarkExecutionProof, air: &VmAir) -> Result<bool>;
+}
+
+struct VanillaBackend;
+
+impl ProofBackendDriver for VanillaBackend {
+    fn backend_kind(&self) -> StarkProofBackend {
+        StarkProofBackend::Vanilla
+    }
+
+    fn backend_version(&self) -> &'static str {
+        VANILLA_STARK_BACKEND_VERSION_V1
+    }
+
+    fn prove(&self, witness: PreparedExecutionWitness) -> Result<VanillaStarkExecutionProof> {
+        let stark = Stark::new(
+            witness.claim.options.expansion_factor,
+            witness.claim.options.num_colinearity_checks,
+            witness.claim.options.security_level,
+            witness.air.register_count(),
+            witness.claim.steps + 1,
+            witness.air.transition_degree_bound(),
+        );
+        let proof = stark.prove(
+            &witness.trace,
+            &witness.air.transition_constraints(),
+            &witness
+                .air
+                .boundary_constraints(witness.claim.steps, &witness.claim.final_state),
+        );
+
+        Ok(VanillaStarkExecutionProof {
+            proof_backend: self.backend_kind(),
+            proof_backend_version: self.backend_version().to_string(),
+            claim: witness.claim,
+            proof,
+        })
+    }
+
+    fn verify(&self, proof: &VanillaStarkExecutionProof, air: &VmAir) -> Result<bool> {
+        let trace_length = proof
+            .claim
+            .steps
+            .checked_add(1)
+            .ok_or_else(|| VmError::InvalidConfig("proof steps overflow".to_string()))?;
+
+        let stark = Stark::new(
+            proof.claim.options.expansion_factor,
+            proof.claim.options.num_colinearity_checks,
+            proof.claim.options.security_level,
+            air.register_count(),
+            trace_length,
+            air.transition_degree_bound(),
+        );
+
+        Ok(stark.verify(
+            &proof.proof,
+            &air.transition_constraints(),
+            &air.boundary_constraints(proof.claim.steps, &proof.claim.final_state),
+        ))
+    }
+}
+
+struct StwoBackend;
+
+impl ProofBackendDriver for StwoBackend {
+    fn backend_kind(&self) -> StarkProofBackend {
+        StarkProofBackend::Stwo
+    }
+
+    fn backend_version(&self) -> &'static str {
+        STWO_BACKEND_VERSION_PHASE0
+    }
+
+    fn prove(&self, _witness: PreparedExecutionWitness) -> Result<VanillaStarkExecutionProof> {
+        Err(VmError::UnsupportedProof(
+            "S-two backend is not implemented yet; use `--backend vanilla`".to_string(),
+        ))
+    }
+
+    fn verify(&self, _proof: &VanillaStarkExecutionProof, _air: &VmAir) -> Result<bool> {
+        Err(VmError::UnsupportedProof(
+            "S-two backend verification is not implemented yet".to_string(),
+        ))
+    }
+}
+
+fn backend_driver(backend: StarkProofBackend) -> &'static dyn ProofBackendDriver {
+    match backend {
+        StarkProofBackend::Vanilla => &VanillaBackend,
+        StarkProofBackend::Stwo => &StwoBackend,
+    }
+}
+
 pub fn prove_execution_stark(
     model: &TransformerVm,
     max_steps: usize,
 ) -> Result<VanillaStarkExecutionProof> {
-    prove_execution_stark_with_options(model, max_steps, production_v1_stark_options())
+    prove_execution_stark_with_backend_and_options(
+        model,
+        max_steps,
+        StarkProofBackend::Vanilla,
+        production_v1_stark_options(),
+    )
 }
 
 pub fn prove_execution_stark_with_options(
@@ -587,67 +728,24 @@ pub fn prove_execution_stark_with_options(
     max_steps: usize,
     options: VanillaStarkProofOptions,
 ) -> Result<VanillaStarkExecutionProof> {
+    prove_execution_stark_with_backend_and_options(
+        model,
+        max_steps,
+        StarkProofBackend::Vanilla,
+        options,
+    )
+}
+
+pub fn prove_execution_stark_with_backend_and_options(
+    model: &TransformerVm,
+    max_steps: usize,
+    backend: StarkProofBackend,
+    options: VanillaStarkProofOptions,
+) -> Result<VanillaStarkExecutionProof> {
     validate_proof_inputs(model.program(), &model.config().attention_mode)?;
     validate_stark_options(&options)?;
-    let comparison = verify_model_against_native(model.clone(), max_steps)?;
-    let equivalence = ExecutionEquivalenceMetadata {
-        checked_steps: comparison.checked_steps,
-        transformer_fingerprint: execution_fingerprint_from_result(
-            "transformer",
-            comparison.checked_steps,
-            &comparison.transformer,
-        ),
-        native_fingerprint: execution_fingerprint_from_result(
-            "native",
-            comparison.checked_steps,
-            &comparison.native,
-        ),
-    };
-
-    let mut runtime = ExecutionRuntime::new(model.clone(), max_steps);
-    let result = runtime.run()?;
-    if !result.halted {
-        return Err(VmError::UnsupportedProof(format!(
-            "execution must halt before proving; stopped after {} steps without HALT",
-            result.steps
-        )));
-    }
-    if runtime.trace().iter().any(|state| state.carry_flag) {
-        return Err(VmError::UnsupportedProof(
-            "overflowing arithmetic is not supported by the vanilla STARK AIR".to_string(),
-        ));
-    }
-
-    let air = VmAir::new(model.program().clone());
-    let trace = execution_trace_rows(&air.layout, runtime.trace());
-    let commitments = build_claim_commitments(model.program(), model.config(), &options)?;
-    let claim = VanillaStarkExecutionClaim {
-        statement_version: CLAIM_STATEMENT_VERSION_V1.to_string(),
-        semantic_scope: CLAIM_SEMANTIC_SCOPE_V1.to_string(),
-        program: model.program().clone(),
-        attention_mode: model.config().attention_mode.clone(),
-        transformer_config: Some(model.config().clone()),
-        steps: result.steps,
-        final_state: result.final_state.clone(),
-        options: options.clone(),
-        equivalence: Some(equivalence),
-        commitments: Some(commitments),
-    };
-    let stark = Stark::new(
-        options.expansion_factor,
-        options.num_colinearity_checks,
-        options.security_level,
-        air.register_count(),
-        claim.steps + 1,
-        air.transition_degree_bound(),
-    );
-    let proof = stark.prove(
-        &trace,
-        &air.transition_constraints(),
-        &air.boundary_constraints(claim.steps, &claim.final_state),
-    );
-
-    Ok(VanillaStarkExecutionProof { claim, proof })
+    let witness = prepare_execution_witness(model, max_steps, options)?;
+    backend_driver(backend).prove(witness)
 }
 
 pub fn verify_execution_stark(proof: &VanillaStarkExecutionProof) -> Result<bool> {
@@ -658,12 +756,15 @@ pub fn verify_execution_stark_with_policy(
     proof: &VanillaStarkExecutionProof,
     policy: StarkVerificationPolicy,
 ) -> Result<bool> {
-    let trace_length = proof
-        .claim
-        .steps
-        .checked_add(1)
-        .ok_or_else(|| VmError::InvalidConfig("proof steps overflow".to_string()))?;
+    verify_execution_stark_with_backend_and_policy(proof, proof.proof_backend, policy)
+}
 
+pub fn verify_execution_stark_with_backend_and_policy(
+    proof: &VanillaStarkExecutionProof,
+    backend: StarkProofBackend,
+    policy: StarkVerificationPolicy,
+) -> Result<bool> {
+    validate_backend_metadata(proof, backend)?;
     validate_statement_metadata(&proof.claim)?;
     validate_proof_inputs(&proof.claim.program, &proof.claim.attention_mode)?;
     validate_stark_options(&proof.claim.options)?;
@@ -685,20 +786,7 @@ pub fn verify_execution_stark_with_policy(
     }
 
     let air = VmAir::new(proof.claim.program.clone());
-    let stark = Stark::new(
-        proof.claim.options.expansion_factor,
-        proof.claim.options.num_colinearity_checks,
-        proof.claim.options.security_level,
-        air.register_count(),
-        trace_length,
-        air.transition_degree_bound(),
-    );
-
-    let is_valid = stark.verify(
-        &proof.proof,
-        &air.transition_constraints(),
-        &air.boundary_constraints(proof.claim.steps, &proof.claim.final_state),
-    );
+    let is_valid = backend_driver(backend).verify(proof, &air)?;
     if !is_valid {
         return Ok(false);
     }
@@ -802,6 +890,81 @@ fn validate_verification_policy(
             bits, policy.min_conjectured_security_bits
         )));
     }
+    Ok(())
+}
+
+fn prepare_execution_witness(
+    model: &TransformerVm,
+    max_steps: usize,
+    options: VanillaStarkProofOptions,
+) -> Result<PreparedExecutionWitness> {
+    let comparison = verify_model_against_native(model.clone(), max_steps)?;
+    let equivalence = ExecutionEquivalenceMetadata {
+        checked_steps: comparison.checked_steps,
+        transformer_fingerprint: execution_fingerprint_from_result(
+            "transformer",
+            comparison.checked_steps,
+            &comparison.transformer,
+        ),
+        native_fingerprint: execution_fingerprint_from_result(
+            "native",
+            comparison.checked_steps,
+            &comparison.native,
+        ),
+    };
+
+    let mut runtime = ExecutionRuntime::new(model.clone(), max_steps);
+    let result = runtime.run()?;
+    if !result.halted {
+        return Err(VmError::UnsupportedProof(format!(
+            "execution must halt before proving; stopped after {} steps without HALT",
+            result.steps
+        )));
+    }
+    if runtime.trace().iter().any(|state| state.carry_flag) {
+        return Err(VmError::UnsupportedProof(
+            "overflowing arithmetic is not supported by the vanilla STARK AIR".to_string(),
+        ));
+    }
+
+    let air = VmAir::new(model.program().clone());
+    let trace = execution_trace_rows(&air.layout, runtime.trace());
+    let commitments = build_claim_commitments(model.program(), model.config(), &options)?;
+    let claim = VanillaStarkExecutionClaim {
+        statement_version: CLAIM_STATEMENT_VERSION_V1.to_string(),
+        semantic_scope: CLAIM_SEMANTIC_SCOPE_V1.to_string(),
+        program: model.program().clone(),
+        attention_mode: model.config().attention_mode.clone(),
+        transformer_config: Some(model.config().clone()),
+        steps: result.steps,
+        final_state: result.final_state.clone(),
+        options,
+        equivalence: Some(equivalence),
+        commitments: Some(commitments),
+    };
+
+    Ok(PreparedExecutionWitness { air, trace, claim })
+}
+
+fn validate_backend_metadata(
+    proof: &VanillaStarkExecutionProof,
+    requested_backend: StarkProofBackend,
+) -> Result<()> {
+    if proof.proof_backend != requested_backend {
+        return Err(VmError::InvalidConfig(format!(
+            "proof backend `{}` does not match requested backend `{}`",
+            proof.proof_backend, requested_backend
+        )));
+    }
+
+    let expected_version = backend_driver(requested_backend).backend_version();
+    if proof.proof_backend_version != expected_version {
+        return Err(VmError::InvalidConfig(format!(
+            "proof backend version `{}` does not match expected `{}` for backend `{}`",
+            proof.proof_backend_version, expected_version, requested_backend
+        )));
+    }
+
     Ok(())
 }
 
@@ -1516,8 +1679,30 @@ HALT
     }
 
     #[test]
+    fn proof_serialization_backfills_vanilla_backend_for_legacy_json() {
+        let proof = prove_program("programs/addition.tvm", 32);
+        let mut json = serde_json::to_value(&proof).expect("proof json");
+        let object = json.as_object_mut().expect("proof object");
+        object.remove("proof_backend");
+        object.remove("proof_backend_version");
+
+        let loaded: VanillaStarkExecutionProof =
+            serde_json::from_value(json).expect("deserialize legacy proof");
+        assert_eq!(loaded.proof_backend, StarkProofBackend::Vanilla);
+        assert_eq!(
+            loaded.proof_backend_version,
+            VANILLA_STARK_BACKEND_VERSION_V1
+        );
+    }
+
+    #[test]
     fn proof_claim_includes_equivalence_metadata() {
         let proof = prove_program("programs/addition.tvm", 32);
+        assert_eq!(proof.proof_backend, StarkProofBackend::Vanilla);
+        assert_eq!(
+            proof.proof_backend_version,
+            VANILLA_STARK_BACKEND_VERSION_V1
+        );
         let metadata = proof.claim.equivalence.expect("equivalence metadata");
         assert_eq!(proof.claim.statement_version, CLAIM_STATEMENT_VERSION_V1);
         assert_eq!(proof.claim.semantic_scope, CLAIM_SEMANTIC_SCOPE_V1);
