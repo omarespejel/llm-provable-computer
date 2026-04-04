@@ -38,7 +38,7 @@ The repository artifact supports the second claim directly. The first claim is a
 
 STARKs arithmetize computation as an execution trace and a set of polynomial transition constraints. In AIR form, each row of the trace represents one machine step, and low-degree constraints express valid state evolution. Soundness is then reduced to polynomial proximity testing via FRI and related machinery. The core appeal for prover-heavy workloads is transparent setup, post-quantum security, and a prover dominated by field arithmetic, FFT-style operations, and hash commitments rather than elliptic-curve MSMs.
 
-Circle STARKs adapt the STARK framework to the Mersenne-31 field (`2^31 - 1`), enabling highly efficient arithmetic over a chip-friendly field. StarkWare’s S-two prover is the current flagship implementation of this direction and is explicitly positioned for recursion, client-side proving, zkML, and Starknet integration. StarkWare’s January 27, 2026 S-two 2.0.0 announcement describes the prover suite as fully open source and developer-ready, and the public S-two materials state that recursive proving is supported out of the box. On March 31, 2026, StarkWare announced a further recursion upgrade from Cairo-based recursion to circuit-based recursion, reporting a reduction from roughly one minute to roughly three seconds for proving verification in the recursive path. These improvements matter directly for any architecture that expects to aggregate many proofs or compress them for onchain verification.
+Circle STARKs adapt the STARK framework to the Mersenne-31 field (`2^31 - 1`), enabling highly efficient arithmetic over a chip-friendly field. StarkWare’s S-two prover is the current flagship implementation of this direction and is explicitly positioned for recursion, client-side proving, zkML, and Starknet integration. In this paper, **S-two** follows StarkWare’s current public naming, while **STWO** is used only when referring to repository, crate, or project names that retain the older capitalization. StarkWare’s January 27, 2026 S-two 2.0.0 announcement describes the prover suite as fully open source and developer-ready, and the public S-two materials state that recursive proving is supported out of the box ([StarkWare, January 27, 2026](https://starkware.co/blog/s-two-2-0-0-prover-for-developers/); [StarkWare, May 26, 2025](https://starkware.co/blog/s-two-prover/)). On March 31, 2026, StarkWare announced a further recursion upgrade from Cairo-based recursion to circuit-based recursion, reporting a reduction from roughly one minute to roughly three seconds for proving verification in the recursive path ([StarkWare, March 31, 2026](https://starkware.co/blog/minutes-to-seconds-efficiency-gains-with-recursive-circuit-proving/)). These improvements matter directly for any architecture that expects to aggregate many proofs or compress them for onchain verification.
 
 ### 2.2 SNARKs, GKR, and modern zkML
 
@@ -110,6 +110,8 @@ C_SNARK = 12Td^2 + 2T^2d + T^2H * C_exp + 2Td * C_norm + 4Td * C_nonlin
 ```
 
 This keeps the arithmetic term shared with the STARK side and makes explicit where the non-arithmetic amplification enters.
+
+The constants `C_exp`, `C_norm`, and `C_nonlin` are **stylized comparative constants**, not normalized measurements extracted from one production prover stack running on one fixed hardware configuration. Their role is to make the model’s sensitivity to non-arithmetic work explicit, not to claim benchmark equivalence with any single deployed system.
 
 ### 4.2 STARK-side symbolic cost
 
@@ -225,9 +227,9 @@ For this paper, however, the key distinction is: **S-two’s progress strengthen
 
 ### 6.2 Starknet proof verification and privacy
 
-Starknet’s public release materials for version `0.14.2` describe in-protocol S-two proof verification, allowing transactions to reference offchain execution proofs. This is highly relevant to verifiable AI because it reduces the friction of taking a locally generated proof and making it legible to onchain execution.
+Starknet’s public release materials for version `0.14.2` describe in-protocol S-two proof verification, allowing transactions to reference offchain execution proofs ([Starknet Community Forum, March 16, 2026](https://community.starknet.io/t/0-14-2-pre-release-notes/116146); [SNIP-36](https://community.starknet.io/t/snip-36-in-protocol-proof-verification/116123)). This is highly relevant to verifiable AI because it reduces the friction of taking a locally generated proof and making it legible to onchain execution.
 
-Separately, Starknet’s March 10, 2026 STRK20 announcement states that any ERC-20 on Starknet can now be private, with client-side proof generation and unified Cairo-based logic. That makes the privacy side of “private verifiable inference” materially less hypothetical than it was in earlier drafts.
+Separately, Starknet’s March 10, 2026 STRK20 announcement states that any ERC-20 on Starknet can now be private, with client-side proof generation and unified Cairo-based logic ([Starknet, March 10, 2026](https://www.starknet.io/blog/make-all-erc-20-tokens-private-with-strk20/)). That makes the privacy side of “private verifiable inference” materially less hypothetical than it was in earlier drafts.
 
 ### 6.3 Native account abstraction
 
@@ -239,13 +241,13 @@ Starknet’s account model remains strategically important: accounts are smart c
 
 ### 7.1 DeepProve as the strongest anti-overclaim counterexample
 
-Any serious paper on this topic must treat Lagrange’s DeepProve as a strong counterexample to sweeping anti-SNARK claims. DeepProve has publicly claimed full GPT-2 inference and later Gemma-class progress. Lagrange’s engineering materials describe a system that combines sumcheck-based treatment of linear layers with custom handling of softmax and lookup-based handling of LayerNorm and GELU. This is enough to reject simplistic claims such as “transformers are intrinsically ill-suited to SNARKs.”
+Any serious paper on this topic must treat Lagrange’s DeepProve as a strong counterexample to sweeping anti-SNARK claims. DeepProve has publicly claimed full GPT-2 inference and later Gemma-class progress. Lagrange’s engineering materials describe a system that combines sumcheck-based treatment of linear layers with custom handling of softmax and lookup-based handling of LayerNorm and GELU ([Lagrange, August 18, 2025](https://lagrange.dev/blog/deepprove-1)). This is enough to reject simplistic claims such as “transformers are intrinsically ill-suited to SNARKs.”
 
 The right conclusion is narrower: modern SNARK systems can clearly prove transformer workloads, but they may do so with different prover-side economics, especially once recursion, field size, and lookup handling become first-order bottlenecks.
 
 ### 7.2 BitSage stwo-ml as the closest public STARK-native comparator
 
-BitSage stwo-ml is the closest public STARK-native system to the architectural thesis of this paper. It combines GKR, sumcheck, and LogUp-style machinery on an S-two/STWO backend and reports aggressive single-block transformer benchmarks together with Starknet verification paths. For this paper, those claims should be treated as public repo- and project-reported evidence, not as independently normalized benchmarks.
+BitSage stwo-ml is the closest public STARK-native system to the architectural thesis of this paper. It combines GKR, sumcheck, and LogUp-style machinery on an S-two/STWO backend and reports aggressive single-block transformer benchmarks together with Starknet verification paths ([BitSage `stwo-ml` repository](https://github.com/Bitsage-Network/stwo-ml); [BitSage verifier documentation](https://github.com/Bitsage-Network/stwo-ml/blob/main/elo-cairo-verifier/README.md)). For this paper, those claims should be treated as public repo- and project-reported evidence, not as independently normalized benchmarks.
 
 The public record should still be described carefully. Repo-reported benchmark claims, publicly surfaced onchain demos, and full transformer-roadmap claims are not the same thing. The strongest defensible wording is that BitSage is the clearest public STARK-native development signal and a serious comparator, while the maturity across components is still uneven and rapidly evolving.
 
@@ -338,6 +340,6 @@ The frontier is therefore no longer “can transformers be proved?” The fronti
 20. BitSage Network. “stwo-ml.” <https://github.com/Bitsage-Network/stwo-ml>
 21. StarkWare. “Giza x S-two: Powering verifiable ML with LuminAIR.” <https://starkware.co/blog/giza-x-s-two-powering-verifiable-ml-with-luminair/>
 22. EZKL documentation. <https://docs.ezkl.xyz>
-23. `omarespejel/llm-provable-computer`. Repository main page. <https://github.com/omarespejel/llm-provable-computer>
-24. `omarespejel/llm-provable-computer`. “Appendix Artifact Index (Production V1).” Repository artifact index, April 4, 2026. <https://github.com/omarespejel/llm-provable-computer/blob/main/docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md>
+23. `omarespejel/llm-provable-computer`. Repository snapshot analyzed in the paper discussion (commit `ad7982912cbbc709df85a446564c83dfd568e657`). <https://github.com/omarespejel/llm-provable-computer/tree/ad7982912cbbc709df85a446564c83dfd568e657>
+24. `omarespejel/llm-provable-computer`. “Appendix Artifact Index (Production V1).” Repository artifact index committed in the paper artifact pass (commit `8d435d540b8e3cf33ec4381bb820a00b6fe7aae6`), documenting a bundle generated from execution/proof commit `58bb05fdd57ee9816e5935eb004396fea6a9fac3`. <https://github.com/omarespejel/llm-provable-computer/blob/8d435d540b8e3cf33ec4381bb820a00b6fe7aae6/docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md>
 25. Starknet documentation. “Accounts.” Accessed April 4, 2026. <https://docs.starknet.io/architecture/accounts>
