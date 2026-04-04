@@ -1235,16 +1235,12 @@ fn research_v2_trace_command_impl(
         artifact.commitments.onnx_metadata_hash
     );
 
-    if !artifact.matched && !allow_mismatch {
-        return Err(VmError::InvalidConfig(format!(
-            "research-v2-trace mismatch at step {:?}: {}",
-            artifact.first_mismatch_step,
-            artifact
-                .mismatch_reason
-                .as_deref()
-                .unwrap_or("unspecified mismatch")
-        )));
-    }
+    enforce_research_v2_trace_mismatch_policy(
+        artifact.matched,
+        allow_mismatch,
+        artifact.first_mismatch_step,
+        artifact.mismatch_reason.as_deref(),
+    )?;
 
     Ok(())
 }
@@ -1346,13 +1342,37 @@ fn research_v2_matrix_command_impl(
         artifact.commitments.matrix_entries_hash
     );
 
-    if artifact.mismatched_programs > 0 && !allow_mismatch {
+    enforce_research_v2_matrix_mismatch_policy(artifact.mismatched_programs, allow_mismatch)?;
+
+    Ok(())
+}
+
+fn enforce_research_v2_trace_mismatch_policy(
+    matched: bool,
+    allow_mismatch: bool,
+    first_mismatch_step: Option<usize>,
+    mismatch_reason: Option<&str>,
+) -> llm_provable_computer::Result<()> {
+    if !matched && !allow_mismatch {
         return Err(VmError::InvalidConfig(format!(
-            "research-v2-matrix found {} mismatched program(s)",
-            artifact.mismatched_programs
+            "research-v2-trace mismatch at step {:?}: {}",
+            first_mismatch_step,
+            mismatch_reason.unwrap_or("unspecified mismatch")
         )));
     }
+    Ok(())
+}
 
+fn enforce_research_v2_matrix_mismatch_policy(
+    mismatched_programs: usize,
+    allow_mismatch: bool,
+) -> llm_provable_computer::Result<()> {
+    if mismatched_programs > 0 && !allow_mismatch {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v2-matrix found {} mismatched program(s)",
+            mismatched_programs
+        )));
+    }
     Ok(())
 }
 
@@ -1630,6 +1650,45 @@ fn hash_bytes_hex(bytes: &[u8]) -> String {
         .finalize_variable(&mut output)
         .expect("blake2b-256 finalization");
     output.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn trace_mismatch_policy_rejects_without_allow_flag() {
+        let err = enforce_research_v2_trace_mismatch_policy(
+            false,
+            false,
+            Some(7),
+            Some("state_after mismatch at step 7"),
+        )
+        .unwrap_err();
+        let message = err.to_string();
+        assert!(message.contains("research-v2-trace mismatch"));
+        assert!(message.contains("Some(7)"));
+        assert!(message.contains("state_after mismatch at step 7"));
+    }
+
+    #[test]
+    fn trace_mismatch_policy_allows_with_allow_flag() {
+        enforce_research_v2_trace_mismatch_policy(false, true, Some(3), Some("mismatch"))
+            .expect("allow mismatch");
+    }
+
+    #[test]
+    fn matrix_mismatch_policy_rejects_without_allow_flag() {
+        let err = enforce_research_v2_matrix_mismatch_policy(2, false).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("research-v2-matrix found 2 mismatched program(s)"));
+    }
+
+    #[test]
+    fn matrix_mismatch_policy_allows_with_allow_flag() {
+        enforce_research_v2_matrix_mismatch_policy(1, true).expect("allow mismatch");
+    }
 }
 
 fn compile_model(

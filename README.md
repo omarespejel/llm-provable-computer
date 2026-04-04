@@ -365,6 +365,8 @@ cargo run --features onnx-export --bin tvm -- research-v2-trace programs/additio
 ```
 
 This checks transformer and ONNX step-by-step, emits mismatch localization (`first_mismatch_step`, `mismatch_reason`), and includes trace/final-state commitments.
+By default, the command still writes the artifact but exits non-zero when a mismatch is found.
+Use `--allow-mismatch` to keep the artifact and exit success for CI/reporting workflows.
 
 Additional trace spec files:
 
@@ -395,6 +397,8 @@ cargo run --features onnx-export --bin tvm -- research-v2-matrix \
 The matrix artifact reports per-program match status, mismatch localization, aggregate counts
 (`total_programs`, `matched_programs`, `mismatched_programs`), and a top-level
 `matrix_entries_hash` commitment.
+By default, the command still writes the artifact but exits non-zero when
+`mismatched_programs > 0`; pass `--allow-mismatch` to keep success exits.
 
 Additional matrix spec files:
 
