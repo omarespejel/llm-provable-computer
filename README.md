@@ -68,7 +68,7 @@ The transition constraints **are** the instruction semantics. The boundary const
                            (= STARK AIR witness)
 ```
 
-The proof is **transparent** (no trusted setup), **post-quantum** (hash-based, no elliptic curves), and verification is **O(log^2 n)** --- exponentially cheaper than re-execution.
+The proof is **transparent** (no trusted setup) and **post-quantum** (hash-based, no elliptic curves). STARK verification itself is **O(log^2 n)**, while the current `statement-v1` verifier also performs transformer/native lockstep re-execution to enforce semantic equivalence.
 
 ---
 
@@ -86,7 +86,7 @@ cargo run --bin tvm -- run programs/fibonacci.tvm --trace
 # Prove execution with a vanilla STARK
 cargo run --bin tvm -- prove-stark programs/fibonacci.tvm -o fib.proof.json
 
-# Verify without re-running
+# Verify (statement-v1 includes lockstep re-execution)
 cargo run --bin tvm -- verify-stark fib.proof.json
 
 # Verify transformer matches native interpreter (lockstep)
@@ -269,14 +269,13 @@ The AIR encodes each supported instruction as polynomial transition constraints 
 # Prove
 cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proof.json
 
-# Verify (does not re-execute the program)
+# Verify (statement-v1 includes lockstep re-execution)
 cargo run --bin tvm -- verify-stark fact.proof.json
 ```
 
-`prove-stark` first runs transformer/native lockstep verification and aborts on any divergence before emitting a proof.
-Proof claims now also include equivalence metadata (`equivalence_checked_steps`, transformer fingerprint, native fingerprint) in the CLI output.
+Verification checks STARK validity and (for the current `statement-v1` semantic scope) re-executes transformer/native lockstep to enforce equivalence against claim outputs.
 
-The proof is transparent and public. The claim includes the program, attention mode, step count, and final state. Zero-knowledge hiding is out of scope.
+The proof is transparent and public. The claim includes statement metadata (`statement_version`, `semantic_scope`), the program, attention mode/configuration, step count, final state, equivalence metadata, and claim commitments. Zero-knowledge hiding is out of scope.
 
 ---
 
