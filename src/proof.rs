@@ -658,6 +658,12 @@ pub fn verify_execution_stark_with_policy(
     proof: &VanillaStarkExecutionProof,
     policy: StarkVerificationPolicy,
 ) -> Result<bool> {
+    let trace_length = proof
+        .claim
+        .steps
+        .checked_add(1)
+        .ok_or_else(|| VmError::InvalidConfig("proof steps overflow".to_string()))?;
+
     validate_statement_metadata(&proof.claim)?;
     validate_proof_inputs(&proof.claim.program, &proof.claim.attention_mode)?;
     validate_stark_options(&proof.claim.options)?;
@@ -684,7 +690,7 @@ pub fn verify_execution_stark_with_policy(
         proof.claim.options.num_colinearity_checks,
         proof.claim.options.security_level,
         air.register_count(),
-        proof.claim.steps + 1,
+        trace_length,
         air.transition_degree_bound(),
     );
 
@@ -1622,6 +1628,14 @@ HALT
         proof.claim.options.expansion_factor = 3;
         let err = verify_execution_stark(&proof).unwrap_err();
         assert!(err.to_string().contains("power of two"));
+    }
+
+    #[test]
+    fn verify_rejects_step_overflow_without_panic() {
+        let mut proof = prove_program("programs/addition.tvm", 32);
+        proof.claim.steps = usize::MAX;
+        let err = verify_execution_stark(&proof).unwrap_err();
+        assert!(err.to_string().contains("proof steps overflow"));
     }
 
     #[test]
