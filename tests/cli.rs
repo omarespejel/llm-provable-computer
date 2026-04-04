@@ -305,6 +305,28 @@ fn cli_can_prove_and_verify_stark_execution() {
 }
 
 #[test]
+fn cli_runs_neural_style_programs_with_verify_native() {
+    let cases = [
+        ("programs/dot_product.tvm", "70"),
+        ("programs/matmul_2x2.tvm", "134"),
+        ("programs/single_neuron.tvm", "1"),
+    ];
+
+    for (program, expected_acc) in cases {
+        let mut run = Command::cargo_bin("tvm").expect("binary");
+        run.arg("run")
+            .arg(program)
+            .arg("--verify-native")
+            .arg("--max-steps")
+            .arg("128")
+            .assert()
+            .success()
+            .stdout(predicate::str::contains(format!("acc: {expected_acc}")))
+            .stdout(predicate::str::contains("verified_against_native: true"));
+    }
+}
+
+#[test]
 fn cli_verify_stark_rejects_malformed_proof_without_panic() {
     let valid_path = unique_temp_dir("cli-stark-proof-valid").with_extension("json");
     let bad_path = unique_temp_dir("cli-stark-proof-bad").with_extension("json");

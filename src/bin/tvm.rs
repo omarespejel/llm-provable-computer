@@ -234,7 +234,8 @@ enum Command {
         /// Program paths to include in the matrix (repeatable).
         #[arg(long = "program")]
         programs: Vec<PathBuf>,
-        /// Include the built-in default suite (addition, counter, fibonacci, multiply, factorial).
+        /// Include the built-in default suite (addition, counter, fibonacci, multiply, factorial,
+        /// dot-product, matmul-2x2, single-neuron).
         #[arg(long)]
         include_default_suite: bool,
         /// Maximum number of execution steps to check per program.
@@ -1586,6 +1587,9 @@ fn research_v2_default_program_suite() -> Vec<PathBuf> {
         PathBuf::from("programs/fibonacci.tvm"),
         PathBuf::from("programs/multiply.tvm"),
         PathBuf::from("programs/factorial_recursive.tvm"),
+        PathBuf::from("programs/dot_product.tvm"),
+        PathBuf::from("programs/matmul_2x2.tvm"),
+        PathBuf::from("programs/single_neuron.tvm"),
     ]
 }
 
@@ -1697,6 +1701,14 @@ mod tests {
     #[test]
     fn matrix_mismatch_policy_allows_with_allow_flag() {
         enforce_research_v2_matrix_mismatch_policy(1, true).expect("allow mismatch");
+    }
+
+    #[test]
+    fn default_matrix_suite_contains_neural_style_programs() {
+        let suite = research_v2_default_program_suite();
+        assert!(suite.contains(&PathBuf::from("programs/dot_product.tvm")));
+        assert!(suite.contains(&PathBuf::from("programs/matmul_2x2.tvm")));
+        assert!(suite.contains(&PathBuf::from("programs/single_neuron.tvm")));
     }
 }
 

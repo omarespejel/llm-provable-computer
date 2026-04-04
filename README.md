@@ -97,6 +97,15 @@ cargo run --bin tvm -- tui programs/fibonacci.tvm
 
 # Tests
 cargo test
+
+# Reproducibility bundle for paper/post artifacts
+./scripts/generate_repro_bundle.sh
+```
+
+For stronger proving settings in the bundle:
+
+```bash
+STARK_PROFILE=production-v1 INCLUDE_FIBONACCI_PROOF=1 ./scripts/generate_repro_bundle.sh
 ```
 
 ### Example Output
@@ -310,6 +319,23 @@ CI enforces sync between this file and verifier constants via:
 cargo test --quiet statement_spec_contract_is_synced_with_constants
 ```
 
+### Claim Boundaries
+
+`statement-v1` (cryptographically proven):
+
+- STARK proof attests to native ISA execution trace validity.
+- Verifier enforces `statement_version = statement-v1` and
+  `semantic_scope = native_isa_execution_with_transformer_native_equivalence_check`.
+- Verification re-executes transformer/native runtimes from claim data and enforces
+  agreement with claimed outputs and equivalence fingerprints.
+
+`research-v2` (research artifacts, not yet a full STARK claim about transformer/ONNX semantics):
+
+- `research-v2-step`, `research-v2-trace`, and `research-v2-matrix` generate semantic
+  equivalence certificates with cryptographic commitments.
+- These artifacts are publication evidence and regression guards, but they are not
+  currently embedded into the `statement-v1` STARK proof relation.
+
 ### Production Profile (v1)
 
 `production-v1` is a practical local proving profile intended for routine CI/integration checks:
@@ -385,7 +411,8 @@ cargo run --features onnx-export --bin tvm -- research-v2-matrix \
   --max-steps 8
 ```
 
-Or include the built-in suite (`addition`, `counter`, `fibonacci`, `multiply`, `factorial_recursive`):
+Or include the built-in suite (`addition`, `counter`, `fibonacci`, `multiply`,
+`factorial_recursive`, `dot_product`, `matmul_2x2`, `single_neuron`):
 
 ```bash
 cargo run --features onnx-export --bin tvm -- research-v2-matrix \
@@ -404,6 +431,22 @@ Additional matrix spec files:
 
 - `spec/statement-v2-matrix-research.json`
 - `spec/statement-v2-matrix-certificate.schema.json`
+
+### Reproducibility Bundle
+
+For publication-ready artifacts (benchmarks, proofs, semantic certificates, hashes),
+run:
+
+```bash
+./scripts/generate_repro_bundle.sh
+```
+
+Outputs are written to `compiled/repro-bundle/`:
+
+- `manifest.txt` (commit + toolchain + environment)
+- `benchmarks.tsv` (timings by command)
+- `sha256sums.txt` (hashes for generated artifacts)
+- STARK proof files and `research-v2` certificates used for evidence sections
 
 ---
 
