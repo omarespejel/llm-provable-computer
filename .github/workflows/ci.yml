@@ -25,7 +25,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Validate statement spec constants contract
-        run: cargo test --quiet statement_spec_contract_is_synced_with_constants
+        run: |
+          cargo test --quiet -- --list | grep -q "statement_spec_contract_is_synced_with_constants"
+          cargo test --quiet statement_spec_contract_is_synced_with_constants
 
   cargo-test:
     name: cargo test (${{ matrix.name }})

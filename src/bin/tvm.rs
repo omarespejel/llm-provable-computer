@@ -146,7 +146,7 @@ enum Command {
         )]
         attention_mode: Attention2DMode,
         /// Named STARK profile (recommended for repeatable proving policy).
-        #[arg(long, value_enum, default_value_t = CliStarkProfile::Default)]
+        #[arg(long, value_enum, default_value_t = CliStarkProfile::ProductionV1)]
         stark_profile: CliStarkProfile,
         /// STARK blowup factor (must be power of two and >= 4).
         ///
@@ -169,7 +169,7 @@ enum Command {
         /// Path to the serialized proof JSON file.
         proof: PathBuf,
         /// Verification policy profile.
-        #[arg(long, value_enum, default_value_t = CliStarkProfile::Default)]
+        #[arg(long, value_enum, default_value_t = CliStarkProfile::ProductionV1)]
         verification_profile: CliStarkProfile,
         /// Re-execute transformer/native runtimes from claim data and check equivalence metadata.
         #[arg(long)]
@@ -762,6 +762,8 @@ fn prove_stark_command(
     stark_options: VanillaStarkProofOptions,
 ) -> llm_provable_computer::Result<()> {
     let model = compile_model(program, layers, attention_mode)?;
+    let profile_options = stark_profile.proof_options();
+    let profile_overridden = stark_options != profile_options;
     let proof = prove_execution_stark_with_options(&model, max_steps, stark_options)?;
     let equivalence = proof.claim.equivalence.as_ref().ok_or_else(|| {
         VmError::InvalidConfig(
@@ -799,13 +801,18 @@ fn prove_stark_command(
         "conjectured_security_bits: {}",
         conjectured_security_bits(&proof.claim.options)
     );
-    println!("stark_profile: {stark_profile}");
-    if let Some(target) = stark_profile.target_max_proving_seconds() {
-        println!("profile_target_max_proving_seconds: {target}");
-    }
-    let profile_security_floor = stark_profile.min_conjectured_security_bits();
-    if profile_security_floor > 0 {
-        println!("profile_min_conjectured_security_bits: {profile_security_floor}");
+    if profile_overridden {
+        println!("stark_profile: custom");
+        println!("stark_profile_base: {stark_profile}");
+    } else {
+        println!("stark_profile: {stark_profile}");
+        if let Some(target) = stark_profile.target_max_proving_seconds() {
+            println!("profile_target_max_proving_seconds: {target}");
+        }
+        let profile_security_floor = stark_profile.min_conjectured_security_bits();
+        if profile_security_floor > 0 {
+            println!("profile_min_conjectured_security_bits: {profile_security_floor}");
+        }
     }
     println!("equivalence_checked_steps: {}", equivalence.checked_steps);
     println!(
@@ -1205,6 +1212,13 @@ fn research_v2_trace_command_impl(
         &bundle,
     )?;
 
+    enforce_research_v2_trace_mismatch_policy(
+        artifact.matched,
+        allow_mismatch,
+        artifact.first_mismatch_step,
+        artifact.mismatch_reason.as_deref(),
+    )?;
+
     let bytes = serde_json::to_vec_pretty(&artifact)
         .map_err(|err| VmError::Serialization(format!("failed to serialize artifact: {err}")))?;
     fs::write(output, bytes)?;
@@ -1234,13 +1248,6 @@ fn research_v2_trace_command_impl(
         "commitment_onnx_metadata_hash: {}",
         artifact.commitments.onnx_metadata_hash
     );
-
-    enforce_research_v2_trace_mismatch_policy(
-        artifact.matched,
-        allow_mismatch,
-        artifact.first_mismatch_step,
-        artifact.mismatch_reason.as_deref(),
-    )?;
 
     Ok(())
 }
@@ -1326,6 +1333,8 @@ fn research_v2_matrix_command_impl(
         },
     };
 
+    enforce_research_v2_matrix_mismatch_policy(artifact.mismatched_programs, allow_mismatch)?;
+
     let bytes = serde_json::to_vec_pretty(&artifact)
         .map_err(|err| VmError::Serialization(format!("failed to serialize artifact: {err}")))?;
     fs::write(output, bytes)?;
@@ -1342,11 +1351,10 @@ fn research_v2_matrix_command_impl(
         artifact.commitments.matrix_entries_hash
     );
 
-    enforce_research_v2_matrix_mismatch_policy(artifact.mismatched_programs, allow_mismatch)?;
-
     Ok(())
 }
 
+#[cfg(feature = "onnx-export")]
 fn enforce_research_v2_trace_mismatch_policy(
     matched: bool,
     allow_mismatch: bool,
@@ -1363,6 +1371,7 @@ fn enforce_research_v2_trace_mismatch_policy(
     Ok(())
 }
 
+#[cfg(feature = "onnx-export")]
 fn enforce_research_v2_matrix_mismatch_policy(
     mismatched_programs: usize,
     allow_mismatch: bool,
@@ -1652,7 +1661,7 @@ fn hash_bytes_hex(bytes: &[u8]) -> String {
     output.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "onnx-export"))]
 mod tests {
     use super::*;
 
