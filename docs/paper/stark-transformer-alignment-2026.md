@@ -10,7 +10,7 @@ April 2026
 
 This paper presents a transformer-specific complexity analysis comparing SNARK circuit size and STARK trace length for verifiable inference. Arithmetic work in a standard transformer block maps similarly in both settings, but non-arithmetic primitives such as softmax, normalization, and activation functions stress the two proving families differently. Under the representative cost model used throughout this paper (`C_exp = 300`, `C_norm = 30`, `C_nonlin = 150`), GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields approximately `157.8B` SNARK constraints versus `106.5B` STARK trace rows across 12 layers, or about `1.48x` more symbolic proving work on the SNARK side under these assumptions. The gap widens with sequence length because the softmax-related overhead scales quadratically in `T`.
 
-We complement this analytic comparison with a concrete proof-stack prototype, [`llm-provable-computer`](https://github.com/omarespejel/llm-provable-computer), in which execution traces from a deterministic transformer-shaped virtual machine are directly consumable as AIR witnesses. The current repository strengthens this thesis with statement-versioned claims, transformer/native lockstep verification, multi-engine differential checks, ONNX export and validation, and research-oriented semantic certificates. The resulting claim is narrower and stronger than a generic “STARKs beat SNARKs” position: transformer workloads expose precisely the dimensions on which STARK-native systems may compound advantages, while modern SNARK systems remain serious and rapidly improving competitors.
+We complement this analytic comparison with a concrete proof-stack prototype, [`llm-provable-computer`](https://github.com/omarespejel/llm-provable-computer), in which execution traces from a deterministic transformer-shaped virtual machine are directly consumable as AIR witnesses. The current repository strengthens this thesis with statement-versioned claims, transformer/native lockstep verification, multi-engine differential checks, ONNX export and validation, and research-oriented semantic certificates. The resulting claim is narrower and stronger than a generic “STARKs beat SNARKs” position: transformer workloads expose precisely the dimensions on which STARK-native systems may compound advantages, while modern SNARK systems remain serious and rapidly improving competitors. A compact public-system comparison is included in `docs/paper/appendix-system-comparison.md`.
 
 ---
 
@@ -28,7 +28,7 @@ This paper makes three distinct claims:
 2. **Systems claim.** Deterministic transformer-style execution can be compiled into traces that are directly consumable as AIR witnesses.
 3. **Infrastructure claim.** The S-two / Starknet stack makes this direction increasingly practical, even though the reference repository used here does not yet implement a production S-two backend.
 
-The repository artifact supports the second claim directly. The first claim is a model-based comparison, not an apples-to-apples end-to-end benchmark of production provers on identical hardware. The third claim is partially supported by recent StarkWare and Starknet releases, but remains ahead of the current repository implementation.
+The repository artifact supports the second claim directly. The first claim is a model-based comparison, not an apples-to-apples end-to-end benchmark of production provers on identical hardware. The third claim is partially supported by recent StarkWare and Starknet releases, but remains ahead of the current repository implementation. The paper therefore aims to be a rigorous architecture-and-systems thesis, not a final empirical verdict on STARK versus SNARK transformer proving.
 
 ---
 
@@ -183,7 +183,7 @@ On April 4, 2026, we generated a `production-v1` reproducibility bundle from com
 - `docs/paper/artifacts/production-v1-2026-04-04/sha256sums.txt`
 - `docs/paper/artifacts/production-v1-2026-04-04/commands.log`
 
-The artifact bundle includes STARK proofs for `addition`, `dot_product`, `single_neuron`, and `fibonacci`, along with `research-v2` semantic certificates.
+The artifact bundle includes STARK proofs for `addition`, `dot_product`, `single_neuron`, and `fibonacci`, along with `research-v2` semantic certificates. The large proof JSON files themselves are intentionally left out of the git repository; what is committed here is the stable metadata layer needed for reproducibility and citation.
 
 #### Table 3. Production-v1 local artifact results (commit `58bb05f`)
 
@@ -231,7 +231,7 @@ Separately, Starknet’s March 10, 2026 STRK20 announcement states that any ERC-
 
 ### 6.3 Native account abstraction
 
-Starknet’s account model remains strategically important: accounts are smart contracts, not externally owned accounts. For agentic or AI-mediated systems, that matters because authorization, proof handling, policy logic, and asset movement can live inside the account abstraction itself rather than being bolted on externally.
+Starknet’s account model remains strategically important: accounts are smart contracts, not externally owned accounts. For agentic or AI-mediated systems, that matters because authorization, proof handling, policy logic, and asset movement can live inside the account abstraction itself rather than being bolted on externally. This is a systems-level advantage rather than a proof-theoretic one, but it affects how easily verifiable AI can be turned into deployable onchain workflows.
 
 ---
 
@@ -245,7 +245,7 @@ The right conclusion is narrower: modern SNARK systems can clearly prove transfo
 
 ### 7.2 BitSage stwo-ml as the closest public STARK-native comparator
 
-BitSage stwo-ml is the closest public STARK-native system to the architectural thesis of this paper. It combines GKR, sumcheck, and LogUp-style machinery on an S-two/STWO backend and reports aggressive single-block transformer benchmarks together with Starknet verification paths.
+BitSage stwo-ml is the closest public STARK-native system to the architectural thesis of this paper. It combines GKR, sumcheck, and LogUp-style machinery on an S-two/STWO backend and reports aggressive single-block transformer benchmarks together with Starknet verification paths. For this paper, those claims should be treated as public repo- and project-reported evidence, not as independently normalized benchmarks.
 
 The public record should still be described carefully. Repo-reported benchmark claims, publicly surfaced onchain demos, and full transformer-roadmap claims are not the same thing. The strongest defensible wording is that BitSage is the clearest public STARK-native development signal and a serious comparator, while the maturity across components is still uneven and rapidly evolving.
 
@@ -259,7 +259,7 @@ The most defensible comparative claim is therefore:
 
 > Once large linear algebra is handled efficiently on both sides, the remaining contest is dominated by lookup handling, transparent recursion, field arithmetic, and commitment backend. On those axes, STARK-native stacks remain highly compelling.
 
-That is a stronger academic posture than “STARKs have already won.” It is narrower, better supported, and harder to dismiss.
+That is a stronger academic posture than “STARKs have already won.” It is narrower, better supported, and harder to dismiss. `docs/paper/appendix-system-comparison.md` summarizes this three-way comparison against DeepProve, BitSage stwo-ml, and this repository artifact.
 
 ---
 
@@ -289,7 +289,7 @@ If the goal is to make the paper materially stronger with one next technical mil
 1. add an S-two/STWO backend alongside the current vanilla backend, and
 2. prove one lookup-backed nonlinearity path on that backend.
 
-That combination would connect the paper’s strongest analytical claim to the strongest missing implementation piece.
+That combination would connect the paper’s strongest analytical claim to the strongest missing implementation piece. The corresponding repository migration plan is captured in `docs/design/stwo-backend-design.md`.
 
 ### 8.4 Secondary milestones
 
@@ -338,3 +338,6 @@ The frontier is therefore no longer “can transformers be proved?” The fronti
 20. BitSage Network. “stwo-ml.” <https://github.com/Bitsage-Network/stwo-ml>
 21. StarkWare. “Giza x S-two: Powering verifiable ML with LuminAIR.” <https://starkware.co/blog/giza-x-s-two-powering-verifiable-ml-with-luminair/>
 22. EZKL documentation. <https://docs.ezkl.xyz>
+23. `omarespejel/llm-provable-computer`. Repository main page. <https://github.com/omarespejel/llm-provable-computer>
+24. `omarespejel/llm-provable-computer`. “Appendix Artifact Index (Production V1).” Repository artifact index, April 4, 2026. <https://github.com/omarespejel/llm-provable-computer/blob/main/docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md>
+25. Starknet documentation. “Accounts.” Accessed April 4, 2026. <https://docs.starknet.io/architecture/accounts>
