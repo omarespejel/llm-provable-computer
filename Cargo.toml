@@ -16,6 +16,7 @@ path = "src/bin/tvm.rs"
 default = []
 burn-model = ["dep:burn"]
 onnx-export = ["dep:onnx-protobuf", "dep:protobuf", "dep:tract-onnx"]
+stwo-backend = []
 full = ["burn-model", "onnx-export"]
 
 [dependencies]

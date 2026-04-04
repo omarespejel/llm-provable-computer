@@ -19,6 +19,7 @@ pub mod onnx_runtime;
 pub mod proof;
 pub mod runtime;
 pub mod state;
+pub mod stwo_backend;
 pub mod tui;
 pub mod vanillastark;
 pub mod verification;
@@ -62,5 +63,9 @@ pub use proof::{
 };
 pub use runtime::ExecutionRuntime;
 pub use state::{decode_state, encode_state, MachineState, MIN_D_MODEL};
+pub use stwo_backend::{
+    is_enabled as stwo_backend_enabled, phase1_supported_mnemonics, STWO_BACKEND_FEATURE_NAME,
+    STWO_BACKEND_VERSION_PHASE1,
+};
 pub use tui::run_execution_tui;
 pub use verification::{verify_engines, verify_model_against_native, ExecutionComparison};

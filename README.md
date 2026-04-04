@@ -89,6 +89,10 @@ cargo run --bin tvm -- prove-stark programs/fibonacci.tvm -o fib.proof.json
 # Verify (statement-v1 includes lockstep re-execution)
 cargo run --bin tvm -- verify-stark fib.proof.json
 
+# Exercise the experimental S-two backend seam (feature-gated, subset-aware, not implemented yet)
+cargo run --features stwo-backend --bin tvm -- \
+  prove-stark programs/addition.tvm -o add.proof.json --backend stwo
+
 # Verify transformer matches native interpreter (lockstep)
 cargo run --bin tvm -- run programs/fibonacci.tvm --verify-native
 
@@ -287,6 +291,11 @@ cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proo
   --stark-profile production-v1 \
   --stark-expansion-factor 8 --stark-num-colinearity-checks 16 --stark-security-level 32
 
+# Exercise the experimental S-two Phase 1 seam (requires the feature flag and the
+# minimum arithmetic subset: addition, multiply, counter, dot_product)
+cargo run --features stwo-backend --bin tvm -- \
+  prove-stark programs/dot_product.tvm -o dot.proof.json --backend stwo
+
 # Verify (statement-v1 includes lockstep re-execution)
 cargo run --bin tvm -- verify-stark fact.proof.json
 
@@ -311,6 +320,8 @@ Proof claims now include explicit statement metadata:
 Verifier checks enforce both fields exactly, so claim wording cannot drift from what is actually being verified.
 Proof claims also include transformer config, equivalence metadata (`equivalence_checked_steps`, transformer fingerprint, native fingerprint), and artifact commitments (program hash, config hash, deterministic-model hash, STARK-options hash, prover-build info/hash) in CLI output.
 Verifier policy checks are available via `--min-conjectured-security`; `--strict` enforces an 80-bit floor and turns on re-execution checks.
+
+The `stwo` path is now an explicit experimental seam behind `--features stwo-backend`. In the current Phase 1 state it performs backend-specific shape validation and subset checks before failing cleanly. That gives the repo a real S-two integration boundary without overstating that a prover exists yet.
 
 The canonical machine-readable statement contract is checked into `spec/statement-v1.json`.
 CI enforces sync between this file and verifier constants via:
@@ -469,6 +480,7 @@ The `average-hard` mode is the only one supported by the STARK proof path. `soft
 | *(default)* | Transformer runtime, native interpreter, TUI, STARK prover |
 | `burn-model` | Burn tensor execution engine, `--verify-burn` |
 | `onnx-export` | ONNX export, Tract execution engine, `--verify-onnx` |
+| `stwo-backend` | Experimental S-two backend seam for `prove-stark --backend stwo` / `verify-stark --backend stwo` |
 | `full` | All of the above, `--verify-all` |
 
 ```bash
@@ -533,7 +545,9 @@ Intentionally narrow. Intentionally correct.
 
 **Implemented:** Compact ISA with arithmetic, memory, stack, and control flow. Transformer execution with hull-backed 2D attention. Four independent execution engines with lockstep differential verification. Vanilla STARK proofs over execution traces. Interactive TUI. CLI. Benchmarks. Property tests.
 
-**Not implemented:** GPU acceleration. Learned/trained weights. Zero-knowledge proofs. WASM frontend. Production STWO prover integration. Full-ISA STARK AIR for bitwise and compare instructions.
+**Not implemented:** GPU acceleration. Learned/trained weights. Zero-knowledge proofs. WASM frontend. A real S-two/STWO prover or verifier backend. Full-ISA STARK AIR for bitwise and compare instructions.
+
+**Experimental seam only:** `--features stwo-backend` enables a Phase 1 backend boundary that accepts only the minimum arithmetic subset (`NOP`, `LOADI`, `LOAD`, `STORE`, `ADD`, `ADDM`, `SUBM`, `MULM`, `JMP`, `JZ`, `HALT`) over the fixture matrix (`addition`, `multiply`, `counter`, `dot_product`). It is a migration seam, not a working S-two prover.
 
 The narrowness is the point. The semantics are small enough to inspect, the test suite is strong enough to trust, and the structure is clean enough to prove over.
 
