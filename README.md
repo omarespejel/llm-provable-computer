@@ -269,13 +269,141 @@ The AIR encodes each supported instruction as polynomial transition constraints 
 # Prove
 cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proof.json
 
+# Prove with the named production profile (v1)
+cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proof.json \
+  --stark-profile production-v1
+
+# Prove with explicit STARK options (overrides any selected profile)
+cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proof.json \
+  --stark-profile production-v1 \
+  --stark-expansion-factor 8 --stark-num-colinearity-checks 16 --stark-security-level 32
+
 # Verify (statement-v1 includes lockstep re-execution)
 cargo run --bin tvm -- verify-stark fact.proof.json
+
+# Verify and re-execute transformer/native runtimes from claim data
+cargo run --bin tvm -- verify-stark fact.proof.json --reexecute
+
+# Verify with the production verification profile (reexec + minimum 32 bits)
+cargo run --bin tvm -- verify-stark fact.proof.json --verification-profile production-v1
+
+# Verify with a custom minimum conjectured-security policy and strict mode
+cargo run --bin tvm -- verify-stark fact.proof.json --min-conjectured-security 64
+cargo run --bin tvm -- verify-stark fact.proof.json --strict
 ```
+
+`prove-stark` first runs transformer/native lockstep verification and aborts on any divergence before emitting a proof.
+The STARK witness trace is then built from the transformer execution trace.
+Proof claims now include explicit statement metadata:
+
+- `statement_version = statement-v1`
+- `semantic_scope = native_isa_execution_with_transformer_native_equivalence_check`
+
+Verifier checks enforce both fields exactly, so claim wording cannot drift from what is actually being verified.
+Proof claims also include transformer config, equivalence metadata (`equivalence_checked_steps`, transformer fingerprint, native fingerprint), and artifact commitments (program hash, config hash, deterministic-model hash, STARK-options hash, prover-build info/hash) in CLI output.
+Verifier policy checks are available via `--min-conjectured-security`; `--strict` enforces an 80-bit floor and turns on re-execution checks.
+
+The canonical machine-readable statement contract is checked into `spec/statement-v1.json`.
+CI enforces sync between this file and verifier constants via:
+
+```bash
+cargo test --quiet statement_spec_contract_is_synced_with_constants
+```
+
+### Production Profile (v1)
+
+`production-v1` is a practical local proving profile intended for routine CI/integration checks:
+
+- `expansion_factor = 4`
+- `num_colinearity_checks = 16`
+- `security_level = 32`
+- `conjectured_security_bits = 32`
+- target proving budget: `<= 45s` (release build, `programs/fibonacci.tvm`, 103 steps)
+
+Measured reference (local release build):
+
+| Profile | Settings `(expansion, q, security)` | Conjectured bits | Prove time (`fibonacci`, 103 steps) |
+|---------|-------------------------------------|------------------|-------------------------------------|
+| default | `(4, 2, 2)` | 4 | ~7-12s |
+| production-v1 | `(4, 16, 32)` | 32 | ~29s |
+| heavier | `(8, 16, 32)` | 48 | ~61s |
 
 Verification checks STARK validity and (for the current `statement-v1` semantic scope) re-executes transformer/native lockstep to enforce equivalence against claim outputs.
 
 The proof is transparent and public. The claim includes statement metadata (`statement_version`, `semantic_scope`), the program, attention mode/configuration, step count, final state, equivalence metadata, and claim commitments. Zero-knowledge hiding is out of scope.
+
+### Research V2 One-Step Semantic Artifact
+
+For research toward `statement-v2`, the CLI can generate a one-step transformer-vs-ONNX semantic equivalence artifact for a toy/target program:
+
+```bash
+cargo run --features onnx-export --bin tvm -- research-v2-step programs/addition.tvm \
+  -o compiled/research-v2-addition-step.json --max-steps 1
+```
+
+This checks a single step across transformer and ONNX runtimes and emits a JSON artifact with:
+
+- statement metadata (`statement-v2-research-draft`)
+- fixed-point profile and ONNX op subset version
+- pre/post machine states
+- commitment hashes for specs, program/config, and runtime outputs
+
+Canonical research-v2 spec files:
+
+- `spec/statement-v2-research.json`
+- `spec/fixed-point-semantics-v2.json`
+- `spec/onnx-op-subset-v2.json`
+- `spec/statement-v2-one-step-certificate.schema.json`
+
+### Research V2 Prefix-Trace Semantic Artifact
+
+For deeper research evidence, generate a prefix trace certificate across up to `N` steps:
+
+```bash
+cargo run --features onnx-export --bin tvm -- research-v2-trace programs/addition.tvm \
+  -o compiled/research-v2-addition-trace.json --max-steps 8
+```
+
+This checks transformer and ONNX step-by-step, emits mismatch localization (`first_mismatch_step`, `mismatch_reason`), and includes trace/final-state commitments.
+By default, the command still writes the artifact but exits non-zero when a mismatch is found.
+Use `--allow-mismatch` to keep the artifact and exit success for CI/reporting workflows.
+
+Additional trace spec files:
+
+- `spec/statement-v2-trace-research.json`
+- `spec/statement-v2-trace-certificate.schema.json`
+
+### Research V2 Multi-Program Matrix Artifact
+
+For a broader benchmark view, generate a matrix artifact across multiple programs:
+
+```bash
+cargo run --features onnx-export --bin tvm -- research-v2-matrix \
+  -o compiled/research-v2-matrix.json \
+  --program programs/addition.tvm \
+  --program programs/counter.tvm \
+  --max-steps 8
+```
+
+Or include the built-in suite (`addition`, `counter`, `fibonacci`, `multiply`, `factorial_recursive`):
+
+```bash
+cargo run --features onnx-export --bin tvm -- research-v2-matrix \
+  -o compiled/research-v2-matrix-default-suite.json \
+  --include-default-suite \
+  --max-steps 32
+```
+
+The matrix artifact reports per-program match status, mismatch localization, aggregate counts
+(`total_programs`, `matched_programs`, `mismatched_programs`), and a top-level
+`matrix_entries_hash` commitment.
+By default, the command still writes the artifact but exits non-zero when
+`mismatched_programs > 0`; pass `--allow-mismatch` to keep success exits.
+
+Additional matrix spec files:
+
+- `spec/statement-v2-matrix-research.json`
+- `spec/statement-v2-matrix-certificate.schema.json`
 
 ---
 
