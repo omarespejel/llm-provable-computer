@@ -358,6 +358,11 @@ fn prove_stark_command(
 ) -> llm_provable_computer::Result<()> {
     let model = compile_model(program, layers, attention_mode)?;
     let proof = prove_execution_stark(&model, max_steps)?;
+    let equivalence = proof.claim.equivalence.as_ref().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "prove-stark produced a claim without equivalence metadata".to_string(),
+        )
+    })?;
     save_execution_stark_proof(&proof, output)?;
 
     println!("program: {}", program.display());
@@ -371,6 +376,15 @@ fn prove_stark_command(
     println!("carry_flag: {}", proof.claim.final_state.carry_flag);
     println!("memory: {:?}", proof.claim.final_state.memory);
     println!("attention_mode: {}", proof.claim.attention_mode);
+    println!("equivalence_checked_steps: {}", equivalence.checked_steps);
+    println!(
+        "equivalence_transformer_fingerprint: {}",
+        equivalence.transformer_fingerprint
+    );
+    println!(
+        "equivalence_native_fingerprint: {}",
+        equivalence.native_fingerprint
+    );
     println!("proof_bytes: {}", proof.proof.len());
 
     Ok(())
@@ -396,6 +410,18 @@ fn verify_stark_command(proof_path: &Path) -> llm_provable_computer::Result<()> 
     println!("carry_flag: {}", proof.claim.final_state.carry_flag);
     println!("memory: {:?}", proof.claim.final_state.memory);
     println!("attention_mode: {}", proof.claim.attention_mode);
+    let equivalence = proof.claim.equivalence.as_ref().ok_or_else(|| {
+        VmError::InvalidConfig("verified claim is missing equivalence metadata".to_string())
+    })?;
+    println!("equivalence_checked_steps: {}", equivalence.checked_steps);
+    println!(
+        "equivalence_transformer_fingerprint: {}",
+        equivalence.transformer_fingerprint
+    );
+    println!(
+        "equivalence_native_fingerprint: {}",
+        equivalence.native_fingerprint
+    );
     println!("instructions: {}", proof.claim.program.instructions().len());
     println!("proof_bytes: {}", proof.proof.len());
 
