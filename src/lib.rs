@@ -50,8 +50,8 @@ pub use onnx_export::{
 pub use onnx_runtime::OnnxExecutionRuntime;
 pub use proof::{
     load_execution_stark_proof, prove_execution_stark, prove_execution_stark_with_options,
-    save_execution_stark_proof, verify_execution_stark, VanillaStarkExecutionClaim,
-    VanillaStarkExecutionProof, VanillaStarkProofOptions,
+    save_execution_stark_proof, verify_execution_stark, ExecutionEquivalenceMetadata,
+    VanillaStarkExecutionClaim, VanillaStarkExecutionProof, VanillaStarkProofOptions,
 };
 pub use runtime::ExecutionRuntime;
 pub use state::{decode_state, encode_state, MachineState, MIN_D_MODEL};

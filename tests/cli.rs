@@ -157,6 +157,7 @@ fn cli_can_prove_and_verify_stark_execution() {
         .arg(&proof_path)
         .assert()
         .success()
+        .stdout(predicate::str::contains("equivalence_checked_steps:"))
         .stdout(predicate::str::contains("proof_bytes:"))
         .stdout(predicate::str::contains("acc: 8"));
 
@@ -168,6 +169,7 @@ fn cli_can_prove_and_verify_stark_execution() {
         .arg(&proof_path)
         .assert()
         .success()
+        .stdout(predicate::str::contains("equivalence_checked_steps:"))
         .stdout(predicate::str::contains("verified_stark: true"))
         .stdout(predicate::str::contains("acc: 8"))
         .stdout(predicate::str::contains("instructions: 3"));
