@@ -12,7 +12,7 @@ No sampling. No stochastic output. Same input, same output, every time.
 
 Based on [*Can LLMs Be Computers?*](https://www.percepta.ai/blog/can-llms-be-computers) by Percepta, which showed that 2D attention over convex hulls turns a transformer into a deterministic machine. This repo implements that system in Rust, then proves the computation correct with a transparent STARK.
 
-This repository is maintained at [`omarespejel/llm-provable-computer`](https://github.com/omarespejel/llm-provable-computer) as a fork of Abdel Danby-Platt's original public repository, [`AbdelStark/llm-provable-computer`](https://github.com/AbdelStark/llm-provable-computer). The original public prototype and repository direction came from Abdel's upstream work; this fork extends it with the paper draft, reproducibility artifacts, semantic certificates, neural-style programs, and the early S-two backend seam.
+`omarespejel/llm-provable-computer` is the maintained fork used for this paper, the reproducibility bundle, and the early S-two migration work. It builds directly on Abdel Danby-Platt's original public repository, `AbdelStark/llm-provable-computer`, which established the upstream prototype and public implementation line. The current fork extends that base with the paper draft, reproducibility artifacts, research-oriented semantic agreement artifacts, neural-style programs, and early S-two backend seams; it does not yet prove full standard-softmax transformer inference on S-two.
 
 ---
 
@@ -71,6 +71,8 @@ The transition constraints **are** the instruction semantics. The boundary const
 ```
 
 The proof is **transparent** (no trusted setup) and **post-quantum** (hash-based, no elliptic curves). STARK verification itself is **O(log^2 n)**, while the current `statement-v1` verifier also performs transformer/native lockstep re-execution to enforce semantic equivalence.
+
+Scope note: the current proof claim is a `statement-v1` claim over native ISA execution, with semantic agreement checks layered around it. This repository does not yet provide a full S-two backend or a proved standard-softmax transformer path.
 
 ---
 
@@ -448,7 +450,7 @@ Additional matrix spec files:
 
 ### Reproducibility Bundle
 
-For publication-ready artifacts (benchmarks, proofs, semantic certificates, hashes),
+For publication-ready artifacts (benchmarks, proofs, semantic agreement artifacts, hashes),
 run:
 
 ```bash
