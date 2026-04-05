@@ -326,8 +326,9 @@ cargo test --quiet statement_spec_contract_is_synced_with_constants
 - STARK proof attests to native ISA execution trace validity.
 - Verifier enforces `statement_version = statement-v1` and
   `semantic_scope = native_isa_execution_with_transformer_native_equivalence_check`.
-- Verification re-executes transformer/native runtimes from claim data and enforces
-  agreement with claimed outputs and equivalence fingerprints.
+- Verification can re-execute transformer/native runtimes from claim data, and the
+  strict/default production verification path enforces agreement with claimed
+  outputs and equivalence fingerprints.
 
 `research-v2` (research artifacts, not yet a full STARK claim about transformer/ONNX semantics):
 

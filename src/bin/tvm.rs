@@ -234,8 +234,8 @@ enum Command {
         /// Program paths to include in the matrix (repeatable).
         #[arg(long = "program")]
         programs: Vec<PathBuf>,
-        /// Include the built-in default suite (addition, counter, fibonacci, multiply, factorial,
-        /// dot-product, matmul-2x2, single-neuron).
+        /// Include the built-in default suite (addition, counter, fibonacci, multiply,
+        /// factorial_recursive, dot_product, matmul_2x2, single_neuron).
         #[arg(long)]
         include_default_suite: bool,
         /// Maximum number of execution steps to check per program.
