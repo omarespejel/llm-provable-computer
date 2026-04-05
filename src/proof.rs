@@ -1832,6 +1832,7 @@ HALT
     #[test]
     fn verify_rejects_step_overflow_without_panic() {
         let mut proof = prove_program("programs/addition.tvm", 32);
+        proof.claim.equivalence = None;
         proof.claim.steps = usize::MAX;
         let err = verify_execution_stark(&proof).unwrap_err();
         assert!(err.to_string().contains("proof steps overflow"));
