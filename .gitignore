@@ -4,6 +4,13 @@
 .DS_Store
 __pycache__/
 *.pyc
+.agents/
+.claude/
+.codex/
+.greptile/
+.coderabbit.yaml
+CLAUDE.md
+AI_REVIEW_BOTS_BEST_PRACTICES_*.md
 **/.claude/tsc-cache/
 **/.claude/cache/
 **/.tldr/
