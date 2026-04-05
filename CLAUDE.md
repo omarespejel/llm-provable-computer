@@ -10,7 +10,7 @@ llm-provable-computer is an implemented Rust workspace for a deterministic trans
 | CLI | clap | 4.5.38 | `tvm` binary in `src/bin/tvm.rs` |
 | Terminal UI | ratatui, crossterm | 0.29.0 / 0.28.1 | Interactive execution viewer |
 | Proof stack | In-repo vanilla STARK | local modules | `src/proof.rs` plus `src/vanillastark/` |
-| Experimental backend seam | S-two / STWO | feature-gated | `src/stwo_backend.rs`, gated by `stwo-backend` |
+| Experimental backend seam | S-two / STWO | feature-gated | `src/stwo_backend/`, gated by `stwo-backend` and backed by official StarkWare crates |
 | Optional tensor runtime | Burn | 0.20.1 | Gated by `burn-model` |
 | Optional export/runtime | ONNX + Tract | 0.2.3 / 0.23.0-dev.2 | Gated by `onnx-export` |
 | Serialization | serde, serde_json | 1.0.219 / 1.0.140 | Proof and metadata IO |
@@ -28,10 +28,11 @@ llm-provable-computer is an implemented Rust workspace for a deterministic trans
   - supported: `NOP`, `LOADI`, `LOAD`, `STORE`, `PUSH`, `POP`, `ADD`, `ADDM`, `SUB`, `SUBM`, `MUL`, `MULM`, `CALL`, `RET`, `JMP`, `JZ`, `JNZ`, `HALT`
   - rejected: softmax and hard-softmax proof paths, bitwise instructions, compare instructions, non-halted public claims, public claims with `carry_flag = true`
 - Experimental S-two status:
-  - `stwo-backend` feature adds a Phase 1 integration seam only
+  - `stwo-backend` feature adds a Phase 2 integration seam only
   - accepted subset: `NOP`, `LOADI`, `LOAD`, `STORE`, `ADD`, `ADDM`, `SUBM`, `MULM`, `JMP`, `JZ`, `HALT`
   - accepted fixture matrix: `addition`, `multiply`, `counter`, `dot_product`
-  - current behavior: subset-aware validation and explicit placeholder failure; no real S-two prover or verifier yet
+  - official dependency seam: `stwo = 2.2.0`, `stwo-constraint-framework = 2.2.0`
+  - current behavior: subset-aware validation, dedicated adapter/layout modules, explicit placeholder failure in CLI proving/verification, plus real `stwo-constraint-framework` component builders for a narrow arithmetic pilot and a bounded lookup-backed binary-step activation pilot
 - Current proof is transparent, not zero-knowledge.
 - Current public claim fields include:
   - statement metadata: `statement_version`, `semantic_scope`
@@ -64,7 +65,7 @@ src/
   runtime.rs            # Transformer execution loop
   state.rs              # MachineState and token encoding
   proof.rs              # Execution-proof plumbing and AIR wiring
-  stwo_backend.rs       # Experimental S-two Phase 1 support gate + subset checks
+  stwo_backend/         # Experimental S-two adapter + layout seam
   verification.rs       # Lockstep engine comparison
   tui.rs                # ratatui execution viewer
   vanillastark/         # Field, polynomial, Merkle, FRI, STARK internals
@@ -97,7 +98,7 @@ scripts/
 | Verify all engines | `cargo run --features full --bin tvm -- run programs/fibonacci.tvm --verify-all` | Transformer + native + Burn + ONNX |
 | Create a proof | `cargo run --bin tvm -- prove-stark programs/fibonacci.tvm -o /tmp/fib.proof.json` | Uses current vanilla STARK path |
 | Verify a proof | `cargo run --bin tvm -- verify-stark /tmp/fib.proof.json` | Re-checks a saved proof |
-| Exercise S-two seam | `cargo run --features stwo-backend --bin tvm -- prove-stark programs/addition.tvm -o /tmp/add.proof.json --backend stwo` | Validates Phase 1 subset, then fails explicitly |
+| Exercise S-two seam | `cargo run --features stwo-backend --bin tvm -- prove-stark programs/addition.tvm -o /tmp/add.proof.json --backend stwo` | Validates Phase 2 subset, loads official dependency seam, then fails explicitly |
 | Review doc drift | `git diff -- README.md CLAUDE.md docs/` | Use before finishing doc/context work |
 </commands>
 
@@ -138,7 +139,7 @@ scripts/
   <known_issues>
   | Symptom | Likely cause | Fix |
   |---------|--------------|-----|
-  | `prove-stark` rejects a program | Unsupported instruction, attention mode, backend feature gate, or claim shape | Check `src/proof.rs::validate_proof_inputs`, `src/stwo_backend.rs`, and the carry/halted restrictions |
+  | `prove-stark` rejects a program | Unsupported instruction, attention mode, backend feature gate, or claim shape | Check `src/proof.rs::validate_proof_inputs`, `src/stwo_backend/`, and the carry/halted restrictions |
   | Burn or ONNX commands are unavailable | Missing feature flag | Re-run with `--features burn-model`, `--features onnx-export`, or `--features full` |
   | Docs mention WASM compilation as current behavior | Stale pre-implementation text | Prefer `README.md`, `CLAUDE.md`, and the source tree over old planning language |
   | An engine mismatch appears during verification | Trace divergence across runtimes | Inspect `ExecutionTraceEntry` output and compare instruction/state pairs |

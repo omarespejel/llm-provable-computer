@@ -687,15 +687,15 @@ impl ProofBackendDriver for StwoBackend {
     }
 
     fn backend_version(&self) -> &'static str {
-        stwo_backend::STWO_BACKEND_VERSION_PHASE1
+        stwo_backend::STWO_BACKEND_VERSION_PHASE2
     }
 
     fn prove(&self, _witness: PreparedExecutionWitness) -> Result<VanillaStarkExecutionProof> {
-        Err(stwo_backend::phase1_placeholder_prove_error())
+        Err(stwo_backend::phase2_placeholder_prove_error())
     }
 
     fn verify(&self, _proof: &VanillaStarkExecutionProof, _air: &VmAir) -> Result<bool> {
-        Err(stwo_backend::phase1_placeholder_verify_error())
+        Err(stwo_backend::phase2_placeholder_verify_error())
     }
 }
 
@@ -738,10 +738,10 @@ pub fn prove_execution_stark_with_backend_and_options(
     options: VanillaStarkProofOptions,
 ) -> Result<VanillaStarkExecutionProof> {
     validate_proof_inputs(model.program(), &model.config().attention_mode, backend)?;
-    validate_stark_options(&options)?;
     if matches!(backend, StarkProofBackend::Stwo) {
-        return Err(stwo_backend::phase1_placeholder_prove_error());
+        return Err(stwo_backend::phase2_placeholder_prove_error());
     }
+    validate_stark_options(&options)?;
     let witness = prepare_execution_witness(model, max_steps, options)?;
     backend_driver(backend).prove(witness)
 }
@@ -765,15 +765,15 @@ pub fn verify_execution_stark_with_backend_and_policy(
     validate_backend_metadata(proof, backend)?;
     validate_statement_metadata(&proof.claim)?;
     validate_proof_inputs(&proof.claim.program, &proof.claim.attention_mode, backend)?;
+    if matches!(backend, StarkProofBackend::Stwo) {
+        return Err(stwo_backend::phase2_placeholder_verify_error());
+    }
     validate_stark_options(&proof.claim.options)?;
     validate_verification_policy(&proof.claim.options, &policy)?;
     validate_public_state(&proof.claim.program, &proof.claim.final_state)?;
     validate_transformer_config(&proof.claim)?;
     validate_equivalence_metadata(&proof.claim)?;
     validate_claim_commitments(&proof.claim)?;
-    if matches!(backend, StarkProofBackend::Stwo) {
-        return Err(stwo_backend::phase1_placeholder_verify_error());
-    }
 
     if !proof.claim.final_state.halted {
         return Err(VmError::UnsupportedProof(
@@ -1007,7 +1007,7 @@ fn validate_proof_inputs(
             }
         }
         StarkProofBackend::Stwo => {
-            stwo_backend::validate_phase1_proof_shape(program, attention_mode)?;
+            stwo_backend::validate_phase2_proof_shape(program, attention_mode)?;
         }
     }
 
