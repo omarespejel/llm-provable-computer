@@ -115,6 +115,23 @@ The constants `C_exp`, `C_norm`, and `C_nonlin` are **stylized comparative const
 
 Because softmax dominates the non-arithmetic budget in this model, `C_exp` is the highest-leverage constant. On the corrected GPT-2-small instantiation below, holding `C_norm = 30` and `C_nonlin = 150` fixed changes the overall SNARK/STARK ratio from about `1.13x` at `C_exp = 50` to `1.20x` at `C_exp = 100`, `1.48x` at `C_exp = 300`, and `1.77x` at `C_exp = 500`. By contrast, varying `C_norm` from `10` to `50` changes the ratio only from about `1.48x` to `1.49x`, while varying `C_nonlin` from `50` to `250` changes it from about `1.45x` to `1.52x`. The qualitative argument is therefore most sensitive to how one models softmax-like non-arithmetic work.
 
+#### Table 1. Sensitivity of the GPT-2-small ratio to stylized non-arithmetic constants
+
+| Constants varied | Setting | SNARK/STARK ratio |
+|---|---:|---:|
+| `C_exp` with `C_norm = 30`, `C_nonlin = 150` | `50` | `1.13x` |
+| `C_exp` with `C_norm = 30`, `C_nonlin = 150` | `100` | `1.20x` |
+| `C_exp` with `C_norm = 30`, `C_nonlin = 150` | `300` | `1.48x` |
+| `C_exp` with `C_norm = 30`, `C_nonlin = 150` | `500` | `1.77x` |
+| `C_norm` with `C_exp = 300`, `C_nonlin = 150` | `10` | `1.48x` |
+| `C_norm` with `C_exp = 300`, `C_nonlin = 150` | `30` | `1.48x` |
+| `C_norm` with `C_exp = 300`, `C_nonlin = 150` | `50` | `1.49x` |
+| `C_nonlin` with `C_exp = 300`, `C_norm = 30` | `50` | `1.45x` |
+| `C_nonlin` with `C_exp = 300`, `C_norm = 30` | `150` | `1.48x` |
+| `C_nonlin` with `C_exp = 300`, `C_norm = 30` | `250` | `1.52x` |
+
+This table should be read as a stress test of the model, not as a benchmark of deployed proving stacks. Its purpose is to show that the analytic claim is materially more sensitive to the assumed softmax-like cost than to the normalization or activation constants.
+
 ### 4.2 STARK-side symbolic cost
 
 For the STARK side, we keep the exact expression:
@@ -129,7 +146,7 @@ A naive approximation such as `12Td^2 + 3T^2d` would not be justified for GPT-2 
 
 Instantiating the model with GPT-2 small parameters (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) gives the following.
 
-#### Table 1. GPT-2 small symbolic work under the stated cost model
+#### Table 2. GPT-2 small symbolic work under the stated cost model
 
 | Component | SNARK (constraints) | STARK (trace rows) | Ratio |
 |---|---:|---:|---:|
@@ -212,7 +229,7 @@ On April 4, 2026, we generated a `production-v1` reproducibility bundle from exe
 
 The artifact bundle includes STARK proofs for `addition`, `dot_product`, `single_neuron`, and `fibonacci`, along with `research-v2` semantic agreement artifacts. The large proof JSON files themselves are intentionally left out of the git repository; what is committed here is the stable metadata layer needed for reproducibility and citation.
 
-#### Table 2. Production-v1 local artifact results (commit `58bb05f`)
+#### Table 3. Production-v1 local artifact results (commit `58bb05f`)
 
 | Artifact | Prove Time | Verify Time | Proof Size |
 |---|---:|---:|---:|
