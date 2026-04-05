@@ -325,7 +325,7 @@ Verifier checks enforce both fields exactly, so claim wording cannot drift from 
 Proof claims also include transformer config, equivalence metadata (`equivalence_checked_steps`, transformer fingerprint, native fingerprint), and artifact commitments (program hash, config hash, deterministic-model hash, STARK-options hash, prover-build info/hash) in CLI output.
 Verifier policy checks are available via `--min-conjectured-security`; `--strict` enforces an 80-bit floor and turns on re-execution checks.
 
-The `stwo` path is now an explicit experimental seam behind `--features stwo-backend`. In the current Phase 2/3 state it wires the official StarkWare crates (`stwo` and `stwo-constraint-framework` at `2.2.0`), performs backend-specific shape validation, routes through a dedicated backend module layout, and exposes real `FrameworkComponent` builders for a narrow arithmetic row pilot plus a bounded lookup-backed binary-step activation pilot before failing cleanly in the actual `prove-stark` / `verify-stark` path. That gives the repo a real S-two integration boundary without overstating that a prover exists yet.
+The `stwo` path is now an explicit experimental backend behind `--features stwo-backend`, and it currently requires `cargo +nightly-2025-07-14` because the upstream `stwo` prover stack is still nightly-only. In the current Phase 4/5 state it wires the official StarkWare crates (`stwo` and `stwo-constraint-framework` at `2.2.0`), performs backend-specific shape validation, proves and verifies the exact shipped `programs/addition.tvm` fixture under `statement-v1`, and exposes real `FrameworkComponent` builders for both the arithmetic addition pilot and a bounded lookup-backed normalization pilot. Programs outside the exact addition fixture still fail cleanly on the `stwo` path, which keeps the claim boundary honest while moving the repo from “dependency seam only” to “first real S-two proof lifecycle”.
 
 The canonical machine-readable statement contract is checked into `spec/statement-v1.json`.
 CI enforces sync between this file and verifier constants via:
@@ -463,6 +463,12 @@ Outputs are written to `compiled/repro-bundle/`:
 - `benchmarks.tsv` (timings by command)
 - `sha256sums.txt` (hashes for generated artifacts)
 - STARK proof files and `research-v2` certificates used for evidence sections
+
+Additional committed transformer-shaped semantic artifacts live under:
+
+- `docs/paper/artifacts/transformer-soft-attention-v1/`
+- `docs/paper/artifacts/transformer-soft-attention-v1/soft_attention_memory-step.json`
+- `docs/paper/artifacts/transformer-soft-attention-v1/soft_attention_memory-trace.json`
 
 ---
 

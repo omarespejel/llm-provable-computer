@@ -1,9 +1,13 @@
 mod adapter;
 #[cfg(feature = "stwo-backend")]
+mod addition_prover;
+#[cfg(feature = "stwo-backend")]
 mod arithmetic_component;
 mod layout;
 #[cfg(feature = "stwo-backend")]
 mod lookup_component;
+#[cfg(feature = "stwo-backend")]
+mod normalization_component;
 
 use crate::config::Attention2DMode;
 use crate::error::{Result, VmError};
@@ -12,6 +16,10 @@ use crate::instruction::Program;
 pub use adapter::{
     phase2_dependency_seam, StwoDependencySeam, STWO_CONSTRAINT_FRAMEWORK_VERSION_PHASE2,
     STWO_CRATE_VERSION_PHASE2,
+};
+#[cfg(feature = "stwo-backend")]
+pub(crate) use addition_prover::{
+    prove_phase4_addition_fixture, verify_phase4_addition_fixture, STWO_BACKEND_VERSION_PHASE4,
 };
 #[cfg(feature = "stwo-backend")]
 pub use arithmetic_component::{
@@ -26,6 +34,12 @@ pub use layout::{
 pub use lookup_component::{
     phase3_binary_step_lookup_component_metadata, phase3_lookup_preprocessed_columns,
     phase3_lookup_table_rows, Phase3LookupComponentMetadata, Phase3LookupTableRow,
+};
+#[cfg(feature = "stwo-backend")]
+pub use normalization_component::{
+    phase5_normalization_lookup_component_metadata, phase5_normalization_preprocessed_columns,
+    phase5_normalization_table_rows, Phase5NormalizationComponentMetadata,
+    Phase5NormalizationTableRow,
 };
 
 /// Backend version label used by the experimental Phase 2 S-two seam.
