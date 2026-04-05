@@ -687,23 +687,23 @@ impl ProofBackendDriver for StwoBackend {
     }
 
     fn backend_version(&self) -> &'static str {
-        stwo_backend::STWO_BACKEND_VERSION_PHASE1
+        stwo_backend::STWO_BACKEND_VERSION_PHASE2
     }
 
     fn prove(&self, witness: PreparedExecutionWitness) -> Result<VanillaStarkExecutionProof> {
-        stwo_backend::validate_phase1_proof_shape(
+        stwo_backend::validate_phase2_proof_shape(
             &witness.claim.program,
             &witness.claim.attention_mode,
         )?;
-        Err(stwo_backend::phase1_placeholder_prove_error())
+        Err(stwo_backend::phase2_placeholder_prove_error())
     }
 
     fn verify(&self, proof: &VanillaStarkExecutionProof, _air: &VmAir) -> Result<bool> {
-        stwo_backend::validate_phase1_proof_shape(
+        stwo_backend::validate_phase2_proof_shape(
             &proof.claim.program,
             &proof.claim.attention_mode,
         )?;
-        Err(stwo_backend::phase1_placeholder_verify_error())
+        Err(stwo_backend::phase2_placeholder_verify_error())
     }
 }
 
@@ -1009,7 +1009,7 @@ fn validate_proof_inputs(
             }
         }
         StarkProofBackend::Stwo => {
-            stwo_backend::validate_phase1_proof_shape(program, attention_mode)?;
+            stwo_backend::validate_phase2_proof_shape(program, attention_mode)?;
         }
     }
 
@@ -1832,6 +1832,7 @@ HALT
     #[test]
     fn verify_rejects_step_overflow_without_panic() {
         let mut proof = prove_program("programs/addition.tvm", 32);
+        proof.claim.equivalence = None;
         proof.claim.steps = usize::MAX;
         let err = verify_execution_stark(&proof).unwrap_err();
         assert!(err.to_string().contains("proof steps overflow"));

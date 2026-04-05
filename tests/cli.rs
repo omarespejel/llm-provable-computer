@@ -336,7 +336,7 @@ fn cli_prove_stark_requires_stwo_feature_flag() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
-fn cli_prove_stark_reports_phase1_placeholder_on_supported_subset() {
+fn cli_prove_stark_reports_phase2_placeholder_on_supported_subset() {
     let proof_path = unique_temp_dir("cli-stark-proof-stwo-phase1").with_extension("json");
 
     let mut prove = Command::cargo_bin("tvm").expect("binary");
@@ -350,13 +350,13 @@ fn cli_prove_stark_reports_phase1_placeholder_on_supported_subset() {
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "S-two backend Phase 1 integration seam is present, but proving is not implemented yet",
+            "S-two backend Phase 2 adapter seam is present",
         ));
 }
 
 #[test]
 #[cfg(feature = "stwo-backend")]
-fn cli_prove_stark_rejects_program_outside_stwo_phase1_subset() {
+fn cli_prove_stark_rejects_program_outside_stwo_phase2_subset() {
     let proof_path = unique_temp_dir("cli-stark-proof-stwo-subset").with_extension("json");
 
     let mut prove = Command::cargo_bin("tvm").expect("binary");
@@ -370,7 +370,7 @@ fn cli_prove_stark_rejects_program_outside_stwo_phase1_subset() {
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "outside the current S-two Phase 1 arithmetic subset",
+            "outside the current S-two Phase 2 arithmetic subset",
         ));
 }
 

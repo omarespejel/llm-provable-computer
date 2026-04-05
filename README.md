@@ -89,7 +89,7 @@ cargo run --bin tvm -- prove-stark programs/fibonacci.tvm -o fib.proof.json
 # Verify (statement-v1 includes lockstep re-execution)
 cargo run --bin tvm -- verify-stark fib.proof.json
 
-# Exercise the experimental S-two backend seam (feature-gated, subset-aware, not implemented yet)
+# Exercise the experimental S-two backend seam (feature-gated, official deps wired, not implemented yet)
 cargo run --features stwo-backend --bin tvm -- \
   prove-stark programs/addition.tvm -o add.proof.json --backend stwo
 
@@ -291,7 +291,7 @@ cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proo
   --stark-profile production-v1 \
   --stark-expansion-factor 8 --stark-num-colinearity-checks 16 --stark-security-level 32
 
-# Exercise the experimental S-two Phase 1 seam (requires the feature flag and the
+# Exercise the experimental S-two Phase 2 seam (requires the feature flag and the
 # minimum arithmetic subset: addition, multiply, counter, dot_product)
 cargo run --features stwo-backend --bin tvm -- \
   prove-stark programs/dot_product.tvm -o dot.proof.json --backend stwo
@@ -321,7 +321,7 @@ Verifier checks enforce both fields exactly, so claim wording cannot drift from 
 Proof claims also include transformer config, equivalence metadata (`equivalence_checked_steps`, transformer fingerprint, native fingerprint), and artifact commitments (program hash, config hash, deterministic-model hash, STARK-options hash, prover-build info/hash) in CLI output.
 Verifier policy checks are available via `--min-conjectured-security`; `--strict` enforces an 80-bit floor and turns on re-execution checks.
 
-The `stwo` path is now an explicit experimental seam behind `--features stwo-backend`. In the current Phase 1 state it performs backend-specific shape validation and subset checks before failing cleanly. That gives the repo a real S-two integration boundary without overstating that a prover exists yet.
+The `stwo` path is now an explicit experimental seam behind `--features stwo-backend`. In the current Phase 2 state it wires the official StarkWare crates (`stwo` and `stwo-constraint-framework` at `2.2.0`), performs backend-specific shape validation, and routes through a dedicated backend module layout before failing cleanly. That gives the repo a real S-two integration boundary without overstating that a prover exists yet.
 
 The canonical machine-readable statement contract is checked into `spec/statement-v1.json`.
 CI enforces sync between this file and verifier constants via:
@@ -521,6 +521,7 @@ src/
   state.rs              # MachineState encoding (d_model = 36)
   memory.rs             # Addressed memory with write histories
   proof.rs              # VM AIR construction, STARK integration
+  stwo_backend/         # Experimental S-two adapter + layout seam
   verification.rs       # Lockstep multi-engine differential verification
   tui.rs                # Interactive terminal viewer
   bin/tvm.rs            # CLI (clap)
@@ -547,7 +548,7 @@ Intentionally narrow. Intentionally correct.
 
 **Not implemented:** GPU acceleration. Learned/trained weights. Zero-knowledge proofs. WASM frontend. A real S-two/STWO prover or verifier backend. Full-ISA STARK AIR for bitwise and compare instructions.
 
-**Experimental seam only:** `--features stwo-backend` enables a Phase 1 backend boundary that accepts only the minimum arithmetic subset (`NOP`, `LOADI`, `LOAD`, `STORE`, `ADD`, `ADDM`, `SUBM`, `MULM`, `JMP`, `JZ`, `HALT`) over the fixture matrix (`addition`, `multiply`, `counter`, `dot_product`). It is a migration seam, not a working S-two prover.
+**Experimental seam only:** `--features stwo-backend` enables a Phase 2 backend boundary that wires the official `stwo` and `stwo-constraint-framework` crates, accepts only the minimum arithmetic subset (`NOP`, `LOADI`, `LOAD`, `STORE`, `ADD`, `ADDM`, `SUBM`, `MULM`, `JMP`, `JZ`, `HALT`) over the fixture matrix (`addition`, `multiply`, `counter`, `dot_product`), and preserves `statement-v1` claim semantics while keeping proof bytes opaque. It is a migration seam, not a working S-two prover.
 
 The narrowness is the point. The semantics are small enough to inspect, the test suite is strong enough to trust, and the structure is clean enough to prove over.
 
