@@ -337,7 +337,7 @@ fn cli_prove_stark_requires_stwo_feature_flag() {
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_prove_stark_reports_phase2_placeholder_on_supported_subset() {
-    let proof_path = unique_temp_dir("cli-stark-proof-stwo-phase1").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stark-proof-stwo-phase2").with_extension("json");
 
     let mut prove = Command::cargo_bin("tvm").expect("binary");
     prove
