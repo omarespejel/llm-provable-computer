@@ -27,7 +27,7 @@ At `T <= 1024`, the sparse and dense curves coincide because `W_eff(T) = min(T, 
 For the dense GPT-style curve, the asymptotic ceiling from Section 4 is
 
 ```text
-(2d + H C_exp) / (2d + H) = (2 * 768 + 12 * 300) / (2 * 768 + 12) = 3.321429x.
+(2d + H C_exp) / (2d + H) = (2 * 768 + 12 * 300) / (2 * 768 + 12) = 3.317829x.
 ```
 
 Figure 1 now plots that ceiling explicitly as a horizontal dashed line so the “rises but saturates” behavior is visible in the figure itself rather than only in the surrounding prose.
