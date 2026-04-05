@@ -93,8 +93,8 @@ cargo run --bin tvm -- prove-stark programs/fibonacci.tvm -o fib.proof.json
 # Verify (statement-v1 includes lockstep re-execution)
 cargo run --bin tvm -- verify-stark fib.proof.json
 
-# Exercise the experimental S-two backend seam (feature-gated, official deps wired, not implemented yet)
-cargo run --features stwo-backend --bin tvm -- \
+# Exercise the experimental S-two backend (nightly-only upstream toolchain)
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prove-stark programs/addition.tvm -o add.proof.json --backend stwo
 
 # Verify transformer matches native interpreter (lockstep)
@@ -295,10 +295,9 @@ cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proo
   --stark-profile production-v1 \
   --stark-expansion-factor 8 --stark-num-colinearity-checks 16 --stark-security-level 32
 
-# Exercise the experimental S-two Phase 2 seam (requires the feature flag and the
-# minimum arithmetic subset: addition, multiply, counter, dot_product)
-cargo run --features stwo-backend --bin tvm -- \
-  prove-stark programs/dot_product.tvm -o dot.proof.json --backend stwo
+# Exercise the experimental S-two backend on the exact shipped addition fixture
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prove-stark programs/addition.tvm -o addition.stwo.proof.json --backend stwo
 
 # Verify (statement-v1 includes lockstep re-execution)
 cargo run --bin tvm -- verify-stark fact.proof.json
@@ -325,7 +324,7 @@ Verifier checks enforce both fields exactly, so claim wording cannot drift from 
 Proof claims also include transformer config, equivalence metadata (`equivalence_checked_steps`, transformer fingerprint, native fingerprint), and artifact commitments (program hash, config hash, deterministic-model hash, STARK-options hash, prover-build info/hash) in CLI output.
 Verifier policy checks are available via `--min-conjectured-security`; `--strict` enforces an 80-bit floor and turns on re-execution checks.
 
-The `stwo` path is now an explicit experimental seam behind `--features stwo-backend`. In the current Phase 2/3 state it wires the official StarkWare crates (`stwo` and `stwo-constraint-framework` at `2.2.0`), performs backend-specific shape validation, routes through a dedicated backend module layout, and exposes real `FrameworkComponent` builders for a narrow arithmetic row pilot plus a bounded lookup-backed binary-step activation pilot before failing cleanly in the actual `prove-stark` / `verify-stark` path. That gives the repo a real S-two integration boundary without overstating that a prover exists yet.
+The `stwo` path is now an explicit experimental backend behind `--features stwo-backend`, and it currently requires `cargo +nightly-2025-07-14` because the upstream `stwo` prover stack is still nightly-only. In the current Phase 5 state it wires the official StarkWare crates (`stwo` and `stwo-constraint-framework` at `2.2.0`), performs backend-specific shape validation, and proves and verifies the exact shipped `programs/addition.tvm` fixture under `statement-v1`. Broader arithmetic-subset AIR coverage now exists in the codebase and is exercised by internal trace-constraint tests, but it is not yet exposed as a public proving path because the real `stwo` prover lifecycle is only validated end to end for the shipped addition fixture. Alongside that `statement-v1` path, the repo now also contains a separate end-to-end normalization lookup demo proof so the lookup-backed normalization component is no longer metadata-only. Programs outside the current proven fixture still fail cleanly on the `stwo` path, which keeps the claim boundary honest while moving the repo from “dependency seam” to “first real S-two proof lifecycle plus one real lookup-backed proof demo”.
 
 The canonical machine-readable statement contract is checked into `spec/statement-v1.json`.
 CI enforces sync between this file and verifier constants via:
@@ -464,6 +463,12 @@ Outputs are written to `compiled/repro-bundle/`:
 - `sha256sums.txt` (hashes for generated artifacts)
 - STARK proof files and `research-v2` certificates used for evidence sections
 
+Additional committed transformer-shaped semantic artifacts live under:
+
+- `docs/paper/artifacts/transformer-soft-attention-v1/`
+- `docs/paper/artifacts/transformer-soft-attention-v1/soft_attention_memory-step.json`
+- `docs/paper/artifacts/transformer-soft-attention-v1/soft_attention_memory-trace.json`
+
 ---
 
 ## Attention Modes
@@ -551,9 +556,9 @@ Intentionally narrow. Intentionally correct.
 
 **Implemented:** Compact ISA with arithmetic, memory, stack, and control flow. Transformer execution with hull-backed 2D attention. Four independent execution engines with lockstep differential verification. Vanilla STARK proofs over execution traces. Interactive TUI. CLI. Benchmarks. Property tests.
 
-**Not implemented:** GPU acceleration. Learned/trained weights. Zero-knowledge proofs. WASM frontend. A real S-two/STWO prover or verifier backend. Full-ISA STARK AIR for bitwise and compare instructions.
+**Not implemented:** GPU acceleration. Learned/trained weights. Zero-knowledge proofs. WASM frontend. A full S-two/STWO zkML backend for standard-softmax transformers. Full-ISA STARK AIR for bitwise and compare instructions.
 
-**Experimental seam only:** `--features stwo-backend` enables a Phase 2 backend boundary that wires the official `stwo` and `stwo-constraint-framework` crates, accepts only the minimum arithmetic subset (`NOP`, `LOADI`, `LOAD`, `STORE`, `ADD`, `ADDM`, `SUBM`, `MULM`, `JMP`, `JZ`, `HALT`) over the fixture matrix (`addition`, `multiply`, `counter`, `dot_product`), and preserves `statement-v1` claim semantics while keeping proof bytes opaque. Phase 3 extends that seam with real `stwo-constraint-framework` component construction for a `LOADI`/immediate-`ADD`/`HALT` arithmetic pilot and a bounded lookup-backed binary-step activation pilot. It is still a migration seam, not a working S-two prover.
+**Experimental backend:** `--features stwo-backend` enables the current S-two path. It preserves `statement-v1` claim semantics and currently proves one exact shipped arithmetic fixture: `programs/addition.tvm`. The broader Phase 2 arithmetic subset (`NOP`, `LOADI`, `LOAD`, `STORE`, `ADD`, `ADDM`, `SUBM`, `MULM`, `JMP`, `JZ`, `HALT`) is implemented at the AIR/trace level and covered by internal constraint tests, but end-to-end `stwo` proving is only validated publicly for the shipped addition fixture. Phase 3 added real `stwo-constraint-framework` component construction for a narrow arithmetic pilot and a bounded lookup-backed activation pilot; Phase 5 replaces the old placeholder seam with a real addition proof lifecycle and adds a separate end-to-end normalization lookup demo. This is still not a full S-two zkML backend for standard-softmax transformers, but it is no longer only a dependency seam.
 
 The narrowness is the point. The semantics are small enough to inspect, the test suite is strong enough to trust, and the structure is clean enough to prove over.
 

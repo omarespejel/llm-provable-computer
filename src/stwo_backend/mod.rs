@@ -1,9 +1,15 @@
 mod adapter;
 #[cfg(feature = "stwo-backend")]
 mod arithmetic_component;
+#[cfg(feature = "stwo-backend")]
+mod arithmetic_subset_prover;
 mod layout;
 #[cfg(feature = "stwo-backend")]
 mod lookup_component;
+#[cfg(feature = "stwo-backend")]
+mod normalization_component;
+#[cfg(feature = "stwo-backend")]
+mod normalization_prover;
 
 use crate::config::Attention2DMode;
 use crate::error::{Result, VmError};
@@ -18,6 +24,10 @@ pub use arithmetic_component::{
     phase3_arithmetic_component_metadata, phase3_arithmetic_preprocessed_columns,
     Phase3ArithmeticComponentMetadata, Phase3TreeSubspan,
 };
+#[cfg(feature = "stwo-backend")]
+pub(crate) use arithmetic_subset_prover::{
+    prove_phase5_arithmetic_subset, verify_phase5_arithmetic_subset, STWO_BACKEND_VERSION_PHASE5,
+};
 pub use layout::{
     phase2_fixture_matrix, phase2_module_layout, phase2_supported_mnemonics,
     StwoBackendModuleLayout,
@@ -26,6 +36,17 @@ pub use layout::{
 pub use lookup_component::{
     phase3_binary_step_lookup_component_metadata, phase3_lookup_preprocessed_columns,
     phase3_lookup_table_rows, Phase3LookupComponentMetadata, Phase3LookupTableRow,
+};
+#[cfg(feature = "stwo-backend")]
+pub use normalization_component::{
+    phase5_normalization_lookup_component_metadata, phase5_normalization_preprocessed_columns,
+    phase5_normalization_table_rows, Phase5NormalizationComponentMetadata,
+    Phase5NormalizationTableRow,
+};
+#[cfg(feature = "stwo-backend")]
+pub use normalization_prover::{
+    prove_phase5_normalization_lookup_demo, verify_phase5_normalization_lookup_demo,
+    STWO_NORMALIZATION_PROOF_VERSION_PHASE5,
 };
 
 /// Backend version label used by the experimental Phase 2 S-two seam.
@@ -68,7 +89,7 @@ pub fn phase2_placeholder_prove_error() -> VmError {
 
     let seam = phase2_dependency_seam();
     VmError::UnsupportedProof(format!(
-        "S-two backend Phase 2 adapter seam is present (official crates: {} {}, {} {}; modules: {}, {}), but proving is not implemented yet; Phase 3 component builders now cover an arithmetic LOADI/ADD/HALT pilot and a bounded lookup-backed binary-step activation pilot",
+        "S-two backend Phase 2 adapter seam is present (official crates: {} {}, {} {}; modules: {}, {}), but proving is not implemented yet in binaries built without the `stwo-backend` feature; the feature-gated implementation now covers a real proof path for the shipped addition fixture plus a separate normalization lookup demo",
         seam.stwo_crate,
         seam.stwo_crate_version,
         seam.constraint_framework_crate,
@@ -86,7 +107,7 @@ pub fn phase2_placeholder_verify_error() -> VmError {
 
     let seam = phase2_dependency_seam();
     VmError::UnsupportedProof(format!(
-        "S-two backend Phase 2 adapter seam is present (official crates: {} {}, {} {}; modules: {}, {}), but verification is not implemented yet; Phase 3 component builders now cover an arithmetic LOADI/ADD/HALT pilot and a bounded lookup-backed binary-step activation pilot",
+        "S-two backend Phase 2 adapter seam is present (official crates: {} {}, {} {}; modules: {}, {}), but verification is not implemented yet in binaries built without the `stwo-backend` feature; the feature-gated implementation now covers a real proof path for the shipped addition fixture plus a separate normalization lookup demo",
         seam.stwo_crate,
         seam.stwo_crate_version,
         seam.constraint_framework_crate,

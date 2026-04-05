@@ -1,0 +1,985 @@
+use ark_ff::Zero;
+use serde::{Deserialize, Serialize};
+use serde_json;
+use stwo::core::air::Component;
+use stwo::core::channel::Blake2sM31Channel;
+use stwo::core::fields::m31::BaseField;
+use stwo::core::fields::qm31::SecureField;
+use stwo::core::pcs::{CommitmentSchemeVerifier, PcsConfig};
+use stwo::core::poly::circle::CanonicCoset;
+use stwo::core::proof::StarkProof;
+use stwo::core::vcs_lifted::blake2_merkle::{Blake2sM31MerkleChannel, Blake2sM31MerkleHasher};
+use stwo::core::verifier::verify;
+use stwo::prover::backend::cpu::CpuBackend;
+use stwo::prover::backend::{Col, Column};
+use stwo::prover::poly::circle::{CircleEvaluation, PolyOps};
+use stwo::prover::poly::{BitReversedOrder, NaturalOrder};
+use stwo::prover::{prove, CommitmentSchemeProver};
+use stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId;
+use stwo_constraint_framework::{
+    EvalAtRow, FrameworkComponent, FrameworkEval, TraceLocationAllocator,
+};
+
+use crate::config::Attention2DMode;
+use crate::error::{Result, VmError};
+use crate::instruction::{Instruction, Program};
+use crate::interpreter::NativeInterpreter;
+use crate::proof::{
+    PreparedExecutionWitness, StarkProofBackend, VanillaStarkExecutionClaim,
+    VanillaStarkExecutionProof,
+};
+use crate::state::MachineState;
+
+pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase5-arithmetic-subset-v1";
+const M31_MODULUS: u32 = (1u32 << 31) - 1;
+const OPCODE_COLUMN_NAMES: [&str; 11] = [
+    "phase5/arithmetic/op/nop",
+    "phase5/arithmetic/op/loadi",
+    "phase5/arithmetic/op/load",
+    "phase5/arithmetic/op/store",
+    "phase5/arithmetic/op/addi",
+    "phase5/arithmetic/op/addm",
+    "phase5/arithmetic/op/subm",
+    "phase5/arithmetic/op/mulm",
+    "phase5/arithmetic/op/jmp",
+    "phase5/arithmetic/op/jz",
+    "phase5/arithmetic/op/halt",
+];
+const IMMEDIATE_COLUMN: &str = "phase5/arithmetic/immediate";
+const JUMP_TARGET_COLUMN: &str = "phase5/arithmetic/jump_target";
+const FIRST_ROW_COLUMN: &str = "phase5/arithmetic/first_row";
+const LAST_ROW_COLUMN: &str = "phase5/arithmetic/last_row";
+
+#[derive(Clone, Debug)]
+struct Phase5ArithmeticSubsetEval {
+    log_size: u32,
+    memory_size: usize,
+    initial_state: PublicState,
+    final_state: PublicState,
+}
+
+#[derive(Clone, Debug)]
+struct PublicState {
+    pc: u8,
+    acc: i16,
+    sp: u8,
+    zero_flag: bool,
+    carry_flag: bool,
+    halted: bool,
+    memory: Vec<i16>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+struct PreprocessedRow {
+    opcode_flags: [u32; 11],
+    immediate: i16,
+    jump_target: u8,
+    address_flags: Vec<u32>,
+    is_first_row: bool,
+    is_last_row: bool,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct TraceLayout {
+    memory_size: usize,
+}
+
+impl TraceLayout {
+    const STATE_PREFIX_WIDTH: usize = 7;
+
+    fn new(memory_size: usize) -> Self {
+        Self { memory_size }
+    }
+
+    fn state_width(&self) -> usize {
+        Self::STATE_PREFIX_WIDTH + self.memory_size
+    }
+
+    fn total_width(&self) -> usize {
+        self.state_width() * 2
+    }
+
+    fn next_prefix(&self) -> usize {
+        self.state_width()
+    }
+}
+
+impl FrameworkEval for Phase5ArithmeticSubsetEval {
+    fn log_size(&self) -> u32 {
+        self.log_size
+    }
+
+    fn max_constraint_log_degree_bound(&self) -> u32 {
+        self.log_size.saturating_add(1)
+    }
+
+    fn evaluate<E: EvalAtRow>(&self, mut eval: E) -> E {
+        let layout = TraceLayout::new(self.memory_size);
+        let one = E::F::from(BaseField::from(1u32));
+        let zero = E::F::zero();
+
+        let current_pc = eval.next_trace_mask();
+        let current_acc = eval.next_trace_mask();
+        let current_sp = eval.next_trace_mask();
+        let current_zero = eval.next_trace_mask();
+        let current_carry = eval.next_trace_mask();
+        let current_halted = eval.next_trace_mask();
+        let current_acc_inv = eval.next_trace_mask();
+        let current_memory: Vec<_> = (0..self.memory_size)
+            .map(|_| eval.next_trace_mask())
+            .collect();
+
+        let next_pc = eval.next_trace_mask();
+        let next_acc = eval.next_trace_mask();
+        let next_sp = eval.next_trace_mask();
+        let next_zero = eval.next_trace_mask();
+        let next_carry = eval.next_trace_mask();
+        let next_halted = eval.next_trace_mask();
+        let next_acc_inv = eval.next_trace_mask();
+        let next_memory: Vec<_> = (0..self.memory_size)
+            .map(|_| eval.next_trace_mask())
+            .collect();
+
+        let opcode_flags: Vec<_> = OPCODE_COLUMN_NAMES
+            .iter()
+            .map(|name| eval.get_preprocessed_column(column_id(name)))
+            .collect();
+        let immediate = eval.get_preprocessed_column(column_id(IMMEDIATE_COLUMN));
+        let jump_target = eval.get_preprocessed_column(column_id(JUMP_TARGET_COLUMN));
+        let is_first_row = eval.get_preprocessed_column(column_id(FIRST_ROW_COLUMN));
+        let is_last_row = eval.get_preprocessed_column(column_id(LAST_ROW_COLUMN));
+        let address_flags: Vec<_> = (0..self.memory_size)
+            .map(|index| eval.get_preprocessed_column(column_id(&address_column_name(index))))
+            .collect();
+
+        for bit in [
+            current_zero.clone(),
+            current_halted.clone(),
+            next_zero.clone(),
+            next_halted.clone(),
+            is_first_row.clone(),
+            is_last_row.clone(),
+        ] {
+            eval.add_constraint(bit.clone() * (bit - one.clone()));
+        }
+
+        for selector in opcode_flags
+            .iter()
+            .cloned()
+            .chain(address_flags.iter().cloned())
+        {
+            eval.add_constraint(selector.clone() * (selector - one.clone()));
+        }
+
+        let opcode_sum = opcode_flags
+            .iter()
+            .cloned()
+            .fold(zero.clone(), |acc, x| acc + x);
+        eval.add_constraint(opcode_sum - one.clone());
+
+        let memory_operand_selector = opcode_flags[2].clone()
+            + opcode_flags[3].clone()
+            + opcode_flags[5].clone()
+            + opcode_flags[6].clone()
+            + opcode_flags[7].clone();
+        let address_sum = address_flags
+            .iter()
+            .cloned()
+            .fold(zero.clone(), |acc, x| acc + x);
+        eval.add_constraint(address_sum - memory_operand_selector);
+
+        eval.add_constraint(current_carry.clone());
+        eval.add_constraint(next_carry.clone());
+
+        eval.add_constraint(current_zero.clone() * current_acc.clone());
+        eval.add_constraint(
+            (one.clone() - current_zero.clone())
+                * (current_acc.clone() * current_acc_inv - one.clone()),
+        );
+        eval.add_constraint(next_zero.clone() * next_acc.clone());
+        eval.add_constraint(
+            (one.clone() - next_zero.clone()) * (next_acc.clone() * next_acc_inv - one.clone()),
+        );
+
+        let pc_plus_one = current_pc.clone() + one.clone();
+        let loaded_memory = address_flags
+            .iter()
+            .cloned()
+            .zip(current_memory.iter().cloned())
+            .fold(zero.clone(), |acc, (sel, value)| acc + sel * value);
+        let jump_taken = current_zero.clone() * jump_target.clone()
+            + (one.clone() - current_zero.clone()) * pc_plus_one.clone();
+
+        let expected_pc_active = opcode_flags[0].clone() * pc_plus_one.clone()
+            + opcode_flags[1].clone() * pc_plus_one.clone()
+            + opcode_flags[2].clone() * pc_plus_one.clone()
+            + opcode_flags[3].clone() * pc_plus_one.clone()
+            + opcode_flags[4].clone() * pc_plus_one.clone()
+            + opcode_flags[5].clone() * pc_plus_one.clone()
+            + opcode_flags[6].clone() * pc_plus_one.clone()
+            + opcode_flags[7].clone() * pc_plus_one.clone()
+            + opcode_flags[8].clone() * jump_target.clone()
+            + opcode_flags[9].clone() * jump_taken
+            + opcode_flags[10].clone() * current_pc.clone();
+
+        let expected_acc_active = opcode_flags[1].clone() * immediate.clone()
+            + opcode_flags[2].clone() * loaded_memory.clone()
+            + opcode_flags[4].clone() * (current_acc.clone() + immediate.clone())
+            + opcode_flags[5].clone() * (current_acc.clone() + loaded_memory.clone())
+            + opcode_flags[6].clone() * (current_acc.clone() - loaded_memory.clone())
+            + opcode_flags[7].clone() * (current_acc.clone() * loaded_memory)
+            + (opcode_flags[0].clone()
+                + opcode_flags[3].clone()
+                + opcode_flags[8].clone()
+                + opcode_flags[9].clone()
+                + opcode_flags[10].clone())
+                * current_acc.clone();
+
+        let expected_halted_active = opcode_flags[10].clone();
+        let expected_next_pc = current_halted.clone() * current_pc.clone()
+            + (one.clone() - current_halted.clone()) * expected_pc_active;
+        let expected_next_acc = current_halted.clone() * current_acc.clone()
+            + (one.clone() - current_halted.clone()) * expected_acc_active;
+        let expected_next_sp = current_sp.clone();
+        let expected_next_halted = current_halted.clone()
+            + (one.clone() - current_halted.clone()) * expected_halted_active;
+
+        eval.add_constraint(next_pc - expected_next_pc);
+        eval.add_constraint(next_acc - expected_next_acc);
+        eval.add_constraint(next_sp - expected_next_sp);
+        eval.add_constraint(next_halted - expected_next_halted);
+
+        for (index, (current_mem, next_mem)) in current_memory
+            .iter()
+            .cloned()
+            .zip(next_memory.iter().cloned())
+            .enumerate()
+        {
+            let write_here = opcode_flags[3].clone() * address_flags[index].clone();
+            let expected_next_mem = current_mem.clone()
+                + (one.clone() - current_halted.clone())
+                    * write_here
+                    * (current_acc.clone() - current_mem.clone());
+            eval.add_constraint(next_mem - expected_next_mem);
+        }
+
+        constrain_public_state(
+            &mut eval,
+            &layout,
+            true,
+            is_first_row,
+            &self.initial_state,
+            &current_pc,
+            &current_acc,
+            &current_sp,
+            &current_zero,
+            &current_carry,
+            &current_halted,
+            &current_memory,
+        );
+        constrain_public_state(
+            &mut eval,
+            &layout,
+            false,
+            is_last_row,
+            &self.final_state,
+            &current_pc,
+            &current_acc,
+            &current_sp,
+            &current_zero,
+            &current_carry,
+            &current_halted,
+            &current_memory,
+        );
+
+        eval
+    }
+}
+
+pub(crate) fn prove_phase5_arithmetic_subset(
+    witness: PreparedExecutionWitness,
+) -> Result<VanillaStarkExecutionProof> {
+    validate_phase5_subset_witness(
+        &witness.claim.program,
+        &witness.state_trace,
+        witness.claim.steps,
+    )?;
+
+    let trace_bundle = build_trace_bundle(&witness.claim.program, &witness.state_trace)?;
+    let component = arithmetic_subset_component(
+        trace_bundle.log_size,
+        witness.claim.program.initial_memory(),
+        witness.claim.final_state.clone(),
+    );
+    let config = PcsConfig::default();
+    let twiddles = CpuBackend::precompute_twiddles(
+        CanonicCoset::new(
+            component.max_constraint_log_degree_bound() + config.fri_config.log_blowup_factor + 1,
+        )
+        .circle_domain()
+        .half_coset,
+    );
+
+    let prover_channel = &mut Blake2sM31Channel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<CpuBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
+    commitment_scheme.set_store_polynomials_coefficients();
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(trace_bundle.preprocessed_trace.clone());
+    tree_builder.commit(prover_channel);
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(trace_bundle.base_trace.clone());
+    tree_builder.commit(prover_channel);
+
+    let stark_proof = prove::<CpuBackend, Blake2sM31MerkleChannel>(
+        &[&component],
+        prover_channel,
+        commitment_scheme,
+    )
+    .map_err(|error| {
+        VmError::UnsupportedProof(format!("S-two arithmetic-subset proving failed: {error}"))
+    })?;
+
+    let proof_bytes = serde_json::to_vec(&Phase5ArithmeticSubsetProofPayload {
+        stark_proof,
+        canonical_preprocessed_rows: trace_bundle.preprocessed_rows,
+    })
+    .map_err(|error| VmError::Serialization(error.to_string()))?;
+
+    Ok(VanillaStarkExecutionProof {
+        proof_backend: StarkProofBackend::Stwo,
+        proof_backend_version: STWO_BACKEND_VERSION_PHASE5.to_string(),
+        claim: witness.claim,
+        proof: proof_bytes,
+    })
+}
+
+pub(crate) fn verify_phase5_arithmetic_subset(proof: &VanillaStarkExecutionProof) -> Result<bool> {
+    validate_phase5_claim(&proof.claim)?;
+    let state_trace = reconstruct_state_trace_from_claim(&proof.claim)?;
+    let trace_bundle = build_trace_bundle(&proof.claim.program, &state_trace)?;
+    let component = arithmetic_subset_component(
+        trace_bundle.log_size,
+        proof.claim.program.initial_memory(),
+        proof.claim.final_state.clone(),
+    );
+    let payload: Phase5ArithmeticSubsetProofPayload = serde_json::from_slice(&proof.proof)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    if payload.canonical_preprocessed_rows != trace_bundle.preprocessed_rows {
+        return Err(VmError::UnsupportedProof(
+            "S-two arithmetic subset verification rejected proof with non-canonical preprocessed rows"
+                .to_string(),
+        ));
+    }
+
+    let stark_proof = payload.stark_proof;
+    let config = stark_proof.config;
+    let verifier_channel = &mut Blake2sM31Channel::default();
+    let commitment_scheme = &mut CommitmentSchemeVerifier::<Blake2sM31MerkleChannel>::new(config);
+    let sizes = component.trace_log_degree_bounds();
+    commitment_scheme.commit(stark_proof.commitments[0], &sizes[0], verifier_channel);
+    commitment_scheme.commit(stark_proof.commitments[1], &sizes[1], verifier_channel);
+
+    Ok(verify(
+        &[&component],
+        verifier_channel,
+        commitment_scheme,
+        stark_proof,
+    )
+    .is_ok())
+}
+
+#[derive(Serialize, Deserialize)]
+struct Phase5ArithmeticSubsetProofPayload {
+    stark_proof: StarkProof<Blake2sM31MerkleHasher>,
+    canonical_preprocessed_rows: Vec<PreprocessedRow>,
+}
+
+fn arithmetic_subset_component(
+    log_size: u32,
+    initial_memory: &[i16],
+    final_state: MachineState,
+) -> FrameworkComponent<Phase5ArithmeticSubsetEval> {
+    let mut allocator = TraceLocationAllocator::new_with_preprocessed_columns(
+        &preprocessed_column_ids(initial_memory.len()),
+    );
+    FrameworkComponent::new(
+        &mut allocator,
+        Phase5ArithmeticSubsetEval {
+            log_size,
+            memory_size: initial_memory.len(),
+            initial_state: PublicState::from_initial_memory(initial_memory),
+            final_state: PublicState::from_machine_state(final_state),
+        },
+        SecureField::zero(),
+    )
+}
+
+fn validate_phase5_claim(claim: &VanillaStarkExecutionClaim) -> Result<()> {
+    if !matches!(claim.attention_mode, Attention2DMode::AverageHard) {
+        return Err(VmError::UnsupportedProof(format!(
+            "S-two backend Phase 5 supports only `average-hard` attention, got `{}`",
+            claim.attention_mode
+        )));
+    }
+
+    validate_phase5_subset_witness(
+        &claim.program,
+        std::slice::from_ref(&claim.final_state),
+        claim.steps,
+    )
+    .or_else(|_| {
+        let trace = reconstruct_state_trace_from_claim(claim)?;
+        validate_phase5_subset_witness(&claim.program, &trace, claim.steps)
+    })
+}
+
+fn validate_phase5_subset_witness(
+    program: &Program,
+    states: &[MachineState],
+    steps: usize,
+) -> Result<()> {
+    validate_phase5_proven_fixture(program)?;
+    super::validate_phase2_proof_shape(program, &Attention2DMode::AverageHard)?;
+
+    if states.is_empty() {
+        return Err(VmError::UnsupportedProof(
+            "S-two arithmetic subset pilot requires a non-empty state trace".to_string(),
+        ));
+    }
+
+    if steps + 1 != states.len() && states.len() != 1 {
+        return Err(VmError::UnsupportedProof(format!(
+            "S-two arithmetic subset pilot expected state trace length {} for {steps} steps, got {}",
+            steps + 1,
+            states.len()
+        )));
+    }
+
+    let final_state = states.last().expect("non-empty");
+    if !final_state.halted {
+        return Err(VmError::UnsupportedProof(
+            "S-two arithmetic subset pilot currently requires executions that halt".to_string(),
+        ));
+    }
+
+    for (row, state) in states.iter().enumerate() {
+        if state.memory.len() != program.memory_size() {
+            return Err(VmError::UnsupportedProof(format!(
+                "S-two arithmetic subset pilot expected memory size {} at row {row}, got {}",
+                program.memory_size(),
+                state.memory.len()
+            )));
+        }
+        if state.carry_flag {
+            return Err(VmError::UnsupportedProof(format!(
+                "S-two arithmetic subset pilot does not support overflow/carry traces; carry set at row {row}"
+            )));
+        }
+        if usize::from(state.sp) != program.memory_size() {
+            return Err(VmError::UnsupportedProof(format!(
+                "S-two arithmetic subset pilot does not yet support stack-pointer motion; expected sp={} at row {row}, got {}",
+                program.memory_size(),
+                state.sp
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_phase5_proven_fixture(program: &Program) -> Result<()> {
+    let expected = [
+        Instruction::LoadImmediate(5),
+        Instruction::AddImmediate(3),
+        Instruction::Halt,
+    ];
+    if program.memory_size() != 4
+        || program.initial_memory() != [0, 0, 0, 0]
+        || program.instructions() != expected
+    {
+        return Err(VmError::UnsupportedProof(
+            "S-two Phase 5 currently proves only the exact shipped `programs/addition.tvm` fixture; broader arithmetic-subset AIR coverage remains internal"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn reconstruct_state_trace_from_claim(
+    claim: &VanillaStarkExecutionClaim,
+) -> Result<Vec<MachineState>> {
+    let mut runtime = NativeInterpreter::new(
+        claim.program.clone(),
+        claim.attention_mode.clone(),
+        claim.steps,
+    );
+    let result = runtime.run()?;
+    if !result.halted {
+        return Err(VmError::UnsupportedProof(format!(
+            "S-two arithmetic subset verification expected halted execution after {} steps",
+            claim.steps
+        )));
+    }
+    if result.steps != claim.steps {
+        return Err(VmError::InvalidConfig(format!(
+            "S-two arithmetic subset verification re-executed {} steps, expected {}",
+            result.steps, claim.steps
+        )));
+    }
+    if result.final_state != claim.final_state {
+        return Err(VmError::InvalidConfig(
+            "S-two arithmetic subset verification re-executed final state does not match claim"
+                .to_string(),
+        ));
+    }
+    Ok(runtime.trace().to_vec())
+}
+
+#[derive(Clone)]
+struct TraceBundle {
+    log_size: u32,
+    preprocessed_rows: Vec<PreprocessedRow>,
+    preprocessed_trace: Vec<CircleEvaluation<CpuBackend, BaseField, BitReversedOrder>>,
+    base_trace: Vec<CircleEvaluation<CpuBackend, BaseField, BitReversedOrder>>,
+}
+
+fn build_trace_bundle(program: &Program, states: &[MachineState]) -> Result<TraceBundle> {
+    let real_rows = states.len().max(1);
+    let row_count = real_rows.next_power_of_two();
+    let log_size = row_count.ilog2();
+    let preprocessed_rows = build_preprocessed_rows(program, states, row_count)?;
+    let preprocessed_trace =
+        preprocessed_trace(&preprocessed_rows, log_size, program.memory_size());
+    let base_trace = base_trace(states, log_size, program.memory_size());
+    Ok(TraceBundle {
+        log_size,
+        preprocessed_rows,
+        preprocessed_trace,
+        base_trace,
+    })
+}
+
+fn build_preprocessed_rows(
+    program: &Program,
+    states: &[MachineState],
+    row_count: usize,
+) -> Result<Vec<PreprocessedRow>> {
+    let last_state = states.last().expect("non-empty state trace");
+    let mut rows = Vec::with_capacity(row_count);
+    for row_index in 0..row_count {
+        let row = if row_index + 1 < states.len() {
+            let state = &states[row_index];
+            let instruction = program.instruction_at(state.pc)?;
+            PreprocessedRow::from_instruction(
+                instruction,
+                program.memory_size(),
+                row_index == 0,
+                row_index + 1 == row_count,
+            )
+        } else {
+            PreprocessedRow::synthetic_halt(
+                program.memory_size(),
+                row_index == 0,
+                row_index + 1 == row_count,
+            )
+        };
+        rows.push(row);
+    }
+    debug_assert!(last_state.halted);
+    Ok(rows)
+}
+
+fn preprocessed_trace(
+    rows: &[PreprocessedRow],
+    log_size: u32,
+    memory_size: usize,
+) -> Vec<CircleEvaluation<CpuBackend, BaseField, BitReversedOrder>> {
+    let row_count = 1usize << log_size;
+    let domain = CanonicCoset::new(log_size).circle_domain();
+    let mut columns = (0..preprocessed_column_ids(memory_size).len())
+        .map(|_| Col::<CpuBackend, BaseField>::zeros(row_count))
+        .collect::<Vec<_>>();
+
+    for (row_index, row) in rows.iter().enumerate() {
+        let mut values = row.column_values();
+        values.extend(row.address_flags.iter().map(|value| base_u32(*value)));
+        for (column_index, value) in values.into_iter().enumerate() {
+            columns[column_index].set(row_index, value);
+        }
+    }
+
+    columns
+        .into_iter()
+        .map(|column| {
+            CircleEvaluation::<CpuBackend, BaseField, NaturalOrder>::new(domain, column)
+                .bit_reverse()
+        })
+        .collect()
+}
+
+fn base_trace(
+    states: &[MachineState],
+    log_size: u32,
+    memory_size: usize,
+) -> Vec<CircleEvaluation<CpuBackend, BaseField, BitReversedOrder>> {
+    let row_count = 1usize << log_size;
+    let layout = TraceLayout::new(memory_size);
+    let domain = CanonicCoset::new(log_size).circle_domain();
+    let mut columns = (0..layout.total_width())
+        .map(|_| Col::<CpuBackend, BaseField>::zeros(row_count))
+        .collect::<Vec<_>>();
+
+    let last_state = states.last().expect("non-empty state trace");
+    for row_index in 0..row_count {
+        let current = if row_index + 1 < states.len() {
+            &states[row_index]
+        } else {
+            last_state
+        };
+        let next = if row_index + 1 < states.len() {
+            &states[row_index + 1]
+        } else {
+            last_state
+        };
+        let current_row = state_values(current);
+        let next_row = state_values(next);
+        for (column_index, value) in current_row.into_iter().enumerate() {
+            columns[column_index].set(row_index, value);
+        }
+        for (offset, value) in next_row.into_iter().enumerate() {
+            columns[layout.next_prefix() + offset].set(row_index, value);
+        }
+    }
+
+    columns
+        .into_iter()
+        .map(|column| {
+            CircleEvaluation::<CpuBackend, BaseField, NaturalOrder>::new(domain, column)
+                .bit_reverse()
+        })
+        .collect()
+}
+
+fn constrain_public_state<E: EvalAtRow>(
+    eval: &mut E,
+    layout: &TraceLayout,
+    _is_initial: bool,
+    selector: E::F,
+    state: &PublicState,
+    current_pc: &E::F,
+    current_acc: &E::F,
+    current_sp: &E::F,
+    current_zero: &E::F,
+    current_carry: &E::F,
+    current_halted: &E::F,
+    current_memory: &[E::F],
+) {
+    eval.add_constraint(selector.clone() * (current_pc.clone() - base_u8_field::<E>(state.pc)));
+    eval.add_constraint(selector.clone() * (current_acc.clone() - base_i16_field::<E>(state.acc)));
+    eval.add_constraint(selector.clone() * (current_sp.clone() - base_u8_field::<E>(state.sp)));
+    eval.add_constraint(
+        selector.clone() * (current_zero.clone() - bool_field::<E>(state.zero_flag)),
+    );
+    eval.add_constraint(
+        selector.clone() * (current_carry.clone() - bool_field::<E>(state.carry_flag)),
+    );
+    eval.add_constraint(
+        selector.clone() * (current_halted.clone() - bool_field::<E>(state.halted)),
+    );
+    for index in 0..layout.memory_size {
+        eval.add_constraint(
+            selector.clone()
+                * (current_memory[index].clone() - base_i16_field::<E>(state.memory[index])),
+        );
+    }
+}
+
+fn state_values(state: &MachineState) -> Vec<BaseField> {
+    let mut values = Vec::with_capacity(7 + state.memory.len());
+    values.push(base_u32(u32::from(state.pc)));
+    values.push(base_i16(state.acc));
+    values.push(base_u32(u32::from(state.sp)));
+    values.push(bool_base(state.zero_flag));
+    values.push(bool_base(state.carry_flag));
+    values.push(bool_base(state.halted));
+    values.push(acc_inverse_base(state.acc));
+    values.extend(state.memory.iter().copied().map(base_i16));
+    values
+}
+
+fn preprocessed_column_ids(memory_size: usize) -> Vec<PreProcessedColumnId> {
+    let mut ids: Vec<_> = OPCODE_COLUMN_NAMES
+        .iter()
+        .map(|name| column_id(name))
+        .collect();
+    ids.push(column_id(IMMEDIATE_COLUMN));
+    ids.push(column_id(JUMP_TARGET_COLUMN));
+    ids.push(column_id(FIRST_ROW_COLUMN));
+    ids.push(column_id(LAST_ROW_COLUMN));
+    ids.extend((0..memory_size).map(|index| column_id(&address_column_name(index))));
+    ids
+}
+
+fn address_column_name(index: usize) -> String {
+    format!("phase5/arithmetic/address/{index}")
+}
+
+fn column_id(id: &str) -> PreProcessedColumnId {
+    PreProcessedColumnId { id: id.to_string() }
+}
+
+impl PublicState {
+    fn from_initial_memory(initial_memory: &[i16]) -> Self {
+        let initial = MachineState::with_memory(initial_memory.to_vec());
+        Self::from_machine_state(initial)
+    }
+
+    fn from_machine_state(state: MachineState) -> Self {
+        Self {
+            pc: state.pc,
+            acc: state.acc,
+            sp: state.sp,
+            zero_flag: state.zero_flag,
+            carry_flag: state.carry_flag,
+            halted: state.halted,
+            memory: state.memory,
+        }
+    }
+}
+
+impl PreprocessedRow {
+    fn from_instruction(
+        instruction: Instruction,
+        memory_size: usize,
+        is_first_row: bool,
+        is_last_row: bool,
+    ) -> Self {
+        let mut row = Self::synthetic_halt(memory_size, is_first_row, is_last_row);
+        row.opcode_flags = opcode_flags(instruction);
+        row.immediate = match instruction {
+            Instruction::LoadImmediate(value) | Instruction::AddImmediate(value) => value,
+            _ => 0,
+        };
+        row.jump_target = match instruction {
+            Instruction::Jump(target) | Instruction::JumpIfZero(target) => target,
+            _ => 0,
+        };
+        let address = match instruction {
+            Instruction::Load(address)
+            | Instruction::Store(address)
+            | Instruction::AddMemory(address)
+            | Instruction::SubMemory(address)
+            | Instruction::MulMemory(address) => Some(address),
+            _ => None,
+        };
+        if let Some(address) = address {
+            row.address_flags[address as usize] = 1;
+        }
+        row
+    }
+
+    fn synthetic_halt(memory_size: usize, is_first_row: bool, is_last_row: bool) -> Self {
+        Self {
+            opcode_flags: opcode_flags(Instruction::Halt),
+            immediate: 0,
+            jump_target: 0,
+            address_flags: vec![0; memory_size],
+            is_first_row,
+            is_last_row,
+        }
+    }
+
+    fn column_values(&self) -> Vec<BaseField> {
+        let mut values = self
+            .opcode_flags
+            .iter()
+            .map(|value| base_u32(*value))
+            .collect::<Vec<_>>();
+        values.push(base_i16(self.immediate));
+        values.push(base_u32(u32::from(self.jump_target)));
+        values.push(bool_base(self.is_first_row));
+        values.push(bool_base(self.is_last_row));
+        values
+    }
+}
+
+fn opcode_flags(instruction: Instruction) -> [u32; 11] {
+    let mut flags = [0u32; 11];
+    let index = match instruction {
+        Instruction::Nop => 0,
+        Instruction::LoadImmediate(_) => 1,
+        Instruction::Load(_) => 2,
+        Instruction::Store(_) => 3,
+        Instruction::AddImmediate(_) => 4,
+        Instruction::AddMemory(_) => 5,
+        Instruction::SubMemory(_) => 6,
+        Instruction::MulMemory(_) => 7,
+        Instruction::Jump(_) => 8,
+        Instruction::JumpIfZero(_) => 9,
+        Instruction::Halt => 10,
+        other => panic!("instruction `{other}` is outside Phase 5 arithmetic subset"),
+    };
+    flags[index] = 1;
+    flags
+}
+
+fn acc_inverse_base(value: i16) -> BaseField {
+    if value == 0 {
+        BaseField::zero()
+    } else {
+        base_i16(value).inverse()
+    }
+}
+
+fn base_i16(value: i16) -> BaseField {
+    if value >= 0 {
+        BaseField::from_u32_unchecked(value as u32)
+    } else {
+        BaseField::from_u32_unchecked((M31_MODULUS as i64 + value as i64) as u32)
+    }
+}
+
+fn base_u32(value: u32) -> BaseField {
+    BaseField::from_u32_unchecked(value)
+}
+
+fn bool_base(value: bool) -> BaseField {
+    base_u32(u32::from(value))
+}
+
+fn base_u8_field<E: EvalAtRow>(value: u8) -> E::F {
+    E::F::from(base_u32(u32::from(value)))
+}
+
+fn base_i16_field<E: EvalAtRow>(value: i16) -> E::F {
+    E::F::from(base_i16(value))
+}
+
+fn bool_field<E: EvalAtRow>(value: bool) -> E::F {
+    E::F::from(bool_base(value))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{ProgramCompiler, TransformerVmConfig};
+    use stwo::core::pcs::utils::TreeVec;
+    use stwo::prover::backend::Column;
+    use stwo_constraint_framework::assert_constraints_on_trace;
+
+    fn compile_program(path: &str) -> Program {
+        let source = std::fs::read_to_string(path).expect("program source");
+        ProgramCompiler
+            .compile_source(&source, TransformerVmConfig::default())
+            .expect("compile")
+            .program()
+            .clone()
+    }
+
+    #[test]
+    fn phase5_subset_accepts_fixture_matrix_programs() {
+        for path in [
+            "programs/addition.tvm",
+            "programs/multiply.tvm",
+            "programs/counter.tvm",
+            "programs/dot_product.tvm",
+        ] {
+            let program = compile_program(path);
+            super::super::validate_phase2_proof_shape(&program, &Attention2DMode::AverageHard)
+                .unwrap_or_else(|error| panic!("{path} should be accepted: {error}"));
+        }
+    }
+
+    #[test]
+    fn phase5_opcode_flags_cover_subset() {
+        assert_eq!(opcode_flags(Instruction::LoadImmediate(1))[1], 1);
+        assert_eq!(opcode_flags(Instruction::JumpIfZero(3))[9], 1);
+        assert_eq!(opcode_flags(Instruction::Halt)[10], 1);
+    }
+
+    #[test]
+    fn phase5_trace_bundle_pads_to_power_of_two() {
+        let states = vec![
+            MachineState::with_memory(vec![0, 0, 0, 0]),
+            MachineState {
+                pc: 1,
+                acc: 5,
+                sp: 4,
+                zero_flag: false,
+                carry_flag: false,
+                halted: false,
+                memory: vec![0, 0, 0, 0],
+            },
+            MachineState {
+                pc: 2,
+                acc: 8,
+                sp: 4,
+                zero_flag: false,
+                carry_flag: false,
+                halted: true,
+                memory: vec![0, 0, 0, 0],
+            },
+        ];
+        let trace = build_trace_bundle(&compile_program("programs/addition.tvm"), &states).unwrap();
+        assert_eq!(trace.log_size, 2);
+        assert_eq!(trace.base_trace.len(), 22);
+    }
+
+    fn assert_program_trace_satisfies_constraints(path: &str) {
+        let program = compile_program(path);
+        let mut runtime = NativeInterpreter::new(program.clone(), Attention2DMode::AverageHard, 64);
+        let result = runtime.run().expect("run program");
+        assert!(result.halted);
+
+        let states = runtime.trace().to_vec();
+        let trace = build_trace_bundle(&program, &states).expect("trace bundle");
+        let final_state = result.final_state.clone();
+        let eval_state = Phase5ArithmeticSubsetEval {
+            log_size: trace.log_size,
+            memory_size: program.memory_size(),
+            initial_state: PublicState::from_initial_memory(program.initial_memory()),
+            final_state: PublicState::from_machine_state(final_state.clone()),
+        };
+        let preprocessed = trace
+            .preprocessed_trace
+            .iter()
+            .map(|column| column.values.to_cpu())
+            .collect::<Vec<_>>();
+        let base = trace
+            .base_trace
+            .iter()
+            .map(|column| column.values.to_cpu())
+            .collect::<Vec<_>>();
+        let tree = TreeVec(vec![
+            preprocessed.iter().collect::<Vec<_>>(),
+            base.iter().collect::<Vec<_>>(),
+        ]);
+
+        assert_constraints_on_trace(
+            &tree,
+            trace.log_size,
+            |eval| {
+                let _ = eval_state.evaluate(eval);
+            },
+            SecureField::zero(),
+        );
+    }
+
+    #[test]
+    fn phase5_dot_product_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/dot_product.tvm");
+    }
+
+    #[test]
+    fn phase5_counter_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/counter.tvm");
+    }
+
+    #[test]
+    fn phase5_multiply_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/multiply.tvm");
+    }
+}

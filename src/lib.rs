@@ -73,8 +73,11 @@ pub use stwo_backend::{
 pub use stwo_backend::{
     phase3_arithmetic_component_metadata, phase3_arithmetic_preprocessed_columns,
     phase3_binary_step_lookup_component_metadata, phase3_lookup_preprocessed_columns,
-    phase3_lookup_table_rows, Phase3ArithmeticComponentMetadata, Phase3LookupComponentMetadata,
-    Phase3LookupTableRow, Phase3TreeSubspan,
+    phase3_lookup_table_rows, phase5_normalization_lookup_component_metadata,
+    prove_phase5_normalization_lookup_demo, verify_phase5_normalization_lookup_demo,
+    Phase3ArithmeticComponentMetadata, Phase3LookupComponentMetadata, Phase3LookupTableRow,
+    Phase3TreeSubspan, Phase5NormalizationComponentMetadata,
+    STWO_NORMALIZATION_PROOF_VERSION_PHASE5,
 };
 pub use tui::run_execution_tui;
 pub use verification::{verify_engines, verify_model_against_native, ExecutionComparison};

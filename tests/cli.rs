@@ -336,8 +336,8 @@ fn cli_prove_stark_requires_stwo_feature_flag() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
-fn cli_prove_stark_reports_phase2_placeholder_on_supported_subset() {
-    let proof_path = unique_temp_dir("cli-stark-proof-stwo-phase2").with_extension("json");
+fn cli_can_prove_and_verify_stwo_addition_fixture() {
+    let proof_path = unique_temp_dir("cli-stark-proof-stwo-phase5-addition").with_extension("json");
 
     let mut prove = Command::cargo_bin("tvm").expect("binary");
     prove
@@ -348,10 +348,27 @@ fn cli_prove_stark_reports_phase2_placeholder_on_supported_subset() {
         .arg("--backend")
         .arg("stwo")
         .assert()
-        .failure()
-        .stderr(predicate::str::contains(
-            "S-two backend Phase 2 adapter seam is present",
-        ));
+        .success();
+
+    let proof_json = std::fs::read_to_string(&proof_path).expect("proof json");
+    assert!(proof_json.contains("\"proof_backend\": \"stwo\""));
+    assert!(proof_json.contains("stwo-phase5-arithmetic-subset-v1"));
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stark")
+        .arg(&proof_path)
+        .arg("--reexecute")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("proof_backend: stwo"))
+        .stdout(predicate::str::contains(
+            "proof_backend_version: stwo-phase5-arithmetic-subset-v1",
+        ))
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains("reexecuted_equivalence: true"));
+
+    let _ = std::fs::remove_file(proof_path);
 }
 
 #[test]
@@ -371,6 +388,26 @@ fn cli_prove_stark_rejects_program_outside_stwo_phase2_subset() {
         .failure()
         .stderr(predicate::str::contains(
             "outside the current S-two Phase 2 arithmetic subset",
+        ));
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_prove_stark_rejects_phase5_programs_outside_exact_addition_fixture() {
+    let proof_path = unique_temp_dir("cli-stark-proof-stwo-phase5-dot").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stark")
+        .arg("programs/dot_product.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "currently proves only the exact shipped `programs/addition.tvm` fixture",
         ));
 }
 
