@@ -690,19 +690,11 @@ impl ProofBackendDriver for StwoBackend {
         stwo_backend::STWO_BACKEND_VERSION_PHASE2
     }
 
-    fn prove(&self, witness: PreparedExecutionWitness) -> Result<VanillaStarkExecutionProof> {
-        stwo_backend::validate_phase2_proof_shape(
-            &witness.claim.program,
-            &witness.claim.attention_mode,
-        )?;
+    fn prove(&self, _witness: PreparedExecutionWitness) -> Result<VanillaStarkExecutionProof> {
         Err(stwo_backend::phase2_placeholder_prove_error())
     }
 
-    fn verify(&self, proof: &VanillaStarkExecutionProof, _air: &VmAir) -> Result<bool> {
-        stwo_backend::validate_phase2_proof_shape(
-            &proof.claim.program,
-            &proof.claim.attention_mode,
-        )?;
+    fn verify(&self, _proof: &VanillaStarkExecutionProof, _air: &VmAir) -> Result<bool> {
         Err(stwo_backend::phase2_placeholder_verify_error())
     }
 }
@@ -746,6 +738,9 @@ pub fn prove_execution_stark_with_backend_and_options(
     options: VanillaStarkProofOptions,
 ) -> Result<VanillaStarkExecutionProof> {
     validate_proof_inputs(model.program(), &model.config().attention_mode, backend)?;
+    if matches!(backend, StarkProofBackend::Stwo) {
+        return Err(stwo_backend::phase2_placeholder_prove_error());
+    }
     validate_stark_options(&options)?;
     let witness = prepare_execution_witness(model, max_steps, options)?;
     backend_driver(backend).prove(witness)
@@ -770,6 +765,9 @@ pub fn verify_execution_stark_with_backend_and_policy(
     validate_backend_metadata(proof, backend)?;
     validate_statement_metadata(&proof.claim)?;
     validate_proof_inputs(&proof.claim.program, &proof.claim.attention_mode, backend)?;
+    if matches!(backend, StarkProofBackend::Stwo) {
+        return Err(stwo_backend::phase2_placeholder_verify_error());
+    }
     validate_stark_options(&proof.claim.options)?;
     validate_verification_policy(&proof.claim.options, &policy)?;
     validate_public_state(&proof.claim.program, &proof.claim.final_state)?;

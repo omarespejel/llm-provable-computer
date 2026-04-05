@@ -31,6 +31,12 @@ pub fn validate_phase2_proof_shape(
 ) -> Result<()> {
     ensure_feature_enabled()?;
 
+    if program.instructions().is_empty() {
+        return Err(VmError::UnsupportedProof(
+            "S-two backend Phase 2 does not accept empty programs".to_string(),
+        ));
+    }
+
     if !matches!(attention_mode, Attention2DMode::AverageHard) {
         return Err(VmError::UnsupportedProof(format!(
             "S-two backend Phase 2 supports only `average-hard` attention, got `{attention_mode}`"
