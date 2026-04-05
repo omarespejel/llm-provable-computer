@@ -69,5 +69,11 @@ pub use stwo_backend::{
     STWO_BACKEND_FEATURE_NAME, STWO_BACKEND_VERSION_PHASE2,
     STWO_CONSTRAINT_FRAMEWORK_VERSION_PHASE2, STWO_CRATE_VERSION_PHASE2,
 };
+#[cfg(feature = "stwo-backend")]
+pub use stwo_backend::{
+    phase3_arithmetic_component_metadata, phase3_arithmetic_preprocessed_columns,
+    phase3_binary_step_lookup_component_metadata, phase3_lookup_preprocessed_columns,
+    Phase3ArithmeticComponentMetadata, Phase3LookupComponentMetadata, Phase3TreeSubspan,
+};
 pub use tui::run_execution_tui;
 pub use verification::{verify_engines, verify_model_against_native, ExecutionComparison};
