@@ -16,6 +16,7 @@ path = "src/bin/tvm.rs"
 default = []
 burn-model = ["dep:burn"]
 onnx-export = ["dep:onnx-protobuf", "dep:protobuf", "dep:tract-onnx"]
+stwo-backend = ["dep:stwo", "dep:stwo-constraint-framework"]
 full = ["burn-model", "onnx-export"]
 
 [dependencies]
@@ -30,6 +31,8 @@ ratatui = "0.29.0"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 sha3 = "0.10"
+stwo = { version = "2.2.0", default-features = false, features = ["std"], optional = true }
+stwo-constraint-framework = { version = "2.2.0", default-features = false, features = ["std"], optional = true }
 thiserror = "2.0.12"
 tract-onnx = { version = "0.23.0-dev.2", optional = true }
 
