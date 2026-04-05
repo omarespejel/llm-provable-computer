@@ -175,6 +175,7 @@ fn cli_stark_help_describes_profile_flags() {
         .assert()
         .success()
         .stdout(predicate::str::contains("--stark-profile"))
+        .stdout(predicate::str::contains("--backend"))
         .stdout(predicate::str::contains("production-v1"));
 
     let mut verify_help = Command::cargo_bin("tvm").expect("binary");
@@ -184,6 +185,7 @@ fn cli_stark_help_describes_profile_flags() {
         .assert()
         .success()
         .stdout(predicate::str::contains("--verification-profile"))
+        .stdout(predicate::str::contains("--backend"))
         .stdout(predicate::str::contains("production-v1"));
 }
 
@@ -274,6 +276,10 @@ fn cli_can_prove_and_verify_stark_execution() {
         .arg(&proof_path)
         .assert()
         .success()
+        .stdout(predicate::str::contains("proof_backend: vanilla"))
+        .stdout(predicate::str::contains(
+            "proof_backend_version: vanilla-v1",
+        ))
         .stdout(predicate::str::contains("statement_version: statement-v1"))
         .stdout(predicate::str::contains(
             "semantic_scope: native_isa_execution_with_transformer_native_equivalence_check",
@@ -293,6 +299,10 @@ fn cli_can_prove_and_verify_stark_execution() {
         .arg("--reexecute")
         .assert()
         .success()
+        .stdout(predicate::str::contains("proof_backend: vanilla"))
+        .stdout(predicate::str::contains(
+            "proof_backend_version: vanilla-v1",
+        ))
         .stdout(predicate::str::contains("statement_version: statement-v1"))
         .stdout(predicate::str::contains("commitment_program_hash:"))
         .stdout(predicate::str::contains("reexecuted_equivalence: true"))
@@ -302,6 +312,116 @@ fn cli_can_prove_and_verify_stark_execution() {
         .stdout(predicate::str::contains("instructions: 3"));
 
     let _ = std::fs::remove_file(proof_path);
+}
+
+#[test]
+#[cfg(not(feature = "stwo-backend"))]
+fn cli_prove_stark_requires_stwo_feature_flag() {
+    let proof_path = unique_temp_dir("cli-stark-proof-stwo").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stark")
+        .arg("programs/addition.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "S-two backend requires building with `--features stwo-backend`",
+        ));
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_prove_stark_reports_phase2_placeholder_on_supported_subset() {
+    let proof_path = unique_temp_dir("cli-stark-proof-stwo-phase2").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stark")
+        .arg("programs/addition.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "S-two backend Phase 2 adapter seam is present",
+        ));
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_prove_stark_rejects_program_outside_stwo_phase2_subset() {
+    let proof_path = unique_temp_dir("cli-stark-proof-stwo-subset").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stark")
+        .arg("programs/subroutine_addition.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "outside the current S-two Phase 2 arithmetic subset",
+        ));
+}
+
+#[test]
+fn cli_verify_stark_rejects_backend_override_mismatch() {
+    let proof_path = unique_temp_dir("cli-stark-proof-backend-mismatch").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stark")
+        .arg("programs/addition.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stark")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "proof backend override `stwo` does not match encoded proof backend `vanilla`",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+}
+
+#[test]
+fn cli_runs_neural_style_programs_with_verify_native() {
+    let cases = [
+        ("programs/dot_product.tvm", "70"),
+        ("programs/matmul_2x2.tvm", "134"),
+        ("programs/single_neuron.tvm", "1"),
+    ];
+
+    for (program, expected_acc) in cases {
+        let mut run = Command::cargo_bin("tvm").expect("binary");
+        run.arg("run")
+            .arg(program)
+            .arg("--verify-native")
+            .arg("--max-steps")
+            .arg("128")
+            .assert()
+            .success()
+            .stdout(predicate::str::contains(format!("acc: {expected_acc}")))
+            .stdout(predicate::str::contains("verified_against_native: true"));
+    }
 }
 
 #[test]

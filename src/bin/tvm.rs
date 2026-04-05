@@ -17,11 +17,12 @@ use clap::{Parser, Subcommand, ValueEnum};
 use llm_provable_computer::verify_engines;
 use llm_provable_computer::{
     conjectured_security_bits, load_execution_stark_proof, production_v1_stark_options,
-    prove_execution_stark_with_options, run_execution_tui, save_execution_stark_proof,
-    verify_execution_stark_with_policy, verify_execution_stark_with_reexecution_and_policy,
-    verify_model_against_native, Attention2DMode, ExecutionResult, ExecutionRuntime,
-    ExecutionTraceEntry, MachineState, NativeInterpreter, ProgramCompiler, StarkVerificationPolicy,
-    TransformerVm, TransformerVmConfig, VanillaStarkProofOptions, VmError,
+    prove_execution_stark_with_backend_and_options, run_execution_tui, save_execution_stark_proof,
+    verify_execution_stark_with_backend_and_policy,
+    verify_execution_stark_with_reexecution_and_policy, verify_model_against_native,
+    Attention2DMode, ExecutionResult, ExecutionRuntime, ExecutionTraceEntry, MachineState,
+    NativeInterpreter, ProgramCompiler, StarkProofBackend, StarkVerificationPolicy, TransformerVm,
+    TransformerVmConfig, VanillaStarkProofOptions, VmError,
     PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS, PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS,
 };
 #[cfg(feature = "onnx-export")]
@@ -163,6 +164,9 @@ enum Command {
         /// Overrides the selected profile.
         #[arg(long)]
         stark_security_level: Option<usize>,
+        /// Proof backend to use.
+        #[arg(long, value_enum, default_value_t = CliProofBackend::Vanilla)]
+        backend: CliProofBackend,
     },
     /// Verify a previously generated STARK proof.
     VerifyStark {
@@ -180,6 +184,9 @@ enum Command {
         /// Apply strict verifier policy (enforces at least 80-bit conjectured security and reexecution).
         #[arg(long)]
         strict: bool,
+        /// Optional backend override. When omitted, verification uses the backend encoded in the proof.
+        #[arg(long, value_enum)]
+        backend: Option<CliProofBackend>,
     },
     /// Generate a research v2 one-step semantic equivalence artifact (transformer vs ONNX).
     ResearchV2Step {
@@ -234,7 +241,8 @@ enum Command {
         /// Program paths to include in the matrix (repeatable).
         #[arg(long = "program")]
         programs: Vec<PathBuf>,
-        /// Include the built-in default suite (addition, counter, fibonacci, multiply, factorial).
+        /// Include the built-in default suite (addition, counter, fibonacci, multiply,
+        /// factorial_recursive, dot_product, matmul_2x2, single_neuron).
         #[arg(long)]
         include_default_suite: bool,
         /// Maximum number of execution steps to check per program.
@@ -268,6 +276,30 @@ enum CliExecutionEngine {
 enum CliStarkProfile {
     Default,
     ProductionV1,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+enum CliProofBackend {
+    Vanilla,
+    Stwo,
+}
+
+impl CliProofBackend {
+    fn backend(self) -> StarkProofBackend {
+        match self {
+            Self::Vanilla => StarkProofBackend::Vanilla,
+            Self::Stwo => StarkProofBackend::Stwo,
+        }
+    }
+}
+
+impl std::fmt::Display for CliProofBackend {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Vanilla => f.write_str("vanilla"),
+            Self::Stwo => f.write_str("stwo"),
+        }
+    }
 }
 
 impl CliStarkProfile {
@@ -603,6 +635,7 @@ fn run() -> llm_provable_computer::Result<()> {
             stark_expansion_factor,
             stark_num_colinearity_checks,
             stark_security_level,
+            backend,
         } => {
             let mut options = stark_profile.proof_options();
             if let Some(value) = stark_expansion_factor {
@@ -621,6 +654,7 @@ fn run() -> llm_provable_computer::Result<()> {
                 layers,
                 attention_mode,
                 stark_profile,
+                backend,
                 options,
             )?
         }
@@ -630,12 +664,14 @@ fn run() -> llm_provable_computer::Result<()> {
             reexecute,
             min_conjectured_security,
             strict,
+            backend,
         } => verify_stark_command(
             &proof,
             verification_profile,
             reexecute,
             min_conjectured_security,
             strict,
+            backend,
         )?,
         Command::ResearchV2Step {
             program,
@@ -759,12 +795,18 @@ fn prove_stark_command(
     layers: usize,
     attention_mode: Attention2DMode,
     stark_profile: CliStarkProfile,
+    backend: CliProofBackend,
     stark_options: VanillaStarkProofOptions,
 ) -> llm_provable_computer::Result<()> {
     let model = compile_model(program, layers, attention_mode)?;
     let profile_options = stark_profile.proof_options();
     let profile_overridden = stark_options != profile_options;
-    let proof = prove_execution_stark_with_options(&model, max_steps, stark_options)?;
+    let proof = prove_execution_stark_with_backend_and_options(
+        &model,
+        max_steps,
+        backend.backend(),
+        stark_options,
+    )?;
     let equivalence = proof.claim.equivalence.as_ref().ok_or_else(|| {
         VmError::InvalidConfig(
             "prove-stark produced a claim without equivalence metadata".to_string(),
@@ -783,6 +825,8 @@ fn prove_stark_command(
     println!("carry_flag: {}", proof.claim.final_state.carry_flag);
     println!("memory: {:?}", proof.claim.final_state.memory);
     println!("attention_mode: {}", proof.claim.attention_mode);
+    println!("proof_backend: {}", proof.proof_backend);
+    println!("proof_backend_version: {}", proof.proof_backend_version);
     println!("statement_version: {}", proof.claim.statement_version);
     println!("semantic_scope: {}", proof.claim.semantic_scope);
     println!(
@@ -859,6 +903,7 @@ fn verify_stark_command(
     reexecute: bool,
     min_conjectured_security: u32,
     strict: bool,
+    backend: Option<CliProofBackend>,
 ) -> llm_provable_computer::Result<()> {
     let proof = load_execution_stark_proof(proof_path)?;
     let policy = StarkVerificationPolicy {
@@ -872,10 +917,19 @@ fn verify_stark_command(
         },
     };
     let effective_reexecute = reexecute || strict || verification_profile.enforces_reexecution();
+    let backend = backend
+        .map(CliProofBackend::backend)
+        .unwrap_or(proof.proof_backend);
     let verified = if effective_reexecute {
+        if backend != proof.proof_backend {
+            return Err(VmError::InvalidConfig(format!(
+                "proof backend override `{backend}` does not match encoded proof backend `{}`",
+                proof.proof_backend
+            )));
+        }
         verify_execution_stark_with_reexecution_and_policy(&proof, policy)?
     } else {
-        verify_execution_stark_with_policy(&proof, policy)?
+        verify_execution_stark_with_backend_and_policy(&proof, backend, policy)?
     };
     if !verified {
         return Err(VmError::InvalidConfig(format!(
@@ -895,6 +949,8 @@ fn verify_stark_command(
     println!("carry_flag: {}", proof.claim.final_state.carry_flag);
     println!("memory: {:?}", proof.claim.final_state.memory);
     println!("attention_mode: {}", proof.claim.attention_mode);
+    println!("proof_backend: {}", proof.proof_backend);
+    println!("proof_backend_version: {}", proof.proof_backend_version);
     println!("statement_version: {}", proof.claim.statement_version);
     println!("semantic_scope: {}", proof.claim.semantic_scope);
     println!(
@@ -1586,6 +1642,9 @@ fn research_v2_default_program_suite() -> Vec<PathBuf> {
         PathBuf::from("programs/fibonacci.tvm"),
         PathBuf::from("programs/multiply.tvm"),
         PathBuf::from("programs/factorial_recursive.tvm"),
+        PathBuf::from("programs/dot_product.tvm"),
+        PathBuf::from("programs/matmul_2x2.tvm"),
+        PathBuf::from("programs/single_neuron.tvm"),
     ]
 }
 
@@ -1697,6 +1756,14 @@ mod tests {
     #[test]
     fn matrix_mismatch_policy_allows_with_allow_flag() {
         enforce_research_v2_matrix_mismatch_policy(1, true).expect("allow mismatch");
+    }
+
+    #[test]
+    fn default_matrix_suite_contains_neural_style_programs() {
+        let suite = research_v2_default_program_suite();
+        assert!(suite.contains(&PathBuf::from("programs/dot_product.tvm")));
+        assert!(suite.contains(&PathBuf::from("programs/matmul_2x2.tvm")));
+        assert!(suite.contains(&PathBuf::from("programs/single_neuron.tvm")));
     }
 }
 
