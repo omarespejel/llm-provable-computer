@@ -691,7 +691,7 @@ impl ProofBackendDriver for StwoBackend {
     fn backend_version(&self) -> &'static str {
         #[cfg(feature = "stwo-backend")]
         {
-            stwo_backend::STWO_BACKEND_VERSION_PHASE4
+            stwo_backend::STWO_BACKEND_VERSION_PHASE5
         }
         #[cfg(not(feature = "stwo-backend"))]
         {
@@ -702,7 +702,7 @@ impl ProofBackendDriver for StwoBackend {
     fn prove(&self, witness: PreparedExecutionWitness) -> Result<VanillaStarkExecutionProof> {
         #[cfg(feature = "stwo-backend")]
         {
-            return stwo_backend::prove_phase4_addition_fixture(witness);
+            return stwo_backend::prove_phase5_arithmetic_subset(witness);
         }
         #[cfg(not(feature = "stwo-backend"))]
         {
@@ -714,7 +714,7 @@ impl ProofBackendDriver for StwoBackend {
     fn verify(&self, proof: &VanillaStarkExecutionProof, _air: &VmAir) -> Result<bool> {
         #[cfg(feature = "stwo-backend")]
         {
-            return stwo_backend::verify_phase4_addition_fixture(proof);
+            return stwo_backend::verify_phase5_arithmetic_subset(proof);
         }
         #[cfg(not(feature = "stwo-backend"))]
         {

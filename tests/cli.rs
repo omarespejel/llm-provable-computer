@@ -337,7 +337,7 @@ fn cli_prove_stark_requires_stwo_feature_flag() {
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_can_prove_and_verify_stwo_addition_fixture() {
-    let proof_path = unique_temp_dir("cli-stark-proof-stwo-phase4").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stark-proof-stwo-phase5-addition").with_extension("json");
 
     let mut prove = Command::cargo_bin("tvm").expect("binary");
     prove
@@ -352,17 +352,18 @@ fn cli_can_prove_and_verify_stwo_addition_fixture() {
 
     let proof_json = std::fs::read_to_string(&proof_path).expect("proof json");
     assert!(proof_json.contains("\"proof_backend\": \"stwo\""));
-    assert!(proof_json.contains("stwo-phase4-addition-v1"));
+    assert!(proof_json.contains("stwo-phase5-arithmetic-subset-v1"));
 
     let mut verify = Command::cargo_bin("tvm").expect("binary");
     verify
         .arg("verify-stark")
         .arg(&proof_path)
+        .arg("--reexecute")
         .assert()
         .success()
         .stdout(predicate::str::contains("proof_backend: stwo"))
         .stdout(predicate::str::contains(
-            "proof_backend_version: stwo-phase4-addition-v1",
+            "proof_backend_version: stwo-phase5-arithmetic-subset-v1",
         ))
         .stdout(predicate::str::contains("verified_stark: true"))
         .stdout(predicate::str::contains("reexecuted_equivalence: true"));
@@ -392,8 +393,8 @@ fn cli_prove_stark_rejects_program_outside_stwo_phase2_subset() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
-fn cli_prove_stark_rejects_supported_phase2_program_outside_phase4_fixture() {
-    let proof_path = unique_temp_dir("cli-stark-proof-stwo-phase4-shape").with_extension("json");
+fn cli_prove_stark_rejects_phase5_programs_outside_exact_addition_fixture() {
+    let proof_path = unique_temp_dir("cli-stark-proof-stwo-phase5-dot").with_extension("json");
 
     let mut prove = Command::cargo_bin("tvm").expect("binary");
     prove
@@ -406,7 +407,7 @@ fn cli_prove_stark_rejects_supported_phase2_program_outside_phase4_fixture() {
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "currently proves only the exact `programs/addition.tvm` fixture",
+            "currently proves only the exact shipped `programs/addition.tvm` fixture",
         ));
 }
 

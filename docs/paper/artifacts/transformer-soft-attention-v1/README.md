@@ -6,7 +6,7 @@ transformer-relevant fixture rather than only arithmetic microprograms.
 
 ## Generation
 
-Generated on 2026-04-06 from `main` after the `paper-v1-2026-04-06` freeze, using:
+Generated on 2026-04-06 Europe/Istanbul from `main` after the `paper-v1-2026-04-06` freeze, using:
 
 ```bash
 cargo run --features onnx-export --bin tvm -- \

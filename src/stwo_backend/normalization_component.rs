@@ -1,6 +1,6 @@
 use ark_ff::{One, Zero};
+use serde::{Deserialize, Serialize};
 use stwo::core::air::Component;
-use stwo::core::fields::m31::BaseField;
 use stwo::core::fields::qm31::SecureField;
 use stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId;
 use stwo_constraint_framework::{
@@ -8,6 +8,7 @@ use stwo_constraint_framework::{
 };
 
 relation!(Phase5NormalizationLookupRelation, 2);
+pub(crate) type Phase5NormalizationLookupElements = Phase5NormalizationLookupRelation;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Phase5NormalizationComponentMetadata {
@@ -22,7 +23,7 @@ pub struct Phase5NormalizationComponentMetadata {
     pub statement_contract: &'static str,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase5NormalizationTableRow {
     pub norm_sq: u16,
     pub inv_sqrt_q8: u16,
@@ -33,9 +34,11 @@ const PHASE5_NORM_TABLE_OUTPUT: &str = "phase5/norm/table_inv_sqrt_q8";
 const PHASE5_NORMALIZATION_SEMANTICS: &str =
     "bounded reciprocal-square-root normalization lookup pilot (Q8 fixed point)";
 
-#[derive(Debug, Clone, Copy)]
-struct Phase5NormalizationLookupEval {
+#[derive(Debug, Clone)]
+pub(crate) struct Phase5NormalizationLookupEval {
     log_size: u32,
+    lookup_elements: Phase5NormalizationLookupRelation,
+    _claimed_sum: SecureField,
 }
 
 impl FrameworkEval for Phase5NormalizationLookupEval {
@@ -52,22 +55,17 @@ impl FrameworkEval for Phase5NormalizationLookupEval {
         let inv_sqrt_q8 = eval.next_trace_mask();
         let table_norm_sq = eval.get_preprocessed_column(column_id(PHASE5_NORM_TABLE_INPUT));
         let table_inv_sqrt_q8 = eval.get_preprocessed_column(column_id(PHASE5_NORM_TABLE_OUTPUT));
-        let one = E::F::from(BaseField::from(1u32));
-
-        eval.add_constraint(norm_sq.clone() * (norm_sq.clone() - one.clone()));
-
-        let relation = Phase5NormalizationLookupRelation::dummy();
         eval.add_to_relation(RelationEntry::new(
-            &relation,
+            &self.lookup_elements,
             E::EF::one(),
             &[norm_sq, inv_sqrt_q8],
         ));
         eval.add_to_relation(RelationEntry::new(
-            &relation,
+            &self.lookup_elements,
             -E::EF::one(),
             &[table_norm_sq, table_inv_sqrt_q8],
         ));
-        eval.finalize_logup();
+        eval.finalize_logup_in_pairs();
         eval
     }
 }
@@ -75,12 +73,12 @@ impl FrameworkEval for Phase5NormalizationLookupEval {
 pub fn phase5_normalization_lookup_component_metadata(
     log_size: u32,
 ) -> Phase5NormalizationComponentMetadata {
-    let mut allocator = TraceLocationAllocator::new_with_preprocessed_columns(
+    let allocator = TraceLocationAllocator::new_with_preprocessed_columns(
         &phase5_normalization_preprocessed_columns(),
     );
-    let component = FrameworkComponent::new(
-        &mut allocator,
-        Phase5NormalizationLookupEval { log_size },
+    let component = phase5_normalization_component(
+        log_size,
+        Phase5NormalizationLookupRelation::dummy(),
         SecureField::zero(),
     );
     let mut logup_relations_per_row: Vec<_> = component
@@ -106,6 +104,24 @@ pub fn phase5_normalization_lookup_component_metadata(
         statement_contract:
             "statement-v1 preserved; normalization lookup primitive remains internal",
     }
+}
+
+pub(crate) fn phase5_normalization_component(
+    log_size: u32,
+    lookup_elements: Phase5NormalizationLookupRelation,
+    claimed_sum: SecureField,
+) -> FrameworkComponent<Phase5NormalizationLookupEval> {
+    FrameworkComponent::new(
+        &mut TraceLocationAllocator::new_with_preprocessed_columns(
+            &phase5_normalization_preprocessed_columns(),
+        ),
+        Phase5NormalizationLookupEval {
+            log_size,
+            lookup_elements,
+            _claimed_sum: claimed_sum,
+        },
+        claimed_sum,
+    )
 }
 
 pub fn phase5_normalization_preprocessed_columns() -> Vec<PreProcessedColumnId> {
@@ -151,7 +167,7 @@ mod tests {
     #[test]
     fn phase5_normalization_component_exposes_logup_relation() {
         let metadata = phase5_normalization_lookup_component_metadata(4);
-        assert_eq!(metadata.n_constraints, 3);
+        assert_eq!(metadata.n_constraints, 2);
         assert_eq!(
             metadata.preprocessed_columns,
             vec![
