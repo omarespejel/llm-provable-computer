@@ -1,6 +1,6 @@
 # Appendix: Section 4 Scaling Companion
 
-Snapshot date: **April 6, 2026**
+Snapshot date: **April 5, 2026**
 
 This appendix is a compact companion to Figure 1 in `docs/paper/stark-transformer-alignment-2026.md`. It gives exact ratios for the dense and sparse curves used in the figure and keeps the visual summary tied to explicit numeric values.
 
@@ -44,9 +44,10 @@ The machine-readable output used by this appendix is committed at:
 
 ## Table B2. Appendix-only Gemma 3 270M instantiation
 
-This table restores the more concrete Gemma-style numbers as an appendix-only supplement. The main text does **not** rely on these exact checkpoint parameters because the official Google Hugging Face raw config endpoints are gated as of April 6, 2026. The values below are therefore derived from a public config mirror snapshot captured on April 6, 2026 and are kept out of the main argument for provenance reasons. The mirror used for this appendix-only instantiation is:
+This table restores the more concrete Gemma-style numbers as an appendix-only supplement. The main text does **not** rely on these exact checkpoint parameters because the official Google Hugging Face raw config endpoints are gated. The values below are therefore derived from a public config mirror snapshot captured on or before April 5, 2026 and are kept out of the main argument for provenance reasons. The mirror used for this appendix-only instantiation is:
 
-- `https://huggingface.co/HedronCreeper/gemma-3-270m-custom-hedron/raw/main/config.json`
+- `https://huggingface.co/HedronCreeper/gemma-3-270m-custom-hedron/raw/ac458437b3053e9d1ef5ca71fed58f3bf84b513c/config.json`
+- SHA-256: `12371a6b5cfbe5849425093d1aace4c771ed6353a3fc8e3dc371ae6b307e0d8f`
 
 Assumptions used here:
 
@@ -69,9 +70,10 @@ Assumptions used here:
 
 ## Table B3. Appendix-only Gemma 3 27B instantiation
 
-This larger appendix-only instantiation uses the same caveat. The official raw config endpoint for the released Google Hugging Face model is gated, so the exact parameters below are sourced from a public config mirror snapshot captured on April 6, 2026:
+This larger appendix-only instantiation uses the same caveat. The official raw config endpoint for the released Google Hugging Face model is gated, so the exact parameters below are sourced from a public config mirror snapshot captured on or before April 5, 2026:
 
-- `https://huggingface.co/Changgil/google-gemma-3-27b-it-text/raw/main/config.json`
+- `https://huggingface.co/Changgil/google-gemma-3-27b-it-text/raw/4e2fb1ce4d063d7877a056b82f0485f4b568563d/config.json`
+- SHA-256: `bd4724fd0098c1611881ceb958a0b294e870adfe21713b0a0cb0f47fff1c379e`
 
 Assumptions used here:
 
