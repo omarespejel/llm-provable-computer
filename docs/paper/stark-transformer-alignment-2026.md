@@ -10,7 +10,7 @@ April 2026
 
 This paper presents a transformer-specific complexity analysis comparing SNARK circuit size and STARK trace length for verifiable inference. Arithmetic work in a standard transformer block maps similarly in both settings, but non-arithmetic primitives such as softmax, normalization, and activation functions stress the two proving families differently. Under the representative cost model used throughout this paper (`C_exp = 300`, `C_norm = 30`, `C_nonlin = 150`), GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields approximately `157.8B` SNARK constraints versus `106.5B` STARK trace rows across 12 layers, or about `1.48x` more symbolic proving work on the SNARK side under these assumptions. The gap widens with sequence length because the softmax-related overhead scales quadratically in `T`.
 
-We complement this analytic comparison with a concrete proof-stack prototype, [`llm-provable-computer`](https://github.com/omarespejel/llm-provable-computer), in which execution traces from a deterministic transformer-shaped virtual machine are directly consumable as AIR witnesses. `omarespejel/llm-provable-computer` is the maintained fork used for this paper, the reproducibility bundle, and the early S-two migration work. It builds directly on Abdel Danby-Platt's original public repository, `AbdelStark/llm-provable-computer`, which established the upstream prototype and public implementation line. The current fork extends that base with the paper draft, reproducibility artifacts, research-oriented semantic agreement artifacts, neural-style programs, and early S-two backend seams; it does not yet prove full standard-softmax transformer inference on S-two. The resulting claim is therefore narrower and stronger than a generic “STARKs beat SNARKs” position: transformer workloads expose precisely the dimensions on which STARK-native systems may compound advantages, while modern SNARK systems remain serious and rapidly improving competitors. A compact public-system comparison is included in `docs/paper/appendix-system-comparison.md`.
+We complement this analytic comparison with a concrete proof-stack prototype, [`llm-provable-computer`](https://github.com/omarespejel/llm-provable-computer), in which execution traces from a deterministic transformer-shaped virtual machine are directly consumable as AIR witnesses. `omarespejel/llm-provable-computer` is the maintained fork used for this paper, the reproducibility bundle, and the early S-two migration work. It builds directly on Abdelhamid Bakhta's original public repository, `AbdelStark/llm-provable-computer`, which established the upstream prototype and public implementation line. The current fork extends that base with the paper draft, reproducibility artifacts, research-oriented semantic agreement artifacts, neural-style programs, and early S-two backend seams; it does not yet prove full standard-softmax transformer inference on S-two, and the repo-backed proof path remains limited to `average-hard` attention rather than full standard softmax. The resulting claim is therefore narrower and stronger than a generic “STARKs beat SNARKs” position: transformer workloads emphasize exactly the dimensions on which STARK-native systems may compound advantages, while modern SNARK systems remain serious and rapidly improving competitors. A compact public-system comparison is included in `docs/paper/appendix-system-comparison.md`.
 
 ---
 
@@ -93,7 +93,7 @@ The key structural point is not just that these terms exist, but that they becom
 
 ## 4. A Transformer-Specific Cost Model
 
-This section is the analytic core of the paper. It should be read as a **model-based comparison of symbolic proving work**, not as a controlled head-to-head benchmark of complete production systems.
+This section is the analytic core of the paper. It should be read as a **model-based comparison of symbolic proving work**, not as a controlled head-to-head benchmark of complete production systems. Throughout this section, raw SNARK constraint counts and raw STARK trace rows are used as symbolic proxies for prover-side work under the simplifying assumption that prover cost is dominated by algebraic operations that scale approximately linearly with these objects. That is a modeling assumption, not a claim that one constraint and one trace row are identical units of runtime cost in production systems.
 
 ### 4.1 SNARK-side symbolic cost
 
@@ -113,28 +113,32 @@ This keeps the arithmetic term shared with the STARK side and makes explicit whe
 
 The constants `C_exp`, `C_norm`, and `C_nonlin` are **stylized comparative constants**, not normalized measurements extracted from one production prover stack running on one fixed hardware configuration. Their role is to make the model’s sensitivity to non-arithmetic work explicit, not to claim benchmark equivalence with any single deployed system.
 
+Because softmax dominates the non-arithmetic budget in this model, `C_exp` is the highest-leverage constant. On the corrected GPT-2-small instantiation below, holding `C_norm = 30` and `C_nonlin = 150` fixed changes the overall SNARK/STARK ratio from about `1.13x` at `C_exp = 50` to `1.20x` at `C_exp = 100`, `1.48x` at `C_exp = 300`, and `1.77x` at `C_exp = 500`. By contrast, varying `C_norm` from `10` to `50` changes the ratio only from about `1.48x` to `1.49x`, while varying `C_nonlin` from `50` to `250` changes it from about `1.45x` to `1.52x`. The qualitative argument is therefore most sensitive to how one models softmax-like non-arithmetic work.
+
 ### 4.2 STARK-side symbolic cost
 
 For the STARK side, we keep the exact expression:
 
 ```text
-L_STARK = 12Td^2 + 2T^2d + T^2H + 6Td
+L_STARK = 12Td^2 + 2T^2d + T^2H + 8Td
 ```
 
-The earlier draft approximated this as `12Td^2 + 3T^2d`, which is not justified for GPT-2 small because `H << d`. For GPT-2 small, `H = 12` and `d = 768`, so the `T^2H` term is `64x` smaller than a `T^2d` term. The asymptotic point remains valid, but the approximation materially inflated the STARK side numerically.
+A naive approximation such as `12Td^2 + 3T^2d` would not be justified for GPT-2 small because `H << d`. For GPT-2 small, `H = 12` and `d = 768`, so the `T^2H` term is `64x` smaller than a `T^2d` term. The asymptotic point remains valid, but that approximation materially inflates the STARK side numerically.
 
 ### 4.3 Concrete analysis: GPT-2 small
 
 Instantiating the model with GPT-2 small parameters (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) gives the following.
 
+#### Table 1. GPT-2 small symbolic work under the stated cost model
+
 | Component | SNARK (constraints) | STARK (trace rows) | Ratio |
 |---|---:|---:|---:|
-| Arithmetic | 8,858,370,048 | 8,858,370,048 | 1.00x |
+| Arithmetic | 8,859,942,912 | 8,859,942,912 | 1.00x |
 | Softmax | 3,774,873,600 | 12,582,912 | 300x |
 | LayerNorm | 47,185,920 | 1,572,864 | 30x |
 | GELU | 471,859,200 | 3,145,728 | 150x |
-| Total per layer | 13,152,288,768 | 8,875,671,552 | 1.48x |
-| Total (12 layers) | 157,827,465,216 | 106,508,058,624 | 1.48x |
+| Total per layer | 13,153,861,632 | 8,877,244,416 | 1.48x |
+| Total (12 layers) | 157,846,339,584 | 106,526,932,992 | 1.48x |
 
 Under this cost model, the non-arithmetic overhead adds about `4.29B` SNARK constraints versus about `17.3M` STARK rows per layer at `T = 1024`. Softmax alone contributes about `87.9%` of the SNARK non-arithmetic overhead. Scaling the same model to `T = 4096` yields an overall ratio of about `2.13x`, so the qualitative claim that the gap widens with context length remains intact.
 
@@ -142,9 +146,11 @@ Under this cost model, the non-arithmetic overhead adds about `4.29B` SNARK cons
 
 This analysis does **not** prove that every STARK system is faster than every SNARK system on every transformer workload. It supports a narrower claim: once both sides handle large linear algebra efficiently, the remaining battleground is dominated by lookup handling, recursion, field arithmetic, and commitment backend. Transformer workloads expose these differences more sharply than many standard proving benchmarks do.
 
+One further scope boundary matters here: the model abstracts each activation or normalized value as one algebraic object. It does **not** model int8/int4 quantization layouts, packing strategies, or backend-specific decompositions. Practical zkML systems often rely heavily on quantization, and that can change absolute constraint counts differently across SNARK and STARK systems. The present model is therefore best read as a structural comparison of symbolic work, not as a quantization-aware production estimate.
+
 ### 4.5 Analytic extension to released Gemma 3 architectures
 
-The GPT-2-small analysis is useful because it keeps the algebra transparent, but it is no longer enough on its own. Public Lagrange engineering materials report DeepProve progress on Gemma 3-class inference, and those same materials are explicit that supporting Gemma 3 required handling grouped-query attention (GQA), alternating local/global attention, RMSNorm, GeGLU, and RoPE ([Lagrange, October 20, 2025](https://www.lagrange.dev/engineering-updates/september-2025)). Official Google Gemma 3 materials independently describe the family as a decoder-only transformer with GQA, RMSNorm, long-context support, and a `5:1` interleaving of local and global attention layers, with the 4B, 12B, and 27B variants supporting `128K` context and the smaller variants supporting shorter windows ([Gemma 3 Technical Report, March 25, 2025](https://storage.googleapis.com/deepmind-media/gemma/Gemma3Report.pdf); [Google/Hugging Face Gemma 3 model cards](https://huggingface.co/google/gemma-3-27b-it); [Google/Hugging Face Gemma 3 270M model card](https://huggingface.co/google/gemma-3-270m)).
+The GPT-2-small analysis is useful because it keeps the algebra transparent, but it is no longer enough on its own. Public Lagrange engineering materials report DeepProve progress on Gemma 3-class inference, and that engineering update for **September 2025**, published on **October 20, 2025**, is explicit that supporting Gemma 3 required handling grouped-query attention (GQA), alternating local/global attention, RMSNorm, GeGLU, and RoPE ([Lagrange, October 20, 2025](https://www.lagrange.dev/engineering-updates/september-2025)). Official Google Gemma 3 materials independently describe the family as a decoder-only transformer with GQA, RMSNorm, long-context support, and a `5:1` interleaving of local and global attention layers, with the 4B, 12B, and 27B variants supporting `128K` context and the smaller variants supporting shorter windows ([Gemma 3 Technical Report, March 25, 2025](https://storage.googleapis.com/deepmind-media/gemma/Gemma3Report.pdf); [Google/Hugging Face Gemma 3 model cards](https://huggingface.co/google/gemma-3-27b-it); [Google/Hugging Face Gemma 3 270M model card](https://huggingface.co/google/gemma-3-270m)).
 
 This subsection is an **analytic scaling extension only**. It does not claim that the repository implements Gemma 3 execution, GQA, local/global attention scheduling, or long-context proving. It asks a narrower question: if one carries the paper’s symbolic comparison logic forward to a released sparse long-context architecture, does the qualitative divergence still persist?
 
@@ -165,7 +171,7 @@ That is the publishable claim. The paper does **not** need to rest on unofficial
 
 ## 5. Repository Artifact: A Semantics-Hardened Transformer-VM Proof Stack
 
-The implementation artifact used in this paper is the open repository [`omarespejel/llm-provable-computer`](https://github.com/omarespejel/llm-provable-computer). `omarespejel/llm-provable-computer` is the maintained fork used for this paper, the reproducibility bundle, and the early S-two migration work. It builds directly on Abdel Danby-Platt's original public repository, `AbdelStark/llm-provable-computer`, which established the upstream prototype and public implementation line. The current fork extends that base with the paper draft, reproducibility artifacts, research-oriented semantic agreement artifacts, neural-style programs, and early S-two backend seams; it does not yet prove full standard-softmax transformer inference on S-two. The repository snapshot discussed in this section is commit `e22d813`. The right way to describe it is **not** “a production zkML stack for full transformer inference.” The right description is: **a semantics-and-proof artifact demonstrating that deterministic transformer-shaped execution can be compiled into traces that are directly usable as AIR witnesses**.
+The implementation artifact used in this paper is the open repository [`omarespejel/llm-provable-computer`](https://github.com/omarespejel/llm-provable-computer). `omarespejel/llm-provable-computer` is the maintained fork used for this paper, the reproducibility bundle, and the early S-two migration work. It builds directly on Abdelhamid Bakhta's original public repository, `AbdelStark/llm-provable-computer`, which established the upstream prototype and public implementation line. The current fork extends that base with the paper draft, reproducibility artifacts, research-oriented semantic agreement artifacts, neural-style programs, and early S-two backend seams; it does not yet prove full standard-softmax transformer inference on S-two. The repository snapshot discussed in this section is commit `7edd9e3`. The right way to describe it is **not** “a production zkML stack for full transformer inference.” The right description is: **a semantics-and-proof artifact demonstrating that deterministic transformer-shaped execution can be compiled into traces that are directly usable as AIR witnesses**.
 
 ### 5.1 What the repository demonstrates today
 
@@ -206,7 +212,7 @@ On April 4, 2026, we generated a `production-v1` reproducibility bundle from exe
 
 The artifact bundle includes STARK proofs for `addition`, `dot_product`, `single_neuron`, and `fibonacci`, along with `research-v2` semantic agreement artifacts. The large proof JSON files themselves are intentionally left out of the git repository; what is committed here is the stable metadata layer needed for reproducibility and citation.
 
-#### Table 3. Production-v1 local artifact results (commit `58bb05f`)
+#### Table 2. Production-v1 local artifact results (commit `58bb05f`)
 
 | Artifact | Prove Time | Verify Time | Proof Size |
 |---|---:|---:|---:|
@@ -260,7 +266,7 @@ Starknet’s account model remains strategically important: accounts are smart c
 
 ### 7.1 DeepProve as the strongest anti-overclaim counterexample
 
-Any serious paper on this topic must treat Lagrange’s DeepProve as a strong counterexample to sweeping anti-SNARK claims. Public Lagrange product and engineering materials report full GPT-2 inference and later Gemma-class progress. Those same materials describe a system that combines sumcheck-based treatment of linear layers with custom handling of softmax and lookup-based handling of LayerNorm and GELU ([Lagrange, August 18, 2025](https://www.lagrange.dev/blog/deepprove-1); [Lagrange, October 20, 2025](https://www.lagrange.dev/engineering-updates/september-2025)). This is enough to reject simplistic claims such as “transformers are intrinsically ill-suited to SNARKs.”
+Any serious paper on this topic must treat Lagrange’s DeepProve as a strong counterexample to sweeping anti-SNARK claims. Public Lagrange product and engineering materials report full GPT-2 inference and later Gemma-class progress. Those same materials describe a system that combines sumcheck-based treatment of linear layers with custom handling of softmax and lookup-based handling of LayerNorm and GELU ([Lagrange, August 18, 2025](https://www.lagrange.dev/blog/deepprove-1); [Lagrange, Engineering Update: September 2025, published October 20, 2025](https://www.lagrange.dev/engineering-updates/september-2025)). This is enough to reject simplistic claims such as “transformers are intrinsically ill-suited to SNARKs.”
 
 The right conclusion is narrower: modern SNARK systems can clearly prove transformer workloads, but they may do so with different prover-side economics, especially once recursion, field size, and lookup handling become first-order bottlenecks.
 
@@ -337,7 +343,7 @@ The frontier is therefore no longer “can transformers be proved?” The fronti
 
 ## Acknowledgments
 
-`omarespejel/llm-provable-computer` is the maintained fork used for this paper, the reproducibility bundle, and the early S-two migration work. It builds directly on Abdel Danby-Platt's original public repository, `AbdelStark/llm-provable-computer`, which established the upstream prototype and public implementation line. The current fork extends that base with the paper draft, reproducibility artifacts, research-oriented semantic agreement artifacts, neural-style programs, and early S-two backend seams; it does not yet prove full standard-softmax transformer inference on S-two.
+`omarespejel/llm-provable-computer` is the maintained fork used for this paper, the reproducibility bundle, and the early S-two migration work. It builds directly on Abdelhamid Bakhta's original public repository, `AbdelStark/llm-provable-computer`, which established the upstream prototype and public implementation line. The current fork extends that base with the paper draft, reproducibility artifacts, research-oriented semantic agreement artifacts, neural-style programs, and early S-two backend seams; it does not yet prove full standard-softmax transformer inference on S-two.
 
 ---
 
