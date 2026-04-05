@@ -33,6 +33,7 @@ const PHASE3_SELECTOR_LOADI: &str = "phase3/arith/selector_loadi";
 const PHASE3_SELECTOR_ADDI: &str = "phase3/arith/selector_addi";
 const PHASE3_SELECTOR_HALT: &str = "phase3/arith/selector_halt";
 const PHASE3_IMMEDIATE: &str = "phase3/arith/immediate";
+const PHASE3_PC_PLUS_ONE_WRAPPED: &str = "phase3/arith/pc_plus_one_wrapped";
 
 #[derive(Debug, Clone, Copy)]
 struct Phase3ArithmeticEval {
@@ -60,6 +61,8 @@ impl FrameworkEval for Phase3ArithmeticEval {
         let is_addi = eval.get_preprocessed_column(column_id(PHASE3_SELECTOR_ADDI));
         let is_halt = eval.get_preprocessed_column(column_id(PHASE3_SELECTOR_HALT));
         let immediate = eval.get_preprocessed_column(column_id(PHASE3_IMMEDIATE));
+        let pc_plus_one_wrapped =
+            eval.get_preprocessed_column(column_id(PHASE3_PC_PLUS_ONE_WRAPPED));
 
         let one = E::F::from(BaseField::from(1u32));
 
@@ -72,7 +75,7 @@ impl FrameworkEval for Phase3ArithmeticEval {
         eval.add_constraint(next_halted.clone() * (next_halted.clone() - one.clone()));
 
         let expected_next_pc = is_halt.clone() * pc.clone()
-            + (is_loadi.clone() + is_addi.clone()) * (pc.clone() + one.clone());
+            + (is_loadi.clone() + is_addi.clone()) * pc_plus_one_wrapped;
         let expected_next_acc = is_loadi.clone() * immediate.clone()
             + is_addi.clone() * (acc.clone() + immediate)
             + is_halt.clone() * acc;
@@ -117,6 +120,7 @@ pub fn phase3_arithmetic_preprocessed_columns() -> Vec<PreProcessedColumnId> {
         PHASE3_SELECTOR_ADDI,
         PHASE3_SELECTOR_HALT,
         PHASE3_IMMEDIATE,
+        PHASE3_PC_PLUS_ONE_WRAPPED,
     ]
     .into_iter()
     .map(column_id)
@@ -155,6 +159,7 @@ mod tests {
                 PHASE3_SELECTOR_ADDI.to_string(),
                 PHASE3_SELECTOR_HALT.to_string(),
                 PHASE3_IMMEDIATE.to_string(),
+                PHASE3_PC_PLUS_ONE_WRAPPED.to_string(),
             ]
         );
         assert!(metadata.statement_contract.contains("statement-v1"));
@@ -170,7 +175,7 @@ mod tests {
         assert_eq!(metadata.trace_locations.len(), 2);
         assert_eq!(metadata.trace_locations[0].tree_index, 0);
         assert_eq!(metadata.trace_locations[1].tree_index, 1);
-        assert_eq!(metadata.trace_log_degree_bounds[0].len(), 4);
+        assert_eq!(metadata.trace_log_degree_bounds[0].len(), 5);
         assert_eq!(metadata.trace_log_degree_bounds[1].len(), 6);
     }
 }

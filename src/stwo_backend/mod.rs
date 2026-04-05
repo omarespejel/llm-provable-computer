@@ -25,7 +25,7 @@ pub use layout::{
 #[cfg(feature = "stwo-backend")]
 pub use lookup_component::{
     phase3_binary_step_lookup_component_metadata, phase3_lookup_preprocessed_columns,
-    Phase3LookupComponentMetadata,
+    phase3_lookup_table_rows, Phase3LookupComponentMetadata, Phase3LookupTableRow,
 };
 
 /// Backend version label used by the experimental Phase 2 S-two seam.

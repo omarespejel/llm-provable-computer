@@ -16,9 +16,16 @@ pub struct Phase3LookupComponentMetadata {
     pub n_constraints: usize,
     pub preprocessed_columns: Vec<String>,
     pub preprocessed_column_indices: Vec<usize>,
+    pub lookup_table_rows: Vec<Phase3LookupTableRow>,
     pub logup_relations_per_row: Vec<(String, usize)>,
     pub activation_semantics: &'static str,
     pub statement_contract: &'static str,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Phase3LookupTableRow {
+    pub input: i16,
+    pub output: u8,
 }
 
 const PHASE3_LOOKUP_TABLE_INPUT: &str = "phase3/lookup/table_input";
@@ -92,6 +99,7 @@ pub fn phase3_binary_step_lookup_component_metadata(
             .map(|column| column.id.clone())
             .collect(),
         preprocessed_column_indices: component.preprocessed_column_indices().to_vec(),
+        lookup_table_rows: phase3_lookup_table_rows(),
         logup_relations_per_row,
         activation_semantics: PHASE3_LOOKUP_SEMANTICS,
         statement_contract: "statement-v1 preserved; lookup primitive remains internal",
@@ -103,6 +111,23 @@ pub fn phase3_lookup_preprocessed_columns() -> Vec<PreProcessedColumnId> {
         .into_iter()
         .map(column_id)
         .collect()
+}
+
+pub fn phase3_lookup_table_rows() -> Vec<Phase3LookupTableRow> {
+    vec![
+        Phase3LookupTableRow {
+            input: -1,
+            output: 0,
+        },
+        Phase3LookupTableRow {
+            input: 0,
+            output: 1,
+        },
+        Phase3LookupTableRow {
+            input: 1,
+            output: 1,
+        },
+    ]
 }
 
 fn column_id(id: &str) -> PreProcessedColumnId {
@@ -128,6 +153,7 @@ mod tests {
             metadata.logup_relations_per_row,
             vec![("Phase3BinaryStepLookupRelation".to_string(), 2)]
         );
+        assert_eq!(metadata.lookup_table_rows, phase3_lookup_table_rows());
         assert!(metadata.statement_contract.contains("statement-v1"));
     }
 
@@ -136,5 +162,6 @@ mod tests {
         let metadata = phase3_binary_step_lookup_component_metadata(3);
         assert_eq!(metadata.activation_semantics, PHASE3_LOOKUP_SEMANTICS);
         assert_eq!(metadata.preprocessed_column_indices, vec![0, 1]);
+        assert_eq!(metadata.lookup_table_rows, phase3_lookup_table_rows());
     }
 }
