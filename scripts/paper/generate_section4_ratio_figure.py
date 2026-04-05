@@ -91,6 +91,7 @@ def main() -> None:
     contexts = [128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072]
     dense = [dense_ratio(t) for t in contexts]
     sparse = [sparse_gemma_style_ratio(t) for t in contexts]
+    dense_asymptote = (2 * D + H * C_EXP) / (2 * D + H)
 
     fig, ax = plt.subplots(figsize=(6.6, 3.2), constrained_layout=True)
 
@@ -102,6 +103,13 @@ def main() -> None:
         linestyle="--",
         color="#B24745",
         label="Sparse Gemma-style (5:1 local/global, W=1024)",
+    )
+    ax.axhline(
+        dense_asymptote,
+        linestyle=":",
+        linewidth=1.4,
+        color="#444444",
+        label=f"Dense asymptote ({dense_asymptote:.2f}x)",
     )
 
     ax.set_xscale("log", base=2)
@@ -118,6 +126,14 @@ def main() -> None:
     # Light endpoint annotations improve readability in print without clutter.
     ax.annotate(f"{dense[-1]:.2f}x", (contexts[-1], dense[-1]), xytext=(6, 0), textcoords="offset points", va="center", color="#006BA4")
     ax.annotate(f"{sparse[-1]:.2f}x", (contexts[-1], sparse[-1]), xytext=(6, -10), textcoords="offset points", va="center", color="#B24745")
+    ax.annotate(
+        f"{dense_asymptote:.2f}x ceiling",
+        (contexts[1], dense_asymptote),
+        xytext=(0, 4),
+        textcoords="offset points",
+        va="bottom",
+        color="#444444",
+    )
 
     pdf_path = OUTDIR / "section4-ratio-vs-context.pdf"
     svg_path = OUTDIR / "section4-ratio-vs-context.svg"
