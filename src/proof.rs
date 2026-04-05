@@ -690,19 +690,11 @@ impl ProofBackendDriver for StwoBackend {
         stwo_backend::STWO_BACKEND_VERSION_PHASE1
     }
 
-    fn prove(&self, witness: PreparedExecutionWitness) -> Result<VanillaStarkExecutionProof> {
-        stwo_backend::validate_phase1_proof_shape(
-            &witness.claim.program,
-            &witness.claim.attention_mode,
-        )?;
+    fn prove(&self, _witness: PreparedExecutionWitness) -> Result<VanillaStarkExecutionProof> {
         Err(stwo_backend::phase1_placeholder_prove_error())
     }
 
-    fn verify(&self, proof: &VanillaStarkExecutionProof, _air: &VmAir) -> Result<bool> {
-        stwo_backend::validate_phase1_proof_shape(
-            &proof.claim.program,
-            &proof.claim.attention_mode,
-        )?;
+    fn verify(&self, _proof: &VanillaStarkExecutionProof, _air: &VmAir) -> Result<bool> {
         Err(stwo_backend::phase1_placeholder_verify_error())
     }
 }
