@@ -366,35 +366,35 @@ The frontier is therefore no longer “can transformers be proved?” The fronti
 
 ## References
 
-1. Eli Ben-Sasson, Iddo Bentov, Yinon Horesh, Michael Riabzev. “Scalable, transparent, and post-quantum secure computational integrity.” *IACR ePrint 2018/046*. <https://eprint.iacr.org/2018/046>
-2. Eli Ben-Sasson, Iddo Bentov, Yinon Horesh, Michael Riabzev. “Fast Reed-Solomon Interactive Oracle Proofs of Proximity.” *ICALP 2018*.
-3. Eli Ben-Sasson, Lior Goldberg, Swastik Kopparty, Shubhangi Saraf. “DEEP-FRI: Sampling Outside the Box Improves Soundness.” *ITCS 2020*.
-4. Ulrich Haböck, Daniel Levit, Shahar Papini. “Circle STARKs.” *IACR ePrint 2024/278*. <https://eprint.iacr.org/2024/278>
-5. Jens Groth. “On the Size of Pairing-Based Non-interactive Arguments.” *EUROCRYPT 2016*.
-6. Ariel Gabizon, Zachary J. Williamson, Oana Ciobotaru. “PLONK: Permutations over Lagrange-bases for Oecumenical Noninteractive Arguments of Knowledge.” *IACR ePrint 2019/953*. <https://eprint.iacr.org/2019/953>
-7. Shafi Goldwasser, Yael Tauman Kalai, Guy N. Rothblum. “Delegating Computation: Interactive Proofs for Muggles.” *Journal of the ACM* 62(4), 2015.
-8. Ulrich Haböck. “Multivariate lookups based on logarithmic derivatives.” *IACR ePrint 2022/1530*. <https://eprint.iacr.org/2022/1530>
-9. Tianxiang Liu, Xiang Xie, Yupeng Zhang. “zkCNN: Zero Knowledge Proofs for Convolutional Neural Network Predictions and Accuracy.” *ACM CCS 2021*.
-10. Haotian Sun, Jiaheng Li, Haichao Zhang. “zkLLM: Zero Knowledge Proofs for Large Language Models.” *arXiv:2404.16109*. <https://arxiv.org/abs/2404.16109>
-11. Daniel Balbás, Dario Fiore, et al. “Modular Sumcheck Proofs with Applications to Machine Learning and Image Processing.” *ACM CCS 2023*.
-12. Ashish Vaswani, Noam Shazeer, Niki Parmar, et al. “Attention Is All You Need.” *NeurIPS 2017*.
-13. Percepta Labs. “Can LLMs Be Computers?” March 2026. <https://percepta.ai/blog/can-llms-be-computers>
-14. Gemma Team. “Gemma 3 Technical Report.” March 25, 2025. <https://storage.googleapis.com/deepmind-media/gemma/Gemma3Report.pdf>
-15. Google DeepMind. “Gemma 3 model card.” Hugging Face. Accessed April 5, 2026. <https://huggingface.co/google/gemma-3-27b-it>
-16. Google DeepMind. “Gemma 3 270M model card.” Hugging Face. Accessed April 5, 2026. <https://huggingface.co/google/gemma-3-270m>
-17. StarkWare. “Introducing S-two: The fastest prover for real-world ZK applications.” May 26, 2025. <https://starkware.co/blog/s-two-prover/>
-18. StarkWare. “S-two 2.0.0 is a developer-friendly, fully open-source toolkit.” January 27, 2026. <https://starkware.co/blog/s-two-2-0-0-prover-for-developers/>
-19. StarkWare. “Minutes to seconds: efficiency gains with recursive circuit proving.” March 31, 2026. <https://starkware.co/blog/minutes-to-seconds-efficiency-gains-with-recursive-circuit-proving/>
-20. Starknet Docs. “S-two Book: Introduction.” Accessed April 5, 2026. <https://docs.starknet.io/learn/S-two-book/introduction>
-21. Starknet. “Make all ERC-20 tokens private with STRK20.” March 10, 2026. <https://www.starknet.io/blog/make-all-erc-20-tokens-private-with-strk20/>
-22. Starknet. “Version releases.” Accessed April 5, 2026. <https://www.starknet.io/developers/version-releases/>
-23. Starknet Community Forum. “SNIP-36: in protocol proof verification.” Accessed April 5, 2026. <https://community.starknet.io/t/snip-36-in-protocol-proof-verification/116123>
-24. Lagrange. “DeepProve-1.” August 18, 2025. <https://www.lagrange.dev/blog/deepprove-1>
-25. Lagrange. “Engineering Update: September 2025.” October 20, 2025. <https://www.lagrange.dev/engineering-updates/september-2025>
-26. BitSage Network. “stwo-ml.” Accessed April 5, 2026. <https://github.com/Bitsage-Network/stwo-ml>
-27. BitSage Network. “elo-cairo-verifier/README.md.” Accessed April 5, 2026. <https://github.com/Bitsage-Network/stwo-ml/blob/main/elo-cairo-verifier/README.md>
-28. Giza. “LuminAIR.” Accessed April 5, 2026. <https://github.com/gizatechxyz/LuminAIR>
-29. StarkWare. “Giza x S-two: Powering verifiable ML with LuminAIR.” Accessed April 5, 2026. <https://starkware.co/blog/giza-x-s-two-powering-verifiable-ml-with-luminair/>
-30. `omarespejel/llm-provable-computer`. Repository snapshot discussed in Sections 5 and 8 (commit `a84bccfc30971d2cfae428b9126059d71775a1a2`). <https://github.com/omarespejel/llm-provable-computer/tree/a84bccfc30971d2cfae428b9126059d71775a1a2>
-31. `omarespejel/llm-provable-computer`. “Appendix Artifact Index (Production V1).” Artifact-index snapshot (commit `8d435d540b8e3cf33ec4381bb820a00b6fe7aae6`), documenting a bundle generated from execution/proof commit `58bb05fdd57ee9816e5935eb004396fea6a9fac3`. <https://github.com/omarespejel/llm-provable-computer/blob/8d435d540b8e3cf33ec4381bb820a00b6fe7aae6/docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md>
-32. Starknet Docs. “Accounts.” Accessed April 5, 2026. <https://docs.starknet.io/architecture/accounts>
+1. Eli Ben-Sasson, Iddo Bentov, Yinon Horesh, and Michael Riabzev. “Scalable, Transparent, and Post-Quantum Secure Computational Integrity.” *IACR Cryptology ePrint Archive*, Paper 2018/046, 2018. <https://eprint.iacr.org/2018/046>
+2. Eli Ben-Sasson, Iddo Bentov, Yinon Horesh, and Michael Riabzev. “Fast Reed-Solomon Interactive Oracle Proofs of Proximity.” In *Proceedings of the 45th International Colloquium on Automata, Languages, and Programming (ICALP)*, 2018.
+3. Eli Ben-Sasson, Lior Goldberg, Swastik Kopparty, and Shubhangi Saraf. “DEEP-FRI: Sampling Outside the Box Improves Soundness.” In *Proceedings of the 11th Innovations in Theoretical Computer Science Conference (ITCS)*, 2020.
+4. Ulrich Haböck, Daniel Levit, and Shahar Papini. “Circle STARKs.” *IACR Cryptology ePrint Archive*, Paper 2024/278, 2024. <https://eprint.iacr.org/2024/278>
+5. Jens Groth. “On the Size of Pairing-Based Non-interactive Arguments.” In *Advances in Cryptology - EUROCRYPT 2016*, 2016.
+6. Ariel Gabizon, Zachary J. Williamson, and Oana Ciobotaru. “PLONK: Permutations over Lagrange-bases for Oecumenical Noninteractive Arguments of Knowledge.” *IACR Cryptology ePrint Archive*, Paper 2019/953, 2019. <https://eprint.iacr.org/2019/953>
+7. Shafi Goldwasser, Yael Tauman Kalai, and Guy N. Rothblum. “Delegating Computation: Interactive Proofs for Muggles.” *Journal of the ACM* 62(4), 2015.
+8. Ulrich Haböck. “Multivariate Lookups Based on Logarithmic Derivatives.” *IACR Cryptology ePrint Archive*, Paper 2022/1530, 2022. <https://eprint.iacr.org/2022/1530>
+9. Tianxiang Liu, Xiang Xie, and Yupeng Zhang. “zkCNN: Zero Knowledge Proofs for Convolutional Neural Network Predictions and Accuracy.” In *Proceedings of the 2021 ACM SIGSAC Conference on Computer and Communications Security (CCS)*, 2021.
+10. Haotian Sun, Jiaheng Li, and Haichao Zhang. “zkLLM: Zero Knowledge Proofs for Large Language Models.” *arXiv preprint* arXiv:2404.16109, 2024. <https://arxiv.org/abs/2404.16109>
+11. Daniel Balbás, Dario Fiore, et al. “Modular Sumcheck Proofs with Applications to Machine Learning and Image Processing.” In *Proceedings of the 2023 ACM SIGSAC Conference on Computer and Communications Security (CCS)*, 2023.
+12. Ashish Vaswani, Noam Shazeer, Niki Parmar, et al. “Attention Is All You Need.” In *Advances in Neural Information Processing Systems 30 (NeurIPS)*, 2017.
+13. Percepta Labs. “Can LLMs Be Computers?” *Percepta Blog*, March 2026. <https://percepta.ai/blog/can-llms-be-computers>
+14. Gemma Team. “Gemma 3 Technical Report.” Technical report, March 25, 2025. <https://storage.googleapis.com/deepmind-media/gemma/Gemma3Report.pdf>
+15. Google DeepMind. “Gemma 3 Model Card.” *Hugging Face Model Card*. Accessed April 5, 2026. <https://huggingface.co/google/gemma-3-27b-it>
+16. Google DeepMind. “Gemma 3 270M Model Card.” *Hugging Face Model Card*. Accessed April 5, 2026. <https://huggingface.co/google/gemma-3-270m>
+17. StarkWare. “Introducing S-two: The Fastest Prover for Real-world ZK Applications.” *StarkWare Blog*, May 26, 2025. <https://starkware.co/blog/s-two-prover/>
+18. StarkWare. “S-two 2.0.0 Is a Developer-Friendly, Fully Open-Source Toolkit.” *StarkWare Blog*, January 27, 2026. <https://starkware.co/blog/s-two-2-0-0-prover-for-developers/>
+19. StarkWare. “Minutes to Seconds: Efficiency Gains with Recursive Circuit Proving.” *StarkWare Blog*, March 31, 2026. <https://starkware.co/blog/minutes-to-seconds-efficiency-gains-with-recursive-circuit-proving/>
+20. Starknet Docs. “S-two Book: Introduction.” *Starknet Documentation*. Accessed April 5, 2026. <https://docs.starknet.io/learn/S-two-book/introduction>
+21. Starknet. “Make All ERC-20 Tokens Private with STRK20.” *Starknet Blog*, March 10, 2026. <https://www.starknet.io/blog/make-all-erc-20-tokens-private-with-strk20/>
+22. Starknet. “Version Releases.” *Starknet Documentation*. Accessed April 5, 2026. <https://www.starknet.io/developers/version-releases/>
+23. Starknet Community Forum. “SNIP-36: In-protocol Proof Verification.” Specification discussion. Accessed April 5, 2026. <https://community.starknet.io/t/snip-36-in-protocol-proof-verification/116123>
+24. Lagrange. “DeepProve-1.” *Lagrange Blog*, August 18, 2025. <https://www.lagrange.dev/blog/deepprove-1>
+25. Lagrange. “Engineering Update: September 2025.” *Lagrange Engineering Update*, published October 20, 2025. <https://www.lagrange.dev/engineering-updates/september-2025>
+26. BitSage Network. *stwo-ml*. GitHub repository. Accessed April 5, 2026. <https://github.com/Bitsage-Network/stwo-ml>
+27. BitSage Network. “elo-cairo-verifier/README.md.” GitHub documentation file. Accessed April 5, 2026. <https://github.com/Bitsage-Network/stwo-ml/blob/main/elo-cairo-verifier/README.md>
+28. Giza. *LuminAIR*. GitHub repository. Accessed April 5, 2026. <https://github.com/gizatechxyz/LuminAIR>
+29. StarkWare. “Giza x S-two: Powering Verifiable ML with LuminAIR.” *StarkWare Blog*. Accessed April 5, 2026. <https://starkware.co/blog/giza-x-s-two-powering-verifiable-ml-with-luminair/>
+30. `omarespejel/llm-provable-computer`. “Repository Snapshot Discussed in Sections 5 and 8.” GitHub repository snapshot, commit `a84bccfc30971d2cfae428b9126059d71775a1a2`. <https://github.com/omarespejel/llm-provable-computer/tree/a84bccfc30971d2cfae428b9126059d71775a1a2>
+31. `omarespejel/llm-provable-computer`. “Appendix Artifact Index (Production V1).” GitHub artifact snapshot, commit `8d435d540b8e3cf33ec4381bb820a00b6fe7aae6`, documenting a bundle generated from execution/proof commit `58bb05fdd57ee9816e5935eb004396fea6a9fac3`. <https://github.com/omarespejel/llm-provable-computer/blob/8d435d540b8e3cf33ec4381bb820a00b6fe7aae6/docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md>
+32. Starknet Docs. “Accounts.” *Starknet Documentation*. Accessed April 5, 2026. <https://docs.starknet.io/architecture/accounts>
