@@ -32,7 +32,7 @@ llm-provable-computer is an implemented Rust workspace for a deterministic trans
   - accepted subset: `NOP`, `LOADI`, `LOAD`, `STORE`, `ADD`, `ADDM`, `SUBM`, `MULM`, `JMP`, `JZ`, `HALT`
   - accepted fixture matrix: `addition`, `multiply`, `counter`, `dot_product`
   - official dependency seam: `stwo = 2.2.0`, `stwo-constraint-framework = 2.2.0`
-  - current behavior: subset-aware validation, dedicated adapter/layout modules, and explicit placeholder failure; no real S-two prover or verifier yet
+  - current behavior: subset-aware validation, dedicated adapter/layout modules, explicit placeholder failure in CLI proving/verification, plus real `stwo-constraint-framework` component builders for a narrow arithmetic pilot and a bounded lookup-backed binary-step activation pilot
 - Current proof is transparent, not zero-knowledge.
 - Current public claim fields include:
   - statement metadata: `statement_version`, `semantic_scope`

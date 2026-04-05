@@ -321,7 +321,7 @@ Verifier checks enforce both fields exactly, so claim wording cannot drift from 
 Proof claims also include transformer config, equivalence metadata (`equivalence_checked_steps`, transformer fingerprint, native fingerprint), and artifact commitments (program hash, config hash, deterministic-model hash, STARK-options hash, prover-build info/hash) in CLI output.
 Verifier policy checks are available via `--min-conjectured-security`; `--strict` enforces an 80-bit floor and turns on re-execution checks.
 
-The `stwo` path is now an explicit experimental seam behind `--features stwo-backend`. In the current Phase 2 state it wires the official StarkWare crates (`stwo` and `stwo-constraint-framework` at `2.2.0`), performs backend-specific shape validation, and routes through a dedicated backend module layout before failing cleanly. That gives the repo a real S-two integration boundary without overstating that a prover exists yet.
+The `stwo` path is now an explicit experimental seam behind `--features stwo-backend`. In the current Phase 2/3 state it wires the official StarkWare crates (`stwo` and `stwo-constraint-framework` at `2.2.0`), performs backend-specific shape validation, routes through a dedicated backend module layout, and exposes real `FrameworkComponent` builders for a narrow arithmetic row pilot plus a bounded lookup-backed binary-step activation pilot before failing cleanly in the actual `prove-stark` / `verify-stark` path. That gives the repo a real S-two integration boundary without overstating that a prover exists yet.
 
 The canonical machine-readable statement contract is checked into `spec/statement-v1.json`.
 CI enforces sync between this file and verifier constants via:
@@ -548,7 +548,7 @@ Intentionally narrow. Intentionally correct.
 
 **Not implemented:** GPU acceleration. Learned/trained weights. Zero-knowledge proofs. WASM frontend. A real S-two/STWO prover or verifier backend. Full-ISA STARK AIR for bitwise and compare instructions.
 
-**Experimental seam only:** `--features stwo-backend` enables a Phase 2 backend boundary that wires the official `stwo` and `stwo-constraint-framework` crates, accepts only the minimum arithmetic subset (`NOP`, `LOADI`, `LOAD`, `STORE`, `ADD`, `ADDM`, `SUBM`, `MULM`, `JMP`, `JZ`, `HALT`) over the fixture matrix (`addition`, `multiply`, `counter`, `dot_product`), and preserves `statement-v1` claim semantics while keeping proof bytes opaque. It is a migration seam, not a working S-two prover.
+**Experimental seam only:** `--features stwo-backend` enables a Phase 2 backend boundary that wires the official `stwo` and `stwo-constraint-framework` crates, accepts only the minimum arithmetic subset (`NOP`, `LOADI`, `LOAD`, `STORE`, `ADD`, `ADDM`, `SUBM`, `MULM`, `JMP`, `JZ`, `HALT`) over the fixture matrix (`addition`, `multiply`, `counter`, `dot_product`), and preserves `statement-v1` claim semantics while keeping proof bytes opaque. Phase 3 extends that seam with real `stwo-constraint-framework` component construction for a `LOADI`/immediate-`ADD`/`HALT` arithmetic pilot and a bounded lookup-backed binary-step activation pilot. It is still a migration seam, not a working S-two prover.
 
 The narrowness is the point. The semantics are small enough to inspect, the test suite is strong enough to trust, and the structure is clean enough to prove over.
 
