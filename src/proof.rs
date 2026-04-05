@@ -14,6 +14,7 @@ use crate::instruction::{Instruction, Program};
 use crate::model::TransformerVm;
 use crate::runtime::ExecutionRuntime;
 use crate::state::MachineState;
+use crate::stwo_backend;
 use crate::vanillastark::{FieldElement, MPolynomial, Stark};
 use crate::verification::verify_model_against_native;
 
@@ -43,8 +44,6 @@ impl std::fmt::Display for StarkProofBackend {
 }
 
 const VANILLA_STARK_BACKEND_VERSION_V1: &str = "vanilla-v1";
-const STWO_BACKEND_VERSION_PHASE0: &str = "stwo-phase0";
-
 fn default_stark_proof_backend() -> StarkProofBackend {
     StarkProofBackend::Vanilla
 }
@@ -688,19 +687,15 @@ impl ProofBackendDriver for StwoBackend {
     }
 
     fn backend_version(&self) -> &'static str {
-        STWO_BACKEND_VERSION_PHASE0
+        stwo_backend::STWO_BACKEND_VERSION_PHASE2
     }
 
     fn prove(&self, _witness: PreparedExecutionWitness) -> Result<VanillaStarkExecutionProof> {
-        Err(VmError::UnsupportedProof(
-            "S-two backend is not implemented yet; use `--backend vanilla`".to_string(),
-        ))
+        Err(stwo_backend::phase2_placeholder_prove_error())
     }
 
     fn verify(&self, _proof: &VanillaStarkExecutionProof, _air: &VmAir) -> Result<bool> {
-        Err(VmError::UnsupportedProof(
-            "S-two backend verification is not implemented yet".to_string(),
-        ))
+        Err(stwo_backend::phase2_placeholder_verify_error())
     }
 }
 
@@ -742,7 +737,10 @@ pub fn prove_execution_stark_with_backend_and_options(
     backend: StarkProofBackend,
     options: VanillaStarkProofOptions,
 ) -> Result<VanillaStarkExecutionProof> {
-    validate_proof_inputs(model.program(), &model.config().attention_mode)?;
+    validate_proof_inputs(model.program(), &model.config().attention_mode, backend)?;
+    if matches!(backend, StarkProofBackend::Stwo) {
+        return Err(stwo_backend::phase2_placeholder_prove_error());
+    }
     validate_stark_options(&options)?;
     let witness = prepare_execution_witness(model, max_steps, options)?;
     backend_driver(backend).prove(witness)
@@ -766,7 +764,10 @@ pub fn verify_execution_stark_with_backend_and_policy(
 ) -> Result<bool> {
     validate_backend_metadata(proof, backend)?;
     validate_statement_metadata(&proof.claim)?;
-    validate_proof_inputs(&proof.claim.program, &proof.claim.attention_mode)?;
+    validate_proof_inputs(&proof.claim.program, &proof.claim.attention_mode, backend)?;
+    if matches!(backend, StarkProofBackend::Stwo) {
+        return Err(stwo_backend::phase2_placeholder_verify_error());
+    }
     validate_stark_options(&proof.claim.options)?;
     validate_verification_policy(&proof.claim.options, &policy)?;
     validate_public_state(&proof.claim.program, &proof.claim.final_state)?;
@@ -810,7 +811,7 @@ pub(crate) fn validate_execution_stark_support(
     program: &Program,
     attention_mode: &Attention2DMode,
 ) -> Result<()> {
-    validate_proof_inputs(program, attention_mode)
+    validate_proof_inputs(program, attention_mode, StarkProofBackend::Vanilla)
 }
 
 pub fn save_execution_stark_proof(proof: &VanillaStarkExecutionProof, path: &Path) -> Result<()> {
@@ -968,34 +969,45 @@ fn validate_backend_metadata(
     Ok(())
 }
 
-fn validate_proof_inputs(program: &Program, attention_mode: &Attention2DMode) -> Result<()> {
+fn validate_proof_inputs(
+    program: &Program,
+    attention_mode: &Attention2DMode,
+    backend: StarkProofBackend,
+) -> Result<()> {
     if program.is_empty() {
         return Err(VmError::UnsupportedProof(
             "cannot prove an empty program".to_string(),
         ));
     }
 
-    if !matches!(attention_mode, Attention2DMode::AverageHard) {
-        return Err(VmError::UnsupportedProof(format!(
-            "vanilla STARK proofs currently support only `average-hard` attention, got `{attention_mode}`"
-        )));
-    }
-
-    for instruction in program.instructions() {
-        match instruction {
-            Instruction::AndImmediate(_)
-            | Instruction::AndMemory(_)
-            | Instruction::OrImmediate(_)
-            | Instruction::OrMemory(_)
-            | Instruction::XorImmediate(_)
-            | Instruction::XorMemory(_)
-            | Instruction::CmpImmediate(_)
-            | Instruction::CmpMemory(_) => {
+    match backend {
+        StarkProofBackend::Vanilla => {
+            if !matches!(attention_mode, Attention2DMode::AverageHard) {
                 return Err(VmError::UnsupportedProof(format!(
-                    "instruction `{instruction}` is not yet supported by the vanilla STARK AIR"
+                    "vanilla STARK proofs currently support only `average-hard` attention, got `{attention_mode}`"
                 )));
             }
-            _ => {}
+
+            for instruction in program.instructions() {
+                match instruction {
+                    Instruction::AndImmediate(_)
+                    | Instruction::AndMemory(_)
+                    | Instruction::OrImmediate(_)
+                    | Instruction::OrMemory(_)
+                    | Instruction::XorImmediate(_)
+                    | Instruction::XorMemory(_)
+                    | Instruction::CmpImmediate(_)
+                    | Instruction::CmpMemory(_) => {
+                        return Err(VmError::UnsupportedProof(format!(
+                            "instruction `{instruction}` is not yet supported by the vanilla STARK AIR"
+                        )));
+                    }
+                    _ => {}
+                }
+            }
+        }
+        StarkProofBackend::Stwo => {
+            stwo_backend::validate_phase2_proof_shape(program, attention_mode)?;
         }
     }
 
@@ -1818,6 +1830,7 @@ HALT
     #[test]
     fn verify_rejects_step_overflow_without_panic() {
         let mut proof = prove_program("programs/addition.tvm", 32);
+        proof.claim.equivalence = None;
         proof.claim.steps = usize::MAX;
         let err = verify_execution_stark(&proof).unwrap_err();
         assert!(err.to_string().contains("proof steps overflow"));

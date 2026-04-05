@@ -49,10 +49,17 @@ Create a backend boundary around proving and verification while preserving curre
 
 ## Issue 7: Prepare for Phase 1
 
-- [ ] Define the minimum arithmetic-subset fixture matrix for `stwo` parity (`addition`, `multiply`, `counter`, `dot_product`).
-- [ ] Decide where S-two-specific dependencies and feature gates will live in `Cargo.toml`.
-- [ ] Decide whether proof bytes stay as opaque `Vec<u8>` or need a backend-tagged envelope type.
-- [ ] Define what must remain identical between `vanilla` and `stwo` for `statement-v1` compatibility.
+- [x] Define the minimum arithmetic-subset fixture matrix for `stwo` parity (`addition`, `multiply`, `counter`, `dot_product`).
+- [x] Decide where S-two-specific dependencies and feature gates will live in `Cargo.toml`.
+- [x] Decide whether proof bytes stay as opaque `Vec<u8>` or need a backend-tagged envelope type.
+- [x] Define what must remain identical between `vanilla` and `stwo` for `statement-v1` compatibility.
+
+Phase 1 status:
+
+- `stwo-backend` is now an explicit Cargo feature gate.
+- The first S-two seam is subset-aware rather than generic: `addition`, `multiply`, `counter`, and `dot_product` define the minimum accepted fixture matrix.
+- Proof bytes remain `Vec<u8>` at the statement-v1 envelope layer; backend selection/versioning stays in proof metadata until a real S-two serialization format exists.
+- Statement-v1 compatibility remains defined by identical claim semantics (`statement_version`, `semantic_scope`, public program/final-state meaning), not by identical proof-byte encoding.
 
 ## Exit criteria for Phase 0
 
