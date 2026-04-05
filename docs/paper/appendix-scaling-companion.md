@@ -42,7 +42,56 @@ The machine-readable output used by this appendix is committed at:
 
 - `docs/paper/figures/section4-ratio-vs-context.tsv`
 
-## Table B2. Appendix-only Gemma 3 270M instantiation
+## Table B2. Exact dense Llama-2-7B-style extension under the current model
+
+To show that the Section 4 model is not specific to GPT-2-small, this appendix also evaluates the **exact same dense symbolic formula** on a Llama-2-7B-style dense reference configuration. The point is not to claim that Llama 2 is the only relevant production architecture; it is to show how the exact model behaves on a substantially wider and more production-like decoder stack than GPT-2-small.
+
+The configuration used here follows the released Llama 2 7B architecture family [37]:
+
+- `d = 4096`
+- `H = 32`
+- context lengths `T ∈ {4096, 32768, 131072}`
+- stylized constants `C_exp = 15, 50, 300`
+- `C_norm = 30`, `C_nonlin = 150`
+
+All values below use the **exact dense formula from Sections 4.1 and 4.2**, not the first-order `TH / d^2` heuristic. That distinction matters at long context because the `2T^2d` term in both the numerator and denominator materially tempers the growth rate.
+
+| Context `T` | Ratio at `C_exp = 15` | Ratio at `C_exp = 50` | Ratio at `C_exp = 300` | STARK non-arithmetic share |
+|---|---:|---:|---:|---:|
+| `4,096` | `1.019204x` | `1.038722x` | `1.178133x` | `0.069706%` |
+| `32,768` | `1.036868x` | `1.114813x` | `1.671567x` | `0.229661%` |
+| `131,072` | `1.047994x` | `1.162746x` | `1.982397x` | `0.330422%` |
+
+This extension supports a narrower and more defensible statement than some earlier drafts: at wide-production hidden sizes, the symbolic ratio can be modest at shorter context and still increase substantially over longer windows. But under the exact dense model it does **not** explode linearly without bound; the `2T^2d` arithmetic term remains first-order and the ratio approaches a finite architecture-dependent ceiling.
+
+## Table B3. Exact autoregressive marginal ratio note
+
+For autoregressive generation, the more relevant object is often not one aggregate sequence-wide ratio but the **marginal proving ratio for the next token at generation step `t`**. Under the same dense symbolic model used in the main text, the per-step marginal ratio becomes
+
+```text
+R_marginal(t) =
+(12d^2 + 2td + 2d + tH * C_exp + 2d * C_norm + 4d * C_nonlin)
+/
+(12d^2 + 2td + tH + 8d).
+```
+
+This is the exact single-step analogue of the Section 4 dense model. It makes the production-relevant dynamic explicit: early tokens remain close to the arithmetic-dominated regime, while later tokens inherit a larger attention-span penalty.
+
+| Configuration | Step `t` | Exact marginal ratio |
+|---|---:|---:|
+| GPT-2-small style (`d = 768`, `H = 12`) | `1` | `1.071393x` |
+| GPT-2-small style (`d = 768`, `H = 12`) | `128` | `1.132040x` |
+| GPT-2-small style (`d = 768`, `H = 12`) | `1,024` | `1.481751x` |
+| GPT-2-small style (`d = 768`, `H = 12`) | `4,096` | `2.132151x` |
+| Llama-2-7B style (`d = 4096`, `H = 32`) | `1` | `1.013350x` |
+| Llama-2-7B style (`d = 4096`, `H = 32`) | `512` | `1.036861x` |
+| Llama-2-7B style (`d = 4096`, `H = 32`) | `4,096` | `1.178133x` |
+| Llama-2-7B style (`d = 4096`, `H = 32`) | `32,768` | `1.671567x` |
+| Llama-2-7B style (`d = 4096`, `H = 32`) | `131,072` | `1.982397x` |
+
+The right takeaway is therefore dynamic rather than aggregate: in autoregressive settings, the late-token regime is where the symbolic gap is largest. That observation is consistent with the main paper’s transformer-specific thesis while remaining within the exact formula rather than introducing a stronger unsupported runtime claim.
+
+## Table B4. Appendix-only Gemma 3 270M instantiation
 
 This table restores the more concrete Gemma-style numbers as an appendix-only supplement. The main text does **not** rely on these exact checkpoint parameters because the official Google Hugging Face raw config endpoints are gated. The values below are therefore derived from a public config mirror snapshot captured on or before April 5, 2026 and are kept out of the main argument for provenance reasons. The mirror used for this appendix-only instantiation is:
 
@@ -68,7 +117,7 @@ Assumptions used here:
 | `8,192` | `1,730,628,550,656` | `1,364,126,072,832` | `1.268672x` | `21.266850%` | `86.153846%` |
 | `32,768` | `14,769,419,452,416` | `10,413,970,292,736` | `1.418231x` | `29.596990%` | `95.336788%` |
 
-## Table B3. Appendix-only Gemma 3 27B instantiation
+## Table B5. Appendix-only Gemma 3 27B instantiation
 
 This larger appendix-only instantiation uses the same caveat. The official raw config endpoint for the released Google Hugging Face model is gated, so the exact parameters below are sourced from a public config mirror snapshot captured on or before April 5, 2026:
 
