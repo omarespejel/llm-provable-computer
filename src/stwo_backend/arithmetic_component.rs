@@ -80,9 +80,12 @@ impl FrameworkEval for Phase3ArithmeticEval {
             + is_addi.clone() * (acc.clone() + immediate)
             + is_halt.clone() * acc;
 
+        let expected_next_halted =
+            halted.clone() + (one.clone() - halted.clone()) * is_halt;
+
         eval.add_constraint(next_pc - expected_next_pc);
         eval.add_constraint(next_acc - expected_next_acc);
-        eval.add_constraint(next_halted - is_halt);
+        eval.add_constraint(next_halted - expected_next_halted);
         eval
     }
 }
