@@ -1,5 +1,7 @@
 # Appendix: Public System Comparison Snapshot
 
+Snapshot date: **April 4, 2026**
+
 This appendix is a compact comparison table for the three systems most relevant to the argument in `docs/paper/stark-transformer-alignment-2026.md`.
 
 It should be read with one rule in mind: these are **not** matched end-to-end benchmarks on identical workloads. They are a structured comparison of public claims, committed artifacts, and implementation scope.
@@ -15,6 +17,7 @@ It should be read with one rule in mind: these are **not** matched end-to-end be
 | Non-arithmetic handling | Custom circuits and lookup-oriented techniques | LogUp-style lookup machinery on STWO | `average-hard` proof path only; `softmax` not yet in proved relation |
 | Backend maturity | Strongest public deployment maturity of the three | Strongest public STARK-native zkML signal | Strongest semantics-portability story among the three |
 | Public onchain posture | Production/prover maturity emphasized more than public Starknet verification demos | Starknet verification path and public demos emphasized | No onchain verifier integration yet |
+| Public onchain evidence | Public materials emphasize production deployment more than named Starknet proof-demo identifiers | Public verifier docs name `D8`, `D9`, `D10`, and `D11` as accepted on Starknet Sepolia | No public onchain proof-verification artifact set |
 | Recursion posture | Present in system architecture, but details vary by release | Publicly aligned with S-two / STWO recursion path | Not implemented; future S-two backend target |
 | Current paper relevance | Main anti-overclaim counterexample for SNARK skepticism | Closest STARK-native comparator to the paper thesis | Concrete artifact that the paper can describe precisely |
 | Main caveat | Strong public claims, but not directly comparable to STARK systems on identical workloads | Public materials mix benchmark claims, verification demos, and roadmap claims | Narrow scope: vanilla STARK backend, `average-hard` only, no full learned-model proving |
