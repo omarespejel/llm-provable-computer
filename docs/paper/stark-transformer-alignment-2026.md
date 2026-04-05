@@ -142,6 +142,38 @@ Under this cost model, the non-arithmetic overhead adds about `4.29B` SNARK cons
 
 This analysis does **not** prove that every STARK system is faster than every SNARK system on every transformer workload. It supports a narrower claim: once both sides handle large linear algebra efficiently, the remaining battleground is dominated by lookup handling, recursion, field arithmetic, and commitment backend. Transformer workloads expose these differences more sharply than many standard proving benchmarks do.
 
+### 4.5 Analytic extension to released Gemma 3 architectures
+
+The GPT-2-small analysis is useful because it keeps the algebra transparent, but it is no longer enough on its own. DeepProve has publicly reported proving inference for Gemma 3-class models, and Lagrange’s September 2025 engineering update is explicit that supporting Gemma 3 required new handling for grouped-query attention (GQA), alternating local/global attention, RMSNorm, GeGLU, and RoPE ([Lagrange, October 20, 2025](https://lagrange.dev/engineering-updates/september-2025)). Meanwhile, Hugging Face’s Gemma 3 documentation describes the released family as using **five local sliding-window self-attention layers for every global self-attention layer**, with long-context support up to `128K` in the larger variants ([Hugging Face Gemma 3 docs](https://huggingface.co/docs/transformers/en/model_doc/gemma3)).
+
+This subsection is an **analytic scaling extension only**. It does not claim that the repository implements Gemma 3 execution, GQA, local/global attention scheduling, or long-context proving. It asks a narrower question: if one carries the paper’s symbolic comparison logic forward to a released sparse long-context architecture, does the qualitative divergence still persist?
+
+For Gemma-style layers, we therefore refine the notation. Let `n_q` be the number of query heads, `n_kv` the number of key/value heads, `d_h` the head dimension, `q = n_q d_h`, `k = n_kv d_h`, `m` the MLP intermediate size, `L_g` the number of global-attention layers, `L_l` the number of local-attention layers, `W` the local sliding-window span, and `W_eff(T) = min(T, W)`. These symbols are used only in this section’s symbolic model; they are not variables exposed by the current repository implementation. Using the same stylized comparative constants as above, the architecture-aware symbolic model becomes:
+
+```text
+A_Gemma(T) = L[Td(q + 2k) + Tdq + 3Tdm] + 2q[L_g T^2 + L_l T W_eff(T)]
+S_Gemma(T) = n_q[L_g T^2 + L_l T W_eff(T)]
+C_SNARK^Gemma(T) = A_Gemma(T) + S_Gemma(T) * C_exp + 2LTd * C_norm + LTm * C_nonlin
+L_STARK^Gemma(T) = A_Gemma(T) + S_Gemma(T) + 2LTd + LTm
+```
+
+This keeps the paper’s original comparison logic intact while replacing the dense-attention surrogate with Gemma-aware GQA and local/global attention terms. It remains a symbolic cost model, not a matched benchmark, and it should not be read as evidence that the repository already proves this architecture.
+
+For the released `Gemma 3 270M` checkpoint, public config mirrors expose `18` layers, hidden size `640`, `4` query heads, `1` KV head, head dimension `256`, intermediate size `2048`, `32K` maximum context, a `512`-token sliding window, and an explicit repeating pattern of five `sliding_attention` layers followed by one `full_attention` layer ([public config mirror](https://huggingface.co/HedronCreeper/gemma-3-270m-custom-hedron/raw/main/config.json)). Instantiating the architecture-aware model with `L = 18`, `L_g = 3`, `L_l = 15`, `d = 640`, `n_q = 4`, `n_kv = 1`, `d_h = 256`, `m = 2048`, and `W = 512` gives the following **symbolic** comparison:
+
+| Context (`T`) | SNARK symbolic work | STARK symbolic work | Ratio | Non-arithmetic share of SNARK |
+|---:|---:|---:|---:|---:|
+| 128 | 14.6B | 13.4B | 1.08x | 7.9% |
+| 2,048 | 310.0B | 263.6B | 1.18x | 15.1% |
+| 8,192 | 1.731T | 1.364T | 1.27x | 21.3% |
+| 32,768 | 14.769T | 10.414T | 1.42x | 29.6% |
+
+This is the right qualitative result. The gap persists, but it is more modest than one would get by pretending Gemma 3 is dense full attention in every layer. Gemma’s local/global sparsity dampens the quadratic attention burden in most layers, so the architecture-aware `32K` result is about `1.42x`, not an inflated `~3x` headline. Even so, the non-arithmetic share keeps rising with context, and within that non-arithmetic budget the softmax term becomes progressively dominant, increasing from about `30.8%` of non-arithmetic SNARK overhead at `T = 128` to about `95.3%` at `T = 32,768`. Again, this is evidence about the symbolic model’s behavior on a released architecture, not evidence that the repository has closed the implementation gap to Gemma-class proving.
+
+The same conclusion survives at a larger frontier point. Public config mirrors for `Gemma 3 27B` expose `62` layers, hidden size `5376`, `32` query heads, `16` KV heads, head dimension `128`, intermediate size `21504`, `128K` maximum context, and a `1024`-token sliding window ([public config mirror](https://huggingface.co/Changgil/google-gemma-3-27b-it-text/raw/main/config.json)). Combining those values with the same `5:1` local/global attention schedule gives approximately `6.565 quadrillion` SNARK constraints versus `4.826 quadrillion` STARK rows at `128K` context, or about `1.36x` more symbolic work on the SNARK side. In that setting, the non-arithmetic component contributes about `26.6%` of total SNARK symbolic work, and softmax accounts for about `98.3%` of non-arithmetic overhead. This should be read as a frontier-scale analytic stress test, not as a repository-backed benchmark or artifact claim.
+
+The main lesson is therefore narrower and stronger than the older dense-attention surrogate. Released long-context production architectures such as Gemma 3 already temper the attention burden through sparsity. Even after respecting that design, the symbolic divergence persists and the softmax-dominated non-arithmetic component becomes increasingly important as context grows. That is a better stress test for this paper’s thesis than GPT-2-small precisely because the architecture is already optimized to suppress long-context attention cost. It strengthens the paper’s analytic claim, while leaving the repository’s implementation scope unchanged.
+
 ---
 
 ## 5. Repository Artifact: A Semantics-Hardened Transformer-VM Proof Stack
