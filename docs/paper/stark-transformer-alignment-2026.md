@@ -184,6 +184,12 @@ The main analytic consequence is clear even without pinning every family member 
 
 That is the publishable claim. The paper does **not** need to rest on unofficial parameter mirrors or on a dense-attention caricature of Gemma 3. It is enough to say that released long-context architectures already incorporate efficiency mechanisms that reduce quadratic attention costs, and that the symbolic divergence still matters precisely because the remaining burden is pushed further toward lookup-heavy and normalization-heavy structure. This strengthens the analytic thesis while avoiding overclaiming from unofficial or unstable model-configuration sources.
 
+Figure 1 visualizes that distinction. The dense curve uses the GPT-2-small symbolic model from Tables 1 and 2. The sparse curve is a **representative Gemma-style sparse attention schedule** under the same stylized constants: a `5:1` local/global pattern with a local sliding window `W = 1024`. It is included to illustrate how sparse production-style attention dampens, but does not erase, the symbolic SNARK/STARK divergence as context grows.
+
+![Figure 1. SNARK/STARK symbolic ratio versus context length for a dense GPT-style model and a representative Gemma-style sparse schedule.](figures/section4-ratio-vs-context.svg)
+
+**Figure 1.** `SNARK/STARK` symbolic ratio versus context length. The dense curve uses the GPT-2-small symbolic model from Section 4.3. The sparse curve is not tied to one exact released checkpoint; it is a representative Gemma-style `5:1` local/global attention schedule with `W = 1024`, included to show the architectural damping effect of sparse long-context attention under the paper's stylized cost model.
+
 ---
 
 ## 5. Repository Artifact: A Semantics-Hardened Transformer-VM Proof Stack
