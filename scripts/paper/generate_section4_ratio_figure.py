@@ -122,13 +122,19 @@ def main() -> None:
     pdf_path = OUTDIR / "section4-ratio-vs-context.pdf"
     svg_path = OUTDIR / "section4-ratio-vs-context.svg"
     png_path = OUTDIR / "section4-ratio-vs-context.png"
+    tsv_path = OUTDIR / "section4-ratio-vs-context.tsv"
     fig.savefig(pdf_path)
     fig.savefig(svg_path)
     fig.savefig(png_path, dpi=300)
+    with tsv_path.open("w", encoding="utf-8") as f:
+        f.write("context_t\tdense_gpt_style_ratio\tsparse_gemma_style_ratio\n")
+        for t, d_ratio, s_ratio in zip(contexts, dense, sparse):
+            f.write(f"{t}\t{d_ratio:.6f}\t{s_ratio:.6f}\n")
 
     print(f"wrote {pdf_path}")
     print(f"wrote {svg_path}")
     print(f"wrote {png_path}")
+    print(f"wrote {tsv_path}")
 
 
 if __name__ == "__main__":
