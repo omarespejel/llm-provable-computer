@@ -1,5 +1,9 @@
 mod adapter;
+#[cfg(feature = "stwo-backend")]
+mod arithmetic_component;
 mod layout;
+#[cfg(feature = "stwo-backend")]
+mod lookup_component;
 
 use crate::config::Attention2DMode;
 use crate::error::{Result, VmError};
@@ -9,9 +13,19 @@ pub use adapter::{
     phase2_dependency_seam, StwoDependencySeam, STWO_CONSTRAINT_FRAMEWORK_VERSION_PHASE2,
     STWO_CRATE_VERSION_PHASE2,
 };
+#[cfg(feature = "stwo-backend")]
+pub use arithmetic_component::{
+    phase3_arithmetic_component_metadata, phase3_arithmetic_preprocessed_columns,
+    Phase3ArithmeticComponentMetadata, Phase3TreeSubspan,
+};
 pub use layout::{
     phase2_fixture_matrix, phase2_module_layout, phase2_supported_mnemonics,
     StwoBackendModuleLayout,
+};
+#[cfg(feature = "stwo-backend")]
+pub use lookup_component::{
+    phase3_binary_step_lookup_component_metadata, phase3_lookup_preprocessed_columns,
+    phase3_lookup_table_rows, Phase3LookupComponentMetadata, Phase3LookupTableRow,
 };
 
 /// Backend version label used by the experimental Phase 2 S-two seam.
@@ -48,7 +62,7 @@ pub fn phase2_placeholder_prove_error() -> VmError {
 
     let seam = phase2_dependency_seam();
     VmError::UnsupportedProof(format!(
-        "S-two backend Phase 2 adapter seam is present (official crates: {} {}, {} {}; modules: {}, {}), but proving is not implemented yet",
+        "S-two backend Phase 2 adapter seam is present (official crates: {} {}, {} {}; modules: {}, {}), but proving is not implemented yet; Phase 3 component builders now cover an arithmetic LOADI/ADD/HALT pilot and a bounded lookup-backed binary-step activation pilot",
         seam.stwo_crate,
         seam.stwo_crate_version,
         seam.constraint_framework_crate,
@@ -66,7 +80,7 @@ pub fn phase2_placeholder_verify_error() -> VmError {
 
     let seam = phase2_dependency_seam();
     VmError::UnsupportedProof(format!(
-        "S-two backend Phase 2 adapter seam is present (official crates: {} {}, {} {}; modules: {}, {}), but verification is not implemented yet",
+        "S-two backend Phase 2 adapter seam is present (official crates: {} {}, {} {}; modules: {}, {}), but verification is not implemented yet; Phase 3 component builders now cover an arithmetic LOADI/ADD/HALT pilot and a bounded lookup-backed binary-step activation pilot",
         seam.stwo_crate,
         seam.stwo_crate_version,
         seam.constraint_framework_crate,
