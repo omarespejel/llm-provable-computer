@@ -12,6 +12,8 @@ No sampling. No stochastic output. Same input, same output, every time.
 
 Based on [*Can LLMs Be Computers?*](https://www.percepta.ai/blog/can-llms-be-computers) by Percepta, which showed that 2D attention over convex hulls turns a transformer into a deterministic machine. This repo implements that system in Rust, then proves the computation correct with a transparent STARK.
 
+This repository is maintained at [`omarespejel/llm-provable-computer`](https://github.com/omarespejel/llm-provable-computer) as a fork of Abdel Danby-Platt's original public repository, [`AbdelStark/llm-provable-computer`](https://github.com/AbdelStark/llm-provable-computer). The original public prototype and repository direction came from Abdel's upstream work; this fork extends it with the paper draft, reproducibility artifacts, semantic certificates, neural-style programs, and the early S-two backend seam.
+
 ---
 
 ## Why This Works
@@ -75,7 +77,7 @@ The proof is **transparent** (no trusted setup) and **post-quantum** (hash-based
 ## Quick Start
 
 ```bash
-git clone https://github.com/AbdelStark/llm-provable-computer && cd llm-provable-computer
+git clone https://github.com/omarespejel/llm-provable-computer && cd llm-provable-computer
 
 # Run a program
 cargo run --bin tvm -- programs/fibonacci.tvm

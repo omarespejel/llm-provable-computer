@@ -10,7 +10,7 @@ April 2026
 
 This paper presents a transformer-specific complexity analysis comparing SNARK circuit size and STARK trace length for verifiable inference. Arithmetic work in a standard transformer block maps similarly in both settings, but non-arithmetic primitives such as softmax, normalization, and activation functions stress the two proving families differently. Under the representative cost model used throughout this paper (`C_exp = 300`, `C_norm = 30`, `C_nonlin = 150`), GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields approximately `157.8B` SNARK constraints versus `106.5B` STARK trace rows across 12 layers, or about `1.48x` more symbolic proving work on the SNARK side under these assumptions. The gap widens with sequence length because the softmax-related overhead scales quadratically in `T`.
 
-We complement this analytic comparison with a concrete proof-stack prototype, [`llm-provable-computer`](https://github.com/omarespejel/llm-provable-computer), in which execution traces from a deterministic transformer-shaped virtual machine are directly consumable as AIR witnesses. The current repository strengthens this thesis with statement-versioned claims, transformer/native lockstep verification, multi-engine differential checks, ONNX export and validation, and research-oriented semantic certificates. The resulting claim is narrower and stronger than a generic “STARKs beat SNARKs” position: transformer workloads expose precisely the dimensions on which STARK-native systems may compound advantages, while modern SNARK systems remain serious and rapidly improving competitors. A compact public-system comparison is included in `docs/paper/appendix-system-comparison.md`.
+We complement this analytic comparison with a concrete proof-stack prototype, [`llm-provable-computer`](https://github.com/omarespejel/llm-provable-computer), in which execution traces from a deterministic transformer-shaped virtual machine are directly consumable as AIR witnesses. The repository analyzed here is maintained in `omarespejel/llm-provable-computer` as a fork of Abdel Danby-Platt's original public repository, `AbdelStark/llm-provable-computer`, and builds directly on that upstream implementation direction. The current fork strengthens this thesis with statement-versioned claims, transformer/native lockstep verification, multi-engine differential checks, ONNX export and validation, and research-oriented semantic certificates. The resulting claim is narrower and stronger than a generic “STARKs beat SNARKs” position: transformer workloads expose precisely the dimensions on which STARK-native systems may compound advantages, while modern SNARK systems remain serious and rapidly improving competitors. A compact public-system comparison is included in `docs/paper/appendix-system-comparison.md`.
 
 ---
 
@@ -178,7 +178,7 @@ The main lesson is therefore narrower and stronger than the older dense-attentio
 
 ## 5. Repository Artifact: A Semantics-Hardened Transformer-VM Proof Stack
 
-The implementation artifact used in this paper is the open repository [`omarespejel/llm-provable-computer`](https://github.com/omarespejel/llm-provable-computer). The right way to describe it is **not** “a production zkML stack for full transformer inference.” The right description is: **a semantics-and-proof artifact demonstrating that deterministic transformer-shaped execution can be compiled into traces that are directly usable as AIR witnesses**.
+The implementation artifact used in this paper is the open repository [`omarespejel/llm-provable-computer`](https://github.com/omarespejel/llm-provable-computer). This repository is a maintained fork of Abdel Danby-Platt's original public `AbdelStark/llm-provable-computer` codebase, and the present artifact should be understood as an extension of that upstream prototype rather than a greenfield implementation. The right way to describe it is **not** “a production zkML stack for full transformer inference.” The right description is: **a semantics-and-proof artifact demonstrating that deterministic transformer-shaped execution can be compiled into traces that are directly usable as AIR witnesses**.
 
 ### 5.1 What the repository demonstrates today
 
@@ -345,6 +345,12 @@ Transformer workloads expose exactly the dimensions on which STARK-native system
 The repository artifact contributes evidence at the trace-semantics layer. Execution traces can be proved directly. Semantic equivalence can be enforced across runtimes. Portable artifacts can be generated and hashed. Reproducibility can be grounded in committed benchmark metadata. That is not the end state of verifiable AI, but it is a defensible and useful piece of the path toward it.
 
 The frontier is therefore no longer “can transformers be proved?” The frontier is: **which proving architecture scales most cleanly to long-context, production verifiable inference while preserving practical deployment properties such as transparency, post-quantum security, and recursive aggregation?**
+
+---
+
+## Acknowledgments
+
+The repository analyzed in this paper builds on Abdel Danby-Platt's original public `AbdelStark/llm-provable-computer` repository. The upstream prototype established the public starting point for this line of implementation work; the current fork extends that base with the paper draft, reproducibility bundle, semantic-certificate workflow, and early S-two backend migration seam.
 
 ---
 
