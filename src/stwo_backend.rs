@@ -25,6 +25,12 @@ pub fn validate_phase1_proof_shape(
 ) -> Result<()> {
     ensure_feature_enabled()?;
 
+    if program.instructions().is_empty() {
+        return Err(VmError::UnsupportedProof(
+            "S-two backend Phase 1 does not accept empty programs".to_string(),
+        ));
+    }
+
     if !matches!(attention_mode, Attention2DMode::AverageHard) {
         return Err(VmError::UnsupportedProof(format!(
             "S-two backend Phase 1 supports only `average-hard` attention, got `{attention_mode}`"
@@ -140,6 +146,17 @@ mod tests {
         assert!(err
             .to_string()
             .contains("outside the current S-two Phase 1 arithmetic subset"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase1_subset_rejects_empty_program() {
+        let program = Program::new(Vec::new(), 0);
+        let err = validate_phase1_proof_shape(&program, &Attention2DMode::AverageHard)
+            .expect_err("empty programs should be rejected explicitly");
+        assert!(err
+            .to_string()
+            .contains("does not accept empty programs"));
     }
 
     #[cfg(not(feature = "stwo-backend"))]

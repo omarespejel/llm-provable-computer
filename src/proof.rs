@@ -747,6 +747,9 @@ pub fn prove_execution_stark_with_backend_and_options(
 ) -> Result<VanillaStarkExecutionProof> {
     validate_proof_inputs(model.program(), &model.config().attention_mode, backend)?;
     validate_stark_options(&options)?;
+    if matches!(backend, StarkProofBackend::Stwo) {
+        return Err(stwo_backend::phase1_placeholder_prove_error());
+    }
     let witness = prepare_execution_witness(model, max_steps, options)?;
     backend_driver(backend).prove(witness)
 }
@@ -776,6 +779,9 @@ pub fn verify_execution_stark_with_backend_and_policy(
     validate_transformer_config(&proof.claim)?;
     validate_equivalence_metadata(&proof.claim)?;
     validate_claim_commitments(&proof.claim)?;
+    if matches!(backend, StarkProofBackend::Stwo) {
+        return Err(stwo_backend::phase1_placeholder_verify_error());
+    }
 
     if !proof.claim.final_state.halted {
         return Err(VmError::UnsupportedProof(

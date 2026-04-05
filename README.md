@@ -481,7 +481,7 @@ The `average-hard` mode is the only one supported by the STARK proof path. `soft
 | `burn-model` | Burn tensor execution engine, `--verify-burn` |
 | `onnx-export` | ONNX export, Tract execution engine, `--verify-onnx` |
 | `stwo-backend` | Experimental S-two backend seam for `prove-stark --backend stwo` / `verify-stark --backend stwo` |
-| `full` | All of the above, `--verify-all` |
+| `full` | `burn-model` + `onnx-export`, plus `--verify-all` convenience workflows |
 
 ```bash
 cargo test                    # Core suite
