@@ -65,9 +65,11 @@ pub use runtime::ExecutionRuntime;
 pub use state::{decode_state, encode_state, MachineState, MIN_D_MODEL};
 pub use stwo_backend::{
     is_enabled as stwo_backend_enabled, phase2_dependency_seam, phase2_fixture_matrix,
-    phase2_module_layout, phase2_supported_mnemonics, StwoBackendModuleLayout, StwoDependencySeam,
-    STWO_BACKEND_FEATURE_NAME, STWO_BACKEND_VERSION_PHASE2,
+    phase2_module_layout, phase2_supported_mnemonics, phase6_prepare_recursion_batch,
+    Phase6RecursionBatchEntry, Phase6RecursionBatchManifest, StwoBackendModuleLayout,
+    StwoDependencySeam, STWO_BACKEND_FEATURE_NAME, STWO_BACKEND_VERSION_PHASE2,
     STWO_CONSTRAINT_FRAMEWORK_VERSION_PHASE2, STWO_CRATE_VERSION_PHASE2,
+    STWO_RECURSION_BATCH_SCOPE_PHASE6, STWO_RECURSION_BATCH_VERSION_PHASE6,
 };
 #[cfg(feature = "stwo-backend")]
 pub use stwo_backend::{

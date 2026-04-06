@@ -16,14 +16,15 @@ use clap::{Parser, Subcommand, ValueEnum};
 #[cfg(any(feature = "burn-model", feature = "onnx-export"))]
 use llm_provable_computer::verify_engines;
 use llm_provable_computer::{
-    conjectured_security_bits, load_execution_stark_proof, production_v1_stark_options,
-    prove_execution_stark_with_backend_and_options, run_execution_tui, save_execution_stark_proof,
-    verify_execution_stark_with_backend_and_policy,
+    conjectured_security_bits, load_execution_stark_proof, phase6_prepare_recursion_batch,
+    production_v1_stark_options, prove_execution_stark_with_backend_and_options, run_execution_tui,
+    save_execution_stark_proof, verify_execution_stark_with_backend_and_policy,
     verify_execution_stark_with_reexecution_and_policy, verify_model_against_native,
     Attention2DMode, ExecutionResult, ExecutionRuntime, ExecutionTraceEntry, MachineState,
     NativeInterpreter, ProgramCompiler, StarkProofBackend, StarkVerificationPolicy, TransformerVm,
     TransformerVmConfig, VanillaStarkProofOptions, VmError,
     PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS, PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS,
+    STWO_RECURSION_BATCH_SCOPE_PHASE6, STWO_RECURSION_BATCH_VERSION_PHASE6,
 };
 #[cfg(feature = "onnx-export")]
 use llm_provable_computer::{export_program_onnx, OnnxExecutionRuntime};
@@ -205,6 +206,15 @@ enum Command {
     VerifyStwoNormalizationDemo {
         /// Path to the serialized proof JSON file.
         proof: PathBuf,
+    },
+    /// Prepare a canonical multi-proof batch manifest for future S-two recursion.
+    PrepareStwoRecursionBatch {
+        /// Proof JSON paths to include in the batch (repeatable).
+        #[arg(long = "proof")]
+        proofs: Vec<PathBuf>,
+        /// File where the serialized batch manifest JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
     },
     /// Generate a research v2 one-step semantic equivalence artifact (transformer vs ONNX).
     ResearchV2Step {
@@ -697,6 +707,9 @@ fn run() -> llm_provable_computer::Result<()> {
         Command::VerifyStwoNormalizationDemo { proof } => {
             verify_stwo_normalization_demo_command(&proof)?
         }
+        Command::PrepareStwoRecursionBatch { proofs, output } => {
+            prepare_stwo_recursion_batch_command(&proofs, &output)?
+        }
         Command::ResearchV2Step {
             program,
             output,
@@ -1117,6 +1130,40 @@ fn verify_stwo_normalization_demo_command(proof_path: &Path) -> llm_provable_com
 
         Ok(())
     }
+}
+
+fn prepare_stwo_recursion_batch_command(
+    proofs: &[PathBuf],
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    if proofs.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "prepare-stwo-recursion-batch requires at least one `--proof` path".to_string(),
+        ));
+    }
+
+    let loaded = proofs
+        .iter()
+        .map(|path| load_execution_stark_proof(path))
+        .collect::<Result<Vec<_>, _>>()?;
+    let manifest = phase6_prepare_recursion_batch(&loaded)?;
+    let json = serde_json::to_string_pretty(&manifest)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    fs::write(output, json)?;
+
+    println!("output: {}", output.display());
+    println!("proof_backend: {}", manifest.proof_backend);
+    println!("batch_version: {}", manifest.batch_version);
+    println!("semantic_scope: {}", manifest.semantic_scope);
+    println!("proof_backend_version: {}", manifest.proof_backend_version);
+    println!("statement_version: {}", manifest.statement_version);
+    println!("total_proofs: {}", manifest.total_proofs);
+    println!("total_steps: {}", manifest.total_steps);
+    println!("total_proof_bytes: {}", manifest.total_proof_bytes);
+    println!("expected_batch_version: {STWO_RECURSION_BATCH_VERSION_PHASE6}");
+    println!("expected_semantic_scope: {STWO_RECURSION_BATCH_SCOPE_PHASE6}");
+
+    Ok(())
 }
 
 fn research_v2_step_command(
@@ -2212,6 +2259,7 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stark"
                 | "prove-stwo-normalization-demo"
                 | "verify-stwo-normalization-demo"
+                | "prepare-stwo-recursion-batch"
                 | "research-v2-step"
                 | "research-v2-trace"
                 | "research-v2-matrix"

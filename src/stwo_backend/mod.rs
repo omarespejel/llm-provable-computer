@@ -10,6 +10,7 @@ mod lookup_component;
 mod normalization_component;
 #[cfg(feature = "stwo-backend")]
 mod normalization_prover;
+mod recursion;
 
 use crate::config::Attention2DMode;
 use crate::error::{Result, VmError};
@@ -50,6 +51,10 @@ pub use normalization_prover::{
     verify_phase5_normalization_lookup_demo, verify_phase5_normalization_lookup_demo_envelope,
     Phase5NormalizationLookupProofEnvelope, STWO_NORMALIZATION_PROOF_VERSION_PHASE5,
     STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5, STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
+};
+pub use recursion::{
+    phase6_prepare_recursion_batch, Phase6RecursionBatchEntry, Phase6RecursionBatchManifest,
+    STWO_RECURSION_BATCH_SCOPE_PHASE6, STWO_RECURSION_BATCH_VERSION_PHASE6,
 };
 
 /// Backend version label used by the experimental Phase 2 S-two seam.

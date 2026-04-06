@@ -307,6 +307,13 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-normalization-demo normalization.stwo.proof.json
 
+# Freeze a canonical pre-aggregation batch manifest for future recursion work
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-recursion-batch \
+  --proof addition.stwo.proof.json \
+  --proof dot.stwo.proof.json \
+  -o recursion-batch.json
+
 # Verify (statement-v1 includes lockstep re-execution)
 cargo run --bin tvm -- verify-stark fact.proof.json
 
@@ -332,7 +339,7 @@ Verifier checks enforce both fields exactly, so claim wording cannot drift from 
 Proof claims also include transformer config, equivalence metadata (`equivalence_checked_steps`, transformer fingerprint, native fingerprint), and artifact commitments (program hash, config hash, deterministic-model hash, STARK-options hash, prover-build info/hash) in CLI output.
 Verifier policy checks are available via `--min-conjectured-security`; `--strict` enforces an 80-bit floor and turns on re-execution checks.
 
-The `stwo` path is now an explicit experimental backend behind `--features stwo-backend`, and it currently requires `cargo +nightly-2025-07-14` because the upstream `stwo` prover stack is still nightly-only. In the current Phase 5 state it wires the official StarkWare crates (`stwo` and `stwo-constraint-framework` at `2.2.0`), performs backend-specific shape validation, and proves and verifies the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/multiply.tvm`, and `programs/dot_product.tvm` under `statement-v1`. Broader arithmetic-subset AIR coverage still exists in the codebase beyond those fixtures, but it is not yet exposed as a public proving path. Alongside that `statement-v1` path, the repo now also exposes the normalization lookup demo through its own serialized proof envelope and dedicated CLI commands, so the lookup-backed normalization component is no longer metadata-only or library-only. Programs outside the current proven fixture set still fail cleanly on the execution-proof `stwo` path, which keeps the claim boundary honest while moving the repo from “dependency seam” to “multiple real S-two proof lifecycles plus one real lookup-backed proof demo”.
+The `stwo` path is now an explicit experimental backend behind `--features stwo-backend`, and it currently requires `cargo +nightly-2025-07-14` because the upstream `stwo` prover stack is still nightly-only. In the current Phase 5 state it wires the official StarkWare crates (`stwo` and `stwo-constraint-framework` at `2.2.0`), performs backend-specific shape validation, and proves and verifies the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/multiply.tvm`, and `programs/dot_product.tvm` under `statement-v1`. Broader arithmetic-subset AIR coverage still exists in the codebase beyond those fixtures, but it is not yet exposed as a public proving path. Alongside that `statement-v1` path, the repo now also exposes the normalization lookup demo through its own serialized proof envelope and dedicated CLI commands, so the lookup-backed normalization component is no longer metadata-only or library-only. Phase 6 begins recursion work conservatively by freezing canonical multi-proof batch manifests for future aggregation rather than pretending recursive proving is already integrated. Programs outside the current proven fixture set still fail cleanly on the execution-proof `stwo` path, which keeps the claim boundary honest while moving the repo from “dependency seam” to “multiple real S-two proof lifecycles plus one real lookup-backed proof demo plus recursion-ready batching”.
 
 The canonical machine-readable statement contract is checked into `spec/statement-v1.json`.
 CI enforces sync between this file and verifier constants via:

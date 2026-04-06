@@ -467,6 +467,65 @@ fn cli_can_prove_and_verify_stwo_normalization_demo() {
 }
 
 #[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_can_prepare_stwo_recursion_batch_manifest() {
+    let proof_a = unique_temp_dir("cli-stwo-recursion-proof-a").with_extension("json");
+    let proof_b = unique_temp_dir("cli-stwo-recursion-proof-b").with_extension("json");
+    let manifest_path = unique_temp_dir("cli-stwo-recursion-manifest").with_extension("json");
+
+    let mut prove_a = Command::cargo_bin("tvm").expect("binary");
+    prove_a
+        .arg("prove-stark")
+        .arg("programs/addition.tvm")
+        .arg("-o")
+        .arg(&proof_a)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    let mut prove_b = Command::cargo_bin("tvm").expect("binary");
+    prove_b
+        .arg("prove-stark")
+        .arg("programs/counter.tvm")
+        .arg("-o")
+        .arg(&proof_b)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    let mut prepare = Command::cargo_bin("tvm").expect("binary");
+    prepare
+        .arg("prepare-stwo-recursion-batch")
+        .arg("--proof")
+        .arg(&proof_a)
+        .arg("--proof")
+        .arg(&proof_b)
+        .arg("-o")
+        .arg(&manifest_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("proof_backend: stwo"))
+        .stdout(predicate::str::contains(
+            "batch_version: stwo-phase6-recursion-batch-v1",
+        ))
+        .stdout(predicate::str::contains("total_proofs: 2"));
+
+    let manifest_json = std::fs::read_to_string(&manifest_path).expect("manifest json");
+    assert!(manifest_json.contains("\"proof_backend\": \"stwo\""));
+    assert!(manifest_json.contains("stwo_execution_proof_batch_preaggregation_manifest"));
+
+    let _ = std::fs::remove_file(proof_a);
+    let _ = std::fs::remove_file(proof_b);
+    let _ = std::fs::remove_file(manifest_path);
+}
+
+#[test]
 fn cli_verify_stark_rejects_backend_override_mismatch() {
     let proof_path = unique_temp_dir("cli-stark-proof-backend-mismatch").with_extension("json");
 
