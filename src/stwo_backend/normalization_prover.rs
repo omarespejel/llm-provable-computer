@@ -67,7 +67,8 @@ impl FrameworkEval for Phase10SharedNormalizationLookupEval {
         let claimed_inv_sqrt_q8 = eval.next_trace_mask();
         let selector = eval.next_trace_mask();
         let table_norm_sq = eval.get_preprocessed_column(column_id("phase10/shared/norm_sq"));
-        let table_inv_sqrt_q8 = eval.get_preprocessed_column(column_id("phase10/shared/inv_sqrt_q8"));
+        let table_inv_sqrt_q8 =
+            eval.get_preprocessed_column(column_id("phase10/shared/inv_sqrt_q8"));
         let one = E::F::from(BaseField::from(1u32));
 
         eval.add_constraint(selector.clone() * (selector.clone() - one));
@@ -489,10 +490,16 @@ fn shared_normalization_base_trace(
     selected_positions: &[usize],
 ) -> ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>> {
     let domain = CanonicCoset::new(log_size).circle_domain();
-    let claimed_norm_sq =
-        BaseColumn::from_iter(canonical_rows.iter().map(|row| BaseField::from(row.0 as u32)));
-    let claimed_inv_sqrt_q8 =
-        BaseColumn::from_iter(canonical_rows.iter().map(|row| BaseField::from(row.1 as u32)));
+    let claimed_norm_sq = BaseColumn::from_iter(
+        canonical_rows
+            .iter()
+            .map(|row| BaseField::from(row.0 as u32)),
+    );
+    let claimed_inv_sqrt_q8 = BaseColumn::from_iter(
+        canonical_rows
+            .iter()
+            .map(|row| BaseField::from(row.1 as u32)),
+    );
     let selector = BaseColumn::from_iter(
         canonical_rows
             .iter()
@@ -527,7 +534,9 @@ fn shared_normalization_component(
     )
 }
 
-fn prove_phase10_shared_normalization_lookup(bundle: &SharedNormalizationBundle) -> Result<Vec<u8>> {
+fn prove_phase10_shared_normalization_lookup(
+    bundle: &SharedNormalizationBundle,
+) -> Result<Vec<u8>> {
     let config = PcsConfig::default();
     let component = shared_normalization_component(
         bundle.log_size,
@@ -640,9 +649,15 @@ fn shared_normalization_interaction_trace(
         let selector = PackedSecureField::from(base_trace[2].data[vec_row]);
         let witness_q: PackedSecureField =
             lookup_elements.combine(&[base_trace[0].data[vec_row], base_trace[1].data[vec_row]]);
-        let table_q: PackedSecureField = lookup_elements
-            .combine(&[preprocessed_trace[0].data[vec_row], preprocessed_trace[1].data[vec_row]]);
-        col_gen.write_frac(vec_row, selector * (table_q - witness_q), witness_q * table_q);
+        let table_q: PackedSecureField = lookup_elements.combine(&[
+            preprocessed_trace[0].data[vec_row],
+            preprocessed_trace[1].data[vec_row],
+        ]);
+        col_gen.write_frac(
+            vec_row,
+            selector * (table_q - witness_q),
+            witness_q * table_q,
+        );
     }
     col_gen.finalize_col();
     logup_gen.finalize_last()
@@ -660,9 +675,7 @@ fn mix_shared_normalization_claim_rows(
 }
 
 fn column_id(id: &str) -> stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId {
-    stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId {
-        id: id.to_string(),
-    }
+    stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId { id: id.to_string() }
 }
 
 #[cfg(test)]
@@ -716,8 +729,10 @@ mod tests {
             STWO_SHARED_NORMALIZATION_SEMANTIC_SCOPE_PHASE10
         );
         assert_eq!(envelope.claimed_rows, claimed_rows);
-        assert!(verify_phase10_shared_normalization_lookup_envelope(&envelope)
-            .expect("verify shared normalization envelope"));
+        assert!(
+            verify_phase10_shared_normalization_lookup_envelope(&envelope)
+                .expect("verify shared normalization envelope")
+        );
     }
 
     #[test]

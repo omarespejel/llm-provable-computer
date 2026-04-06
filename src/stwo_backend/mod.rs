@@ -37,12 +37,11 @@ pub(crate) use arithmetic_subset_prover::{
 pub use decoding::{
     decoding_step_v1_program_with_initial_memory, decoding_step_v1_template_program,
     derive_phase11_from_final_memory, derive_phase11_from_program_initial_state,
-    load_phase11_decoding_chain, matches_decoding_step_v1_family,
-    phase11_prepare_decoding_chain, prove_phase11_decoding_demo, save_phase11_decoding_chain,
-    verify_phase11_decoding_chain, verify_phase11_decoding_chain_with_proof_checks,
-    Phase11DecodingChainManifest, Phase11DecodingState, Phase11DecodingStep,
-    STWO_DECODING_CHAIN_SCOPE_PHASE11, STWO_DECODING_CHAIN_VERSION_PHASE11,
-    STWO_DECODING_STATE_VERSION_PHASE11,
+    load_phase11_decoding_chain, matches_decoding_step_v1_family, phase11_prepare_decoding_chain,
+    prove_phase11_decoding_demo, save_phase11_decoding_chain, verify_phase11_decoding_chain,
+    verify_phase11_decoding_chain_with_proof_checks, Phase11DecodingChainManifest,
+    Phase11DecodingState, Phase11DecodingStep, STWO_DECODING_CHAIN_SCOPE_PHASE11,
+    STWO_DECODING_CHAIN_VERSION_PHASE11, STWO_DECODING_STATE_VERSION_PHASE11,
 };
 pub use layout::{
     phase2_fixture_matrix, phase2_module_layout, phase2_supported_mnemonics,
@@ -55,13 +54,12 @@ pub use lookup_component::{
 };
 #[cfg(feature = "stwo-backend")]
 pub use lookup_prover::{
-    load_phase10_shared_binary_step_lookup_proof,
-    load_phase3_binary_step_lookup_proof, prove_phase3_binary_step_lookup_demo,
-    prove_phase3_binary_step_lookup_demo_envelope, save_phase3_binary_step_lookup_proof,
-    save_phase10_shared_binary_step_lookup_proof, prove_phase10_shared_binary_step_lookup_envelope,
+    load_phase10_shared_binary_step_lookup_proof, load_phase3_binary_step_lookup_proof,
+    prove_phase10_shared_binary_step_lookup_envelope, prove_phase3_binary_step_lookup_demo,
+    prove_phase3_binary_step_lookup_demo_envelope, save_phase10_shared_binary_step_lookup_proof,
+    save_phase3_binary_step_lookup_proof, verify_phase10_shared_binary_step_lookup_envelope,
     verify_phase3_binary_step_lookup_demo, verify_phase3_binary_step_lookup_demo_envelope,
-    verify_phase10_shared_binary_step_lookup_envelope, Phase10SharedLookupProofEnvelope,
-    Phase3LookupProofEnvelope, STWO_LOOKUP_PROOF_VERSION_PHASE3,
+    Phase10SharedLookupProofEnvelope, Phase3LookupProofEnvelope, STWO_LOOKUP_PROOF_VERSION_PHASE3,
     STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
     STWO_SHARED_LOOKUP_PROOF_VERSION_PHASE10, STWO_SHARED_LOOKUP_SEMANTIC_SCOPE_PHASE10,
     STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10,
@@ -74,17 +72,15 @@ pub use normalization_component::{
 };
 #[cfg(feature = "stwo-backend")]
 pub use normalization_prover::{
-    load_phase10_shared_normalization_lookup_proof,
-    load_phase5_normalization_lookup_proof, prove_phase5_normalization_lookup_demo,
-    prove_phase5_normalization_lookup_demo_envelope, save_phase5_normalization_lookup_proof,
-    prove_phase10_shared_normalization_lookup_envelope,
-    save_phase10_shared_normalization_lookup_proof,
-    verify_phase5_normalization_lookup_demo, verify_phase5_normalization_lookup_demo_envelope,
-    verify_phase10_shared_normalization_lookup_envelope,
+    load_phase10_shared_normalization_lookup_proof, load_phase5_normalization_lookup_proof,
+    prove_phase10_shared_normalization_lookup_envelope, prove_phase5_normalization_lookup_demo,
+    prove_phase5_normalization_lookup_demo_envelope,
+    save_phase10_shared_normalization_lookup_proof, save_phase5_normalization_lookup_proof,
+    verify_phase10_shared_normalization_lookup_envelope, verify_phase5_normalization_lookup_demo,
+    verify_phase5_normalization_lookup_demo_envelope,
     Phase10SharedNormalizationLookupProofEnvelope, Phase5NormalizationLookupProofEnvelope,
     STWO_NORMALIZATION_PROOF_VERSION_PHASE5, STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5,
-    STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
-    STWO_SHARED_NORMALIZATION_PROOF_VERSION_PHASE10,
+    STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5, STWO_SHARED_NORMALIZATION_PROOF_VERSION_PHASE10,
     STWO_SHARED_NORMALIZATION_SEMANTIC_SCOPE_PHASE10,
     STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10,
 };

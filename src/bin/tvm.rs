@@ -30,26 +30,23 @@ use llm_provable_computer::{
 use llm_provable_computer::{export_program_onnx, OnnxExecutionRuntime};
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::{
-    load_phase11_decoding_chain,
     load_phase10_shared_binary_step_lookup_proof, load_phase10_shared_normalization_lookup_proof,
-    load_phase3_binary_step_lookup_proof, load_phase5_normalization_lookup_proof,
-    prove_phase11_decoding_demo,
-    prove_phase10_shared_binary_step_lookup_envelope,
-    prove_phase10_shared_normalization_lookup_envelope,
-    prove_phase3_binary_step_lookup_demo_envelope,
-    prove_phase5_normalization_lookup_demo_envelope, save_phase10_shared_binary_step_lookup_proof,
-    save_phase11_decoding_chain,
-    save_phase10_shared_normalization_lookup_proof, save_phase3_binary_step_lookup_proof,
+    load_phase11_decoding_chain, load_phase3_binary_step_lookup_proof,
+    load_phase5_normalization_lookup_proof, prove_phase10_shared_binary_step_lookup_envelope,
+    prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
+    prove_phase3_binary_step_lookup_demo_envelope, prove_phase5_normalization_lookup_demo_envelope,
+    save_phase10_shared_binary_step_lookup_proof, save_phase10_shared_normalization_lookup_proof,
+    save_phase11_decoding_chain, save_phase3_binary_step_lookup_proof,
     save_phase5_normalization_lookup_proof, stwo_backend_enabled,
     verify_phase10_shared_binary_step_lookup_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
     verify_phase11_decoding_chain_with_proof_checks,
     verify_phase3_binary_step_lookup_demo_envelope,
-    verify_phase5_normalization_lookup_demo_envelope, STWO_LOOKUP_PROOF_VERSION_PHASE3,
+    verify_phase5_normalization_lookup_demo_envelope, STWO_DECODING_CHAIN_SCOPE_PHASE11,
+    STWO_DECODING_CHAIN_VERSION_PHASE11, STWO_LOOKUP_PROOF_VERSION_PHASE3,
     STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
     STWO_NORMALIZATION_PROOF_VERSION_PHASE5, STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5,
-    STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5, STWO_DECODING_CHAIN_VERSION_PHASE11,
-    STWO_DECODING_CHAIN_SCOPE_PHASE11,
+    STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
 };
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
@@ -781,12 +778,8 @@ fn run() -> llm_provable_computer::Result<()> {
         Command::VerifyStwoSharedNormalizationDemo { proof } => {
             verify_stwo_shared_normalization_demo_command(&proof)?
         }
-        Command::ProveStwoDecodingDemo { output } => {
-            prove_stwo_decoding_demo_command(&output)?
-        }
-        Command::VerifyStwoDecodingDemo { proof } => {
-            verify_stwo_decoding_demo_command(&proof)?
-        }
+        Command::ProveStwoDecodingDemo { output } => prove_stwo_decoding_demo_command(&output)?,
+        Command::VerifyStwoDecodingDemo { proof } => verify_stwo_decoding_demo_command(&proof)?,
         Command::PrepareStwoRecursionBatch { proofs, output } => {
             prepare_stwo_recursion_batch_command(&proofs, &output)?
         }
@@ -1227,8 +1220,14 @@ fn prove_stwo_shared_lookup_demo_command(output: &Path) -> llm_provable_computer
     #[cfg(feature = "stwo-backend")]
     {
         let proof = prove_phase10_shared_binary_step_lookup_envelope(&[
-            llm_provable_computer::Phase3LookupTableRow { input: 0, output: 1 },
-            llm_provable_computer::Phase3LookupTableRow { input: 1, output: 1 },
+            llm_provable_computer::Phase3LookupTableRow {
+                input: 0,
+                output: 1,
+            },
+            llm_provable_computer::Phase3LookupTableRow {
+                input: 1,
+                output: 1,
+            },
         ])?;
         save_phase10_shared_binary_step_lookup_proof(&proof, output)?;
 
@@ -1486,9 +1485,7 @@ fn verify_stwo_decoding_demo_command(proof_path: &Path) -> llm_provable_computer
         println!("proof_backend_version: {}", manifest.proof_backend_version);
         println!("statement_version: {}", manifest.statement_version);
         println!("total_steps: {}", manifest.total_steps);
-        println!(
-            "expected_chain_version: {STWO_DECODING_CHAIN_VERSION_PHASE11}"
-        );
+        println!("expected_chain_version: {STWO_DECODING_CHAIN_VERSION_PHASE11}");
         println!("expected_semantic_scope: {STWO_DECODING_CHAIN_SCOPE_PHASE11}");
 
         Ok(())

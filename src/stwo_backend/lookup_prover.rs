@@ -37,8 +37,7 @@ pub const STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3: &str =
     "stwo_binary_step_activation_lookup_demo_with_canonical_table";
 pub const STWO_SHARED_LOOKUP_PROOF_VERSION_PHASE10: &str =
     "stwo-phase10-shared-binary-step-lookup-v1";
-pub const STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10: &str =
-    "stwo-shared-binary-step-lookup-v1";
+pub const STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10: &str = "stwo-shared-binary-step-lookup-v1";
 pub const STWO_SHARED_LOOKUP_SEMANTIC_SCOPE_PHASE10: &str =
     "stwo_shared_binary_step_activation_lookup_with_canonical_table";
 
@@ -278,8 +277,12 @@ pub fn prove_phase3_binary_step_lookup_demo() -> Result<Vec<u8>> {
 
     channel.mix_u64(bundle.log_size as u64);
     let lookup_elements = Phase3BinaryStepLookupElements::draw(channel);
-    let (interaction_trace, claimed_sum) =
-        lookup_interaction_trace(bundle.log_size, &bundle.base_trace, &bundle.preprocessed_trace, &lookup_elements);
+    let (interaction_trace, claimed_sum) = lookup_interaction_trace(
+        bundle.log_size,
+        &bundle.base_trace,
+        &bundle.preprocessed_trace,
+        &lookup_elements,
+    );
     if claimed_sum != SecureField::zero() {
         return Err(VmError::UnsupportedProof(
             "binary-step lookup demo expected zero claimed sum for identical witness/table multisets"
@@ -420,8 +423,10 @@ fn lookup_interaction_trace(
     for vec_row in 0..(1 << (log_size - LOG_N_LANES)) {
         let witness_q: PackedSecureField =
             lookup_elements.combine(&[base_trace[0].data[vec_row], base_trace[1].data[vec_row]]);
-        let table_q: PackedSecureField = lookup_elements
-            .combine(&[preprocessed_trace[0].data[vec_row], preprocessed_trace[1].data[vec_row]]);
+        let table_q: PackedSecureField = lookup_elements.combine(&[
+            preprocessed_trace[0].data[vec_row],
+            preprocessed_trace[1].data[vec_row],
+        ]);
         col_gen.write_frac(vec_row, table_q - witness_q, witness_q * table_q);
     }
     col_gen.finalize_col();
@@ -478,11 +483,16 @@ fn shared_lookup_base_trace(
     selected_positions: &[usize],
 ) -> ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>> {
     let domain = CanonicCoset::new(log_size).circle_domain();
-    let claimed_input = BaseColumn::from_iter(canonical_rows.iter().map(|row| {
-        BaseField::from((row.input as i32).rem_euclid(1 << 31) as u32)
-    }));
-    let claimed_output =
-        BaseColumn::from_iter(canonical_rows.iter().map(|row| BaseField::from(row.output as u32)));
+    let claimed_input = BaseColumn::from_iter(
+        canonical_rows
+            .iter()
+            .map(|row| BaseField::from((row.input as i32).rem_euclid(1 << 31) as u32)),
+    );
+    let claimed_output = BaseColumn::from_iter(
+        canonical_rows
+            .iter()
+            .map(|row| BaseField::from(row.output as u32)),
+    );
     let selector = BaseColumn::from_iter(
         canonical_rows
             .iter()
@@ -547,8 +557,12 @@ fn prove_phase10_shared_binary_step_lookup(bundle: &SharedLookupBundle) -> Resul
 
     mix_shared_lookup_claim_rows(channel, &bundle.claimed_rows);
     let lookup_elements = Phase10SharedBinaryStepLookupElements::draw(channel);
-    let (interaction_trace, claimed_sum) =
-        shared_lookup_interaction_trace(bundle.log_size, &bundle.base_trace, &bundle.preprocessed_trace, &lookup_elements);
+    let (interaction_trace, claimed_sum) = shared_lookup_interaction_trace(
+        bundle.log_size,
+        &bundle.base_trace,
+        &bundle.preprocessed_trace,
+        &lookup_elements,
+    );
     if claimed_sum != SecureField::zero() {
         return Err(VmError::UnsupportedProof(
             "shared binary-step lookup expected zero claimed sum for selected canonical rows"
@@ -625,9 +639,15 @@ fn shared_lookup_interaction_trace(
         let selector = PackedSecureField::from(base_trace[2].data[vec_row]);
         let witness_q: PackedSecureField =
             lookup_elements.combine(&[base_trace[0].data[vec_row], base_trace[1].data[vec_row]]);
-        let table_q: PackedSecureField = lookup_elements
-            .combine(&[preprocessed_trace[0].data[vec_row], preprocessed_trace[1].data[vec_row]]);
-        col_gen.write_frac(vec_row, selector * (table_q - witness_q), witness_q * table_q);
+        let table_q: PackedSecureField = lookup_elements.combine(&[
+            preprocessed_trace[0].data[vec_row],
+            preprocessed_trace[1].data[vec_row],
+        ]);
+        col_gen.write_frac(
+            vec_row,
+            selector * (table_q - witness_q),
+            witness_q * table_q,
+        );
     }
     col_gen.finalize_col();
     logup_gen.finalize_last()
@@ -645,9 +665,7 @@ fn mix_shared_lookup_claim_rows(
 }
 
 fn column_id(id: &str) -> stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId {
-    stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId {
-        id: id.to_string(),
-    }
+    stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId { id: id.to_string() }
 }
 
 #[cfg(test)]
@@ -666,7 +684,10 @@ mod tests {
         let envelope =
             prove_phase3_binary_step_lookup_demo_envelope().expect("prove lookup demo envelope");
         assert_eq!(envelope.proof_backend, StarkProofBackend::Stwo);
-        assert_eq!(envelope.proof_backend_version, STWO_LOOKUP_PROOF_VERSION_PHASE3);
+        assert_eq!(
+            envelope.proof_backend_version,
+            STWO_LOOKUP_PROOF_VERSION_PHASE3
+        );
         assert_eq!(
             envelope.statement_version,
             STWO_LOOKUP_STATEMENT_VERSION_PHASE3
