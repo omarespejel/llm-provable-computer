@@ -6,9 +6,14 @@ use blake2::Blake2bVar;
 use serde::{Deserialize, Serialize};
 
 use crate::assembly::parse_program;
+use crate::config::{Attention2DMode, TransformerVmConfig};
+use crate::compiler::ProgramCompiler;
 use crate::error::{Result, VmError};
 use crate::instruction::Program;
-use crate::proof::{StarkProofBackend, VanillaStarkExecutionProof};
+use crate::proof::{
+    production_v1_stark_options, prove_execution_stark_with_backend_and_options,
+    verify_execution_stark, StarkProofBackend, VanillaStarkExecutionProof,
+};
 
 pub const STWO_DECODING_CHAIN_VERSION_PHASE11: &str = "stwo-phase11-decoding-chain-v1";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE11: &str =
@@ -214,6 +219,20 @@ pub fn verify_phase11_decoding_chain(manifest: &Phase11DecodingChainManifest) ->
     validate_phase11_chain_steps(&manifest.steps)
 }
 
+pub fn verify_phase11_decoding_chain_with_proof_checks(
+    manifest: &Phase11DecodingChainManifest,
+) -> Result<()> {
+    verify_phase11_decoding_chain(manifest)?;
+    for (step_index, step) in manifest.steps.iter().enumerate() {
+        if !verify_execution_stark(&step.proof)? {
+            return Err(VmError::UnsupportedProof(format!(
+                "decoding step {step_index} execution proof did not verify"
+            )));
+        }
+    }
+    Ok(())
+}
+
 pub fn save_phase11_decoding_chain(
     manifest: &Phase11DecodingChainManifest,
     path: &Path,
@@ -227,6 +246,29 @@ pub fn save_phase11_decoding_chain(
 pub fn load_phase11_decoding_chain(path: &Path) -> Result<Phase11DecodingChainManifest> {
     let bytes = fs::read(path)?;
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+}
+
+pub fn prove_phase11_decoding_demo() -> Result<Phase11DecodingChainManifest> {
+    let config = TransformerVmConfig {
+        num_layers: 1,
+        attention_mode: Attention2DMode::AverageHard,
+        ..TransformerVmConfig::default()
+    };
+    let mut proofs = Vec::new();
+    for initial_memory in phase11_demo_initial_memories() {
+        let program = decoding_step_v1_program_with_initial_memory(initial_memory)?;
+        let model = ProgramCompiler.compile_program(program, config.clone())?;
+        let proof = prove_execution_stark_with_backend_and_options(
+            &model,
+            128,
+            StarkProofBackend::Stwo,
+            production_v1_stark_options(),
+        )?;
+        proofs.push(proof);
+    }
+    let manifest = phase11_prepare_decoding_chain(&proofs)?;
+    verify_phase11_decoding_chain_with_proof_checks(&manifest)?;
+    Ok(manifest)
 }
 
 fn derive_phase11_state(memory: &[i16], step_index: usize) -> Result<Phase11DecodingState> {
@@ -310,6 +352,14 @@ fn commit_slice(values: &[i16]) -> String {
     let mut out = [0u8; 32];
     hasher.finalize_variable(&mut out).expect("blake2b finalize");
     lower_hex(&out)
+}
+
+fn phase11_demo_initial_memories() -> Vec<Vec<i16>> {
+    vec![
+        vec![0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![0, 0, 0, 0, 2, 1, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+        vec![0, 0, 2, 1, 3, 2, 4, 3, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1],
+    ]
 }
 
 fn lower_hex(bytes: &[u8]) -> String {
