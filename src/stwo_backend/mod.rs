@@ -89,7 +89,7 @@ pub fn phase2_placeholder_prove_error() -> VmError {
 
     let seam = phase2_dependency_seam();
     VmError::UnsupportedProof(format!(
-        "S-two backend Phase 2 adapter seam is present (official crates: {} {}, {} {}; modules: {}, {}), but proving is not implemented yet in binaries built without the `stwo-backend` feature; the feature-gated implementation now covers a real proof path for the shipped addition fixture plus a separate normalization lookup demo",
+        "S-two backend Phase 2 adapter seam is present (official crates: {} {}, {} {}; modules: {}, {}), but proving is not implemented yet in binaries built without the `stwo-backend` feature; the feature-gated implementation now covers real proof paths for the shipped arithmetic fixtures plus a separate normalization lookup demo",
         seam.stwo_crate,
         seam.stwo_crate_version,
         seam.constraint_framework_crate,
@@ -107,7 +107,7 @@ pub fn phase2_placeholder_verify_error() -> VmError {
 
     let seam = phase2_dependency_seam();
     VmError::UnsupportedProof(format!(
-        "S-two backend Phase 2 adapter seam is present (official crates: {} {}, {} {}; modules: {}, {}), but verification is not implemented yet in binaries built without the `stwo-backend` feature; the feature-gated implementation now covers a real proof path for the shipped addition fixture plus a separate normalization lookup demo",
+        "S-two backend Phase 2 adapter seam is present (official crates: {} {}, {} {}; modules: {}, {}), but verification is not implemented yet in binaries built without the `stwo-backend` feature; the feature-gated implementation now covers real proof paths for the shipped arithmetic fixtures plus a separate normalization lookup demo",
         seam.stwo_crate,
         seam.stwo_crate_version,
         seam.constraint_framework_crate,

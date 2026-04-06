@@ -295,9 +295,11 @@ cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proo
   --stark-profile production-v1 \
   --stark-expansion-factor 8 --stark-num-colinearity-checks 16 --stark-security-level 32
 
-# Exercise the experimental S-two backend on the exact shipped addition fixture
+# Exercise the experimental S-two backend on the shipped arithmetic fixtures
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prove-stark programs/addition.tvm -o addition.stwo.proof.json --backend stwo
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prove-stark programs/dot_product.tvm -o dot.stwo.proof.json --backend stwo --max-steps 256
 
 # Verify (statement-v1 includes lockstep re-execution)
 cargo run --bin tvm -- verify-stark fact.proof.json
@@ -324,7 +326,7 @@ Verifier checks enforce both fields exactly, so claim wording cannot drift from 
 Proof claims also include transformer config, equivalence metadata (`equivalence_checked_steps`, transformer fingerprint, native fingerprint), and artifact commitments (program hash, config hash, deterministic-model hash, STARK-options hash, prover-build info/hash) in CLI output.
 Verifier policy checks are available via `--min-conjectured-security`; `--strict` enforces an 80-bit floor and turns on re-execution checks.
 
-The `stwo` path is now an explicit experimental backend behind `--features stwo-backend`, and it currently requires `cargo +nightly-2025-07-14` because the upstream `stwo` prover stack is still nightly-only. In the current Phase 5 state it wires the official StarkWare crates (`stwo` and `stwo-constraint-framework` at `2.2.0`), performs backend-specific shape validation, and proves and verifies the exact shipped `programs/addition.tvm` fixture under `statement-v1`. Broader arithmetic-subset AIR coverage now exists in the codebase and is exercised by internal trace-constraint tests, but it is not yet exposed as a public proving path because the real `stwo` prover lifecycle is only validated end to end for the shipped addition fixture. Alongside that `statement-v1` path, the repo now also contains a separate end-to-end normalization lookup demo proof so the lookup-backed normalization component is no longer metadata-only. Programs outside the current proven fixture still fail cleanly on the `stwo` path, which keeps the claim boundary honest while moving the repo from “dependency seam” to “first real S-two proof lifecycle plus one real lookup-backed proof demo”.
+The `stwo` path is now an explicit experimental backend behind `--features stwo-backend`, and it currently requires `cargo +nightly-2025-07-14` because the upstream `stwo` prover stack is still nightly-only. In the current Phase 5 state it wires the official StarkWare crates (`stwo` and `stwo-constraint-framework` at `2.2.0`), performs backend-specific shape validation, and proves and verifies the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/multiply.tvm`, and `programs/dot_product.tvm` under `statement-v1`. Broader arithmetic-subset AIR coverage still exists in the codebase beyond those fixtures, but it is not yet exposed as a public proving path. Alongside that `statement-v1` path, the repo now also contains a separate end-to-end normalization lookup demo proof so the lookup-backed normalization component is no longer metadata-only. Programs outside the current proven fixture set still fail cleanly on the `stwo` path, which keeps the claim boundary honest while moving the repo from “dependency seam” to “multiple real S-two proof lifecycles plus one real lookup-backed proof demo”.
 
 The canonical machine-readable statement contract is checked into `spec/statement-v1.json`.
 CI enforces sync between this file and verifier constants via:
@@ -558,7 +560,7 @@ Intentionally narrow. Intentionally correct.
 
 **Not implemented:** GPU acceleration. Learned/trained weights. Zero-knowledge proofs. WASM frontend. A full S-two/STWO zkML backend for standard-softmax transformers. Full-ISA STARK AIR for bitwise and compare instructions.
 
-**Experimental backend:** `--features stwo-backend` enables the current S-two path. It preserves `statement-v1` claim semantics and currently proves one exact shipped arithmetic fixture: `programs/addition.tvm`. The broader Phase 2 arithmetic subset (`NOP`, `LOADI`, `LOAD`, `STORE`, `ADD`, `ADDM`, `SUBM`, `MULM`, `JMP`, `JZ`, `HALT`) is implemented at the AIR/trace level and covered by internal constraint tests, but end-to-end `stwo` proving is only validated publicly for the shipped addition fixture. Phase 3 added real `stwo-constraint-framework` component construction for a narrow arithmetic pilot and a bounded lookup-backed activation pilot; Phase 5 replaces the old placeholder seam with a real addition proof lifecycle and adds a separate end-to-end normalization lookup demo. This is still not a full S-two zkML backend for standard-softmax transformers, but it is no longer only a dependency seam.
+**Experimental backend:** `--features stwo-backend` enables the current S-two path. It preserves `statement-v1` claim semantics and currently proves four shipped arithmetic fixtures: `programs/addition.tvm`, `programs/counter.tvm`, `programs/multiply.tvm`, and `programs/dot_product.tvm`. The broader Phase 2 arithmetic subset (`NOP`, `LOADI`, `LOAD`, `STORE`, `ADD`, `ADDM`, `SUBM`, `MULM`, `JMP`, `JZ`, `HALT`) is implemented at the AIR/trace level and covered by internal constraint tests, but end-to-end `stwo` proving is only validated publicly for that shipped fixture set. Phase 3 added real `stwo-constraint-framework` component construction for a narrow arithmetic pilot and a bounded lookup-backed activation pilot; Phase 5 replaces the old placeholder seam with multiple real arithmetic proof lifecycles and a separate end-to-end normalization lookup demo. This is still not a full S-two zkML backend for standard-softmax transformers, but it is no longer only a dependency seam.
 
 The narrowness is the point. The semantics are small enough to inspect, the test suite is strong enough to trust, and the structure is clean enough to prove over.
 
