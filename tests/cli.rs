@@ -340,8 +340,12 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
     for (program, stem, expected_acc) in [
         ("programs/addition.tvm", "addition", "8"),
         ("programs/counter.tvm", "counter", "5"),
+        ("programs/memory_roundtrip.tvm", "memory-roundtrip", "42"),
         ("programs/multiply.tvm", "multiply", "42"),
         ("programs/dot_product.tvm", "dot", "70"),
+        ("programs/fibonacci.tvm", "fibonacci", "21"),
+        ("programs/matmul_2x2.tvm", "matmul-2x2", "134"),
+        ("programs/single_neuron.tvm", "single-neuron", "1"),
     ] {
         let proof_path =
             unique_temp_dir(&format!("cli-stark-proof-stwo-phase5-{stem}")).with_extension("json");
@@ -407,13 +411,15 @@ fn cli_prove_stark_rejects_program_outside_stwo_phase2_subset() {
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_prove_stark_rejects_phase5_programs_outside_shipped_fixtures() {
-    let proof_path =
-        unique_temp_dir("cli-stark-proof-stwo-phase5-memory-roundtrip").with_extension("json");
+    let temp_dir = unique_temp_dir("cli-stark-proof-stwo-phase5-custom-subset");
+    let program_path = temp_dir.with_extension("tvm");
+    let proof_path = temp_dir.with_extension("json");
+    std::fs::write(&program_path, ".memory 4\n\nLOADI 9\nHALT\n").expect("write program");
 
     let mut prove = Command::cargo_bin("tvm").expect("binary");
     prove
         .arg("prove-stark")
-        .arg("programs/memory_roundtrip.tvm")
+        .arg(&program_path)
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -423,6 +429,8 @@ fn cli_prove_stark_rejects_phase5_programs_outside_shipped_fixtures() {
         .stderr(predicate::str::contains(
             "currently proves only the shipped arithmetic fixtures",
         ));
+
+    let _ = std::fs::remove_file(program_path);
 }
 
 #[test]
