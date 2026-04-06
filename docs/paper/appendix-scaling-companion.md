@@ -56,7 +56,7 @@ The configuration used here follows the released Llama 2 7B architecture family 
 
 All values below use the **exact dense formula from Sections 4.1 and 4.2**, not the first-order `TH / d^2` heuristic. That distinction matters at long context because the `2T^2d` term in both the numerator and denominator materially tempers the growth rate.
 
-| Context `T` | Ratio at `C_exp = 15` | Ratio at `C_exp = 50` | Ratio at `C_exp = 300` | STARK non-arithmetic share |
+| Context `T` | Ratio at `C_exp = 15` | Ratio at `C_exp = 50` | Ratio at `C_exp = 300` | STARK lookup-plus-scaling share |
 |---|---:|---:|---:|---:|
 | `4,096` | `1.019204x` | `1.038722x` | `1.178133x` | `0.069706%` |
 | `32,768` | `1.036868x` | `1.114813x` | `1.671567x` | `0.229661%` |
