@@ -347,6 +347,7 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
         ("programs/gemma_block_v1.tvm", "gemma-block-v1", "16"),
         ("programs/gemma_block_v2.tvm", "gemma-block-v2", "16"),
         ("programs/gemma_block_v3.tvm", "gemma-block-v3", "16"),
+        ("programs/gemma_block_v4.tvm", "gemma-block-v4", "16"),
         ("programs/matmul_2x2.tvm", "matmul-2x2", "134"),
         ("programs/single_neuron.tvm", "single-neuron", "1"),
     ] {
@@ -370,13 +371,16 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
 
         let proof_json = std::fs::read_to_string(&proof_path).expect("proof json");
         assert!(proof_json.contains("\"proof_backend\": \"stwo\""));
-        assert!(proof_json.contains("stwo-phase9-gemma-block-v3"));
+        assert!(proof_json.contains("stwo-phase10-gemma-block-v4"));
         if program == "programs/gemma_block_v1.tvm" {
             assert!(proof_json.contains("\"normalization_companion\""));
             assert!(proof_json.contains("stwo-normalization-demo-v1"));
             assert!(proof_json.contains("stwo_gemma_block_v1_execution_plus_normalization_companion"));
         }
-        if program == "programs/gemma_block_v2.tvm" || program == "programs/gemma_block_v3.tvm" {
+        if program == "programs/gemma_block_v2.tvm"
+            || program == "programs/gemma_block_v3.tvm"
+            || program == "programs/gemma_block_v4.tvm"
+        {
             let proof_value: serde_json::Value =
                 serde_json::from_str(&proof_json).expect("proof value");
             let proof_bytes = proof_value["proof"]
@@ -388,16 +392,18 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
             let payload: serde_json::Value =
                 serde_json::from_slice(&proof_bytes).expect("payload json");
             assert!(!proof_json.contains("\"stwo_auxiliary\""));
-            assert_eq!(
-                payload["embedded_normalization"]["statement_version"],
-                "stwo-normalization-demo-v1"
-            );
-            let expected_norm_scope = if program == "programs/gemma_block_v3.tvm" {
-                "stwo_gemma_block_v3_execution_with_embedded_normalization"
-            } else {
-                "stwo_gemma_block_v2_execution_with_embedded_normalization"
-            };
-            assert_eq!(payload["embedded_normalization"]["semantic_scope"], expected_norm_scope);
+            if program == "programs/gemma_block_v2.tvm" || program == "programs/gemma_block_v3.tvm" {
+                assert_eq!(
+                    payload["embedded_normalization"]["statement_version"],
+                    "stwo-normalization-demo-v1"
+                );
+                let expected_norm_scope = if program == "programs/gemma_block_v3.tvm" {
+                    "stwo_gemma_block_v3_execution_with_embedded_normalization"
+                } else {
+                    "stwo_gemma_block_v2_execution_with_embedded_normalization"
+                };
+                assert_eq!(payload["embedded_normalization"]["semantic_scope"], expected_norm_scope);
+            }
             if program == "programs/gemma_block_v3.tvm" {
                 assert_eq!(
                     payload["embedded_activation_lookup"]["statement_version"],
@@ -406,6 +412,37 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
                 assert_eq!(
                     payload["embedded_activation_lookup"]["semantic_scope"],
                     "stwo_gemma_block_v3_execution_with_embedded_binary_step_lookup"
+                );
+            } else if program == "programs/gemma_block_v4.tvm" {
+                assert_eq!(
+                    payload["embedded_shared_normalization"]["statement_version"],
+                    "stwo-shared-normalization-lookup-v1"
+                );
+                assert_eq!(
+                    payload["embedded_shared_normalization"]["semantic_scope"],
+                    "stwo_gemma_block_v4_execution_with_shared_normalization_lookup"
+                );
+                assert_eq!(
+                    payload["embedded_shared_activation_lookup"]["statement_version"],
+                    "stwo-shared-binary-step-lookup-v1"
+                );
+                assert_eq!(
+                    payload["embedded_shared_activation_lookup"]["semantic_scope"],
+                    "stwo_gemma_block_v4_execution_with_shared_binary_step_lookup"
+                );
+                assert_eq!(
+                    payload["embedded_shared_normalization"]["claimed_rows"]
+                        .as_array()
+                        .expect("shared normalization rows")
+                        .len(),
+                    2
+                );
+                assert_eq!(
+                    payload["embedded_shared_activation_lookup"]["claimed_rows"]
+                        .as_array()
+                        .expect("shared activation rows")
+                        .len(),
+                    2
                 );
             }
         }
@@ -419,7 +456,7 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
             .success()
             .stdout(predicate::str::contains("proof_backend: stwo"))
             .stdout(predicate::str::contains(
-                "proof_backend_version: stwo-phase9-gemma-block-v3",
+                "proof_backend_version: stwo-phase10-gemma-block-v4",
             ))
             .stdout(predicate::str::contains("verified_stark: true"))
             .stdout(predicate::str::contains("reexecuted_equivalence: true"))
@@ -592,6 +629,124 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v3_embedded_activation() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_verify_stark_rejects_tampered_gemma_block_v4_shared_normalization() {
+    let proof_path = unique_temp_dir("cli-stwo-gemma-block-v4-proof").with_extension("json");
+    let invalid_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-proof-tampered-norm").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stark")
+        .arg("programs/gemma_block_v4.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&proof_path).expect("read proof")).expect("json");
+    let proof_bytes = proof_json["proof"]
+        .as_array()
+        .expect("proof bytes")
+        .iter()
+        .map(|v| v.as_u64().expect("byte") as u8)
+        .collect::<Vec<_>>();
+    let mut payload: serde_json::Value = serde_json::from_slice(&proof_bytes).expect("payload");
+    payload["embedded_shared_normalization"]["claimed_rows"][1]["expected_inv_sqrt_q8"] =
+        serde_json::json!(65);
+    proof_json["proof"] = serde_json::Value::Array(
+        serde_json::to_vec(&payload)
+            .expect("encode payload")
+            .into_iter()
+            .map(serde_json::Value::from)
+            .collect(),
+    );
+    std::fs::write(
+        &invalid_path,
+        serde_json::to_vec_pretty(&proof_json).expect("encode bad proof"),
+    )
+    .expect("write bad proof");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stark")
+        .arg(&invalid_path)
+        .arg("--reexecute")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "gemma_block_v4 shared normalization does not match claimed final state",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(invalid_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stark_rejects_tampered_gemma_block_v4_shared_activation() {
+    let proof_path = unique_temp_dir("cli-stwo-gemma-block-v4-proof").with_extension("json");
+    let invalid_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-proof-tampered-act").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stark")
+        .arg("programs/gemma_block_v4.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&proof_path).expect("read proof")).expect("json");
+    let proof_bytes = proof_json["proof"]
+        .as_array()
+        .expect("proof bytes")
+        .iter()
+        .map(|v| v.as_u64().expect("byte") as u8)
+        .collect::<Vec<_>>();
+    let mut payload: serde_json::Value = serde_json::from_slice(&proof_bytes).expect("payload");
+    payload["embedded_shared_activation_lookup"]["claimed_rows"][1]["expected_output"] =
+        serde_json::json!(0);
+    proof_json["proof"] = serde_json::Value::Array(
+        serde_json::to_vec(&payload)
+            .expect("encode payload")
+            .into_iter()
+            .map(serde_json::Value::from)
+            .collect(),
+    );
+    std::fs::write(
+        &invalid_path,
+        serde_json::to_vec_pretty(&proof_json).expect("encode bad proof"),
+    )
+    .expect("write bad proof");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stark")
+        .arg(&invalid_path)
+        .arg("--reexecute")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "gemma_block_v4 shared activation does not match claimed final state",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(invalid_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_prove_stark_rejects_program_outside_stwo_phase2_subset() {
     let proof_path = unique_temp_dir("cli-stark-proof-stwo-subset").with_extension("json");
 
@@ -712,6 +867,85 @@ fn cli_can_prove_and_verify_stwo_normalization_demo() {
         ))
         .stdout(predicate::str::contains(
             "semantic_scope: stwo_normalization_lookup_demo_with_canonical_table",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_can_prove_and_verify_stwo_shared_lookup_demo() {
+    let proof_path = unique_temp_dir("cli-stwo-shared-lookup-demo-proof").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-shared-lookup-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("proof_backend: stwo"))
+        .stdout(predicate::str::contains(
+            "proof_backend_version: stwo-phase10-shared-binary-step-lookup-v1",
+        ))
+        .stdout(predicate::str::contains(
+            "semantic_scope: stwo_shared_binary_step_activation_lookup_with_canonical_table",
+        ))
+        .stdout(predicate::str::contains("claimed_rows: 2"));
+
+    let proof_json = std::fs::read_to_string(&proof_path).expect("proof json");
+    assert!(proof_json.contains("\"proof_backend\": \"stwo\""));
+    assert!(proof_json.contains("stwo-phase10-shared-binary-step-lookup-v1"));
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-shared-lookup-demo")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(
+            "statement_version: stwo-shared-binary-step-lookup-v1",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_can_prove_and_verify_stwo_shared_normalization_demo() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-shared-normalization-demo-proof").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-shared-normalization-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("proof_backend: stwo"))
+        .stdout(predicate::str::contains(
+            "proof_backend_version: stwo-phase10-shared-normalization-lookup-v1",
+        ))
+        .stdout(predicate::str::contains(
+            "semantic_scope: stwo_shared_normalization_lookup_with_canonical_table",
+        ))
+        .stdout(predicate::str::contains("claimed_rows: 2"));
+
+    let proof_json = std::fs::read_to_string(&proof_path).expect("proof json");
+    assert!(proof_json.contains("\"proof_backend\": \"stwo\""));
+    assert!(proof_json.contains("stwo-phase10-shared-normalization-lookup-v1"));
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-shared-normalization-demo")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(
+            "statement_version: stwo-shared-normalization-lookup-v1",
         ));
 
     let _ = std::fs::remove_file(proof_path);
