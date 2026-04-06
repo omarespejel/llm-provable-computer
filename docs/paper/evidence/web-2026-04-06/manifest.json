@@ -3,25 +3,25 @@
     "label": "gemma_3_model_card",
     "url": "https://ai.google.dev/gemma/docs/core/model_card_3",
     "file": "gemma_3_model_card.html",
-    "sha256": "295c0b0b456a0403392e27b1dc0f157d5e33a7243fde8587b6e731004cbe78cb"
+    "sha256": "6425e54c2085a7f2f64277ffc06afed236736351538fa8faeda3eb0291ba452e"
   },
   {
     "label": "gemma_family_overview",
     "url": "https://developers.googleblog.com/en/gemma-explained-overview-gemma-model-family-architectures/",
     "file": "gemma_family_overview.html",
-    "sha256": "7d5240aa494ee7cfe5c1b5341f88d4d381f61719b6b19d3be66a7a8248632345"
+    "sha256": "ffc7feb4c4948af17fa6651eddf57bb19edd64d17663fe98e33b495118f26651"
   },
   {
     "label": "stwo_2_0_0",
     "url": "https://starkware.co/blog/s-two-2-0-0-prover-for-developers/",
     "file": "stwo_2_0_0.html",
-    "sha256": "bd565583f810736334f62de96edf356b1472a48070e8999d72536229d0dfaeff"
+    "sha256": "773cc542e8ad180067959f5876a3b6a7f7e422088a1215c64adba7909aba2664"
   },
   {
     "label": "recursive_circuit_proving",
     "url": "https://starkware.co/blog/minutes-to-seconds-efficiency-gains-with-recursive-circuit-proving/",
     "file": "recursive_circuit_proving.html",
-    "sha256": "790239ad8104261f4850183a40be8b84cc6322bf5ba2ecb5ca512b9a953bc142"
+    "sha256": "b13d06c44b10a2e4285b1f7cf1321cf2f3e7733bd2e3020444b59b7c36c65e2f"
   },
   {
     "label": "starknet_version_releases",
@@ -51,7 +51,7 @@
     "label": "luminair_post",
     "url": "https://starkware.co/blog/giza-x-s-two-powering-verifiable-ml-with-luminair/",
     "file": "luminair_post.html",
-    "sha256": "ab4f377880adcd9b3a1641ec9a9df6a0b38f7a6910d5f390e30ab9744cb52e90"
+    "sha256": "418aa06ed08e465ca3902058444b8cc28eed26000d48095c79d622cf19cdcde5"
   },
   {
     "label": "zkpytorch_product",
@@ -69,6 +69,6 @@
     "label": "paradex_stwo",
     "url": "https://starkware.co/blog/paradex-s-two-the-fastest-prover-meets-the-fastest-appchain/",
     "file": "paradex_stwo.html",
-    "sha256": "1f277423a8de9663b31b1d022982b36f04da4cf536b26c7304f0374e8b145cdc"
+    "sha256": "a15e7c140a57b6e8adb987764773b17aa5b008e9d37d393e6a0366ddfd7a8288"
   }
 ]

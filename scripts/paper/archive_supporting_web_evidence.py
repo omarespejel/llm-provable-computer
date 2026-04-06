@@ -73,12 +73,32 @@ def sanitize_html(payload: bytes) -> bytes:
             "<!-- stripped telemetry script: external analytics -->",
         ),
         (
+            r"<script[^>]*>.*?(?:hs-script-loader|hs-scripts\.com|HubSpot).*?</script>",
+            "<!-- stripped telemetry script: HubSpot -->",
+        ),
+        (
+            r"<script[^>]*src=[\"'][^\"']*hs-scripts\.com[^\"']*[\"'][^>]*></script>",
+            "<!-- stripped telemetry script: HubSpot -->",
+        ),
+        (
             r"<noscript>\s*<iframe[^>]*googletagmanager\.com/ns\.html[^>]*></iframe>\s*</noscript>",
             "<!-- stripped telemetry noscript iframe: Google Tag Manager -->",
         ),
     ]
     for pattern, replacement in patterns:
         text = re.sub(pattern, replacement, text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(
+        r"<link[^>]*href=[\"'][^\"']*google-analytics\.com[^\"']*[\"'][^>]*>",
+        "<!-- stripped telemetry preconnect: Google Analytics -->",
+        text,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    text = re.sub(
+        r"<devsite-analytics\b[^>]*>.*?</devsite-analytics>",
+        "<!-- stripped telemetry element: devsite-analytics -->",
+        text,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
     return text.encode("utf-8")
 
 
