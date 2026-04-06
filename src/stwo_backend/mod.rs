@@ -42,11 +42,16 @@ pub use lookup_component::{
 };
 #[cfg(feature = "stwo-backend")]
 pub use lookup_prover::{
+    load_phase10_shared_binary_step_lookup_proof,
     load_phase3_binary_step_lookup_proof, prove_phase3_binary_step_lookup_demo,
     prove_phase3_binary_step_lookup_demo_envelope, save_phase3_binary_step_lookup_proof,
+    save_phase10_shared_binary_step_lookup_proof, prove_phase10_shared_binary_step_lookup_envelope,
     verify_phase3_binary_step_lookup_demo, verify_phase3_binary_step_lookup_demo_envelope,
+    verify_phase10_shared_binary_step_lookup_envelope, Phase10SharedLookupProofEnvelope,
     Phase3LookupProofEnvelope, STWO_LOOKUP_PROOF_VERSION_PHASE3,
     STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
+    STWO_SHARED_LOOKUP_PROOF_VERSION_PHASE10, STWO_SHARED_LOOKUP_SEMANTIC_SCOPE_PHASE10,
+    STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10,
 };
 #[cfg(feature = "stwo-backend")]
 pub use normalization_component::{
@@ -56,11 +61,19 @@ pub use normalization_component::{
 };
 #[cfg(feature = "stwo-backend")]
 pub use normalization_prover::{
+    load_phase10_shared_normalization_lookup_proof,
     load_phase5_normalization_lookup_proof, prove_phase5_normalization_lookup_demo,
     prove_phase5_normalization_lookup_demo_envelope, save_phase5_normalization_lookup_proof,
+    prove_phase10_shared_normalization_lookup_envelope,
+    save_phase10_shared_normalization_lookup_proof,
     verify_phase5_normalization_lookup_demo, verify_phase5_normalization_lookup_demo_envelope,
-    Phase5NormalizationLookupProofEnvelope, STWO_NORMALIZATION_PROOF_VERSION_PHASE5,
-    STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5, STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
+    verify_phase10_shared_normalization_lookup_envelope,
+    Phase10SharedNormalizationLookupProofEnvelope, Phase5NormalizationLookupProofEnvelope,
+    STWO_NORMALIZATION_PROOF_VERSION_PHASE5, STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5,
+    STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
+    STWO_SHARED_NORMALIZATION_PROOF_VERSION_PHASE10,
+    STWO_SHARED_NORMALIZATION_SEMANTIC_SCOPE_PHASE10,
+    STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10,
 };
 pub use recursion::{
     phase6_prepare_recursion_batch, Phase6RecursionBatchEntry, Phase6RecursionBatchManifest,
