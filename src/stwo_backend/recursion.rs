@@ -137,7 +137,7 @@ mod tests {
         let program = parse_program(program_source).expect("parse");
         VanillaStarkExecutionProof {
             proof_backend: StarkProofBackend::Stwo,
-            proof_backend_version: "stwo-phase5-arithmetic-subset-v1".to_string(),
+            proof_backend_version: "stwo-phase5-arithmetic-subset-v2".to_string(),
             claim: crate::proof::VanillaStarkExecutionClaim {
                 statement_version: CLAIM_STATEMENT_VERSION_V1.to_string(),
                 semantic_scope: CLAIM_SEMANTIC_SCOPE_V1.to_string(),

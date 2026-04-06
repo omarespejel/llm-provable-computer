@@ -363,7 +363,7 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
 
         let proof_json = std::fs::read_to_string(&proof_path).expect("proof json");
         assert!(proof_json.contains("\"proof_backend\": \"stwo\""));
-        assert!(proof_json.contains("stwo-phase5-arithmetic-subset-v1"));
+        assert!(proof_json.contains("stwo-phase5-arithmetic-subset-v2"));
 
         let mut verify = Command::cargo_bin("tvm").expect("binary");
         verify
@@ -374,7 +374,7 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
             .success()
             .stdout(predicate::str::contains("proof_backend: stwo"))
             .stdout(predicate::str::contains(
-                "proof_backend_version: stwo-phase5-arithmetic-subset-v1",
+                "proof_backend_version: stwo-phase5-arithmetic-subset-v2",
             ))
             .stdout(predicate::str::contains("verified_stark: true"))
             .stdout(predicate::str::contains("reexecuted_equivalence: true"))

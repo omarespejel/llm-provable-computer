@@ -30,7 +30,7 @@ use crate::proof::{
 };
 use crate::state::MachineState;
 
-pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase5-arithmetic-subset-v1";
+pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase5-arithmetic-subset-v2";
 const M31_MODULUS: u32 = (1u32 << 31) - 1;
 const OPCODE_COLUMN_NAMES: [&str; 11] = [
     "phase5/arithmetic/op/nop",
@@ -1105,7 +1105,7 @@ mod tests {
         ];
         let trace = build_trace_bundle(&compile_program("programs/addition.tvm"), &states).unwrap();
         assert_eq!(trace.log_size, 2);
-        assert_eq!(trace.base_trace.len(), 22);
+        assert_eq!(trace.base_trace.len(), 30);
     }
 
     fn assert_program_trace_satisfies_constraints(path: &str) {
