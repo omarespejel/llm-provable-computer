@@ -44,6 +44,23 @@ The machine-readable outputs used by this appendix are committed at:
 - `docs/paper/figures/section4-ratio-vs-context.tsv`
 - `docs/paper/figures/section4-decomposition-vs-context.tsv`
 
+## Table B1a. Sensitivity of the GPT-2-small ratio to stylized non-arithmetic constants
+
+This table moves the main-text sensitivity sweep into the appendix so that Section 4 can stay focused on the exact cost model and one worked example. It shows that the qualitative claim is materially more sensitive to the assumed softmax-like cost than to the normalization or activation constants.
+
+| Constants varied | Setting | SNARK/STARK ratio |
+|---|---:|---:|
+| `C_exp` with `C_norm = 30`, `C_nonlin = 150` | `50` | `1.13x` |
+| `C_exp` with `C_norm = 30`, `C_nonlin = 150` | `100` | `1.20x` |
+| `C_exp` with `C_norm = 30`, `C_nonlin = 150` | `300` | `1.48x` |
+| `C_exp` with `C_norm = 30`, `C_nonlin = 150` | `500` | `1.77x` |
+| `C_norm` with `C_exp = 300`, `C_nonlin = 150` | `10` | `1.48x` |
+| `C_norm` with `C_exp = 300`, `C_nonlin = 150` | `30` | `1.48x` |
+| `C_norm` with `C_exp = 300`, `C_nonlin = 150` | `50` | `1.49x` |
+| `C_nonlin` with `C_exp = 300`, `C_norm = 30` | `50` | `1.45x` |
+| `C_nonlin` with `C_exp = 300`, `C_norm = 30` | `150` | `1.48x` |
+| `C_nonlin` with `C_exp = 300`, `C_norm = 30` | `250` | `1.52x` |
+
 ## Table B2. Exact dense Llama-2-7B-style extension under the current model
 
 To show that the Section 4 model is not specific to GPT-2-small, this appendix also evaluates the **exact same dense symbolic formula** on a Llama-2-7B-style dense reference configuration. The point is not to claim that Llama 2 is the only relevant production architecture; it is to show how the exact model behaves on a substantially wider and more production-like decoder stack than GPT-2-small.
