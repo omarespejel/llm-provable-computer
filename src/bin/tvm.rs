@@ -30,10 +30,15 @@ use llm_provable_computer::{
 use llm_provable_computer::{export_program_onnx, OnnxExecutionRuntime};
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::{
-    load_phase5_normalization_lookup_proof, prove_phase5_normalization_lookup_demo_envelope,
+    load_phase3_binary_step_lookup_proof, load_phase5_normalization_lookup_proof,
+    prove_phase3_binary_step_lookup_demo_envelope,
+    prove_phase5_normalization_lookup_demo_envelope, save_phase3_binary_step_lookup_proof,
     save_phase5_normalization_lookup_proof, stwo_backend_enabled,
-    verify_phase5_normalization_lookup_demo_envelope, STWO_NORMALIZATION_PROOF_VERSION_PHASE5,
-    STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5, STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
+    verify_phase3_binary_step_lookup_demo_envelope,
+    verify_phase5_normalization_lookup_demo_envelope, STWO_LOOKUP_PROOF_VERSION_PHASE3,
+    STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
+    STWO_NORMALIZATION_PROOF_VERSION_PHASE5, STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5,
+    STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
 };
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
@@ -195,6 +200,17 @@ enum Command {
         /// Optional backend override. When omitted, verification uses the backend encoded in the proof.
         #[arg(long, value_enum)]
         backend: Option<CliProofBackend>,
+    },
+    /// Produce a serialized S-two normalization lookup demo proof.
+    ProveStwoLookupDemo {
+        /// File where the serialized proof JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a serialized S-two binary-step lookup demo proof.
+    VerifyStwoLookupDemo {
+        /// Path to the serialized proof JSON file.
+        proof: PathBuf,
     },
     /// Produce a serialized S-two normalization lookup demo proof.
     ProveStwoNormalizationDemo {
@@ -701,6 +717,8 @@ fn run() -> llm_provable_computer::Result<()> {
             strict,
             backend,
         )?,
+        Command::ProveStwoLookupDemo { output } => prove_stwo_lookup_demo_command(&output)?,
+        Command::VerifyStwoLookupDemo { proof } => verify_stwo_lookup_demo_command(&proof)?,
         Command::ProveStwoNormalizationDemo { output } => {
             prove_stwo_normalization_demo_command(&output)?
         }
@@ -1085,6 +1103,86 @@ fn prove_stwo_normalization_demo_command(output: &Path) -> llm_provable_computer
         println!("statement_version: {}", proof.statement_version);
         println!("semantic_scope: {}", proof.semantic_scope);
         println!("canonical_table_rows: {}", proof.canonical_table_rows.len());
+        println!("proof_bytes: {}", proof.proof.len());
+
+        Ok(())
+    }
+}
+
+fn prove_stwo_lookup_demo_command(output: &Path) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output;
+        return Err(VmError::UnsupportedProof(
+            "S-two binary-step lookup demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    if !stwo_backend_enabled() {
+        return Err(VmError::UnsupportedProof(
+            "S-two binary-step lookup demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        let proof = prove_phase3_binary_step_lookup_demo_envelope()?;
+        save_phase3_binary_step_lookup_proof(&proof, output)?;
+
+        println!("proof: {}", output.display());
+        println!("proof_backend: {}", proof.proof_backend);
+        println!("proof_backend_version: {}", proof.proof_backend_version);
+        println!("statement_version: {}", proof.statement_version);
+        println!("semantic_scope: {}", proof.semantic_scope);
+        println!("canonical_table_rows: {}", proof.canonical_table_rows.len());
+        println!("proof_bytes: {}", proof.proof.len());
+
+        Ok(())
+    }
+}
+
+fn verify_stwo_lookup_demo_command(proof_path: &Path) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = proof_path;
+        return Err(VmError::UnsupportedProof(
+            "S-two binary-step lookup demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    if !stwo_backend_enabled() {
+        return Err(VmError::UnsupportedProof(
+            "S-two binary-step lookup demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        let proof = load_phase3_binary_step_lookup_proof(proof_path)?;
+        let verified = verify_phase3_binary_step_lookup_demo_envelope(&proof)?;
+        if !verified {
+            return Err(VmError::InvalidConfig(format!(
+                "binary-step lookup demo proof verification failed for {}",
+                proof_path.display()
+            )));
+        }
+
+        println!("proof: {}", proof_path.display());
+        println!("verified_stark: true");
+        println!("proof_backend: {}", proof.proof_backend);
+        println!("proof_backend_version: {}", proof.proof_backend_version);
+        println!("statement_version: {}", proof.statement_version);
+        println!("semantic_scope: {}", proof.semantic_scope);
+        println!("canonical_table_rows: {}", proof.canonical_table_rows.len());
+        println!("expected_statement_version: {STWO_LOOKUP_STATEMENT_VERSION_PHASE3}");
+        println!("expected_semantic_scope: {STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3}");
+        println!("expected_proof_backend_version: {STWO_LOOKUP_PROOF_VERSION_PHASE3}");
         println!("proof_bytes: {}", proof.proof.len());
 
         Ok(())
@@ -2259,6 +2357,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "export-onnx"
                 | "prove-stark"
                 | "verify-stark"
+                | "prove-stwo-lookup-demo"
+                | "verify-stwo-lookup-demo"
                 | "prove-stwo-normalization-demo"
                 | "verify-stwo-normalization-demo"
                 | "prepare-stwo-recursion-batch"

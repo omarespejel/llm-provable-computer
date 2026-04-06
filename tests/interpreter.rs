@@ -101,6 +101,13 @@ fn verifier_matches_transformer_for_shipped_programs() {
             Attention2DMode::AverageHard,
             16,
         ),
+        (
+            "programs/gemma_block_v3.tvm",
+            128,
+            3,
+            Attention2DMode::AverageHard,
+            16,
+        ),
     ];
 
     for (path, max_steps, layers, attention_mode, expected_acc) in cases {

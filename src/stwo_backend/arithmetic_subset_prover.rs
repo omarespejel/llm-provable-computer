@@ -25,6 +25,11 @@ use super::normalization_prover::{
     prove_phase5_normalization_lookup_demo_envelope, verify_phase5_normalization_lookup_demo_envelope,
     STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
 };
+use super::{
+    phase3_lookup_table_rows, prove_phase3_binary_step_lookup_demo_envelope,
+    verify_phase3_binary_step_lookup_demo_envelope, Phase3LookupProofEnvelope,
+    STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
+};
 use crate::config::Attention2DMode;
 use crate::error::{Result, VmError};
 use crate::instruction::{Instruction, Program};
@@ -35,16 +40,24 @@ use crate::proof::{
 };
 use crate::state::MachineState;
 
-pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase7-gemma-block-v1";
+pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase9-gemma-block-v3";
 const M31_MODULUS: u32 = (1u32 << 31) - 1;
 const GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX: usize = 13;
 const GEMMA_BLOCK_INV_SQRT_MEMORY_INDEX: usize = 14;
+const GEMMA_BLOCK_ACTIVATION_INPUT_MEMORY_INDEX: usize = 15;
+const GEMMA_BLOCK_ACTIVATION_OUTPUT_MEMORY_INDEX: usize = 16;
 const GEMMA_BLOCK_EXPECTED_NORM_SQ: i16 = 16;
 const GEMMA_BLOCK_EXPECTED_INV_SQRT_Q8: i16 = 64;
+const GEMMA_BLOCK_EXPECTED_ACTIVATION_INPUT: i16 = 1;
+const GEMMA_BLOCK_EXPECTED_ACTIVATION_OUTPUT: i16 = 1;
 const GEMMA_BLOCK_NORMALIZATION_SCOPE: &str =
     "stwo_gemma_block_v1_execution_plus_normalization_companion";
 const GEMMA_BLOCK_V2_NORMALIZATION_SCOPE: &str =
     "stwo_gemma_block_v2_execution_with_embedded_normalization";
+const GEMMA_BLOCK_V3_NORMALIZATION_SCOPE: &str =
+    "stwo_gemma_block_v3_execution_with_embedded_normalization";
+const GEMMA_BLOCK_V3_ACTIVATION_SCOPE: &str =
+    "stwo_gemma_block_v3_execution_with_embedded_binary_step_lookup";
 const OPCODE_COLUMN_NAMES: [&str; 11] = [
     "phase5/arithmetic/op/nop",
     "phase5/arithmetic/op/loadi",
@@ -414,10 +427,12 @@ pub(crate) fn prove_phase5_arithmetic_subset(
     })?;
 
     let embedded_normalization = build_phase8_embedded_normalization(&witness.claim)?;
+    let embedded_activation_lookup = build_phase9_embedded_activation_lookup(&witness.claim)?;
     let proof_bytes = serde_json::to_vec(&Phase5ArithmeticSubsetProofPayload {
         stark_proof,
         canonical_preprocessed_rows: trace_bundle.preprocessed_rows,
         embedded_normalization,
+        embedded_activation_lookup,
     })
     .map_err(|error| VmError::Serialization(error.to_string()))?;
     let stwo_auxiliary = build_phase7_auxiliary_proofs(&witness.claim)?;
@@ -470,6 +485,7 @@ pub(crate) fn verify_phase5_arithmetic_subset(proof: &VanillaStarkExecutionProof
 
     verify_phase7_auxiliary_proofs(proof)?;
     verify_phase8_embedded_normalization(proof, payload.embedded_normalization.as_ref())?;
+    verify_phase9_embedded_activation_lookup(proof, payload.embedded_activation_lookup.as_ref())?;
     Ok(true)
 }
 
@@ -522,7 +538,7 @@ fn build_phase7_auxiliary_proofs(
 fn build_phase8_embedded_normalization(
     claim: &VanillaStarkExecutionClaim,
 ) -> Result<Option<EmbeddedNormalizationProof>> {
-    if !matches_gemma_block_v2(&claim.program) {
+    if !(matches_gemma_block_v2(&claim.program) || matches_gemma_block_v3(&claim.program)) {
         return Ok(None);
     }
 
@@ -531,11 +547,33 @@ fn build_phase8_embedded_normalization(
         .map_err(|error| VmError::Serialization(error.to_string()))?;
     Ok(Some(EmbeddedNormalizationProof {
         statement_version: STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5.to_string(),
-        semantic_scope: GEMMA_BLOCK_V2_NORMALIZATION_SCOPE.to_string(),
+        semantic_scope: embedded_normalization_scope(&claim.program).to_string(),
         norm_sq_memory_index: GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX as u8,
         inv_sqrt_q8_memory_index: GEMMA_BLOCK_INV_SQRT_MEMORY_INDEX as u8,
         expected_norm_sq: norm_sq,
         expected_inv_sqrt_q8: inv_sqrt_q8,
+        proof_envelope,
+    }))
+}
+
+fn build_phase9_embedded_activation_lookup(
+    claim: &VanillaStarkExecutionClaim,
+) -> Result<Option<EmbeddedActivationLookupProof>> {
+    if !matches_gemma_block_v3(&claim.program) {
+        return Ok(None);
+    }
+
+    let (activation_input, activation_output) =
+        gemma_block_activation_pair(&claim.final_state.memory)?;
+    let proof_envelope = serde_json::to_value(prove_phase3_binary_step_lookup_demo_envelope()?)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    Ok(Some(EmbeddedActivationLookupProof {
+        statement_version: STWO_LOOKUP_STATEMENT_VERSION_PHASE3.to_string(),
+        semantic_scope: GEMMA_BLOCK_V3_ACTIVATION_SCOPE.to_string(),
+        input_memory_index: GEMMA_BLOCK_ACTIVATION_INPUT_MEMORY_INDEX as u8,
+        output_memory_index: GEMMA_BLOCK_ACTIVATION_OUTPUT_MEMORY_INDEX as u8,
+        expected_input: activation_input,
+        expected_output: activation_output,
         proof_envelope,
     }))
 }
@@ -612,24 +650,25 @@ fn verify_phase8_embedded_normalization(
     proof: &VanillaStarkExecutionProof,
     embedded: Option<&EmbeddedNormalizationProof>,
 ) -> Result<()> {
-    if !matches_gemma_block_v2(&proof.claim.program) {
+    if !(matches_gemma_block_v2(&proof.claim.program) || matches_gemma_block_v3(&proof.claim.program)) {
         return Ok(());
     }
 
     let embedded = embedded.ok_or_else(|| {
         VmError::InvalidConfig(
-            "gemma_block_v2 S-two proof is missing embedded normalization proof".to_string(),
+            "gemma_block_v2/v3 S-two proof is missing embedded normalization proof".to_string(),
         )
     })?;
     if embedded.statement_version != STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5 {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported gemma_block_v2 embedded normalization statement version `{}`",
+            "unsupported gemma_block_v2/v3 embedded normalization statement version `{}`",
             embedded.statement_version
         )));
     }
-    if embedded.semantic_scope != GEMMA_BLOCK_V2_NORMALIZATION_SCOPE {
+    let expected_scope = embedded_normalization_scope(&proof.claim.program);
+    if embedded.semantic_scope != expected_scope {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported gemma_block_v2 embedded normalization scope `{}`",
+            "unsupported gemma_block_v2/v3 embedded normalization scope `{}`",
             embedded.semantic_scope
         )));
     }
@@ -637,11 +676,11 @@ fn verify_phase8_embedded_normalization(
         &proof.claim.final_state.memory,
         embedded.norm_sq_memory_index,
         embedded.inv_sqrt_q8_memory_index,
-        "gemma_block_v2 embedded normalization",
+        "gemma_block_v2/v3 embedded normalization",
     )?;
     if norm_sq != embedded.expected_norm_sq || inv_sqrt_q8 != embedded.expected_inv_sqrt_q8 {
         return Err(VmError::InvalidConfig(format!(
-            "gemma_block_v2 embedded normalization does not match claimed final state: expected ({}, {}), got ({}, {})",
+            "gemma_block_v2/v3 embedded normalization does not match claimed final state: expected ({}, {}), got ({}, {})",
             embedded.expected_norm_sq, embedded.expected_inv_sqrt_q8, norm_sq, inv_sqrt_q8
         )));
     }
@@ -650,14 +689,70 @@ fn verify_phase8_embedded_normalization(
         .any(|row| row.norm_sq as i16 == norm_sq && row.inv_sqrt_q8 as i16 == inv_sqrt_q8);
     if !canonical_pair_exists {
         return Err(VmError::InvalidConfig(format!(
-            "gemma_block_v2 embedded normalization row ({norm_sq}, {inv_sqrt_q8}) is not present in the canonical Phase 5 lookup table"
+            "gemma_block_v2/v3 embedded normalization row ({norm_sq}, {inv_sqrt_q8}) is not present in the canonical Phase 5 lookup table"
         )));
     }
     let proof_envelope = serde_json::from_value(embedded.proof_envelope.clone())
         .map_err(|error| VmError::Serialization(error.to_string()))?;
     if !verify_phase5_normalization_lookup_demo_envelope(&proof_envelope)? {
         return Err(VmError::UnsupportedProof(
-            "gemma_block_v2 embedded normalization proof did not verify".to_string(),
+            "gemma_block_v2/v3 embedded normalization proof did not verify".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn verify_phase9_embedded_activation_lookup(
+    proof: &VanillaStarkExecutionProof,
+    embedded: Option<&EmbeddedActivationLookupProof>,
+) -> Result<()> {
+    if !matches_gemma_block_v3(&proof.claim.program) {
+        return Ok(());
+    }
+
+    let embedded = embedded.ok_or_else(|| {
+        VmError::InvalidConfig(
+            "gemma_block_v3 S-two proof is missing embedded activation lookup proof".to_string(),
+        )
+    })?;
+    if embedded.statement_version != STWO_LOOKUP_STATEMENT_VERSION_PHASE3 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported gemma_block_v3 embedded activation statement version `{}`",
+            embedded.statement_version
+        )));
+    }
+    if embedded.semantic_scope != GEMMA_BLOCK_V3_ACTIVATION_SCOPE {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported gemma_block_v3 embedded activation scope `{}`",
+            embedded.semantic_scope
+        )));
+    }
+    let (activation_input, activation_output) = activation_pair_from_indices(
+        &proof.claim.final_state.memory,
+        embedded.input_memory_index,
+        embedded.output_memory_index,
+        "gemma_block_v3 embedded activation",
+    )?;
+    if activation_input != embedded.expected_input || activation_output != embedded.expected_output {
+        return Err(VmError::InvalidConfig(format!(
+            "gemma_block_v3 embedded activation does not match claimed final state: expected ({}, {}), got ({}, {})",
+            embedded.expected_input, embedded.expected_output, activation_input, activation_output
+        )));
+    }
+    let canonical_pair_exists = phase3_lookup_table_rows().into_iter().any(|row| {
+        row.input == activation_input && row.output as i16 == activation_output
+    });
+    if !canonical_pair_exists {
+        return Err(VmError::InvalidConfig(format!(
+            "gemma_block_v3 embedded activation row ({activation_input}, {activation_output}) is not present in the canonical Phase 3 lookup table"
+        )));
+    }
+    let proof_envelope: Phase3LookupProofEnvelope =
+        serde_json::from_value(embedded.proof_envelope.clone())
+            .map_err(|error| VmError::Serialization(error.to_string()))?;
+    if !verify_phase3_binary_step_lookup_demo_envelope(&proof_envelope)? {
+        return Err(VmError::UnsupportedProof(
+            "gemma_block_v3 embedded activation proof did not verify".to_string(),
         ));
     }
     Ok(())
@@ -687,6 +782,31 @@ fn gemma_block_normalization_pair(final_memory: &[i16]) -> Result<(i16, i16)> {
     Ok((norm_sq, inv_sqrt_q8))
 }
 
+fn gemma_block_activation_pair(final_memory: &[i16]) -> Result<(i16, i16)> {
+    let activation_input = *final_memory
+        .get(GEMMA_BLOCK_ACTIVATION_INPUT_MEMORY_INDEX)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("gemma_block final state missing activation input cell".to_string())
+        })?;
+    let activation_output = *final_memory
+        .get(GEMMA_BLOCK_ACTIVATION_OUTPUT_MEMORY_INDEX)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("gemma_block final state missing activation output cell".to_string())
+        })?;
+    if activation_input != GEMMA_BLOCK_EXPECTED_ACTIVATION_INPUT
+        || activation_output != GEMMA_BLOCK_EXPECTED_ACTIVATION_OUTPUT
+    {
+        return Err(VmError::UnsupportedProof(format!(
+            "gemma_block activation expects input={} and output={}, got {} and {}",
+            GEMMA_BLOCK_EXPECTED_ACTIVATION_INPUT,
+            GEMMA_BLOCK_EXPECTED_ACTIVATION_OUTPUT,
+            activation_input,
+            activation_output
+        )));
+    }
+    Ok((activation_input, activation_output))
+}
+
 fn normalized_pair_from_indices(
     final_memory: &[i16],
     norm_sq_index: u8,
@@ -702,12 +822,37 @@ fn normalized_pair_from_indices(
     Ok((norm_sq, inv_sqrt_q8))
 }
 
+fn activation_pair_from_indices(
+    final_memory: &[i16],
+    input_index: u8,
+    output_index: u8,
+    scope: &str,
+) -> Result<(i16, i16)> {
+    let activation_input = *final_memory
+        .get(input_index as usize)
+        .ok_or_else(|| VmError::InvalidConfig(format!("{scope} input index is out of bounds")))?;
+    let activation_output = *final_memory
+        .get(output_index as usize)
+        .ok_or_else(|| VmError::InvalidConfig(format!("{scope} output index is out of bounds")))?;
+    Ok((activation_input, activation_output))
+}
+
+fn embedded_normalization_scope(program: &Program) -> &'static str {
+    if matches_gemma_block_v3(program) {
+        GEMMA_BLOCK_V3_NORMALIZATION_SCOPE
+    } else {
+        GEMMA_BLOCK_V2_NORMALIZATION_SCOPE
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 struct Phase5ArithmeticSubsetProofPayload {
     stark_proof: StarkProof<Blake2sM31MerkleHasher>,
     canonical_preprocessed_rows: Vec<PreprocessedRow>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     embedded_normalization: Option<EmbeddedNormalizationProof>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    embedded_activation_lookup: Option<EmbeddedActivationLookupProof>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -718,6 +863,17 @@ struct EmbeddedNormalizationProof {
     inv_sqrt_q8_memory_index: u8,
     expected_norm_sq: i16,
     expected_inv_sqrt_q8: i16,
+    proof_envelope: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct EmbeddedActivationLookupProof {
+    statement_version: String,
+    semantic_scope: String,
+    input_memory_index: u8,
+    output_memory_index: u8,
+    expected_input: i16,
+    expected_output: i16,
     proof_envelope: serde_json::Value,
 }
 
@@ -973,6 +1129,7 @@ fn validate_phase5_proven_fixture(program: &Program) -> Result<()> {
             ];
     let matches_gemma_block_v1 = matches_gemma_block_v1(program);
     let matches_gemma_block_v2 = matches_gemma_block_v2(program);
+    let matches_gemma_block_v3 = matches_gemma_block_v3(program);
 
     if matches_addition
         || matches_counter
@@ -984,12 +1141,13 @@ fn validate_phase5_proven_fixture(program: &Program) -> Result<()> {
         || matches_single_neuron
         || matches_gemma_block_v1
         || matches_gemma_block_v2
+        || matches_gemma_block_v3
     {
         return Ok(());
     }
 
     Err(VmError::UnsupportedProof(
-        "S-two Phase 5 currently proves only the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`, `programs/dot_product.tvm`, `programs/fibonacci.tvm`, `programs/matmul_2x2.tvm`, `programs/single_neuron.tvm`, `programs/gemma_block_v1.tvm`, and `programs/gemma_block_v2.tvm`; broader arithmetic-subset AIR coverage remains internal"
+        "S-two Phase 5 currently proves only the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`, `programs/dot_product.tvm`, `programs/fibonacci.tvm`, `programs/matmul_2x2.tvm`, `programs/single_neuron.tvm`, `programs/gemma_block_v1.tvm`, `programs/gemma_block_v2.tvm`, and `programs/gemma_block_v3.tvm`; broader arithmetic-subset AIR coverage remains internal"
             .to_string(),
     ))
 }
@@ -1067,6 +1225,52 @@ fn matches_gemma_block_v2(program: &Program) -> bool {
                 Instruction::Store(13),
                 Instruction::LoadImmediate(64),
                 Instruction::Store(14),
+                Instruction::Load(13),
+                Instruction::Store(13),
+                Instruction::Load(13),
+                Instruction::Halt,
+            ]
+}
+
+fn matches_gemma_block_v3(program: &Program) -> bool {
+    program.memory_size() == 17
+        && program.initial_memory()
+            == [1, 1, 2, 0, 0, 2, 2, -4, 0, 2, 0, 0, 0, 0, 0, 0, 0]
+        && program.instructions()
+            == [
+                Instruction::Load(0),
+                Instruction::MulMemory(2),
+                Instruction::Store(10),
+                Instruction::Load(1),
+                Instruction::MulMemory(3),
+                Instruction::AddMemory(10),
+                Instruction::Store(10),
+                Instruction::Load(0),
+                Instruction::MulMemory(4),
+                Instruction::Store(11),
+                Instruction::Load(1),
+                Instruction::MulMemory(5),
+                Instruction::AddMemory(11),
+                Instruction::Store(11),
+                Instruction::Load(10),
+                Instruction::MulMemory(6),
+                Instruction::Store(12),
+                Instruction::Load(11),
+                Instruction::MulMemory(9),
+                Instruction::AddMemory(12),
+                Instruction::Store(12),
+                Instruction::Load(12),
+                Instruction::AddMemory(7),
+                Instruction::Store(8),
+                Instruction::Load(8),
+                Instruction::MulMemory(8),
+                Instruction::Store(13),
+                Instruction::LoadImmediate(64),
+                Instruction::Store(14),
+                Instruction::LoadImmediate(1),
+                Instruction::Store(15),
+                Instruction::LoadImmediate(1),
+                Instruction::Store(16),
                 Instruction::Load(13),
                 Instruction::Store(13),
                 Instruction::Load(13),
@@ -1521,6 +1725,7 @@ mod tests {
             "programs/fibonacci.tvm",
             "programs/gemma_block_v1.tvm",
             "programs/gemma_block_v2.tvm",
+            "programs/gemma_block_v3.tvm",
             "programs/matmul_2x2.tvm",
             "programs/single_neuron.tvm",
         ] {
@@ -1643,6 +1848,11 @@ mod tests {
     }
 
     #[test]
+    fn phase5_gemma_block_v3_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/gemma_block_v3.tvm");
+    }
+
+    #[test]
     fn phase5_matmul_2x2_trace_satisfies_constraints() {
         assert_program_trace_satisfies_constraints("programs/matmul_2x2.tvm");
     }
@@ -1726,6 +1936,11 @@ mod tests {
     #[test]
     fn phase5_gemma_block_v2_trace_polys_satisfy_constraints() {
         assert_program_trace_polys_satisfy_constraints("programs/gemma_block_v2.tvm");
+    }
+
+    #[test]
+    fn phase5_gemma_block_v3_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/gemma_block_v3.tvm");
     }
 
     #[test]
