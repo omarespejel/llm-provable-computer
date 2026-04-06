@@ -1164,9 +1164,13 @@ mod tests {
     fn phase5_subset_accepts_fixture_matrix_programs() {
         for path in [
             "programs/addition.tvm",
-            "programs/multiply.tvm",
             "programs/counter.tvm",
+            "programs/memory_roundtrip.tvm",
+            "programs/multiply.tvm",
             "programs/dot_product.tvm",
+            "programs/fibonacci.tvm",
+            "programs/matmul_2x2.tvm",
+            "programs/single_neuron.tvm",
         ] {
             let program = compile_program(path);
             super::super::validate_phase2_proof_shape(&program, &Attention2DMode::AverageHard)
@@ -1265,6 +1269,26 @@ mod tests {
         assert_program_trace_satisfies_constraints("programs/multiply.tvm");
     }
 
+    #[test]
+    fn phase5_memory_roundtrip_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/memory_roundtrip.tvm");
+    }
+
+    #[test]
+    fn phase5_fibonacci_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/fibonacci.tvm");
+    }
+
+    #[test]
+    fn phase5_matmul_2x2_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/matmul_2x2.tvm");
+    }
+
+    #[test]
+    fn phase5_single_neuron_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/single_neuron.tvm");
+    }
+
     fn assert_program_trace_polys_satisfy_constraints(path: &str) {
         let program = compile_program(path);
         let mut runtime =
@@ -1319,5 +1343,25 @@ mod tests {
     #[test]
     fn phase5_multiply_trace_polys_satisfy_constraints() {
         assert_program_trace_polys_satisfy_constraints("programs/multiply.tvm");
+    }
+
+    #[test]
+    fn phase5_memory_roundtrip_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/memory_roundtrip.tvm");
+    }
+
+    #[test]
+    fn phase5_fibonacci_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/fibonacci.tvm");
+    }
+
+    #[test]
+    fn phase5_matmul_2x2_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/matmul_2x2.tvm");
+    }
+
+    #[test]
+    fn phase5_single_neuron_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/single_neuron.tvm");
     }
 }
