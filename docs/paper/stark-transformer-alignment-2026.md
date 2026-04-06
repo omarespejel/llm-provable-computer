@@ -209,9 +209,17 @@ This analysis does **not** prove that every STARK system is faster than every SN
 
 One further scope boundary matters here: the model abstracts each activation or normalized value as one algebraic object. It does **not** model int8/int4 quantization layouts, packing strategies, or backend-specific decompositions. Practical zkML systems often rely heavily on quantization, and that can change absolute constraint counts differently across SNARK and STARK systems. The present model is therefore best read as a structural comparison of symbolic work, not as a quantization-aware production estimate.
 
+Appendix B2 shows the same model on a wider Llama-2-7B-style dense reference. Under the exact formula, a wider production-style dense model can remain near parity at shorter contexts under lower softmax constants while still widening materially at longer windows.
+
 Recent implementation-level comparisons reinforce that point. A December 2025 empirical comparison of Groth16 and a reference STARK implementation on consumer ARM hardware reports much faster proving and dramatically smaller proofs for the Groth16 side, alongside faster verification and transparency/post-quantum advantages for the STARK side [34]. That result is relevant because it shows exactly what this section does **not** measure: symbolic row and constraint counts are not direct runtime measurements, and real STARK provers also pay for low-degree extension, Merkle commitments, and FRI rounds. At the same time, that benchmark is not a transformer-specific zkML evaluation and does not study S-two-class STARK implementations, so it should be read as a boundary condition on the present model rather than as a direct refutation of it.
 
 Threats to validity for this section are therefore concentrated in four places: quantization and packing strategy, lookup-table reuse and non-arithmetic circuit lowering, recursion and proof-compression strategy, and hardware parallelism. The model intentionally abstracts over these dimensions in order to isolate the architectural role of non-arithmetic transformer work, but they matter materially to real deployed systems.
+
+Figure 2 makes the symbolic-work decomposition behind that sensitivity visible for both the GPT-2-small worked example and a wider dense reference.
+
+![Figure 2. Symbolic-work decomposition versus context for GPT-2-small and a Llama-2-7B-style dense reference.](figures/section4-decomposition-vs-context.svg)
+
+**Figure 2.** Symbolic-work decomposition versus context. Each configuration is shown as paired SNARK and STARK stacked bars using the exact dense formulas from Sections 4.1 and 4.2. The GPT-2-small bars make the softmax-driven sensitivity of the model visually obvious, while the Llama-2-7B-style bars show the narrower short-context regime and the later widening discussed in Appendix B2.
 
 ### 4.5 Analytic extension to released Gemma 3 architectures
 
@@ -283,7 +291,7 @@ The repository remains deliberately narrow in several important ways:
 
 These limits matter because the paper’s strongest architectural claim is about lookup-heavy standard transformer nonlinearities on an S-two-style stack. The repository supports the structural trace thesis, but it does not yet close the loop on that full claim.
 
-### 5.3 Reproducible artifact bundle
+### 5.3 Frozen reproducibility bundle
 
 On April 4, 2026, we generated a `production-v1` reproducibility bundle from execution/proof commit `58bb05f` and documented it in an immutable repository artifact snapshot (artifact-index commit `8d435d5`) with benchmark metadata, exact command logs, SHA-256 hashes, and proof artifacts. The committed appendix index and raw metadata are included in this repository under:
 
@@ -293,7 +301,7 @@ On April 4, 2026, we generated a `production-v1` reproducibility bundle from exe
 - `docs/paper/artifacts/production-v1-2026-04-04/sha256sums.txt`
 - `docs/paper/artifacts/production-v1-2026-04-04/commands.log`
 
-The artifact bundle includes STARK proofs for `addition`, `dot_product`, `single_neuron`, and `fibonacci`, along with `research-v2` semantic agreement artifacts. It also includes a committed transformer-specific attention-semantics fixture, `run_soft_attention_memory`, with benchmark entry, command log, and hash-anchored outputs in the same appendix bundle. After that frozen `production-v1` bundle, the repository added newer fixed-shape `stwo` artifacts under `docs/paper/artifacts/gemma-block-v1/`, `docs/paper/artifacts/gemma-block-v2/`, and `docs/paper/artifacts/gemma-block-v3/`. The strongest of the three is `gemma-block-v3/stwo-execution-proof.json`: a Gemma-inspired block checksum fixture whose top-level execution proof embeds both the normalization lookup proof for the claimed `norm_sq = 16` and `inv_sqrt_q8 = 64` row and a bounded binary-step activation lookup proof for the claimed `input = 1`, `output = 1` row inside the main serialized proof payload rather than carrying them only through sidecar metadata. The large proof JSON files themselves are intentionally left out of the original `production-v1` appendix bundle; what is committed in-repo is the stable metadata layer and selected newer artifact files needed for reproducibility and citation.
+The artifact bundle includes STARK proofs for `addition`, `dot_product`, `single_neuron`, and `fibonacci`, along with `research-v2` semantic agreement artifacts. It also includes a committed transformer-specific attention-semantics fixture, `run_soft_attention_memory`, with benchmark entry, command log, and hash-anchored outputs in the same appendix bundle.
 
 #### Table 3. Production-v1 local artifact results (commit `58bb05f`)
 
@@ -313,7 +321,21 @@ Additional semantic-agreement timings from the same bundle:
 
 These measurements were produced on an `arm64` macOS host using `rustc 1.92.0`, `cargo 1.92.0`, `STARK_PROFILE=production-v1`, and `proof_max_steps=256`. They should be interpreted as **artifact reproducibility evidence and semantic/proof-stack evidence**, not as comparative prover-performance evidence or frontier-model performance claims.
 
-### 5.4 Why this artifact matters
+### 5.4 Post-freeze exploratory S-two artifacts
+
+After the frozen `production-v1` bundle, the repository added newer fixed-shape `stwo` artifacts under `docs/paper/artifacts/gemma-block-v1/`, `docs/paper/artifacts/gemma-block-v2/`, and `docs/paper/artifacts/gemma-block-v3/`. The strongest of the three is `gemma-block-v3/stwo-execution-proof.json`: a Gemma-inspired block checksum fixture whose top-level execution proof embeds both the normalization lookup proof for the claimed `norm_sq = 16` and `inv_sqrt_q8 = 64` row and a bounded binary-step activation lookup proof for the claimed `input = 1`, `output = 1` row inside the main serialized proof payload rather than carrying them only through sidecar metadata.
+
+These later artifacts are intentionally a second evidence tier rather than part of the frozen `production-v1` bundle. They are cited here as post-freeze exploratory support for the repo’s experimental `stwo` direction, not as part of the original immutable appendix snapshot.
+
+To reduce dependence on mutable external pages, this repository now also archives the public web evidence used by the paper under:
+
+- `docs/paper/evidence/web-2026-04-06/`
+
+and stores the appendix-only extracted Gemma parameter snapshots used by Tables B4 and B5 under:
+
+- `docs/paper/evidence/gemma-config-snapshots/`
+
+### 5.5 Why this artifact matters
 
 The artifact matters because it narrows the gap between theory and system design. It shows that:
 
@@ -358,7 +380,7 @@ The right conclusion is narrower: modern SNARK systems can clearly prove transfo
 
 ### 7.2 zkPyTorch and compiler-driven SNARK competitiveness
 
-Polyhedra’s zkPyTorch is another important counterexample to any simplistic “SNARKs cannot scale to real models” story. Public Polyhedra materials describe a compiler path from PyTorch and ONNX graphs into ZK circuits, explicit ZK-friendly quantization, and public benchmark claims including VGG-16 proof generation in `6.3s` per image and Llama-3 `8B` proof generation in roughly `150s` per token with `99.32%` cosine similarity to the original model outputs [35, 36]. For this paper, those numbers are treated as public project- and product-reported evidence, not as normalized head-to-head benchmarks.
+Polyhedra’s zkPyTorch is another important counterexample to any simplistic “SNARKs cannot scale to real models” story. The clearest public benchmark source is the project’s ePrint paper, which reports a compiler path from PyTorch and ONNX graphs into ZK circuits, explicit ZK-friendly quantization, VGG-16 proof generation at `2.2s` per image, and Llama-3 `8B` proof generation at roughly `150s` per token [35]. Official Polyhedra product materials separately present zkPyTorch as a deployment-oriented proving stack rather than as a normalized head-to-head benchmark suite [36].
 
 Its relevance here is architectural. zkPyTorch suggests that compiler design, quantization strategy, and circuit lowering can materially change SNARK-side economics, especially once the system is optimized around concrete deployment pipelines rather than symbolic cost models alone. That does not negate the STARK-native thesis of this paper, but it does narrow it further: the contest is not only between proof families, but between increasingly specialized system architectures within those families.
 
@@ -487,7 +509,7 @@ This paper uses `omarespejel/llm-provable-computer`, the maintained fork for the
 32. Starknet Docs. “Accounts.” *Starknet Documentation*. Accessed April 5, 2026. <https://docs.starknet.io/architecture/accounts>
 33. Zhizhi Peng, Chonghe Zhao, Taotao Wang, Guofu Liao, Zibin Lin, Yifeng Liu, Bin Cao, Long Shi, Qing Yang, and Shengli Zhang. “A Survey of Zero-Knowledge Proof-Based Verifiable Machine Learning.” *Artificial Intelligence Review* (accepted manuscript), arXiv:2502.18535v2, 2026. <https://arxiv.org/abs/2502.18535>
 34. Ayush Nainwal, Atharva Kamble, and Nitin Awathare. “A Comparative Analysis of zk-SNARKs and zk-STARKs: Theory and Practice.” *arXiv preprint* arXiv:2512.10020, 2025. <https://arxiv.org/abs/2512.10020>
-35. Polyhedra Network. “zkPyTorch: Verifiable PyTorch with Zero-Knowledge Proofs.” *Polyhedra Blog*, March 2025. <https://blog.polyhedra.network/zkpytorch/>
+35. Jiajun Wang, Xiaowen Wang, Zekun Wen, Linyan Lyu, Wei Wang, Yuxin Wang, Yanjiang Yang, Jian Liu, Jiaheng Zhang, Chao Li, and Qianhui Wang. “zkPyTorch: Verifiable Training and Inference with Zero-Knowledge Proofs.” *IACR Cryptology ePrint Archive*, Paper 2025/535, 2025. <https://eprint.iacr.org/2025/535>
 36. Polyhedra Network. “zkPyTorch.” *Polyhedra Product Page*. Accessed April 6, 2026. <https://polyhedra.network/zkPyTorch>
 37. Hugo Touvron, Louis Martin, Kevin Stone, et al. “Llama 2: Open Foundation and Fine-Tuned Chat Models.” *arXiv preprint* arXiv:2307.09288, 2023. <https://arxiv.org/abs/2307.09288>
 38. Wyatt Benno, Alberto Centelles, Antoine Douchet, and Khalil Gibran. “Jolt Atlas: Verifiable Inference via Lookup Arguments in Zero Knowledge.” *arXiv preprint* arXiv:2602.17452, 2026. <https://arxiv.org/abs/2602.17452>
