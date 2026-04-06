@@ -4,6 +4,8 @@ Snapshot date: **April 4, 2026**
 
 This appendix is a compact comparison table for the three systems most relevant to the argument in the main paper. It inherits its source posture from Sections 6 and 7: archival papers, official engineering/product materials, and commit-pinned repository artifacts are used for different claim types and should not be read as a single matched benchmark class.
 
+Sources: rows inherit the main paper’s source set from Sections 6 and 7, especially References 24-31 and 35-39.
+
 It should be read with one rule in mind: these are **not** matched end-to-end benchmarks on identical workloads. They are a structured comparison of public claims, committed artifacts, and implementation scope.
 
 ## Table A1. DeepProve vs. BitSage stwo-ml vs. `llm-provable-computer`
@@ -19,7 +21,7 @@ It should be read with one rule in mind: these are **not** matched end-to-end be
 | Public onchain posture | Production/prover maturity emphasized more than public Starknet verification demos | Starknet verification path and public demos emphasized | No onchain verifier integration yet |
 | Public onchain evidence | Public materials emphasize production deployment more than named Starknet proof-demo identifiers | Public verifier docs name `D8`, `D9`, `D10`, and `D11` as accepted on Starknet Sepolia | No public onchain proof-verification artifact set |
 | Recursion posture | Present in system architecture, but details vary by release | Publicly aligned with S-two / STWO recursion path | Not implemented; repo currently stops at experimental S-two execution proofs plus batching/preparation seams |
-| Current paper relevance | Main anti-overclaim counterexample for SNARK skepticism | Closest STARK-native comparator to the paper thesis | Concrete artifact that the paper can describe precisely |
+| Current paper relevance | Main counterexample to categorical anti-SNARK claims | Closest STARK-native comparator to the paper thesis | Concrete artifact that the paper can describe precisely |
 | Main caveat | Strong public claims, but not directly comparable to STARK systems on identical workloads | Public materials mix benchmark claims, verification demos, and roadmap claims | Narrow scope: vanilla backend remains primary, `average-hard` only in the main proved relation, no full learned-model proving |
 
 ## How to use this appendix
