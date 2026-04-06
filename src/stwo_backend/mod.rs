@@ -3,6 +3,8 @@ mod adapter;
 mod arithmetic_component;
 #[cfg(feature = "stwo-backend")]
 mod arithmetic_subset_prover;
+#[cfg(feature = "stwo-backend")]
+mod decoding;
 mod layout;
 #[cfg(feature = "stwo-backend")]
 mod lookup_component;
@@ -30,6 +32,16 @@ pub use arithmetic_component::{
 #[cfg(feature = "stwo-backend")]
 pub(crate) use arithmetic_subset_prover::{
     prove_phase5_arithmetic_subset, verify_phase5_arithmetic_subset, STWO_BACKEND_VERSION_PHASE5,
+};
+#[cfg(feature = "stwo-backend")]
+pub use decoding::{
+    decoding_step_v1_program_with_initial_memory, decoding_step_v1_template_program,
+    derive_phase11_from_final_memory, derive_phase11_from_program_initial_state,
+    load_phase11_decoding_chain, matches_decoding_step_v1_family,
+    phase11_prepare_decoding_chain, save_phase11_decoding_chain,
+    verify_phase11_decoding_chain, Phase11DecodingChainManifest, Phase11DecodingState,
+    Phase11DecodingStep, STWO_DECODING_CHAIN_SCOPE_PHASE11,
+    STWO_DECODING_CHAIN_VERSION_PHASE11, STWO_DECODING_STATE_VERSION_PHASE11,
 };
 pub use layout::{
     phase2_fixture_matrix, phase2_module_layout, phase2_supported_mnemonics,
