@@ -30,7 +30,7 @@ use crate::proof::{
 };
 use crate::state::MachineState;
 
-pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase5-arithmetic-subset-v1";
+pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase5-arithmetic-subset-v2";
 const M31_MODULUS: u32 = (1u32 << 31) - 1;
 const OPCODE_COLUMN_NAMES: [&str; 11] = [
     "phase5/arithmetic/op/nop",
@@ -75,8 +75,18 @@ struct PreprocessedRow {
     immediate: i16,
     jump_target: u8,
     address_flags: Vec<u32>,
+    store_address_flags: Vec<u32>,
     is_first_row: bool,
     is_last_row: bool,
+}
+
+#[derive(Clone, Debug)]
+struct AuxiliaryState {
+    loaded_memory: i16,
+    mul_result: i16,
+    next_pc_active: u8,
+    next_acc_active: i16,
+    next_memory_active: Vec<i16>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -86,6 +96,7 @@ struct TraceLayout {
 
 impl TraceLayout {
     const STATE_PREFIX_WIDTH: usize = 7;
+    const AUX_PREFIX_WIDTH: usize = 4;
 
     fn new(memory_size: usize) -> Self {
         Self { memory_size }
@@ -96,11 +107,35 @@ impl TraceLayout {
     }
 
     fn total_width(&self) -> usize {
-        self.state_width() * 2
+        self.state_width() * 2 + Self::AUX_PREFIX_WIDTH + self.memory_size
     }
 
     fn next_prefix(&self) -> usize {
         self.state_width()
+    }
+
+    fn aux_prefix(&self) -> usize {
+        self.state_width() * 2
+    }
+
+    fn loaded_memory(&self) -> usize {
+        self.aux_prefix()
+    }
+
+    fn mul_result(&self) -> usize {
+        self.aux_prefix() + 1
+    }
+
+    fn next_pc_active(&self) -> usize {
+        self.aux_prefix() + 2
+    }
+
+    fn next_acc_active(&self) -> usize {
+        self.aux_prefix() + 3
+    }
+
+    fn next_memory_active(&self, index: usize) -> usize {
+        self.aux_prefix() + Self::AUX_PREFIX_WIDTH + index
     }
 }
 
@@ -139,6 +174,13 @@ impl FrameworkEval for Phase5ArithmeticSubsetEval {
         let next_memory: Vec<_> = (0..self.memory_size)
             .map(|_| eval.next_trace_mask())
             .collect();
+        let loaded_memory_aux = eval.next_trace_mask();
+        let mul_result_aux = eval.next_trace_mask();
+        let next_pc_active_aux = eval.next_trace_mask();
+        let next_acc_active_aux = eval.next_trace_mask();
+        let next_memory_active_aux: Vec<_> = (0..self.memory_size)
+            .map(|_| eval.next_trace_mask())
+            .collect();
 
         let opcode_flags: Vec<_> = OPCODE_COLUMN_NAMES
             .iter()
@@ -150,6 +192,9 @@ impl FrameworkEval for Phase5ArithmeticSubsetEval {
         let is_last_row = eval.get_preprocessed_column(column_id(LAST_ROW_COLUMN));
         let address_flags: Vec<_> = (0..self.memory_size)
             .map(|index| eval.get_preprocessed_column(column_id(&address_column_name(index))))
+            .collect();
+        let store_address_flags: Vec<_> = (0..self.memory_size)
+            .map(|index| eval.get_preprocessed_column(column_id(&store_address_column_name(index))))
             .collect();
 
         for bit in [
@@ -167,6 +212,7 @@ impl FrameworkEval for Phase5ArithmeticSubsetEval {
             .iter()
             .cloned()
             .chain(address_flags.iter().cloned())
+            .chain(store_address_flags.iter().cloned())
         {
             eval.add_constraint(selector.clone() * (selector - one.clone()));
         }
@@ -187,6 +233,11 @@ impl FrameworkEval for Phase5ArithmeticSubsetEval {
             .cloned()
             .fold(zero.clone(), |acc, x| acc + x);
         eval.add_constraint(address_sum - memory_operand_selector);
+        let store_address_sum = store_address_flags
+            .iter()
+            .cloned()
+            .fold(zero.clone(), |acc, x| acc + x);
+        eval.add_constraint(store_address_sum - opcode_flags[3].clone());
 
         eval.add_constraint(current_carry.clone());
         eval.add_constraint(next_carry.clone());
@@ -207,6 +258,10 @@ impl FrameworkEval for Phase5ArithmeticSubsetEval {
             .cloned()
             .zip(current_memory.iter().cloned())
             .fold(zero.clone(), |acc, (sel, value)| acc + sel * value);
+        eval.add_constraint(loaded_memory_aux.clone() - loaded_memory.clone());
+        eval.add_constraint(
+            mul_result_aux.clone() - current_acc.clone() * loaded_memory_aux.clone(),
+        );
         let jump_taken = current_zero.clone() * jump_target.clone()
             + (one.clone() - current_zero.clone()) * pc_plus_one.clone();
 
@@ -221,25 +276,27 @@ impl FrameworkEval for Phase5ArithmeticSubsetEval {
             + opcode_flags[8].clone() * jump_target.clone()
             + opcode_flags[9].clone() * jump_taken
             + opcode_flags[10].clone() * current_pc.clone();
+        eval.add_constraint(next_pc_active_aux.clone() - expected_pc_active);
 
         let expected_acc_active = opcode_flags[1].clone() * immediate.clone()
-            + opcode_flags[2].clone() * loaded_memory.clone()
+            + opcode_flags[2].clone() * loaded_memory_aux.clone()
             + opcode_flags[4].clone() * (current_acc.clone() + immediate.clone())
-            + opcode_flags[5].clone() * (current_acc.clone() + loaded_memory.clone())
-            + opcode_flags[6].clone() * (current_acc.clone() - loaded_memory.clone())
-            + opcode_flags[7].clone() * (current_acc.clone() * loaded_memory)
+            + opcode_flags[5].clone() * (current_acc.clone() + loaded_memory_aux.clone())
+            + opcode_flags[6].clone() * (current_acc.clone() - loaded_memory_aux.clone())
+            + opcode_flags[7].clone() * mul_result_aux.clone()
             + (opcode_flags[0].clone()
                 + opcode_flags[3].clone()
                 + opcode_flags[8].clone()
                 + opcode_flags[9].clone()
                 + opcode_flags[10].clone())
                 * current_acc.clone();
+        eval.add_constraint(next_acc_active_aux.clone() - expected_acc_active);
 
         let expected_halted_active = opcode_flags[10].clone();
         let expected_next_pc = current_halted.clone() * current_pc.clone()
-            + (one.clone() - current_halted.clone()) * expected_pc_active;
+            + (one.clone() - current_halted.clone()) * next_pc_active_aux;
         let expected_next_acc = current_halted.clone() * current_acc.clone()
-            + (one.clone() - current_halted.clone()) * expected_acc_active;
+            + (one.clone() - current_halted.clone()) * next_acc_active_aux;
         let expected_next_sp = current_sp.clone();
         let expected_next_halted = current_halted.clone()
             + (one.clone() - current_halted.clone()) * expected_halted_active;
@@ -255,11 +312,12 @@ impl FrameworkEval for Phase5ArithmeticSubsetEval {
             .zip(next_memory.iter().cloned())
             .enumerate()
         {
-            let write_here = opcode_flags[3].clone() * address_flags[index].clone();
-            let expected_next_mem = current_mem.clone()
-                + (one.clone() - current_halted.clone())
-                    * write_here
-                    * (current_acc.clone() - current_mem.clone());
+            let store_here = store_address_flags[index].clone();
+            let expected_next_mem_active = store_here.clone() * current_acc.clone()
+                + (one.clone() - store_here) * current_mem.clone();
+            eval.add_constraint(next_memory_active_aux[index].clone() - expected_next_mem_active);
+            let expected_next_mem = current_halted.clone() * current_mem.clone()
+                + (one.clone() - current_halted.clone()) * next_memory_active_aux[index].clone();
             eval.add_constraint(next_mem - expected_next_mem);
         }
 
@@ -491,21 +549,78 @@ fn validate_phase5_subset_witness(
 }
 
 fn validate_phase5_proven_fixture(program: &Program) -> Result<()> {
-    let expected = [
-        Instruction::LoadImmediate(5),
-        Instruction::AddImmediate(3),
-        Instruction::Halt,
-    ];
-    if program.memory_size() != 4
-        || program.initial_memory() != [0, 0, 0, 0]
-        || program.instructions() != expected
-    {
-        return Err(VmError::UnsupportedProof(
-            "S-two Phase 5 currently proves only the exact shipped `programs/addition.tvm` fixture; broader arithmetic-subset AIR coverage remains internal"
-                .to_string(),
-        ));
+    let matches_addition = program.memory_size() == 4
+        && program.initial_memory() == [0, 0, 0, 0]
+        && program.instructions()
+            == [
+                Instruction::LoadImmediate(5),
+                Instruction::AddImmediate(3),
+                Instruction::Halt,
+            ];
+    let matches_counter = program.memory_size() == 4
+        && program.initial_memory() == [0, 5, 0, 0]
+        && program.instructions()
+            == [
+                Instruction::LoadImmediate(0),
+                Instruction::Store(0),
+                Instruction::Load(0),
+                Instruction::AddImmediate(1),
+                Instruction::Store(0),
+                Instruction::Load(0),
+                Instruction::SubMemory(1),
+                Instruction::JumpIfZero(9),
+                Instruction::Jump(2),
+                Instruction::Load(0),
+                Instruction::Halt,
+            ];
+    let matches_multiply = program.memory_size() == 4
+        && program.initial_memory() == [7, 0, 0, 6]
+        && program.instructions()
+            == [
+                Instruction::Load(2),
+                Instruction::SubMemory(3),
+                Instruction::JumpIfZero(10),
+                Instruction::Load(1),
+                Instruction::AddMemory(0),
+                Instruction::Store(1),
+                Instruction::Load(2),
+                Instruction::AddImmediate(1),
+                Instruction::Store(2),
+                Instruction::Jump(0),
+                Instruction::Load(1),
+                Instruction::Halt,
+            ];
+    let matches_dot_product = program.memory_size() == 10
+        && program.initial_memory() == [1, 2, 3, 4, 5, 6, 7, 8, 0, 0]
+        && program.instructions()
+            == [
+                Instruction::Load(0),
+                Instruction::MulMemory(4),
+                Instruction::Store(9),
+                Instruction::Load(1),
+                Instruction::MulMemory(5),
+                Instruction::AddMemory(9),
+                Instruction::Store(9),
+                Instruction::Load(2),
+                Instruction::MulMemory(6),
+                Instruction::AddMemory(9),
+                Instruction::Store(9),
+                Instruction::Load(3),
+                Instruction::MulMemory(7),
+                Instruction::AddMemory(9),
+                Instruction::Store(9),
+                Instruction::Load(9),
+                Instruction::Halt,
+            ];
+
+    if matches_addition || matches_counter || matches_multiply || matches_dot_product {
+        return Ok(());
     }
-    Ok(())
+
+    Err(VmError::UnsupportedProof(
+        "S-two Phase 5 currently proves only the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/multiply.tvm`, and `programs/dot_product.tvm`; broader arithmetic-subset AIR coverage remains internal"
+            .to_string(),
+    ))
 }
 
 fn reconstruct_state_trace_from_claim(
@@ -553,7 +668,7 @@ fn build_trace_bundle(program: &Program, states: &[MachineState]) -> Result<Trac
     let preprocessed_rows = build_preprocessed_rows(program, states, row_count)?;
     let preprocessed_trace =
         preprocessed_trace(&preprocessed_rows, log_size, program.memory_size());
-    let base_trace = base_trace(states, log_size, program.memory_size());
+    let base_trace = base_trace(program, states, log_size, program.memory_size())?;
     Ok(TraceBundle {
         log_size,
         preprocessed_rows,
@@ -606,6 +721,7 @@ fn preprocessed_trace(
     for (row_index, row) in rows.iter().enumerate() {
         let mut values = row.column_values();
         values.extend(row.address_flags.iter().map(|value| base_u32(*value)));
+        values.extend(row.store_address_flags.iter().map(|value| base_u32(*value)));
         for (column_index, value) in values.into_iter().enumerate() {
             columns[column_index].set(row_index, value);
         }
@@ -621,10 +737,11 @@ fn preprocessed_trace(
 }
 
 fn base_trace(
+    program: &Program,
     states: &[MachineState],
     log_size: u32,
     memory_size: usize,
-) -> Vec<CircleEvaluation<CpuBackend, BaseField, BitReversedOrder>> {
+) -> Result<Vec<CircleEvaluation<CpuBackend, BaseField, BitReversedOrder>>> {
     let row_count = 1usize << log_size;
     let layout = TraceLayout::new(memory_size);
     let domain = CanonicCoset::new(log_size).circle_domain();
@@ -644,6 +761,7 @@ fn base_trace(
         } else {
             last_state
         };
+        let auxiliary = auxiliary_values(program, current)?;
         let current_row = state_values(current);
         let next_row = state_values(next);
         for (column_index, value) in current_row.into_iter().enumerate() {
@@ -652,15 +770,23 @@ fn base_trace(
         for (offset, value) in next_row.into_iter().enumerate() {
             columns[layout.next_prefix() + offset].set(row_index, value);
         }
+        columns[layout.loaded_memory()].set(row_index, base_i16(auxiliary.loaded_memory));
+        columns[layout.mul_result()].set(row_index, base_i16(auxiliary.mul_result));
+        columns[layout.next_pc_active()]
+            .set(row_index, base_u32(u32::from(auxiliary.next_pc_active)));
+        columns[layout.next_acc_active()].set(row_index, base_i16(auxiliary.next_acc_active));
+        for (index, value) in auxiliary.next_memory_active.into_iter().enumerate() {
+            columns[layout.next_memory_active(index)].set(row_index, base_i16(value));
+        }
     }
 
-    columns
+    Ok(columns
         .into_iter()
         .map(|column| {
             CircleEvaluation::<CpuBackend, BaseField, NaturalOrder>::new(domain, column)
                 .bit_reverse()
         })
-        .collect()
+        .collect())
 }
 
 fn constrain_public_state<E: EvalAtRow>(
@@ -720,11 +846,16 @@ fn preprocessed_column_ids(memory_size: usize) -> Vec<PreProcessedColumnId> {
     ids.push(column_id(FIRST_ROW_COLUMN));
     ids.push(column_id(LAST_ROW_COLUMN));
     ids.extend((0..memory_size).map(|index| column_id(&address_column_name(index))));
+    ids.extend((0..memory_size).map(|index| column_id(&store_address_column_name(index))));
     ids
 }
 
 fn address_column_name(index: usize) -> String {
     format!("phase5/arithmetic/address/{index}")
+}
+
+fn store_address_column_name(index: usize) -> String {
+    format!("phase5/arithmetic/store_address/{index}")
 }
 
 fn column_id(id: &str) -> PreProcessedColumnId {
@@ -778,6 +909,9 @@ impl PreprocessedRow {
         if let Some(address) = address {
             row.address_flags[address as usize] = 1;
         }
+        if let Instruction::Store(address) = instruction {
+            row.store_address_flags[address as usize] = 1;
+        }
         row
     }
 
@@ -787,6 +921,7 @@ impl PreprocessedRow {
             immediate: 0,
             jump_target: 0,
             address_flags: vec![0; memory_size],
+            store_address_flags: vec![0; memory_size],
             is_first_row,
             is_last_row,
         }
@@ -804,6 +939,51 @@ impl PreprocessedRow {
         values.push(bool_base(self.is_last_row));
         values
     }
+}
+
+fn auxiliary_values(program: &Program, state: &MachineState) -> Result<AuxiliaryState> {
+    let instruction = program.instruction_at(state.pc)?;
+    let loaded_memory = match instruction {
+        Instruction::Load(address)
+        | Instruction::Store(address)
+        | Instruction::AddMemory(address)
+        | Instruction::SubMemory(address)
+        | Instruction::MulMemory(address) => state.memory[address as usize],
+        _ => 0,
+    };
+    let next_pc_active = match instruction {
+        Instruction::Jump(target) => target,
+        Instruction::JumpIfZero(target) => {
+            if state.zero_flag {
+                target
+            } else {
+                state.pc.saturating_add(1)
+            }
+        }
+        Instruction::Halt => state.pc,
+        _ => state.pc.saturating_add(1),
+    };
+    let mul_result = state.acc.wrapping_mul(loaded_memory);
+    let next_acc_active = match instruction {
+        Instruction::LoadImmediate(value) => value,
+        Instruction::Load(_) => loaded_memory,
+        Instruction::AddImmediate(value) => state.acc.wrapping_add(value),
+        Instruction::AddMemory(_) => state.acc.wrapping_add(loaded_memory),
+        Instruction::SubMemory(_) => state.acc.wrapping_sub(loaded_memory),
+        Instruction::MulMemory(_) => mul_result,
+        _ => state.acc,
+    };
+    let mut next_memory_active = state.memory.clone();
+    if let Instruction::Store(address) = instruction {
+        next_memory_active[address as usize] = state.acc;
+    }
+    Ok(AuxiliaryState {
+        loaded_memory,
+        mul_result,
+        next_pc_active,
+        next_acc_active,
+        next_memory_active,
+    })
 }
 
 fn opcode_flags(instruction: Instruction) -> [u32; 11] {
@@ -868,7 +1048,7 @@ mod tests {
     use crate::{ProgramCompiler, TransformerVmConfig};
     use stwo::core::pcs::utils::TreeVec;
     use stwo::prover::backend::Column;
-    use stwo_constraint_framework::assert_constraints_on_trace;
+    use stwo_constraint_framework::{assert_constraints_on_polys, assert_constraints_on_trace};
 
     fn compile_program(path: &str) -> Program {
         let source = std::fs::read_to_string(path).expect("program source");
@@ -925,12 +1105,13 @@ mod tests {
         ];
         let trace = build_trace_bundle(&compile_program("programs/addition.tvm"), &states).unwrap();
         assert_eq!(trace.log_size, 2);
-        assert_eq!(trace.base_trace.len(), 22);
+        assert_eq!(trace.base_trace.len(), 30);
     }
 
     fn assert_program_trace_satisfies_constraints(path: &str) {
         let program = compile_program(path);
-        let mut runtime = NativeInterpreter::new(program.clone(), Attention2DMode::AverageHard, 64);
+        let mut runtime =
+            NativeInterpreter::new(program.clone(), Attention2DMode::AverageHard, 256);
         let result = runtime.run().expect("run program");
         assert!(result.halted);
 
@@ -981,5 +1162,61 @@ mod tests {
     #[test]
     fn phase5_multiply_trace_satisfies_constraints() {
         assert_program_trace_satisfies_constraints("programs/multiply.tvm");
+    }
+
+    fn assert_program_trace_polys_satisfy_constraints(path: &str) {
+        let program = compile_program(path);
+        let mut runtime =
+            NativeInterpreter::new(program.clone(), Attention2DMode::AverageHard, 256);
+        let result = runtime.run().expect("run program");
+        assert!(result.halted);
+
+        let states = runtime.trace().to_vec();
+        let trace = build_trace_bundle(&program, &states).expect("trace bundle");
+        let final_state = result.final_state.clone();
+        let eval_state = Phase5ArithmeticSubsetEval {
+            log_size: trace.log_size,
+            memory_size: program.memory_size(),
+            initial_state: PublicState::from_initial_memory(program.initial_memory()),
+            final_state: PublicState::from_machine_state(final_state.clone()),
+        };
+        let trace_polys = TreeVec(vec![
+            trace
+                .preprocessed_trace
+                .iter()
+                .cloned()
+                .map(|c| c.interpolate())
+                .collect::<Vec<_>>(),
+            trace
+                .base_trace
+                .iter()
+                .cloned()
+                .map(|c| c.interpolate())
+                .collect::<Vec<_>>(),
+        ]);
+
+        assert_constraints_on_polys(
+            &trace_polys,
+            CanonicCoset::new(trace.log_size),
+            |eval| {
+                let _ = eval_state.evaluate(eval);
+            },
+            SecureField::zero(),
+        );
+    }
+
+    #[test]
+    fn phase5_dot_product_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/dot_product.tvm");
+    }
+
+    #[test]
+    fn phase5_counter_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/counter.tvm");
+    }
+
+    #[test]
+    fn phase5_multiply_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/multiply.tvm");
     }
 }

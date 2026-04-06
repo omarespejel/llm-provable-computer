@@ -1,6 +1,8 @@
 use ark_ff::Zero;
 use serde::{Deserialize, Serialize};
 use serde_json;
+use std::fs;
+use std::path::Path;
 use stwo::core::air::Component;
 use stwo::core::channel::Blake2sM31Channel;
 use stwo::core::channel::Channel;
@@ -26,13 +28,95 @@ use super::normalization_component::{
     Phase5NormalizationLookupElements,
 };
 use crate::error::{Result, VmError};
+use crate::proof::StarkProofBackend;
 
 pub const STWO_NORMALIZATION_PROOF_VERSION_PHASE5: &str = "stwo-phase5-normalization-demo-v1";
+pub const STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5: &str = "stwo-normalization-demo-v1";
+pub const STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5: &str =
+    "stwo_normalization_lookup_demo_with_canonical_table";
 
 #[derive(Serialize, Deserialize)]
 struct Phase5NormalizationProofPayload {
     stark_proof: StarkProof<Blake2sM31MerkleHasher>,
     canonical_table_rows: Vec<(u16, u16)>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase5NormalizationLookupProofEnvelope {
+    pub proof_backend: StarkProofBackend,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub semantic_scope: String,
+    pub canonical_table_rows: Vec<(u16, u16)>,
+    pub proof: Vec<u8>,
+}
+
+pub fn prove_phase5_normalization_lookup_demo_envelope(
+) -> Result<Phase5NormalizationLookupProofEnvelope> {
+    let bundle = build_normalization_demo_bundle();
+    Ok(Phase5NormalizationLookupProofEnvelope {
+        proof_backend: StarkProofBackend::Stwo,
+        proof_backend_version: STWO_NORMALIZATION_PROOF_VERSION_PHASE5.to_string(),
+        statement_version: STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5.to_string(),
+        semantic_scope: STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5.to_string(),
+        canonical_table_rows: bundle.table_rows.clone(),
+        proof: prove_phase5_normalization_lookup_demo()?,
+    })
+}
+
+pub fn verify_phase5_normalization_lookup_demo_envelope(
+    envelope: &Phase5NormalizationLookupProofEnvelope,
+) -> Result<bool> {
+    if envelope.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "normalization demo proof backend `{}` is not `stwo`",
+            envelope.proof_backend
+        )));
+    }
+    if envelope.proof_backend_version != STWO_NORMALIZATION_PROOF_VERSION_PHASE5 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported normalization demo proof backend version `{}` (expected `{}`)",
+            envelope.proof_backend_version, STWO_NORMALIZATION_PROOF_VERSION_PHASE5
+        )));
+    }
+    if envelope.statement_version != STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported normalization demo statement version `{}` (expected `{}`)",
+            envelope.statement_version, STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5
+        )));
+    }
+    if envelope.semantic_scope != STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported normalization demo semantic scope `{}` (expected `{}`)",
+            envelope.semantic_scope, STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5
+        )));
+    }
+
+    let bundle = build_normalization_demo_bundle();
+    if envelope.canonical_table_rows != bundle.table_rows {
+        return Err(VmError::UnsupportedProof(
+            "normalization demo proof envelope does not match the canonical Phase 5 lookup table"
+                .to_string(),
+        ));
+    }
+    verify_phase5_normalization_lookup_demo(&envelope.proof)
+}
+
+pub fn save_phase5_normalization_lookup_proof(
+    proof: &Phase5NormalizationLookupProofEnvelope,
+    path: &Path,
+) -> Result<()> {
+    let json = serde_json::to_string_pretty(proof)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    fs::write(path, json)?;
+    Ok(())
+}
+
+pub fn load_phase5_normalization_lookup_proof(
+    path: &Path,
+) -> Result<Phase5NormalizationLookupProofEnvelope> {
+    let json = fs::read_to_string(path)?;
+    serde_json::from_str(&json).map_err(|error| VmError::Serialization(error.to_string()))
 }
 
 pub fn prove_phase5_normalization_lookup_demo() -> Result<Vec<u8>> {
@@ -216,5 +300,26 @@ mod tests {
         let proof = prove_phase5_normalization_lookup_demo().expect("prove normalization demo");
         assert!(!proof.is_empty());
         assert!(verify_phase5_normalization_lookup_demo(&proof).expect("verify normalization demo"));
+    }
+
+    #[test]
+    fn phase5_normalization_demo_envelope_round_trips() {
+        let envelope = prove_phase5_normalization_lookup_demo_envelope()
+            .expect("prove normalization demo envelope");
+        assert_eq!(envelope.proof_backend, StarkProofBackend::Stwo);
+        assert_eq!(
+            envelope.proof_backend_version,
+            STWO_NORMALIZATION_PROOF_VERSION_PHASE5
+        );
+        assert_eq!(
+            envelope.statement_version,
+            STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5
+        );
+        assert_eq!(
+            envelope.semantic_scope,
+            STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5
+        );
+        assert!(verify_phase5_normalization_lookup_demo_envelope(&envelope)
+            .expect("verify normalization demo envelope"));
     }
 }

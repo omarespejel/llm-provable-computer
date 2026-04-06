@@ -10,6 +10,7 @@ mod lookup_component;
 mod normalization_component;
 #[cfg(feature = "stwo-backend")]
 mod normalization_prover;
+mod recursion;
 
 use crate::config::Attention2DMode;
 use crate::error::{Result, VmError};
@@ -45,8 +46,15 @@ pub use normalization_component::{
 };
 #[cfg(feature = "stwo-backend")]
 pub use normalization_prover::{
-    prove_phase5_normalization_lookup_demo, verify_phase5_normalization_lookup_demo,
-    STWO_NORMALIZATION_PROOF_VERSION_PHASE5,
+    load_phase5_normalization_lookup_proof, prove_phase5_normalization_lookup_demo,
+    prove_phase5_normalization_lookup_demo_envelope, save_phase5_normalization_lookup_proof,
+    verify_phase5_normalization_lookup_demo, verify_phase5_normalization_lookup_demo_envelope,
+    Phase5NormalizationLookupProofEnvelope, STWO_NORMALIZATION_PROOF_VERSION_PHASE5,
+    STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5, STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
+};
+pub use recursion::{
+    phase6_prepare_recursion_batch, Phase6RecursionBatchEntry, Phase6RecursionBatchManifest,
+    STWO_RECURSION_BATCH_SCOPE_PHASE6, STWO_RECURSION_BATCH_VERSION_PHASE6,
 };
 
 /// Backend version label used by the experimental Phase 2 S-two seam.
@@ -89,7 +97,7 @@ pub fn phase2_placeholder_prove_error() -> VmError {
 
     let seam = phase2_dependency_seam();
     VmError::UnsupportedProof(format!(
-        "S-two backend Phase 2 adapter seam is present (official crates: {} {}, {} {}; modules: {}, {}), but proving is not implemented yet in binaries built without the `stwo-backend` feature; the feature-gated implementation now covers a real proof path for the shipped addition fixture plus a separate normalization lookup demo",
+        "S-two backend Phase 2 adapter seam is present (official crates: {} {}, {} {}; modules: {}, {}), but proving is not implemented yet in binaries built without the `stwo-backend` feature; the feature-gated implementation now covers real proof paths for the shipped arithmetic fixtures plus a separate normalization lookup demo",
         seam.stwo_crate,
         seam.stwo_crate_version,
         seam.constraint_framework_crate,
@@ -107,7 +115,7 @@ pub fn phase2_placeholder_verify_error() -> VmError {
 
     let seam = phase2_dependency_seam();
     VmError::UnsupportedProof(format!(
-        "S-two backend Phase 2 adapter seam is present (official crates: {} {}, {} {}; modules: {}, {}), but verification is not implemented yet in binaries built without the `stwo-backend` feature; the feature-gated implementation now covers a real proof path for the shipped addition fixture plus a separate normalization lookup demo",
+        "S-two backend Phase 2 adapter seam is present (official crates: {} {}, {} {}; modules: {}, {}), but verification is not implemented yet in binaries built without the `stwo-backend` feature; the feature-gated implementation now covers real proof paths for the shipped arithmetic fixtures plus a separate normalization lookup demo",
         seam.stwo_crate,
         seam.stwo_crate_version,
         seam.constraint_framework_crate,

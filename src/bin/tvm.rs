@@ -16,17 +16,25 @@ use clap::{Parser, Subcommand, ValueEnum};
 #[cfg(any(feature = "burn-model", feature = "onnx-export"))]
 use llm_provable_computer::verify_engines;
 use llm_provable_computer::{
-    conjectured_security_bits, load_execution_stark_proof, production_v1_stark_options,
-    prove_execution_stark_with_backend_and_options, run_execution_tui, save_execution_stark_proof,
-    verify_execution_stark_with_backend_and_policy,
+    conjectured_security_bits, load_execution_stark_proof, phase6_prepare_recursion_batch,
+    production_v1_stark_options, prove_execution_stark_with_backend_and_options, run_execution_tui,
+    save_execution_stark_proof, verify_execution_stark_with_backend_and_policy,
     verify_execution_stark_with_reexecution_and_policy, verify_model_against_native,
     Attention2DMode, ExecutionResult, ExecutionRuntime, ExecutionTraceEntry, MachineState,
     NativeInterpreter, ProgramCompiler, StarkProofBackend, StarkVerificationPolicy, TransformerVm,
     TransformerVmConfig, VanillaStarkProofOptions, VmError,
     PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS, PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS,
+    STWO_RECURSION_BATCH_SCOPE_PHASE6, STWO_RECURSION_BATCH_VERSION_PHASE6,
 };
 #[cfg(feature = "onnx-export")]
 use llm_provable_computer::{export_program_onnx, OnnxExecutionRuntime};
+#[cfg(feature = "stwo-backend")]
+use llm_provable_computer::{
+    load_phase5_normalization_lookup_proof, prove_phase5_normalization_lookup_demo_envelope,
+    save_phase5_normalization_lookup_proof, stwo_backend_enabled,
+    verify_phase5_normalization_lookup_demo_envelope, STWO_NORMALIZATION_PROOF_VERSION_PHASE5,
+    STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5, STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
+};
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
 #[cfg(feature = "onnx-export")]
@@ -187,6 +195,26 @@ enum Command {
         /// Optional backend override. When omitted, verification uses the backend encoded in the proof.
         #[arg(long, value_enum)]
         backend: Option<CliProofBackend>,
+    },
+    /// Produce a serialized S-two normalization lookup demo proof.
+    ProveStwoNormalizationDemo {
+        /// File where the serialized proof JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a serialized S-two normalization lookup demo proof.
+    VerifyStwoNormalizationDemo {
+        /// Path to the serialized proof JSON file.
+        proof: PathBuf,
+    },
+    /// Prepare a canonical multi-proof batch manifest for future S-two recursion.
+    PrepareStwoRecursionBatch {
+        /// Proof JSON paths to include in the batch (repeatable).
+        #[arg(long = "proof")]
+        proofs: Vec<PathBuf>,
+        /// File where the serialized batch manifest JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
     },
     /// Generate a research v2 one-step semantic equivalence artifact (transformer vs ONNX).
     ResearchV2Step {
@@ -673,6 +701,15 @@ fn run() -> llm_provable_computer::Result<()> {
             strict,
             backend,
         )?,
+        Command::ProveStwoNormalizationDemo { output } => {
+            prove_stwo_normalization_demo_command(&output)?
+        }
+        Command::VerifyStwoNormalizationDemo { proof } => {
+            verify_stwo_normalization_demo_command(&proof)?
+        }
+        Command::PrepareStwoRecursionBatch { proofs, output } => {
+            prepare_stwo_recursion_batch_command(&proofs, &output)?
+        }
         Command::ResearchV2Step {
             program,
             output,
@@ -1015,6 +1052,116 @@ fn verify_stark_command(
     }
     println!("instructions: {}", proof.claim.program.instructions().len());
     println!("proof_bytes: {}", proof.proof.len());
+
+    Ok(())
+}
+
+fn prove_stwo_normalization_demo_command(output: &Path) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output;
+        return Err(VmError::UnsupportedProof(
+            "S-two normalization demo requires building with `--features stwo-backend`".to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    if !stwo_backend_enabled() {
+        return Err(VmError::UnsupportedProof(
+            "S-two normalization demo requires building with `--features stwo-backend`".to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        let proof = prove_phase5_normalization_lookup_demo_envelope()?;
+        save_phase5_normalization_lookup_proof(&proof, output)?;
+
+        println!("proof: {}", output.display());
+        println!("proof_backend: {}", proof.proof_backend);
+        println!("proof_backend_version: {}", proof.proof_backend_version);
+        println!("statement_version: {}", proof.statement_version);
+        println!("semantic_scope: {}", proof.semantic_scope);
+        println!("canonical_table_rows: {}", proof.canonical_table_rows.len());
+        println!("proof_bytes: {}", proof.proof.len());
+
+        Ok(())
+    }
+}
+
+fn verify_stwo_normalization_demo_command(proof_path: &Path) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = proof_path;
+        return Err(VmError::UnsupportedProof(
+            "S-two normalization demo requires building with `--features stwo-backend`".to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    if !stwo_backend_enabled() {
+        return Err(VmError::UnsupportedProof(
+            "S-two normalization demo requires building with `--features stwo-backend`".to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        let proof = load_phase5_normalization_lookup_proof(proof_path)?;
+        let verified = verify_phase5_normalization_lookup_demo_envelope(&proof)?;
+        if !verified {
+            return Err(VmError::InvalidConfig(format!(
+                "normalization demo proof verification failed for {}",
+                proof_path.display()
+            )));
+        }
+
+        println!("proof: {}", proof_path.display());
+        println!("verified_stark: true");
+        println!("proof_backend: {}", proof.proof_backend);
+        println!("proof_backend_version: {}", proof.proof_backend_version);
+        println!("statement_version: {}", proof.statement_version);
+        println!("semantic_scope: {}", proof.semantic_scope);
+        println!("canonical_table_rows: {}", proof.canonical_table_rows.len());
+        println!("expected_statement_version: {STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5}");
+        println!("expected_semantic_scope: {STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5}");
+        println!("expected_proof_backend_version: {STWO_NORMALIZATION_PROOF_VERSION_PHASE5}");
+        println!("proof_bytes: {}", proof.proof.len());
+
+        Ok(())
+    }
+}
+
+fn prepare_stwo_recursion_batch_command(
+    proofs: &[PathBuf],
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    if proofs.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "prepare-stwo-recursion-batch requires at least one `--proof` path".to_string(),
+        ));
+    }
+
+    let loaded = proofs
+        .iter()
+        .map(|path| load_execution_stark_proof(path))
+        .collect::<Result<Vec<_>, _>>()?;
+    let manifest = phase6_prepare_recursion_batch(&loaded)?;
+    let json = serde_json::to_string_pretty(&manifest)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    fs::write(output, json)?;
+
+    println!("output: {}", output.display());
+    println!("proof_backend: {}", manifest.proof_backend);
+    println!("batch_version: {}", manifest.batch_version);
+    println!("semantic_scope: {}", manifest.semantic_scope);
+    println!("proof_backend_version: {}", manifest.proof_backend_version);
+    println!("statement_version: {}", manifest.statement_version);
+    println!("total_proofs: {}", manifest.total_proofs);
+    println!("total_steps: {}", manifest.total_steps);
+    println!("total_proof_bytes: {}", manifest.total_proof_bytes);
+    println!("expected_batch_version: {STWO_RECURSION_BATCH_VERSION_PHASE6}");
+    println!("expected_semantic_scope: {STWO_RECURSION_BATCH_SCOPE_PHASE6}");
 
     Ok(())
 }
@@ -2110,6 +2257,9 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "export-onnx"
                 | "prove-stark"
                 | "verify-stark"
+                | "prove-stwo-normalization-demo"
+                | "verify-stwo-normalization-demo"
+                | "prepare-stwo-recursion-batch"
                 | "research-v2-step"
                 | "research-v2-trace"
                 | "research-v2-matrix"

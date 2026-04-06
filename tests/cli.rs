@@ -336,39 +336,52 @@ fn cli_prove_stark_requires_stwo_feature_flag() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
-fn cli_can_prove_and_verify_stwo_addition_fixture() {
-    let proof_path = unique_temp_dir("cli-stark-proof-stwo-phase5-addition").with_extension("json");
+fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
+    for (program, stem, expected_acc) in [
+        ("programs/addition.tvm", "addition", "8"),
+        ("programs/counter.tvm", "counter", "5"),
+        ("programs/multiply.tvm", "multiply", "42"),
+        ("programs/dot_product.tvm", "dot", "70"),
+    ] {
+        let proof_path =
+            unique_temp_dir(&format!("cli-stark-proof-stwo-phase5-{stem}")).with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
-    prove
-        .arg("prove-stark")
-        .arg("programs/addition.tvm")
-        .arg("-o")
-        .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
-        .assert()
-        .success();
+        let mut prove = Command::cargo_bin("tvm").expect("binary");
+        prove
+            .arg("prove-stark")
+            .arg(program)
+            .arg("-o")
+            .arg(&proof_path)
+            .arg("--backend")
+            .arg("stwo")
+            .arg("--max-steps")
+            .arg("256")
+            .assert()
+            .success()
+            .stdout(predicate::str::contains("proof_backend: stwo"))
+            .stdout(predicate::str::contains(format!("acc: {expected_acc}")));
 
-    let proof_json = std::fs::read_to_string(&proof_path).expect("proof json");
-    assert!(proof_json.contains("\"proof_backend\": \"stwo\""));
-    assert!(proof_json.contains("stwo-phase5-arithmetic-subset-v1"));
+        let proof_json = std::fs::read_to_string(&proof_path).expect("proof json");
+        assert!(proof_json.contains("\"proof_backend\": \"stwo\""));
+        assert!(proof_json.contains("stwo-phase5-arithmetic-subset-v2"));
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
-    verify
-        .arg("verify-stark")
-        .arg(&proof_path)
-        .arg("--reexecute")
-        .assert()
-        .success()
-        .stdout(predicate::str::contains("proof_backend: stwo"))
-        .stdout(predicate::str::contains(
-            "proof_backend_version: stwo-phase5-arithmetic-subset-v1",
-        ))
-        .stdout(predicate::str::contains("verified_stark: true"))
-        .stdout(predicate::str::contains("reexecuted_equivalence: true"));
+        let mut verify = Command::cargo_bin("tvm").expect("binary");
+        verify
+            .arg("verify-stark")
+            .arg(&proof_path)
+            .arg("--reexecute")
+            .assert()
+            .success()
+            .stdout(predicate::str::contains("proof_backend: stwo"))
+            .stdout(predicate::str::contains(
+                "proof_backend_version: stwo-phase5-arithmetic-subset-v2",
+            ))
+            .stdout(predicate::str::contains("verified_stark: true"))
+            .stdout(predicate::str::contains("reexecuted_equivalence: true"))
+            .stdout(predicate::str::contains(format!("acc: {expected_acc}")));
 
-    let _ = std::fs::remove_file(proof_path);
+        let _ = std::fs::remove_file(proof_path);
+    }
 }
 
 #[test]
@@ -393,13 +406,14 @@ fn cli_prove_stark_rejects_program_outside_stwo_phase2_subset() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
-fn cli_prove_stark_rejects_phase5_programs_outside_exact_addition_fixture() {
-    let proof_path = unique_temp_dir("cli-stark-proof-stwo-phase5-dot").with_extension("json");
+fn cli_prove_stark_rejects_phase5_programs_outside_shipped_fixtures() {
+    let proof_path =
+        unique_temp_dir("cli-stark-proof-stwo-phase5-memory-roundtrip").with_extension("json");
 
     let mut prove = Command::cargo_bin("tvm").expect("binary");
     prove
         .arg("prove-stark")
-        .arg("programs/dot_product.tvm")
+        .arg("programs/memory_roundtrip.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -407,8 +421,108 @@ fn cli_prove_stark_rejects_phase5_programs_outside_exact_addition_fixture() {
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "currently proves only the exact shipped `programs/addition.tvm` fixture",
+            "currently proves only the shipped arithmetic fixtures",
         ));
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_can_prove_and_verify_stwo_normalization_demo() {
+    let proof_path = unique_temp_dir("cli-stwo-normalization-demo-proof").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-normalization-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("proof_backend: stwo"))
+        .stdout(predicate::str::contains(
+            "proof_backend_version: stwo-phase5-normalization-demo-v1",
+        ))
+        .stdout(predicate::str::contains(
+            "semantic_scope: stwo_normalization_lookup_demo_with_canonical_table",
+        ));
+
+    let proof_json = std::fs::read_to_string(&proof_path).expect("proof json");
+    assert!(proof_json.contains("\"proof_backend\": \"stwo\""));
+    assert!(proof_json.contains("stwo-phase5-normalization-demo-v1"));
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-normalization-demo")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(
+            "statement_version: stwo-normalization-demo-v1",
+        ))
+        .stdout(predicate::str::contains(
+            "semantic_scope: stwo_normalization_lookup_demo_with_canonical_table",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_can_prepare_stwo_recursion_batch_manifest() {
+    let proof_a = unique_temp_dir("cli-stwo-recursion-proof-a").with_extension("json");
+    let proof_b = unique_temp_dir("cli-stwo-recursion-proof-b").with_extension("json");
+    let manifest_path = unique_temp_dir("cli-stwo-recursion-manifest").with_extension("json");
+
+    let mut prove_a = Command::cargo_bin("tvm").expect("binary");
+    prove_a
+        .arg("prove-stark")
+        .arg("programs/addition.tvm")
+        .arg("-o")
+        .arg(&proof_a)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    let mut prove_b = Command::cargo_bin("tvm").expect("binary");
+    prove_b
+        .arg("prove-stark")
+        .arg("programs/counter.tvm")
+        .arg("-o")
+        .arg(&proof_b)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    let mut prepare = Command::cargo_bin("tvm").expect("binary");
+    prepare
+        .arg("prepare-stwo-recursion-batch")
+        .arg("--proof")
+        .arg(&proof_a)
+        .arg("--proof")
+        .arg(&proof_b)
+        .arg("-o")
+        .arg(&manifest_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("proof_backend: stwo"))
+        .stdout(predicate::str::contains(
+            "batch_version: stwo-phase6-recursion-batch-v1",
+        ))
+        .stdout(predicate::str::contains("total_proofs: 2"));
+
+    let manifest_json = std::fs::read_to_string(&manifest_path).expect("manifest json");
+    assert!(manifest_json.contains("\"proof_backend\": \"stwo\""));
+    assert!(manifest_json.contains("stwo_execution_proof_batch_preaggregation_manifest"));
+
+    let _ = std::fs::remove_file(proof_a);
+    let _ = std::fs::remove_file(proof_b);
+    let _ = std::fs::remove_file(manifest_path);
 }
 
 #[test]
