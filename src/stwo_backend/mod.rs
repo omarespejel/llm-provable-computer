@@ -7,6 +7,8 @@ mod layout;
 #[cfg(feature = "stwo-backend")]
 mod lookup_component;
 #[cfg(feature = "stwo-backend")]
+mod lookup_prover;
+#[cfg(feature = "stwo-backend")]
 mod normalization_component;
 #[cfg(feature = "stwo-backend")]
 mod normalization_prover;
@@ -37,6 +39,14 @@ pub use layout::{
 pub use lookup_component::{
     phase3_binary_step_lookup_component_metadata, phase3_lookup_preprocessed_columns,
     phase3_lookup_table_rows, Phase3LookupComponentMetadata, Phase3LookupTableRow,
+};
+#[cfg(feature = "stwo-backend")]
+pub use lookup_prover::{
+    load_phase3_binary_step_lookup_proof, prove_phase3_binary_step_lookup_demo,
+    prove_phase3_binary_step_lookup_demo_envelope, save_phase3_binary_step_lookup_proof,
+    verify_phase3_binary_step_lookup_demo, verify_phase3_binary_step_lookup_demo_envelope,
+    Phase3LookupProofEnvelope, STWO_LOOKUP_PROOF_VERSION_PHASE3,
+    STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
 };
 #[cfg(feature = "stwo-backend")]
 pub use normalization_component::{

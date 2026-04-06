@@ -566,6 +566,47 @@ fn cli_prove_stark_rejects_phase5_programs_outside_shipped_fixtures() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_can_prove_and_verify_stwo_lookup_demo() {
+    let proof_path = unique_temp_dir("cli-stwo-lookup-demo-proof").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-lookup-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("proof_backend: stwo"))
+        .stdout(predicate::str::contains(
+            "proof_backend_version: stwo-phase3-binary-step-lookup-demo-v1",
+        ))
+        .stdout(predicate::str::contains(
+            "semantic_scope: stwo_binary_step_activation_lookup_demo_with_canonical_table",
+        ));
+
+    let proof_json = std::fs::read_to_string(&proof_path).expect("proof json");
+    assert!(proof_json.contains("\"proof_backend\": \"stwo\""));
+    assert!(proof_json.contains("stwo-phase3-binary-step-lookup-demo-v1"));
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-lookup-demo")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(
+            "statement_version: stwo-binary-step-lookup-demo-v1",
+        ))
+        .stdout(predicate::str::contains(
+            "semantic_scope: stwo_binary_step_activation_lookup_demo_with_canonical_table",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_can_prove_and_verify_stwo_normalization_demo() {
     let proof_path = unique_temp_dir("cli-stwo-normalization-demo-proof").with_extension("json");
 

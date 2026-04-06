@@ -1,4 +1,5 @@
 use ark_ff::{One, Zero};
+use serde::{Deserialize, Serialize};
 use stwo::core::air::Component;
 use stwo::core::fields::m31::BaseField;
 use stwo::core::fields::qm31::SecureField;
@@ -8,6 +9,7 @@ use stwo_constraint_framework::{
 };
 
 relation!(Phase3BinaryStepLookupRelation, 2);
+pub(crate) type Phase3BinaryStepLookupElements = Phase3BinaryStepLookupRelation;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Phase3LookupComponentMetadata {
@@ -22,7 +24,7 @@ pub struct Phase3LookupComponentMetadata {
     pub statement_contract: &'static str,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase3LookupTableRow {
     pub input: i16,
     pub output: u8,
@@ -32,9 +34,11 @@ const PHASE3_LOOKUP_TABLE_INPUT: &str = "phase3/lookup/table_input";
 const PHASE3_LOOKUP_TABLE_OUTPUT: &str = "phase3/lookup/table_output";
 const PHASE3_LOOKUP_SEMANTICS: &str = "bounded binary-step activation lookup pilot";
 
-#[derive(Debug, Clone, Copy)]
-struct Phase3BinaryStepLookupEval {
+#[derive(Debug, Clone)]
+pub(crate) struct Phase3BinaryStepLookupEval {
     log_size: u32,
+    lookup_elements: Phase3BinaryStepLookupRelation,
+    _claimed_sum: SecureField,
 }
 
 impl FrameworkEval for Phase3BinaryStepLookupEval {
@@ -55,18 +59,17 @@ impl FrameworkEval for Phase3BinaryStepLookupEval {
 
         eval.add_constraint(activation_output.clone() * (activation_output.clone() - one));
 
-        let relation = Phase3BinaryStepLookupRelation::dummy();
         eval.add_to_relation(RelationEntry::new(
-            &relation,
+            &self.lookup_elements,
             E::EF::one(),
             &[activation_input, activation_output],
         ));
         eval.add_to_relation(RelationEntry::new(
-            &relation,
+            &self.lookup_elements,
             -E::EF::one(),
             &[table_input, table_output],
         ));
-        eval.finalize_logup();
+        eval.finalize_logup_in_pairs();
         eval
     }
 }
@@ -79,7 +82,11 @@ pub fn phase3_binary_step_lookup_component_metadata(
     );
     let component = FrameworkComponent::new(
         &mut allocator,
-        Phase3BinaryStepLookupEval { log_size },
+        Phase3BinaryStepLookupEval {
+            log_size,
+            lookup_elements: Phase3BinaryStepLookupRelation::dummy(),
+            _claimed_sum: SecureField::zero(),
+        },
         SecureField::zero(),
     );
     let mut logup_relations_per_row: Vec<_> = component
@@ -104,6 +111,24 @@ pub fn phase3_binary_step_lookup_component_metadata(
         activation_semantics: PHASE3_LOOKUP_SEMANTICS,
         statement_contract: "statement-v1 preserved; lookup primitive remains internal",
     }
+}
+
+pub(crate) fn phase3_binary_step_lookup_component(
+    log_size: u32,
+    lookup_elements: Phase3BinaryStepLookupRelation,
+    claimed_sum: SecureField,
+) -> FrameworkComponent<Phase3BinaryStepLookupEval> {
+    FrameworkComponent::new(
+        &mut TraceLocationAllocator::new_with_preprocessed_columns(
+            &phase3_lookup_preprocessed_columns(),
+        ),
+        Phase3BinaryStepLookupEval {
+            log_size,
+            lookup_elements,
+            _claimed_sum: claimed_sum,
+        },
+        claimed_sum,
+    )
 }
 
 pub fn phase3_lookup_preprocessed_columns() -> Vec<PreProcessedColumnId> {
@@ -141,7 +166,7 @@ mod tests {
     #[test]
     fn phase3_lookup_component_exposes_logup_relation() {
         let metadata = phase3_binary_step_lookup_component_metadata(4);
-        assert_eq!(metadata.n_constraints, 3);
+        assert_eq!(metadata.n_constraints, 2);
         assert_eq!(
             metadata.preprocessed_columns,
             vec![
