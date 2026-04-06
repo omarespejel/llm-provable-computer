@@ -22,7 +22,7 @@ use llm_provable_computer::{
     verify_execution_stark_with_reexecution_and_policy, verify_model_against_native,
     Attention2DMode, ExecutionResult, ExecutionRuntime, ExecutionTraceEntry, MachineState,
     NativeInterpreter, ProgramCompiler, StarkProofBackend, StarkVerificationPolicy, TransformerVm,
-    TransformerVmConfig, VanillaStarkProofOptions, VmError,
+    TransformerVmConfig, VanillaStarkExecutionProof, VanillaStarkProofOptions, VmError,
     PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS, PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS,
     STWO_RECURSION_BATCH_SCOPE_PHASE6, STWO_RECURSION_BATCH_VERSION_PHASE6,
 };
@@ -866,26 +866,7 @@ fn prove_stark_command(
     println!("proof_backend_version: {}", proof.proof_backend_version);
     println!("statement_version: {}", proof.claim.statement_version);
     println!("semantic_scope: {}", proof.claim.semantic_scope);
-    if let Some(auxiliary) = &proof.stwo_auxiliary {
-        if let Some(companion) = &auxiliary.normalization_companion {
-            println!(
-                "stwo_normalization_companion_scope: {}",
-                companion.semantic_scope
-            );
-            println!(
-                "stwo_normalization_companion_norm_sq_index: {}",
-                companion.norm_sq_memory_index
-            );
-            println!(
-                "stwo_normalization_companion_inv_sqrt_index: {}",
-                companion.inv_sqrt_q8_memory_index
-            );
-            println!(
-                "stwo_normalization_companion_expected_row: ({}, {})",
-                companion.expected_norm_sq, companion.expected_inv_sqrt_q8
-            );
-        }
-    }
+    print_stwo_normalization_companion(&proof);
     println!(
         "stark_expansion_factor: {}",
         proof.claim.options.expansion_factor
@@ -1010,26 +991,7 @@ fn verify_stark_command(
     println!("proof_backend_version: {}", proof.proof_backend_version);
     println!("statement_version: {}", proof.claim.statement_version);
     println!("semantic_scope: {}", proof.claim.semantic_scope);
-    if let Some(auxiliary) = &proof.stwo_auxiliary {
-        if let Some(companion) = &auxiliary.normalization_companion {
-            println!(
-                "stwo_normalization_companion_scope: {}",
-                companion.semantic_scope
-            );
-            println!(
-                "stwo_normalization_companion_norm_sq_index: {}",
-                companion.norm_sq_memory_index
-            );
-            println!(
-                "stwo_normalization_companion_inv_sqrt_index: {}",
-                companion.inv_sqrt_q8_memory_index
-            );
-            println!(
-                "stwo_normalization_companion_expected_row: ({}, {})",
-                companion.expected_norm_sq, companion.expected_inv_sqrt_q8
-            );
-        }
-    }
+    print_stwo_normalization_companion(&proof);
     println!(
         "stark_expansion_factor: {}",
         proof.claim.options.expansion_factor
@@ -2305,6 +2267,29 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "research-v2-matrix"
                 | "help"
         )
+}
+
+fn print_stwo_normalization_companion(proof: &VanillaStarkExecutionProof) {
+    if let Some(auxiliary) = &proof.stwo_auxiliary {
+        if let Some(companion) = &auxiliary.normalization_companion {
+            println!(
+                "stwo_normalization_companion_scope: {}",
+                companion.semantic_scope
+            );
+            println!(
+                "stwo_normalization_companion_norm_sq_index: {}",
+                companion.norm_sq_memory_index
+            );
+            println!(
+                "stwo_normalization_companion_inv_sqrt_index: {}",
+                companion.inv_sqrt_q8_memory_index
+            );
+            println!(
+                "stwo_normalization_companion_expected_row: ({}, {})",
+                companion.expected_norm_sq, companion.expected_inv_sqrt_q8
+            );
+        }
+    }
 }
 
 fn parse_attention_mode(input: &str) -> Result<Attention2DMode, String> {
