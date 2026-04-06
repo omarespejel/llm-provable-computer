@@ -1,11 +1,11 @@
-generated_at_utc: 2026-04-06T17:11:34Z
-repo_root: /Users/espejelomar/StarkNet/zk-ai/llm-provable-computer-codex
-git_commit: 74e3a5a935a58c5378abd14054d6139c330c59a5
-git_commit_short: 74e3a5a
+generated_at_utc: 2026-04-06T17:21:21Z
+repo_root: .
+git_commit: 9e33bb38372359d9a31f113ae862a33b98f23f59
+git_commit_short: 9e33bb3
 git_branch: codex/publication-ready-stwo-bundle
 rustc: rustc 1.90.0-nightly (e9182f195 2025-07-13)
 cargo: cargo 1.90.0-nightly (eabb4cd92 2025-07-09)
-host_uname: Darwin TMWM-G5FXKKXLXY 23.6.0 Darwin Kernel Version 23.6.0: Thu Apr 24 20:29:27 PDT 2025; root:xnu-10063.141.1.705.2~1/RELEASE_ARM64_T6030 arm64
+host_platform: Darwin 23.6.0 arm64
 nightly_toolchain: +nightly-2025-07-14
-bundle_dir: /Users/espejelomar/StarkNet/zk-ai/llm-provable-computer-codex/docs/paper/artifacts/stwo-experimental-v1-2026-04-06
+bundle_dir: docs/paper/artifacts/stwo-experimental-v1-2026-04-06
 fixtures: addition, shared-normalization-demo, gemma_block_v4, decoding_demo

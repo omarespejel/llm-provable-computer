@@ -11,7 +11,20 @@ BUNDLE_DIR="${BUNDLE_DIR:-$REPO_ROOT/docs/paper/artifacts/stwo-experimental-v1-2
 NIGHTLY_TOOLCHAIN="${NIGHTLY_TOOLCHAIN:-+nightly-2025-07-14}"
 CARGO_STWO=(cargo "$NIGHTLY_TOOLCHAIN" run --features stwo-backend --bin tvm --)
 
-rm -rf "$BUNDLE_DIR"
+EXPECTED_PREFIX="$REPO_ROOT/docs/paper/artifacts/"
+case "$BUNDLE_DIR/" in
+  "$EXPECTED_PREFIX"*) ;;
+  *)
+    echo "Refusing to use BUNDLE_DIR outside $EXPECTED_PREFIX: $BUNDLE_DIR" >&2
+    exit 1
+    ;;
+esac
+[ -n "$BUNDLE_DIR" ] || { echo "Refusing to use empty BUNDLE_DIR" >&2; exit 1; }
+[ "$BUNDLE_DIR" != "/" ] || { echo "Refusing to delete /" >&2; exit 1; }
+[ "$BUNDLE_DIR" != "." ] || { echo "Refusing to delete ." >&2; exit 1; }
+[ "$BUNDLE_DIR" != "$REPO_ROOT" ] || { echo "Refusing to delete repo root" >&2; exit 1; }
+
+rm -rf -- "$BUNDLE_DIR"
 mkdir -p "$BUNDLE_DIR"
 
 MANIFEST="$BUNDLE_DIR/manifest.txt"
@@ -39,15 +52,15 @@ run_timed() {
 
 cat > "$MANIFEST" <<MANIFEST
 generated_at_utc: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-repo_root: $REPO_ROOT
+repo_root: .
 git_commit: $(git rev-parse HEAD)
 git_commit_short: $(git rev-parse --short HEAD)
 git_branch: $(git rev-parse --abbrev-ref HEAD)
 rustc: $(rustup run "${NIGHTLY_TOOLCHAIN#+}" rustc --version)
 cargo: $(cargo $NIGHTLY_TOOLCHAIN --version)
-host_uname: $(uname -a)
+host_platform: $(uname -srm)
 nightly_toolchain: $NIGHTLY_TOOLCHAIN
-bundle_dir: $BUNDLE_DIR
+bundle_dir: docs/paper/artifacts/$(basename "$BUNDLE_DIR")
 fixtures: addition, shared-normalization-demo, gemma_block_v4, decoding_demo
 MANIFEST
 
@@ -166,7 +179,7 @@ index_lines.extend([
     "- This bundle freezes the current publication-facing experimental `stwo` evidence tier.",
     "- The included artifacts deliberately span one arithmetic proof, one lookup-backed proof envelope, one transformer-shaped execution proof, and one proof-carrying decoding chain.",
     "- Timing rows are local wall-clock bundle runs under an existing cargo build cache; they are artifact facts, not a normalized backend-performance study.",
-    "- Recompute integrity with `shasum -a 256 *.json benchmarks.tsv manifest.txt commands.log` inside the bundle directory.",
+    "- Recompute integrity with `shasum -a 256 *.json benchmarks.tsv manifest.txt commands.log APPENDIX_ARTIFACT_INDEX.md README.md` inside the bundle directory.",
 ])
 index_md.write_text("\n".join(index_lines) + "\n")
 
