@@ -866,6 +866,26 @@ fn prove_stark_command(
     println!("proof_backend_version: {}", proof.proof_backend_version);
     println!("statement_version: {}", proof.claim.statement_version);
     println!("semantic_scope: {}", proof.claim.semantic_scope);
+    if let Some(auxiliary) = &proof.stwo_auxiliary {
+        if let Some(companion) = &auxiliary.normalization_companion {
+            println!(
+                "stwo_normalization_companion_scope: {}",
+                companion.semantic_scope
+            );
+            println!(
+                "stwo_normalization_companion_norm_sq_index: {}",
+                companion.norm_sq_memory_index
+            );
+            println!(
+                "stwo_normalization_companion_inv_sqrt_index: {}",
+                companion.inv_sqrt_q8_memory_index
+            );
+            println!(
+                "stwo_normalization_companion_expected_row: ({}, {})",
+                companion.expected_norm_sq, companion.expected_inv_sqrt_q8
+            );
+        }
+    }
     println!(
         "stark_expansion_factor: {}",
         proof.claim.options.expansion_factor
@@ -990,6 +1010,26 @@ fn verify_stark_command(
     println!("proof_backend_version: {}", proof.proof_backend_version);
     println!("statement_version: {}", proof.claim.statement_version);
     println!("semantic_scope: {}", proof.claim.semantic_scope);
+    if let Some(auxiliary) = &proof.stwo_auxiliary {
+        if let Some(companion) = &auxiliary.normalization_companion {
+            println!(
+                "stwo_normalization_companion_scope: {}",
+                companion.semantic_scope
+            );
+            println!(
+                "stwo_normalization_companion_norm_sq_index: {}",
+                companion.norm_sq_memory_index
+            );
+            println!(
+                "stwo_normalization_companion_inv_sqrt_index: {}",
+                companion.inv_sqrt_q8_memory_index
+            );
+            println!(
+                "stwo_normalization_companion_expected_row: ({}, {})",
+                companion.expected_norm_sq, companion.expected_inv_sqrt_q8
+            );
+        }
+    }
     println!(
         "stark_expansion_factor: {}",
         proof.claim.options.expansion_factor

@@ -56,8 +56,9 @@ pub use proof::{
     verify_execution_stark_with_backend_and_policy, verify_execution_stark_with_policy,
     verify_execution_stark_with_reexecution, verify_execution_stark_with_reexecution_and_policy,
     ExecutionClaimCommitments, ExecutionEquivalenceMetadata, StarkProofBackend,
-    StarkVerificationPolicy, VanillaStarkExecutionClaim, VanillaStarkExecutionProof,
-    VanillaStarkProofOptions, CLAIM_COMMITMENT_HASH_FUNCTION_V1,
+    StarkVerificationPolicy, StwoAuxiliaryProofs, StwoNormalizationCompanion,
+    VanillaStarkExecutionClaim, VanillaStarkExecutionProof, VanillaStarkProofOptions,
+    CLAIM_COMMITMENT_HASH_FUNCTION_V1,
     CLAIM_COMMITMENT_SCHEME_VERSION_V1, CLAIM_SEMANTIC_SCOPE_V1, CLAIM_STATEMENT_VERSION_V1,
     PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS, PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS,
 };

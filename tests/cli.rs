@@ -344,6 +344,7 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
         ("programs/multiply.tvm", "multiply", "42"),
         ("programs/dot_product.tvm", "dot", "70"),
         ("programs/fibonacci.tvm", "fibonacci", "21"),
+        ("programs/gemma_block_v1.tvm", "gemma-block-v1", "16"),
         ("programs/matmul_2x2.tvm", "matmul-2x2", "134"),
         ("programs/single_neuron.tvm", "single-neuron", "1"),
     ] {
@@ -367,7 +368,12 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
 
         let proof_json = std::fs::read_to_string(&proof_path).expect("proof json");
         assert!(proof_json.contains("\"proof_backend\": \"stwo\""));
-        assert!(proof_json.contains("stwo-phase5-arithmetic-subset-v2"));
+        assert!(proof_json.contains("stwo-phase7-gemma-block-v1"));
+        if program == "programs/gemma_block_v1.tvm" {
+            assert!(proof_json.contains("\"normalization_companion\""));
+            assert!(proof_json.contains("stwo-normalization-demo-v1"));
+            assert!(proof_json.contains("stwo_gemma_block_v1_execution_plus_normalization_companion"));
+        }
 
         let mut verify = Command::cargo_bin("tvm").expect("binary");
         verify
@@ -378,7 +384,7 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
             .success()
             .stdout(predicate::str::contains("proof_backend: stwo"))
             .stdout(predicate::str::contains(
-                "proof_backend_version: stwo-phase5-arithmetic-subset-v2",
+                "proof_backend_version: stwo-phase7-gemma-block-v1",
             ))
             .stdout(predicate::str::contains("verified_stark: true"))
             .stdout(predicate::str::contains("reexecuted_equivalence: true"))
