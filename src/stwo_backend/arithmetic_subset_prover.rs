@@ -612,13 +612,114 @@ fn validate_phase5_proven_fixture(program: &Program) -> Result<()> {
                 Instruction::Load(9),
                 Instruction::Halt,
             ];
+    let matches_memory_roundtrip = program.memory_size() == 4
+        && program.initial_memory() == [0, 0, 0, 0]
+        && program.instructions()
+            == [
+                Instruction::LoadImmediate(41),
+                Instruction::Store(2),
+                Instruction::LoadImmediate(0),
+                Instruction::Load(2),
+                Instruction::AddImmediate(1),
+                Instruction::Halt,
+            ];
+    let matches_fibonacci = program.memory_size() == 5
+        && program.initial_memory() == [0, 1, 0, 0, 7]
+        && program.instructions()
+            == [
+                Instruction::Load(3),
+                Instruction::SubMemory(4),
+                Instruction::JumpIfZero(14),
+                Instruction::Load(0),
+                Instruction::AddMemory(1),
+                Instruction::Store(2),
+                Instruction::Load(1),
+                Instruction::Store(0),
+                Instruction::Load(2),
+                Instruction::Store(1),
+                Instruction::Load(3),
+                Instruction::AddImmediate(1),
+                Instruction::Store(3),
+                Instruction::Jump(0),
+                Instruction::Load(1),
+                Instruction::Halt,
+            ];
+    let matches_matmul_2x2 = program.memory_size() == 14
+        && program.initial_memory() == [1, 2, 3, 4, 5, 6, 7, 8, 0, 0, 0, 0, 0, 0]
+        && program.instructions()
+            == [
+                Instruction::Load(0),
+                Instruction::MulMemory(4),
+                Instruction::Store(12),
+                Instruction::Load(1),
+                Instruction::MulMemory(6),
+                Instruction::AddMemory(12),
+                Instruction::Store(8),
+                Instruction::Load(0),
+                Instruction::MulMemory(5),
+                Instruction::Store(12),
+                Instruction::Load(1),
+                Instruction::MulMemory(7),
+                Instruction::AddMemory(12),
+                Instruction::Store(9),
+                Instruction::Load(2),
+                Instruction::MulMemory(4),
+                Instruction::Store(12),
+                Instruction::Load(3),
+                Instruction::MulMemory(6),
+                Instruction::AddMemory(12),
+                Instruction::Store(10),
+                Instruction::Load(2),
+                Instruction::MulMemory(5),
+                Instruction::Store(12),
+                Instruction::Load(3),
+                Instruction::MulMemory(7),
+                Instruction::AddMemory(12),
+                Instruction::Store(11),
+                Instruction::Load(8),
+                Instruction::AddMemory(9),
+                Instruction::AddMemory(10),
+                Instruction::AddMemory(11),
+                Instruction::Halt,
+            ];
+    let matches_single_neuron = program.memory_size() == 8
+        && program.initial_memory() == [2, 3, 1, 4, 2, 6, 20, 0]
+        && program.instructions()
+            == [
+                Instruction::Load(0),
+                Instruction::MulMemory(3),
+                Instruction::Store(7),
+                Instruction::Load(1),
+                Instruction::MulMemory(4),
+                Instruction::AddMemory(7),
+                Instruction::Store(7),
+                Instruction::Load(2),
+                Instruction::MulMemory(5),
+                Instruction::AddMemory(7),
+                Instruction::Store(7),
+                Instruction::Load(7),
+                Instruction::SubMemory(6),
+                Instruction::JumpIfZero(16),
+                Instruction::LoadImmediate(0),
+                Instruction::Halt,
+                Instruction::LoadImmediate(1),
+                Instruction::Halt,
+            ];
 
-    if matches_addition || matches_counter || matches_multiply || matches_dot_product {
+    if matches_addition
+        || matches_counter
+        || matches_multiply
+        || matches_dot_product
+        || matches_memory_roundtrip
+        || matches_fibonacci
+        || matches_matmul_2x2
+        || matches_single_neuron
+    {
         return Ok(());
     }
 
     Err(VmError::UnsupportedProof(
-        "S-two Phase 5 currently proves only the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/multiply.tvm`, and `programs/dot_product.tvm`; broader arithmetic-subset AIR coverage remains internal"
+        "S-two Phase 5 currently proves only the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`, `programs/dot_product.tvm`, `programs/fibonacci.tvm`, `programs/matmul_2x2.tvm`, and `programs/single_neuron.tvm`; broader arithmetic-subset AIR coverage remains internal"
             .to_string(),
     ))
 }
@@ -1063,9 +1164,13 @@ mod tests {
     fn phase5_subset_accepts_fixture_matrix_programs() {
         for path in [
             "programs/addition.tvm",
-            "programs/multiply.tvm",
             "programs/counter.tvm",
+            "programs/memory_roundtrip.tvm",
+            "programs/multiply.tvm",
             "programs/dot_product.tvm",
+            "programs/fibonacci.tvm",
+            "programs/matmul_2x2.tvm",
+            "programs/single_neuron.tvm",
         ] {
             let program = compile_program(path);
             super::super::validate_phase2_proof_shape(&program, &Attention2DMode::AverageHard)
@@ -1164,6 +1269,26 @@ mod tests {
         assert_program_trace_satisfies_constraints("programs/multiply.tvm");
     }
 
+    #[test]
+    fn phase5_memory_roundtrip_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/memory_roundtrip.tvm");
+    }
+
+    #[test]
+    fn phase5_fibonacci_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/fibonacci.tvm");
+    }
+
+    #[test]
+    fn phase5_matmul_2x2_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/matmul_2x2.tvm");
+    }
+
+    #[test]
+    fn phase5_single_neuron_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/single_neuron.tvm");
+    }
+
     fn assert_program_trace_polys_satisfy_constraints(path: &str) {
         let program = compile_program(path);
         let mut runtime =
@@ -1218,5 +1343,25 @@ mod tests {
     #[test]
     fn phase5_multiply_trace_polys_satisfy_constraints() {
         assert_program_trace_polys_satisfy_constraints("programs/multiply.tvm");
+    }
+
+    #[test]
+    fn phase5_memory_roundtrip_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/memory_roundtrip.tvm");
+    }
+
+    #[test]
+    fn phase5_fibonacci_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/fibonacci.tvm");
+    }
+
+    #[test]
+    fn phase5_matmul_2x2_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/matmul_2x2.tvm");
+    }
+
+    #[test]
+    fn phase5_single_neuron_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/single_neuron.tvm");
     }
 }
