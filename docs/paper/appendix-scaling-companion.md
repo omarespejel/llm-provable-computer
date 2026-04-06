@@ -2,7 +2,7 @@
 
 Snapshot date: **April 5, 2026**
 
-This appendix is a compact companion to Figure 1 in `docs/paper/stark-transformer-alignment-2026.md`. It gives exact ratios for the dense and sparse curves used in the figure and keeps the visual summary tied to explicit numeric values.
+This appendix is a compact companion to Figure 1 in the main paper. It gives exact ratios for the dense and sparse curves used in the figure and keeps the visual summary tied to explicit numeric values.
 
 The appendix should be read with the same scope boundary as Section 4:
 

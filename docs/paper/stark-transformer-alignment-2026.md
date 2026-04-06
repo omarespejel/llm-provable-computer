@@ -370,7 +370,7 @@ If the goal is to make the paper materially stronger with one next technical mil
 1. add an S-two/STWO backend alongside the current vanilla backend, and
 2. prove one lookup-backed nonlinearity path on that backend.
 
-That combination would connect the paper’s strongest analytical claim to the strongest missing implementation piece. The corresponding repository migration plan is captured in the repository’s supplementary S-two backend design note.
+That combination would connect the paper’s strongest analytical claim to the strongest missing implementation piece. The corresponding repository migration plan is captured in supplementary design materials.
 
 The next most valuable repository advances are:
 

@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import socket
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -49,9 +51,14 @@ SOURCES = [
 
 
 def fetch(url: str) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": "codex-gemma-config-snapshot"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return r.read()
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "codex-gemma-config-snapshot"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return r.read()
+    except (urllib.error.HTTPError, urllib.error.URLError, socket.timeout) as error:
+        raise SystemExit(f"Failed to fetch {url}: {error}") from error
+    except Exception as error:  # pragma: no cover - defensive fallback
+        raise SystemExit(f"Unexpected error while fetching {url}: {error}") from error
 
 
 def main() -> None:

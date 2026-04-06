@@ -6,6 +6,8 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import socket
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -34,15 +36,56 @@ def slugify(text: str) -> str:
 
 
 def fetch(url: str) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": "codex-paper-archiver"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return r.read()
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "codex-paper-archiver"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return r.read()
+    except (urllib.error.HTTPError, urllib.error.URLError, socket.timeout) as error:
+        raise SystemExit(f"Failed to fetch {url}: {error}") from error
+    except Exception as error:  # pragma: no cover - defensive fallback
+        raise SystemExit(f"Unexpected error while fetching {url}: {error}") from error
+
+
+def sanitize_html(payload: bytes) -> bytes:
+    text = payload.decode("utf-8", errors="replace")
+    if not text.lstrip().lower().startswith("<!doctype html>"):
+        text = "<!DOCTYPE html>\n" + text.lstrip()
+
+    patterns = [
+        (
+            r"<script[^>]*>.*?(?:googletagmanager|gtag\(|dataLayer|GTM-[A-Z0-9]+).*?</script>",
+            "<!-- stripped telemetry script: Google Tag Manager / Analytics -->",
+        ),
+        (
+            r"<script[^>]*src=[\"'][^\"']*googletagmanager[^\"']*[\"'][^>]*></script>",
+            "<!-- stripped telemetry script: Google Tag Manager / Analytics -->",
+        ),
+        (
+            r"<script[^>]*>.*?(?:_hjSettings|hotjar).*?</script>",
+            "<!-- stripped telemetry script: Hotjar -->",
+        ),
+        (
+            r"<script[^>]*>.*?(?:_fs_namespace|fullstory|_fs_script).*?</script>",
+            "<!-- stripped telemetry script: FullStory -->",
+        ),
+        (
+            r"<script[^>]*src=[\"'][^\"']*(?:recaptcha|cloudflareinsights)[^\"']*[\"'][^>]*></script>",
+            "<!-- stripped telemetry script: external analytics -->",
+        ),
+        (
+            r"<noscript>\s*<iframe[^>]*googletagmanager\.com/ns\.html[^>]*></iframe>\s*</noscript>",
+            "<!-- stripped telemetry noscript iframe: Google Tag Manager -->",
+        ),
+    ]
+    for pattern, replacement in patterns:
+        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE | re.DOTALL)
+    return text.encode("utf-8")
 
 
 def main() -> None:
     manifest = []
     for label, url in URLS:
-        payload = fetch(url)
+        payload = sanitize_html(fetch(url))
         sha256 = hashlib.sha256(payload).hexdigest()
         filename = f"{slugify(label)}.html"
         path = OUTDIR / filename
