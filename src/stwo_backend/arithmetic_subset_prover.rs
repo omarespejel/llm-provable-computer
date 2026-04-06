@@ -20,18 +20,29 @@ use stwo_constraint_framework::{
     EvalAtRow, FrameworkComponent, FrameworkEval, TraceLocationAllocator,
 };
 
+use super::normalization_component::phase5_normalization_table_rows;
+use super::normalization_prover::{
+    prove_phase5_normalization_lookup_demo_envelope, verify_phase5_normalization_lookup_demo_envelope,
+    STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
+};
 use crate::config::Attention2DMode;
 use crate::error::{Result, VmError};
 use crate::instruction::{Instruction, Program};
 use crate::interpreter::NativeInterpreter;
 use crate::proof::{
-    PreparedExecutionWitness, StarkProofBackend, VanillaStarkExecutionClaim,
-    VanillaStarkExecutionProof,
+    PreparedExecutionWitness, StarkProofBackend, StwoAuxiliaryProofs,
+    StwoNormalizationCompanion, VanillaStarkExecutionClaim, VanillaStarkExecutionProof,
 };
 use crate::state::MachineState;
 
-pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase5-arithmetic-subset-v2";
+pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase7-gemma-block-v1";
 const M31_MODULUS: u32 = (1u32 << 31) - 1;
+const GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX: usize = 13;
+const GEMMA_BLOCK_INV_SQRT_MEMORY_INDEX: usize = 14;
+const GEMMA_BLOCK_EXPECTED_NORM_SQ: i16 = 16;
+const GEMMA_BLOCK_EXPECTED_INV_SQRT_Q8: i16 = 64;
+const GEMMA_BLOCK_NORMALIZATION_SCOPE: &str =
+    "stwo_gemma_block_v1_execution_plus_normalization_companion";
 const OPCODE_COLUMN_NAMES: [&str; 11] = [
     "phase5/arithmetic/op/nop",
     "phase5/arithmetic/op/loadi",
@@ -405,10 +416,12 @@ pub(crate) fn prove_phase5_arithmetic_subset(
         canonical_preprocessed_rows: trace_bundle.preprocessed_rows,
     })
     .map_err(|error| VmError::Serialization(error.to_string()))?;
+    let stwo_auxiliary = build_phase7_auxiliary_proofs(&witness.claim)?;
 
     Ok(VanillaStarkExecutionProof {
         proof_backend: StarkProofBackend::Stwo,
         proof_backend_version: STWO_BACKEND_VERSION_PHASE5.to_string(),
+        stwo_auxiliary,
         claim: witness.claim,
         proof: proof_bytes,
     })
@@ -440,13 +453,133 @@ pub(crate) fn verify_phase5_arithmetic_subset(proof: &VanillaStarkExecutionProof
     commitment_scheme.commit(stark_proof.commitments[0], &sizes[0], verifier_channel);
     commitment_scheme.commit(stark_proof.commitments[1], &sizes[1], verifier_channel);
 
-    Ok(verify(
+    let verified = verify(
         &[&component],
         verifier_channel,
         commitment_scheme,
         stark_proof,
     )
-    .is_ok())
+    .is_ok();
+    if !verified {
+        return Ok(false);
+    }
+
+    verify_phase7_auxiliary_proofs(proof)?;
+    Ok(true)
+}
+
+fn build_phase7_auxiliary_proofs(
+    claim: &VanillaStarkExecutionClaim,
+) -> Result<Option<StwoAuxiliaryProofs>> {
+    if !matches_gemma_block_v1(&claim.program) {
+        return Ok(None);
+    }
+
+    let final_memory = &claim.final_state.memory;
+    let norm_sq = *final_memory
+        .get(GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("gemma_block_v1 final state missing norm_sq cell".to_string())
+        })?;
+    let inv_sqrt_q8 = *final_memory
+        .get(GEMMA_BLOCK_INV_SQRT_MEMORY_INDEX)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "gemma_block_v1 final state missing inv_sqrt_q8 cell".to_string(),
+            )
+        })?;
+    if norm_sq != GEMMA_BLOCK_EXPECTED_NORM_SQ || inv_sqrt_q8 != GEMMA_BLOCK_EXPECTED_INV_SQRT_Q8 {
+        return Err(VmError::UnsupportedProof(format!(
+            "gemma_block_v1 normalization companion expects norm_sq={} and inv_sqrt_q8={}, got {} and {}",
+            GEMMA_BLOCK_EXPECTED_NORM_SQ,
+            GEMMA_BLOCK_EXPECTED_INV_SQRT_Q8,
+            norm_sq,
+            inv_sqrt_q8
+        )));
+    }
+
+    let proof_envelope = serde_json::to_value(prove_phase5_normalization_lookup_demo_envelope()?)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+
+    Ok(Some(StwoAuxiliaryProofs {
+        normalization_companion: Some(StwoNormalizationCompanion {
+            statement_version: STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5.to_string(),
+            semantic_scope: GEMMA_BLOCK_NORMALIZATION_SCOPE.to_string(),
+            norm_sq_memory_index: GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX as u8,
+            inv_sqrt_q8_memory_index: GEMMA_BLOCK_INV_SQRT_MEMORY_INDEX as u8,
+            expected_norm_sq: norm_sq,
+            expected_inv_sqrt_q8: inv_sqrt_q8,
+            proof_envelope,
+        }),
+    }))
+}
+
+fn verify_phase7_auxiliary_proofs(proof: &VanillaStarkExecutionProof) -> Result<()> {
+    if !matches_gemma_block_v1(&proof.claim.program) {
+        return Ok(());
+    }
+
+    let auxiliary = proof.stwo_auxiliary.as_ref().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "gemma_block_v1 S-two proof is missing its normalization companion".to_string(),
+        )
+    })?;
+    let companion = auxiliary.normalization_companion.as_ref().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "gemma_block_v1 S-two proof is missing normalization companion metadata".to_string(),
+        )
+    })?;
+    if companion.statement_version != STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported gemma_block_v1 normalization companion statement version `{}`",
+            companion.statement_version
+        )));
+    }
+    if companion.semantic_scope != GEMMA_BLOCK_NORMALIZATION_SCOPE {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported gemma_block_v1 normalization companion scope `{}`",
+            companion.semantic_scope
+        )));
+    }
+    let final_memory = &proof.claim.final_state.memory;
+    let norm_sq = *final_memory
+        .get(companion.norm_sq_memory_index as usize)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "gemma_block_v1 normalization companion norm_sq index is out of bounds"
+                    .to_string(),
+            )
+        })?;
+    let inv_sqrt_q8 = *final_memory
+        .get(companion.inv_sqrt_q8_memory_index as usize)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "gemma_block_v1 normalization companion inv_sqrt_q8 index is out of bounds"
+                    .to_string(),
+            )
+        })?;
+    if norm_sq != companion.expected_norm_sq || inv_sqrt_q8 != companion.expected_inv_sqrt_q8 {
+        return Err(VmError::InvalidConfig(format!(
+            "gemma_block_v1 normalization companion does not match claimed final state: expected ({}, {}), got ({}, {})",
+            companion.expected_norm_sq, companion.expected_inv_sqrt_q8, norm_sq, inv_sqrt_q8
+        )));
+    }
+    let canonical_pair_exists = phase5_normalization_table_rows()
+        .into_iter()
+        .any(|row| row.norm_sq as i16 == norm_sq && row.inv_sqrt_q8 as i16 == inv_sqrt_q8);
+    if !canonical_pair_exists {
+        return Err(VmError::InvalidConfig(format!(
+            "gemma_block_v1 normalization companion row ({norm_sq}, {inv_sqrt_q8}) is not present in the canonical Phase 5 lookup table"
+        )));
+    }
+    let proof_envelope = serde_json::from_value(companion.proof_envelope.clone())
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    if !verify_phase5_normalization_lookup_demo_envelope(&proof_envelope)? {
+        return Err(VmError::UnsupportedProof(
+            "gemma_block_v1 normalization companion proof did not verify".to_string(),
+        ));
+    }
+    Ok(())
 }
 
 #[derive(Serialize, Deserialize)]
@@ -705,6 +838,7 @@ fn validate_phase5_proven_fixture(program: &Program) -> Result<()> {
                 Instruction::LoadImmediate(1),
                 Instruction::Halt,
             ];
+    let matches_gemma_block_v1 = matches_gemma_block_v1(program);
 
     if matches_addition
         || matches_counter
@@ -714,14 +848,54 @@ fn validate_phase5_proven_fixture(program: &Program) -> Result<()> {
         || matches_fibonacci
         || matches_matmul_2x2
         || matches_single_neuron
+        || matches_gemma_block_v1
     {
         return Ok(());
     }
 
     Err(VmError::UnsupportedProof(
-        "S-two Phase 5 currently proves only the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`, `programs/dot_product.tvm`, `programs/fibonacci.tvm`, `programs/matmul_2x2.tvm`, and `programs/single_neuron.tvm`; broader arithmetic-subset AIR coverage remains internal"
+        "S-two Phase 7 currently proves only the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`, `programs/dot_product.tvm`, `programs/fibonacci.tvm`, `programs/matmul_2x2.tvm`, `programs/single_neuron.tvm`, and `programs/gemma_block_v1.tvm`; broader arithmetic-subset AIR coverage remains internal"
             .to_string(),
     ))
+}
+
+fn matches_gemma_block_v1(program: &Program) -> bool {
+    program.memory_size() == 15
+        && program.initial_memory() == [1, 1, 2, 0, 0, 2, 2, -4, 0, 2, 0, 0, 0, 0, 0]
+        && program.instructions()
+            == [
+                Instruction::Load(0),
+                Instruction::MulMemory(2),
+                Instruction::Store(10),
+                Instruction::Load(1),
+                Instruction::MulMemory(3),
+                Instruction::AddMemory(10),
+                Instruction::Store(10),
+                Instruction::Load(0),
+                Instruction::MulMemory(4),
+                Instruction::Store(11),
+                Instruction::Load(1),
+                Instruction::MulMemory(5),
+                Instruction::AddMemory(11),
+                Instruction::Store(11),
+                Instruction::Load(10),
+                Instruction::MulMemory(6),
+                Instruction::Store(12),
+                Instruction::Load(11),
+                Instruction::MulMemory(9),
+                Instruction::AddMemory(12),
+                Instruction::Store(12),
+                Instruction::Load(12),
+                Instruction::AddMemory(7),
+                Instruction::Store(8),
+                Instruction::Load(8),
+                Instruction::MulMemory(8),
+                Instruction::Store(13),
+                Instruction::LoadImmediate(64),
+                Instruction::Store(14),
+                Instruction::Load(13),
+                Instruction::Halt,
+            ]
 }
 
 fn reconstruct_state_trace_from_claim(
@@ -1169,6 +1343,7 @@ mod tests {
             "programs/multiply.tvm",
             "programs/dot_product.tvm",
             "programs/fibonacci.tvm",
+            "programs/gemma_block_v1.tvm",
             "programs/matmul_2x2.tvm",
             "programs/single_neuron.tvm",
         ] {
@@ -1280,6 +1455,11 @@ mod tests {
     }
 
     #[test]
+    fn phase5_gemma_block_v1_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/gemma_block_v1.tvm");
+    }
+
+    #[test]
     fn phase5_matmul_2x2_trace_satisfies_constraints() {
         assert_program_trace_satisfies_constraints("programs/matmul_2x2.tvm");
     }
@@ -1353,6 +1533,11 @@ mod tests {
     #[test]
     fn phase5_fibonacci_trace_polys_satisfy_constraints() {
         assert_program_trace_polys_satisfy_constraints("programs/fibonacci.tvm");
+    }
+
+    #[test]
+    fn phase5_gemma_block_v1_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/gemma_block_v1.tvm");
     }
 
     #[test]

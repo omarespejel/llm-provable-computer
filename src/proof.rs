@@ -141,8 +141,27 @@ pub struct VanillaStarkExecutionProof {
     pub proof_backend: StarkProofBackend,
     #[serde(default = "default_stark_proof_backend_version")]
     pub proof_backend_version: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stwo_auxiliary: Option<StwoAuxiliaryProofs>,
     pub claim: VanillaStarkExecutionClaim,
     pub proof: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StwoAuxiliaryProofs {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub normalization_companion: Option<StwoNormalizationCompanion>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StwoNormalizationCompanion {
+    pub statement_version: String,
+    pub semantic_scope: String,
+    pub norm_sq_memory_index: u8,
+    pub inv_sqrt_q8_memory_index: u8,
+    pub expected_norm_sq: i16,
+    pub expected_inv_sqrt_q8: i16,
+    pub proof_envelope: Value,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -652,6 +671,7 @@ impl ProofBackendDriver for VanillaBackend {
         Ok(VanillaStarkExecutionProof {
             proof_backend: self.backend_kind(),
             proof_backend_version: self.backend_version().to_string(),
+            stwo_auxiliary: None,
             claim: witness.claim,
             proof,
         })
