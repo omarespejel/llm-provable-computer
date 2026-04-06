@@ -31,8 +31,7 @@ pub use arithmetic_component::{
 };
 #[cfg(feature = "stwo-backend")]
 pub(crate) use arithmetic_subset_prover::{
-    prove_phase5_arithmetic_subset, verify_phase5_arithmetic_subset, STWO_BACKEND_VERSION_PHASE11,
-    STWO_BACKEND_VERSION_PHASE5,
+    prove_phase5_arithmetic_subset, verify_phase5_arithmetic_subset,
 };
 #[cfg(feature = "stwo-backend")]
 pub use decoding::{
@@ -96,6 +95,10 @@ pub use recursion::{
 
 /// Backend version label used by the experimental Phase 2 S-two seam.
 pub const STWO_BACKEND_VERSION_PHASE2: &str = "stwo-phase2";
+/// Backend version label used by the current shipped-fixture `stwo` execution-proof path.
+pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase10-gemma-block-v4";
+/// Backend version label used by the fixed-shape proof-carrying decoding demo family.
+pub const STWO_BACKEND_VERSION_PHASE11: &str = "stwo-phase11-decoding-step-v1";
 /// Cargo feature that enables the experimental S-two backend seam.
 pub const STWO_BACKEND_FEATURE_NAME: &str = "stwo-backend";
 
