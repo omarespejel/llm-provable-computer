@@ -1004,10 +1004,27 @@ fn validate_backend_metadata(
     }
 
     let expected_version = backend_driver(requested_backend).backend_version();
-    if proof.proof_backend_version != expected_version {
+    let backend_version_matches = match requested_backend {
+        StarkProofBackend::Vanilla => proof.proof_backend_version == expected_version,
+        StarkProofBackend::Stwo => {
+            proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE2
+                || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE5
+                || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE11
+        }
+    };
+    if !backend_version_matches {
+        let expected_versions = match requested_backend {
+            StarkProofBackend::Vanilla => expected_version.to_string(),
+            StarkProofBackend::Stwo => format!(
+                "{}/{}/{}",
+                stwo_backend::STWO_BACKEND_VERSION_PHASE2,
+                stwo_backend::STWO_BACKEND_VERSION_PHASE5,
+                stwo_backend::STWO_BACKEND_VERSION_PHASE11
+            ),
+        };
         return Err(VmError::InvalidConfig(format!(
             "proof backend version `{}` does not match expected `{}` for backend `{}`",
-            proof.proof_backend_version, expected_version, requested_backend
+            proof.proof_backend_version, expected_versions, requested_backend
         )));
     }
 

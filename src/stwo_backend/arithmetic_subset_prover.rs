@@ -20,6 +20,7 @@ use stwo_constraint_framework::{
     EvalAtRow, FrameworkComponent, FrameworkEval, TraceLocationAllocator,
 };
 
+use super::matches_decoding_step_v1_family;
 use super::normalization_component::phase5_normalization_table_rows;
 use super::normalization_prover::{
     prove_phase10_shared_normalization_lookup_envelope,
@@ -31,7 +32,8 @@ use super::normalization_prover::{
 };
 use super::{
     phase3_lookup_table_rows, prove_phase10_shared_binary_step_lookup_envelope,
-    prove_phase3_binary_step_lookup_demo_envelope, verify_phase10_shared_binary_step_lookup_envelope,
+    prove_phase3_binary_step_lookup_demo_envelope,
+    verify_phase10_shared_binary_step_lookup_envelope,
     verify_phase3_binary_step_lookup_demo_envelope, Phase10SharedLookupProofEnvelope,
     Phase3LookupProofEnvelope, Phase3LookupTableRow, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
     STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10,
@@ -41,12 +43,13 @@ use crate::error::{Result, VmError};
 use crate::instruction::{Instruction, Program};
 use crate::interpreter::NativeInterpreter;
 use crate::proof::{
-    PreparedExecutionWitness, StarkProofBackend, StwoAuxiliaryProofs,
-    StwoNormalizationCompanion, VanillaStarkExecutionClaim, VanillaStarkExecutionProof,
+    PreparedExecutionWitness, StarkProofBackend, StwoAuxiliaryProofs, StwoNormalizationCompanion,
+    VanillaStarkExecutionClaim, VanillaStarkExecutionProof,
 };
 use crate::state::MachineState;
 
 pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase10-gemma-block-v4";
+pub const STWO_BACKEND_VERSION_PHASE11: &str = "stwo-phase11-decoding-step-v1";
 const M31_MODULUS: u32 = (1u32 << 31) - 1;
 const GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX: usize = 13;
 const GEMMA_BLOCK_INV_SQRT_MEMORY_INDEX: usize = 14;
@@ -76,6 +79,10 @@ const GEMMA_BLOCK_V4_SHARED_NORMALIZATION_SCOPE: &str =
     "stwo_gemma_block_v4_execution_with_shared_normalization_lookup";
 const GEMMA_BLOCK_V4_SHARED_ACTIVATION_SCOPE: &str =
     "stwo_gemma_block_v4_execution_with_shared_binary_step_lookup";
+const DECODING_STEP_V1_SHARED_NORMALIZATION_SCOPE: &str =
+    "stwo_decoding_step_v1_execution_with_shared_normalization_lookup";
+const DECODING_STEP_V1_SHARED_ACTIVATION_SCOPE: &str =
+    "stwo_decoding_step_v1_execution_with_shared_binary_step_lookup";
 const OPCODE_COLUMN_NAMES: [&str; 11] = [
     "phase5/arithmetic/op/nop",
     "phase5/arithmetic/op/loadi",
@@ -446,7 +453,8 @@ pub(crate) fn prove_phase5_arithmetic_subset(
 
     let embedded_normalization = build_phase8_embedded_normalization(&witness.claim)?;
     let embedded_activation_lookup = build_phase9_embedded_activation_lookup(&witness.claim)?;
-    let embedded_shared_normalization = build_phase10_embedded_shared_normalization(&witness.claim)?;
+    let embedded_shared_normalization =
+        build_phase10_embedded_shared_normalization(&witness.claim)?;
     let embedded_shared_activation_lookup =
         build_phase10_embedded_shared_activation_lookup(&witness.claim)?;
     let proof_bytes = serde_json::to_vec(&Phase5ArithmeticSubsetProofPayload {
@@ -462,7 +470,7 @@ pub(crate) fn prove_phase5_arithmetic_subset(
 
     Ok(VanillaStarkExecutionProof {
         proof_backend: StarkProofBackend::Stwo,
-        proof_backend_version: STWO_BACKEND_VERSION_PHASE5.to_string(),
+        proof_backend_version: stwo_backend_version_for_program(&witness.claim.program).to_string(),
         stwo_auxiliary,
         claim: witness.claim,
         proof: proof_bytes,
@@ -470,6 +478,13 @@ pub(crate) fn prove_phase5_arithmetic_subset(
 }
 
 pub(crate) fn verify_phase5_arithmetic_subset(proof: &VanillaStarkExecutionProof) -> Result<bool> {
+    let expected_backend_version = stwo_backend_version_for_program(&proof.claim.program);
+    if proof.proof_backend_version != expected_backend_version {
+        return Err(VmError::InvalidConfig(format!(
+            "S-two proof backend version `{}` does not match expected `{}` for this program family",
+            proof.proof_backend_version, expected_backend_version
+        )));
+    }
     validate_phase5_claim(&proof.claim)?;
     let state_trace = reconstruct_state_trace_from_claim(&proof.claim)?;
     let trace_bundle = build_trace_bundle(&proof.claim.program, &state_trace)?;
@@ -612,21 +627,22 @@ fn build_phase9_embedded_activation_lookup(
 fn build_phase10_embedded_shared_normalization(
     claim: &VanillaStarkExecutionClaim,
 ) -> Result<Option<EmbeddedSharedNormalizationProof>> {
-    if !matches_gemma_block_v4(&claim.program) {
+    if !(matches_gemma_block_v4(&claim.program) || matches_decoding_step_v1(&claim.program)) {
         return Ok(None);
     }
 
-    let claimed_rows = gemma_block_v4_shared_normalization_claim_rows(&claim.final_state.memory)?;
+    let claimed_rows = shared_normalization_claim_rows(&claim.final_state.memory)?;
     let proof_rows: Vec<(u16, u16)> = claimed_rows
         .iter()
         .map(|row| (row.expected_norm_sq as u16, row.expected_inv_sqrt_q8 as u16))
         .collect();
-    let proof_envelope =
-        serde_json::to_value(prove_phase10_shared_normalization_lookup_envelope(&proof_rows)?)
-            .map_err(|error| VmError::Serialization(error.to_string()))?;
+    let proof_envelope = serde_json::to_value(prove_phase10_shared_normalization_lookup_envelope(
+        &proof_rows,
+    )?)
+    .map_err(|error| VmError::Serialization(error.to_string()))?;
     Ok(Some(EmbeddedSharedNormalizationProof {
         statement_version: STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10.to_string(),
-        semantic_scope: GEMMA_BLOCK_V4_SHARED_NORMALIZATION_SCOPE.to_string(),
+        semantic_scope: shared_normalization_scope(&claim.program).to_string(),
         claimed_rows,
         proof_envelope,
     }))
@@ -635,11 +651,11 @@ fn build_phase10_embedded_shared_normalization(
 fn build_phase10_embedded_shared_activation_lookup(
     claim: &VanillaStarkExecutionClaim,
 ) -> Result<Option<EmbeddedSharedActivationLookupProof>> {
-    if !matches_gemma_block_v4(&claim.program) {
+    if !(matches_gemma_block_v4(&claim.program) || matches_decoding_step_v1(&claim.program)) {
         return Ok(None);
     }
 
-    let claimed_rows = gemma_block_v4_shared_activation_claim_rows(&claim.final_state.memory)?;
+    let claimed_rows = shared_activation_claim_rows(&claim.final_state.memory)?;
     let proof_rows: Vec<Phase3LookupTableRow> = claimed_rows
         .iter()
         .map(|row| Phase3LookupTableRow {
@@ -647,12 +663,13 @@ fn build_phase10_embedded_shared_activation_lookup(
             output: row.expected_output as u8,
         })
         .collect();
-    let proof_envelope =
-        serde_json::to_value(prove_phase10_shared_binary_step_lookup_envelope(&proof_rows)?)
-            .map_err(|error| VmError::Serialization(error.to_string()))?;
+    let proof_envelope = serde_json::to_value(prove_phase10_shared_binary_step_lookup_envelope(
+        &proof_rows,
+    )?)
+    .map_err(|error| VmError::Serialization(error.to_string()))?;
     Ok(Some(EmbeddedSharedActivationLookupProof {
         statement_version: STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10.to_string(),
-        semantic_scope: GEMMA_BLOCK_V4_SHARED_ACTIVATION_SCOPE.to_string(),
+        semantic_scope: shared_activation_scope(&claim.program).to_string(),
         claimed_rows,
         proof_envelope,
     }))
@@ -690,8 +707,7 @@ fn verify_phase7_auxiliary_proofs(proof: &VanillaStarkExecutionProof) -> Result<
         .get(companion.norm_sq_memory_index as usize)
         .ok_or_else(|| {
             VmError::InvalidConfig(
-                "gemma_block_v1 normalization companion norm_sq index is out of bounds"
-                    .to_string(),
+                "gemma_block_v1 normalization companion norm_sq index is out of bounds".to_string(),
             )
         })?;
     let inv_sqrt_q8 = *final_memory
@@ -730,7 +746,9 @@ fn verify_phase8_embedded_normalization(
     proof: &VanillaStarkExecutionProof,
     embedded: Option<&EmbeddedNormalizationProof>,
 ) -> Result<()> {
-    if !(matches_gemma_block_v2(&proof.claim.program) || matches_gemma_block_v3(&proof.claim.program)) {
+    if !(matches_gemma_block_v2(&proof.claim.program)
+        || matches_gemma_block_v3(&proof.claim.program))
+    {
         return Ok(());
     }
 
@@ -813,15 +831,16 @@ fn verify_phase9_embedded_activation_lookup(
         embedded.output_memory_index,
         "gemma_block_v3 embedded activation",
     )?;
-    if activation_input != embedded.expected_input || activation_output != embedded.expected_output {
+    if activation_input != embedded.expected_input || activation_output != embedded.expected_output
+    {
         return Err(VmError::InvalidConfig(format!(
             "gemma_block_v3 embedded activation does not match claimed final state: expected ({}, {}), got ({}, {})",
             embedded.expected_input, embedded.expected_output, activation_input, activation_output
         )));
     }
-    let canonical_pair_exists = phase3_lookup_table_rows().into_iter().any(|row| {
-        row.input == activation_input && row.output as i16 == activation_output
-    });
+    let canonical_pair_exists = phase3_lookup_table_rows()
+        .into_iter()
+        .any(|row| row.input == activation_input && row.output as i16 == activation_output);
     if !canonical_pair_exists {
         return Err(VmError::InvalidConfig(format!(
             "gemma_block_v3 embedded activation row ({activation_input}, {activation_output}) is not present in the canonical Phase 3 lookup table"
@@ -842,15 +861,17 @@ fn verify_phase10_embedded_shared_normalization(
     proof: &VanillaStarkExecutionProof,
     embedded: Option<&EmbeddedSharedNormalizationProof>,
 ) -> Result<()> {
-    if !matches_gemma_block_v4(&proof.claim.program) {
+    if !(matches_gemma_block_v4(&proof.claim.program)
+        || matches_decoding_step_v1(&proof.claim.program))
+    {
         return Ok(());
     }
 
     let embedded = embedded.ok_or_else(|| {
-        VmError::InvalidConfig(
-            "gemma_block_v4 S-two proof is missing embedded shared normalization proof"
-                .to_string(),
-        )
+        VmError::InvalidConfig(format!(
+            "{} S-two proof is missing embedded shared normalization proof",
+            shared_program_label(&proof.claim.program)
+        ))
     })?;
     if embedded.statement_version != STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10 {
         return Err(VmError::InvalidConfig(format!(
@@ -858,9 +879,11 @@ fn verify_phase10_embedded_shared_normalization(
             embedded.statement_version
         )));
     }
-    if embedded.semantic_scope != GEMMA_BLOCK_V4_SHARED_NORMALIZATION_SCOPE {
+    let expected_scope = shared_normalization_scope(&proof.claim.program);
+    if embedded.semantic_scope != expected_scope {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported gemma_block_v4 embedded shared normalization scope `{}`",
+            "unsupported {} embedded shared normalization scope `{}`",
+            shared_program_label(&proof.claim.program),
             embedded.semantic_scope
         )));
     }
@@ -870,7 +893,7 @@ fn verify_phase10_embedded_shared_normalization(
             &proof.claim.final_state.memory,
             row.norm_sq_memory_index,
             row.inv_sqrt_q8_memory_index,
-            "gemma_block_v4 shared normalization",
+            shared_normalization_label(&proof.claim.program),
         )?;
         if norm_sq != row.expected_norm_sq || inv_sqrt_q8 != row.expected_inv_sqrt_q8 {
             return Err(VmError::InvalidConfig(format!(
@@ -884,15 +907,16 @@ fn verify_phase10_embedded_shared_normalization(
         serde_json::from_value(embedded.proof_envelope.clone())
             .map_err(|error| VmError::Serialization(error.to_string()))?;
     if proof_envelope.claimed_rows != proof_rows {
-        return Err(VmError::InvalidConfig(
-            "gemma_block_v4 shared normalization proof envelope claimed rows do not match the embedded rows"
-                .to_string(),
-        ));
+        return Err(VmError::InvalidConfig(format!(
+            "{} proof envelope claimed rows do not match the embedded rows",
+            shared_normalization_label(&proof.claim.program)
+        )));
     }
     if !verify_phase10_shared_normalization_lookup_envelope(&proof_envelope)? {
-        return Err(VmError::UnsupportedProof(
-            "gemma_block_v4 shared normalization proof did not verify".to_string(),
-        ));
+        return Err(VmError::UnsupportedProof(format!(
+            "{} proof did not verify",
+            shared_normalization_label(&proof.claim.program)
+        )));
     }
     Ok(())
 }
@@ -901,15 +925,17 @@ fn verify_phase10_embedded_shared_activation_lookup(
     proof: &VanillaStarkExecutionProof,
     embedded: Option<&EmbeddedSharedActivationLookupProof>,
 ) -> Result<()> {
-    if !matches_gemma_block_v4(&proof.claim.program) {
+    if !(matches_gemma_block_v4(&proof.claim.program)
+        || matches_decoding_step_v1(&proof.claim.program))
+    {
         return Ok(());
     }
 
     let embedded = embedded.ok_or_else(|| {
-        VmError::InvalidConfig(
-            "gemma_block_v4 S-two proof is missing embedded shared activation proof"
-                .to_string(),
-        )
+        VmError::InvalidConfig(format!(
+            "{} S-two proof is missing embedded shared activation proof",
+            shared_program_label(&proof.claim.program)
+        ))
     })?;
     if embedded.statement_version != STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10 {
         return Err(VmError::InvalidConfig(format!(
@@ -917,9 +943,11 @@ fn verify_phase10_embedded_shared_activation_lookup(
             embedded.statement_version
         )));
     }
-    if embedded.semantic_scope != GEMMA_BLOCK_V4_SHARED_ACTIVATION_SCOPE {
+    let expected_scope = shared_activation_scope(&proof.claim.program);
+    if embedded.semantic_scope != expected_scope {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported gemma_block_v4 embedded shared activation scope `{}`",
+            "unsupported {} embedded shared activation scope `{}`",
+            shared_program_label(&proof.claim.program),
             embedded.semantic_scope
         )));
     }
@@ -929,7 +957,7 @@ fn verify_phase10_embedded_shared_activation_lookup(
             &proof.claim.final_state.memory,
             row.input_memory_index,
             row.output_memory_index,
-            "gemma_block_v4 shared activation",
+            shared_activation_label(&proof.claim.program),
         )?;
         if activation_input != row.expected_input || activation_output != row.expected_output {
             return Err(VmError::InvalidConfig(format!(
@@ -946,38 +974,35 @@ fn verify_phase10_embedded_shared_activation_lookup(
         serde_json::from_value(embedded.proof_envelope.clone())
             .map_err(|error| VmError::Serialization(error.to_string()))?;
     if proof_envelope.claimed_rows != proof_rows {
-        return Err(VmError::InvalidConfig(
-            "gemma_block_v4 shared activation proof envelope claimed rows do not match the embedded rows"
-                .to_string(),
-        ));
+        return Err(VmError::InvalidConfig(format!(
+            "{} proof envelope claimed rows do not match the embedded rows",
+            shared_activation_label(&proof.claim.program)
+        )));
     }
     if !verify_phase10_shared_binary_step_lookup_envelope(&proof_envelope)? {
-        return Err(VmError::UnsupportedProof(
-            "gemma_block_v4 shared activation proof did not verify".to_string(),
-        ));
+        return Err(VmError::UnsupportedProof(format!(
+            "{} proof did not verify",
+            shared_activation_label(&proof.claim.program)
+        )));
     }
     Ok(())
 }
 
 fn gemma_block_normalization_pair(final_memory: &[i16]) -> Result<(i16, i16)> {
-    let norm_sq = *final_memory.get(GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX).ok_or_else(|| {
-        VmError::InvalidConfig("gemma_block final state missing norm_sq cell".to_string())
-    })?;
-    let inv_sqrt_q8 =
-        *final_memory
-            .get(GEMMA_BLOCK_INV_SQRT_MEMORY_INDEX)
-            .ok_or_else(|| {
-                VmError::InvalidConfig(
-                    "gemma_block final state missing inv_sqrt_q8 cell".to_string(),
-                )
-            })?;
+    let norm_sq = *final_memory
+        .get(GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("gemma_block final state missing norm_sq cell".to_string())
+        })?;
+    let inv_sqrt_q8 = *final_memory
+        .get(GEMMA_BLOCK_INV_SQRT_MEMORY_INDEX)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("gemma_block final state missing inv_sqrt_q8 cell".to_string())
+        })?;
     if norm_sq != GEMMA_BLOCK_EXPECTED_NORM_SQ || inv_sqrt_q8 != GEMMA_BLOCK_EXPECTED_INV_SQRT_Q8 {
         return Err(VmError::UnsupportedProof(format!(
             "gemma_block normalization expects norm_sq={} and inv_sqrt_q8={}, got {} and {}",
-            GEMMA_BLOCK_EXPECTED_NORM_SQ,
-            GEMMA_BLOCK_EXPECTED_INV_SQRT_Q8,
-            norm_sq,
-            inv_sqrt_q8
+            GEMMA_BLOCK_EXPECTED_NORM_SQ, GEMMA_BLOCK_EXPECTED_INV_SQRT_Q8, norm_sq, inv_sqrt_q8
         )));
     }
     Ok((norm_sq, inv_sqrt_q8))
@@ -987,12 +1012,16 @@ fn gemma_block_activation_pair(final_memory: &[i16]) -> Result<(i16, i16)> {
     let activation_input = *final_memory
         .get(GEMMA_BLOCK_ACTIVATION_INPUT_MEMORY_INDEX)
         .ok_or_else(|| {
-            VmError::InvalidConfig("gemma_block final state missing activation input cell".to_string())
+            VmError::InvalidConfig(
+                "gemma_block final state missing activation input cell".to_string(),
+            )
         })?;
     let activation_output = *final_memory
         .get(GEMMA_BLOCK_ACTIVATION_OUTPUT_MEMORY_INDEX)
         .ok_or_else(|| {
-            VmError::InvalidConfig("gemma_block final state missing activation output cell".to_string())
+            VmError::InvalidConfig(
+                "gemma_block final state missing activation output cell".to_string(),
+            )
         })?;
     if activation_input != GEMMA_BLOCK_EXPECTED_ACTIVATION_INPUT
         || activation_output != GEMMA_BLOCK_EXPECTED_ACTIVATION_OUTPUT
@@ -1008,29 +1037,31 @@ fn gemma_block_activation_pair(final_memory: &[i16]) -> Result<(i16, i16)> {
     Ok((activation_input, activation_output))
 }
 
-fn gemma_block_v4_shared_normalization_claim_rows(
+fn shared_normalization_claim_rows(
     final_memory: &[i16],
 ) -> Result<Vec<EmbeddedSharedNormalizationClaimRow>> {
     let primary = normalized_pair_from_indices(
         final_memory,
         GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX as u8,
         GEMMA_BLOCK_INV_SQRT_MEMORY_INDEX as u8,
-        "gemma_block_v4 shared normalization primary row",
+        "shared normalization primary row",
     )?;
-    if primary != (GEMMA_BLOCK_EXPECTED_NORM_SQ, GEMMA_BLOCK_EXPECTED_INV_SQRT_Q8) {
-        return Err(VmError::UnsupportedProof(format!(
-            "gemma_block_v4 shared normalization expects primary row ({}, {}), got ({}, {})",
+    if primary
+        != (
             GEMMA_BLOCK_EXPECTED_NORM_SQ,
             GEMMA_BLOCK_EXPECTED_INV_SQRT_Q8,
-            primary.0,
-            primary.1
+        )
+    {
+        return Err(VmError::UnsupportedProof(format!(
+            "shared normalization expects primary row ({}, {}), got ({}, {})",
+            GEMMA_BLOCK_EXPECTED_NORM_SQ, GEMMA_BLOCK_EXPECTED_INV_SQRT_Q8, primary.0, primary.1
         )));
     }
     let secondary = normalized_pair_from_indices(
         final_memory,
         GEMMA_BLOCK_V4_SHARED_NORM_SQ_MEMORY_INDEX as u8,
         GEMMA_BLOCK_V4_SHARED_INV_SQRT_Q8_MEMORY_INDEX as u8,
-        "gemma_block_v4 shared normalization secondary row",
+        "shared normalization secondary row",
     )?;
     if secondary
         != (
@@ -1039,7 +1070,7 @@ fn gemma_block_v4_shared_normalization_claim_rows(
         )
     {
         return Err(VmError::UnsupportedProof(format!(
-            "gemma_block_v4 shared normalization expects secondary row ({}, {}), got ({}, {})",
+            "shared normalization expects secondary row ({}, {}), got ({}, {})",
             GEMMA_BLOCK_V4_SHARED_NORM_SQ,
             GEMMA_BLOCK_V4_SHARED_INV_SQRT_Q8,
             secondary.0,
@@ -1062,14 +1093,14 @@ fn gemma_block_v4_shared_normalization_claim_rows(
     ])
 }
 
-fn gemma_block_v4_shared_activation_claim_rows(
+fn shared_activation_claim_rows(
     final_memory: &[i16],
 ) -> Result<Vec<EmbeddedSharedActivationClaimRow>> {
     let primary = activation_pair_from_indices(
         final_memory,
         GEMMA_BLOCK_ACTIVATION_INPUT_MEMORY_INDEX as u8,
         GEMMA_BLOCK_ACTIVATION_OUTPUT_MEMORY_INDEX as u8,
-        "gemma_block_v4 shared activation primary row",
+        "shared activation primary row",
     )?;
     if primary
         != (
@@ -1078,7 +1109,7 @@ fn gemma_block_v4_shared_activation_claim_rows(
         )
     {
         return Err(VmError::UnsupportedProof(format!(
-            "gemma_block_v4 shared activation expects primary row ({}, {}), got ({}, {})",
+            "shared activation expects primary row ({}, {}), got ({}, {})",
             GEMMA_BLOCK_EXPECTED_ACTIVATION_INPUT,
             GEMMA_BLOCK_EXPECTED_ACTIVATION_OUTPUT,
             primary.0,
@@ -1089,7 +1120,7 @@ fn gemma_block_v4_shared_activation_claim_rows(
         final_memory,
         GEMMA_BLOCK_V4_SHARED_ACTIVATION_INPUT_MEMORY_INDEX as u8,
         GEMMA_BLOCK_V4_SHARED_ACTIVATION_OUTPUT_MEMORY_INDEX as u8,
-        "gemma_block_v4 shared activation secondary row",
+        "shared activation secondary row",
     )?;
     if secondary
         != (
@@ -1098,7 +1129,7 @@ fn gemma_block_v4_shared_activation_claim_rows(
         )
     {
         return Err(VmError::UnsupportedProof(format!(
-            "gemma_block_v4 shared activation expects secondary row ({}, {}), got ({}, {})",
+            "shared activation expects secondary row ({}, {}), got ({}, {})",
             GEMMA_BLOCK_V4_SHARED_ACTIVATION_INPUT,
             GEMMA_BLOCK_V4_SHARED_ACTIVATION_OUTPUT,
             secondary.0,
@@ -1127,12 +1158,14 @@ fn normalized_pair_from_indices(
     inv_sqrt_q8_index: u8,
     scope: &str,
 ) -> Result<(i16, i16)> {
-    let norm_sq = *final_memory.get(norm_sq_index as usize).ok_or_else(|| {
-        VmError::InvalidConfig(format!("{scope} norm_sq index is out of bounds"))
-    })?;
-    let inv_sqrt_q8 = *final_memory.get(inv_sqrt_q8_index as usize).ok_or_else(|| {
-        VmError::InvalidConfig(format!("{scope} inv_sqrt_q8 index is out of bounds"))
-    })?;
+    let norm_sq = *final_memory
+        .get(norm_sq_index as usize)
+        .ok_or_else(|| VmError::InvalidConfig(format!("{scope} norm_sq index is out of bounds")))?;
+    let inv_sqrt_q8 = *final_memory
+        .get(inv_sqrt_q8_index as usize)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(format!("{scope} inv_sqrt_q8 index is out of bounds"))
+        })?;
     Ok((norm_sq, inv_sqrt_q8))
 }
 
@@ -1481,6 +1514,7 @@ fn validate_phase5_proven_fixture(program: &Program) -> Result<()> {
     let matches_gemma_block_v2 = matches_gemma_block_v2(program);
     let matches_gemma_block_v3 = matches_gemma_block_v3(program);
     let matches_gemma_block_v4 = matches_gemma_block_v4(program);
+    let matches_decoding_step_v1 = matches_decoding_step_v1(program);
 
     if matches_addition
         || matches_counter
@@ -1494,12 +1528,13 @@ fn validate_phase5_proven_fixture(program: &Program) -> Result<()> {
         || matches_gemma_block_v2
         || matches_gemma_block_v3
         || matches_gemma_block_v4
+        || matches_decoding_step_v1
     {
         return Ok(());
     }
 
     Err(VmError::UnsupportedProof(
-        "S-two Phase 5 currently proves only the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`, `programs/dot_product.tvm`, `programs/fibonacci.tvm`, `programs/matmul_2x2.tvm`, `programs/single_neuron.tvm`, `programs/gemma_block_v1.tvm`, `programs/gemma_block_v2.tvm`, `programs/gemma_block_v3.tvm`, and `programs/gemma_block_v4.tvm`; broader arithmetic-subset AIR coverage remains internal"
+        "S-two Phase 5 currently proves only the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`, `programs/dot_product.tvm`, `programs/fibonacci.tvm`, `programs/matmul_2x2.tvm`, `programs/single_neuron.tvm`, `programs/gemma_block_v1.tvm`, `programs/gemma_block_v2.tvm`, `programs/gemma_block_v3.tvm`, `programs/gemma_block_v4.tvm`, and the `decoding_step_v1` family; broader arithmetic-subset AIR coverage remains internal"
             .to_string(),
     ))
 }
@@ -1586,8 +1621,7 @@ fn matches_gemma_block_v2(program: &Program) -> bool {
 
 fn matches_gemma_block_v3(program: &Program) -> bool {
     program.memory_size() == 17
-        && program.initial_memory()
-            == [1, 1, 2, 0, 0, 2, 2, -4, 0, 2, 0, 0, 0, 0, 0, 0, 0]
+        && program.initial_memory() == [1, 1, 2, 0, 0, 2, 2, -4, 0, 2, 0, 0, 0, 0, 0, 0, 0]
         && program.instructions()
             == [
                 Instruction::Load(0),
@@ -1630,10 +1664,64 @@ fn matches_gemma_block_v3(program: &Program) -> bool {
             ]
 }
 
+fn stwo_backend_version_for_program(program: &Program) -> &str {
+    if matches_decoding_step_v1(program) {
+        STWO_BACKEND_VERSION_PHASE11
+    } else {
+        STWO_BACKEND_VERSION_PHASE5
+    }
+}
+
+fn shared_program_label(program: &Program) -> &str {
+    if matches_decoding_step_v1(program) {
+        "decoding_step_v1"
+    } else {
+        "gemma_block_v4"
+    }
+}
+
+fn shared_normalization_scope(program: &Program) -> &str {
+    if matches_decoding_step_v1(program) {
+        DECODING_STEP_V1_SHARED_NORMALIZATION_SCOPE
+    } else {
+        GEMMA_BLOCK_V4_SHARED_NORMALIZATION_SCOPE
+    }
+}
+
+fn shared_activation_scope(program: &Program) -> &str {
+    if matches_decoding_step_v1(program) {
+        DECODING_STEP_V1_SHARED_ACTIVATION_SCOPE
+    } else {
+        GEMMA_BLOCK_V4_SHARED_ACTIVATION_SCOPE
+    }
+}
+
+fn shared_normalization_label(program: &Program) -> &str {
+    if matches_decoding_step_v1(program) {
+        "decoding_step_v1 shared normalization"
+    } else {
+        "gemma_block_v4 shared normalization"
+    }
+}
+
+fn shared_activation_label(program: &Program) -> &str {
+    if matches_decoding_step_v1(program) {
+        "decoding_step_v1 shared activation"
+    } else {
+        "gemma_block_v4 shared activation"
+    }
+}
+
+fn matches_decoding_step_v1(program: &Program) -> bool {
+    matches_decoding_step_v1_family(program)
+}
+
 fn matches_gemma_block_v4(program: &Program) -> bool {
     program.memory_size() == 21
         && program.initial_memory()
-            == [1, 1, 2, 0, 0, 2, 2, -4, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            == [
+                1, 1, 2, 0, 0, 2, 2, -4, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            ]
         && program.instructions()
             == [
                 Instruction::Load(0),
@@ -2263,6 +2351,11 @@ mod tests {
     }
 
     #[test]
+    fn phase11_decoding_step_v1_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/decoding_step_v1.tvm");
+    }
+
+    #[test]
     fn phase5_matmul_2x2_trace_satisfies_constraints() {
         assert_program_trace_satisfies_constraints("programs/matmul_2x2.tvm");
     }
@@ -2356,6 +2449,11 @@ mod tests {
     #[test]
     fn phase5_gemma_block_v4_trace_polys_satisfy_constraints() {
         assert_program_trace_polys_satisfy_constraints("programs/gemma_block_v4.tvm");
+    }
+
+    #[test]
+    fn phase11_decoding_step_v1_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/decoding_step_v1.tvm");
     }
 
     #[test]
