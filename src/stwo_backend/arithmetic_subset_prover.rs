@@ -1525,8 +1525,9 @@ mod tests {
             "programs/single_neuron.tvm",
         ] {
             let program = compile_program(path);
-            super::super::validate_phase2_proof_shape(&program, &Attention2DMode::AverageHard)
-                .unwrap_or_else(|error| panic!("{path} should be accepted: {error}"));
+            validate_phase5_proven_fixture(&program).unwrap_or_else(|error| {
+                panic!("{path} should be accepted by the Phase 5 fixture allow-list: {error}")
+            });
         }
     }
 
