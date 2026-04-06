@@ -1,0 +1,356 @@
+<html lang="en">
+  <head>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/assets/built/index.css?v=96ef89bd4a" />
+    <script src="/assets/built/index.js?v=96ef89bd4a" defer></script>
+
+    <title>zkPyTorch: Verifiable PyTorch with Zero-Knowledge Proofs</title>
+
+    <link rel="icon" href="https://img.zkbridge.com/ghost/2024/11/f9e54e1c5602bd86.png" type="image/png">
+    <link rel="canonical" href="https://blog.polyhedra.network/zkpytorch/">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    
+    <meta property="og:site_name" content="Blog | Polyhedra Network">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="zkPyTorch: Verifiable PyTorch with Zero-Knowledge Proofs">
+    <meta property="og:description" content="As Artificial Intelligence (AI) is used deeper in critical industries such as healthcare, finance, and autonomous systems, ensuring the reliability, transparency, and security of machine learning (ML) computations becomes increasingly crucial.  Traditional ML services, often treated as black boxes, lack transparency, making them vulnerable to issues such as model theft,">
+    <meta property="og:url" content="https://blog.polyhedra.network/zkpytorch/">
+    <meta property="og:image" content="https://img.zkbridge.com/ghost/2025/06/82650e2d7d2392c2.jpg">
+    <meta property="article:published_time" content="2025-06-05T04:02:44.000Z">
+    <meta property="article:modified_time" content="2025-06-05T04:02:44.000Z">
+    <meta property="article:tag" content="AI">
+    <meta property="article:tag" content="Zero Knowledge">
+    
+    <meta property="article:publisher" content="https://www.facebook.com/ghost">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="zkPyTorch: Verifiable PyTorch with Zero-Knowledge Proofs">
+    <meta name="twitter:description" content="As Artificial Intelligence (AI) is used deeper in critical industries such as healthcare, finance, and autonomous systems, ensuring the reliability, transparency, and security of machine learning (ML) computations becomes increasingly crucial.  Traditional ML services, often treated as black boxes, lack transparency, making them vulnerable to issues such as model theft,">
+    <meta name="twitter:url" content="https://blog.polyhedra.network/zkpytorch/">
+    <meta name="twitter:image" content="https://img.zkbridge.com/ghost/2025/06/82650e2d7d2392c2.jpg">
+    <meta name="twitter:label1" content="Written by">
+    <meta name="twitter:data1" content="Polyhedra">
+    <meta name="twitter:label2" content="Filed under">
+    <meta name="twitter:data2" content="AI, Zero Knowledge">
+    <meta name="twitter:site" content="@PolyhedraZK">
+    <meta name="twitter:creator" content="@PolyhedraZK">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="675">
+    
+    <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "publisher": {
+        "@type": "Organization",
+        "name": "Blog | Polyhedra Network",
+        "url": "https://blog.polyhedra.network/",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "https://img.zkbridge.com/ghost/2025/02/3f3ebe49261a9a5e.png"
+        }
+    },
+    "author": {
+        "@type": "Person",
+        "name": "Polyhedra",
+        "image": {
+            "@type": "ImageObject",
+            "url": "https://img.zkbridge.com/ghost/2024/11/7b8c2753e94c4a9c.png",
+            "width": 256,
+            "height": 256
+        },
+        "url": "https://blog.polyhedra.network/author/aurora/",
+        "sameAs": [
+            "https://polyhedra.network",
+            "https://x.com/PolyhedraZK"
+        ]
+    },
+    "headline": "zkPyTorch: Verifiable PyTorch with Zero-Knowledge Proofs",
+    "url": "https://blog.polyhedra.network/zkpytorch/",
+    "datePublished": "2025-06-05T04:02:44.000Z",
+    "dateModified": "2025-06-05T04:02:44.000Z",
+    "image": {
+        "@type": "ImageObject",
+        "url": "https://img.zkbridge.com/ghost/2025/06/82650e2d7d2392c2.jpg",
+        "width": 1200,
+        "height": 675
+    },
+    "keywords": "AI, Zero Knowledge",
+    "description": "As Artificial Intelligence (AI) is used deeper in critical industries such as healthcare, finance, and autonomous systems, ensuring the reliability, transparency, and security of machine learning (ML) computations becomes increasingly crucial.  Traditional ML services, often treated as black boxes, lack transparency, making them vulnerable to issues such as model theft, incorrect or malicious execution, and data privacy concerns. \n\nZero-Knowledge Machine Learning (ZKML) provides an innovative so",
+    "mainEntityOfPage": "https://blog.polyhedra.network/zkpytorch/"
+}
+    </script>
+
+    <meta name="generator" content="Ghost 5.130">
+    <link rel="alternate" type="application/rss+xml" title="Blog | Polyhedra Network" href="https://blog.polyhedra.network/rss/">
+    
+    <script defer src="https://cdn.jsdelivr.net/ghost/sodo-search@~1.8/umd/sodo-search.min.js" data-key="130f8a27040a11f439d820446a" data-styles="https://cdn.jsdelivr.net/ghost/sodo-search@~1.8/umd/main.css" data-sodo-search="https://blog.polyhedra.network/" data-locale="en" crossorigin="anonymous"></script>
+    
+    <link href="https://blog.polyhedra.network/webmentions/receive/" rel="webmention">
+    <script defer src="/public/cards.min.js?v=96ef89bd4a"></script><style>:root {--ghost-accent-color: #ffffff;}</style>
+    <link rel="stylesheet" type="text/css" href="/public/cards.min.css?v=96ef89bd4a">
+    <script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']]
+  }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/core-js-bundle@3.32.0/minified.js"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+<script>
+//   var vConsole = new window.VConsole();
+//   fetch('https://storage.googleapis.com/resources.zkbridge.com/expander-gpu-live-demo.mp4', {
+//   method: 'HEAD'
+// })
+// .then(response => {
+//   console.log('视频链接状态:', response.status);
+//   console.log('响应头:', response.headers);
+// })
+// .catch(error => {
+//   console.error('无法访问视频链接:', error);
+// });
+</script>
+
+  </head>
+  <body class="post-template tag-ai tag-zero-knowledge">
+    <div class="gh-viewport">
+
+      <header id="gh-head" class="gh-head">
+        <nav class="gh-head-inner gh-container">
+          <div class="gh-head-brand">
+            <a class="gh-head-logo" href="https://blog.polyhedra.network">
+                    <img src="https://img.zkbridge.com/ghost/2025/02/3f3ebe49261a9a5e.png" alt="Blog | Polyhedra Network" />
+            </a>
+          </div>
+          <div class="custom-head-actions">
+            <div class="gh-head-actions-list">
+                <a href="https://x.com/PolyhedraZK" title="Twitter" target="_blank" rel="noopener"
+                class="custom-head-actions-list-icon"
+                ><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="X">
+<path id="Vector" d="M15.8076 12.5452L22.8808 4.5H21.2046L15.063 11.4855L10.1577 4.5H4.5L11.9178 15.0634L4.5 23.5H6.17621L12.6619 16.123L17.8423 23.5H23.5L15.8072 12.5452H15.8076ZM13.5118 15.1564L12.7602 14.1046L6.78017 5.7347H9.35474L14.1807 12.4894L14.9323 13.5413L21.2054 22.3215H18.6309L13.5118 15.1568V15.1564Z" fill="#141413"/>
+</g>
+</svg>
+</a>
+                <a href="https://discord.com/invite/polyhedra-network " title="Discord" target="_blank" rel="noopener"
+                class="custom-head-actions-list-icon"
+                ><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Discord">
+<path id="Vector" d="M22.348 6.5519C25.0585 10.5563 26.3971 15.0732 25.8967 20.2731C25.8946 20.2951 25.8832 20.3153 25.8652 20.3285C23.8126 21.843 21.8239 22.7621 19.8631 23.3716C19.8478 23.3763 19.8315 23.376 19.8164 23.3709C19.8012 23.3658 19.7881 23.356 19.7788 23.343C19.3258 22.7097 18.9142 22.042 18.5536 21.3408C18.5329 21.2995 18.5518 21.2498 18.5944 21.2335C19.2481 20.986 19.8697 20.6894 20.4676 20.3382C20.5147 20.3105 20.5177 20.2426 20.4742 20.2101C20.3473 20.1154 20.2216 20.0159 20.1013 19.9165C20.0788 19.8981 20.0485 19.8945 20.023 19.9068C16.1413 21.708 11.8891 21.708 7.9615 19.9068C7.936 19.8954 7.9057 19.8993 7.8838 19.9174C7.7638 20.0169 7.6378 20.1154 7.5121 20.2101C7.4686 20.2426 7.4722 20.3105 7.5196 20.3382C8.1175 20.6827 8.7391 20.986 9.3919 21.2347C9.4342 21.251 9.4543 21.2995 9.4333 21.3408C9.0805 22.0429 8.6689 22.7106 8.2075 23.3439C8.1874 23.3695 8.1544 23.3813 8.1232 23.3716C6.1717 22.7621 4.18301 21.843 2.13041 20.3285C2.11331 20.3153 2.10101 20.2942 2.09921 20.2722C1.68101 15.7743 2.53331 11.2201 5.6446 6.551C5.6521 6.53864 5.6635 6.52899 5.6767 6.52327C7.2076 5.81728 8.8477 5.29789 10.5619 5.00127C10.5931 4.99645 10.6243 5.01092 10.6405 5.03865C10.8523 5.41546 11.0944 5.89867 11.2582 6.29357C13.0651 6.01624 14.9002 6.01624 16.7449 6.29357C16.9087 5.90711 17.1424 5.41546 17.3533 5.03865C17.3608 5.02489 17.3724 5.01387 17.3866 5.00716C17.4007 5.00044 17.4165 4.99838 17.4319 5.00127C19.147 5.2988 20.7871 5.81819 22.3168 6.52327C22.3303 6.52899 22.3414 6.53864 22.348 6.5519ZM12.1768 15.1039C12.1957 13.7742 11.2309 12.674 10.0198 12.674C8.8186 12.674 7.8631 13.7646 7.8631 15.1039C7.8631 16.4429 8.8375 17.5335 10.0198 17.5335C11.2213 17.5335 12.1768 16.4429 12.1768 15.1039ZM20.1514 15.1039C20.1703 13.7742 19.2055 12.674 17.9947 12.674C16.7932 12.674 15.8377 13.7646 15.8377 15.1039C15.8377 16.4429 16.8121 17.5335 17.9947 17.5335C19.2055 17.5335 20.1514 16.4429 20.1514 15.1039Z" fill="#141413"/>
+</g>
+</svg>
+</a>
+                <a href="https://t.me/PolyhedraGroup" title="Telegram" target="_blank" rel="noopener"
+                class="custom-head-actions-list-icon"
+                ><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Telegram logo">
+<path id="Vector" d="M24.0517 4.12925L2.78878 12.3711C1.93313 12.7549 1.64372 13.5236 2.58193 13.9407L8.03682 15.6832L21.2259 7.4899C21.946 6.97552 22.6833 7.11269 22.0489 7.6785L10.7212 17.9879L10.3654 22.3509C10.695 23.0246 11.2985 23.0277 11.6834 22.6929L14.8174 19.7121L20.1848 23.7521C21.4314 24.494 22.1097 24.0152 22.3779 22.6555L25.8985 5.89915C26.264 4.22544 25.6407 3.488 24.0517 4.12925Z" fill="#141413"/>
+</g>
+</svg>
+</a>
+            </div>
+          </div>
+        </nav>
+      </header>
+
+      <main class="gh-main">
+        
+
+<article class="gh-article post tag-ai tag-zero-knowledge">
+
+  <header class="gh-header gh-canvas">
+      <h1 class="gh-title">zkPyTorch: Verifiable PyTorch with Zero-Knowledge Proofs</h1>
+      <span class="gh-post-meta">
+        <time datetime="2025-06-05">Jun 5, 2025</time>
+      </span>
+  </header>
+  <div class="gh-content gh-canvas">
+      <p>As Artificial Intelligence (AI) is used deeper in critical industries such as healthcare, finance, and autonomous systems, ensuring the reliability, transparency, and security of machine learning (ML) computations becomes increasingly crucial.&nbsp; Traditional ML services, often treated as black boxes, lack transparency, making them vulnerable to issues such as model theft, incorrect or malicious execution, and data privacy concerns.&nbsp;</p><p>Zero-Knowledge Machine Learning (ZKML) provides an innovative solution to this challenge. It employs a cryptographic primitive called&nbsp; Zero-Knowledge Proofs (ZKPs) to provide a cryptographically secure verification mechanism for ML models. ZKPs enable one party (the prover) to convince another (the verifier) that a computation was correctly executed without revealing any sensitive or proprietary information involved in the computation. In a ZKML setting, ZKPs allow the ML service provider to convince users that the output is the result of correct inference without revealing the model parameters, which are considered valuable assets due to the high cost of training.</p><h3 id="introducing-zkpytorch">Introducing zkPyTorch</h3><p>Polyhedra Network introduces zkPyTorch, a revolutionary compiler explicitly engineered to streamline Zero-Knowledge Machine Learning. zkPyTorch effectively bridges the robust capabilities of the widely-used PyTorch ML framework with advanced ZKP engines. This integration enables AI developers to write standard ML code in familiar environments without needing to learn new ZKP-specific programming paradigms. It automatically translates high-level ML operations, such as convolution, matrix multiplication, ReLU, softmax, and attention, into verifiable ZKP circuits while applying a suite of built-in optimizations tailored to common ZKML computation patterns, ensuring both correctness and computational efficiency.</p><h3 id="importance-of-zkpytorch-in-ai-ecosystems">Importance of zkPyTorch in AI Ecosystems</h3><p>Modern ML ecosystems have significant issues around data security, computational verifiability, and model transparency. ML models used in critical sectors handle sensitive personal data, proprietary model details, and high-value intellectual property. ZKML addresses these concerns by providing a robust verification process that maintains model integrity and data confidentiality simultaneously, ensuring secure and trusted AI deployments. However, existing ZKML approaches require specialized cryptographic expertise, making them inaccessible to traditional AI developers. zkPyTorch bridges the gap between ML frameworks and ZKP engines, enabling AI developers to use standard ML code to build ZKML applications. This significantly lowers the barrier to developing scalable, privacy-preserving, and verifiable machine learning systems.</p><h3 id="workflow-of-zkpytorch"><strong>Workflow of zkPyTorch</strong></h3><figure class="kg-card kg-image-card"><img src="https://lh7-rt.googleusercontent.com/docsz/AD_4nXc_cu4OhRv8HM3Rvj6BkCvdxPINWtXXc-vlVWvfGtfFZXeuXJk5xEQ0m5EVnsCekFnemOblqzy3QUjviv7mNJgn48VC_ygPBU6bTMMNeXOWYPhJKVciXyEN5WW6ygpeR0q6R4KK0A?key=Ls0hN2W9I2ScUitN_hG5Xw" class="kg-image" alt="" loading="lazy" width="1600" height="438"></figure><p>Figure 1: A high-level overview of ZKPyTorch.</p><p>As shown in Figure 1, zkPyTorch converts standard PyTorch models into ZKP-compatible circuits through carefully designed three modules, including a preprocessing module, a ZK-friendly quantization module, and a circuit optimization module. These modules work together to automatically translate standard ML code written in PyTorch into ZKP circuits, which can be recognized by ZKP engines such as Expander to generate zero-knowledge proofs. This approach enables AI developers to build efficient ZKML applications without&nbsp; needing to learn new ZKP-specific programming paradigms.</p><h4 id="module-1-model-preprocessing"><strong>Module 1: Model Preprocessing</strong></h4><p>The first module involves converting PyTorch models into structured computational graphs using the Open Neural Network Exchange (ONNX) format. ONNX provides a standardized intermediate representation, capturing complex ML operations uniformly. This preprocessing phase simplifies the intricate nature of ML operations, ensuring they are efficiently prepared for ZKP circuit translation.</p><h4 id="module-2-zkp-friendly-quantization"><strong>Module 2: ZKP-Friendly Quantization</strong></h4><p>The quantization module is crucial, converting the floating-point computations used in traditional ML models into integer-based arithmetic compatible with ZKP constraints. zkPyTorch utilizes integer quantization methods specifically designed for finite field computations, additionally transforming ZKP-unfriendly nonlinear operations into efficient ZKP-friendly table lookup operations.&nbsp; This approach significantly reduces computational complexity while preserving model accuracy.</p><h4 id="module-3-hierarchical-circuit-optimization"><strong>Module 3: Hierarchical Circuit Optimization</strong></h4><p>The hierarchical optimization module implemented by zkPyTorch includes:</p><ul><li><strong>Optimizing Batch Processing</strong>: Specifically designed for sequential operations, this significantly reduces complexity and computational demands, particularly for transformer-based language models.</li><li><strong>Optimized Primitive Operations</strong>: The use of FFT-based convolutions and lookup tables substantially accelerates primitive operations, greatly enhancing overall circuit efficiency.</li><li><strong>Parallel Circuit Execution</strong>: Enables efficient use of hardware resources by distributing computational tasks across multiple processing cores, drastically enhancing scalability and speed of proof generation.</li></ul><h3 id="deep-technical-exploration">Deep Technical Exploration</h3><p><strong>Directed Acyclic Graphs (DAG).</strong> The utilization of Directed Acyclic Graphs (DAGs) in zkPyTorch to manage ML computational processes. DAG-based representations systematically capture the complex dependencies to advanced ML models. As shown in Figure 2, each node within the DAG represents a specific operation such as matrix transpose, matrix multiplication, division, and softmax, while edges precisely illustrate the data flow between these operations. This clear and structured visualization aids significantly in both debugging and performance optimization. DAG-based approaches avoid cyclical dependencies, facilitating streamlined computational sequencing essential for optimized ZKP circuit generation. Moreover, they enable zkPyTorch to effectively handle sophisticated model architectures like transformers and residual networks, which often exhibit complex data pathways.</p><figure class="kg-card kg-image-card"><img src="https://lh7-rt.googleusercontent.com/docsz/AD_4nXcQ3UxIMvi2ZIaaYFPs0Jh6I4v0Di4thsOKumZMLNJm4UrO2_AT1Pr0H_pfsMqtGwV1muxk6OYofWmdSDddviIWrTKRNZXh47Isuf_JlOoB9sBPC9AOLkUEtEWrfx5xfWlEt477gA?key=Ls0hN2W9I2ScUitN_hG5Xw" class="kg-image" alt="" loading="lazy" width="1600" height="548"></figure><p>Figure 2: Example of machine learning models represented as directed acyclic graphs</p><p><strong>Advanced Quantization Techniques. </strong>Advanced quantization techniques in zkPyTorch are essential for transforming floating-point computations into integer-based operations compatible with efficient finite field arithmetic in ZKP systems. zkPyTorch employs static integer quantization methods carefully designed to computational efficiency for proof generation without compromising model accuracy. This quantization process involves careful calibration, identifying optimal quantization scales to represent floating-point numbers to avoid overflow and large accuracy loss. Additionally, zkPyTorch addresses ZKP-specific quantization challenges for nonlinear operations, such as softmax and layer normalization. By converting nonlinear functions into table lookup operations, zkPyTorch enhances proof generation efficiency while ensuring that the generated proof is fully consistent with the output of the high-accuracy quantized model.</p><p><strong>Multi-Level Circuit Optimization.</strong> zkPyTorch employs a sophisticated hierarchical optimization strategy at multiple levels to ensure maximum efficiency:</p><ul><li><strong>Optimizing Batch Processing</strong>: Batch processing techniques group multiple inference operations together, significantly reducing the complexity and computational demands, particularly beneficial for sequential operations common in transformer-based language models. As shown in Figure 3, traditional LLM inference generates outputs token by token. We verify the correctness of LLM inference by aggregating both the input and output tokens into a single prompt process. This allows us to validate that the prompt process is executed correctly and that the token generated during this phase matches the output tokens produced by standard LLM inference. In LLMs, the KV cache mechanism ensures that the output from a single prompt will match the results of multi-step decoding only if the model performs inference correctly.</li></ul><figure class="kg-card kg-image-card"><img src="https://lh7-rt.googleusercontent.com/docsz/AD_4nXe2l4UOZlJZfch-mzz3Lru5fQ9TarEOdVMkB-eOGeSwFp1gKwfq_-CJPS5Hn1LKtvYm4zIxM8VH3UZb2tjOgv5HwGF9wSuXVO5x52B0mtwsG2DdebwigfvoIF9UA2yFwvcmzxBo?key=Ls0hN2W9I2ScUitN_hG5Xw" class="kg-image" alt="" loading="lazy" width="1600" height="425"></figure><p>Figure 3: Batch verification of LLMs’ computation, where L is the input sequence length, N&nbsp; is the output sequence length, and H is the model’s hidden dimension.</p><ul><li><strong>Optimized Primitive Operations</strong>: zkPyTorch optimizes core machine learning operations at the primitive level. For instance, convolution operations, which are typically computationally intensive, are accelerated using Fast Fourier Transform (FFT)-based techniques that convert spatial-domain convolutions into more efficient frequency-domain multiplications. Nonlinear functions, such as ReLU and softmax, are implemented using precomputed lookup tables, significantly reducing computational overhead and enhancing circuit efficiency.</li><li><strong>Parallel Circuit Execution</strong>: zkPyTorch compiles machine learning operations into parallel circuits, enabling efficient proof generation by distributing computations across multiple processing cores. For example, tensor operations like matrix multiplication are decomposed into independent sub-tasks that can be executed concurrently on multiple CPU or GPU cores. This parallelization significantly boosts the throughput of proof generation, making it feasible to verify large-scale ML models quickly and efficiently.</li></ul><h3 id="comprehensive-performance-benchmarks">Comprehensive Performance Benchmarks</h3><p>Extensive benchmarking highlights zkPyTorch's remarkable performance and practical viability across diverse ML models:</p><ul><li><strong>VGG-16 Model Benchmark</strong>: zkPyTorch completes proof generation for the VGG-16 model in merely <strong>6.3 seconds per image</strong> on the CIFAR-10 dataset, with negligible accuracy loss compared to traditional floating-point computations.</li><li><strong>Llama-3 Model Benchmark</strong>: zkPyTorch efficiently processes the massive 8-billion parameter Llama-3 model, achieving proof generation in roughly <strong>150 seconds per token</strong>. This result retains an impressive <strong>99.32% cosine similarity</strong> to the original model outputs, demonstrating substantial reliability and precision.</li></ul><table>
+<thead>
+<tr>
+<th></th>
+<th>Models</th>
+<th>Parameters</th>
+<th>CPU Thread</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>zkCNN</td>
+<td>VGG-16</td>
+<td>15.2 million</td>
+<td>1</td>
+<td>88s per image</td>
+</tr>
+<tr>
+<td>EZKL</td>
+<td>nanoGPT</td>
+<td>0.25 million</td>
+<td>24</td>
+<td>237s</td>
+</tr>
+<tr>
+<td>ZKML</td>
+<td>GPT-2</td>
+<td>117 million</td>
+<td>64</td>
+<td>159s per token</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>VGG-16</td>
+<td>15.2 million</td>
+<td>1</td>
+<td>6.3s per image</td>
+</tr>
+<tr>
+<td>zkPyTorch</td>
+<td>ResNet-101</td>
+<td>44.5 million</td>
+<td>1</td>
+<td>23s per image</td>
+</tr>
+<tr>
+<td></td>
+<td>Llama-3</td>
+<td>8 billion</td>
+<td>1</td>
+<td>150s per token</td>
+</tr>
+</tbody>
+</table>
+<p>Table 1: The performance of ZKP schemes for convolutional and transformer neural networks</p><h3 id="extensive-real-world-applications">Extensive Real-World Applications</h3><p><strong>Verifiable Machine-Learning-as-a-Service (MLaaS)</strong>. As machine learning models become increasingly valuable, AI developers can deploy their own models on cloud platforms to provide MLaaS. However, users often face challenges in verifying the correctness of model computations, while developers seek to protect their intellectual property by restricting access to the model’s underlying details. zkPyTorch allows cloud-hosted AI services to provide cryptographically verifiable inference results securely. As shown in Figure 4, AI developers can directly feed the Llama-3 model into zkPyTorch to construct a verifiable MLaaS system. With zkPyTorch integrating with the ZKP engine, the framework automatically generates ZKPs that are used to verify the correctness of inference results while safeguarding the confidentiality of the model.</p><figure class="kg-card kg-image-card"><img src="https://lh7-rt.googleusercontent.com/docsz/AD_4nXcwlUGvx_7V88j0W3YrH5__pf-yG1Hdt457aF0u43uvy3SpjgJETt_mSraH0EOuXhVnWOBnZ8t0YszomRHGfH8D-UZTpvcxM8MYVd49oC7s8IJPG1KJmhgpZsy6kUlFCQ6-QMJGXQ?key=Ls0hN2W9I2ScUitN_hG5Xw" class="kg-image" alt="" loading="lazy" width="1600" height="1006"></figure><p>Figure 4: The use case of ZKPyTorch in variable Machine Learning-as-a-Service.</p><p><strong>Secure Model Valuation.</strong> zkPyTorch facilitates secure and transparent verification of AI models, allowing stakeholders to evaluate essential performance metrics without risking exposure of sensitive or proprietary model information. This secure valuation process ensures fairness, security, and transparency across the AI industry.</p><p><strong>Integration with EXPchain Blockchain.</strong> zkPyTorch seamlessly integrates with Polyhedra’s EXPchain blockchain, enhancing decentralized, secure, and verifiable AI-driven applications. This integration allows efficient smart contract interactions and robust on-chain verification processes, further strengthening the transparency and trustworthiness of blockchain ecosystems.</p><h3 id="future-innovations-and-roadmap">Future Innovations and Roadmap</h3><p>Polyhedra is dedicated to continuous improvements and innovation:</p><ul><li><strong>Open Source Community Engagement</strong>: Releasing zkPyTorch components to foster community participation and collaborative development.</li><li><strong>Broadened Model and Framework Compatibility</strong>: Expanding the compatibility and supporting diverse ML frameworks to enhance zkPyTorch’s utility and flexibility.</li><li><strong>Development Tools and SDKs</strong>: Creation of extensive development resources and software tools to simplify and accelerate the adoption of zkPyTorch in real-world applications.</li></ul><h3 id="conclusion">Conclusion</h3><p>zkPyTorch represents a transformative advancement in secure, verifiable, and efficient machine learning. By integrating robust zero-knowledge cryptographic techniques with the widely used PyTorch framework, zkPyTorch significantly advances AI deployment capabilities. Polyhedra continues to lead innovation in the secure AI domain, promoting transparency, trust, and scalability in machine learning applications.</p><p>Stay tuned for ongoing updates and developments as we revolutionize secure AI with zkPyTorch.</p>
+  </div>
+  <div class="custom-post-tags-container gh-canvas">
+    <div class="custom-post-tags">
+          <span class="custom-post-tag-item">AI</span>
+          <span class="custom-post-tag-item">Zero Knowledge</span>
+    </div>
+  </div>
+</article>
+
+
+
+            <aside class="read-more-wrap outer gh-canvas">
+              <div class="read-more-divider"></div>
+               <div class="read-more-title">
+                  More Blog
+                </div>
+                <div class="read-more inner">
+                        
+<article class="post-card post tag-ocash tag-polyhedra-2 tag-secure-settlement tag-selective-disclosure tag-private-payments tag-stablecoin">
+
+    <a class="post-card-image-link" href="/the-next-era-of-stablecoins-ocash-is-rebuilding-payments-for-a-private-compliant-ai-driven-world/">
+
+        <img class="post-card-image"
+            srcset="https://img.polyhedra.network/content/images/2026/02/The-Next-Era-of-Stablecoins.jpg 300w,
+                    https://img.polyhedra.network/content/images/2026/02/The-Next-Era-of-Stablecoins.jpg 600w,
+                    https://img.polyhedra.network/content/images/2026/02/The-Next-Era-of-Stablecoins.jpg 1000w,
+                    https://img.polyhedra.network/content/images/2026/02/The-Next-Era-of-Stablecoins.jpg 2000w"
+            sizes="(max-width: 1000px) 400px, 800px"
+            src="https://img.polyhedra.network/content/images/2026/02/The-Next-Era-of-Stablecoins.jpg"
+            alt="The Next Era of Stablecoins: Ocash Is Rebuilding Payments for a Private, Compliant, AI-Driven World"
+            loading="lazy"
+        />
+
+
+    </a>
+
+    <div class="post-card-content">
+
+        <a class="post-card-content-link" href="/the-next-era-of-stablecoins-ocash-is-rebuilding-payments-for-a-private-compliant-ai-driven-world/">
+            <header class="post-card-content-header">
+                <div class="post-card-meta">
+                    <time class="post-card-meta-date" datetime="2026-02-06">Feb 6, 2026</time>
+                </div>
+                <h2 class="post-card-title">
+                    The Next Era of Stablecoins: Ocash Is Rebuilding Payments for a Private, Compliant, AI-Driven World
+                </h2>
+            </header>
+        </a>
+        <footer class="post-card-content-footer">
+            <div class="custom-card-content-footer-tag-container">
+                  <span class="custom-card-content-footer-tag-item">Ocash</span>
+                  <span class="custom-card-content-footer-tag-item">Polyhedra</span>
+                  <span class="custom-card-content-footer-tag-item">Secure Settlement</span>
+                  <span class="custom-card-content-footer-tag-item">Selective Disclosure</span>
+                  <span class="custom-card-content-footer-tag-item">Private Payments</span>
+                  <span class="custom-card-content-footer-tag-item">Stablecoin</span>
+            </div>
+        </footer>
+    </div>
+</article>
+                        
+<article class="post-card post tag-ocash tag-privacy tag-ocashproofoflove">
+
+    <a class="post-card-image-link" href="/proof-of-love-ocash-valentines-day-campaign/">
+
+        <img class="post-card-image"
+            srcset="https://img.polyhedra.network/content/images/2026/01/image--4-.png 300w,
+                    https://img.polyhedra.network/content/images/2026/01/image--4-.png 600w,
+                    https://img.polyhedra.network/content/images/2026/01/image--4-.png 1000w,
+                    https://img.polyhedra.network/content/images/2026/01/image--4-.png 2000w"
+            sizes="(max-width: 1000px) 400px, 800px"
+            src="https://img.polyhedra.network/content/images/2026/01/image--4-.png"
+            alt="Proof of Love: Ocash Valentine&#x27;s Day Campaign"
+            loading="lazy"
+        />
+
+
+    </a>
+
+    <div class="post-card-content">
+
+        <a class="post-card-content-link" href="/proof-of-love-ocash-valentines-day-campaign/">
+            <header class="post-card-content-header">
+                <div class="post-card-meta">
+                    <time class="post-card-meta-date" datetime="2026-02-02">Feb 2, 2026</time>
+                </div>
+                <h2 class="post-card-title">
+                    Proof of Love: Ocash Valentine&#x27;s Day Campaign
+                </h2>
+            </header>
+        </a>
+        <footer class="post-card-content-footer">
+            <div class="custom-card-content-footer-tag-container">
+                  <span class="custom-card-content-footer-tag-item">Ocash</span>
+                  <span class="custom-card-content-footer-tag-item">Privacy</span>
+                  <span class="custom-card-content-footer-tag-item">OcashProofOfLove</span>
+            </div>
+        </footer>
+    </div>
+</article>
+                </div>
+            </aside>
+
+
+      </main>
+
+      <footer class="gh-foot">
+
+      </footer>
+
+    </div>
+
+    
+
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"cd7637c05d954bd49b571ed54a8365c5","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>

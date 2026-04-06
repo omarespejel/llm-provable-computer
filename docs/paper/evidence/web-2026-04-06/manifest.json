@@ -1,0 +1,74 @@
+[
+  {
+    "label": "gemma_3_model_card",
+    "url": "https://ai.google.dev/gemma/docs/core/model_card_3",
+    "file": "gemma_3_model_card.html",
+    "sha256": "885048296bd7b5f45276ce08b3f9d594905a3e119bc6a810e680ccf268622847"
+  },
+  {
+    "label": "gemma_family_overview",
+    "url": "https://developers.googleblog.com/en/gemma-explained-overview-gemma-model-family-architectures/",
+    "file": "gemma_family_overview.html",
+    "sha256": "fdab427cf531e31e9d7fe0e1c2767362a361215fd67f3914e6d87cd570a2fb78"
+  },
+  {
+    "label": "stwo_2_0_0",
+    "url": "https://starkware.co/blog/s-two-2-0-0-prover-for-developers/",
+    "file": "stwo_2_0_0.html",
+    "sha256": "4f989decb1cf05c7f82b5fc0ed9bfb4da3723f4715c8411f1bc7b5fc2836aef4"
+  },
+  {
+    "label": "recursive_circuit_proving",
+    "url": "https://starkware.co/blog/minutes-to-seconds-efficiency-gains-with-recursive-circuit-proving/",
+    "file": "recursive_circuit_proving.html",
+    "sha256": "a27588163543b63916849445b353f73c5cd3079e9f68559e7291703dd72de5d9"
+  },
+  {
+    "label": "starknet_version_releases",
+    "url": "https://www.starknet.io/developers/version-releases/",
+    "file": "starknet_version_releases.html",
+    "sha256": "6df79ac168e8b68036ebca740e12605601139fc395906c377511446bdce4b033"
+  },
+  {
+    "label": "strk20",
+    "url": "https://www.starknet.io/blog/make-all-erc-20-tokens-private-with-strk20/",
+    "file": "strk20.html",
+    "sha256": "c50a4d15b4cb5f68cbe62610fdbf819f59140345b73d058979bfb9ba239352da"
+  },
+  {
+    "label": "deepprove_1",
+    "url": "https://www.lagrange.dev/blog/deepprove-1",
+    "file": "deepprove_1.html",
+    "sha256": "329c230479b3aeecd9060367572ae734d8eb66fefe5e8776ae124287add568b9"
+  },
+  {
+    "label": "deepprove_update_sep_2025",
+    "url": "https://www.lagrange.dev/engineering-updates/september-2025",
+    "file": "deepprove_update_sep_2025.html",
+    "sha256": "7499b86c3ebf920bde769c2ea41341ffa48a41be3a3a308243dc18705e2297c2"
+  },
+  {
+    "label": "luminair_post",
+    "url": "https://starkware.co/blog/giza-x-s-two-powering-verifiable-ml-with-luminair/",
+    "file": "luminair_post.html",
+    "sha256": "c9c19efdb6ca1f9c6eab4bacfcabc3c96166eedbed4d58f6e6e7e8c3726fd877"
+  },
+  {
+    "label": "zkpytorch_product",
+    "url": "https://polyhedra.network/zkPyTorch",
+    "file": "zkpytorch_product.html",
+    "sha256": "2452fa9729c420358e04a14e3713834c0abccf007e4f6ca3c4681610e6c827e5"
+  },
+  {
+    "label": "zkpytorch_blog",
+    "url": "https://blog.polyhedra.network/zkpytorch/",
+    "file": "zkpytorch_blog.html",
+    "sha256": "d47d1ed5dcf7939f4fb6eacb59a035d15df8b670863766113cc9cd3ee2b32a36"
+  },
+  {
+    "label": "paradex_stwo",
+    "url": "https://starkware.co/blog/paradex-s-two-the-fastest-prover-meets-the-fastest-appchain/",
+    "file": "paradex_stwo.html",
+    "sha256": "3040b2702e39f5360117f77b58cb34d79a73607b48733490fda4fc1f5862210a"
+  }
+]

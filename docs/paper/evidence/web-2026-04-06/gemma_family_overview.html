@@ -1,0 +1,1828 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+  	<head>
+        <meta charset="utf-8" />
+        
+        <title>
+            
+            Gemma explained: An overview of Gemma model family architectures
+            
+            
+            - Google Developers Blog
+            
+        </title>
+        <meta property="og:title" content="Gemma explained: An overview of Gemma model family architectures- Google Developers Blog" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        
+	<meta name="description" content="Learn more about the different variations of Gemma models, how they are designed for different use cases, and the core parameters of their architecture." />
+  <meta content="summary_large_image" name="twitter:card"/>
+  <meta content="Google for Developers Blog - News about Web, Mobile, AI and Cloud" property="twitter:title"/>
+  <meta property="og:title" content="Gemma explained: An overview of Gemma model family architectures" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [{
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Google for Developers Blog",
+      "item": "https://developers.googleblog.com/"
+    },{
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Gemma explained: An overview of Gemma model family architectures",
+      "item": "https://developers.googleblog.com/en/gemma-explained-overview-gemma-model-family-architectures/"
+    }]
+  }
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": "Gemma explained: An overview of Gemma model family architectures",
+      "description": "Learn more about the different variations of Gemma models, how they are designed for different use cases, and the core parameters of their architecture.",
+      "image": "https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/Gemma-social.2e16d0ba.fill-800x400.png",
+      "datePublished": "2024-08-15",
+      "author": [
+        
+        
+          { "@type": "Person", "name": "Ju-yeong Ji", "url": "/en/search/?author=Ju-yeong+Ji" },
+        
+          { "@type": "Person", "name": "Ravin Kumar", "url": "/en/search/?author=Ravin+Kumar" }
+        
+        
+      ]
+    }
+  </script>
+  
+  <meta content="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/Gemma-social.2e16d0ba.fill-1200x600.png" property="og:image"/>
+  
+
+
+        
+        
+
+        <!-- Google Tag Manager -->
+        <script type="text/javascript" nonce="bb3tR01/RhD1GvMuVyTU7w==" src="https://storage.googleapis.com/gweb-developer-goog-blog-cms-assets/site/20251118-195321/js/analytics.js"></script>
+        <!-- End Google Tag Manager -->
+
+        
+        <link href="//www.gstatic.com/glue/v27_1/glue.min.css" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="https://storage.googleapis.com/gweb-developer-goog-blog-cms-assets/site/20251118-195321/css/dgc_blog.css">
+        <link rel="icon" href="https://storage.googleapis.com/gweb-developer-goog-blog-assets/meta/favicon.ico" type="image/x-icon">
+        <link rel="apple-touch-icon" href="https://storage.googleapis.com/gweb-developer-goog-blog-assets/meta/apple-touch-icon.png">
+
+        
+				<link rel="preconnect" href="https://fonts.googleapis.com">
+				<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+				<link rel="preload" href="https://fonts.googleapis.com/css2?family=Product+Sans&family=Google+Sans+Display:ital@0;1&family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=Google+Sans+Text:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" as="style">
+				<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Product+Sans&family=Google+Sans+Display:ital@0;1&family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=Google+Sans+Text:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400&display=swap">
+
+        
+        <link href="https://www.gstatic.com/glue/cookienotificationbar/cookienotificationbar.min.css" rel="stylesheet">
+
+        
+  <link
+    rel="stylesheet"
+    type="text/css"
+    href="https://storage.googleapis.com/gweb-developer-goog-blog-cms-assets/site/20251118-195321/css/blog_detail.css"
+  />
+  <link type="text/css" href="https://storage.googleapis.com/gweb-developer-goog-blog-cms-assets/site/20251118-195321/css/prism.css" rel="stylesheet" />
+
+    </head>
+
+    <body id="main-content" class="glue-body ">
+        <!-- Google Tag Manager (noscript) -->
+        <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WVTLDSL "
+        height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+        <!-- End Google Tag Manager (noscript) -->
+
+        
+
+				
+        
+
+<!-- HTML -->
+<header class="dgc-header">
+  <div class="dgc-header-inner">
+    <button class="hamburger" aria-haspopup="true" aria-expanded="false" aria-label="Open Menu">
+      <svg role="presentation" aria-hidden="true" class="glue-icon">
+        <use href="/glue-icon/#menu"></use>
+      </svg>
+    </button>
+    <div class="product-name-wrapper">
+      <a href="https://developers.google.com/" class="site-logo-link" data-label="Site logo">
+        <img src="https://storage.googleapis.com/gweb-developer-goog-blog-cms-assets/site/20251118-195321/images/g-dev.svg" class="site-logo" alt="Google for Developers">
+      </a>
+    </div>
+    <div class="desktop-nav-wrapper">
+      <div class="upper-tabs-wrapper">
+        <div class="upper-tabs">
+          <nav class="tabs" aria-label="Upper Tabs">
+            <div class="tab" dropdown>
+              <a
+                href="//developers.google.com/products"
+                class="top-nav-title">
+                Products
+              </a>
+              <a
+                href="#"
+                role="button"
+                aria-haspopup="true"
+                aria-expanded="true"
+                aria-label="Dropdown menu for Products"
+                class="dropdown-toggle">
+                <svg role="presentation" aria-hidden="true" class="glue-icon">
+                  <use href="/glue-icon/#arrow-drop-down"></use>
+                </svg>
+              </a>
+              <div class="tabs-dropdown" aria-label="Submenu">
+                <div class="tabs-dropdown-content">
+                  <div class="tabs-dropdown-column">
+                    <ul class="tabs-dropdown-section">
+                      <li class="nav-title" aria-label="Develop Menu">Develop</li>
+                      
+                        <li class="nav-item">
+                          <a href="//developer.android.com">
+                            <div class="nav-item-title">
+                              Android
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developer.chrome.com">
+                            <div class="nav-item-title">
+                              Chrome
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//chromeos.dev/">
+                            <div class="nav-item-title">
+                              ChromeOS
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//cloud.google.com">
+                            <div class="nav-item-title">
+                              Cloud
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//firebase.google.com">
+                            <div class="nav-item-title">
+                              Firebase
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//flutter.dev">
+                            <div class="nav-item-title">
+                              Flutter
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/assistant">
+                            <div class="nav-item-title">
+                              Google Assistant
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/maps">
+                            <div class="nav-item-title">
+                              Google Maps Platform
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/workspace">
+                            <div class="nav-item-title">
+                              Google Workspace
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//www.tensorflow.org">
+                            <div class="nav-item-title">
+                              TensorFlow
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/youtube">
+                            <div class="nav-item-title">
+                              YouTube
+                            </div>
+                          </a>
+                        </li>
+                      
+                    </ul>
+                  </div>
+                  <div class="tabs-dropdown-column">
+                    <ul class="tabs-dropdown-section">
+                      <li class="nav-title" aria-label="Grow Menu">Grow</li>
+                      
+                        <li class="nav-item">
+                          <a href="//firebase.google.com">
+                            <div class="nav-item-title">
+                              Firebase
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/google-ads">
+                            <div class="nav-item-title">
+                              Google Ads
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/analytics">
+                            <div class="nav-item-title">
+                              Google Analytics
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developer.android.com/distribute">
+                            <div class="nav-item-title">
+                              Google Play
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/search">
+                            <div class="nav-item-title">
+                              Search
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/web/fundamentals/engage-and-retain/push-notifications">
+                            <div class="nav-item-title">
+                              Web Push and Notification APIs
+                            </div>
+                          </a>
+                        </li>
+                      
+                    </ul>
+                  </div>
+                  <div class="tabs-dropdown-column">
+                    <ul class="tabs-dropdown-section">
+                      <li class="nav-title" aria-label="Earn Menu">Earn</li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/admob">
+                            <div class="nav-item-title">
+                              AdMob
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/google-ads/api">
+                            <div class="nav-item-title">
+                              Google Ads API
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/pay">
+                            <div class="nav-item-title">
+                              Google Pay
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developer.android.com/google/play/billing/">
+                            <div class="nav-item-title">
+                              Google Play Billing
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/interactive-media-ads">
+                            <div class="nav-item-title">
+                              Interactive Media Ads
+                            </div>
+                          </a>
+                        </li>
+                      
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tab">
+              <a
+                href="//developers.google.com/solutions/catalog"
+                class="top-nav-title">
+                Solutions
+              </a>
+            </div>
+            <div class="tab">
+              <a
+                href="//developers.google.com/events"
+                class="top-nav-title">
+                Events
+              </a>
+            </div>
+            <div class="tab">
+              <a
+                href="//developers.google.com/learn"
+                class="top-nav-title">
+                Learn
+              </a>
+            </div>
+            <div class="tab" dropdown>
+              <a
+                href="//developers.google.com/community"
+                class="top-nav-title">
+                Community
+              </a>
+              <a
+                href="#"
+                role="button"
+                aria-haspopup="true"
+                aria-expanded="true"
+                aria-label="Dropdown menu for Community"
+                class="dropdown-toggle">
+                <svg role="presentation" aria-hidden="true" class="glue-icon">
+                  <use href="/glue-icon/#arrow-drop-down"></use>
+                </svg>
+              </a>
+              <div class="tabs-dropdown" aria-label="Submenu">
+                <div class="tabs-dropdown-content">
+                  <div class="tabs-dropdown-column">
+                    <ul class="tabs-dropdown-section">
+                      <li class="nav-title" aria-label="Groups Menu">Groups</li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/community/gdg">
+                            <div class="nav-item-title">
+                              Google Developer Groups
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/community/gdsc">
+                            <div class="nav-item-title">
+                              Google Developer Student Clubs
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/womentechmakers">
+                            <div class="nav-item-title">
+                              Woman Techmakers
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/community/experts">
+                            <div class="nav-item-title">
+                              Google Developer Experts
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//www.techequitycollective.com/">
+                            <div class="nav-item-title">
+                              Tech Equity Collective
+                            </div>
+                          </a>
+                        </li>
+                      
+                    </ul>
+                  </div>
+                  <div class="tabs-dropdown-column">
+                    <ul class="tabs-dropdown-section">
+                      <li class="nav-title" aria-label="Programs Menu">Programs</li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/community/accelerators">
+                            <div class="nav-item-title">
+                              Accelerator
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/community/gdsc-solution-challenge">
+                            <div class="nav-item-title">
+                              Solution Challenge
+                            </div>
+                          </a>
+                        </li>
+                      
+                        <li class="nav-item">
+                          <a href="//developers.google.com/community/devfest">
+                            <div class="nav-item-title">
+                              DevFest
+                            </div>
+                          </a>
+                        </li>
+                      
+                    </ul>
+                  </div>
+                  <div class="tabs-dropdown-column">
+                    <ul class="tabs-dropdown-section">
+                      <li class="nav-title" aria-label="Stories Menu">Stories</li>
+                      <li class="nav-item">
+                        <a href="//developers.google.com/community/stories">
+                          <div class="nav-item-title">
+                            All Stories
+                          </div>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tab">
+              <a
+                href="//developers.google.com/profile/u/me"
+                class="top-nav-title">
+                Developer Program
+              </a>
+            </div>
+            <div class="tab">
+              <a
+                href="//developers.googleblog.com/"
+                class="top-nav-title">
+                Blog
+              </a>
+            </div>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="dgc-header-search">
+    <div class="search-wrapper glue-page">
+      <div class="glue-grid">
+        <form id="search-form"  action="/en/search/" method="get" class="search-content glue-grid__col glue-grid__col--span-4-sm glue-grid__col--span-9-md glue-grid__col--span-7-lg">
+          <div class="search-input-wrapper">
+            <svg role="presentation" aria-hidden="true" class="glue-icon search-icon">
+              <use href="/glue-icon/#search"></use>
+            </svg>
+            <input
+              type="text"
+              name="query"
+              
+              placeholder="Search all articles..."
+              aria-label="Search"
+              class="search-input-field"
+            />
+          </div>
+          <button class="glue-button glue-button--high-emphasis">
+            Search
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="mobile-drawer" top-level-nav>
+  <nav class="nav-content" aria-label="Side menu">
+    <div class="mobile-header">
+      <button class="nav-close-btn nav-btn" aria-label="Close navigation">
+        <svg role="presentation" aria-hidden="true" class="glue-icon">
+          <use href="/glue-icon/#close"></use>
+        </svg>
+      </button>
+      <button class="nav-back-btn nav-btn hidden" aria-label="Back to Menu">
+        <svg role="presentation" aria-hidden="true" class="glue-icon">
+          <use href="/glue-icon/#arrow-back"></use>
+        </svg>
+      </button>
+      <div class="product-name-wrapper">
+        <a href="https://developers.google.com/" class="site-logo-link" data-label="Site logo">
+          <img src="https://storage.googleapis.com/gweb-developer-goog-blog-cms-assets/site/20251118-195321/images/g-dev.svg" class="site-logo" alt="Google for Developers">
+        </a>
+      </div>
+    </div>
+    <div class="nav-wrapper">
+      <div class="mobile-nav-top">
+        <ul class="nav-list">
+          <li class="nav-item">
+            <a href="//developers.google.com/products" class="nav-title" data-label="Tab: Products">
+              <span class="nav-text" tooltip="">
+                Products
+             </span>
+            </a>
+            <ul class="nav-responsive-tabs">
+              <li class="nav-item">
+                <span tabindex="0" class="nav-title products-btn" data-label="More Products">
+                  <span class="nav-text" menu="Products">
+                    More
+                  </span>
+                  <span class="nav-icon" menu="Products">
+                    <svg role="presentation" aria-hidden="true" class="glue-icon">
+                      <use href="/glue-icon/#arrow-forward"></use>
+                    </svg>
+                  </span>
+                </span>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-item">
+            <a href="//developers.google.com/solutions/catalog" class="nav-title" data-label="Tab: Solutions">
+              <span class="nav-text" tooltip="">
+                Solutions
+             </span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="//developers.google.com/events" class="nav-title" data-label="Tab: Events">
+              <span class="nav-text" tooltip="">
+                Events
+             </span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="//developers.google.com/learn" class="nav-title" data-label="Tab: Learn">
+              <span class="nav-text" tooltip="">
+                Learn
+             </span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="//developers.google.com/community" class="nav-title" data-label="Tab: Community">
+              <span class="nav-text" tooltip="">
+                Community
+             </span>
+            </a>
+            <ul class="nav-responsive-tabs">
+              <li class="nav-item">
+                <span tabindex="0" class="nav-title community-btn" data-label="More Community">
+                  <span class="nav-text" menu="Community">
+                    More
+                  </span>
+                  <span class="nav-icon" menu="Community">
+                    <svg role="presentation" aria-hidden="true" class="glue-icon">
+                      <use href="/glue-icon/#arrow-forward"></use>
+                    </svg>
+                  </span>
+                </span>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-item">
+            <a href="//developers.google.com/profile/u/me" class="nav-title" data-label="Tab: Developer Program">
+              <span class="nav-text" tooltip="">
+                Developer Program
+             </span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="//developers.googleblog.com/" class="nav-title" data-label="Tab: Blog">
+              <span class="nav-text" tooltip="">
+                Blog
+             </span>
+            </a>
+          </li>
+        </ul>
+      </div>
+      <div class="mobile-nav-bottom">
+        <ul class="nav-list products-submenu" menu="Products" aria-label="Side menu">
+          <li class="nav-item nav-heading">
+            <span class="nav-title">
+              <span class="nav-text">
+                Develop
+              </span>
+            </span>
+          </li>
+          
+            <li class="nav-item">
+              <a href="//developer.android.com" class="nav-title">
+                <span class="nav-text">
+                  Android
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developer.chrome.com" class="nav-title">
+                <span class="nav-text">
+                  Chrome
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//chromeos.dev/" class="nav-title">
+                <span class="nav-text">
+                  ChromeOS
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//cloud.google.com" class="nav-title">
+                <span class="nav-text">
+                  Cloud
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//firebase.google.com" class="nav-title">
+                <span class="nav-text">
+                  Firebase
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//flutter.dev" class="nav-title">
+                <span class="nav-text">
+                  Flutter
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/assistant" class="nav-title">
+                <span class="nav-text">
+                  Google Assistant
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/maps" class="nav-title">
+                <span class="nav-text">
+                  Google Maps Platform
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/workspace" class="nav-title">
+                <span class="nav-text">
+                  Google Workspace
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//www.tensorflow.org" class="nav-title">
+                <span class="nav-text">
+                  TensorFlow
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/youtube" class="nav-title">
+                <span class="nav-text">
+                  YouTube
+                </span>
+              </a>
+            </li>
+          
+          <li class="nav-item nav-heading">
+            <span class="nav-title">
+              <span class="nav-text">
+                Grow
+              </span>
+            </span>
+          </li>
+          
+            <li class="nav-item">
+              <a href="//firebase.google.com" class="nav-title">
+                <span class="nav-text">
+                  Firebase
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/google-ads" class="nav-title">
+                <span class="nav-text">
+                  Google Ads
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/analytics" class="nav-title">
+                <span class="nav-text">
+                  Google Analytics
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developer.android.com/distribute" class="nav-title">
+                <span class="nav-text">
+                  Google Play
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/search" class="nav-title">
+                <span class="nav-text">
+                  Search
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/web/fundamentals/engage-and-retain/push-notifications" class="nav-title">
+                <span class="nav-text">
+                  Web Push and Notification APIs
+                </span>
+              </a>
+            </li>
+          
+          <li class="nav-item nav-heading">
+            <span class="nav-title">
+              <span class="nav-text">
+                Earn
+              </span>
+            </span>
+          </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/admob" class="nav-title">
+                <span class="nav-text">
+                  AdMob
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/google-ads/api" class="nav-title">
+                <span class="nav-text">
+                  Google Ads API
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/pay" class="nav-title">
+                <span class="nav-text">
+                  Google Pay
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developer.android.com/google/play/billing/" class="nav-title">
+                <span class="nav-text">
+                  Google Play Billing
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/interactive-media-ads" class="nav-title">
+                <span class="nav-text">
+                  Interactive Media Ads
+                </span>
+              </a>
+            </li>
+          
+        </ul>
+        <ul class="nav-list community-submenu hidden" menu="Community" aria-label="Side menu">
+          <li class="nav-item nav-heading">
+            <span class="nav-title">
+              <span class="nav-text">
+                Groups
+              </span>
+            </span>
+          </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/community/gdg" class="nav-title">
+                <span class="nav-text">
+                  Google Developer Groups
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/community/gdsc" class="nav-title">
+                <span class="nav-text">
+                  Google Developer Student Clubs
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/womentechmakers" class="nav-title">
+                <span class="nav-text">
+                  Woman Techmakers
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/community/experts" class="nav-title">
+                <span class="nav-text">
+                  Google Developer Experts
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//www.techequitycollective.com/" class="nav-title">
+                <span class="nav-text">
+                  Tech Equity Collective
+                </span>
+              </a>
+            </li>
+          
+          <li class="nav-item nav-heading">
+            <span class="nav-title">
+              <span class="nav-text">
+                Programs
+              </span>
+            </span>
+          </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/community/accelerators" class="nav-title">
+                <span class="nav-text">
+                  Accelerator
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/community/gdsc-solution-challenge" class="nav-title">
+                <span class="nav-text">
+                  Solution Challenge
+                </span>
+              </a>
+            </li>
+          
+            <li class="nav-item">
+              <a href="//developers.google.com/community/devfest" class="nav-title">
+                <span class="nav-text">
+                  DevFest
+                </span>
+              </a>
+            </li>
+          
+          <li class="nav-item nav-heading">
+            <span class="nav-title">
+              <span class="nav-text">
+                Stories
+              </span>
+            </span>
+          </li>
+          <li class="nav-item">
+            <a href="//developers.google.com/community/stories" class="nav-title" aria-label="All Stories">
+              <span class="nav-text">
+                All Stories
+              </span>
+            </a>
+          </li>
+        </ul>
+      </div>
+      
+    </div>
+  </nav>
+  <select
+    aria-label="Change language"
+    name="lang-selector"
+    id="lang-selector-nav"
+    class="glue-form__dropdown glue-mobile-nav__lang-dropdown"
+    onchange="window.location.href=this.value"
+  >
+    
+  </select>
+</div>
+
+<div class="backdrop"></div>
+
+        
+  <div class="blog-detail-container">
+
+    
+      <section class="tags-container glue-page glue-spacer-5-top">
+        <div class="glue-eyebrow"><a href="/en/search/?product_categories=Gemma">Gemma</a></div>
+      </section>
+    
+
+    <section class="heading-container glue-page  glue-spacer-1-top">
+      <h1 class="glue-headline glue-headline--headline-1">Gemma explained: An overview of Gemma model family architectures</h1>
+    </section>
+
+    <section class="summary-container glue-page glue-spacer-4-top">
+      <div class="date-time">
+        <div class="published-date glue-font-weight-medium">AUG. 15, 2024</div>
+      </div>
+    </section>
+
+    <section class="glue-page glue-grid glue-spacer-1-top">
+
+      <section class="author-container glue-grid__col glue-grid__col--span-4-sm glue-grid__col--span-10-md">
+      
+        
+          <div class="author-obj">
+            <a class="glue-font-weight-medium" href="/en/search/?author=Ju-yeong+Ji">Ju-yeong Ji</a>
+            
+              <span class="glue-font-weight-medium role">Sr. Technical Consultant</span>
+            
+            
+              <span class="glue-font-weight-medium team">Gen AI – AI Studio</span>
+            
+          </div>
+        
+          <div class="author-obj">
+            <a class="glue-font-weight-medium" href="/en/search/?author=Ravin+Kumar">Ravin Kumar</a>
+            
+            
+          </div>
+        
+
+      
+      </section>
+      <section class="social-container glue-grid__col glue-grid__col--span-4-sm glue-grid__col--span-2-md">
+        <button id="social-button" class="glue-button glue-button--low-emphasis glue-button--icon" aria-haspopup="true" aria-expanded="false">
+          <svg role="presentation" aria-hidden="true" class="glue-icon">
+            <use href="/glue-icon/#share"></use>
+          </svg>
+          <span>Share</span>
+        </button>
+        <ul id="social-menu" class="glue-elevation-level-1" role="menu" aria-labelledby="social-button">
+          <li>
+            <a href="https://www.facebook.com/sharer/sharer.php?u={url}"
+                title="Share on Facebook" target="_blank" rel="noopener">
+              <svg role="presentation" aria-hidden="true"
+                  class="glue-icon glue-icon--social glue-icon--32px">
+                <use href="/glue-icon/#post-facebook"></use>
+              </svg>
+              <span>Facebook</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://twitter.com/intent/tweet?text={url}"
+                title="Share on Twitter" target="_blank" rel="noopener">
+              <svg role="presentation" aria-hidden="true"
+                  class="glue-icon glue-icon--social glue-icon--32px">
+                <use href="/glue-icon/#twitter-x"></use>
+              </svg>
+              <span>Twitter</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://www.linkedin.com/shareArticle?url={url}&amp;mini=true" title="Share on LinkedIn" target="_blank" rel="noopener">
+              <svg role="presentation" aria-hidden="true"
+                  class="glue-icon glue-icon--social glue-icon--32px">
+                <use href="/glue-icon/#post-linkedin"></use>
+              </svg>
+              <span>LinkedIn</span>
+            </a>
+          </li>
+          <li>
+            <a href="mailto:name@example.com?subject=Check%20out%20this%20site&body=Check%20out%20{url}" title="Send via Email">
+              <svg role="presentation" aria-hidden="true"
+                  class="glue-icon glue-icon--social glue-icon--32px">
+                <use href="/glue-icon/#email"></use>
+              </svg>
+              <span>Mail</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" title="Get shareable link" data-link="" data-copy-text="Copy Link" data-copied-text="Copied!">
+              <svg role="presentation" aria-hidden="true"
+                  class="glue-icon glue-icon--social glue-icon--32px">
+                <use href="/glue-icon/#link"></use>
+              </svg>
+              <span></span>
+            </a>
+          </li>
+        </ul>
+      </section>
+    </section>
+
+    
+    <section class="blocks-container glue-page glue-spacer-3-top">
+      <div class="block">
+          
+
+<img
+    class="banner-image"
+    src="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/Gemma-banner.original.png"
+    alt="Gemma-banner"
+/>  <div class="inner-block-content rich-content">
+    <p data-block-key="jy293"><a href="https://ai.google.dev/gemma">Gemma</a> is a family of lightweight, state-of-the art open models built from the same research and technology used to create the Gemini models.</p><p data-block-key="9mr9j">Different variations of Gemma are designed for different use cases and modalities, such as:</p><p data-block-key="dv2g2"></p><ul><li data-block-key="5c52n">Single modality (Text in, Text out)</li></ul><p data-block-key="dgjdl"></p><ul><li data-block-key="ab5dq">Specialization for coding use cases</li></ul><p data-block-key="cfpoc"></p><ul><li data-block-key="1fltp">Multi modality (Text and Image in, Text out)</li></ul><p data-block-key="f0pfv"></p><ul><li data-block-key="4asln">Varying sizes for different hardware types, inference needs, and other constraints.</li></ul><p data-block-key="657gc"></p><ul><li data-block-key="2q018">“Novel” architectures</li></ul><p data-block-key="a2i4i"></p><p data-block-key="3a444">Because all these models share a similar DNA, the Gemma family presents a unique way to learn about the architectures and design choices that are available in modern LLM systems. We hope this contributes to a rich ecosystem of open models and promotes a greater understanding of how LLM systems work.</p><p data-block-key="5gqvt"></p><p data-block-key="62o40">This series will cover:</p><p data-block-key="e25bc"></p><ul><li data-block-key="ffinb"><b>Gemma 1 (2B, 7B)</b> - Transformer based text-to-text models.</li></ul><p data-block-key="dlcf2"></p><ul><li data-block-key="2odrf"><b>CodeGemma (2B and 7B)</b> - A fine-tuned version of Gemma, optimized for code completion and generation.</li></ul><p data-block-key="cdn53"></p><ul><li data-block-key="7k6bv"><b>Gemma 2 (2B, 9B, 27B)</b> - Updated text-to-text models trained with newer architecture with the 2B and 9B versions trained through distillation from larger models.</li></ul><p data-block-key="9417r"></p><ul><li data-block-key="4dcc2"><b>RecurrentGemma (2B, 9B)</b> - A model built on the novel Griffin architecture. This architecture uses a mixture of local attention and linear recurrences to achieve fast inference when generating long sequences.</li></ul><p data-block-key="6qg9s"></p><ul><li data-block-key="aajrl"><b>PaliGemma (3B)</b> - A vision-language model that can take in text and images and provide a text output.</li></ul><h2 data-block-key="9jk2g"><br/>How to use this guide</h2><p data-block-key="e4i9f">In this series, we will</p><p data-block-key="6707p"></p><ul><li data-block-key="vfl8">Collate the specific architectures of various models</li></ul><p data-block-key="avn4e"></p><ul><li data-block-key="7k4vh">Explain how these parameters affect model generations (e.g. num embeddings, Multi Query vs Multi Head vs Grouped Query)</li></ul><p data-block-key="8ohrh"></p><ul><li data-block-key="7q3ui">Provide code examples of the models for further exploration</li></ul><p data-block-key="9r4h7"></p><p data-block-key="1cv80">To provide information about the model, we use Hugging Face Transformers print module, like the simple code below.</p>
+</div>  <div class="inner-block-content code-block line-numbers">
+    <pre><code class="language-python">from transformers import AutoModelForCausalLM
+model = AutoModelForCausalLM.from_pretrained(&quot;google/gemma-7b&quot;)
+print(model)</code></pre>
+    <div class="language-block glue-font-weight-medium">
+        Python
+    </div>
+    <div class="copy-code-block">
+        <span class="hidden">Copied</span>
+        <button class="copy-clipboard">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#202124"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/></svg>
+        </button>
+    </div>
+    <div class="dark-mode-block">
+        <button class="dark-mode-toggle">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#202124"><path d="M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q14 0 27.5 1t26.5 3q-41 29-65.5 75.5T444-660q0 90 63 153t153 63q55 0 101-24.5t75-65.5q2 13 3 26.5t1 27.5q0 150-105 255T480-120Zm0-80q88 0 158-48.5T740-375q-20 5-40 8t-40 3q-123 0-209.5-86.5T364-660q0-20 3-40t8-40q-78 32-126.5 102T200-480q0 116 82 198t198 82Zm-10-270Z"/></svg>
+        </button>
+    </div>
+    
+</div>  <div class="inner-block-content rich-content">
+    <p data-block-key="jy293">You can explore inside the model with <a href="https://github.com/TylerYep/torchinfo">torchinfo</a> or <a href="https://keras.io/api/models/model/#summary-method">summary()</a> in the Keras Model class API as well.</p><h2 data-block-key="2upob"><br/>What this guide is not</h2><p data-block-key="37rk3">This guide is not an introduction to AI. It assumes working knowledge of neural networks, Transformers and associated terms like tokens. If you need a refresher on these concepts here are some resources to get you started:</p><p data-block-key="a2n73">A hands on neural network learning tool that works in browser</p><ul><li data-block-key="22qdr"><a href="http://playground.tensorflow.org/">http://playground.tensorflow.org/</a></li></ul><p data-block-key="bs1qo">An introduction to transformers</p><ul><li data-block-key="1b89l"><a href="https://www.youtube.com/watch?v=SZorAJ4I-sA&amp;t=26s">Transformers, explained: Understand the model behind GPT, BERT, and T5</a></li><li data-block-key="aotd8"><a href="https://github.com/google/sentencepiece">https://github.com/google/sentencepiece</a></li></ul><h2 data-block-key="7bd85"><br/><b>Gemma</b></h2><p data-block-key="acak6">Gemma is an open weight LLM. It comes in both instruction-tuned and raw, pretrained variants at various parameter sizes. It is based on the LLM architecture introduced by Google Research in the <a href="https://arxiv.org/abs/1706.03762v7">Attention Is All You Need</a> paper. Its primary function is to generate text tokenword by tokenword, based on a prompt provided by a user. In tasks like translation, Gemma takes a sentence from one language as input and outputs its equivalent in another language.</p><p data-block-key="5l4fi">As you’ll soon see Gemma is both a great model by itself, but also lends itself to custom extensions to meet different user needs.</p><h3 data-block-key="3v9cm"><br/><b>Gemma Architecture</b></h3><p data-block-key="toie">First, let’s see <a href="https://arxiv.org/abs/1706.03762v7">the transformer decoder</a> that Gemma models are based on.</p>
+</div>   
+
+
+    
+    <div class="inner-block-content">
+        <div class="image-wrapper">
+            
+                <img
+                    class="regular-image"
+                    src="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/image8_h40ZNWW.original.png"
+                    alt="Transformer decoder architecture"
+                />
+            
+            
+        </div>
+    </div>
+  <div class="inner-block-content rich-content">
+    <p data-block-key="jy293">Unlike the original encoder-decoder transformer model architecture introduced in “Attention Is All You Need”, Gemma is solely a “decoder-only” model.</p><p data-block-key="at9et">The <a href="https://storage.googleapis.com/deepmind-media/gemma/gemma-report.pdf">core parameters</a> of the architecture are summarized in the table below.</p>
+</div>   
+
+
+    
+    <div class="inner-block-content">
+        <div class="image-wrapper">
+            
+                <img
+                    class="regular-image"
+                    src="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/Screenshot_2024-08-08_at_2.16.18PM.original.png"
+                    alt="Core parameters of the architecture"
+                />
+            
+            
+        </div>
+    </div>
+  <div class="inner-block-content rich-content">
+    <p data-block-key="jy293">Models are trained on a context length of 8192 tokens. This means they can process up to approximately 6144 words (using the rule of thumb of 100 tokens ~= 75 words) at a time.</p><p data-block-key="dv1i3">It&#x27;s worth noting that the practical input limit can vary based on the task and usage. This is because text generation consumes tokens within the context window, effectively reducing space for new input. Although the technical input limit remains constant, generated output becomes part of the subsequent input, influencing further generations.</p><h3 data-block-key="9i2ni"><b><br/>d_model (2B: 2048, 7B: 3072)</b></h3><p data-block-key="c0n44"><i>d_model</i> represents the size of the embeddings (vector representations of words or subwords a.k.a tokens) used as input to the decoder. It also determines the size of the internal representation within the decoder layers.</p>
+</div>   
+
+
+    
+    <div class="inner-block-content">
+        <div class="image-wrapper">
+            
+                <img
+                    class="regular-image"
+                    src="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/image7_PhVB9TE.original.png"
+                    alt="d_model x Num heads x Head size"
+                />
+            
+            
+                
+                    <div class="regular-image-description">
+                        “d_model x Num heads x Head size” defines the parameter number in self_attn
+                    </div>
+                
+            
+        </div>
+    </div>
+  <div class="inner-block-content rich-content">
+    <p data-block-key="jy293">A larger <i>d_model</i> value means the model has more “space” to represent the nuances of different words and their relationships. This can lead to better performance, especially for complex language tasks. However, increasing <i>d_model</i> also makes the model larger and more computationally expensive to train and use.</p><h3 data-block-key="9mf73"><br/><b>Layers (2B: 18, 7B: 28)</b></h3><p data-block-key="393aq">Transformers consist of multiple stacked layers. Deeper models have more layers, and therefore more parameters and can learn more intricate patterns. However these additional parameters mean they are also more prone to overfitting and require more computational resources.</p><p data-block-key="8p9cn">This augmented representational capacity might result in the model learning noise or specific training data patterns that lack the ability to generalize to novel examples.</p><p data-block-key="51i2r">Furthermore, deeper models often necessitate more training data to avert overfitting. In cases where available data is limited, the model might lack sufficient examples to learn a generalizable representation, leading to the memorization of training data instead.</p><h3 data-block-key="4vmil"><br/><b>Feedforward hidden dims (2B: 32768, 7B: 49152)</b></h3><p data-block-key="9b6sl">Each Transformer layer includes a feedforward network after the attention mechanism. This network has its own dimensionality, often larger than the d_model size to increase the model’s expressive power.</p><p data-block-key="6ki07">It is implemented as a multi-layer perceptron (MLP), a kind of neural network, to further transform the embeddings and extract more intricate patterns.</p>
+</div>   
+
+
+    
+    <div class="inner-block-content">
+        <div class="image-wrapper">
+            
+                <img
+                    class="regular-image"
+                    src="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/image2_l7UnOuC.original.png"
+                    alt="multi-layer perceptron (MLP) neural network achitecture"
+                />
+            
+            
+        </div>
+    </div>
+  <div class="inner-block-content rich-content">
+    <p data-block-key="jy293">In Gemma, the standard ReLU non-linearity is replaced by the <a href="https://arxiv.org/abs/2002.05202">GeGLU activation function</a>, a variation of GLU (Gate Linear Unit). GeGLU divides the activation into two parts: a sigmoidal part and a linear projection. The output of the sigmoidal part is element-wise multiplied with the linear projection, resulting in a non-linear activation function.</p>
+</div>   
+
+
+    
+    <div class="inner-block-content">
+        <div class="image-wrapper">
+            
+                <img
+                    class="regular-image"
+                    src="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/Screenshot_2024-08-09_at_10.23.20AM.original.png"
+                    alt="GeGLU activation function example"
+                />
+            
+            
+        </div>
+    </div>
+  <div class="inner-block-content rich-content">
+    <h3 data-block-key="jy293"><b>Num heads (2B: 8, 7B: 16)</b></h3><p data-block-key="5i978">Each Transformer layer contains multiple attention mechanisms working in parallel. These “heads” allow the model to focus on different aspects of the input sequence simultaneously. Increasing the number of heads can enhance the model&#x27;s ability to capture diverse relationships in the data.</p><h3 data-block-key="aump7"><br/><b>Num KV heads (2B: 1, 7B: 16)</b></h3><p data-block-key="6tk04">The 7B model uses multi-head attention(MHA), while the 2B model uses multi-query attention(MQA). MQA shares the same key and value projections, which means each head focuses on the same underlying representation but with different query projections.</p><p data-block-key="5kide">The original MHA offers richer representation learning but comes with higher computational costs. MQA provides an efficient alternative that has been <a href="https://arxiv.org/abs/1911.02150">shown to be effective</a>.</p><h3 data-block-key="d3p0f"><b><br/>Head size (2B: 256, 7B: 256)</b></h3><p data-block-key="ci170">It refers to the dimensionality of each attention head within the multi-head attention mechanism. It is calculated by dividing the embedding dimension by the number of heads. For example, if the embedding dimension is 2048 and there are 8 heads, then each head would have a size of 256.</p><h3 data-block-key="7rfmm"><b><br/>Vocab size (2B: 256128, 7B: 256128)</b></h3><p data-block-key="f2u1a">It defines the number of unique tokens (words, sub words or characters) that the model understands and can process. Gemma tokenizer is based on <a href="https://github.com/google/sentencepiece">SentencePiece</a>. The size of the vocabulary is predetermined before training. SentencePiece then learns the optimal subword segmentation based on the chosen vocabulary size and the training data. Gemma’s large 256k vocabulary allows it to handle diverse text inputs and potentially improve performance on various tasks, e.g. handling multilingual text inputs.</p><h2 data-block-key="2r3r7"><b><br/>Gemma 7B</b></h2>
+</div>  <div class="inner-block-content code-block line-numbers">
+    <pre><code class="language-python">GemmaForCausalLM(
+  (model): GemmaModel(
+    (embed_tokens): Embedding(256000, 3072, padding_idx=0)
+    (layers): ModuleList(
+      (0-27): 28 x GemmaDecoderLayer(
+        (self_attn): GemmaSdpaAttention(
+          (q_proj): Linear(in_features=3072, out_features=4096, bias=False)
+          (k_proj): Linear(in_features=3072, out_features=4096, bias=False)
+          (v_proj): Linear(in_features=3072, out_features=4096, bias=False)
+          (o_proj): Linear(in_features=4096, out_features=3072, bias=False)
+          (rotary_emb): GemmaRotaryEmbedding()
+        )
+        (mlp): GemmaMLP(
+          (gate_proj): Linear(in_features=3072, out_features=24576, bias=False)
+          (up_proj): Linear(in_features=3072, out_features=24576, bias=False)
+          (down_proj): Linear(in_features=24576, out_features=3072, bias=False)
+          (act_fn): PytorchGELUTanh()
+        )
+        (input_layernorm): GemmaRMSNorm()
+        (post_attention_layernorm): GemmaRMSNorm()
+      )
+    )
+    (norm): GemmaRMSNorm()
+  )
+  (lm_head): Linear(in_features=3072, out_features=256000, bias=False)
+)</code></pre>
+    <div class="language-block glue-font-weight-medium">
+        Python
+    </div>
+    <div class="copy-code-block">
+        <span class="hidden">Copied</span>
+        <button class="copy-clipboard">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#202124"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/></svg>
+        </button>
+    </div>
+    <div class="dark-mode-block">
+        <button class="dark-mode-toggle">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#202124"><path d="M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q14 0 27.5 1t26.5 3q-41 29-65.5 75.5T444-660q0 90 63 153t153 63q55 0 101-24.5t75-65.5q2 13 3 26.5t1 27.5q0 150-105 255T480-120Zm0-80q88 0 158-48.5T740-375q-20 5-40 8t-40 3q-123 0-209.5-86.5T364-660q0-20 3-40t8-40q-78 32-126.5 102T200-480q0 116 82 198t198 82Zm-10-270Z"/></svg>
+        </button>
+    </div>
+    
+</div>   
+
+
+    
+    <div class="inner-block-content">
+        <div class="image-wrapper">
+            
+                <img
+                    class="regular-image"
+                    src="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/image6_iinFugc.original.png"
+                    alt="Gemma 7B architecture"
+                />
+            
+            
+        </div>
+    </div>
+  <div class="inner-block-content rich-content">
+    <h3 data-block-key="jy293"><b>embed_tokens (Embedding Layer)</b></h3><p data-block-key="2uknd">This layer converts the input tokens (words or subwords) into dense numerical representations (embeddings) that the model can process. It has a vocabulary size of 256,000 and creates embeddings of dimension 3072.</p><h3 data-block-key="1v900"><br/><b>layers</b></h3><p data-block-key="d17nl">This is the heart of the model, consisting of 28 stacked GemmaDecoderLayer blocks. Each of these layers refines the token embeddings to capture complex relationships between words and their context.</p><h3 data-block-key="2d8qk"><br/><b>self_attn</b></h3><p data-block-key="evedh">In the self-attention mechanism, the model assigns different weights to the words in the input when creating the next word. Leveraging a scaled dot-product attention mechanism, the model employs linear projections (<i>q_proj</i>, <i>k_proj</i>, <i>v_proj</i>, and <i>o_proj</i>) to generate query, key, value, and output representations.</p><p data-block-key="8ih4v">All out_features values are the same 4096 for <i>q_proj</i>, <i>k_proj</i> and <i>v_proj</i> as this model uses <b>Multi Head Attention (MHA)</b>. They have 16 heads with a size of 256 in parallel, totaling 4096 (256 x 16).</p><p data-block-key="28bc8">Furthermore, the model leverages positional information more effectively by employing <i>rotary_emb</i> (GemmaRotaryEmbedding) for positional encoding (a.k.a RoPE).</p><p data-block-key="7vn05">Finally, <i>o_proj</i> layer projects the attention output back to the original dimension (3072).</p><hr/><p data-block-key="aakv8">Note that the <b>Gemma 2B</b> model uses <b>Multi Query Attention (MQA)</b>.</p>
+</div>   
+
+
+    
+    <div class="inner-block-content">
+        <div class="image-wrapper">
+            
+                <img
+                    class="regular-image"
+                    src="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/image3_3kHryqa.original.png"
+                    alt="Multi-Query Attention (MQA) architecture used in Gemma 2B model"
+                />
+            
+            
+        </div>
+    </div>
+  <div class="inner-block-content rich-content">
+    <p data-block-key="jy293"><i>k_proj</i> and <i>v_proj</i> share the same head with a size of 256, resulting in <i>out_features</i> of 256. In contrast, <i>q_proj</i> and <i>o_proj</i> have 8 heads (256 x 8 = 2048) in parallel.</p>
+</div>  <div class="inner-block-content code-block line-numbers">
+    <pre><code class="language-python">(self_attn): GemmaSdpaAttention(
+          (q_proj): Linear(in_features=2048, out_features=2048, bias=False)
+          (k_proj): Linear(in_features=2048, out_features=256, bias=False)
+          (v_proj): Linear(in_features=2048, out_features=256, bias=False)
+          (o_proj): Linear(in_features=2048, out_features=2048, bias=False)
+          (rotary_emb): GemmaRotaryEmbedding()
+        )</code></pre>
+    <div class="language-block glue-font-weight-medium">
+        Python
+    </div>
+    <div class="copy-code-block">
+        <span class="hidden">Copied</span>
+        <button class="copy-clipboard">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#202124"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/></svg>
+        </button>
+    </div>
+    <div class="dark-mode-block">
+        <button class="dark-mode-toggle">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#202124"><path d="M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q14 0 27.5 1t26.5 3q-41 29-65.5 75.5T444-660q0 90 63 153t153 63q55 0 101-24.5t75-65.5q2 13 3 26.5t1 27.5q0 150-105 255T480-120Zm0-80q88 0 158-48.5T740-375q-20 5-40 8t-40 3q-123 0-209.5-86.5T364-660q0-20 3-40t8-40q-78 32-126.5 102T200-480q0 116 82 198t198 82Zm-10-270Z"/></svg>
+        </button>
+    </div>
+    
+</div>  <div class="inner-block-content rich-content">
+    <p data-block-key="jy293"></p><hr/><h3 data-block-key="5ccpk"><b>mlp</b></h3><p data-block-key="c8t7b">It utilizes <i>gate_proj</i> and <i>up_proj</i> for a gating mechanism, followed by <i>down_proj</i> to reduce the dimension back to 3072.</p><h3 data-block-key="4a0ss"><br/><b>input_layernorm, post_attention_layernorm and norm</b></h3><p data-block-key="e2lse">These normalization layers stabilize training and improve the model’s ability to learn effectively.</p><h3 data-block-key="56cmo"><br/><b>lm_head</b></h3><p data-block-key="41sr6">This final layer maps the refined embeddings (3072) back to a probability distribution for the next token over the vocabulary space (256000).</p><h2 data-block-key="4nvb"><br/><b>CodeGemma (2B and 7B)</b></h2><p data-block-key="498la">CodeGemma models are fine-tuned Gemma models that are optimized for code completion and coding chat assistance. CodeGemma models are trained on more than 500 billion tokens of primarily code. In addition CodeGemma adds fill-in-the- middle capability, allowing completions that occur between two pieces of existing text.</p><p data-block-key="f8of3">CodeGemma highlights the finetunability of the Gemma checkpoints. Through additional training the models become specialized at a certain task, learning a more complex completion than pure suffix completion.</p><h3 data-block-key="10ok3"><br/><b>Code Gemma Usage</b></h3><p data-block-key="7bb4p">You can use 4 user-defined tokens - 3 for FIM and a &quot;&lt;|file_separator|&gt;&quot; token for multi-file context support.</p>
+</div>  <div class="inner-block-content code-block line-numbers">
+    <pre><code class="language-plaintext">BEFORE_CURSOR = &quot;&lt;|fim_prefix|&gt;&quot;
+AFTER_CURSOR = &quot;&lt;|fim_suffix|&gt;&quot;
+AT_CURSOR = &quot;&lt;|fim_middle|&gt;&quot;
+FILE_SEPARATOR = &quot;&lt;|file_separator|&gt;&quot;</code></pre>
+    <div class="language-block glue-font-weight-medium">
+        Plain text
+    </div>
+    <div class="copy-code-block">
+        <span class="hidden">Copied</span>
+        <button class="copy-clipboard">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#202124"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/></svg>
+        </button>
+    </div>
+    <div class="dark-mode-block">
+        <button class="dark-mode-toggle">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#202124"><path d="M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q14 0 27.5 1t26.5 3q-41 29-65.5 75.5T444-660q0 90 63 153t153 63q55 0 101-24.5t75-65.5q2 13 3 26.5t1 27.5q0 150-105 255T480-120Zm0-80q88 0 158-48.5T740-375q-20 5-40 8t-40 3q-123 0-209.5-86.5T364-660q0-20 3-40t8-40q-78 32-126.5 102T200-480q0 116 82 198t198 82Zm-10-270Z"/></svg>
+        </button>
+    </div>
+    
+</div>  <div class="inner-block-content rich-content">
+    <p data-block-key="jy293">Imagine that you are trying to complete the code like the screen below.</p>
+</div>   
+
+
+    
+    <div class="inner-block-content">
+        <div class="image-wrapper">
+            
+                <img
+                    class="regular-image"
+                    src="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/image4_QvGp009.original.png"
+                    alt="Code snippet example - CodeGemma (2B and 7B)"
+                />
+            
+            
+        </div>
+    </div>
+  <div class="inner-block-content rich-content">
+    <p data-block-key="jy293">And the input prompt should look like this</p>
+</div>  <div class="inner-block-content code-block line-numbers">
+    <pre><code class="language-plaintext">&lt;|fim_prefix|&gt;import &lt;|fim_suffix|&gt;if __name__ == &quot;__main__&quot;:\n    sys.exit(0)&lt;|fim_middle|&gt;</code></pre>
+    <div class="language-block glue-font-weight-medium">
+        Plain text
+    </div>
+    <div class="copy-code-block">
+        <span class="hidden">Copied</span>
+        <button class="copy-clipboard">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#202124"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/></svg>
+        </button>
+    </div>
+    <div class="dark-mode-block">
+        <button class="dark-mode-toggle">
+            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#202124"><path d="M480-120q-150 0-255-105T120-480q0-150 105-255t255-105q14 0 27.5 1t26.5 3q-41 29-65.5 75.5T444-660q0 90 63 153t153 63q55 0 101-24.5t75-65.5q2 13 3 26.5t1 27.5q0 150-105 255T480-120Zm0-80q88 0 158-48.5T740-375q-20 5-40 8t-40 3q-123 0-209.5-86.5T364-660q0-20 3-40t8-40q-78 32-126.5 102T200-480q0 116 82 198t198 82Zm-10-270Z"/></svg>
+        </button>
+    </div>
+    
+</div>  <div class="inner-block-content rich-content">
+    <p data-block-key="jy293">The model will provide &quot;sys&quot; as the suggested code completion.</p><p data-block-key="aouoi">You can explore more about CodeGemma on <a href="https://ai.google.dev/gemma/docs/codegemma/keras_quickstart">CodeGemma / Quickstart</a>.</p><h2 data-block-key="99lt0"><br/><b>What’s Next?</b></h2><p data-block-key="2esk0">This article discussed the Gemma architecture.</p><p data-block-key="6pvvv">In our next series of posts, you will explore the latest model, Gemma 2. With substantial enhancements in safety measures, this model surpasses its predecessor in terms of performance and efficiency during inference.</p><p data-block-key="7tjuq">Stay tuned and thanks for reading!</p><hr/><h2 data-block-key="86nlh"><br/>References</h2><h3 data-block-key="1dro3"><b><br/>Papers</b></h3><ul><li data-block-key="5uv0c"><a href="https://arxiv.org/abs/1706.03762v7">Attention Is All You Need</a></li><li data-block-key="eoi4f"><a href="https://storage.googleapis.com/deepmind-media/gemma/gemma-report.pdf">Gemma: Open Models Based on Gemini Research and Technology</a></li><li data-block-key="760a3"><a href="https://arxiv.org/abs/2002.05202">GLU Variants Improve Transformer</a></li><li data-block-key="ft3in"><a href="https://arxiv.org/abs/1911.02150">Fast Transformer Decoding: One Write-Head is All You Need</a> <b><br/></b></li></ul><h3 data-block-key="cpgfm"><b>Code Examples</b></h3><p data-block-key="354b6"></p><p data-block-key="5p105">Gemma</p><ul><li data-block-key="ac2v3"><a href="https://ai.google.dev/gemma/docs/get_started">Get started with Gemma using KerasNLP</a></li></ul><p data-block-key="ckg7k"></p><p data-block-key="c2dft">CodeGemma</p><ul><li data-block-key="dd181"><a href="https://ai.google.dev/gemma/docs/codegemma/keras_quickstart">Quickstart</a></li><li data-block-key="esv5o"><a href="https://ai.google.dev/gemma/docs/codegemma/code_assist_keras">AI Assisted coding with CodeGemma</a></li></ul><h2 data-block-key="7usg"><br/>📋 The complete Gemma architecture series</h2><ul><li data-block-key="b1db0">Gemma explained: An overview of Gemma model family architectures</li><li data-block-key="f1v1d"><a href="/en/gemma-explained-new-in-gemma-2/">Gemma explained: What’s new in Gemma 2</a></li><li data-block-key="b8rcl"><a href="/en/gemma-explained-recurrentgemma-architecture/">Gemma explained: RecurrentGemma architecture</a></li><li data-block-key="d58np"><a href="/en/gemma-explained-paligemma-architecture/">Gemma explained: PaliGemma architecture</a></li></ul>
+</div> 
+      </div>
+    </section>
+    
+
+    <section class="navigation-container glue-page glue-spacer-6-top">
+      <div class="posted-in-section">
+        <div class="posted-in-section__heading">
+          <span class="glue-caption">
+            posted in:
+          </span>
+        </div>
+        <div class="posted-in-section__tags">
+          <ul>
+              
+                  <li>
+                      <a href="/en/search/?product_categories=Gemma" class="glue-caption">Gemma</a>
+                  </li>
+              
+                  <li>
+                      <a href="/en/search/?technology_categories=AI" class="glue-caption">AI</a>
+                  </li>
+              
+                  <li>
+                      <a href="/en/search/?content_type_categories=Documentation" class="glue-caption">Documentation</a>
+                  </li>
+              
+              
+                  <li>
+                      <a href="/en/search/?tag=Learn" class="glue-caption">Learn</a>
+                  </li>
+              
+          </ul>
+      </div>
+      </div>
+      <div class="buttons-section">
+        <div class="buttons-section__left">
+          <a href="/en/indie-games-fund-google-plays-2m-fund-in-latin-america-is-back/" class="glue-button--icon glue-elevation-level-1 " aria-label="Previous">
+            <svg role="presentation" aria-hidden="true" class="glue-icon">
+              <use href="/glue-icon/#chevron-left"></use>
+            </svg>
+          </a>
+          <span class="caption ">Previous</span>
+        </div>
+        <div class="buttons-section__right">
+          <span class="caption ">Next</span>
+          <a href="/en/gemini-15-flash-updates-google-ai-studio-gemini-api/" class="glue-button--icon glue-elevation-level-1 "  aria-label="Next">
+            <svg role="presentation" aria-hidden="true" class="glue-icon">
+              <use href="/glue-icon/#chevron-right"></use>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    
+    <section class="related-posts-container glue-page glue-spacer-6-top glue-spacer-3-bottom">
+      <span class="glue-headline glue-headline--headline-3">Related Posts</span>
+      <div class="related-posts-container__carousel glue-page glue-spacer-5-top">
+        <div class="glue-carousel glue-carousel--cards glue-carousel-related-posts" aria-label="Related Posts">
+          <!-- Previous -->
+          <button class="glue-carousel__button glue-carousel__button--prev"
+              aria-label="Go to the previous slide">
+            <svg role="presentation" aria-hidden="true" class="glue-icon glue-icon--32px">
+              <use href="/glue-icon/#chevron-left"></use>
+            </svg>
+          </button>
+          <!-- Next -->
+          <button class="glue-carousel__button glue-carousel__button--next"
+              aria-label="Go to the next slide">
+            <svg role="presentation" aria-hidden="true" class="glue-icon glue-icon--32px">
+              <use href="/glue-icon/#chevron-right"></use>
+            </svg>
+          </button>
+          <!-- List -->
+          <div class="glue-carousel__viewport">
+            <div class="glue-carousel__list">
+              
+                <a class="glue-card glue-carousel__item" href="/en/developers-guide-to-building-adk-agents-with-skills/">
+                  <div aria-label="Developer’s Guide to Building ADK Agents with Skills" class="glue-card__inner">
+                    <picture class="glue-card__asset">
+                      <img alt="Developer’s Guide to Building ADK Agents with Skills" src="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/part1-cover.2e16d0ba.fill-800x400.png">
+                    </picture>
+                    <div class="glue-card__content">
+                      <div class="glue-card__tags glue-spacer-2-top">
+                        
+                            
+                            
+                            <span class="glue-label">AI</span>
+                            
+                            <span class="glue-label">Cloud</span>
+                            
+                            
+                            <span class="glue-label">How-To Guides</span>
+                            
+                            <span class="glue-label">Best Practices</span>
+                            
+                        
+                      </div>
+                      <p class="glue-headline glue-headline--headline-5">Developer’s Guide to Building ADK Agents with Skills</p>
+                      <div class="glue-card__cta-custom glue-spacer-3-top">
+                        <span class="glue-cta">APRIL 1, 2026</span>
+                        <svg aria-hidden="true" class="glue-icon glue-icon--24px" role="presentation">
+                          <use href="/glue-icon/#arrow-forward"></use>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              
+                <a class="glue-card glue-carousel__item" href="/en/introducing-embeddinggemma/">
+                  <div aria-label="Introducing EmbeddingGemma: The Best-in-Class Open Model for On-Device Embeddings" class="glue-card__inner">
+                    <picture class="glue-card__asset">
+                      <img alt="Introducing EmbeddingGemma: The Best-in-Class Open Model for On-Device Embeddings" src="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/EmbeddingGemma_Metadatal_RD2-V01.2e16d0ba.fill-800x400.jpg">
+                    </picture>
+                    <div class="glue-card__content">
+                      <div class="glue-card__tags glue-spacer-2-top">
+                        
+                            
+                            <span class="glue-label">Gemma</span>
+                            
+                            
+                            <span class="glue-label">Mobile</span>
+                            
+                            <span class="glue-label">AI</span>
+                            
+                            
+                            <span class="glue-label">Announcements</span>
+                            
+                        
+                      </div>
+                      <p class="glue-headline glue-headline--headline-5">Introducing EmbeddingGemma: The Best-in-Class Open Model for On-Device Embeddings</p>
+                      <div class="glue-card__cta-custom glue-spacer-3-top">
+                        <span class="glue-cta">SEPT. 4, 2025</span>
+                        <svg aria-hidden="true" class="glue-icon glue-icon--24px" role="presentation">
+                          <use href="/glue-icon/#arrow-forward"></use>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              
+                <a class="glue-card glue-carousel__item" href="/en/introducing-gemma-3-270m/">
+                  <div aria-label="Introducing Gemma 3 270M: The compact model for hyper-efficient AI" class="glue-card__inner">
+                    <picture class="glue-card__asset">
+                      <img alt="Introducing Gemma 3 270M: The compact model for hyper-efficient AI" src="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/Gemma3-270M_Metadata_RD2-V02.2e16d0ba.fill-800x400.jpg">
+                    </picture>
+                    <div class="glue-card__content">
+                      <div class="glue-card__tags glue-spacer-2-top">
+                        
+                            
+                            <span class="glue-label">Gemma</span>
+                            
+                            
+                            <span class="glue-label">AI</span>
+                            
+                            
+                            <span class="glue-label">Announcements</span>
+                            
+                        
+                      </div>
+                      <p class="glue-headline glue-headline--headline-5">Introducing Gemma 3 270M: The compact model for hyper-efficient AI</p>
+                      <div class="glue-card__cta-custom glue-spacer-3-top">
+                        <span class="glue-cta">AUG. 14, 2025</span>
+                        <svg aria-hidden="true" class="glue-icon glue-icon--24px" role="presentation">
+                          <use href="/glue-icon/#arrow-forward"></use>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              
+                <a class="glue-card glue-carousel__item" href="/en/bring-state-of-the-art-agentic-skills-to-the-edge-with-gemma-4/">
+                  <div aria-label="Bring state-of-the-art agentic skills to the edge with Gemma 4" class="glue-card__inner">
+                    <picture class="glue-card__asset">
+                      <img alt="Bring state-of-the-art agentic skills to the edge with Gemma 4" src="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/gemma4_banner_2.2e16d0ba.fill-800x400.png">
+                    </picture>
+                    <div class="glue-card__content">
+                      <div class="glue-card__tags glue-spacer-2-top">
+                        
+                            
+                            
+                            <span class="glue-label">Mobile</span>
+                            
+                            <span class="glue-label">Web</span>
+                            
+                            
+                            <span class="glue-label">Announcements</span>
+                            
+                        
+                      </div>
+                      <p class="glue-headline glue-headline--headline-5">Bring state-of-the-art agentic skills to the edge with Gemma 4</p>
+                      <div class="glue-card__cta-custom glue-spacer-3-top">
+                        <span class="glue-cta">APRIL 2, 2026</span>
+                        <svg aria-hidden="true" class="glue-icon glue-icon--24px" role="presentation">
+                          <use href="/glue-icon/#arrow-forward"></use>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              
+                <a class="glue-card glue-carousel__item" href="/en/introducing-metrax-performant-efficient-and-robust-model-evaluation-metrics-in-jax/">
+                  <div aria-label="Introducing Metrax: performant, efficient, and robust model evaluation metrics in JAX" class="glue-card__inner">
+                    <picture class="glue-card__asset">
+                      <img alt="Introducing Metrax: performant, efficient, and robust model evaluation metrics in JAX" src="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/Data-2-banner.2e16d0ba.fill-800x400.png">
+                    </picture>
+                    <div class="glue-card__content">
+                      <div class="glue-card__tags glue-spacer-2-top">
+                        
+                            
+                            
+                            <span class="glue-label">AI</span>
+                            
+                            
+                            <span class="glue-label">Announcements</span>
+                            
+                            <span class="glue-label">Best Practices</span>
+                            
+                        
+                      </div>
+                      <p class="glue-headline glue-headline--headline-5">Introducing Metrax: performant, efficient, and robust model evaluation metrics in JAX</p>
+                      <div class="glue-card__cta-custom glue-spacer-3-top">
+                        <span class="glue-cta">NOV. 13, 2025</span>
+                        <svg aria-hidden="true" class="glue-icon glue-icon--24px" role="presentation">
+                          <use href="/glue-icon/#arrow-forward"></use>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              
+                <a class="glue-card glue-carousel__item" href="/en/introducing-coral-npu-a-full-stack-platform-for-edge-ai/">
+                  <div aria-label="Introducing Coral NPU: A full-stack platform for Edge AI" class="glue-card__inner">
+                    <picture class="glue-card__asset">
+                      <img alt="Introducing Coral NPU: A full-stack platform for Edge AI" src="https://storage.googleapis.com/gweb-developer-goog-blog-assets/images/blogpost.2e16d0ba.fill-800x400.png">
+                    </picture>
+                    <div class="glue-card__content">
+                      <div class="glue-card__tags glue-spacer-2-top">
+                        
+                            
+                            
+                            <span class="glue-label">AI</span>
+                            
+                            
+                            <span class="glue-label">How-To Guides</span>
+                            
+                            <span class="glue-label">Announcements</span>
+                            
+                        
+                      </div>
+                      <p class="glue-headline glue-headline--headline-5">Introducing Coral NPU: A full-stack platform for Edge AI</p>
+                      <div class="glue-card__cta-custom glue-spacer-3-top">
+                        <span class="glue-cta">OCT. 15, 2025</span>
+                        <svg aria-hidden="true" class="glue-icon glue-icon--24px" role="presentation">
+                          <use href="/glue-icon/#arrow-forward"></use>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              
+            </div>
+          </div>
+          <!-- Navigation dots -->
+          <div class="glue-carousel__navigation" aria-label="Choose a page"
+               data-glue-carousel-navigation-label="Selected tab $glue_carousel_page_number$ of $glue_carousel_page_total$">
+          </div>
+        </div>
+      </div>
+    </section>
+    
+  </div>
+
+
+				
+				
+
+<div class="footer-linkboxes__wrapper">
+  <nav class="footer-linkboxes" aria-label="Footer links">
+    <ul class="footer-linkboxes__list">
+      <li class="footer-linkbox">
+        <span class="footer-linkbox-heading">
+          Connect
+        </span>
+        <ul class="footer-linkbox-list">
+          
+            <li class="footer-linkbox-list__item">
+              <a href="//googledevelopers.blogspot.com" class="footer-linkbox-list__link">
+                Blog
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="https://goo.gle/3FReQXN" class="footer-linkbox-list__link">
+                Bluesky
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="https://goo.gle/googlefordevs" class="footer-linkbox-list__link">
+                Instagram
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="https://goo.gle/gdevs-li" class="footer-linkbox-list__link">
+                LinkedIn
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="https://goo.gle/gdevs-tw" class="footer-linkbox-list__link">
+                X (Twitter)
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="https://goo.gle/developers" class="footer-linkbox-list__link">
+                YouTube
+              </a>
+            </li>
+          
+        </ul>
+      </li>
+      <li class="footer-linkbox">
+        <span class="footer-linkbox-heading">
+          Programs
+        </span>
+        <ul class="footer-linkbox-list">
+          
+            <li class="footer-linkbox-list__item">
+              <a href="//developers.google.com/program" class="footer-linkbox-list__link">
+                Google Developer Program
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="//developers.google.com/community/gdg" class="footer-linkbox-list__link">
+                Google Developer Groups
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="//developers.google.com/community/experts" class="footer-linkbox-list__link">
+                Google Developer Experts
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="//developers.google.com/community/accelerators" class="footer-linkbox-list__link">
+                Accelerators
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="//www.womentechmakers.com" class="footer-linkbox-list__link">
+                Women Techmakers
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="//developers.google.com/community/nvidia" class="footer-linkbox-list__link">
+                Google Cloud &amp; NVIDIA
+              </a>
+            </li>
+          
+        </ul>
+      </li>
+      <li class="footer-linkbox">
+        <span class="footer-linkbox-heading">
+          Developer consoles
+        </span>
+        <ul class="footer-linkbox-list">
+          
+            <li class="footer-linkbox-list__item">
+              <a href="//console.developers.google.com" class="footer-linkbox-list__link">
+                Google API Console
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="//console.cloud.google.com" class="footer-linkbox-list__link">
+                Google Cloud Platform Console
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="//play.google.com/apps/publish" class="footer-linkbox-list__link">
+                Google Play Console
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="//console.firebase.google.com" class="footer-linkbox-list__link">
+                Firebase Console
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="//console.actions.google.com" class="footer-linkbox-list__link">
+                Actions on Google Console
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="//cast.google.com/publish" class="footer-linkbox-list__link">
+                Cast SDK Developer Console
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="//chrome.google.com/webstore/developer/dashboard" class="footer-linkbox-list__link">
+                Chrome Web Store Dashboard
+              </a>
+            </li>
+          
+            <li class="footer-linkbox-list__item">
+              <a href="//console.home.google.com/" class="footer-linkbox-list__link">
+                Google Home Developer Console
+              </a>
+            </li>
+          
+        </ul>
+      </li>
+    </ul>
+  </nav>
+</div>
+<div class="footer-utility__wrapper">
+  <div>
+    <nav class="footer-sites" aria-label="Other Google Developers websites">
+      <a href="https://developers.google.com/" class="site-logo-link" data-label="Site logo">
+        <img src="https://storage.googleapis.com/gweb-developer-goog-blog-cms-assets/site/20251118-195321/images/g-dev.svg" class="site-logo" alt="Google for Developers">
+      </a>
+      <ul class="footer-sites-list">
+        <li class="footer-sites-item">
+          <a href="//developer.android.com" class="footer-sites-link">
+            Android
+          </a>
+        </li>
+        <li class="footer-sites-item">
+          <a href="//developer.chrome.com/home" class="footer-sites-link">
+            Chrome
+          </a>
+        </li>
+        <li class="footer-sites-item">
+          <a href="//firebase.google.com" class="footer-sites-link">
+            Firebase
+          </a>
+        </li>
+        <li class="footer-sites-item">
+          <a href="//cloud.google.com" class="footer-sites-link">
+            Google Cloud Platform
+          </a>
+        </li>
+        <li class="footer-sites-item">
+          <a href="//developers.google.com/products" class="footer-sites-link">
+            All products
+          </a>
+        </li>
+        <li class="footer-sites-item">
+          <button aria-hidden="true" class="glue-cookie-notification-bar-control footer-sites-link">
+            Manage cookies
+          </button>
+        </li>
+      </ul>
+    </nav>
+    <nav class="footer-utility-links">
+      <ul class="footer-utility-list">
+        <li class="footer-utility-item">
+          <a href="//developers.google.com/terms/site-terms" class="footer-utility-link">
+            Terms
+          </a>
+        </li>
+        <li class="footer-utility-item">
+          <a href="//policies.google.com/privacy" class="footer-utility-link">
+            Privacy
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>
+
+
+        
+				
+
+        
+        <script nonce="bb3tR01/RhD1GvMuVyTU7w==" src="https://www.youtube.com/player_api"></script>
+        <script nonce="bb3tR01/RhD1GvMuVyTU7w==" src="//www.gstatic.com/glue/v27_1/glue.min.js"></script>
+        <script nonce="bb3tR01/RhD1GvMuVyTU7w==" type="text/javascript" src="https://storage.googleapis.com/gweb-developer-goog-blog-cms-assets/site/20251118-195321/js/dgc_blog.js"></script>
+
+        <script nonce="bb3tR01/RhD1GvMuVyTU7w==" src="https://www.gstatic.com/glue/cookienotificationbar/cookienotificationbar.min.js"
+            data-glue-cookie-notification-bar-category="2A"
+            data-glue-cookie-notification-bar-site-id="developers.googleblog.com"></script>
+
+        
+  <script src="https://storage.googleapis.com/gweb-developer-goog-blog-cms-assets/site/20251118-195321/js/blog_detail.js" nonce="bb3tR01/RhD1GvMuVyTU7w=="></script>
+  <script src="https://storage.googleapis.com/gweb-developer-goog-blog-cms-assets/site/20251118-195321/js/prism.js" nonce="bb3tR01/RhD1GvMuVyTU7w=="></script>
+
+    </body>
+</html>
