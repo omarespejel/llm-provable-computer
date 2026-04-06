@@ -868,7 +868,7 @@ mod tests {
     use crate::{ProgramCompiler, TransformerVmConfig};
     use stwo::core::pcs::utils::TreeVec;
     use stwo::prover::backend::Column;
-    use stwo_constraint_framework::assert_constraints_on_trace;
+    use stwo_constraint_framework::{assert_constraints_on_polys, assert_constraints_on_trace};
 
     fn compile_program(path: &str) -> Program {
         let source = std::fs::read_to_string(path).expect("program source");
@@ -981,5 +981,61 @@ mod tests {
     #[test]
     fn phase5_multiply_trace_satisfies_constraints() {
         assert_program_trace_satisfies_constraints("programs/multiply.tvm");
+    }
+
+    fn assert_program_trace_polys_satisfy_constraints(path: &str) {
+        let program = compile_program(path);
+        let mut runtime =
+            NativeInterpreter::new(program.clone(), Attention2DMode::AverageHard, 256);
+        let result = runtime.run().expect("run program");
+        assert!(result.halted);
+
+        let states = runtime.trace().to_vec();
+        let trace = build_trace_bundle(&program, &states).expect("trace bundle");
+        let final_state = result.final_state.clone();
+        let eval_state = Phase5ArithmeticSubsetEval {
+            log_size: trace.log_size,
+            memory_size: program.memory_size(),
+            initial_state: PublicState::from_initial_memory(program.initial_memory()),
+            final_state: PublicState::from_machine_state(final_state.clone()),
+        };
+        let trace_polys = TreeVec(vec![
+            trace
+                .preprocessed_trace
+                .iter()
+                .cloned()
+                .map(|c| c.interpolate())
+                .collect::<Vec<_>>(),
+            trace
+                .base_trace
+                .iter()
+                .cloned()
+                .map(|c| c.interpolate())
+                .collect::<Vec<_>>(),
+        ]);
+
+        assert_constraints_on_polys(
+            &trace_polys,
+            CanonicCoset::new(trace.log_size),
+            |eval| {
+                let _ = eval_state.evaluate(eval);
+            },
+            SecureField::zero(),
+        );
+    }
+
+    #[test]
+    fn phase5_dot_product_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/dot_product.tvm");
+    }
+
+    #[test]
+    fn phase5_counter_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/counter.tvm");
+    }
+
+    #[test]
+    fn phase5_multiply_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/multiply.tvm");
     }
 }
