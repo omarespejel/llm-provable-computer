@@ -38,7 +38,6 @@ const PHASE3_LOOKUP_SEMANTICS: &str = "bounded binary-step activation lookup pil
 pub(crate) struct Phase3BinaryStepLookupEval {
     log_size: u32,
     lookup_elements: Phase3BinaryStepLookupRelation,
-    _claimed_sum: SecureField,
 }
 
 impl FrameworkEval for Phase3BinaryStepLookupEval {
@@ -85,7 +84,6 @@ pub fn phase3_binary_step_lookup_component_metadata(
         Phase3BinaryStepLookupEval {
             log_size,
             lookup_elements: Phase3BinaryStepLookupRelation::dummy(),
-            _claimed_sum: SecureField::zero(),
         },
         SecureField::zero(),
     );
@@ -125,7 +123,6 @@ pub(crate) fn phase3_binary_step_lookup_component(
         Phase3BinaryStepLookupEval {
             log_size,
             lookup_elements,
-            _claimed_sum: claimed_sum,
         },
         claimed_sum,
     )
