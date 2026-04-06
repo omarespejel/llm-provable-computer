@@ -74,22 +74,32 @@ pub use stwo_backend::{
 };
 #[cfg(feature = "stwo-backend")]
 pub use stwo_backend::{
+    load_phase10_shared_binary_step_lookup_proof,
+    load_phase10_shared_normalization_lookup_proof,
     load_phase3_binary_step_lookup_proof, load_phase5_normalization_lookup_proof,
     phase3_arithmetic_component_metadata,
     phase3_arithmetic_preprocessed_columns, phase3_binary_step_lookup_component_metadata,
     phase3_lookup_preprocessed_columns, phase3_lookup_table_rows,
-    phase5_normalization_lookup_component_metadata, prove_phase3_binary_step_lookup_demo,
+    phase5_normalization_lookup_component_metadata, prove_phase10_shared_binary_step_lookup_envelope,
+    prove_phase10_shared_normalization_lookup_envelope, prove_phase3_binary_step_lookup_demo,
     prove_phase3_binary_step_lookup_demo_envelope, prove_phase5_normalization_lookup_demo,
-    prove_phase5_normalization_lookup_demo_envelope, save_phase5_normalization_lookup_proof,
-    save_phase3_binary_step_lookup_proof, verify_phase3_binary_step_lookup_demo,
+    prove_phase5_normalization_lookup_demo_envelope, save_phase10_shared_binary_step_lookup_proof,
+    save_phase10_shared_normalization_lookup_proof, save_phase5_normalization_lookup_proof,
+    save_phase3_binary_step_lookup_proof, verify_phase10_shared_binary_step_lookup_envelope,
+    verify_phase10_shared_normalization_lookup_envelope, verify_phase3_binary_step_lookup_demo,
     verify_phase3_binary_step_lookup_demo_envelope, verify_phase5_normalization_lookup_demo,
-    verify_phase5_normalization_lookup_demo_envelope, Phase3ArithmeticComponentMetadata,
+    verify_phase5_normalization_lookup_demo_envelope, Phase10SharedLookupProofEnvelope,
+    Phase10SharedNormalizationLookupProofEnvelope, Phase3ArithmeticComponentMetadata,
     Phase3LookupComponentMetadata, Phase3LookupProofEnvelope, Phase3LookupTableRow,
     Phase3TreeSubspan, Phase5NormalizationComponentMetadata,
     Phase5NormalizationLookupProofEnvelope, STWO_LOOKUP_PROOF_VERSION_PHASE3,
     STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
     STWO_NORMALIZATION_PROOF_VERSION_PHASE5, STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5,
-    STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
+    STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5, STWO_SHARED_LOOKUP_PROOF_VERSION_PHASE10,
+    STWO_SHARED_LOOKUP_SEMANTIC_SCOPE_PHASE10, STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10,
+    STWO_SHARED_NORMALIZATION_PROOF_VERSION_PHASE10,
+    STWO_SHARED_NORMALIZATION_SEMANTIC_SCOPE_PHASE10,
+    STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10,
 };
 pub use tui::run_execution_tui;
 pub use verification::{verify_engines, verify_model_against_native, ExecutionComparison};

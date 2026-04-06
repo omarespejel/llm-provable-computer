@@ -30,10 +30,16 @@ use llm_provable_computer::{
 use llm_provable_computer::{export_program_onnx, OnnxExecutionRuntime};
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::{
+    load_phase10_shared_binary_step_lookup_proof, load_phase10_shared_normalization_lookup_proof,
     load_phase3_binary_step_lookup_proof, load_phase5_normalization_lookup_proof,
+    prove_phase10_shared_binary_step_lookup_envelope,
+    prove_phase10_shared_normalization_lookup_envelope,
     prove_phase3_binary_step_lookup_demo_envelope,
-    prove_phase5_normalization_lookup_demo_envelope, save_phase3_binary_step_lookup_proof,
+    prove_phase5_normalization_lookup_demo_envelope, save_phase10_shared_binary_step_lookup_proof,
+    save_phase10_shared_normalization_lookup_proof, save_phase3_binary_step_lookup_proof,
     save_phase5_normalization_lookup_proof, stwo_backend_enabled,
+    verify_phase10_shared_binary_step_lookup_envelope,
+    verify_phase10_shared_normalization_lookup_envelope,
     verify_phase3_binary_step_lookup_demo_envelope,
     verify_phase5_normalization_lookup_demo_envelope, STWO_LOOKUP_PROOF_VERSION_PHASE3,
     STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
@@ -220,6 +226,28 @@ enum Command {
     },
     /// Verify a serialized S-two normalization lookup demo proof.
     VerifyStwoNormalizationDemo {
+        /// Path to the serialized proof JSON file.
+        proof: PathBuf,
+    },
+    /// Produce a serialized S-two shared binary-step lookup proof for two canonical rows.
+    ProveStwoSharedLookupDemo {
+        /// File where the serialized proof JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a serialized S-two shared binary-step lookup proof.
+    VerifyStwoSharedLookupDemo {
+        /// Path to the serialized proof JSON file.
+        proof: PathBuf,
+    },
+    /// Produce a serialized S-two shared normalization lookup proof for two canonical rows.
+    ProveStwoSharedNormalizationDemo {
+        /// File where the serialized proof JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a serialized S-two shared normalization lookup proof.
+    VerifyStwoSharedNormalizationDemo {
         /// Path to the serialized proof JSON file.
         proof: PathBuf,
     },
@@ -725,6 +753,18 @@ fn run() -> llm_provable_computer::Result<()> {
         Command::VerifyStwoNormalizationDemo { proof } => {
             verify_stwo_normalization_demo_command(&proof)?
         }
+        Command::ProveStwoSharedLookupDemo { output } => {
+            prove_stwo_shared_lookup_demo_command(&output)?
+        }
+        Command::VerifyStwoSharedLookupDemo { proof } => {
+            verify_stwo_shared_lookup_demo_command(&proof)?
+        }
+        Command::ProveStwoSharedNormalizationDemo { output } => {
+            prove_stwo_shared_normalization_demo_command(&output)?
+        }
+        Command::VerifyStwoSharedNormalizationDemo { proof } => {
+            verify_stwo_shared_normalization_demo_command(&proof)?
+        }
         Command::PrepareStwoRecursionBatch { proofs, output } => {
             prepare_stwo_recursion_batch_command(&proofs, &output)?
         }
@@ -1144,6 +1184,83 @@ fn prove_stwo_lookup_demo_command(output: &Path) -> llm_provable_computer::Resul
     }
 }
 
+fn prove_stwo_shared_lookup_demo_command(output: &Path) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output;
+        return Err(VmError::UnsupportedProof(
+            "S-two shared binary-step lookup demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    if !stwo_backend_enabled() {
+        return Err(VmError::UnsupportedProof(
+            "S-two shared binary-step lookup demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        let proof = prove_phase10_shared_binary_step_lookup_envelope(&[
+            llm_provable_computer::Phase3LookupTableRow { input: 0, output: 1 },
+            llm_provable_computer::Phase3LookupTableRow { input: 1, output: 1 },
+        ])?;
+        save_phase10_shared_binary_step_lookup_proof(&proof, output)?;
+
+        println!("proof: {}", output.display());
+        println!("proof_backend: {}", proof.proof_backend);
+        println!("proof_backend_version: {}", proof.proof_backend_version);
+        println!("statement_version: {}", proof.statement_version);
+        println!("semantic_scope: {}", proof.semantic_scope);
+        println!("canonical_table_rows: {}", proof.canonical_table_rows.len());
+        println!("claimed_rows: {}", proof.claimed_rows.len());
+        println!("proof_bytes: {}", proof.proof.len());
+
+        Ok(())
+    }
+}
+
+fn prove_stwo_shared_normalization_demo_command(
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output;
+        return Err(VmError::UnsupportedProof(
+            "S-two shared normalization demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    if !stwo_backend_enabled() {
+        return Err(VmError::UnsupportedProof(
+            "S-two shared normalization demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        let proof = prove_phase10_shared_normalization_lookup_envelope(&[(4, 128), (16, 64)])?;
+        save_phase10_shared_normalization_lookup_proof(&proof, output)?;
+
+        println!("proof: {}", output.display());
+        println!("proof_backend: {}", proof.proof_backend);
+        println!("proof_backend_version: {}", proof.proof_backend_version);
+        println!("statement_version: {}", proof.statement_version);
+        println!("semantic_scope: {}", proof.semantic_scope);
+        println!("canonical_table_rows: {}", proof.canonical_table_rows.len());
+        println!("claimed_rows: {}", proof.claimed_rows.len());
+        println!("proof_bytes: {}", proof.proof.len());
+
+        Ok(())
+    }
+}
+
 fn verify_stwo_lookup_demo_command(proof_path: &Path) -> llm_provable_computer::Result<()> {
     #[cfg(not(feature = "stwo-backend"))]
     {
@@ -1183,6 +1300,92 @@ fn verify_stwo_lookup_demo_command(proof_path: &Path) -> llm_provable_computer::
         println!("expected_statement_version: {STWO_LOOKUP_STATEMENT_VERSION_PHASE3}");
         println!("expected_semantic_scope: {STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3}");
         println!("expected_proof_backend_version: {STWO_LOOKUP_PROOF_VERSION_PHASE3}");
+        println!("proof_bytes: {}", proof.proof.len());
+
+        Ok(())
+    }
+}
+
+fn verify_stwo_shared_lookup_demo_command(proof_path: &Path) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = proof_path;
+        return Err(VmError::UnsupportedProof(
+            "S-two shared binary-step lookup demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    if !stwo_backend_enabled() {
+        return Err(VmError::UnsupportedProof(
+            "S-two shared binary-step lookup demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        let proof = load_phase10_shared_binary_step_lookup_proof(proof_path)?;
+        if !verify_phase10_shared_binary_step_lookup_envelope(&proof)? {
+            return Err(VmError::InvalidConfig(format!(
+                "S-two shared binary-step lookup proof verification failed for {}",
+                proof_path.display()
+            )));
+        }
+
+        println!("proof: {}", proof_path.display());
+        println!("verified_stark: true");
+        println!("proof_backend: {}", proof.proof_backend);
+        println!("proof_backend_version: {}", proof.proof_backend_version);
+        println!("statement_version: {}", proof.statement_version);
+        println!("semantic_scope: {}", proof.semantic_scope);
+        println!("canonical_table_rows: {}", proof.canonical_table_rows.len());
+        println!("claimed_rows: {}", proof.claimed_rows.len());
+        println!("proof_bytes: {}", proof.proof.len());
+
+        Ok(())
+    }
+}
+
+fn verify_stwo_shared_normalization_demo_command(
+    proof_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = proof_path;
+        return Err(VmError::UnsupportedProof(
+            "S-two shared normalization demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    if !stwo_backend_enabled() {
+        return Err(VmError::UnsupportedProof(
+            "S-two shared normalization demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        let proof = load_phase10_shared_normalization_lookup_proof(proof_path)?;
+        if !verify_phase10_shared_normalization_lookup_envelope(&proof)? {
+            return Err(VmError::InvalidConfig(format!(
+                "S-two shared normalization proof verification failed for {}",
+                proof_path.display()
+            )));
+        }
+
+        println!("proof: {}", proof_path.display());
+        println!("verified_stark: true");
+        println!("proof_backend: {}", proof.proof_backend);
+        println!("proof_backend_version: {}", proof.proof_backend_version);
+        println!("statement_version: {}", proof.statement_version);
+        println!("semantic_scope: {}", proof.semantic_scope);
+        println!("canonical_table_rows: {}", proof.canonical_table_rows.len());
+        println!("claimed_rows: {}", proof.claimed_rows.len());
         println!("proof_bytes: {}", proof.proof.len());
 
         Ok(())
@@ -2361,6 +2564,10 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-lookup-demo"
                 | "prove-stwo-normalization-demo"
                 | "verify-stwo-normalization-demo"
+                | "prove-stwo-shared-lookup-demo"
+                | "verify-stwo-shared-lookup-demo"
+                | "prove-stwo-shared-normalization-demo"
+                | "verify-stwo-shared-normalization-demo"
                 | "prepare-stwo-recursion-batch"
                 | "research-v2-step"
                 | "research-v2-trace"
