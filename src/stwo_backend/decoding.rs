@@ -6,18 +6,18 @@ use blake2::Blake2bVar;
 use serde::{Deserialize, Serialize};
 
 use crate::assembly::parse_program;
-use crate::config::{Attention2DMode, TransformerVmConfig};
 use crate::compiler::ProgramCompiler;
+use crate::config::{Attention2DMode, TransformerVmConfig};
 use crate::error::{Result, VmError};
 use crate::instruction::Program;
 use crate::proof::{
     production_v1_stark_options, prove_execution_stark_with_backend_and_options,
     verify_execution_stark, StarkProofBackend, VanillaStarkExecutionProof,
 };
+use crate::stwo_backend::STWO_BACKEND_VERSION_PHASE11;
 
 pub const STWO_DECODING_CHAIN_VERSION_PHASE11: &str = "stwo-phase11-decoding-chain-v1";
-pub const STWO_DECODING_CHAIN_SCOPE_PHASE11: &str =
-    "stwo_execution_proof_carrying_decoding_chain";
+pub const STWO_DECODING_CHAIN_SCOPE_PHASE11: &str = "stwo_execution_proof_carrying_decoding_chain";
 pub const STWO_DECODING_STATE_VERSION_PHASE11: &str = "stwo-decoding-state-v1";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
 const DECODING_OUTPUT_RANGE: std::ops::Range<usize> = 10..13;
@@ -153,6 +153,12 @@ pub fn verify_phase11_decoding_chain(manifest: &Phase11DecodingChainManifest) ->
             manifest.proof_backend
         )));
     }
+    if manifest.proof_backend_version != STWO_BACKEND_VERSION_PHASE11 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding proof backend version `{}`",
+            manifest.proof_backend_version
+        )));
+    }
     if manifest.chain_version != STWO_DECODING_CHAIN_VERSION_PHASE11 {
         return Err(VmError::InvalidConfig(format!(
             "unsupported decoding chain version `{}`",
@@ -179,6 +185,11 @@ pub fn verify_phase11_decoding_chain(manifest: &Phase11DecodingChainManifest) ->
     }
 
     for (step_index, step) in manifest.steps.iter().enumerate() {
+        if !matches_decoding_step_v1_family(&step.proof.claim.program) {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step {step_index} is not a decoding_step_v1-family proof"
+            )));
+        }
         if step.proof.proof_backend != StarkProofBackend::Stwo {
             return Err(VmError::InvalidConfig(format!(
                 "decoding step {step_index} proof backend `{}` is not `stwo`",
@@ -197,13 +208,17 @@ pub fn verify_phase11_decoding_chain(manifest: &Phase11DecodingChainManifest) ->
                 step.proof.claim.statement_version, manifest.statement_version
             )));
         }
+        if step.proof.proof_backend_version != STWO_BACKEND_VERSION_PHASE11 {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step {step_index} proof backend version `{}` is not `{}`",
+                step.proof.proof_backend_version, STWO_BACKEND_VERSION_PHASE11
+            )));
+        }
 
         let derived_from =
             derive_phase11_from_program_initial_state(&step.proof.claim.program, step_index)?;
-        let derived_to = derive_phase11_from_final_memory(
-            &step.proof.claim.final_state.memory,
-            step_index + 1,
-        )?;
+        let derived_to =
+            derive_phase11_from_final_memory(&step.proof.claim.final_state.memory, step_index + 1)?;
         if step.from_state != derived_from {
             return Err(VmError::InvalidConfig(format!(
                 "decoding step {step_index} recorded from_state does not match the proof's initial state"
@@ -315,7 +330,13 @@ fn validate_phase11_chain_steps(steps: &[Phase11DecodingStep]) -> Result<()> {
                 index + 1
             )));
         }
-        if step.to_state.position != step.from_state.position + 1 {
+        let expected_next_position = step.from_state.position.checked_add(1).ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "decoding step {index} position {} cannot be incremented",
+                step.from_state.position
+            ))
+        })?;
+        if step.to_state.position != expected_next_position {
             return Err(VmError::InvalidConfig(format!(
                 "decoding step {index} does not increment position: from {} to {}",
                 step.from_state.position, step.to_state.position
@@ -350,15 +371,23 @@ fn commit_slice(values: &[i16]) -> String {
         hasher.update(&value.to_le_bytes());
     }
     let mut out = [0u8; 32];
-    hasher.finalize_variable(&mut out).expect("blake2b finalize");
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
     lower_hex(&out)
 }
 
 fn phase11_demo_initial_memories() -> Vec<Vec<i16>> {
     vec![
-        vec![0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        vec![0, 0, 0, 0, 2, 1, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-        vec![0, 0, 2, 1, 3, 2, 4, 3, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1],
+        vec![
+            0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+        ],
+        vec![
+            0, 0, 0, 0, 2, 1, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+        ],
+        vec![
+            0, 0, 2, 1, 3, 2, 4, 3, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1,
+        ],
     ]
 }
 
@@ -408,7 +437,8 @@ mod tests {
         initial_memory: Vec<i16>,
         final_memory: Vec<i16>,
     ) -> VanillaStarkExecutionProof {
-        let program = decoding_step_v1_program_with_initial_memory(initial_memory).expect("program");
+        let program =
+            decoding_step_v1_program_with_initial_memory(initial_memory).expect("program");
         VanillaStarkExecutionProof {
             proof_backend: StarkProofBackend::Stwo,
             proof_backend_version: "stwo-phase11-decoding-step-v1".to_string(),
@@ -449,12 +479,20 @@ mod tests {
     #[test]
     fn phase11_prepare_decoding_chain_accepts_linked_steps() {
         let step0 = sample_step_proof(
-            vec![0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            vec![0, 0, 0, 0, 2, 1, 2, 1, 1, 1, 1, 4, 1, 16, 64, 1, 1, 4, 128, 0, 1, 1, 1],
+            vec![
+                0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            ],
+            vec![
+                0, 0, 0, 0, 2, 1, 2, 1, 1, 1, 1, 4, 1, 16, 64, 1, 1, 4, 128, 0, 1, 1, 1,
+            ],
         );
         let step1 = sample_step_proof(
-            vec![0, 0, 0, 0, 2, 1, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-            vec![0, 0, 2, 1, 3, 2, 3, 2, 1, 0, 2, 7, 1, 16, 64, 1, 1, 4, 128, 0, 1, 2, 1],
+            vec![
+                0, 0, 0, 0, 2, 1, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+            ],
+            vec![
+                0, 0, 2, 1, 3, 2, 3, 2, 1, 0, 2, 7, 1, 16, 64, 1, 1, 4, 128, 0, 1, 2, 1,
+            ],
         );
         let manifest = phase11_prepare_decoding_chain(&[step0, step1]).expect("manifest");
         assert_eq!(manifest.total_steps, 2);
@@ -471,12 +509,20 @@ mod tests {
     #[test]
     fn phase11_verify_decoding_chain_rejects_broken_kv_link() {
         let step0 = sample_step_proof(
-            vec![0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            vec![0, 0, 0, 0, 2, 1, 2, 1, 1, 1, 1, 4, 1, 16, 64, 1, 1, 4, 128, 0, 1, 1, 1],
+            vec![
+                0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            ],
+            vec![
+                0, 0, 0, 0, 2, 1, 2, 1, 1, 1, 1, 4, 1, 16, 64, 1, 1, 4, 128, 0, 1, 1, 1,
+            ],
         );
         let step1 = sample_step_proof(
-            vec![9, 9, 9, 9, 9, 9, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-            vec![9, 9, 9, 9, 3, 2, 3, 2, 1, 0, 2, 7, 1, 16, 64, 1, 1, 4, 128, 0, 1, 2, 1],
+            vec![
+                9, 9, 9, 9, 9, 9, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+            ],
+            vec![
+                9, 9, 9, 9, 3, 2, 3, 2, 1, 0, 2, 7, 1, 16, 64, 1, 1, 4, 128, 0, 1, 2, 1,
+            ],
         );
         let err = phase11_prepare_decoding_chain(&[step0, step1]).unwrap_err();
         assert!(err.to_string().contains("KV-cache commitment"));
@@ -485,8 +531,12 @@ mod tests {
     #[test]
     fn phase11_round_trips_manifest_json() {
         let step = sample_step_proof(
-            vec![0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            vec![0, 0, 0, 0, 2, 1, 2, 1, 1, 1, 1, 4, 1, 16, 64, 1, 1, 4, 128, 0, 1, 1, 1],
+            vec![
+                0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            ],
+            vec![
+                0, 0, 0, 0, 2, 1, 2, 1, 1, 1, 1, 4, 1, 16, 64, 1, 1, 4, 128, 0, 1, 1, 1,
+            ],
         );
         let manifest = phase11_prepare_decoding_chain(&[step]).expect("manifest");
         let path = std::env::temp_dir().join(format!(
@@ -498,5 +548,72 @@ mod tests {
         verify_phase11_decoding_chain(&loaded).expect("verify");
         assert_eq!(loaded, manifest);
         let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn phase11_verify_decoding_chain_rejects_wrong_backend_version() {
+        let step = sample_step_proof(
+            vec![
+                0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            ],
+            vec![
+                0, 0, 0, 0, 2, 1, 2, 1, 1, 1, 1, 4, 1, 16, 64, 1, 1, 4, 128, 0, 1, 1, 1,
+            ],
+        );
+        let mut manifest = phase11_prepare_decoding_chain(&[step]).expect("manifest");
+        manifest.proof_backend_version = "stwo-phase10-gemma-block-v4".to_string();
+        let err = verify_phase11_decoding_chain(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("unsupported decoding proof backend version"));
+    }
+
+    #[test]
+    fn phase11_verify_decoding_chain_rejects_non_decoding_family_steps() {
+        let step = sample_step_proof(
+            vec![
+                0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            ],
+            vec![
+                0, 0, 0, 0, 2, 1, 2, 1, 1, 1, 1, 4, 1, 16, 64, 1, 1, 4, 128, 0, 1, 1, 1,
+            ],
+        );
+        let mut manifest = phase11_prepare_decoding_chain(&[step]).expect("manifest");
+        manifest.steps[0].proof.claim.program =
+            parse_program(include_str!("../../programs/addition.tvm")).expect("program");
+        let err = verify_phase11_decoding_chain(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("is not a decoding_step_v1-family proof"));
+    }
+
+    #[test]
+    fn phase11_validate_chain_steps_rejects_position_overflow() {
+        let step = Phase11DecodingStep {
+            from_state: Phase11DecodingState {
+                state_version: STWO_DECODING_STATE_VERSION_PHASE11.to_string(),
+                step_index: 0,
+                position: i16::MAX,
+                kv_cache_commitment: "kv".to_string(),
+                output_commitment: "out".to_string(),
+            },
+            to_state: Phase11DecodingState {
+                state_version: STWO_DECODING_STATE_VERSION_PHASE11.to_string(),
+                step_index: 1,
+                position: i16::MAX,
+                kv_cache_commitment: "kv".to_string(),
+                output_commitment: "out2".to_string(),
+            },
+            proof: sample_step_proof(
+                vec![
+                    0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+                ],
+                vec![
+                    0, 0, 0, 0, 2, 1, 2, 1, 1, 1, 1, 4, 1, 16, 64, 1, 1, 4, 128, 0, 1, 1, 1,
+                ],
+            ),
+        };
+        let err = validate_phase11_chain_steps(&[step]).unwrap_err();
+        assert!(err.to_string().contains("cannot be incremented"));
     }
 }

@@ -375,7 +375,9 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
         if program == "programs/gemma_block_v1.tvm" {
             assert!(proof_json.contains("\"normalization_companion\""));
             assert!(proof_json.contains("stwo-normalization-demo-v1"));
-            assert!(proof_json.contains("stwo_gemma_block_v1_execution_plus_normalization_companion"));
+            assert!(
+                proof_json.contains("stwo_gemma_block_v1_execution_plus_normalization_companion")
+            );
         }
         if program == "programs/gemma_block_v2.tvm"
             || program == "programs/gemma_block_v3.tvm"
@@ -392,7 +394,8 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
             let payload: serde_json::Value =
                 serde_json::from_slice(&proof_bytes).expect("payload json");
             assert!(!proof_json.contains("\"stwo_auxiliary\""));
-            if program == "programs/gemma_block_v2.tvm" || program == "programs/gemma_block_v3.tvm" {
+            if program == "programs/gemma_block_v2.tvm" || program == "programs/gemma_block_v3.tvm"
+            {
                 assert_eq!(
                     payload["embedded_normalization"]["statement_version"],
                     "stwo-normalization-demo-v1"
@@ -402,7 +405,10 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
                 } else {
                     "stwo_gemma_block_v2_execution_with_embedded_normalization"
                 };
-                assert_eq!(payload["embedded_normalization"]["semantic_scope"], expected_norm_scope);
+                assert_eq!(
+                    payload["embedded_normalization"]["semantic_scope"],
+                    expected_norm_scope
+                );
             }
             if program == "programs/gemma_block_v3.tvm" {
                 assert_eq!(
@@ -747,6 +753,51 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v4_shared_activation() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_verify_stark_rejects_mismatched_stwo_backend_version_for_program_family() {
+    let proof_path = unique_temp_dir("cli-stwo-gemma-block-v4-proof").with_extension("json");
+    let invalid_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-proof-bad-version").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stark")
+        .arg("programs/gemma_block_v4.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&proof_path).expect("read proof")).expect("json");
+    proof_json["proof_backend_version"] =
+        serde_json::Value::String("stwo-phase11-decoding-step-v1".to_string());
+    std::fs::write(
+        &invalid_path,
+        serde_json::to_vec_pretty(&proof_json).expect("encode bad proof"),
+    )
+    .expect("write bad proof");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stark")
+        .arg(&invalid_path)
+        .arg("--reexecute")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "does not match expected `stwo-phase10-gemma-block-v4`",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(invalid_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_prove_stark_rejects_program_outside_stwo_phase2_subset() {
     let proof_path = unique_temp_dir("cli-stark-proof-stwo-subset").with_extension("json");
 
@@ -994,8 +1045,7 @@ fn cli_can_prove_and_verify_stwo_decoding_demo() {
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_verify_stwo_decoding_demo_rejects_tampered_kv_link() {
-    let proof_path =
-        unique_temp_dir("cli-stwo-decoding-demo-proof-tamper").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-decoding-demo-proof-tamper").with_extension("json");
     let tampered_path =
         unique_temp_dir("cli-stwo-decoding-demo-proof-tampered").with_extension("json");
 
