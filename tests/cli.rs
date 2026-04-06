@@ -396,6 +396,51 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_verify_stark_rejects_tampered_gemma_block_normalization_companion() {
+    let proof_path = unique_temp_dir("cli-stwo-gemma-block-proof").with_extension("json");
+    let invalid_path =
+        unique_temp_dir("cli-stwo-gemma-block-proof-tampered").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stark")
+        .arg("programs/gemma_block_v1.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&proof_path).expect("read proof")).expect("json");
+    proof_json["stwo_auxiliary"]["normalization_companion"]["expected_inv_sqrt_q8"] =
+        serde_json::json!(65);
+    std::fs::write(
+        &invalid_path,
+        serde_json::to_vec_pretty(&proof_json).expect("encode bad proof"),
+    )
+    .expect("write bad proof");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stark")
+        .arg(&invalid_path)
+        .arg("--reexecute")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "gemma_block_v1 normalization companion does not match claimed final state",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(invalid_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_prove_stark_rejects_program_outside_stwo_phase2_subset() {
     let proof_path = unique_temp_dir("cli-stark-proof-stwo-subset").with_extension("json");
 
