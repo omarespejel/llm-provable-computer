@@ -4,16 +4,21 @@
 from __future__ import annotations
 
 import hashlib
+import html
 import json
 import re
 import socket
+import subprocess
+import tempfile
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
+import shutil
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTDIR = ROOT / "docs" / "paper" / "evidence" / "web-2026-04-06"
-OUTDIR.mkdir(parents=True, exist_ok=True)
+RENDERER = ROOT / "scripts" / "paper" / "render_page_with_playwright.mjs"
 
 URLS = [
     ("gemma_3_model_card", "https://ai.google.dev/gemma/docs/core/model_card_3"),
@@ -35,97 +40,161 @@ def slugify(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
 
 
-def fetch(url: str) -> bytes:
+def sha256_hex(payload: bytes) -> str:
+    return hashlib.sha256(payload).hexdigest()
+
+
+def fetch(url: str) -> dict[str, str]:
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme != "https" or not parsed.netloc:
+        raise SystemExit(f"Unsupported URL: {url!r}. Only https:// URLs are allowed.")
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "codex-paper-archiver"})
-        with urllib.request.urlopen(req, timeout=60) as r:
-            return r.read()
-    except (urllib.error.HTTPError, urllib.error.URLError, socket.timeout) as error:
-        raise SystemExit(f"Failed to fetch {url}: {error}") from error
+        result = subprocess.run(
+            ["node", str(RENDERER), url],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+    except (subprocess.TimeoutExpired, OSError, socket.timeout) as error:
+        raise SystemExit(f"Failed to render {url}: {error}") from error
     except Exception as error:  # pragma: no cover - defensive fallback
-        raise SystemExit(f"Unexpected error while fetching {url}: {error}") from error
+        raise SystemExit(f"Unexpected error while rendering {url}: {error}") from error
+
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        raise SystemExit(f"Failed to render {url}: {detail or f'exit code {result.returncode}'}")
+
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        raise SystemExit(f"Failed to decode rendered snapshot for {url}: {error}") from error
+
+    if not isinstance(payload, dict) or "html" not in payload or "text" not in payload:
+        raise SystemExit(f"Rendered snapshot for {url} is missing required fields.")
+    return payload
 
 
-def sanitize_html(payload: bytes) -> bytes:
-    text = payload.decode("utf-8", errors="replace")
-    if not text.lstrip().lower().startswith("<!doctype html>"):
-        text = "<!DOCTYPE html>\n" + text.lstrip()
+def sanitize_visible_text(text: str) -> str:
+    text = text.replace("\r\n", "\n").replace("\r", "\n").strip()
+    return re.sub(r"\n{3,}", "\n\n", text)
 
-    patterns = [
-        (
-            r"<script[^>]*>.*?(?:googletagmanager|gtag\(|dataLayer|GTM-[A-Z0-9]+).*?</script>",
-            "<!-- stripped telemetry script: Google Tag Manager / Analytics -->",
-        ),
-        (
-            r"<script[^>]*src=[\"'][^\"']*googletagmanager[^\"']*[\"'][^>]*></script>",
-            "<!-- stripped telemetry script: Google Tag Manager / Analytics -->",
-        ),
-        (
-            r"<script[^>]*>.*?(?:_hjSettings|hotjar).*?</script>",
-            "<!-- stripped telemetry script: Hotjar -->",
-        ),
-        (
-            r"<script[^>]*>.*?(?:_fs_namespace|fullstory|_fs_script).*?</script>",
-            "<!-- stripped telemetry script: FullStory -->",
-        ),
-        (
-            r"<script[^>]*src=[\"'][^\"']*(?:recaptcha|cloudflareinsights)[^\"']*[\"'][^>]*></script>",
-            "<!-- stripped telemetry script: external analytics -->",
-        ),
-        (
-            r"<script[^>]*>.*?(?:hs-script-loader|hs-scripts\.com|HubSpot).*?</script>",
-            "<!-- stripped telemetry script: HubSpot -->",
-        ),
-        (
-            r"<script[^>]*src=[\"'][^\"']*hs-scripts\.com[^\"']*[\"'][^>]*></script>",
-            "<!-- stripped telemetry script: HubSpot -->",
-        ),
-        (
-            r"<noscript>\s*<iframe[^>]*googletagmanager\.com/ns\.html[^>]*></iframe>\s*</noscript>",
-            "<!-- stripped telemetry noscript iframe: Google Tag Manager -->",
-        ),
-    ]
-    for pattern, replacement in patterns:
-        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE | re.DOTALL)
-    text = re.sub(
-        r"<link[^>]*href=[\"'][^\"']*google-analytics\.com[^\"']*[\"'][^>]*>",
-        "<!-- stripped telemetry preconnect: Google Analytics -->",
-        text,
-        flags=re.IGNORECASE | re.DOTALL,
-    )
-    text = re.sub(
-        r"<devsite-analytics\b[^>]*>.*?</devsite-analytics>",
-        "<!-- stripped telemetry element: devsite-analytics -->",
-        text,
-        flags=re.IGNORECASE | re.DOTALL,
-    )
-    return text.encode("utf-8")
+
+def build_snapshot_html(
+    *,
+    label: str,
+    url: str,
+    title: str,
+    rendered_html: str,
+    visible_text: str,
+    rendered_sha256: str,
+) -> bytes:
+    safe_title = html.escape(title or label)
+    safe_url = html.escape(url)
+    safe_text = html.escape(sanitize_visible_text(visible_text))
+    document = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{safe_title}</title>
+  <style>
+    body {{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin: 2rem; line-height: 1.45; color: #111; }}
+    h1, h2 {{ font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif; }}
+    code {{ background: #f4f4f4; padding: 0.1rem 0.25rem; }}
+    pre {{ white-space: pre-wrap; word-break: break-word; background: #f7f7f7; border: 1px solid #ddd; padding: 1rem; overflow-x: auto; }}
+    .meta {{ margin-bottom: 1.5rem; }}
+    .meta li {{ margin-bottom: 0.35rem; }}
+  </style>
+</head>
+<body>
+  <h1>{safe_title}</h1>
+  <p>This is an inert, repo-local evidence wrapper. It stores browser-rendered visible text and content hashes so the snapshot can be inspected without executing third-party scripts or loading remote assets.</p>
+  <ul class="meta">
+    <li><strong>Label:</strong> <code>{html.escape(label)}</code></li>
+    <li><strong>Source URL:</strong> <code>{safe_url}</code></li>
+    <li><strong>Rendered HTML SHA-256:</strong> <code>{rendered_sha256}</code></li>
+  </ul>
+  <h2>Rendered Visible Text</h2>
+  <pre>{safe_text}</pre>
+</body>
+</html>
+"""
+    return document.encode("utf-8")
 
 
 def main() -> None:
-    manifest = []
+    fetched: list[dict[str, str]] = []
     for label, url in URLS:
-        payload = sanitize_html(fetch(url))
-        sha256 = hashlib.sha256(payload).hexdigest()
+        rendered = fetch(url)
+        rendered_html = rendered["html"]
+        visible_text = rendered["text"]
+        title = rendered.get("title", label)
+        rendered_sha256 = sha256_hex(rendered_html.encode("utf-8"))
+        snapshot_bytes = build_snapshot_html(
+            label=label,
+            url=url,
+            title=title,
+            rendered_html=rendered_html,
+            visible_text=visible_text,
+            rendered_sha256=rendered_sha256,
+        )
         filename = f"{slugify(label)}.html"
-        path = OUTDIR / filename
-        path.write_bytes(payload)
-        manifest.append(
+        fetched.append(
             {
                 "label": label,
                 "url": url,
                 "file": filename,
-                "sha256": sha256,
+                "title": title,
+                "rendered_sha256": rendered_sha256,
+                "snapshot_sha256": sha256_hex(snapshot_bytes),
+                "snapshot_bytes": snapshot_bytes.decode("utf-8"),
             }
         )
 
-    (OUTDIR / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-    with (OUTDIR / "manifest.tsv").open("w", encoding="utf-8") as f:
-        f.write("label\turl\tfile\tsha256\n")
-        for item in manifest:
-            f.write(
-                f"{item['label']}\t{item['url']}\t{item['file']}\t{item['sha256']}\n"
+    with tempfile.TemporaryDirectory(dir=OUTDIR.parent) as temp_root:
+        staging = Path(temp_root) / OUTDIR.name
+        staging.mkdir(parents=True, exist_ok=True)
+        manifest = []
+        for item in fetched:
+            (staging / item["file"]).write_text(item["snapshot_bytes"], encoding="utf-8")
+            manifest.append(
+                {
+                    "label": item["label"],
+                    "url": item["url"],
+                    "title": item["title"],
+                    "file": item["file"],
+                    "rendered_sha256": item["rendered_sha256"],
+                    "snapshot_sha256": item["snapshot_sha256"],
+                }
             )
+
+        (staging / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+        with (staging / "manifest.tsv").open("w", encoding="utf-8") as f:
+            f.write("label\turl\ttitle\tfile\trendered_sha256\tsnapshot_sha256\n")
+            for item in manifest:
+                f.write(
+                    f"{item['label']}\t{item['url']}\t{item['title']}\t{item['file']}\t{item['rendered_sha256']}\t{item['snapshot_sha256']}\n"
+                )
+
+        backup = OUTDIR.parent / f"{OUTDIR.name}.bak"
+        if backup.exists():
+            shutil.rmtree(backup)
+        if OUTDIR.exists():
+            OUTDIR.rename(backup)
+        try:
+            staging.rename(OUTDIR)
+        except Exception:
+            if OUTDIR.exists():
+                shutil.rmtree(OUTDIR)
+            if backup.exists():
+                backup.rename(OUTDIR)
+            raise
+        else:
+            if backup.exists():
+                shutil.rmtree(backup)
+
     print(f"wrote {OUTDIR / 'manifest.json'}")
     print(f"wrote {OUTDIR / 'manifest.tsv'}")
 
