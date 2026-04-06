@@ -989,7 +989,7 @@ fn validate_phase5_proven_fixture(program: &Program) -> Result<()> {
     }
 
     Err(VmError::UnsupportedProof(
-        "S-two Phase 8 currently proves only the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`, `programs/dot_product.tvm`, `programs/fibonacci.tvm`, `programs/matmul_2x2.tvm`, `programs/single_neuron.tvm`, `programs/gemma_block_v1.tvm`, and `programs/gemma_block_v2.tvm`; broader arithmetic-subset AIR coverage remains internal"
+        "S-two Phase 5 currently proves only the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`, `programs/dot_product.tvm`, `programs/fibonacci.tvm`, `programs/matmul_2x2.tvm`, `programs/single_neuron.tvm`, `programs/gemma_block_v1.tvm`, and `programs/gemma_block_v2.tvm`; broader arithmetic-subset AIR coverage remains internal"
             .to_string(),
     ))
 }
