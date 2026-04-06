@@ -45,8 +45,11 @@ pub use normalization_component::{
 };
 #[cfg(feature = "stwo-backend")]
 pub use normalization_prover::{
-    prove_phase5_normalization_lookup_demo, verify_phase5_normalization_lookup_demo,
-    STWO_NORMALIZATION_PROOF_VERSION_PHASE5,
+    load_phase5_normalization_lookup_proof, prove_phase5_normalization_lookup_demo,
+    prove_phase5_normalization_lookup_demo_envelope, save_phase5_normalization_lookup_proof,
+    verify_phase5_normalization_lookup_demo, verify_phase5_normalization_lookup_demo_envelope,
+    Phase5NormalizationLookupProofEnvelope, STWO_NORMALIZATION_PROOF_VERSION_PHASE5,
+    STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5, STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
 };
 
 /// Backend version label used by the experimental Phase 2 S-two seam.

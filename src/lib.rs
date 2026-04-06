@@ -71,13 +71,16 @@ pub use stwo_backend::{
 };
 #[cfg(feature = "stwo-backend")]
 pub use stwo_backend::{
-    phase3_arithmetic_component_metadata, phase3_arithmetic_preprocessed_columns,
-    phase3_binary_step_lookup_component_metadata, phase3_lookup_preprocessed_columns,
-    phase3_lookup_table_rows, phase5_normalization_lookup_component_metadata,
-    prove_phase5_normalization_lookup_demo, verify_phase5_normalization_lookup_demo,
+    load_phase5_normalization_lookup_proof, phase3_arithmetic_component_metadata,
+    phase3_arithmetic_preprocessed_columns, phase3_binary_step_lookup_component_metadata,
+    phase3_lookup_preprocessed_columns, phase3_lookup_table_rows,
+    phase5_normalization_lookup_component_metadata, prove_phase5_normalization_lookup_demo,
+    prove_phase5_normalization_lookup_demo_envelope, save_phase5_normalization_lookup_proof,
+    verify_phase5_normalization_lookup_demo, verify_phase5_normalization_lookup_demo_envelope,
     Phase3ArithmeticComponentMetadata, Phase3LookupComponentMetadata, Phase3LookupTableRow,
     Phase3TreeSubspan, Phase5NormalizationComponentMetadata,
-    STWO_NORMALIZATION_PROOF_VERSION_PHASE5,
+    Phase5NormalizationLookupProofEnvelope, STWO_NORMALIZATION_PROOF_VERSION_PHASE5,
+    STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5, STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
 };
 pub use tui::run_execution_tui;
 pub use verification::{verify_engines, verify_model_against_native, ExecutionComparison};
