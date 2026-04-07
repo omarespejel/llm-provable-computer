@@ -190,7 +190,9 @@ Delivered:
   sealed history chunks from the open chunk to make later accumulation boundaries explicit,
 - a segment-bundle layer over those Phase 14 chunked-history chains, carrying explicit global
   boundary states so later accumulation work can consume mergeable decoding segments without
-  pretending recursion already exists.
+  pretending recursion already exists,
+- a Phase 16 rollup layer over Phase 15 segment bundles, carrying larger global boundary units so
+  later accumulation work can consume mergeable groups of segments instead of one flat bundle.
 
 Current limitation:
 
@@ -208,10 +210,10 @@ Targets:
 - move one transformer-relevant non-arithmetic path deeper into the main proved relation,
 - keep the same `statement-v1` claim boundary until a real semantic change forces `statement-v2`.
 
-The new Phase 13 layout-matrix demo, Phase 14 chunked-history chain, and Phase 15 segmented-history
-bundle are the first steps on that path: they prove that the parameterized relation survives
-multiple public layouts and a more segmented carried-state discipline without changing the
-semantic contract.
+The new Phase 13 layout-matrix demo, Phase 14 chunked-history chain, Phase 15 segmented-history
+bundle, and Phase 16 rollup layer are the first steps on that path: they prove that the
+parameterized relation survives multiple public layouts and progressively more mergeable
+carried-state boundaries without changing the semantic contract.
 
 ### Phase 6: Recursive compression and aggregation `[later]`
 
