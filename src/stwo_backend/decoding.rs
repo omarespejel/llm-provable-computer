@@ -3104,6 +3104,10 @@ fn commit_phase12_persistent_state(
     lower_hex(&out)
 }
 
+fn decoding_program_step_limit(program: &Program) -> usize {
+    program.instructions().len().saturating_add(1)
+}
+
 fn commit_phase12_history_seed(
     layout_commitment: &str,
     kv_cache_values: &[i16],
@@ -3540,8 +3544,15 @@ pub(crate) fn phase12_demo_initial_memories(
         memory[position_index] = position as i16;
         memory[position_increment_index] = 1;
         let program = decoding_step_v2_program_with_initial_memory(layout, memory.clone())?;
-        let mut runtime = NativeInterpreter::new(program, Attention2DMode::AverageHard, 256);
+        let step_limit = decoding_program_step_limit(&program);
+        let mut runtime = NativeInterpreter::new(program, Attention2DMode::AverageHard, step_limit);
         let result = runtime.run()?;
+        if !result.halted {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 12 demo seed generation did not halt within {} steps",
+                step_limit
+            )));
+        }
         kv_cache.copy_from_slice(&result.final_state.memory[kv_cache_range.clone()]);
         memories.push(memory);
     }
@@ -4036,8 +4047,12 @@ mod tests {
                     expected_raw_dot + memory[incoming.clone()].iter().copied().sum::<i16>();
                 let program =
                     decoding_step_v2_program_with_initial_memory(&layout, memory).expect("program");
-                let mut runtime =
-                    NativeInterpreter::new(program, Attention2DMode::AverageHard, 256);
+                let step_limit = decoding_program_step_limit(&program);
+                let mut runtime = NativeInterpreter::new(
+                    program,
+                    Attention2DMode::AverageHard,
+                    step_limit,
+                );
                 let result = runtime.run().expect("run program");
                 assert!(result.halted);
                 let final_memory = result.final_state.memory;
@@ -4314,9 +4329,14 @@ mod tests {
                 let next = &pair[1];
                 let program =
                     decoding_step_v2_program_with_initial_memory(&layout, current).expect("program");
-                let mut runtime =
-                    NativeInterpreter::new(program, Attention2DMode::AverageHard, 256);
+                let step_limit = decoding_program_step_limit(&program);
+                let mut runtime = NativeInterpreter::new(
+                    program,
+                    Attention2DMode::AverageHard,
+                    step_limit,
+                );
                 let result = runtime.run().expect("run program");
+                assert!(result.halted);
                 assert_eq!(
                     &result.final_state.memory[kv_cache_range.clone()],
                     &next[kv_cache_range.clone()]
