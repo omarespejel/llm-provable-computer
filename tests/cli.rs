@@ -10,6 +10,13 @@ use blake2::Blake2bVar;
 use jsonschema::{Draft, JSONSchema};
 use predicates::prelude::*;
 
+#[cfg(feature = "stwo-backend")]
+use llm_provable_computer::stwo_backend::{
+    STWO_BACKEND_VERSION_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE12,
+    STWO_DECODING_CHAIN_VERSION_PHASE14,
+    STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13,
+};
+
 fn unique_temp_dir(name: &str) -> PathBuf {
     let suffix = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -1095,9 +1102,9 @@ fn cli_can_prove_and_verify_stwo_decoding_family_demo() {
         .assert()
         .success()
         .stdout(predicate::str::contains("proof_backend: stwo"))
-        .stdout(predicate::str::contains(
-            "chain_version: stwo-phase12-decoding-chain-v1",
-        ))
+        .stdout(predicate::str::contains(format!(
+            "chain_version: {STWO_DECODING_CHAIN_VERSION_PHASE12}",
+        )))
         .stdout(predicate::str::contains(
             "semantic_scope: stwo_execution_parameterized_proof_carrying_decoding_chain",
         ))
@@ -1119,13 +1126,13 @@ fn cli_can_prove_and_verify_stwo_decoding_family_demo() {
         proof_json
             .get("chain_version")
             .and_then(serde_json::Value::as_str),
-        Some("stwo-phase12-decoding-chain-v1")
+        Some(STWO_DECODING_CHAIN_VERSION_PHASE12)
     );
     assert_eq!(
         proof_json
             .get("proof_backend_version")
             .and_then(serde_json::Value::as_str),
-        Some("stwo-phase12-decoding-family-v1")
+        Some(STWO_BACKEND_VERSION_PHASE12)
     );
 
     let mut verify = Command::cargo_bin("tvm").expect("binary");
@@ -1135,12 +1142,12 @@ fn cli_can_prove_and_verify_stwo_decoding_family_demo() {
         .assert()
         .success()
         .stdout(predicate::str::contains("verified_stark: true"))
-        .stdout(predicate::str::contains(
-            "expected_chain_version: stwo-phase12-decoding-chain-v1",
-        ))
-        .stdout(predicate::str::contains(
-            "expected_proof_backend_version: stwo-phase12-decoding-family-v1",
-        ))
+        .stdout(predicate::str::contains(format!(
+            "expected_chain_version: {STWO_DECODING_CHAIN_VERSION_PHASE12}",
+        )))
+        .stdout(predicate::str::contains(format!(
+            "expected_proof_backend_version: {STWO_BACKEND_VERSION_PHASE12}",
+        )))
         .stdout(predicate::str::contains("rolling_kv_pairs: 4"))
         .stdout(predicate::str::contains("pair_width: 4"))
         .stdout(predicate::str::contains("start_history_length: 4"))
@@ -1285,9 +1292,9 @@ fn cli_can_prove_and_verify_stwo_decoding_layout_matrix_demo() {
         .assert()
         .success()
         .stdout(predicate::str::contains("proof_backend: stwo"))
-        .stdout(predicate::str::contains(
-            "matrix_version: stwo-phase13-decoding-layout-matrix-v1",
-        ))
+        .stdout(predicate::str::contains(format!(
+            "matrix_version: {STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13}",
+        )))
         .stdout(predicate::str::contains("total_layouts: 3"))
         .stdout(predicate::str::contains("total_steps: 9"));
 
@@ -1298,7 +1305,7 @@ fn cli_can_prove_and_verify_stwo_decoding_layout_matrix_demo() {
         proof_json
             .get("matrix_version")
             .and_then(serde_json::Value::as_str),
-        Some("stwo-phase13-decoding-layout-matrix-v1")
+        Some(STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13)
     );
     assert_eq!(
         proof_json
@@ -1314,12 +1321,12 @@ fn cli_can_prove_and_verify_stwo_decoding_layout_matrix_demo() {
         .assert()
         .success()
         .stdout(predicate::str::contains("verified_stark: true"))
-        .stdout(predicate::str::contains(
-            "expected_matrix_version: stwo-phase13-decoding-layout-matrix-v1",
-        ))
-        .stdout(predicate::str::contains(
-            "expected_proof_backend_version: stwo-phase12-decoding-family-v1",
-        ));
+        .stdout(predicate::str::contains(format!(
+            "expected_matrix_version: {STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13}",
+        )))
+        .stdout(predicate::str::contains(format!(
+            "expected_proof_backend_version: {STWO_BACKEND_VERSION_PHASE12}",
+        )));
 
     let _ = std::fs::remove_file(proof_path);
 }
@@ -1378,9 +1385,9 @@ fn cli_can_prove_and_verify_stwo_decoding_chunked_history_demo() {
         .assert()
         .success()
         .stdout(predicate::str::contains("proof_backend: stwo"))
-        .stdout(predicate::str::contains(
-            "chain_version: stwo-phase14-decoding-chunked-history-chain-v1",
-        ))
+        .stdout(predicate::str::contains(format!(
+            "chain_version: {STWO_DECODING_CHAIN_VERSION_PHASE14}",
+        )))
         .stdout(predicate::str::contains("history_chunk_pairs: 2"))
         .stdout(predicate::str::contains("start_sealed_chunks: 2"))
         .stdout(predicate::str::contains("final_history_length: 7"))
@@ -1393,7 +1400,7 @@ fn cli_can_prove_and_verify_stwo_decoding_chunked_history_demo() {
         proof_json
             .get("chain_version")
             .and_then(serde_json::Value::as_str),
-        Some("stwo-phase14-decoding-chunked-history-chain-v1")
+        Some(STWO_DECODING_CHAIN_VERSION_PHASE14)
     );
     assert_eq!(
         proof_json
@@ -1409,12 +1416,12 @@ fn cli_can_prove_and_verify_stwo_decoding_chunked_history_demo() {
         .assert()
         .success()
         .stdout(predicate::str::contains("verified_stark: true"))
-        .stdout(predicate::str::contains(
-            "expected_chain_version: stwo-phase14-decoding-chunked-history-chain-v1",
-        ))
-        .stdout(predicate::str::contains(
-            "expected_proof_backend_version: stwo-phase12-decoding-family-v1",
-        ))
+        .stdout(predicate::str::contains(format!(
+            "expected_chain_version: {STWO_DECODING_CHAIN_VERSION_PHASE14}",
+        )))
+        .stdout(predicate::str::contains(format!(
+            "expected_proof_backend_version: {STWO_BACKEND_VERSION_PHASE12}",
+        )))
         .stdout(predicate::str::contains("history_chunk_pairs: 2"))
         .stdout(predicate::str::contains("final_sealed_chunks: 3"));
 
@@ -1509,9 +1516,9 @@ fn cli_can_prove_and_verify_stwo_decoding_history_segments_demo() {
         .stdout(predicate::str::contains(
             "expected_bundle_version: stwo-phase15-decoding-history-segment-bundle-v4",
         ))
-        .stdout(predicate::str::contains(
-            "expected_proof_backend_version: stwo-phase12-decoding-family-v1",
-        ))
+        .stdout(predicate::str::contains(format!(
+            "expected_proof_backend_version: {STWO_BACKEND_VERSION_PHASE12}",
+        )))
         .stdout(predicate::str::contains("last_segment_start_step: 2"));
 
     let _ = std::fs::remove_file(proof_path);
@@ -1604,9 +1611,9 @@ fn cli_can_prove_and_verify_stwo_decoding_history_rollup_demo() {
         .stdout(predicate::str::contains(
             "expected_rollup_version: stwo-phase16-decoding-history-segment-rollup-v4",
         ))
-        .stdout(predicate::str::contains(
-            "expected_proof_backend_version: stwo-phase12-decoding-family-v1",
-        ))
+        .stdout(predicate::str::contains(format!(
+            "expected_proof_backend_version: {STWO_BACKEND_VERSION_PHASE12}",
+        )))
         .stdout(predicate::str::contains("last_rollup_start_step: 2"));
 
     let _ = std::fs::remove_file(proof_path);
@@ -1701,9 +1708,9 @@ fn cli_can_prove_and_verify_stwo_decoding_history_rollup_matrix_demo() {
         .stdout(predicate::str::contains(
             "expected_matrix_version: stwo-phase17-decoding-history-rollup-matrix-v4",
         ))
-        .stdout(predicate::str::contains(
-            "expected_proof_backend_version: stwo-phase12-decoding-family-v1",
-        ));
+        .stdout(predicate::str::contains(format!(
+            "expected_proof_backend_version: {STWO_BACKEND_VERSION_PHASE12}",
+        )));
 
     let _ = std::fs::remove_file(proof_path);
 }
