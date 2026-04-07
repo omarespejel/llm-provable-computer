@@ -40,7 +40,9 @@ Today the repository has the following `stwo` properties:
   forms,
 - proof-carrying decoding now includes both a fixed-shape `decoding_step_v1` chain and a
   parameterized `decoding_step_v2` chain with layout-bound carried-state commitments, cumulative
-  KV-history commitments, rolling KV-cache windows, and explicit position metadata, and
+  KV-history commitments, rolling KV-cache windows, and explicit position metadata,
+- a Phase 13 layout-matrix demo now proves and verifies several `decoding_step_v2` layouts under
+  one matrix manifest, and
 - recursion work currently stops at canonical batch manifests and compatibility checks rather than
   recursive proving.
 
@@ -200,6 +202,9 @@ Targets:
 - carry richer KV-cache commitments than the current cumulative-history plus bounded rolling-window model,
 - move one transformer-relevant non-arithmetic path deeper into the main proved relation,
 - keep the same `statement-v1` claim boundary until a real semantic change forces `statement-v2`.
+
+The new Phase 13 layout-matrix demo is the first step on that path: it proves that the
+parameterized relation survives multiple public layouts without changing the semantic contract.
 
 ### Phase 6: Recursive compression and aggregation `[later]`
 

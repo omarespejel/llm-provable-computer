@@ -24,6 +24,10 @@ pub const STWO_DECODING_CHAIN_SCOPE_PHASE12: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_chain";
 pub const STWO_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v2";
 pub const STWO_DECODING_LAYOUT_VERSION_PHASE12: &str = "stwo-decoding-layout-v1";
+pub const STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13: &str =
+    "stwo-phase13-decoding-layout-matrix-v1";
+pub const STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13: &str =
+    "stwo_execution_parameterized_proof_carrying_decoding_layout_matrix";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
 const DECODING_OUTPUT_RANGE: std::ops::Range<usize> = 10..13;
 const DECODING_POSITION_INDEX: usize = 21;
@@ -216,6 +220,18 @@ pub struct Phase12DecodingChainManifest {
     pub layout: Phase12DecodingLayout,
     pub total_steps: usize,
     pub steps: Vec<Phase12DecodingStep>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Phase13DecodingLayoutMatrixManifest {
+    pub proof_backend: StarkProofBackend,
+    pub matrix_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub total_layouts: usize,
+    pub total_steps: usize,
+    pub chains: Vec<Phase12DecodingChainManifest>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -836,6 +852,91 @@ pub fn verify_phase12_decoding_chain_with_proof_checks(
     Ok(())
 }
 
+pub fn verify_phase13_decoding_layout_matrix(
+    manifest: &Phase13DecodingLayoutMatrixManifest,
+) -> Result<()> {
+    if manifest.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding layout matrix backend `{}` is not `stwo`",
+            manifest.proof_backend
+        )));
+    }
+    if manifest.matrix_version != STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding layout matrix version `{}`",
+            manifest.matrix_version
+        )));
+    }
+    if manifest.semantic_scope != STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding layout matrix semantic scope `{}`",
+            manifest.semantic_scope
+        )));
+    }
+    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding layout matrix proof backend version `{}` (expected `{}`)",
+            manifest.proof_backend_version,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+        )));
+    }
+    if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding layout matrix statement version `{}`",
+            manifest.statement_version
+        )));
+    }
+    if manifest.chains.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding layout matrix must contain at least one chain".to_string(),
+        ));
+    }
+    if manifest.total_layouts != manifest.chains.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding layout matrix total_layouts={} does not match chains.len()={}",
+            manifest.total_layouts,
+            manifest.chains.len()
+        )));
+    }
+    let derived_total_steps: usize = manifest.chains.iter().map(|chain| chain.total_steps).sum();
+    if manifest.total_steps != derived_total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding layout matrix total_steps={} does not match derived total_steps={}",
+            manifest.total_steps, derived_total_steps
+        )));
+    }
+    for (layout_index, chain) in manifest.chains.iter().enumerate() {
+        if chain.proof_backend_version != manifest.proof_backend_version {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding layout matrix chain {layout_index} proof backend version `{}` does not match matrix `{}`",
+                chain.proof_backend_version, manifest.proof_backend_version
+            )));
+        }
+        if chain.statement_version != manifest.statement_version {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding layout matrix chain {layout_index} statement version `{}` does not match matrix `{}`",
+                chain.statement_version, manifest.statement_version
+            )));
+        }
+        verify_phase12_decoding_chain(chain)?;
+    }
+    Ok(())
+}
+
+pub fn verify_phase13_decoding_layout_matrix_with_proof_checks(
+    manifest: &Phase13DecodingLayoutMatrixManifest,
+) -> Result<()> {
+    verify_phase13_decoding_layout_matrix(manifest)?;
+    for (layout_index, chain) in manifest.chains.iter().enumerate() {
+        verify_phase12_decoding_chain_with_proof_checks(chain).map_err(|error| {
+            VmError::UnsupportedProof(format!(
+                "decoding layout matrix chain {layout_index} failed verification: {error}"
+            ))
+        })?;
+    }
+    Ok(())
+}
+
 pub fn save_phase11_decoding_chain(
     manifest: &Phase11DecodingChainManifest,
     path: &Path,
@@ -866,6 +967,23 @@ pub fn load_phase12_decoding_chain(path: &Path) -> Result<Phase12DecodingChainMa
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
+pub fn save_phase13_decoding_layout_matrix(
+    manifest: &Phase13DecodingLayoutMatrixManifest,
+    path: &Path,
+) -> Result<()> {
+    let bytes = serde_json::to_vec_pretty(manifest)
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    fs::write(path, bytes)?;
+    Ok(())
+}
+
+pub fn load_phase13_decoding_layout_matrix(
+    path: &Path,
+) -> Result<Phase13DecodingLayoutMatrixManifest> {
+    let bytes = fs::read(path)?;
+    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+}
+
 pub fn prove_phase11_decoding_demo() -> Result<Phase11DecodingChainManifest> {
     let config = TransformerVmConfig {
         num_layers: 1,
@@ -889,16 +1007,25 @@ pub fn prove_phase11_decoding_demo() -> Result<Phase11DecodingChainManifest> {
     Ok(manifest)
 }
 
-pub fn prove_phase12_decoding_demo() -> Result<Phase12DecodingChainManifest> {
+pub fn phase13_default_decoding_layout_matrix() -> Result<Vec<Phase12DecodingLayout>> {
+    Ok(vec![
+        Phase12DecodingLayout::new(2, 2)?,
+        Phase12DecodingLayout::new(3, 3)?,
+        phase12_default_decoding_layout(),
+    ])
+}
+
+pub fn prove_phase12_decoding_demo_for_layout(
+    layout: &Phase12DecodingLayout,
+) -> Result<Phase12DecodingChainManifest> {
     let config = TransformerVmConfig {
         num_layers: 1,
         attention_mode: Attention2DMode::AverageHard,
         ..TransformerVmConfig::default()
     };
-    let layout = phase12_default_decoding_layout();
     let mut proofs = Vec::new();
-    for initial_memory in phase12_demo_initial_memories(&layout)? {
-        let program = decoding_step_v2_program_with_initial_memory(&layout, initial_memory)?;
+    for initial_memory in phase12_demo_initial_memories(layout)? {
+        let program = decoding_step_v2_program_with_initial_memory(layout, initial_memory)?;
         let model = ProgramCompiler.compile_program(program, config.clone())?;
         let proof = prove_execution_stark_with_backend_and_options(
             &model,
@@ -908,8 +1035,33 @@ pub fn prove_phase12_decoding_demo() -> Result<Phase12DecodingChainManifest> {
         )?;
         proofs.push(proof);
     }
-    let manifest = phase12_prepare_decoding_chain(&layout, &proofs)?;
+    let manifest = phase12_prepare_decoding_chain(layout, &proofs)?;
     verify_phase12_decoding_chain_with_proof_checks(&manifest)?;
+    Ok(manifest)
+}
+
+pub fn prove_phase12_decoding_demo() -> Result<Phase12DecodingChainManifest> {
+    let layout = phase12_default_decoding_layout();
+    prove_phase12_decoding_demo_for_layout(&layout)
+}
+
+pub fn prove_phase13_decoding_layout_matrix_demo() -> Result<Phase13DecodingLayoutMatrixManifest> {
+    let layouts = phase13_default_decoding_layout_matrix()?;
+    let mut chains = Vec::with_capacity(layouts.len());
+    for layout in &layouts {
+        chains.push(prove_phase12_decoding_demo_for_layout(layout)?);
+    }
+    let manifest = Phase13DecodingLayoutMatrixManifest {
+        proof_backend: StarkProofBackend::Stwo,
+        matrix_version: STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13.to_string(),
+        semantic_scope: STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13.to_string(),
+        proof_backend_version: crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12.to_string(),
+        statement_version: crate::proof::CLAIM_STATEMENT_VERSION_V1.to_string(),
+        total_layouts: chains.len(),
+        total_steps: chains.iter().map(|chain| chain.total_steps).sum(),
+        chains,
+    };
+    verify_phase13_decoding_layout_matrix_with_proof_checks(&manifest)?;
     Ok(manifest)
 }
 
@@ -1295,30 +1447,15 @@ pub(crate) fn phase12_demo_initial_memories(
     let position_index = layout.position_index()?;
     let position_increment_index = layout.position_increment_index()?;
     let mut kv_cache = vec![0; kv_cache_range.len()];
-    let step_inputs: [&[i16]; 3] = [&[1, 2, 3, 4], &[2, 3, 4, 5], &[3, 5, 7, 9]];
-    let query_inputs: [&[i16]; 3] = [&[1, 0, 1, 0], &[0, 1, 0, 1], &[1, 1, 0, 0]];
 
-    if step_inputs.iter().any(|row| row.len() != layout.pair_width)
-        || query_inputs
-            .iter()
-            .any(|row| row.len() != layout.pair_width)
-    {
-        return Err(VmError::InvalidConfig(format!(
-            "Phase 12 demo expects pair_width={}, but embedded demo rows have a different width",
-            layout.pair_width
-        )));
-    }
-
-    let mut memories = Vec::with_capacity(step_inputs.len());
-    for (position, (incoming_values, query_values)) in step_inputs
-        .into_iter()
-        .zip(query_inputs.into_iter())
-        .enumerate()
-    {
+    let mut memories = Vec::with_capacity(3);
+    for position in 0..3 {
+        let incoming_values = phase12_demo_incoming_values(layout.pair_width, position);
+        let query_values = phase12_demo_query_values(layout.pair_width, position);
         let mut memory = vec![0; layout.memory_size()?];
         memory[kv_cache_range.clone()].copy_from_slice(&kv_cache);
-        memory[incoming_token_range.clone()].copy_from_slice(incoming_values);
-        memory[query_range.clone()].copy_from_slice(query_values);
+        memory[incoming_token_range.clone()].copy_from_slice(&incoming_values);
+        memory[query_range.clone()].copy_from_slice(&query_values);
         memory[lookup_range.clone()].copy_from_slice(&PHASE12_LOOKUP_ROW_VALUES);
         memory[position_index] = position as i16;
         memory[position_increment_index] = 1;
@@ -1326,9 +1463,21 @@ pub(crate) fn phase12_demo_initial_memories(
 
         kv_cache.rotate_left(layout.pair_width);
         let tail_start = kv_cache.len() - layout.pair_width;
-        kv_cache[tail_start..].copy_from_slice(incoming_values);
+        kv_cache[tail_start..].copy_from_slice(&incoming_values);
     }
     Ok(memories)
+}
+
+fn phase12_demo_incoming_values(pair_width: usize, step_index: usize) -> Vec<i16> {
+    (0..pair_width)
+        .map(|offset| ((step_index + 1) as i16) * (offset as i16 + 1))
+        .collect()
+}
+
+fn phase12_demo_query_values(pair_width: usize, step_index: usize) -> Vec<i16> {
+    (0..pair_width)
+        .map(|offset| ((step_index + offset + 1) % 3) as i16)
+        .collect()
 }
 
 fn lower_hex(bytes: &[u8]) -> String {
@@ -1768,5 +1917,68 @@ mod tests {
         assert!(err
             .to_string()
             .contains("only supports the seed step"));
+    }
+
+    #[test]
+    fn phase12_demo_initial_memories_support_multiple_layouts() {
+        for layout in phase13_default_decoding_layout_matrix().expect("layout matrix") {
+            let memories = phase12_demo_initial_memories(&layout).expect("memories");
+            assert_eq!(memories.len(), 3);
+            for memory in memories {
+                assert_eq!(memory.len(), layout.memory_size().expect("memory size"));
+            }
+        }
+    }
+
+    #[test]
+    fn phase13_verify_decoding_layout_matrix_accepts_linked_chains() {
+        let layouts = phase13_default_decoding_layout_matrix().expect("layouts");
+        let chains = layouts
+            .iter()
+            .map(|layout| {
+                let proofs = phase12_demo_initial_memories(layout)
+                    .expect("memories")
+                    .into_iter()
+                    .map(|memory| sample_phase12_step_proof(layout, memory))
+                    .collect::<Vec<_>>();
+                phase12_prepare_decoding_chain(layout, &proofs).expect("chain")
+            })
+            .collect::<Vec<_>>();
+        let manifest = Phase13DecodingLayoutMatrixManifest {
+            proof_backend: StarkProofBackend::Stwo,
+            matrix_version: STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13.to_string(),
+            semantic_scope: STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13.to_string(),
+            proof_backend_version: crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12.to_string(),
+            statement_version: crate::proof::CLAIM_STATEMENT_VERSION_V1.to_string(),
+            total_layouts: chains.len(),
+            total_steps: chains.iter().map(|chain| chain.total_steps).sum(),
+            chains,
+        };
+        verify_phase13_decoding_layout_matrix(&manifest).expect("matrix verification");
+    }
+
+    #[test]
+    fn phase13_verify_decoding_layout_matrix_rejects_mismatched_totals() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let manifest = Phase13DecodingLayoutMatrixManifest {
+            proof_backend: StarkProofBackend::Stwo,
+            matrix_version: STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13.to_string(),
+            semantic_scope: STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13.to_string(),
+            proof_backend_version: crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12.to_string(),
+            statement_version: crate::proof::CLAIM_STATEMENT_VERSION_V1.to_string(),
+            total_layouts: 2,
+            total_steps: chain.total_steps,
+            chains: vec![chain],
+        };
+        let err = verify_phase13_decoding_layout_matrix(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("total_layouts=2 does not match chains.len()=1"));
     }
 }
