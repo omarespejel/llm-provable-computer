@@ -52,7 +52,6 @@ use crate::state::MachineState;
 
 pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase10-gemma-block-v4";
 pub const STWO_BACKEND_VERSION_PHASE11: &str = "stwo-phase11-decoding-step-v1";
-pub const STWO_BACKEND_VERSION_PHASE12: &str = "stwo-phase12-decoding-family-v1";
 const M31_MODULUS: u32 = (1u32 << 31) - 1;
 const GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX: usize = 13;
 const GEMMA_BLOCK_INV_SQRT_MEMORY_INDEX: usize = 14;
@@ -1992,7 +1991,7 @@ fn matches_gemma_block_v3(program: &Program) -> bool {
 
 fn stwo_backend_version_for_program(program: &Program) -> &str {
     if matches_decoding_step_v2(program) {
-        STWO_BACKEND_VERSION_PHASE12
+        super::STWO_BACKEND_VERSION_PHASE12
     } else if matches_decoding_step_v1(program) {
         STWO_BACKEND_VERSION_PHASE11
     } else {
