@@ -1,0 +1,35 @@
+[github_app]
+pr_commands = ["/agentic_describe", "/agentic_review"]
+handle_push_trigger = true
+push_commands = ["/agentic_review"]
+
+[config]
+publish_output = true
+publish_output_progress = true
+verbosity_level = 2
+use_repo_settings_file = true
+ignore_pr_labels = ["skip-review", "artifact-only"]
+
+[review]
+require_score_review = false
+final_update_message = true
+persistent_comment = true
+comment_severity_threshold = 0
+wikipedia_reference = false
+
+[review_agent]
+comments_location_policy = "both"
+inline_comments_severity_threshold = 1
+enable_help_text = true
+num_code_suggestions = 6
+extra_instructions = "Review aggressively for proof soundness, AIR and trace consistency, statement/backend version drift, overflow and index arithmetic, missing negative tests, CI coverage loss, and documentation claim drift. Ignore vendored or generated artifacts unless they create a reproducibility or integrity risk."
+
+[ignore]
+glob = [
+  "scripts/node_modules/**",
+  "docs/artifacts/**",
+  "docs/paper/artifacts/**",
+  "docs/paper/evidence/**",
+  "docs/paper/figures/**",
+  "compiled/**"
+]
