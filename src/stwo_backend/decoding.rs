@@ -23,13 +23,13 @@ use crate::stwo_backend::{
 pub const STWO_DECODING_CHAIN_VERSION_PHASE11: &str = "stwo-phase11-decoding-chain-v1";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE11: &str = "stwo_execution_proof_carrying_decoding_chain";
 pub const STWO_DECODING_STATE_VERSION_PHASE11: &str = "stwo-decoding-state-v1";
-pub const STWO_DECODING_CHAIN_VERSION_PHASE12: &str = "stwo-phase12-decoding-chain-v3";
+pub const STWO_DECODING_CHAIN_VERSION_PHASE12: &str = "stwo-phase12-decoding-chain-v4";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE12: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_chain";
-pub const STWO_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v4";
+pub const STWO_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v5";
 pub const STWO_DECODING_LAYOUT_VERSION_PHASE12: &str = "stwo-decoding-layout-v1";
 pub const STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13: &str =
-    "stwo-phase13-decoding-layout-matrix-v3";
+    "stwo-phase13-decoding-layout-matrix-v4";
 pub const STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_layout_matrix";
 pub const STWO_DECODING_CHAIN_VERSION_PHASE14: &str =
@@ -479,7 +479,7 @@ pub fn decoding_step_v2_template_program(layout: &Phase12DecodingLayout) -> Resu
     for offset in 0..layout.pair_width {
         match offset {
             0 => {
-                instructions.push(Instruction::Load((lookup.start + 3) as u8));
+                instructions.push(Instruction::Load((output.start + 2) as u8));
                 instructions.push(Instruction::Store((latest_cached.start + offset) as u8));
             }
             1 => {
@@ -4109,6 +4109,24 @@ mod tests {
     }
 
     #[test]
+    fn phase12_template_writes_combined_output_into_first_cache_lane_when_available() {
+        let layout = phase12_default_decoding_layout();
+        let latest_cached = layout.latest_cached_pair_range().expect("latest cached");
+        let output = layout.output_range().expect("output range");
+        let program = decoding_step_v2_template_program(&layout).expect("program");
+        let instructions = program.instructions();
+        let expected = [
+            Instruction::Load((output.start + 2) as u8),
+            Instruction::Store(latest_cached.start as u8),
+        ];
+        assert!(
+            instructions
+                .windows(expected.len())
+                .any(|window| window == expected.as_slice())
+        );
+    }
+
+    #[test]
     fn phase12_runtime_uses_shared_lookup_rows_across_layouts() {
         for layout in phase13_default_decoding_layout_matrix().expect("layout matrix") {
             let latest_cached = layout.latest_cached_pair_range().expect("latest cached");
@@ -4152,7 +4170,7 @@ mod tests {
                 );
                 for offset in 0..layout.pair_width {
                     let expected_latest_value = match offset {
-                        0 => expected_activation,
+                        0 => final_memory[output.start + 2],
                         1 => expected_secondary_activation,
                         2 => final_memory[output.start + 2],
                         3 => final_memory[output.start],
