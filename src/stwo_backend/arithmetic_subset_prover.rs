@@ -2538,6 +2538,7 @@ mod tests {
         phase12_demo_initial_memories,
     };
     use crate::{ProgramCompiler, TransformerVmConfig};
+    use std::panic::{catch_unwind, AssertUnwindSafe};
     use stwo::core::pcs::utils::TreeVec;
     use stwo::prover::backend::Column;
     use stwo_constraint_framework::{assert_constraints_on_polys, assert_constraints_on_trace};
@@ -2762,9 +2763,18 @@ mod tests {
             .into_iter()
             .enumerate()
         {
+            let debug_memory = memory.clone();
             let program =
                 decoding_step_v2_program_with_initial_memory(&layout, memory).expect("program");
-            assert_trace_satisfies_constraints_for_program(program.clone());
+            catch_unwind(AssertUnwindSafe(|| {
+                assert_trace_satisfies_constraints_for_program(program.clone())
+            }))
+            .unwrap_or_else(|payload| {
+                panic!(
+                    "step {step_index} failed trace constraints: {}; initial_memory={debug_memory:?}",
+                    panic_payload_to_string(payload)
+                )
+            });
             assert!(
                 matches_decoding_step_v2_family(&program),
                 "step {step_index} is not recognized as decoding_step_v2-family"
@@ -2784,6 +2794,16 @@ mod tests {
 
     fn assert_program_trace_polys_satisfy_constraints(path: &str) {
         assert_trace_polys_satisfy_constraints_for_program(compile_program(path));
+    }
+
+    fn panic_payload_to_string(payload: Box<dyn std::any::Any + Send>) -> String {
+        if let Some(message) = payload.downcast_ref::<&str>() {
+            (*message).to_string()
+        } else if let Some(message) = payload.downcast_ref::<String>() {
+            message.clone()
+        } else {
+            "non-string panic payload".to_string()
+        }
     }
 
     #[test]
@@ -2844,9 +2864,18 @@ mod tests {
             .into_iter()
             .enumerate()
         {
+            let debug_memory = memory.clone();
             let program =
                 decoding_step_v2_program_with_initial_memory(&layout, memory).expect("program");
-            assert_trace_polys_satisfy_constraints_for_program(program.clone());
+            catch_unwind(AssertUnwindSafe(|| {
+                assert_trace_polys_satisfy_constraints_for_program(program.clone())
+            }))
+            .unwrap_or_else(|payload| {
+                panic!(
+                    "step {step_index} failed trace polynomial constraints: {}; initial_memory={debug_memory:?}",
+                    panic_payload_to_string(payload)
+                )
+            });
             assert!(
                 matches_decoding_step_v2_family(&program),
                 "step {step_index} is not recognized as decoding_step_v2-family"
