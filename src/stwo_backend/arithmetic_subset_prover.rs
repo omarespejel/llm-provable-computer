@@ -901,22 +901,20 @@ fn verify_phase10_embedded_shared_normalization(
             embedded.semantic_scope
         )));
     }
-    let mut proof_rows = Vec::with_capacity(embedded.claimed_rows.len());
-    for row in &embedded.claimed_rows {
-        let (norm_sq, inv_sqrt_q8) = normalized_pair_from_indices(
-            &proof.claim.final_state.memory,
-            row.norm_sq_memory_index,
-            row.inv_sqrt_q8_memory_index,
-            shared_normalization_label(&proof.claim.program),
-        )?;
-        if norm_sq != row.expected_norm_sq || inv_sqrt_q8 != row.expected_inv_sqrt_q8 {
-            return Err(VmError::InvalidConfig(format!(
-                "gemma_block_v4 shared normalization does not match claimed final state: expected ({}, {}), got ({}, {})",
-                row.expected_norm_sq, row.expected_inv_sqrt_q8, norm_sq, inv_sqrt_q8
-            )));
-        }
-        proof_rows.push((norm_sq as u16, inv_sqrt_q8 as u16));
+    let canonical_rows = shared_normalization_claim_rows(
+        &proof.claim.program,
+        &proof.claim.final_state.memory,
+    )?;
+    if embedded.claimed_rows != canonical_rows {
+        return Err(VmError::InvalidConfig(format!(
+            "{} embedded claimed rows do not match the canonical final-state rows",
+            shared_normalization_label(&proof.claim.program)
+        )));
     }
+    let proof_rows: Vec<(u16, u16)> = canonical_rows
+        .iter()
+        .map(|row| (row.expected_norm_sq as u16, row.expected_inv_sqrt_q8 as u16))
+        .collect();
     let proof_envelope: Phase10SharedNormalizationLookupProofEnvelope =
         serde_json::from_value(embedded.proof_envelope.clone())
             .map_err(|error| VmError::Serialization(error.to_string()))?;
@@ -1314,7 +1312,7 @@ fn phase12_shared_normalization_indices(program: &Program) -> Result<(u8, u8, u8
             "Phase 12 shared normalization requires a decoding_step_v2-family layout".to_string(),
         )
     })?;
-    let lookup = layout.lookup_range();
+    let lookup = layout.lookup_range()?;
     Ok((
         lookup.start as u8,
         (lookup.start + 1) as u8,
@@ -1329,7 +1327,7 @@ fn phase12_shared_activation_indices(program: &Program) -> Result<(u8, u8, u8, u
             "Phase 12 shared activation requires a decoding_step_v2-family layout".to_string(),
         )
     })?;
-    let lookup = layout.lookup_range();
+    let lookup = layout.lookup_range()?;
     Ok((
         (lookup.start + 2) as u8,
         (lookup.start + 3) as u8,

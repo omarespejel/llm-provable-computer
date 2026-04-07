@@ -93,55 +93,93 @@ impl Phase12DecodingLayout {
                 "Phase 12 decoding layout requires pair_width > 0".to_string(),
             ));
         }
-        if self.memory_size() > usize::from(u8::MAX) {
+        let memory_size = self.memory_size()?;
+        if memory_size > usize::from(u8::MAX) + 1 {
             return Err(VmError::InvalidConfig(format!(
                 "Phase 12 decoding layout memory size {} exceeds the encoded address limit {}",
-                self.memory_size(),
-                u8::MAX
+                memory_size,
+                usize::from(u8::MAX) + 1
             )));
         }
         Ok(())
     }
 
-    pub fn memory_size(&self) -> usize {
-        self.position_increment_index() + 1
+    pub fn memory_size(&self) -> Result<usize> {
+        self.position_increment_index()?
+            .checked_add(1)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "Phase 12 decoding layout memory size overflowed".to_string(),
+                )
+            })
     }
 
-    pub fn kv_cache_range(&self) -> std::ops::Range<usize> {
-        0..(self.rolling_kv_pairs * self.pair_width)
+    pub fn kv_cache_range(&self) -> Result<std::ops::Range<usize>> {
+        let end = self
+            .rolling_kv_pairs
+            .checked_mul(self.pair_width)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "Phase 12 decoding layout KV-cache range overflowed".to_string(),
+                )
+            })?;
+        Ok(0..end)
     }
 
-    pub fn incoming_token_range(&self) -> std::ops::Range<usize> {
-        let start = self.kv_cache_range().end;
-        start..(start + self.pair_width)
+    pub fn incoming_token_range(&self) -> Result<std::ops::Range<usize>> {
+        let start = self.kv_cache_range()?.end;
+        let end = start.checked_add(self.pair_width).ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 12 decoding layout incoming-token range overflowed".to_string(),
+            )
+        })?;
+        Ok(start..end)
     }
 
-    pub fn query_range(&self) -> std::ops::Range<usize> {
-        let start = self.incoming_token_range().end;
-        start..(start + self.pair_width)
+    pub fn query_range(&self) -> Result<std::ops::Range<usize>> {
+        let start = self.incoming_token_range()?.end;
+        let end = start.checked_add(self.pair_width).ok_or_else(|| {
+            VmError::InvalidConfig("Phase 12 decoding layout query range overflowed".to_string())
+        })?;
+        Ok(start..end)
     }
 
-    pub fn output_range(&self) -> std::ops::Range<usize> {
-        let start = self.query_range().end;
-        start..(start + PHASE12_OUTPUT_WIDTH)
+    pub fn output_range(&self) -> Result<std::ops::Range<usize>> {
+        let start = self.query_range()?.end;
+        let end = start.checked_add(PHASE12_OUTPUT_WIDTH).ok_or_else(|| {
+            VmError::InvalidConfig("Phase 12 decoding layout output range overflowed".to_string())
+        })?;
+        Ok(start..end)
     }
 
-    pub fn lookup_range(&self) -> std::ops::Range<usize> {
-        let start = self.output_range().end;
-        start..(start + PHASE12_SHARED_LOOKUP_ROWS)
+    pub fn lookup_range(&self) -> Result<std::ops::Range<usize>> {
+        let start = self.output_range()?.end;
+        let end = start.checked_add(PHASE12_SHARED_LOOKUP_ROWS).ok_or_else(|| {
+            VmError::InvalidConfig("Phase 12 decoding layout lookup range overflowed".to_string())
+        })?;
+        Ok(start..end)
     }
 
-    pub fn position_index(&self) -> usize {
-        self.lookup_range().end
+    pub fn position_index(&self) -> Result<usize> {
+        Ok(self.lookup_range()?.end)
     }
 
-    pub fn position_increment_index(&self) -> usize {
-        self.position_index() + 1
+    pub fn position_increment_index(&self) -> Result<usize> {
+        self.position_index()?.checked_add(1).ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 12 decoding layout position increment index overflowed".to_string(),
+            )
+        })
     }
 
-    pub fn latest_cached_pair_range(&self) -> std::ops::Range<usize> {
-        let end = self.kv_cache_range().end;
-        (end - self.pair_width)..end
+    pub fn latest_cached_pair_range(&self) -> Result<std::ops::Range<usize>> {
+        let end = self.kv_cache_range()?.end;
+        let start = end.checked_sub(self.pair_width).ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 12 decoding layout latest cached pair range underflowed".to_string(),
+            )
+        })?;
+        Ok(start..end)
     }
 }
 
@@ -211,11 +249,11 @@ pub fn phase12_default_decoding_layout() -> Phase12DecodingLayout {
 pub fn decoding_step_v2_template_program(layout: &Phase12DecodingLayout) -> Result<Program> {
     layout.validate()?;
 
-    let latest_cached = layout.latest_cached_pair_range();
-    let incoming = layout.incoming_token_range();
-    let query = layout.query_range();
-    let output = layout.output_range();
-    let lookup = layout.lookup_range();
+    let latest_cached = layout.latest_cached_pair_range()?;
+    let incoming = layout.incoming_token_range()?;
+    let query = layout.query_range()?;
+    let output = layout.output_range()?;
+    let lookup = layout.lookup_range()?;
 
     let mut instructions = Vec::new();
 
@@ -250,7 +288,7 @@ pub fn decoding_step_v2_template_program(layout: &Phase12DecodingLayout) -> Resu
         instructions.push(Instruction::Store((lookup.start + offset) as u8));
     }
 
-    let kv_cache = layout.kv_cache_range();
+    let kv_cache = layout.kv_cache_range()?;
     for index in 0..(kv_cache.len().saturating_sub(layout.pair_width)) {
         instructions.push(Instruction::Load((index + layout.pair_width) as u8));
         instructions.push(Instruction::Store(index as u8));
@@ -260,15 +298,15 @@ pub fn decoding_step_v2_template_program(layout: &Phase12DecodingLayout) -> Resu
         instructions.push(Instruction::Store((latest_cached.start + offset) as u8));
     }
 
-    instructions.push(Instruction::Load(layout.position_index() as u8));
+    instructions.push(Instruction::Load(layout.position_index()? as u8));
     instructions.push(Instruction::AddMemory(
-        layout.position_increment_index() as u8
+        layout.position_increment_index()? as u8
     ));
-    instructions.push(Instruction::Store(layout.position_index() as u8));
+    instructions.push(Instruction::Store(layout.position_index()? as u8));
     instructions.push(Instruction::Load((output.start + 2) as u8));
     instructions.push(Instruction::Halt);
 
-    Ok(Program::new(instructions, layout.memory_size()))
+    Ok(Program::new(instructions, layout.memory_size()?))
 }
 
 pub fn decoding_step_v2_program_with_initial_memory(
@@ -296,6 +334,11 @@ pub fn derive_phase12_from_program_initial_state(
     program: &Program,
     step_index: usize,
 ) -> Result<Phase12DecodingState> {
+    if step_index != 0 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 12 standalone state derivation only supports the seed step, got step_index={step_index}"
+        )));
+    }
     let layout = infer_phase12_decoding_layout(program).ok_or_else(|| {
         VmError::InvalidConfig(
             "Phase 12 decoding state derivation requires a decoding_step_v2-family program"
@@ -305,7 +348,7 @@ pub fn derive_phase12_from_program_initial_state(
     let view = derive_phase12_state_view(program.initial_memory(), &layout)?;
     let history_commitment = commit_phase12_history_seed(
         &view.layout_commitment,
-        &program.initial_memory()[layout.kv_cache_range()],
+        &program.initial_memory()[layout.kv_cache_range()?],
         layout.pair_width,
     );
     Ok(build_phase12_state(
@@ -321,10 +364,15 @@ pub fn derive_phase12_from_final_memory(
     step_index: usize,
     layout: &Phase12DecodingLayout,
 ) -> Result<Phase12DecodingState> {
+    if step_index != 0 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 12 standalone state derivation only supports the seed step, got step_index={step_index}"
+        )));
+    }
     let view = derive_phase12_state_view(final_memory, layout)?;
     let history_commitment = commit_phase12_history_seed(
         &view.layout_commitment,
-        &final_memory[layout.kv_cache_range()],
+        &final_memory[layout.kv_cache_range()?],
         layout.pair_width,
     );
     Ok(build_phase12_state(
@@ -578,7 +626,7 @@ pub fn phase12_prepare_decoding_chain(
                 _ => (
                     commit_phase12_history_seed(
                         &expected_layout_commitment,
-                        &proof.claim.program.initial_memory()[layout.kv_cache_range()],
+                        &proof.claim.program.initial_memory()[layout.kv_cache_range()?],
                         layout.pair_width,
                     ),
                     layout.rolling_kv_pairs,
@@ -605,7 +653,7 @@ pub fn phase12_prepare_decoding_chain(
         let to_history_commitment = advance_phase12_history_commitment(
             &expected_layout_commitment,
             &from_history_commitment,
-            &proof.claim.program.initial_memory()[layout.incoming_token_range()],
+            &proof.claim.program.initial_memory()[layout.incoming_token_range()?],
             to_history_length,
         );
         let to_state = build_phase12_state(
@@ -659,6 +707,13 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
             manifest.semantic_scope
         )));
     }
+    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding proof backend version `{}` (expected `{}`)",
+            manifest.proof_backend_version,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+        )));
+    }
     if manifest.steps.is_empty() {
         return Err(VmError::InvalidConfig(
             "decoding chain must contain at least one step".to_string(),
@@ -685,6 +740,13 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
                 step.proof.proof_backend
             )));
         }
+        if step.proof.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step {step_index} proof backend version `{}` does not match the supported Phase 12 version `{}`",
+                step.proof.proof_backend_version,
+                crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+            )));
+        }
         if step.proof.proof_backend_version != manifest.proof_backend_version {
             return Err(VmError::InvalidConfig(format!(
                 "decoding step {step_index} proof backend version `{}` does not match manifest `{}`",
@@ -706,7 +768,8 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
             (
                 commit_phase12_history_seed(
                     &expected_layout_commitment,
-                    &step.proof.claim.program.initial_memory()[manifest.layout.kv_cache_range()],
+                    &step.proof.claim.program.initial_memory()
+                        [manifest.layout.kv_cache_range()?],
                     manifest.layout.pair_width,
                 ),
                 manifest.layout.rolling_kv_pairs,
@@ -734,7 +797,8 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
         let next_history_commitment = advance_phase12_history_commitment(
             &expected_layout_commitment,
             &expected_history_commitment,
-            &step.proof.claim.program.initial_memory()[manifest.layout.incoming_token_range()],
+            &step.proof.claim.program.initial_memory()
+                [manifest.layout.incoming_token_range()?],
             next_history_length,
         );
         let expected_to = build_phase12_state(
@@ -871,39 +935,43 @@ fn derive_phase12_state_view(
     layout: &Phase12DecodingLayout,
 ) -> Result<Phase12StateView> {
     layout.validate()?;
-    if memory.len() != layout.memory_size() {
+    let memory_size = layout.memory_size()?;
+    let kv_cache_range = layout.kv_cache_range()?;
+    let incoming_token_range = layout.incoming_token_range()?;
+    let query_range = layout.query_range()?;
+    let output_range = layout.output_range()?;
+    let lookup_range = layout.lookup_range()?;
+    let position_index = layout.position_index()?;
+    if memory.len() != memory_size {
         return Err(VmError::InvalidConfig(format!(
             "Phase 12 decoding state requires exactly {} memory cells, got {}",
-            layout.memory_size(),
+            memory_size,
             memory.len()
         )));
     }
 
     let layout_commitment = commit_phase12_layout(layout);
-    let kv_cache_commitment = commit_phase12_named_slice(
-        "kv-cache",
-        &layout_commitment,
-        &memory[layout.kv_cache_range()],
-    );
+    let kv_cache_commitment =
+        commit_phase12_named_slice("kv-cache", &layout_commitment, &memory[kv_cache_range.clone()]);
     let incoming_token_commitment = commit_phase12_named_slice(
         "incoming-token",
         &layout_commitment,
-        &memory[layout.incoming_token_range()],
+        &memory[incoming_token_range.clone()],
     );
     let query_commitment =
-        commit_phase12_named_slice("query", &layout_commitment, &memory[layout.query_range()]);
+        commit_phase12_named_slice("query", &layout_commitment, &memory[query_range]);
     let output_commitment =
-        commit_phase12_named_slice("output", &layout_commitment, &memory[layout.output_range()]);
+        commit_phase12_named_slice("output", &layout_commitment, &memory[output_range]);
     let lookup_rows_commitment = commit_phase12_named_slice(
         "lookup-rows",
         &layout_commitment,
-        &memory[layout.lookup_range()],
+        &memory[lookup_range],
     );
-    let position = memory[layout.position_index()];
+    let position = memory[position_index];
     let persistent_state_commitment = commit_phase12_persistent_state(
         &layout_commitment,
         position,
-        &memory[layout.kv_cache_range()],
+        &memory[kv_cache_range],
     );
 
     Ok(Phase12StateView {
@@ -1220,7 +1288,13 @@ pub(crate) fn phase12_demo_initial_memories(
     layout: &Phase12DecodingLayout,
 ) -> Result<Vec<Vec<i16>>> {
     layout.validate()?;
-    let mut kv_cache = vec![0; layout.kv_cache_range().len()];
+    let kv_cache_range = layout.kv_cache_range()?;
+    let incoming_token_range = layout.incoming_token_range()?;
+    let query_range = layout.query_range()?;
+    let lookup_range = layout.lookup_range()?;
+    let position_index = layout.position_index()?;
+    let position_increment_index = layout.position_increment_index()?;
+    let mut kv_cache = vec![0; kv_cache_range.len()];
     let step_inputs: [&[i16]; 3] = [&[1, 2, 3, 4], &[2, 3, 4, 5], &[3, 5, 7, 9]];
     let query_inputs: [&[i16]; 3] = [&[1, 0, 1, 0], &[0, 1, 0, 1], &[1, 1, 0, 0]];
 
@@ -1241,13 +1315,13 @@ pub(crate) fn phase12_demo_initial_memories(
         .zip(query_inputs.into_iter())
         .enumerate()
     {
-        let mut memory = vec![0; layout.memory_size()];
-        memory[layout.kv_cache_range()].copy_from_slice(&kv_cache);
-        memory[layout.incoming_token_range()].copy_from_slice(incoming_values);
-        memory[layout.query_range()].copy_from_slice(query_values);
-        memory[layout.lookup_range()].copy_from_slice(&PHASE12_LOOKUP_ROW_VALUES);
-        memory[layout.position_index()] = position as i16;
-        memory[layout.position_increment_index()] = 1;
+        let mut memory = vec![0; layout.memory_size()?];
+        memory[kv_cache_range.clone()].copy_from_slice(&kv_cache);
+        memory[incoming_token_range.clone()].copy_from_slice(incoming_values);
+        memory[query_range.clone()].copy_from_slice(query_values);
+        memory[lookup_range.clone()].copy_from_slice(&PHASE12_LOOKUP_ROW_VALUES);
+        memory[position_index] = position as i16;
+        memory[position_increment_index] = 1;
         memories.push(memory);
 
         kv_cache.rotate_left(layout.pair_width);
@@ -1570,6 +1644,20 @@ mod tests {
     }
 
     #[test]
+    fn phase12_decoding_layout_accepts_full_u8_address_space() {
+        let layout = Phase12DecodingLayout::new(241, 1).expect("layout");
+        assert_eq!(layout.memory_size().expect("memory size"), 256);
+    }
+
+    #[test]
+    fn phase12_decoding_layout_rejects_overflowing_address_space() {
+        let error = Phase12DecodingLayout::new(242, 1).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("exceeds the encoded address limit 256"));
+    }
+
+    #[test]
     fn phase12_prepare_decoding_chain_accepts_linked_steps() {
         let layout = phase12_default_decoding_layout();
         let memories = phase12_demo_initial_memories(&layout).expect("memories");
@@ -1643,5 +1731,42 @@ mod tests {
         assert!(err
             .to_string()
             .contains("is not a decoding_step_v2-family proof for the manifest layout"));
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_unsupported_backend_version() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        manifest.proof_backend_version = STWO_BACKEND_VERSION_PHASE11.to_string();
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("unsupported decoding proof backend version"));
+    }
+
+    #[test]
+    fn phase12_standalone_state_derivation_rejects_non_seed_steps() {
+        let layout = phase12_default_decoding_layout();
+        let memory = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .next()
+            .expect("first memory");
+        let program = decoding_step_v2_program_with_initial_memory(&layout, memory.clone())
+            .expect("program");
+        let err = derive_phase12_from_program_initial_state(&program, 1).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("only supports the seed step"));
+
+        let err = derive_phase12_from_final_memory(&memory, 1, &layout).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("only supports the seed step"));
     }
 }
