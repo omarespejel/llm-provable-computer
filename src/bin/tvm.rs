@@ -34,17 +34,19 @@ use llm_provable_computer::{
     load_phase11_decoding_chain, load_phase12_decoding_chain,
     load_phase13_decoding_layout_matrix, load_phase14_decoding_chain,
     load_phase15_decoding_segment_bundle, load_phase16_decoding_segment_rollup,
+    load_phase17_decoding_rollup_matrix,
     load_phase3_binary_step_lookup_proof,
     load_phase5_normalization_lookup_proof, prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
     prove_phase12_decoding_demo, prove_phase13_decoding_layout_matrix_demo,
     prove_phase14_decoding_demo, prove_phase15_decoding_demo,
-    prove_phase16_decoding_demo,
+    prove_phase16_decoding_demo, prove_phase17_decoding_rollup_matrix_demo,
     prove_phase3_binary_step_lookup_demo_envelope,
     prove_phase5_normalization_lookup_demo_envelope, save_phase10_shared_binary_step_lookup_proof,
     save_phase10_shared_normalization_lookup_proof, save_phase11_decoding_chain,
     save_phase12_decoding_chain, save_phase13_decoding_layout_matrix, save_phase14_decoding_chain,
     save_phase15_decoding_segment_bundle, save_phase16_decoding_segment_rollup,
+    save_phase17_decoding_rollup_matrix,
     save_phase3_binary_step_lookup_proof,
     save_phase5_normalization_lookup_proof, stwo_backend_enabled,
     verify_phase10_shared_binary_step_lookup_envelope,
@@ -55,6 +57,7 @@ use llm_provable_computer::{
     verify_phase14_decoding_chain_with_proof_checks,
     verify_phase15_decoding_segment_bundle_with_proof_checks,
     verify_phase16_decoding_segment_rollup_with_proof_checks,
+    verify_phase17_decoding_rollup_matrix_with_proof_checks,
     verify_phase3_binary_step_lookup_demo_envelope,
     verify_phase5_normalization_lookup_demo_envelope, STWO_DECODING_CHAIN_SCOPE_PHASE11,
     STWO_DECODING_CHAIN_SCOPE_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE11,
@@ -66,6 +69,7 @@ use llm_provable_computer::{
     STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13, STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13,
     STWO_DECODING_SEGMENT_BUNDLE_SCOPE_PHASE15, STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15,
     STWO_DECODING_SEGMENT_ROLLUP_SCOPE_PHASE16, STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16,
+    STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17, STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17,
 };
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
@@ -336,6 +340,17 @@ enum Command {
     /// Verify a serialized rollup over segmented chunked-history decoding bundles.
     VerifyStwoDecodingHistoryRollupDemo {
         /// Path to the serialized rollup JSON file.
+        proof: PathBuf,
+    },
+    /// Produce a serialized matrix over multiple Phase 16 decoding history rollups.
+    ProveStwoDecodingHistoryRollupMatrixDemo {
+        /// File where the serialized matrix JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a serialized matrix over multiple Phase 16 decoding history rollups.
+    VerifyStwoDecodingHistoryRollupMatrixDemo {
+        /// Path to the serialized matrix JSON file.
         proof: PathBuf,
     },
     /// Prepare a canonical multi-proof batch manifest for future S-two recursion.
@@ -883,6 +898,12 @@ fn run() -> llm_provable_computer::Result<()> {
         }
         Command::VerifyStwoDecodingHistoryRollupDemo { proof } => {
             verify_stwo_decoding_history_rollup_demo_command(&proof)?
+        }
+        Command::ProveStwoDecodingHistoryRollupMatrixDemo { output } => {
+            prove_stwo_decoding_history_rollup_matrix_demo_command(&output)?
+        }
+        Command::VerifyStwoDecodingHistoryRollupMatrixDemo { proof } => {
+            verify_stwo_decoding_history_rollup_matrix_demo_command(&proof)?
         }
         Command::PrepareStwoRecursionBatch { proofs, output } => {
             prepare_stwo_recursion_batch_command(&proofs, &output)?
@@ -2161,6 +2182,125 @@ fn verify_stwo_decoding_history_rollup_demo_command(
     }
 }
 
+fn prove_stwo_decoding_history_rollup_matrix_demo_command(
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output;
+        return Err(VmError::UnsupportedProof(
+            "S-two decoding history-rollup matrix demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    if !stwo_backend_enabled() {
+        return Err(VmError::UnsupportedProof(
+            "S-two decoding history-rollup matrix demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        let manifest = prove_phase17_decoding_rollup_matrix_demo()?;
+        save_phase17_decoding_rollup_matrix(&manifest, output)?;
+
+        println!("proof: {}", output.display());
+        println!("proof_backend: {}", manifest.proof_backend);
+        println!("matrix_version: {}", manifest.matrix_version);
+        println!("semantic_scope: {}", manifest.semantic_scope);
+        println!("proof_backend_version: {}", manifest.proof_backend_version);
+        println!("statement_version: {}", manifest.statement_version);
+        println!("total_layouts: {}", manifest.total_layouts);
+        println!("total_rollups: {}", manifest.total_rollups);
+        println!("total_segments: {}", manifest.total_segments);
+        println!("total_steps: {}", manifest.total_steps);
+        if let Some(first) = manifest.rollups.first() {
+            println!("first_layout_rollups: {}", first.total_rollups);
+            println!("first_layout_segments: {}", first.total_segments);
+        }
+        if let Some(last) = manifest.rollups.last() {
+            println!("last_layout_rollups: {}", last.total_rollups);
+            println!("last_layout_segments: {}", last.total_segments);
+            if let Some(last_rollup) = last.rollups.last() {
+                println!(
+                    "final_history_length: {}",
+                    last_rollup.global_to_state.kv_history_length
+                );
+            }
+        }
+        Ok(())
+    }
+}
+
+fn verify_stwo_decoding_history_rollup_matrix_demo_command(
+    proof_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = proof_path;
+        return Err(VmError::UnsupportedProof(
+            "S-two decoding history-rollup matrix demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    if !stwo_backend_enabled() {
+        return Err(VmError::UnsupportedProof(
+            "S-two decoding history-rollup matrix demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        let manifest = load_phase17_decoding_rollup_matrix(proof_path)?;
+        verify_phase17_decoding_rollup_matrix_with_proof_checks(&manifest)?;
+
+        println!("proof: {}", proof_path.display());
+        println!("verified_stark: true");
+        println!("proof_backend: {}", manifest.proof_backend);
+        println!("matrix_version: {}", manifest.matrix_version);
+        println!("semantic_scope: {}", manifest.semantic_scope);
+        println!("proof_backend_version: {}", manifest.proof_backend_version);
+        println!("statement_version: {}", manifest.statement_version);
+        println!("total_layouts: {}", manifest.total_layouts);
+        println!("total_rollups: {}", manifest.total_rollups);
+        println!("total_segments: {}", manifest.total_segments);
+        println!("total_steps: {}", manifest.total_steps);
+        println!(
+            "expected_matrix_version: {}",
+            STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17
+        );
+        println!(
+            "expected_semantic_scope: {}",
+            STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17
+        );
+        println!(
+            "expected_proof_backend_version: {}",
+            STWO_BACKEND_VERSION_PHASE12
+        );
+        if let Some(first) = manifest.rollups.first() {
+            println!("first_layout_rollups: {}", first.total_rollups);
+            println!("first_layout_segments: {}", first.total_segments);
+        }
+        if let Some(last) = manifest.rollups.last() {
+            println!("last_layout_rollups: {}", last.total_rollups);
+            println!("last_layout_segments: {}", last.total_segments);
+            if let Some(last_rollup) = last.rollups.last() {
+                println!(
+                    "final_history_length: {}",
+                    last_rollup.global_to_state.kv_history_length
+                );
+            }
+        }
+        Ok(())
+    }
+}
+
 fn verify_stwo_normalization_demo_command(proof_path: &Path) -> llm_provable_computer::Result<()> {
     #[cfg(not(feature = "stwo-backend"))]
     {
@@ -3349,6 +3489,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-decoding-history-segments-demo"
                 | "prove-stwo-decoding-history-rollup-demo"
                 | "verify-stwo-decoding-history-rollup-demo"
+                | "prove-stwo-decoding-history-rollup-matrix-demo"
+                | "verify-stwo-decoding-history-rollup-matrix-demo"
                 | "prepare-stwo-recursion-batch"
                 | "research-v2-step"
                 | "research-v2-trace"
