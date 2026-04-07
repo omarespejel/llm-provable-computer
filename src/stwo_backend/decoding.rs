@@ -33,20 +33,20 @@ pub const STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13: &str =
 pub const STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_layout_matrix";
 pub const STWO_DECODING_CHAIN_VERSION_PHASE14: &str =
-    "stwo-phase14-decoding-chunked-history-chain-v4";
+    "stwo-phase14-decoding-chunked-history-chain-v5";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE14: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_chunked_history_chain";
 pub const STWO_DECODING_STATE_VERSION_PHASE14: &str = "stwo-decoding-state-v6";
 pub const STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15: &str =
-    "stwo-phase15-decoding-history-segment-bundle-v4";
+    "stwo-phase15-decoding-history-segment-bundle-v5";
 pub const STWO_DECODING_SEGMENT_BUNDLE_SCOPE_PHASE15: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_segment_bundle";
 pub const STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16: &str =
-    "stwo-phase16-decoding-history-segment-rollup-v4";
+    "stwo-phase16-decoding-history-segment-rollup-v5";
 pub const STWO_DECODING_SEGMENT_ROLLUP_SCOPE_PHASE16: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_segment_rollup";
 pub const STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17: &str =
-    "stwo-phase17-decoding-history-rollup-matrix-v4";
+    "stwo-phase17-decoding-history-rollup-matrix-v5";
 pub const STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_rollup_matrix";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
