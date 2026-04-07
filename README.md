@@ -512,6 +512,7 @@ matrix/rollup-style packaging layers described in the next-paper track.
   rows inside the same top-level execution proof
 - Phase 11: fixed-shape proof-carrying decoding over `decoding_step_v1`
 - Phase 12: parameterized `decoding_step_v2` family with richer carried state
+  and proof-bound shared-lookup rows
 - Phase 13: validated layout matrix for `decoding_step_v2`
 - Phase 14: chunked cumulative KV-history with sealed/open segment boundaries
 - Phase 15: mergeable history segments with explicit global carried-state boundaries

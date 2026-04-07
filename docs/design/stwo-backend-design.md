@@ -202,7 +202,8 @@ Delivered:
   trace across chunked-history chains, segment bundles, rollups, and rollup matrices,
 - a Phase 20 lookup-frontier layer over that same stack, preserving a recent non-arithmetic
   window alongside the cumulative lookup transcript so later accumulation work has a cleaner
-  lookup boundary to consume.
+  lookup boundary to consume, and binding that lookup state back to the embedded shared
+  normalization / activation claims already carried inside each `decoding_step_v2` proof payload.
 
 Current limitation:
 

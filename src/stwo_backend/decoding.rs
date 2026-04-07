@@ -14,7 +14,10 @@ use crate::proof::{
     production_v1_stark_options, prove_execution_stark_with_backend_and_options,
     verify_execution_stark, StarkProofBackend, VanillaStarkExecutionProof,
 };
-use crate::stwo_backend::STWO_BACKEND_VERSION_PHASE11;
+use crate::stwo_backend::{
+    arithmetic_subset_prover::phase12_shared_lookup_rows_from_proof_payload,
+    STWO_BACKEND_VERSION_PHASE11,
+};
 
 pub const STWO_DECODING_CHAIN_VERSION_PHASE11: &str = "stwo-phase11-decoding-chain-v1";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE11: &str = "stwo_execution_proof_carrying_decoding_chain";
@@ -807,7 +810,7 @@ pub fn phase12_prepare_decoding_chain(
             from_history_length,
         );
 
-        let to_view = derive_phase12_state_view(&proof.claim.final_state.memory, layout)?;
+        let to_view = derive_phase12_final_state_view_from_proof(&proof, layout)?;
         if to_view.layout_commitment != expected_layout_commitment {
             return Err(VmError::InvalidConfig(format!(
                 "decoding step {step_index} final state does not match the manifest layout commitment"
@@ -931,7 +934,7 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
         let derived_from =
             derive_phase12_state_view(step.proof.claim.program.initial_memory(), &manifest.layout)?;
         let derived_to =
-            derive_phase12_state_view(&step.proof.claim.final_state.memory, &manifest.layout)?;
+            derive_phase12_final_state_view_from_proof(&step.proof, &manifest.layout)?;
         let (expected_history_commitment, expected_history_length) = if step_index == 0 {
             (
                 commit_phase12_history_seed(
@@ -1118,7 +1121,7 @@ pub fn phase14_prepare_decoding_chain(
         });
         let from_state = build_phase14_state(step_index, from_view, &current);
 
-        let to_view = derive_phase12_state_view(&step.proof.claim.final_state.memory, layout)?;
+        let to_view = derive_phase12_final_state_view_from_proof(&step.proof, layout)?;
         if to_view.layout_commitment != expected_layout_commitment {
             return Err(VmError::InvalidConfig(format!(
                 "Phase 14 decoding step {step_index} final state does not match the manifest layout commitment"
@@ -1254,7 +1257,8 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
             )));
         }
 
-        let to_view = derive_phase12_state_view(&step.proof.claim.final_state.memory, &manifest.layout)?;
+        let to_view =
+            derive_phase12_final_state_view_from_proof(&step.proof, &manifest.layout)?;
         if to_view.layout_commitment != expected_layout_commitment {
             return Err(VmError::InvalidConfig(format!(
                 "chunked decoding step {step_index} final state does not match the manifest layout commitment"
@@ -2266,6 +2270,31 @@ fn derive_phase12_state_view(
     })
 }
 
+fn derive_phase12_final_state_view_from_proof(
+    proof: &VanillaStarkExecutionProof,
+    layout: &Phase12DecodingLayout,
+) -> Result<Phase12StateView> {
+    let mut view = derive_phase12_state_view(&proof.claim.final_state.memory, layout)?;
+    if let Some(proof_lookup_rows) = phase12_shared_lookup_rows_from_proof_payload(proof)? {
+        let lookup_range = layout.lookup_range()?;
+        if proof_lookup_rows.len() != lookup_range.len() {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding_step_v2 proof payload exposes {} shared lookup values, but layout expects {}",
+                proof_lookup_rows.len(),
+                lookup_range.len()
+            )));
+        }
+        if &proof.claim.final_state.memory[lookup_range.clone()] != proof_lookup_rows.as_slice() {
+            return Err(VmError::InvalidConfig(
+                "decoding_step_v2 final-state lookup slice does not match the embedded shared lookup rows".to_string(),
+            ));
+        }
+        view.lookup_rows_commitment =
+            commit_phase12_named_slice("lookup-rows", &view.layout_commitment, &proof_lookup_rows);
+    }
+    Ok(view)
+}
+
 fn build_phase12_state(
     step_index: usize,
     view: Phase12StateView,
@@ -2961,7 +2990,7 @@ fn verify_phase15_segment_sequence(
 
         let mut expected_global_to = expected_global_from.clone();
         for (local_index, step) in segment.chain.steps.iter().enumerate() {
-            let to_view = derive_phase12_state_view(&step.proof.claim.final_state.memory, layout)?;
+            let to_view = derive_phase12_final_state_view_from_proof(&step.proof, layout)?;
             current = advance_phase14_history(
                 &expected_layout_commitment,
                 &current,
@@ -3649,6 +3678,7 @@ mod tests {
             NativeInterpreter::new(program.clone(), Attention2DMode::AverageHard, 256);
         let result = runtime.run().expect("run program");
         assert!(result.halted);
+        let final_memory = result.final_state.memory.clone();
         VanillaStarkExecutionProof {
             proof_backend: StarkProofBackend::Stwo,
             proof_backend_version: "stwo-phase12-decoding-family-v1".to_string(),
@@ -3666,8 +3696,69 @@ mod tests {
                 equivalence: None,
                 commitments: Some(sample_commitments()),
             },
-            proof: vec![4, 5, 6],
+            proof: sample_phase12_proof_payload(layout, &final_memory),
         }
+    }
+
+    fn sample_phase12_proof_payload(layout: &Phase12DecodingLayout, final_memory: &[i16]) -> Vec<u8> {
+        let lookup = layout.lookup_range().expect("lookup range");
+        serde_json::to_vec(&serde_json::json!({
+            "embedded_shared_normalization": {
+                "statement_version": "stwo-shared-normalization-lookup-v1",
+                "semantic_scope": "stwo_decoding_step_v2_execution_with_shared_normalization_lookup",
+                "claimed_rows": [
+                    {
+                        "norm_sq_memory_index": lookup.start,
+                        "inv_sqrt_q8_memory_index": lookup.start + 1,
+                        "expected_norm_sq": final_memory[lookup.start],
+                        "expected_inv_sqrt_q8": final_memory[lookup.start + 1]
+                    },
+                    {
+                        "norm_sq_memory_index": lookup.start + 4,
+                        "inv_sqrt_q8_memory_index": lookup.start + 5,
+                        "expected_norm_sq": final_memory[lookup.start + 4],
+                        "expected_inv_sqrt_q8": final_memory[lookup.start + 5]
+                    }
+                ],
+                "proof_envelope": {
+                    "claimed_rows": [
+                        [final_memory[lookup.start], final_memory[lookup.start + 1]],
+                        [final_memory[lookup.start + 4], final_memory[lookup.start + 5]]
+                    ]
+                }
+            },
+            "embedded_shared_activation_lookup": {
+                "statement_version": "stwo-shared-binary-step-lookup-v1",
+                "semantic_scope": "stwo_decoding_step_v2_execution_with_shared_binary_step_lookup",
+                "claimed_rows": [
+                    {
+                        "input_memory_index": lookup.start + 2,
+                        "output_memory_index": lookup.start + 3,
+                        "expected_input": final_memory[lookup.start + 2],
+                        "expected_output": final_memory[lookup.start + 3]
+                    },
+                    {
+                        "input_memory_index": lookup.start + 6,
+                        "output_memory_index": lookup.start + 7,
+                        "expected_input": final_memory[lookup.start + 6],
+                        "expected_output": final_memory[lookup.start + 7]
+                    }
+                ],
+                "proof_envelope": {
+                    "claimed_rows": [
+                        {
+                            "input": final_memory[lookup.start + 2],
+                            "output": final_memory[lookup.start + 3]
+                        },
+                        {
+                            "input": final_memory[lookup.start + 6],
+                            "output": final_memory[lookup.start + 7]
+                        }
+                    ]
+                }
+            }
+        }))
+        .expect("sample proof payload")
     }
 
     fn sample_phase17_rollup_matrix_manifest() -> Phase17DecodingHistoryRollupMatrixManifest {
@@ -3936,6 +4027,26 @@ mod tests {
         assert!(err
             .to_string()
             .contains("recorded from_state does not match the proof's initial state"));
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_tampered_embedded_lookup_rows() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        let mut payload: serde_json::Value =
+            serde_json::from_slice(&manifest.steps[1].proof.proof).expect("payload");
+        payload["embedded_shared_activation_lookup"]["claimed_rows"][1]["expected_output"] =
+            serde_json::json!(0);
+        manifest.steps[1].proof.proof = serde_json::to_vec(&payload).expect("payload bytes");
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("embedded shared activation rows do not match"));
     }
 
     #[test]

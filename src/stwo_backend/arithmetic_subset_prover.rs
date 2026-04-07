@@ -1001,6 +1001,145 @@ fn verify_phase10_embedded_shared_activation_lookup(
     Ok(())
 }
 
+pub(crate) fn phase12_shared_lookup_rows_from_proof_payload(
+    proof: &VanillaStarkExecutionProof,
+) -> Result<Option<Vec<i16>>> {
+    if !matches_decoding_step_v2(&proof.claim.program) {
+        return Ok(None);
+    }
+
+    let payload: serde_json::Value = serde_json::from_slice(&proof.proof)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    let normalization_value = payload
+        .get("embedded_shared_normalization")
+        .cloned()
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "decoding_step_v2 proof payload is missing embedded shared normalization rows"
+                    .to_string(),
+            )
+        })?;
+    let activation_value = payload
+        .get("embedded_shared_activation_lookup")
+        .cloned()
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "decoding_step_v2 proof payload is missing embedded shared activation rows"
+                    .to_string(),
+            )
+        })?;
+    let normalization: EmbeddedSharedNormalizationProof =
+        serde_json::from_value(normalization_value)
+            .map_err(|error| VmError::Serialization(error.to_string()))?;
+    let activation: EmbeddedSharedActivationLookupProof = serde_json::from_value(activation_value)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+
+    let expected_norm_rows =
+        shared_normalization_claim_rows(&proof.claim.program, &proof.claim.final_state.memory)?;
+    if normalization.statement_version != STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding_step_v2 shared normalization statement version `{}`",
+            normalization.statement_version
+        )));
+    }
+    if normalization.semantic_scope != DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding_step_v2 shared normalization scope `{}`",
+            normalization.semantic_scope
+        )));
+    }
+    if normalization.claimed_rows != expected_norm_rows {
+        return Err(VmError::InvalidConfig(
+            "decoding_step_v2 embedded shared normalization rows do not match the canonical final-state rows".to_string(),
+        ));
+    }
+    let normalization_envelope_rows = normalization
+        .proof_envelope
+        .get("claimed_rows")
+        .cloned()
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "decoding_step_v2 shared normalization proof envelope is missing claimed_rows"
+                    .to_string(),
+            )
+        })?;
+    let expected_norm_pairs: Vec<(u16, u16)> = expected_norm_rows
+        .iter()
+        .map(|row| (row.expected_norm_sq as u16, row.expected_inv_sqrt_q8 as u16))
+        .collect();
+    if normalization_envelope_rows
+        != serde_json::to_value(&expected_norm_pairs)
+            .map_err(|error| VmError::Serialization(error.to_string()))?
+    {
+        return Err(VmError::InvalidConfig(
+            "decoding_step_v2 shared normalization proof envelope rows do not match the canonical final-state rows".to_string(),
+        ));
+    }
+
+    let expected_activation_rows =
+        shared_activation_claim_rows(&proof.claim.program, &proof.claim.final_state.memory)?;
+    if activation.statement_version != STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding_step_v2 shared activation statement version `{}`",
+            activation.statement_version
+        )));
+    }
+    if activation.semantic_scope != DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding_step_v2 shared activation scope `{}`",
+            activation.semantic_scope
+        )));
+    }
+    if activation.claimed_rows != expected_activation_rows {
+        return Err(VmError::InvalidConfig(
+            "decoding_step_v2 embedded shared activation rows do not match the canonical final-state rows".to_string(),
+        ));
+    }
+    let activation_envelope_rows = activation
+        .proof_envelope
+        .get("claimed_rows")
+        .cloned()
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "decoding_step_v2 shared activation proof envelope is missing claimed_rows"
+                    .to_string(),
+            )
+        })?;
+    let expected_activation_pairs: Vec<Phase3LookupTableRow> = expected_activation_rows
+        .iter()
+        .map(|row| Phase3LookupTableRow {
+            input: row.expected_input,
+            output: row.expected_output as u8,
+        })
+        .collect();
+    if activation_envelope_rows
+        != serde_json::to_value(&expected_activation_pairs)
+            .map_err(|error| VmError::Serialization(error.to_string()))?
+    {
+        return Err(VmError::InvalidConfig(
+            "decoding_step_v2 shared activation proof envelope rows do not match the canonical final-state rows".to_string(),
+        ));
+    }
+    if expected_norm_rows.len() != expected_activation_rows.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding_step_v2 embedded shared lookup row counts disagree: normalization={}, activation={}",
+            expected_norm_rows.len(),
+            expected_activation_rows.len()
+        )));
+    }
+
+    let mut lookup_rows = Vec::with_capacity(expected_norm_rows.len() * 4);
+    for (normalization_row, activation_row) in
+        expected_norm_rows.iter().zip(expected_activation_rows.iter())
+    {
+        lookup_rows.push(normalization_row.expected_norm_sq);
+        lookup_rows.push(normalization_row.expected_inv_sqrt_q8);
+        lookup_rows.push(activation_row.expected_input);
+        lookup_rows.push(activation_row.expected_output);
+    }
+    Ok(Some(lookup_rows))
+}
+
 fn gemma_block_normalization_pair(final_memory: &[i16]) -> Result<(i16, i16)> {
     let norm_sq = *final_memory
         .get(GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX)
