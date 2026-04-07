@@ -1103,6 +1103,8 @@ fn cli_can_prove_and_verify_stwo_decoding_family_demo() {
         ))
         .stdout(predicate::str::contains("rolling_kv_pairs: 4"))
         .stdout(predicate::str::contains("pair_width: 4"))
+        .stdout(predicate::str::contains("start_history_length: 4"))
+        .stdout(predicate::str::contains("final_history_length: 7"))
         .stdout(predicate::str::contains("total_steps: 3"));
 
     let proof_json = std::fs::read_to_string(&proof_path).expect("proof json");
@@ -1121,7 +1123,9 @@ fn cli_can_prove_and_verify_stwo_decoding_family_demo() {
             "expected_chain_version: stwo-phase12-decoding-chain-v1",
         ))
         .stdout(predicate::str::contains("rolling_kv_pairs: 4"))
-        .stdout(predicate::str::contains("pair_width: 4"));
+        .stdout(predicate::str::contains("pair_width: 4"))
+        .stdout(predicate::str::contains("start_history_length: 4"))
+        .stdout(predicate::str::contains("final_history_length: 7"));
 
     let _ = std::fs::remove_file(proof_path);
 }
@@ -1147,6 +1151,47 @@ fn cli_verify_stwo_decoding_family_demo_rejects_tampered_persistent_link() {
             .expect("json");
     proof_json["steps"][1]["from_state"]["persistent_state_commitment"] =
         serde_json::Value::String("deadbeef".repeat(8));
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-decoding-family-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "recorded from_state does not match the proof's initial state",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_decoding_family_demo_rejects_tampered_history_link() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-history-proof").with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-history-tampered").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-decoding-family-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    proof_json["steps"][1]["from_state"]["kv_history_commitment"] =
+        serde_json::Value::String("beadfeed".repeat(8));
     std::fs::write(
         &tampered_path,
         serde_json::to_vec_pretty(&proof_json).expect("serialize"),

@@ -152,6 +152,8 @@ pub struct Phase12DecodingState {
     pub position: i16,
     pub layout_commitment: String,
     pub persistent_state_commitment: String,
+    pub kv_history_commitment: String,
+    pub kv_history_length: usize,
     pub kv_cache_commitment: String,
     pub incoming_token_commitment: String,
     pub query_commitment: String,
@@ -176,6 +178,18 @@ pub struct Phase12DecodingChainManifest {
     pub layout: Phase12DecodingLayout,
     pub total_steps: usize,
     pub steps: Vec<Phase12DecodingStep>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Phase12StateView {
+    position: i16,
+    layout_commitment: String,
+    persistent_state_commitment: String,
+    kv_cache_commitment: String,
+    incoming_token_commitment: String,
+    query_commitment: String,
+    output_commitment: String,
+    lookup_rows_commitment: String,
 }
 
 pub fn decoding_step_v1_template_program() -> Result<Program> {
@@ -288,7 +302,18 @@ pub fn derive_phase12_from_program_initial_state(
                 .to_string(),
         )
     })?;
-    derive_phase12_state(program.initial_memory(), step_index, &layout)
+    let view = derive_phase12_state_view(program.initial_memory(), &layout)?;
+    let history_commitment = commit_phase12_history_seed(
+        &view.layout_commitment,
+        &program.initial_memory()[layout.kv_cache_range()],
+        layout.pair_width,
+    );
+    Ok(build_phase12_state(
+        step_index,
+        view,
+        history_commitment,
+        layout.rolling_kv_pairs,
+    ))
 }
 
 pub fn derive_phase12_from_final_memory(
@@ -296,7 +321,18 @@ pub fn derive_phase12_from_final_memory(
     step_index: usize,
     layout: &Phase12DecodingLayout,
 ) -> Result<Phase12DecodingState> {
-    derive_phase12_state(final_memory, step_index, layout)
+    let view = derive_phase12_state_view(final_memory, layout)?;
+    let history_commitment = commit_phase12_history_seed(
+        &view.layout_commitment,
+        &final_memory[layout.kv_cache_range()],
+        layout.pair_width,
+    );
+    Ok(build_phase12_state(
+        step_index,
+        view,
+        history_commitment,
+        layout.rolling_kv_pairs,
+    ))
 }
 
 pub fn phase11_prepare_decoding_chain(
@@ -496,6 +532,9 @@ pub fn phase12_prepare_decoding_chain(
     }
 
     let mut steps = Vec::with_capacity(proofs.len());
+    let expected_layout_commitment = commit_phase12_layout(layout);
+    let mut previous_history_commitment: Option<String> = None;
+    let mut previous_history_length: Option<usize> = None;
     for (step_index, proof) in proofs.iter().cloned().enumerate() {
         if proof.proof_backend != StarkProofBackend::Stwo {
             return Err(VmError::InvalidConfig(format!(
@@ -527,10 +566,57 @@ pub fn phase12_prepare_decoding_chain(
             )));
         }
 
-        let from_state =
-            derive_phase12_state(proof.claim.program.initial_memory(), step_index, layout)?;
-        let to_state =
-            derive_phase12_state(&proof.claim.final_state.memory, step_index + 1, layout)?;
+        let from_view = derive_phase12_state_view(proof.claim.program.initial_memory(), layout)?;
+        if from_view.layout_commitment != expected_layout_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step {step_index} initial state does not match the manifest layout commitment"
+            )));
+        }
+        let (from_history_commitment, from_history_length) =
+            match (previous_history_commitment.clone(), previous_history_length) {
+                (Some(commitment), Some(length)) => (commitment, length),
+                _ => (
+                    commit_phase12_history_seed(
+                        &expected_layout_commitment,
+                        &proof.claim.program.initial_memory()[layout.kv_cache_range()],
+                        layout.pair_width,
+                    ),
+                    layout.rolling_kv_pairs,
+                ),
+            };
+        let from_state = build_phase12_state(
+            step_index,
+            from_view,
+            from_history_commitment.clone(),
+            from_history_length,
+        );
+
+        let to_view = derive_phase12_state_view(&proof.claim.final_state.memory, layout)?;
+        if to_view.layout_commitment != expected_layout_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step {step_index} final state does not match the manifest layout commitment"
+            )));
+        }
+        let to_history_length = from_history_length.checked_add(1).ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "decoding step {step_index} history length {from_history_length} cannot be incremented"
+            ))
+        })?;
+        let to_history_commitment = advance_phase12_history_commitment(
+            &expected_layout_commitment,
+            &from_history_commitment,
+            &proof.claim.program.initial_memory()[layout.incoming_token_range()],
+            to_history_length,
+        );
+        let to_state = build_phase12_state(
+            step_index + 1,
+            to_view,
+            to_history_commitment.clone(),
+            to_history_length,
+        );
+
+        previous_history_commitment = Some(to_history_commitment);
+        previous_history_length = Some(to_history_length);
         steps.push(Phase12DecodingStep {
             from_state,
             to_state,
@@ -554,6 +640,7 @@ pub fn phase12_prepare_decoding_chain(
 
 pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) -> Result<()> {
     manifest.layout.validate()?;
+    let expected_layout_commitment = commit_phase12_layout(&manifest.layout);
     if manifest.proof_backend != StarkProofBackend::Stwo {
         return Err(VmError::InvalidConfig(format!(
             "decoding chain backend `{}` is not `stwo`",
@@ -611,22 +698,57 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
             )));
         }
 
-        let derived_from = derive_phase12_state(
-            step.proof.claim.program.initial_memory(),
+        let derived_from =
+            derive_phase12_state_view(step.proof.claim.program.initial_memory(), &manifest.layout)?;
+        let derived_to =
+            derive_phase12_state_view(&step.proof.claim.final_state.memory, &manifest.layout)?;
+        let (expected_history_commitment, expected_history_length) = if step_index == 0 {
+            (
+                commit_phase12_history_seed(
+                    &expected_layout_commitment,
+                    &step.proof.claim.program.initial_memory()[manifest.layout.kv_cache_range()],
+                    manifest.layout.pair_width,
+                ),
+                manifest.layout.rolling_kv_pairs,
+            )
+        } else {
+            (
+                manifest.steps[step_index - 1]
+                    .to_state
+                    .kv_history_commitment
+                    .clone(),
+                manifest.steps[step_index - 1].to_state.kv_history_length,
+            )
+        };
+        let expected_from = build_phase12_state(
             step_index,
-            &manifest.layout,
-        )?;
-        let derived_to = derive_phase12_state(
-            &step.proof.claim.final_state.memory,
+            derived_from,
+            expected_history_commitment.clone(),
+            expected_history_length,
+        );
+        let next_history_length = expected_history_length.checked_add(1).ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "decoding step {step_index} history length {expected_history_length} cannot be incremented"
+            ))
+        })?;
+        let next_history_commitment = advance_phase12_history_commitment(
+            &expected_layout_commitment,
+            &expected_history_commitment,
+            &step.proof.claim.program.initial_memory()[manifest.layout.incoming_token_range()],
+            next_history_length,
+        );
+        let expected_to = build_phase12_state(
             step_index + 1,
-            &manifest.layout,
-        )?;
-        if step.from_state != derived_from {
+            derived_to,
+            next_history_commitment,
+            next_history_length,
+        );
+        if step.from_state != expected_from {
             return Err(VmError::InvalidConfig(format!(
                 "decoding step {step_index} recorded from_state does not match the proof's initial state"
             )));
         }
-        if step.to_state != derived_to {
+        if step.to_state != expected_to {
             return Err(VmError::InvalidConfig(format!(
                 "decoding step {step_index} recorded to_state does not match the proof's final state"
             )));
@@ -744,11 +866,10 @@ fn derive_phase11_state(memory: &[i16], step_index: usize) -> Result<Phase11Deco
     })
 }
 
-fn derive_phase12_state(
+fn derive_phase12_state_view(
     memory: &[i16],
-    step_index: usize,
     layout: &Phase12DecodingLayout,
-) -> Result<Phase12DecodingState> {
+) -> Result<Phase12StateView> {
     layout.validate()?;
     if memory.len() != layout.memory_size() {
         return Err(VmError::InvalidConfig(format!(
@@ -785,9 +906,7 @@ fn derive_phase12_state(
         &memory[layout.kv_cache_range()],
     );
 
-    Ok(Phase12DecodingState {
-        state_version: STWO_DECODING_STATE_VERSION_PHASE12.to_string(),
-        step_index,
+    Ok(Phase12StateView {
         position,
         layout_commitment,
         persistent_state_commitment,
@@ -797,6 +916,28 @@ fn derive_phase12_state(
         output_commitment,
         lookup_rows_commitment,
     })
+}
+
+fn build_phase12_state(
+    step_index: usize,
+    view: Phase12StateView,
+    kv_history_commitment: String,
+    kv_history_length: usize,
+) -> Phase12DecodingState {
+    Phase12DecodingState {
+        state_version: STWO_DECODING_STATE_VERSION_PHASE12.to_string(),
+        step_index,
+        position: view.position,
+        layout_commitment: view.layout_commitment,
+        persistent_state_commitment: view.persistent_state_commitment,
+        kv_history_commitment,
+        kv_history_length,
+        kv_cache_commitment: view.kv_cache_commitment,
+        incoming_token_commitment: view.incoming_token_commitment,
+        query_commitment: view.query_commitment,
+        output_commitment: view.output_commitment,
+        lookup_rows_commitment: view.lookup_rows_commitment,
+    }
 }
 
 fn validate_phase11_chain_steps(steps: &[Phase11DecodingStep]) -> Result<()> {
@@ -937,6 +1078,23 @@ fn validate_phase12_chain_steps(
                 index
             )));
         }
+        if steps[index - 1].to_state.kv_history_commitment
+            != steps[index].from_state.kv_history_commitment
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding chain link {} -> {} does not preserve the cumulative KV-history commitment",
+                index - 1,
+                index
+            )));
+        }
+        if steps[index - 1].to_state.kv_history_length != steps[index].from_state.kv_history_length
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding chain link {} -> {} does not preserve the cumulative KV-history length",
+                index - 1,
+                index
+            )));
+        }
     }
     Ok(())
 }
@@ -991,6 +1149,50 @@ fn commit_phase12_persistent_state(
     hasher.update(layout_commitment.as_bytes());
     hasher.update(&position.to_le_bytes());
     for value in kv_cache_values {
+        hasher.update(&value.to_le_bytes());
+    }
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+fn commit_phase12_history_seed(
+    layout_commitment: &str,
+    kv_cache_values: &[i16],
+    pair_width: usize,
+) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STATE_VERSION_PHASE12.as_bytes());
+    hasher.update(layout_commitment.as_bytes());
+    hasher.update(b"history-seed");
+    hasher.update(&(pair_width as u64).to_le_bytes());
+    hasher.update(&((kv_cache_values.len() / pair_width) as u64).to_le_bytes());
+    for value in kv_cache_values {
+        hasher.update(&value.to_le_bytes());
+    }
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+fn advance_phase12_history_commitment(
+    layout_commitment: &str,
+    previous_commitment: &str,
+    appended_pair: &[i16],
+    next_length: usize,
+) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STATE_VERSION_PHASE12.as_bytes());
+    hasher.update(layout_commitment.as_bytes());
+    hasher.update(b"history-advance");
+    hasher.update(previous_commitment.as_bytes());
+    hasher.update(&(next_length as u64).to_le_bytes());
+    hasher.update(&(appended_pair.len() as u64).to_le_bytes());
+    for value in appended_pair {
         hasher.update(&value.to_le_bytes());
     }
     let mut out = [0u8; 32];
@@ -1383,6 +1585,12 @@ mod tests {
             manifest.steps[0].to_state.persistent_state_commitment,
             manifest.steps[1].from_state.persistent_state_commitment
         );
+        assert_eq!(
+            manifest.steps[0].to_state.kv_history_commitment,
+            manifest.steps[1].from_state.kv_history_commitment
+        );
+        assert_eq!(manifest.steps[0].from_state.kv_history_length, 4);
+        assert_eq!(manifest.steps[2].to_state.kv_history_length, 7);
         assert_ne!(
             manifest.steps[0].from_state.incoming_token_commitment,
             manifest.steps[1].from_state.incoming_token_commitment
@@ -1399,6 +1607,22 @@ mod tests {
             .collect::<Vec<_>>();
         let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
         manifest.steps[1].from_state.persistent_state_commitment = "broken".to_string();
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("recorded from_state does not match the proof's initial state"));
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_broken_history_link() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        manifest.steps[1].from_state.kv_history_commitment = "broken".to_string();
         let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
         assert!(err
             .to_string()

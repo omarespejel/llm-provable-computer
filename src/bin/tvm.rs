@@ -1546,9 +1546,14 @@ fn prove_stwo_decoding_family_demo_command(output: &Path) -> llm_provable_comput
         println!("pair_width: {}", manifest.layout.pair_width);
         if let Some(first) = manifest.steps.first() {
             println!("start_position: {}", first.from_state.position);
+            println!(
+                "start_history_length: {}",
+                first.from_state.kv_history_length
+            );
         }
         if let Some(last) = manifest.steps.last() {
             println!("final_position: {}", last.to_state.position);
+            println!("final_history_length: {}", last.to_state.kv_history_length);
         }
 
         Ok(())
@@ -1590,6 +1595,15 @@ fn verify_stwo_decoding_family_demo_command(
         println!("total_steps: {}", manifest.total_steps);
         println!("rolling_kv_pairs: {}", manifest.layout.rolling_kv_pairs);
         println!("pair_width: {}", manifest.layout.pair_width);
+        if let Some(first) = manifest.steps.first() {
+            println!(
+                "start_history_length: {}",
+                first.from_state.kv_history_length
+            );
+        }
+        if let Some(last) = manifest.steps.last() {
+            println!("final_history_length: {}", last.to_state.kv_history_length);
+        }
         println!("expected_chain_version: {STWO_DECODING_CHAIN_VERSION_PHASE12}");
         println!("expected_semantic_scope: {STWO_DECODING_CHAIN_SCOPE_PHASE12}");
 
