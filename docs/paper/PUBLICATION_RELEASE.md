@@ -1,6 +1,9 @@
 # Publication Release Package
 
-Snapshot date: **April 6, 2026**
+Snapshot date: **April 7, 2026**
+
+Intended launch tag for the current paper-facing repository state:
+`paper-publication-v2-2026-04-07`
 
 This repository state is the publication-facing package for the paper and its supporting
 artifacts. The package is intentionally split into evidence tiers rather than treated as one
@@ -51,4 +54,6 @@ Before cutting a release tag, verify:
 1. the two frozen bundle directories exist and their `sha256sums.txt` files validate,
 2. the main paper and appendices refer to the same repo state and evidence tiers,
 3. the design note matches the current experimental `stwo` status,
-4. no stale top-level README language still describes S-two as merely prospective.
+4. no stale top-level README language still describes S-two as merely prospective,
+5. Reference `[30]` in the paper points at the same release tag that is being
+   circulated.

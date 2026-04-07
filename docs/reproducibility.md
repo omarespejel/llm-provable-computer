@@ -3,6 +3,25 @@
 This repository includes a one-command reproducibility bundle generator intended
 for publication and external review.
 
+## Tooling notes
+
+- The default vanilla STARK path builds on stable Rust.
+- The experimental `stwo` path is different: compiling or running anything with
+  `--features stwo-backend` currently requires the pinned nightly toolchain
+  `cargo +nightly-2025-07-14`, because the upstream `stwo` stack is still
+  nightly-only.
+- Python helper scripts should be run from a local virtual environment. On
+  PEP-668-managed Python installations, bare `pip install` may fail against the
+  system interpreter.
+
+Recommended Python setup:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r scripts/requirements.txt
+```
+
 ## Command
 
 ```bash
@@ -51,3 +70,15 @@ The script writes to `compiled/repro-bundle/` by default and produces:
 - `research-v2` artifacts are structured semantic certificates with commitments,
   used as evidence and regression checks, but are not yet part of the STARK
   claim relation.
+
+## Paper figure regeneration
+
+The Section 4 paper figures can be regenerated from the same local venv:
+
+```bash
+python3 scripts/paper/generate_section4_ratio_figure.py
+python3 scripts/paper/generate_section4_decomposition_figure.py
+```
+
+These scripts rewrite the committed TSV/SVG/PDF figure assets under
+`docs/paper/figures/`.

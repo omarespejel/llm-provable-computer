@@ -97,6 +97,9 @@ cargo run --bin tvm -- verify-stark fib.proof.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prove-stark programs/addition.tvm -o add.proof.json --backend stwo
 
+# The experimental `stwo` path requires the pinned nightly toolchain both to
+# compile `--features stwo-backend` and to run its CLI commands.
+
 # Verify transformer matches native interpreter (lockstep)
 cargo run --bin tvm -- run programs/fibonacci.tvm --verify-native
 
@@ -258,10 +261,15 @@ If `--verify-all` passes and `scripts/validate_onnx.py` reproduces the result fr
 cargo run --features onnx-export --bin tvm -- export-onnx programs/fibonacci.tvm -o compiled/fibonacci
 
 # Reproduce in Python with onnxruntime
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r scripts/requirements.txt
 python3 scripts/validate_onnx.py compiled/fibonacci \
   --program-name fibonacci --expected-acc 21 --expected-halted true
 ```
+
+On PEP-668-managed Python installations, use the local venv above rather than
+system `pip`.
 
 ---
 
@@ -559,6 +567,10 @@ cargo test                    # Core suite
 cargo test --features full    # Everything
 cargo bench                   # Hull + STARK benchmarks
 ```
+
+`cargo test` is not a fast smoke check here: several suites generate and verify
+real STARK proofs, so full runs can take 10-30+ minutes depending on machine
+and enabled features.
 
 ## Development Checks
 
