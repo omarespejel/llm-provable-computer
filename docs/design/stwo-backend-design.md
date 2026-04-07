@@ -207,8 +207,10 @@ Delivered:
   with the current transition now reading both shared normalization scale rows and both shared
   activation output rows inside the executed `decoding_step_v2` program instead of treating those
   lookup rows as write-only metadata, feeding bounded lookup-backed values into the latest carried
-  KV-cache pair on the public demo layouts, and with exact tests plus real-backend proving
-  coverage over all default demo steps and the default layout matrix.
+  KV-cache pair on the public demo layouts, with three carried lanes now bound to the combined
+  output cell and one to the lookup-backed primary output on the wider layouts, and with exact
+  tests plus real-backend proving coverage over all default demo steps and the default layout
+  matrix.
 
 Current limitation:
 
