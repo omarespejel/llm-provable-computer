@@ -471,14 +471,29 @@ pub fn decoding_step_v2_template_program(layout: &Phase12DecodingLayout) -> Resu
         instructions.push(Instruction::Store(index as u8));
     }
     for offset in 0..layout.pair_width {
-        let source = match offset {
-            0 => lookup.start + 3,
-            1 => lookup.start + 7,
-            2 => output.start + 2,
-            _ => incoming.start + offset,
-        };
-        instructions.push(Instruction::Load(source as u8));
-        instructions.push(Instruction::Store((latest_cached.start + offset) as u8));
+        match offset {
+            0 => {
+                instructions.push(Instruction::Load((lookup.start + 3) as u8));
+                instructions.push(Instruction::Store((latest_cached.start + offset) as u8));
+            }
+            1 => {
+                instructions.push(Instruction::Load((lookup.start + 7) as u8));
+                instructions.push(Instruction::Store((latest_cached.start + offset) as u8));
+            }
+            2 => {
+                instructions.push(Instruction::Load((output.start + 2) as u8));
+                instructions.push(Instruction::Store((latest_cached.start + offset) as u8));
+            }
+            3 => {
+                instructions.push(Instruction::Load(lookup.start as u8));
+                instructions.push(Instruction::AddMemory((lookup.start + 4) as u8));
+                instructions.push(Instruction::Store((latest_cached.start + offset) as u8));
+            }
+            _ => {
+                instructions.push(Instruction::Load((incoming.start + offset) as u8));
+                instructions.push(Instruction::Store((latest_cached.start + offset) as u8));
+            }
+        }
     }
 
     instructions.push(Instruction::Load(layout.position_index()? as u8));
@@ -4032,6 +4047,25 @@ mod tests {
     }
 
     #[test]
+    fn phase12_template_writes_lookup_derived_fourth_cache_lane_when_available() {
+        let layout = phase12_default_decoding_layout();
+        let latest_cached = layout.latest_cached_pair_range().expect("latest cached");
+        let lookup = layout.lookup_range().expect("lookup range");
+        let program = decoding_step_v2_template_program(&layout).expect("program");
+        let instructions = program.instructions();
+        let expected = [
+            Instruction::Load(lookup.start as u8),
+            Instruction::AddMemory((lookup.start + 4) as u8),
+            Instruction::Store((latest_cached.start + 3) as u8),
+        ];
+        assert!(
+            instructions
+                .windows(expected.len())
+                .any(|window| window == expected.as_slice())
+        );
+    }
+
+    #[test]
     fn phase12_runtime_uses_shared_lookup_rows_across_layouts() {
         for layout in phase13_default_decoding_layout_matrix().expect("layout matrix") {
             let latest_cached = layout.latest_cached_pair_range().expect("latest cached");
@@ -4060,6 +4094,7 @@ mod tests {
                 let expected_secondary_scale = final_memory[lookup.start + 5];
                 let expected_activation = final_memory[lookup.start + 3];
                 let expected_secondary_activation = final_memory[lookup.start + 7];
+                let expected_lookup_sum = final_memory[lookup.start] + final_memory[lookup.start + 4];
                 assert_eq!(
                     final_memory[output.start],
                     expected_raw_dot * expected_primary_scale
@@ -4077,6 +4112,7 @@ mod tests {
                         0 => expected_activation,
                         1 => expected_secondary_activation,
                         2 => final_memory[output.start + 2],
+                        3 => expected_lookup_sum,
                         _ => final_memory[incoming.start + offset],
                     };
                     assert_eq!(
