@@ -3971,7 +3971,6 @@ mod tests {
         let instructions = program.instructions();
         let store_last_lookup =
             Instruction::Store((lookup.start + PHASE12_SHARED_LOOKUP_ROWS - 1) as u8);
-        let store_output_flag = Instruction::Store((output.start + 2) as u8);
         let lookup_store_index = instructions
             .iter()
             .rposition(|instruction| *instruction == store_last_lookup)
@@ -3990,11 +3989,27 @@ mod tests {
         );
         assert_eq!(
             instructions.get(lookup_store_index + 4),
-            Some(&Instruction::Load((lookup.start + 3) as u8))
+            Some(&Instruction::Load((output.start + 1) as u8))
         );
         assert_eq!(
             instructions.get(lookup_store_index + 5),
-            Some(&store_output_flag)
+            Some(&Instruction::MulMemory((lookup.start + 5) as u8))
+        );
+        assert_eq!(
+            instructions.get(lookup_store_index + 6),
+            Some(&Instruction::Store((output.start + 1) as u8))
+        );
+        assert_eq!(
+            instructions.get(lookup_store_index + 7),
+            Some(&Instruction::Load((lookup.start + 3) as u8))
+        );
+        assert_eq!(
+            instructions.get(lookup_store_index + 8),
+            Some(&Instruction::AddMemory((lookup.start + 7) as u8))
+        );
+        assert_eq!(
+            instructions.get(lookup_store_index + 9),
+            Some(&Instruction::Store((output.start + 2) as u8))
         );
     }
 
