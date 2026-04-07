@@ -29,20 +29,20 @@ pub const STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13: &str =
 pub const STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_layout_matrix";
 pub const STWO_DECODING_CHAIN_VERSION_PHASE14: &str =
-    "stwo-phase14-decoding-chunked-history-chain-v1";
+    "stwo-phase14-decoding-chunked-history-chain-v2";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE14: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_chunked_history_chain";
-pub const STWO_DECODING_STATE_VERSION_PHASE14: &str = "stwo-decoding-state-v3";
+pub const STWO_DECODING_STATE_VERSION_PHASE14: &str = "stwo-decoding-state-v4";
 pub const STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15: &str =
-    "stwo-phase15-decoding-history-segment-bundle-v1";
+    "stwo-phase15-decoding-history-segment-bundle-v2";
 pub const STWO_DECODING_SEGMENT_BUNDLE_SCOPE_PHASE15: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_segment_bundle";
 pub const STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16: &str =
-    "stwo-phase16-decoding-history-segment-rollup-v1";
+    "stwo-phase16-decoding-history-segment-rollup-v2";
 pub const STWO_DECODING_SEGMENT_ROLLUP_SCOPE_PHASE16: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_segment_rollup";
 pub const STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17: &str =
-    "stwo-phase17-decoding-history-rollup-matrix-v1";
+    "stwo-phase17-decoding-history-rollup-matrix-v2";
 pub const STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_rollup_matrix";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
@@ -268,6 +268,8 @@ pub struct Phase14DecodingState {
     pub kv_history_sealed_chunks: usize,
     pub kv_history_open_chunk_commitment: String,
     pub kv_history_open_chunk_pairs: usize,
+    pub kv_history_frontier_commitment: String,
+    pub kv_history_frontier_pairs: usize,
     pub kv_cache_commitment: String,
     pub incoming_token_commitment: String,
     pub query_commitment: String,
@@ -382,6 +384,9 @@ struct Phase14HistoryAccumulator {
     sealed_chunks: usize,
     open_chunk_commitment: String,
     open_chunk_pairs: usize,
+    frontier_commitment: String,
+    frontier_pairs: usize,
+    frontier_values: Vec<i16>,
 }
 
 pub fn decoding_step_v1_template_program() -> Result<Program> {
@@ -2288,6 +2293,8 @@ fn build_phase14_state(
         kv_history_sealed_chunks: history.sealed_chunks,
         kv_history_open_chunk_commitment: history.open_chunk_commitment.clone(),
         kv_history_open_chunk_pairs: history.open_chunk_pairs,
+        kv_history_frontier_commitment: history.frontier_commitment.clone(),
+        kv_history_frontier_pairs: history.frontier_pairs,
         kv_cache_commitment: view.kv_cache_commitment,
         incoming_token_commitment: view.incoming_token_commitment,
         query_commitment: view.query_commitment,
@@ -2507,6 +2514,26 @@ fn validate_phase14_chain_steps(
                 history_chunk_pairs
             )));
         }
+        if step.from_state.kv_history_frontier_pairs != layout.rolling_kv_pairs
+            || step.to_state.kv_history_frontier_pairs != layout.rolling_kv_pairs
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} uses history frontier pair count {} -> {}, expected {}",
+                step.from_state.kv_history_frontier_pairs,
+                step.to_state.kv_history_frontier_pairs,
+                layout.rolling_kv_pairs
+            )));
+        }
+        if step.from_state.kv_history_frontier_commitment != step.from_state.kv_cache_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} does not tie the from_state history frontier commitment to the KV-cache commitment"
+            )));
+        }
+        if step.to_state.kv_history_frontier_commitment != step.to_state.kv_cache_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} does not tie the to_state history frontier commitment to the KV-cache commitment"
+            )));
+        }
         let expected_next_position = step.from_state.position.checked_add(1).ok_or_else(|| {
             VmError::InvalidConfig(format!(
                 "chunked decoding step {index} position {} cannot be incremented",
@@ -2595,6 +2622,24 @@ fn validate_phase14_chain_steps(
         {
             return Err(VmError::InvalidConfig(format!(
                 "chunked decoding chain link {} -> {} does not preserve the open KV-history chunk length",
+                index - 1,
+                index
+            )));
+        }
+        if steps[index - 1].to_state.kv_history_frontier_commitment
+            != steps[index].from_state.kv_history_frontier_commitment
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the KV-history frontier commitment",
+                index - 1,
+                index
+            )));
+        }
+        if steps[index - 1].to_state.kv_history_frontier_pairs
+            != steps[index].from_state.kv_history_frontier_pairs
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the KV-history frontier pair count",
                 index - 1,
                 index
             )));
@@ -3030,6 +3075,7 @@ fn seed_phase14_history(
         PHASE14_HISTORY_CHUNK_PAIRS,
         history_length,
     );
+    let frontier_values = kv_cache_values.to_vec();
     Phase14HistoryAccumulator {
         history_commitment,
         history_length,
@@ -3038,6 +3084,13 @@ fn seed_phase14_history(
         sealed_chunks,
         open_chunk_commitment,
         open_chunk_pairs,
+        frontier_commitment: commit_phase12_named_slice(
+            "kv-cache",
+            layout_commitment,
+            &frontier_values,
+        ),
+        frontier_pairs: history_length,
+        frontier_values,
     }
 }
 
@@ -3125,6 +3178,20 @@ fn advance_phase14_history(
         previous.chunk_size,
         next_history_length,
     );
+    let frontier_value_capacity = previous
+        .frontier_pairs
+        .checked_mul(pair_width)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "chunked decoding frontier value capacity overflowed".to_string(),
+            )
+        })?;
+    let mut frontier_values = previous.frontier_values.clone();
+    frontier_values.extend_from_slice(appended_pair);
+    if frontier_values.len() > frontier_value_capacity {
+        let keep_from = frontier_values.len() - frontier_value_capacity;
+        frontier_values = frontier_values[keep_from..].to_vec();
+    }
     Ok(Phase14HistoryAccumulator {
         history_commitment,
         history_length: next_history_length,
@@ -3133,6 +3200,13 @@ fn advance_phase14_history(
         sealed_chunks,
         open_chunk_commitment,
         open_chunk_pairs,
+        frontier_commitment: commit_phase12_named_slice(
+            "kv-cache",
+            layout_commitment,
+            &frontier_values,
+        ),
+        frontier_pairs: previous.frontier_pairs,
+        frontier_values,
     })
 }
 
@@ -3766,9 +3840,25 @@ mod tests {
         assert_eq!(manifest.history_chunk_pairs, PHASE14_HISTORY_CHUNK_PAIRS);
         assert_eq!(manifest.steps[0].from_state.kv_history_sealed_chunks, 2);
         assert_eq!(manifest.steps[0].from_state.kv_history_open_chunk_pairs, 0);
+        assert_eq!(
+            manifest.steps[0].from_state.kv_history_frontier_pairs,
+            layout.rolling_kv_pairs
+        );
+        assert_eq!(
+            manifest.steps[0].from_state.kv_history_frontier_commitment,
+            manifest.steps[0].from_state.kv_cache_commitment
+        );
         assert_eq!(manifest.steps[2].to_state.kv_history_length, 7);
         assert_eq!(manifest.steps[2].to_state.kv_history_sealed_chunks, 3);
         assert_eq!(manifest.steps[2].to_state.kv_history_open_chunk_pairs, 1);
+        assert_eq!(
+            manifest.steps[2].to_state.kv_history_frontier_pairs,
+            layout.rolling_kv_pairs
+        );
+        assert_eq!(
+            manifest.steps[2].to_state.kv_history_frontier_commitment,
+            manifest.steps[2].to_state.kv_cache_commitment
+        );
         verify_phase14_decoding_chain(&manifest).expect("phase14 verification");
     }
 
@@ -3804,6 +3894,23 @@ mod tests {
         assert!(err
             .to_string()
             .contains("unsupported chunked decoding history_chunk_pairs=4"));
+    }
+
+    #[test]
+    fn phase14_verify_decoding_chain_rejects_broken_frontier_cache_link() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        manifest.steps[1].from_state.kv_history_frontier_commitment = "broken".to_string();
+        let err = verify_phase14_decoding_chain(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("recorded from_state does not match the proof's initial state"));
     }
 
     #[test]
