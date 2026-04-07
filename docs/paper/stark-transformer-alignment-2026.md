@@ -263,7 +263,9 @@ These capabilities support the trace-as-witness thesis directly and move the rep
 
 The repository remains deliberately narrow in several important ways:
 
-- the default reproducibility bundle and primary transformer proof relation still use a custom vanilla STARK backend, even though the repo now also exposes a frozen experimental `stwo` bundle together with a broader exploratory `stwo-backend` for a narrow arithmetic fixture set, dedicated lookup demos, shared-table lookup proofs, fixed-shape Gemma-inspired artifacts, and a fixed-shape proof-carrying decoding demo,
+- the default reproducibility bundle and primary transformer proof relation still use a custom vanilla STARK backend,
+- the repo now also exposes a frozen experimental `stwo` bundle together with a broader exploratory `stwo-backend`,
+- that experimental `stwo` surface remains narrow: a public arithmetic fixture set, dedicated lookup demos, shared-table lookup proofs, fixed-shape Gemma-inspired artifacts, and a fixed-shape proof-carrying decoding demo,
 - the proved attention mode is currently `average-hard`, not standard softmax,
 - learned/trained weights remain out of scope,
 - zero-knowledge hiding is not implemented,
@@ -302,7 +304,7 @@ The infrastructure argument is stronger now than it was a year ago.
 
 StarkWare’s public materials position S-two as its next-generation prover, fully open source and built around Circle STARKs over M31. The March 31, 2026 recursion update is particularly relevant to verifiable AI because proof aggregation is not optional once workloads become large or modular. If one wants many local proofs, batched proofs, or compressed proofs that can be checked cheaply onchain, recursion is the mechanism that keeps the system practical.
 
-For this paper, however, the key distinction is: **S-two’s progress strengthens the architectural roadmap, while the repository analyzed here still keeps its default artifact bundle and primary transformer proof relation on the vanilla backend and exposes `stwo` through a frozen narrow evidence tier plus a broader experimental fixture set, shared-table lookup demos, fixed-shape Gemma-inspired artifacts, and a fixed-shape proof-carrying decoding demo.**
+For this paper, however, the key distinction is: **S-two’s progress strengthens the architectural roadmap, while the repository analyzed here still keeps its default artifact bundle and primary transformer proof relation on the vanilla backend.** It exposes `stwo` through a frozen narrow evidence tier plus a broader experimental fixture set, shared-table lookup demos, fixed-shape Gemma-inspired artifacts, and a fixed-shape proof-carrying decoding demo.
 
 Verifier cost and proof size remain part of that roadmap, not a side note. The frozen vanilla-backend artifact bundle still produces `7.6–12.8 MB` proof files for tiny fixtures, which is far from an onchain-friendly footprint. That is why recursion matters to the infrastructure claim: if STARK-native systems are to be practical for verifiable AI onchain, aggregation and compression must narrow verifier workload and proof-size overhead rather than only improving raw prover throughput [19, 34].
 

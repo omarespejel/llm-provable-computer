@@ -15,13 +15,17 @@ EXPECTED_PREFIX="$REPO_ROOT/docs/paper/artifacts"
 CANON_EXPECTED_PREFIX="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$EXPECTED_PREFIX")"
 CANON_BUNDLE_DIR="$(python3 -c 'import os,sys; print(os.path.realpath(os.path.abspath(sys.argv[1])))' "$BUNDLE_DIR")"
 case "$CANON_BUNDLE_DIR/" in
-  "$CANON_EXPECTED_PREFIX"/* | "$CANON_EXPECTED_PREFIX"/) ;;
+  "$CANON_EXPECTED_PREFIX"/*) ;;
   *)
     echo "Refusing to use BUNDLE_DIR outside $EXPECTED_PREFIX: $BUNDLE_DIR" >&2
     exit 1
     ;;
 esac
 [ -n "$CANON_BUNDLE_DIR" ] || { echo "Refusing to use empty BUNDLE_DIR" >&2; exit 1; }
+[ "$CANON_BUNDLE_DIR" != "$CANON_EXPECTED_PREFIX" ] || {
+  echo "Refusing to delete artifacts root: $CANON_BUNDLE_DIR" >&2
+  exit 1
+}
 [ "$CANON_BUNDLE_DIR" != "/" ] || { echo "Refusing to delete /" >&2; exit 1; }
 [ "$CANON_BUNDLE_DIR" != "$REPO_ROOT" ] || { echo "Refusing to delete repo root" >&2; exit 1; }
 
@@ -59,7 +63,7 @@ git_commit: $(git rev-parse HEAD)
 git_commit_short: $(git rev-parse --short HEAD)
 git_branch: $(git rev-parse --abbrev-ref HEAD)
 rustc: $(rustup run "${NIGHTLY_TOOLCHAIN#+}" rustc --version)
-cargo: $(cargo $NIGHTLY_TOOLCHAIN --version)
+cargo: $(cargo "$NIGHTLY_TOOLCHAIN" --version)
 host_platform: $(uname -srm)
 nightly_toolchain: $NIGHTLY_TOOLCHAIN
 bundle_dir: docs/paper/artifacts/$(basename "$BUNDLE_DIR")
