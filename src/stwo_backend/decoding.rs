@@ -26,7 +26,7 @@ pub const STWO_DECODING_STATE_VERSION_PHASE11: &str = "stwo-decoding-state-v1";
 pub const STWO_DECODING_CHAIN_VERSION_PHASE12: &str = "stwo-phase12-decoding-chain-v5";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE12: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_chain";
-pub const STWO_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v6";
+pub const STWO_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v7";
 pub const STWO_DECODING_LAYOUT_VERSION_PHASE12: &str = "stwo-decoding-layout-v1";
 pub const STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13: &str =
     "stwo-phase13-decoding-layout-matrix-v5";
