@@ -1464,6 +1464,101 @@ fn cli_verify_stwo_decoding_chunked_history_demo_rejects_tampered_chunk_state() 
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_can_prove_and_verify_stwo_decoding_history_segments_demo() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-history-segments-proof").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-decoding-history-segments-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("proof_backend: stwo"))
+        .stdout(predicate::str::contains(
+            "bundle_version: stwo-phase15-decoding-history-segment-bundle-v1",
+        ))
+        .stdout(predicate::str::contains("total_segments: 2"))
+        .stdout(predicate::str::contains("max_segment_steps: 2"))
+        .stdout(predicate::str::contains("final_history_length: 7"));
+
+    let proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    assert_eq!(
+        proof_json
+            .get("bundle_version")
+            .and_then(serde_json::Value::as_str),
+        Some("stwo-phase15-decoding-history-segment-bundle-v1")
+    );
+    assert_eq!(
+        proof_json
+            .get("total_segments")
+            .and_then(serde_json::Value::as_u64),
+        Some(2)
+    );
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-decoding-history-segments-demo")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(
+            "expected_bundle_version: stwo-phase15-decoding-history-segment-bundle-v1",
+        ))
+        .stdout(predicate::str::contains(
+            "expected_proof_backend_version: stwo-phase12-decoding-family-v1",
+        ))
+        .stdout(predicate::str::contains("last_segment_start_step: 2"));
+
+    let _ = std::fs::remove_file(proof_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_decoding_history_segments_demo_rejects_tampered_segment_start() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-history-segments-tamper").with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-decoding-history-segments-tampered").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-decoding-history-segments-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    proof_json["segments"][1]["global_start_step_index"] = serde_json::Value::from(99u64);
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-decoding-history-segments-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "starts at global step 99 instead of 2",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_can_prepare_stwo_recursion_batch_manifest() {
     let proof_a = unique_temp_dir("cli-stwo-recursion-proof-a").with_extension("json");
     let proof_b = unique_temp_dir("cli-stwo-recursion-proof-b").with_extension("json");

@@ -187,7 +187,10 @@ Delivered:
 - proof-carrying decoding over a parameterized `decoding_step_v2` family with layout-bound
   carried-state commitments and cumulative KV-history commitments,
 - a chunked-history carried-state variant over the same `decoding_step_v2` proofs, separating
-  sealed history chunks from the open chunk to make later accumulation boundaries explicit.
+  sealed history chunks from the open chunk to make later accumulation boundaries explicit,
+- a segment-bundle layer over those Phase 14 chunked-history chains, carrying explicit global
+  boundary states so later accumulation work can consume mergeable decoding segments without
+  pretending recursion already exists.
 
 Current limitation:
 
@@ -205,9 +208,10 @@ Targets:
 - move one transformer-relevant non-arithmetic path deeper into the main proved relation,
 - keep the same `statement-v1` claim boundary until a real semantic change forces `statement-v2`.
 
-The new Phase 13 layout-matrix demo and Phase 14 chunked-history chain are the first steps on
-that path: they prove that the parameterized relation survives multiple public layouts and a more
-segmented carried-state discipline without changing the semantic contract.
+The new Phase 13 layout-matrix demo, Phase 14 chunked-history chain, and Phase 15 segmented-history
+bundle are the first steps on that path: they prove that the parameterized relation survives
+multiple public layouts and a more segmented carried-state discipline without changing the
+semantic contract.
 
 ### Phase 6: Recursive compression and aggregation `[later]`
 
@@ -303,7 +307,7 @@ theater rather than real progress.
 
 1. keep the current frozen S-two bundle reproducible,
 2. widen the decode-step family without changing the semantic claim,
-3. improve KV-cache commitment discipline beyond the current cumulative-history plus bounded rolling-window layout,
+3. improve KV-cache commitment discipline beyond the current cumulative-history, chunked-history, and segmented-boundary layout,
 4. move a more faithful non-arithmetic attention path into the main proved relation,
 5. only then bind to recursive aggregation work.
 

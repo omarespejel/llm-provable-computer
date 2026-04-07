@@ -33,6 +33,10 @@ pub const STWO_DECODING_CHAIN_VERSION_PHASE14: &str =
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE14: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_chunked_history_chain";
 pub const STWO_DECODING_STATE_VERSION_PHASE14: &str = "stwo-decoding-state-v3";
+pub const STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15: &str =
+    "stwo-phase15-decoding-history-segment-bundle-v1";
+pub const STWO_DECODING_SEGMENT_BUNDLE_SCOPE_PHASE15: &str =
+    "stwo_execution_parameterized_proof_carrying_decoding_history_segment_bundle";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
 const DECODING_OUTPUT_RANGE: std::ops::Range<usize> = 10..13;
 const DECODING_POSITION_INDEX: usize = 21;
@@ -40,6 +44,7 @@ const PHASE12_OUTPUT_WIDTH: usize = 3;
 const PHASE12_SHARED_LOOKUP_ROWS: usize = 8;
 const PHASE12_LOOKUP_ROW_VALUES: [i16; PHASE12_SHARED_LOOKUP_ROWS] = [16, 64, 1, 1, 4, 128, 0, 1];
 const PHASE14_HISTORY_CHUNK_PAIRS: usize = 2;
+const PHASE15_SEGMENT_STEP_LIMIT: usize = 2;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase11DecodingState {
@@ -279,6 +284,31 @@ pub struct Phase14DecodingChainManifest {
     pub total_steps: usize,
     pub history_chunk_pairs: usize,
     pub steps: Vec<Phase14DecodingStep>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Phase15DecodingHistorySegment {
+    pub segment_index: usize,
+    pub global_start_step_index: usize,
+    pub total_steps: usize,
+    pub global_from_state: Phase14DecodingState,
+    pub global_to_state: Phase14DecodingState,
+    pub chain: Phase14DecodingChainManifest,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Phase15DecodingHistorySegmentBundleManifest {
+    pub proof_backend: StarkProofBackend,
+    pub bundle_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub layout: Phase12DecodingLayout,
+    pub history_chunk_pairs: usize,
+    pub max_segment_steps: usize,
+    pub total_segments: usize,
+    pub total_steps: usize,
+    pub segments: Vec<Phase15DecodingHistorySegment>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1199,6 +1229,297 @@ pub fn verify_phase14_decoding_chain_with_proof_checks(
     Ok(())
 }
 
+pub fn phase15_default_segment_step_limit() -> usize {
+    PHASE15_SEGMENT_STEP_LIMIT
+}
+
+pub fn phase15_prepare_segment_bundle(
+    chain: &Phase14DecodingChainManifest,
+    max_segment_steps: usize,
+) -> Result<Phase15DecodingHistorySegmentBundleManifest> {
+    verify_phase14_decoding_chain(chain)?;
+    if max_segment_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 15 segment bundle requires max_segment_steps > 0".to_string(),
+        ));
+    }
+
+    let mut segments = Vec::new();
+    let mut global_start_step_index = 0usize;
+    for (segment_index, chunk) in chain.steps.chunks(max_segment_steps).enumerate() {
+        let proofs = chunk
+            .iter()
+            .map(|step| step.proof.clone())
+            .collect::<Vec<_>>();
+        let phase12_chain = phase12_prepare_decoding_chain(&chain.layout, &proofs)?;
+        let segment_chain = phase14_prepare_decoding_chain(&phase12_chain)?;
+        let global_from_state = chunk
+            .first()
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 15 segment {segment_index} must contain at least one step"
+                ))
+            })?
+            .from_state
+            .clone();
+        let global_to_state = chunk
+            .last()
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 15 segment {segment_index} must contain at least one step"
+                ))
+            })?
+            .to_state
+            .clone();
+        segments.push(Phase15DecodingHistorySegment {
+            segment_index,
+            global_start_step_index,
+            total_steps: segment_chain.total_steps,
+            global_from_state,
+            global_to_state,
+            chain: segment_chain,
+        });
+        global_start_step_index = global_start_step_index
+            .checked_add(chunk.len())
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "Phase 15 segment bundle global step count overflowed".to_string(),
+                )
+            })?;
+    }
+
+    let manifest = Phase15DecodingHistorySegmentBundleManifest {
+        proof_backend: StarkProofBackend::Stwo,
+        bundle_version: STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15.to_string(),
+        semantic_scope: STWO_DECODING_SEGMENT_BUNDLE_SCOPE_PHASE15.to_string(),
+        proof_backend_version: crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12.to_string(),
+        statement_version: crate::proof::CLAIM_STATEMENT_VERSION_V1.to_string(),
+        layout: chain.layout.clone(),
+        history_chunk_pairs: chain.history_chunk_pairs,
+        max_segment_steps,
+        total_segments: segments.len(),
+        total_steps: chain.total_steps,
+        segments,
+    };
+    verify_phase15_decoding_segment_bundle(&manifest)?;
+    Ok(manifest)
+}
+
+pub fn verify_phase15_decoding_segment_bundle(
+    manifest: &Phase15DecodingHistorySegmentBundleManifest,
+) -> Result<()> {
+    manifest.layout.validate()?;
+    if manifest.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment bundle backend `{}` is not `stwo`",
+            manifest.proof_backend
+        )));
+    }
+    if manifest.bundle_version != STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding history segment bundle version `{}`",
+            manifest.bundle_version
+        )));
+    }
+    if manifest.semantic_scope != STWO_DECODING_SEGMENT_BUNDLE_SCOPE_PHASE15 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding history segment bundle semantic scope `{}`",
+            manifest.semantic_scope
+        )));
+    }
+    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding history segment bundle proof backend version `{}` (expected `{}`)",
+            manifest.proof_backend_version,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+        )));
+    }
+    if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding history segment bundle statement version `{}`",
+            manifest.statement_version
+        )));
+    }
+    if manifest.history_chunk_pairs != PHASE14_HISTORY_CHUNK_PAIRS {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding history segment bundle history_chunk_pairs={} (expected {})",
+            manifest.history_chunk_pairs, PHASE14_HISTORY_CHUNK_PAIRS
+        )));
+    }
+    if manifest.max_segment_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "decoding history segment bundle requires max_segment_steps > 0".to_string(),
+        ));
+    }
+    if manifest.segments.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding history segment bundle must contain at least one segment".to_string(),
+        ));
+    }
+    if manifest.total_segments != manifest.segments.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment bundle total_segments={} does not match segments.len()={}",
+            manifest.total_segments,
+            manifest.segments.len()
+        )));
+    }
+    let derived_total_steps = manifest
+        .segments
+        .iter()
+        .try_fold(0usize, |acc, segment| acc.checked_add(segment.total_steps))
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "decoding history segment bundle total_steps overflowed while summing segments"
+                    .to_string(),
+            )
+        })?;
+    if manifest.total_steps != derived_total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment bundle total_steps={} does not match derived total_steps={}",
+            manifest.total_steps, derived_total_steps
+        )));
+    }
+
+    let expected_layout_commitment = commit_phase12_layout(&manifest.layout);
+    let kv_cache_range = manifest.layout.kv_cache_range()?;
+    let incoming_token_range = manifest.layout.incoming_token_range()?;
+    let mut expected_global_start_step_index = 0usize;
+    let mut accumulator: Option<Phase14HistoryAccumulator> = None;
+    for (segment_index, segment) in manifest.segments.iter().enumerate() {
+        if segment.segment_index != segment_index {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {segment_index} stores segment_index={} instead of {}",
+                segment.segment_index, segment_index
+            )));
+        }
+        if segment.global_start_step_index != expected_global_start_step_index {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {segment_index} starts at global step {} instead of {}",
+                segment.global_start_step_index, expected_global_start_step_index
+            )));
+        }
+        if segment.total_steps == 0 {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {segment_index} must contain at least one step"
+            )));
+        }
+        if segment.total_steps > manifest.max_segment_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {segment_index} total_steps={} exceeds max_segment_steps={}",
+                segment.total_steps, manifest.max_segment_steps
+            )));
+        }
+        if segment.chain.total_steps != segment.total_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {segment_index} total_steps={} does not match chain.total_steps={}",
+                segment.total_steps, segment.chain.total_steps
+            )));
+        }
+        if segment.chain.layout != manifest.layout {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {segment_index} does not match the bundle layout"
+            )));
+        }
+        if segment.chain.history_chunk_pairs != manifest.history_chunk_pairs {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {segment_index} history_chunk_pairs={} does not match bundle {}",
+                segment.chain.history_chunk_pairs, manifest.history_chunk_pairs
+            )));
+        }
+        if segment.chain.proof_backend_version != manifest.proof_backend_version {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {segment_index} proof backend version `{}` does not match bundle `{}`",
+                segment.chain.proof_backend_version, manifest.proof_backend_version
+            )));
+        }
+        if segment.chain.statement_version != manifest.statement_version {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {segment_index} statement version `{}` does not match bundle `{}`",
+                segment.chain.statement_version, manifest.statement_version
+            )));
+        }
+        verify_phase14_decoding_chain(&segment.chain)?;
+        let first_local_step = segment.chain.steps.first().ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "decoding history segment {segment_index} must contain at least one local step"
+            ))
+        })?;
+        let mut current = accumulator.clone().unwrap_or_else(|| {
+            seed_phase14_history(
+                &expected_layout_commitment,
+                &first_local_step.proof.claim.program.initial_memory()[kv_cache_range.clone()],
+                manifest.layout.pair_width,
+            )
+        });
+        let first_from_view = derive_phase12_state_view(
+            first_local_step.proof.claim.program.initial_memory(),
+            &manifest.layout,
+        )?;
+        let expected_global_from = build_phase14_state(expected_global_start_step_index, first_from_view, &current);
+        if segment.global_from_state != expected_global_from {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {segment_index} global_from_state does not match the carried-state replay"
+            )));
+        }
+
+        let mut expected_global_to = expected_global_from.clone();
+        for (local_index, step) in segment.chain.steps.iter().enumerate() {
+            let to_view =
+                derive_phase12_state_view(&step.proof.claim.final_state.memory, &manifest.layout)?;
+            current = advance_phase14_history(
+                &expected_layout_commitment,
+                &current,
+                &step.proof.claim.program.initial_memory()[incoming_token_range.clone()],
+                manifest.layout.pair_width,
+            )?;
+            let global_step_index = expected_global_start_step_index
+                .checked_add(local_index + 1)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(
+                        "decoding history segment bundle global step index overflowed".to_string(),
+                    )
+                })?;
+            expected_global_to = build_phase14_state(global_step_index, to_view, &current);
+        }
+        if segment.global_to_state != expected_global_to {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {segment_index} global_to_state does not match the carried-state replay"
+            )));
+        }
+        if segment_index > 0 {
+            validate_phase15_segment_boundary(
+                &manifest.segments[segment_index - 1].global_to_state,
+                &segment.global_from_state,
+                segment_index,
+            )?;
+        }
+        accumulator = Some(current);
+        expected_global_start_step_index = expected_global_start_step_index
+            .checked_add(segment.total_steps)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "decoding history segment bundle global step count overflowed".to_string(),
+                )
+            })?;
+    }
+
+    Ok(())
+}
+
+pub fn verify_phase15_decoding_segment_bundle_with_proof_checks(
+    manifest: &Phase15DecodingHistorySegmentBundleManifest,
+) -> Result<()> {
+    verify_phase15_decoding_segment_bundle(manifest)?;
+    for (segment_index, segment) in manifest.segments.iter().enumerate() {
+        verify_phase14_decoding_chain_with_proof_checks(&segment.chain).map_err(|error| {
+            VmError::UnsupportedProof(format!(
+                "decoding history segment {segment_index} failed verification: {error}"
+            ))
+        })?;
+    }
+    Ok(())
+}
+
 pub fn save_phase11_decoding_chain(
     manifest: &Phase11DecodingChainManifest,
     path: &Path,
@@ -1240,6 +1561,23 @@ pub fn save_phase14_decoding_chain(
 }
 
 pub fn load_phase14_decoding_chain(path: &Path) -> Result<Phase14DecodingChainManifest> {
+    let bytes = fs::read(path)?;
+    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+}
+
+pub fn save_phase15_decoding_segment_bundle(
+    manifest: &Phase15DecodingHistorySegmentBundleManifest,
+    path: &Path,
+) -> Result<()> {
+    let bytes = serde_json::to_vec_pretty(manifest)
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    fs::write(path, bytes)?;
+    Ok(())
+}
+
+pub fn load_phase15_decoding_segment_bundle(
+    path: &Path,
+) -> Result<Phase15DecodingHistorySegmentBundleManifest> {
     let bytes = fs::read(path)?;
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
 }
@@ -1354,6 +1692,21 @@ pub fn prove_phase14_decoding_demo_for_layout(
 pub fn prove_phase14_decoding_demo() -> Result<Phase14DecodingChainManifest> {
     let layout = phase12_default_decoding_layout();
     prove_phase14_decoding_demo_for_layout(&layout)
+}
+
+pub fn prove_phase15_decoding_demo_for_layout(
+    layout: &Phase12DecodingLayout,
+) -> Result<Phase15DecodingHistorySegmentBundleManifest> {
+    let phase14_manifest = prove_phase14_decoding_demo_for_layout(layout)?;
+    let manifest =
+        phase15_prepare_segment_bundle(&phase14_manifest, phase15_default_segment_step_limit())?;
+    verify_phase15_decoding_segment_bundle_with_proof_checks(&manifest)?;
+    Ok(manifest)
+}
+
+pub fn prove_phase15_decoding_demo() -> Result<Phase15DecodingHistorySegmentBundleManifest> {
+    let layout = phase12_default_decoding_layout();
+    prove_phase15_decoding_demo_for_layout(&layout)
 }
 
 fn derive_phase11_state(memory: &[i16], step_index: usize) -> Result<Phase11DecodingState> {
@@ -1780,6 +2133,93 @@ fn validate_phase14_chain_steps(
                 index
             )));
         }
+    }
+    Ok(())
+}
+
+fn validate_phase15_segment_boundary(
+    previous_state: &Phase14DecodingState,
+    current_state: &Phase14DecodingState,
+    segment_index: usize,
+) -> Result<()> {
+    if previous_state.step_index != current_state.step_index {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the global step index",
+            segment_index - 1,
+            segment_index
+        )));
+    }
+    if previous_state.layout_commitment != current_state.layout_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the layout commitment",
+            segment_index - 1,
+            segment_index
+        )));
+    }
+    if previous_state.persistent_state_commitment != current_state.persistent_state_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the persistent KV-cache state commitment",
+            segment_index - 1,
+            segment_index
+        )));
+    }
+    if previous_state.kv_cache_commitment != current_state.kv_cache_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the KV-cache commitment",
+            segment_index - 1,
+            segment_index
+        )));
+    }
+    if previous_state.position != current_state.position {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the decoding position",
+            segment_index - 1,
+            segment_index
+        )));
+    }
+    if previous_state.kv_history_commitment != current_state.kv_history_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the cumulative KV-history commitment",
+            segment_index - 1,
+            segment_index
+        )));
+    }
+    if previous_state.kv_history_length != current_state.kv_history_length {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the cumulative KV-history length",
+            segment_index - 1,
+            segment_index
+        )));
+    }
+    if previous_state.kv_history_sealed_commitment != current_state.kv_history_sealed_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the sealed KV-history commitment",
+            segment_index - 1,
+            segment_index
+        )));
+    }
+    if previous_state.kv_history_sealed_chunks != current_state.kv_history_sealed_chunks {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the sealed KV-history chunk count",
+            segment_index - 1,
+            segment_index
+        )));
+    }
+    if previous_state.kv_history_open_chunk_commitment
+        != current_state.kv_history_open_chunk_commitment
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the open KV-history chunk commitment",
+            segment_index - 1,
+            segment_index
+        )));
+    }
+    if previous_state.kv_history_open_chunk_pairs != current_state.kv_history_open_chunk_pairs {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the open KV-history chunk length",
+            segment_index - 1,
+            segment_index
+        )));
     }
     Ok(())
 }
@@ -2728,5 +3168,68 @@ mod tests {
         assert!(err
             .to_string()
             .contains("unsupported chunked decoding history_chunk_pairs=4"));
+    }
+
+    #[test]
+    fn phase15_prepare_segment_bundle_accepts_chunked_history_chain() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let manifest =
+            phase15_prepare_segment_bundle(&phase14, phase15_default_segment_step_limit())
+                .expect("phase15 manifest");
+        assert_eq!(manifest.total_segments, 2);
+        assert_eq!(manifest.total_steps, 3);
+        assert_eq!(manifest.max_segment_steps, 2);
+        assert_eq!(manifest.segments[0].global_start_step_index, 0);
+        assert_eq!(manifest.segments[1].global_start_step_index, 2);
+        assert_eq!(manifest.segments[0].chain.total_steps, 2);
+        assert_eq!(manifest.segments[1].chain.total_steps, 1);
+        verify_phase15_decoding_segment_bundle(&manifest).expect("phase15 verification");
+    }
+
+    #[test]
+    fn phase15_verify_segment_bundle_rejects_wrong_segment_start() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let mut manifest =
+            phase15_prepare_segment_bundle(&phase14, phase15_default_segment_step_limit())
+                .expect("phase15 manifest");
+        manifest.segments[1].global_start_step_index = 99;
+        let err = verify_phase15_decoding_segment_bundle(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("starts at global step 99 instead of 2"));
+    }
+
+    #[test]
+    fn phase15_verify_segment_bundle_rejects_tampered_global_boundary_state() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let mut manifest =
+            phase15_prepare_segment_bundle(&phase14, phase15_default_segment_step_limit())
+                .expect("phase15 manifest");
+        manifest.segments[1].global_from_state.kv_history_commitment = "tampered".to_string();
+        let err = verify_phase15_decoding_segment_bundle(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("global_from_state does not match the carried-state replay"));
     }
 }
