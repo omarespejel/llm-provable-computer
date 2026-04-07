@@ -206,7 +206,8 @@ Delivered:
   normalization / activation claims already carried inside each `decoding_step_v2` proof payload,
   with the current transition now reading both the shared activation output row and the shared
   normalization scale row inside the executed `decoding_step_v2` program instead of treating those
-  lookup rows as write-only metadata.
+  lookup rows as write-only metadata, and with exact tests plus real-backend proving coverage over
+  all default demo steps.
 
 Current limitation:
 

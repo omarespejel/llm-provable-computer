@@ -2757,12 +2757,19 @@ mod tests {
     #[test]
     fn phase12_decoding_step_v2_trace_satisfies_constraints() {
         let layout = phase12_default_decoding_layout();
-        let memory = phase12_demo_initial_memories(&layout)
+        for (step_index, memory) in phase12_demo_initial_memories(&layout)
             .expect("memories")
-            .remove(0);
-        let program =
-            decoding_step_v2_program_with_initial_memory(&layout, memory).expect("program");
-        assert_trace_satisfies_constraints_for_program(program);
+            .into_iter()
+            .enumerate()
+        {
+            let program =
+                decoding_step_v2_program_with_initial_memory(&layout, memory).expect("program");
+            assert_trace_satisfies_constraints_for_program(program.clone());
+            assert!(
+                matches_decoding_step_v2_family(&program),
+                "step {step_index} is not recognized as decoding_step_v2-family"
+            );
+        }
     }
 
     #[test]
@@ -2832,12 +2839,19 @@ mod tests {
     #[test]
     fn phase12_decoding_step_v2_trace_polys_satisfy_constraints() {
         let layout = phase12_default_decoding_layout();
-        let memory = phase12_demo_initial_memories(&layout)
+        for (step_index, memory) in phase12_demo_initial_memories(&layout)
             .expect("memories")
-            .remove(0);
-        let program =
-            decoding_step_v2_program_with_initial_memory(&layout, memory).expect("program");
-        assert_trace_polys_satisfy_constraints_for_program(program);
+            .into_iter()
+            .enumerate()
+        {
+            let program =
+                decoding_step_v2_program_with_initial_memory(&layout, memory).expect("program");
+            assert_trace_polys_satisfy_constraints_for_program(program.clone());
+            assert!(
+                matches_decoding_step_v2_family(&program),
+                "step {step_index} is not recognized as decoding_step_v2-family"
+            );
+        }
     }
 
     #[test]

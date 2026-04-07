@@ -3617,9 +3617,11 @@ mod tests {
     use crate::config::Attention2DMode;
     use crate::interpreter::NativeInterpreter;
     use crate::proof::{
-        production_v1_stark_options, ExecutionClaimCommitments, VanillaStarkExecutionClaim,
+        production_v1_stark_options, prove_execution_stark_with_backend_and_options,
+        ExecutionClaimCommitments, VanillaStarkExecutionClaim,
     };
     use crate::state::MachineState;
+    use crate::{ProgramCompiler, TransformerVmConfig};
 
     fn sample_commitments() -> ExecutionClaimCommitments {
         ExecutionClaimCommitments {
@@ -3996,6 +3998,7 @@ mod tests {
     fn phase12_runtime_uses_shared_lookup_rows_across_layouts() {
         for layout in phase13_default_decoding_layout_matrix().expect("layout matrix") {
             let latest_cached = layout.latest_cached_pair_range().expect("latest cached");
+            let incoming = layout.incoming_token_range().expect("incoming range");
             let query = layout.query_range().expect("query range");
             let lookup = layout.lookup_range().expect("lookup range");
             let output = layout.output_range().expect("output range");
@@ -4003,6 +4006,8 @@ mod tests {
                 let expected_raw_dot: i16 = (0..layout.pair_width)
                     .map(|offset| memory[query.start + offset] * memory[latest_cached.start + offset])
                     .sum();
+                let expected_raw_accumulated: i16 =
+                    expected_raw_dot + memory[incoming.clone()].iter().copied().sum::<i16>();
                 let program =
                     decoding_step_v2_program_with_initial_memory(&layout, memory).expect("program");
                 let mut runtime =
@@ -4010,11 +4015,48 @@ mod tests {
                 let result = runtime.run().expect("run program");
                 assert!(result.halted);
                 let final_memory = result.final_state.memory;
-                let expected_scale = final_memory[lookup.start + 1];
+                let expected_primary_scale = final_memory[lookup.start + 1];
                 let expected_activation = final_memory[lookup.start + 3];
-                assert_eq!(final_memory[output.start], expected_raw_dot * expected_scale);
+                assert_eq!(
+                    final_memory[output.start],
+                    expected_raw_dot * expected_primary_scale
+                );
+                assert_eq!(final_memory[output.start + 1], expected_raw_accumulated);
                 assert_eq!(final_memory[output.start + 2], expected_activation);
             }
+        }
+    }
+
+    #[test]
+    fn phase12_real_stwo_prove_accepts_default_layout_demo_memories() {
+        let layout = phase12_default_decoding_layout();
+        let config = TransformerVmConfig {
+            num_layers: 1,
+            attention_mode: Attention2DMode::AverageHard,
+            ..TransformerVmConfig::default()
+        };
+        for (step_index, initial_memory) in phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .enumerate()
+        {
+            let debug_memory = initial_memory.clone();
+            let program =
+                decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
+            let model = ProgramCompiler
+                .compile_program(program, config.clone())
+                .expect("compile");
+            prove_execution_stark_with_backend_and_options(
+                &model,
+                128,
+                StarkProofBackend::Stwo,
+                production_v1_stark_options(),
+            )
+            .unwrap_or_else(|error| {
+                panic!(
+                    "default layout step {step_index} failed real stwo proof: {error}; initial_memory={debug_memory:?}"
+                )
+            });
         }
     }
 
