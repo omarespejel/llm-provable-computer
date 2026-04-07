@@ -29,20 +29,20 @@ pub const STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13: &str =
 pub const STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_layout_matrix";
 pub const STWO_DECODING_CHAIN_VERSION_PHASE14: &str =
-    "stwo-phase14-decoding-chunked-history-chain-v3";
+    "stwo-phase14-decoding-chunked-history-chain-v4";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE14: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_chunked_history_chain";
-pub const STWO_DECODING_STATE_VERSION_PHASE14: &str = "stwo-decoding-state-v5";
+pub const STWO_DECODING_STATE_VERSION_PHASE14: &str = "stwo-decoding-state-v6";
 pub const STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15: &str =
-    "stwo-phase15-decoding-history-segment-bundle-v3";
+    "stwo-phase15-decoding-history-segment-bundle-v4";
 pub const STWO_DECODING_SEGMENT_BUNDLE_SCOPE_PHASE15: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_segment_bundle";
 pub const STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16: &str =
-    "stwo-phase16-decoding-history-segment-rollup-v3";
+    "stwo-phase16-decoding-history-segment-rollup-v4";
 pub const STWO_DECODING_SEGMENT_ROLLUP_SCOPE_PHASE16: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_segment_rollup";
 pub const STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17: &str =
-    "stwo-phase17-decoding-history-rollup-matrix-v3";
+    "stwo-phase17-decoding-history-rollup-matrix-v4";
 pub const STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_rollup_matrix";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
@@ -272,6 +272,8 @@ pub struct Phase14DecodingState {
     pub kv_history_frontier_pairs: usize,
     pub lookup_transcript_commitment: String,
     pub lookup_transcript_entries: usize,
+    pub lookup_frontier_commitment: String,
+    pub lookup_frontier_entries: usize,
     pub kv_cache_commitment: String,
     pub incoming_token_commitment: String,
     pub query_commitment: String,
@@ -391,6 +393,9 @@ struct Phase14HistoryAccumulator {
     frontier_values: Vec<i16>,
     lookup_transcript_commitment: String,
     lookup_transcript_entries: usize,
+    lookup_frontier_commitment: String,
+    lookup_frontier_entries: usize,
+    lookup_frontier_values: Vec<String>,
 }
 
 pub fn decoding_step_v1_template_program() -> Result<Program> {
@@ -2305,6 +2310,8 @@ fn build_phase14_state(
         kv_history_frontier_pairs: history.frontier_pairs,
         lookup_transcript_commitment: history.lookup_transcript_commitment.clone(),
         lookup_transcript_entries: history.lookup_transcript_entries,
+        lookup_frontier_commitment: history.lookup_frontier_commitment.clone(),
+        lookup_frontier_entries: history.lookup_frontier_entries,
         kv_cache_commitment: view.kv_cache_commitment,
         incoming_token_commitment: view.incoming_token_commitment,
         query_commitment: view.query_commitment,
@@ -2556,6 +2563,28 @@ fn validate_phase14_chain_steps(
                 step.to_state.lookup_transcript_entries
             )));
         }
+        if step.from_state.lookup_frontier_entries == 0
+            || step.from_state.lookup_frontier_entries > history_chunk_pairs
+            || step.to_state.lookup_frontier_entries == 0
+            || step.to_state.lookup_frontier_entries > history_chunk_pairs
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} uses lookup frontier entry count {} -> {}, expected 1..={}",
+                step.from_state.lookup_frontier_entries,
+                step.to_state.lookup_frontier_entries,
+                history_chunk_pairs
+            )));
+        }
+        let expected_next_lookup_frontier_entries =
+            (step.from_state.lookup_frontier_entries + 1).min(history_chunk_pairs);
+        if step.to_state.lookup_frontier_entries != expected_next_lookup_frontier_entries {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} does not advance the lookup frontier entry count: from {} to {}, expected {}",
+                step.from_state.lookup_frontier_entries,
+                step.to_state.lookup_frontier_entries,
+                expected_next_lookup_frontier_entries
+            )));
+        }
         let expected_next_position = step.from_state.position.checked_add(1).ok_or_else(|| {
             VmError::InvalidConfig(format!(
                 "chunked decoding step {index} position {} cannot be incremented",
@@ -2684,6 +2713,24 @@ fn validate_phase14_chain_steps(
                 index
             )));
         }
+        if steps[index - 1].to_state.lookup_frontier_commitment
+            != steps[index].from_state.lookup_frontier_commitment
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the lookup frontier commitment",
+                index - 1,
+                index
+            )));
+        }
+        if steps[index - 1].to_state.lookup_frontier_entries
+            != steps[index].from_state.lookup_frontier_entries
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the lookup frontier entry count",
+                index - 1,
+                index
+            )));
+        }
     }
     Ok(())
 }
@@ -2797,6 +2844,20 @@ fn validate_phase15_segment_boundary(
     if previous_state.lookup_transcript_entries != current_state.lookup_transcript_entries {
         return Err(VmError::InvalidConfig(format!(
             "decoding history segment boundary {} -> {} does not preserve the lookup transcript entry count",
+            segment_index - 1,
+            segment_index
+        )));
+    }
+    if previous_state.lookup_frontier_commitment != current_state.lookup_frontier_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the lookup frontier commitment",
+            segment_index - 1,
+            segment_index
+        )));
+    }
+    if previous_state.lookup_frontier_entries != current_state.lookup_frontier_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the lookup frontier entry count",
             segment_index - 1,
             segment_index
         )));
@@ -3140,6 +3201,25 @@ fn fold_phase19_lookup_transcript(
     lower_hex(&out)
 }
 
+fn commit_phase20_lookup_frontier(
+    layout_commitment: &str,
+    lookup_rows_commitments: &[String],
+) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STATE_VERSION_PHASE14.as_bytes());
+    hasher.update(layout_commitment.as_bytes());
+    hasher.update(b"lookup-frontier");
+    hasher.update(&(lookup_rows_commitments.len() as u64).to_le_bytes());
+    for commitment in lookup_rows_commitments {
+        hasher.update(commitment.as_bytes());
+    }
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
 fn seed_phase14_history(
     layout_commitment: &str,
     kv_cache_values: &[i16],
@@ -3205,6 +3285,12 @@ fn seed_phase14_history(
             lookup_rows_commitment,
         ),
         lookup_transcript_entries: 1,
+        lookup_frontier_commitment: commit_phase20_lookup_frontier(
+            layout_commitment,
+            &[lookup_rows_commitment.to_string()],
+        ),
+        lookup_frontier_entries: 1,
+        lookup_frontier_values: vec![lookup_rows_commitment.to_string()],
     }
 }
 
@@ -3315,6 +3401,12 @@ fn advance_phase14_history(
                 "chunked decoding lookup transcript length overflowed".to_string(),
             )
         })?;
+    let mut lookup_frontier_values = previous.lookup_frontier_values.clone();
+    lookup_frontier_values.push(lookup_rows_commitment.to_string());
+    if lookup_frontier_values.len() > PHASE14_HISTORY_CHUNK_PAIRS {
+        let keep_from = lookup_frontier_values.len() - PHASE14_HISTORY_CHUNK_PAIRS;
+        lookup_frontier_values = lookup_frontier_values[keep_from..].to_vec();
+    }
     Ok(Phase14HistoryAccumulator {
         history_commitment,
         history_length: next_history_length,
@@ -3337,6 +3429,12 @@ fn advance_phase14_history(
             lookup_rows_commitment,
         ),
         lookup_transcript_entries,
+        lookup_frontier_commitment: commit_phase20_lookup_frontier(
+            layout_commitment,
+            &lookup_frontier_values,
+        ),
+        lookup_frontier_entries: lookup_frontier_values.len(),
+        lookup_frontier_values,
     })
 }
 
@@ -3979,6 +4077,7 @@ mod tests {
             manifest.steps[0].from_state.kv_cache_commitment
         );
         assert_eq!(manifest.steps[0].from_state.lookup_transcript_entries, 1);
+        assert_eq!(manifest.steps[0].from_state.lookup_frontier_entries, 1);
         assert_eq!(manifest.steps[2].to_state.kv_history_length, 7);
         assert_eq!(manifest.steps[2].to_state.kv_history_sealed_chunks, 3);
         assert_eq!(manifest.steps[2].to_state.kv_history_open_chunk_pairs, 1);
@@ -3991,6 +4090,10 @@ mod tests {
             manifest.steps[2].to_state.kv_cache_commitment
         );
         assert_eq!(manifest.steps[2].to_state.lookup_transcript_entries, 4);
+        assert_eq!(
+            manifest.steps[2].to_state.lookup_frontier_entries,
+            PHASE14_HISTORY_CHUNK_PAIRS
+        );
         verify_phase14_decoding_chain(&manifest).expect("phase14 verification");
     }
 
@@ -4056,6 +4159,23 @@ mod tests {
         let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
         let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
         manifest.steps[1].from_state.lookup_transcript_commitment = "broken".to_string();
+        let err = verify_phase14_decoding_chain(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("recorded from_state does not match the proof's initial state"));
+    }
+
+    #[test]
+    fn phase14_verify_decoding_chain_rejects_broken_lookup_frontier_link() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        manifest.steps[1].from_state.lookup_frontier_commitment = "broken".to_string();
         let err = verify_phase14_decoding_chain(&manifest).unwrap_err();
         assert!(err
             .to_string()
