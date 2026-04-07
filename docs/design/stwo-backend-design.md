@@ -39,8 +39,8 @@ Today the repository has the following `stwo` properties:
 - dedicated lookup and normalization demos exist both in single-row and shared-table multi-claim
   forms,
 - proof-carrying decoding now includes both a fixed-shape `decoding_step_v1` chain and a
-  parameterized `decoding_step_v2` chain with layout-bound carried-state commitments, rolling
-  KV-cache windows, and explicit position metadata, and
+  parameterized `decoding_step_v2` chain with layout-bound carried-state commitments, cumulative
+  KV-history commitments, rolling KV-cache windows, and explicit position metadata, and
 - recursion work currently stops at canonical batch manifests and compatibility checks rather than
   recursive proving.
 
@@ -183,7 +183,7 @@ Delivered:
 - proof-carrying decoding over a fixed three-step `decoding_step_v1` chain with carried-state
   commitments,
 - proof-carrying decoding over a parameterized `decoding_step_v2` family with layout-bound
-  carried-state commitments.
+  carried-state commitments and cumulative KV-history commitments.
 
 Current limitation:
 
@@ -197,7 +197,7 @@ This is now the highest-leverage next milestone.
 Targets:
 
 - broaden the parameterized decode-step family beyond the current demo layouts,
-- carry richer KV-cache commitments than the current bounded rolling-window slice model,
+- carry richer KV-cache commitments than the current cumulative-history plus bounded rolling-window model,
 - move one transformer-relevant non-arithmetic path deeper into the main proved relation,
 - keep the same `statement-v1` claim boundary until a real semantic change forces `statement-v2`.
 
@@ -295,7 +295,7 @@ theater rather than real progress.
 
 1. keep the current frozen S-two bundle reproducible,
 2. widen the decode-step family without changing the semantic claim,
-3. improve KV-cache commitment discipline beyond the current bounded rolling-window layout,
+3. improve KV-cache commitment discipline beyond the current cumulative-history plus bounded rolling-window layout,
 4. move a more faithful non-arithmetic attention path into the main proved relation,
 5. only then bind to recursive aggregation work.
 
