@@ -37,6 +37,10 @@ pub const STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15: &str =
     "stwo-phase15-decoding-history-segment-bundle-v1";
 pub const STWO_DECODING_SEGMENT_BUNDLE_SCOPE_PHASE15: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_segment_bundle";
+pub const STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16: &str =
+    "stwo-phase16-decoding-history-segment-rollup-v1";
+pub const STWO_DECODING_SEGMENT_ROLLUP_SCOPE_PHASE16: &str =
+    "stwo_execution_parameterized_proof_carrying_decoding_history_segment_rollup";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
 const DECODING_OUTPUT_RANGE: std::ops::Range<usize> = 10..13;
 const DECODING_POSITION_INDEX: usize = 21;
@@ -45,6 +49,7 @@ const PHASE12_SHARED_LOOKUP_ROWS: usize = 8;
 const PHASE12_LOOKUP_ROW_VALUES: [i16; PHASE12_SHARED_LOOKUP_ROWS] = [16, 64, 1, 1, 4, 128, 0, 1];
 const PHASE14_HISTORY_CHUNK_PAIRS: usize = 2;
 const PHASE15_SEGMENT_STEP_LIMIT: usize = 2;
+const PHASE16_ROLLUP_SEGMENT_LIMIT: usize = 2;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase11DecodingState {
@@ -309,6 +314,33 @@ pub struct Phase15DecodingHistorySegmentBundleManifest {
     pub total_segments: usize,
     pub total_steps: usize,
     pub segments: Vec<Phase15DecodingHistorySegment>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Phase16DecodingHistoryRollup {
+    pub rollup_index: usize,
+    pub global_start_step_index: usize,
+    pub total_segments: usize,
+    pub total_steps: usize,
+    pub global_from_state: Phase14DecodingState,
+    pub global_to_state: Phase14DecodingState,
+    pub segments: Vec<Phase15DecodingHistorySegment>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Phase16DecodingHistoryRollupManifest {
+    pub proof_backend: StarkProofBackend,
+    pub rollup_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub layout: Phase12DecodingLayout,
+    pub history_chunk_pairs: usize,
+    pub max_rollup_segments: usize,
+    pub total_rollups: usize,
+    pub total_segments: usize,
+    pub total_steps: usize,
+    pub rollups: Vec<Phase16DecodingHistoryRollup>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1233,6 +1265,10 @@ pub fn phase15_default_segment_step_limit() -> usize {
     PHASE15_SEGMENT_STEP_LIMIT
 }
 
+pub fn phase16_default_rollup_segment_limit() -> usize {
+    PHASE16_ROLLUP_SEGMENT_LIMIT
+}
+
 pub fn phase15_prepare_segment_bundle(
     chain: &Phase14DecodingChainManifest,
     max_segment_steps: usize,
@@ -1380,11 +1416,8 @@ pub fn verify_phase15_decoding_segment_bundle(
         )));
     }
 
-    let expected_layout_commitment = commit_phase12_layout(&manifest.layout);
-    let kv_cache_range = manifest.layout.kv_cache_range()?;
-    let incoming_token_range = manifest.layout.incoming_token_range()?;
-    let mut expected_global_start_step_index = 0usize;
     let mut accumulator: Option<Phase14HistoryAccumulator> = None;
+    let mut expected_global_start_step_index = 0usize;
     for (segment_index, segment) in manifest.segments.iter().enumerate() {
         if segment.segment_index != segment_index {
             return Err(VmError::InvalidConfig(format!(
@@ -1409,91 +1442,6 @@ pub fn verify_phase15_decoding_segment_bundle(
                 segment.total_steps, manifest.max_segment_steps
             )));
         }
-        if segment.chain.total_steps != segment.total_steps {
-            return Err(VmError::InvalidConfig(format!(
-                "decoding history segment {segment_index} total_steps={} does not match chain.total_steps={}",
-                segment.total_steps, segment.chain.total_steps
-            )));
-        }
-        if segment.chain.layout != manifest.layout {
-            return Err(VmError::InvalidConfig(format!(
-                "decoding history segment {segment_index} does not match the bundle layout"
-            )));
-        }
-        if segment.chain.history_chunk_pairs != manifest.history_chunk_pairs {
-            return Err(VmError::InvalidConfig(format!(
-                "decoding history segment {segment_index} history_chunk_pairs={} does not match bundle {}",
-                segment.chain.history_chunk_pairs, manifest.history_chunk_pairs
-            )));
-        }
-        if segment.chain.proof_backend_version != manifest.proof_backend_version {
-            return Err(VmError::InvalidConfig(format!(
-                "decoding history segment {segment_index} proof backend version `{}` does not match bundle `{}`",
-                segment.chain.proof_backend_version, manifest.proof_backend_version
-            )));
-        }
-        if segment.chain.statement_version != manifest.statement_version {
-            return Err(VmError::InvalidConfig(format!(
-                "decoding history segment {segment_index} statement version `{}` does not match bundle `{}`",
-                segment.chain.statement_version, manifest.statement_version
-            )));
-        }
-        verify_phase14_decoding_chain(&segment.chain)?;
-        let first_local_step = segment.chain.steps.first().ok_or_else(|| {
-            VmError::InvalidConfig(format!(
-                "decoding history segment {segment_index} must contain at least one local step"
-            ))
-        })?;
-        let mut current = accumulator.clone().unwrap_or_else(|| {
-            seed_phase14_history(
-                &expected_layout_commitment,
-                &first_local_step.proof.claim.program.initial_memory()[kv_cache_range.clone()],
-                manifest.layout.pair_width,
-            )
-        });
-        let first_from_view = derive_phase12_state_view(
-            first_local_step.proof.claim.program.initial_memory(),
-            &manifest.layout,
-        )?;
-        let expected_global_from = build_phase14_state(expected_global_start_step_index, first_from_view, &current);
-        if segment.global_from_state != expected_global_from {
-            return Err(VmError::InvalidConfig(format!(
-                "decoding history segment {segment_index} global_from_state does not match the carried-state replay"
-            )));
-        }
-
-        let mut expected_global_to = expected_global_from.clone();
-        for (local_index, step) in segment.chain.steps.iter().enumerate() {
-            let to_view =
-                derive_phase12_state_view(&step.proof.claim.final_state.memory, &manifest.layout)?;
-            current = advance_phase14_history(
-                &expected_layout_commitment,
-                &current,
-                &step.proof.claim.program.initial_memory()[incoming_token_range.clone()],
-                manifest.layout.pair_width,
-            )?;
-            let global_step_index = expected_global_start_step_index
-                .checked_add(local_index + 1)
-                .ok_or_else(|| {
-                    VmError::InvalidConfig(
-                        "decoding history segment bundle global step index overflowed".to_string(),
-                    )
-                })?;
-            expected_global_to = build_phase14_state(global_step_index, to_view, &current);
-        }
-        if segment.global_to_state != expected_global_to {
-            return Err(VmError::InvalidConfig(format!(
-                "decoding history segment {segment_index} global_to_state does not match the carried-state replay"
-            )));
-        }
-        if segment_index > 0 {
-            validate_phase15_segment_boundary(
-                &manifest.segments[segment_index - 1].global_to_state,
-                &segment.global_from_state,
-                segment_index,
-            )?;
-        }
-        accumulator = Some(current);
         expected_global_start_step_index = expected_global_start_step_index
             .checked_add(segment.total_steps)
             .ok_or_else(|| {
@@ -1501,6 +1449,21 @@ pub fn verify_phase15_decoding_segment_bundle(
                     "decoding history segment bundle global step count overflowed".to_string(),
                 )
             })?;
+    }
+    let final_global_step_index = verify_phase15_segment_sequence(
+        &manifest.layout,
+        manifest.history_chunk_pairs,
+        &manifest.proof_backend_version,
+        &manifest.statement_version,
+        &manifest.segments,
+        0,
+        &mut accumulator,
+    )?;
+    if final_global_step_index != manifest.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment bundle replay ended at global step {} instead of total_steps={}",
+            final_global_step_index, manifest.total_steps
+        )));
     }
 
     Ok(())
@@ -1516,6 +1479,286 @@ pub fn verify_phase15_decoding_segment_bundle_with_proof_checks(
                 "decoding history segment {segment_index} failed verification: {error}"
             ))
         })?;
+    }
+    Ok(())
+}
+
+pub fn phase16_prepare_segment_rollup(
+    bundle: &Phase15DecodingHistorySegmentBundleManifest,
+    max_rollup_segments: usize,
+) -> Result<Phase16DecodingHistoryRollupManifest> {
+    verify_phase15_decoding_segment_bundle(bundle)?;
+    if max_rollup_segments == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 16 segment rollup requires max_rollup_segments > 0".to_string(),
+        ));
+    }
+
+    let mut rollups = Vec::new();
+    for (rollup_index, chunk) in bundle.segments.chunks(max_rollup_segments).enumerate() {
+        let first = chunk.first().ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "Phase 16 rollup {rollup_index} must contain at least one segment"
+            ))
+        })?;
+        let last = chunk.last().ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "Phase 16 rollup {rollup_index} must contain at least one segment"
+            ))
+        })?;
+        let total_steps = chunk
+            .iter()
+            .try_fold(0usize, |acc, segment| acc.checked_add(segment.total_steps))
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "Phase 16 rollup total_steps overflowed while summing segments".to_string(),
+                )
+            })?;
+        rollups.push(Phase16DecodingHistoryRollup {
+            rollup_index,
+            global_start_step_index: first.global_start_step_index,
+            total_segments: chunk.len(),
+            total_steps,
+            global_from_state: first.global_from_state.clone(),
+            global_to_state: last.global_to_state.clone(),
+            segments: chunk.to_vec(),
+        });
+    }
+
+    let manifest = Phase16DecodingHistoryRollupManifest {
+        proof_backend: StarkProofBackend::Stwo,
+        rollup_version: STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16.to_string(),
+        semantic_scope: STWO_DECODING_SEGMENT_ROLLUP_SCOPE_PHASE16.to_string(),
+        proof_backend_version: bundle.proof_backend_version.clone(),
+        statement_version: bundle.statement_version.clone(),
+        layout: bundle.layout.clone(),
+        history_chunk_pairs: bundle.history_chunk_pairs,
+        max_rollup_segments,
+        total_rollups: rollups.len(),
+        total_segments: bundle.total_segments,
+        total_steps: bundle.total_steps,
+        rollups,
+    };
+    verify_phase16_decoding_segment_rollup(&manifest)?;
+    Ok(manifest)
+}
+
+pub fn verify_phase16_decoding_segment_rollup(
+    manifest: &Phase16DecodingHistoryRollupManifest,
+) -> Result<()> {
+    manifest.layout.validate()?;
+    if manifest.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment rollup backend `{}` is not `stwo`",
+            manifest.proof_backend
+        )));
+    }
+    if manifest.rollup_version != STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding history segment rollup version `{}`",
+            manifest.rollup_version
+        )));
+    }
+    if manifest.semantic_scope != STWO_DECODING_SEGMENT_ROLLUP_SCOPE_PHASE16 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding history segment rollup semantic scope `{}`",
+            manifest.semantic_scope
+        )));
+    }
+    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding history segment rollup proof backend version `{}` (expected `{}`)",
+            manifest.proof_backend_version,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+        )));
+    }
+    if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding history segment rollup statement version `{}`",
+            manifest.statement_version
+        )));
+    }
+    if manifest.history_chunk_pairs != PHASE14_HISTORY_CHUNK_PAIRS {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding history segment rollup history_chunk_pairs={} (expected {})",
+            manifest.history_chunk_pairs, PHASE14_HISTORY_CHUNK_PAIRS
+        )));
+    }
+    if manifest.max_rollup_segments == 0 {
+        return Err(VmError::InvalidConfig(
+            "decoding history segment rollup requires max_rollup_segments > 0".to_string(),
+        ));
+    }
+    if manifest.rollups.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding history segment rollup must contain at least one rollup".to_string(),
+        ));
+    }
+    if manifest.total_rollups != manifest.rollups.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment rollup total_rollups={} does not match rollups.len()={}",
+            manifest.total_rollups,
+            manifest.rollups.len()
+        )));
+    }
+    let derived_total_segments = manifest
+        .rollups
+        .iter()
+        .try_fold(0usize, |acc, rollup| acc.checked_add(rollup.total_segments))
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "decoding history segment rollup total_segments overflowed while summing rollups"
+                    .to_string(),
+            )
+        })?;
+    if manifest.total_segments != derived_total_segments {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment rollup total_segments={} does not match derived total_segments={}",
+            manifest.total_segments, derived_total_segments
+        )));
+    }
+    let derived_total_steps = manifest
+        .rollups
+        .iter()
+        .try_fold(0usize, |acc, rollup| acc.checked_add(rollup.total_steps))
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "decoding history segment rollup total_steps overflowed while summing rollups"
+                    .to_string(),
+            )
+        })?;
+    if manifest.total_steps != derived_total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment rollup total_steps={} does not match derived total_steps={}",
+            manifest.total_steps, derived_total_steps
+        )));
+    }
+
+    let mut accumulator: Option<Phase14HistoryAccumulator> = None;
+    let mut expected_rollup_start_step_index = 0usize;
+    let mut expected_segment_index = 0usize;
+    for (rollup_index, rollup) in manifest.rollups.iter().enumerate() {
+        if rollup.rollup_index != rollup_index {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment rollup {rollup_index} stores rollup_index={} instead of {}",
+                rollup.rollup_index, rollup_index
+            )));
+        }
+        if rollup.global_start_step_index != expected_rollup_start_step_index {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment rollup {rollup_index} starts at global step {} instead of {}",
+                rollup.global_start_step_index, expected_rollup_start_step_index
+            )));
+        }
+        if rollup.total_segments == 0 {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment rollup {rollup_index} must contain at least one segment"
+            )));
+        }
+        if rollup.total_segments > manifest.max_rollup_segments {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment rollup {rollup_index} total_segments={} exceeds max_rollup_segments={}",
+                rollup.total_segments, manifest.max_rollup_segments
+            )));
+        }
+        if rollup.segments.len() != rollup.total_segments {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment rollup {rollup_index} total_segments={} does not match segments.len()={}",
+                rollup.total_segments,
+                rollup.segments.len()
+            )));
+        }
+        let derived_rollup_total_steps = rollup
+            .segments
+            .iter()
+            .try_fold(0usize, |acc, segment| acc.checked_add(segment.total_steps))
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "decoding history segment rollup {rollup_index} total_steps overflowed while summing segments"
+                ))
+            })?;
+        if rollup.total_steps != derived_rollup_total_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment rollup {rollup_index} total_steps={} does not match derived total_steps={}",
+                rollup.total_steps, derived_rollup_total_steps
+            )));
+        }
+        let first_segment = rollup.segments.first().ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "decoding history segment rollup {rollup_index} must contain at least one segment"
+            ))
+        })?;
+        let last_segment = rollup.segments.last().ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "decoding history segment rollup {rollup_index} must contain at least one segment"
+            ))
+        })?;
+        if rollup.global_from_state != first_segment.global_from_state {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment rollup {rollup_index} global_from_state does not match the first segment boundary"
+            )));
+        }
+        if rollup.global_to_state != last_segment.global_to_state {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment rollup {rollup_index} global_to_state does not match the last segment boundary"
+            )));
+        }
+        for segment in &rollup.segments {
+            if segment.segment_index != expected_segment_index {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding history segment rollup {rollup_index} segment stores segment_index={} instead of {}",
+                    segment.segment_index, expected_segment_index
+                )));
+            }
+            expected_segment_index = expected_segment_index
+                .checked_add(1)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(
+                        "decoding history segment rollup segment count overflowed".to_string(),
+                    )
+                })?;
+        }
+        let next_global_start_step_index = verify_phase15_segment_sequence(
+            &manifest.layout,
+            manifest.history_chunk_pairs,
+            &manifest.proof_backend_version,
+            &manifest.statement_version,
+            &rollup.segments,
+            expected_rollup_start_step_index,
+            &mut accumulator,
+        )?;
+        if rollup_index > 0 {
+            validate_phase16_rollup_boundary(
+                &manifest.rollups[rollup_index - 1].global_to_state,
+                &rollup.global_from_state,
+                rollup_index,
+            )?;
+        }
+        expected_rollup_start_step_index = next_global_start_step_index;
+    }
+    if expected_rollup_start_step_index != manifest.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment rollup replay ended at global step {} instead of total_steps={}",
+            expected_rollup_start_step_index, manifest.total_steps
+        )));
+    }
+
+    Ok(())
+}
+
+pub fn verify_phase16_decoding_segment_rollup_with_proof_checks(
+    manifest: &Phase16DecodingHistoryRollupManifest,
+) -> Result<()> {
+    verify_phase16_decoding_segment_rollup(manifest)?;
+    for (rollup_index, rollup) in manifest.rollups.iter().enumerate() {
+        for segment in &rollup.segments {
+            verify_phase14_decoding_chain_with_proof_checks(&segment.chain).map_err(|error| {
+                VmError::UnsupportedProof(format!(
+                    "decoding history segment rollup {rollup_index} segment {} failed verification: {error}",
+                    segment.segment_index
+                ))
+            })?;
+        }
     }
     Ok(())
 }
@@ -1578,6 +1821,23 @@ pub fn save_phase15_decoding_segment_bundle(
 pub fn load_phase15_decoding_segment_bundle(
     path: &Path,
 ) -> Result<Phase15DecodingHistorySegmentBundleManifest> {
+    let bytes = fs::read(path)?;
+    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+}
+
+pub fn save_phase16_decoding_segment_rollup(
+    manifest: &Phase16DecodingHistoryRollupManifest,
+    path: &Path,
+) -> Result<()> {
+    let bytes = serde_json::to_vec_pretty(manifest)
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    fs::write(path, bytes)?;
+    Ok(())
+}
+
+pub fn load_phase16_decoding_segment_rollup(
+    path: &Path,
+) -> Result<Phase16DecodingHistoryRollupManifest> {
     let bytes = fs::read(path)?;
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
 }
@@ -1707,6 +1967,22 @@ pub fn prove_phase15_decoding_demo_for_layout(
 pub fn prove_phase15_decoding_demo() -> Result<Phase15DecodingHistorySegmentBundleManifest> {
     let layout = phase12_default_decoding_layout();
     prove_phase15_decoding_demo_for_layout(&layout)
+}
+
+pub fn prove_phase16_decoding_demo_for_layout(
+    layout: &Phase12DecodingLayout,
+) -> Result<Phase16DecodingHistoryRollupManifest> {
+    let phase14_manifest = prove_phase14_decoding_demo_for_layout(layout)?;
+    let phase15_manifest = phase15_prepare_segment_bundle(&phase14_manifest, 1)?;
+    let manifest =
+        phase16_prepare_segment_rollup(&phase15_manifest, phase16_default_rollup_segment_limit())?;
+    verify_phase16_decoding_segment_rollup_with_proof_checks(&manifest)?;
+    Ok(manifest)
+}
+
+pub fn prove_phase16_decoding_demo() -> Result<Phase16DecodingHistoryRollupManifest> {
+    let layout = phase12_default_decoding_layout();
+    prove_phase16_decoding_demo_for_layout(&layout)
 }
 
 fn derive_phase11_state(memory: &[i16], step_index: usize) -> Result<Phase11DecodingState> {
@@ -2222,6 +2498,135 @@ fn validate_phase15_segment_boundary(
         )));
     }
     Ok(())
+}
+
+fn validate_phase16_rollup_boundary(
+    previous_state: &Phase14DecodingState,
+    current_state: &Phase14DecodingState,
+    rollup_index: usize,
+) -> Result<()> {
+    validate_phase15_segment_boundary(previous_state, current_state, rollup_index).map_err(
+        |error| match error {
+            VmError::InvalidConfig(message) => VmError::InvalidConfig(
+                message.replace("decoding history segment boundary", "decoding history segment rollup boundary"),
+            ),
+            other => other,
+        },
+    )
+}
+
+fn verify_phase15_segment_sequence(
+    layout: &Phase12DecodingLayout,
+    history_chunk_pairs: usize,
+    proof_backend_version: &str,
+    statement_version: &str,
+    segments: &[Phase15DecodingHistorySegment],
+    initial_global_start_step_index: usize,
+    accumulator: &mut Option<Phase14HistoryAccumulator>,
+) -> Result<usize> {
+    let expected_layout_commitment = commit_phase12_layout(layout);
+    let kv_cache_range = layout.kv_cache_range()?;
+    let incoming_token_range = layout.incoming_token_range()?;
+    let mut expected_global_start_step_index = initial_global_start_step_index;
+
+    for (local_segment_index, segment) in segments.iter().enumerate() {
+        if segment.chain.total_steps != segment.total_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {} total_steps={} does not match chain.total_steps={}",
+                segment.segment_index, segment.total_steps, segment.chain.total_steps
+            )));
+        }
+        if segment.chain.layout != *layout {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {} does not match the expected layout",
+                segment.segment_index
+            )));
+        }
+        if segment.chain.history_chunk_pairs != history_chunk_pairs {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {} history_chunk_pairs={} does not match expected {}",
+                segment.segment_index, segment.chain.history_chunk_pairs, history_chunk_pairs
+            )));
+        }
+        if segment.chain.proof_backend_version != proof_backend_version {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {} proof backend version `{}` does not match expected `{}`",
+                segment.segment_index, segment.chain.proof_backend_version, proof_backend_version
+            )));
+        }
+        if segment.chain.statement_version != statement_version {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {} statement version `{}` does not match expected `{}`",
+                segment.segment_index, segment.chain.statement_version, statement_version
+            )));
+        }
+        verify_phase14_decoding_chain(&segment.chain)?;
+        let first_local_step = segment.chain.steps.first().ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "decoding history segment {} must contain at least one local step",
+                segment.segment_index
+            ))
+        })?;
+        let mut current = accumulator.clone().unwrap_or_else(|| {
+            seed_phase14_history(
+                &expected_layout_commitment,
+                &first_local_step.proof.claim.program.initial_memory()[kv_cache_range.clone()],
+                layout.pair_width,
+            )
+        });
+        let first_from_view =
+            derive_phase12_state_view(first_local_step.proof.claim.program.initial_memory(), layout)?;
+        let expected_global_from =
+            build_phase14_state(expected_global_start_step_index, first_from_view, &current);
+        if segment.global_from_state != expected_global_from {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {} global_from_state does not match the carried-state replay",
+                segment.segment_index
+            )));
+        }
+
+        let mut expected_global_to = expected_global_from.clone();
+        for (local_index, step) in segment.chain.steps.iter().enumerate() {
+            let to_view = derive_phase12_state_view(&step.proof.claim.final_state.memory, layout)?;
+            current = advance_phase14_history(
+                &expected_layout_commitment,
+                &current,
+                &step.proof.claim.program.initial_memory()[incoming_token_range.clone()],
+                layout.pair_width,
+            )?;
+            let global_step_index = expected_global_start_step_index
+                .checked_add(local_index + 1)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(
+                        "decoding history segment replay global step index overflowed".to_string(),
+                    )
+                })?;
+            expected_global_to = build_phase14_state(global_step_index, to_view, &current);
+        }
+        if segment.global_to_state != expected_global_to {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {} global_to_state does not match the carried-state replay",
+                segment.segment_index
+            )));
+        }
+        if local_segment_index > 0 {
+            validate_phase15_segment_boundary(
+                &segments[local_segment_index - 1].global_to_state,
+                &segment.global_from_state,
+                segment.segment_index,
+            )?;
+        }
+        *accumulator = Some(current);
+        expected_global_start_step_index = expected_global_start_step_index
+            .checked_add(segment.total_steps)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "decoding history segment replay global step count overflowed".to_string(),
+                )
+            })?;
+    }
+
+    Ok(expected_global_start_step_index)
 }
 
 fn commit_slice(values: &[i16]) -> String {
@@ -3231,5 +3636,71 @@ mod tests {
         assert!(err
             .to_string()
             .contains("global_from_state does not match the carried-state replay"));
+    }
+
+    #[test]
+    fn phase16_prepare_segment_rollup_accepts_segment_bundle() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let phase15 = phase15_prepare_segment_bundle(&phase14, 1).expect("phase15 manifest");
+        let manifest =
+            phase16_prepare_segment_rollup(&phase15, phase16_default_rollup_segment_limit())
+                .expect("phase16 manifest");
+        assert_eq!(manifest.total_rollups, 2);
+        assert_eq!(manifest.total_segments, 3);
+        assert_eq!(manifest.total_steps, 3);
+        assert_eq!(manifest.rollups[0].global_start_step_index, 0);
+        assert_eq!(manifest.rollups[1].global_start_step_index, 2);
+        assert_eq!(manifest.rollups[0].total_segments, 2);
+        assert_eq!(manifest.rollups[1].total_segments, 1);
+        verify_phase16_decoding_segment_rollup(&manifest).expect("phase16 verification");
+    }
+
+    #[test]
+    fn phase16_verify_segment_rollup_rejects_wrong_rollup_start() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let phase15 = phase15_prepare_segment_bundle(&phase14, 1).expect("phase15 manifest");
+        let mut manifest =
+            phase16_prepare_segment_rollup(&phase15, phase16_default_rollup_segment_limit())
+                .expect("phase16 manifest");
+        manifest.rollups[1].global_start_step_index = 99;
+        let err = verify_phase16_decoding_segment_rollup(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("starts at global step 99 instead of 2"));
+    }
+
+    #[test]
+    fn phase16_verify_segment_rollup_rejects_tampered_rollup_boundary_state() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let phase15 = phase15_prepare_segment_bundle(&phase14, 1).expect("phase15 manifest");
+        let mut manifest =
+            phase16_prepare_segment_rollup(&phase15, phase16_default_rollup_segment_limit())
+                .expect("phase16 manifest");
+        manifest.rollups[1].global_from_state.kv_history_commitment = "tampered".to_string();
+        let err = verify_phase16_decoding_segment_rollup(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("global_from_state does not match the first segment boundary"));
     }
 }
