@@ -2530,6 +2530,14 @@ fn verify_phase15_segment_sequence(
     let mut expected_global_start_step_index = initial_global_start_step_index;
 
     for (local_segment_index, segment) in segments.iter().enumerate() {
+        if segment.global_start_step_index != expected_global_start_step_index {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {} starts at global step {} instead of {}",
+                segment.segment_index,
+                segment.global_start_step_index,
+                expected_global_start_step_index
+            )));
+        }
         if segment.chain.total_steps != segment.total_steps {
             return Err(VmError::InvalidConfig(format!(
                 "decoding history segment {} total_steps={} does not match chain.total_steps={}",

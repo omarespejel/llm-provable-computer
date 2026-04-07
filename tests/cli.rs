@@ -1631,7 +1631,17 @@ fn cli_verify_stwo_decoding_history_rollup_demo_rejects_tampered_rollup_start() 
     let mut proof_json: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
             .expect("json");
-    proof_json["rollups"][1]["global_start_step_index"] = serde_json::Value::from(99u64);
+    let rollup = proof_json
+        .get_mut("rollups")
+        .and_then(serde_json::Value::as_array_mut)
+        .and_then(|rollups| rollups.get_mut(1))
+        .unwrap_or_else(|| {
+            panic!(
+                "phase16 demo should produce at least two rollups in {}",
+                proof_path.display()
+            )
+        });
+    rollup["global_start_step_index"] = serde_json::Value::from(99u64);
     std::fs::write(
         &tampered_path,
         serde_json::to_vec_pretty(&proof_json).expect("serialize"),
