@@ -7,13 +7,13 @@ This appendix is a compact companion to Figure 1 in the main paper. It gives exa
 The appendix should be read with the same scope boundary as Section 4:
 
 - the dense curve is the GPT-2-small symbolic model from Section 4.3,
-- the sparse curve is a representative Gemma-style `5:1` local/global attention schedule with `W = 1024`,
+- the sparse curve is a representative `5:1` local/global sparse attention schedule, Gemma-style in spirit, with `W = 1024`,
 - both curves use the same stylized constants `C_exp = 300`, `C_norm = 30`, and `C_nonlin = 150`,
 - the sparse curve is **not** claimed to be one exact released Gemma checkpoint.
 
 ## Table B1. Exact dense and sparse ratios used in Figure 1
 
-| Context `T` | Dense GPT-style ratio | Sparse Gemma-style ratio |
+| Context `T` | Dense GPT-style ratio | Sparse `5:1` schedule ratio |
 |---|---:|---:|
 | `128` | `1.132040x` | `1.132040x` |
 | `1024` | `1.481751x` | `1.481751x` |
