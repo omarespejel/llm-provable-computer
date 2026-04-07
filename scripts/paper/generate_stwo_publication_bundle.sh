@@ -11,19 +11,21 @@ BUNDLE_DIR="${BUNDLE_DIR:-$REPO_ROOT/docs/paper/artifacts/stwo-experimental-v1-2
 NIGHTLY_TOOLCHAIN="${NIGHTLY_TOOLCHAIN:-+nightly-2025-07-14}"
 CARGO_STWO=(cargo "$NIGHTLY_TOOLCHAIN" run --features stwo-backend --bin tvm --)
 
-EXPECTED_PREFIX="$REPO_ROOT/docs/paper/artifacts/"
-case "$BUNDLE_DIR/" in
-  "$EXPECTED_PREFIX"*) ;;
+EXPECTED_PREFIX="$REPO_ROOT/docs/paper/artifacts"
+CANON_EXPECTED_PREFIX="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$EXPECTED_PREFIX")"
+CANON_BUNDLE_DIR="$(python3 -c 'import os,sys; print(os.path.realpath(os.path.abspath(sys.argv[1])))' "$BUNDLE_DIR")"
+case "$CANON_BUNDLE_DIR/" in
+  "$CANON_EXPECTED_PREFIX"/* | "$CANON_EXPECTED_PREFIX"/) ;;
   *)
     echo "Refusing to use BUNDLE_DIR outside $EXPECTED_PREFIX: $BUNDLE_DIR" >&2
     exit 1
     ;;
 esac
-[ -n "$BUNDLE_DIR" ] || { echo "Refusing to use empty BUNDLE_DIR" >&2; exit 1; }
-[ "$BUNDLE_DIR" != "/" ] || { echo "Refusing to delete /" >&2; exit 1; }
-[ "$BUNDLE_DIR" != "." ] || { echo "Refusing to delete ." >&2; exit 1; }
-[ "$BUNDLE_DIR" != "$REPO_ROOT" ] || { echo "Refusing to delete repo root" >&2; exit 1; }
+[ -n "$CANON_BUNDLE_DIR" ] || { echo "Refusing to use empty BUNDLE_DIR" >&2; exit 1; }
+[ "$CANON_BUNDLE_DIR" != "/" ] || { echo "Refusing to delete /" >&2; exit 1; }
+[ "$CANON_BUNDLE_DIR" != "$REPO_ROOT" ] || { echo "Refusing to delete repo root" >&2; exit 1; }
 
+BUNDLE_DIR="$CANON_BUNDLE_DIR"
 rm -rf -- "$BUNDLE_DIR"
 mkdir -p "$BUNDLE_DIR"
 
@@ -203,7 +205,7 @@ PY
 
 (
   cd "$BUNDLE_DIR"
-  shasum -a 256 *.json benchmarks.tsv manifest.txt commands.log APPENDIX_ARTIFACT_INDEX.md README.md > "$SHA256S"
+  shasum -a 256 -- *.json benchmarks.tsv manifest.txt commands.log APPENDIX_ARTIFACT_INDEX.md README.md > "$SHA256S"
 )
 
 chmod 644 "$MANIFEST" "$BENCHMARKS" "$COMMANDS_LOG" "$SHA256S" "$INDEX_MD" "$README_MD"
