@@ -34,12 +34,13 @@ Today the repository has the following `stwo` properties:
 - `--features stwo-backend` enables an experimental S-two path under the same `statement-v1`
   semantic claim,
 - the experimental S-two path publicly proves a shipped fixture set including arithmetic programs,
-  `gemma_block_v1` through `gemma_block_v4`, and the `decoding_step_v1` family used by the
-  proof-carrying decoding demo chain,
+  `gemma_block_v1` through `gemma_block_v4`, the fixed-shape `decoding_step_v1` family, and the
+  parameterized `decoding_step_v2` family used by the proof-carrying decoding demos,
 - dedicated lookup and normalization demos exist both in single-row and shared-table multi-claim
   forms,
-- proof-carrying decoding currently chains three fixed-shape `decoding_step_v1` executions through
-  explicit carried KV-cache commitments and position metadata, and
+- proof-carrying decoding now includes both a fixed-shape `decoding_step_v1` chain and a
+  parameterized `decoding_step_v2` chain with layout-bound carried-state commitments, cumulative
+  KV-history commitments, rolling KV-cache windows, and explicit position metadata, and
 - recursion work currently stops at canonical batch manifests and compatibility checks rather than
   recursive proving.
 
@@ -180,11 +181,14 @@ Delivered:
 - `gemma_block_v1` through `gemma_block_v4`,
 - embedded normalization and bounded activation proofs in the top-level S-two payload,
 - proof-carrying decoding over a fixed three-step `decoding_step_v1` chain with carried-state
-  commitments.
+  commitments,
+- proof-carrying decoding over a parameterized `decoding_step_v2` family with layout-bound
+  carried-state commitments and cumulative KV-history commitments.
 
 Current limitation:
 
-- the decoding path is still a bounded research fixture, not a parameterized decode-step family.
+- the decoding path is still a bounded research family with fixed demo layouts rather than a
+  broader transformer decode relation.
 
 ### Phase 5: Broaden the proved S-two relation `[next]`
 
@@ -192,8 +196,8 @@ This is now the highest-leverage next milestone.
 
 Targets:
 
-- promote the fixed-shape decoding demo into a parameterized decode-step family,
-- carry richer KV-cache commitments than a fixed memory slice,
+- broaden the parameterized decode-step family beyond the current demo layouts,
+- carry richer KV-cache commitments than the current cumulative-history plus bounded rolling-window model,
 - move one transformer-relevant non-arithmetic path deeper into the main proved relation,
 - keep the same `statement-v1` claim boundary until a real semantic change forces `statement-v2`.
 
@@ -291,7 +295,7 @@ theater rather than real progress.
 
 1. keep the current frozen S-two bundle reproducible,
 2. widen the decode-step family without changing the semantic claim,
-3. improve KV-cache commitment discipline,
+3. improve KV-cache commitment discipline beyond the current cumulative-history plus bounded rolling-window layout,
 4. move a more faithful non-arithmetic attention path into the main proved relation,
 5. only then bind to recursive aggregation work.
 

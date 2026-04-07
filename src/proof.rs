@@ -1010,16 +1010,18 @@ fn validate_backend_metadata(
             proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE2
                 || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE5
                 || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE11
+                || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE12
         }
     };
     if !backend_version_matches {
         let expected_versions = match requested_backend {
             StarkProofBackend::Vanilla => expected_version.to_string(),
             StarkProofBackend::Stwo => format!(
-                "{}/{}/{}",
+                "{}/{}/{}/{}",
                 stwo_backend::STWO_BACKEND_VERSION_PHASE2,
                 stwo_backend::STWO_BACKEND_VERSION_PHASE5,
-                stwo_backend::STWO_BACKEND_VERSION_PHASE11
+                stwo_backend::STWO_BACKEND_VERSION_PHASE11,
+                stwo_backend::STWO_BACKEND_VERSION_PHASE12
             ),
         };
         return Err(VmError::InvalidConfig(format!(

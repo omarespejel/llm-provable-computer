@@ -685,7 +685,7 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v4_shared_normalization() {
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "gemma_block_v4 shared normalization does not match claimed final state",
+            "gemma_block_v4 shared normalization embedded claimed rows do not match the canonical final-state rows",
         ));
 
     let _ = std::fs::remove_file(proof_path);
@@ -1076,6 +1076,195 @@ fn cli_verify_stwo_decoding_demo_rejects_tampered_kv_link() {
         .failure()
         .stderr(predicate::str::contains(
             "recorded from_state does not match the proof's initial state",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_can_prove_and_verify_stwo_decoding_family_demo() {
+    let proof_path = unique_temp_dir("cli-stwo-decoding-family-demo-proof").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-decoding-family-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("proof_backend: stwo"))
+        .stdout(predicate::str::contains(
+            "chain_version: stwo-phase12-decoding-chain-v1",
+        ))
+        .stdout(predicate::str::contains(
+            "semantic_scope: stwo_execution_parameterized_proof_carrying_decoding_chain",
+        ))
+        .stdout(predicate::str::contains("rolling_kv_pairs: 4"))
+        .stdout(predicate::str::contains("pair_width: 4"))
+        .stdout(predicate::str::contains("start_history_length: 4"))
+        .stdout(predicate::str::contains("final_history_length: 7"))
+        .stdout(predicate::str::contains("total_steps: 3"));
+
+    let proof_json = std::fs::read_to_string(&proof_path).expect("proof json");
+    let proof_json: serde_json::Value = serde_json::from_str(&proof_json).expect("proof json");
+    assert_eq!(
+        proof_json
+            .get("proof_backend")
+            .and_then(serde_json::Value::as_str),
+        Some("stwo")
+    );
+    assert_eq!(
+        proof_json
+            .get("chain_version")
+            .and_then(serde_json::Value::as_str),
+        Some("stwo-phase12-decoding-chain-v1")
+    );
+    assert_eq!(
+        proof_json
+            .get("proof_backend_version")
+            .and_then(serde_json::Value::as_str),
+        Some("stwo-phase12-decoding-family-v1")
+    );
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-decoding-family-demo")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(
+            "expected_chain_version: stwo-phase12-decoding-chain-v1",
+        ))
+        .stdout(predicate::str::contains(
+            "expected_proof_backend_version: stwo-phase12-decoding-family-v1",
+        ))
+        .stdout(predicate::str::contains("rolling_kv_pairs: 4"))
+        .stdout(predicate::str::contains("pair_width: 4"))
+        .stdout(predicate::str::contains("start_history_length: 4"))
+        .stdout(predicate::str::contains("final_history_length: 7"));
+
+    let _ = std::fs::remove_file(proof_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_decoding_family_demo_rejects_tampered_persistent_link() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-proof-tamper").with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-proof-tampered").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-decoding-family-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    proof_json["steps"][1]["from_state"]["persistent_state_commitment"] =
+        serde_json::Value::String("deadbeef".repeat(8));
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-decoding-family-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "recorded from_state does not match the proof's initial state",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_decoding_family_demo_rejects_tampered_history_link() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-history-proof").with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-history-tampered").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-decoding-family-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    proof_json["steps"][1]["from_state"]["kv_history_commitment"] =
+        serde_json::Value::String("beadfeed".repeat(8));
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-decoding-family-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "recorded from_state does not match the proof's initial state",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_decoding_family_demo_rejects_tampered_layout() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-layout-proof").with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-layout-tampered").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-decoding-family-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    proof_json["layout"]["rolling_kv_pairs"] = serde_json::Value::from(3u64);
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-decoding-family-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "is not a decoding_step_v2-family proof for the manifest layout",
         ));
 
     let _ = std::fs::remove_file(proof_path);
