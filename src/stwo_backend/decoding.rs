@@ -1460,6 +1460,12 @@ pub fn verify_phase15_decoding_segment_bundle(
                 segment.total_steps, manifest.max_segment_steps
             )));
         }
+        if segment.chain.total_steps != segment.total_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {segment_index} total_steps={} does not match chain.total_steps={}",
+                segment.total_steps, segment.chain.total_steps
+            )));
+        }
         expected_global_start_step_index = expected_global_start_step_index
             .checked_add(segment.total_steps)
             .ok_or_else(|| {
@@ -3362,6 +3368,39 @@ mod tests {
         }
     }
 
+    fn sample_phase17_rollup_matrix_manifest() -> Phase17DecodingHistoryRollupMatrixManifest {
+        let layouts = phase13_default_decoding_layout_matrix().expect("layout matrix");
+        let mut rollups = Vec::with_capacity(layouts.len());
+        for layout in &layouts {
+            let proofs = phase12_demo_initial_memories(layout)
+                .expect("memories")
+                .into_iter()
+                .map(|memory| sample_phase12_step_proof(layout, memory))
+                .collect::<Vec<_>>();
+            let phase12 = phase12_prepare_decoding_chain(layout, &proofs).expect("phase12 chain");
+            let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+            let phase15 = phase15_prepare_segment_bundle(&phase14, 1).expect("phase15 manifest");
+            let phase16 = phase16_prepare_segment_rollup(
+                &phase15,
+                phase16_default_rollup_segment_limit(),
+            )
+            .expect("phase16 manifest");
+            rollups.push(phase16);
+        }
+        Phase17DecodingHistoryRollupMatrixManifest {
+            proof_backend: StarkProofBackend::Stwo,
+            matrix_version: STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17.to_string(),
+            semantic_scope: STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17.to_string(),
+            proof_backend_version: crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12.to_string(),
+            statement_version: crate::proof::CLAIM_STATEMENT_VERSION_V1.to_string(),
+            total_layouts: rollups.len(),
+            total_rollups: rollups.iter().map(|rollup| rollup.total_rollups).sum(),
+            total_segments: rollups.iter().map(|rollup| rollup.total_segments).sum(),
+            total_steps: rollups.iter().map(|rollup| rollup.total_steps).sum(),
+            rollups,
+        }
+    }
+
     #[test]
     fn decoding_step_family_ignores_initial_memory_but_requires_template() {
         let mut initial = vec![0; 23];
@@ -3898,7 +3937,7 @@ mod tests {
 
     #[test]
     fn phase17_rollup_matrix_accepts_multiple_layouts() {
-        let manifest = prove_phase17_decoding_rollup_matrix_demo().expect("phase17 manifest");
+        let manifest = sample_phase17_rollup_matrix_manifest();
         assert_eq!(manifest.total_layouts, 3);
         assert_eq!(manifest.rollups.len(), 3);
         assert!(manifest.total_rollups >= 3);
@@ -3909,7 +3948,7 @@ mod tests {
 
     #[test]
     fn phase17_rollup_matrix_rejects_tampered_total_rollups() {
-        let mut manifest = prove_phase17_decoding_rollup_matrix_demo().expect("phase17 manifest");
+        let mut manifest = sample_phase17_rollup_matrix_manifest();
         manifest.total_rollups = 99;
         let err = verify_phase17_decoding_rollup_matrix(&manifest).unwrap_err();
         assert!(err
