@@ -1,6 +1,6 @@
 # Appendix: Public System Comparison Snapshot
 
-Snapshot date: **April 4, 2026**
+Snapshot date: **April 6, 2026**
 
 This appendix is a compact comparison table for the three systems most relevant to the argument in the main paper. It inherits its source posture from Sections 6 and 7: archival papers, official engineering/product materials, and commit-pinned repository artifacts are used for different claim types and should not be read as a single matched benchmark class.
 
