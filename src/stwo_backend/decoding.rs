@@ -457,7 +457,11 @@ pub fn decoding_step_v2_template_program(layout: &Phase12DecodingLayout) -> Resu
     instructions.push(Instruction::Load(output.start as u8));
     instructions.push(Instruction::MulMemory((lookup.start + 1) as u8));
     instructions.push(Instruction::Store(output.start as u8));
+    instructions.push(Instruction::Load((output.start + 1) as u8));
+    instructions.push(Instruction::MulMemory((lookup.start + 5) as u8));
+    instructions.push(Instruction::Store((output.start + 1) as u8));
     instructions.push(Instruction::Load((lookup.start + 3) as u8));
+    instructions.push(Instruction::AddMemory((lookup.start + 7) as u8));
     instructions.push(Instruction::Store((output.start + 2) as u8));
 
     let kv_cache = layout.kv_cache_range()?;
@@ -4016,13 +4020,21 @@ mod tests {
                 assert!(result.halted);
                 let final_memory = result.final_state.memory;
                 let expected_primary_scale = final_memory[lookup.start + 1];
+                let expected_secondary_scale = final_memory[lookup.start + 5];
                 let expected_activation = final_memory[lookup.start + 3];
+                let expected_secondary_activation = final_memory[lookup.start + 7];
                 assert_eq!(
                     final_memory[output.start],
                     expected_raw_dot * expected_primary_scale
                 );
-                assert_eq!(final_memory[output.start + 1], expected_raw_accumulated);
-                assert_eq!(final_memory[output.start + 2], expected_activation);
+                assert_eq!(
+                    final_memory[output.start + 1],
+                    expected_raw_accumulated * expected_secondary_scale
+                );
+                assert_eq!(
+                    final_memory[output.start + 2],
+                    expected_activation + expected_secondary_activation
+                );
             }
         }
     }
