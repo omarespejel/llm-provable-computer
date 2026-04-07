@@ -318,7 +318,8 @@ impl FrameworkEval for Phase5ArithmeticSubsetEval {
             .fold(zero.clone(), |acc, (sel, value)| acc + sel * value);
         eval.add_constraint(loaded_memory_aux.clone() - loaded_memory.clone());
         eval.add_constraint(
-            mul_result_aux.clone() - current_acc.clone() * loaded_memory_aux.clone(),
+            opcode_flags[7].clone()
+                * (mul_result_aux.clone() - current_acc.clone() * loaded_memory_aux.clone()),
         );
         let jump_taken = current_zero.clone() * jump_target.clone()
             + (one.clone() - current_zero.clone()) * pc_plus_one.clone();
@@ -2451,7 +2452,10 @@ fn auxiliary_values(program: &Program, state: &MachineState) -> Result<Auxiliary
         Instruction::Halt => state.pc,
         _ => state.pc.saturating_add(1),
     };
-    let mul_result = state.acc.wrapping_mul(loaded_memory);
+    let mul_result = match instruction {
+        Instruction::MulMemory(_) => state.acc.wrapping_mul(loaded_memory),
+        _ => 0,
+    };
     let next_acc_active = match instruction {
         Instruction::LoadImmediate(value) => value,
         Instruction::Load(_) => loaded_memory,

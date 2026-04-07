@@ -512,9 +512,10 @@ matrix/rollup-style packaging layers described in the next-paper track.
   rows inside the same top-level execution proof
 - Phase 11: fixed-shape proof-carrying decoding over `decoding_step_v1`
 - Phase 12: parameterized `decoding_step_v2` family with richer carried state,
-  proof-bound shared-lookup rows, and an executed read of the shared activation
-  row plus the shared normalization scale row inside the decoding transition itself,
-  with exact semantic tests and real-backend proving coverage over all default demo steps
+  proof-bound shared-lookup rows, and executed reads of both shared normalization
+  scale rows plus both shared activation output rows inside the decoding
+  transition itself, with exact semantic tests and real-backend proving coverage
+  over all default demo steps
 - Phase 13: validated layout matrix for `decoding_step_v2`, now with real-backend proving coverage across the default layout matrix
 - Phase 14: chunked cumulative KV-history with sealed/open segment boundaries
 - Phase 15: mergeable history segments with explicit global carried-state boundaries
@@ -824,7 +825,9 @@ The public decoding artifacts currently cover:
 Those power the proof-carrying decoding demos, including layout-bound carried
 state, rolling KV-cache windows, cumulative KV-history commitments, mergeable
 history segments, rollups, rollup matrices, and the newer KV / lookup frontier
-layers used by the next-paper track.
+layers used by the next-paper track. The current Phase 12 transition now uses
+both shared normalization scale rows and both shared activation output rows in
+executed decoding semantics, not only as carried proof metadata.
 
 #### Phase Highlights
 

@@ -457,7 +457,11 @@ pub fn decoding_step_v2_template_program(layout: &Phase12DecodingLayout) -> Resu
     instructions.push(Instruction::Load(output.start as u8));
     instructions.push(Instruction::MulMemory((lookup.start + 1) as u8));
     instructions.push(Instruction::Store(output.start as u8));
+    instructions.push(Instruction::Load((output.start + 1) as u8));
+    instructions.push(Instruction::MulMemory((lookup.start + 5) as u8));
+    instructions.push(Instruction::Store((output.start + 1) as u8));
     instructions.push(Instruction::Load((lookup.start + 3) as u8));
+    instructions.push(Instruction::AddMemory((lookup.start + 7) as u8));
     instructions.push(Instruction::Store((output.start + 2) as u8));
 
     let kv_cache = layout.kv_cache_range()?;
@@ -3967,7 +3971,6 @@ mod tests {
         let instructions = program.instructions();
         let store_last_lookup =
             Instruction::Store((lookup.start + PHASE12_SHARED_LOOKUP_ROWS - 1) as u8);
-        let store_output_flag = Instruction::Store((output.start + 2) as u8);
         let lookup_store_index = instructions
             .iter()
             .rposition(|instruction| *instruction == store_last_lookup)
@@ -3986,11 +3989,27 @@ mod tests {
         );
         assert_eq!(
             instructions.get(lookup_store_index + 4),
-            Some(&Instruction::Load((lookup.start + 3) as u8))
+            Some(&Instruction::Load((output.start + 1) as u8))
         );
         assert_eq!(
             instructions.get(lookup_store_index + 5),
-            Some(&store_output_flag)
+            Some(&Instruction::MulMemory((lookup.start + 5) as u8))
+        );
+        assert_eq!(
+            instructions.get(lookup_store_index + 6),
+            Some(&Instruction::Store((output.start + 1) as u8))
+        );
+        assert_eq!(
+            instructions.get(lookup_store_index + 7),
+            Some(&Instruction::Load((lookup.start + 3) as u8))
+        );
+        assert_eq!(
+            instructions.get(lookup_store_index + 8),
+            Some(&Instruction::AddMemory((lookup.start + 7) as u8))
+        );
+        assert_eq!(
+            instructions.get(lookup_store_index + 9),
+            Some(&Instruction::Store((output.start + 2) as u8))
         );
     }
 
@@ -4016,13 +4035,21 @@ mod tests {
                 assert!(result.halted);
                 let final_memory = result.final_state.memory;
                 let expected_primary_scale = final_memory[lookup.start + 1];
+                let expected_secondary_scale = final_memory[lookup.start + 5];
                 let expected_activation = final_memory[lookup.start + 3];
+                let expected_secondary_activation = final_memory[lookup.start + 7];
                 assert_eq!(
                     final_memory[output.start],
                     expected_raw_dot * expected_primary_scale
                 );
-                assert_eq!(final_memory[output.start + 1], expected_raw_accumulated);
-                assert_eq!(final_memory[output.start + 2], expected_activation);
+                assert_eq!(
+                    final_memory[output.start + 1],
+                    expected_raw_accumulated * expected_secondary_scale
+                );
+                assert_eq!(
+                    final_memory[output.start + 2],
+                    expected_activation + expected_secondary_activation
+                );
             }
         }
     }
