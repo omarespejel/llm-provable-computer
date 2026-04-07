@@ -1664,6 +1664,92 @@ fn cli_verify_stwo_decoding_history_rollup_demo_rejects_tampered_rollup_start() 
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_can_prove_and_verify_stwo_decoding_history_rollup_matrix_demo() {
+    let proof_path = unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-proof")
+        .with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-decoding-history-rollup-matrix-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("proof_backend: stwo"))
+        .stdout(predicate::str::contains(
+            "matrix_version: stwo-phase17-decoding-history-rollup-matrix-v1",
+        ))
+        .stdout(predicate::str::contains("total_layouts: 3"));
+
+    let proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    assert_eq!(
+        proof_json
+            .get("matrix_version")
+            .and_then(serde_json::Value::as_str),
+        Some("stwo-phase17-decoding-history-rollup-matrix-v1")
+    );
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-decoding-history-rollup-matrix-demo")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(
+            "expected_matrix_version: stwo-phase17-decoding-history-rollup-matrix-v1",
+        ))
+        .stdout(predicate::str::contains(
+            "expected_proof_backend_version: stwo-phase12-decoding-family-v1",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_decoding_history_rollup_matrix_demo_rejects_tampered_total_rollups() {
+    let proof_path = unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-tamper")
+        .with_extension("json");
+    let tampered_path = unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-tampered")
+        .with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-decoding-history-rollup-matrix-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    proof_json["total_rollups"] = serde_json::Value::from(99u64);
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-decoding-history-rollup-matrix-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "total_rollups=99 does not match derived total_rollups",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_can_prepare_stwo_recursion_batch_manifest() {
     let proof_a = unique_temp_dir("cli-stwo-recursion-proof-a").with_extension("json");
     let proof_b = unique_temp_dir("cli-stwo-recursion-proof-b").with_extension("json");
