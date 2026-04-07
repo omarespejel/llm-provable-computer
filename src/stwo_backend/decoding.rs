@@ -23,13 +23,13 @@ use crate::stwo_backend::{
 pub const STWO_DECODING_CHAIN_VERSION_PHASE11: &str = "stwo-phase11-decoding-chain-v1";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE11: &str = "stwo_execution_proof_carrying_decoding_chain";
 pub const STWO_DECODING_STATE_VERSION_PHASE11: &str = "stwo-decoding-state-v1";
-pub const STWO_DECODING_CHAIN_VERSION_PHASE12: &str = "stwo-phase12-decoding-chain-v1";
+pub const STWO_DECODING_CHAIN_VERSION_PHASE12: &str = "stwo-phase12-decoding-chain-v2";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE12: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_chain";
-pub const STWO_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v2";
+pub const STWO_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v3";
 pub const STWO_DECODING_LAYOUT_VERSION_PHASE12: &str = "stwo-decoding-layout-v1";
 pub const STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13: &str =
-    "stwo-phase13-decoding-layout-matrix-v1";
+    "stwo-phase13-decoding-layout-matrix-v2";
 pub const STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_layout_matrix";
 pub const STWO_DECODING_CHAIN_VERSION_PHASE14: &str =
@@ -3721,7 +3721,7 @@ mod tests {
         let final_memory = result.final_state.memory.clone();
         VanillaStarkExecutionProof {
             proof_backend: StarkProofBackend::Stwo,
-            proof_backend_version: "stwo-phase12-decoding-family-v1".to_string(),
+            proof_backend_version: crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12.to_string(),
             stwo_auxiliary: None,
             claim: VanillaStarkExecutionClaim {
                 statement_version: "statement-v1".to_string(),
