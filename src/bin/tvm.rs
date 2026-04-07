@@ -31,19 +31,22 @@ use llm_provable_computer::{export_program_onnx, OnnxExecutionRuntime};
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::{
     load_phase10_shared_binary_step_lookup_proof, load_phase10_shared_normalization_lookup_proof,
-    load_phase11_decoding_chain, load_phase3_binary_step_lookup_proof,
+    load_phase11_decoding_chain, load_phase12_decoding_chain, load_phase3_binary_step_lookup_proof,
     load_phase5_normalization_lookup_proof, prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
-    prove_phase3_binary_step_lookup_demo_envelope, prove_phase5_normalization_lookup_demo_envelope,
-    save_phase10_shared_binary_step_lookup_proof, save_phase10_shared_normalization_lookup_proof,
-    save_phase11_decoding_chain, save_phase3_binary_step_lookup_proof,
+    prove_phase12_decoding_demo, prove_phase3_binary_step_lookup_demo_envelope,
+    prove_phase5_normalization_lookup_demo_envelope, save_phase10_shared_binary_step_lookup_proof,
+    save_phase10_shared_normalization_lookup_proof, save_phase11_decoding_chain,
+    save_phase12_decoding_chain, save_phase3_binary_step_lookup_proof,
     save_phase5_normalization_lookup_proof, stwo_backend_enabled,
     verify_phase10_shared_binary_step_lookup_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
     verify_phase11_decoding_chain_with_proof_checks,
+    verify_phase12_decoding_chain_with_proof_checks,
     verify_phase3_binary_step_lookup_demo_envelope,
     verify_phase5_normalization_lookup_demo_envelope, STWO_DECODING_CHAIN_SCOPE_PHASE11,
-    STWO_DECODING_CHAIN_VERSION_PHASE11, STWO_LOOKUP_PROOF_VERSION_PHASE3,
+    STWO_DECODING_CHAIN_SCOPE_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE11,
+    STWO_DECODING_CHAIN_VERSION_PHASE12, STWO_LOOKUP_PROOF_VERSION_PHASE3,
     STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
     STWO_NORMALIZATION_PROOF_VERSION_PHASE5, STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5,
     STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
@@ -261,6 +264,17 @@ enum Command {
     },
     /// Verify a serialized proof-carrying decoding chain.
     VerifyStwoDecodingDemo {
+        /// Path to the serialized chain JSON file.
+        proof: PathBuf,
+    },
+    /// Produce a serialized proof-carrying decoding chain over a parameterized S-two step family.
+    ProveStwoDecodingFamilyDemo {
+        /// File where the serialized chain JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a serialized parameterized proof-carrying decoding chain.
+    VerifyStwoDecodingFamilyDemo {
         /// Path to the serialized chain JSON file.
         proof: PathBuf,
     },
@@ -780,6 +794,12 @@ fn run() -> llm_provable_computer::Result<()> {
         }
         Command::ProveStwoDecodingDemo { output } => prove_stwo_decoding_demo_command(&output)?,
         Command::VerifyStwoDecodingDemo { proof } => verify_stwo_decoding_demo_command(&proof)?,
+        Command::ProveStwoDecodingFamilyDemo { output } => {
+            prove_stwo_decoding_family_demo_command(&output)?
+        }
+        Command::VerifyStwoDecodingFamilyDemo { proof } => {
+            verify_stwo_decoding_family_demo_command(&proof)?
+        }
         Command::PrepareStwoRecursionBatch { proofs, output } => {
             prepare_stwo_recursion_batch_command(&proofs, &output)?
         }
@@ -1487,6 +1507,91 @@ fn verify_stwo_decoding_demo_command(proof_path: &Path) -> llm_provable_computer
         println!("total_steps: {}", manifest.total_steps);
         println!("expected_chain_version: {STWO_DECODING_CHAIN_VERSION_PHASE11}");
         println!("expected_semantic_scope: {STWO_DECODING_CHAIN_SCOPE_PHASE11}");
+
+        Ok(())
+    }
+}
+
+fn prove_stwo_decoding_family_demo_command(output: &Path) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output;
+        return Err(VmError::UnsupportedProof(
+            "S-two parameterized proof-carrying decoding demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    if !stwo_backend_enabled() {
+        return Err(VmError::UnsupportedProof(
+            "S-two parameterized proof-carrying decoding demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        let manifest = prove_phase12_decoding_demo()?;
+        save_phase12_decoding_chain(&manifest, output)?;
+
+        println!("proof: {}", output.display());
+        println!("proof_backend: {}", manifest.proof_backend);
+        println!("chain_version: {}", manifest.chain_version);
+        println!("semantic_scope: {}", manifest.semantic_scope);
+        println!("proof_backend_version: {}", manifest.proof_backend_version);
+        println!("statement_version: {}", manifest.statement_version);
+        println!("total_steps: {}", manifest.total_steps);
+        println!("rolling_kv_pairs: {}", manifest.layout.rolling_kv_pairs);
+        println!("pair_width: {}", manifest.layout.pair_width);
+        if let Some(first) = manifest.steps.first() {
+            println!("start_position: {}", first.from_state.position);
+        }
+        if let Some(last) = manifest.steps.last() {
+            println!("final_position: {}", last.to_state.position);
+        }
+
+        Ok(())
+    }
+}
+
+fn verify_stwo_decoding_family_demo_command(
+    proof_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = proof_path;
+        return Err(VmError::UnsupportedProof(
+            "S-two parameterized proof-carrying decoding demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    if !stwo_backend_enabled() {
+        return Err(VmError::UnsupportedProof(
+            "S-two parameterized proof-carrying decoding demo requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        let manifest = load_phase12_decoding_chain(proof_path)?;
+        verify_phase12_decoding_chain_with_proof_checks(&manifest)?;
+
+        println!("proof: {}", proof_path.display());
+        println!("verified_stark: true");
+        println!("proof_backend: {}", manifest.proof_backend);
+        println!("chain_version: {}", manifest.chain_version);
+        println!("semantic_scope: {}", manifest.semantic_scope);
+        println!("proof_backend_version: {}", manifest.proof_backend_version);
+        println!("statement_version: {}", manifest.statement_version);
+        println!("total_steps: {}", manifest.total_steps);
+        println!("rolling_kv_pairs: {}", manifest.layout.rolling_kv_pairs);
+        println!("pair_width: {}", manifest.layout.pair_width);
+        println!("expected_chain_version: {STWO_DECODING_CHAIN_VERSION_PHASE12}");
+        println!("expected_semantic_scope: {STWO_DECODING_CHAIN_SCOPE_PHASE12}");
 
         Ok(())
     }
@@ -2670,6 +2775,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-shared-normalization-demo"
                 | "prove-stwo-decoding-demo"
                 | "verify-stwo-decoding-demo"
+                | "prove-stwo-decoding-family-demo"
+                | "verify-stwo-decoding-family-demo"
                 | "prepare-stwo-recursion-batch"
                 | "research-v2-step"
                 | "research-v2-trace"

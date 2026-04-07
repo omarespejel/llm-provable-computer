@@ -20,7 +20,9 @@ use stwo_constraint_framework::{
     EvalAtRow, FrameworkComponent, FrameworkEval, TraceLocationAllocator,
 };
 
-use super::matches_decoding_step_v1_family;
+use super::decoding::{
+    infer_phase12_decoding_layout, matches_decoding_step_v1_family, matches_decoding_step_v2_family,
+};
 use super::normalization_component::phase5_normalization_table_rows;
 use super::normalization_prover::{
     prove_phase10_shared_normalization_lookup_envelope,
@@ -50,6 +52,7 @@ use crate::state::MachineState;
 
 pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase10-gemma-block-v4";
 pub const STWO_BACKEND_VERSION_PHASE11: &str = "stwo-phase11-decoding-step-v1";
+pub const STWO_BACKEND_VERSION_PHASE12: &str = "stwo-phase12-decoding-family-v1";
 const M31_MODULUS: u32 = (1u32 << 31) - 1;
 const GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX: usize = 13;
 const GEMMA_BLOCK_INV_SQRT_MEMORY_INDEX: usize = 14;
@@ -83,6 +86,10 @@ const DECODING_STEP_V1_SHARED_NORMALIZATION_SCOPE: &str =
     "stwo_decoding_step_v1_execution_with_shared_normalization_lookup";
 const DECODING_STEP_V1_SHARED_ACTIVATION_SCOPE: &str =
     "stwo_decoding_step_v1_execution_with_shared_binary_step_lookup";
+const DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE: &str =
+    "stwo_decoding_step_v2_execution_with_shared_normalization_lookup";
+const DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE: &str =
+    "stwo_decoding_step_v2_execution_with_shared_binary_step_lookup";
 const OPCODE_COLUMN_NAMES: [&str; 11] = [
     "phase5/arithmetic/op/nop",
     "phase5/arithmetic/op/loadi",
@@ -627,11 +634,14 @@ fn build_phase9_embedded_activation_lookup(
 fn build_phase10_embedded_shared_normalization(
     claim: &VanillaStarkExecutionClaim,
 ) -> Result<Option<EmbeddedSharedNormalizationProof>> {
-    if !(matches_gemma_block_v4(&claim.program) || matches_decoding_step_v1(&claim.program)) {
+    if !(matches_gemma_block_v4(&claim.program)
+        || matches_decoding_step_v1(&claim.program)
+        || matches_decoding_step_v2(&claim.program))
+    {
         return Ok(None);
     }
 
-    let claimed_rows = shared_normalization_claim_rows(&claim.final_state.memory)?;
+    let claimed_rows = shared_normalization_claim_rows(&claim.program, &claim.final_state.memory)?;
     let proof_rows: Vec<(u16, u16)> = claimed_rows
         .iter()
         .map(|row| (row.expected_norm_sq as u16, row.expected_inv_sqrt_q8 as u16))
@@ -651,11 +661,14 @@ fn build_phase10_embedded_shared_normalization(
 fn build_phase10_embedded_shared_activation_lookup(
     claim: &VanillaStarkExecutionClaim,
 ) -> Result<Option<EmbeddedSharedActivationLookupProof>> {
-    if !(matches_gemma_block_v4(&claim.program) || matches_decoding_step_v1(&claim.program)) {
+    if !(matches_gemma_block_v4(&claim.program)
+        || matches_decoding_step_v1(&claim.program)
+        || matches_decoding_step_v2(&claim.program))
+    {
         return Ok(None);
     }
 
-    let claimed_rows = shared_activation_claim_rows(&claim.final_state.memory)?;
+    let claimed_rows = shared_activation_claim_rows(&claim.program, &claim.final_state.memory)?;
     let proof_rows: Vec<Phase3LookupTableRow> = claimed_rows
         .iter()
         .map(|row| Phase3LookupTableRow {
@@ -862,7 +875,8 @@ fn verify_phase10_embedded_shared_normalization(
     embedded: Option<&EmbeddedSharedNormalizationProof>,
 ) -> Result<()> {
     if !(matches_gemma_block_v4(&proof.claim.program)
-        || matches_decoding_step_v1(&proof.claim.program))
+        || matches_decoding_step_v1(&proof.claim.program)
+        || matches_decoding_step_v2(&proof.claim.program))
     {
         return Ok(());
     }
@@ -926,7 +940,8 @@ fn verify_phase10_embedded_shared_activation_lookup(
     embedded: Option<&EmbeddedSharedActivationLookupProof>,
 ) -> Result<()> {
     if !(matches_gemma_block_v4(&proof.claim.program)
-        || matches_decoding_step_v1(&proof.claim.program))
+        || matches_decoding_step_v1(&proof.claim.program)
+        || matches_decoding_step_v2(&proof.claim.program))
     {
         return Ok(());
     }
@@ -1038,8 +1053,34 @@ fn gemma_block_activation_pair(final_memory: &[i16]) -> Result<(i16, i16)> {
 }
 
 fn shared_normalization_claim_rows(
+    program: &Program,
     final_memory: &[i16],
 ) -> Result<Vec<EmbeddedSharedNormalizationClaimRow>> {
+    if matches_decoding_step_v2(program) {
+        let (primary_norm_idx, primary_inv_idx, secondary_norm_idx, secondary_inv_idx) =
+            phase12_shared_normalization_indices(program)?;
+        let primary = normalized_pair_from_indices(
+            final_memory,
+            primary_norm_idx,
+            primary_inv_idx,
+            "shared normalization primary row",
+        )?;
+        let secondary = normalized_pair_from_indices(
+            final_memory,
+            secondary_norm_idx,
+            secondary_inv_idx,
+            "shared normalization secondary row",
+        )?;
+        return validate_shared_normalization_pairs(
+            primary,
+            secondary,
+            primary_norm_idx,
+            primary_inv_idx,
+            secondary_norm_idx,
+            secondary_inv_idx,
+        );
+    }
+
     let primary = normalized_pair_from_indices(
         final_memory,
         GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX as u8,
@@ -1077,25 +1118,45 @@ fn shared_normalization_claim_rows(
             secondary.1
         )));
     }
-    Ok(vec![
-        EmbeddedSharedNormalizationClaimRow {
-            norm_sq_memory_index: GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX as u8,
-            inv_sqrt_q8_memory_index: GEMMA_BLOCK_INV_SQRT_MEMORY_INDEX as u8,
-            expected_norm_sq: primary.0,
-            expected_inv_sqrt_q8: primary.1,
-        },
-        EmbeddedSharedNormalizationClaimRow {
-            norm_sq_memory_index: GEMMA_BLOCK_V4_SHARED_NORM_SQ_MEMORY_INDEX as u8,
-            inv_sqrt_q8_memory_index: GEMMA_BLOCK_V4_SHARED_INV_SQRT_Q8_MEMORY_INDEX as u8,
-            expected_norm_sq: secondary.0,
-            expected_inv_sqrt_q8: secondary.1,
-        },
-    ])
+    validate_shared_normalization_pairs(
+        primary,
+        secondary,
+        GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX as u8,
+        GEMMA_BLOCK_INV_SQRT_MEMORY_INDEX as u8,
+        GEMMA_BLOCK_V4_SHARED_NORM_SQ_MEMORY_INDEX as u8,
+        GEMMA_BLOCK_V4_SHARED_INV_SQRT_Q8_MEMORY_INDEX as u8,
+    )
 }
 
 fn shared_activation_claim_rows(
+    program: &Program,
     final_memory: &[i16],
 ) -> Result<Vec<EmbeddedSharedActivationClaimRow>> {
+    if matches_decoding_step_v2(program) {
+        let (primary_input_idx, primary_output_idx, secondary_input_idx, secondary_output_idx) =
+            phase12_shared_activation_indices(program)?;
+        let primary = activation_pair_from_indices(
+            final_memory,
+            primary_input_idx,
+            primary_output_idx,
+            "shared activation primary row",
+        )?;
+        let secondary = activation_pair_from_indices(
+            final_memory,
+            secondary_input_idx,
+            secondary_output_idx,
+            "shared activation secondary row",
+        )?;
+        return validate_shared_activation_pairs(
+            primary,
+            secondary,
+            primary_input_idx,
+            primary_output_idx,
+            secondary_input_idx,
+            secondary_output_idx,
+        );
+    }
+
     let primary = activation_pair_from_indices(
         final_memory,
         GEMMA_BLOCK_ACTIVATION_INPUT_MEMORY_INDEX as u8,
@@ -1136,20 +1197,145 @@ fn shared_activation_claim_rows(
             secondary.1
         )));
     }
+    validate_shared_activation_pairs(
+        primary,
+        secondary,
+        GEMMA_BLOCK_ACTIVATION_INPUT_MEMORY_INDEX as u8,
+        GEMMA_BLOCK_ACTIVATION_OUTPUT_MEMORY_INDEX as u8,
+        GEMMA_BLOCK_V4_SHARED_ACTIVATION_INPUT_MEMORY_INDEX as u8,
+        GEMMA_BLOCK_V4_SHARED_ACTIVATION_OUTPUT_MEMORY_INDEX as u8,
+    )
+}
+
+fn validate_shared_normalization_pairs(
+    primary: (i16, i16),
+    secondary: (i16, i16),
+    primary_norm_idx: u8,
+    primary_inv_idx: u8,
+    secondary_norm_idx: u8,
+    secondary_inv_idx: u8,
+) -> Result<Vec<EmbeddedSharedNormalizationClaimRow>> {
+    if primary
+        != (
+            GEMMA_BLOCK_EXPECTED_NORM_SQ,
+            GEMMA_BLOCK_EXPECTED_INV_SQRT_Q8,
+        )
+    {
+        return Err(VmError::UnsupportedProof(format!(
+            "shared normalization expects primary row ({}, {}), got ({}, {})",
+            GEMMA_BLOCK_EXPECTED_NORM_SQ, GEMMA_BLOCK_EXPECTED_INV_SQRT_Q8, primary.0, primary.1
+        )));
+    }
+    if secondary
+        != (
+            GEMMA_BLOCK_V4_SHARED_NORM_SQ,
+            GEMMA_BLOCK_V4_SHARED_INV_SQRT_Q8,
+        )
+    {
+        return Err(VmError::UnsupportedProof(format!(
+            "shared normalization expects secondary row ({}, {}), got ({}, {})",
+            GEMMA_BLOCK_V4_SHARED_NORM_SQ,
+            GEMMA_BLOCK_V4_SHARED_INV_SQRT_Q8,
+            secondary.0,
+            secondary.1
+        )));
+    }
+    Ok(vec![
+        EmbeddedSharedNormalizationClaimRow {
+            norm_sq_memory_index: primary_norm_idx,
+            inv_sqrt_q8_memory_index: primary_inv_idx,
+            expected_norm_sq: primary.0,
+            expected_inv_sqrt_q8: primary.1,
+        },
+        EmbeddedSharedNormalizationClaimRow {
+            norm_sq_memory_index: secondary_norm_idx,
+            inv_sqrt_q8_memory_index: secondary_inv_idx,
+            expected_norm_sq: secondary.0,
+            expected_inv_sqrt_q8: secondary.1,
+        },
+    ])
+}
+
+fn validate_shared_activation_pairs(
+    primary: (i16, i16),
+    secondary: (i16, i16),
+    primary_input_idx: u8,
+    primary_output_idx: u8,
+    secondary_input_idx: u8,
+    secondary_output_idx: u8,
+) -> Result<Vec<EmbeddedSharedActivationClaimRow>> {
+    if primary
+        != (
+            GEMMA_BLOCK_EXPECTED_ACTIVATION_INPUT,
+            GEMMA_BLOCK_EXPECTED_ACTIVATION_OUTPUT,
+        )
+    {
+        return Err(VmError::UnsupportedProof(format!(
+            "shared activation expects primary row ({}, {}), got ({}, {})",
+            GEMMA_BLOCK_EXPECTED_ACTIVATION_INPUT,
+            GEMMA_BLOCK_EXPECTED_ACTIVATION_OUTPUT,
+            primary.0,
+            primary.1
+        )));
+    }
+    if secondary
+        != (
+            GEMMA_BLOCK_V4_SHARED_ACTIVATION_INPUT,
+            GEMMA_BLOCK_V4_SHARED_ACTIVATION_OUTPUT,
+        )
+    {
+        return Err(VmError::UnsupportedProof(format!(
+            "shared activation expects secondary row ({}, {}), got ({}, {})",
+            GEMMA_BLOCK_V4_SHARED_ACTIVATION_INPUT,
+            GEMMA_BLOCK_V4_SHARED_ACTIVATION_OUTPUT,
+            secondary.0,
+            secondary.1
+        )));
+    }
     Ok(vec![
         EmbeddedSharedActivationClaimRow {
-            input_memory_index: GEMMA_BLOCK_ACTIVATION_INPUT_MEMORY_INDEX as u8,
-            output_memory_index: GEMMA_BLOCK_ACTIVATION_OUTPUT_MEMORY_INDEX as u8,
+            input_memory_index: primary_input_idx,
+            output_memory_index: primary_output_idx,
             expected_input: primary.0,
             expected_output: primary.1,
         },
         EmbeddedSharedActivationClaimRow {
-            input_memory_index: GEMMA_BLOCK_V4_SHARED_ACTIVATION_INPUT_MEMORY_INDEX as u8,
-            output_memory_index: GEMMA_BLOCK_V4_SHARED_ACTIVATION_OUTPUT_MEMORY_INDEX as u8,
+            input_memory_index: secondary_input_idx,
+            output_memory_index: secondary_output_idx,
             expected_input: secondary.0,
             expected_output: secondary.1,
         },
     ])
+}
+
+fn phase12_shared_normalization_indices(program: &Program) -> Result<(u8, u8, u8, u8)> {
+    let layout = infer_phase12_decoding_layout(program).ok_or_else(|| {
+        VmError::UnsupportedProof(
+            "Phase 12 shared normalization requires a decoding_step_v2-family layout".to_string(),
+        )
+    })?;
+    let lookup = layout.lookup_range();
+    Ok((
+        lookup.start as u8,
+        (lookup.start + 1) as u8,
+        (lookup.start + 4) as u8,
+        (lookup.start + 5) as u8,
+    ))
+}
+
+fn phase12_shared_activation_indices(program: &Program) -> Result<(u8, u8, u8, u8)> {
+    let layout = infer_phase12_decoding_layout(program).ok_or_else(|| {
+        VmError::UnsupportedProof(
+            "Phase 12 shared activation requires a decoding_step_v2-family layout".to_string(),
+        )
+    })?;
+    let lookup = layout.lookup_range();
+    Ok((
+        (lookup.start + 2) as u8,
+        (lookup.start + 3) as u8,
+        (lookup.start + 6) as u8,
+        (lookup.start + 7) as u8,
+    ))
 }
 
 fn normalized_pair_from_indices(
@@ -1515,6 +1701,7 @@ fn validate_phase5_proven_fixture(program: &Program) -> Result<()> {
     let matches_gemma_block_v3 = matches_gemma_block_v3(program);
     let matches_gemma_block_v4 = matches_gemma_block_v4(program);
     let matches_decoding_step_v1 = matches_decoding_step_v1(program);
+    let matches_decoding_step_v2 = matches_decoding_step_v2(program);
 
     if matches_addition
         || matches_counter
@@ -1529,12 +1716,13 @@ fn validate_phase5_proven_fixture(program: &Program) -> Result<()> {
         || matches_gemma_block_v3
         || matches_gemma_block_v4
         || matches_decoding_step_v1
+        || matches_decoding_step_v2
     {
         return Ok(());
     }
 
     Err(VmError::UnsupportedProof(
-        "S-two Phase 5 currently proves only the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`, `programs/dot_product.tvm`, `programs/fibonacci.tvm`, `programs/matmul_2x2.tvm`, `programs/single_neuron.tvm`, `programs/gemma_block_v1.tvm`, `programs/gemma_block_v2.tvm`, `programs/gemma_block_v3.tvm`, `programs/gemma_block_v4.tvm`, and the `decoding_step_v1` family; broader arithmetic-subset AIR coverage remains internal"
+        "S-two Phase 5 currently proves only the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`, `programs/dot_product.tvm`, `programs/fibonacci.tvm`, `programs/matmul_2x2.tvm`, `programs/single_neuron.tvm`, `programs/gemma_block_v1.tvm`, `programs/gemma_block_v2.tvm`, `programs/gemma_block_v3.tvm`, `programs/gemma_block_v4.tvm`, the `decoding_step_v1` family, and the parameterized `decoding_step_v2` family; broader arithmetic-subset AIR coverage remains internal"
             .to_string(),
     ))
 }
@@ -1665,7 +1853,9 @@ fn matches_gemma_block_v3(program: &Program) -> bool {
 }
 
 fn stwo_backend_version_for_program(program: &Program) -> &str {
-    if matches_decoding_step_v1(program) {
+    if matches_decoding_step_v2(program) {
+        STWO_BACKEND_VERSION_PHASE12
+    } else if matches_decoding_step_v1(program) {
         STWO_BACKEND_VERSION_PHASE11
     } else {
         STWO_BACKEND_VERSION_PHASE5
@@ -1673,7 +1863,9 @@ fn stwo_backend_version_for_program(program: &Program) -> &str {
 }
 
 fn shared_program_label(program: &Program) -> &str {
-    if matches_decoding_step_v1(program) {
+    if matches_decoding_step_v2(program) {
+        "decoding_step_v2"
+    } else if matches_decoding_step_v1(program) {
         "decoding_step_v1"
     } else {
         "gemma_block_v4"
@@ -1681,7 +1873,9 @@ fn shared_program_label(program: &Program) -> &str {
 }
 
 fn shared_normalization_scope(program: &Program) -> &str {
-    if matches_decoding_step_v1(program) {
+    if matches_decoding_step_v2(program) {
+        DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE
+    } else if matches_decoding_step_v1(program) {
         DECODING_STEP_V1_SHARED_NORMALIZATION_SCOPE
     } else {
         GEMMA_BLOCK_V4_SHARED_NORMALIZATION_SCOPE
@@ -1689,7 +1883,9 @@ fn shared_normalization_scope(program: &Program) -> &str {
 }
 
 fn shared_activation_scope(program: &Program) -> &str {
-    if matches_decoding_step_v1(program) {
+    if matches_decoding_step_v2(program) {
+        DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE
+    } else if matches_decoding_step_v1(program) {
         DECODING_STEP_V1_SHARED_ACTIVATION_SCOPE
     } else {
         GEMMA_BLOCK_V4_SHARED_ACTIVATION_SCOPE
@@ -1697,7 +1893,9 @@ fn shared_activation_scope(program: &Program) -> &str {
 }
 
 fn shared_normalization_label(program: &Program) -> &str {
-    if matches_decoding_step_v1(program) {
+    if matches_decoding_step_v2(program) {
+        "decoding_step_v2 shared normalization"
+    } else if matches_decoding_step_v1(program) {
         "decoding_step_v1 shared normalization"
     } else {
         "gemma_block_v4 shared normalization"
@@ -1705,7 +1903,9 @@ fn shared_normalization_label(program: &Program) -> &str {
 }
 
 fn shared_activation_label(program: &Program) -> &str {
-    if matches_decoding_step_v1(program) {
+    if matches_decoding_step_v2(program) {
+        "decoding_step_v2 shared activation"
+    } else if matches_decoding_step_v1(program) {
         "decoding_step_v1 shared activation"
     } else {
         "gemma_block_v4 shared activation"
@@ -1714,6 +1914,10 @@ fn shared_activation_label(program: &Program) -> &str {
 
 fn matches_decoding_step_v1(program: &Program) -> bool {
     matches_decoding_step_v1_family(program)
+}
+
+fn matches_decoding_step_v2(program: &Program) -> bool {
+    matches_decoding_step_v2_family(program)
 }
 
 fn matches_gemma_block_v4(program: &Program) -> bool {
@@ -2192,6 +2396,10 @@ fn bool_field<E: EvalAtRow>(value: bool) -> E::F {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::stwo_backend::decoding::{
+        decoding_step_v2_program_with_initial_memory, phase12_default_decoding_layout,
+        phase12_demo_initial_memories,
+    };
     use crate::{ProgramCompiler, TransformerVmConfig};
     use stwo::core::pcs::utils::TreeVec;
     use stwo::prover::backend::Column;
@@ -2204,6 +2412,86 @@ mod tests {
             .expect("compile")
             .program()
             .clone()
+    }
+
+    fn assert_trace_satisfies_constraints_for_program(program: Program) {
+        let mut runtime =
+            NativeInterpreter::new(program.clone(), Attention2DMode::AverageHard, 256);
+        let result = runtime.run().expect("run program");
+        assert!(result.halted);
+
+        let states = runtime.trace().to_vec();
+        let trace = build_trace_bundle(&program, &states).expect("trace bundle");
+        let final_state = result.final_state.clone();
+        let eval_state = Phase5ArithmeticSubsetEval {
+            log_size: trace.log_size,
+            memory_size: program.memory_size(),
+            initial_state: PublicState::from_initial_memory(program.initial_memory()),
+            final_state: PublicState::from_machine_state(final_state.clone()),
+        };
+        let preprocessed = trace
+            .preprocessed_trace
+            .iter()
+            .map(|column| column.values.to_cpu())
+            .collect::<Vec<_>>();
+        let base = trace
+            .base_trace
+            .iter()
+            .map(|column| column.values.to_cpu())
+            .collect::<Vec<_>>();
+        let tree = TreeVec(vec![
+            preprocessed.iter().collect::<Vec<_>>(),
+            base.iter().collect::<Vec<_>>(),
+        ]);
+
+        assert_constraints_on_trace(
+            &tree,
+            trace.log_size,
+            |eval| {
+                let _ = eval_state.evaluate(eval);
+            },
+            SecureField::zero(),
+        );
+    }
+
+    fn assert_trace_polys_satisfy_constraints_for_program(program: Program) {
+        let mut runtime =
+            NativeInterpreter::new(program.clone(), Attention2DMode::AverageHard, 256);
+        let result = runtime.run().expect("run program");
+        assert!(result.halted);
+
+        let states = runtime.trace().to_vec();
+        let trace = build_trace_bundle(&program, &states).expect("trace bundle");
+        let final_state = result.final_state.clone();
+        let eval_state = Phase5ArithmeticSubsetEval {
+            log_size: trace.log_size,
+            memory_size: program.memory_size(),
+            initial_state: PublicState::from_initial_memory(program.initial_memory()),
+            final_state: PublicState::from_machine_state(final_state.clone()),
+        };
+        let trace_polys = TreeVec(vec![
+            trace
+                .preprocessed_trace
+                .iter()
+                .cloned()
+                .map(|c| c.interpolate())
+                .collect::<Vec<_>>(),
+            trace
+                .base_trace
+                .iter()
+                .cloned()
+                .map(|c| c.interpolate())
+                .collect::<Vec<_>>(),
+        ]);
+
+        assert_constraints_on_polys(
+            &trace_polys,
+            CanonicCoset::new(trace.log_size),
+            |eval| {
+                let _ = eval_state.evaluate(eval);
+            },
+            SecureField::zero(),
+        );
     }
 
     #[test]
@@ -2227,6 +2515,17 @@ mod tests {
                 panic!("{path} should be accepted by the Phase 5 fixture allow-list: {error}")
             });
         }
+    }
+
+    #[test]
+    fn phase12_subset_accepts_parameterized_decoding_family() {
+        let layout = phase12_default_decoding_layout();
+        let memory = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .remove(0);
+        let program =
+            decoding_step_v2_program_with_initial_memory(&layout, memory).expect("program");
+        validate_phase5_proven_fixture(&program).expect("phase12 family allow-list");
     }
 
     #[test]
@@ -2265,44 +2564,7 @@ mod tests {
     }
 
     fn assert_program_trace_satisfies_constraints(path: &str) {
-        let program = compile_program(path);
-        let mut runtime =
-            NativeInterpreter::new(program.clone(), Attention2DMode::AverageHard, 256);
-        let result = runtime.run().expect("run program");
-        assert!(result.halted);
-
-        let states = runtime.trace().to_vec();
-        let trace = build_trace_bundle(&program, &states).expect("trace bundle");
-        let final_state = result.final_state.clone();
-        let eval_state = Phase5ArithmeticSubsetEval {
-            log_size: trace.log_size,
-            memory_size: program.memory_size(),
-            initial_state: PublicState::from_initial_memory(program.initial_memory()),
-            final_state: PublicState::from_machine_state(final_state.clone()),
-        };
-        let preprocessed = trace
-            .preprocessed_trace
-            .iter()
-            .map(|column| column.values.to_cpu())
-            .collect::<Vec<_>>();
-        let base = trace
-            .base_trace
-            .iter()
-            .map(|column| column.values.to_cpu())
-            .collect::<Vec<_>>();
-        let tree = TreeVec(vec![
-            preprocessed.iter().collect::<Vec<_>>(),
-            base.iter().collect::<Vec<_>>(),
-        ]);
-
-        assert_constraints_on_trace(
-            &tree,
-            trace.log_size,
-            |eval| {
-                let _ = eval_state.evaluate(eval);
-            },
-            SecureField::zero(),
-        );
+        assert_trace_satisfies_constraints_for_program(compile_program(path));
     }
 
     #[test]
@@ -2356,6 +2618,17 @@ mod tests {
     }
 
     #[test]
+    fn phase12_decoding_step_v2_trace_satisfies_constraints() {
+        let layout = phase12_default_decoding_layout();
+        let memory = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .remove(0);
+        let program =
+            decoding_step_v2_program_with_initial_memory(&layout, memory).expect("program");
+        assert_trace_satisfies_constraints_for_program(program);
+    }
+
+    #[test]
     fn phase5_matmul_2x2_trace_satisfies_constraints() {
         assert_program_trace_satisfies_constraints("programs/matmul_2x2.tvm");
     }
@@ -2366,44 +2639,7 @@ mod tests {
     }
 
     fn assert_program_trace_polys_satisfy_constraints(path: &str) {
-        let program = compile_program(path);
-        let mut runtime =
-            NativeInterpreter::new(program.clone(), Attention2DMode::AverageHard, 256);
-        let result = runtime.run().expect("run program");
-        assert!(result.halted);
-
-        let states = runtime.trace().to_vec();
-        let trace = build_trace_bundle(&program, &states).expect("trace bundle");
-        let final_state = result.final_state.clone();
-        let eval_state = Phase5ArithmeticSubsetEval {
-            log_size: trace.log_size,
-            memory_size: program.memory_size(),
-            initial_state: PublicState::from_initial_memory(program.initial_memory()),
-            final_state: PublicState::from_machine_state(final_state.clone()),
-        };
-        let trace_polys = TreeVec(vec![
-            trace
-                .preprocessed_trace
-                .iter()
-                .cloned()
-                .map(|c| c.interpolate())
-                .collect::<Vec<_>>(),
-            trace
-                .base_trace
-                .iter()
-                .cloned()
-                .map(|c| c.interpolate())
-                .collect::<Vec<_>>(),
-        ]);
-
-        assert_constraints_on_polys(
-            &trace_polys,
-            CanonicCoset::new(trace.log_size),
-            |eval| {
-                let _ = eval_state.evaluate(eval);
-            },
-            SecureField::zero(),
-        );
+        assert_trace_polys_satisfy_constraints_for_program(compile_program(path));
     }
 
     #[test]
@@ -2454,6 +2690,17 @@ mod tests {
     #[test]
     fn phase11_decoding_step_v1_trace_polys_satisfy_constraints() {
         assert_program_trace_polys_satisfy_constraints("programs/decoding_step_v1.tvm");
+    }
+
+    #[test]
+    fn phase12_decoding_step_v2_trace_polys_satisfy_constraints() {
+        let layout = phase12_default_decoding_layout();
+        let memory = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .remove(0);
+        let program =
+            decoding_step_v2_program_with_initial_memory(&layout, memory).expect("program");
+        assert_trace_polys_satisfy_constraints_for_program(program);
     }
 
     #[test]

@@ -36,12 +36,21 @@ pub(crate) use arithmetic_subset_prover::{
 #[cfg(feature = "stwo-backend")]
 pub use decoding::{
     decoding_step_v1_program_with_initial_memory, decoding_step_v1_template_program,
+    decoding_step_v2_program_with_initial_memory, decoding_step_v2_template_program,
     derive_phase11_from_final_memory, derive_phase11_from_program_initial_state,
-    load_phase11_decoding_chain, matches_decoding_step_v1_family, phase11_prepare_decoding_chain,
-    prove_phase11_decoding_demo, save_phase11_decoding_chain, verify_phase11_decoding_chain,
-    verify_phase11_decoding_chain_with_proof_checks, Phase11DecodingChainManifest,
-    Phase11DecodingState, Phase11DecodingStep, STWO_DECODING_CHAIN_SCOPE_PHASE11,
-    STWO_DECODING_CHAIN_VERSION_PHASE11, STWO_DECODING_STATE_VERSION_PHASE11,
+    derive_phase12_from_final_memory, derive_phase12_from_program_initial_state,
+    infer_phase12_decoding_layout, load_phase11_decoding_chain, load_phase12_decoding_chain,
+    matches_decoding_step_v1_family, matches_decoding_step_v2_family,
+    phase11_prepare_decoding_chain, phase12_default_decoding_layout,
+    phase12_prepare_decoding_chain, prove_phase11_decoding_demo, prove_phase12_decoding_demo,
+    save_phase11_decoding_chain, save_phase12_decoding_chain, verify_phase11_decoding_chain,
+    verify_phase11_decoding_chain_with_proof_checks, verify_phase12_decoding_chain,
+    verify_phase12_decoding_chain_with_proof_checks, Phase11DecodingChainManifest,
+    Phase11DecodingState, Phase11DecodingStep, Phase12DecodingChainManifest, Phase12DecodingLayout,
+    Phase12DecodingState, Phase12DecodingStep, STWO_DECODING_CHAIN_SCOPE_PHASE11,
+    STWO_DECODING_CHAIN_SCOPE_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE11,
+    STWO_DECODING_CHAIN_VERSION_PHASE12, STWO_DECODING_LAYOUT_VERSION_PHASE12,
+    STWO_DECODING_STATE_VERSION_PHASE11, STWO_DECODING_STATE_VERSION_PHASE12,
 };
 pub use layout::{
     phase2_fixture_matrix, phase2_module_layout, phase2_supported_mnemonics,
@@ -95,6 +104,8 @@ pub const STWO_BACKEND_VERSION_PHASE2: &str = "stwo-phase2";
 pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase10-gemma-block-v4";
 /// Backend version label used by the fixed-shape proof-carrying decoding demo family.
 pub const STWO_BACKEND_VERSION_PHASE11: &str = "stwo-phase11-decoding-step-v1";
+/// Backend version label used by the parameterized proof-carrying decoding family.
+pub const STWO_BACKEND_VERSION_PHASE12: &str = "stwo-phase12-decoding-family-v1";
 /// Cargo feature that enables the experimental S-two backend seam.
 pub const STWO_BACKEND_FEATURE_NAME: &str = "stwo-backend";
 
