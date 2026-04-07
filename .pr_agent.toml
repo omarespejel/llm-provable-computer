@@ -27,6 +27,7 @@ extra_instructions = "Review aggressively for proof soundness, AIR and trace con
 [ignore]
 glob = [
   "scripts/node_modules/**",
+  "docs/artifacts/**",
   "docs/paper/artifacts/**",
   "docs/paper/evidence/**",
   "docs/paper/figures/**",

@@ -6,9 +6,7 @@ reviews:
   profile: assertive
   request_changes_workflow: false
   high_level_summary: true
-  high_level_summary_placeholder: true
   changed_files_summary: true
-  changed_files_summary_title: true
   poem: false
   review_status: true
   collapse_walkthrough: false
@@ -27,7 +25,6 @@ reviews:
       - codex/.*
     labels: []
     ignore_title_keywords: []
-    auto_title_placeholder: false
   path_filters:
     - src/**
     - tests/**
@@ -37,6 +34,7 @@ reviews:
     - README.md
     - docs/**/*.md
     - '!scripts/node_modules/**'
+    - '!docs/artifacts/**'
     - '!docs/paper/artifacts/**'
     - '!docs/paper/evidence/**'
     - '!docs/paper/figures/**'

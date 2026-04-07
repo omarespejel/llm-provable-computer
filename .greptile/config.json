@@ -6,7 +6,14 @@
   "maxLinesToAnalyze": 20000,
   "fileChangeLimit": 200,
   "includeBranches": ["main", "codex/.*"],
-  "ignorePatterns": "scripts/node_modules/**\ndocs/paper/artifacts/**\ndocs/paper/evidence/**\ndocs/paper/figures/**\ncompiled/**",
+  "ignorePatterns": [
+    "scripts/node_modules/**",
+    "docs/artifacts/**",
+    "docs/paper/artifacts/**",
+    "docs/paper/evidence/**",
+    "docs/paper/figures/**",
+    "compiled/**"
+  ],
   "triggerOnUpdates": true,
   "statusCheck": true,
   "statusCommentsEnabled": true,

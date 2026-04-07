@@ -28,6 +28,7 @@ Review this repository aggressively.
 Do not spend review budget on vendored or generated content:
 
 - `scripts/node_modules/**`
+- `docs/artifacts/**`
 - `docs/paper/artifacts/**`
 - `docs/paper/evidence/**`
 - `docs/paper/figures/**`
