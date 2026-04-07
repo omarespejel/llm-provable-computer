@@ -1289,6 +1289,25 @@ fn prove_stwo_normalization_demo_command(output: &Path) -> llm_provable_computer
     }
 }
 
+fn require_stwo_backend(context: &str) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        return Err(VmError::UnsupportedProof(format!(
+            "{context} requires building with `--features stwo-backend`"
+        )));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        if !stwo_backend_enabled() {
+            return Err(VmError::UnsupportedProof(format!(
+                "{context} requires building with `--features stwo-backend`"
+            )));
+        }
+        Ok(())
+    }
+}
+
 fn prove_stwo_lookup_demo_command(output: &Path) -> llm_provable_computer::Result<()> {
     #[cfg(not(feature = "stwo-backend"))]
     {
@@ -2052,22 +2071,7 @@ fn verify_stwo_decoding_history_segments_demo_command(
 fn prove_stwo_decoding_history_rollup_demo_command(
     output: &Path,
 ) -> llm_provable_computer::Result<()> {
-    #[cfg(not(feature = "stwo-backend"))]
-    {
-        let _ = output;
-        return Err(VmError::UnsupportedProof(
-            "S-two decoding history-rollup demo requires building with `--features stwo-backend`"
-                .to_string(),
-        ));
-    }
-
-    #[cfg(feature = "stwo-backend")]
-    if !stwo_backend_enabled() {
-        return Err(VmError::UnsupportedProof(
-            "S-two decoding history-rollup demo requires building with `--features stwo-backend`"
-                .to_string(),
-        ));
-    }
+    require_stwo_backend("S-two decoding history-rollup demo")?;
 
     #[cfg(feature = "stwo-backend")]
     {
@@ -2107,27 +2111,18 @@ fn prove_stwo_decoding_history_rollup_demo_command(
 
         Ok(())
     }
+
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output;
+        unreachable!("require_stwo_backend must fail without `stwo-backend`");
+    }
 }
 
 fn verify_stwo_decoding_history_rollup_demo_command(
     proof_path: &Path,
 ) -> llm_provable_computer::Result<()> {
-    #[cfg(not(feature = "stwo-backend"))]
-    {
-        let _ = proof_path;
-        return Err(VmError::UnsupportedProof(
-            "S-two decoding history-rollup demo requires building with `--features stwo-backend`"
-                .to_string(),
-        ));
-    }
-
-    #[cfg(feature = "stwo-backend")]
-    if !stwo_backend_enabled() {
-        return Err(VmError::UnsupportedProof(
-            "S-two decoding history-rollup demo requires building with `--features stwo-backend`"
-                .to_string(),
-        ));
-    }
+    require_stwo_backend("S-two decoding history-rollup demo")?;
 
     #[cfg(feature = "stwo-backend")]
     {
@@ -2180,27 +2175,18 @@ fn verify_stwo_decoding_history_rollup_demo_command(
 
         Ok(())
     }
+
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = proof_path;
+        unreachable!("require_stwo_backend must fail without `stwo-backend`");
+    }
 }
 
 fn prove_stwo_decoding_history_rollup_matrix_demo_command(
     output: &Path,
 ) -> llm_provable_computer::Result<()> {
-    #[cfg(not(feature = "stwo-backend"))]
-    {
-        let _ = output;
-        return Err(VmError::UnsupportedProof(
-            "S-two decoding history-rollup matrix demo requires building with `--features stwo-backend`"
-                .to_string(),
-        ));
-    }
-
-    #[cfg(feature = "stwo-backend")]
-    if !stwo_backend_enabled() {
-        return Err(VmError::UnsupportedProof(
-            "S-two decoding history-rollup matrix demo requires building with `--features stwo-backend`"
-                .to_string(),
-        ));
-    }
+    require_stwo_backend("S-two decoding history-rollup matrix demo")?;
 
     #[cfg(feature = "stwo-backend")]
     {
@@ -2233,27 +2219,18 @@ fn prove_stwo_decoding_history_rollup_matrix_demo_command(
         }
         Ok(())
     }
+
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output;
+        unreachable!("require_stwo_backend must fail without `stwo-backend`");
+    }
 }
 
 fn verify_stwo_decoding_history_rollup_matrix_demo_command(
     proof_path: &Path,
 ) -> llm_provable_computer::Result<()> {
-    #[cfg(not(feature = "stwo-backend"))]
-    {
-        let _ = proof_path;
-        return Err(VmError::UnsupportedProof(
-            "S-two decoding history-rollup matrix demo requires building with `--features stwo-backend`"
-                .to_string(),
-        ));
-    }
-
-    #[cfg(feature = "stwo-backend")]
-    if !stwo_backend_enabled() {
-        return Err(VmError::UnsupportedProof(
-            "S-two decoding history-rollup matrix demo requires building with `--features stwo-backend`"
-                .to_string(),
-        ));
-    }
+    require_stwo_backend("S-two decoding history-rollup matrix demo")?;
 
     #[cfg(feature = "stwo-backend")]
     {
@@ -2298,6 +2275,12 @@ fn verify_stwo_decoding_history_rollup_matrix_demo_command(
             }
         }
         Ok(())
+    }
+
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = proof_path;
+        unreachable!("require_stwo_backend must fail without `stwo-backend`");
     }
 }
 
