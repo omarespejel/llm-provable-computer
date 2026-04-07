@@ -147,7 +147,7 @@ with bench_path.open() as f:
 rows = []
 for name, purpose, scope in artifacts:
     path = bundle / name
-    size = path.stat().st_size if path.exists() else 0
+    size = path.stat().st_size
     digest = sha256(path)
     rows.append((name, purpose, scope, size, digest))
 
