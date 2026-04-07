@@ -509,6 +509,14 @@ pub fn decoding_step_v2_template_program(layout: &Phase12DecodingLayout) -> Resu
     instructions.push(Instruction::Load((output.start + 2) as u8));
     instructions.push(Instruction::Halt);
 
+    if instructions.len() > usize::from(u8::MAX) + 1 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 12 decoding program instruction count {} exceeds the u8 pc horizon {}",
+            instructions.len(),
+            usize::from(u8::MAX) + 1
+        )));
+    }
+
     Ok(Program::new(instructions, layout.memory_size()?))
 }
 
@@ -3126,6 +3134,12 @@ fn commit_phase12_persistent_state(
 }
 
 fn decoding_program_step_limit(program: &Program) -> usize {
+    debug_assert!(
+        program.instructions().len() <= usize::from(u8::MAX) + 1,
+        "Phase 12 decoding program instruction count {} exceeds the u8 pc horizon {}",
+        program.instructions().len(),
+        usize::from(u8::MAX) + 1
+    );
     program.instructions().len().saturating_add(1)
 }
 
@@ -4254,6 +4268,19 @@ mod tests {
                 .windows(expected.len())
                 .any(|window| window == expected.as_slice())
         );
+    }
+
+    #[test]
+    fn phase12_template_rejects_programs_beyond_u8_pc_horizon() {
+        let layout = Phase12DecodingLayout::new(25, 4).expect("layout");
+        let err = decoding_step_v2_template_program(&layout).expect_err("program must be rejected");
+        match err {
+            VmError::InvalidConfig(message) => {
+                assert!(message.contains("instruction count"));
+                assert!(message.contains("u8 pc horizon"));
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
     }
 
     #[test]
