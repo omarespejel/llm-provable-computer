@@ -9,6 +9,7 @@ use crate::assembly::parse_program;
 use crate::compiler::ProgramCompiler;
 use crate::config::{Attention2DMode, TransformerVmConfig};
 use crate::error::{Result, VmError};
+use crate::interpreter::NativeInterpreter;
 use crate::instruction::{Instruction, Program};
 use crate::proof::{
     production_v1_stark_options, prove_execution_stark_with_backend_and_options,
@@ -470,7 +471,13 @@ pub fn decoding_step_v2_template_program(layout: &Phase12DecodingLayout) -> Resu
         instructions.push(Instruction::Store(index as u8));
     }
     for offset in 0..layout.pair_width {
-        instructions.push(Instruction::Load((incoming.start + offset) as u8));
+        let source = match offset {
+            0 => lookup.start + 3,
+            1 => lookup.start + 7,
+            2 => output.start + 2,
+            _ => incoming.start + offset,
+        };
+        instructions.push(Instruction::Load(source as u8));
         instructions.push(Instruction::Store((latest_cached.start + offset) as u8));
     }
 
@@ -1105,7 +1112,7 @@ pub fn phase14_prepare_decoding_chain(
     let layout = &chain.layout;
     let expected_layout_commitment = commit_phase12_layout(layout);
     let kv_cache_range = layout.kv_cache_range()?;
-    let incoming_token_range = layout.incoming_token_range()?;
+    let latest_cached_range = layout.latest_cached_pair_range()?;
     let mut steps = Vec::with_capacity(chain.steps.len());
     let mut accumulator: Option<Phase14HistoryAccumulator> = None;
 
@@ -1135,7 +1142,7 @@ pub fn phase14_prepare_decoding_chain(
         let next = advance_phase14_history(
             &expected_layout_commitment,
             &current,
-            &step.proof.claim.program.initial_memory()[incoming_token_range.clone()],
+            &step.proof.claim.final_state.memory[latest_cached_range.clone()],
             &to_view.lookup_rows_commitment,
             layout.pair_width,
         )?;
@@ -1167,7 +1174,7 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
     manifest.layout.validate()?;
     let expected_layout_commitment = commit_phase12_layout(&manifest.layout);
     let kv_cache_range = manifest.layout.kv_cache_range()?;
-    let incoming_token_range = manifest.layout.incoming_token_range()?;
+    let latest_cached_range = manifest.layout.latest_cached_pair_range()?;
     if manifest.proof_backend != StarkProofBackend::Stwo {
         return Err(VmError::InvalidConfig(format!(
             "chunked decoding chain backend `{}` is not `stwo`",
@@ -1272,7 +1279,7 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
         let next = advance_phase14_history(
             &expected_layout_commitment,
             &current,
-            &step.proof.claim.program.initial_memory()[incoming_token_range.clone()],
+            &step.proof.claim.final_state.memory[latest_cached_range.clone()],
             &to_view.lookup_rows_commitment,
             manifest.layout.pair_width,
         )?;
@@ -2925,7 +2932,7 @@ fn verify_phase15_segment_sequence(
 ) -> Result<usize> {
     let expected_layout_commitment = commit_phase12_layout(layout);
     let kv_cache_range = layout.kv_cache_range()?;
-    let incoming_token_range = layout.incoming_token_range()?;
+    let latest_cached_range = layout.latest_cached_pair_range()?;
     let mut expected_global_start_step_index = initial_global_start_step_index;
 
     for (local_segment_index, segment) in segments.iter().enumerate() {
@@ -2999,7 +3006,7 @@ fn verify_phase15_segment_sequence(
             current = advance_phase14_history(
                 &expected_layout_commitment,
                 &current,
-                &step.proof.claim.program.initial_memory()[incoming_token_range.clone()],
+                &step.proof.claim.final_state.memory[latest_cached_range.clone()],
                 &to_view.lookup_rows_commitment,
                 layout.pair_width,
             )?;
@@ -3532,11 +3539,11 @@ pub(crate) fn phase12_demo_initial_memories(
         memory[lookup_range.clone()].copy_from_slice(&PHASE12_LOOKUP_ROW_VALUES);
         memory[position_index] = position as i16;
         memory[position_increment_index] = 1;
+        let program = decoding_step_v2_program_with_initial_memory(layout, memory.clone())?;
+        let mut runtime = NativeInterpreter::new(program, Attention2DMode::AverageHard, 256);
+        let result = runtime.run()?;
+        kv_cache.copy_from_slice(&result.final_state.memory[kv_cache_range.clone()]);
         memories.push(memory);
-
-        kv_cache.rotate_left(layout.pair_width);
-        let tail_start = kv_cache.len() - layout.pair_width;
-        kv_cache[tail_start..].copy_from_slice(&incoming_values);
     }
     Ok(memories)
 }
@@ -4050,6 +4057,18 @@ mod tests {
                     final_memory[output.start + 2],
                     expected_activation + expected_secondary_activation
                 );
+                for offset in 0..layout.pair_width {
+                    let expected_latest_value = match offset {
+                        0 => expected_activation,
+                        1 => expected_secondary_activation,
+                        2 => final_memory[output.start + 2],
+                        _ => final_memory[incoming.start + offset],
+                    };
+                    assert_eq!(
+                        final_memory[latest_cached.start + offset],
+                        expected_latest_value
+                    );
+                }
             }
         }
     }
@@ -4152,6 +4171,10 @@ mod tests {
         assert_eq!(
             manifest.steps[0].to_state.persistent_state_commitment,
             manifest.steps[1].from_state.persistent_state_commitment
+        );
+        assert_eq!(
+            manifest.steps[0].to_state.kv_cache_commitment,
+            manifest.steps[1].from_state.kv_cache_commitment
         );
         assert_eq!(
             manifest.steps[0].to_state.kv_history_commitment,
@@ -4277,6 +4300,27 @@ mod tests {
             assert_eq!(memories.len(), 3);
             for memory in memories {
                 assert_eq!(memory.len(), layout.memory_size().expect("memory size"));
+            }
+        }
+    }
+
+    #[test]
+    fn phase12_demo_initial_memories_follow_lookup_backed_cache_progression() {
+        for layout in phase13_default_decoding_layout_matrix().expect("layout matrix") {
+            let kv_cache_range = layout.kv_cache_range().expect("kv cache range");
+            let memories = phase12_demo_initial_memories(&layout).expect("memories");
+            for pair in memories.windows(2) {
+                let current = pair[0].clone();
+                let next = &pair[1];
+                let program =
+                    decoding_step_v2_program_with_initial_memory(&layout, current).expect("program");
+                let mut runtime =
+                    NativeInterpreter::new(program, Attention2DMode::AverageHard, 256);
+                let result = runtime.run().expect("run program");
+                assert_eq!(
+                    &result.final_state.memory[kv_cache_range.clone()],
+                    &next[kv_cache_range.clone()]
+                );
             }
         }
     }
