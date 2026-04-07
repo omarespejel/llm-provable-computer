@@ -192,7 +192,9 @@ Delivered:
   boundary states so later accumulation work can consume mergeable decoding segments without
   pretending recursion already exists,
 - a Phase 16 rollup layer over Phase 15 segment bundles, carrying larger global boundary units so
-  later accumulation work can consume mergeable groups of segments instead of one flat bundle.
+  later accumulation work can consume mergeable groups of segments instead of one flat bundle,
+- a Phase 17 layout-matrix layer over those Phase 16 rollups, proving that the higher-level
+  carried-state packaging survives multiple public `decoding_step_v2` layouts as well.
 
 Current limitation:
 
@@ -211,9 +213,9 @@ Targets:
 - keep the same `statement-v1` claim boundary until a real semantic change forces `statement-v2`.
 
 The new Phase 13 layout-matrix demo, Phase 14 chunked-history chain, Phase 15 segmented-history
-bundle, and Phase 16 rollup layer are the first steps on that path: they prove that the
-parameterized relation survives multiple public layouts and progressively more mergeable
-carried-state boundaries without changing the semantic contract.
+bundle, Phase 16 rollup layer, and Phase 17 rollup-matrix layer are the first steps on that
+path: they prove that the parameterized relation survives multiple public layouts and
+progressively more mergeable carried-state boundaries without changing the semantic contract.
 
 ### Phase 6: Recursive compression and aggregation `[later]`
 
