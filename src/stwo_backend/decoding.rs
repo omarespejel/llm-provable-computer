@@ -461,6 +461,9 @@ pub fn decoding_step_v2_template_program(layout: &Phase12DecodingLayout) -> Resu
     instructions.push(Instruction::Load((output.start + 1) as u8));
     instructions.push(Instruction::MulMemory((lookup.start + 5) as u8));
     instructions.push(Instruction::Store((output.start + 1) as u8));
+    instructions.push(Instruction::Load((output.start + 1) as u8));
+    instructions.push(Instruction::AddMemory((lookup.start + 7) as u8));
+    instructions.push(Instruction::Store((output.start + 1) as u8));
     instructions.push(Instruction::Load((lookup.start + 3) as u8));
     instructions.push(Instruction::AddMemory((lookup.start + 7) as u8));
     instructions.push(Instruction::Store((output.start + 2) as u8));
@@ -4034,7 +4037,7 @@ mod tests {
         );
         assert_eq!(
             instructions.get(lookup_store_index + 7),
-            Some(&Instruction::Load((lookup.start + 3) as u8))
+            Some(&Instruction::Load((output.start + 1) as u8))
         );
         assert_eq!(
             instructions.get(lookup_store_index + 8),
@@ -4042,6 +4045,18 @@ mod tests {
         );
         assert_eq!(
             instructions.get(lookup_store_index + 9),
+            Some(&Instruction::Store((output.start + 1) as u8))
+        );
+        assert_eq!(
+            instructions.get(lookup_store_index + 10),
+            Some(&Instruction::Load((lookup.start + 3) as u8))
+        );
+        assert_eq!(
+            instructions.get(lookup_store_index + 11),
+            Some(&Instruction::AddMemory((lookup.start + 7) as u8))
+        );
+        assert_eq!(
+            instructions.get(lookup_store_index + 12),
             Some(&Instruction::Store((output.start + 2) as u8))
         );
     }
@@ -4102,6 +4117,7 @@ mod tests {
                 assert_eq!(
                     final_memory[output.start + 1],
                     expected_raw_accumulated * expected_secondary_scale
+                        + expected_secondary_activation
                 );
                 assert_eq!(
                     final_memory[output.start + 2],
