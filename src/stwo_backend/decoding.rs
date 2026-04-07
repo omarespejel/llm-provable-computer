@@ -28,12 +28,18 @@ pub const STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13: &str =
     "stwo-phase13-decoding-layout-matrix-v1";
 pub const STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_layout_matrix";
+pub const STWO_DECODING_CHAIN_VERSION_PHASE14: &str =
+    "stwo-phase14-decoding-chunked-history-chain-v1";
+pub const STWO_DECODING_CHAIN_SCOPE_PHASE14: &str =
+    "stwo_execution_parameterized_proof_carrying_decoding_chunked_history_chain";
+pub const STWO_DECODING_STATE_VERSION_PHASE14: &str = "stwo-decoding-state-v3";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
 const DECODING_OUTPUT_RANGE: std::ops::Range<usize> = 10..13;
 const DECODING_POSITION_INDEX: usize = 21;
 const PHASE12_OUTPUT_WIDTH: usize = 3;
 const PHASE12_SHARED_LOOKUP_ROWS: usize = 8;
 const PHASE12_LOOKUP_ROW_VALUES: [i16; PHASE12_SHARED_LOOKUP_ROWS] = [16, 64, 1, 1, 4, 128, 0, 1];
+const PHASE14_HISTORY_CHUNK_PAIRS: usize = 2;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase11DecodingState {
@@ -234,6 +240,47 @@ pub struct Phase13DecodingLayoutMatrixManifest {
     pub chains: Vec<Phase12DecodingChainManifest>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase14DecodingState {
+    pub state_version: String,
+    pub step_index: usize,
+    pub position: i16,
+    pub layout_commitment: String,
+    pub persistent_state_commitment: String,
+    pub kv_history_commitment: String,
+    pub kv_history_length: usize,
+    pub kv_history_chunk_size: usize,
+    pub kv_history_sealed_commitment: String,
+    pub kv_history_sealed_chunks: usize,
+    pub kv_history_open_chunk_commitment: String,
+    pub kv_history_open_chunk_pairs: usize,
+    pub kv_cache_commitment: String,
+    pub incoming_token_commitment: String,
+    pub query_commitment: String,
+    pub output_commitment: String,
+    pub lookup_rows_commitment: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Phase14DecodingStep {
+    pub from_state: Phase14DecodingState,
+    pub to_state: Phase14DecodingState,
+    pub proof: VanillaStarkExecutionProof,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Phase14DecodingChainManifest {
+    pub proof_backend: StarkProofBackend,
+    pub chain_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub layout: Phase12DecodingLayout,
+    pub total_steps: usize,
+    pub history_chunk_pairs: usize,
+    pub steps: Vec<Phase14DecodingStep>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Phase12StateView {
     position: i16,
@@ -244,6 +291,17 @@ struct Phase12StateView {
     query_commitment: String,
     output_commitment: String,
     lookup_rows_commitment: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Phase14HistoryAccumulator {
+    history_commitment: String,
+    history_length: usize,
+    chunk_size: usize,
+    sealed_commitment: String,
+    sealed_chunks: usize,
+    open_chunk_commitment: String,
+    open_chunk_pairs: usize,
 }
 
 pub fn decoding_step_v1_template_program() -> Result<Program> {
@@ -937,6 +995,210 @@ pub fn verify_phase13_decoding_layout_matrix_with_proof_checks(
     Ok(())
 }
 
+pub fn phase14_prepare_decoding_chain(
+    chain: &Phase12DecodingChainManifest,
+) -> Result<Phase14DecodingChainManifest> {
+    verify_phase12_decoding_chain(chain)?;
+
+    let layout = &chain.layout;
+    let expected_layout_commitment = commit_phase12_layout(layout);
+    let kv_cache_range = layout.kv_cache_range()?;
+    let incoming_token_range = layout.incoming_token_range()?;
+    let mut steps = Vec::with_capacity(chain.steps.len());
+    let mut accumulator: Option<Phase14HistoryAccumulator> = None;
+
+    for (step_index, step) in chain.steps.iter().enumerate() {
+        let from_view = derive_phase12_state_view(step.proof.claim.program.initial_memory(), layout)?;
+        if from_view.layout_commitment != expected_layout_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 14 decoding step {step_index} initial state does not match the manifest layout commitment"
+            )));
+        }
+        let current = accumulator.clone().unwrap_or_else(|| {
+            seed_phase14_history(
+                &expected_layout_commitment,
+                &step.proof.claim.program.initial_memory()[kv_cache_range.clone()],
+                layout.pair_width,
+            )
+        });
+        let from_state = build_phase14_state(step_index, from_view, &current);
+
+        let to_view = derive_phase12_state_view(&step.proof.claim.final_state.memory, layout)?;
+        if to_view.layout_commitment != expected_layout_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 14 decoding step {step_index} final state does not match the manifest layout commitment"
+            )));
+        }
+        let next = advance_phase14_history(
+            &expected_layout_commitment,
+            &current,
+            &step.proof.claim.program.initial_memory()[incoming_token_range.clone()],
+            layout.pair_width,
+        )?;
+        let to_state = build_phase14_state(step_index + 1, to_view, &next);
+        steps.push(Phase14DecodingStep {
+            from_state,
+            to_state,
+            proof: step.proof.clone(),
+        });
+        accumulator = Some(next);
+    }
+
+    validate_phase14_chain_steps(&chain.layout, PHASE14_HISTORY_CHUNK_PAIRS, &steps)?;
+
+    Ok(Phase14DecodingChainManifest {
+        proof_backend: StarkProofBackend::Stwo,
+        chain_version: STWO_DECODING_CHAIN_VERSION_PHASE14.to_string(),
+        semantic_scope: STWO_DECODING_CHAIN_SCOPE_PHASE14.to_string(),
+        proof_backend_version: crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12.to_string(),
+        statement_version: crate::proof::CLAIM_STATEMENT_VERSION_V1.to_string(),
+        layout: chain.layout.clone(),
+        total_steps: steps.len(),
+        history_chunk_pairs: PHASE14_HISTORY_CHUNK_PAIRS,
+        steps,
+    })
+}
+
+pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) -> Result<()> {
+    manifest.layout.validate()?;
+    let expected_layout_commitment = commit_phase12_layout(&manifest.layout);
+    let kv_cache_range = manifest.layout.kv_cache_range()?;
+    let incoming_token_range = manifest.layout.incoming_token_range()?;
+    if manifest.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "chunked decoding chain backend `{}` is not `stwo`",
+            manifest.proof_backend
+        )));
+    }
+    if manifest.chain_version != STWO_DECODING_CHAIN_VERSION_PHASE14 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported chunked decoding chain version `{}`",
+            manifest.chain_version
+        )));
+    }
+    if manifest.semantic_scope != STWO_DECODING_CHAIN_SCOPE_PHASE14 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported chunked decoding semantic scope `{}`",
+            manifest.semantic_scope
+        )));
+    }
+    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported chunked decoding proof backend version `{}` (expected `{}`)",
+            manifest.proof_backend_version,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+        )));
+    }
+    if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported chunked decoding statement version `{}`",
+            manifest.statement_version
+        )));
+    }
+    if manifest.history_chunk_pairs != PHASE14_HISTORY_CHUNK_PAIRS {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported chunked decoding history_chunk_pairs={} (expected {})",
+            manifest.history_chunk_pairs, PHASE14_HISTORY_CHUNK_PAIRS
+        )));
+    }
+    if manifest.steps.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "chunked decoding chain must contain at least one step".to_string(),
+        ));
+    }
+    if manifest.total_steps != manifest.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "chunked decoding chain total_steps={} does not match steps.len()={}",
+            manifest.total_steps,
+            manifest.steps.len()
+        )));
+    }
+
+    let mut accumulator: Option<Phase14HistoryAccumulator> = None;
+    for (step_index, step) in manifest.steps.iter().enumerate() {
+        if !matches_decoding_step_v2_family_with_layout(&step.proof.claim.program, &manifest.layout)
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {step_index} is not a decoding_step_v2-family proof for the manifest layout"
+            )));
+        }
+        if step.proof.proof_backend != StarkProofBackend::Stwo {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {step_index} proof backend `{}` is not `stwo`",
+                step.proof.proof_backend
+            )));
+        }
+        if step.proof.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {step_index} proof backend version `{}` is not `{}`",
+                step.proof.proof_backend_version,
+                crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+            )));
+        }
+
+        let from_view =
+            derive_phase12_state_view(step.proof.claim.program.initial_memory(), &manifest.layout)?;
+        if from_view.layout_commitment != expected_layout_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {step_index} initial state does not match the manifest layout commitment"
+            )));
+        }
+        let current = accumulator.clone().unwrap_or_else(|| {
+            seed_phase14_history(
+                &expected_layout_commitment,
+                &step.proof.claim.program.initial_memory()[kv_cache_range.clone()],
+                manifest.layout.pair_width,
+            )
+        });
+        let expected_from = build_phase14_state(step_index, from_view, &current);
+        if step.from_state != expected_from {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {step_index} recorded from_state does not match the proof's initial state"
+            )));
+        }
+
+        let to_view = derive_phase12_state_view(&step.proof.claim.final_state.memory, &manifest.layout)?;
+        if to_view.layout_commitment != expected_layout_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {step_index} final state does not match the manifest layout commitment"
+            )));
+        }
+        let next = advance_phase14_history(
+            &expected_layout_commitment,
+            &current,
+            &step.proof.claim.program.initial_memory()[incoming_token_range.clone()],
+            manifest.layout.pair_width,
+        )?;
+        let expected_to = build_phase14_state(step_index + 1, to_view, &next);
+        if step.to_state != expected_to {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {step_index} recorded to_state does not match the proof's final state"
+            )));
+        }
+        accumulator = Some(next);
+    }
+
+    validate_phase14_chain_steps(
+        &manifest.layout,
+        manifest.history_chunk_pairs,
+        &manifest.steps,
+    )
+}
+
+pub fn verify_phase14_decoding_chain_with_proof_checks(
+    manifest: &Phase14DecodingChainManifest,
+) -> Result<()> {
+    verify_phase14_decoding_chain(manifest)?;
+    for (step_index, step) in manifest.steps.iter().enumerate() {
+        if !verify_execution_stark(&step.proof)? {
+            return Err(VmError::UnsupportedProof(format!(
+                "chunked decoding step {step_index} execution proof did not verify"
+            )));
+        }
+    }
+    Ok(())
+}
+
 pub fn save_phase11_decoding_chain(
     manifest: &Phase11DecodingChainManifest,
     path: &Path,
@@ -963,6 +1225,21 @@ pub fn load_phase11_decoding_chain(path: &Path) -> Result<Phase11DecodingChainMa
 }
 
 pub fn load_phase12_decoding_chain(path: &Path) -> Result<Phase12DecodingChainManifest> {
+    let bytes = fs::read(path)?;
+    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+}
+
+pub fn save_phase14_decoding_chain(
+    manifest: &Phase14DecodingChainManifest,
+    path: &Path,
+) -> Result<()> {
+    let bytes = serde_json::to_vec_pretty(manifest)
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    fs::write(path, bytes)?;
+    Ok(())
+}
+
+pub fn load_phase14_decoding_chain(path: &Path) -> Result<Phase14DecodingChainManifest> {
     let bytes = fs::read(path)?;
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
 }
@@ -1065,6 +1342,20 @@ pub fn prove_phase13_decoding_layout_matrix_demo() -> Result<Phase13DecodingLayo
     Ok(manifest)
 }
 
+pub fn prove_phase14_decoding_demo_for_layout(
+    layout: &Phase12DecodingLayout,
+) -> Result<Phase14DecodingChainManifest> {
+    let phase12_manifest = prove_phase12_decoding_demo_for_layout(layout)?;
+    let manifest = phase14_prepare_decoding_chain(&phase12_manifest)?;
+    verify_phase14_decoding_chain_with_proof_checks(&manifest)?;
+    Ok(manifest)
+}
+
+pub fn prove_phase14_decoding_demo() -> Result<Phase14DecodingChainManifest> {
+    let layout = phase12_default_decoding_layout();
+    prove_phase14_decoding_demo_for_layout(&layout)
+}
+
 fn derive_phase11_state(memory: &[i16], step_index: usize) -> Result<Phase11DecodingState> {
     if memory.len() <= DECODING_POSITION_INDEX {
         return Err(VmError::InvalidConfig(format!(
@@ -1152,6 +1443,32 @@ fn build_phase12_state(
         persistent_state_commitment: view.persistent_state_commitment,
         kv_history_commitment,
         kv_history_length,
+        kv_cache_commitment: view.kv_cache_commitment,
+        incoming_token_commitment: view.incoming_token_commitment,
+        query_commitment: view.query_commitment,
+        output_commitment: view.output_commitment,
+        lookup_rows_commitment: view.lookup_rows_commitment,
+    }
+}
+
+fn build_phase14_state(
+    step_index: usize,
+    view: Phase12StateView,
+    history: &Phase14HistoryAccumulator,
+) -> Phase14DecodingState {
+    Phase14DecodingState {
+        state_version: STWO_DECODING_STATE_VERSION_PHASE14.to_string(),
+        step_index,
+        position: view.position,
+        layout_commitment: view.layout_commitment,
+        persistent_state_commitment: view.persistent_state_commitment,
+        kv_history_commitment: history.history_commitment.clone(),
+        kv_history_length: history.history_length,
+        kv_history_chunk_size: history.chunk_size,
+        kv_history_sealed_commitment: history.sealed_commitment.clone(),
+        kv_history_sealed_chunks: history.sealed_chunks,
+        kv_history_open_chunk_commitment: history.open_chunk_commitment.clone(),
+        kv_history_open_chunk_pairs: history.open_chunk_pairs,
         kv_cache_commitment: view.kv_cache_commitment,
         incoming_token_commitment: view.incoming_token_commitment,
         query_commitment: view.query_commitment,
@@ -1319,6 +1636,154 @@ fn validate_phase12_chain_steps(
     Ok(())
 }
 
+fn validate_phase14_chain_steps(
+    layout: &Phase12DecodingLayout,
+    history_chunk_pairs: usize,
+    steps: &[Phase14DecodingStep],
+) -> Result<()> {
+    for (index, step) in steps.iter().enumerate() {
+        if step.from_state.state_version != STWO_DECODING_STATE_VERSION_PHASE14 {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} has unsupported from_state version `{}`",
+                step.from_state.state_version
+            )));
+        }
+        if step.to_state.state_version != STWO_DECODING_STATE_VERSION_PHASE14 {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} has unsupported to_state version `{}`",
+                step.to_state.state_version
+            )));
+        }
+        if step.from_state.step_index != index {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} from_state.step_index={} does not match index",
+                step.from_state.step_index
+            )));
+        }
+        if step.to_state.step_index != index + 1 {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} to_state.step_index={} does not match index + 1",
+                step.to_state.step_index
+            )));
+        }
+        if step.from_state.layout_commitment != step.to_state.layout_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} changes the layout commitment"
+            )));
+        }
+        let expected_layout_commitment = commit_phase12_layout(layout);
+        if step.from_state.layout_commitment != expected_layout_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} layout commitment `{}` does not match the canonical layout commitment",
+                step.from_state.layout_commitment
+            )));
+        }
+        if step.from_state.kv_history_chunk_size != history_chunk_pairs
+            || step.to_state.kv_history_chunk_size != history_chunk_pairs
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} uses history_chunk_size {} -> {}, expected {}",
+                step.from_state.kv_history_chunk_size,
+                step.to_state.kv_history_chunk_size,
+                history_chunk_pairs
+            )));
+        }
+        let expected_next_position = step.from_state.position.checked_add(1).ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "chunked decoding step {index} position {} cannot be incremented",
+                step.from_state.position
+            ))
+        })?;
+        if step.to_state.position != expected_next_position {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} does not increment position: from {} to {}",
+                step.from_state.position, step.to_state.position
+            )));
+        }
+    }
+    for index in 1..steps.len() {
+        if steps[index - 1].to_state.persistent_state_commitment
+            != steps[index].from_state.persistent_state_commitment
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the persistent KV-cache state commitment",
+                index - 1,
+                index
+            )));
+        }
+        if steps[index - 1].to_state.kv_cache_commitment
+            != steps[index].from_state.kv_cache_commitment
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the KV-cache commitment",
+                index - 1,
+                index
+            )));
+        }
+        if steps[index - 1].to_state.position != steps[index].from_state.position {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the decoding position",
+                index - 1,
+                index
+            )));
+        }
+        if steps[index - 1].to_state.kv_history_commitment
+            != steps[index].from_state.kv_history_commitment
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the cumulative KV-history commitment",
+                index - 1,
+                index
+            )));
+        }
+        if steps[index - 1].to_state.kv_history_length != steps[index].from_state.kv_history_length
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the cumulative KV-history length",
+                index - 1,
+                index
+            )));
+        }
+        if steps[index - 1].to_state.kv_history_sealed_commitment
+            != steps[index].from_state.kv_history_sealed_commitment
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the sealed KV-history commitment",
+                index - 1,
+                index
+            )));
+        }
+        if steps[index - 1].to_state.kv_history_sealed_chunks
+            != steps[index].from_state.kv_history_sealed_chunks
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the sealed KV-history chunk count",
+                index - 1,
+                index
+            )));
+        }
+        if steps[index - 1].to_state.kv_history_open_chunk_commitment
+            != steps[index].from_state.kv_history_open_chunk_commitment
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the open KV-history chunk commitment",
+                index - 1,
+                index
+            )));
+        }
+        if steps[index - 1].to_state.kv_history_open_chunk_pairs
+            != steps[index].from_state.kv_history_open_chunk_pairs
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the open KV-history chunk length",
+                index - 1,
+                index
+            )));
+        }
+    }
+    Ok(())
+}
+
 fn commit_slice(values: &[i16]) -> String {
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_DECODING_STATE_VERSION_PHASE11.as_bytes());
@@ -1397,6 +1862,235 @@ fn commit_phase12_history_seed(
         .finalize_variable(&mut out)
         .expect("blake2b finalize");
     lower_hex(&out)
+}
+
+fn commit_phase14_history_empty_chunk(layout_commitment: &str, pair_width: usize) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STATE_VERSION_PHASE14.as_bytes());
+    hasher.update(layout_commitment.as_bytes());
+    hasher.update(b"history-open-empty");
+    hasher.update(&(pair_width as u64).to_le_bytes());
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+fn commit_phase14_history_chunk(
+    layout_commitment: &str,
+    pair_width: usize,
+    chunk_values: &[i16],
+) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STATE_VERSION_PHASE14.as_bytes());
+    hasher.update(layout_commitment.as_bytes());
+    hasher.update(b"history-chunk");
+    hasher.update(&(pair_width as u64).to_le_bytes());
+    hasher.update(&((chunk_values.len() / pair_width) as u64).to_le_bytes());
+    for value in chunk_values {
+        hasher.update(&value.to_le_bytes());
+    }
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+fn fold_phase14_history_chunk(
+    layout_commitment: &str,
+    previous_sealed_commitment: &str,
+    previous_sealed_chunks: usize,
+    chunk_commitment: &str,
+) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STATE_VERSION_PHASE14.as_bytes());
+    hasher.update(layout_commitment.as_bytes());
+    hasher.update(b"history-sealed-fold");
+    hasher.update(previous_sealed_commitment.as_bytes());
+    hasher.update(&(previous_sealed_chunks as u64).to_le_bytes());
+    hasher.update(chunk_commitment.as_bytes());
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+fn commit_phase14_history_total(
+    layout_commitment: &str,
+    sealed_commitment: &str,
+    sealed_chunks: usize,
+    open_chunk_commitment: &str,
+    open_chunk_pairs: usize,
+    chunk_size: usize,
+    history_length: usize,
+) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STATE_VERSION_PHASE14.as_bytes());
+    hasher.update(layout_commitment.as_bytes());
+    hasher.update(b"history-total");
+    hasher.update(sealed_commitment.as_bytes());
+    hasher.update(&(sealed_chunks as u64).to_le_bytes());
+    hasher.update(open_chunk_commitment.as_bytes());
+    hasher.update(&(open_chunk_pairs as u64).to_le_bytes());
+    hasher.update(&(chunk_size as u64).to_le_bytes());
+    hasher.update(&(history_length as u64).to_le_bytes());
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+fn seed_phase14_history(
+    layout_commitment: &str,
+    kv_cache_values: &[i16],
+    pair_width: usize,
+) -> Phase14HistoryAccumulator {
+    let mut sealed_commitment = commit_phase14_history_empty_chunk(layout_commitment, pair_width);
+    let mut sealed_chunks = 0usize;
+    let mut open_chunk_pairs = 0usize;
+    let mut open_chunk_values = Vec::new();
+
+    for pair in kv_cache_values.chunks(pair_width) {
+        open_chunk_values.extend_from_slice(pair);
+        open_chunk_pairs += 1;
+        if open_chunk_pairs == PHASE14_HISTORY_CHUNK_PAIRS {
+            let chunk_commitment =
+                commit_phase14_history_chunk(layout_commitment, pair_width, &open_chunk_values);
+            sealed_commitment = fold_phase14_history_chunk(
+                layout_commitment,
+                &sealed_commitment,
+                sealed_chunks,
+                &chunk_commitment,
+            );
+            sealed_chunks += 1;
+            open_chunk_pairs = 0;
+            open_chunk_values.clear();
+        }
+    }
+
+    let open_chunk_commitment = if open_chunk_pairs == 0 {
+        commit_phase14_history_empty_chunk(layout_commitment, pair_width)
+    } else {
+        commit_phase14_history_chunk(layout_commitment, pair_width, &open_chunk_values)
+    };
+    let history_length = kv_cache_values.len() / pair_width;
+    let history_commitment = commit_phase14_history_total(
+        layout_commitment,
+        &sealed_commitment,
+        sealed_chunks,
+        &open_chunk_commitment,
+        open_chunk_pairs,
+        PHASE14_HISTORY_CHUNK_PAIRS,
+        history_length,
+    );
+    Phase14HistoryAccumulator {
+        history_commitment,
+        history_length,
+        chunk_size: PHASE14_HISTORY_CHUNK_PAIRS,
+        sealed_commitment,
+        sealed_chunks,
+        open_chunk_commitment,
+        open_chunk_pairs,
+    }
+}
+
+fn advance_phase14_open_chunk(
+    layout_commitment: &str,
+    previous_open_chunk_commitment: &str,
+    previous_open_chunk_pairs: usize,
+    appended_pair: &[i16],
+    pair_width: usize,
+) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STATE_VERSION_PHASE14.as_bytes());
+    hasher.update(layout_commitment.as_bytes());
+    hasher.update(b"history-open-advance");
+    hasher.update(previous_open_chunk_commitment.as_bytes());
+    hasher.update(&(previous_open_chunk_pairs as u64).to_le_bytes());
+    hasher.update(&(pair_width as u64).to_le_bytes());
+    for value in appended_pair {
+        hasher.update(&value.to_le_bytes());
+    }
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+fn advance_phase14_history(
+    layout_commitment: &str,
+    previous: &Phase14HistoryAccumulator,
+    appended_pair: &[i16],
+    pair_width: usize,
+) -> Result<Phase14HistoryAccumulator> {
+    if appended_pair.len() != pair_width {
+        return Err(VmError::InvalidConfig(format!(
+            "chunked decoding history append expects pair_width={} values, got {}",
+            pair_width,
+            appended_pair.len()
+        )));
+    }
+    let next_history_length = previous.history_length.checked_add(1).ok_or_else(|| {
+        VmError::InvalidConfig(format!(
+            "chunked decoding history length {} cannot be incremented",
+            previous.history_length
+        ))
+    })?;
+
+    let advanced_open_commitment = advance_phase14_open_chunk(
+        layout_commitment,
+        &previous.open_chunk_commitment,
+        previous.open_chunk_pairs,
+        appended_pair,
+        pair_width,
+    );
+    let next_open_chunk_pairs = previous.open_chunk_pairs + 1;
+
+    let (sealed_commitment, sealed_chunks, open_chunk_commitment, open_chunk_pairs) =
+        if next_open_chunk_pairs == previous.chunk_size {
+            let next_sealed_commitment = fold_phase14_history_chunk(
+                layout_commitment,
+                &previous.sealed_commitment,
+                previous.sealed_chunks,
+                &advanced_open_commitment,
+            );
+            (
+                next_sealed_commitment,
+                previous.sealed_chunks + 1,
+                commit_phase14_history_empty_chunk(layout_commitment, pair_width),
+                0,
+            )
+        } else {
+            (
+                previous.sealed_commitment.clone(),
+                previous.sealed_chunks,
+                advanced_open_commitment,
+                next_open_chunk_pairs,
+            )
+        };
+    let history_commitment = commit_phase14_history_total(
+        layout_commitment,
+        &sealed_commitment,
+        sealed_chunks,
+        &open_chunk_commitment,
+        open_chunk_pairs,
+        previous.chunk_size,
+        next_history_length,
+    );
+    Ok(Phase14HistoryAccumulator {
+        history_commitment,
+        history_length: next_history_length,
+        chunk_size: previous.chunk_size,
+        sealed_commitment,
+        sealed_chunks,
+        open_chunk_commitment,
+        open_chunk_pairs,
+    })
 }
 
 fn advance_phase12_history_commitment(
@@ -1980,5 +2674,59 @@ mod tests {
         assert!(err
             .to_string()
             .contains("total_layouts=2 does not match chains.len()=1"));
+    }
+
+    #[test]
+    fn phase14_prepare_decoding_chain_accepts_linked_steps() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        assert_eq!(manifest.total_steps, 3);
+        assert_eq!(manifest.history_chunk_pairs, PHASE14_HISTORY_CHUNK_PAIRS);
+        assert_eq!(manifest.steps[0].from_state.kv_history_sealed_chunks, 2);
+        assert_eq!(manifest.steps[0].from_state.kv_history_open_chunk_pairs, 0);
+        assert_eq!(manifest.steps[2].to_state.kv_history_length, 7);
+        assert_eq!(manifest.steps[2].to_state.kv_history_sealed_chunks, 3);
+        assert_eq!(manifest.steps[2].to_state.kv_history_open_chunk_pairs, 1);
+        verify_phase14_decoding_chain(&manifest).expect("phase14 verification");
+    }
+
+    #[test]
+    fn phase14_verify_decoding_chain_rejects_broken_open_chunk_link() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        manifest.steps[1].from_state.kv_history_open_chunk_commitment = "broken".to_string();
+        let err = verify_phase14_decoding_chain(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("recorded from_state does not match the proof's initial state"));
+    }
+
+    #[test]
+    fn phase14_verify_decoding_chain_rejects_wrong_chunk_size() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        manifest.history_chunk_pairs = 4;
+        let err = verify_phase14_decoding_chain(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("unsupported chunked decoding history_chunk_pairs=4"));
     }
 }

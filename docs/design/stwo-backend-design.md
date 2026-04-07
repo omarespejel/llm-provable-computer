@@ -185,7 +185,9 @@ Delivered:
 - proof-carrying decoding over a fixed three-step `decoding_step_v1` chain with carried-state
   commitments,
 - proof-carrying decoding over a parameterized `decoding_step_v2` family with layout-bound
-  carried-state commitments and cumulative KV-history commitments.
+  carried-state commitments and cumulative KV-history commitments,
+- a chunked-history carried-state variant over the same `decoding_step_v2` proofs, separating
+  sealed history chunks from the open chunk to make later accumulation boundaries explicit.
 
 Current limitation:
 
@@ -199,12 +201,13 @@ This is now the highest-leverage next milestone.
 Targets:
 
 - broaden the parameterized decode-step family beyond the current demo layouts,
-- carry richer KV-cache commitments than the current cumulative-history plus bounded rolling-window model,
+- carry richer KV-cache commitments than the current chunked-history plus bounded rolling-window model,
 - move one transformer-relevant non-arithmetic path deeper into the main proved relation,
 - keep the same `statement-v1` claim boundary until a real semantic change forces `statement-v2`.
 
-The new Phase 13 layout-matrix demo is the first step on that path: it proves that the
-parameterized relation survives multiple public layouts without changing the semantic contract.
+The new Phase 13 layout-matrix demo and Phase 14 chunked-history chain are the first steps on
+that path: they prove that the parameterized relation survives multiple public layouts and a more
+segmented carried-state discipline without changing the semantic contract.
 
 ### Phase 6: Recursive compression and aggregation `[later]`
 
