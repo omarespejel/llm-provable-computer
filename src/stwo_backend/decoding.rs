@@ -3768,17 +3768,24 @@ mod tests {
         .expect("sample proof payload")
     }
 
+    fn sample_phase14_chain_manifest(
+        layout: &Phase12DecodingLayout,
+    ) -> (Phase12DecodingChainManifest, Phase14DecodingChainManifest) {
+        let proofs = phase12_demo_initial_memories(layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(layout, &proofs).expect("phase12 chain");
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        (phase12, phase14)
+    }
+
     fn sample_phase17_rollup_matrix_manifest() -> Phase17DecodingHistoryRollupMatrixManifest {
         let layouts = phase13_default_decoding_layout_matrix().expect("layout matrix");
         let mut rollups = Vec::with_capacity(layouts.len());
         for layout in &layouts {
-            let proofs = phase12_demo_initial_memories(layout)
-                .expect("memories")
-                .into_iter()
-                .map(|memory| sample_phase12_step_proof(layout, memory))
-                .collect::<Vec<_>>();
-            let phase12 = phase12_prepare_decoding_chain(layout, &proofs).expect("phase12 chain");
-            let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+            let (_, phase14) = sample_phase14_chain_manifest(layout);
             let phase15 = phase15_prepare_segment_bundle(&phase14, 1).expect("phase15 manifest");
             let phase16 = phase16_prepare_segment_rollup(
                 &phase15,
@@ -4377,6 +4384,32 @@ mod tests {
     }
 
     #[test]
+    fn phase14_preserves_phase12_output_and_lookup_commitments() {
+        let layout = phase12_default_decoding_layout();
+        let (phase12, phase14) = sample_phase14_chain_manifest(&layout);
+        assert_eq!(phase12.total_steps, phase14.total_steps);
+
+        for (phase12_step, phase14_step) in phase12.steps.iter().zip(phase14.steps.iter()) {
+            assert_eq!(
+                phase14_step.from_state.output_commitment,
+                phase12_step.from_state.output_commitment
+            );
+            assert_eq!(
+                phase14_step.from_state.lookup_rows_commitment,
+                phase12_step.from_state.lookup_rows_commitment
+            );
+            assert_eq!(
+                phase14_step.to_state.output_commitment,
+                phase12_step.to_state.output_commitment
+            );
+            assert_eq!(
+                phase14_step.to_state.lookup_rows_commitment,
+                phase12_step.to_state.lookup_rows_commitment
+            );
+        }
+    }
+
+    #[test]
     fn phase14_verify_decoding_chain_rejects_broken_open_chunk_link() {
         let layout = phase12_default_decoding_layout();
         let proofs = phase12_demo_initial_memories(&layout)
@@ -4485,6 +4518,47 @@ mod tests {
     }
 
     #[test]
+    fn phase15_segments_preserve_global_output_and_lookup_commitments() {
+        let layout = phase12_default_decoding_layout();
+        let (_, phase14) = sample_phase14_chain_manifest(&layout);
+        let manifest =
+            phase15_prepare_segment_bundle(&phase14, phase15_default_segment_step_limit())
+                .expect("phase15 manifest");
+
+        for segment in &manifest.segments {
+            let first_step = segment.chain.steps.first().expect("segment first step");
+            let last_step = segment.chain.steps.last().expect("segment last step");
+            let global_last_step =
+                &phase14.steps[segment.global_start_step_index + segment.total_steps - 1];
+
+            assert_eq!(
+                segment.global_from_state.output_commitment,
+                first_step.from_state.output_commitment
+            );
+            assert_eq!(
+                segment.global_from_state.lookup_rows_commitment,
+                first_step.from_state.lookup_rows_commitment
+            );
+            assert_eq!(
+                segment.global_to_state.output_commitment,
+                last_step.to_state.output_commitment
+            );
+            assert_eq!(
+                segment.global_to_state.lookup_rows_commitment,
+                last_step.to_state.lookup_rows_commitment
+            );
+            assert_eq!(
+                segment.global_to_state.output_commitment,
+                global_last_step.to_state.output_commitment
+            );
+            assert_eq!(
+                segment.global_to_state.lookup_rows_commitment,
+                global_last_step.to_state.lookup_rows_commitment
+            );
+        }
+    }
+
+    #[test]
     fn phase15_verify_segment_bundle_rejects_wrong_segment_start() {
         let layout = phase12_default_decoding_layout();
         let proofs = phase12_demo_initial_memories(&layout)
@@ -4549,6 +4623,48 @@ mod tests {
     }
 
     #[test]
+    fn phase16_rollups_preserve_global_output_and_lookup_commitments() {
+        let layout = phase12_default_decoding_layout();
+        let (_, phase14) = sample_phase14_chain_manifest(&layout);
+        let phase15 = phase15_prepare_segment_bundle(&phase14, 1).expect("phase15 manifest");
+        let manifest =
+            phase16_prepare_segment_rollup(&phase15, phase16_default_rollup_segment_limit())
+                .expect("phase16 manifest");
+
+        for rollup in &manifest.rollups {
+            let first_segment = rollup.segments.first().expect("rollup first segment");
+            let last_segment = rollup.segments.last().expect("rollup last segment");
+            let global_last_step =
+                &phase14.steps[rollup.global_start_step_index + rollup.total_steps - 1];
+
+            assert_eq!(
+                rollup.global_from_state.output_commitment,
+                first_segment.global_from_state.output_commitment
+            );
+            assert_eq!(
+                rollup.global_from_state.lookup_rows_commitment,
+                first_segment.global_from_state.lookup_rows_commitment
+            );
+            assert_eq!(
+                rollup.global_to_state.output_commitment,
+                last_segment.global_to_state.output_commitment
+            );
+            assert_eq!(
+                rollup.global_to_state.lookup_rows_commitment,
+                last_segment.global_to_state.lookup_rows_commitment
+            );
+            assert_eq!(
+                rollup.global_to_state.output_commitment,
+                global_last_step.to_state.output_commitment
+            );
+            assert_eq!(
+                rollup.global_to_state.lookup_rows_commitment,
+                global_last_step.to_state.lookup_rows_commitment
+            );
+        }
+    }
+
+    #[test]
     fn phase16_verify_segment_rollup_rejects_wrong_rollup_start() {
         let layout = phase12_default_decoding_layout();
         let proofs = phase12_demo_initial_memories(&layout)
@@ -4599,6 +4715,39 @@ mod tests {
         assert!(manifest.total_segments >= 3);
         assert!(manifest.total_steps >= 3);
         verify_phase17_decoding_rollup_matrix(&manifest).expect("phase17 verification");
+    }
+
+    #[test]
+    fn phase17_rollup_matrix_preserves_layout_output_and_lookup_commitments() {
+        let layouts = phase13_default_decoding_layout_matrix().expect("layout matrix");
+        let manifest = sample_phase17_rollup_matrix_manifest();
+        assert_eq!(manifest.rollups.len(), layouts.len());
+
+        for (layout, rollup_manifest) in layouts.iter().zip(manifest.rollups.iter()) {
+            let (_, phase14) = sample_phase14_chain_manifest(layout);
+            let first_rollup = rollup_manifest.rollups.first().expect("first rollup");
+            let last_rollup = rollup_manifest.rollups.last().expect("last rollup");
+            let first_step = phase14.steps.first().expect("first step");
+            let last_step = phase14.steps.last().expect("last step");
+
+            assert_eq!(rollup_manifest.layout, *layout);
+            assert_eq!(
+                first_rollup.global_from_state.output_commitment,
+                first_step.from_state.output_commitment
+            );
+            assert_eq!(
+                first_rollup.global_from_state.lookup_rows_commitment,
+                first_step.from_state.lookup_rows_commitment
+            );
+            assert_eq!(
+                last_rollup.global_to_state.output_commitment,
+                last_step.to_state.output_commitment
+            );
+            assert_eq!(
+                last_rollup.global_to_state.lookup_rows_commitment,
+                last_step.to_state.lookup_rows_commitment
+            );
+        }
     }
 
     #[test]
