@@ -81,6 +81,8 @@ All values below use the **exact dense formula from Sections 4.1 and 4.2**, not 
 | `32,768` | `1.036868x` | `1.114813x` | `1.671567x` | `0.229661%` |
 | `131,072` | `1.047994x` | `1.162746x` | `1.982397x` | `0.330422%` |
 
+Here `STARK lookup-plus-scaling share` is defined as `(T^2H + 8Td) / L_STARK`: the `T^2H` lookup term plus both the `6Td` linear baseline and the additional `2Td` linear scaling term carried by the exact dense denominator. The column is therefore intentionally broader than a literal “lookup-only” share.
+
 This extension supports a narrower and more defensible statement than some earlier drafts: at wide-production hidden sizes, the symbolic ratio can be modest at shorter context and still increase substantially over longer windows. But under the exact dense model it does **not** explode linearly without bound; the `2T^2d` arithmetic term remains first-order and the ratio approaches a finite architecture-dependent ceiling.
 
 ## Table B3. Exact autoregressive marginal ratio note
@@ -95,6 +97,8 @@ R_marginal(t) =
 ```
 
 This is the exact single-step analogue of the Section 4 dense model. It makes the production-relevant dynamic explicit: early tokens remain close to the arithmetic-dominated regime, while later tokens inherit a larger attention-span penalty.
+
+By inspection, `R_marginal(t)` is algebraically identical to the dense per-layer ratio from Section 4 evaluated at context `T = t`. The autoregressive note is therefore not a different model; it is the same exact dense model viewed one generation step at a time.
 
 | Configuration | Step `t` | Exact marginal ratio |
 |---|---:|---:|

@@ -2,71 +2,90 @@
 
 ## Goal
 
-Add an experimental S-two / STWO proving backend to `llm-provable-computer` without breaking the current `statement-v1` claim contract or the existing vanilla STARK path.
+Harden and widen the existing experimental S-two / STWO proving backend in
+`llm-provable-computer` without breaking the current `statement-v1` claim contract or the
+existing vanilla STARK path.
 
-The design target is conservative:
+The design target remains conservative:
 
 - preserve current semantics and claim scope,
-- isolate proving backend concerns behind an explicit abstraction,
-- ship an arithmetic-subset S-two path before attempting lookup-backed nonlinearities or recursion,
-- make recursion a later compression layer, not the first migration step.
+- isolate proving-backend concerns behind an explicit abstraction,
+- widen the proved S-two surface only when the claim boundary stays honest, and
+- treat recursion as a later compression layer, not a substitute for backend correctness.
 
 ## Why this document exists
 
-The paper at `docs/paper/stark-transformer-alignment-2026.md` now argues that S-two recursion and M31-native proving strengthen the architectural case for STARK-native verifiable AI. The repo does not yet implement that backend.
+The paper at `docs/paper/stark-transformer-alignment-2026.md` argues that S-two recursion and
+M31-native proving strengthen the architectural case for STARK-native verifiable AI. The repo no
+longer treats S-two as purely prospective: it already exposes a narrow experimental backend,
+shared-table lookup demos, fixed-shape Gemma-inspired fixtures, and a proof-carrying decoding
+demo. The remaining problem is therefore not “backend yes or no,” but how to widen that proved
+surface without drifting the statement semantics.
 
-This document defines the minimum serious path from the current in-repo vanilla STARK to an S-two-backed prover.
+This document records the design boundary for that widening work.
 
 ## Current state
 
-Today the repository has the following properties:
+Today the repository has the following `stwo` properties:
 
-- proof generation is implemented in `src/proof.rs`
-- the prover/verifier backend is the local module `src/vanillastark/mod.rs`
-- proof claims are versioned under `statement-v1`
-- verifier semantics include transformer/native lockstep re-execution
-- the proved attention mode is currently `average-hard`
-- the current proof relation rejects unsupported instructions outside the vanilla AIR subset
+- proof generation is still orchestrated from `src/proof.rs`,
+- the default reproducibility bundle and primary transformer proof relation remain on the local
+  vanilla backend,
+- `--features stwo-backend` enables an experimental S-two path under the same `statement-v1`
+  semantic claim,
+- the experimental S-two path publicly proves a shipped fixture set including arithmetic programs,
+  `gemma_block_v1` through `gemma_block_v4`, and the `decoding_step_v1` family used by the
+  proof-carrying decoding demo chain,
+- dedicated lookup and normalization demos exist both in single-row and shared-table multi-claim
+  forms,
+- proof-carrying decoding currently chains three fixed-shape `decoding_step_v1` executions through
+  explicit carried KV-cache commitments and position metadata, and
+- recursion work currently stops at canonical batch manifests and compatibility checks rather than
+  recursive proving.
 
-This means the migration problem is not just “swap one prover crate for another.” The repo currently couples:
+This means the migration problem is no longer “swap one prover crate for another.” The repo now
+already couples:
 
 - witness generation,
 - AIR shape,
 - proof serialization,
 - verifier claim logic,
-- backend assumptions.
+- backend-version compatibility checks,
+- embedded lookup proof envelopes,
+- and carried-state decoding metadata.
 
-## Non-goals for the first S-two milestone
+## Non-goals for the current widening milestone
 
-The first S-two milestone should not try to solve all of the following at once:
+The next S-two milestone should not try to solve all of the following at once:
 
 - full standard-softmax proving,
-- recursion,
+- recursive aggregation,
 - onchain verification,
-- learned/trained model weights,
+- learned or trained weights,
 - zero-knowledge hiding,
-- complete ISA proof coverage.
+- or complete ISA proof coverage.
 
-Trying to do all of those together would turn the migration into an unbounded rewrite.
+Trying to do all of those together would turn the backend into an unbounded rewrite and make the
+claim boundary impossible to defend.
 
 ## Design principles
 
 ### 1. Preserve statement semantics first
 
-`statement-v1` is the user-visible proof contract. The first S-two integration should preserve:
+`statement-v1` is still the user-visible proof contract. The S-two path must preserve:
 
 - claim fields,
 - semantic scope,
 - lockstep verification behavior,
-- output digest structure where possible.
+- and output digest structure where possible.
 
-If proof bytes or backend metadata differ, that is acceptable. If the semantic statement changes, that is a `statement-v2` problem and should be treated separately.
+If proof bytes or backend metadata differ, that is acceptable. If the semantic statement changes,
+that is a `statement-v2` problem and should be treated separately.
 
 ### 2. Separate backend from witness extraction
 
-Introduce a backend boundary so that trace construction and semantic checks happen once, while proof generation can vary by backend.
-
-Proposed shape:
+Trace construction and semantic checks should happen once, while proof generation varies by
+backend. The original backend-abstraction shape is still the right mental model:
 
 ```rust
 pub trait ProofBackend {
@@ -84,157 +103,156 @@ pub trait ProofBackend {
 }
 ```
 
-Then split current logic into:
+The widening work should continue to keep:
 
 - semantic execution and witness extraction,
 - claim assembly,
 - backend-specific proving,
-- backend-specific verification.
+- and backend-specific verification
+
+as separate concerns.
 
 ### 3. Keep vanilla STARK as a reference backend
 
-Do not remove or degrade the current vanilla backend while integrating S-two. It should remain:
+Do not remove or degrade the current vanilla backend while hardening S-two. It still serves as:
 
 - the correctness oracle for migration,
 - the fallback local backend,
-- the parity target for tests.
+- the bundle used by the primary frozen reproducibility tier, and
+- the easiest place to spot statement drift.
 
-## Proposed phases
+## Statused roadmap
 
-### Phase 0: Backend abstraction refactor
+### Phase 0: Backend abstraction refactor `[implemented]`
 
-Deliverables:
+Delivered:
 
-- extract current witness and claim assembly into backend-agnostic structs,
-- rename current implementation internally to `VanillaBackend`,
-- add CLI/backend selection, for example:
+- backend selection on the CLI,
+- backend-tagged proof metadata,
+- default backend remains `vanilla`,
+- no semantic fork away from `statement-v1`.
 
-```text
-cargo run --bin tvm -- prove-stark programs/addition.tvm --backend vanilla
-cargo run --bin tvm -- prove-stark programs/addition.tvm --backend stwo
-```
+### Phase 1: S-two arithmetic-subset proving `[implemented narrowly]`
 
-Acceptance criteria:
-
-- no semantic changes to `statement-v1`,
-- current tests remain green,
-- default backend remains `vanilla`.
-
-### Phase 1: S-two arithmetic-subset proving
-
-Scope:
-
-- `addition`,
-- `multiply`,
-- `counter`,
-- `dot_product` if feasible,
-- the arithmetic-only instruction subset already supported by the vanilla AIR.
-
-Deliverables:
+Delivered:
 
 - experimental `stwo` feature flag,
-- proof generation for at least one shipped arithmetic program,
-- verification path that checks the same claim semantics,
-- backend fingerprint metadata in proof output.
+- proof generation and verification for the shipped arithmetic fixture set,
+- explicit backend fingerprints and backend-version metadata,
+- deterministic rejection outside the public proved family.
 
-Acceptance criteria:
+Current limitation:
 
-- `vanilla` and `stwo` both prove the same program semantics,
-- lockstep verification still runs,
-- proof generation failures clearly explain unsupported shapes.
+- broader arithmetic-subset AIR coverage exists in code, but public end-to-end proving remains
+  intentionally narrower than that internal coverage.
 
-### Phase 2: AIR parity and unsupported-op inventory
+### Phase 2: AIR parity and unsupported-op inventory `[implemented partially]`
 
-Before adding nonlinearities, inventory exactly what remains unsupported.
+Delivered:
 
-Deliverables:
+- backend-specific shape validation,
+- internal constraint coverage for the broader arithmetic subset,
+- explicit public rejection for unsupported execution-proof shapes.
 
-- explicit documented opcode coverage table,
-- tests that prove or reject each instruction class deterministically,
-- mismatch report between the vanilla AIR subset and the desired S-two target subset.
+Still missing:
 
-Acceptance criteria:
+- a publication-facing opcode coverage matrix that cleanly separates
+  “internal AIR coverage” from “publicly frozen proving coverage.”
 
-- no hidden unsupported behavior,
-- CLI can explain whether a program is outside the S-two-supported subset.
+### Phase 3: Lookup-backed nonlinearity path `[implemented narrowly]`
 
-### Phase 3: One lookup-backed nonlinearity path
+Delivered:
 
-This is the highest-leverage technical milestone for the paper.
+- bounded activation demo proofs,
+- normalization demo proofs,
+- shared-table lookup demos,
+- embedded lookup proof envelopes inside `gemma_block_v2` through `gemma_block_v4`.
 
-Target:
+Current limitation:
 
-- prove one non-arithmetic path, preferably a tiny lookup-backed softmax-family or normalization-family component.
+- lookup-backed nonlinearities are still fixed-shape or demo-scoped rather than a general
+  transformer relation with standard softmax.
 
-Deliverables:
+### Phase 4: Transformer-shaped fixed fixtures and decoding `[implemented narrowly]`
 
-- fixed-point lookup semantics,
-- table commitment strategy,
-- one proved nonlinearity benchmark,
-- cross-check against transformer/native/ONNX paths where applicable.
+Delivered:
 
-Acceptance criteria:
+- `gemma_block_v1` through `gemma_block_v4`,
+- embedded normalization and bounded activation proofs in the top-level S-two payload,
+- proof-carrying decoding over a fixed three-step `decoding_step_v1` chain with carried-state
+  commitments.
 
-- one non-arithmetic component enters the proved relation on the S-two backend,
-- tests demonstrate both semantic agreement and proof validity.
+Current limitation:
 
-### Phase 4: Recursive compression and aggregation
+- the decoding path is still a bounded research fixture, not a parameterized decode-step family.
 
-Only after Phase 1–3 exist does recursion become the right next step.
+### Phase 5: Broaden the proved S-two relation `[next]`
+
+This is now the highest-leverage next milestone.
 
 Targets:
 
-- aggregate multiple proof artifacts from the reproducibility suite,
-- compress proof bundles for appendix-ready or onchain-friendly outputs,
-- prepare for a future Starknet-facing verification story.
+- promote the fixed-shape decoding demo into a parameterized decode-step family,
+- carry richer KV-cache commitments than a fixed memory slice,
+- move one transformer-relevant non-arithmetic path deeper into the main proved relation,
+- keep the same `statement-v1` claim boundary until a real semantic change forces `statement-v2`.
 
-Why later:
+### Phase 6: Recursive compression and aggregation `[later]`
 
-- recursion only compounds value once there is an S-two proof to recurse on,
-- the March 31, 2026 circuit-recursion upgrade is strategically important, but not a substitute for backend migration.
+Recursion only becomes the right next step once there is more than one meaningful S-two proof
+family worth aggregating.
+
+Targets:
+
+- aggregate frozen S-two artifacts rather than ad hoc local proofs,
+- compress proof bundles for appendix-ready or onchain-friendlier outputs,
+- prepare for a future Starknet-facing verification story without overstating current repo status.
 
 ## Serialization and claim compatibility
 
-Proof outputs should add backend metadata while preserving semantic claim fields.
+Proof outputs should continue to add backend metadata while preserving semantic claim fields.
 
-Suggested additions:
+Required metadata:
 
 - `proof_backend: vanilla | stwo`
 - `proof_backend_version`
 - `backend_fingerprint`
 
-These fields should live in `ExecutionClaimCommitments`, not as new semantic fields on
-`VanillaStarkExecutionClaim`. They belong to the proof-artifact and prover-metadata layer, alongside
-existing commitment metadata such as `scheme_version`, `hash_function`, and `prover_build_info`.
+These fields belong in `ExecutionClaimCommitments`, not as new semantic fields on
+`VanillaStarkExecutionClaim`. They are proof-artifact metadata, not new statement semantics.
 
 Because these additions do not change the meaning of the claimed computation, they are
-backward-compatible commitment metadata only. They should therefore be introduced with
-`#[serde(default)]` compatibility where needed and do **not** require forking to `statement-v2`.
+backward-compatible commitment metadata only. They should continue to use `#[serde(default)]`
+compatibility where needed and do **not** require forking to `statement-v2`.
 
-Reserve `statement-v2` for material semantic changes to the statement itself, such as changing the
-meaning of `VanillaStarkExecutionClaim`, altering required semantic fields, or widening the proved
-relation beyond the current `statement-v1` scope.
+Reserve `statement-v2` for material semantic changes such as:
+
+- changing the meaning of `VanillaStarkExecutionClaim`,
+- altering required semantic fields,
+- widening the proved relation beyond the current `statement-v1` scope,
+- or making carried-state decoding fields first-class semantic statement components.
 
 ## Testing strategy
 
 ### Golden-path parity tests
 
-For each shipped arithmetic fixture:
+For each frozen S-two artifact family:
 
-- run transformer/native lockstep,
-- prove with `vanilla`,
+- run transformer/native lockstep where applicable,
+- prove with `vanilla` when a vanilla analogue exists,
 - prove with `stwo`,
 - verify both,
-- compare final semantic outputs and claim digests.
+- compare final semantic outputs and claim digests where the statements are comparable.
 
 ### Negative tests
 
-For unsupported shapes:
+For unsupported or mismatched shapes:
 
 - softmax path,
 - unsupported instructions,
-- overflow-dependent programs,
-- carry-flag claims,
+- backend-version/program-family mismatches,
+- tampered lookup rows,
+- tampered carried-state commitments,
 
 assert that backend rejection is explicit and stable.
 
@@ -242,39 +260,50 @@ assert that backend rejection is explicit and stable.
 
 Generate backend-tagged reproducibility metadata:
 
-- benchmark JSON or TSV,
+- benchmark TSVs,
 - artifact hashes,
 - backend fingerprints,
-- commands log.
+- command logs,
+- bundle manifests.
+
+The publication-facing `stwo` tier should stay reproducible the same way the vanilla
+`production-v1` tier is reproducible.
 
 ## Risks
 
 ### Risk 1: AIR mismatch
 
-The current vanilla AIR and an S-two-compatible AIR may not line up cleanly. If so, preserve claim semantics and accept backend-specific internal trace shape.
+The current vanilla AIR and an S-two-compatible AIR do not need to line up internally. Preserve
+claim semantics and accept backend-specific trace shape where necessary.
 
 ### Risk 2: Statement drift
 
-The easiest mistake is letting an experimental S-two path silently widen or alter the semantic statement. Guard against this with explicit statement-version checks.
+The easiest mistake is letting an experimental S-two path silently widen or alter the semantic
+statement. Guard against this with explicit statement-version and backend-version checks.
 
 ### Risk 3: Premature recursion work
 
-Recursion is attractive because the latest StarkWare update is impressive, but adding it before there is a functioning S-two backend would produce architecture theater rather than real progress.
+Recursion is attractive because StarkWare’s public recursion story is now much stronger, but
+adding it before the proved S-two relation is broad enough would still produce architecture
+theater rather than real progress.
 
 ## Recommended implementation order
 
-1. backend abstraction,
-2. arithmetic-subset S-two backend,
-3. opcode coverage inventory,
-4. one lookup-backed nonlinearity,
-5. recursive aggregation.
+1. keep the current frozen S-two bundle reproducible,
+2. widen the decode-step family without changing the semantic claim,
+3. improve KV-cache commitment discipline,
+4. move a more faithful non-arithmetic attention path into the main proved relation,
+5. only then bind to recursive aggregation work.
 
 ## Definition of success
 
-The first meaningful success condition is not “recursive proof on Starknet.”
+The next meaningful success condition is not “recursive proof on Starknet.”
 
 It is this:
 
-> The same `statement-v1` semantic claim can be proved for at least one shipped program by both the current vanilla backend and an experimental S-two backend, with verifier-side lockstep semantics preserved.
+> The same `statement-v1` claim family can be proved on the current narrow experimental S-two path
+> for a transformer-shaped fixed fixture and a proof-carrying decoding transition, while preserving
+> verifier-side lockstep semantics and explicit carried-state integrity.
 
-Once that exists, the rest of the roadmap becomes technically serious rather than aspirational.
+Once that exists for a broader family than the current fixed fixtures, the recursion and
+aggregation roadmap becomes technically serious rather than aspirational.

@@ -253,9 +253,9 @@ The repository snapshot analyzed here provides:
 - multi-engine differential checks across transformer, native, Burn, and ONNX paths,
 - ONNX export and independent validation,
 - `research-v2` semantic agreement artifacts for one-step, prefix-trace, and matrix agreement checks,
-- a production-oriented local proving profile (`production-v1`), and
-- a reproducibility bundle with artifact hashes and benchmark metadata, and
-- a post-freeze experimental `stwo` layer with shipped arithmetic fixtures, embedded shared-table lookup proofs, and a three-step proof-carrying decoding demo over explicit carried-state commitments.
+- a production-oriented local proving profile (`production-v1`),
+- a frozen reproducibility bundle with artifact hashes and benchmark metadata, and
+- a second frozen experimental `stwo` bundle spanning shipped arithmetic, a shared-table lookup proof envelope, a transformer-shaped fixed-shape proof, and a three-step proof-carrying decoding demo over explicit carried-state commitments.
 
 These capabilities support the trace-as-witness thesis directly and move the repository beyond a minimal proof-of-concept interpreter.
 
@@ -263,7 +263,9 @@ These capabilities support the trace-as-witness thesis directly and move the rep
 
 The repository remains deliberately narrow in several important ways:
 
-- the default reproducibility bundle and primary transformer proof relation still use a custom vanilla STARK backend, even though the repo now also exposes an experimental `stwo-backend` for a narrow arithmetic fixture set, dedicated lookup demos, and a fixed-shape proof-carrying decoding demo,
+- the default reproducibility bundle and primary transformer proof relation still use a custom vanilla STARK backend,
+- the repo now also exposes a frozen experimental `stwo` bundle together with a broader exploratory `stwo-backend`,
+- that experimental `stwo` surface remains narrow: a public arithmetic fixture set, dedicated lookup demos, shared-table lookup proofs, fixed-shape Gemma-inspired artifacts, and a fixed-shape proof-carrying decoding demo,
 - the proved attention mode is currently `average-hard`, not standard softmax,
 - learned/trained weights remain out of scope,
 - zero-knowledge hiding is not implemented,
@@ -277,9 +279,11 @@ On April 4, 2026, we generated a `production-v1` reproducibility bundle from exe
 
 The artifact bundle includes STARK proofs for `addition`, `dot_product`, `single_neuron`, and `fibonacci`, together with `research-v2` semantic agreement artifacts and a committed transformer-specific attention-semantics fixture, `run_soft_attention_memory`. On the frozen `production-v1` profile, the four proof artifacts span roughly `71–856s` proving time, `2–5s` verification time, and `7.6–12.8 MB` proof sizes on the recorded `arm64` macOS host. These measurements should be read as artifact reproducibility evidence and semantic/proof-stack evidence, not as comparative prover-performance evidence or frontier-model performance claims.
 
-### 5.4 Post-freeze exploratory S-two artifacts
+### 5.4 Frozen experimental S-two bundle
 
-After the frozen `production-v1` bundle, the repository added newer fixed-shape `stwo` artifacts, including Gemma-inspired fixtures whose top-level execution proofs embed normalization and bounded activation lookup companions inside the main serialized proof payload, shared-table multi-claim lookup proof envelopes, and a three-step fixed-shape proof-carrying decoding demo that links `decoding_step_v1` executions through explicit carried KV-cache and position commitments. These later artifacts are intentionally a second evidence tier rather than part of the frozen bundle. The same post-freeze repository state also archives the mutable web evidence used by the paper and stores the appendix-only extracted Gemma parameter snapshots referenced in Appendix B.
+On April 6, 2026, we generated a second immutable bundle for the experimental `stwo` path and preserved it in an immutable repository snapshot (artifact-index commit `3970277`) with exact command logs, wall-clock timings, SHA-256 hashes, and proof artifacts for four representative outputs: an arithmetic `statement-v1` execution proof (`addition`), a shared-table normalization lookup proof envelope, a Gemma-inspired fixed-shape execution proof (`gemma_block_v4`) with embedded shared lookup bindings, and a three-step proof-carrying decoding chain over explicit carried-state commitments. This frozen `stwo-experimental-v1` bundle intentionally complements the vanilla `production-v1` bundle rather than replacing it [40].
+
+The later experimental history still matters because the bundle stands on earlier fixed-shape `stwo` artifacts (`gemma_block_v1` through `gemma_block_v3`) and the dedicated lookup/normalization demos. But for publication purposes the relevant distinction is now cleaner: the repo has one frozen vanilla evidence tier and one frozen narrow `stwo` evidence tier. The same repository state also archives the mutable web evidence used by the paper and stores the appendix-only extracted Gemma parameter snapshots referenced in Appendix B.
 
 ### 5.5 Why this artifact matters
 
@@ -300,7 +304,7 @@ The infrastructure argument is stronger now than it was a year ago.
 
 StarkWare’s public materials position S-two as its next-generation prover, fully open source and built around Circle STARKs over M31. The March 31, 2026 recursion update is particularly relevant to verifiable AI because proof aggregation is not optional once workloads become large or modular. If one wants many local proofs, batched proofs, or compressed proofs that can be checked cheaply onchain, recursion is the mechanism that keeps the system practical.
 
-For this paper, however, the key distinction is: **S-two’s progress strengthens the architectural roadmap, while the repository analyzed here still keeps its default artifact bundle and primary transformer proof relation on the vanilla backend and exposes `stwo` only through an experimental narrow fixture set, shared-table lookup demos, fixed-shape Gemma-inspired artifacts, and a fixed-shape proof-carrying decoding demo.**
+For this paper, however, the key distinction is: **S-two’s progress strengthens the architectural roadmap, while the repository analyzed here still keeps its default artifact bundle and primary transformer proof relation on the vanilla backend.** It exposes `stwo` through a frozen narrow evidence tier plus a broader experimental fixture set, shared-table lookup demos, fixed-shape Gemma-inspired artifacts, and a fixed-shape proof-carrying decoding demo.
 
 Verifier cost and proof size remain part of that roadmap, not a side note. The frozen vanilla-backend artifact bundle still produces `7.6–12.8 MB` proof files for tiny fixtures, which is far from an onchain-friendly footprint. That is why recursion matters to the infrastructure claim: if STARK-native systems are to be practical for verifiable AI onchain, aggregation and compression must narrow verifier workload and proof-size overhead rather than only improving raw prover throughput [19, 34].
 
@@ -366,7 +370,7 @@ It does **not** yet support stronger claims such as: that STARKs have conclusive
 
 ### 8.2 Highest-leverage repository milestones
 
-If the goal is to make the paper materially stronger with one next technical milestone, the highest-leverage move is to generalize the current fixed-shape `stwo` path into a broader transformer-relevant execution relation: promote the proof-carrying decoding demo from a bounded research fixture into a parameterized decode-step family, carry a richer KV-cache commitment than a fixed memory slice, and bring a more faithful non-arithmetic attention path into the same experimental backend.
+If the goal is to make the paper materially stronger with one next technical milestone, the highest-leverage move is to widen the now-frozen narrow `stwo` path into a broader transformer-relevant execution relation: promote the proof-carrying decoding demo from a bounded research fixture into a parameterized decode-step family, carry a richer KV-cache commitment than a fixed memory slice, and bring a more faithful non-arithmetic attention path into the same experimental backend.
 
 That combination would connect the paper’s strongest analytical claim to the strongest missing implementation piece without pretending that recursion or full standard-softmax proving has already landed. The corresponding repository migration plan is captured in supplementary design materials.
 
@@ -438,3 +442,4 @@ This paper uses the maintained fork `omarespejel/llm-provable-computer`, which b
 37. Hugo Touvron, Louis Martin, Kevin Stone, et al. “Llama 2: Open Foundation and Fine-Tuned Chat Models.” *arXiv preprint* arXiv:2307.09288, 2023. <https://arxiv.org/abs/2307.09288>
 38. Wyatt Benno, Alberto Centelles, Antoine Douchet, and Khalil Gibran. “Jolt Atlas: Verifiable Inference via Lookup Arguments in Zero Knowledge.” *arXiv preprint* arXiv:2602.17452, 2026. <https://arxiv.org/abs/2602.17452>
 39. Zhaohui Geoffrey Wang. “NANOZK: Layerwise Zero-Knowledge Proofs for Verifiable Large Language Model Inference.” *arXiv preprint* arXiv:2603.18046, 2026. <https://arxiv.org/abs/2603.18046>
+40. `omarespejel/llm-provable-computer`. “Appendix Artifact Index (S-two Experimental V1).” GitHub artifact snapshot, commit `3970277d964a0a9a5326b0db364cf16822c1ccd4`, at `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md`. <https://github.com/omarespejel/llm-provable-computer/blob/3970277d964a0a9a5326b0db364cf16822c1ccd4/docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md>
