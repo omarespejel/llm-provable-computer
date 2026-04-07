@@ -4290,6 +4290,24 @@ mod tests {
     }
 
     #[test]
+    fn phase12_template_adds_combined_output_into_secondary_output() {
+        let layout = phase12_default_decoding_layout();
+        let output = layout.output_range().expect("output range");
+        let program = decoding_step_v2_template_program(&layout).expect("program");
+        let instructions = program.instructions();
+        let expected = [
+            Instruction::Load((output.start + 1) as u8),
+            Instruction::AddMemory((output.start + 2) as u8),
+            Instruction::Store((output.start + 1) as u8),
+        ];
+        assert!(
+            instructions
+                .windows(expected.len())
+                .any(|window| window == expected.as_slice())
+        );
+    }
+
+    #[test]
     fn phase12_template_writes_primary_output_into_fourth_cache_lane_when_available() {
         let layout = phase12_default_decoding_layout();
         let latest_cached = layout.latest_cached_pair_range().expect("latest cached");
