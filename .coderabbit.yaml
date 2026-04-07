@@ -26,6 +26,10 @@ reviews:
     labels: []
     ignore_title_keywords: []
   path_filters:
+    - .coderabbit.yaml
+    - .greptile/**
+    - .pr_agent.toml
+    - .gitignore
     - src/**
     - tests/**
     - programs/**
@@ -63,15 +67,6 @@ reviews:
         Review technical docs for alignment with code and proofs. Ignore pure prose taste, but flag any mismatch in supported phases, artifact semantics, backend capabilities, or reproducibility steps.
 chat:
   auto_reply: true
-tools:
-  shellcheck:
-    enabled: true
-  markdownlint:
-    enabled: true
-  yamllint:
-    enabled: true
-  ast-grep:
-    essential_rules: true
 knowledge_base:
   learnings:
     scope: auto
