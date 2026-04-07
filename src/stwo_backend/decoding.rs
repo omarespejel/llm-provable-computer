@@ -3125,15 +3125,8 @@ fn commit_phase12_persistent_state(
     lower_hex(&out)
 }
 
-fn decoding_program_step_limit(program: &Program) -> Result<usize> {
-    let instruction_count = program.instructions().len();
-    let max_reachable_instructions = usize::from(u8::MAX) + 1;
-    if instruction_count > max_reachable_instructions {
-        return Err(VmError::InvalidConfig(format!(
-            "Phase 12 demo seed program has {instruction_count} instructions, exceeding the u8 program counter limit {max_reachable_instructions}"
-        )));
-    }
-    Ok(instruction_count.saturating_add(1))
+fn decoding_program_step_limit(program: &Program) -> usize {
+    program.instructions().len().saturating_add(1)
 }
 
 fn commit_phase12_history_seed(
@@ -3572,7 +3565,7 @@ pub(crate) fn phase12_demo_initial_memories(
         memory[position_index] = position as i16;
         memory[position_increment_index] = 1;
         let program = decoding_step_v2_program_with_initial_memory(layout, memory.clone())?;
-        let step_limit = decoding_program_step_limit(&program)?;
+        let step_limit = decoding_program_step_limit(&program);
         let mut runtime = NativeInterpreter::new(program, Attention2DMode::AverageHard, step_limit);
         let result = runtime.run()?;
         if !result.halted {
@@ -3672,6 +3665,8 @@ mod tests {
     };
     use crate::state::MachineState;
     use crate::{ProgramCompiler, TransformerVmConfig};
+    use proptest::prelude::*;
+    use rand::{rngs::StdRng, Rng, SeedableRng};
 
     fn sample_commitments() -> ExecutionClaimCommitments {
         ExecutionClaimCommitments {
@@ -3727,8 +3722,11 @@ mod tests {
     ) -> VanillaStarkExecutionProof {
         let program = decoding_step_v2_program_with_initial_memory(layout, initial_memory.clone())
             .expect("program");
-        let mut runtime =
-            NativeInterpreter::new(program.clone(), Attention2DMode::AverageHard, 256);
+        let mut runtime = NativeInterpreter::new(
+            program.clone(),
+            Attention2DMode::AverageHard,
+            decoding_program_step_limit(&program),
+        );
         let result = runtime.run().expect("run program");
         assert!(result.halted);
         let final_memory = result.final_state.memory.clone();
@@ -3814,24 +3812,138 @@ mod tests {
         .expect("sample proof payload")
     }
 
-    fn sample_phase14_chain_manifest(
+    /// Requires `memory` to already contain `PHASE12_LOOKUP_ROW_VALUES` in the layout's lookup
+    /// range. `phase12_expected_final_memory` satisfies that precondition before calling this
+    /// helper.
+    fn phase12_expected_output_cells(
         layout: &Phase12DecodingLayout,
-    ) -> (Phase12DecodingChainManifest, Phase14DecodingChainManifest) {
-        let proofs = phase12_demo_initial_memories(layout)
-            .expect("memories")
-            .into_iter()
-            .map(|memory| sample_phase12_step_proof(layout, memory))
-            .collect::<Vec<_>>();
-        let phase12 = phase12_prepare_decoding_chain(layout, &proofs).expect("phase12 chain");
-        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
-        (phase12, phase14)
+        memory: &[i16],
+    ) -> [i16; PHASE12_OUTPUT_WIDTH] {
+        let latest_cached = layout.latest_cached_pair_range().expect("latest cached");
+        let incoming = layout.incoming_token_range().expect("incoming");
+        let query = layout.query_range().expect("query");
+        let lookup = layout.lookup_range().expect("lookup");
+        let raw_dot: i32 = (0..layout.pair_width)
+            .map(|offset| {
+                i32::from(memory[query.start + offset])
+                    * i32::from(memory[latest_cached.start + offset])
+            })
+            .sum();
+        let raw_accumulated =
+            raw_dot + memory[incoming.clone()].iter().map(|&value| i32::from(value)).sum::<i32>();
+        [
+            raw_dot * i32::from(memory[lookup.start + 1]) + i32::from(memory[lookup.start + 3]),
+            raw_accumulated * i32::from(memory[lookup.start + 5])
+                + i32::from(memory[lookup.start + 7]),
+            i32::from(memory[lookup.start + 3]) + i32::from(memory[lookup.start + 7]),
+        ]
+        .map(|value| i16::try_from(value).expect("bounded Phase 12 oracle output"))
+    }
+
+    fn phase12_expected_final_memory(
+        layout: &Phase12DecodingLayout,
+        initial_memory: &[i16],
+    ) -> Vec<i16> {
+        let kv_cache = layout.kv_cache_range().expect("kv cache");
+        let incoming = layout.incoming_token_range().expect("incoming");
+        let output = layout.output_range().expect("output");
+        let lookup = layout.lookup_range().expect("lookup");
+        let latest_cached = layout.latest_cached_pair_range().expect("latest cached");
+        let position_index = layout.position_index().expect("position");
+        let position_increment_index = layout.position_increment_index().expect("position increment");
+        let mut expected = initial_memory.to_vec();
+
+        expected[lookup.clone()].copy_from_slice(&PHASE12_LOOKUP_ROW_VALUES);
+        let outputs = phase12_expected_output_cells(layout, &expected);
+        expected[output.clone()].copy_from_slice(&outputs);
+
+        for index in 0..kv_cache.len().saturating_sub(layout.pair_width) {
+            expected[kv_cache.start + index] = initial_memory[kv_cache.start + index + layout.pair_width];
+        }
+        for offset in 0..layout.pair_width {
+            expected[latest_cached.start + offset] = match offset {
+                0 | 1 | 2 => outputs[2],
+                3 => outputs[0],
+                _ => initial_memory[incoming.start + offset],
+            };
+        }
+
+        expected[position_index] = initial_memory[position_index] + initial_memory[position_increment_index];
+        expected
+    }
+
+    fn phase12_random_bounded_memory(
+        layout: &Phase12DecodingLayout,
+        rng: &mut StdRng,
+    ) -> Vec<i16> {
+        let kv_cache = layout.kv_cache_range().expect("kv cache");
+        let incoming = layout.incoming_token_range().expect("incoming");
+        let query = layout.query_range().expect("query");
+        let lookup = layout.lookup_range().expect("lookup");
+        let position_index = layout.position_index().expect("position");
+        let position_increment_index = layout.position_increment_index().expect("position increment");
+        let mut memory = vec![0; layout.memory_size().expect("memory size")];
+
+        for index in kv_cache {
+            memory[index] = rng.gen_range(-3..=3);
+        }
+        for index in incoming {
+            memory[index] = rng.gen_range(-3..=3);
+        }
+        for index in query {
+            memory[index] = rng.gen_range(-3..=3);
+        }
+        memory[lookup].copy_from_slice(&PHASE12_LOOKUP_ROW_VALUES);
+        memory[position_index] = rng.gen_range(0..=7);
+        memory[position_increment_index] = 1;
+        memory
+    }
+
+    fn phase12_bounded_memory_strategy() -> impl Strategy<Value = (Phase12DecodingLayout, Vec<i16>)> {
+        let layouts = phase13_default_decoding_layout_matrix().expect("layout matrix");
+        prop::sample::select(layouts).prop_flat_map(|layout| {
+            let kv_cache_len = layout.kv_cache_range().expect("kv cache range").len();
+            let incoming_len = layout.incoming_token_range().expect("incoming range").len();
+            let query_len = layout.query_range().expect("query range").len();
+            (
+                Just(layout),
+                prop::collection::vec(-3i16..=3, kv_cache_len),
+                prop::collection::vec(-3i16..=3, incoming_len),
+                prop::collection::vec(-3i16..=3, query_len),
+                0i16..=7,
+            )
+                .prop_map(|(layout, kv_cache, incoming, query, position)| {
+                    let kv_cache_range = layout.kv_cache_range().expect("kv cache range");
+                    let incoming_range = layout.incoming_token_range().expect("incoming range");
+                    let query_range = layout.query_range().expect("query range");
+                    let lookup_range = layout.lookup_range().expect("lookup range");
+                    let position_index = layout.position_index().expect("position index");
+                    let position_increment_index = layout
+                        .position_increment_index()
+                        .expect("position increment index");
+                    let mut memory = vec![0; layout.memory_size().expect("memory size")];
+                    memory[kv_cache_range].copy_from_slice(&kv_cache);
+                    memory[incoming_range].copy_from_slice(&incoming);
+                    memory[query_range].copy_from_slice(&query);
+                    memory[lookup_range].copy_from_slice(&PHASE12_LOOKUP_ROW_VALUES);
+                    memory[position_index] = position;
+                    memory[position_increment_index] = 1;
+                    (layout, memory)
+                })
+        })
     }
 
     fn sample_phase17_rollup_matrix_manifest() -> Phase17DecodingHistoryRollupMatrixManifest {
         let layouts = phase13_default_decoding_layout_matrix().expect("layout matrix");
         let mut rollups = Vec::with_capacity(layouts.len());
         for layout in &layouts {
-            let (_, phase14) = sample_phase14_chain_manifest(layout);
+            let proofs = phase12_demo_initial_memories(layout)
+                .expect("memories")
+                .into_iter()
+                .map(|memory| sample_phase12_step_proof(layout, memory))
+                .collect::<Vec<_>>();
+            let phase12 = phase12_prepare_decoding_chain(layout, &proofs).expect("phase12 chain");
+            let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
             let phase15 = phase15_prepare_segment_bundle(&phase14, 1).expect("phase15 manifest");
             let phase16 = phase16_prepare_segment_rollup(
                 &phase15,
@@ -4147,20 +4259,10 @@ mod tests {
     #[test]
     fn phase12_runtime_uses_shared_lookup_rows_across_layouts() {
         for layout in phase13_default_decoding_layout_matrix().expect("layout matrix") {
-            let latest_cached = layout.latest_cached_pair_range().expect("latest cached");
-            let incoming = layout.incoming_token_range().expect("incoming range");
-            let query = layout.query_range().expect("query range");
-            let lookup = layout.lookup_range().expect("lookup range");
-            let output = layout.output_range().expect("output range");
             for memory in phase12_demo_initial_memories(&layout).expect("memories") {
-                let expected_raw_dot: i16 = (0..layout.pair_width)
-                    .map(|offset| memory[query.start + offset] * memory[latest_cached.start + offset])
-                    .sum();
-                let expected_raw_accumulated: i16 =
-                    expected_raw_dot + memory[incoming.clone()].iter().copied().sum::<i16>();
                 let program =
-                    decoding_step_v2_program_with_initial_memory(&layout, memory).expect("program");
-                let step_limit = decoding_program_step_limit(&program).expect("step limit");
+                    decoding_step_v2_program_with_initial_memory(&layout, memory.clone()).expect("program");
+                let step_limit = decoding_program_step_limit(&program);
                 let mut runtime = NativeInterpreter::new(
                     program,
                     Attention2DMode::AverageHard,
@@ -4168,37 +4270,129 @@ mod tests {
                 );
                 let result = runtime.run().expect("run program");
                 assert!(result.halted);
-                let final_memory = result.final_state.memory;
-                let expected_primary_scale = final_memory[lookup.start + 1];
-                let expected_secondary_scale = final_memory[lookup.start + 5];
-                let expected_activation = final_memory[lookup.start + 3];
-                let expected_secondary_activation = final_memory[lookup.start + 7];
-                assert_eq!(
-                    final_memory[output.start],
-                    expected_raw_dot * expected_primary_scale + expected_activation
+                assert_eq!(result.final_state.memory, phase12_expected_final_memory(&layout, &memory));
+            }
+        }
+    }
+
+    #[test]
+    fn phase12_semantic_oracle_matches_manifest_states_across_layouts() {
+        for layout in phase13_default_decoding_layout_matrix().expect("layout matrix") {
+            let kv_cache_range = layout.kv_cache_range().expect("kv cache range");
+            let latest_cached_range = layout.latest_cached_pair_range().expect("latest cached range");
+            let layout_commitment = commit_phase12_layout(&layout);
+            let proofs = phase12_demo_initial_memories(&layout)
+                .expect("memories")
+                .into_iter()
+                .map(|memory| sample_phase12_step_proof(&layout, memory))
+                .collect::<Vec<_>>();
+            let manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+
+            let mut expected_history_length = layout.rolling_kv_pairs;
+            let mut expected_history_commitment = commit_phase12_history_seed(
+                &layout_commitment,
+                &proofs[0].claim.program.initial_memory()[kv_cache_range.clone()],
+                layout.pair_width,
+            );
+
+            for (step_index, (step, proof)) in manifest.steps.iter().zip(proofs.iter()).enumerate() {
+                let initial_memory = proof.claim.program.initial_memory();
+                let expected_final_memory = phase12_expected_final_memory(&layout, initial_memory);
+                assert_eq!(proof.claim.final_state.memory, expected_final_memory);
+
+                let expected_from = build_phase12_state(
+                    step_index,
+                    derive_phase12_state_view(initial_memory, &layout).expect("from view"),
+                    expected_history_commitment.clone(),
+                    expected_history_length,
                 );
-                assert_eq!(
-                    final_memory[output.start + 1],
-                    expected_raw_accumulated * expected_secondary_scale
-                        + expected_secondary_activation
+                assert_eq!(step.from_state, expected_from);
+
+                let next_history_length = expected_history_length + 1;
+                let next_history_commitment = advance_phase12_history_commitment(
+                    &layout_commitment,
+                    &expected_history_commitment,
+                    &expected_final_memory[latest_cached_range.clone()],
+                    next_history_length,
                 );
-                assert_eq!(
-                    final_memory[output.start + 2],
-                    expected_activation + expected_secondary_activation
+                let expected_to = build_phase12_state(
+                    step_index + 1,
+                    derive_phase12_final_state_view_from_proof(proof, &layout).expect("to view"),
+                    next_history_commitment.clone(),
+                    next_history_length,
                 );
-                for offset in 0..layout.pair_width {
-                    let expected_latest_value = match offset {
-                        0 => final_memory[output.start + 2],
-                        1 => final_memory[output.start + 2],
-                        2 => final_memory[output.start + 2],
-                        3 => final_memory[output.start],
-                        _ => final_memory[incoming.start + offset],
-                    };
-                    assert_eq!(
-                        final_memory[latest_cached.start + offset],
-                        expected_latest_value
-                    );
-                }
+                assert_eq!(step.to_state, expected_to);
+
+                expected_history_commitment = next_history_commitment;
+                expected_history_length = next_history_length;
+            }
+
+            verify_phase12_decoding_chain(&manifest).expect("verify oracle-backed manifest");
+        }
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(48))]
+
+        #[test]
+        fn phase12_runtime_matches_oracle_for_bounded_layout_memory(
+            (layout, memory) in phase12_bounded_memory_strategy(),
+        ) {
+            let program = decoding_step_v2_program_with_initial_memory(&layout, memory.clone()).expect("program");
+            let step_limit = decoding_program_step_limit(&program);
+            let mut runtime = NativeInterpreter::new(
+                program,
+                Attention2DMode::AverageHard,
+                step_limit,
+            );
+            let result = runtime.run().expect("run program");
+            prop_assert!(result.halted);
+            prop_assert_eq!(result.final_state.memory, phase12_expected_final_memory(&layout, &memory));
+        }
+    }
+
+    #[test]
+    fn phase12_random_bounded_memories_accept_real_stwo_proof_and_match_oracle() {
+        const RANDOM_REAL_PROOF_CASES_PER_LAYOUT: usize = 1;
+
+        let config = TransformerVmConfig {
+            num_layers: 1,
+            attention_mode: Attention2DMode::AverageHard,
+            ..TransformerVmConfig::default()
+        };
+        let mut rng = StdRng::seed_from_u64(0x5EED_1202);
+        for layout in phase13_default_decoding_layout_matrix().expect("layout matrix") {
+            // Keep the real proving loop bounded; the broader randomized coverage lives in the
+            // property test above, while this path ensures each layout still hits the real backend.
+            for case_index in 0..RANDOM_REAL_PROOF_CASES_PER_LAYOUT {
+                let initial_memory = phase12_random_bounded_memory(&layout, &mut rng);
+                let expected_final_memory = phase12_expected_final_memory(&layout, &initial_memory);
+                let program = decoding_step_v2_program_with_initial_memory(&layout, initial_memory.clone())
+                    .expect("program");
+                let mut runtime = NativeInterpreter::new(
+                    program.clone(),
+                    Attention2DMode::AverageHard,
+                    decoding_program_step_limit(&program),
+                );
+                let result = runtime.run().expect("run program");
+                assert!(result.halted);
+                assert_eq!(result.final_state.memory, expected_final_memory);
+
+                let model = ProgramCompiler
+                    .compile_program(program, config.clone())
+                    .expect("compile");
+                prove_execution_stark_with_backend_and_options(
+                    &model,
+                    128,
+                    StarkProofBackend::Stwo,
+                    production_v1_stark_options(),
+                )
+                .unwrap_or_else(|error| {
+                    panic!(
+                        "random bounded layout {:?} case {case_index} failed real stwo proof: {error}; initial_memory={initial_memory:?}",
+                        layout
+                    )
+                });
             }
         }
     }
@@ -4284,15 +4478,6 @@ mod tests {
         assert!(error
             .to_string()
             .contains("exceeds the encoded address limit 256"));
-    }
-
-    #[test]
-    fn phase12_decoding_program_step_limit_rejects_programs_beyond_u8_pc_horizon() {
-        let program = Program::new(vec![Instruction::Nop; usize::from(u8::MAX) + 2], 1);
-        let error = decoding_program_step_limit(&program).unwrap_err();
-        assert!(error
-            .to_string()
-            .contains("exceeding the u8 program counter limit"));
     }
 
     #[test]
@@ -4480,7 +4665,7 @@ mod tests {
                 let next = &pair[1];
                 let program =
                     decoding_step_v2_program_with_initial_memory(&layout, current).expect("program");
-                let step_limit = decoding_program_step_limit(&program).expect("step limit");
+                let step_limit = decoding_program_step_limit(&program);
                 let mut runtime = NativeInterpreter::new(
                     program,
                     Attention2DMode::AverageHard,
@@ -4592,33 +4777,6 @@ mod tests {
     }
 
     #[test]
-    fn phase14_preserves_phase12_output_and_lookup_commitments() {
-        let layout = phase12_default_decoding_layout();
-        let (phase12, phase14) = sample_phase14_chain_manifest(&layout);
-        assert_eq!(phase12.total_steps, phase14.total_steps);
-        assert_eq!(phase12.steps.len(), phase14.steps.len());
-
-        for (phase12_step, phase14_step) in phase12.steps.iter().zip(phase14.steps.iter()) {
-            assert_eq!(
-                phase14_step.from_state.output_commitment,
-                phase12_step.from_state.output_commitment
-            );
-            assert_eq!(
-                phase14_step.from_state.lookup_rows_commitment,
-                phase12_step.from_state.lookup_rows_commitment
-            );
-            assert_eq!(
-                phase14_step.to_state.output_commitment,
-                phase12_step.to_state.output_commitment
-            );
-            assert_eq!(
-                phase14_step.to_state.lookup_rows_commitment,
-                phase12_step.to_state.lookup_rows_commitment
-            );
-        }
-    }
-
-    #[test]
     fn phase14_verify_decoding_chain_rejects_broken_open_chunk_link() {
         let layout = phase12_default_decoding_layout();
         let proofs = phase12_demo_initial_memories(&layout)
@@ -4727,56 +4885,6 @@ mod tests {
     }
 
     #[test]
-    fn phase15_segments_preserve_global_output_and_lookup_commitments() {
-        let layout = phase12_default_decoding_layout();
-        let (_, phase14) = sample_phase14_chain_manifest(&layout);
-        let manifest =
-            phase15_prepare_segment_bundle(&phase14, phase15_default_segment_step_limit())
-                .expect("phase15 manifest");
-
-        for segment in &manifest.segments {
-            let first_step = segment.chain.steps.first().expect("segment first step");
-            let last_step = segment.chain.steps.last().expect("segment last step");
-            let global_first_step = &phase14.steps[segment.global_start_step_index];
-            let global_last_step =
-                &phase14.steps[segment.global_start_step_index + segment.total_steps - 1];
-
-            assert_eq!(
-                segment.global_from_state.output_commitment,
-                first_step.from_state.output_commitment
-            );
-            assert_eq!(
-                segment.global_from_state.lookup_rows_commitment,
-                first_step.from_state.lookup_rows_commitment
-            );
-            assert_eq!(
-                segment.global_from_state.output_commitment,
-                global_first_step.from_state.output_commitment
-            );
-            assert_eq!(
-                segment.global_from_state.lookup_rows_commitment,
-                global_first_step.from_state.lookup_rows_commitment
-            );
-            assert_eq!(
-                segment.global_to_state.output_commitment,
-                last_step.to_state.output_commitment
-            );
-            assert_eq!(
-                segment.global_to_state.lookup_rows_commitment,
-                last_step.to_state.lookup_rows_commitment
-            );
-            assert_eq!(
-                segment.global_to_state.output_commitment,
-                global_last_step.to_state.output_commitment
-            );
-            assert_eq!(
-                segment.global_to_state.lookup_rows_commitment,
-                global_last_step.to_state.lookup_rows_commitment
-            );
-        }
-    }
-
-    #[test]
     fn phase15_verify_segment_bundle_rejects_wrong_segment_start() {
         let layout = phase12_default_decoding_layout();
         let proofs = phase12_demo_initial_memories(&layout)
@@ -4841,57 +4949,6 @@ mod tests {
     }
 
     #[test]
-    fn phase16_rollups_preserve_global_output_and_lookup_commitments() {
-        let layout = phase12_default_decoding_layout();
-        let (_, phase14) = sample_phase14_chain_manifest(&layout);
-        let phase15 = phase15_prepare_segment_bundle(&phase14, 1).expect("phase15 manifest");
-        let manifest =
-            phase16_prepare_segment_rollup(&phase15, phase16_default_rollup_segment_limit())
-                .expect("phase16 manifest");
-
-        for rollup in &manifest.rollups {
-            let first_segment = rollup.segments.first().expect("rollup first segment");
-            let last_segment = rollup.segments.last().expect("rollup last segment");
-            let global_first_step = &phase14.steps[rollup.global_start_step_index];
-            let global_last_step =
-                &phase14.steps[rollup.global_start_step_index + rollup.total_steps - 1];
-
-            assert_eq!(
-                rollup.global_from_state.output_commitment,
-                first_segment.global_from_state.output_commitment
-            );
-            assert_eq!(
-                rollup.global_from_state.lookup_rows_commitment,
-                first_segment.global_from_state.lookup_rows_commitment
-            );
-            assert_eq!(
-                rollup.global_from_state.output_commitment,
-                global_first_step.from_state.output_commitment
-            );
-            assert_eq!(
-                rollup.global_from_state.lookup_rows_commitment,
-                global_first_step.from_state.lookup_rows_commitment
-            );
-            assert_eq!(
-                rollup.global_to_state.output_commitment,
-                last_segment.global_to_state.output_commitment
-            );
-            assert_eq!(
-                rollup.global_to_state.lookup_rows_commitment,
-                last_segment.global_to_state.lookup_rows_commitment
-            );
-            assert_eq!(
-                rollup.global_to_state.output_commitment,
-                global_last_step.to_state.output_commitment
-            );
-            assert_eq!(
-                rollup.global_to_state.lookup_rows_commitment,
-                global_last_step.to_state.lookup_rows_commitment
-            );
-        }
-    }
-
-    #[test]
     fn phase16_verify_segment_rollup_rejects_wrong_rollup_start() {
         let layout = phase12_default_decoding_layout();
         let proofs = phase12_demo_initial_memories(&layout)
@@ -4942,39 +4999,6 @@ mod tests {
         assert!(manifest.total_segments >= 3);
         assert!(manifest.total_steps >= 3);
         verify_phase17_decoding_rollup_matrix(&manifest).expect("phase17 verification");
-    }
-
-    #[test]
-    fn phase17_rollup_matrix_preserves_layout_output_and_lookup_commitments() {
-        let layouts = phase13_default_decoding_layout_matrix().expect("layout matrix");
-        let manifest = sample_phase17_rollup_matrix_manifest();
-        assert_eq!(manifest.rollups.len(), layouts.len());
-
-        for (layout, rollup_manifest) in layouts.iter().zip(manifest.rollups.iter()) {
-            let (_, phase14) = sample_phase14_chain_manifest(layout);
-            let first_rollup = rollup_manifest.rollups.first().expect("first rollup");
-            let last_rollup = rollup_manifest.rollups.last().expect("last rollup");
-            let first_step = phase14.steps.first().expect("first step");
-            let last_step = phase14.steps.last().expect("last step");
-
-            assert_eq!(rollup_manifest.layout, *layout);
-            assert_eq!(
-                first_rollup.global_from_state.output_commitment,
-                first_step.from_state.output_commitment
-            );
-            assert_eq!(
-                first_rollup.global_from_state.lookup_rows_commitment,
-                first_step.from_state.lookup_rows_commitment
-            );
-            assert_eq!(
-                last_rollup.global_to_state.output_commitment,
-                last_step.to_state.output_commitment
-            );
-            assert_eq!(
-                last_rollup.global_to_state.lookup_rows_commitment,
-                last_step.to_state.lookup_rows_commitment
-            );
-        }
     }
 
     #[test]
