@@ -1363,7 +1363,16 @@ pub fn verify_phase15_decoding_segment_bundle(
             manifest.segments.len()
         )));
     }
-    let derived_total_steps: usize = manifest.segments.iter().map(|segment| segment.total_steps).sum();
+    let derived_total_steps = manifest
+        .segments
+        .iter()
+        .try_fold(0usize, |acc, segment| acc.checked_add(segment.total_steps))
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "decoding history segment bundle total_steps overflowed while summing segments"
+                    .to_string(),
+            )
+        })?;
     if manifest.total_steps != derived_total_steps {
         return Err(VmError::InvalidConfig(format!(
             "decoding history segment bundle total_steps={} does not match derived total_steps={}",
@@ -3202,5 +3211,25 @@ mod tests {
         assert!(err
             .to_string()
             .contains("starts at global step 99 instead of 2"));
+    }
+
+    #[test]
+    fn phase15_verify_segment_bundle_rejects_tampered_global_boundary_state() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let mut manifest =
+            phase15_prepare_segment_bundle(&phase14, phase15_default_segment_step_limit())
+                .expect("phase15 manifest");
+        manifest.segments[1].global_from_state.kv_history_commitment = "tampered".to_string();
+        let err = verify_phase15_decoding_segment_bundle(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("global_from_state does not match the carried-state replay"));
     }
 }
