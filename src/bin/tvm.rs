@@ -49,7 +49,7 @@ use llm_provable_computer::{
     STWO_DECODING_CHAIN_VERSION_PHASE12, STWO_LOOKUP_PROOF_VERSION_PHASE3,
     STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
     STWO_NORMALIZATION_PROOF_VERSION_PHASE5, STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5,
-    STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
+    STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5, STWO_BACKEND_VERSION_PHASE12,
 };
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
@@ -1606,6 +1606,7 @@ fn verify_stwo_decoding_family_demo_command(
         }
         println!("expected_chain_version: {STWO_DECODING_CHAIN_VERSION_PHASE12}");
         println!("expected_semantic_scope: {STWO_DECODING_CHAIN_SCOPE_PHASE12}");
+        println!("expected_proof_backend_version: {STWO_BACKEND_VERSION_PHASE12}");
 
         Ok(())
     }
