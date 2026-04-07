@@ -3104,8 +3104,15 @@ fn commit_phase12_persistent_state(
     lower_hex(&out)
 }
 
-fn decoding_program_step_limit(program: &Program) -> usize {
-    program.instructions().len().saturating_add(1)
+fn decoding_program_step_limit(program: &Program) -> Result<usize> {
+    let instruction_count = program.instructions().len();
+    let max_reachable_instructions = usize::from(u8::MAX) + 1;
+    if instruction_count > max_reachable_instructions {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 12 demo seed program has {instruction_count} instructions, exceeding the u8 program counter limit {max_reachable_instructions}"
+        )));
+    }
+    Ok(instruction_count.saturating_add(1))
 }
 
 fn commit_phase12_history_seed(
@@ -3544,7 +3551,7 @@ pub(crate) fn phase12_demo_initial_memories(
         memory[position_index] = position as i16;
         memory[position_increment_index] = 1;
         let program = decoding_step_v2_program_with_initial_memory(layout, memory.clone())?;
-        let step_limit = decoding_program_step_limit(&program);
+        let step_limit = decoding_program_step_limit(&program)?;
         let mut runtime = NativeInterpreter::new(program, Attention2DMode::AverageHard, step_limit);
         let result = runtime.run()?;
         if !result.halted {
@@ -4047,7 +4054,7 @@ mod tests {
                     expected_raw_dot + memory[incoming.clone()].iter().copied().sum::<i16>();
                 let program =
                     decoding_step_v2_program_with_initial_memory(&layout, memory).expect("program");
-                let step_limit = decoding_program_step_limit(&program);
+                let step_limit = decoding_program_step_limit(&program).expect("step limit");
                 let mut runtime = NativeInterpreter::new(
                     program,
                     Attention2DMode::AverageHard,
@@ -4169,6 +4176,15 @@ mod tests {
         assert!(error
             .to_string()
             .contains("exceeds the encoded address limit 256"));
+    }
+
+    #[test]
+    fn phase12_decoding_program_step_limit_rejects_programs_beyond_u8_pc_horizon() {
+        let program = Program::new(vec![Instruction::Nop; usize::from(u8::MAX) + 2], 1);
+        let error = decoding_program_step_limit(&program).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("exceeding the u8 program counter limit"));
     }
 
     #[test]
@@ -4329,7 +4345,7 @@ mod tests {
                 let next = &pair[1];
                 let program =
                     decoding_step_v2_program_with_initial_memory(&layout, current).expect("program");
-                let step_limit = decoding_program_step_limit(&program);
+                let step_limit = decoding_program_step_limit(&program).expect("step limit");
                 let mut runtime = NativeInterpreter::new(
                     program,
                     Attention2DMode::AverageHard,
