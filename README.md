@@ -456,7 +456,79 @@ Verifier checks enforce both fields exactly, so claim wording cannot drift from 
 Proof claims also include transformer config, equivalence metadata (`equivalence_checked_steps`, transformer fingerprint, native fingerprint), and artifact commitments (program hash, config hash, deterministic-model hash, STARK-options hash, prover-build info/hash) in CLI output.
 Verifier policy checks are available via `--min-conjectured-security`; `--strict` enforces an 80-bit floor and turns on re-execution checks.
 
-The `stwo` path is now an explicit experimental backend behind `--features stwo-backend`, and it currently requires `cargo +nightly-2025-07-14` because the upstream `stwo` prover stack is still nightly-only. In the current Phase 20 state it wires the official StarkWare crates (`stwo` and `stwo-constraint-framework` at `2.2.0`), performs backend-specific shape validation, and proves and verifies the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`, `programs/dot_product.tvm`, `programs/fibonacci.tvm`, `programs/matmul_2x2.tvm`, `programs/single_neuron.tvm`, `programs/gemma_block_v1.tvm`, `programs/gemma_block_v2.tvm`, `programs/gemma_block_v3.tvm`, and `programs/gemma_block_v4.tvm` under `statement-v1`, plus both the fixed-shape `decoding_step_v1` proof family and the parameterized `decoding_step_v2` family used by the proof-carrying decoding demos. Broader arithmetic-subset AIR coverage still exists in the codebase beyond those fixtures, but it is not yet exposed as a public proving path. Alongside that `statement-v1` path, the repo now also exposes both the single-row binary-step lookup and normalization demos and their shared-table multi-claim successors through serialized proof envelopes and dedicated CLI commands, so the lookup-backed components are no longer metadata-only or library-only. Phase 8 added `programs/gemma_block_v2.tvm` as a stronger fixed-shape, Gemma-inspired shipped fixture whose top-level `stwo` execution proof embeds the canonical normalization row proof inside the main serialized proof payload rather than carrying it only through `stwo_auxiliary` sidecar metadata. Phase 9 adds `programs/gemma_block_v3.tvm`, which keeps the same bounded arithmetic backbone but embeds both the canonical normalization row proof and a canonical binary-step activation row proof inside the same top-level serialized execution proof payload. Phase 10 adds `programs/gemma_block_v4.tvm`, which binds two normalization rows and two activation rows through shared-table proof envelopes inside the same top-level `stwo` execution proof. Phase 11 added a fixed-shape proof-carrying decoding demo that chains three `decoding_step_v1` executions with explicit KV-cache commitments and carried decoding position metadata. Phase 12 generalizes that path into a parameterized `decoding_step_v2` family with layout-committed carried state, rolling KV-cache windows, cumulative KV-history commitments, and richer per-step commitments while preserving the `statement-v1` boundary. Phase 13 extends that same relation across a small validated layout matrix, proving and verifying multiple `decoding_step_v2` layouts under one top-level matrix manifest instead of treating the default layout as the only public parameterization. Phase 14 keeps those same `decoding_step_v2` proofs but upgrades the carried-state layer to a chunked cumulative KV-history commitment, separating sealed history chunks from the open chunk so later accumulation work has a segment boundary without pretending recursion already exists. Phase 15 keeps the same Phase 14 chunked-history chains but packages them into a segment bundle with explicit global carried-state boundaries, so later accumulation work can consume mergeable decoding segments rather than one monolithic chain. Phase 16 groups those Phase 15 bundles into larger rollups, and Phase 17 proves that the same higher-level carried-state packaging survives a multi-layout rollup matrix instead of one public layout only. Phase 18 keeps the same underlying `decoding_step_v2` proofs but adds explicit KV-history frontier commitments, tying the carried history suffix directly to the live rolling KV-cache commitment seen by each step so later accumulation work has a cleaner cache/history boundary to consume. Phase 19 carries a lookup transcript through that same Phase 14-17 stack, so the chunked-history chains, segment bundles, rollups, and rollup matrices preserve a committed non-arithmetic trace alongside the KV-history/cache state. Phase 20 adds an explicit lookup frontier over that same stack, so the same carried-state family now preserves both a cumulative lookup transcript and a recent lookup window without claiming shared-table accumulation or recursion already exists. Phase 6 begins recursion work conservatively by freezing canonical multi-proof batch manifests for future aggregation rather than pretending recursive proving is already integrated. Programs outside the current proven fixture set still fail cleanly on the execution-proof `stwo` path, which keeps the claim boundary honest while moving the repo from “dependency seam” to “more real S-two proof lifecycles plus shared-table lookup demos plus proof-carrying decoding plus recursion-ready batching”.
+### Experimental `stwo` Surface
+
+- Backend flag: `--features stwo-backend`
+- Toolchain: `cargo +nightly-2025-07-14`
+- Upstream crates: `stwo` and `stwo-constraint-framework` at `2.2.0`
+- Claim boundary: still `statement-v1`
+
+#### Current Fixture Set
+
+The public `stwo` proving path currently proves and verifies these shipped
+fixtures under `statement-v1`:
+
+- arithmetic fixtures:
+  `programs/addition.tvm`, `programs/counter.tvm`,
+  `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`,
+  `programs/dot_product.tvm`, `programs/fibonacci.tvm`,
+  `programs/matmul_2x2.tvm`, `programs/single_neuron.tvm`
+- transformer-shaped fixtures:
+  `programs/gemma_block_v1.tvm`, `programs/gemma_block_v2.tvm`,
+  `programs/gemma_block_v3.tvm`, `programs/gemma_block_v4.tvm`
+
+Broader arithmetic-subset AIR coverage exists beyond those fixtures, but that
+surface is not yet exposed as a public end-to-end proving path.
+
+#### Lookup Demos
+
+The repo exposes dedicated serialized proof envelopes and CLI commands for:
+
+- single-row binary-step lookup and normalization demos
+- shared-table multi-claim lookup and normalization demos
+
+That means the lookup-backed components are part of the public proof workflow,
+not just internal metadata or library-only helpers.
+
+#### Decoding Families
+
+The public decoding artifacts currently cover:
+
+- fixed-shape `decoding_step_v1`
+- parameterized `decoding_step_v2`
+
+Those power the proof-carrying decoding demos, including layout-bound carried
+state, rolling KV-cache windows, cumulative KV-history commitments, and the
+matrix/rollup-style packaging layers described in the next-paper track.
+
+#### Phase Highlights
+
+- Phase 6: canonical pre-aggregation batch manifests for future recursion work
+- Phase 8: `gemma_block_v2` binds canonical normalization inside the top-level
+  execution proof instead of only through `stwo_auxiliary`
+- Phase 9: `gemma_block_v3` binds normalization plus canonical binary-step
+  activation inside the same top-level execution proof
+- Phase 10: `gemma_block_v4` binds shared-table normalization and activation
+  rows inside the same top-level execution proof
+- Phase 11: fixed-shape proof-carrying decoding over `decoding_step_v1`
+- Phase 12: parameterized `decoding_step_v2` family with richer carried state
+- Phase 13: validated layout matrix for `decoding_step_v2`
+- Phase 14: chunked cumulative KV-history with sealed/open segment boundaries
+- Phase 15: mergeable history segments with explicit global carried-state boundaries
+- Phase 16: rollups over verified Phase 15 segment bundles
+- Phase 17: multi-layout rollup matrices over the same carried-state family
+- Phase 18: explicit KV-history frontier commitments tied to the live rolling cache
+- Phase 19: carried lookup transcripts over the same Phase 14-17 stack
+- Phase 20: explicit lookup frontier commitments over that same stack
+
+#### Explicit Non-Goals
+
+- not a full `stwo` zkML backend for standard-softmax transformers
+- not full public end-to-end proving for every arithmetic-subset program
+- not recursive proving yet
+
+Programs outside the current proven fixture set still fail cleanly on the
+execution-proof `stwo` path, which keeps the claim boundary honest.
 
 The canonical machine-readable statement contract is checked into `spec/statement-v1.json`.
 CI enforces sync between this file and verifier constants via:
