@@ -194,7 +194,10 @@ Delivered:
 - a Phase 16 rollup layer over Phase 15 segment bundles, carrying larger global boundary units so
   later accumulation work can consume mergeable groups of segments instead of one flat bundle,
 - a Phase 17 layout-matrix layer over those Phase 16 rollups, proving that the higher-level
-  carried-state packaging survives multiple public `decoding_step_v2` layouts as well.
+  carried-state packaging survives multiple public `decoding_step_v2` layouts as well,
+- a Phase 18 frontier-boundary refinement over the same chunked-history/segment/rollup stack,
+  tying the carried history suffix explicitly to the live rolling KV-cache commitment seen by
+  each decoding step.
 
 Current limitation:
 
@@ -208,14 +211,15 @@ This is now the highest-leverage next milestone.
 Targets:
 
 - broaden the parameterized decode-step family beyond the current demo layouts,
-- carry richer KV-cache commitments than the current chunked-history plus bounded rolling-window model,
+- move from the current frontier-aware KV-cache/history boundary to a more reusable merge interface,
 - move one transformer-relevant non-arithmetic path deeper into the main proved relation,
 - keep the same `statement-v1` claim boundary until a real semantic change forces `statement-v2`.
 
 The new Phase 13 layout-matrix demo, Phase 14 chunked-history chain, Phase 15 segmented-history
-bundle, Phase 16 rollup layer, and Phase 17 rollup-matrix layer are the first steps on that
-path: they prove that the parameterized relation survives multiple public layouts and
-progressively more mergeable carried-state boundaries without changing the semantic contract.
+bundle, Phase 16 rollup layer, Phase 17 rollup-matrix layer, and Phase 18 frontier-boundary
+refinement are the first steps on that path: they prove that the parameterized relation survives
+multiple public layouts and progressively more mergeable carried-state boundaries without changing
+the semantic contract.
 
 ### Phase 6: Recursive compression and aggregation `[later]`
 
@@ -311,7 +315,7 @@ theater rather than real progress.
 
 1. keep the current frozen S-two bundle reproducible,
 2. widen the decode-step family without changing the semantic claim,
-3. improve KV-cache commitment discipline beyond the current cumulative-history, chunked-history, and segmented-boundary layout,
+3. improve KV-cache commitment discipline beyond the current cumulative-history, chunked-history, segmented-boundary, and frontier-boundary layout,
 4. move a more faithful non-arithmetic attention path into the main proved relation,
 5. only then bind to recursive aggregation work.
 

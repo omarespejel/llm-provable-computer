@@ -1477,7 +1477,7 @@ fn cli_can_prove_and_verify_stwo_decoding_history_segments_demo() {
         .success()
         .stdout(predicate::str::contains("proof_backend: stwo"))
         .stdout(predicate::str::contains(
-            "bundle_version: stwo-phase15-decoding-history-segment-bundle-v1",
+            "bundle_version: stwo-phase15-decoding-history-segment-bundle-v2",
         ))
         .stdout(predicate::str::contains("total_segments: 2"))
         .stdout(predicate::str::contains("max_segment_steps: 2"))
@@ -1490,7 +1490,7 @@ fn cli_can_prove_and_verify_stwo_decoding_history_segments_demo() {
         proof_json
             .get("bundle_version")
             .and_then(serde_json::Value::as_str),
-        Some("stwo-phase15-decoding-history-segment-bundle-v1")
+        Some("stwo-phase15-decoding-history-segment-bundle-v2")
     );
     assert_eq!(
         proof_json
@@ -1507,7 +1507,7 @@ fn cli_can_prove_and_verify_stwo_decoding_history_segments_demo() {
         .success()
         .stdout(predicate::str::contains("verified_stark: true"))
         .stdout(predicate::str::contains(
-            "expected_bundle_version: stwo-phase15-decoding-history-segment-bundle-v1",
+            "expected_bundle_version: stwo-phase15-decoding-history-segment-bundle-v2",
         ))
         .stdout(predicate::str::contains(
             "expected_proof_backend_version: stwo-phase12-decoding-family-v1",
@@ -1572,7 +1572,7 @@ fn cli_can_prove_and_verify_stwo_decoding_history_rollup_demo() {
         .success()
         .stdout(predicate::str::contains("proof_backend: stwo"))
         .stdout(predicate::str::contains(
-            "rollup_version: stwo-phase16-decoding-history-segment-rollup-v1",
+            "rollup_version: stwo-phase16-decoding-history-segment-rollup-v2",
         ))
         .stdout(predicate::str::contains("total_rollups: 2"))
         .stdout(predicate::str::contains("total_segments: 3"))
@@ -1585,7 +1585,7 @@ fn cli_can_prove_and_verify_stwo_decoding_history_rollup_demo() {
         proof_json
             .get("rollup_version")
             .and_then(serde_json::Value::as_str),
-        Some("stwo-phase16-decoding-history-segment-rollup-v1")
+        Some("stwo-phase16-decoding-history-segment-rollup-v2")
     );
     assert_eq!(
         proof_json
@@ -1602,7 +1602,7 @@ fn cli_can_prove_and_verify_stwo_decoding_history_rollup_demo() {
         .success()
         .stdout(predicate::str::contains("verified_stark: true"))
         .stdout(predicate::str::contains(
-            "expected_rollup_version: stwo-phase16-decoding-history-segment-rollup-v1",
+            "expected_rollup_version: stwo-phase16-decoding-history-segment-rollup-v2",
         ))
         .stdout(predicate::str::contains(
             "expected_proof_backend_version: stwo-phase12-decoding-family-v1",
@@ -1677,7 +1677,7 @@ fn cli_can_prove_and_verify_stwo_decoding_history_rollup_matrix_demo() {
         .success()
         .stdout(predicate::str::contains("proof_backend: stwo"))
         .stdout(predicate::str::contains(
-            "matrix_version: stwo-phase17-decoding-history-rollup-matrix-v1",
+            "matrix_version: stwo-phase17-decoding-history-rollup-matrix-v2",
         ))
         .stdout(predicate::str::contains("total_layouts: 3"));
 
@@ -1688,7 +1688,7 @@ fn cli_can_prove_and_verify_stwo_decoding_history_rollup_matrix_demo() {
         proof_json
             .get("matrix_version")
             .and_then(serde_json::Value::as_str),
-        Some("stwo-phase17-decoding-history-rollup-matrix-v1")
+        Some("stwo-phase17-decoding-history-rollup-matrix-v2")
     );
 
     let mut verify = Command::cargo_bin("tvm").expect("binary");
@@ -1699,7 +1699,7 @@ fn cli_can_prove_and_verify_stwo_decoding_history_rollup_matrix_demo() {
         .success()
         .stdout(predicate::str::contains("verified_stark: true"))
         .stdout(predicate::str::contains(
-            "expected_matrix_version: stwo-phase17-decoding-history-rollup-matrix-v1",
+            "expected_matrix_version: stwo-phase17-decoding-history-rollup-matrix-v2",
         ))
         .stdout(predicate::str::contains(
             "expected_proof_backend_version: stwo-phase12-decoding-family-v1",
