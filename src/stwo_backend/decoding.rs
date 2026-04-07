@@ -4528,6 +4528,7 @@ mod tests {
         for segment in &manifest.segments {
             let first_step = segment.chain.steps.first().expect("segment first step");
             let last_step = segment.chain.steps.last().expect("segment last step");
+            let global_first_step = &phase14.steps[segment.global_start_step_index];
             let global_last_step =
                 &phase14.steps[segment.global_start_step_index + segment.total_steps - 1];
 
@@ -4538,6 +4539,14 @@ mod tests {
             assert_eq!(
                 segment.global_from_state.lookup_rows_commitment,
                 first_step.from_state.lookup_rows_commitment
+            );
+            assert_eq!(
+                segment.global_from_state.output_commitment,
+                global_first_step.from_state.output_commitment
+            );
+            assert_eq!(
+                segment.global_from_state.lookup_rows_commitment,
+                global_first_step.from_state.lookup_rows_commitment
             );
             assert_eq!(
                 segment.global_to_state.output_commitment,
@@ -4634,6 +4643,7 @@ mod tests {
         for rollup in &manifest.rollups {
             let first_segment = rollup.segments.first().expect("rollup first segment");
             let last_segment = rollup.segments.last().expect("rollup last segment");
+            let global_first_step = &phase14.steps[rollup.global_start_step_index];
             let global_last_step =
                 &phase14.steps[rollup.global_start_step_index + rollup.total_steps - 1];
 
@@ -4644,6 +4654,14 @@ mod tests {
             assert_eq!(
                 rollup.global_from_state.lookup_rows_commitment,
                 first_segment.global_from_state.lookup_rows_commitment
+            );
+            assert_eq!(
+                rollup.global_from_state.output_commitment,
+                global_first_step.from_state.output_commitment
+            );
+            assert_eq!(
+                rollup.global_from_state.lookup_rows_commitment,
+                global_first_step.from_state.lookup_rows_commitment
             );
             assert_eq!(
                 rollup.global_to_state.output_commitment,
