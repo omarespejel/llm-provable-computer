@@ -16,7 +16,7 @@ cumulative and frontier lookup commitments. The same base `decoding_step_v2`
 proofs are then packaged into chains, segments, rollups, and a multi-layout
 rollup matrix. The contribution is systems-level rather than cryptographic: a
 stable proof-carrying decoding relation whose carried state becomes
-progressively more mergeable without claiming recursive compression,
+progressively more composable without claiming recursive compression,
 shared-table accumulation across decode steps, or full standard-softmax
 transformer proving. The result is a concrete pre-recursive bridge between the
 earlier architecture thesis and a later transformer-specific accumulation
@@ -37,7 +37,7 @@ STARKs beat SNARKs in deployment today. It is not whether recursion is already
 integrated. It is not whether full standard-softmax transformer inference has
 been proved on S-two. The question here is smaller and more concrete:
 
-> Can proof-carrying decoding be expressed as a stable experimental S-two relation with carried state that remains valid across multiple public layouts and progressively more mergeable packaging layers?
+> Can proof-carrying decoding be expressed as a stable experimental S-two relation with carried state that remains valid across multiple public layouts and progressively more composable packaging layers?
 
 The answer implemented in the repository is yes, within a narrow but real
 scope. The right claim is therefore a systems claim about carried-state
@@ -49,7 +49,7 @@ This paper makes three contributions.
    `decoding_step_v2`, that remains inside the existing `statement-v1`
    execution claim rather than inventing a new statement family prematurely.
 2. It shows that the same base proofs can be repackaged into progressively more
-   mergeable carried-state units: chunked chains, segments, rollups, and a
+   composable carried-state units: chunked chains, segments, rollups, and a
    multi-layout rollup matrix.
 3. It carries two distinct state families through that stack:
    arithmetic/KV-side state and lookup-side non-arithmetic state, each with
@@ -60,7 +60,7 @@ This paper makes three contributions.
 This paper makes three narrow claims.
 
 1. A parameterized decode-step family can be proved on the current experimental `stwo` path while preserving the same `statement-v1` semantic contract used elsewhere in the repository.
-2. The carried state for that family can be packaged into progressively more mergeable layers without changing the base decode-step relation.
+2. The carried state for that family can be packaged into progressively more composable layers without changing the base decode-step relation.
 3. Both arithmetic state and non-arithmetic lookup-related state can be carried through those layers in committed form.
 
 This paper does **not** claim any of the following.
@@ -72,6 +72,22 @@ This paper does **not** claim any of the following.
 - It does not claim matched benchmark superiority over any external system.
 
 That boundary is important. The artifact described here is best understood as a pre-recursive carried-state system for transformer-shaped decoding, not as a finished zkML prover.
+
+By "composable" we mean boundary-compatible and suitable for later recursive or
+accumulative consumption. We do **not** mean cryptographically compressed or
+already folded.
+
+### 2.1 Positioning relative to PCD, IVC, and folding
+
+This paper sits below proof-carrying data, incrementally verifiable
+computation, and folding-based systems in ambition. Prior work already covers
+recursive composition and proof-carrying data [7], recursive arguments for
+customizable constraint systems [8], folding for zero-check/CCS relations that
+generalize Plonkish, AIR, and R1CS [9], and generic accumulation/folding for
+special-sound protocols with lookup support [10]. The contribution here is not
+to compete with those systems at the cryptographic layer. It is to build the
+decode-state discipline and boundary objects that a later recursive or
+accumulative transformer paper would need.
 
 ## 3. Base Relation: Parameterized Proof-Carrying Decoding
 
@@ -119,12 +135,79 @@ state includes at least:
 
 This state is intentionally redundant in places. The redundancy is not accidental. It exists to make boundary preservation and tamper detection explicit at every packaging layer.
 
-## 4. Mergeable Carried-State Layers
+### 3.4 Formal system model
+
+Let the public decoding state at step `t` under layout `\ell` be
+
+\[
+\Sigma_t^{(\ell)} =
+(\ell, p_t, C_t^{state}, C_t^{kv}, C_t^{kv,front}, n_t^{kv}, n_t^{kv,front},
+ C_t^{look}, C_t^{look,front}, n_t^{look}, n_t^{look,front},
+ C_t^{in}, C_t^{qry}, C_t^{out}, C_t^{row}),
+\]
+
+where:
+
+- `p_t` is the public decoding position,
+- `C_t^{state}` is the persistent-state commitment,
+- `C_t^{kv}` and `C_t^{kv,front}` are cumulative and frontier KV-side commitments,
+- `C_t^{look}` and `C_t^{look,front}` are cumulative and frontier lookup-side commitments,
+- `n_t^{kv}, n_t^{kv,front}, n_t^{look}, n_t^{look,front}` are the corresponding public lengths or counts,
+- `C_t^{in}, C_t^{qry}, C_t^{out}, C_t^{row}` are the input-token, query, output, and lookup-row commitments.
+
+For each public layout `\ell`, define the base decode relation
+
+\[
+\mathcal{R}_{decode}^{(\ell)}(\Sigma_t^{(\ell)}, w_t) \to \Sigma_{t+1}^{(\ell)},
+\]
+
+where `w_t` is the private witness for one `decoding_step_v2` execution proof.
+The repository realizes `\mathcal{R}_{decode}^{(\ell)}` by a `statement-v1`
+proof plus explicit boundary checks over the carried public state.
+
+We then define three higher-level validity predicates:
+
+- `SegmentVerify`: every base step proof verifies and all adjacent segment-local
+  boundary states match,
+- `RollupVerify`: every contained segment verifies and all segment boundary
+  states match globally,
+- `MatrixVerify`: every contained rollup verifies under its declared public
+  layout and the matrix-level counts/layout commitments match.
+
+**Proposition 1.** If every base proof in a packaged object verifies under
+`statement-v1` and all required adjacent boundary states match, then the
+packaged object preserves the same start-state to end-state relation as the
+underlying decode chain.
+
+This is a systems proposition rather than a new cryptographic theorem. The
+higher layers do not add compression; they preserve the same relation while
+making its boundary objects explicit and reusable.
+
+## 4. Composable Carried-State Layers
 
 The repository now exposes a sequence of layers over the same base
 `decoding_step_v2` proofs.
 
-### 4.1 Phase 14: Chunked cumulative KV history
+```text
+decode_step_v2 proofs
+        │
+        ▼
+    chain layer
+        │
+        ▼
+   segment layer
+        │
+        ▼
+    rollup layer
+        │
+        ▼
+ multi-layout matrix
+
+KV lane:      cumulative history  + frontier
+Lookup lane:  cumulative transcript + frontier
+```
+
+### 4.1 Chunked cumulative KV history (Phase 14)
 
 Phase 14 upgrades the carried state from a flat cumulative history to a chunked cumulative history. The default demo uses a chunk size of `2` KV pairs. The state separates:
 
@@ -135,7 +218,7 @@ Phase 14 upgrades the carried state from a flat cumulative history to a chunked 
 
 That split matters because later layers can consume explicit boundaries instead of one opaque hash.
 
-### 4.2 Phase 15: Segment bundles
+### 4.2 Segment bundles (Phase 15)
 
 Phase 15 groups Phase 14 chains into explicit segments. The default demo uses a maximum of `2` steps per segment. Each segment carries:
 
@@ -144,33 +227,34 @@ Phase 15 groups Phase 14 chains into explicit segments. The default demo uses a 
 - a global to-state,
 - the local Phase 14 chain.
 
-The verifier checks both the local chain and the global boundary states. This turns one monolithic chain into a collection of mergeable carried-state units.
+The verifier checks both the local chain and the global boundary states. This
+turns one monolithic chain into a collection of composable carried-state units.
 
-### 4.3 Phase 16: Rollups over segments
+### 4.3 Rollups over segments (Phase 16)
 
 Phase 16 groups Phase 15 segments into larger rollups. The default demo uses a maximum of `2` segments per rollup. A rollup therefore becomes a larger carried-state unit whose integrity is derived from the same underlying local proofs.
 
 This is not recursion. It is only packaging plus replayed verification. But it is useful packaging, because it defines a higher-level unit that later recursive or accumulative systems could consume.
 
-### 4.4 Phase 17: Multi-layout rollup matrix
+### 4.4 Multi-layout rollup matrix (Phase 17)
 
 Phase 17 lifts the rollup layer across multiple public layouts. Instead of validating only one layout family, the matrix manifest proves that the same packaging discipline survives across the three public layouts listed above.
 
 This matters for the paper’s claim. Without the matrix layer, the implementation would still look too close to a single hand-tuned decode shape. With it, the claim becomes: one relation, several public layouts, same carried-state contract.
 
-### 4.5 Phase 18: KV-history frontier
+### 4.5 KV-history frontier (Phase 18)
 
 Phase 18 adds an explicit frontier commitment for the live suffix of the KV history and ties it directly to the live rolling KV-cache commitment. This is the KV-side analogue of the distinction between cumulative state and recent state.
 
 The point is to make the carried-state boundary more reusable. A later accumulation layer should not need to reconstruct the meaning of the rolling cache from a single undifferentiated history digest.
 
-### 4.6 Phase 19: Lookup transcript
+### 4.6 Lookup transcript (Phase 19)
 
 Phase 19 adds a cumulative lookup transcript commitment. This is the first step in carrying a non-arithmetic signal through the same stack rather than treating lookup state as purely local metadata.
 
 The implementation still does not claim shared-table accumulation across decode steps. It does something smaller and more defensible: it preserves a committed transcript of lookup-row commitments across chains, segments, rollups, and layout matrices.
 
-### 4.7 Phase 20: Lookup frontier
+### 4.7 Lookup frontier (Phase 20)
 
 Phase 20 adds the non-arithmetic analogue of the KV frontier: a recent lookup frontier commitment and entry count. The carried state therefore now distinguishes:
 
@@ -205,14 +289,29 @@ base decode-step proofs.
 | Base chain | `prove-stwo-decoding-family-demo` | Parameterized `decoding_step_v2` relation |
 | Layout matrix | `prove-stwo-decoding-layout-matrix-demo` | Same relation across three public layouts |
 | Chunked history | `prove-stwo-decoding-chunked-history-demo` | Chunked cumulative KV-history |
-| Segments | `prove-stwo-decoding-history-segments-demo` | Mergeable segment boundaries |
+| Segments | `prove-stwo-decoding-history-segments-demo` | Segment boundaries over local chains |
 | Rollups | `prove-stwo-decoding-history-rollup-demo` | Larger carried-state units over segments |
 | Rollup matrix | `prove-stwo-decoding-history-rollup-matrix-demo` | Rollups across multiple public layouts |
 | KV frontier | Phase 18 state extension | Recent KV boundary in addition to cumulative history |
 | Lookup transcript | Phase 19 state extension | Cumulative non-arithmetic transcript |
 | Lookup frontier | Phase 20 state extension | Recent non-arithmetic boundary |
 
-### 5.3 What the artifact demonstrates
+### 5.3 Frozen artifact facts
+
+The current frozen `stwo-experimental-v1` bundle already contains four concrete
+artifacts that matter for this paper's scope [3].
+
+| Artifact | Scope | Size (bytes) | Prove (s) | Verify (s) |
+|---|---|---:|---:|---:|
+| `addition.stwo.proof.json` | arithmetic execution proof | 54,563 | 2 | 1 |
+| `shared-normalization.stwo.proof.json` | shared-table normalization envelope | 74,074 | 1 | 1 |
+| `gemma_block_v4.stwo.proof.json` | transformer-shaped fixed-shape execution proof | 751,737 | 1 | 1 |
+| `decoding.stwo.chain.json` | three-step proof-carrying decoding chain | 4,032,182 | 1 | 1 |
+
+These are artifact facts from one frozen bundle, not a normalized backend
+benchmark study.
+
+### 5.4 What the artifact demonstrates
 
 The artifact demonstrates four things.
 
@@ -221,7 +320,15 @@ The artifact demonstrates four things.
 3. The carried state can be packaged into chunked chains, segments, rollups, and a rollup matrix without losing boundary integrity.
 4. Both KV-side state and lookup-side state can be preserved as cumulative and recent-window commitments.
 
-### 5.4 What the artifact does not yet demonstrate
+Before cross-step accumulation exists, the repository already proves some
+shared-table lookup components directly. The frozen bundle includes a
+shared-table normalization proof envelope, and `gemma_block_v4` already binds
+shared-table normalization and activation rows inside a top-level `stwo`
+execution proof [2,3]. This paper relies on that component-level evidence, but
+it does **not** claim those lookup envelopes are yet accumulated across decode
+steps.
+
+### 5.5 What the artifact does not yet demonstrate
 
 The artifact still does not demonstrate:
 
@@ -243,7 +350,7 @@ The current repository state now supplies several of those prerequisites.
 
 The base relation is no longer one fixed proof demo. It is a parameterized `decoding_step_v2` family with several public layouts.
 
-### 6.2 Mergeable units
+### 6.2 Composable units
 
 The carried state is no longer one flat chain. It is packaged into:
 
@@ -309,7 +416,7 @@ This paper does not claim a new proof system. It does not claim recursion. It
 does not claim full transformer inference on S-two. What it does claim is
 narrower and, for that reason, stronger: the repository now contains a
 parameterized proof-carrying decoding relation whose carried state remains
-valid across multiple layouts and progressively more mergeable packaging
+valid across multiple layouts and progressively more composable packaging
 layers, while preserving both arithmetic and non-arithmetic boundary
 commitments.
 
@@ -317,12 +424,19 @@ That is enough to justify a real systems paper. It is also enough to make the la
 
 ## Acknowledgments
 
-This draft builds on the maintained `omarespejel/llm-provable-computer` research fork and the earlier architecture paper that motivated the current implementation path.
+This draft builds on the maintained `omarespejel/provable-transformer-vm`
+research fork and the earlier architecture paper that motivated the current
+implementation path.
 
 ## References
 
-- [1] Omar Espejel. *On the Alignment of Transformer Workloads and STARK Proof Systems*. Starknet Foundation, April 2026. `/Users/espejelomar/StarkNet/zk-ai/llm-provable-computer-codex/docs/paper/stark-transformer-alignment-2026.md`
-- [2] `omarespejel/llm-provable-computer`. Maintained research repository and artifact base for the implementation described here. `/Users/espejelomar/StarkNet/zk-ai/llm-provable-computer-codex`
-- [3] Eli Ben-Sasson et al. *Scalable, Transparent, and Post-Quantum Secure Computational Integrity*. IACR ePrint 2018/046.
-- [4] Ulrich Haböck, David Levit, and Valeria Papini. *Circle STARKs*. IACR ePrint 2024/278.
-- [5] StarkWare Industries. *STWO Prover*. [https://github.com/starkware-libs/stwo](https://github.com/starkware-libs/stwo)
+- [1] Omar Espejel. *On the Alignment of Transformer Workloads and STARK Proof Systems*. Starknet Foundation, April 2026. Release tag `paper-publication-v2-2026-04-07`. <https://github.com/omarespejel/provable-transformer-vm/blob/paper-publication-v2-2026-04-07/docs/paper/stark-transformer-alignment-2026.md>
+- [2] `omarespejel/provable-transformer-vm`. Maintained research repository and implementation base for the system described here. Commit `68e08fb1d3fdb186cfcfab4f22c52ccf4264f542`. <https://github.com/omarespejel/provable-transformer-vm/tree/68e08fb1d3fdb186cfcfab4f22c52ccf4264f542>
+- [3] `omarespejel/provable-transformer-vm`. *Appendix Artifact Index (S-two Experimental V1).* Commit `3cb6d55e9fdc39ab729f7cff910976163e2814f0`. <https://github.com/omarespejel/provable-transformer-vm/blob/3cb6d55e9fdc39ab729f7cff910976163e2814f0/docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md>
+- [4] Eli Ben-Sasson, Iddo Bentov, Yinon Horesh, and Michael Riabzev. *Scalable, Transparent, and Post-Quantum Secure Computational Integrity*. IACR ePrint 2018/046. <https://eprint.iacr.org/2018/046>
+- [5] Ulrich Haböck, David Levit, and Valeria Papini. *Circle STARKs*. IACR ePrint 2024/278. <https://eprint.iacr.org/2024/278>
+- [6] StarkWare Industries. *STWO Prover*. <https://github.com/starkware-libs/stwo>
+- [7] Nir Bitansky, Ran Canetti, Alessandro Chiesa, and Eran Tromer. *Recursive Composition and Bootstrapping for SNARKs and Proof-Carrying Data*. IACR ePrint 2012/095. <https://eprint.iacr.org/2012/095>
+- [8] Abhiram Kothapalli and Srinath Setty. *HyperNova: Recursive Arguments for Customizable Constraint Systems*. IACR ePrint 2023/573. <https://eprint.iacr.org/2023/573>
+- [9] Abhiram Kothapalli and Srinath Setty. *NeutronNova: Folding Everything that Reduces to Zero-Check*. IACR ePrint 2024/1606. <https://eprint.iacr.org/2024/1606>
+- [10] Abhiram Kothapalli and Srinath Setty. *ProtoStar: Generic Efficient Accumulation/Folding for Special Sound Protocols*. IACR ePrint 2023/620. <https://eprint.iacr.org/2023/620>
