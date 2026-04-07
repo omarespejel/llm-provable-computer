@@ -517,8 +517,11 @@ matrix/rollup-style packaging layers described in the next-paper track.
   transition itself, with the latest carried KV-cache pair now updated from
   lookup-backed values rather than only forwarded incoming values, with three
   carried lanes now driven by the bounded combined-output cell and one by the
-  lookup-backed primary output on the wider public layouts, plus exact semantic
-  tests and real-backend proving coverage over all default demo steps
+  lookup-backed primary output on the wider public layouts, and with the primary
+  output itself now absorbing that bounded combined-output cell so both shared
+  activation rows influence the carried primary lane and output commitment, plus
+  exact semantic tests and real-backend proving coverage over all default demo
+  steps
 - Phase 13: validated layout matrix for `decoding_step_v2`, now with real-backend proving coverage across the default layout matrix
 - Phase 14: chunked cumulative KV-history with sealed/open segment boundaries
 - Phase 15: mergeable history segments with explicit global carried-state boundaries
@@ -833,7 +836,8 @@ both shared normalization scale rows and both shared activation output rows in
 executed decoding semantics, not only as carried proof metadata, and feeds
 lookup-backed values into the latest carried KV-cache pair on the public demo
 layouts, with the current wider layout frontier now mostly output-derived
-rather than forwarded-input-derived.
+rather than forwarded-input-derived, while the primary output now also absorbs
+the bounded combined-output cell before being carried forward.
 
 #### Phase Highlights
 

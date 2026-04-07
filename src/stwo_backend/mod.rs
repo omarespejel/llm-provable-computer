@@ -138,7 +138,7 @@ pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase10-gemma-block-v4";
 /// Backend version label used by the fixed-shape proof-carrying decoding demo family.
 pub const STWO_BACKEND_VERSION_PHASE11: &str = "stwo-phase11-decoding-step-v1";
 /// Backend version label used by the parameterized proof-carrying decoding family.
-pub const STWO_BACKEND_VERSION_PHASE12: &str = "stwo-phase12-decoding-family-v5";
+pub const STWO_BACKEND_VERSION_PHASE12: &str = "stwo-phase12-decoding-family-v6";
 /// Cargo feature that enables the experimental S-two backend seam.
 pub const STWO_BACKEND_FEATURE_NAME: &str = "stwo-backend";
 
