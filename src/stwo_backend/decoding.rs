@@ -4061,6 +4061,42 @@ mod tests {
     }
 
     #[test]
+    fn phase13_real_stwo_prove_accepts_layout_matrix_demo_memories() {
+        let config = TransformerVmConfig {
+            num_layers: 1,
+            attention_mode: Attention2DMode::AverageHard,
+            ..TransformerVmConfig::default()
+        };
+        for layout in phase13_default_decoding_layout_matrix().expect("layout matrix") {
+            for (step_index, initial_memory) in phase12_demo_initial_memories(&layout)
+                .expect("memories")
+                .into_iter()
+                .enumerate()
+            {
+                let debug_layout = layout.clone();
+                let debug_memory = initial_memory.clone();
+                let program = decoding_step_v2_program_with_initial_memory(&layout, initial_memory)
+                    .expect("program");
+                let model = ProgramCompiler
+                    .compile_program(program, config.clone())
+                    .expect("compile");
+                prove_execution_stark_with_backend_and_options(
+                    &model,
+                    128,
+                    StarkProofBackend::Stwo,
+                    production_v1_stark_options(),
+                )
+                .unwrap_or_else(|error| {
+                    panic!(
+                        "layout {:?} step {step_index} failed real stwo proof: {error}; initial_memory={debug_memory:?}",
+                        debug_layout
+                    )
+                });
+            }
+        }
+    }
+
+    #[test]
     fn phase12_decoding_layout_accepts_full_u8_address_space() {
         let layout = Phase12DecodingLayout::new(241, 1).expect("layout");
         assert_eq!(layout.memory_size().expect("memory size"), 256);

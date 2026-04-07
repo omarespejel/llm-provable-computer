@@ -227,7 +227,8 @@ Targets:
   into the main proved relation,
 - keep the same `statement-v1` claim boundary until a real semantic change forces `statement-v2`.
 
-The new Phase 13 layout-matrix demo, Phase 14 chunked-history chain, Phase 15 segmented-history
+The new Phase 13 layout-matrix demo, now covered by real-backend proving regressions across the
+default layout matrix, plus the Phase 14 chunked-history chain, Phase 15 segmented-history
 bundle, Phase 16 rollup layer, Phase 17 rollup-matrix layer, and Phase 18 frontier-boundary
 refinement, Phase 19 lookup-transcript layer, and Phase 20 lookup-frontier layer are the first
 steps on that path: they prove that the parameterized relation survives multiple public layouts

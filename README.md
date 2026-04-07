@@ -515,7 +515,7 @@ matrix/rollup-style packaging layers described in the next-paper track.
   proof-bound shared-lookup rows, and an executed read of the shared activation
   row plus the shared normalization scale row inside the decoding transition itself,
   with exact semantic tests and real-backend proving coverage over all default demo steps
-- Phase 13: validated layout matrix for `decoding_step_v2`
+- Phase 13: validated layout matrix for `decoding_step_v2`, now with real-backend proving coverage across the default layout matrix
 - Phase 14: chunked cumulative KV-history with sealed/open segment boundaries
 - Phase 15: mergeable history segments with explicit global carried-state boundaries
 - Phase 16: rollups over verified Phase 15 segment bundles
