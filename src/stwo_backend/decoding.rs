@@ -765,6 +765,7 @@ pub fn phase12_prepare_decoding_chain(
     proofs: &[VanillaStarkExecutionProof],
 ) -> Result<Phase12DecodingChainManifest> {
     layout.validate()?;
+    let latest_cached_range = layout.latest_cached_pair_range()?;
     let first = proofs.first().ok_or_else(|| {
         VmError::InvalidConfig("proof-carrying decoding requires at least one proof".to_string())
     })?;
@@ -854,7 +855,7 @@ pub fn phase12_prepare_decoding_chain(
         let to_history_commitment = advance_phase12_history_commitment(
             &expected_layout_commitment,
             &from_history_commitment,
-            &proof.claim.program.initial_memory()[layout.incoming_token_range()?],
+            &proof.claim.final_state.memory[latest_cached_range.clone()],
             to_history_length,
         );
         let to_state = build_phase12_state(
@@ -890,6 +891,7 @@ pub fn phase12_prepare_decoding_chain(
 pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) -> Result<()> {
     manifest.layout.validate()?;
     let expected_layout_commitment = commit_phase12_layout(&manifest.layout);
+    let latest_cached_range = manifest.layout.latest_cached_pair_range()?;
     if manifest.proof_backend != StarkProofBackend::Stwo {
         return Err(VmError::InvalidConfig(format!(
             "decoding chain backend `{}` is not `stwo`",
@@ -998,8 +1000,7 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
         let next_history_commitment = advance_phase12_history_commitment(
             &expected_layout_commitment,
             &expected_history_commitment,
-            &step.proof.claim.program.initial_memory()
-                [manifest.layout.incoming_token_range()?],
+            &step.proof.claim.final_state.memory[latest_cached_range.clone()],
             next_history_length,
         );
         let expected_to = build_phase12_state(
@@ -4253,6 +4254,33 @@ mod tests {
             manifest.steps[0].from_state.incoming_token_commitment,
             manifest.steps[1].from_state.incoming_token_commitment
         );
+    }
+
+    #[test]
+    fn phase12_history_commitment_tracks_executed_latest_cached_pair() {
+        let layout = phase12_default_decoding_layout();
+        let latest_cached_range = layout.latest_cached_pair_range().expect("latest cached range");
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+
+        let manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        let layout_commitment = commit_phase12_layout(&layout);
+        let seeded_history_commitment = commit_phase12_history_seed(
+            &layout_commitment,
+            &manifest.steps[0].proof.claim.program.initial_memory()[layout.kv_cache_range().expect("kv cache range")],
+            layout.pair_width,
+        );
+        let expected_commitment = advance_phase12_history_commitment(
+            &layout_commitment,
+            &seeded_history_commitment,
+            &manifest.steps[0].proof.claim.final_state.memory[latest_cached_range],
+            layout.rolling_kv_pairs + 1,
+        );
+
+        assert_eq!(manifest.steps[0].to_state.kv_history_commitment, expected_commitment);
     }
 
     #[test]
