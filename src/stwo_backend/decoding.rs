@@ -29,20 +29,20 @@ pub const STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13: &str =
 pub const STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_layout_matrix";
 pub const STWO_DECODING_CHAIN_VERSION_PHASE14: &str =
-    "stwo-phase14-decoding-chunked-history-chain-v2";
+    "stwo-phase14-decoding-chunked-history-chain-v3";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE14: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_chunked_history_chain";
-pub const STWO_DECODING_STATE_VERSION_PHASE14: &str = "stwo-decoding-state-v4";
+pub const STWO_DECODING_STATE_VERSION_PHASE14: &str = "stwo-decoding-state-v5";
 pub const STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15: &str =
-    "stwo-phase15-decoding-history-segment-bundle-v2";
+    "stwo-phase15-decoding-history-segment-bundle-v3";
 pub const STWO_DECODING_SEGMENT_BUNDLE_SCOPE_PHASE15: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_segment_bundle";
 pub const STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16: &str =
-    "stwo-phase16-decoding-history-segment-rollup-v2";
+    "stwo-phase16-decoding-history-segment-rollup-v3";
 pub const STWO_DECODING_SEGMENT_ROLLUP_SCOPE_PHASE16: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_segment_rollup";
 pub const STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17: &str =
-    "stwo-phase17-decoding-history-rollup-matrix-v2";
+    "stwo-phase17-decoding-history-rollup-matrix-v3";
 pub const STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_rollup_matrix";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
@@ -270,6 +270,8 @@ pub struct Phase14DecodingState {
     pub kv_history_open_chunk_pairs: usize,
     pub kv_history_frontier_commitment: String,
     pub kv_history_frontier_pairs: usize,
+    pub lookup_transcript_commitment: String,
+    pub lookup_transcript_entries: usize,
     pub kv_cache_commitment: String,
     pub incoming_token_commitment: String,
     pub query_commitment: String,
@@ -387,6 +389,8 @@ struct Phase14HistoryAccumulator {
     frontier_commitment: String,
     frontier_pairs: usize,
     frontier_values: Vec<i16>,
+    lookup_transcript_commitment: String,
+    lookup_transcript_entries: usize,
 }
 
 pub fn decoding_step_v1_template_program() -> Result<Program> {
@@ -1103,6 +1107,7 @@ pub fn phase14_prepare_decoding_chain(
             seed_phase14_history(
                 &expected_layout_commitment,
                 &step.proof.claim.program.initial_memory()[kv_cache_range.clone()],
+                &from_view.lookup_rows_commitment,
                 layout.pair_width,
             )
         });
@@ -1118,6 +1123,7 @@ pub fn phase14_prepare_decoding_chain(
             &expected_layout_commitment,
             &current,
             &step.proof.claim.program.initial_memory()[incoming_token_range.clone()],
+            &to_view.lookup_rows_commitment,
             layout.pair_width,
         )?;
         let to_state = build_phase14_state(step_index + 1, to_view, &next);
@@ -1232,6 +1238,7 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
             seed_phase14_history(
                 &expected_layout_commitment,
                 &step.proof.claim.program.initial_memory()[kv_cache_range.clone()],
+                &from_view.lookup_rows_commitment,
                 manifest.layout.pair_width,
             )
         });
@@ -1252,6 +1259,7 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
             &expected_layout_commitment,
             &current,
             &step.proof.claim.program.initial_memory()[incoming_token_range.clone()],
+            &to_view.lookup_rows_commitment,
             manifest.layout.pair_width,
         )?;
         let expected_to = build_phase14_state(step_index + 1, to_view, &next);
@@ -2295,6 +2303,8 @@ fn build_phase14_state(
         kv_history_open_chunk_pairs: history.open_chunk_pairs,
         kv_history_frontier_commitment: history.frontier_commitment.clone(),
         kv_history_frontier_pairs: history.frontier_pairs,
+        lookup_transcript_commitment: history.lookup_transcript_commitment.clone(),
+        lookup_transcript_entries: history.lookup_transcript_entries,
         kv_cache_commitment: view.kv_cache_commitment,
         incoming_token_commitment: view.incoming_token_commitment,
         query_commitment: view.query_commitment,
@@ -2534,6 +2544,18 @@ fn validate_phase14_chain_steps(
                 "chunked decoding step {index} does not tie the to_state history frontier commitment to the KV-cache commitment"
             )));
         }
+        if step.from_state.lookup_transcript_entries == 0 {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} must start from a non-empty lookup transcript"
+            )));
+        }
+        if step.to_state.lookup_transcript_entries != step.from_state.lookup_transcript_entries + 1 {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} does not advance the lookup transcript entry count: from {} to {}",
+                step.from_state.lookup_transcript_entries,
+                step.to_state.lookup_transcript_entries
+            )));
+        }
         let expected_next_position = step.from_state.position.checked_add(1).ok_or_else(|| {
             VmError::InvalidConfig(format!(
                 "chunked decoding step {index} position {} cannot be incremented",
@@ -2644,6 +2666,24 @@ fn validate_phase14_chain_steps(
                 index
             )));
         }
+        if steps[index - 1].to_state.lookup_transcript_commitment
+            != steps[index].from_state.lookup_transcript_commitment
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the lookup transcript commitment",
+                index - 1,
+                index
+            )));
+        }
+        if steps[index - 1].to_state.lookup_transcript_entries
+            != steps[index].from_state.lookup_transcript_entries
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the lookup transcript entry count",
+                index - 1,
+                index
+            )));
+        }
     }
     Ok(())
 }
@@ -2732,6 +2772,35 @@ fn validate_phase15_segment_boundary(
             segment_index
         )));
     }
+    if previous_state.kv_history_frontier_commitment != current_state.kv_history_frontier_commitment
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the KV-history frontier commitment",
+            segment_index - 1,
+            segment_index
+        )));
+    }
+    if previous_state.kv_history_frontier_pairs != current_state.kv_history_frontier_pairs {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the KV-history frontier pair count",
+            segment_index - 1,
+            segment_index
+        )));
+    }
+    if previous_state.lookup_transcript_commitment != current_state.lookup_transcript_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the lookup transcript commitment",
+            segment_index - 1,
+            segment_index
+        )));
+    }
+    if previous_state.lookup_transcript_entries != current_state.lookup_transcript_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding history segment boundary {} -> {} does not preserve the lookup transcript entry count",
+            segment_index - 1,
+            segment_index
+        )));
+    }
     Ok(())
 }
 
@@ -2810,15 +2879,16 @@ fn verify_phase15_segment_sequence(
                 segment.segment_index
             ))
         })?;
+        let first_from_view =
+            derive_phase12_state_view(first_local_step.proof.claim.program.initial_memory(), layout)?;
         let mut current = accumulator.clone().unwrap_or_else(|| {
             seed_phase14_history(
                 &expected_layout_commitment,
                 &first_local_step.proof.claim.program.initial_memory()[kv_cache_range.clone()],
+                &first_from_view.lookup_rows_commitment,
                 layout.pair_width,
             )
         });
-        let first_from_view =
-            derive_phase12_state_view(first_local_step.proof.claim.program.initial_memory(), layout)?;
         let expected_global_from =
             build_phase14_state(expected_global_start_step_index, first_from_view, &current);
         if segment.global_from_state != expected_global_from {
@@ -2835,6 +2905,7 @@ fn verify_phase15_segment_sequence(
                 &expected_layout_commitment,
                 &current,
                 &step.proof.claim.program.initial_memory()[incoming_token_range.clone()],
+                &to_view.lookup_rows_commitment,
                 layout.pair_width,
             )?;
             let global_step_index = expected_global_start_step_index
@@ -3032,9 +3103,47 @@ fn commit_phase14_history_total(
     lower_hex(&out)
 }
 
+fn commit_phase19_lookup_transcript_seed(
+    layout_commitment: &str,
+    lookup_rows_commitment: &str,
+) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STATE_VERSION_PHASE14.as_bytes());
+    hasher.update(layout_commitment.as_bytes());
+    hasher.update(b"lookup-transcript-seed");
+    hasher.update(&(1u64).to_le_bytes());
+    hasher.update(lookup_rows_commitment.as_bytes());
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+fn fold_phase19_lookup_transcript(
+    layout_commitment: &str,
+    previous_commitment: &str,
+    previous_entries: usize,
+    lookup_rows_commitment: &str,
+) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STATE_VERSION_PHASE14.as_bytes());
+    hasher.update(layout_commitment.as_bytes());
+    hasher.update(b"lookup-transcript-fold");
+    hasher.update(previous_commitment.as_bytes());
+    hasher.update(&(previous_entries as u64).to_le_bytes());
+    hasher.update(lookup_rows_commitment.as_bytes());
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
 fn seed_phase14_history(
     layout_commitment: &str,
     kv_cache_values: &[i16],
+    lookup_rows_commitment: &str,
     pair_width: usize,
 ) -> Phase14HistoryAccumulator {
     let mut sealed_commitment = commit_phase14_history_empty_chunk(layout_commitment, pair_width);
@@ -3091,6 +3200,11 @@ fn seed_phase14_history(
         ),
         frontier_pairs: history_length,
         frontier_values,
+        lookup_transcript_commitment: commit_phase19_lookup_transcript_seed(
+            layout_commitment,
+            lookup_rows_commitment,
+        ),
+        lookup_transcript_entries: 1,
     }
 }
 
@@ -3122,6 +3236,7 @@ fn advance_phase14_history(
     layout_commitment: &str,
     previous: &Phase14HistoryAccumulator,
     appended_pair: &[i16],
+    lookup_rows_commitment: &str,
     pair_width: usize,
 ) -> Result<Phase14HistoryAccumulator> {
     if appended_pair.len() != pair_width {
@@ -3192,6 +3307,14 @@ fn advance_phase14_history(
         let keep_from = frontier_values.len() - frontier_value_capacity;
         frontier_values = frontier_values[keep_from..].to_vec();
     }
+    let lookup_transcript_entries = previous
+        .lookup_transcript_entries
+        .checked_add(1)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "chunked decoding lookup transcript length overflowed".to_string(),
+            )
+        })?;
     Ok(Phase14HistoryAccumulator {
         history_commitment,
         history_length: next_history_length,
@@ -3207,6 +3330,13 @@ fn advance_phase14_history(
         ),
         frontier_pairs: previous.frontier_pairs,
         frontier_values,
+        lookup_transcript_commitment: fold_phase19_lookup_transcript(
+            layout_commitment,
+            &previous.lookup_transcript_commitment,
+            previous.lookup_transcript_entries,
+            lookup_rows_commitment,
+        ),
+        lookup_transcript_entries,
     })
 }
 
@@ -3848,6 +3978,7 @@ mod tests {
             manifest.steps[0].from_state.kv_history_frontier_commitment,
             manifest.steps[0].from_state.kv_cache_commitment
         );
+        assert_eq!(manifest.steps[0].from_state.lookup_transcript_entries, 1);
         assert_eq!(manifest.steps[2].to_state.kv_history_length, 7);
         assert_eq!(manifest.steps[2].to_state.kv_history_sealed_chunks, 3);
         assert_eq!(manifest.steps[2].to_state.kv_history_open_chunk_pairs, 1);
@@ -3859,6 +3990,7 @@ mod tests {
             manifest.steps[2].to_state.kv_history_frontier_commitment,
             manifest.steps[2].to_state.kv_cache_commitment
         );
+        assert_eq!(manifest.steps[2].to_state.lookup_transcript_entries, 4);
         verify_phase14_decoding_chain(&manifest).expect("phase14 verification");
     }
 
@@ -3907,6 +4039,23 @@ mod tests {
         let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
         let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
         manifest.steps[1].from_state.kv_history_frontier_commitment = "broken".to_string();
+        let err = verify_phase14_decoding_chain(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("recorded from_state does not match the proof's initial state"));
+    }
+
+    #[test]
+    fn phase14_verify_decoding_chain_rejects_broken_lookup_transcript_link() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        manifest.steps[1].from_state.lookup_transcript_commitment = "broken".to_string();
         let err = verify_phase14_decoding_chain(&manifest).unwrap_err();
         assert!(err
             .to_string()
