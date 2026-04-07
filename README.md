@@ -361,6 +361,12 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-decoding-history-segments-demo decoding-history-segments.stwo.json
 
+# Produce and verify the rollup-over-segments decoding demo
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prove-stwo-decoding-history-rollup-demo -o decoding-history-rollup.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-decoding-history-rollup-demo decoding-history-rollup.stwo.json
+
 # Freeze a canonical pre-aggregation batch manifest for future recursion work
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-recursion-batch \
@@ -645,6 +651,7 @@ The current transformer-shaped timeline is:
 - Phase 13: validated layout-matrix demo proving and verifying several `decoding_step_v2` layouts under one matrix manifest.
 - Phase 14: chunked cumulative KV-history commitment with sealed/open segment boundaries over the same `decoding_step_v2` proofs.
 - Phase 15: mergeable history segments with explicit global carried-state boundaries over those Phase 14 chains.
+- Phase 16: a rollup-over-segments manifest that groups verified Phase 15 bundles into larger carried-state units without pretending recursive compression already exists.
 
 This is still not a full S-two zkML backend for standard-softmax transformers, but it is no longer only a dependency seam.
 
