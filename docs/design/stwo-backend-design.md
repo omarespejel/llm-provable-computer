@@ -204,8 +204,9 @@ Delivered:
   window alongside the cumulative lookup transcript so later accumulation work has a cleaner
   lookup boundary to consume, and binding that lookup state back to the embedded shared
   normalization / activation claims already carried inside each `decoding_step_v2` proof payload,
-  with the current transition now reading the shared activation output row inside the executed
-  `decoding_step_v2` program instead of treating those lookup rows as write-only metadata.
+  with the current transition now reading both the shared activation output row and the shared
+  normalization scale row inside the executed `decoding_step_v2` program instead of treating those
+  lookup rows as write-only metadata.
 
 Current limitation:
 
