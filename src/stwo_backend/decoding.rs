@@ -449,15 +449,13 @@ pub fn decoding_step_v2_template_program(layout: &Phase12DecodingLayout) -> Resu
         instructions.push(Instruction::Store((output.start + 1) as u8));
     }
 
-    instructions.push(Instruction::LoadImmediate(layout.pair_width as i16));
-    instructions.push(Instruction::Store((output.start + 2) as u8));
-    instructions.push(Instruction::LoadImmediate(1));
-    instructions.push(Instruction::Store((output.start + 2) as u8));
-
     for (offset, value) in PHASE12_LOOKUP_ROW_VALUES.iter().enumerate() {
         instructions.push(Instruction::LoadImmediate(*value));
         instructions.push(Instruction::Store((lookup.start + offset) as u8));
     }
+
+    instructions.push(Instruction::Load((lookup.start + 3) as u8));
+    instructions.push(Instruction::Store((output.start + 2) as u8));
 
     let kv_cache = layout.kv_cache_range()?;
     for index in 0..(kv_cache.len().saturating_sub(layout.pair_width)) {
@@ -3953,6 +3951,29 @@ mod tests {
         assert!(matches_decoding_step_v2_family_with_layout(
             &program, &layout
         ));
+    }
+
+    #[test]
+    fn phase12_template_consumes_shared_activation_row() {
+        let layout = phase12_default_decoding_layout();
+        let program = decoding_step_v2_template_program(&layout).expect("program");
+        let lookup = layout.lookup_range().expect("lookup range");
+        let output = layout.output_range().expect("output range");
+        let instructions = program.instructions();
+        let store_last_lookup = Instruction::Store((lookup.start + PHASE12_SHARED_LOOKUP_ROWS - 1) as u8);
+        let store_output_flag = Instruction::Store((output.start + 2) as u8);
+        let lookup_store_index = instructions
+            .iter()
+            .rposition(|instruction| *instruction == store_last_lookup)
+            .expect("last lookup store");
+        assert_eq!(
+            instructions.get(lookup_store_index + 1),
+            Some(&Instruction::Load((lookup.start + 3) as u8))
+        );
+        assert_eq!(
+            instructions.get(lookup_store_index + 2),
+            Some(&store_output_flag)
+        );
     }
 
     #[test]
