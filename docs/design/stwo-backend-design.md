@@ -203,7 +203,9 @@ Delivered:
 - a Phase 20 lookup-frontier layer over that same stack, preserving a recent non-arithmetic
   window alongside the cumulative lookup transcript so later accumulation work has a cleaner
   lookup boundary to consume, and binding that lookup state back to the embedded shared
-  normalization / activation claims already carried inside each `decoding_step_v2` proof payload.
+  normalization / activation claims already carried inside each `decoding_step_v2` proof payload,
+  with the current transition now reading the shared activation output row inside the executed
+  `decoding_step_v2` program instead of treating those lookup rows as write-only metadata.
 
 Current limitation:
 
