@@ -3993,6 +3993,32 @@ mod tests {
     }
 
     #[test]
+    fn phase12_runtime_uses_shared_lookup_rows_across_layouts() {
+        for layout in phase13_default_decoding_layout_matrix().expect("layout matrix") {
+            let latest_cached = layout.latest_cached_pair_range().expect("latest cached");
+            let query = layout.query_range().expect("query range");
+            let lookup = layout.lookup_range().expect("lookup range");
+            let output = layout.output_range().expect("output range");
+            for memory in phase12_demo_initial_memories(&layout).expect("memories") {
+                let expected_raw_dot: i16 = (0..layout.pair_width)
+                    .map(|offset| memory[query.start + offset] * memory[latest_cached.start + offset])
+                    .sum();
+                let program =
+                    decoding_step_v2_program_with_initial_memory(&layout, memory).expect("program");
+                let mut runtime =
+                    NativeInterpreter::new(program, Attention2DMode::AverageHard, 256);
+                let result = runtime.run().expect("run program");
+                assert!(result.halted);
+                let final_memory = result.final_state.memory;
+                let expected_scale = final_memory[lookup.start + 1];
+                let expected_activation = final_memory[lookup.start + 3];
+                assert_eq!(final_memory[output.start], expected_raw_dot * expected_scale);
+                assert_eq!(final_memory[output.start + 2], expected_activation);
+            }
+        }
+    }
+
+    #[test]
     fn phase12_decoding_layout_accepts_full_u8_address_space() {
         let layout = Phase12DecodingLayout::new(241, 1).expect("layout");
         assert_eq!(layout.memory_size().expect("memory size"), 256);
