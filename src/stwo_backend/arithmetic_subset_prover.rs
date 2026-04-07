@@ -2538,7 +2538,7 @@ mod tests {
         phase12_demo_initial_memories,
     };
     use crate::{ProgramCompiler, TransformerVmConfig};
-    use std::panic::{catch_unwind, AssertUnwindSafe};
+    use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
     use stwo::core::pcs::utils::TreeVec;
     use stwo::prover::backend::Column;
     use stwo_constraint_framework::{assert_constraints_on_polys, assert_constraints_on_trace};
@@ -2770,10 +2770,11 @@ mod tests {
                 assert_trace_satisfies_constraints_for_program(program.clone())
             }))
             .unwrap_or_else(|payload| {
-                panic!(
+                eprintln!(
                     "step {step_index} failed trace constraints: {}; initial_memory={debug_memory:?}",
-                    panic_payload_to_string(payload)
-                )
+                    panic_payload_to_string(payload.as_ref())
+                );
+                resume_unwind(payload);
             });
             assert!(
                 matches_decoding_step_v2_family(&program),
@@ -2796,7 +2797,7 @@ mod tests {
         assert_trace_polys_satisfy_constraints_for_program(compile_program(path));
     }
 
-    fn panic_payload_to_string(payload: Box<dyn std::any::Any + Send>) -> String {
+    fn panic_payload_to_string(payload: &(dyn std::any::Any + Send)) -> String {
         if let Some(message) = payload.downcast_ref::<&str>() {
             (*message).to_string()
         } else if let Some(message) = payload.downcast_ref::<String>() {
@@ -2871,10 +2872,11 @@ mod tests {
                 assert_trace_polys_satisfy_constraints_for_program(program.clone())
             }))
             .unwrap_or_else(|payload| {
-                panic!(
+                eprintln!(
                     "step {step_index} failed trace polynomial constraints: {}; initial_memory={debug_memory:?}",
-                    panic_payload_to_string(payload)
-                )
+                    panic_payload_to_string(payload.as_ref())
+                );
+                resume_unwind(payload);
             });
             assert!(
                 matches_decoding_step_v2_family(&program),
