@@ -4388,6 +4388,7 @@ mod tests {
         let layout = phase12_default_decoding_layout();
         let (phase12, phase14) = sample_phase14_chain_manifest(&layout);
         assert_eq!(phase12.total_steps, phase14.total_steps);
+        assert_eq!(phase12.steps.len(), phase14.steps.len());
 
         for (phase12_step, phase14_step) in phase12.steps.iter().zip(phase14.steps.iter()) {
             assert_eq!(
