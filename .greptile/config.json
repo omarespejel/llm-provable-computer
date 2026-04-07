@@ -1,0 +1,16 @@
+{
+  "strictness": 1,
+  "commentTypes": ["syntax", "logic", "style", "info"],
+  "maxLines": 250,
+  "maxLineLength": 180,
+  "maxLinesToAnalyze": 20000,
+  "fileChangeLimit": 200,
+  "includeBranches": ["main", "codex/.*"],
+  "ignorePatterns": "scripts/node_modules/**\ndocs/paper/artifacts/**\ndocs/paper/evidence/**\ndocs/paper/figures/**\ncompiled/**",
+  "triggerOnUpdates": true,
+  "statusCheck": true,
+  "statusCommentsEnabled": true,
+  "updateExistingSummaryComment": false,
+  "showRepoMap": true,
+  "fixWithAI": true
+}

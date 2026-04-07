@@ -8,8 +8,6 @@ scripts/node_modules/
 .agents/
 .claude/
 .codex/
-.greptile/
-.coderabbit.yaml
 CLAUDE.md
 AI_REVIEW_BOTS_BEST_PRACTICES_*.md
 **/.claude/tsc-cache/
