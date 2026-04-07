@@ -1,4 +1,4 @@
-# Proof-Carrying Decoding and Mergeable Carried-State Layers over an Experimental S-two Backend
+# Proof-Carrying Decoding over an Experimental S-two Backend
 
 Omar Espejel  
 Starknet Foundation  
@@ -6,33 +6,58 @@ Working draft, April 2026
 
 ## Abstract
 
-This paper studies a narrower question than full zkML inference: how far a transformer-shaped proof stack can be pushed toward proof-carrying decoding before recursion or accumulation are introduced. We present an experimental S-two-backed extension of `llm-provable-computer` that preserves the existing `statement-v1` execution claim while adding a parameterized decoding relation, carried KV-cache state, cumulative and frontier KV-history commitments, and cumulative and frontier lookup commitments. The same base `decoding_step_v2` proofs are packaged into a chain, a segment bundle, a rollup-over-segments layer, and a multi-layout rollup matrix. The main contribution is therefore systems-level rather than cryptographic: a stable small-field proof-carrying decoding relation whose carried state becomes progressively more mergeable without yet claiming recursive compression, shared-table accumulation across steps, or full standard-softmax transformer proving. The resulting artifact is a stronger bridge between the earlier architecture thesis and a later transformer-specific accumulation paper.
+This paper studies a narrower question than full zkML inference: how far an
+experimental small-field transformer proof stack can be pushed toward
+proof-carrying decoding before recursion or accumulation are introduced. We
+present an extension of `provable-transformer-vm` that preserves the existing
+`statement-v1` execution claim while adding a parameterized decoding relation,
+multi-layout carried state, cumulative and frontier KV-history commitments, and
+cumulative and frontier lookup commitments. The same base `decoding_step_v2`
+proofs are then packaged into chains, segments, rollups, and a multi-layout
+rollup matrix. The contribution is systems-level rather than cryptographic: a
+stable proof-carrying decoding relation whose carried state becomes
+progressively more mergeable without claiming recursive compression,
+shared-table accumulation across decode steps, or full standard-softmax
+transformer proving. The result is a concrete pre-recursive bridge between the
+earlier architecture thesis and a later transformer-specific accumulation
+paper.
 
 ## 1. Introduction
 
-The previous paper in this repository argued that transformer workloads are structurally well aligned with STARK-style proof systems, especially when lookup-heavy non-arithmetic work dominates the proving burden at long context [1]. That paper was intentionally modest on the implementation side: it documented a semantics-hardened proof artifact, a narrow experimental `stwo` path, and a list of milestones needed to make the implementation story more compelling.
+The previous paper in this repository argued that transformer workloads are
+structurally well aligned with STARK-style proof systems, especially when
+lookup-heavy non-arithmetic work dominates the proving burden at long context
+[1]. That paper was intentionally modest on the implementation side: it
+documented a semantics-hardened proof artifact, a narrow experimental `stwo`
+path, and a list of milestones needed to make the implementation story more
+compelling.
 
-This paper is the next step in that sequence. Its question is not whether STARKs beat SNARKs in deployment today. It is not whether recursion is already integrated. It is not whether full standard-softmax transformer inference has been proved on S-two. The question here is smaller and more concrete:
+This paper is the next step in that sequence. Its question is not whether
+STARKs beat SNARKs in deployment today. It is not whether recursion is already
+integrated. It is not whether full standard-softmax transformer inference has
+been proved on S-two. The question here is smaller and more concrete:
 
 > Can proof-carrying decoding be expressed as a stable experimental S-two relation with carried state that remains valid across multiple public layouts and progressively more mergeable packaging layers?
 
-The answer implemented in the repository is yes, within a narrow but real scope. The repository now contains:
+The answer implemented in the repository is yes, within a narrow but real
+scope. The right claim is therefore a systems claim about carried-state
+discipline over a stable proof relation, not a broad proof-system claim.
 
-- a fixed-shape proof-carrying decoding demo over `decoding_step_v1`,
-- a parameterized `decoding_step_v2` family,
-- a validated three-layout matrix over that family,
-- chunked cumulative KV-history commitments,
-- explicit segment and rollup packaging over those chains,
-- a multi-layout rollup matrix,
-- explicit KV-history frontier commitments,
-- a cumulative lookup transcript commitment, and
-- a recent lookup frontier commitment.
+This paper makes three contributions.
 
-The right claim is therefore a systems claim about carried-state discipline over a stable proof relation, not a broad proof-system claim.
+1. It exposes a parameterized proof-carrying decoding relation,
+   `decoding_step_v2`, that remains inside the existing `statement-v1`
+   execution claim rather than inventing a new statement family prematurely.
+2. It shows that the same base proofs can be repackaged into progressively more
+   mergeable carried-state units: chunked chains, segments, rollups, and a
+   multi-layout rollup matrix.
+3. It carries two distinct state families through that stack:
+   arithmetic/KV-side state and lookup-side non-arithmetic state, each with
+   both cumulative and frontier boundaries.
 
 ## 2. Scope and Claim Boundary
 
-This paper makes three claims.
+This paper makes three narrow claims.
 
 1. A parameterized decode-step family can be proved on the current experimental `stwo` path while preserving the same `statement-v1` semantic contract used elsewhere in the repository.
 2. The carried state for that family can be packaged into progressively more mergeable layers without changing the base decode-step relation.
@@ -65,7 +90,9 @@ The default public layout is `(4, 4)`. The shipped layout matrix currently valid
 - `(3, 3)`
 - `(4, 4)`
 
-For each layout, the demo witness generator constructs a three-step decoding chain. That chain length is deliberately small; the point is to validate the carried-state semantics, not to maximize sequence length.
+For each layout, the demo witness generator constructs a three-step decoding
+chain. That chain length is deliberately small; the point is to validate the
+carried-state semantics, not to maximize sequence length.
 
 ### 3.2 Statement boundary
 
@@ -73,7 +100,8 @@ The base proof boundary does not change. Each step remains a `statement-v1` exec
 
 ### 3.3 Carried step state
 
-Each decoding step exposes a carried public state. By Phase 20, the Phase 14+ state includes at least:
+Each decoding step exposes a carried public state. By Phase 20, the carried
+state includes at least:
 
 - step index and decoding position,
 - layout commitment,
@@ -93,7 +121,8 @@ This state is intentionally redundant in places. The redundancy is not accidenta
 
 ## 4. Mergeable Carried-State Layers
 
-The repository now exposes a sequence of layers over the same base `decoding_step_v2` proofs.
+The repository now exposes a sequence of layers over the same base
+`decoding_step_v2` proofs.
 
 ### 4.1 Phase 14: Chunked cumulative KV history
 
@@ -166,7 +195,24 @@ The current public demo family is intentionally small.
 
 These numbers are not meant as optimized proving settings. They are chosen to make the carried-state structure inspectable and testable.
 
-### 5.2 What the artifact demonstrates
+### 5.2 Public artifact stack
+
+The public artifact surface is easier to understand as one stack over the same
+base decode-step proofs.
+
+| Layer | Public artifact | Adds |
+|---|---|---|
+| Base chain | `prove-stwo-decoding-family-demo` | Parameterized `decoding_step_v2` relation |
+| Layout matrix | `prove-stwo-decoding-layout-matrix-demo` | Same relation across three public layouts |
+| Chunked history | `prove-stwo-decoding-chunked-history-demo` | Chunked cumulative KV-history |
+| Segments | `prove-stwo-decoding-history-segments-demo` | Mergeable segment boundaries |
+| Rollups | `prove-stwo-decoding-history-rollup-demo` | Larger carried-state units over segments |
+| Rollup matrix | `prove-stwo-decoding-history-rollup-matrix-demo` | Rollups across multiple public layouts |
+| KV frontier | Phase 18 state extension | Recent KV boundary in addition to cumulative history |
+| Lookup transcript | Phase 19 state extension | Cumulative non-arithmetic transcript |
+| Lookup frontier | Phase 20 state extension | Recent non-arithmetic boundary |
+
+### 5.3 What the artifact demonstrates
 
 The artifact demonstrates four things.
 
@@ -175,7 +221,7 @@ The artifact demonstrates four things.
 3. The carried state can be packaged into chunked chains, segments, rollups, and a rollup matrix without losing boundary integrity.
 4. Both KV-side state and lookup-side state can be preserved as cumulative and recent-window commitments.
 
-### 5.3 What the artifact does not yet demonstrate
+### 5.4 What the artifact does not yet demonstrate
 
 The artifact still does not demonstrate:
 
@@ -243,7 +289,10 @@ This paper makes no matched-benchmark claim against external systems. The contri
 
 ## 8. Engineering Next Steps
 
-The next repository milestone should not be another packaging layer by itself. The next high-leverage step is to move one transformer-relevant non-arithmetic path deeper into the main proved relation rather than keeping it only in carried transcript form.
+The next repository milestone should not be another packaging layer by itself.
+The next high-leverage step is to move one transformer-relevant non-arithmetic
+path deeper into the main proved relation rather than keeping it only in
+carried transcript form.
 
 A sensible order is:
 
@@ -256,7 +305,13 @@ That order keeps the implementation honest. Recursion before a broader proved re
 
 ## 9. Conclusion
 
-This paper does not claim a new proof system. It does not claim recursion. It does not claim full transformer inference on S-two. What it does claim is narrower and, for that reason, stronger: the repository now contains a parameterized proof-carrying decoding relation whose carried state remains valid across multiple layouts and progressively more mergeable packaging layers, while preserving both arithmetic and non-arithmetic boundary commitments.
+This paper does not claim a new proof system. It does not claim recursion. It
+does not claim full transformer inference on S-two. What it does claim is
+narrower and, for that reason, stronger: the repository now contains a
+parameterized proof-carrying decoding relation whose carried state remains
+valid across multiple layouts and progressively more mergeable packaging
+layers, while preserving both arithmetic and non-arithmetic boundary
+commitments.
 
 That is enough to justify a real systems paper. It is also enough to make the later accumulation paper technically serious instead of aspirational.
 
