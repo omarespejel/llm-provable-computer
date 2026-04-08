@@ -56,6 +56,11 @@ jobs:
             needs_python: true
             nextest_profile: ci
             rust_toolchain: stable
+          - name: full-stwo-backend
+            cargo_args: "--features full stwo-backend"
+            needs_python: true
+            nextest_profile: ci-stwo
+            rust_toolchain: nightly-2025-07-14
           - name: stwo-backend
             cargo_args: "--features stwo-backend"
             needs_python: false
