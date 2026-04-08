@@ -1116,6 +1116,13 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
             "decoding chain must contain at least one step".to_string(),
         ));
     }
+    if manifest.steps.len() > MAX_DECODING_CHAIN_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding chain contains {} steps, exceeding the limit of {}",
+            manifest.steps.len(),
+            MAX_DECODING_CHAIN_STEPS
+        )));
+    }
     if manifest.total_steps != manifest.steps.len() {
         return Err(VmError::InvalidConfig(format!(
             "decoding chain total_steps={} does not match steps.len()={}",
@@ -5262,6 +5269,22 @@ mod tests {
             .resize(MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES + 1, 0);
         let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
         assert!(err.to_string().contains("activation proof is"));
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_too_many_steps() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        let template_step = manifest.steps[0].clone();
+        manifest.steps = vec![template_step; MAX_DECODING_CHAIN_STEPS + 1];
+        manifest.total_steps = manifest.steps.len();
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        assert!(err.to_string().contains("exceeding the limit"));
     }
 
     #[test]
