@@ -70,11 +70,13 @@ pub(crate) const MAX_DECODING_PROOF_PAYLOAD_BYTES: usize = 2 * 1024 * 1024;
 pub(crate) const MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES: usize = 512 * 1024;
 const MAX_PHASE11_DECODING_CHAIN_JSON_BYTES: usize = 2 * 1024 * 1024;
 const MAX_PHASE12_DECODING_CHAIN_JSON_BYTES: usize = 8 * 1024 * 1024;
-const MAX_PHASE14_DECODING_CHAIN_JSON_BYTES: usize = 8 * 1024 * 1024;
+const MAX_PHASE14_DECODING_CHAIN_JSON_BYTES: usize =
+    MAX_PHASE12_DECODING_CHAIN_JSON_BYTES + (2 * 1024 * 1024);
 const MAX_PHASE15_SEGMENT_BUNDLE_JSON_BYTES: usize = 8 * 1024 * 1024;
 const MAX_PHASE16_SEGMENT_ROLLUP_JSON_BYTES: usize = 8 * 1024 * 1024;
 const MAX_PHASE17_ROLLUP_MATRIX_JSON_BYTES: usize = 16 * 1024 * 1024;
-const MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES: usize = 1 * 1024 * 1024;
+const MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES: usize =
+    MAX_PHASE12_DECODING_CHAIN_JSON_BYTES + (512 * 1024);
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase11DecodingState {
@@ -548,14 +550,14 @@ fn validate_phase12_shared_lookup_artifact_resource_bounds(
 }
 
 fn read_json_bytes_with_limit(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u8>> {
-    let file = fs::File::open(path)?;
-    let metadata = file.metadata()?;
+    let metadata = fs::symlink_metadata(path)?;
     if !metadata.file_type().is_file() {
         return Err(VmError::InvalidConfig(format!(
             "{label} `{}` is not a regular file",
             path.display()
         )));
     }
+    let file = fs::File::open(path)?;
     if metadata.len() > max_bytes as u64 {
         return Err(VmError::InvalidConfig(format!(
             "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
@@ -784,6 +786,13 @@ pub fn phase11_prepare_decoding_chain(
     let first = proofs.first().ok_or_else(|| {
         VmError::InvalidConfig("proof-carrying decoding requires at least one proof".to_string())
     })?;
+    if proofs.len() > MAX_DECODING_CHAIN_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding chain contains {} steps, exceeding the limit of {}",
+            proofs.len(),
+            MAX_DECODING_CHAIN_STEPS
+        )));
+    }
     if first.proof_backend != StarkProofBackend::Stwo {
         return Err(VmError::InvalidConfig(format!(
             "proof-carrying decoding requires `stwo` proofs, got `{}`",
@@ -4509,6 +4518,21 @@ mod tests {
     }
 
     #[test]
+    fn phase11_prepare_decoding_chain_rejects_too_many_steps() {
+        let step = sample_step_proof(
+            vec![
+                0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            ],
+            vec![
+                0, 0, 0, 0, 2, 1, 2, 1, 1, 1, 1, 4, 1, 16, 64, 1, 1, 4, 128, 0, 1, 1, 1,
+            ],
+        );
+        let proofs = vec![step; MAX_DECODING_CHAIN_STEPS + 1];
+        let err = phase11_prepare_decoding_chain(&proofs).expect_err("too many steps should fail");
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[test]
     fn phase11_verify_decoding_chain_rejects_broken_kv_link() {
         let step0 = sample_step_proof(
             vec![
@@ -4562,6 +4586,15 @@ mod tests {
         let err = load_phase12_decoding_chain(&path).expect_err("oversized manifest should fail");
         assert!(err.to_string().contains("exceeding the limit"));
         let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn load_phase12_decoding_chain_rejects_non_regular_file() {
+        let path = std::env::temp_dir().join(format!("phase12-decoding-dir-{}", std::process::id()));
+        fs::create_dir_all(&path).expect("create dir");
+        let err = load_phase12_decoding_chain(&path).expect_err("directory should fail");
+        assert!(err.to_string().contains("is not a regular file"));
+        let _ = fs::remove_dir_all(path);
     }
 
     #[test]
