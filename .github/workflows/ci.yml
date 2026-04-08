@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -51,7 +51,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -80,7 +80,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -133,18 +133,28 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Read fuzz toolchain
+        id: fuzz-toolchain
+        run: |
+          channel="$(awk -F'\"' '/^channel = / { print $2 }' fuzz/rust-toolchain.toml)"
+          if [ -z "$channel" ]; then
+            echo "failed to read toolchain.channel from fuzz/rust-toolchain.toml" >&2
+            exit 1
+          fi
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
         with:
-          toolchain: nightly-2025-07-14
+          toolchain: ${{ steps.fuzz-toolchain.outputs.channel }}
 
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@v2
 
       - name: Install cargo-fuzz
-        run: cargo +nightly-2025-07-14 install cargo-fuzz --version 0.13.1 --locked
+        run: cargo +${{ steps.fuzz-toolchain.outputs.channel }} install cargo-fuzz --version 0.13.1 --locked
 
       - name: Install Python
         uses: actions/setup-python@v5
@@ -155,4 +165,4 @@ jobs:
         run: python3 scripts/fuzz/generate_decoding_fuzz_corpus.py
 
       - name: Run fuzz smoke
-        run: cargo +nightly-2025-07-14 fuzz run ${{ matrix.target }} ${{ matrix.corpus }} -- -runs=32
+        run: cargo +${{ steps.fuzz-toolchain.outputs.channel }} fuzz run ${{ matrix.target }} ${{ matrix.corpus }} -- -runs=32

@@ -13,11 +13,22 @@ RUN_TIMEOUT_SECONDS = 300
 DEFAULT_RUST_TOOLCHAIN = "nightly-2025-07-14"
 
 
+def env_flag_is_true(name: str) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return False
+    return value.strip().lower() not in {"", "0", "false", "no", "off"}
+
+
+def normalized_toolchain(value: str) -> str:
+    return value.lstrip("+")
+
+
 def load_rust_toolchain() -> str:
-    in_ci = bool(os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS"))
+    in_ci = env_flag_is_true("CI") or env_flag_is_true("GITHUB_ACTIONS")
     env_toolchain = os.environ.get("FUZZ_RUST_TOOLCHAIN")
     if env_toolchain and not in_ci:
-        return env_toolchain
+        return normalized_toolchain(env_toolchain)
     try:
         with FUZZ_TOOLCHAIN_TOML.open("rb") as handle:
             config = tomllib.load(handle)
@@ -44,7 +55,7 @@ def load_rust_toolchain() -> str:
             file=sys.stderr,
         )
         return DEFAULT_RUST_TOOLCHAIN
-    return channel
+    return normalized_toolchain(channel)
 
 
 RUST_TOOLCHAIN = load_rust_toolchain()
@@ -61,6 +72,10 @@ def run(*args: str) -> None:
     except subprocess.TimeoutExpired as error:
         raise SystemExit(
             f"command timed out after {RUN_TIMEOUT_SECONDS}s: {' '.join(args)}"
+        ) from error
+    except subprocess.CalledProcessError as error:
+        raise SystemExit(
+            f"command failed with exit code {error.returncode}: {' '.join(args)}"
         ) from error
 
 
@@ -119,20 +134,35 @@ def main() -> int:
     lookup_artifacts = phase12.get("shared_lookup_artifacts", [])
     if not isinstance(lookup_artifacts, list) or not lookup_artifacts:
         raise SystemExit("phase12 corpus generation did not produce shared lookup artifacts")
+    steps = phase12.get("steps", [])
+    if not isinstance(steps, list) or not steps:
+        raise SystemExit("phase12 corpus generation did not produce decoding steps")
     if "layout" not in phase12:
         raise SystemExit("phase12 corpus generation did not produce layout")
-    layout_artifacts = [
+    first_step = steps[0]
+    if not isinstance(first_step, dict):
+        raise SystemExit(
+            f"phase12 corpus generation produced a non-object first step: {first_step!r}"
+        )
+    referenced_commitment = first_step.get("shared_lookup_artifact_commitment")
+    if not isinstance(referenced_commitment, str) or not referenced_commitment:
+        raise SystemExit(
+            "phase12 corpus generation first step is missing shared_lookup_artifact_commitment"
+        )
+    matching_artifacts = [
         artifact
         for artifact in lookup_artifacts
-        if isinstance(artifact, dict) and "layout_commitment" in artifact
+        if isinstance(artifact, dict)
+        and artifact.get("artifact_commitment") == referenced_commitment
+        and "layout_commitment" in artifact
     ]
-    if len(layout_artifacts) != 1:
+    if len(matching_artifacts) != 1:
         raise SystemExit(
             "phase12 corpus generation must produce exactly one shared lookup artifact "
-            f"with layout_commitment, found {len(layout_artifacts)} in "
-            f"{lookup_artifacts!r}"
+            f"matching first step commitment {referenced_commitment!r}, found "
+            f"{len(matching_artifacts)} in {lookup_artifacts!r}"
         )
-    first_artifact = layout_artifacts[0]
+    first_artifact = matching_artifacts[0]
 
     artifact_input = {
         "layout": phase12["layout"],
