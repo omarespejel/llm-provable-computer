@@ -15,6 +15,7 @@ use crate::interpreter::NativeInterpreter;
 use crate::proof::{
     production_v1_stark_options, prove_execution_stark_with_backend_and_options,
     verify_execution_stark, StarkProofBackend, VanillaStarkExecutionProof,
+    CLAIM_SEMANTIC_SCOPE_V1,
 };
 use crate::stwo_backend::{
     arithmetic_subset_prover::{
@@ -745,10 +746,10 @@ pub fn phase11_prepare_decoding_chain(
                 proof.claim.statement_version, first.claim.statement_version
             )));
         }
-        if proof.claim.semantic_scope != first.claim.semantic_scope {
+        if proof.claim.semantic_scope != CLAIM_SEMANTIC_SCOPE_V1 {
             return Err(VmError::InvalidConfig(format!(
                 "decoding step {step_index} uses semantic scope `{}`; expected `{}`",
-                proof.claim.semantic_scope, first.claim.semantic_scope
+                proof.claim.semantic_scope, CLAIM_SEMANTIC_SCOPE_V1
             )));
         }
         if !matches_decoding_step_v1_family(&proof.claim.program) {
@@ -1080,6 +1081,7 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
         manifest.layout.lookup_range()?.len(),
         "decoding chain shared lookup",
     )?;
+    let expected_step_semantic_scope = CLAIM_SEMANTIC_SCOPE_V1;
 
     for (step_index, step) in manifest.steps.iter().enumerate() {
         if !matches_decoding_step_v2_family_with_layout(&step.proof.claim.program, &manifest.layout)
@@ -1111,6 +1113,12 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
             return Err(VmError::InvalidConfig(format!(
                 "decoding step {step_index} statement version `{}` does not match manifest `{}`",
                 step.proof.claim.statement_version, manifest.statement_version
+            )));
+        }
+        if step.proof.claim.semantic_scope != expected_step_semantic_scope {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step {step_index} semantic scope `{}` does not match expected `{}`",
+                step.proof.claim.semantic_scope, expected_step_semantic_scope
             )));
         }
         let shared_lookup_artifact = shared_lookup_artifact_by_commitment(
@@ -1453,6 +1461,7 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
         manifest.layout.lookup_range()?.len(),
         "chunked decoding shared lookup",
     )?;
+    let expected_step_semantic_scope = CLAIM_SEMANTIC_SCOPE_V1;
 
     let mut accumulator: Option<Phase14HistoryAccumulator> = None;
     for (step_index, step) in manifest.steps.iter().enumerate() {
@@ -1479,6 +1488,12 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
             return Err(VmError::InvalidConfig(format!(
                 "chunked decoding step {step_index} statement version `{}` does not match manifest `{}`",
                 step.proof.claim.statement_version, manifest.statement_version
+            )));
+        }
+        if step.proof.claim.semantic_scope != expected_step_semantic_scope {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {step_index} semantic scope `{}` does not match expected `{}`",
+                step.proof.claim.semantic_scope, expected_step_semantic_scope
             )));
         }
         let shared_lookup_artifact = shared_lookup_artifact_by_commitment(
@@ -4417,7 +4432,6 @@ mod tests {
         build_phase12_shared_lookup_artifact, EmbeddedSharedActivationClaimRow,
         EmbeddedSharedActivationLookupProof, EmbeddedSharedNormalizationClaimRow,
         EmbeddedSharedNormalizationProof, Phase12SharedLookupArtifact,
-        STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12, STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12,
     };
     use crate::stwo_backend::{
         prove_phase10_shared_binary_step_lookup_envelope,
@@ -4648,11 +4662,19 @@ mod tests {
         .expect("synthetic valid artifact")
     }
 
+    const ORACLE_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v11";
+    const ORACLE_DECODING_STATE_VERSION_PHASE14: &str = "stwo-decoding-state-v6";
+    const ORACLE_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12: &str =
+        "stwo-phase12-shared-lookup-artifact-v1";
+    const ORACLE_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12: &str =
+        "stwo_parameterized_decoding_shared_lookup_artifact";
+
     fn oracle_lower_hex(bytes: &[u8]) -> String {
+        const HEX: &[u8; 16] = b"0123456789abcdef";
         let mut out = String::with_capacity(bytes.len() * 2);
-        for byte in bytes {
-            use std::fmt::Write as _;
-            let _ = write!(out, "{byte:02x}");
+        for &byte in bytes {
+            out.push(HEX[(byte >> 4) as usize] as char);
+            out.push(HEX[(byte & 0x0f) as usize] as char);
         }
         out
     }
@@ -4683,7 +4705,7 @@ mod tests {
         values: &[i16],
     ) -> String {
         let mut parts = vec![
-            STWO_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
+            ORACLE_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
             layout_commitment.as_bytes().to_vec(),
             label.as_bytes().to_vec(),
         ];
@@ -4699,7 +4721,7 @@ mod tests {
         kv_cache_values: &[i16],
     ) -> String {
         let mut parts = vec![
-            STWO_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
+            ORACLE_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
             layout_commitment.as_bytes().to_vec(),
             position.to_le_bytes().to_vec(),
         ];
@@ -4711,7 +4733,7 @@ mod tests {
 
     fn oracle_commit_phase12_shared_lookup_rows(layout_commitment: &str, values: &[i16]) -> String {
         let mut parts = vec![
-            STWO_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
+            ORACLE_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
             layout_commitment.as_bytes().to_vec(),
             b"lookup-rows".to_vec(),
         ];
@@ -4727,7 +4749,7 @@ mod tests {
         pair_width: usize,
     ) -> String {
         oracle_blake2b_256(&[
-            STWO_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
+            ORACLE_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
             layout_commitment.as_bytes().to_vec(),
             b"history-seed".to_vec(),
             (pair_width as u64).to_le_bytes().to_vec(),
@@ -4748,7 +4770,7 @@ mod tests {
         next_length: usize,
     ) -> String {
         let mut parts = vec![
-            STWO_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
+            ORACLE_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
             layout_commitment.as_bytes().to_vec(),
             b"history-advance".to_vec(),
             previous_commitment.as_bytes().to_vec(),
@@ -4759,29 +4781,6 @@ mod tests {
             parts.push(value.to_le_bytes().to_vec());
         }
         oracle_blake2b_256(&parts)
-    }
-
-    fn oracle_commit_phase12_shared_lookup_artifact(
-        layout_commitment: &str,
-        flattened_lookup_rows: &[i16],
-        normalization: &EmbeddedSharedNormalizationProof,
-        activation: &EmbeddedSharedActivationLookupProof,
-    ) -> String {
-        let rows_json = serde_json::to_vec(flattened_lookup_rows).expect("rows json");
-        let normalization_json = serde_json::to_vec(normalization).expect("normalization json");
-        let activation_json = serde_json::to_vec(activation).expect("activation json");
-        oracle_blake2b_256(&[
-            STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12
-                .as_bytes()
-                .to_vec(),
-            layout_commitment.as_bytes().to_vec(),
-            (rows_json.len() as u64).to_le_bytes().to_vec(),
-            rows_json,
-            (normalization_json.len() as u64).to_le_bytes().to_vec(),
-            normalization_json,
-            (activation_json.len() as u64).to_le_bytes().to_vec(),
-            activation_json,
-        ])
     }
 
     fn oracle_phase12_state_view(
@@ -4843,6 +4842,7 @@ mod tests {
 
     fn oracle_phase12_shared_lookup_artifact_from_proof_payload(
         proof: &VanillaStarkExecutionProof,
+        layout: &Phase12DecodingLayout,
         layout_commitment: &str,
     ) -> Result<Option<Phase12SharedLookupArtifact>> {
         if !matches_decoding_step_v2_family(&proof.claim.program) {
@@ -4850,12 +4850,36 @@ mod tests {
         }
         let payload: serde_json::Value = serde_json::from_slice(&proof.proof)
             .map_err(|error| VmError::Serialization(error.to_string()))?;
+        let normalization_value = payload
+            .get("embedded_shared_normalization")
+            .ok_or_else(|| {
+                VmError::Serialization(
+                    "Phase 12 oracle payload is missing embedded_shared_normalization".to_string(),
+                )
+            })?
+            .clone();
+        let activation_value = payload
+            .get("embedded_shared_activation_lookup")
+            .ok_or_else(|| {
+                VmError::Serialization(
+                    "Phase 12 oracle payload is missing embedded_shared_activation_lookup"
+                        .to_string(),
+                )
+            })?
+            .clone();
         let normalization: EmbeddedSharedNormalizationProof =
-            serde_json::from_value(payload["embedded_shared_normalization"].clone())
+            serde_json::from_value(normalization_value)
                 .map_err(|error| VmError::Serialization(error.to_string()))?;
         let activation: EmbeddedSharedActivationLookupProof =
-            serde_json::from_value(payload["embedded_shared_activation_lookup"].clone())
+            serde_json::from_value(activation_value)
                 .map_err(|error| VmError::Serialization(error.to_string()))?;
+        if normalization.claimed_rows.len() != activation.claimed_rows.len() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 12 oracle payload row count mismatch: normalization={}, activation={}",
+                normalization.claimed_rows.len(),
+                activation.claimed_rows.len()
+            )));
+        }
         let mut flattened_lookup_rows =
             Vec::with_capacity(normalization.claimed_rows.len().saturating_mul(4));
         for (normalization_row, activation_row) in normalization
@@ -4870,22 +4894,92 @@ mod tests {
         }
         let lookup_rows_commitment =
             oracle_commit_phase12_shared_lookup_rows(layout_commitment, &flattened_lookup_rows);
-        let artifact_commitment = oracle_commit_phase12_shared_lookup_artifact(
-            layout_commitment,
-            &flattened_lookup_rows,
-            &normalization,
-            &activation,
-        );
-        Ok(Some(Phase12SharedLookupArtifact {
-            artifact_version: STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12.to_string(),
-            semantic_scope: STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12.to_string(),
+        let rows_json = serde_json::to_vec(&flattened_lookup_rows)
+            .map_err(|error| VmError::Serialization(error.to_string()))?;
+        let normalization_json = serde_json::to_vec(&normalization)
+            .map_err(|error| VmError::Serialization(error.to_string()))?;
+        let activation_json = serde_json::to_vec(&activation)
+            .map_err(|error| VmError::Serialization(error.to_string()))?;
+        let artifact_commitment = oracle_blake2b_256(&[
+            ORACLE_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12
+                .as_bytes()
+                .to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            (rows_json.len() as u64).to_le_bytes().to_vec(),
+            rows_json,
+            (normalization_json.len() as u64).to_le_bytes().to_vec(),
+            normalization_json,
+            (activation_json.len() as u64).to_le_bytes().to_vec(),
+            activation_json,
+        ]);
+        let artifact = Phase12SharedLookupArtifact {
+            artifact_version: ORACLE_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12.to_string(),
+            semantic_scope: ORACLE_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12.to_string(),
             artifact_commitment,
             layout_commitment: layout_commitment.to_string(),
             lookup_rows_commitment,
             flattened_lookup_rows,
             normalization_proof_envelope: normalization,
             activation_proof_envelope: activation,
-        }))
+        };
+        verify_phase12_shared_lookup_artifact(&artifact, layout, layout_commitment)?;
+        Ok(Some(artifact))
+    }
+
+    fn oracle_build_phase12_shared_lookup_artifact_index<'a>(
+        artifacts: &'a [Phase12SharedLookupArtifact],
+        referenced_commitments: &HashSet<String>,
+        expected_flattened_lookup_rows_len: usize,
+        registry_label: &str,
+    ) -> Result<HashMap<String, &'a Phase12SharedLookupArtifact>> {
+        let mut artifact_index = HashMap::with_capacity(artifacts.len());
+        for artifact in artifacts {
+            if artifact.flattened_lookup_rows.len() != expected_flattened_lookup_rows_len {
+                return Err(VmError::InvalidConfig(format!(
+                    "{registry_label} artifact `{}` has {} flattened lookup rows; expected {}",
+                    artifact.artifact_commitment,
+                    artifact.flattened_lookup_rows.len(),
+                    expected_flattened_lookup_rows_len
+                )));
+            }
+            if !referenced_commitments.contains(&artifact.artifact_commitment) {
+                return Err(VmError::InvalidConfig(format!(
+                    "{registry_label} artifact `{}` is not referenced by any decoding step",
+                    artifact.artifact_commitment
+                )));
+            }
+            if artifact_index
+                .insert(artifact.artifact_commitment.clone(), artifact)
+                .is_some()
+            {
+                return Err(VmError::InvalidConfig(format!(
+                    "{registry_label} artifact `{}` appears more than once in the manifest registry",
+                    artifact.artifact_commitment
+                )));
+            }
+        }
+        if artifact_index.len() != referenced_commitments.len() {
+            let missing = referenced_commitments
+                .iter()
+                .find(|commitment| !artifact_index.contains_key(*commitment))
+                .cloned()
+                .unwrap_or_else(|| "<unknown>".to_string());
+            return Err(VmError::InvalidConfig(format!(
+                "{registry_label} artifact `{missing}` is not present in the manifest registry"
+            )));
+        }
+        Ok(artifact_index)
+    }
+
+    fn oracle_shared_lookup_artifact_by_commitment<'a>(
+        artifacts: &'a HashMap<String, &'a Phase12SharedLookupArtifact>,
+        artifact_commitment: &str,
+    ) -> Result<&'a Phase12SharedLookupArtifact> {
+        artifacts.get(artifact_commitment).copied().ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "shared lookup artifact `{artifact_commitment}` is not present in the manifest registry"
+            ))
+        })
     }
 
     fn oracle_commit_phase14_history_empty_chunk(
@@ -4893,7 +4987,7 @@ mod tests {
         pair_width: usize,
     ) -> String {
         oracle_blake2b_256(&[
-            STWO_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            ORACLE_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
             layout_commitment.as_bytes().to_vec(),
             b"history-open-empty".to_vec(),
             (pair_width as u64).to_le_bytes().to_vec(),
@@ -4906,7 +5000,7 @@ mod tests {
         chunk_values: &[i16],
     ) -> String {
         let mut parts = vec![
-            STWO_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            ORACLE_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
             layout_commitment.as_bytes().to_vec(),
             b"history-chunk".to_vec(),
             (pair_width as u64).to_le_bytes().to_vec(),
@@ -4927,7 +5021,7 @@ mod tests {
         chunk_commitment: &str,
     ) -> String {
         oracle_blake2b_256(&[
-            STWO_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            ORACLE_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
             layout_commitment.as_bytes().to_vec(),
             b"history-sealed-fold".to_vec(),
             previous_sealed_commitment.as_bytes().to_vec(),
@@ -4946,7 +5040,7 @@ mod tests {
         history_length: usize,
     ) -> String {
         oracle_blake2b_256(&[
-            STWO_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            ORACLE_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
             layout_commitment.as_bytes().to_vec(),
             b"history-total".to_vec(),
             sealed_commitment.as_bytes().to_vec(),
@@ -4963,7 +5057,7 @@ mod tests {
         lookup_rows_commitment: &str,
     ) -> String {
         oracle_blake2b_256(&[
-            STWO_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            ORACLE_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
             layout_commitment.as_bytes().to_vec(),
             b"lookup-transcript-seed".to_vec(),
             (1u64).to_le_bytes().to_vec(),
@@ -4978,7 +5072,7 @@ mod tests {
         lookup_rows_commitment: &str,
     ) -> String {
         oracle_blake2b_256(&[
-            STWO_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            ORACLE_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
             layout_commitment.as_bytes().to_vec(),
             b"lookup-transcript-fold".to_vec(),
             previous_commitment.as_bytes().to_vec(),
@@ -4992,7 +5086,7 @@ mod tests {
         lookup_rows_commitments: &[String],
     ) -> String {
         let mut parts = vec![
-            STWO_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            ORACLE_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
             layout_commitment.as_bytes().to_vec(),
             b"lookup-frontier".to_vec(),
             (lookup_rows_commitments.len() as u64)
@@ -5013,7 +5107,7 @@ mod tests {
         pair_width: usize,
     ) -> String {
         let mut parts = vec![
-            STWO_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            ORACLE_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
             layout_commitment.as_bytes().to_vec(),
             b"history-open-advance".to_vec(),
             previous_open_chunk_commitment.as_bytes().to_vec(),
@@ -5269,23 +5363,18 @@ mod tests {
             )));
         }
 
-        let mut registry = std::collections::HashMap::new();
-        for artifact in &manifest.shared_lookup_artifacts {
-            verify_phase12_shared_lookup_artifact(
-                artifact,
-                &manifest.layout,
-                &expected_layout_commitment,
-            )?;
-            if registry
-                .insert(artifact.artifact_commitment.clone(), artifact)
-                .is_some()
-            {
-                return Err(VmError::InvalidConfig(format!(
-                    "decoding chain reuses shared lookup artifact commitment `{}` for different entries",
-                    artifact.artifact_commitment
-                )));
-            }
-        }
+        let referenced_artifacts: HashSet<String> = manifest
+            .steps
+            .iter()
+            .map(|step| step.shared_lookup_artifact_commitment.clone())
+            .collect();
+        let registry = oracle_build_phase12_shared_lookup_artifact_index(
+            &manifest.shared_lookup_artifacts,
+            &referenced_artifacts,
+            manifest.layout.lookup_range()?.len(),
+            "oracle decoding chain shared lookup",
+        )?;
+        let expected_step_semantic_scope = CLAIM_SEMANTIC_SCOPE_V1;
 
         let mut previous_history_commitment: Option<String> = None;
         let mut previous_history_length: Option<usize> = None;
@@ -5312,6 +5401,12 @@ mod tests {
                     "decoding step {step_index} proof metadata does not match manifest"
                 )));
             }
+            if step.proof.claim.semantic_scope != expected_step_semantic_scope {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding step {step_index} semantic scope `{}` does not match expected `{}`",
+                    step.proof.claim.semantic_scope, expected_step_semantic_scope
+                )));
+            }
             if !matches_decoding_step_v2_family_with_layout(
                 &step.proof.claim.program,
                 &manifest.layout,
@@ -5320,16 +5415,13 @@ mod tests {
                     "decoding step {step_index} is not a decoding_step_v2-family proof for the manifest layout"
                 )));
             }
-            let registry_artifact = registry
-                .get(&step.shared_lookup_artifact_commitment)
-                .ok_or_else(|| {
-                    VmError::InvalidConfig(format!(
-                        "shared lookup artifact `{}` is not present in the manifest registry",
-                        step.shared_lookup_artifact_commitment
-                    ))
-                })?;
+            let registry_artifact = oracle_shared_lookup_artifact_by_commitment(
+                &registry,
+                &step.shared_lookup_artifact_commitment,
+            )?;
             let proof_artifact = oracle_phase12_shared_lookup_artifact_from_proof_payload(
                 &step.proof,
+                &manifest.layout,
                 &expected_layout_commitment,
             )?
             .ok_or_else(|| {
@@ -5337,7 +5429,7 @@ mod tests {
                     "decoding step {step_index} is missing its Phase 12 shared lookup artifact payload"
                 ))
             })?;
-            if **registry_artifact != proof_artifact {
+            if *registry_artifact != proof_artifact {
                 return Err(VmError::InvalidConfig(format!(
                     "decoding step {step_index} shared lookup artifact `{}` does not match the proof payload",
                     step.shared_lookup_artifact_commitment
@@ -5419,6 +5511,12 @@ mod tests {
 
             let to_view =
                 oracle_phase12_state_view(&step.proof.claim.final_state.memory, &manifest.layout)?;
+            if proof_artifact.lookup_rows_commitment != to_view.lookup_rows_commitment {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding step {step_index} shared lookup artifact `{}` does not match the proof's final-state lookup rows",
+                    step.shared_lookup_artifact_commitment
+                )));
+            }
             let to_history_length = from_history_length.checked_add(1).ok_or_else(|| {
                 VmError::InvalidConfig(format!(
                     "decoding step {step_index} history length {from_history_length} cannot be incremented"
@@ -5449,11 +5547,16 @@ mod tests {
                     "decoding step {step_index} recorded to_state does not match the oracle replay"
                 )));
             }
+            if expected_to.position != expected_from.position + 1 {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding step {step_index} does not advance the decoding position by exactly one token"
+                )));
+            }
             previous_history_commitment = Some(to_history_commitment);
             previous_history_length = Some(to_history_length);
             previous_expected_to = Some(expected_to);
         }
-        Ok(())
+        validate_phase12_chain_steps(&manifest.layout, &manifest.steps)
     }
 
     fn oracle_verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) -> Result<()> {
@@ -5516,23 +5619,18 @@ mod tests {
                 manifest.steps.len()
             )));
         }
-        let mut registry = std::collections::HashMap::new();
-        for artifact in &manifest.shared_lookup_artifacts {
-            verify_phase12_shared_lookup_artifact(
-                artifact,
-                &manifest.layout,
-                &expected_layout_commitment,
-            )?;
-            if registry
-                .insert(artifact.artifact_commitment.clone(), artifact)
-                .is_some()
-            {
-                return Err(VmError::InvalidConfig(format!(
-                    "chunked decoding chain reuses shared lookup artifact commitment `{}` for different entries",
-                    artifact.artifact_commitment
-                )));
-            }
-        }
+        let referenced_artifacts: HashSet<String> = manifest
+            .steps
+            .iter()
+            .map(|step| step.shared_lookup_artifact_commitment.clone())
+            .collect();
+        let registry = oracle_build_phase12_shared_lookup_artifact_index(
+            &manifest.shared_lookup_artifacts,
+            &referenced_artifacts,
+            manifest.layout.lookup_range()?.len(),
+            "oracle chunked decoding shared lookup",
+        )?;
+        let expected_step_semantic_scope = CLAIM_SEMANTIC_SCOPE_V1;
         let mut accumulator: Option<Phase14HistoryAccumulator> = None;
         let mut previous_expected_to: Option<Phase14DecodingState> = None;
         for (step_index, step) in manifest.steps.iter().enumerate() {
@@ -5564,14 +5662,16 @@ mod tests {
                     step.proof.claim.statement_version, manifest.statement_version
                 )));
             }
-            let registry_artifact = registry
-                .get(&step.shared_lookup_artifact_commitment)
-                .ok_or_else(|| {
-                    VmError::InvalidConfig(format!(
-                        "shared lookup artifact `{}` is not present in the manifest registry",
-                        step.shared_lookup_artifact_commitment
-                    ))
-                })?;
+            if step.proof.claim.semantic_scope != expected_step_semantic_scope {
+                return Err(VmError::InvalidConfig(format!(
+                    "chunked decoding step {step_index} semantic scope `{}` does not match expected `{}`",
+                    step.proof.claim.semantic_scope, expected_step_semantic_scope
+                )));
+            }
+            let registry_artifact = oracle_shared_lookup_artifact_by_commitment(
+                &registry,
+                &step.shared_lookup_artifact_commitment,
+            )?;
             let from_view = oracle_phase12_state_view(
                 step.proof.claim.program.initial_memory(),
                 &manifest.layout,
@@ -5657,6 +5757,7 @@ mod tests {
                 oracle_phase12_state_view(&step.proof.claim.final_state.memory, &manifest.layout)?;
             let proof_artifact = oracle_phase12_shared_lookup_artifact_from_proof_payload(
                 &step.proof,
+                &manifest.layout,
                 &expected_layout_commitment,
             )?
             .ok_or_else(|| {
@@ -5664,7 +5765,7 @@ mod tests {
                     "chunked decoding step {step_index} is missing its Phase 12 shared lookup artifact payload"
                 ))
             })?;
-            if **registry_artifact != proof_artifact {
+            if *registry_artifact != proof_artifact {
                 return Err(VmError::InvalidConfig(format!(
                     "chunked decoding step {step_index} shared lookup artifact `{}` does not match the proof payload",
                     step.shared_lookup_artifact_commitment
@@ -5713,10 +5814,19 @@ mod tests {
                     "chunked decoding step {step_index} recorded to_state does not match the oracle replay"
                 )));
             }
+            if expected_to.position != expected_from.position + 1 {
+                return Err(VmError::InvalidConfig(format!(
+                    "chunked decoding step {step_index} does not advance the decoding position by exactly one token"
+                )));
+            }
             accumulator = Some(next);
             previous_expected_to = Some(expected_to);
         }
-        Ok(())
+        validate_phase14_chain_steps(
+            &manifest.layout,
+            manifest.history_chunk_pairs,
+            &manifest.steps,
+        )
     }
 
     /// Requires `memory` to already contain `PHASE12_LOOKUP_ROW_VALUES` in the layout's lookup
@@ -7263,6 +7373,58 @@ mod tests {
     }
 
     #[test]
+    fn phase12_oracle_and_production_reject_same_unreferenced_artifact() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest =
+            phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        manifest
+            .shared_lookup_artifacts
+            .push(sample_phase12_valid_but_wrong_shared_lookup_artifact(&layout));
+
+        assert!(verify_phase12_decoding_chain(&manifest).is_err());
+        assert!(oracle_verify_phase12_decoding_chain(&manifest).is_err());
+    }
+
+    #[test]
+    fn phase12_oracle_and_production_reject_same_semantic_scope_drift() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest =
+            phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        manifest.steps[1].proof.claim.semantic_scope = "tampered-semantic-scope".to_string();
+
+        assert!(verify_phase12_decoding_chain(&manifest).is_err());
+        assert!(oracle_verify_phase12_decoding_chain(&manifest).is_err());
+    }
+
+    #[test]
+    fn phase12_oracle_and_production_reject_same_forged_semantic_scope_across_all_steps() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest =
+            phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        for step in &mut manifest.steps {
+            step.proof.claim.semantic_scope = "forged-semantic-scope".to_string();
+        }
+
+        assert!(verify_phase12_decoding_chain(&manifest).is_err());
+        assert!(oracle_verify_phase12_decoding_chain(&manifest).is_err());
+    }
+
+    #[test]
     fn phase14_oracle_matches_production_on_demo_chain() {
         let layout = phase12_default_decoding_layout();
         let proofs = phase12_demo_initial_memories(&layout)
@@ -7290,6 +7452,58 @@ mod tests {
         manifest.steps[1]
             .from_state
             .kv_history_open_chunk_commitment = "tampered".to_string();
+
+        assert!(verify_phase14_decoding_chain(&manifest).is_err());
+        assert!(oracle_verify_phase14_decoding_chain(&manifest).is_err());
+    }
+
+    #[test]
+    fn phase14_oracle_and_production_reject_same_unreferenced_artifact() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        manifest
+            .shared_lookup_artifacts
+            .push(manifest.shared_lookup_artifacts[0].clone());
+
+        assert!(verify_phase14_decoding_chain(&manifest).is_err());
+        assert!(oracle_verify_phase14_decoding_chain(&manifest).is_err());
+    }
+
+    #[test]
+    fn phase14_oracle_and_production_reject_same_semantic_scope_drift() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        manifest.steps[1].proof.claim.semantic_scope = "tampered-semantic-scope".to_string();
+
+        assert!(verify_phase14_decoding_chain(&manifest).is_err());
+        assert!(oracle_verify_phase14_decoding_chain(&manifest).is_err());
+    }
+
+    #[test]
+    fn phase14_oracle_and_production_reject_same_forged_semantic_scope_across_all_steps() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        for step in &mut manifest.steps {
+            step.proof.claim.semantic_scope = "forged-semantic-scope".to_string();
+        }
 
         assert!(verify_phase14_decoding_chain(&manifest).is_err());
         assert!(oracle_verify_phase14_decoding_chain(&manifest).is_err());
