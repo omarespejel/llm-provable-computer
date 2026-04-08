@@ -3133,14 +3133,16 @@ fn commit_phase12_persistent_state(
     lower_hex(&out)
 }
 
-fn decoding_program_step_limit(program: &Program) -> usize {
-    debug_assert!(
-        program.instructions().len() <= usize::from(u8::MAX) + 1,
-        "Phase 12 decoding program instruction count {} exceeds the u8 pc horizon {}",
-        program.instructions().len(),
-        usize::from(u8::MAX) + 1
-    );
-    program.instructions().len().saturating_add(1)
+fn decoding_program_step_limit(program: &Program) -> Result<usize> {
+    let instruction_count = program.instructions().len();
+    let max_reachable_instructions = usize::from(u8::MAX) + 1;
+    if instruction_count > max_reachable_instructions {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 12 decoding program instruction count {} exceeds the u8 pc horizon {}",
+            instruction_count, max_reachable_instructions
+        )));
+    }
+    Ok(instruction_count + 1)
 }
 
 fn commit_phase12_history_seed(
@@ -3555,6 +3557,12 @@ fn phase11_demo_initial_memories() -> Vec<Vec<i16>> {
     ]
 }
 
+fn write_phase12_noncanonical_lookup_seed(memory: &mut [i16], lookup: std::ops::Range<usize>) {
+    for (offset, cell) in memory[lookup].iter_mut().enumerate() {
+        *cell = PHASE12_LOOKUP_ROW_VALUES[offset] + 1;
+    }
+}
+
 pub(crate) fn phase12_demo_initial_memories(
     layout: &Phase12DecodingLayout,
 ) -> Result<Vec<Vec<i16>>> {
@@ -3575,11 +3583,11 @@ pub(crate) fn phase12_demo_initial_memories(
         memory[kv_cache_range.clone()].copy_from_slice(&kv_cache);
         memory[incoming_token_range.clone()].copy_from_slice(&incoming_values);
         memory[query_range.clone()].copy_from_slice(&query_values);
-        memory[lookup_range.clone()].copy_from_slice(&PHASE12_LOOKUP_ROW_VALUES);
+        write_phase12_noncanonical_lookup_seed(&mut memory, lookup_range.clone());
         memory[position_index] = position as i16;
         memory[position_increment_index] = 1;
         let program = decoding_step_v2_program_with_initial_memory(layout, memory.clone())?;
-        let step_limit = decoding_program_step_limit(&program);
+        let step_limit = decoding_program_step_limit(&program)?;
         let mut runtime = NativeInterpreter::new(program, Attention2DMode::AverageHard, step_limit);
         let result = runtime.run()?;
         if !result.halted {
@@ -3739,7 +3747,7 @@ mod tests {
         let mut runtime = NativeInterpreter::new(
             program.clone(),
             Attention2DMode::AverageHard,
-            decoding_program_step_limit(&program),
+            decoding_program_step_limit(&program).expect("step limit"),
         );
         let result = runtime.run().expect("run program");
         assert!(result.halted);
@@ -3907,7 +3915,7 @@ mod tests {
         for index in query {
             memory[index] = rng.gen_range(-3..=3);
         }
-        memory[lookup].copy_from_slice(&PHASE12_LOOKUP_ROW_VALUES);
+        write_phase12_noncanonical_lookup_seed(&mut memory, lookup);
         memory[position_index] = rng.gen_range(0..=7);
         memory[position_increment_index] = 1;
         memory
@@ -3939,7 +3947,7 @@ mod tests {
                     memory[kv_cache_range].copy_from_slice(&kv_cache);
                     memory[incoming_range].copy_from_slice(&incoming);
                     memory[query_range].copy_from_slice(&query);
-                    memory[lookup_range].copy_from_slice(&PHASE12_LOOKUP_ROW_VALUES);
+                    write_phase12_noncanonical_lookup_seed(&mut memory, lookup_range);
                     memory[position_index] = position;
                     memory[position_increment_index] = 1;
                     (layout, memory)
@@ -4289,7 +4297,7 @@ mod tests {
             for memory in phase12_demo_initial_memories(&layout).expect("memories") {
                 let program =
                     decoding_step_v2_program_with_initial_memory(&layout, memory.clone()).expect("program");
-                let step_limit = decoding_program_step_limit(&program);
+                let step_limit = decoding_program_step_limit(&program).expect("step limit");
                 let mut runtime = NativeInterpreter::new(
                     program,
                     Attention2DMode::AverageHard,
@@ -4366,7 +4374,7 @@ mod tests {
             (layout, memory) in phase12_bounded_memory_strategy(),
         ) {
             let program = decoding_step_v2_program_with_initial_memory(&layout, memory.clone()).expect("program");
-            let step_limit = decoding_program_step_limit(&program);
+            let step_limit = decoding_program_step_limit(&program).expect("step limit");
             let mut runtime = NativeInterpreter::new(
                 program,
                 Attention2DMode::AverageHard,
@@ -4399,7 +4407,7 @@ mod tests {
                 let mut runtime = NativeInterpreter::new(
                     program.clone(),
                     Attention2DMode::AverageHard,
-                    decoding_program_step_limit(&program),
+                    decoding_program_step_limit(&program).expect("step limit"),
                 );
                 let result = runtime.run().expect("run program");
                 assert!(result.halted);
@@ -4408,7 +4416,7 @@ mod tests {
                 let model = ProgramCompiler
                     .compile_program(program, config.clone())
                     .expect("compile");
-                prove_execution_stark_with_backend_and_options(
+                let proof = prove_execution_stark_with_backend_and_options(
                     &model,
                     128,
                     StarkProofBackend::Stwo,
@@ -4420,6 +4428,11 @@ mod tests {
                         layout
                     )
                 });
+                assert_eq!(proof.claim.final_state.memory, expected_final_memory);
+                assert_eq!(
+                    phase12_shared_lookup_rows_from_proof_payload(&proof).expect("lookup rows from proof"),
+                    Some(expected_final_memory[layout.lookup_range().expect("lookup range")].to_vec())
+                );
             }
         }
     }
@@ -4692,7 +4705,7 @@ mod tests {
                 let next = &pair[1];
                 let program =
                     decoding_step_v2_program_with_initial_memory(&layout, current).expect("program");
-                let step_limit = decoding_program_step_limit(&program);
+                let step_limit = decoding_program_step_limit(&program).expect("step limit");
                 let mut runtime = NativeInterpreter::new(
                     program,
                     Attention2DMode::AverageHard,
