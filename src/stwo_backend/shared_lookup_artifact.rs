@@ -461,6 +461,13 @@ mod tests {
         expected_layout_commitment: &str,
     ) -> Result<()> {
         layout.validate()?;
+        let computed_layout_commitment = commit_phase12_layout(layout);
+        if computed_layout_commitment != expected_layout_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "oracle_verify_phase12_shared_lookup_artifact expected layout commitment `{}` does not match the validated layout commitment `{}`",
+                expected_layout_commitment, computed_layout_commitment
+            )));
+        }
         if artifact.artifact_version != STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12 {
             return Err(VmError::InvalidConfig(format!(
                 "unsupported Phase 12 shared lookup artifact version `{}`",
@@ -643,6 +650,13 @@ mod tests {
                 })
             })
             .collect::<Result<_>>()?;
+        if normalization_rows.len() != activation_rows.len() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 12 shared lookup artifact row counts disagree: normalization={}, activation={}",
+                normalization_rows.len(),
+                activation_rows.len()
+            )));
+        }
         if activation_wrapper.proof_envelope.claimed_rows != activation_rows {
             return Err(VmError::InvalidConfig(
                 "Phase 12 shared lookup artifact activation wrapper rows do not match the embedded proof envelope"
@@ -663,6 +677,18 @@ mod tests {
             return Err(VmError::InvalidConfig(
                 "Phase 12 shared lookup artifact flattened rows do not match the embedded lookup proofs"
                     .to_string(),
+            ));
+        }
+        if !verify_phase10_shared_normalization_lookup_envelope(
+            &normalization_wrapper.proof_envelope,
+        )? {
+            return Err(VmError::UnsupportedProof(
+                "Phase 12 shared lookup artifact normalization proof did not verify".to_string(),
+            ));
+        }
+        if !verify_phase10_shared_binary_step_lookup_envelope(&activation_wrapper.proof_envelope)? {
+            return Err(VmError::UnsupportedProof(
+                "Phase 12 shared lookup artifact activation proof did not verify".to_string(),
             ));
         }
         Ok(())

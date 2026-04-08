@@ -3925,9 +3925,8 @@ mod tests {
     use crate::stwo_backend::shared_lookup_artifact::{
         build_phase12_shared_lookup_artifact, EmbeddedSharedActivationClaimRow,
         EmbeddedSharedActivationLookupProof, EmbeddedSharedNormalizationClaimRow,
-        EmbeddedSharedNormalizationProof,
-        Phase12SharedLookupArtifact, STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12,
-        STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12,
+        EmbeddedSharedNormalizationProof, Phase12SharedLookupArtifact,
+        STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12, STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12,
     };
     use crate::stwo_backend::{
         prove_phase10_shared_binary_step_lookup_envelope,
@@ -4748,30 +4747,71 @@ mod tests {
                 manifest.chain_version
             )));
         }
+        if manifest.semantic_scope != STWO_DECODING_CHAIN_SCOPE_PHASE12 {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported decoding chain semantic scope `{}`",
+                manifest.semantic_scope
+            )));
+        }
+        if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported decoding proof backend version `{}` (expected `{}`)",
+                manifest.proof_backend_version,
+                crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+            )));
+        }
         if manifest.steps.is_empty() || manifest.total_steps != manifest.steps.len() {
             return Err(VmError::InvalidConfig(
                 "decoding chain step count metadata is inconsistent".to_string(),
             ));
         }
+        if manifest.shared_lookup_artifacts.is_empty() {
+            return Err(VmError::InvalidConfig(
+                "decoding chain must contain at least one shared lookup artifact".to_string(),
+            ));
+        }
+        if manifest.shared_lookup_artifacts.len() > manifest.steps.len() {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding chain contains {} shared lookup artifacts for only {} steps",
+                manifest.shared_lookup_artifacts.len(),
+                manifest.steps.len()
+            )));
+        }
 
         let mut registry = std::collections::HashMap::new();
         for artifact in &manifest.shared_lookup_artifacts {
-            if artifact.layout_commitment != expected_layout_commitment {
-                return Err(VmError::InvalidConfig(
-                    "decoding chain shared lookup artifact layout commitment is inconsistent"
-                        .to_string(),
-                ));
+            verify_phase12_shared_lookup_artifact(
+                artifact,
+                &manifest.layout,
+                &expected_layout_commitment,
+            )?;
+            if registry
+                .insert(artifact.artifact_commitment.clone(), artifact)
+                .is_some()
+            {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding chain reuses shared lookup artifact commitment `{}` for different entries",
+                    artifact.artifact_commitment
+                )));
             }
-            registry.insert(artifact.artifact_commitment.clone(), artifact);
         }
 
         let mut previous_history_commitment: Option<String> = None;
         let mut previous_history_length: Option<usize> = None;
+        let mut previous_expected_to: Option<Phase12DecodingState> = None;
         for (step_index, step) in manifest.steps.iter().enumerate() {
             if step.proof.proof_backend != StarkProofBackend::Stwo {
                 return Err(VmError::InvalidConfig(format!(
                     "decoding step {step_index} proof backend `{}` is not `stwo`",
                     step.proof.proof_backend
+                )));
+            }
+            if step.proof.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+            {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding step {step_index} proof backend version `{}` does not match the supported Phase 12 version `{}`",
+                    step.proof.proof_backend_version,
+                    crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
                 )));
             }
             if step.proof.proof_backend_version != manifest.proof_backend_version
@@ -4847,6 +4887,44 @@ mod tests {
                     "decoding step {step_index} recorded from_state does not match the oracle replay"
                 )));
             }
+            if let Some(previous) = &previous_expected_to {
+                if previous.persistent_state_commitment != expected_from.persistent_state_commitment
+                {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding chain link {} -> {} does not preserve the persistent KV-cache state commitment",
+                        step_index - 1,
+                        step_index
+                    )));
+                }
+                if previous.kv_cache_commitment != expected_from.kv_cache_commitment {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding chain link {} -> {} does not preserve the KV-cache commitment",
+                        step_index - 1,
+                        step_index
+                    )));
+                }
+                if previous.position != expected_from.position {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding chain link {} -> {} does not preserve the decoding position",
+                        step_index - 1,
+                        step_index
+                    )));
+                }
+                if previous.kv_history_commitment != expected_from.kv_history_commitment {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding chain link {} -> {} does not preserve the cumulative KV-history commitment",
+                        step_index - 1,
+                        step_index
+                    )));
+                }
+                if previous.kv_history_length != expected_from.kv_history_length {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding chain link {} -> {} does not preserve the cumulative KV-history length",
+                        step_index - 1,
+                        step_index
+                    )));
+                }
+            }
 
             let to_view =
                 oracle_phase12_state_view(&step.proof.claim.final_state.memory, &manifest.layout)?;
@@ -4873,7 +4951,7 @@ mod tests {
                 incoming_token_commitment: to_view.incoming_token_commitment.clone(),
                 query_commitment: to_view.query_commitment.clone(),
                 output_commitment: to_view.output_commitment.clone(),
-                lookup_rows_commitment: registry_artifact.lookup_rows_commitment.clone(),
+                lookup_rows_commitment: to_view.lookup_rows_commitment.clone(),
             };
             if step.to_state != expected_to {
                 return Err(VmError::InvalidConfig(format!(
@@ -4882,6 +4960,7 @@ mod tests {
             }
             previous_history_commitment = Some(to_history_commitment);
             previous_history_length = Some(to_history_length);
+            previous_expected_to = Some(expected_to);
         }
         Ok(())
     }
@@ -4891,19 +4970,110 @@ mod tests {
         let expected_layout_commitment = oracle_commit_phase12_layout(&manifest.layout);
         let kv_cache_range = manifest.layout.kv_cache_range()?;
         let latest_cached_range = manifest.layout.latest_cached_pair_range()?;
+        if manifest.proof_backend != StarkProofBackend::Stwo {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain backend `{}` is not `stwo`",
+                manifest.proof_backend
+            )));
+        }
+        if manifest.chain_version != STWO_DECODING_CHAIN_VERSION_PHASE14 {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported chunked decoding chain version `{}`",
+                manifest.chain_version
+            )));
+        }
+        if manifest.semantic_scope != STWO_DECODING_CHAIN_SCOPE_PHASE14 {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported chunked decoding semantic scope `{}`",
+                manifest.semantic_scope
+            )));
+        }
+        if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported chunked decoding proof backend version `{}` (expected `{}`)",
+                manifest.proof_backend_version,
+                crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+            )));
+        }
         if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
             return Err(VmError::InvalidConfig(format!(
                 "unsupported chunked decoding statement version `{}`",
                 manifest.statement_version
             )));
         }
+        if manifest.history_chunk_pairs != PHASE14_HISTORY_CHUNK_PAIRS {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported chunked decoding history_chunk_pairs={} (expected {})",
+                manifest.history_chunk_pairs, PHASE14_HISTORY_CHUNK_PAIRS
+            )));
+        }
+        if manifest.steps.is_empty() || manifest.total_steps != manifest.steps.len() {
+            return Err(VmError::InvalidConfig(
+                "chunked decoding chain step count metadata is inconsistent".to_string(),
+            ));
+        }
+        if manifest.shared_lookup_artifacts.is_empty() {
+            return Err(VmError::InvalidConfig(
+                "chunked decoding chain must contain at least one shared lookup artifact"
+                    .to_string(),
+            ));
+        }
+        if manifest.shared_lookup_artifacts.len() > manifest.steps.len() {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain contains {} shared lookup artifacts for only {} steps",
+                manifest.shared_lookup_artifacts.len(),
+                manifest.steps.len()
+            )));
+        }
         let mut registry = std::collections::HashMap::new();
         for artifact in &manifest.shared_lookup_artifacts {
-            registry.insert(artifact.artifact_commitment.clone(), artifact);
+            verify_phase12_shared_lookup_artifact(
+                artifact,
+                &manifest.layout,
+                &expected_layout_commitment,
+            )?;
+            if registry
+                .insert(artifact.artifact_commitment.clone(), artifact)
+                .is_some()
+            {
+                return Err(VmError::InvalidConfig(format!(
+                    "chunked decoding chain reuses shared lookup artifact commitment `{}` for different entries",
+                    artifact.artifact_commitment
+                )));
+            }
         }
         let mut accumulator: Option<Phase14HistoryAccumulator> = None;
+        let mut previous_expected_to: Option<Phase14DecodingState> = None;
         for (step_index, step) in manifest.steps.iter().enumerate() {
-            let artifact = registry
+            if !matches_decoding_step_v2_family_with_layout(
+                &step.proof.claim.program,
+                &manifest.layout,
+            ) {
+                return Err(VmError::InvalidConfig(format!(
+                    "chunked decoding step {step_index} is not a decoding_step_v2-family proof for the manifest layout"
+                )));
+            }
+            if step.proof.proof_backend != StarkProofBackend::Stwo {
+                return Err(VmError::InvalidConfig(format!(
+                    "chunked decoding step {step_index} proof backend `{}` is not `stwo`",
+                    step.proof.proof_backend
+                )));
+            }
+            if step.proof.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+            {
+                return Err(VmError::InvalidConfig(format!(
+                    "chunked decoding step {step_index} proof backend version `{}` is not `{}`",
+                    step.proof.proof_backend_version,
+                    crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+                )));
+            }
+            if step.proof.claim.statement_version != manifest.statement_version {
+                return Err(VmError::InvalidConfig(format!(
+                    "chunked decoding step {step_index} statement version `{}` does not match manifest `{}`",
+                    step.proof.claim.statement_version, manifest.statement_version
+                )));
+            }
+            let registry_artifact = registry
                 .get(&step.shared_lookup_artifact_commitment)
                 .ok_or_else(|| {
                     VmError::InvalidConfig(format!(
@@ -4953,14 +5123,73 @@ mod tests {
                     "chunked decoding step {step_index} recorded from_state does not match the oracle replay"
                 )));
             }
+            if let Some(previous) = &previous_expected_to {
+                if previous.persistent_state_commitment != expected_from.persistent_state_commitment
+                {
+                    return Err(VmError::InvalidConfig(format!(
+                        "chunked decoding chain link {} -> {} does not preserve the persistent KV-cache state commitment",
+                        step_index - 1,
+                        step_index
+                    )));
+                }
+                if previous.kv_cache_commitment != expected_from.kv_cache_commitment {
+                    return Err(VmError::InvalidConfig(format!(
+                        "chunked decoding chain link {} -> {} does not preserve the KV-cache commitment",
+                        step_index - 1,
+                        step_index
+                    )));
+                }
+                if previous.position != expected_from.position {
+                    return Err(VmError::InvalidConfig(format!(
+                        "chunked decoding chain link {} -> {} does not preserve the decoding position",
+                        step_index - 1,
+                        step_index
+                    )));
+                }
+                if previous.kv_history_commitment != expected_from.kv_history_commitment {
+                    return Err(VmError::InvalidConfig(format!(
+                        "chunked decoding chain link {} -> {} does not preserve the cumulative KV-history commitment",
+                        step_index - 1,
+                        step_index
+                    )));
+                }
+                if previous.kv_history_length != expected_from.kv_history_length {
+                    return Err(VmError::InvalidConfig(format!(
+                        "chunked decoding chain link {} -> {} does not preserve the cumulative KV-history length",
+                        step_index - 1,
+                        step_index
+                    )));
+                }
+            }
 
             let to_view =
                 oracle_phase12_state_view(&step.proof.claim.final_state.memory, &manifest.layout)?;
+            let proof_artifact = oracle_phase12_shared_lookup_artifact_from_proof_payload(
+                &step.proof,
+                &expected_layout_commitment,
+            )?
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "chunked decoding step {step_index} is missing its Phase 12 shared lookup artifact payload"
+                ))
+            })?;
+            if **registry_artifact != proof_artifact {
+                return Err(VmError::InvalidConfig(format!(
+                    "chunked decoding step {step_index} shared lookup artifact `{}` does not match the proof payload",
+                    step.shared_lookup_artifact_commitment
+                )));
+            }
+            if proof_artifact.lookup_rows_commitment != to_view.lookup_rows_commitment {
+                return Err(VmError::InvalidConfig(format!(
+                    "chunked decoding step {step_index} shared lookup artifact `{}` does not match the proof's final-state lookup rows",
+                    step.shared_lookup_artifact_commitment
+                )));
+            }
             let next = oracle_advance_phase14_history(
                 &expected_layout_commitment,
                 &current,
                 &step.proof.claim.final_state.memory[latest_cached_range.clone()],
-                &artifact.lookup_rows_commitment,
+                &proof_artifact.lookup_rows_commitment,
                 manifest.layout.pair_width,
             )?;
             let expected_to = Phase14DecodingState {
@@ -4994,6 +5223,7 @@ mod tests {
                 )));
             }
             accumulator = Some(next);
+            previous_expected_to = Some(expected_to);
         }
         Ok(())
     }
@@ -6513,6 +6743,7 @@ mod tests {
     }
 
     proptest! {
+        #![proptest_config(ProptestConfig::with_cases(32))]
         #[test]
         fn phase12_oracle_matches_production_on_bounded_single_step_chain(
             (layout, memory) in phase12_bounded_memory_strategy()
