@@ -14,7 +14,7 @@ if ((${#hardening_test_filters[@]} == 0)); then
   exit 1
 fi
 
-export ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=0}"
+export ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=1:leak_check_at_exit=0}"
 export RUSTFLAGS="${RUSTFLAGS:-} -Zsanitizer=address"
 export RUSTDOCFLAGS="${RUSTDOCFLAGS:-} -Zsanitizer=address"
 
