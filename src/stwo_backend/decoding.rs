@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::fs;
+use std::io::Read;
 use std::path::Path;
 
 use blake2::digest::{Update, VariableOutput};
@@ -64,6 +65,19 @@ const PHASE12_LOOKUP_ROW_VALUES: [i16; PHASE12_SHARED_LOOKUP_ROWS] = [16, 64, 1,
 const PHASE14_HISTORY_CHUNK_PAIRS: usize = 2;
 const PHASE15_SEGMENT_STEP_LIMIT: usize = 2;
 const PHASE16_ROLLUP_SEGMENT_LIMIT: usize = 2;
+const MAX_DECODING_CHAIN_STEPS: usize = 4096;
+const MAX_DECODING_SHARED_LOOKUP_ARTIFACTS: usize = 4096;
+pub(crate) const MAX_DECODING_PROOF_PAYLOAD_BYTES: usize = 2 * 1024 * 1024;
+pub(crate) const MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES: usize = 512 * 1024;
+const MAX_PHASE11_DECODING_CHAIN_JSON_BYTES: usize = 2 * 1024 * 1024;
+const MAX_PHASE12_DECODING_CHAIN_JSON_BYTES: usize = 8 * 1024 * 1024;
+const MAX_PHASE14_DECODING_CHAIN_JSON_BYTES: usize =
+    MAX_PHASE12_DECODING_CHAIN_JSON_BYTES + (2 * 1024 * 1024);
+const MAX_PHASE15_SEGMENT_BUNDLE_JSON_BYTES: usize = 8 * 1024 * 1024;
+const MAX_PHASE16_SEGMENT_ROLLUP_JSON_BYTES: usize = 8 * 1024 * 1024;
+const MAX_PHASE17_ROLLUP_MATRIX_JSON_BYTES: usize = 16 * 1024 * 1024;
+const MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES: usize =
+    MAX_PHASE12_DECODING_CHAIN_JSON_BYTES + (512 * 1024);
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase11DecodingState {
@@ -457,6 +471,7 @@ fn build_phase12_shared_lookup_artifact_index<'a>(
 ) -> Result<HashMap<String, &'a Phase12SharedLookupArtifact>> {
     let mut artifact_index = HashMap::with_capacity(artifacts.len());
     for artifact in artifacts {
+        validate_phase12_shared_lookup_artifact_resource_bounds(artifact, registry_label)?;
         if artifact.flattened_lookup_rows.len() != expected_flattened_lookup_rows_len {
             return Err(VmError::InvalidConfig(format!(
                 "{registry_label} artifact `{}` has {} flattened lookup rows; expected {}",
@@ -506,6 +521,84 @@ fn shared_lookup_artifact_by_commitment<'a>(
                 "shared lookup artifact `{artifact_commitment}` is not present in the manifest registry"
             ))
         })
+}
+
+fn validate_phase12_shared_lookup_artifact_resource_bounds(
+    artifact: &Phase12SharedLookupArtifact,
+    registry_label: &str,
+) -> Result<()> {
+    if artifact.normalization_proof_envelope.proof_envelope.proof.len()
+        > MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "{registry_label} artifact `{}` normalization proof is {} bytes, exceeding the limit of {} bytes",
+            artifact.artifact_commitment,
+            artifact.normalization_proof_envelope.proof_envelope.proof.len(),
+            MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES
+        )));
+    }
+    if artifact.activation_proof_envelope.proof_envelope.proof.len()
+        > MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "{registry_label} artifact `{}` activation proof is {} bytes, exceeding the limit of {} bytes",
+            artifact.artifact_commitment,
+            artifact.activation_proof_envelope.proof_envelope.proof.len(),
+            MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES
+        )));
+    }
+    Ok(())
+}
+
+fn read_json_bytes_with_limit(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u8>> {
+    let metadata = fs::symlink_metadata(path)?;
+    if !metadata.file_type().is_file() {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} `{}` is not a regular file",
+            path.display()
+        )));
+    }
+    let file = fs::File::open(path)?;
+    if metadata.len() > max_bytes as u64 {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
+            path.display(),
+            metadata.len(),
+            max_bytes
+        )));
+    }
+    let mut limited = file.take((max_bytes as u64).saturating_add(1));
+    let mut bytes = Vec::with_capacity(metadata.len().min(max_bytes as u64) as usize);
+    limited.read_to_end(&mut bytes)?;
+    if bytes.len() > max_bytes {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} `{}` is {} bytes after reading, exceeding the limit of {} bytes",
+            path.display(),
+            bytes.len(),
+            max_bytes
+        )));
+    }
+    Ok(bytes)
+}
+
+fn write_json_with_limit<T: Serialize>(
+    value: &T,
+    path: &Path,
+    max_bytes: usize,
+    label: &str,
+) -> Result<()> {
+    let bytes = serde_json::to_vec_pretty(value)
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    if bytes.len() > max_bytes {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
+            path.display(),
+            bytes.len(),
+            max_bytes
+        )));
+    }
+    fs::write(path, bytes)?;
+    Ok(())
 }
 
 pub fn decoding_step_v1_template_program() -> Result<Program> {
@@ -714,6 +807,13 @@ pub fn phase11_prepare_decoding_chain(
     let first = proofs.first().ok_or_else(|| {
         VmError::InvalidConfig("proof-carrying decoding requires at least one proof".to_string())
     })?;
+    if proofs.len() > MAX_DECODING_CHAIN_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding chain contains {} steps, exceeding the limit of {}",
+            proofs.len(),
+            MAX_DECODING_CHAIN_STEPS
+        )));
+    }
     if first.proof_backend != StarkProofBackend::Stwo {
         return Err(VmError::InvalidConfig(format!(
             "proof-carrying decoding requires `stwo` proofs, got `{}`",
@@ -812,6 +912,13 @@ pub fn verify_phase11_decoding_chain(manifest: &Phase11DecodingChainManifest) ->
             "decoding chain must contain at least one step".to_string(),
         ));
     }
+    if manifest.steps.len() > MAX_DECODING_CHAIN_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding chain contains {} steps, exceeding the limit of {}",
+            manifest.steps.len(),
+            MAX_DECODING_CHAIN_STEPS
+        )));
+    }
     if manifest.total_steps != manifest.steps.len() {
         return Err(VmError::InvalidConfig(format!(
             "decoding chain total_steps={} does not match steps.len()={}",
@@ -892,6 +999,13 @@ pub fn phase12_prepare_decoding_chain(
     let first = proofs.first().ok_or_else(|| {
         VmError::InvalidConfig("proof-carrying decoding requires at least one proof".to_string())
     })?;
+    if proofs.len() > MAX_DECODING_CHAIN_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "proof-carrying decoding contains {} steps, exceeding the limit of {}",
+            proofs.len(),
+            MAX_DECODING_CHAIN_STEPS
+        )));
+    }
     if first.proof_backend != StarkProofBackend::Stwo {
         return Err(VmError::InvalidConfig(format!(
             "proof-carrying decoding requires `stwo` proofs, got `{}`",
@@ -907,6 +1021,13 @@ pub fn phase12_prepare_decoding_chain(
     let expected_layout_commitment = commit_phase12_layout(layout);
     let (shared_lookup_artifacts, artifact_refs) =
         build_phase12_shared_lookup_artifact_registry(proofs, &expected_layout_commitment)?;
+    if shared_lookup_artifacts.len() > MAX_DECODING_SHARED_LOOKUP_ARTIFACTS {
+        return Err(VmError::InvalidConfig(format!(
+            "proof-carrying decoding contains {} shared lookup artifacts, exceeding the limit of {}",
+            shared_lookup_artifacts.len(),
+            MAX_DECODING_SHARED_LOOKUP_ARTIFACTS
+        )));
+    }
     let mut steps = Vec::with_capacity(proofs.len());
     let mut previous_history_commitment: Option<String> = None;
     let mut previous_history_length: Option<usize> = None;
@@ -1049,6 +1170,13 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
             "decoding chain must contain at least one step".to_string(),
         ));
     }
+    if manifest.steps.len() > MAX_DECODING_CHAIN_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding chain contains {} steps, exceeding the limit of {}",
+            manifest.steps.len(),
+            MAX_DECODING_CHAIN_STEPS
+        )));
+    }
     if manifest.total_steps != manifest.steps.len() {
         return Err(VmError::InvalidConfig(format!(
             "decoding chain total_steps={} does not match steps.len()={}",
@@ -1060,6 +1188,13 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
         return Err(VmError::InvalidConfig(
             "decoding chain must contain at least one shared lookup artifact".to_string(),
         ));
+    }
+    if manifest.shared_lookup_artifacts.len() > MAX_DECODING_SHARED_LOOKUP_ARTIFACTS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding chain contains {} shared lookup artifacts, exceeding the limit of {}",
+            manifest.shared_lookup_artifacts.len(),
+            MAX_DECODING_SHARED_LOOKUP_ARTIFACTS
+        )));
     }
     if manifest.shared_lookup_artifacts.len() > manifest.steps.len() {
         return Err(VmError::InvalidConfig(format!(
@@ -1429,6 +1564,13 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
             "chunked decoding chain must contain at least one step".to_string(),
         ));
     }
+    if manifest.steps.len() > MAX_DECODING_CHAIN_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "chunked decoding chain contains {} steps, exceeding the limit of {}",
+            manifest.steps.len(),
+            MAX_DECODING_CHAIN_STEPS
+        )));
+    }
     if manifest.total_steps != manifest.steps.len() {
         return Err(VmError::InvalidConfig(format!(
             "chunked decoding chain total_steps={} does not match steps.len()={}",
@@ -1440,6 +1582,13 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
         return Err(VmError::InvalidConfig(
             "chunked decoding chain must contain at least one shared lookup artifact".to_string(),
         ));
+    }
+    if manifest.shared_lookup_artifacts.len() > MAX_DECODING_SHARED_LOOKUP_ARTIFACTS {
+        return Err(VmError::InvalidConfig(format!(
+            "chunked decoding chain contains {} shared lookup artifacts, exceeding the limit of {}",
+            manifest.shared_lookup_artifacts.len(),
+            MAX_DECODING_SHARED_LOOKUP_ARTIFACTS
+        )));
     }
     if manifest.shared_lookup_artifacts.len() > manifest.steps.len() {
         return Err(VmError::InvalidConfig(format!(
@@ -2220,29 +2369,41 @@ pub fn save_phase11_decoding_chain(
     manifest: &Phase11DecodingChainManifest,
     path: &Path,
 ) -> Result<()> {
-    let bytes = serde_json::to_vec_pretty(manifest)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
-    fs::write(path, bytes)?;
-    Ok(())
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE11_DECODING_CHAIN_JSON_BYTES,
+        "Phase 11 decoding chain manifest",
+    )
 }
 
 pub fn save_phase12_decoding_chain(
     manifest: &Phase12DecodingChainManifest,
     path: &Path,
 ) -> Result<()> {
-    let bytes = serde_json::to_vec_pretty(manifest)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
-    fs::write(path, bytes)?;
-    Ok(())
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE12_DECODING_CHAIN_JSON_BYTES,
+        "Phase 12 decoding chain manifest",
+    )
 }
 
 pub fn load_phase11_decoding_chain(path: &Path) -> Result<Phase11DecodingChainManifest> {
-    let bytes = fs::read(path)?;
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE11_DECODING_CHAIN_JSON_BYTES,
+        "Phase 11 decoding chain manifest",
+    )?;
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
 pub fn load_phase12_decoding_chain(path: &Path) -> Result<Phase12DecodingChainManifest> {
-    let bytes = fs::read(path)?;
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE12_DECODING_CHAIN_JSON_BYTES,
+        "Phase 12 decoding chain manifest",
+    )?;
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
@@ -2250,14 +2411,20 @@ pub fn save_phase14_decoding_chain(
     manifest: &Phase14DecodingChainManifest,
     path: &Path,
 ) -> Result<()> {
-    let bytes = serde_json::to_vec_pretty(manifest)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
-    fs::write(path, bytes)?;
-    Ok(())
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE14_DECODING_CHAIN_JSON_BYTES,
+        "Phase 14 decoding chain manifest",
+    )
 }
 
 pub fn load_phase14_decoding_chain(path: &Path) -> Result<Phase14DecodingChainManifest> {
-    let bytes = fs::read(path)?;
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE14_DECODING_CHAIN_JSON_BYTES,
+        "Phase 14 decoding chain manifest",
+    )?;
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
@@ -2265,16 +2432,22 @@ pub fn save_phase15_decoding_segment_bundle(
     manifest: &Phase15DecodingHistorySegmentBundleManifest,
     path: &Path,
 ) -> Result<()> {
-    let bytes = serde_json::to_vec_pretty(manifest)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
-    fs::write(path, bytes)?;
-    Ok(())
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE15_SEGMENT_BUNDLE_JSON_BYTES,
+        "Phase 15 decoding history segment bundle",
+    )
 }
 
 pub fn load_phase15_decoding_segment_bundle(
     path: &Path,
 ) -> Result<Phase15DecodingHistorySegmentBundleManifest> {
-    let bytes = fs::read(path)?;
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE15_SEGMENT_BUNDLE_JSON_BYTES,
+        "Phase 15 decoding history segment bundle",
+    )?;
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
@@ -2282,16 +2455,22 @@ pub fn save_phase16_decoding_segment_rollup(
     manifest: &Phase16DecodingHistoryRollupManifest,
     path: &Path,
 ) -> Result<()> {
-    let bytes = serde_json::to_vec_pretty(manifest)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
-    fs::write(path, bytes)?;
-    Ok(())
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE16_SEGMENT_ROLLUP_JSON_BYTES,
+        "Phase 16 decoding history segment rollup",
+    )
 }
 
 pub fn load_phase16_decoding_segment_rollup(
     path: &Path,
 ) -> Result<Phase16DecodingHistoryRollupManifest> {
-    let bytes = fs::read(path)?;
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE16_SEGMENT_ROLLUP_JSON_BYTES,
+        "Phase 16 decoding history segment rollup",
+    )?;
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
@@ -2299,16 +2478,22 @@ pub fn save_phase17_decoding_rollup_matrix(
     manifest: &Phase17DecodingHistoryRollupMatrixManifest,
     path: &Path,
 ) -> Result<()> {
-    let bytes = serde_json::to_vec_pretty(manifest)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
-    fs::write(path, bytes)?;
-    Ok(())
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE17_ROLLUP_MATRIX_JSON_BYTES,
+        "Phase 17 decoding history rollup matrix",
+    )
 }
 
 pub fn load_phase17_decoding_rollup_matrix(
     path: &Path,
 ) -> Result<Phase17DecodingHistoryRollupMatrixManifest> {
-    let bytes = fs::read(path)?;
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE17_ROLLUP_MATRIX_JSON_BYTES,
+        "Phase 17 decoding history rollup matrix",
+    )?;
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
@@ -2316,16 +2501,22 @@ pub fn save_phase13_decoding_layout_matrix(
     manifest: &Phase13DecodingLayoutMatrixManifest,
     path: &Path,
 ) -> Result<()> {
-    let bytes = serde_json::to_vec_pretty(manifest)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
-    fs::write(path, bytes)?;
-    Ok(())
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES,
+        "Phase 13 decoding layout matrix",
+    )
 }
 
 pub fn load_phase13_decoding_layout_matrix(
     path: &Path,
 ) -> Result<Phase13DecodingLayoutMatrixManifest> {
-    let bytes = fs::read(path)?;
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES,
+        "Phase 13 decoding layout matrix",
+    )?;
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
@@ -6034,6 +6225,21 @@ mod tests {
     }
 
     #[test]
+    fn phase11_prepare_decoding_chain_rejects_too_many_steps() {
+        let step = sample_step_proof(
+            vec![
+                0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            ],
+            vec![
+                0, 0, 0, 0, 2, 1, 2, 1, 1, 1, 1, 4, 1, 16, 64, 1, 1, 4, 128, 0, 1, 1, 1,
+            ],
+        );
+        let proofs = vec![step; MAX_DECODING_CHAIN_STEPS + 1];
+        let err = phase11_prepare_decoding_chain(&proofs).expect_err("too many steps should fail");
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[test]
     fn phase11_verify_decoding_chain_rejects_broken_kv_link() {
         let step0 = sample_step_proof(
             vec![
@@ -6075,6 +6281,70 @@ mod tests {
         verify_phase11_decoding_chain(&loaded).expect("verify");
         assert_eq!(loaded, manifest);
         let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn load_phase12_decoding_chain_rejects_oversized_manifest_file() {
+        let path = std::env::temp_dir().join(format!(
+            "phase12-decoding-oversized-{}.json",
+            std::process::id()
+        ));
+        fs::write(&path, vec![b'x'; MAX_PHASE12_DECODING_CHAIN_JSON_BYTES + 1]).expect("write");
+        let err = load_phase12_decoding_chain(&path).expect_err("oversized manifest should fail");
+        assert!(err.to_string().contains("exceeding the limit"));
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn load_phase12_decoding_chain_rejects_non_regular_file() {
+        let path = std::env::temp_dir().join(format!("phase12-decoding-dir-{}", std::process::id()));
+        fs::create_dir_all(&path).expect("create dir");
+        let err = load_phase12_decoding_chain(&path).expect_err("directory should fail");
+        assert!(err.to_string().contains("is not a regular file"));
+        let _ = fs::remove_dir_all(path);
+    }
+
+    #[test]
+    fn save_phase12_decoding_chain_rejects_manifest_exceeding_json_budget() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        manifest.steps[0].proof.proof = vec![0; MAX_PHASE12_DECODING_CHAIN_JSON_BYTES];
+        let path = std::env::temp_dir().join(format!(
+            "phase12-decoding-save-oversized-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        let err = save_phase12_decoding_chain(&manifest, &path)
+            .expect_err("oversized manifest should be rejected on save");
+        assert!(err.to_string().contains("exceeding the limit"));
+        assert!(!path.exists(), "save should not write an unreadable manifest");
+    }
+
+    #[test]
+    fn save_phase14_decoding_chain_rejects_manifest_exceeding_json_budget() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        manifest.steps[0].proof.proof = vec![0; MAX_PHASE14_DECODING_CHAIN_JSON_BYTES];
+        let path = std::env::temp_dir().join(format!(
+            "phase14-decoding-save-oversized-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        let err = save_phase14_decoding_chain(&manifest, &path)
+            .expect_err("oversized phase14 manifest should be rejected on save");
+        assert!(err.to_string().contains("exceeding the limit"));
+        assert!(!path.exists(), "save should not write an unreadable manifest");
     }
 
     #[test]
@@ -6777,6 +7047,68 @@ mod tests {
     }
 
     #[test]
+    fn phase12_verify_decoding_chain_rejects_oversized_proof_payload() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        manifest.steps[0].proof.proof = vec![0; MAX_DECODING_PROOF_PAYLOAD_BYTES + 1];
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        assert!(err.to_string().contains("proof payload is"));
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_oversized_registry_nested_proof() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        manifest.shared_lookup_artifacts[0]
+            .activation_proof_envelope
+            .proof_envelope
+            .proof
+            .resize(MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES + 1, 0);
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        assert!(err.to_string().contains("activation proof is"));
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_too_many_steps() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        let template_step = manifest.steps[0].clone();
+        manifest.steps = vec![template_step; MAX_DECODING_CHAIN_STEPS + 1];
+        manifest.total_steps = manifest.steps.len();
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[test]
+    fn phase12_prepare_decoding_chain_rejects_too_many_steps() {
+        let layout = phase12_default_decoding_layout();
+        let memory = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .next()
+            .expect("seed memory");
+        let template = sample_phase12_step_proof(&layout, memory);
+        let proofs = vec![template; MAX_DECODING_CHAIN_STEPS + 1];
+        let err = phase12_prepare_decoding_chain(&layout, &proofs).unwrap_err();
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[test]
     fn phase12_verify_decoding_chain_rejects_unreferenced_shared_lookup_artifact() {
         let layout = phase12_default_decoding_layout();
         let memories = phase12_demo_initial_memories(&layout).expect("memories");
@@ -6795,6 +7127,31 @@ mod tests {
                 || message.contains("appears more than once"),
             "unexpected error: {message}"
         );
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_too_many_shared_lookup_artifacts() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        let template_step = manifest.steps[0].clone();
+        manifest.steps = vec![template_step; MAX_DECODING_SHARED_LOOKUP_ARTIFACTS];
+        manifest.total_steps = manifest.steps.len();
+        let template = manifest.shared_lookup_artifacts[0].clone();
+        while manifest.shared_lookup_artifacts.len() <= MAX_DECODING_SHARED_LOOKUP_ARTIFACTS {
+            let mut extra = template.clone();
+            extra.artifact_commitment
+                .push_str(&format!("-{}", manifest.shared_lookup_artifacts.len()));
+            manifest.shared_lookup_artifacts.push(extra);
+        }
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("shared lookup artifacts, exceeding the limit"));
     }
 
     #[test]
@@ -7126,6 +7483,52 @@ mod tests {
         assert!(err
             .to_string()
             .contains("unsupported chunked decoding history_chunk_pairs=4"));
+    }
+
+    #[test]
+    fn phase14_verify_decoding_chain_rejects_too_many_steps() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let template_step = manifest.steps[0].clone();
+        manifest.steps = vec![template_step; MAX_DECODING_CHAIN_STEPS + 1];
+        manifest.total_steps = manifest.steps.len();
+        let err = verify_phase14_decoding_chain(&manifest).unwrap_err();
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[test]
+    fn phase14_verify_decoding_chain_rejects_too_many_shared_lookup_artifacts() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let template_step = manifest.steps[0].clone();
+        manifest.steps = vec![template_step; MAX_DECODING_SHARED_LOOKUP_ARTIFACTS];
+        manifest.total_steps = manifest.steps.len();
+        let template = manifest.shared_lookup_artifacts[0].clone();
+        while manifest.shared_lookup_artifacts.len() <= MAX_DECODING_SHARED_LOOKUP_ARTIFACTS {
+            let mut extra = template.clone();
+            extra.artifact_commitment.push_str(&format!("-{}", manifest.shared_lookup_artifacts.len()));
+            manifest.shared_lookup_artifacts.push(extra);
+        }
+        let err = verify_phase14_decoding_chain(&manifest).unwrap_err();
+        let message = err.to_string();
+        assert!(
+            message.contains("shared lookup artifacts, exceeding the limit")
+                || message.contains("shared lookup artifact")
+                || message.contains("appears more than once"),
+            "unexpected error: {message}"
+        );
     }
 
     #[test]
