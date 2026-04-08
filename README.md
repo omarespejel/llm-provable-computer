@@ -518,8 +518,8 @@ matrix/rollup-style packaging layers described in the next-paper track.
   lookup-backed values rather than only forwarded incoming values, with three
   carried lanes now driven by the bounded combined-output cell and one by the
   lookup-backed primary output on the wider public layouts, with that
-  combined-output cell now also absorbing one additional bounded shared lookup
-  row before it is carried forward, and with the primary and secondary outputs
+  combined-output cell now also absorbing two additional bounded shared lookup
+  rows before it is carried forward, and with the primary and secondary outputs
   both absorbing that combined-output cell so both shared activation rows
   influence the carried output frontier and output commitment, plus exact
   semantic tests and real-backend proving coverage over all default demo steps
@@ -838,7 +838,7 @@ executed decoding semantics, not only as carried proof metadata, and feeds
 lookup-backed values into the latest carried KV-cache pair on the public demo
 layouts, with the current wider layout frontier now mostly output-derived
 rather than forwarded-input-derived, while the bounded combined-output cell
-itself now absorbs one additional shared lookup row before both final output
+itself now absorbs two additional shared lookup rows before both final output
 lanes carry it forward.
 
 #### Phase Highlights

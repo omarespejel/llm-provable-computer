@@ -1,15 +1,15 @@
 # Review Rules
 
-Review this repository aggressively.
+Review this repository as a proof-system codebase, not as a generic app repository.
 
-## Priorities
+## Highest priorities
 
 1. Proof soundness and verification correctness.
-2. AIR/trace consistency and replay invariants.
-3. Statement-version / backend-version / manifest-version drift.
-4. Overflow, carry, index arithmetic, and layout-boundary bugs.
-5. CI coverage regressions and reproducibility drift.
-6. Documentation claims that no longer match the code.
+2. AIR, trace, and carried-state consistency.
+3. Statement, backend, manifest, and artifact version drift.
+4. Bounds and denial-of-service safety in verification and manifest parsing.
+5. Missing negative, tamper, or compatibility tests after semantic changes.
+6. Documentation or README claims that overstate supported backends or phases.
 
 ## High-signal targets
 
@@ -19,13 +19,14 @@ Review this repository aggressively.
 - `src/bin/tvm.rs`
 - `tests/**`
 - `.github/workflows/**`
+- `scripts/**`
 - `README.md`
 - `docs/design/**`
 - `docs/paper/*.md`
 
-## What to ignore
+## Low-value targets to ignore
 
-Do not spend review budget on vendored or generated content:
+Do not spend review budget on vendored or generated content unless it creates an integrity or reproducibility risk:
 
 - `scripts/node_modules/**`
 - `docs/artifacts/**`
@@ -36,7 +37,7 @@ Do not spend review budget on vendored or generated content:
 
 ## Review style
 
-- Prefer concrete bug reports over generic advice.
-- If a change affects proof semantics, ask whether there is a failing-path or tamper-path regression test.
-- Flag claim drift in docs and README whenever a command, backend claim, or paper statement no longer matches implementation.
-- Ignore formatting-only issues unless they hide a correctness or maintainability risk.
+- Prefer one precise bug over five generic suggestions.
+- Treat removed checks, weaker commitment comparisons, and skipped nested-proof verification as high severity.
+- When a PR changes proof semantics, decoding-chain structure, or manifest schemas, expect at least one failing-path or tamper-path test.
+- Ignore style-only issues unless they hide a correctness, maintenance, or security risk.

@@ -15,6 +15,18 @@
       "scope": ["scripts/**", "docs/**", ".github/workflows/**"]
     },
     {
+      "path": ".coderabbit.yaml",
+      "description": "CodeRabbit review policy for this repository. Relevant when review behavior, path filters, or bot signal quality changes."
+    },
+    {
+      "path": ".pr_agent.toml",
+      "description": "Qodo review policy for this repository. Relevant when automatic review triggers, ignore filters, or proof-oriented review instructions change."
+    },
+    {
+      "path": "best_practices.md",
+      "description": "Repository-specific Qodo best practices used to reinforce proof-soundness and regression expectations."
+    },
+    {
       "path": ".github/workflows/ci.yml",
       "description": "Required CI matrix for stable/full/onnx-export/burn-model coverage and ONNX validation workflow.",
       "scope": ["src/**", "tests/**", "scripts/**", ".github/workflows/**"]

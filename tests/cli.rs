@@ -2,9 +2,9 @@ use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use assert_cmd::Command;
-#[cfg(feature = "onnx-export")]
+#[cfg(any(feature = "onnx-export", feature = "stwo-backend"))]
 use blake2::digest::{Update, VariableOutput};
-#[cfg(feature = "onnx-export")]
+#[cfg(any(feature = "onnx-export", feature = "stwo-backend"))]
 use blake2::Blake2bVar;
 #[cfg(feature = "onnx-export")]
 use jsonschema::{Draft, JSONSchema};
@@ -12,12 +12,13 @@ use predicates::prelude::*;
 
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::stwo_backend::{
+    commit_phase12_shared_lookup_rows, prove_phase10_shared_binary_step_lookup_envelope,
+    prove_phase10_shared_normalization_lookup_envelope, Phase10SharedLookupProofEnvelope,
+    Phase10SharedNormalizationLookupProofEnvelope, Phase3LookupTableRow,
     STWO_BACKEND_VERSION_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE12,
-    STWO_DECODING_CHAIN_VERSION_PHASE14,
-    STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13,
-    STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17,
-    STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15,
-    STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16,
+    STWO_DECODING_CHAIN_VERSION_PHASE14, STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13,
+    STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17, STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15,
+    STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16, STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12,
 };
 
 fn unique_temp_dir(name: &str) -> PathBuf {
@@ -63,7 +64,11 @@ fn read_repo_file(relative_path: &str) -> Vec<u8> {
     std::fs::read(path).expect("repo file")
 }
 
-#[cfg(feature = "onnx-export")]
+#[cfg(any(feature = "onnx-export", feature = "stwo-backend"))]
+#[cfg_attr(
+    all(feature = "stwo-backend", not(feature = "onnx-export")),
+    allow(dead_code)
+)]
 fn blake2b_256_hex(bytes: &[u8]) -> String {
     let mut output = [0u8; 32];
     let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
@@ -72,6 +77,88 @@ fn blake2b_256_hex(bytes: &[u8]) -> String {
         .finalize_variable(&mut output)
         .expect("blake2b-256 finalization");
     output.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+struct TestEmbeddedSharedNormalizationClaimRow {
+    norm_sq_memory_index: u8,
+    inv_sqrt_q8_memory_index: u8,
+    expected_norm_sq: i16,
+    expected_inv_sqrt_q8: i16,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+struct TestEmbeddedSharedNormalizationProof {
+    statement_version: String,
+    semantic_scope: String,
+    claimed_rows: Vec<TestEmbeddedSharedNormalizationClaimRow>,
+    proof_envelope: Phase10SharedNormalizationLookupProofEnvelope,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+struct TestEmbeddedSharedActivationClaimRow {
+    input_memory_index: u8,
+    output_memory_index: u8,
+    expected_input: i16,
+    expected_output: i16,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+struct TestEmbeddedSharedActivationLookupProof {
+    statement_version: String,
+    semantic_scope: String,
+    claimed_rows: Vec<TestEmbeddedSharedActivationClaimRow>,
+    proof_envelope: Phase10SharedLookupProofEnvelope,
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase12_artifact_commitment_from_json(artifact: &serde_json::Value) -> String {
+    let layout_commitment = artifact["layout_commitment"]
+        .as_str()
+        .expect("layout commitment");
+    let flattened_lookup_rows: Vec<i16> =
+        serde_json::from_value(artifact["flattened_lookup_rows"].clone())
+            .expect("flattened lookup rows");
+    let normalization: TestEmbeddedSharedNormalizationProof =
+        serde_json::from_value(artifact["normalization_proof_envelope"].clone())
+            .expect("normalization proof envelope");
+    let activation: TestEmbeddedSharedActivationLookupProof =
+        serde_json::from_value(artifact["activation_proof_envelope"].clone())
+            .expect("activation proof envelope");
+
+    let flattened_json = serde_json::to_vec(&flattened_lookup_rows).expect("flattened rows json");
+    let normalization_json = serde_json::to_vec(&normalization).expect("normalization json");
+    let activation_json = serde_json::to_vec(&activation).expect("activation json");
+
+    let mut output = [0u8; 32];
+    let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
+    hasher.update(STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12.as_bytes());
+    hasher.update(layout_commitment.as_bytes());
+    hasher.update(&(flattened_json.len() as u64).to_le_bytes());
+    hasher.update(&flattened_json);
+    hasher.update(&(normalization_json.len() as u64).to_le_bytes());
+    hasher.update(&normalization_json);
+    hasher.update(&(activation_json.len() as u64).to_le_bytes());
+    hasher.update(&activation_json);
+    hasher
+        .finalize_variable(&mut output)
+        .expect("blake2b-256 finalization");
+    output.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase12_lookup_rows_commitment_from_json(artifact: &serde_json::Value) -> String {
+    let layout_commitment = artifact["layout_commitment"]
+        .as_str()
+        .expect("layout commitment");
+    let flattened_lookup_rows: Vec<i16> =
+        serde_json::from_value(artifact["flattened_lookup_rows"].clone())
+            .expect("flattened lookup rows");
+    commit_phase12_shared_lookup_rows(layout_commitment, &flattened_lookup_rows)
 }
 
 #[cfg(feature = "onnx-export")]
@@ -753,9 +840,14 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v4_shared_activation() {
         .arg("--reexecute")
         .assert()
         .failure()
-        .stderr(predicate::str::contains(
-            "gemma_block_v4 shared activation does not match claimed final state",
-        ));
+        .stderr(
+            predicate::str::contains(
+                "gemma_block_v4 shared activation embedded claimed rows do not match the canonical final-state rows",
+            )
+            .or(predicate::str::contains(
+                "gemma_block_v4 shared activation does not match claimed final state",
+            )),
+        );
 
     let _ = std::fs::remove_file(proof_path);
     let _ = std::fs::remove_file(invalid_path);
@@ -1243,6 +1335,131 @@ fn cli_verify_stwo_decoding_family_demo_rejects_tampered_history_link() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_decoding_family_demo_rejects_missing_shared_lookup_artifact() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-artifact-proof").with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-artifact-tampered").with_extension("json");
+    let wrong_ref_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-artifact-wrong-ref").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-decoding-family-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    proof_json["shared_lookup_artifacts"] = serde_json::Value::Array(Vec::new());
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-decoding-family-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "must contain at least one shared lookup artifact",
+        ));
+
+    let mut wrong_ref_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    let artifact_commitments: Vec<String> = wrong_ref_json["shared_lookup_artifacts"]
+        .as_array()
+        .expect("artifact array")
+        .iter()
+        .filter_map(|artifact| artifact["artifact_commitment"].as_str().map(str::to_string))
+        .collect();
+    let original_commitment = wrong_ref_json["steps"][0]["shared_lookup_artifact_commitment"]
+        .as_str()
+        .expect("original shared lookup artifact commitment")
+        .to_string();
+    let wrong_commitment =
+        if artifact_commitments.len() > 1 && artifact_commitments[1] != original_commitment {
+            artifact_commitments[1].clone()
+        } else {
+            let artifact_array = wrong_ref_json["shared_lookup_artifacts"]
+                .as_array_mut()
+                .expect("artifact array");
+            let mut synthetic = artifact_array[0].clone();
+            let normalization_rows = vec![(4u16, 128u16), (16u16, 64u16)];
+            let activation_rows = vec![
+                Phase3LookupTableRow {
+                    input: 0,
+                    output: 1,
+                },
+                Phase3LookupTableRow {
+                    input: 1,
+                    output: 1,
+                },
+            ];
+            let normalization_envelope =
+                prove_phase10_shared_normalization_lookup_envelope(&normalization_rows)
+                    .expect("synthetic normalization envelope");
+            let activation_envelope =
+                prove_phase10_shared_binary_step_lookup_envelope(&activation_rows)
+                    .expect("synthetic activation envelope");
+            synthetic["flattened_lookup_rows"] = serde_json::json!([4, 128, 0, 1, 16, 64, 1, 1]);
+            synthetic["normalization_proof_envelope"]["claimed_rows"][0]["expected_norm_sq"] =
+                serde_json::Value::from(4);
+            synthetic["normalization_proof_envelope"]["claimed_rows"][0]["expected_inv_sqrt_q8"] =
+                serde_json::Value::from(128);
+            synthetic["normalization_proof_envelope"]["claimed_rows"][1]["expected_norm_sq"] =
+                serde_json::Value::from(16);
+            synthetic["normalization_proof_envelope"]["claimed_rows"][1]["expected_inv_sqrt_q8"] =
+                serde_json::Value::from(64);
+            synthetic["normalization_proof_envelope"]["proof_envelope"] =
+                serde_json::to_value(normalization_envelope).expect("serialize normalization");
+            synthetic["activation_proof_envelope"]["claimed_rows"][0]["expected_input"] =
+                serde_json::Value::from(0);
+            synthetic["activation_proof_envelope"]["claimed_rows"][0]["expected_output"] =
+                serde_json::Value::from(1);
+            synthetic["activation_proof_envelope"]["claimed_rows"][1]["expected_input"] =
+                serde_json::Value::from(1);
+            synthetic["activation_proof_envelope"]["claimed_rows"][1]["expected_output"] =
+                serde_json::Value::from(1);
+            synthetic["activation_proof_envelope"]["proof_envelope"] =
+                serde_json::to_value(activation_envelope).expect("serialize activation");
+            let lookup_rows_commitment = phase12_lookup_rows_commitment_from_json(&synthetic);
+            synthetic["lookup_rows_commitment"] = serde_json::Value::String(lookup_rows_commitment);
+            let commitment = phase12_artifact_commitment_from_json(&synthetic);
+            synthetic["artifact_commitment"] = serde_json::Value::String(commitment.clone());
+            artifact_array.push(synthetic);
+            commitment
+        };
+    wrong_ref_json["steps"][0]["shared_lookup_artifact_commitment"] =
+        serde_json::Value::String(wrong_commitment);
+    std::fs::write(
+        &wrong_ref_path,
+        serde_json::to_vec_pretty(&wrong_ref_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify_wrong_ref = Command::cargo_bin("tvm").expect("binary");
+    verify_wrong_ref
+        .arg("verify-stwo-decoding-family-demo")
+        .arg(&wrong_ref_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("does not match the proof payload"));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+    let _ = std::fs::remove_file(wrong_ref_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_verify_stwo_decoding_family_demo_rejects_tampered_layout() {
     let proof_path =
         unique_temp_dir("cli-stwo-decoding-family-demo-layout-proof").with_extension("json");
@@ -1273,9 +1490,14 @@ fn cli_verify_stwo_decoding_family_demo_rejects_tampered_layout() {
         .arg(&tampered_path)
         .assert()
         .failure()
-        .stderr(predicate::str::contains(
-            "is not a decoding_step_v2-family proof for the manifest layout",
-        ));
+        .stderr(
+            predicate::str::contains(
+                "is not a decoding_step_v2-family proof for the manifest layout",
+            )
+            .or(predicate::str::contains(
+                "shared lookup artifact layout commitment",
+            )),
+        );
 
     let _ = std::fs::remove_file(proof_path);
     let _ = std::fs::remove_file(tampered_path);
@@ -1675,8 +1897,8 @@ fn cli_verify_stwo_decoding_history_rollup_demo_rejects_tampered_rollup_start() 
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_can_prove_and_verify_stwo_decoding_history_rollup_matrix_demo() {
-    let proof_path = unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-proof")
-        .with_extension("json");
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-proof").with_extension("json");
 
     let mut prove = Command::cargo_bin("tvm").expect("binary");
     prove
@@ -1721,10 +1943,10 @@ fn cli_can_prove_and_verify_stwo_decoding_history_rollup_matrix_demo() {
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_verify_stwo_decoding_history_rollup_matrix_demo_rejects_tampered_total_rollups() {
-    let proof_path = unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-tamper")
-        .with_extension("json");
-    let tampered_path = unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-tampered")
-        .with_extension("json");
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-tamper").with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-tampered").with_extension("json");
 
     let mut prove = Command::cargo_bin("tvm").expect("binary");
     prove

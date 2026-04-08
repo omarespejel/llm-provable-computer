@@ -1,21 +1,28 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 language: en-US
 
 early_access: false
 enable_free_tier: false
+tone_instructions: |
+  Prioritize correctness, security, proof soundness, and regression risk. Avoid
+  style-only remarks and repository-genealogy commentary. Prefer concise,
+  actionable findings with concrete failing-path or tamper-path guidance.
 reviews:
   profile: assertive
   request_changes_workflow: false
   high_level_summary: true
   changed_files_summary: true
+  high_level_summary_in_walkthrough: false
   poem: false
   review_status: true
-  collapse_walkthrough: false
-  sequence_diagrams: true
-  assess_linked_issues: true
-  related_issues: true
-  related_prs: true
-  suggested_labels: true
-  suggested_reviewers: true
+  commit_status: true
+  collapse_walkthrough: true
+  sequence_diagrams: false
+  assess_linked_issues: false
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false
   auto_review:
     enabled: true
     auto_incremental_review: true
@@ -24,7 +31,17 @@ reviews:
       - main
       - codex/.*
     labels: []
-    ignore_title_keywords: []
+    ignore_title_keywords:
+      - WIP
+      - DO NOT MERGE
+      - artifact-only
+      - docs-only
+    ignore_usernames:
+      - github-actions[bot]
+      - dependabot[bot]
+      - coderabbitai[bot]
+      - qodo-code-review
+      - greptile-app[bot]
   path_filters:
     - .coderabbit.yaml
     - .greptile/**
@@ -66,7 +83,7 @@ reviews:
       instructions: |
         Review technical docs for alignment with code and proofs. Ignore pure prose taste, but flag any mismatch in supported phases, artifact semantics, backend capabilities, or reproducibility steps.
 chat:
-  auto_reply: true
+  auto_reply: false
 knowledge_base:
   learnings:
     scope: auto

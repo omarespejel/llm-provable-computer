@@ -15,6 +15,8 @@ mod normalization_component;
 #[cfg(feature = "stwo-backend")]
 mod normalization_prover;
 mod recursion;
+#[cfg(feature = "stwo-backend")]
+mod shared_lookup_artifact;
 
 use crate::config::Attention2DMode;
 use crate::error::{Result, VmError};
@@ -42,48 +44,44 @@ pub use decoding::{
     infer_phase12_decoding_layout, load_phase11_decoding_chain, load_phase12_decoding_chain,
     load_phase13_decoding_layout_matrix, load_phase14_decoding_chain,
     load_phase15_decoding_segment_bundle, load_phase16_decoding_segment_rollup,
-    load_phase17_decoding_rollup_matrix,
-    matches_decoding_step_v1_family, matches_decoding_step_v2_family,
-    phase11_prepare_decoding_chain, phase12_default_decoding_layout,
-    phase12_prepare_decoding_chain, phase13_default_decoding_layout_matrix,
-    phase14_prepare_decoding_chain, phase15_default_segment_step_limit,
-    phase15_prepare_segment_bundle, phase16_default_rollup_segment_limit,
-    phase16_prepare_segment_rollup,
-    prove_phase17_decoding_rollup_matrix_demo,
+    load_phase17_decoding_rollup_matrix, matches_decoding_step_v1_family,
+    matches_decoding_step_v2_family, phase11_prepare_decoding_chain,
+    phase12_default_decoding_layout, phase12_prepare_decoding_chain,
+    phase13_default_decoding_layout_matrix, phase14_prepare_decoding_chain,
+    phase15_default_segment_step_limit, phase15_prepare_segment_bundle,
+    phase16_default_rollup_segment_limit, phase16_prepare_segment_rollup,
     prove_phase11_decoding_demo, prove_phase12_decoding_demo,
     prove_phase12_decoding_demo_for_layout, prove_phase13_decoding_layout_matrix_demo,
     prove_phase14_decoding_demo, prove_phase14_decoding_demo_for_layout,
     prove_phase15_decoding_demo, prove_phase15_decoding_demo_for_layout,
     prove_phase16_decoding_demo, prove_phase16_decoding_demo_for_layout,
-    save_phase11_decoding_chain, save_phase12_decoding_chain, save_phase13_decoding_layout_matrix,
-    save_phase14_decoding_chain, save_phase15_decoding_segment_bundle,
-    save_phase16_decoding_segment_rollup, save_phase17_decoding_rollup_matrix,
-    verify_phase11_decoding_chain,
+    prove_phase17_decoding_rollup_matrix_demo, save_phase11_decoding_chain,
+    save_phase12_decoding_chain, save_phase13_decoding_layout_matrix, save_phase14_decoding_chain,
+    save_phase15_decoding_segment_bundle, save_phase16_decoding_segment_rollup,
+    save_phase17_decoding_rollup_matrix, verify_phase11_decoding_chain,
     verify_phase11_decoding_chain_with_proof_checks, verify_phase12_decoding_chain,
     verify_phase12_decoding_chain_with_proof_checks, verify_phase13_decoding_layout_matrix,
     verify_phase13_decoding_layout_matrix_with_proof_checks, verify_phase14_decoding_chain,
-    verify_phase14_decoding_chain_with_proof_checks,
-    verify_phase15_decoding_segment_bundle,
+    verify_phase14_decoding_chain_with_proof_checks, verify_phase15_decoding_segment_bundle,
     verify_phase15_decoding_segment_bundle_with_proof_checks,
     verify_phase16_decoding_segment_rollup,
     verify_phase16_decoding_segment_rollup_with_proof_checks,
-    verify_phase17_decoding_rollup_matrix,
-    verify_phase17_decoding_rollup_matrix_with_proof_checks, Phase11DecodingChainManifest,
-    Phase11DecodingState, Phase11DecodingStep, Phase12DecodingChainManifest,
-    Phase12DecodingLayout, Phase12DecodingState, Phase12DecodingStep,
-    Phase14DecodingChainManifest, Phase14DecodingState, Phase14DecodingStep,
-    Phase15DecodingHistorySegment, Phase15DecodingHistorySegmentBundleManifest,
-    Phase16DecodingHistoryRollup, Phase16DecodingHistoryRollupManifest,
-    Phase17DecodingHistoryRollupMatrixManifest, Phase13DecodingLayoutMatrixManifest, STWO_DECODING_CHAIN_SCOPE_PHASE11,
-    STWO_DECODING_CHAIN_SCOPE_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE11,
+    verify_phase17_decoding_rollup_matrix, verify_phase17_decoding_rollup_matrix_with_proof_checks,
+    Phase11DecodingChainManifest, Phase11DecodingState, Phase11DecodingStep,
+    Phase12DecodingChainManifest, Phase12DecodingLayout, Phase12DecodingState, Phase12DecodingStep,
+    Phase13DecodingLayoutMatrixManifest, Phase14DecodingChainManifest, Phase14DecodingState,
+    Phase14DecodingStep, Phase15DecodingHistorySegment,
+    Phase15DecodingHistorySegmentBundleManifest, Phase16DecodingHistoryRollup,
+    Phase16DecodingHistoryRollupManifest, Phase17DecodingHistoryRollupMatrixManifest,
+    STWO_DECODING_CHAIN_SCOPE_PHASE11, STWO_DECODING_CHAIN_SCOPE_PHASE12,
+    STWO_DECODING_CHAIN_SCOPE_PHASE14, STWO_DECODING_CHAIN_VERSION_PHASE11,
     STWO_DECODING_CHAIN_VERSION_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE14,
-    STWO_DECODING_CHAIN_SCOPE_PHASE14, STWO_DECODING_LAYOUT_VERSION_PHASE12,
     STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13, STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13,
-    STWO_DECODING_SEGMENT_BUNDLE_SCOPE_PHASE15, STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15,
-    STWO_DECODING_SEGMENT_ROLLUP_SCOPE_PHASE16, STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16,
-    STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17, STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17,
-    STWO_DECODING_STATE_VERSION_PHASE11, STWO_DECODING_STATE_VERSION_PHASE12,
-    STWO_DECODING_STATE_VERSION_PHASE14,
+    STWO_DECODING_LAYOUT_VERSION_PHASE12, STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17,
+    STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17, STWO_DECODING_SEGMENT_BUNDLE_SCOPE_PHASE15,
+    STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15, STWO_DECODING_SEGMENT_ROLLUP_SCOPE_PHASE16,
+    STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16, STWO_DECODING_STATE_VERSION_PHASE11,
+    STWO_DECODING_STATE_VERSION_PHASE12, STWO_DECODING_STATE_VERSION_PHASE14,
 };
 pub use layout::{
     phase2_fixture_matrix, phase2_module_layout, phase2_supported_mnemonics,
@@ -130,6 +128,12 @@ pub use recursion::{
     phase6_prepare_recursion_batch, Phase6RecursionBatchEntry, Phase6RecursionBatchManifest,
     STWO_RECURSION_BATCH_SCOPE_PHASE6, STWO_RECURSION_BATCH_VERSION_PHASE6,
 };
+#[cfg(feature = "stwo-backend")]
+pub use shared_lookup_artifact::{
+    commit_phase12_shared_lookup_rows, verify_phase12_shared_lookup_artifact,
+    Phase12SharedLookupArtifact, STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12,
+    STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12,
+};
 
 /// Backend version label used by the experimental Phase 2 S-two seam.
 pub const STWO_BACKEND_VERSION_PHASE2: &str = "stwo-phase2";
@@ -138,7 +142,7 @@ pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase10-gemma-block-v4";
 /// Backend version label used by the fixed-shape proof-carrying decoding demo family.
 pub const STWO_BACKEND_VERSION_PHASE11: &str = "stwo-phase11-decoding-step-v1";
 /// Backend version label used by the parameterized proof-carrying decoding family.
-pub const STWO_BACKEND_VERSION_PHASE12: &str = "stwo-phase12-decoding-family-v8";
+pub const STWO_BACKEND_VERSION_PHASE12: &str = "stwo-phase12-decoding-family-v9";
 /// Cargo feature that enables the experimental S-two backend seam.
 pub const STWO_BACKEND_FEATURE_NAME: &str = "stwo-backend";
 

@@ -1,3 +1,4 @@
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
@@ -9,44 +10,48 @@ use crate::assembly::parse_program;
 use crate::compiler::ProgramCompiler;
 use crate::config::{Attention2DMode, TransformerVmConfig};
 use crate::error::{Result, VmError};
-use crate::interpreter::NativeInterpreter;
 use crate::instruction::{Instruction, Program};
+use crate::interpreter::NativeInterpreter;
 use crate::proof::{
     production_v1_stark_options, prove_execution_stark_with_backend_and_options,
     verify_execution_stark, StarkProofBackend, VanillaStarkExecutionProof,
 };
 use crate::stwo_backend::{
-    arithmetic_subset_prover::phase12_shared_lookup_rows_from_proof_payload,
-    STWO_BACKEND_VERSION_PHASE11,
+    arithmetic_subset_prover::{
+        phase12_shared_lookup_artifact_from_proof_payload,
+        phase12_shared_lookup_rows_from_proof_payload,
+    },
+    commit_phase12_shared_lookup_rows, verify_phase12_shared_lookup_artifact,
+    Phase12SharedLookupArtifact, STWO_BACKEND_VERSION_PHASE11,
 };
 
 pub const STWO_DECODING_CHAIN_VERSION_PHASE11: &str = "stwo-phase11-decoding-chain-v1";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE11: &str = "stwo_execution_proof_carrying_decoding_chain";
 pub const STWO_DECODING_STATE_VERSION_PHASE11: &str = "stwo-decoding-state-v1";
-pub const STWO_DECODING_CHAIN_VERSION_PHASE12: &str = "stwo-phase12-decoding-chain-v8";
+pub const STWO_DECODING_CHAIN_VERSION_PHASE12: &str = "stwo-phase12-decoding-chain-v9";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE12: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_chain";
-pub const STWO_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v10";
+pub const STWO_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v11";
 pub const STWO_DECODING_LAYOUT_VERSION_PHASE12: &str = "stwo-decoding-layout-v1";
 pub const STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13: &str =
-    "stwo-phase13-decoding-layout-matrix-v8";
+    "stwo-phase13-decoding-layout-matrix-v9";
 pub const STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_layout_matrix";
 pub const STWO_DECODING_CHAIN_VERSION_PHASE14: &str =
-    "stwo-phase14-decoding-chunked-history-chain-v8";
+    "stwo-phase14-decoding-chunked-history-chain-v9";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE14: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_chunked_history_chain";
 pub const STWO_DECODING_STATE_VERSION_PHASE14: &str = "stwo-decoding-state-v6";
 pub const STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15: &str =
-    "stwo-phase15-decoding-history-segment-bundle-v8";
+    "stwo-phase15-decoding-history-segment-bundle-v9";
 pub const STWO_DECODING_SEGMENT_BUNDLE_SCOPE_PHASE15: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_segment_bundle";
 pub const STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16: &str =
-    "stwo-phase16-decoding-history-segment-rollup-v8";
+    "stwo-phase16-decoding-history-segment-rollup-v9";
 pub const STWO_DECODING_SEGMENT_ROLLUP_SCOPE_PHASE16: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_segment_rollup";
 pub const STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17: &str =
-    "stwo-phase17-decoding-history-rollup-matrix-v8";
+    "stwo-phase17-decoding-history-rollup-matrix-v9";
 pub const STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_rollup_matrix";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
@@ -182,9 +187,13 @@ impl Phase12DecodingLayout {
 
     pub fn lookup_range(&self) -> Result<std::ops::Range<usize>> {
         let start = self.output_range()?.end;
-        let end = start.checked_add(PHASE12_SHARED_LOOKUP_ROWS).ok_or_else(|| {
-            VmError::InvalidConfig("Phase 12 decoding layout lookup range overflowed".to_string())
-        })?;
+        let end = start
+            .checked_add(PHASE12_SHARED_LOOKUP_ROWS)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "Phase 12 decoding layout lookup range overflowed".to_string(),
+                )
+            })?;
         Ok(start..end)
     }
 
@@ -231,6 +240,7 @@ pub struct Phase12DecodingState {
 pub struct Phase12DecodingStep {
     pub from_state: Phase12DecodingState,
     pub to_state: Phase12DecodingState,
+    pub shared_lookup_artifact_commitment: String,
     pub proof: VanillaStarkExecutionProof,
 }
 
@@ -243,6 +253,7 @@ pub struct Phase12DecodingChainManifest {
     pub statement_version: String,
     pub layout: Phase12DecodingLayout,
     pub total_steps: usize,
+    pub shared_lookup_artifacts: Vec<Phase12SharedLookupArtifact>,
     pub steps: Vec<Phase12DecodingStep>,
 }
 
@@ -289,6 +300,7 @@ pub struct Phase14DecodingState {
 pub struct Phase14DecodingStep {
     pub from_state: Phase14DecodingState,
     pub to_state: Phase14DecodingState,
+    pub shared_lookup_artifact_commitment: String,
     pub proof: VanillaStarkExecutionProof,
 }
 
@@ -302,6 +314,7 @@ pub struct Phase14DecodingChainManifest {
     pub layout: Phase12DecodingLayout,
     pub total_steps: usize,
     pub history_chunk_pairs: usize,
+    pub shared_lookup_artifacts: Vec<Phase12SharedLookupArtifact>,
     pub steps: Vec<Phase14DecodingStep>,
 }
 
@@ -402,6 +415,98 @@ struct Phase14HistoryAccumulator {
     lookup_frontier_values: Vec<String>,
 }
 
+fn build_phase12_shared_lookup_artifact_registry(
+    proofs: &[VanillaStarkExecutionProof],
+    layout_commitment: &str,
+) -> Result<(Vec<Phase12SharedLookupArtifact>, Vec<String>)> {
+    let mut artifacts: Vec<Phase12SharedLookupArtifact> = Vec::new();
+    let mut artifact_indexes: HashMap<String, usize> = HashMap::new();
+    let mut artifact_refs = Vec::with_capacity(proofs.len());
+    for (step_index, proof) in proofs.iter().enumerate() {
+        let artifact = phase12_shared_lookup_artifact_from_proof_payload(proof, layout_commitment)?
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "decoding step {step_index} is missing its Phase 12 shared lookup artifact payload"
+                ))
+            })?;
+        if let Some(existing_index) = artifact_indexes.get(&artifact.artifact_commitment) {
+            let existing = &artifacts[*existing_index];
+            if existing != &artifact {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding step {step_index} reuses shared lookup artifact commitment `{}` but with different contents",
+                    artifact.artifact_commitment
+                )));
+            }
+        } else {
+            artifact_indexes.insert(artifact.artifact_commitment.clone(), artifacts.len());
+            artifacts.push(artifact.clone());
+        }
+        artifact_refs.push(artifact.artifact_commitment);
+    }
+    Ok((artifacts, artifact_refs))
+}
+
+fn build_phase12_shared_lookup_artifact_index<'a>(
+    artifacts: &'a [Phase12SharedLookupArtifact],
+    referenced_commitments: &HashSet<String>,
+    layout: &Phase12DecodingLayout,
+    expected_layout_commitment: &str,
+    expected_flattened_lookup_rows_len: usize,
+    registry_label: &str,
+) -> Result<HashMap<String, &'a Phase12SharedLookupArtifact>> {
+    let mut artifact_index = HashMap::with_capacity(artifacts.len());
+    for artifact in artifacts {
+        if artifact.flattened_lookup_rows.len() != expected_flattened_lookup_rows_len {
+            return Err(VmError::InvalidConfig(format!(
+                "{registry_label} artifact `{}` has {} flattened lookup rows; expected {}",
+                artifact.artifact_commitment,
+                artifact.flattened_lookup_rows.len(),
+                expected_flattened_lookup_rows_len
+            )));
+        }
+        if !referenced_commitments.contains(&artifact.artifact_commitment) {
+            return Err(VmError::InvalidConfig(format!(
+                "{registry_label} artifact `{}` is not referenced by any decoding step",
+                artifact.artifact_commitment
+            )));
+        }
+        if artifact_index
+            .insert(artifact.artifact_commitment.clone(), artifact)
+            .is_some()
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "{registry_label} artifact `{}` appears more than once in the manifest registry",
+                artifact.artifact_commitment
+            )));
+        }
+    }
+    if artifact_index.len() != referenced_commitments.len() {
+        let missing = referenced_commitments
+            .iter()
+            .find(|commitment| !artifact_index.contains_key(*commitment))
+            .cloned()
+            .unwrap_or_else(|| "<unknown>".to_string());
+        return Err(VmError::InvalidConfig(format!(
+            "{registry_label} artifact `{missing}` is not present in the manifest registry"
+        )));
+    }
+    for artifact in artifact_index.values() {
+        verify_phase12_shared_lookup_artifact(artifact, layout, expected_layout_commitment)?;
+    }
+    Ok(artifact_index)
+}
+
+fn shared_lookup_artifact_by_commitment<'a>(
+    artifacts: &'a HashMap<String, &'a Phase12SharedLookupArtifact>,
+    artifact_commitment: &str,
+) -> Result<&'a Phase12SharedLookupArtifact> {
+    artifacts.get(artifact_commitment).copied().ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "shared lookup artifact `{artifact_commitment}` is not present in the manifest registry"
+            ))
+        })
+}
+
 pub fn decoding_step_v1_template_program() -> Result<Program> {
     parse_program(include_str!("../../programs/decoding_step_v1.tvm"))
 }
@@ -469,6 +574,7 @@ pub fn decoding_step_v2_template_program(layout: &Phase12DecodingLayout) -> Resu
     instructions.push(Instruction::Store((output.start + 1) as u8));
     instructions.push(Instruction::Load((lookup.start + 3) as u8));
     instructions.push(Instruction::AddMemory((lookup.start + 7) as u8));
+    instructions.push(Instruction::AddMemory((lookup.start + 2) as u8));
     instructions.push(Instruction::AddMemory((lookup.start + 4) as u8));
     instructions.push(Instruction::Store((output.start + 2) as u8));
     instructions.push(Instruction::Load((output.start + 1) as u8));
@@ -712,7 +818,6 @@ pub fn verify_phase11_decoding_chain(manifest: &Phase11DecodingChainManifest) ->
             manifest.steps.len()
         )));
     }
-
     for (step_index, step) in manifest.steps.iter().enumerate() {
         if !matches_decoding_step_v1_family(&step.proof.claim.program) {
             return Err(VmError::InvalidConfig(format!(
@@ -798,8 +903,10 @@ pub fn phase12_prepare_decoding_chain(
         ));
     }
 
-    let mut steps = Vec::with_capacity(proofs.len());
     let expected_layout_commitment = commit_phase12_layout(layout);
+    let (shared_lookup_artifacts, artifact_refs) =
+        build_phase12_shared_lookup_artifact_registry(proofs, &expected_layout_commitment)?;
+    let mut steps = Vec::with_capacity(proofs.len());
     let mut previous_history_commitment: Option<String> = None;
     let mut previous_history_length: Option<usize> = None;
     for (step_index, proof) in proofs.iter().cloned().enumerate() {
@@ -887,6 +994,7 @@ pub fn phase12_prepare_decoding_chain(
         steps.push(Phase12DecodingStep {
             from_state,
             to_state,
+            shared_lookup_artifact_commitment: artifact_refs[step_index].clone(),
             proof,
         });
     }
@@ -901,6 +1009,7 @@ pub fn phase12_prepare_decoding_chain(
         statement_version: first.claim.statement_version.clone(),
         layout: layout.clone(),
         total_steps: steps.len(),
+        shared_lookup_artifacts,
         steps,
     })
 }
@@ -946,6 +1055,31 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
             manifest.steps.len()
         )));
     }
+    if manifest.shared_lookup_artifacts.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding chain must contain at least one shared lookup artifact".to_string(),
+        ));
+    }
+    if manifest.shared_lookup_artifacts.len() > manifest.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding chain contains {} shared lookup artifacts for only {} steps",
+            manifest.shared_lookup_artifacts.len(),
+            manifest.steps.len()
+        )));
+    }
+    let referenced_artifacts: HashSet<String> = manifest
+        .steps
+        .iter()
+        .map(|step| step.shared_lookup_artifact_commitment.clone())
+        .collect();
+    let shared_lookup_artifacts = build_phase12_shared_lookup_artifact_index(
+        &manifest.shared_lookup_artifacts,
+        &referenced_artifacts,
+        &manifest.layout,
+        &expected_layout_commitment,
+        manifest.layout.lookup_range()?.len(),
+        "decoding chain shared lookup",
+    )?;
 
     for (step_index, step) in manifest.steps.iter().enumerate() {
         if !matches_decoding_step_v2_family_with_layout(&step.proof.claim.program, &manifest.layout)
@@ -979,17 +1113,40 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
                 step.proof.claim.statement_version, manifest.statement_version
             )));
         }
+        let shared_lookup_artifact = shared_lookup_artifact_by_commitment(
+            &shared_lookup_artifacts,
+            &step.shared_lookup_artifact_commitment,
+        )?;
+        let proof_artifact = phase12_shared_lookup_artifact_from_proof_payload(
+            &step.proof,
+            &expected_layout_commitment,
+        )?
+        .ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "decoding step {step_index} is missing its Phase 12 shared lookup artifact payload"
+            ))
+        })?;
+        if &proof_artifact != shared_lookup_artifact {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step {step_index} shared lookup artifact `{}` does not match the proof payload",
+                step.shared_lookup_artifact_commitment
+            )));
+        }
 
         let derived_from =
             derive_phase12_state_view(step.proof.claim.program.initial_memory(), &manifest.layout)?;
-        let derived_to =
-            derive_phase12_final_state_view_from_proof(&step.proof, &manifest.layout)?;
+        let derived_to = derive_phase12_final_state_view_from_proof(&step.proof, &manifest.layout)?;
+        if shared_lookup_artifact.lookup_rows_commitment != derived_to.lookup_rows_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step {step_index} shared lookup artifact `{}` does not match the proof's final-state lookup rows",
+                step.shared_lookup_artifact_commitment
+            )));
+        }
         let (expected_history_commitment, expected_history_length) = if step_index == 0 {
             (
                 commit_phase12_history_seed(
                     &expected_layout_commitment,
-                    &step.proof.claim.program.initial_memory()
-                        [manifest.layout.kv_cache_range()?],
+                    &step.proof.claim.program.initial_memory()[manifest.layout.kv_cache_range()?],
                     manifest.layout.pair_width,
                 ),
                 manifest.layout.rolling_kv_pairs,
@@ -1144,6 +1301,12 @@ pub fn phase14_prepare_decoding_chain(
     chain: &Phase12DecodingChainManifest,
 ) -> Result<Phase14DecodingChainManifest> {
     verify_phase12_decoding_chain(chain)?;
+    if chain.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported chunked decoding statement version `{}`",
+            chain.statement_version
+        )));
+    }
 
     let layout = &chain.layout;
     let expected_layout_commitment = commit_phase12_layout(layout);
@@ -1153,7 +1316,8 @@ pub fn phase14_prepare_decoding_chain(
     let mut accumulator: Option<Phase14HistoryAccumulator> = None;
 
     for (step_index, step) in chain.steps.iter().enumerate() {
-        let from_view = derive_phase12_state_view(step.proof.claim.program.initial_memory(), layout)?;
+        let from_view =
+            derive_phase12_state_view(step.proof.claim.program.initial_memory(), layout)?;
         if from_view.layout_commitment != expected_layout_commitment {
             return Err(VmError::InvalidConfig(format!(
                 "Phase 14 decoding step {step_index} initial state does not match the manifest layout commitment"
@@ -1186,6 +1350,9 @@ pub fn phase14_prepare_decoding_chain(
         steps.push(Phase14DecodingStep {
             from_state,
             to_state,
+            shared_lookup_artifact_commitment: chain.steps[step_index]
+                .shared_lookup_artifact_commitment
+                .clone(),
             proof: step.proof.clone(),
         });
         accumulator = Some(next);
@@ -1198,10 +1365,11 @@ pub fn phase14_prepare_decoding_chain(
         chain_version: STWO_DECODING_CHAIN_VERSION_PHASE14.to_string(),
         semantic_scope: STWO_DECODING_CHAIN_SCOPE_PHASE14.to_string(),
         proof_backend_version: crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12.to_string(),
-        statement_version: crate::proof::CLAIM_STATEMENT_VERSION_V1.to_string(),
+        statement_version: chain.statement_version.clone(),
         layout: chain.layout.clone(),
         total_steps: steps.len(),
         history_chunk_pairs: PHASE14_HISTORY_CHUNK_PAIRS,
+        shared_lookup_artifacts: chain.shared_lookup_artifacts.clone(),
         steps,
     })
 }
@@ -1260,6 +1428,31 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
             manifest.steps.len()
         )));
     }
+    if manifest.shared_lookup_artifacts.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "chunked decoding chain must contain at least one shared lookup artifact".to_string(),
+        ));
+    }
+    if manifest.shared_lookup_artifacts.len() > manifest.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "chunked decoding chain contains {} shared lookup artifacts for only {} steps",
+            manifest.shared_lookup_artifacts.len(),
+            manifest.steps.len()
+        )));
+    }
+    let referenced_artifacts: HashSet<String> = manifest
+        .steps
+        .iter()
+        .map(|step| step.shared_lookup_artifact_commitment.clone())
+        .collect();
+    let shared_lookup_artifacts = build_phase12_shared_lookup_artifact_index(
+        &manifest.shared_lookup_artifacts,
+        &referenced_artifacts,
+        &manifest.layout,
+        &expected_layout_commitment,
+        manifest.layout.lookup_range()?.len(),
+        "chunked decoding shared lookup",
+    )?;
 
     let mut accumulator: Option<Phase14HistoryAccumulator> = None;
     for (step_index, step) in manifest.steps.iter().enumerate() {
@@ -1280,6 +1473,29 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
                 "chunked decoding step {step_index} proof backend version `{}` is not `{}`",
                 step.proof.proof_backend_version,
                 crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+            )));
+        }
+        if step.proof.claim.statement_version != manifest.statement_version {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {step_index} statement version `{}` does not match manifest `{}`",
+                step.proof.claim.statement_version, manifest.statement_version
+            )));
+        }
+        let shared_lookup_artifact = shared_lookup_artifact_by_commitment(
+            &shared_lookup_artifacts,
+            &step.shared_lookup_artifact_commitment,
+        )?;
+        let proof_artifact =
+            phase12_shared_lookup_artifact_from_proof_payload(&step.proof, &expected_layout_commitment)?
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "chunked decoding step {step_index} is missing its Phase 12 shared lookup artifact payload"
+                    ))
+                })?;
+        if &proof_artifact != shared_lookup_artifact {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {step_index} shared lookup artifact `{}` does not match the proof payload",
+                step.shared_lookup_artifact_commitment
             )));
         }
 
@@ -1305,8 +1521,13 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
             )));
         }
 
-        let to_view =
-            derive_phase12_final_state_view_from_proof(&step.proof, &manifest.layout)?;
+        let to_view = derive_phase12_final_state_view_from_proof(&step.proof, &manifest.layout)?;
+        if shared_lookup_artifact.lookup_rows_commitment != to_view.lookup_rows_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {step_index} shared lookup artifact `{}` does not match the proof's final-state lookup rows",
+                step.shared_lookup_artifact_commitment
+            )));
+        }
         if to_view.layout_commitment != expected_layout_commitment {
             return Err(VmError::InvalidConfig(format!(
                 "chunked decoding step {step_index} final state does not match the manifest layout commitment"
@@ -1804,13 +2025,11 @@ pub fn verify_phase16_decoding_segment_rollup(
                     segment.segment_index, expected_segment_index
                 )));
             }
-            expected_segment_index = expected_segment_index
-                .checked_add(1)
-                .ok_or_else(|| {
-                    VmError::InvalidConfig(
-                        "decoding history segment rollup segment count overflowed".to_string(),
-                    )
-                })?;
+            expected_segment_index = expected_segment_index.checked_add(1).ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "decoding history segment rollup segment count overflowed".to_string(),
+                )
+            })?;
         }
         let next_global_start_step_index = verify_phase15_segment_sequence(
             &manifest.layout,
@@ -1941,8 +2160,7 @@ pub fn verify_phase17_decoding_rollup_matrix(
         .try_fold(0usize, |acc, rollup| acc.checked_add(rollup.total_steps))
         .ok_or_else(|| {
             VmError::InvalidConfig(
-                "decoding rollup matrix total_steps overflowed while summing manifests"
-                    .to_string(),
+                "decoding rollup matrix total_steps overflowed while summing manifests".to_string(),
             )
         })?;
     if manifest.total_steps != derived_total_steps {
@@ -2283,8 +2501,11 @@ fn derive_phase12_state_view(
     }
 
     let layout_commitment = commit_phase12_layout(layout);
-    let kv_cache_commitment =
-        commit_phase12_named_slice("kv-cache", &layout_commitment, &memory[kv_cache_range.clone()]);
+    let kv_cache_commitment = commit_phase12_named_slice(
+        "kv-cache",
+        &layout_commitment,
+        &memory[kv_cache_range.clone()],
+    );
     let incoming_token_commitment = commit_phase12_named_slice(
         "incoming-token",
         &layout_commitment,
@@ -2294,17 +2515,11 @@ fn derive_phase12_state_view(
         commit_phase12_named_slice("query", &layout_commitment, &memory[query_range]);
     let output_commitment =
         commit_phase12_named_slice("output", &layout_commitment, &memory[output_range]);
-    let lookup_rows_commitment = commit_phase12_named_slice(
-        "lookup-rows",
-        &layout_commitment,
-        &memory[lookup_range],
-    );
+    let lookup_rows_commitment =
+        commit_phase12_shared_lookup_rows(&layout_commitment, &memory[lookup_range]);
     let position = memory[position_index];
-    let persistent_state_commitment = commit_phase12_persistent_state(
-        &layout_commitment,
-        position,
-        &memory[kv_cache_range],
-    );
+    let persistent_state_commitment =
+        commit_phase12_persistent_state(&layout_commitment, position, &memory[kv_cache_range]);
 
     Ok(Phase12StateView {
         position,
@@ -2323,7 +2538,9 @@ fn derive_phase12_final_state_view_from_proof(
     layout: &Phase12DecodingLayout,
 ) -> Result<Phase12StateView> {
     let mut view = derive_phase12_state_view(&proof.claim.final_state.memory, layout)?;
-    if let Some(proof_lookup_rows) = phase12_shared_lookup_rows_from_proof_payload(proof)? {
+    if let Some(proof_lookup_rows) =
+        phase12_shared_lookup_rows_from_proof_payload(proof, &view.layout_commitment)?
+    {
         let lookup_range = layout.lookup_range()?;
         if proof_lookup_rows.len() != lookup_range.len() {
             return Err(VmError::InvalidConfig(format!(
@@ -2338,7 +2555,7 @@ fn derive_phase12_final_state_view_from_proof(
             ));
         }
         view.lookup_rows_commitment =
-            commit_phase12_named_slice("lookup-rows", &view.layout_commitment, &proof_lookup_rows);
+            commit_phase12_shared_lookup_rows(&view.layout_commitment, &proof_lookup_rows);
     }
     Ok(view)
 }
@@ -2633,7 +2850,8 @@ fn validate_phase14_chain_steps(
                 "chunked decoding step {index} must start from a non-empty lookup transcript"
             )));
         }
-        if step.to_state.lookup_transcript_entries != step.from_state.lookup_transcript_entries + 1 {
+        if step.to_state.lookup_transcript_entries != step.from_state.lookup_transcript_entries + 1
+        {
             return Err(VmError::InvalidConfig(format!(
                 "chunked decoding step {index} does not advance the lookup transcript entry count: from {} to {}",
                 step.from_state.lookup_transcript_entries,
@@ -2949,9 +3167,10 @@ fn validate_phase16_rollup_boundary(
 ) -> Result<()> {
     validate_phase15_segment_boundary(previous_state, current_state, rollup_index).map_err(
         |error| match error {
-            VmError::InvalidConfig(message) => VmError::InvalidConfig(
-                message.replace("decoding history segment boundary", "decoding history segment rollup boundary"),
-            ),
+            VmError::InvalidConfig(message) => VmError::InvalidConfig(message.replace(
+                "decoding history segment boundary",
+                "decoding history segment rollup boundary",
+            )),
             other => other,
         },
     )
@@ -3017,8 +3236,10 @@ fn verify_phase15_segment_sequence(
                 segment.segment_index
             ))
         })?;
-        let first_from_view =
-            derive_phase12_state_view(first_local_step.proof.claim.program.initial_memory(), layout)?;
+        let first_from_view = derive_phase12_state_view(
+            first_local_step.proof.claim.program.initial_memory(),
+            layout,
+        )?;
         let mut current = accumulator.clone().unwrap_or_else(|| {
             seed_phase14_history(
                 &expected_layout_commitment,
@@ -3094,7 +3315,7 @@ fn commit_slice(values: &[i16]) -> String {
     lower_hex(&out)
 }
 
-fn commit_phase12_layout(layout: &Phase12DecodingLayout) -> String {
+pub(crate) fn commit_phase12_layout(layout: &Phase12DecodingLayout) -> String {
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_DECODING_LAYOUT_VERSION_PHASE12.as_bytes());
     hasher.update(&(layout.rolling_kv_pairs as u64).to_le_bytes());
@@ -3468,14 +3689,15 @@ fn advance_phase14_history(
         previous.chunk_size,
         next_history_length,
     );
-    let frontier_value_capacity = previous
-        .frontier_pairs
-        .checked_mul(pair_width)
-        .ok_or_else(|| {
-            VmError::InvalidConfig(
-                "chunked decoding frontier value capacity overflowed".to_string(),
-            )
-        })?;
+    let frontier_value_capacity =
+        previous
+            .frontier_pairs
+            .checked_mul(pair_width)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "chunked decoding frontier value capacity overflowed".to_string(),
+                )
+            })?;
     let mut frontier_values = previous.frontier_values.clone();
     frontier_values.extend_from_slice(appended_pair);
     if frontier_values.len() > frontier_value_capacity {
@@ -3699,6 +3921,16 @@ mod tests {
         ExecutionClaimCommitments, VanillaStarkExecutionClaim,
     };
     use crate::state::MachineState;
+    use crate::stwo_backend::lookup_component::Phase3LookupTableRow;
+    use crate::stwo_backend::shared_lookup_artifact::{
+        build_phase12_shared_lookup_artifact, EmbeddedSharedActivationClaimRow,
+        EmbeddedSharedActivationLookupProof, EmbeddedSharedNormalizationClaimRow,
+        EmbeddedSharedNormalizationProof,
+    };
+    use crate::stwo_backend::{
+        prove_phase10_shared_binary_step_lookup_envelope,
+        prove_phase10_shared_normalization_lookup_envelope,
+    };
     use crate::{ProgramCompiler, TransformerVmConfig};
     use proptest::prelude::*;
     use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -3786,8 +4018,33 @@ mod tests {
         }
     }
 
-    fn sample_phase12_proof_payload(layout: &Phase12DecodingLayout, final_memory: &[i16]) -> Vec<u8> {
+    fn sample_phase12_proof_payload(
+        layout: &Phase12DecodingLayout,
+        final_memory: &[i16],
+    ) -> Vec<u8> {
         let lookup = layout.lookup_range().expect("lookup range");
+        let normalization_envelope = prove_phase10_shared_normalization_lookup_envelope(&[
+            (
+                final_memory[lookup.start] as u16,
+                final_memory[lookup.start + 1] as u16,
+            ),
+            (
+                final_memory[lookup.start + 4] as u16,
+                final_memory[lookup.start + 5] as u16,
+            ),
+        ])
+        .expect("normalization envelope");
+        let activation_envelope = prove_phase10_shared_binary_step_lookup_envelope(&[
+            Phase3LookupTableRow {
+                input: final_memory[lookup.start + 2],
+                output: final_memory[lookup.start + 3] as u8,
+            },
+            Phase3LookupTableRow {
+                input: final_memory[lookup.start + 6],
+                output: final_memory[lookup.start + 7] as u8,
+            },
+        ])
+        .expect("activation envelope");
         serde_json::to_vec(&serde_json::json!({
             "embedded_shared_normalization": {
                 "statement_version": "stwo-shared-normalization-lookup-v1",
@@ -3806,12 +4063,7 @@ mod tests {
                         "expected_inv_sqrt_q8": final_memory[lookup.start + 5]
                     }
                 ],
-                "proof_envelope": {
-                    "claimed_rows": [
-                        [final_memory[lookup.start], final_memory[lookup.start + 1]],
-                        [final_memory[lookup.start + 4], final_memory[lookup.start + 5]]
-                    ]
-                }
+                "proof_envelope": normalization_envelope
             },
             "embedded_shared_activation_lookup": {
                 "statement_version": "stwo-shared-binary-step-lookup-v1",
@@ -3830,21 +4082,78 @@ mod tests {
                         "expected_output": final_memory[lookup.start + 7]
                     }
                 ],
-                "proof_envelope": {
-                    "claimed_rows": [
-                        {
-                            "input": final_memory[lookup.start + 2],
-                            "output": final_memory[lookup.start + 3]
-                        },
-                        {
-                            "input": final_memory[lookup.start + 6],
-                            "output": final_memory[lookup.start + 7]
-                        }
-                    ]
-                }
+                "proof_envelope": activation_envelope
             }
         }))
         .expect("sample proof payload")
+    }
+
+    fn sample_phase12_valid_but_wrong_shared_lookup_artifact(
+        layout: &Phase12DecodingLayout,
+    ) -> Phase12SharedLookupArtifact {
+        let layout_commitment = commit_phase12_layout(layout);
+        let lookup = layout.lookup_range().expect("lookup range");
+        let normalization = EmbeddedSharedNormalizationProof {
+            statement_version: "stwo-shared-normalization-lookup-v1".to_string(),
+            semantic_scope: "stwo_decoding_step_v2_execution_with_shared_normalization_lookup"
+                .to_string(),
+            claimed_rows: vec![
+                EmbeddedSharedNormalizationClaimRow {
+                    norm_sq_memory_index: lookup.start as u8,
+                    inv_sqrt_q8_memory_index: (lookup.start + 1) as u8,
+                    expected_norm_sq: 4,
+                    expected_inv_sqrt_q8: 128,
+                },
+                EmbeddedSharedNormalizationClaimRow {
+                    norm_sq_memory_index: (lookup.start + 4) as u8,
+                    inv_sqrt_q8_memory_index: (lookup.start + 5) as u8,
+                    expected_norm_sq: 16,
+                    expected_inv_sqrt_q8: 64,
+                },
+            ],
+            proof_envelope: prove_phase10_shared_normalization_lookup_envelope(&[
+                (4, 128),
+                (16, 64),
+            ])
+            .expect("normalization envelope"),
+        };
+        let activation = EmbeddedSharedActivationLookupProof {
+            statement_version: "stwo-shared-binary-step-lookup-v1".to_string(),
+            semantic_scope: "stwo_decoding_step_v2_execution_with_shared_binary_step_lookup"
+                .to_string(),
+            claimed_rows: vec![
+                EmbeddedSharedActivationClaimRow {
+                    input_memory_index: (lookup.start + 2) as u8,
+                    output_memory_index: (lookup.start + 3) as u8,
+                    expected_input: 0,
+                    expected_output: 1,
+                },
+                EmbeddedSharedActivationClaimRow {
+                    input_memory_index: (lookup.start + 6) as u8,
+                    output_memory_index: (lookup.start + 7) as u8,
+                    expected_input: 1,
+                    expected_output: 1,
+                },
+            ],
+            proof_envelope: prove_phase10_shared_binary_step_lookup_envelope(&[
+                Phase3LookupTableRow {
+                    input: 0,
+                    output: 1,
+                },
+                Phase3LookupTableRow {
+                    input: 1,
+                    output: 1,
+                },
+            ])
+            .expect("activation envelope"),
+        };
+        build_phase12_shared_lookup_artifact(
+            &layout_commitment,
+            vec![4, 128, 0, 1, 16, 64, 1, 1],
+            normalization,
+            activation,
+        )
+        .expect("synthetic valid artifact")
     }
 
     /// Requires `memory` to already contain `PHASE12_LOOKUP_ROW_VALUES` in the layout's lookup
@@ -3864,10 +4173,14 @@ mod tests {
                     * i32::from(memory[latest_cached.start + offset])
             })
             .sum();
-        let raw_accumulated =
-            raw_dot + memory[incoming.clone()].iter().map(|&value| i32::from(value)).sum::<i32>();
+        let raw_accumulated = raw_dot
+            + memory[incoming.clone()]
+                .iter()
+                .map(|&value| i32::from(value))
+                .sum::<i32>();
         let combined_output = i32::from(memory[lookup.start + 3])
             + i32::from(memory[lookup.start + 7])
+            + i32::from(memory[lookup.start + 2])
             + i32::from(memory[lookup.start + 4]);
         [
             raw_dot * i32::from(memory[lookup.start + 1])
@@ -3891,7 +4204,9 @@ mod tests {
         let lookup = layout.lookup_range().expect("lookup");
         let latest_cached = layout.latest_cached_pair_range().expect("latest cached");
         let position_index = layout.position_index().expect("position");
-        let position_increment_index = layout.position_increment_index().expect("position increment");
+        let position_increment_index = layout
+            .position_increment_index()
+            .expect("position increment");
         let mut expected = initial_memory.to_vec();
 
         expected[lookup.clone()].copy_from_slice(&PHASE12_LOOKUP_ROW_VALUES);
@@ -3899,7 +4214,8 @@ mod tests {
         expected[output.clone()].copy_from_slice(&outputs);
 
         for index in 0..kv_cache.len().saturating_sub(layout.pair_width) {
-            expected[kv_cache.start + index] = initial_memory[kv_cache.start + index + layout.pair_width];
+            expected[kv_cache.start + index] =
+                initial_memory[kv_cache.start + index + layout.pair_width];
         }
         for offset in 0..layout.pair_width {
             expected[latest_cached.start + offset] = match offset {
@@ -3909,20 +4225,20 @@ mod tests {
             };
         }
 
-        expected[position_index] = initial_memory[position_index] + initial_memory[position_increment_index];
+        expected[position_index] =
+            initial_memory[position_index] + initial_memory[position_increment_index];
         expected
     }
 
-    fn phase12_random_bounded_memory(
-        layout: &Phase12DecodingLayout,
-        rng: &mut StdRng,
-    ) -> Vec<i16> {
+    fn phase12_random_bounded_memory(layout: &Phase12DecodingLayout, rng: &mut StdRng) -> Vec<i16> {
         let kv_cache = layout.kv_cache_range().expect("kv cache");
         let incoming = layout.incoming_token_range().expect("incoming");
         let query = layout.query_range().expect("query");
         let lookup = layout.lookup_range().expect("lookup");
         let position_index = layout.position_index().expect("position");
-        let position_increment_index = layout.position_increment_index().expect("position increment");
+        let position_increment_index = layout
+            .position_increment_index()
+            .expect("position increment");
         let mut memory = vec![0; layout.memory_size().expect("memory size")];
 
         for index in kv_cache {
@@ -3940,7 +4256,8 @@ mod tests {
         memory
     }
 
-    fn phase12_bounded_memory_strategy() -> impl Strategy<Value = (Phase12DecodingLayout, Vec<i16>)> {
+    fn phase12_bounded_memory_strategy() -> impl Strategy<Value = (Phase12DecodingLayout, Vec<i16>)>
+    {
         let layouts = phase13_default_decoding_layout_matrix().expect("layout matrix");
         prop::sample::select(layouts).prop_flat_map(|layout| {
             let kv_cache_len = layout.kv_cache_range().expect("kv cache range").len();
@@ -3986,11 +4303,9 @@ mod tests {
             let phase12 = phase12_prepare_decoding_chain(layout, &proofs).expect("phase12 chain");
             let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
             let phase15 = phase15_prepare_segment_bundle(&phase14, 1).expect("phase15 manifest");
-            let phase16 = phase16_prepare_segment_rollup(
-                &phase15,
-                phase16_default_rollup_segment_limit(),
-            )
-            .expect("phase16 manifest");
+            let phase16 =
+                phase16_prepare_segment_rollup(&phase15, phase16_default_rollup_segment_limit())
+                    .expect("phase16 manifest");
             rollups.push(phase16);
         }
         Phase17DecodingHistoryRollupMatrixManifest {
@@ -4239,10 +4554,14 @@ mod tests {
         );
         assert_eq!(
             instructions.get(lookup_store_index + 15),
-            Some(&Instruction::AddMemory((lookup.start + 4) as u8))
+            Some(&Instruction::AddMemory((lookup.start + 2) as u8))
         );
         assert_eq!(
             instructions.get(lookup_store_index + 16),
+            Some(&Instruction::AddMemory((lookup.start + 4) as u8))
+        );
+        assert_eq!(
+            instructions.get(lookup_store_index + 17),
             Some(&Instruction::Store((output.start + 2) as u8))
         );
     }
@@ -4306,11 +4625,9 @@ mod tests {
             Instruction::Load(output.start as u8),
             Instruction::Store((latest_cached.start + 3) as u8),
         ];
-        assert!(
-            instructions
-                .windows(expected.len())
-                .any(|window| window == expected.as_slice())
-        );
+        assert!(instructions
+            .windows(expected.len())
+            .any(|window| window == expected.as_slice()));
     }
 
     #[test]
@@ -4324,11 +4641,9 @@ mod tests {
             Instruction::Load((output.start + 2) as u8),
             Instruction::Store(latest_cached.start as u8),
         ];
-        assert!(
-            instructions
-                .windows(expected.len())
-                .any(|window| window == expected.as_slice())
-        );
+        assert!(instructions
+            .windows(expected.len())
+            .any(|window| window == expected.as_slice()));
     }
 
     #[test]
@@ -4342,11 +4657,9 @@ mod tests {
             Instruction::Load((output.start + 2) as u8),
             Instruction::Store((latest_cached.start + 1) as u8),
         ];
-        assert!(
-            instructions
-                .windows(expected.len())
-                .any(|window| window == expected.as_slice())
-        );
+        assert!(instructions
+            .windows(expected.len())
+            .any(|window| window == expected.as_slice()));
     }
 
     #[test]
@@ -4366,17 +4679,17 @@ mod tests {
     fn phase12_runtime_uses_shared_lookup_rows_across_layouts() {
         for layout in phase13_default_decoding_layout_matrix().expect("layout matrix") {
             for memory in phase12_demo_initial_memories(&layout).expect("memories") {
-                let program =
-                    decoding_step_v2_program_with_initial_memory(&layout, memory.clone()).expect("program");
+                let program = decoding_step_v2_program_with_initial_memory(&layout, memory.clone())
+                    .expect("program");
                 let step_limit = decoding_program_step_limit(&program).expect("step limit");
-                let mut runtime = NativeInterpreter::new(
-                    program,
-                    Attention2DMode::AverageHard,
-                    step_limit,
-                );
+                let mut runtime =
+                    NativeInterpreter::new(program, Attention2DMode::AverageHard, step_limit);
                 let result = runtime.run().expect("run program");
                 assert!(result.halted);
-                assert_eq!(result.final_state.memory, phase12_expected_final_memory(&layout, &memory));
+                assert_eq!(
+                    result.final_state.memory,
+                    phase12_expected_final_memory(&layout, &memory)
+                );
             }
         }
     }
@@ -4385,7 +4698,9 @@ mod tests {
     fn phase12_semantic_oracle_matches_manifest_states_across_layouts() {
         for layout in phase13_default_decoding_layout_matrix().expect("layout matrix") {
             let kv_cache_range = layout.kv_cache_range().expect("kv cache range");
-            let latest_cached_range = layout.latest_cached_pair_range().expect("latest cached range");
+            let latest_cached_range = layout
+                .latest_cached_pair_range()
+                .expect("latest cached range");
             let layout_commitment = commit_phase12_layout(&layout);
             let proofs = phase12_demo_initial_memories(&layout)
                 .expect("memories")
@@ -4401,7 +4716,8 @@ mod tests {
                 layout.pair_width,
             );
 
-            for (step_index, (step, proof)) in manifest.steps.iter().zip(proofs.iter()).enumerate() {
+            for (step_index, (step, proof)) in manifest.steps.iter().zip(proofs.iter()).enumerate()
+            {
                 let initial_memory = proof.claim.program.initial_memory();
                 let expected_final_memory = phase12_expected_final_memory(&layout, initial_memory);
                 assert_eq!(proof.claim.final_state.memory, expected_final_memory);
@@ -4473,8 +4789,9 @@ mod tests {
             for case_index in 0..RANDOM_REAL_PROOF_CASES_PER_LAYOUT {
                 let initial_memory = phase12_random_bounded_memory(&layout, &mut rng);
                 let expected_final_memory = phase12_expected_final_memory(&layout, &initial_memory);
-                let program = decoding_step_v2_program_with_initial_memory(&layout, initial_memory.clone())
-                    .expect("program");
+                let program =
+                    decoding_step_v2_program_with_initial_memory(&layout, initial_memory.clone())
+                        .expect("program");
                 let mut runtime = NativeInterpreter::new(
                     program.clone(),
                     Attention2DMode::AverageHard,
@@ -4501,8 +4818,15 @@ mod tests {
                 });
                 assert_eq!(proof.claim.final_state.memory, expected_final_memory);
                 assert_eq!(
-                    phase12_shared_lookup_rows_from_proof_payload(&proof).expect("lookup rows from proof"),
-                    Some(expected_final_memory[layout.lookup_range().expect("lookup range")].to_vec())
+                    phase12_shared_lookup_rows_from_proof_payload(
+                        &proof,
+                        &commit_phase12_layout(&layout),
+                    )
+                    .expect("lookup rows from proof"),
+                    Some(
+                        expected_final_memory[layout.lookup_range().expect("lookup range")]
+                            .to_vec()
+                    )
                 );
             }
         }
@@ -4522,8 +4846,8 @@ mod tests {
             .enumerate()
         {
             let debug_memory = initial_memory.clone();
-            let program =
-                decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
+            let program = decoding_step_v2_program_with_initial_memory(&layout, initial_memory)
+                .expect("program");
             let model = ProgramCompiler
                 .compile_program(program, config.clone())
                 .expect("compile");
@@ -4621,12 +4945,50 @@ mod tests {
             manifest.steps[0].from_state.incoming_token_commitment,
             manifest.steps[1].from_state.incoming_token_commitment
         );
+        assert!(!manifest.shared_lookup_artifacts.is_empty());
+        for step in &manifest.steps {
+            let artifact = manifest
+                .shared_lookup_artifacts
+                .iter()
+                .find(|artifact| {
+                    artifact.artifact_commitment == step.shared_lookup_artifact_commitment
+                })
+                .expect("artifact for step");
+            assert_eq!(
+                artifact.lookup_rows_commitment,
+                step.to_state.lookup_rows_commitment
+            );
+        }
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_registry_deduplicates_identical_proofs() {
+        let layout = phase12_default_decoding_layout();
+        let layout_commitment = commit_phase12_layout(&layout);
+        let memory = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .next()
+            .expect("first memory");
+        let proof = sample_phase12_step_proof(&layout, memory);
+
+        let (artifacts, refs) = build_phase12_shared_lookup_artifact_registry(
+            &[proof.clone(), proof],
+            &layout_commitment,
+        )
+        .expect("artifact registry");
+
+        assert_eq!(artifacts.len(), 1);
+        assert_eq!(refs.len(), 2);
+        assert_eq!(refs[0], refs[1]);
     }
 
     #[test]
     fn phase12_history_commitment_tracks_executed_latest_cached_pair() {
         let layout = phase12_default_decoding_layout();
-        let latest_cached_range = layout.latest_cached_pair_range().expect("latest cached range");
+        let latest_cached_range = layout
+            .latest_cached_pair_range()
+            .expect("latest cached range");
         let memories = phase12_demo_initial_memories(&layout).expect("memories");
         let proofs = memories
             .into_iter()
@@ -4637,7 +4999,8 @@ mod tests {
         let layout_commitment = commit_phase12_layout(&layout);
         let seeded_history_commitment = commit_phase12_history_seed(
             &layout_commitment,
-            &manifest.steps[0].proof.claim.program.initial_memory()[layout.kv_cache_range().expect("kv cache range")],
+            &manifest.steps[0].proof.claim.program.initial_memory()
+                [layout.kv_cache_range().expect("kv cache range")],
             layout.pair_width,
         );
         let expected_commitment = advance_phase12_history_commitment(
@@ -4647,7 +5010,10 @@ mod tests {
             layout.rolling_kv_pairs + 1,
         );
 
-        assert_eq!(manifest.steps[0].to_state.kv_history_commitment, expected_commitment);
+        assert_eq!(
+            manifest.steps[0].to_state.kv_history_commitment,
+            expected_commitment
+        );
     }
 
     #[test]
@@ -4697,9 +5063,130 @@ mod tests {
             serde_json::json!(0);
         manifest.steps[1].proof.proof = serde_json::to_vec(&payload).expect("payload bytes");
         let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        let message = err.to_string();
+        assert!(
+            message.contains("embedded shared activation rows do not match")
+                || message.contains("shared lookup artifact"),
+            "unexpected error: {message}"
+        );
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_missing_shared_lookup_artifact() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        manifest.shared_lookup_artifacts.clear();
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
         assert!(err
             .to_string()
-            .contains("embedded shared activation rows do not match"));
+            .contains("must contain at least one shared lookup artifact"));
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_tampered_shared_lookup_artifact() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        manifest.shared_lookup_artifacts[0].flattened_lookup_rows[0] = 0;
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("lookup_rows_commitment does not match"));
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_unreferenced_shared_lookup_artifact() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        let extra_artifact = manifest.shared_lookup_artifacts[0].clone();
+        manifest.shared_lookup_artifacts.push(extra_artifact);
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        let message = err.to_string();
+        assert!(
+            message.contains("contains 4 shared lookup artifacts for only 3 steps")
+                || message.contains("is not referenced by any decoding step")
+                || message.contains("appears more than once"),
+            "unexpected error: {message}"
+        );
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_wrong_shared_lookup_artifact_reference() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        let wrong_artifact = sample_phase12_valid_but_wrong_shared_lookup_artifact(&layout);
+        let wrong_commitment = wrong_artifact.artifact_commitment.clone();
+        manifest.shared_lookup_artifacts.push(wrong_artifact);
+        manifest.steps[0].shared_lookup_artifact_commitment = wrong_commitment;
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        assert!(err.to_string().contains("does not match the proof payload"));
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_missing_embedded_shared_lookup_payload() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        let mut payload: serde_json::Value =
+            serde_json::from_slice(&manifest.steps[0].proof.proof).expect("payload");
+        payload
+            .as_object_mut()
+            .expect("payload object")
+            .remove("embedded_shared_activation_lookup");
+        manifest.steps[0].proof.proof = serde_json::to_vec(&payload).expect("payload bytes");
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("missing its Phase 12 shared lookup artifact payload")
+                || err.to_string().contains("does not match the proof payload")
+                || err
+                    .to_string()
+                    .contains("missing embedded shared activation rows"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_duplicate_shared_lookup_artifact_commitment() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        let duplicate = manifest.shared_lookup_artifacts[0].clone();
+        manifest.shared_lookup_artifacts.push(duplicate);
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        let message = err.to_string();
+        assert!(
+            message.contains("appears more than once")
+                || message.contains("is not referenced by any decoding step"),
+            "unexpected error: {message}"
+        );
     }
 
     #[test]
@@ -4713,9 +5200,11 @@ mod tests {
         let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
         manifest.layout = Phase12DecodingLayout::new(3, 4).expect("alternate layout");
         let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("is not a decoding_step_v2-family proof for the manifest layout"));
+        let message = err.to_string();
+        assert!(
+            message.contains("is not a decoding_step_v2-family proof for the manifest layout")
+                || message.contains("shared lookup artifact layout commitment")
+        );
     }
 
     #[test]
@@ -4742,17 +5231,13 @@ mod tests {
             .into_iter()
             .next()
             .expect("first memory");
-        let program = decoding_step_v2_program_with_initial_memory(&layout, memory.clone())
-            .expect("program");
+        let program =
+            decoding_step_v2_program_with_initial_memory(&layout, memory.clone()).expect("program");
         let err = derive_phase12_from_program_initial_state(&program, 1).unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("only supports the seed step"));
+        assert!(err.to_string().contains("only supports the seed step"));
 
         let err = derive_phase12_from_final_memory(&memory, 1, &layout).unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("only supports the seed step"));
+        assert!(err.to_string().contains("only supports the seed step"));
     }
 
     #[test]
@@ -4774,14 +5259,11 @@ mod tests {
             for pair in memories.windows(2) {
                 let current = pair[0].clone();
                 let next = &pair[1];
-                let program =
-                    decoding_step_v2_program_with_initial_memory(&layout, current).expect("program");
+                let program = decoding_step_v2_program_with_initial_memory(&layout, current)
+                    .expect("program");
                 let step_limit = decoding_program_step_limit(&program).expect("step limit");
-                let mut runtime = NativeInterpreter::new(
-                    program,
-                    Attention2DMode::AverageHard,
-                    step_limit,
-                );
+                let mut runtime =
+                    NativeInterpreter::new(program, Attention2DMode::AverageHard, step_limit);
                 let result = runtime.run().expect("run program");
                 assert!(result.halted);
                 assert_eq!(
@@ -4888,6 +5370,56 @@ mod tests {
     }
 
     #[test]
+    fn phase14_prepare_decoding_chain_preserves_statement_version() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        assert_eq!(manifest.statement_version, phase12.statement_version);
+    }
+
+    #[test]
+    fn phase14_prepare_decoding_chain_rejects_unsupported_statement_version() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        phase12.statement_version = "claim-v2".to_string();
+        for step in &mut phase12.steps {
+            step.proof.claim.statement_version = "claim-v2".to_string();
+        }
+
+        let err = phase14_prepare_decoding_chain(&phase12).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("unsupported chunked decoding statement version `claim-v2`"));
+    }
+
+    #[test]
+    fn phase14_verify_decoding_chain_rejects_statement_version_drift() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        manifest.steps[0].proof.claim.statement_version = "claim-v2".to_string();
+        let err = verify_phase14_decoding_chain(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("statement version `claim-v2` does not match manifest"));
+    }
+
+    #[test]
     fn phase14_verify_decoding_chain_rejects_broken_open_chunk_link() {
         let layout = phase12_default_decoding_layout();
         let proofs = phase12_demo_initial_memories(&layout)
@@ -4897,7 +5429,9 @@ mod tests {
             .collect::<Vec<_>>();
         let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
         let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
-        manifest.steps[1].from_state.kv_history_open_chunk_commitment = "broken".to_string();
+        manifest.steps[1]
+            .from_state
+            .kv_history_open_chunk_commitment = "broken".to_string();
         let err = verify_phase14_decoding_chain(&manifest).unwrap_err();
         assert!(err
             .to_string()

@@ -28,16 +28,21 @@ use super::normalization_prover::{
     prove_phase10_shared_normalization_lookup_envelope,
     prove_phase5_normalization_lookup_demo_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
-    verify_phase5_normalization_lookup_demo_envelope,
-    Phase10SharedNormalizationLookupProofEnvelope, STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
+    verify_phase5_normalization_lookup_demo_envelope, STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
     STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10,
+};
+use super::shared_lookup_artifact::{
+    build_phase12_shared_lookup_artifact, EmbeddedSharedActivationClaimRow,
+    EmbeddedSharedActivationLookupProof, EmbeddedSharedNormalizationClaimRow,
+    EmbeddedSharedNormalizationProof, Phase12SharedLookupArtifact,
+    DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE, DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE,
 };
 use super::{
     phase3_lookup_table_rows, prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase3_binary_step_lookup_demo_envelope,
     verify_phase10_shared_binary_step_lookup_envelope,
-    verify_phase3_binary_step_lookup_demo_envelope, Phase10SharedLookupProofEnvelope,
-    Phase3LookupProofEnvelope, Phase3LookupTableRow, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
+    verify_phase3_binary_step_lookup_demo_envelope, Phase3LookupProofEnvelope,
+    Phase3LookupTableRow, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
     STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10,
 };
 use crate::config::Attention2DMode;
@@ -85,10 +90,6 @@ const DECODING_STEP_V1_SHARED_NORMALIZATION_SCOPE: &str =
     "stwo_decoding_step_v1_execution_with_shared_normalization_lookup";
 const DECODING_STEP_V1_SHARED_ACTIVATION_SCOPE: &str =
     "stwo_decoding_step_v1_execution_with_shared_binary_step_lookup";
-const DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE: &str =
-    "stwo_decoding_step_v2_execution_with_shared_normalization_lookup";
-const DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE: &str =
-    "stwo_decoding_step_v2_execution_with_shared_binary_step_lookup";
 const OPCODE_COLUMN_NAMES: [&str; 11] = [
     "phase5/arithmetic/op/nop",
     "phase5/arithmetic/op/loadi",
@@ -646,10 +647,7 @@ fn build_phase10_embedded_shared_normalization(
         .iter()
         .map(|row| (row.expected_norm_sq as u16, row.expected_inv_sqrt_q8 as u16))
         .collect();
-    let proof_envelope = serde_json::to_value(prove_phase10_shared_normalization_lookup_envelope(
-        &proof_rows,
-    )?)
-    .map_err(|error| VmError::Serialization(error.to_string()))?;
+    let proof_envelope = prove_phase10_shared_normalization_lookup_envelope(&proof_rows)?;
     Ok(Some(EmbeddedSharedNormalizationProof {
         statement_version: STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10.to_string(),
         semantic_scope: shared_normalization_scope(&claim.program).to_string(),
@@ -676,10 +674,7 @@ fn build_phase10_embedded_shared_activation_lookup(
             output: row.expected_output as u8,
         })
         .collect();
-    let proof_envelope = serde_json::to_value(prove_phase10_shared_binary_step_lookup_envelope(
-        &proof_rows,
-    )?)
-    .map_err(|error| VmError::Serialization(error.to_string()))?;
+    let proof_envelope = prove_phase10_shared_binary_step_lookup_envelope(&proof_rows)?;
     Ok(Some(EmbeddedSharedActivationLookupProof {
         statement_version: STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10.to_string(),
         semantic_scope: shared_activation_scope(&claim.program).to_string(),
@@ -901,10 +896,8 @@ fn verify_phase10_embedded_shared_normalization(
             embedded.semantic_scope
         )));
     }
-    let canonical_rows = shared_normalization_claim_rows(
-        &proof.claim.program,
-        &proof.claim.final_state.memory,
-    )?;
+    let canonical_rows =
+        shared_normalization_claim_rows(&proof.claim.program, &proof.claim.final_state.memory)?;
     if embedded.claimed_rows != canonical_rows {
         return Err(VmError::InvalidConfig(format!(
             "{} embedded claimed rows do not match the canonical final-state rows",
@@ -913,11 +906,24 @@ fn verify_phase10_embedded_shared_normalization(
     }
     let proof_rows: Vec<(u16, u16)> = canonical_rows
         .iter()
-        .map(|row| (row.expected_norm_sq as u16, row.expected_inv_sqrt_q8 as u16))
-        .collect();
-    let proof_envelope: Phase10SharedNormalizationLookupProofEnvelope =
-        serde_json::from_value(embedded.proof_envelope.clone())
-            .map_err(|error| VmError::Serialization(error.to_string()))?;
+        .map(|row| {
+            Ok((
+                u16::try_from(row.expected_norm_sq).map_err(|_| {
+                    VmError::InvalidConfig(format!(
+                        "{} normalization row is not a canonical u16",
+                        shared_normalization_label(&proof.claim.program)
+                    ))
+                })?,
+                u16::try_from(row.expected_inv_sqrt_q8).map_err(|_| {
+                    VmError::InvalidConfig(format!(
+                        "{} normalization inverse row is not a canonical u16",
+                        shared_normalization_label(&proof.claim.program)
+                    ))
+                })?,
+            ))
+        })
+        .collect::<Result<_>>()?;
+    let proof_envelope = embedded.proof_envelope.clone();
     if proof_envelope.claimed_rows != proof_rows {
         return Err(VmError::InvalidConfig(format!(
             "{} proof envelope claimed rows do not match the embedded rows",
@@ -964,8 +970,16 @@ fn verify_phase10_embedded_shared_activation_lookup(
             embedded.semantic_scope
         )));
     }
-    let mut proof_rows = Vec::with_capacity(embedded.claimed_rows.len());
-    for row in &embedded.claimed_rows {
+    let canonical_rows =
+        shared_activation_claim_rows(&proof.claim.program, &proof.claim.final_state.memory)?;
+    if embedded.claimed_rows != canonical_rows {
+        return Err(VmError::InvalidConfig(format!(
+            "{} embedded claimed rows do not match the canonical final-state rows",
+            shared_activation_label(&proof.claim.program)
+        )));
+    }
+    let mut proof_rows = Vec::with_capacity(canonical_rows.len());
+    for row in &canonical_rows {
         let (activation_input, activation_output) = activation_pair_from_indices(
             &proof.claim.final_state.memory,
             row.input_memory_index,
@@ -980,12 +994,15 @@ fn verify_phase10_embedded_shared_activation_lookup(
         }
         proof_rows.push(Phase3LookupTableRow {
             input: activation_input,
-            output: activation_output as u8,
+            output: u8::try_from(activation_output).map_err(|_| {
+                VmError::InvalidConfig(format!(
+                    "{} activation output is not a canonical u8",
+                    shared_activation_label(&proof.claim.program)
+                ))
+            })?,
         });
     }
-    let proof_envelope: Phase10SharedLookupProofEnvelope =
-        serde_json::from_value(embedded.proof_envelope.clone())
-            .map_err(|error| VmError::Serialization(error.to_string()))?;
+    let proof_envelope = embedded.proof_envelope.clone();
     if proof_envelope.claimed_rows != proof_rows {
         return Err(VmError::InvalidConfig(format!(
             "{} proof envelope claimed rows do not match the embedded rows",
@@ -1001,9 +1018,10 @@ fn verify_phase10_embedded_shared_activation_lookup(
     Ok(())
 }
 
-pub(crate) fn phase12_shared_lookup_rows_from_proof_payload(
+pub(crate) fn phase12_shared_lookup_artifact_from_proof_payload(
     proof: &VanillaStarkExecutionProof,
-) -> Result<Option<Vec<i16>>> {
+    layout_commitment: &str,
+) -> Result<Option<Phase12SharedLookupArtifact>> {
     if !matches_decoding_step_v2(&proof.claim.program) {
         return Ok(None);
     }
@@ -1053,24 +1071,11 @@ pub(crate) fn phase12_shared_lookup_rows_from_proof_payload(
             "decoding_step_v2 embedded shared normalization rows do not match the canonical final-state rows".to_string(),
         ));
     }
-    let normalization_envelope_rows = normalization
-        .proof_envelope
-        .get("claimed_rows")
-        .cloned()
-        .ok_or_else(|| {
-            VmError::InvalidConfig(
-                "decoding_step_v2 shared normalization proof envelope is missing claimed_rows"
-                    .to_string(),
-            )
-        })?;
     let expected_norm_pairs: Vec<(u16, u16)> = expected_norm_rows
         .iter()
         .map(|row| (row.expected_norm_sq as u16, row.expected_inv_sqrt_q8 as u16))
         .collect();
-    if normalization_envelope_rows
-        != serde_json::to_value(&expected_norm_pairs)
-            .map_err(|error| VmError::Serialization(error.to_string()))?
-    {
+    if normalization.proof_envelope.claimed_rows != expected_norm_pairs {
         return Err(VmError::InvalidConfig(
             "decoding_step_v2 shared normalization proof envelope rows do not match the canonical final-state rows".to_string(),
         ));
@@ -1095,16 +1100,6 @@ pub(crate) fn phase12_shared_lookup_rows_from_proof_payload(
             "decoding_step_v2 embedded shared activation rows do not match the canonical final-state rows".to_string(),
         ));
     }
-    let activation_envelope_rows = activation
-        .proof_envelope
-        .get("claimed_rows")
-        .cloned()
-        .ok_or_else(|| {
-            VmError::InvalidConfig(
-                "decoding_step_v2 shared activation proof envelope is missing claimed_rows"
-                    .to_string(),
-            )
-        })?;
     let expected_activation_pairs: Vec<Phase3LookupTableRow> = expected_activation_rows
         .iter()
         .map(|row| Phase3LookupTableRow {
@@ -1112,10 +1107,7 @@ pub(crate) fn phase12_shared_lookup_rows_from_proof_payload(
             output: row.expected_output as u8,
         })
         .collect();
-    if activation_envelope_rows
-        != serde_json::to_value(&expected_activation_pairs)
-            .map_err(|error| VmError::Serialization(error.to_string()))?
-    {
+    if activation.proof_envelope.claimed_rows != expected_activation_pairs {
         return Err(VmError::InvalidConfig(
             "decoding_step_v2 shared activation proof envelope rows do not match the canonical final-state rows".to_string(),
         ));
@@ -1129,15 +1121,31 @@ pub(crate) fn phase12_shared_lookup_rows_from_proof_payload(
     }
 
     let mut lookup_rows = Vec::with_capacity(expected_norm_rows.len() * 4);
-    for (normalization_row, activation_row) in
-        expected_norm_rows.iter().zip(expected_activation_rows.iter())
+    for (normalization_row, activation_row) in expected_norm_rows
+        .iter()
+        .zip(expected_activation_rows.iter())
     {
         lookup_rows.push(normalization_row.expected_norm_sq);
         lookup_rows.push(normalization_row.expected_inv_sqrt_q8);
         lookup_rows.push(activation_row.expected_input);
         lookup_rows.push(activation_row.expected_output);
     }
-    Ok(Some(lookup_rows))
+    Ok(Some(build_phase12_shared_lookup_artifact(
+        layout_commitment,
+        lookup_rows,
+        normalization,
+        activation,
+    )?))
+}
+
+pub(crate) fn phase12_shared_lookup_rows_from_proof_payload(
+    proof: &VanillaStarkExecutionProof,
+    layout_commitment: &str,
+) -> Result<Option<Vec<i16>>> {
+    Ok(
+        phase12_shared_lookup_artifact_from_proof_payload(proof, layout_commitment)?
+            .map(|artifact| artifact.flattened_lookup_rows),
+    )
 }
 
 fn gemma_block_normalization_pair(final_memory: &[i16]) -> Result<(i16, i16)> {
@@ -1548,38 +1556,6 @@ struct EmbeddedActivationLookupProof {
     output_memory_index: u8,
     expected_input: i16,
     expected_output: i16,
-    proof_envelope: serde_json::Value,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct EmbeddedSharedNormalizationClaimRow {
-    norm_sq_memory_index: u8,
-    inv_sqrt_q8_memory_index: u8,
-    expected_norm_sq: i16,
-    expected_inv_sqrt_q8: i16,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct EmbeddedSharedNormalizationProof {
-    statement_version: String,
-    semantic_scope: String,
-    claimed_rows: Vec<EmbeddedSharedNormalizationClaimRow>,
-    proof_envelope: serde_json::Value,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct EmbeddedSharedActivationClaimRow {
-    input_memory_index: u8,
-    output_memory_index: u8,
-    expected_input: i16,
-    expected_output: i16,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct EmbeddedSharedActivationLookupProof {
-    statement_version: String,
-    semantic_scope: String,
-    claimed_rows: Vec<EmbeddedSharedActivationClaimRow>,
     proof_envelope: serde_json::Value,
 }
 
