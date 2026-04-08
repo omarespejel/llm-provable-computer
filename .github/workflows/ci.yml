@@ -37,32 +37,32 @@ jobs:
       matrix:
         include:
           - name: default
-            cargo_args: ""
+            features: ""
             needs_python: false
             nextest_profile: ci
             rust_toolchain: stable
           - name: burn-model
-            cargo_args: "--features burn-model"
+            features: "burn-model"
             needs_python: false
             nextest_profile: ci
             rust_toolchain: stable
           - name: onnx-export
-            cargo_args: "--features onnx-export"
+            features: "onnx-export"
             needs_python: true
             nextest_profile: ci
             rust_toolchain: stable
           - name: full
-            cargo_args: "--features full"
+            features: "full"
             needs_python: true
             nextest_profile: ci
             rust_toolchain: stable
           - name: full-stwo-backend
-            cargo_args: "--features full stwo-backend"
+            features: "full,stwo-backend"
             needs_python: true
             nextest_profile: ci-stwo
             rust_toolchain: nightly-2025-07-14
           - name: stwo-backend
-            cargo_args: "--features stwo-backend"
+            features: "stwo-backend"
             needs_python: false
             nextest_profile: ci-stwo
             rust_toolchain: nightly-2025-07-14
@@ -98,15 +98,24 @@ jobs:
 
       - name: Run cargo nextest
         run: |
+          feature_args=()
+          if [ -n "${{ matrix.features }}" ]; then
+            feature_args+=(--features "${{ matrix.features }}")
+          fi
           cargo nextest run \
             --workspace \
             --all-targets \
             --profile ${{ matrix.nextest_profile }} \
             --no-fail-fast \
-            ${{ matrix.cargo_args }}
+            "${feature_args[@]}"
 
       - name: Run cargo doctests
-        run: cargo test --doc ${{ matrix.cargo_args }}
+        run: |
+          feature_args=()
+          if [ -n "${{ matrix.features }}" ]; then
+            feature_args+=(--features "${{ matrix.features }}")
+          fi
+          cargo test --doc "${feature_args[@]}"
 
       - name: Upload nextest junit report
         if: always()
