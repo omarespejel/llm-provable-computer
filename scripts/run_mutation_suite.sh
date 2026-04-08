@@ -4,16 +4,17 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+MUTATION_TOOLCHAIN="${MUTATION_TOOLCHAIN:-nightly-2025-07-14}"
+
 args=(
   cargo
-  +nightly-2025-07-14
+  +"${MUTATION_TOOLCHAIN}"
   mutants
   --file src/stwo_backend/decoding.rs
   --file src/stwo_backend/shared_lookup_artifact.rs
   --file src/stwo_backend/arithmetic_subset_prover.rs
   --features stwo-backend
   --test-tool cargo
-  --cargo-arg=--lib
   --cap-lints=true
   --copy-target=true
   --baseline "${MUTATION_BASELINE:-skip}"

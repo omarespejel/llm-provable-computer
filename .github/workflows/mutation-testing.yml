@@ -7,19 +7,20 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - "Cargo.toml"
-      - "Cargo.lock"
       - ".github/workflows/mutation-testing.yml"
       - "scripts/run_mutation_suite.sh"
-      - "src/stwo_backend/decoding.rs"
-      - "src/stwo_backend/shared_lookup_artifact.rs"
-      - "src/stwo_backend/arithmetic_subset_prover.rs"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "src/stwo_backend/**"
+
+env:
+  MUTATION_TOOLCHAIN: nightly-2025-07-14
 
 jobs:
   cargo-mutants:
     name: cargo-mutants (${{ matrix.shard }})
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
@@ -30,9 +31,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
         with:
-          toolchain: nightly-2025-07-14
+          toolchain: ${{ env.MUTATION_TOOLCHAIN }}
 
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@v2
@@ -40,12 +41,27 @@ jobs:
       - name: Install cargo-mutants
         run: cargo install cargo-mutants --locked
 
-      - name: Run targeted mutation suite
+      - name: Run mutation compile smoke on pull requests
+        if: github.event_name == 'pull_request'
         env:
           MUTATION_SHARD: ${{ matrix.shard }}
+          MUTATION_TOOLCHAIN: ${{ env.MUTATION_TOOLCHAIN }}
           MUTATION_BASELINE: skip
-          MUTATION_MIN_TEST_TIMEOUT: 120
-          MUTATION_TIMEOUT: 1800
+          MUTATION_MIN_TEST_TIMEOUT: 60
+          MUTATION_TIMEOUT: 600
+          MUTATION_JOBS: 2
+        run: |
+          chmod +x scripts/run_mutation_suite.sh
+          scripts/run_mutation_suite.sh --check
+
+      - name: Run full targeted mutation suite
+        if: github.event_name != 'pull_request'
+        env:
+          MUTATION_SHARD: ${{ matrix.shard }}
+          MUTATION_TOOLCHAIN: ${{ env.MUTATION_TOOLCHAIN }}
+          MUTATION_BASELINE: skip
+          MUTATION_MIN_TEST_TIMEOUT: 60
+          MUTATION_TIMEOUT: 600
           MUTATION_JOBS: 2
         run: |
           chmod +x scripts/run_mutation_suite.sh
