@@ -22,6 +22,7 @@ use stwo_constraint_framework::{
 
 use super::decoding::{
     infer_phase12_decoding_layout, matches_decoding_step_v1_family, matches_decoding_step_v2_family,
+    MAX_DECODING_PROOF_PAYLOAD_BYTES, MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES,
 };
 use super::normalization_component::phase5_normalization_table_rows;
 use super::normalization_prover::{
@@ -1025,6 +1026,13 @@ pub(crate) fn phase12_shared_lookup_artifact_from_proof_payload(
     if !matches_decoding_step_v2(&proof.claim.program) {
         return Ok(None);
     }
+    if proof.proof.len() > MAX_DECODING_PROOF_PAYLOAD_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding_step_v2 proof payload is {} bytes, exceeding the limit of {} bytes",
+            proof.proof.len(),
+            MAX_DECODING_PROOF_PAYLOAD_BYTES
+        )));
+    }
 
     let payload: serde_json::Value = serde_json::from_slice(&proof.proof)
         .map_err(|error| VmError::Serialization(error.to_string()))?;
@@ -1051,6 +1059,20 @@ pub(crate) fn phase12_shared_lookup_artifact_from_proof_payload(
             .map_err(|error| VmError::Serialization(error.to_string()))?;
     let activation: EmbeddedSharedActivationLookupProof = serde_json::from_value(activation_value)
         .map_err(|error| VmError::Serialization(error.to_string()))?;
+    if normalization.proof_envelope.proof.len() > MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding_step_v2 shared normalization proof is {} bytes, exceeding the limit of {} bytes",
+            normalization.proof_envelope.proof.len(),
+            MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES
+        )));
+    }
+    if activation.proof_envelope.proof.len() > MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding_step_v2 shared activation proof is {} bytes, exceeding the limit of {} bytes",
+            activation.proof_envelope.proof.len(),
+            MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES
+        )));
+    }
 
     let expected_norm_rows =
         shared_normalization_claim_rows(&proof.claim.program, &proof.claim.final_state.memory)?;
