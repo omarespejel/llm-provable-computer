@@ -12,7 +12,7 @@ use predicates::prelude::*;
 
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::stwo_backend::{
-    prove_phase10_shared_binary_step_lookup_envelope,
+    commit_phase12_shared_lookup_rows, prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, Phase10SharedLookupProofEnvelope,
     Phase10SharedNormalizationLookupProofEnvelope, Phase3LookupTableRow,
     STWO_BACKEND_VERSION_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE12,
@@ -158,19 +158,7 @@ fn phase12_lookup_rows_commitment_from_json(artifact: &serde_json::Value) -> Str
     let flattened_lookup_rows: Vec<i16> =
         serde_json::from_value(artifact["flattened_lookup_rows"].clone())
             .expect("flattened lookup rows");
-
-    let mut output = [0u8; 32];
-    let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
-    hasher.update("stwo-decoding-state-v11".as_bytes());
-    hasher.update(layout_commitment.as_bytes());
-    hasher.update(b"lookup-rows");
-    for value in &flattened_lookup_rows {
-        hasher.update(&value.to_le_bytes());
-    }
-    hasher
-        .finalize_variable(&mut output)
-        .expect("blake2b-256 finalization");
-    output.iter().map(|byte| format!("{byte:02x}")).collect()
+    commit_phase12_shared_lookup_rows(layout_commitment, &flattened_lookup_rows)
 }
 
 #[cfg(feature = "onnx-export")]

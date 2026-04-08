@@ -2,7 +2,7 @@ use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
 use serde::{Deserialize, Serialize};
 
-use super::decoding::Phase12DecodingLayout;
+use super::decoding::{commit_phase12_layout, Phase12DecodingLayout};
 use super::lookup_prover::{
     verify_phase10_shared_binary_step_lookup_envelope, Phase10SharedLookupProofEnvelope,
     STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10,
@@ -146,6 +146,13 @@ pub fn verify_phase12_shared_lookup_artifact(
     expected_layout_commitment: &str,
 ) -> Result<()> {
     layout.validate()?;
+    let computed_layout_commitment = commit_phase12_layout(layout);
+    if computed_layout_commitment != expected_layout_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "verify_phase12_shared_lookup_artifact expected layout commitment `{}` does not match the validated layout commitment `{}`",
+            expected_layout_commitment, computed_layout_commitment
+        )));
+    }
     if artifact.artifact_version != STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12 {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 12 shared lookup artifact version `{}`",
@@ -158,15 +165,15 @@ pub fn verify_phase12_shared_lookup_artifact(
             artifact.semantic_scope
         )));
     }
-    if artifact.layout_commitment != expected_layout_commitment {
+    if artifact.layout_commitment != computed_layout_commitment {
         return Err(VmError::InvalidConfig(format!(
             "Phase 12 shared lookup artifact layout commitment `{}` does not match expected `{}`",
-            artifact.layout_commitment, expected_layout_commitment
+            artifact.layout_commitment, computed_layout_commitment
         )));
     }
 
     let expected_lookup_rows_commitment = commit_phase12_shared_lookup_rows(
-        expected_layout_commitment,
+        &computed_layout_commitment,
         &artifact.flattened_lookup_rows,
     );
     if artifact.lookup_rows_commitment != expected_lookup_rows_commitment {
@@ -177,7 +184,7 @@ pub fn verify_phase12_shared_lookup_artifact(
     }
 
     let expected_artifact_commitment = commit_phase12_shared_lookup_artifact(
-        expected_layout_commitment,
+        &computed_layout_commitment,
         &artifact.flattened_lookup_rows,
         &artifact.normalization_proof_envelope,
         &artifact.activation_proof_envelope,

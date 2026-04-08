@@ -3922,6 +3922,11 @@ mod tests {
     };
     use crate::state::MachineState;
     use crate::stwo_backend::lookup_component::Phase3LookupTableRow;
+    use crate::stwo_backend::shared_lookup_artifact::{
+        build_phase12_shared_lookup_artifact, EmbeddedSharedActivationClaimRow,
+        EmbeddedSharedActivationLookupProof, EmbeddedSharedNormalizationClaimRow,
+        EmbeddedSharedNormalizationProof,
+    };
     use crate::stwo_backend::{
         prove_phase10_shared_binary_step_lookup_envelope,
         prove_phase10_shared_normalization_lookup_envelope,
@@ -4081,6 +4086,74 @@ mod tests {
             }
         }))
         .expect("sample proof payload")
+    }
+
+    fn sample_phase12_valid_but_wrong_shared_lookup_artifact(
+        layout: &Phase12DecodingLayout,
+    ) -> Phase12SharedLookupArtifact {
+        let layout_commitment = commit_phase12_layout(layout);
+        let lookup = layout.lookup_range().expect("lookup range");
+        let normalization = EmbeddedSharedNormalizationProof {
+            statement_version: "stwo-shared-normalization-lookup-v1".to_string(),
+            semantic_scope: "stwo_decoding_step_v2_execution_with_shared_normalization_lookup"
+                .to_string(),
+            claimed_rows: vec![
+                EmbeddedSharedNormalizationClaimRow {
+                    norm_sq_memory_index: lookup.start as u8,
+                    inv_sqrt_q8_memory_index: (lookup.start + 1) as u8,
+                    expected_norm_sq: 4,
+                    expected_inv_sqrt_q8: 128,
+                },
+                EmbeddedSharedNormalizationClaimRow {
+                    norm_sq_memory_index: (lookup.start + 4) as u8,
+                    inv_sqrt_q8_memory_index: (lookup.start + 5) as u8,
+                    expected_norm_sq: 16,
+                    expected_inv_sqrt_q8: 64,
+                },
+            ],
+            proof_envelope: prove_phase10_shared_normalization_lookup_envelope(&[
+                (4, 128),
+                (16, 64),
+            ])
+            .expect("normalization envelope"),
+        };
+        let activation = EmbeddedSharedActivationLookupProof {
+            statement_version: "stwo-shared-binary-step-lookup-v1".to_string(),
+            semantic_scope: "stwo_decoding_step_v2_execution_with_shared_binary_step_lookup"
+                .to_string(),
+            claimed_rows: vec![
+                EmbeddedSharedActivationClaimRow {
+                    input_memory_index: (lookup.start + 2) as u8,
+                    output_memory_index: (lookup.start + 3) as u8,
+                    expected_input: 0,
+                    expected_output: 1,
+                },
+                EmbeddedSharedActivationClaimRow {
+                    input_memory_index: (lookup.start + 6) as u8,
+                    output_memory_index: (lookup.start + 7) as u8,
+                    expected_input: 1,
+                    expected_output: 1,
+                },
+            ],
+            proof_envelope: prove_phase10_shared_binary_step_lookup_envelope(&[
+                Phase3LookupTableRow {
+                    input: 0,
+                    output: 1,
+                },
+                Phase3LookupTableRow {
+                    input: 1,
+                    output: 1,
+                },
+            ])
+            .expect("activation envelope"),
+        };
+        build_phase12_shared_lookup_artifact(
+            &layout_commitment,
+            vec![4, 128, 0, 1, 16, 64, 1, 1],
+            normalization,
+            activation,
+        )
+        .expect("synthetic valid artifact")
     }
 
     /// Requires `memory` to already contain `PHASE12_LOOKUP_ROW_VALUES` in the layout's lookup
@@ -4954,12 +5027,9 @@ mod tests {
         let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
         manifest.steps[1].from_state.persistent_state_commitment = "broken".to_string();
         let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
-        let message = err.to_string();
-        assert!(
-            message.contains("recorded from_state does not match the proof's initial state")
-                || message.contains("shared lookup artifact"),
-            "unexpected error: {message}"
-        );
+        assert!(err
+            .to_string()
+            .contains("recorded from_state does not match the proof's initial state"));
     }
 
     #[test]
@@ -4973,12 +5043,9 @@ mod tests {
         let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
         manifest.steps[1].from_state.kv_history_commitment = "broken".to_string();
         let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
-        let message = err.to_string();
-        assert!(
-            message.contains("recorded from_state does not match the proof's initial state")
-                || message.contains("shared lookup artifact"),
-            "unexpected error: {message}"
-        );
+        assert!(err
+            .to_string()
+            .contains("recorded from_state does not match the proof's initial state"));
     }
 
     #[test]
@@ -5066,11 +5133,12 @@ mod tests {
             .map(|memory| sample_phase12_step_proof(&layout, memory))
             .collect::<Vec<_>>();
         let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
-        manifest.steps[0].shared_lookup_artifact_commitment = "deadbeef".repeat(8);
+        let wrong_artifact = sample_phase12_valid_but_wrong_shared_lookup_artifact(&layout);
+        let wrong_commitment = wrong_artifact.artifact_commitment.clone();
+        manifest.shared_lookup_artifacts.push(wrong_artifact);
+        manifest.steps[0].shared_lookup_artifact_commitment = wrong_commitment;
         let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("is not present in the manifest registry"));
+        assert!(err.to_string().contains("does not match the proof payload"));
     }
 
     #[test]

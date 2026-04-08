@@ -6,7 +6,7 @@
   "maxLinesToAnalyze": 20000,
   "fileChangeLimit": 200,
   "includeBranches": ["main", "codex/.*"],
-  "excludeAuthors": ["github-actions[bot]", "dependabot[bot]", "coderabbitai", "qodo-code-review"],
+  "excludeAuthors": ["github-actions[bot]", "dependabot[bot]", "coderabbitai[bot]", "qodo-code-review"],
   "disabledLabels": ["skip-review", "artifact-only", "docs-only", "wip"],
   "ignorePatterns": [
     "scripts/node_modules/**",
