@@ -16,3 +16,4 @@ AI_REVIEW_BOTS_BEST_PRACTICES_*.md
 **/.tldrignore
 compiled/
 docs/artifacts/*.proof.json
+mutants.out/

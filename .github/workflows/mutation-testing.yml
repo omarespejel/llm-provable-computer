@@ -1,0 +1,52 @@
+name: Mutation Testing
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/mutation-testing.yml"
+      - "scripts/run_mutation_suite.sh"
+      - "src/stwo_backend/decoding.rs"
+      - "src/stwo_backend/shared_lookup_artifact.rs"
+      - "src/stwo_backend/arithmetic_subset_prover.rs"
+
+jobs:
+  cargo-mutants:
+    name: cargo-mutants (${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ["1/2", "2/2"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2025-07-14
+
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants --locked
+
+      - name: Run targeted mutation suite
+        env:
+          MUTATION_SHARD: ${{ matrix.shard }}
+          MUTATION_BASELINE: skip
+          MUTATION_MIN_TEST_TIMEOUT: 120
+          MUTATION_TIMEOUT: 1800
+          MUTATION_JOBS: 2
+        run: |
+          chmod +x scripts/run_mutation_suite.sh
+          scripts/run_mutation_suite.sh
