@@ -4,6 +4,13 @@ use serde::{Deserialize, Serialize};
 
 use serde_json::Value;
 
+use super::lookup_prover::{
+    verify_phase10_shared_binary_step_lookup_envelope, Phase10SharedLookupProofEnvelope,
+};
+use super::normalization_prover::{
+    verify_phase10_shared_normalization_lookup_envelope,
+    Phase10SharedNormalizationLookupProofEnvelope,
+};
 use super::{Phase3LookupTableRow, STWO_DECODING_STATE_VERSION_PHASE12};
 use crate::error::{Result, VmError};
 
@@ -195,6 +202,22 @@ pub fn verify_phase12_shared_lookup_artifact(
                 .to_string(),
         ));
     }
+    let normalization_envelope: Phase10SharedNormalizationLookupProofEnvelope =
+        serde_json::from_value(artifact.normalization_proof_envelope.clone())
+            .map_err(|error| VmError::Serialization(error.to_string()))?;
+    if !verify_phase10_shared_normalization_lookup_envelope(&normalization_envelope)? {
+        return Err(VmError::UnsupportedProof(
+            "Phase 12 shared lookup artifact normalization proof did not verify".to_string(),
+        ));
+    }
+    let activation_envelope: Phase10SharedLookupProofEnvelope =
+        serde_json::from_value(artifact.activation_proof_envelope.clone())
+            .map_err(|error| VmError::Serialization(error.to_string()))?;
+    if !verify_phase10_shared_binary_step_lookup_envelope(&activation_envelope)? {
+        return Err(VmError::UnsupportedProof(
+            "Phase 12 shared lookup artifact activation proof did not verify".to_string(),
+        ));
+    }
 
     Ok(())
 }
@@ -207,4 +230,71 @@ fn lower_hex(bytes: &[u8]) -> String {
         out.push(HEX[(byte & 0x0f) as usize] as char);
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::stwo_backend::lookup_component::Phase3LookupTableRow;
+    use crate::stwo_backend::lookup_prover::prove_phase10_shared_binary_step_lookup_envelope;
+    use crate::stwo_backend::normalization_prover::prove_phase10_shared_normalization_lookup_envelope;
+
+    #[test]
+    fn phase12_shared_lookup_artifact_verifies_nested_envelopes() {
+        let normalization_rows = vec![(16u16, 64u16), (4u16, 128u16)];
+        let activation_rows = vec![
+            Phase3LookupTableRow { input: 1, output: 1 },
+            Phase3LookupTableRow { input: 0, output: 1 },
+        ];
+        let normalization_envelope =
+            prove_phase10_shared_normalization_lookup_envelope(&normalization_rows)
+                .expect("normalization envelope");
+        let activation_envelope =
+            prove_phase10_shared_binary_step_lookup_envelope(&activation_rows)
+                .expect("activation envelope");
+        let artifact = build_phase12_shared_lookup_artifact(
+            "layout-commitment",
+            vec![16, 64, 1, 1, 4, 128, 0, 1],
+            serde_json::to_value(normalization_envelope).expect("normalization value"),
+            serde_json::to_value(activation_envelope).expect("activation value"),
+        )
+        .expect("artifact");
+
+        verify_phase12_shared_lookup_artifact(&artifact, "layout-commitment")
+            .expect("artifact verifies");
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_rejects_tampered_nested_proof_bytes() {
+        let normalization_rows = vec![(16u16, 64u16), (4u16, 128u16)];
+        let activation_rows = vec![
+            Phase3LookupTableRow { input: 1, output: 1 },
+            Phase3LookupTableRow { input: 0, output: 1 },
+        ];
+        let normalization_envelope =
+            prove_phase10_shared_normalization_lookup_envelope(&normalization_rows)
+                .expect("normalization envelope");
+        let mut activation_envelope =
+            prove_phase10_shared_binary_step_lookup_envelope(&activation_rows)
+                .expect("activation envelope");
+        activation_envelope.proof[0] ^= 0x01;
+        let artifact = build_phase12_shared_lookup_artifact(
+            "layout-commitment",
+            vec![16, 64, 1, 1, 4, 128, 0, 1],
+            serde_json::to_value(normalization_envelope).expect("normalization value"),
+            serde_json::to_value(activation_envelope).expect("activation value"),
+        )
+        .expect("artifact");
+
+        let error = verify_phase12_shared_lookup_artifact(&artifact, "layout-commitment")
+            .expect_err("tampered nested proof should fail");
+        assert!(
+            error
+                .to_string()
+                .contains("activation proof did not verify")
+                || error.to_string().contains("unsupported")
+                || error.to_string().contains("serialization error"),
+            "unexpected error: {error}"
+        );
+    }
 }
