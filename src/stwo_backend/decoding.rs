@@ -3935,6 +3935,9 @@ pub fn matches_decoding_step_v2_family_with_layout(
 #[cfg(kani)]
 mod kani_proofs {
     use super::*;
+    use crate::instruction::Program;
+    use crate::proof::{production_v1_stark_options, VanillaStarkExecutionClaim, VanillaStarkExecutionProof};
+    use crate::state::MachineState;
 
     fn phase12_step_header_is_valid(
         from_state_version: &str,
@@ -4049,6 +4052,134 @@ mod kani_proofs {
             && lookup_frontier_entries_matches
     }
 
+    fn kani_dummy_proof() -> VanillaStarkExecutionProof {
+        VanillaStarkExecutionProof {
+            proof_backend: StarkProofBackend::Stwo,
+            proof_backend_version: "kani-stwo-test-proof".to_string(),
+            stwo_auxiliary: None,
+            claim: VanillaStarkExecutionClaim {
+                statement_version: "statement-v1".to_string(),
+                semantic_scope:
+                    "native_isa_execution_with_transformer_native_equivalence_check".to_string(),
+                program: Program::new(vec![], 1),
+                attention_mode: Attention2DMode::AverageHard,
+                transformer_config: None,
+                steps: 0,
+                final_state: MachineState::with_memory(vec![0]),
+                options: production_v1_stark_options(),
+                equivalence: None,
+                commitments: None,
+            },
+            proof: vec![],
+        }
+    }
+
+    fn kani_phase12_step(
+        layout_commitment: &str,
+        from_step_index: usize,
+        to_step_index: usize,
+        from_position: i16,
+        to_position: i16,
+    ) -> Phase12DecodingStep {
+        Phase12DecodingStep {
+            from_state: Phase12DecodingState {
+                state_version: STWO_DECODING_STATE_VERSION_PHASE12.to_string(),
+                step_index: from_step_index,
+                position: from_position,
+                layout_commitment: layout_commitment.to_string(),
+                persistent_state_commitment: "persistent".to_string(),
+                kv_history_commitment: "history".to_string(),
+                kv_history_length: 1,
+                kv_cache_commitment: "cache".to_string(),
+                incoming_token_commitment: "incoming".to_string(),
+                query_commitment: "query".to_string(),
+                output_commitment: "output".to_string(),
+                lookup_rows_commitment: "lookup".to_string(),
+            },
+            to_state: Phase12DecodingState {
+                state_version: STWO_DECODING_STATE_VERSION_PHASE12.to_string(),
+                step_index: to_step_index,
+                position: to_position,
+                layout_commitment: layout_commitment.to_string(),
+                persistent_state_commitment: "persistent-next".to_string(),
+                kv_history_commitment: "history-next".to_string(),
+                kv_history_length: 2,
+                kv_cache_commitment: "cache-next".to_string(),
+                incoming_token_commitment: "incoming-next".to_string(),
+                query_commitment: "query-next".to_string(),
+                output_commitment: "output-next".to_string(),
+                lookup_rows_commitment: "lookup-next".to_string(),
+            },
+            shared_lookup_artifact_commitment: "artifact".to_string(),
+            proof: kani_dummy_proof(),
+        }
+    }
+
+    fn kani_phase14_step(
+        layout_commitment: &str,
+        history_chunk_pairs: usize,
+        rolling_kv_pairs: usize,
+        from_step_index: usize,
+        to_step_index: usize,
+        from_position: i16,
+        to_position: i16,
+    ) -> Phase14DecodingStep {
+        Phase14DecodingStep {
+            from_state: Phase14DecodingState {
+                state_version: STWO_DECODING_STATE_VERSION_PHASE14.to_string(),
+                step_index: from_step_index,
+                position: from_position,
+                layout_commitment: layout_commitment.to_string(),
+                persistent_state_commitment: "persistent".to_string(),
+                kv_history_commitment: "history".to_string(),
+                kv_history_length: 1,
+                kv_history_chunk_size: history_chunk_pairs,
+                kv_history_sealed_commitment: "sealed".to_string(),
+                kv_history_sealed_chunks: 0,
+                kv_history_open_chunk_commitment: "open".to_string(),
+                kv_history_open_chunk_pairs: 1,
+                kv_history_frontier_commitment: "cache".to_string(),
+                kv_history_frontier_pairs: rolling_kv_pairs,
+                lookup_transcript_commitment: "lookup-transcript".to_string(),
+                lookup_transcript_entries: 1,
+                lookup_frontier_commitment: "lookup-frontier".to_string(),
+                lookup_frontier_entries: 1,
+                kv_cache_commitment: "cache".to_string(),
+                incoming_token_commitment: "incoming".to_string(),
+                query_commitment: "query".to_string(),
+                output_commitment: "output".to_string(),
+                lookup_rows_commitment: "lookup".to_string(),
+            },
+            to_state: Phase14DecodingState {
+                state_version: STWO_DECODING_STATE_VERSION_PHASE14.to_string(),
+                step_index: to_step_index,
+                position: to_position,
+                layout_commitment: layout_commitment.to_string(),
+                persistent_state_commitment: "persistent-next".to_string(),
+                kv_history_commitment: "history-next".to_string(),
+                kv_history_length: 2,
+                kv_history_chunk_size: history_chunk_pairs,
+                kv_history_sealed_commitment: "sealed-next".to_string(),
+                kv_history_sealed_chunks: 1,
+                kv_history_open_chunk_commitment: "open-next".to_string(),
+                kv_history_open_chunk_pairs: 1,
+                kv_history_frontier_commitment: "cache-next".to_string(),
+                kv_history_frontier_pairs: rolling_kv_pairs,
+                lookup_transcript_commitment: "lookup-transcript-next".to_string(),
+                lookup_transcript_entries: 2,
+                lookup_frontier_commitment: "lookup-frontier-next".to_string(),
+                lookup_frontier_entries: 2,
+                kv_cache_commitment: "cache-next".to_string(),
+                incoming_token_commitment: "incoming-next".to_string(),
+                query_commitment: "query-next".to_string(),
+                output_commitment: "output-next".to_string(),
+                lookup_rows_commitment: "lookup-next".to_string(),
+            },
+            shared_lookup_artifact_commitment: "artifact".to_string(),
+            proof: kani_dummy_proof(),
+        }
+    }
+
     #[kani::proof]
     fn kani_phase12_validate_accepts_canonical_single_step() {
         assert!(phase12_step_header_is_valid(
@@ -4062,6 +4193,16 @@ mod kani_proofs {
             0,
             1,
         ));
+    }
+
+    #[kani::proof]
+    fn kani_phase12_validator_accepts_canonical_single_step() {
+        let layout_commitment = "layout-commitment".to_string();
+        let step = kani_phase12_step(&layout_commitment, 0, 1, 0, 1);
+        assert!(
+            validate_phase12_chain_steps_against_layout_commitment(&layout_commitment, &[step])
+                .is_ok()
+        );
     }
 
     #[kani::proof]
@@ -4079,6 +4220,18 @@ mod kani_proofs {
             0,
             1,
         ));
+    }
+
+    #[kani::proof]
+    fn kani_phase12_validator_rejects_step_index_drift() {
+        let layout_commitment = "layout-commitment".to_string();
+        let bad_index = kani::any::<usize>();
+        kani::assume(bad_index != 1);
+        let step = kani_phase12_step(&layout_commitment, 0, bad_index, 0, 1);
+        assert!(
+            validate_phase12_chain_steps_against_layout_commitment(&layout_commitment, &[step])
+                .is_err()
+        );
     }
 
     #[kani::proof]
@@ -4134,6 +4287,30 @@ mod kani_proofs {
     }
 
     #[kani::proof]
+    fn kani_phase14_validator_accepts_canonical_single_step() {
+        let layout = Phase12DecodingLayout::new(4, 4).expect("valid Phase 12 layout");
+        let layout_commitment = "layout-commitment".to_string();
+        let step = kani_phase14_step(
+            &layout_commitment,
+            PHASE14_HISTORY_CHUNK_PAIRS,
+            layout.rolling_kv_pairs,
+            0,
+            1,
+            0,
+            1,
+        );
+        assert!(
+            validate_phase14_chain_steps_against_layout_commitment(
+                &layout,
+                &layout_commitment,
+                PHASE14_HISTORY_CHUNK_PAIRS,
+                &[step],
+            )
+            .is_ok()
+        );
+    }
+
+    #[kani::proof]
     fn kani_phase14_validate_rejects_wrong_chunk_size() {
         assert!(!phase14_step_header_is_valid(
             STWO_DECODING_STATE_VERSION_PHASE14,
@@ -4158,6 +4335,31 @@ mod kani_proofs {
             0,
             1,
         ));
+    }
+
+    #[kani::proof]
+    fn kani_phase14_validator_rejects_wrong_chunk_size() {
+        let layout = Phase12DecodingLayout::new(4, 4).expect("valid Phase 12 layout");
+        let layout_commitment = "layout-commitment".to_string();
+        let mut step = kani_phase14_step(
+            &layout_commitment,
+            PHASE14_HISTORY_CHUNK_PAIRS,
+            layout.rolling_kv_pairs,
+            0,
+            1,
+            0,
+            1,
+        );
+        step.to_state.kv_history_chunk_size = PHASE14_HISTORY_CHUNK_PAIRS + 1;
+        assert!(
+            validate_phase14_chain_steps_against_layout_commitment(
+                &layout,
+                &layout_commitment,
+                PHASE14_HISTORY_CHUNK_PAIRS,
+                &[step],
+            )
+            .is_err()
+        );
     }
 
     #[kani::proof]
