@@ -746,10 +746,10 @@ pub fn phase11_prepare_decoding_chain(
                 proof.claim.statement_version, first.claim.statement_version
             )));
         }
-        if proof.claim.semantic_scope != first.claim.semantic_scope {
+        if proof.claim.semantic_scope != CLAIM_SEMANTIC_SCOPE_V1 {
             return Err(VmError::InvalidConfig(format!(
                 "decoding step {step_index} uses semantic scope `{}`; expected `{}`",
-                proof.claim.semantic_scope, first.claim.semantic_scope
+                proof.claim.semantic_scope, CLAIM_SEMANTIC_SCOPE_V1
             )));
         }
         if !matches_decoding_step_v1_family(&proof.claim.program) {

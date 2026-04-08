@@ -418,6 +418,10 @@ mod tests {
     const ORACLE_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12: &str =
         "stwo_parameterized_decoding_shared_lookup_artifact";
     const ORACLE_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v11";
+    const ORACLE_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10: &str =
+        "stwo-shared-normalization-lookup-v1";
+    const ORACLE_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10: &str =
+        "stwo-shared-binary-step-lookup-v1";
 
     fn oracle_lower_hex(bytes: &[u8]) -> String {
         const HEX: &[u8; 16] = b"0123456789abcdef";
@@ -439,6 +443,30 @@ mod tests {
             .finalize_variable(&mut out)
             .expect("blake2b finalize");
         oracle_lower_hex(&out)
+    }
+
+    #[test]
+    fn oracle_constants_match_production() {
+        assert_eq!(
+            ORACLE_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12,
+            super::STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12
+        );
+        assert_eq!(
+            ORACLE_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12,
+            super::STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12
+        );
+        assert_eq!(
+            ORACLE_DECODING_STATE_VERSION_PHASE12,
+            crate::stwo_backend::decoding::STWO_DECODING_STATE_VERSION_PHASE12
+        );
+        assert_eq!(
+            ORACLE_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10,
+            super::STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10
+        );
+        assert_eq!(
+            ORACLE_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10,
+            super::STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10
+        );
     }
 
     fn oracle_commit_phase12_shared_lookup_rows(
@@ -506,15 +534,15 @@ mod tests {
                 artifact.semantic_scope
             )));
         }
-        if artifact.layout_commitment != expected_layout_commitment {
+        if artifact.layout_commitment != computed_layout_commitment {
             return Err(VmError::InvalidConfig(format!(
                 "Phase 12 shared lookup artifact layout commitment `{}` does not match expected `{}`",
-                artifact.layout_commitment, expected_layout_commitment
+                artifact.layout_commitment, computed_layout_commitment
             )));
         }
 
         let expected_lookup_rows_commitment = oracle_commit_phase12_shared_lookup_rows(
-            expected_layout_commitment,
+            &computed_layout_commitment,
             &artifact.flattened_lookup_rows,
         );
         if artifact.lookup_rows_commitment != expected_lookup_rows_commitment {
@@ -525,7 +553,7 @@ mod tests {
         }
 
         let expected_artifact_commitment = oracle_commit_phase12_shared_lookup_artifact(
-            expected_layout_commitment,
+            &computed_layout_commitment,
             &artifact.flattened_lookup_rows,
             &artifact.normalization_proof_envelope,
             &artifact.activation_proof_envelope,
@@ -550,7 +578,7 @@ mod tests {
         ];
         let normalization_wrapper = &artifact.normalization_proof_envelope;
         if normalization_wrapper.statement_version
-            != STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10
+            != ORACLE_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10
         {
             return Err(VmError::InvalidConfig(format!(
                 "unsupported Phase 12 shared lookup artifact normalization statement version `{}`",
@@ -630,7 +658,7 @@ mod tests {
             ),
         ];
         let activation_wrapper = &artifact.activation_proof_envelope;
-        if activation_wrapper.statement_version != STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10 {
+        if activation_wrapper.statement_version != ORACLE_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10 {
             return Err(VmError::InvalidConfig(format!(
                 "unsupported Phase 12 shared lookup artifact activation statement version `{}`",
                 activation_wrapper.statement_version
@@ -750,13 +778,25 @@ mod tests {
                 EmbeddedSharedNormalizationClaimRow {
                     norm_sq_memory_index: checked_lookup_index(lookup.start, "normalization input")
                         .expect("normalization input fits in u8"),
-                    inv_sqrt_q8_memory_index: (lookup.start + 1) as u8,
+                    inv_sqrt_q8_memory_index: checked_lookup_index(
+                        lookup.start + 1,
+                        "normalization inverse output",
+                    )
+                    .expect("normalization inverse output fits in u8"),
                     expected_norm_sq: 16,
                     expected_inv_sqrt_q8: 64,
                 },
                 EmbeddedSharedNormalizationClaimRow {
-                    norm_sq_memory_index: (lookup.start + 4) as u8,
-                    inv_sqrt_q8_memory_index: (lookup.start + 5) as u8,
+                    norm_sq_memory_index: checked_lookup_index(
+                        lookup.start + 4,
+                        "normalization input",
+                    )
+                    .expect("normalization input fits in u8"),
+                    inv_sqrt_q8_memory_index: checked_lookup_index(
+                        lookup.start + 5,
+                        "normalization inverse output",
+                    )
+                    .expect("normalization inverse output fits in u8"),
                     expected_norm_sq: 4,
                     expected_inv_sqrt_q8: 128,
                 },
@@ -775,14 +815,24 @@ mod tests {
             semantic_scope: DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE.to_string(),
             claimed_rows: vec![
                 EmbeddedSharedActivationClaimRow {
-                    input_memory_index: (lookup.start + 2) as u8,
-                    output_memory_index: (lookup.start + 3) as u8,
+                    input_memory_index: checked_lookup_index(lookup.start + 2, "activation input")
+                        .expect("activation input fits in u8"),
+                    output_memory_index: checked_lookup_index(
+                        lookup.start + 3,
+                        "activation output",
+                    )
+                    .expect("activation output fits in u8"),
                     expected_input: 1,
                     expected_output: 1,
                 },
                 EmbeddedSharedActivationClaimRow {
-                    input_memory_index: (lookup.start + 6) as u8,
-                    output_memory_index: (lookup.start + 7) as u8,
+                    input_memory_index: checked_lookup_index(lookup.start + 6, "activation input")
+                        .expect("activation input fits in u8"),
+                    output_memory_index: checked_lookup_index(
+                        lookup.start + 7,
+                        "activation output",
+                    )
+                    .expect("activation output fits in u8"),
                     expected_input: 0,
                     expected_output: 1,
                 },
