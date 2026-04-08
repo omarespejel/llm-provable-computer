@@ -2,6 +2,7 @@ use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
 use serde::{Deserialize, Serialize};
 
+use super::decoding::Phase12DecodingLayout;
 use super::lookup_prover::{
     verify_phase10_shared_binary_step_lookup_envelope, Phase10SharedLookupProofEnvelope,
     STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10,
@@ -141,8 +142,10 @@ pub(crate) fn build_phase12_shared_lookup_artifact(
 
 pub fn verify_phase12_shared_lookup_artifact(
     artifact: &Phase12SharedLookupArtifact,
+    layout: &Phase12DecodingLayout,
     expected_layout_commitment: &str,
 ) -> Result<()> {
+    layout.validate()?;
     if artifact.artifact_version != STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12 {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 12 shared lookup artifact version `{}`",
@@ -205,6 +208,35 @@ pub fn verify_phase12_shared_lookup_artifact(
         .iter()
         .map(|row| (row.expected_norm_sq, row.expected_inv_sqrt_q8))
         .collect();
+    let lookup = layout.lookup_range()?;
+    let expected_normalization_indices = [
+        (lookup.start as u8, (lookup.start + 1) as u8),
+        ((lookup.start + 4) as u8, (lookup.start + 5) as u8),
+    ];
+    if normalization_wrapper.claimed_rows.len() != expected_normalization_indices.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 12 shared lookup artifact normalization row count {} does not match expected {}",
+            normalization_wrapper.claimed_rows.len(),
+            expected_normalization_indices.len()
+        )));
+    }
+    for (row, (expected_norm_idx, expected_inv_idx)) in normalization_wrapper
+        .claimed_rows
+        .iter()
+        .zip(expected_normalization_indices)
+    {
+        if row.norm_sq_memory_index != expected_norm_idx
+            || row.inv_sqrt_q8_memory_index != expected_inv_idx
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 12 shared lookup artifact normalization indices ({}, {}) do not match expected ({}, {})",
+                row.norm_sq_memory_index,
+                row.inv_sqrt_q8_memory_index,
+                expected_norm_idx,
+                expected_inv_idx
+            )));
+        }
+    }
 
     let activation_wrapper = &artifact.activation_proof_envelope;
     if activation_wrapper.statement_version != STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10 {
@@ -240,6 +272,34 @@ pub fn verify_phase12_shared_lookup_artifact(
             })
         })
         .collect::<Result<_>>()?;
+    let expected_activation_indices = [
+        ((lookup.start + 2) as u8, (lookup.start + 3) as u8),
+        ((lookup.start + 6) as u8, (lookup.start + 7) as u8),
+    ];
+    if activation_wrapper.claimed_rows.len() != expected_activation_indices.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 12 shared lookup artifact activation row count {} does not match expected {}",
+            activation_wrapper.claimed_rows.len(),
+            expected_activation_indices.len()
+        )));
+    }
+    for (row, (expected_input_idx, expected_output_idx)) in activation_wrapper
+        .claimed_rows
+        .iter()
+        .zip(expected_activation_indices)
+    {
+        if row.input_memory_index != expected_input_idx
+            || row.output_memory_index != expected_output_idx
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 12 shared lookup artifact activation indices ({}, {}) do not match expected ({}, {})",
+                row.input_memory_index,
+                row.output_memory_index,
+                expected_input_idx,
+                expected_output_idx
+            )));
+        }
+    }
     if normalization_rows.len() != activation_rows.len() {
         return Err(VmError::InvalidConfig(format!(
             "Phase 12 shared lookup artifact row counts disagree: normalization={}, activation={}",
@@ -321,26 +381,35 @@ fn lower_hex(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::stwo_backend::decoding::{commit_phase12_layout, phase12_default_decoding_layout};
     use crate::stwo_backend::lookup_component::Phase3LookupTableRow;
     use crate::stwo_backend::lookup_prover::prove_phase10_shared_binary_step_lookup_envelope;
     use crate::stwo_backend::normalization_prover::prove_phase10_shared_normalization_lookup_envelope;
 
+    fn sample_layout_and_commitment() -> (Phase12DecodingLayout, String) {
+        let layout = phase12_default_decoding_layout();
+        let commitment = commit_phase12_layout(&layout);
+        (layout, commitment)
+    }
+
     fn normalization_wrapper(
         envelope: Phase10SharedNormalizationLookupProofEnvelope,
     ) -> EmbeddedSharedNormalizationProof {
+        let (layout, _) = sample_layout_and_commitment();
+        let lookup = layout.lookup_range().expect("lookup range");
         EmbeddedSharedNormalizationProof {
             statement_version: STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10.to_string(),
             semantic_scope: DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE.to_string(),
             claimed_rows: vec![
                 EmbeddedSharedNormalizationClaimRow {
-                    norm_sq_memory_index: 16,
-                    inv_sqrt_q8_memory_index: 17,
+                    norm_sq_memory_index: lookup.start as u8,
+                    inv_sqrt_q8_memory_index: (lookup.start + 1) as u8,
                     expected_norm_sq: 16,
                     expected_inv_sqrt_q8: 64,
                 },
                 EmbeddedSharedNormalizationClaimRow {
-                    norm_sq_memory_index: 18,
-                    inv_sqrt_q8_memory_index: 19,
+                    norm_sq_memory_index: (lookup.start + 4) as u8,
+                    inv_sqrt_q8_memory_index: (lookup.start + 5) as u8,
                     expected_norm_sq: 4,
                     expected_inv_sqrt_q8: 128,
                 },
@@ -352,19 +421,21 @@ mod tests {
     fn activation_wrapper(
         envelope: Phase10SharedLookupProofEnvelope,
     ) -> EmbeddedSharedActivationLookupProof {
+        let (layout, _) = sample_layout_and_commitment();
+        let lookup = layout.lookup_range().expect("lookup range");
         EmbeddedSharedActivationLookupProof {
             statement_version: STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10.to_string(),
             semantic_scope: DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE.to_string(),
             claimed_rows: vec![
                 EmbeddedSharedActivationClaimRow {
-                    input_memory_index: 20,
-                    output_memory_index: 21,
+                    input_memory_index: (lookup.start + 2) as u8,
+                    output_memory_index: (lookup.start + 3) as u8,
                     expected_input: 1,
                     expected_output: 1,
                 },
                 EmbeddedSharedActivationClaimRow {
-                    input_memory_index: 22,
-                    output_memory_index: 23,
+                    input_memory_index: (lookup.start + 6) as u8,
+                    output_memory_index: (lookup.start + 7) as u8,
                     expected_input: 0,
                     expected_output: 1,
                 },
@@ -375,6 +446,7 @@ mod tests {
 
     #[test]
     fn phase12_shared_lookup_artifact_verifies_nested_envelopes() {
+        let (layout, layout_commitment) = sample_layout_and_commitment();
         let normalization_rows = vec![(16u16, 64u16), (4u16, 128u16)];
         let activation_rows = vec![
             Phase3LookupTableRow {
@@ -393,19 +465,20 @@ mod tests {
             prove_phase10_shared_binary_step_lookup_envelope(&activation_rows)
                 .expect("activation envelope");
         let artifact = build_phase12_shared_lookup_artifact(
-            "layout-commitment",
+            &layout_commitment,
             vec![16, 64, 1, 1, 4, 128, 0, 1],
             normalization_wrapper(normalization_envelope),
             activation_wrapper(activation_envelope),
         )
         .expect("artifact");
 
-        verify_phase12_shared_lookup_artifact(&artifact, "layout-commitment")
+        verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment)
             .expect("artifact verifies");
     }
 
     #[test]
     fn phase12_shared_lookup_artifact_rejects_tampered_nested_proof_bytes() {
+        let (layout, layout_commitment) = sample_layout_and_commitment();
         let normalization_rows = vec![(16u16, 64u16), (4u16, 128u16)];
         let activation_rows = vec![
             Phase3LookupTableRow {
@@ -425,14 +498,14 @@ mod tests {
                 .expect("activation envelope");
         activation_envelope.proof[0] ^= 0x01;
         let artifact = build_phase12_shared_lookup_artifact(
-            "layout-commitment",
+            &layout_commitment,
             vec![16, 64, 1, 1, 4, 128, 0, 1],
             normalization_wrapper(normalization_envelope),
             activation_wrapper(activation_envelope),
         )
         .expect("artifact");
 
-        let error = verify_phase12_shared_lookup_artifact(&artifact, "layout-commitment")
+        let error = verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment)
             .expect_err("tampered nested proof should fail");
         assert!(
             error
@@ -446,6 +519,7 @@ mod tests {
 
     #[test]
     fn phase12_shared_lookup_artifact_rejects_noncanonical_activation_output() {
+        let (layout, layout_commitment) = sample_layout_and_commitment();
         let normalization_rows = vec![(16u16, 64u16), (4u16, 128u16)];
         let activation_rows = vec![
             Phase3LookupTableRow {
@@ -467,19 +541,64 @@ mod tests {
         let mut activation_wrapper = activation_wrapper(activation_envelope);
         activation_wrapper.claimed_rows[0].expected_output = -255;
         let artifact = build_phase12_shared_lookup_artifact(
-            "layout-commitment",
+            &layout_commitment,
             vec![16, 64, 1, 1, 4, 128, 0, 1],
             normalization_wrapper,
             activation_wrapper,
         )
         .expect("artifact");
 
-        let error = verify_phase12_shared_lookup_artifact(&artifact, "layout-commitment")
+        let error = verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment)
             .expect_err("noncanonical activation output should fail");
         assert!(
             error
                 .to_string()
                 .contains("activation output is not a canonical u8"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_rejects_tampered_wrapper_indices() {
+        let (layout, layout_commitment) = sample_layout_and_commitment();
+        let normalization_rows = vec![(16u16, 64u16), (4u16, 128u16)];
+        let activation_rows = vec![
+            Phase3LookupTableRow {
+                input: 1,
+                output: 1,
+            },
+            Phase3LookupTableRow {
+                input: 0,
+                output: 1,
+            },
+        ];
+        let normalization_envelope =
+            prove_phase10_shared_normalization_lookup_envelope(&normalization_rows)
+                .expect("normalization envelope");
+        let activation_envelope =
+            prove_phase10_shared_binary_step_lookup_envelope(&activation_rows)
+                .expect("activation envelope");
+        let mut artifact = build_phase12_shared_lookup_artifact(
+            &layout_commitment,
+            vec![16, 64, 1, 1, 4, 128, 0, 1],
+            normalization_wrapper(normalization_envelope),
+            activation_wrapper(activation_envelope),
+        )
+        .expect("artifact");
+        artifact.activation_proof_envelope.claimed_rows[0].input_memory_index += 1;
+        artifact.artifact_commitment = commit_phase12_shared_lookup_artifact(
+            &layout_commitment,
+            &artifact.flattened_lookup_rows,
+            &artifact.normalization_proof_envelope,
+            &artifact.activation_proof_envelope,
+        )
+        .expect("recommit artifact");
+
+        let error = verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment)
+            .expect_err("tampered wrapper indices should fail");
+        assert!(
+            error.to_string().contains("activation indices")
+                || error.to_string().contains("normalization indices"),
             "unexpected error: {error}"
         );
     }

@@ -906,8 +906,23 @@ fn verify_phase10_embedded_shared_normalization(
     }
     let proof_rows: Vec<(u16, u16)> = canonical_rows
         .iter()
-        .map(|row| (row.expected_norm_sq as u16, row.expected_inv_sqrt_q8 as u16))
-        .collect();
+        .map(|row| {
+            Ok((
+                u16::try_from(row.expected_norm_sq).map_err(|_| {
+                    VmError::InvalidConfig(format!(
+                        "{} normalization row is not a canonical u16",
+                        shared_normalization_label(&proof.claim.program)
+                    ))
+                })?,
+                u16::try_from(row.expected_inv_sqrt_q8).map_err(|_| {
+                    VmError::InvalidConfig(format!(
+                        "{} normalization inverse row is not a canonical u16",
+                        shared_normalization_label(&proof.claim.program)
+                    ))
+                })?,
+            ))
+        })
+        .collect::<Result<_>>()?;
     let proof_envelope = embedded.proof_envelope.clone();
     if proof_envelope.claimed_rows != proof_rows {
         return Err(VmError::InvalidConfig(format!(
@@ -955,8 +970,16 @@ fn verify_phase10_embedded_shared_activation_lookup(
             embedded.semantic_scope
         )));
     }
-    let mut proof_rows = Vec::with_capacity(embedded.claimed_rows.len());
-    for row in &embedded.claimed_rows {
+    let canonical_rows =
+        shared_activation_claim_rows(&proof.claim.program, &proof.claim.final_state.memory)?;
+    if embedded.claimed_rows != canonical_rows {
+        return Err(VmError::InvalidConfig(format!(
+            "{} embedded claimed rows do not match the canonical final-state rows",
+            shared_activation_label(&proof.claim.program)
+        )));
+    }
+    let mut proof_rows = Vec::with_capacity(canonical_rows.len());
+    for row in &canonical_rows {
         let (activation_input, activation_output) = activation_pair_from_indices(
             &proof.claim.final_state.memory,
             row.input_memory_index,
@@ -971,7 +994,12 @@ fn verify_phase10_embedded_shared_activation_lookup(
         }
         proof_rows.push(Phase3LookupTableRow {
             input: activation_input,
-            output: activation_output as u8,
+            output: u8::try_from(activation_output).map_err(|_| {
+                VmError::InvalidConfig(format!(
+                    "{} activation output is not a canonical u8",
+                    shared_activation_label(&proof.claim.program)
+                ))
+            })?,
         });
     }
     let proof_envelope = embedded.proof_envelope.clone();

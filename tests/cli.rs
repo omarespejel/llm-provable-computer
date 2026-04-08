@@ -12,7 +12,9 @@ use predicates::prelude::*;
 
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::stwo_backend::{
-    Phase10SharedLookupProofEnvelope, Phase10SharedNormalizationLookupProofEnvelope,
+    prove_phase10_shared_binary_step_lookup_envelope,
+    prove_phase10_shared_normalization_lookup_envelope, Phase10SharedLookupProofEnvelope,
+    Phase10SharedNormalizationLookupProofEnvelope, Phase3LookupTableRow,
     STWO_BACKEND_VERSION_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE12,
     STWO_DECODING_CHAIN_VERSION_PHASE14, STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13,
     STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17, STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15,
@@ -63,7 +65,10 @@ fn read_repo_file(relative_path: &str) -> Vec<u8> {
 }
 
 #[cfg(any(feature = "onnx-export", feature = "stwo-backend"))]
-#[cfg_attr(all(feature = "stwo-backend", not(feature = "onnx-export")), allow(dead_code))]
+#[cfg_attr(
+    all(feature = "stwo-backend", not(feature = "onnx-export")),
+    allow(dead_code)
+)]
 fn blake2b_256_hex(bytes: &[u8]) -> String {
     let mut output = [0u8; 32];
     let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
@@ -139,6 +144,29 @@ fn phase12_artifact_commitment_from_json(artifact: &serde_json::Value) -> String
     hasher.update(&normalization_json);
     hasher.update(&(activation_json.len() as u64).to_le_bytes());
     hasher.update(&activation_json);
+    hasher
+        .finalize_variable(&mut output)
+        .expect("blake2b-256 finalization");
+    output.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase12_lookup_rows_commitment_from_json(artifact: &serde_json::Value) -> String {
+    let layout_commitment = artifact["layout_commitment"]
+        .as_str()
+        .expect("layout commitment");
+    let flattened_lookup_rows: Vec<i16> =
+        serde_json::from_value(artifact["flattened_lookup_rows"].clone())
+            .expect("flattened lookup rows");
+
+    let mut output = [0u8; 32];
+    let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
+    hasher.update("stwo-decoding-state-v11".as_bytes());
+    hasher.update(layout_commitment.as_bytes());
+    hasher.update(b"lookup-rows");
+    for value in &flattened_lookup_rows {
+        hasher.update(&value.to_le_bytes());
+    }
     hasher
         .finalize_variable(&mut output)
         .expect("blake2b-256 finalization");
@@ -824,9 +852,14 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v4_shared_activation() {
         .arg("--reexecute")
         .assert()
         .failure()
-        .stderr(predicate::str::contains(
-            "gemma_block_v4 shared activation does not match claimed final state",
-        ));
+        .stderr(
+            predicate::str::contains(
+                "gemma_block_v4 shared activation embedded claimed rows do not match the canonical final-state rows",
+            )
+            .or(predicate::str::contains(
+                "gemma_block_v4 shared activation does not match claimed final state",
+            )),
+        );
 
     let _ = std::fs::remove_file(proof_path);
     let _ = std::fs::remove_file(invalid_path);
@@ -1371,12 +1404,46 @@ fn cli_verify_stwo_decoding_family_demo_rejects_missing_shared_lookup_artifact()
                 .as_array_mut()
                 .expect("artifact array");
             let mut synthetic = artifact_array[0].clone();
-            let index = synthetic["normalization_proof_envelope"]["claimed_rows"][0]
-                ["norm_sq_memory_index"]
-                .as_u64()
-                .expect("normalization memory index");
-            synthetic["normalization_proof_envelope"]["claimed_rows"][0]["norm_sq_memory_index"] =
-                serde_json::Value::from(index + 1);
+            let normalization_rows = vec![(4u16, 128u16), (16u16, 64u16)];
+            let activation_rows = vec![
+                Phase3LookupTableRow {
+                    input: 0,
+                    output: 1,
+                },
+                Phase3LookupTableRow {
+                    input: 1,
+                    output: 1,
+                },
+            ];
+            let normalization_envelope =
+                prove_phase10_shared_normalization_lookup_envelope(&normalization_rows)
+                    .expect("synthetic normalization envelope");
+            let activation_envelope =
+                prove_phase10_shared_binary_step_lookup_envelope(&activation_rows)
+                    .expect("synthetic activation envelope");
+            synthetic["flattened_lookup_rows"] = serde_json::json!([4, 128, 0, 1, 16, 64, 1, 1]);
+            synthetic["normalization_proof_envelope"]["claimed_rows"][0]["expected_norm_sq"] =
+                serde_json::Value::from(4);
+            synthetic["normalization_proof_envelope"]["claimed_rows"][0]["expected_inv_sqrt_q8"] =
+                serde_json::Value::from(128);
+            synthetic["normalization_proof_envelope"]["claimed_rows"][1]["expected_norm_sq"] =
+                serde_json::Value::from(16);
+            synthetic["normalization_proof_envelope"]["claimed_rows"][1]["expected_inv_sqrt_q8"] =
+                serde_json::Value::from(64);
+            synthetic["normalization_proof_envelope"]["proof_envelope"] =
+                serde_json::to_value(normalization_envelope).expect("serialize normalization");
+            synthetic["activation_proof_envelope"]["claimed_rows"][0]["expected_input"] =
+                serde_json::Value::from(0);
+            synthetic["activation_proof_envelope"]["claimed_rows"][0]["expected_output"] =
+                serde_json::Value::from(1);
+            synthetic["activation_proof_envelope"]["claimed_rows"][1]["expected_input"] =
+                serde_json::Value::from(1);
+            synthetic["activation_proof_envelope"]["claimed_rows"][1]["expected_output"] =
+                serde_json::Value::from(1);
+            synthetic["activation_proof_envelope"]["proof_envelope"] =
+                serde_json::to_value(activation_envelope).expect("serialize activation");
+            let lookup_rows_commitment = phase12_lookup_rows_commitment_from_json(&synthetic);
+            synthetic["lookup_rows_commitment"] = serde_json::Value::String(lookup_rows_commitment);
             let commitment = phase12_artifact_commitment_from_json(&synthetic);
             synthetic["artifact_commitment"] = serde_json::Value::String(commitment.clone());
             artifact_array.push(synthetic);

@@ -39,7 +39,7 @@ reviews:
     ignore_usernames:
       - github-actions[bot]
       - dependabot[bot]
-      - coderabbitai
+      - coderabbitai[bot]
       - qodo-code-review
       - greptile-app[bot]
   path_filters:

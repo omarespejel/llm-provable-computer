@@ -449,6 +449,7 @@ fn build_phase12_shared_lookup_artifact_registry(
 fn build_phase12_shared_lookup_artifact_index<'a>(
     artifacts: &'a [Phase12SharedLookupArtifact],
     referenced_commitments: &HashSet<String>,
+    layout: &Phase12DecodingLayout,
     expected_layout_commitment: &str,
     expected_flattened_lookup_rows_len: usize,
     registry_label: &str,
@@ -490,7 +491,7 @@ fn build_phase12_shared_lookup_artifact_index<'a>(
         )));
     }
     for artifact in artifact_index.values() {
-        verify_phase12_shared_lookup_artifact(artifact, expected_layout_commitment)?;
+        verify_phase12_shared_lookup_artifact(artifact, layout, expected_layout_commitment)?;
     }
     Ok(artifact_index)
 }
@@ -1074,6 +1075,7 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
     let shared_lookup_artifacts = build_phase12_shared_lookup_artifact_index(
         &manifest.shared_lookup_artifacts,
         &referenced_artifacts,
+        &manifest.layout,
         &expected_layout_commitment,
         manifest.layout.lookup_range()?.len(),
         "decoding chain shared lookup",
@@ -1299,6 +1301,12 @@ pub fn phase14_prepare_decoding_chain(
     chain: &Phase12DecodingChainManifest,
 ) -> Result<Phase14DecodingChainManifest> {
     verify_phase12_decoding_chain(chain)?;
+    if chain.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported chunked decoding statement version `{}`",
+            chain.statement_version
+        )));
+    }
 
     let layout = &chain.layout;
     let expected_layout_commitment = commit_phase12_layout(layout);
@@ -1440,6 +1448,7 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
     let shared_lookup_artifacts = build_phase12_shared_lookup_artifact_index(
         &manifest.shared_lookup_artifacts,
         &referenced_artifacts,
+        &manifest.layout,
         &expected_layout_commitment,
         manifest.layout.lookup_range()?.len(),
         "chunked decoding shared lookup",
@@ -3306,7 +3315,7 @@ fn commit_slice(values: &[i16]) -> String {
     lower_hex(&out)
 }
 
-fn commit_phase12_layout(layout: &Phase12DecodingLayout) -> String {
+pub(crate) fn commit_phase12_layout(layout: &Phase12DecodingLayout) -> String {
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_DECODING_LAYOUT_VERSION_PHASE12.as_bytes());
     hasher.update(&(layout.rolling_kv_pairs as u64).to_le_bytes());
@@ -5303,6 +5312,26 @@ mod tests {
         let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
         let manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
         assert_eq!(manifest.statement_version, phase12.statement_version);
+    }
+
+    #[test]
+    fn phase14_prepare_decoding_chain_rejects_unsupported_statement_version() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        phase12.statement_version = "claim-v2".to_string();
+        for step in &mut phase12.steps {
+            step.proof.claim.statement_version = "claim-v2".to_string();
+        }
+
+        let err = phase14_prepare_decoding_chain(&phase12).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("unsupported chunked decoding statement version `claim-v2`"));
     }
 
     #[test]
