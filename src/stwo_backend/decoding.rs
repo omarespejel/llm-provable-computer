@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::fs;
+use std::io::Read;
 use std::path::Path;
 
 use blake2::digest::{Update, VariableOutput};
@@ -547,7 +548,14 @@ fn validate_phase12_shared_lookup_artifact_resource_bounds(
 }
 
 fn read_json_bytes_with_limit(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u8>> {
-    let metadata = fs::metadata(path)?;
+    let file = fs::File::open(path)?;
+    let metadata = file.metadata()?;
+    if !metadata.file_type().is_file() {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} `{}` is not a regular file",
+            path.display()
+        )));
+    }
     if metadata.len() > max_bytes as u64 {
         return Err(VmError::InvalidConfig(format!(
             "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
@@ -556,7 +564,9 @@ fn read_json_bytes_with_limit(path: &Path, max_bytes: usize, label: &str) -> Res
             max_bytes
         )));
     }
-    let bytes = fs::read(path)?;
+    let mut limited = file.take((max_bytes as u64).saturating_add(1));
+    let mut bytes = Vec::with_capacity(metadata.len().min(max_bytes as u64) as usize);
+    limited.read_to_end(&mut bytes)?;
     if bytes.len() > max_bytes {
         return Err(VmError::InvalidConfig(format!(
             "{label} `{}` is {} bytes after reading, exceeding the limit of {} bytes",
@@ -959,6 +969,13 @@ pub fn phase12_prepare_decoding_chain(
     let first = proofs.first().ok_or_else(|| {
         VmError::InvalidConfig("proof-carrying decoding requires at least one proof".to_string())
     })?;
+    if proofs.len() > MAX_DECODING_CHAIN_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "proof-carrying decoding contains {} steps, exceeding the limit of {}",
+            proofs.len(),
+            MAX_DECODING_CHAIN_STEPS
+        )));
+    }
     if first.proof_backend != StarkProofBackend::Stwo {
         return Err(VmError::InvalidConfig(format!(
             "proof-carrying decoding requires `stwo` proofs, got `{}`",
@@ -974,6 +991,13 @@ pub fn phase12_prepare_decoding_chain(
     let expected_layout_commitment = commit_phase12_layout(layout);
     let (shared_lookup_artifacts, artifact_refs) =
         build_phase12_shared_lookup_artifact_registry(proofs, &expected_layout_commitment)?;
+    if shared_lookup_artifacts.len() > MAX_DECODING_SHARED_LOOKUP_ARTIFACTS {
+        return Err(VmError::InvalidConfig(format!(
+            "proof-carrying decoding contains {} shared lookup artifacts, exceeding the limit of {}",
+            shared_lookup_artifacts.len(),
+            MAX_DECODING_SHARED_LOOKUP_ARTIFACTS
+        )));
+    }
     let mut steps = Vec::with_capacity(proofs.len());
     let mut previous_history_commitment: Option<String> = None;
     let mut previous_history_length: Option<usize> = None;
@@ -1135,18 +1159,18 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
             "decoding chain must contain at least one shared lookup artifact".to_string(),
         ));
     }
-    if manifest.shared_lookup_artifacts.len() > manifest.steps.len() {
-        return Err(VmError::InvalidConfig(format!(
-            "decoding chain contains {} shared lookup artifacts for only {} steps",
-            manifest.shared_lookup_artifacts.len(),
-            manifest.steps.len()
-        )));
-    }
     if manifest.shared_lookup_artifacts.len() > MAX_DECODING_SHARED_LOOKUP_ARTIFACTS {
         return Err(VmError::InvalidConfig(format!(
             "decoding chain contains {} shared lookup artifacts, exceeding the limit of {}",
             manifest.shared_lookup_artifacts.len(),
             MAX_DECODING_SHARED_LOOKUP_ARTIFACTS
+        )));
+    }
+    if manifest.shared_lookup_artifacts.len() > manifest.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding chain contains {} shared lookup artifacts for only {} steps",
+            manifest.shared_lookup_artifacts.len(),
+            manifest.steps.len()
         )));
     }
     let referenced_artifacts: HashSet<String> = manifest
@@ -1522,18 +1546,18 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
             "chunked decoding chain must contain at least one shared lookup artifact".to_string(),
         ));
     }
-    if manifest.shared_lookup_artifacts.len() > manifest.steps.len() {
-        return Err(VmError::InvalidConfig(format!(
-            "chunked decoding chain contains {} shared lookup artifacts for only {} steps",
-            manifest.shared_lookup_artifacts.len(),
-            manifest.steps.len()
-        )));
-    }
     if manifest.shared_lookup_artifacts.len() > MAX_DECODING_SHARED_LOOKUP_ARTIFACTS {
         return Err(VmError::InvalidConfig(format!(
             "chunked decoding chain contains {} shared lookup artifacts, exceeding the limit of {}",
             manifest.shared_lookup_artifacts.len(),
             MAX_DECODING_SHARED_LOOKUP_ARTIFACTS
+        )));
+    }
+    if manifest.shared_lookup_artifacts.len() > manifest.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "chunked decoding chain contains {} shared lookup artifacts for only {} steps",
+            manifest.shared_lookup_artifacts.len(),
+            manifest.steps.len()
         )));
     }
     let referenced_artifacts: HashSet<String> = manifest
@@ -5288,6 +5312,20 @@ mod tests {
     }
 
     #[test]
+    fn phase12_prepare_decoding_chain_rejects_too_many_steps() {
+        let layout = phase12_default_decoding_layout();
+        let memory = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .next()
+            .expect("seed memory");
+        let template = sample_phase12_step_proof(&layout, memory);
+        let proofs = vec![template; MAX_DECODING_CHAIN_STEPS + 1];
+        let err = phase12_prepare_decoding_chain(&layout, &proofs).unwrap_err();
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[test]
     fn phase12_verify_decoding_chain_rejects_unreferenced_shared_lookup_artifact() {
         let layout = phase12_default_decoding_layout();
         let memories = phase12_demo_initial_memories(&layout).expect("memories");
@@ -5306,6 +5344,31 @@ mod tests {
                 || message.contains("appears more than once"),
             "unexpected error: {message}"
         );
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_too_many_shared_lookup_artifacts() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        let template_step = manifest.steps[0].clone();
+        manifest.steps = vec![template_step; MAX_DECODING_SHARED_LOOKUP_ARTIFACTS];
+        manifest.total_steps = manifest.steps.len();
+        let template = manifest.shared_lookup_artifacts[0].clone();
+        while manifest.shared_lookup_artifacts.len() <= MAX_DECODING_SHARED_LOOKUP_ARTIFACTS {
+            let mut extra = template.clone();
+            extra.artifact_commitment
+                .push_str(&format!("-{}", manifest.shared_lookup_artifacts.len()));
+            manifest.shared_lookup_artifacts.push(extra);
+        }
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("shared lookup artifacts, exceeding the limit"));
     }
 
     #[test]
@@ -5637,6 +5700,52 @@ mod tests {
         assert!(err
             .to_string()
             .contains("unsupported chunked decoding history_chunk_pairs=4"));
+    }
+
+    #[test]
+    fn phase14_verify_decoding_chain_rejects_too_many_steps() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let template_step = manifest.steps[0].clone();
+        manifest.steps = vec![template_step; MAX_DECODING_CHAIN_STEPS + 1];
+        manifest.total_steps = manifest.steps.len();
+        let err = verify_phase14_decoding_chain(&manifest).unwrap_err();
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[test]
+    fn phase14_verify_decoding_chain_rejects_too_many_shared_lookup_artifacts() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let template_step = manifest.steps[0].clone();
+        manifest.steps = vec![template_step; MAX_DECODING_SHARED_LOOKUP_ARTIFACTS];
+        manifest.total_steps = manifest.steps.len();
+        let template = manifest.shared_lookup_artifacts[0].clone();
+        while manifest.shared_lookup_artifacts.len() <= MAX_DECODING_SHARED_LOOKUP_ARTIFACTS {
+            let mut extra = template.clone();
+            extra.artifact_commitment.push_str(&format!("-{}", manifest.shared_lookup_artifacts.len()));
+            manifest.shared_lookup_artifacts.push(extra);
+        }
+        let err = verify_phase14_decoding_chain(&manifest).unwrap_err();
+        let message = err.to_string();
+        assert!(
+            message.contains("shared lookup artifacts, exceeding the limit")
+                || message.contains("shared lookup artifact")
+                || message.contains("appears more than once"),
+            "unexpected error: {message}"
+        );
     }
 
     #[test]
