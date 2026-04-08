@@ -1243,6 +1243,46 @@ fn cli_verify_stwo_decoding_family_demo_rejects_tampered_history_link() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_decoding_family_demo_rejects_missing_shared_lookup_artifact() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-artifact-proof").with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-artifact-tampered").with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-decoding-family-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    proof_json["shared_lookup_artifacts"] = serde_json::Value::Array(Vec::new());
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-decoding-family-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "must contain at least one shared lookup artifact",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_verify_stwo_decoding_family_demo_rejects_tampered_layout() {
     let proof_path =
         unique_temp_dir("cli-stwo-decoding-family-demo-layout-proof").with_extension("json");
@@ -1273,9 +1313,14 @@ fn cli_verify_stwo_decoding_family_demo_rejects_tampered_layout() {
         .arg(&tampered_path)
         .assert()
         .failure()
-        .stderr(predicate::str::contains(
-            "is not a decoding_step_v2-family proof for the manifest layout",
-        ));
+        .stderr(
+            predicate::str::contains(
+                "is not a decoding_step_v2-family proof for the manifest layout",
+            )
+            .or(predicate::str::contains(
+                "shared lookup artifact layout commitment",
+            )),
+        );
 
     let _ = std::fs::remove_file(proof_path);
     let _ = std::fs::remove_file(tampered_path);

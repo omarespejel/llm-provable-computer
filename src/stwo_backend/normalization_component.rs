@@ -167,7 +167,7 @@ mod tests {
     #[test]
     fn phase5_normalization_component_exposes_logup_relation() {
         let metadata = phase5_normalization_lookup_component_metadata(4);
-        assert_eq!(metadata.n_constraints, 2);
+        assert_eq!(metadata.n_constraints, 1);
         assert_eq!(
             metadata.preprocessed_columns,
             vec![

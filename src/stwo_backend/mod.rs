@@ -15,6 +15,8 @@ mod normalization_component;
 #[cfg(feature = "stwo-backend")]
 mod normalization_prover;
 mod recursion;
+#[cfg(feature = "stwo-backend")]
+mod shared_lookup_artifact;
 
 use crate::config::Attention2DMode;
 use crate::error::{Result, VmError};
@@ -126,6 +128,13 @@ pub use normalization_prover::{
     STWO_SHARED_NORMALIZATION_SEMANTIC_SCOPE_PHASE10,
     STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10,
 };
+#[cfg(feature = "stwo-backend")]
+pub use shared_lookup_artifact::{
+    build_phase12_shared_lookup_artifact, commit_phase12_shared_lookup_artifact,
+    commit_phase12_shared_lookup_rows, verify_phase12_shared_lookup_artifact,
+    Phase12SharedLookupArtifact, STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12,
+    STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12,
+};
 pub use recursion::{
     phase6_prepare_recursion_batch, Phase6RecursionBatchEntry, Phase6RecursionBatchManifest,
     STWO_RECURSION_BATCH_SCOPE_PHASE6, STWO_RECURSION_BATCH_VERSION_PHASE6,
@@ -138,7 +147,7 @@ pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase10-gemma-block-v4";
 /// Backend version label used by the fixed-shape proof-carrying decoding demo family.
 pub const STWO_BACKEND_VERSION_PHASE11: &str = "stwo-phase11-decoding-step-v1";
 /// Backend version label used by the parameterized proof-carrying decoding family.
-pub const STWO_BACKEND_VERSION_PHASE12: &str = "stwo-phase12-decoding-family-v8";
+pub const STWO_BACKEND_VERSION_PHASE12: &str = "stwo-phase12-decoding-family-v9";
 /// Cargo feature that enables the experimental S-two backend seam.
 pub const STWO_BACKEND_FEATURE_NAME: &str = "stwo-backend";
 

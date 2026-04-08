@@ -209,7 +209,7 @@ Delivered:
   lookup rows as write-only metadata, feeding bounded lookup-backed values into the latest carried
   KV-cache pair on the public demo layouts, with three carried lanes now bound to the combined
   output cell and one to the lookup-backed primary output on the wider layouts, with that
-  combined-output cell now also absorbing one additional bounded shared lookup row before it is
+  combined-output cell now also absorbing two additional bounded shared lookup rows before it is
   carried forward, with both final output lanes absorbing that combined-output cell, and with
   exact tests plus real-backend proving coverage over all default demo steps and the default
   layout matrix.

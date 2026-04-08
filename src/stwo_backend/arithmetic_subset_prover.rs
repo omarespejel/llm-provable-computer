@@ -32,6 +32,7 @@ use super::normalization_prover::{
     Phase10SharedNormalizationLookupProofEnvelope, STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
     STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10,
 };
+use super::shared_lookup_artifact::{build_phase12_shared_lookup_artifact, Phase12SharedLookupArtifact};
 use super::{
     phase3_lookup_table_rows, prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase3_binary_step_lookup_demo_envelope,
@@ -1001,9 +1002,10 @@ fn verify_phase10_embedded_shared_activation_lookup(
     Ok(())
 }
 
-pub(crate) fn phase12_shared_lookup_rows_from_proof_payload(
+pub(crate) fn phase12_shared_lookup_artifact_from_proof_payload(
     proof: &VanillaStarkExecutionProof,
-) -> Result<Option<Vec<i16>>> {
+    layout_commitment: &str,
+) -> Result<Option<Phase12SharedLookupArtifact>> {
     if !matches_decoding_step_v2(&proof.claim.program) {
         return Ok(None);
     }
@@ -1137,7 +1139,20 @@ pub(crate) fn phase12_shared_lookup_rows_from_proof_payload(
         lookup_rows.push(activation_row.expected_input);
         lookup_rows.push(activation_row.expected_output);
     }
-    Ok(Some(lookup_rows))
+    Ok(Some(build_phase12_shared_lookup_artifact(
+        layout_commitment,
+        lookup_rows,
+        normalization.proof_envelope,
+        activation.proof_envelope,
+    )?))
+}
+
+pub(crate) fn phase12_shared_lookup_rows_from_proof_payload(
+    proof: &VanillaStarkExecutionProof,
+    layout_commitment: &str,
+) -> Result<Option<Vec<i16>>> {
+    Ok(phase12_shared_lookup_artifact_from_proof_payload(proof, layout_commitment)?
+        .map(|artifact| artifact.flattened_lookup_rows))
 }
 
 fn gemma_block_normalization_pair(final_memory: &[i16]) -> Result<(i16, i16)> {
