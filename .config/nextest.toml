@@ -44,6 +44,12 @@ flaky-fail-status = "failure"
 [test-groups]
 proof-heavy = { max-threads = 1 }
 
+[[profile.ci.overrides]]
+filter = 'test(/^(proof::tests::(addition_round_trips_through_stark_proof|small_loop_round_trips_through_stark_proof|stack_and_subroutine_round_trip_through_stark_proof|reexecution_verification_round_trips|proof_claim_includes_artifact_commitments|proof_claim_includes_equivalence_metadata|proof_serialization_round_trip|proof_serialization_backfills_vanilla_backend_for_legacy_json|verify_rejects_commitment_hash_function_mismatch|verify_rejects_commitment_mismatch|verify_rejects_commitment_scheme_version_mismatch|verify_rejects_invalid_stark_options_without_panic|verify_rejects_statement_scope_mismatch|verify_rejects_step_overflow_without_panic)|cli_can_prove_and_verify_stark_execution|cli_verify_stark_rejects_backend_override_mismatch|cli_verify_stark_rejects_malformed_proof_without_panic|cli_verify_stark_strict_policy_rejects_low_security_proof)$/)'
+threads-required = "num-test-threads"
+test-group = "proof-heavy"
+slow-timeout = { period = "240s", terminate-after = 2, grace-period = "15s" }
+
 [[profile.ci-stwo.overrides]]
 filter = 'test(/^(cli_can_prove_and_verify_stark_execution|cli_can_prove_and_verify_stwo_.*|cli_can_prepare_stwo_recursion_batch_manifest|cli_verify_stwo_decoding.*|cli_verify_stark_rejects_tampered_gemma_block_.*)$/)'
 threads-required = "num-test-threads"
