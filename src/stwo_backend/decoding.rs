@@ -580,6 +580,26 @@ fn read_json_bytes_with_limit(path: &Path, max_bytes: usize, label: &str) -> Res
     Ok(bytes)
 }
 
+fn write_json_with_limit<T: Serialize>(
+    value: &T,
+    path: &Path,
+    max_bytes: usize,
+    label: &str,
+) -> Result<()> {
+    let bytes = serde_json::to_vec_pretty(value)
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    if bytes.len() > max_bytes {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
+            path.display(),
+            bytes.len(),
+            max_bytes
+        )));
+    }
+    fs::write(path, bytes)?;
+    Ok(())
+}
+
 pub fn decoding_step_v1_template_program() -> Result<Program> {
     parse_program(include_str!("../../programs/decoding_step_v1.tvm"))
 }
@@ -2334,20 +2354,24 @@ pub fn save_phase11_decoding_chain(
     manifest: &Phase11DecodingChainManifest,
     path: &Path,
 ) -> Result<()> {
-    let bytes = serde_json::to_vec_pretty(manifest)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
-    fs::write(path, bytes)?;
-    Ok(())
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE11_DECODING_CHAIN_JSON_BYTES,
+        "Phase 11 decoding chain manifest",
+    )
 }
 
 pub fn save_phase12_decoding_chain(
     manifest: &Phase12DecodingChainManifest,
     path: &Path,
 ) -> Result<()> {
-    let bytes = serde_json::to_vec_pretty(manifest)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
-    fs::write(path, bytes)?;
-    Ok(())
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE12_DECODING_CHAIN_JSON_BYTES,
+        "Phase 12 decoding chain manifest",
+    )
 }
 
 pub fn load_phase11_decoding_chain(path: &Path) -> Result<Phase11DecodingChainManifest> {
@@ -2372,10 +2396,12 @@ pub fn save_phase14_decoding_chain(
     manifest: &Phase14DecodingChainManifest,
     path: &Path,
 ) -> Result<()> {
-    let bytes = serde_json::to_vec_pretty(manifest)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
-    fs::write(path, bytes)?;
-    Ok(())
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE14_DECODING_CHAIN_JSON_BYTES,
+        "Phase 14 decoding chain manifest",
+    )
 }
 
 pub fn load_phase14_decoding_chain(path: &Path) -> Result<Phase14DecodingChainManifest> {
@@ -2391,10 +2417,12 @@ pub fn save_phase15_decoding_segment_bundle(
     manifest: &Phase15DecodingHistorySegmentBundleManifest,
     path: &Path,
 ) -> Result<()> {
-    let bytes = serde_json::to_vec_pretty(manifest)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
-    fs::write(path, bytes)?;
-    Ok(())
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE15_SEGMENT_BUNDLE_JSON_BYTES,
+        "Phase 15 decoding history segment bundle",
+    )
 }
 
 pub fn load_phase15_decoding_segment_bundle(
@@ -2412,10 +2440,12 @@ pub fn save_phase16_decoding_segment_rollup(
     manifest: &Phase16DecodingHistoryRollupManifest,
     path: &Path,
 ) -> Result<()> {
-    let bytes = serde_json::to_vec_pretty(manifest)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
-    fs::write(path, bytes)?;
-    Ok(())
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE16_SEGMENT_ROLLUP_JSON_BYTES,
+        "Phase 16 decoding history segment rollup",
+    )
 }
 
 pub fn load_phase16_decoding_segment_rollup(
@@ -2433,10 +2463,12 @@ pub fn save_phase17_decoding_rollup_matrix(
     manifest: &Phase17DecodingHistoryRollupMatrixManifest,
     path: &Path,
 ) -> Result<()> {
-    let bytes = serde_json::to_vec_pretty(manifest)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
-    fs::write(path, bytes)?;
-    Ok(())
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE17_ROLLUP_MATRIX_JSON_BYTES,
+        "Phase 17 decoding history rollup matrix",
+    )
 }
 
 pub fn load_phase17_decoding_rollup_matrix(
@@ -2454,10 +2486,12 @@ pub fn save_phase13_decoding_layout_matrix(
     manifest: &Phase13DecodingLayoutMatrixManifest,
     path: &Path,
 ) -> Result<()> {
-    let bytes = serde_json::to_vec_pretty(manifest)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
-    fs::write(path, bytes)?;
-    Ok(())
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES,
+        "Phase 13 decoding layout matrix",
+    )
 }
 
 pub fn load_phase13_decoding_layout_matrix(
@@ -4595,6 +4629,49 @@ mod tests {
         let err = load_phase12_decoding_chain(&path).expect_err("directory should fail");
         assert!(err.to_string().contains("is not a regular file"));
         let _ = fs::remove_dir_all(path);
+    }
+
+    #[test]
+    fn save_phase12_decoding_chain_rejects_manifest_exceeding_json_budget() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        manifest.steps[0].proof.proof = vec![0; MAX_PHASE12_DECODING_CHAIN_JSON_BYTES];
+        let path = std::env::temp_dir().join(format!(
+            "phase12-decoding-save-oversized-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        let err = save_phase12_decoding_chain(&manifest, &path)
+            .expect_err("oversized manifest should be rejected on save");
+        assert!(err.to_string().contains("exceeding the limit"));
+        assert!(!path.exists(), "save should not write an unreadable manifest");
+    }
+
+    #[test]
+    fn save_phase14_decoding_chain_rejects_manifest_exceeding_json_budget() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        manifest.steps[0].proof.proof = vec![0; MAX_PHASE14_DECODING_CHAIN_JSON_BYTES];
+        let path = std::env::temp_dir().join(format!(
+            "phase14-decoding-save-oversized-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        let err = save_phase14_decoding_chain(&manifest, &path)
+            .expect_err("oversized phase14 manifest should be rejected on save");
+        assert!(err.to_string().contains("exceeding the limit"));
+        assert!(!path.exists(), "save should not write an unreadable manifest");
     }
 
     #[test]
