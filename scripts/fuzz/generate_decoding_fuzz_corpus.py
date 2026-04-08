@@ -21,6 +21,10 @@ def load_rust_toolchain() -> str:
         with FUZZ_TOOLCHAIN_TOML.open("rb") as handle:
             config = tomllib.load(handle)
     except (OSError, tomllib.TOMLDecodeError) as error:
+        if os.environ.get("CI"):
+            raise SystemExit(
+                f"failed to read required CI fuzz toolchain file {FUZZ_TOOLCHAIN_TOML}: {error}"
+            ) from error
         print(
             f"warning: failed to read {FUZZ_TOOLCHAIN_TOML}: {error}; "
             f"falling back to {DEFAULT_RUST_TOOLCHAIN}",
@@ -29,6 +33,10 @@ def load_rust_toolchain() -> str:
         return DEFAULT_RUST_TOOLCHAIN
     channel = config.get("toolchain", {}).get("channel")
     if not isinstance(channel, str) or not channel:
+        if os.environ.get("CI"):
+            raise SystemExit(
+                f"{FUZZ_TOOLCHAIN_TOML} is missing required toolchain.channel in CI"
+            )
         print(
             f"warning: {FUZZ_TOOLCHAIN_TOML} is missing toolchain.channel; "
             f"falling back to {DEFAULT_RUST_TOOLCHAIN}",
@@ -112,11 +120,17 @@ def main() -> int:
         raise SystemExit("phase12 corpus generation did not produce shared lookup artifacts")
     if "layout" not in phase12:
         raise SystemExit("phase12 corpus generation did not produce layout")
+    first_artifact = lookup_artifacts[0]
+    if "layout_commitment" not in first_artifact:
+        raise SystemExit(
+            "phase12 shared lookup artifact is missing required layout_commitment: "
+            f"{first_artifact!r}"
+        )
 
     artifact_input = {
         "layout": phase12["layout"],
-        "expected_layout_commitment": lookup_artifacts[0]["layout_commitment"],
-        "artifact": lookup_artifacts[0],
+        "expected_layout_commitment": first_artifact["layout_commitment"],
+        "artifact": first_artifact,
     }
     write_json(artifact_path, artifact_input)
     return 0
