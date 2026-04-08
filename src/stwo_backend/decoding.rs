@@ -470,8 +470,7 @@ pub fn decoding_step_v2_template_program(layout: &Phase12DecodingLayout) -> Resu
     instructions.push(Instruction::Load((lookup.start + 3) as u8));
     instructions.push(Instruction::AddMemory((lookup.start + 7) as u8));
     instructions.push(Instruction::Store((output.start + 2) as u8));
-    instructions.push(Instruction::Load(output.start as u8));
-    instructions.push(Instruction::AddMemory((output.start + 2) as u8));
+    instructions.push(Instruction::AddMemory(output.start as u8));
     instructions.push(Instruction::Store(output.start as u8));
 
     let kv_cache = layout.kv_cache_range()?;
@@ -3561,8 +3560,14 @@ fn phase11_demo_initial_memories() -> Vec<Vec<i16>> {
 }
 
 fn write_phase12_noncanonical_lookup_seed(memory: &mut [i16], lookup: std::ops::Range<usize>) {
-    for (offset, cell) in memory[lookup].iter_mut().enumerate() {
-        *cell = PHASE12_LOOKUP_ROW_VALUES[offset] + 1;
+    let slice = &mut memory[lookup];
+    assert_eq!(
+        slice.len(),
+        PHASE12_LOOKUP_ROW_VALUES.len(),
+        "Phase 12 lookup seed length mismatch"
+    );
+    for (cell, &value) in slice.iter_mut().zip(PHASE12_LOOKUP_ROW_VALUES.iter()) {
+        *cell = value.saturating_add(1);
     }
 }
 
@@ -4237,15 +4242,17 @@ mod tests {
         let output = layout.output_range().expect("output range");
         let program = decoding_step_v2_template_program(&layout).expect("program");
         let instructions = program.instructions();
-        let expected = [
-            Instruction::Load(output.start as u8),
-            Instruction::AddMemory((output.start + 2) as u8),
-            Instruction::Store(output.start as u8),
-        ];
-        assert!(
-            instructions
-                .windows(expected.len())
-                .any(|window| window == expected.as_slice())
+        let combined_store_index = instructions
+            .iter()
+            .position(|instruction| *instruction == Instruction::Store((output.start + 2) as u8))
+            .expect("combined-output store");
+        assert_eq!(
+            instructions.get(combined_store_index + 1),
+            Some(&Instruction::AddMemory(output.start as u8))
+        );
+        assert_eq!(
+            instructions.get(combined_store_index + 2),
+            Some(&Instruction::Store(output.start as u8))
         );
     }
 
