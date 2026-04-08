@@ -144,7 +144,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Install cargo-fuzz
-        run: cargo +nightly-2025-07-14 install cargo-fuzz --locked
+        run: cargo +nightly-2025-07-14 install cargo-fuzz --version 0.13.1 --locked
 
       - name: Install Python
         uses: actions/setup-python@v5

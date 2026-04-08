@@ -14,14 +14,15 @@ DEFAULT_RUST_TOOLCHAIN = "nightly-2025-07-14"
 
 
 def load_rust_toolchain() -> str:
+    in_ci = bool(os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS"))
     env_toolchain = os.environ.get("FUZZ_RUST_TOOLCHAIN")
-    if env_toolchain:
+    if env_toolchain and not in_ci:
         return env_toolchain
     try:
         with FUZZ_TOOLCHAIN_TOML.open("rb") as handle:
             config = tomllib.load(handle)
     except (OSError, tomllib.TOMLDecodeError) as error:
-        if os.environ.get("CI"):
+        if in_ci:
             raise SystemExit(
                 f"failed to read required CI fuzz toolchain file {FUZZ_TOOLCHAIN_TOML}: {error}"
             ) from error
@@ -33,7 +34,7 @@ def load_rust_toolchain() -> str:
         return DEFAULT_RUST_TOOLCHAIN
     channel = config.get("toolchain", {}).get("channel")
     if not isinstance(channel, str) or not channel:
-        if os.environ.get("CI"):
+        if in_ci:
             raise SystemExit(
                 f"{FUZZ_TOOLCHAIN_TOML} is missing required toolchain.channel in CI"
             )
@@ -116,16 +117,22 @@ def main() -> int:
     write_json(phase14_path, phase14)
 
     lookup_artifacts = phase12.get("shared_lookup_artifacts", [])
-    if not lookup_artifacts:
+    if not isinstance(lookup_artifacts, list) or not lookup_artifacts:
         raise SystemExit("phase12 corpus generation did not produce shared lookup artifacts")
     if "layout" not in phase12:
         raise SystemExit("phase12 corpus generation did not produce layout")
-    first_artifact = lookup_artifacts[0]
-    if "layout_commitment" not in first_artifact:
+    layout_artifacts = [
+        artifact
+        for artifact in lookup_artifacts
+        if isinstance(artifact, dict) and "layout_commitment" in artifact
+    ]
+    if len(layout_artifacts) != 1:
         raise SystemExit(
-            "phase12 shared lookup artifact is missing required layout_commitment: "
-            f"{first_artifact!r}"
+            "phase12 corpus generation must produce exactly one shared lookup artifact "
+            f"with layout_commitment, found {len(layout_artifacts)} in "
+            f"{lookup_artifacts!r}"
         )
+    first_artifact = layout_artifacts[0]
 
     artifact_input = {
         "layout": phase12["layout"],
