@@ -4178,6 +4178,24 @@ mod kani_proofs {
             && kv_history_length_matches
     }
 
+    fn phase12_claim_bindings_are_valid(
+        statement_version_matches: bool,
+        semantic_scope_matches: bool,
+        artifact_commitment_matches: bool,
+    ) -> bool {
+        statement_version_matches && semantic_scope_matches && artifact_commitment_matches
+    }
+
+    fn phase12_state_progress_is_valid(
+        from_history_length: usize,
+        to_history_length: usize,
+        from_position: i16,
+        to_position: i16,
+    ) -> bool {
+        from_history_length.checked_add(1) == Some(to_history_length)
+            && from_position.checked_add(1) == Some(to_position)
+    }
+
     fn phase14_step_header_is_valid(
         from_state_version: &str,
         to_state_version: &str,
@@ -4256,6 +4274,27 @@ mod kani_proofs {
             && lookup_transcript_entries_matches
             && lookup_frontier_commitment_matches
             && lookup_frontier_entries_matches
+    }
+
+    fn phase14_claim_bindings_are_valid(
+        statement_version_matches: bool,
+        semantic_scope_matches: bool,
+        artifact_commitment_matches: bool,
+    ) -> bool {
+        statement_version_matches && semantic_scope_matches && artifact_commitment_matches
+    }
+
+    fn phase14_state_progress_is_valid(
+        from_history_length: usize,
+        to_history_length: usize,
+        from_lookup_transcript_entries: usize,
+        to_lookup_transcript_entries: usize,
+        from_position: i16,
+        to_position: i16,
+    ) -> bool {
+        from_history_length.checked_add(1) == Some(to_history_length)
+            && from_lookup_transcript_entries.checked_add(1) == Some(to_lookup_transcript_entries)
+            && from_position.checked_add(1) == Some(to_position)
     }
 
     fn kani_dummy_proof() -> VanillaStarkExecutionProof {
@@ -4466,6 +4505,48 @@ mod kani_proofs {
     }
 
     #[kani::proof]
+    fn kani_phase12_claim_bindings_accept_canonical_single_step() {
+        assert!(phase12_claim_bindings_are_valid(true, true, true));
+    }
+
+    #[kani::proof]
+    fn kani_phase12_claim_bindings_reject_any_binding_mismatch() {
+        let which = kani::any::<u8>();
+        kani::assume(which < 3);
+        let mut statement_version_matches = true;
+        let mut semantic_scope_matches = true;
+        let mut artifact_commitment_matches = true;
+        match which {
+            0 => statement_version_matches = false,
+            1 => semantic_scope_matches = false,
+            _ => artifact_commitment_matches = false,
+        }
+        assert!(!phase12_claim_bindings_are_valid(
+            statement_version_matches,
+            semantic_scope_matches,
+            artifact_commitment_matches,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase12_state_progress_accepts_canonical_single_step() {
+        assert!(phase12_state_progress_is_valid(1, 2, 0, 1));
+    }
+
+    #[kani::proof]
+    fn kani_phase12_state_progress_rejects_any_progress_mismatch() {
+        let which = kani::any::<u8>();
+        kani::assume(which < 2);
+        let mut to_history_length = 2usize;
+        let mut to_position = 1i16;
+        match which {
+            0 => to_history_length = 3,
+            _ => to_position = 2,
+        }
+        assert!(!phase12_state_progress_is_valid(1, to_history_length, 0, to_position));
+    }
+
+    #[kani::proof]
     fn kani_phase14_validate_accepts_canonical_single_step() {
         assert!(phase14_step_header_is_valid(
             STWO_DECODING_STATE_VERSION_PHASE14,
@@ -4604,6 +4685,57 @@ mod kani_proofs {
         assert!(!phase14_link_is_valid(
             flags[0], flags[1], flags[2], flags[3], flags[4], flags[5], flags[6], flags[7],
             flags[8], flags[9], flags[10], flags[11], flags[12], flags[13], flags[14],
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase14_claim_bindings_accept_canonical_single_step() {
+        assert!(phase14_claim_bindings_are_valid(true, true, true));
+    }
+
+    #[kani::proof]
+    fn kani_phase14_claim_bindings_reject_any_binding_mismatch() {
+        let which = kani::any::<u8>();
+        kani::assume(which < 3);
+        let mut statement_version_matches = true;
+        let mut semantic_scope_matches = true;
+        let mut artifact_commitment_matches = true;
+        match which {
+            0 => statement_version_matches = false,
+            1 => semantic_scope_matches = false,
+            _ => artifact_commitment_matches = false,
+        }
+        assert!(!phase14_claim_bindings_are_valid(
+            statement_version_matches,
+            semantic_scope_matches,
+            artifact_commitment_matches,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase14_state_progress_accepts_canonical_single_step() {
+        assert!(phase14_state_progress_is_valid(1, 2, 1, 2, 0, 1));
+    }
+
+    #[kani::proof]
+    fn kani_phase14_state_progress_rejects_any_progress_mismatch() {
+        let which = kani::any::<u8>();
+        kani::assume(which < 3);
+        let mut to_history_length = 2usize;
+        let mut to_lookup_transcript_entries = 2usize;
+        let mut to_position = 1i16;
+        match which {
+            0 => to_history_length = 3,
+            1 => to_lookup_transcript_entries = 3,
+            _ => to_position = 2,
+        }
+        assert!(!phase14_state_progress_is_valid(
+            1,
+            to_history_length,
+            1,
+            to_lookup_transcript_entries,
+            0,
+            to_position,
         ));
     }
 }
