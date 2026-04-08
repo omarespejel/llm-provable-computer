@@ -11,8 +11,7 @@ on:
       - "scripts/hardening_test_names.sh"
       - "scripts/run_miri_suite.sh"
       - "scripts/run_asan_suite.sh"
-      - "src/proof.rs"
-      - "src/vanillastark/proof_stream.rs"
+      - "src/**/*.rs"
       - "Cargo.toml"
       - "Cargo.lock"
 
@@ -22,7 +21,7 @@ env:
 jobs:
   miri:
     name: miri validator subset
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 120
 
     steps:
@@ -36,7 +35,7 @@ jobs:
           components: miri
 
       - name: Restore Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
 
       - name: Run Miri suite
         run: |
@@ -45,7 +44,7 @@ jobs:
 
   address-sanitizer:
     name: address sanitizer validator subset
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 120
 
     steps:
@@ -57,12 +56,22 @@ jobs:
         with:
           toolchain: ${{ env.HARDENING_TOOLCHAIN }}
           components: rust-src
-          targets: x86_64-unknown-linux-gnu
+
+      - name: Read host target
+        id: host-target
+        run: |
+          echo "target=$(rustc +${{ env.HARDENING_TOOLCHAIN }} -vV | awk '/^host: / { print $2 }')" >> "$GITHUB_OUTPUT"
+
+      - name: Install host target
+        run: |
+          rustup +${{ env.HARDENING_TOOLCHAIN }} target add ${{ steps.host-target.outputs.target }}
 
       - name: Restore Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
 
       - name: Run address sanitizer suite
+        env:
+          SANITIZER_TARGET: ${{ steps.host-target.outputs.target }}
         run: |
           chmod +x scripts/run_asan_suite.sh scripts/hardening_test_names.sh
           scripts/run_asan_suite.sh

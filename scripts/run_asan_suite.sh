@@ -9,6 +9,11 @@ SANITIZER_TARGET="${SANITIZER_TARGET:-$(rustc +${HARDENING_TOOLCHAIN} -vV | awk 
 
 source "$ROOT_DIR/scripts/hardening_test_names.sh"
 
+if ((${#hardening_test_filters[@]} == 0)); then
+  echo "hardening_test_filters is empty; refusing to run an empty hardening suite" >&2
+  exit 1
+fi
+
 export ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=0}"
 export RUSTFLAGS="${RUSTFLAGS:-} -Zsanitizer=address"
 export RUSTDOCFLAGS="${RUSTDOCFLAGS:-} -Zsanitizer=address"

@@ -9,6 +9,11 @@ export MIRIFLAGS="${MIRIFLAGS:-"-Zmiri-strict-provenance -Zmiri-symbolic-alignme
 
 source "$ROOT_DIR/scripts/hardening_test_names.sh"
 
+if ((${#hardening_test_filters[@]} == 0)); then
+  echo "hardening_test_filters is empty; refusing to run an empty hardening suite" >&2
+  exit 1
+fi
+
 cargo +"${HARDENING_TOOLCHAIN}" miri setup
 
 for test_filter in "${hardening_test_filters[@]}"; do
