@@ -422,6 +422,10 @@ mod tests {
         "stwo-shared-normalization-lookup-v1";
     const ORACLE_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10: &str =
         "stwo-shared-binary-step-lookup-v1";
+    const ORACLE_DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE: &str =
+        "stwo_decoding_step_v2_execution_with_shared_normalization_lookup";
+    const ORACLE_DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE: &str =
+        "stwo_decoding_step_v2_execution_with_shared_binary_step_lookup";
 
     fn oracle_lower_hex(bytes: &[u8]) -> String {
         const HEX: &[u8; 16] = b"0123456789abcdef";
@@ -466,6 +470,14 @@ mod tests {
         assert_eq!(
             ORACLE_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10,
             super::STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10
+        );
+        assert_eq!(
+            ORACLE_DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE,
+            super::DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE
+        );
+        assert_eq!(
+            ORACLE_DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE,
+            super::DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE
         );
     }
 
@@ -585,7 +597,7 @@ mod tests {
                 normalization_wrapper.statement_version
             )));
         }
-        if normalization_wrapper.semantic_scope != DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE {
+        if normalization_wrapper.semantic_scope != ORACLE_DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE {
             return Err(VmError::InvalidConfig(format!(
                 "unsupported Phase 12 shared lookup artifact normalization scope `{}`",
                 normalization_wrapper.semantic_scope
@@ -664,7 +676,7 @@ mod tests {
                 activation_wrapper.statement_version
             )));
         }
-        if activation_wrapper.semantic_scope != DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE {
+        if activation_wrapper.semantic_scope != ORACLE_DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE {
             return Err(VmError::InvalidConfig(format!(
                 "unsupported Phase 12 shared lookup artifact activation scope `{}`",
                 activation_wrapper.semantic_scope
@@ -893,7 +905,13 @@ mod tests {
         let mut activation_envelope =
             prove_phase10_shared_binary_step_lookup_envelope(&activation_rows)
                 .expect("activation envelope");
-        activation_envelope.proof[0] ^= 0x01;
+        if let Some(byte) = activation_envelope.proof.get_mut(0) {
+            *byte ^= 0x01;
+        } else {
+            panic!(
+                "activation_envelope.proof is empty after prove_phase10_shared_binary_step_lookup_envelope"
+            );
+        }
         let artifact = build_phase12_shared_lookup_artifact(
             &layout_commitment,
             vec![16, 64, 1, 1, 4, 128, 0, 1],

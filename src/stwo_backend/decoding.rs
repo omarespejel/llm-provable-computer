@@ -4351,6 +4351,7 @@ mod tests {
 
     fn oracle_phase12_shared_lookup_artifact_from_proof_payload(
         proof: &VanillaStarkExecutionProof,
+        layout: &Phase12DecodingLayout,
         layout_commitment: &str,
     ) -> Result<Option<Phase12SharedLookupArtifact>> {
         if !matches_decoding_step_v2_family(&proof.claim.program) {
@@ -4420,7 +4421,7 @@ mod tests {
             (activation_json.len() as u64).to_le_bytes().to_vec(),
             activation_json,
         ]);
-        Ok(Some(Phase12SharedLookupArtifact {
+        let artifact = Phase12SharedLookupArtifact {
             artifact_version: ORACLE_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12.to_string(),
             semantic_scope: ORACLE_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12.to_string(),
             artifact_commitment,
@@ -4429,7 +4430,9 @@ mod tests {
             flattened_lookup_rows,
             normalization_proof_envelope: normalization,
             activation_proof_envelope: activation,
-        }))
+        };
+        verify_phase12_shared_lookup_artifact(&artifact, layout, layout_commitment)?;
+        Ok(Some(artifact))
     }
 
     fn oracle_build_phase12_shared_lookup_artifact_index<'a>(
@@ -4927,6 +4930,7 @@ mod tests {
             )?;
             let proof_artifact = oracle_phase12_shared_lookup_artifact_from_proof_payload(
                 &step.proof,
+                &manifest.layout,
                 &expected_layout_commitment,
             )?
             .ok_or_else(|| {
@@ -5050,6 +5054,11 @@ mod tests {
             if step.to_state != expected_to {
                 return Err(VmError::InvalidConfig(format!(
                     "decoding step {step_index} recorded to_state does not match the oracle replay"
+                )));
+            }
+            if expected_to.position != expected_from.position + 1 {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding step {step_index} does not advance the decoding position by exactly one token"
                 )));
             }
             previous_history_commitment = Some(to_history_commitment);
@@ -5257,6 +5266,7 @@ mod tests {
                 oracle_phase12_state_view(&step.proof.claim.final_state.memory, &manifest.layout)?;
             let proof_artifact = oracle_phase12_shared_lookup_artifact_from_proof_payload(
                 &step.proof,
+                &manifest.layout,
                 &expected_layout_commitment,
             )?
             .ok_or_else(|| {
@@ -5311,6 +5321,11 @@ mod tests {
             if step.to_state != expected_to {
                 return Err(VmError::InvalidConfig(format!(
                     "chunked decoding step {step_index} recorded to_state does not match the oracle replay"
+                )));
+            }
+            if expected_to.position != expected_from.position + 1 {
+                return Err(VmError::InvalidConfig(format!(
+                    "chunked decoding step {step_index} does not advance the decoding position by exactly one token"
                 )));
             }
             accumulator = Some(next);
@@ -6878,7 +6893,7 @@ mod tests {
             phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
         manifest
             .shared_lookup_artifacts
-            .push(manifest.shared_lookup_artifacts[0].clone());
+            .push(sample_phase12_valid_but_wrong_shared_lookup_artifact(&layout));
 
         assert!(verify_phase12_decoding_chain(&manifest).is_err());
         assert!(oracle_verify_phase12_decoding_chain(&manifest).is_err());
