@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 language: en-US
 
 early_access: false
@@ -7,15 +8,21 @@ reviews:
   request_changes_workflow: false
   high_level_summary: true
   changed_files_summary: true
+  high_level_summary_in_walkthrough: false
   poem: false
   review_status: true
-  collapse_walkthrough: false
-  sequence_diagrams: true
-  assess_linked_issues: true
-  related_issues: true
-  related_prs: true
-  suggested_labels: true
-  suggested_reviewers: true
+  commit_status: true
+  collapse_walkthrough: true
+  sequence_diagrams: false
+  assess_linked_issues: false
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false
+  tone_instructions: |
+    Prioritize correctness, security, proof soundness, and regression risk. Avoid
+    style-only remarks and repository-genealogy commentary. Prefer concise,
+    actionable findings with concrete failing-path or tamper-path guidance.
   auto_review:
     enabled: true
     auto_incremental_review: true
@@ -24,7 +31,17 @@ reviews:
       - main
       - codex/.*
     labels: []
-    ignore_title_keywords: []
+    ignore_title_keywords:
+      - WIP
+      - DO NOT MERGE
+      - artifact-only
+      - docs-only
+    ignore_usernames:
+      - github-actions[bot]
+      - dependabot[bot]
+      - coderabbitai
+      - qodo-code-review
+      - greptile-app[bot]
   path_filters:
     - .coderabbit.yaml
     - .greptile/**
@@ -65,8 +82,43 @@ reviews:
     - path: 'docs/**/*.md'
       instructions: |
         Review technical docs for alignment with code and proofs. Ignore pure prose taste, but flag any mismatch in supported phases, artifact semantics, backend capabilities, or reproducibility steps.
+finishing_touches:
+  docstrings:
+    enabled: false
+  unit_tests:
+    enabled: false
+pre_merge_checks:
+  override_requested_reviewers_only: true
+  docstrings:
+    mode: off
+  title:
+    mode: warning
+    requirements: "Keep PR titles concise and specific about the proof surface or artifact boundary being changed."
+  description:
+    mode: warning
+  issue_assessment:
+    mode: off
+  custom_checks:
+    - mode: warning
+      name: "Proof Semantics Tests"
+      instructions: |
+        If the PR changes proof semantics, decoding-chain structure, artifact commitments,
+        version constants, or verification logic, check that it adds or updates at least
+        one failing-path, tamper-path, or compatibility regression test. Warn if the
+        change relies only on happy-path coverage.
 chat:
-  auto_reply: true
+  auto_reply: false
 knowledge_base:
   learnings:
     scope: auto
+tools:
+  actionlint:
+    enabled: true
+  gitleaks:
+    enabled: true
+  markdownlint:
+    enabled: true
+  shellcheck:
+    enabled: true
+  yamllint:
+    enabled: true
