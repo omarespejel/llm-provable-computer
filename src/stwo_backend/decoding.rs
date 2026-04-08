@@ -2680,6 +2680,13 @@ fn validate_phase12_chain_steps(
     steps: &[Phase12DecodingStep],
 ) -> Result<()> {
     let expected_layout_commitment = commit_phase12_layout(layout);
+    validate_phase12_chain_steps_against_layout_commitment(&expected_layout_commitment, steps)
+}
+
+fn validate_phase12_chain_steps_against_layout_commitment(
+    expected_layout_commitment: &str,
+    steps: &[Phase12DecodingStep],
+) -> Result<()> {
     for (index, step) in steps.iter().enumerate() {
         if step.from_state.state_version != STWO_DECODING_STATE_VERSION_PHASE12 {
             return Err(VmError::InvalidConfig(format!(
@@ -2778,6 +2785,21 @@ fn validate_phase14_chain_steps(
     history_chunk_pairs: usize,
     steps: &[Phase14DecodingStep],
 ) -> Result<()> {
+    let expected_layout_commitment = commit_phase12_layout(layout);
+    validate_phase14_chain_steps_against_layout_commitment(
+        layout,
+        &expected_layout_commitment,
+        history_chunk_pairs,
+        steps,
+    )
+}
+
+fn validate_phase14_chain_steps_against_layout_commitment(
+    layout: &Phase12DecodingLayout,
+    expected_layout_commitment: &str,
+    history_chunk_pairs: usize,
+    steps: &[Phase14DecodingStep],
+) -> Result<()> {
     for (index, step) in steps.iter().enumerate() {
         if step.from_state.state_version != STWO_DECODING_STATE_VERSION_PHASE14 {
             return Err(VmError::InvalidConfig(format!(
@@ -2808,7 +2830,6 @@ fn validate_phase14_chain_steps(
                 "chunked decoding step {index} changes the layout commitment"
             )));
         }
-        let expected_layout_commitment = commit_phase12_layout(layout);
         if step.from_state.layout_commitment != expected_layout_commitment {
             return Err(VmError::InvalidConfig(format!(
                 "chunked decoding step {index} layout commitment `{}` does not match the canonical layout commitment",
@@ -3909,6 +3930,274 @@ pub fn matches_decoding_step_v2_family_with_layout(
     };
     program.memory_size() == template.memory_size()
         && program.instructions() == template.instructions()
+}
+
+#[cfg(kani)]
+mod kani_proofs {
+    use super::*;
+
+    fn phase12_step_header_is_valid(
+        from_state_version: &str,
+        to_state_version: &str,
+        from_step_index: usize,
+        to_step_index: usize,
+        from_layout_commitment: &str,
+        to_layout_commitment: &str,
+        expected_layout_commitment: &str,
+        from_position: i16,
+        to_position: i16,
+    ) -> bool {
+        from_state_version == STWO_DECODING_STATE_VERSION_PHASE12
+            && to_state_version == STWO_DECODING_STATE_VERSION_PHASE12
+            && from_step_index + 1 == to_step_index
+            && from_layout_commitment == expected_layout_commitment
+            && to_layout_commitment == expected_layout_commitment
+            && from_position.checked_add(1) == Some(to_position)
+    }
+
+    fn phase12_link_is_valid(
+        persistent_state_matches: bool,
+        kv_cache_matches: bool,
+        position_matches: bool,
+        kv_history_commitment_matches: bool,
+        kv_history_length_matches: bool,
+    ) -> bool {
+        persistent_state_matches
+            && kv_cache_matches
+            && position_matches
+            && kv_history_commitment_matches
+            && kv_history_length_matches
+    }
+
+    fn phase14_step_header_is_valid(
+        from_state_version: &str,
+        to_state_version: &str,
+        from_step_index: usize,
+        to_step_index: usize,
+        from_layout_commitment: &str,
+        to_layout_commitment: &str,
+        expected_layout_commitment: &str,
+        from_chunk_size: usize,
+        to_chunk_size: usize,
+        history_chunk_pairs: usize,
+        from_frontier_pairs: usize,
+        to_frontier_pairs: usize,
+        rolling_kv_pairs: usize,
+        from_frontier_matches_cache: bool,
+        to_frontier_matches_cache: bool,
+        from_lookup_transcript_entries: usize,
+        to_lookup_transcript_entries: usize,
+        from_lookup_frontier_entries: usize,
+        to_lookup_frontier_entries: usize,
+        from_position: i16,
+        to_position: i16,
+    ) -> bool {
+        let expected_next_lookup_frontier_entries =
+            (from_lookup_frontier_entries + 1).min(history_chunk_pairs);
+        from_state_version == STWO_DECODING_STATE_VERSION_PHASE14
+            && to_state_version == STWO_DECODING_STATE_VERSION_PHASE14
+            && from_step_index + 1 == to_step_index
+            && from_layout_commitment == to_layout_commitment
+            && from_layout_commitment == expected_layout_commitment
+            && from_chunk_size == history_chunk_pairs
+            && to_chunk_size == history_chunk_pairs
+            && from_frontier_pairs == rolling_kv_pairs
+            && to_frontier_pairs == rolling_kv_pairs
+            && from_frontier_matches_cache
+            && to_frontier_matches_cache
+            && from_lookup_transcript_entries > 0
+            && to_lookup_transcript_entries == from_lookup_transcript_entries + 1
+            && from_lookup_frontier_entries > 0
+            && from_lookup_frontier_entries <= history_chunk_pairs
+            && to_lookup_frontier_entries > 0
+            && to_lookup_frontier_entries <= history_chunk_pairs
+            && to_lookup_frontier_entries == expected_next_lookup_frontier_entries
+            && from_position.checked_add(1) == Some(to_position)
+    }
+
+    fn phase14_link_is_valid(
+        persistent_state_matches: bool,
+        kv_cache_matches: bool,
+        position_matches: bool,
+        kv_history_commitment_matches: bool,
+        kv_history_length_matches: bool,
+        kv_history_sealed_commitment_matches: bool,
+        kv_history_sealed_chunks_matches: bool,
+        kv_history_open_chunk_commitment_matches: bool,
+        kv_history_open_chunk_pairs_matches: bool,
+        kv_history_frontier_commitment_matches: bool,
+        kv_history_frontier_pairs_matches: bool,
+        lookup_transcript_commitment_matches: bool,
+        lookup_transcript_entries_matches: bool,
+        lookup_frontier_commitment_matches: bool,
+        lookup_frontier_entries_matches: bool,
+    ) -> bool {
+        persistent_state_matches
+            && kv_cache_matches
+            && position_matches
+            && kv_history_commitment_matches
+            && kv_history_length_matches
+            && kv_history_sealed_commitment_matches
+            && kv_history_sealed_chunks_matches
+            && kv_history_open_chunk_commitment_matches
+            && kv_history_open_chunk_pairs_matches
+            && kv_history_frontier_commitment_matches
+            && kv_history_frontier_pairs_matches
+            && lookup_transcript_commitment_matches
+            && lookup_transcript_entries_matches
+            && lookup_frontier_commitment_matches
+            && lookup_frontier_entries_matches
+    }
+
+    #[kani::proof]
+    fn kani_phase12_validate_accepts_canonical_single_step() {
+        assert!(phase12_step_header_is_valid(
+            STWO_DECODING_STATE_VERSION_PHASE12,
+            STWO_DECODING_STATE_VERSION_PHASE12,
+            0,
+            1,
+            "layout-commitment",
+            "layout-commitment",
+            "layout-commitment",
+            0,
+            1,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase12_validate_rejects_step_index_drift() {
+        let bad_index = kani::any::<usize>();
+        kani::assume(bad_index != 1);
+        assert!(!phase12_step_header_is_valid(
+            STWO_DECODING_STATE_VERSION_PHASE12,
+            STWO_DECODING_STATE_VERSION_PHASE12,
+            0,
+            bad_index,
+            "layout-commitment",
+            "layout-commitment",
+            "layout-commitment",
+            0,
+            1,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase12_validate_rejects_any_link_mismatch() {
+        let which = kani::any::<u8>();
+        kani::assume(which < 5);
+        let mut persistent_state_matches = true;
+        let mut kv_cache_matches = true;
+        let mut position_matches = true;
+        let mut kv_history_commitment_matches = true;
+        let mut kv_history_length_matches = true;
+        match which {
+            0 => persistent_state_matches = false,
+            1 => kv_cache_matches = false,
+            2 => position_matches = false,
+            3 => kv_history_commitment_matches = false,
+            _ => kv_history_length_matches = false,
+        }
+        assert!(!phase12_link_is_valid(
+            persistent_state_matches,
+            kv_cache_matches,
+            position_matches,
+            kv_history_commitment_matches,
+            kv_history_length_matches,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase14_validate_accepts_canonical_single_step() {
+        assert!(phase14_step_header_is_valid(
+            STWO_DECODING_STATE_VERSION_PHASE14,
+            STWO_DECODING_STATE_VERSION_PHASE14,
+            0,
+            1,
+            "layout-commitment",
+            "layout-commitment",
+            "layout-commitment",
+            PHASE14_HISTORY_CHUNK_PAIRS,
+            PHASE14_HISTORY_CHUNK_PAIRS,
+            PHASE14_HISTORY_CHUNK_PAIRS,
+            4,
+            4,
+            4,
+            true,
+            true,
+            1,
+            2,
+            1,
+            2,
+            0,
+            1,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase14_validate_rejects_wrong_chunk_size() {
+        assert!(!phase14_step_header_is_valid(
+            STWO_DECODING_STATE_VERSION_PHASE14,
+            STWO_DECODING_STATE_VERSION_PHASE14,
+            0,
+            1,
+            "layout-commitment",
+            "layout-commitment",
+            "layout-commitment",
+            PHASE14_HISTORY_CHUNK_PAIRS,
+            PHASE14_HISTORY_CHUNK_PAIRS + 1,
+            PHASE14_HISTORY_CHUNK_PAIRS,
+            4,
+            4,
+            4,
+            true,
+            true,
+            1,
+            2,
+            1,
+            2,
+            0,
+            1,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase14_validate_rejects_frontier_commitment_drift() {
+        assert!(!phase14_step_header_is_valid(
+            STWO_DECODING_STATE_VERSION_PHASE14,
+            STWO_DECODING_STATE_VERSION_PHASE14,
+            0,
+            1,
+            "layout-commitment",
+            "layout-commitment",
+            "layout-commitment",
+            PHASE14_HISTORY_CHUNK_PAIRS,
+            PHASE14_HISTORY_CHUNK_PAIRS,
+            PHASE14_HISTORY_CHUNK_PAIRS,
+            4,
+            4,
+            4,
+            false,
+            true,
+            1,
+            2,
+            1,
+            2,
+            0,
+            1,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase14_validate_rejects_any_link_mismatch() {
+        let which = kani::any::<u8>();
+        kani::assume(which < 15);
+        let mut flags = [true; 15];
+        flags[which as usize] = false;
+        assert!(!phase14_link_is_valid(
+            flags[0], flags[1], flags[2], flags[3], flags[4], flags[5], flags[6], flags[7],
+            flags[8], flags[9], flags[10], flags[11], flags[12], flags[13], flags[14],
+        ));
+    }
 }
 
 #[cfg(test)]
