@@ -23,30 +23,30 @@ use crate::stwo_backend::{
 pub const STWO_DECODING_CHAIN_VERSION_PHASE11: &str = "stwo-phase11-decoding-chain-v1";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE11: &str = "stwo_execution_proof_carrying_decoding_chain";
 pub const STWO_DECODING_STATE_VERSION_PHASE11: &str = "stwo-decoding-state-v1";
-pub const STWO_DECODING_CHAIN_VERSION_PHASE12: &str = "stwo-phase12-decoding-chain-v6";
+pub const STWO_DECODING_CHAIN_VERSION_PHASE12: &str = "stwo-phase12-decoding-chain-v7";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE12: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_chain";
-pub const STWO_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v8";
+pub const STWO_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v9";
 pub const STWO_DECODING_LAYOUT_VERSION_PHASE12: &str = "stwo-decoding-layout-v1";
 pub const STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13: &str =
-    "stwo-phase13-decoding-layout-matrix-v6";
+    "stwo-phase13-decoding-layout-matrix-v7";
 pub const STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_layout_matrix";
 pub const STWO_DECODING_CHAIN_VERSION_PHASE14: &str =
-    "stwo-phase14-decoding-chunked-history-chain-v6";
+    "stwo-phase14-decoding-chunked-history-chain-v7";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE14: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_chunked_history_chain";
 pub const STWO_DECODING_STATE_VERSION_PHASE14: &str = "stwo-decoding-state-v6";
 pub const STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15: &str =
-    "stwo-phase15-decoding-history-segment-bundle-v6";
+    "stwo-phase15-decoding-history-segment-bundle-v7";
 pub const STWO_DECODING_SEGMENT_BUNDLE_SCOPE_PHASE15: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_segment_bundle";
 pub const STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16: &str =
-    "stwo-phase16-decoding-history-segment-rollup-v6";
+    "stwo-phase16-decoding-history-segment-rollup-v7";
 pub const STWO_DECODING_SEGMENT_ROLLUP_SCOPE_PHASE16: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_segment_rollup";
 pub const STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17: &str =
-    "stwo-phase17-decoding-history-rollup-matrix-v6";
+    "stwo-phase17-decoding-history-rollup-matrix-v7";
 pub const STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_rollup_matrix";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
@@ -470,7 +470,11 @@ pub fn decoding_step_v2_template_program(layout: &Phase12DecodingLayout) -> Resu
     instructions.push(Instruction::Load((lookup.start + 3) as u8));
     instructions.push(Instruction::AddMemory((lookup.start + 7) as u8));
     instructions.push(Instruction::Store((output.start + 2) as u8));
-    instructions.push(Instruction::AddMemory(output.start as u8));
+    instructions.push(Instruction::Load((output.start + 1) as u8));
+    instructions.push(Instruction::AddMemory((output.start + 2) as u8));
+    instructions.push(Instruction::Store((output.start + 1) as u8));
+    instructions.push(Instruction::Load(output.start as u8));
+    instructions.push(Instruction::AddMemory((output.start + 2) as u8));
     instructions.push(Instruction::Store(output.start as u8));
 
     let kv_cache = layout.kv_cache_range()?;
@@ -3868,7 +3872,8 @@ mod tests {
                 + i32::from(memory[lookup.start + 3])
                 + combined_output,
             raw_accumulated * i32::from(memory[lookup.start + 5])
-                + i32::from(memory[lookup.start + 7]),
+                + i32::from(memory[lookup.start + 7])
+                + combined_output,
             combined_output,
         ]
         .map(|value| i16::try_from(value).expect("bounded Phase 12 oracle output"))
@@ -4247,12 +4252,40 @@ mod tests {
             .position(|instruction| *instruction == Instruction::Store((output.start + 2) as u8))
             .expect("combined-output store");
         assert_eq!(
+            instructions.get(combined_store_index + 4),
+            Some(&Instruction::Load(output.start as u8))
+        );
+        assert_eq!(
+            instructions.get(combined_store_index + 5),
+            Some(&Instruction::AddMemory((output.start + 2) as u8))
+        );
+        assert_eq!(
+            instructions.get(combined_store_index + 6),
+            Some(&Instruction::Store(output.start as u8))
+        );
+    }
+
+    #[test]
+    fn phase12_template_adds_combined_output_into_secondary_output() {
+        let layout = phase12_default_decoding_layout();
+        let output = layout.output_range().expect("output range");
+        let program = decoding_step_v2_template_program(&layout).expect("program");
+        let instructions = program.instructions();
+        let combined_store_index = instructions
+            .iter()
+            .position(|instruction| *instruction == Instruction::Store((output.start + 2) as u8))
+            .expect("combined-output store");
+        assert_eq!(
             instructions.get(combined_store_index + 1),
-            Some(&Instruction::AddMemory(output.start as u8))
+            Some(&Instruction::Load((output.start + 1) as u8))
         );
         assert_eq!(
             instructions.get(combined_store_index + 2),
-            Some(&Instruction::Store(output.start as u8))
+            Some(&Instruction::AddMemory((output.start + 2) as u8))
+        );
+        assert_eq!(
+            instructions.get(combined_store_index + 3),
+            Some(&Instruction::Store((output.start + 1) as u8))
         );
     }
 
