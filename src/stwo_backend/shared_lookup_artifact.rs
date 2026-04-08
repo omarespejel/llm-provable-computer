@@ -609,4 +609,51 @@ mod tests {
             "unexpected error: {error}"
         );
     }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_rejects_recommitted_flattened_row_drift() {
+        let (layout, layout_commitment) = sample_layout_and_commitment();
+        let normalization_rows = vec![(16u16, 64u16), (4u16, 128u16)];
+        let activation_rows = vec![
+            Phase3LookupTableRow {
+                input: 1,
+                output: 1,
+            },
+            Phase3LookupTableRow {
+                input: 0,
+                output: 1,
+            },
+        ];
+        let normalization_envelope =
+            prove_phase10_shared_normalization_lookup_envelope(&normalization_rows)
+                .expect("normalization envelope");
+        let activation_envelope =
+            prove_phase10_shared_binary_step_lookup_envelope(&activation_rows)
+                .expect("activation envelope");
+        let mut artifact = build_phase12_shared_lookup_artifact(
+            &layout_commitment,
+            vec![16, 64, 1, 1, 4, 128, 0, 1],
+            normalization_wrapper(normalization_envelope),
+            activation_wrapper(activation_envelope),
+        )
+        .expect("artifact");
+
+        artifact.flattened_lookup_rows[0] = 4;
+        artifact.lookup_rows_commitment =
+            commit_phase12_shared_lookup_rows(&layout_commitment, &artifact.flattened_lookup_rows);
+        artifact.artifact_commitment = commit_phase12_shared_lookup_artifact(
+            &layout_commitment,
+            &artifact.flattened_lookup_rows,
+            &artifact.normalization_proof_envelope,
+            &artifact.activation_proof_envelope,
+        )
+        .expect("recommit artifact");
+
+        let error = verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment)
+            .expect_err("flattened-row drift should fail");
+        assert!(
+            error.to_string().contains("flattened rows do not match"),
+            "unexpected error: {error}"
+        );
+    }
 }
