@@ -12,6 +12,7 @@ on:
       - "Cargo.toml"
       - "Cargo.lock"
       - "src/stwo_backend/**"
+      - "tests/**"
 
 env:
   MUTATION_TOOLCHAIN: nightly-2025-07-14
@@ -19,7 +20,7 @@ env:
 jobs:
   cargo-mutants:
     name: cargo-mutants (${{ matrix.shard }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 360
     strategy:
       fail-fast: false
@@ -36,7 +37,7 @@ jobs:
           toolchain: ${{ env.MUTATION_TOOLCHAIN }}
 
       - name: Restore Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
 
       - name: Install cargo-mutants
         run: cargo install cargo-mutants --version 27.0.0 --locked

@@ -28,7 +28,7 @@ args=(
   --copy-target=true
   --baseline "${MUTATION_BASELINE:-skip}"
   --minimum-test-timeout "${MUTATION_MIN_TEST_TIMEOUT:-60}"
-  --timeout "${MUTATION_TIMEOUT:-900}"
+  --timeout "${MUTATION_TIMEOUT:-600}"
   --jobs "${MUTATION_JOBS:-2}"
   --no-shuffle
 )
