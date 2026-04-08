@@ -208,9 +208,10 @@ Delivered:
   activation output rows inside the executed `decoding_step_v2` program instead of treating those
   lookup rows as write-only metadata, feeding bounded lookup-backed values into the latest carried
   KV-cache pair on the public demo layouts, with three carried lanes now bound to the combined
-  output cell and one to the lookup-backed primary output on the wider layouts, and with exact
-  tests plus real-backend proving coverage over all default demo steps and the default layout
-  matrix.
+  output cell and one to the lookup-backed primary output on the wider layouts, with that primary
+  output now also absorbing the bounded combined-output cell before it is carried forward, and
+  with exact tests plus real-backend proving coverage over all default demo steps and the default
+  layout matrix.
 
 Current limitation:
 

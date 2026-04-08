@@ -23,30 +23,30 @@ use crate::stwo_backend::{
 pub const STWO_DECODING_CHAIN_VERSION_PHASE11: &str = "stwo-phase11-decoding-chain-v1";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE11: &str = "stwo_execution_proof_carrying_decoding_chain";
 pub const STWO_DECODING_STATE_VERSION_PHASE11: &str = "stwo-decoding-state-v1";
-pub const STWO_DECODING_CHAIN_VERSION_PHASE12: &str = "stwo-phase12-decoding-chain-v5";
+pub const STWO_DECODING_CHAIN_VERSION_PHASE12: &str = "stwo-phase12-decoding-chain-v6";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE12: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_chain";
-pub const STWO_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v7";
+pub const STWO_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v8";
 pub const STWO_DECODING_LAYOUT_VERSION_PHASE12: &str = "stwo-decoding-layout-v1";
 pub const STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13: &str =
-    "stwo-phase13-decoding-layout-matrix-v5";
+    "stwo-phase13-decoding-layout-matrix-v6";
 pub const STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_layout_matrix";
 pub const STWO_DECODING_CHAIN_VERSION_PHASE14: &str =
-    "stwo-phase14-decoding-chunked-history-chain-v5";
+    "stwo-phase14-decoding-chunked-history-chain-v6";
 pub const STWO_DECODING_CHAIN_SCOPE_PHASE14: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_chunked_history_chain";
 pub const STWO_DECODING_STATE_VERSION_PHASE14: &str = "stwo-decoding-state-v6";
 pub const STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15: &str =
-    "stwo-phase15-decoding-history-segment-bundle-v5";
+    "stwo-phase15-decoding-history-segment-bundle-v6";
 pub const STWO_DECODING_SEGMENT_BUNDLE_SCOPE_PHASE15: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_segment_bundle";
 pub const STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16: &str =
-    "stwo-phase16-decoding-history-segment-rollup-v5";
+    "stwo-phase16-decoding-history-segment-rollup-v6";
 pub const STWO_DECODING_SEGMENT_ROLLUP_SCOPE_PHASE16: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_segment_rollup";
 pub const STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17: &str =
-    "stwo-phase17-decoding-history-rollup-matrix-v5";
+    "stwo-phase17-decoding-history-rollup-matrix-v6";
 pub const STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_rollup_matrix";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
@@ -470,6 +470,8 @@ pub fn decoding_step_v2_template_program(layout: &Phase12DecodingLayout) -> Resu
     instructions.push(Instruction::Load((lookup.start + 3) as u8));
     instructions.push(Instruction::AddMemory((lookup.start + 7) as u8));
     instructions.push(Instruction::Store((output.start + 2) as u8));
+    instructions.push(Instruction::AddMemory(output.start as u8));
+    instructions.push(Instruction::Store(output.start as u8));
 
     let kv_cache = layout.kv_cache_range()?;
     for index in 0..(kv_cache.len().saturating_sub(layout.pair_width)) {
@@ -3133,14 +3135,16 @@ fn commit_phase12_persistent_state(
     lower_hex(&out)
 }
 
-fn decoding_program_step_limit(program: &Program) -> usize {
-    debug_assert!(
-        program.instructions().len() <= usize::from(u8::MAX) + 1,
-        "Phase 12 decoding program instruction count {} exceeds the u8 pc horizon {}",
-        program.instructions().len(),
-        usize::from(u8::MAX) + 1
-    );
-    program.instructions().len().saturating_add(1)
+fn decoding_program_step_limit(program: &Program) -> Result<usize> {
+    let instruction_count = program.instructions().len();
+    let max_reachable_instructions = usize::from(u8::MAX) + 1;
+    if instruction_count > max_reachable_instructions {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 12 decoding program instruction count {} exceeds the u8 pc horizon {}",
+            instruction_count, max_reachable_instructions
+        )));
+    }
+    Ok(instruction_count + 1)
 }
 
 fn commit_phase12_history_seed(
@@ -3555,6 +3559,18 @@ fn phase11_demo_initial_memories() -> Vec<Vec<i16>> {
     ]
 }
 
+fn write_phase12_noncanonical_lookup_seed(memory: &mut [i16], lookup: std::ops::Range<usize>) {
+    let slice = &mut memory[lookup];
+    assert_eq!(
+        slice.len(),
+        PHASE12_LOOKUP_ROW_VALUES.len(),
+        "Phase 12 lookup seed length mismatch"
+    );
+    for (cell, &value) in slice.iter_mut().zip(PHASE12_LOOKUP_ROW_VALUES.iter()) {
+        *cell = value.saturating_add(1);
+    }
+}
+
 pub(crate) fn phase12_demo_initial_memories(
     layout: &Phase12DecodingLayout,
 ) -> Result<Vec<Vec<i16>>> {
@@ -3575,11 +3591,11 @@ pub(crate) fn phase12_demo_initial_memories(
         memory[kv_cache_range.clone()].copy_from_slice(&kv_cache);
         memory[incoming_token_range.clone()].copy_from_slice(&incoming_values);
         memory[query_range.clone()].copy_from_slice(&query_values);
-        memory[lookup_range.clone()].copy_from_slice(&PHASE12_LOOKUP_ROW_VALUES);
+        write_phase12_noncanonical_lookup_seed(&mut memory, lookup_range.clone());
         memory[position_index] = position as i16;
         memory[position_increment_index] = 1;
         let program = decoding_step_v2_program_with_initial_memory(layout, memory.clone())?;
-        let step_limit = decoding_program_step_limit(&program);
+        let step_limit = decoding_program_step_limit(&program)?;
         let mut runtime = NativeInterpreter::new(program, Attention2DMode::AverageHard, step_limit);
         let result = runtime.run()?;
         if !result.halted {
@@ -3739,7 +3755,7 @@ mod tests {
         let mut runtime = NativeInterpreter::new(
             program.clone(),
             Attention2DMode::AverageHard,
-            decoding_program_step_limit(&program),
+            decoding_program_step_limit(&program).expect("step limit"),
         );
         let result = runtime.run().expect("run program");
         assert!(result.halted);
@@ -3845,11 +3861,15 @@ mod tests {
             .sum();
         let raw_accumulated =
             raw_dot + memory[incoming.clone()].iter().map(|&value| i32::from(value)).sum::<i32>();
+        let combined_output =
+            i32::from(memory[lookup.start + 3]) + i32::from(memory[lookup.start + 7]);
         [
-            raw_dot * i32::from(memory[lookup.start + 1]) + i32::from(memory[lookup.start + 3]),
+            raw_dot * i32::from(memory[lookup.start + 1])
+                + i32::from(memory[lookup.start + 3])
+                + combined_output,
             raw_accumulated * i32::from(memory[lookup.start + 5])
                 + i32::from(memory[lookup.start + 7]),
-            i32::from(memory[lookup.start + 3]) + i32::from(memory[lookup.start + 7]),
+            combined_output,
         ]
         .map(|value| i16::try_from(value).expect("bounded Phase 12 oracle output"))
     }
@@ -3907,7 +3927,7 @@ mod tests {
         for index in query {
             memory[index] = rng.gen_range(-3..=3);
         }
-        memory[lookup].copy_from_slice(&PHASE12_LOOKUP_ROW_VALUES);
+        write_phase12_noncanonical_lookup_seed(&mut memory, lookup);
         memory[position_index] = rng.gen_range(0..=7);
         memory[position_increment_index] = 1;
         memory
@@ -3939,7 +3959,7 @@ mod tests {
                     memory[kv_cache_range].copy_from_slice(&kv_cache);
                     memory[incoming_range].copy_from_slice(&incoming);
                     memory[query_range].copy_from_slice(&query);
-                    memory[lookup_range].copy_from_slice(&PHASE12_LOOKUP_ROW_VALUES);
+                    write_phase12_noncanonical_lookup_seed(&mut memory, lookup_range);
                     memory[position_index] = position;
                     memory[position_increment_index] = 1;
                     (layout, memory)
@@ -4217,6 +4237,26 @@ mod tests {
     }
 
     #[test]
+    fn phase12_template_adds_combined_output_into_primary_output() {
+        let layout = phase12_default_decoding_layout();
+        let output = layout.output_range().expect("output range");
+        let program = decoding_step_v2_template_program(&layout).expect("program");
+        let instructions = program.instructions();
+        let combined_store_index = instructions
+            .iter()
+            .position(|instruction| *instruction == Instruction::Store((output.start + 2) as u8))
+            .expect("combined-output store");
+        assert_eq!(
+            instructions.get(combined_store_index + 1),
+            Some(&Instruction::AddMemory(output.start as u8))
+        );
+        assert_eq!(
+            instructions.get(combined_store_index + 2),
+            Some(&Instruction::Store(output.start as u8))
+        );
+    }
+
+    #[test]
     fn phase12_template_writes_primary_output_into_fourth_cache_lane_when_available() {
         let layout = phase12_default_decoding_layout();
         let latest_cached = layout.latest_cached_pair_range().expect("latest cached");
@@ -4289,7 +4329,7 @@ mod tests {
             for memory in phase12_demo_initial_memories(&layout).expect("memories") {
                 let program =
                     decoding_step_v2_program_with_initial_memory(&layout, memory.clone()).expect("program");
-                let step_limit = decoding_program_step_limit(&program);
+                let step_limit = decoding_program_step_limit(&program).expect("step limit");
                 let mut runtime = NativeInterpreter::new(
                     program,
                     Attention2DMode::AverageHard,
@@ -4366,7 +4406,7 @@ mod tests {
             (layout, memory) in phase12_bounded_memory_strategy(),
         ) {
             let program = decoding_step_v2_program_with_initial_memory(&layout, memory.clone()).expect("program");
-            let step_limit = decoding_program_step_limit(&program);
+            let step_limit = decoding_program_step_limit(&program).expect("step limit");
             let mut runtime = NativeInterpreter::new(
                 program,
                 Attention2DMode::AverageHard,
@@ -4399,7 +4439,7 @@ mod tests {
                 let mut runtime = NativeInterpreter::new(
                     program.clone(),
                     Attention2DMode::AverageHard,
-                    decoding_program_step_limit(&program),
+                    decoding_program_step_limit(&program).expect("step limit"),
                 );
                 let result = runtime.run().expect("run program");
                 assert!(result.halted);
@@ -4408,7 +4448,7 @@ mod tests {
                 let model = ProgramCompiler
                     .compile_program(program, config.clone())
                     .expect("compile");
-                prove_execution_stark_with_backend_and_options(
+                let proof = prove_execution_stark_with_backend_and_options(
                     &model,
                     128,
                     StarkProofBackend::Stwo,
@@ -4420,6 +4460,11 @@ mod tests {
                         layout
                     )
                 });
+                assert_eq!(proof.claim.final_state.memory, expected_final_memory);
+                assert_eq!(
+                    phase12_shared_lookup_rows_from_proof_payload(&proof).expect("lookup rows from proof"),
+                    Some(expected_final_memory[layout.lookup_range().expect("lookup range")].to_vec())
+                );
             }
         }
     }
@@ -4692,7 +4737,7 @@ mod tests {
                 let next = &pair[1];
                 let program =
                     decoding_step_v2_program_with_initial_memory(&layout, current).expect("program");
-                let step_limit = decoding_program_step_limit(&program);
+                let step_limit = decoding_program_step_limit(&program).expect("step limit");
                 let mut runtime = NativeInterpreter::new(
                     program,
                     Attention2DMode::AverageHard,
