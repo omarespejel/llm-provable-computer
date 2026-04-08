@@ -3,6 +3,10 @@ language: en-US
 
 early_access: false
 enable_free_tier: false
+tone_instructions: |
+  Prioritize correctness, security, proof soundness, and regression risk. Avoid
+  style-only remarks and repository-genealogy commentary. Prefer concise,
+  actionable findings with concrete failing-path or tamper-path guidance.
 reviews:
   profile: assertive
   request_changes_workflow: false
@@ -19,10 +23,6 @@ reviews:
   related_prs: false
   suggested_labels: false
   suggested_reviewers: false
-  tone_instructions: |
-    Prioritize correctness, security, proof soundness, and regression risk. Avoid
-    style-only remarks and repository-genealogy commentary. Prefer concise,
-    actionable findings with concrete failing-path or tamper-path guidance.
   auto_review:
     enabled: true
     auto_incremental_review: true
