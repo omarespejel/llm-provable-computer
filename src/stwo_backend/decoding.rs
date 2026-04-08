@@ -1,3 +1,4 @@
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
@@ -416,6 +417,7 @@ fn build_phase12_shared_lookup_artifact_registry(
     layout_commitment: &str,
 ) -> Result<(Vec<Phase12SharedLookupArtifact>, Vec<String>)> {
     let mut artifacts: Vec<Phase12SharedLookupArtifact> = Vec::new();
+    let mut artifact_indexes: HashMap<String, usize> = HashMap::new();
     let mut artifact_refs = Vec::with_capacity(proofs.len());
     for (step_index, proof) in proofs.iter().enumerate() {
         let artifact = phase12_shared_lookup_artifact_from_proof_payload(proof, layout_commitment)?
@@ -424,10 +426,8 @@ fn build_phase12_shared_lookup_artifact_registry(
                     "decoding step {step_index} is missing its Phase 12 shared lookup artifact payload"
                 ))
             })?;
-        if let Some(existing) = artifacts
-            .iter()
-            .find(|existing| existing.artifact_commitment == artifact.artifact_commitment)
-        {
+        if let Some(existing_index) = artifact_indexes.get(&artifact.artifact_commitment) {
+            let existing = &artifacts[*existing_index];
             if existing != &artifact {
                 return Err(VmError::InvalidConfig(format!(
                     "decoding step {step_index} reuses shared lookup artifact commitment `{}` but with different contents",
@@ -435,6 +435,7 @@ fn build_phase12_shared_lookup_artifact_registry(
                 )));
             }
         } else {
+            artifact_indexes.insert(artifact.artifact_commitment.clone(), artifacts.len());
             artifacts.push(artifact.clone());
         }
         artifact_refs.push(artifact.artifact_commitment);
@@ -442,14 +443,60 @@ fn build_phase12_shared_lookup_artifact_registry(
     Ok((artifacts, artifact_refs))
 }
 
-fn shared_lookup_artifact_by_commitment<'a>(
+fn build_phase12_shared_lookup_artifact_index<'a>(
     artifacts: &'a [Phase12SharedLookupArtifact],
+    referenced_commitments: &HashSet<String>,
+    expected_layout_commitment: &str,
+    expected_flattened_lookup_rows_len: usize,
+    registry_label: &str,
+) -> Result<HashMap<String, &'a Phase12SharedLookupArtifact>> {
+    let mut artifact_index = HashMap::with_capacity(artifacts.len());
+    for artifact in artifacts {
+        if artifact.flattened_lookup_rows.len() != expected_flattened_lookup_rows_len {
+            return Err(VmError::InvalidConfig(format!(
+                "{registry_label} artifact `{}` has {} flattened lookup rows; expected {}",
+                artifact.artifact_commitment,
+                artifact.flattened_lookup_rows.len(),
+                expected_flattened_lookup_rows_len
+            )));
+        }
+        if !referenced_commitments.contains(&artifact.artifact_commitment) {
+            return Err(VmError::InvalidConfig(format!(
+                "{registry_label} artifact `{}` is not referenced by any decoding step",
+                artifact.artifact_commitment
+            )));
+        }
+        if artifact_index
+            .insert(artifact.artifact_commitment.clone(), artifact)
+            .is_some()
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "{registry_label} artifact `{}` appears more than once in the manifest registry",
+                artifact.artifact_commitment
+            )));
+        }
+    }
+    if artifact_index.len() != referenced_commitments.len() {
+        let missing = referenced_commitments
+            .iter()
+            .find(|commitment| !artifact_index.contains_key(*commitment))
+            .cloned()
+            .unwrap_or_else(|| "<unknown>".to_string());
+        return Err(VmError::InvalidConfig(format!(
+            "{registry_label} artifact `{missing}` is not present in the manifest registry"
+        )));
+    }
+    for artifact in artifact_index.values() {
+        verify_phase12_shared_lookup_artifact(artifact, expected_layout_commitment)?;
+    }
+    Ok(artifact_index)
+}
+
+fn shared_lookup_artifact_by_commitment<'a>(
+    artifacts: &'a HashMap<String, &'a Phase12SharedLookupArtifact>,
     artifact_commitment: &str,
 ) -> Result<&'a Phase12SharedLookupArtifact> {
-    artifacts
-        .iter()
-        .find(|artifact| artifact.artifact_commitment == artifact_commitment)
-        .ok_or_else(|| {
+    artifacts.get(artifact_commitment).copied().ok_or_else(|| {
             VmError::InvalidConfig(format!(
                 "shared lookup artifact `{artifact_commitment}` is not present in the manifest registry"
             ))
@@ -1009,9 +1056,25 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
             "decoding chain must contain at least one shared lookup artifact".to_string(),
         ));
     }
-    for artifact in &manifest.shared_lookup_artifacts {
-        verify_phase12_shared_lookup_artifact(artifact, &expected_layout_commitment)?;
+    if manifest.shared_lookup_artifacts.len() > manifest.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding chain contains {} shared lookup artifacts for only {} steps",
+            manifest.shared_lookup_artifacts.len(),
+            manifest.steps.len()
+        )));
     }
+    let referenced_artifacts: HashSet<String> = manifest
+        .steps
+        .iter()
+        .map(|step| step.shared_lookup_artifact_commitment.clone())
+        .collect();
+    let shared_lookup_artifacts = build_phase12_shared_lookup_artifact_index(
+        &manifest.shared_lookup_artifacts,
+        &referenced_artifacts,
+        &expected_layout_commitment,
+        manifest.layout.lookup_range()?.len(),
+        "decoding chain shared lookup",
+    )?;
 
     for (step_index, step) in manifest.steps.iter().enumerate() {
         if !matches_decoding_step_v2_family_with_layout(&step.proof.claim.program, &manifest.layout)
@@ -1046,7 +1109,7 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
             )));
         }
         let shared_lookup_artifact = shared_lookup_artifact_by_commitment(
-            &manifest.shared_lookup_artifacts,
+            &shared_lookup_artifacts,
             &step.shared_lookup_artifact_commitment,
         )?;
 
@@ -1345,9 +1408,25 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
             "chunked decoding chain must contain at least one shared lookup artifact".to_string(),
         ));
     }
-    for artifact in &manifest.shared_lookup_artifacts {
-        verify_phase12_shared_lookup_artifact(artifact, &expected_layout_commitment)?;
+    if manifest.shared_lookup_artifacts.len() > manifest.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "chunked decoding chain contains {} shared lookup artifacts for only {} steps",
+            manifest.shared_lookup_artifacts.len(),
+            manifest.steps.len()
+        )));
     }
+    let referenced_artifacts: HashSet<String> = manifest
+        .steps
+        .iter()
+        .map(|step| step.shared_lookup_artifact_commitment.clone())
+        .collect();
+    let shared_lookup_artifacts = build_phase12_shared_lookup_artifact_index(
+        &manifest.shared_lookup_artifacts,
+        &referenced_artifacts,
+        &expected_layout_commitment,
+        manifest.layout.lookup_range()?.len(),
+        "chunked decoding shared lookup",
+    )?;
 
     let mut accumulator: Option<Phase14HistoryAccumulator> = None;
     for (step_index, step) in manifest.steps.iter().enumerate() {
@@ -1371,7 +1450,7 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
             )));
         }
         let shared_lookup_artifact = shared_lookup_artifact_by_commitment(
-            &manifest.shared_lookup_artifacts,
+            &shared_lookup_artifacts,
             &step.shared_lookup_artifact_commitment,
         )?;
 
@@ -3796,6 +3875,11 @@ mod tests {
         ExecutionClaimCommitments, VanillaStarkExecutionClaim,
     };
     use crate::state::MachineState;
+    use crate::stwo_backend::lookup_component::Phase3LookupTableRow;
+    use crate::stwo_backend::{
+        prove_phase10_shared_binary_step_lookup_envelope,
+        prove_phase10_shared_normalization_lookup_envelope,
+    };
     use crate::{ProgramCompiler, TransformerVmConfig};
     use proptest::prelude::*;
     use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -3885,6 +3969,26 @@ mod tests {
 
     fn sample_phase12_proof_payload(layout: &Phase12DecodingLayout, final_memory: &[i16]) -> Vec<u8> {
         let lookup = layout.lookup_range().expect("lookup range");
+        let normalization_envelope =
+            prove_phase10_shared_normalization_lookup_envelope(&[
+                (final_memory[lookup.start] as u16, final_memory[lookup.start + 1] as u16),
+                (
+                    final_memory[lookup.start + 4] as u16,
+                    final_memory[lookup.start + 5] as u16,
+                ),
+            ])
+            .expect("normalization envelope");
+        let activation_envelope = prove_phase10_shared_binary_step_lookup_envelope(&[
+            Phase3LookupTableRow {
+                input: final_memory[lookup.start + 2],
+                output: final_memory[lookup.start + 3] as u8,
+            },
+            Phase3LookupTableRow {
+                input: final_memory[lookup.start + 6],
+                output: final_memory[lookup.start + 7] as u8,
+            },
+        ])
+        .expect("activation envelope");
         serde_json::to_vec(&serde_json::json!({
             "embedded_shared_normalization": {
                 "statement_version": "stwo-shared-normalization-lookup-v1",
@@ -3903,12 +4007,7 @@ mod tests {
                         "expected_inv_sqrt_q8": final_memory[lookup.start + 5]
                     }
                 ],
-                "proof_envelope": {
-                    "claimed_rows": [
-                        [final_memory[lookup.start], final_memory[lookup.start + 1]],
-                        [final_memory[lookup.start + 4], final_memory[lookup.start + 5]]
-                    ]
-                }
+                "proof_envelope": normalization_envelope
             },
             "embedded_shared_activation_lookup": {
                 "statement_version": "stwo-shared-binary-step-lookup-v1",
@@ -3927,18 +4026,7 @@ mod tests {
                         "expected_output": final_memory[lookup.start + 7]
                     }
                 ],
-                "proof_envelope": {
-                    "claimed_rows": [
-                        {
-                            "input": final_memory[lookup.start + 2],
-                            "output": final_memory[lookup.start + 3]
-                        },
-                        {
-                            "input": final_memory[lookup.start + 6],
-                            "output": final_memory[lookup.start + 7]
-                        }
-                    ]
-                }
+                "proof_envelope": activation_envelope
             }
         }))
         .expect("sample proof payload")
@@ -4803,9 +4891,12 @@ mod tests {
         let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
         manifest.steps[1].from_state.persistent_state_commitment = "broken".to_string();
         let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("recorded from_state does not match the proof's initial state"));
+        let message = err.to_string();
+        assert!(
+            message.contains("recorded from_state does not match the proof's initial state")
+                || message.contains("shared lookup artifact"),
+            "unexpected error: {message}"
+        );
     }
 
     #[test]
@@ -4819,9 +4910,12 @@ mod tests {
         let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
         manifest.steps[1].from_state.kv_history_commitment = "broken".to_string();
         let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("recorded from_state does not match the proof's initial state"));
+        let message = err.to_string();
+        assert!(
+            message.contains("recorded from_state does not match the proof's initial state")
+                || message.contains("shared lookup artifact"),
+            "unexpected error: {message}"
+        );
     }
 
     #[test]
@@ -4839,9 +4933,12 @@ mod tests {
             serde_json::json!(0);
         manifest.steps[1].proof.proof = serde_json::to_vec(&payload).expect("payload bytes");
         let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("embedded shared activation rows do not match"));
+        let message = err.to_string();
+        assert!(
+            message.contains("embedded shared activation rows do not match")
+                || message.contains("shared lookup artifact"),
+            "unexpected error: {message}"
+        );
     }
 
     #[test]
@@ -4875,6 +4972,27 @@ mod tests {
     }
 
     #[test]
+    fn phase12_verify_decoding_chain_rejects_unreferenced_shared_lookup_artifact() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        let extra_artifact = manifest.shared_lookup_artifacts[0].clone();
+        manifest.shared_lookup_artifacts.push(extra_artifact);
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        let message = err.to_string();
+        assert!(
+            message.contains("contains 4 shared lookup artifacts for only 3 steps")
+                || message.contains("is not referenced by any decoding step")
+                || message.contains("appears more than once"),
+            "unexpected error: {message}"
+        );
+    }
+
+    #[test]
     fn phase12_verify_decoding_chain_rejects_wrong_shared_lookup_artifact_reference() {
         let layout = phase12_default_decoding_layout();
         let memories = phase12_demo_initial_memories(&layout).expect("memories");
@@ -4888,6 +5006,26 @@ mod tests {
         assert!(err
             .to_string()
             .contains("is not present in the manifest registry"));
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_duplicate_shared_lookup_artifact_commitment() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        let duplicate = manifest.shared_lookup_artifacts[0].clone();
+        manifest.shared_lookup_artifacts.push(duplicate);
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        let message = err.to_string();
+        assert!(
+            message.contains("appears more than once")
+                || message.contains("is not referenced by any decoding step"),
+            "unexpected error: {message}"
+        );
     }
 
     #[test]

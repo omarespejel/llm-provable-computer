@@ -1031,9 +1031,10 @@ pub(crate) fn phase12_shared_lookup_artifact_from_proof_payload(
             )
         })?;
     let normalization: EmbeddedSharedNormalizationProof =
-        serde_json::from_value(normalization_value)
+        serde_json::from_value(normalization_value.clone())
             .map_err(|error| VmError::Serialization(error.to_string()))?;
-    let activation: EmbeddedSharedActivationLookupProof = serde_json::from_value(activation_value)
+    let activation: EmbeddedSharedActivationLookupProof =
+        serde_json::from_value(activation_value.clone())
         .map_err(|error| VmError::Serialization(error.to_string()))?;
 
     let expected_norm_rows =
@@ -1142,8 +1143,8 @@ pub(crate) fn phase12_shared_lookup_artifact_from_proof_payload(
     Ok(Some(build_phase12_shared_lookup_artifact(
         layout_commitment,
         lookup_rows,
-        normalization.proof_envelope,
-        activation.proof_envelope,
+        normalization_value,
+        activation_value,
     )?))
 }
 

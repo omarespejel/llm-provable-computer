@@ -6,10 +6,11 @@ use serde_json::Value;
 
 use super::lookup_prover::{
     verify_phase10_shared_binary_step_lookup_envelope, Phase10SharedLookupProofEnvelope,
+    STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10,
 };
 use super::normalization_prover::{
     verify_phase10_shared_normalization_lookup_envelope,
-    Phase10SharedNormalizationLookupProofEnvelope,
+    Phase10SharedNormalizationLookupProofEnvelope, STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10,
 };
 use super::{Phase3LookupTableRow, STWO_DECODING_STATE_VERSION_PHASE12};
 use crate::error::{Result, VmError};
@@ -18,6 +19,42 @@ pub const STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12: &str =
     "stwo-phase12-shared-lookup-artifact-v1";
 pub const STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12: &str =
     "stwo_parameterized_decoding_shared_lookup_artifact";
+const DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE: &str =
+    "stwo_decoding_step_v2_execution_with_shared_normalization_lookup";
+const DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE: &str =
+    "stwo_decoding_step_v2_execution_with_shared_binary_step_lookup";
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+struct EmbeddedSharedNormalizationClaimRow {
+    norm_sq_memory_index: u8,
+    inv_sqrt_q8_memory_index: u8,
+    expected_norm_sq: i16,
+    expected_inv_sqrt_q8: i16,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+struct EmbeddedSharedNormalizationProof {
+    statement_version: String,
+    semantic_scope: String,
+    claimed_rows: Vec<EmbeddedSharedNormalizationClaimRow>,
+    proof_envelope: Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+struct EmbeddedSharedActivationClaimRow {
+    input_memory_index: u8,
+    output_memory_index: u8,
+    expected_input: i16,
+    expected_output: i16,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+struct EmbeddedSharedActivationLookupProof {
+    statement_version: String,
+    semantic_scope: String,
+    claimed_rows: Vec<EmbeddedSharedActivationClaimRow>,
+    proof_envelope: Value,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase12SharedLookupArtifact {
@@ -144,32 +181,51 @@ pub fn verify_phase12_shared_lookup_artifact(
                 .to_string(),
         ));
     }
-    let normalization_rows: Vec<(u16, u16)> = serde_json::from_value(
-        artifact
-            .normalization_proof_envelope
-            .get("claimed_rows")
-            .cloned()
-            .ok_or_else(|| {
-                VmError::InvalidConfig(
-                    "Phase 12 shared lookup artifact normalization envelope is missing claimed_rows"
-                        .to_string(),
-                )
-            })?,
-    )
-    .map_err(|error| VmError::Serialization(error.to_string()))?;
-    let activation_rows: Vec<Phase3LookupTableRow> = serde_json::from_value(
-        artifact
-            .activation_proof_envelope
-            .get("claimed_rows")
-            .cloned()
-            .ok_or_else(|| {
-                VmError::InvalidConfig(
-                    "Phase 12 shared lookup artifact activation envelope is missing claimed_rows"
-                        .to_string(),
-                )
-            })?,
-    )
-    .map_err(|error| VmError::Serialization(error.to_string()))?;
+    let normalization_wrapper: EmbeddedSharedNormalizationProof =
+        serde_json::from_value(artifact.normalization_proof_envelope.clone())
+            .map_err(|error| VmError::Serialization(error.to_string()))?;
+    if normalization_wrapper.statement_version != STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 12 shared lookup artifact normalization statement version `{}`",
+            normalization_wrapper.statement_version
+        )));
+    }
+    if normalization_wrapper.semantic_scope != DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 12 shared lookup artifact normalization scope `{}`",
+            normalization_wrapper.semantic_scope
+        )));
+    }
+    let normalization_rows: Vec<(u16, u16)> = normalization_wrapper
+        .claimed_rows
+        .iter()
+        .map(|row| (row.expected_norm_sq as u16, row.expected_inv_sqrt_q8 as u16))
+        .collect();
+
+    let activation_wrapper: EmbeddedSharedActivationLookupProof =
+        serde_json::from_value(artifact.activation_proof_envelope.clone())
+            .map_err(|error| VmError::Serialization(error.to_string()))?;
+    if activation_wrapper.statement_version != STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 12 shared lookup artifact activation statement version `{}`",
+            activation_wrapper.statement_version
+        )));
+    }
+    if activation_wrapper.semantic_scope != DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 12 shared lookup artifact activation scope `{}`",
+            activation_wrapper.semantic_scope
+        )));
+    }
+    let activation_rows: Vec<Phase3LookupTableRow> = activation_wrapper
+        .claimed_rows
+        .iter()
+        .map(|row| Phase3LookupTableRow {
+            input: row.expected_input,
+            output: row.expected_output as u8,
+        })
+        .collect();
     if normalization_rows.len() != activation_rows.len() {
         return Err(VmError::InvalidConfig(format!(
             "Phase 12 shared lookup artifact row counts disagree: normalization={}, activation={}",
@@ -203,16 +259,28 @@ pub fn verify_phase12_shared_lookup_artifact(
         ));
     }
     let normalization_envelope: Phase10SharedNormalizationLookupProofEnvelope =
-        serde_json::from_value(artifact.normalization_proof_envelope.clone())
+        serde_json::from_value(normalization_wrapper.proof_envelope)
             .map_err(|error| VmError::Serialization(error.to_string()))?;
+    if normalization_envelope.claimed_rows != normalization_rows {
+        return Err(VmError::InvalidConfig(
+            "Phase 12 shared lookup artifact normalization wrapper rows do not match the embedded proof envelope"
+                .to_string(),
+        ));
+    }
     if !verify_phase10_shared_normalization_lookup_envelope(&normalization_envelope)? {
         return Err(VmError::UnsupportedProof(
             "Phase 12 shared lookup artifact normalization proof did not verify".to_string(),
         ));
     }
     let activation_envelope: Phase10SharedLookupProofEnvelope =
-        serde_json::from_value(artifact.activation_proof_envelope.clone())
+        serde_json::from_value(activation_wrapper.proof_envelope)
             .map_err(|error| VmError::Serialization(error.to_string()))?;
+    if activation_envelope.claimed_rows != activation_rows {
+        return Err(VmError::InvalidConfig(
+            "Phase 12 shared lookup artifact activation wrapper rows do not match the embedded proof envelope"
+                .to_string(),
+        ));
+    }
     if !verify_phase10_shared_binary_step_lookup_envelope(&activation_envelope)? {
         return Err(VmError::UnsupportedProof(
             "Phase 12 shared lookup artifact activation proof did not verify".to_string(),
@@ -252,11 +320,49 @@ mod tests {
         let activation_envelope =
             prove_phase10_shared_binary_step_lookup_envelope(&activation_rows)
                 .expect("activation envelope");
+        let normalization_wrapper = serde_json::json!({
+            "statement_version": STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10,
+            "semantic_scope": DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE,
+            "claimed_rows": [
+                {
+                    "norm_sq_memory_index": 16,
+                    "inv_sqrt_q8_memory_index": 17,
+                    "expected_norm_sq": 16,
+                    "expected_inv_sqrt_q8": 64
+                },
+                {
+                    "norm_sq_memory_index": 18,
+                    "inv_sqrt_q8_memory_index": 19,
+                    "expected_norm_sq": 4,
+                    "expected_inv_sqrt_q8": 128
+                }
+            ],
+            "proof_envelope": normalization_envelope
+        });
+        let activation_wrapper = serde_json::json!({
+            "statement_version": STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10,
+            "semantic_scope": DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE,
+            "claimed_rows": [
+                {
+                    "input_memory_index": 20,
+                    "output_memory_index": 21,
+                    "expected_input": 1,
+                    "expected_output": 1
+                },
+                {
+                    "input_memory_index": 22,
+                    "output_memory_index": 23,
+                    "expected_input": 0,
+                    "expected_output": 1
+                }
+            ],
+            "proof_envelope": activation_envelope
+        });
         let artifact = build_phase12_shared_lookup_artifact(
             "layout-commitment",
             vec![16, 64, 1, 1, 4, 128, 0, 1],
-            serde_json::to_value(normalization_envelope).expect("normalization value"),
-            serde_json::to_value(activation_envelope).expect("activation value"),
+            normalization_wrapper,
+            activation_wrapper,
         )
         .expect("artifact");
 
@@ -278,11 +384,49 @@ mod tests {
             prove_phase10_shared_binary_step_lookup_envelope(&activation_rows)
                 .expect("activation envelope");
         activation_envelope.proof[0] ^= 0x01;
+        let normalization_wrapper = serde_json::json!({
+            "statement_version": STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10,
+            "semantic_scope": DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE,
+            "claimed_rows": [
+                {
+                    "norm_sq_memory_index": 16,
+                    "inv_sqrt_q8_memory_index": 17,
+                    "expected_norm_sq": 16,
+                    "expected_inv_sqrt_q8": 64
+                },
+                {
+                    "norm_sq_memory_index": 18,
+                    "inv_sqrt_q8_memory_index": 19,
+                    "expected_norm_sq": 4,
+                    "expected_inv_sqrt_q8": 128
+                }
+            ],
+            "proof_envelope": normalization_envelope
+        });
+        let activation_wrapper = serde_json::json!({
+            "statement_version": STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10,
+            "semantic_scope": DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE,
+            "claimed_rows": [
+                {
+                    "input_memory_index": 20,
+                    "output_memory_index": 21,
+                    "expected_input": 1,
+                    "expected_output": 1
+                },
+                {
+                    "input_memory_index": 22,
+                    "output_memory_index": 23,
+                    "expected_input": 0,
+                    "expected_output": 1
+                }
+            ],
+            "proof_envelope": activation_envelope
+        });
         let artifact = build_phase12_shared_lookup_artifact(
             "layout-commitment",
             vec![16, 64, 1, 1, 4, 128, 0, 1],
-            serde_json::to_value(normalization_envelope).expect("normalization value"),
-            serde_json::to_value(activation_envelope).expect("activation value"),
+            normalization_wrapper,
+            activation_wrapper,
         )
         .expect("artifact");
 
