@@ -393,6 +393,12 @@ mod tests {
     use crate::stwo_backend::lookup_prover::prove_phase10_shared_binary_step_lookup_envelope;
     use crate::stwo_backend::normalization_prover::prove_phase10_shared_normalization_lookup_envelope;
 
+    const ORACLE_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12: &str =
+        "stwo-phase12-shared-lookup-artifact-v1";
+    const ORACLE_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12: &str =
+        "stwo_parameterized_decoding_shared_lookup_artifact";
+    const ORACLE_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v11";
+
     fn oracle_lower_hex(bytes: &[u8]) -> String {
         const HEX: &[u8; 16] = b"0123456789abcdef";
         let mut out = String::with_capacity(bytes.len() * 2);
@@ -420,7 +426,7 @@ mod tests {
         flattened_lookup_rows: &[i16],
     ) -> String {
         let mut parts = vec![
-            STWO_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
+            ORACLE_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
             layout_commitment.as_bytes().to_vec(),
             b"lookup-rows".to_vec(),
         ];
@@ -442,7 +448,7 @@ mod tests {
         let activation_json =
             serde_json::to_vec(activation_proof_envelope).expect("activation json");
         oracle_blake2b_256(&[
-            STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12
+            ORACLE_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12
                 .as_bytes()
                 .to_vec(),
             layout_commitment.as_bytes().to_vec(),
@@ -468,13 +474,13 @@ mod tests {
                 expected_layout_commitment, computed_layout_commitment
             )));
         }
-        if artifact.artifact_version != STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12 {
+        if artifact.artifact_version != ORACLE_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12 {
             return Err(VmError::InvalidConfig(format!(
                 "unsupported Phase 12 shared lookup artifact version `{}`",
                 artifact.artifact_version
             )));
         }
-        if artifact.semantic_scope != STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12 {
+        if artifact.semantic_scope != ORACLE_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12 {
             return Err(VmError::InvalidConfig(format!(
                 "unsupported Phase 12 shared lookup artifact scope `{}`",
                 artifact.semantic_scope
@@ -1068,7 +1074,13 @@ mod tests {
             ),
         )
         .expect("artifact");
-        artifact.activation_proof_envelope.proof_envelope.proof[0] ^= 0x01;
+        let byte = artifact
+            .activation_proof_envelope
+            .proof_envelope
+            .proof
+            .first_mut()
+            .expect("activation proof must contain at least one byte");
+        *byte ^= 0x01;
         artifact.artifact_commitment = oracle_commit_phase12_shared_lookup_artifact(
             &layout_commitment,
             &artifact.flattened_lookup_rows,
