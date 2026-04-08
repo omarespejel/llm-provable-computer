@@ -146,8 +146,13 @@ jobs:
       - name: Install cargo-fuzz
         run: cargo +nightly-2025-07-14 install cargo-fuzz --locked
 
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Regenerate fuzz corpus
         run: python3 scripts/fuzz/generate_decoding_fuzz_corpus.py
 
       - name: Run fuzz smoke
-        run: cargo +nightly-2025-07-14 fuzz run ${{ matrix.target }} ${{ matrix.corpus }} --sanitizer none -- -runs=32
+        run: cargo +nightly-2025-07-14 fuzz run ${{ matrix.target }} ${{ matrix.corpus }} -- -runs=32
