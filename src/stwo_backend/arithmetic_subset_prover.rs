@@ -495,6 +495,15 @@ pub(crate) fn verify_phase5_arithmetic_subset(proof: &VanillaStarkExecutionProof
         )));
     }
     validate_phase5_claim(&proof.claim)?;
+    if matches_decoding_step_v2(&proof.claim.program)
+        && proof.proof.len() > MAX_DECODING_PROOF_PAYLOAD_BYTES
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding_step_v2 proof payload is {} bytes, exceeding the limit of {} bytes",
+            proof.proof.len(),
+            MAX_DECODING_PROOF_PAYLOAD_BYTES
+        )));
+    }
     let state_trace = reconstruct_state_trace_from_claim(&proof.claim)?;
     let trace_bundle = build_trace_bundle(&proof.claim.program, &state_trace)?;
     let component = arithmetic_subset_component(
@@ -2538,6 +2547,7 @@ mod tests {
         decoding_step_v2_program_with_initial_memory, phase12_default_decoding_layout,
         phase12_demo_initial_memories,
     };
+    use crate::{production_v1_stark_options, prove_execution_stark_with_backend_and_options};
     use crate::{ProgramCompiler, TransformerVmConfig};
     use std::panic::{catch_unwind, AssertUnwindSafe};
     use stwo::core::pcs::utils::TreeVec;
@@ -2882,6 +2892,39 @@ mod tests {
                 "step {step_index} is not recognized as decoding_step_v2-family"
             );
         }
+    }
+
+    #[test]
+    fn phase12_verify_phase5_rejects_oversized_decoding_payload_before_deserialization() {
+        let layout = phase12_default_decoding_layout();
+        let initial_memory = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .next()
+            .expect("seed memory");
+        let program =
+            decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
+        let model = ProgramCompiler
+            .compile_program(
+                program,
+                TransformerVmConfig {
+                    num_layers: 1,
+                    attention_mode: Attention2DMode::AverageHard,
+                    ..TransformerVmConfig::default()
+                },
+            )
+            .expect("compile");
+        let mut proof = prove_execution_stark_with_backend_and_options(
+            &model,
+            128,
+            StarkProofBackend::Stwo,
+            production_v1_stark_options(),
+        )
+        .expect("real stwo proof");
+        proof.proof = vec![0; MAX_DECODING_PROOF_PAYLOAD_BYTES + 1];
+
+        let err = verify_phase5_arithmetic_subset(&proof).expect_err("oversized payload");
+        assert!(err.to_string().contains("exceeding the limit"));
     }
 
     #[test]
