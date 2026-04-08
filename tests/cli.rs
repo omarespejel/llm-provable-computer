@@ -13,10 +13,8 @@ use predicates::prelude::*;
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::stwo_backend::{
     STWO_BACKEND_VERSION_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE12,
-    STWO_DECODING_CHAIN_VERSION_PHASE14,
-    STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13,
-    STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17,
-    STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15,
+    STWO_DECODING_CHAIN_VERSION_PHASE14, STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13,
+    STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17, STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15,
     STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16,
 };
 
@@ -1288,7 +1286,11 @@ fn cli_verify_stwo_decoding_family_demo_rejects_missing_shared_lookup_artifact()
         .iter()
         .filter_map(|artifact| artifact["artifact_commitment"].as_str().map(str::to_string))
         .collect();
-    if artifact_commitments.len() > 1 {
+    let original_commitment = wrong_ref_json["steps"][0]["shared_lookup_artifact_commitment"]
+        .as_str()
+        .expect("original shared lookup artifact commitment")
+        .to_string();
+    if artifact_commitments.len() > 1 && artifact_commitments[1] != original_commitment {
         wrong_ref_json["steps"][0]["shared_lookup_artifact_commitment"] =
             serde_json::Value::String(artifact_commitments[1].clone());
     } else {
@@ -1307,8 +1309,8 @@ fn cli_verify_stwo_decoding_family_demo_rejects_missing_shared_lookup_artifact()
         .arg(&wrong_ref_path)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("shared lookup artifact").or(
-            predicate::str::contains("is not present in the manifest registry"),
+        .stderr(predicate::str::contains(
+            "is not present in the manifest registry",
         ));
 
     let _ = std::fs::remove_file(proof_path);
@@ -1755,8 +1757,8 @@ fn cli_verify_stwo_decoding_history_rollup_demo_rejects_tampered_rollup_start() 
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_can_prove_and_verify_stwo_decoding_history_rollup_matrix_demo() {
-    let proof_path = unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-proof")
-        .with_extension("json");
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-proof").with_extension("json");
 
     let mut prove = Command::cargo_bin("tvm").expect("binary");
     prove
@@ -1801,10 +1803,10 @@ fn cli_can_prove_and_verify_stwo_decoding_history_rollup_matrix_demo() {
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_verify_stwo_decoding_history_rollup_matrix_demo_rejects_tampered_total_rollups() {
-    let proof_path = unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-tamper")
-        .with_extension("json");
-    let tampered_path = unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-tampered")
-        .with_extension("json");
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-tamper").with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-tampered").with_extension("json");
 
     let mut prove = Command::cargo_bin("tvm").expect("binary");
     prove

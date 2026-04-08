@@ -31,23 +31,20 @@ use llm_provable_computer::{export_program_onnx, OnnxExecutionRuntime};
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::{
     load_phase10_shared_binary_step_lookup_proof, load_phase10_shared_normalization_lookup_proof,
-    load_phase11_decoding_chain, load_phase12_decoding_chain,
-    load_phase13_decoding_layout_matrix, load_phase14_decoding_chain,
-    load_phase15_decoding_segment_bundle, load_phase16_decoding_segment_rollup,
-    load_phase17_decoding_rollup_matrix,
-    load_phase3_binary_step_lookup_proof,
-    load_phase5_normalization_lookup_proof, prove_phase10_shared_binary_step_lookup_envelope,
+    load_phase11_decoding_chain, load_phase12_decoding_chain, load_phase13_decoding_layout_matrix,
+    load_phase14_decoding_chain, load_phase15_decoding_segment_bundle,
+    load_phase16_decoding_segment_rollup, load_phase17_decoding_rollup_matrix,
+    load_phase3_binary_step_lookup_proof, load_phase5_normalization_lookup_proof,
+    prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
     prove_phase12_decoding_demo, prove_phase13_decoding_layout_matrix_demo,
-    prove_phase14_decoding_demo, prove_phase15_decoding_demo,
-    prove_phase16_decoding_demo, prove_phase17_decoding_rollup_matrix_demo,
-    prove_phase3_binary_step_lookup_demo_envelope,
+    prove_phase14_decoding_demo, prove_phase15_decoding_demo, prove_phase16_decoding_demo,
+    prove_phase17_decoding_rollup_matrix_demo, prove_phase3_binary_step_lookup_demo_envelope,
     prove_phase5_normalization_lookup_demo_envelope, save_phase10_shared_binary_step_lookup_proof,
     save_phase10_shared_normalization_lookup_proof, save_phase11_decoding_chain,
     save_phase12_decoding_chain, save_phase13_decoding_layout_matrix, save_phase14_decoding_chain,
     save_phase15_decoding_segment_bundle, save_phase16_decoding_segment_rollup,
-    save_phase17_decoding_rollup_matrix,
-    save_phase3_binary_step_lookup_proof,
+    save_phase17_decoding_rollup_matrix, save_phase3_binary_step_lookup_proof,
     save_phase5_normalization_lookup_proof, stwo_backend_enabled,
     verify_phase10_shared_binary_step_lookup_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
@@ -59,17 +56,17 @@ use llm_provable_computer::{
     verify_phase16_decoding_segment_rollup_with_proof_checks,
     verify_phase17_decoding_rollup_matrix_with_proof_checks,
     verify_phase3_binary_step_lookup_demo_envelope,
-    verify_phase5_normalization_lookup_demo_envelope, STWO_DECODING_CHAIN_SCOPE_PHASE11,
-    STWO_DECODING_CHAIN_SCOPE_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE11,
-    STWO_DECODING_CHAIN_SCOPE_PHASE14, STWO_DECODING_CHAIN_VERSION_PHASE12,
-    STWO_DECODING_CHAIN_VERSION_PHASE14, STWO_LOOKUP_PROOF_VERSION_PHASE3,
-    STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
-    STWO_NORMALIZATION_PROOF_VERSION_PHASE5, STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5,
-    STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5, STWO_BACKEND_VERSION_PHASE12,
+    verify_phase5_normalization_lookup_demo_envelope, STWO_BACKEND_VERSION_PHASE12,
+    STWO_DECODING_CHAIN_SCOPE_PHASE11, STWO_DECODING_CHAIN_SCOPE_PHASE12,
+    STWO_DECODING_CHAIN_SCOPE_PHASE14, STWO_DECODING_CHAIN_VERSION_PHASE11,
+    STWO_DECODING_CHAIN_VERSION_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE14,
     STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13, STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13,
+    STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17, STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17,
     STWO_DECODING_SEGMENT_BUNDLE_SCOPE_PHASE15, STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15,
     STWO_DECODING_SEGMENT_ROLLUP_SCOPE_PHASE16, STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16,
-    STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17, STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17,
+    STWO_LOOKUP_PROOF_VERSION_PHASE3, STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3,
+    STWO_LOOKUP_STATEMENT_VERSION_PHASE3, STWO_NORMALIZATION_PROOF_VERSION_PHASE5,
+    STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5, STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
 };
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
@@ -1860,7 +1857,10 @@ fn prove_stwo_decoding_chunked_history_demo_command(
         println!("rolling_kv_pairs: {}", manifest.layout.rolling_kv_pairs);
         println!("pair_width: {}", manifest.layout.pair_width);
         if let Some(first) = manifest.steps.first() {
-            println!("start_history_length: {}", first.from_state.kv_history_length);
+            println!(
+                "start_history_length: {}",
+                first.from_state.kv_history_length
+            );
             println!(
                 "start_sealed_chunks: {}",
                 first.from_state.kv_history_sealed_chunks
@@ -1872,7 +1872,10 @@ fn prove_stwo_decoding_chunked_history_demo_command(
         }
         if let Some(last) = manifest.steps.last() {
             println!("final_history_length: {}", last.to_state.kv_history_length);
-            println!("final_sealed_chunks: {}", last.to_state.kv_history_sealed_chunks);
+            println!(
+                "final_sealed_chunks: {}",
+                last.to_state.kv_history_sealed_chunks
+            );
             println!(
                 "final_open_chunk_pairs: {}",
                 last.to_state.kv_history_open_chunk_pairs
@@ -1920,7 +1923,10 @@ fn verify_stwo_decoding_chunked_history_demo_command(
         println!("rolling_kv_pairs: {}", manifest.layout.rolling_kv_pairs);
         println!("pair_width: {}", manifest.layout.pair_width);
         if let Some(first) = manifest.steps.first() {
-            println!("start_history_length: {}", first.from_state.kv_history_length);
+            println!(
+                "start_history_length: {}",
+                first.from_state.kv_history_length
+            );
             println!(
                 "start_sealed_chunks: {}",
                 first.from_state.kv_history_sealed_chunks
@@ -1932,7 +1938,10 @@ fn verify_stwo_decoding_chunked_history_demo_command(
         }
         if let Some(last) = manifest.steps.last() {
             println!("final_history_length: {}", last.to_state.kv_history_length);
-            println!("final_sealed_chunks: {}", last.to_state.kv_history_sealed_chunks);
+            println!(
+                "final_sealed_chunks: {}",
+                last.to_state.kv_history_sealed_chunks
+            );
             println!(
                 "final_open_chunk_pairs: {}",
                 last.to_state.kv_history_open_chunk_pairs
@@ -1984,13 +1993,19 @@ fn prove_stwo_decoding_history_segments_demo_command(
         println!("rolling_kv_pairs: {}", manifest.layout.rolling_kv_pairs);
         println!("pair_width: {}", manifest.layout.pair_width);
         if let Some(first) = manifest.segments.first() {
-            println!("first_segment_start_step: {}", first.global_start_step_index);
+            println!(
+                "first_segment_start_step: {}",
+                first.global_start_step_index
+            );
             println!("first_segment_steps: {}", first.total_steps);
         }
         if let Some(last) = manifest.segments.last() {
             println!("last_segment_start_step: {}", last.global_start_step_index);
             println!("last_segment_steps: {}", last.total_steps);
-            println!("final_history_length: {}", last.global_to_state.kv_history_length);
+            println!(
+                "final_history_length: {}",
+                last.global_to_state.kv_history_length
+            );
             println!(
                 "final_sealed_chunks: {}",
                 last.global_to_state.kv_history_sealed_chunks
@@ -2044,13 +2059,19 @@ fn verify_stwo_decoding_history_segments_demo_command(
         println!("rolling_kv_pairs: {}", manifest.layout.rolling_kv_pairs);
         println!("pair_width: {}", manifest.layout.pair_width);
         if let Some(first) = manifest.segments.first() {
-            println!("first_segment_start_step: {}", first.global_start_step_index);
+            println!(
+                "first_segment_start_step: {}",
+                first.global_start_step_index
+            );
             println!("first_segment_steps: {}", first.total_steps);
         }
         if let Some(last) = manifest.segments.last() {
             println!("last_segment_start_step: {}", last.global_start_step_index);
             println!("last_segment_steps: {}", last.total_steps);
-            println!("final_history_length: {}", last.global_to_state.kv_history_length);
+            println!(
+                "final_history_length: {}",
+                last.global_to_state.kv_history_length
+            );
             println!(
                 "final_sealed_chunks: {}",
                 last.global_to_state.kv_history_sealed_chunks
@@ -2098,7 +2119,10 @@ fn prove_stwo_decoding_history_rollup_demo_command(
         if let Some(last) = manifest.rollups.last() {
             println!("last_rollup_start_step: {}", last.global_start_step_index);
             println!("last_rollup_segments: {}", last.total_segments);
-            println!("final_history_length: {}", last.global_to_state.kv_history_length);
+            println!(
+                "final_history_length: {}",
+                last.global_to_state.kv_history_length
+            );
             println!(
                 "final_sealed_chunks: {}",
                 last.global_to_state.kv_history_sealed_chunks
@@ -2162,7 +2186,10 @@ fn verify_stwo_decoding_history_rollup_demo_command(
         if let Some(last) = manifest.rollups.last() {
             println!("last_rollup_start_step: {}", last.global_start_step_index);
             println!("last_rollup_segments: {}", last.total_segments);
-            println!("final_history_length: {}", last.global_to_state.kv_history_length);
+            println!(
+                "final_history_length: {}",
+                last.global_to_state.kv_history_length
+            );
             println!(
                 "final_sealed_chunks: {}",
                 last.global_to_state.kv_history_sealed_chunks
