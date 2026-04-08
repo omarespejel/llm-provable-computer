@@ -115,3 +115,38 @@ jobs:
 
       - name: Generate research v2 matrix semantic artifact
         run: cargo run --features onnx-export --bin tvm -- research-v2-matrix -o compiled/research-v2-matrix.json --program programs/addition.tvm --program programs/counter.tvm --max-steps 8
+
+  fuzz-smoke:
+    name: fuzz smoke (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: phase12_decoding_manifest
+            corpus: fuzz/corpus/phase12_decoding_manifest
+          - target: phase14_decoding_manifest
+            corpus: fuzz/corpus/phase14_decoding_manifest
+          - target: phase12_shared_lookup_artifact
+            corpus: fuzz/corpus/phase12_shared_lookup_artifact
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2025-07-14
+
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-fuzz
+        run: cargo +nightly-2025-07-14 install cargo-fuzz --locked
+
+      - name: Regenerate fuzz corpus
+        run: python3 scripts/fuzz/generate_decoding_fuzz_corpus.py
+
+      - name: Run fuzz smoke
+        run: cargo +nightly-2025-07-14 fuzz run ${{ matrix.target }} ${{ matrix.corpus }} --sanitizer none -- -runs=32

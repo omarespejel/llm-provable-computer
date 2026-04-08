@@ -8,6 +8,9 @@ readme = "README.md"
 keywords = ["transformer", "vm", "attention", "compiler", "rust"]
 categories = ["compilers", "algorithms", "science"]
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+
 [[bin]]
 name = "tvm"
 path = "src/bin/tvm.rs"
