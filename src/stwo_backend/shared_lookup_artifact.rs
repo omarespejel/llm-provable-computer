@@ -24,6 +24,14 @@ pub(crate) const DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE: &str =
 pub(crate) const DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE: &str =
     "stwo_decoding_step_v2_execution_with_shared_binary_step_lookup";
 
+fn checked_lookup_index(index: usize, label: &str) -> Result<u8> {
+    u8::try_from(index).map_err(|_| {
+        VmError::InvalidConfig(format!(
+            "Phase 12 shared lookup artifact {label} index {index} exceeds the u8 memory-address limit"
+        ))
+    })
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct EmbeddedSharedNormalizationClaimRow {
     pub(crate) norm_sq_memory_index: u8,
@@ -217,8 +225,14 @@ pub fn verify_phase12_shared_lookup_artifact(
         .collect();
     let lookup = layout.lookup_range()?;
     let expected_normalization_indices = [
-        (lookup.start as u8, (lookup.start + 1) as u8),
-        ((lookup.start + 4) as u8, (lookup.start + 5) as u8),
+        (
+            checked_lookup_index(lookup.start, "normalization input")?,
+            checked_lookup_index(lookup.start + 1, "normalization inverse output")?,
+        ),
+        (
+            checked_lookup_index(lookup.start + 4, "normalization input")?,
+            checked_lookup_index(lookup.start + 5, "normalization inverse output")?,
+        ),
     ];
     if normalization_wrapper.claimed_rows.len() != expected_normalization_indices.len() {
         return Err(VmError::InvalidConfig(format!(
@@ -280,8 +294,14 @@ pub fn verify_phase12_shared_lookup_artifact(
         })
         .collect::<Result<_>>()?;
     let expected_activation_indices = [
-        ((lookup.start + 2) as u8, (lookup.start + 3) as u8),
-        ((lookup.start + 6) as u8, (lookup.start + 7) as u8),
+        (
+            checked_lookup_index(lookup.start + 2, "activation input")?,
+            checked_lookup_index(lookup.start + 3, "activation output")?,
+        ),
+        (
+            checked_lookup_index(lookup.start + 6, "activation input")?,
+            checked_lookup_index(lookup.start + 7, "activation output")?,
+        ),
     ];
     if activation_wrapper.claimed_rows.len() != expected_activation_indices.len() {
         return Err(VmError::InvalidConfig(format!(
@@ -519,8 +539,14 @@ mod tests {
 
         let lookup = layout.lookup_range()?;
         let expected_norm_indices = [
-            (lookup.start as u8, (lookup.start + 1) as u8),
-            ((lookup.start + 4) as u8, (lookup.start + 5) as u8),
+            (
+                checked_lookup_index(lookup.start, "normalization input")?,
+                checked_lookup_index(lookup.start + 1, "normalization inverse output")?,
+            ),
+            (
+                checked_lookup_index(lookup.start + 4, "normalization input")?,
+                checked_lookup_index(lookup.start + 5, "normalization inverse output")?,
+            ),
         ];
         let normalization_wrapper = &artifact.normalization_proof_envelope;
         if normalization_wrapper.statement_version
@@ -594,8 +620,14 @@ mod tests {
         }
 
         let expected_activation_indices = [
-            ((lookup.start + 2) as u8, (lookup.start + 3) as u8),
-            ((lookup.start + 6) as u8, (lookup.start + 7) as u8),
+            (
+                checked_lookup_index(lookup.start + 2, "activation input")?,
+                checked_lookup_index(lookup.start + 3, "activation output")?,
+            ),
+            (
+                checked_lookup_index(lookup.start + 6, "activation input")?,
+                checked_lookup_index(lookup.start + 7, "activation output")?,
+            ),
         ];
         let activation_wrapper = &artifact.activation_proof_envelope;
         if activation_wrapper.statement_version != STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10 {
@@ -716,7 +748,8 @@ mod tests {
             semantic_scope: DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE.to_string(),
             claimed_rows: vec![
                 EmbeddedSharedNormalizationClaimRow {
-                    norm_sq_memory_index: lookup.start as u8,
+                    norm_sq_memory_index: checked_lookup_index(lookup.start, "normalization input")
+                        .expect("normalization input fits in u8"),
                     inv_sqrt_q8_memory_index: (lookup.start + 1) as u8,
                     expected_norm_sq: 16,
                     expected_inv_sqrt_q8: 64,

@@ -15,6 +15,7 @@ use crate::interpreter::NativeInterpreter;
 use crate::proof::{
     production_v1_stark_options, prove_execution_stark_with_backend_and_options,
     verify_execution_stark, StarkProofBackend, VanillaStarkExecutionProof,
+    CLAIM_SEMANTIC_SCOPE_V1,
 };
 use crate::stwo_backend::{
     arithmetic_subset_prover::{
@@ -1080,7 +1081,7 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
         manifest.layout.lookup_range()?.len(),
         "decoding chain shared lookup",
     )?;
-    let expected_step_semantic_scope = manifest.steps[0].proof.claim.semantic_scope.clone();
+    let expected_step_semantic_scope = CLAIM_SEMANTIC_SCOPE_V1;
 
     for (step_index, step) in manifest.steps.iter().enumerate() {
         if !matches_decoding_step_v2_family_with_layout(&step.proof.claim.program, &manifest.layout)
@@ -1460,7 +1461,7 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
         manifest.layout.lookup_range()?.len(),
         "chunked decoding shared lookup",
     )?;
-    let expected_step_semantic_scope = manifest.steps[0].proof.claim.semantic_scope.clone();
+    let expected_step_semantic_scope = CLAIM_SEMANTIC_SCOPE_V1;
 
     let mut accumulator: Option<Phase14HistoryAccumulator> = None;
     for (step_index, step) in manifest.steps.iter().enumerate() {
@@ -4879,7 +4880,7 @@ mod tests {
             manifest.layout.lookup_range()?.len(),
             "oracle decoding chain shared lookup",
         )?;
-        let expected_step_semantic_scope = manifest.steps[0].proof.claim.semantic_scope.clone();
+        let expected_step_semantic_scope = CLAIM_SEMANTIC_SCOPE_V1;
 
         let mut previous_history_commitment: Option<String> = None;
         let mut previous_history_length: Option<usize> = None;
@@ -5129,7 +5130,7 @@ mod tests {
             manifest.layout.lookup_range()?.len(),
             "oracle chunked decoding shared lookup",
         )?;
-        let expected_step_semantic_scope = manifest.steps[0].proof.claim.semantic_scope.clone();
+        let expected_step_semantic_scope = CLAIM_SEMANTIC_SCOPE_V1;
         let mut accumulator: Option<Phase14HistoryAccumulator> = None;
         let mut previous_expected_to: Option<Phase14DecodingState> = None;
         for (step_index, step) in manifest.steps.iter().enumerate() {
@@ -6900,6 +6901,24 @@ mod tests {
     }
 
     #[test]
+    fn phase12_oracle_and_production_reject_same_forged_semantic_scope_across_all_steps() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest =
+            phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        for step in &mut manifest.steps {
+            step.proof.claim.semantic_scope = "forged-semantic-scope".to_string();
+        }
+
+        assert!(verify_phase12_decoding_chain(&manifest).is_err());
+        assert!(oracle_verify_phase12_decoding_chain(&manifest).is_err());
+    }
+
+    #[test]
     fn phase14_oracle_matches_production_on_demo_chain() {
         let layout = phase12_default_decoding_layout();
         let proofs = phase12_demo_initial_memories(&layout)
@@ -6961,6 +6980,24 @@ mod tests {
         let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
         let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
         manifest.steps[1].proof.claim.semantic_scope = "tampered-semantic-scope".to_string();
+
+        assert!(verify_phase14_decoding_chain(&manifest).is_err());
+        assert!(oracle_verify_phase14_decoding_chain(&manifest).is_err());
+    }
+
+    #[test]
+    fn phase14_oracle_and_production_reject_same_forged_semantic_scope_across_all_steps() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        for step in &mut manifest.steps {
+            step.proof.claim.semantic_scope = "forged-semantic-scope".to_string();
+        }
 
         assert!(verify_phase14_decoding_chain(&manifest).is_err());
         assert!(oracle_verify_phase14_decoding_chain(&manifest).is_err());
