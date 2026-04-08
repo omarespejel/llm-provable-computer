@@ -210,9 +210,13 @@ Delivered:
   KV-cache pair on the public demo layouts, with three carried lanes now bound to the combined
   output cell and one to the lookup-backed primary output on the wider layouts, with that
   combined-output cell now also absorbing two additional bounded shared lookup rows before it is
-  carried forward, with both final output lanes absorbing that combined-output cell, and with
-  exact tests plus real-backend proving coverage over all default demo steps and the default
-  layout matrix.
+  carried forward, with both final output lanes absorbing that combined-output cell, and with a
+  shared-lookup registry boundary at Phase 12+ where each manifest deduplicates shared lookup
+  artifacts into a registry and decoding steps reference those artifacts by commitment rather than
+  inlining them, so the extra bounded shared lookup rows consumed by the combined-output cell and
+  lookup-backed primary output are represented once at the manifest layer and then rebound to each
+  proof payload during verification, with exact tests plus real-backend proving coverage over all
+  default demo steps and the default layout matrix.
 
 Current limitation:
 

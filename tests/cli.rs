@@ -1248,6 +1248,8 @@ fn cli_verify_stwo_decoding_family_demo_rejects_missing_shared_lookup_artifact()
         unique_temp_dir("cli-stwo-decoding-family-demo-artifact-proof").with_extension("json");
     let tampered_path =
         unique_temp_dir("cli-stwo-decoding-family-demo-artifact-tampered").with_extension("json");
+    let wrong_ref_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-artifact-wrong-ref").with_extension("json");
 
     let mut prove = Command::cargo_bin("tvm").expect("binary");
     prove
@@ -1277,8 +1279,41 @@ fn cli_verify_stwo_decoding_family_demo_rejects_missing_shared_lookup_artifact()
             "must contain at least one shared lookup artifact",
         ));
 
+    let mut wrong_ref_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    let artifact_commitments: Vec<String> = wrong_ref_json["shared_lookup_artifacts"]
+        .as_array()
+        .expect("artifact array")
+        .iter()
+        .filter_map(|artifact| artifact["artifact_commitment"].as_str().map(str::to_string))
+        .collect();
+    if artifact_commitments.len() > 1 {
+        wrong_ref_json["steps"][0]["shared_lookup_artifact_commitment"] =
+            serde_json::Value::String(artifact_commitments[1].clone());
+    } else {
+        wrong_ref_json["steps"][0]["shared_lookup_artifact_commitment"] =
+            serde_json::Value::String("deadbeef".repeat(8));
+    }
+    std::fs::write(
+        &wrong_ref_path,
+        serde_json::to_vec_pretty(&wrong_ref_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify_wrong_ref = Command::cargo_bin("tvm").expect("binary");
+    verify_wrong_ref
+        .arg("verify-stwo-decoding-family-demo")
+        .arg(&wrong_ref_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("shared lookup artifact").or(
+            predicate::str::contains("is not present in the manifest registry"),
+        ));
+
     let _ = std::fs::remove_file(proof_path);
     let _ = std::fs::remove_file(tampered_path);
+    let _ = std::fs::remove_file(wrong_ref_path);
 }
 
 #[test]

@@ -1112,6 +1112,19 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
             &shared_lookup_artifacts,
             &step.shared_lookup_artifact_commitment,
         )?;
+        let proof_artifact =
+            phase12_shared_lookup_artifact_from_proof_payload(&step.proof, &expected_layout_commitment)?
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "decoding step {step_index} is missing its Phase 12 shared lookup artifact payload"
+                    ))
+                })?;
+        if &proof_artifact != shared_lookup_artifact {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step {step_index} shared lookup artifact `{}` does not match the proof payload",
+                step.shared_lookup_artifact_commitment
+            )));
+        }
 
         let derived_from =
             derive_phase12_state_view(step.proof.claim.program.initial_memory(), &manifest.layout)?;
@@ -1453,6 +1466,19 @@ pub fn verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) ->
             &shared_lookup_artifacts,
             &step.shared_lookup_artifact_commitment,
         )?;
+        let proof_artifact =
+            phase12_shared_lookup_artifact_from_proof_payload(&step.proof, &expected_layout_commitment)?
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "chunked decoding step {step_index} is missing its Phase 12 shared lookup artifact payload"
+                    ))
+                })?;
+        if &proof_artifact != shared_lookup_artifact {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {step_index} shared lookup artifact `{}` does not match the proof payload",
+                step.shared_lookup_artifact_commitment
+            )));
+        }
 
         let from_view =
             derive_phase12_state_view(step.proof.claim.program.initial_memory(), &manifest.layout)?;
@@ -5006,6 +5032,33 @@ mod tests {
         assert!(err
             .to_string()
             .contains("is not present in the manifest registry"));
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_missing_embedded_shared_lookup_payload() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        let mut payload: serde_json::Value =
+            serde_json::from_slice(&manifest.steps[0].proof.proof).expect("payload");
+        payload
+            .as_object_mut()
+            .expect("payload object")
+            .remove("embedded_shared_activation_lookup");
+        manifest.steps[0].proof.proof = serde_json::to_vec(&payload).expect("payload bytes");
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        assert!(
+            err.to_string().contains("missing its Phase 12 shared lookup artifact payload")
+                || err.to_string().contains("does not match the proof payload")
+                || err
+                    .to_string()
+                    .contains("missing embedded shared activation rows"),
+            "unexpected error: {err}"
+        );
     }
 
     #[test]

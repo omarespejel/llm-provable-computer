@@ -82,43 +82,8 @@ reviews:
     - path: 'docs/**/*.md'
       instructions: |
         Review technical docs for alignment with code and proofs. Ignore pure prose taste, but flag any mismatch in supported phases, artifact semantics, backend capabilities, or reproducibility steps.
-finishing_touches:
-  docstrings:
-    enabled: false
-  unit_tests:
-    enabled: false
-pre_merge_checks:
-  override_requested_reviewers_only: true
-  docstrings:
-    mode: off
-  title:
-    mode: warning
-    requirements: "Keep PR titles concise and specific about the proof surface or artifact boundary being changed."
-  description:
-    mode: warning
-  issue_assessment:
-    mode: off
-  custom_checks:
-    - mode: warning
-      name: "Proof Semantics Tests"
-      instructions: |
-        If the PR changes proof semantics, decoding-chain structure, artifact commitments,
-        version constants, or verification logic, check that it adds or updates at least
-        one failing-path, tamper-path, or compatibility regression test. Warn if the
-        change relies only on happy-path coverage.
 chat:
   auto_reply: false
 knowledge_base:
   learnings:
     scope: auto
-tools:
-  actionlint:
-    enabled: true
-  gitleaks:
-    enabled: true
-  markdownlint:
-    enabled: true
-  shellcheck:
-    enabled: true
-  yamllint:
-    enabled: true

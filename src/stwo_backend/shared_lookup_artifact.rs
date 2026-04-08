@@ -19,9 +19,9 @@ pub const STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12: &str =
     "stwo-phase12-shared-lookup-artifact-v1";
 pub const STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12: &str =
     "stwo_parameterized_decoding_shared_lookup_artifact";
-const DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE: &str =
+pub(crate) const DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE: &str =
     "stwo_decoding_step_v2_execution_with_shared_normalization_lookup";
-const DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE: &str =
+pub(crate) const DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE: &str =
     "stwo_decoding_step_v2_execution_with_shared_binary_step_lookup";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -197,10 +197,10 @@ pub fn verify_phase12_shared_lookup_artifact(
             normalization_wrapper.semantic_scope
         )));
     }
-    let normalization_rows: Vec<(u16, u16)> = normalization_wrapper
+    let normalization_rows: Vec<(i16, i16)> = normalization_wrapper
         .claimed_rows
         .iter()
-        .map(|row| (row.expected_norm_sq as u16, row.expected_inv_sqrt_q8 as u16))
+        .map(|row| (row.expected_norm_sq, row.expected_inv_sqrt_q8))
         .collect();
 
     let activation_wrapper: EmbeddedSharedActivationLookupProof =
@@ -221,11 +221,24 @@ pub fn verify_phase12_shared_lookup_artifact(
     let activation_rows: Vec<Phase3LookupTableRow> = activation_wrapper
         .claimed_rows
         .iter()
-        .map(|row| Phase3LookupTableRow {
-            input: row.expected_input,
-            output: row.expected_output as u8,
+        .map(|row| {
+            let output = u8::try_from(row.expected_output).map_err(|_| {
+                VmError::InvalidConfig(
+                    "Phase 12 shared lookup artifact activation output is not a canonical u8"
+                        .to_string(),
+                )
+            })?;
+            if output > 1 {
+                return Err(VmError::InvalidConfig(
+                    "Phase 12 shared lookup artifact activation output must be binary".to_string(),
+                ));
+            }
+            Ok(Phase3LookupTableRow {
+                input: row.expected_input,
+                output,
+            })
         })
-        .collect();
+        .collect::<Result<_>>()?;
     if normalization_rows.len() != activation_rows.len() {
         return Err(VmError::InvalidConfig(format!(
             "Phase 12 shared lookup artifact row counts disagree: normalization={}, activation={}",
@@ -238,17 +251,8 @@ pub fn verify_phase12_shared_lookup_artifact(
     for (normalization_row, activation_row) in
         normalization_rows.iter().zip(activation_rows.iter())
     {
-        expected_flattened_rows.push(i16::try_from(normalization_row.0).map_err(|_| {
-            VmError::InvalidConfig(
-                "Phase 12 shared lookup artifact normalization row overflows i16".to_string(),
-            )
-        })?);
-        expected_flattened_rows.push(i16::try_from(normalization_row.1).map_err(|_| {
-            VmError::InvalidConfig(
-                "Phase 12 shared lookup artifact normalization inverse row overflows i16"
-                    .to_string(),
-            )
-        })?);
+        expected_flattened_rows.push(normalization_row.0);
+        expected_flattened_rows.push(normalization_row.1);
         expected_flattened_rows.push(activation_row.input);
         expected_flattened_rows.push(i16::from(activation_row.output));
     }
@@ -261,7 +265,26 @@ pub fn verify_phase12_shared_lookup_artifact(
     let normalization_envelope: Phase10SharedNormalizationLookupProofEnvelope =
         serde_json::from_value(normalization_wrapper.proof_envelope)
             .map_err(|error| VmError::Serialization(error.to_string()))?;
-    if normalization_envelope.claimed_rows != normalization_rows {
+    let normalization_envelope_rows: Vec<(u16, u16)> = normalization_rows
+        .iter()
+        .map(|(norm_sq, inv_sqrt_q8)| {
+            Ok((
+                u16::try_from(*norm_sq).map_err(|_| {
+                    VmError::InvalidConfig(
+                        "Phase 12 shared lookup artifact normalization row is not a canonical u16"
+                            .to_string(),
+                    )
+                })?,
+                u16::try_from(*inv_sqrt_q8).map_err(|_| {
+                    VmError::InvalidConfig(
+                        "Phase 12 shared lookup artifact normalization inverse row is not a canonical u16"
+                            .to_string(),
+                    )
+                })?,
+            ))
+        })
+        .collect::<Result<_>>()?;
+    if normalization_envelope.claimed_rows != normalization_envelope_rows {
         return Err(VmError::InvalidConfig(
             "Phase 12 shared lookup artifact normalization wrapper rows do not match the embedded proof envelope"
                 .to_string(),
@@ -438,6 +461,75 @@ mod tests {
                 .contains("activation proof did not verify")
                 || error.to_string().contains("unsupported")
                 || error.to_string().contains("serialization error"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_rejects_noncanonical_activation_output() {
+        let normalization_rows = vec![(16u16, 64u16), (4u16, 128u16)];
+        let activation_rows = vec![
+            Phase3LookupTableRow { input: 1, output: 1 },
+            Phase3LookupTableRow { input: 0, output: 1 },
+        ];
+        let normalization_envelope =
+            prove_phase10_shared_normalization_lookup_envelope(&normalization_rows)
+                .expect("normalization envelope");
+        let activation_envelope =
+            prove_phase10_shared_binary_step_lookup_envelope(&activation_rows)
+                .expect("activation envelope");
+        let normalization_wrapper = serde_json::json!({
+            "statement_version": STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10,
+            "semantic_scope": DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE,
+            "claimed_rows": [
+                {
+                    "norm_sq_memory_index": 16,
+                    "inv_sqrt_q8_memory_index": 17,
+                    "expected_norm_sq": 16,
+                    "expected_inv_sqrt_q8": 64
+                },
+                {
+                    "norm_sq_memory_index": 18,
+                    "inv_sqrt_q8_memory_index": 19,
+                    "expected_norm_sq": 4,
+                    "expected_inv_sqrt_q8": 128
+                }
+            ],
+            "proof_envelope": normalization_envelope
+        });
+        let activation_wrapper = serde_json::json!({
+            "statement_version": STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10,
+            "semantic_scope": DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE,
+            "claimed_rows": [
+                {
+                    "input_memory_index": 20,
+                    "output_memory_index": 21,
+                    "expected_input": 1,
+                    "expected_output": -255
+                },
+                {
+                    "input_memory_index": 22,
+                    "output_memory_index": 23,
+                    "expected_input": 0,
+                    "expected_output": 1
+                }
+            ],
+            "proof_envelope": activation_envelope
+        });
+        let artifact = build_phase12_shared_lookup_artifact(
+            "layout-commitment",
+            vec![16, 64, 1, 1, 4, 128, 0, 1],
+            normalization_wrapper,
+            activation_wrapper,
+        )
+        .expect("artifact");
+
+        let error = verify_phase12_shared_lookup_artifact(&artifact, "layout-commitment")
+            .expect_err("noncanonical activation output should fail");
+        assert!(
+            error
+                .to_string()
+                .contains("activation output is not a canonical u8"),
             "unexpected error: {error}"
         );
     }

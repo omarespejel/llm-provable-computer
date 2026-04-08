@@ -32,7 +32,10 @@ use super::normalization_prover::{
     Phase10SharedNormalizationLookupProofEnvelope, STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
     STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10,
 };
-use super::shared_lookup_artifact::{build_phase12_shared_lookup_artifact, Phase12SharedLookupArtifact};
+use super::shared_lookup_artifact::{
+    build_phase12_shared_lookup_artifact, Phase12SharedLookupArtifact,
+    DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE, DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE,
+};
 use super::{
     phase3_lookup_table_rows, prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase3_binary_step_lookup_demo_envelope,
@@ -86,10 +89,6 @@ const DECODING_STEP_V1_SHARED_NORMALIZATION_SCOPE: &str =
     "stwo_decoding_step_v1_execution_with_shared_normalization_lookup";
 const DECODING_STEP_V1_SHARED_ACTIVATION_SCOPE: &str =
     "stwo_decoding_step_v1_execution_with_shared_binary_step_lookup";
-const DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE: &str =
-    "stwo_decoding_step_v2_execution_with_shared_normalization_lookup";
-const DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE: &str =
-    "stwo_decoding_step_v2_execution_with_shared_binary_step_lookup";
 const OPCODE_COLUMN_NAMES: [&str; 11] = [
     "phase5/arithmetic/op/nop",
     "phase5/arithmetic/op/loadi",
