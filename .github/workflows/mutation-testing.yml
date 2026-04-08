@@ -44,9 +44,13 @@ jobs:
 
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+        with:
+          cache-bin: false
 
       - name: Install cargo-mutants
-        run: cargo install cargo-mutants --version 27.0.0 --locked
+        run: |
+          rm -f "$CARGO_HOME/bin/cargo-mutants"
+          cargo install cargo-mutants --version 27.0.0 --locked --force
 
       - name: Run targeted mutation suite
         env:
