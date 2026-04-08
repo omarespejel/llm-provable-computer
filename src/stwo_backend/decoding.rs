@@ -3926,6 +3926,8 @@ mod tests {
         build_phase12_shared_lookup_artifact, EmbeddedSharedActivationClaimRow,
         EmbeddedSharedActivationLookupProof, EmbeddedSharedNormalizationClaimRow,
         EmbeddedSharedNormalizationProof,
+        Phase12SharedLookupArtifact, STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12,
+        STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12,
     };
     use crate::stwo_backend::{
         prove_phase10_shared_binary_step_lookup_envelope,
@@ -4154,6 +4156,846 @@ mod tests {
             activation,
         )
         .expect("synthetic valid artifact")
+    }
+
+    fn oracle_lower_hex(bytes: &[u8]) -> String {
+        let mut out = String::with_capacity(bytes.len() * 2);
+        for byte in bytes {
+            use std::fmt::Write as _;
+            let _ = write!(out, "{byte:02x}");
+        }
+        out
+    }
+
+    fn oracle_blake2b_256(parts: &[Vec<u8>]) -> String {
+        let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+        for part in parts {
+            hasher.update(part);
+        }
+        let mut out = [0u8; 32];
+        hasher
+            .finalize_variable(&mut out)
+            .expect("blake2b finalize");
+        oracle_lower_hex(&out)
+    }
+
+    fn oracle_commit_phase12_layout(layout: &Phase12DecodingLayout) -> String {
+        oracle_blake2b_256(&[
+            STWO_DECODING_LAYOUT_VERSION_PHASE12.as_bytes().to_vec(),
+            (layout.rolling_kv_pairs as u64).to_le_bytes().to_vec(),
+            (layout.pair_width as u64).to_le_bytes().to_vec(),
+        ])
+    }
+
+    fn oracle_commit_phase12_named_slice(
+        label: &str,
+        layout_commitment: &str,
+        values: &[i16],
+    ) -> String {
+        let mut parts = vec![
+            STWO_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            label.as_bytes().to_vec(),
+        ];
+        for value in values {
+            parts.push(value.to_le_bytes().to_vec());
+        }
+        oracle_blake2b_256(&parts)
+    }
+
+    fn oracle_commit_phase12_persistent_state(
+        layout_commitment: &str,
+        position: i16,
+        kv_cache_values: &[i16],
+    ) -> String {
+        let mut parts = vec![
+            STWO_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            position.to_le_bytes().to_vec(),
+        ];
+        for value in kv_cache_values {
+            parts.push(value.to_le_bytes().to_vec());
+        }
+        oracle_blake2b_256(&parts)
+    }
+
+    fn oracle_commit_phase12_shared_lookup_rows(layout_commitment: &str, values: &[i16]) -> String {
+        let mut parts = vec![
+            STWO_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            b"lookup-rows".to_vec(),
+        ];
+        for value in values {
+            parts.push(value.to_le_bytes().to_vec());
+        }
+        oracle_blake2b_256(&parts)
+    }
+
+    fn oracle_commit_phase12_history_seed(
+        layout_commitment: &str,
+        kv_cache_values: &[i16],
+        pair_width: usize,
+    ) -> String {
+        oracle_blake2b_256(&[
+            STWO_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            b"history-seed".to_vec(),
+            (pair_width as u64).to_le_bytes().to_vec(),
+            ((kv_cache_values.len() / pair_width) as u64)
+                .to_le_bytes()
+                .to_vec(),
+            kv_cache_values
+                .iter()
+                .flat_map(|value| value.to_le_bytes())
+                .collect(),
+        ])
+    }
+
+    fn oracle_advance_phase12_history_commitment(
+        layout_commitment: &str,
+        previous_commitment: &str,
+        appended_pair: &[i16],
+        next_length: usize,
+    ) -> String {
+        let mut parts = vec![
+            STWO_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            b"history-advance".to_vec(),
+            previous_commitment.as_bytes().to_vec(),
+            (next_length as u64).to_le_bytes().to_vec(),
+            (appended_pair.len() as u64).to_le_bytes().to_vec(),
+        ];
+        for value in appended_pair {
+            parts.push(value.to_le_bytes().to_vec());
+        }
+        oracle_blake2b_256(&parts)
+    }
+
+    fn oracle_commit_phase12_shared_lookup_artifact(
+        layout_commitment: &str,
+        flattened_lookup_rows: &[i16],
+        normalization: &EmbeddedSharedNormalizationProof,
+        activation: &EmbeddedSharedActivationLookupProof,
+    ) -> String {
+        let rows_json = serde_json::to_vec(flattened_lookup_rows).expect("rows json");
+        let normalization_json = serde_json::to_vec(normalization).expect("normalization json");
+        let activation_json = serde_json::to_vec(activation).expect("activation json");
+        oracle_blake2b_256(&[
+            STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12
+                .as_bytes()
+                .to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            (rows_json.len() as u64).to_le_bytes().to_vec(),
+            rows_json,
+            (normalization_json.len() as u64).to_le_bytes().to_vec(),
+            normalization_json,
+            (activation_json.len() as u64).to_le_bytes().to_vec(),
+            activation_json,
+        ])
+    }
+
+    fn oracle_phase12_state_view(
+        memory: &[i16],
+        layout: &Phase12DecodingLayout,
+    ) -> Result<Phase12StateView> {
+        layout.validate()?;
+        let memory_size = layout.memory_size()?;
+        if memory.len() != memory_size {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 12 decoding state requires exactly {} memory cells, got {}",
+                memory_size,
+                memory.len()
+            )));
+        }
+        let kv_cache_range = layout.kv_cache_range()?;
+        let incoming_token_range = layout.incoming_token_range()?;
+        let query_range = layout.query_range()?;
+        let output_range = layout.output_range()?;
+        let lookup_range = layout.lookup_range()?;
+        let position_index = layout.position_index()?;
+        let layout_commitment = oracle_commit_phase12_layout(layout);
+        let position = memory[position_index];
+
+        Ok(Phase12StateView {
+            position,
+            layout_commitment: layout_commitment.clone(),
+            persistent_state_commitment: oracle_commit_phase12_persistent_state(
+                &layout_commitment,
+                position,
+                &memory[kv_cache_range.clone()],
+            ),
+            kv_cache_commitment: oracle_commit_phase12_named_slice(
+                "kv-cache",
+                &layout_commitment,
+                &memory[kv_cache_range],
+            ),
+            incoming_token_commitment: oracle_commit_phase12_named_slice(
+                "incoming-token",
+                &layout_commitment,
+                &memory[incoming_token_range],
+            ),
+            query_commitment: oracle_commit_phase12_named_slice(
+                "query",
+                &layout_commitment,
+                &memory[query_range],
+            ),
+            output_commitment: oracle_commit_phase12_named_slice(
+                "output",
+                &layout_commitment,
+                &memory[output_range],
+            ),
+            lookup_rows_commitment: oracle_commit_phase12_shared_lookup_rows(
+                &layout_commitment,
+                &memory[lookup_range],
+            ),
+        })
+    }
+
+    fn oracle_phase12_shared_lookup_artifact_from_proof_payload(
+        proof: &VanillaStarkExecutionProof,
+        layout_commitment: &str,
+    ) -> Result<Option<Phase12SharedLookupArtifact>> {
+        if !matches_decoding_step_v2_family(&proof.claim.program) {
+            return Ok(None);
+        }
+        let payload: serde_json::Value = serde_json::from_slice(&proof.proof)
+            .map_err(|error| VmError::Serialization(error.to_string()))?;
+        let normalization: EmbeddedSharedNormalizationProof =
+            serde_json::from_value(payload["embedded_shared_normalization"].clone())
+                .map_err(|error| VmError::Serialization(error.to_string()))?;
+        let activation: EmbeddedSharedActivationLookupProof =
+            serde_json::from_value(payload["embedded_shared_activation_lookup"].clone())
+                .map_err(|error| VmError::Serialization(error.to_string()))?;
+        let mut flattened_lookup_rows =
+            Vec::with_capacity(normalization.claimed_rows.len().saturating_mul(4));
+        for (normalization_row, activation_row) in normalization
+            .claimed_rows
+            .iter()
+            .zip(activation.claimed_rows.iter())
+        {
+            flattened_lookup_rows.push(normalization_row.expected_norm_sq);
+            flattened_lookup_rows.push(normalization_row.expected_inv_sqrt_q8);
+            flattened_lookup_rows.push(activation_row.expected_input);
+            flattened_lookup_rows.push(activation_row.expected_output);
+        }
+        let lookup_rows_commitment =
+            oracle_commit_phase12_shared_lookup_rows(layout_commitment, &flattened_lookup_rows);
+        let artifact_commitment = oracle_commit_phase12_shared_lookup_artifact(
+            layout_commitment,
+            &flattened_lookup_rows,
+            &normalization,
+            &activation,
+        );
+        Ok(Some(Phase12SharedLookupArtifact {
+            artifact_version: STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12.to_string(),
+            semantic_scope: STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12.to_string(),
+            artifact_commitment,
+            layout_commitment: layout_commitment.to_string(),
+            lookup_rows_commitment,
+            flattened_lookup_rows,
+            normalization_proof_envelope: normalization,
+            activation_proof_envelope: activation,
+        }))
+    }
+
+    fn oracle_commit_phase14_history_empty_chunk(
+        layout_commitment: &str,
+        pair_width: usize,
+    ) -> String {
+        oracle_blake2b_256(&[
+            STWO_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            b"history-open-empty".to_vec(),
+            (pair_width as u64).to_le_bytes().to_vec(),
+        ])
+    }
+
+    fn oracle_commit_phase14_history_chunk(
+        layout_commitment: &str,
+        pair_width: usize,
+        chunk_values: &[i16],
+    ) -> String {
+        let mut parts = vec![
+            STWO_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            b"history-chunk".to_vec(),
+            (pair_width as u64).to_le_bytes().to_vec(),
+            ((chunk_values.len() / pair_width) as u64)
+                .to_le_bytes()
+                .to_vec(),
+        ];
+        for value in chunk_values {
+            parts.push(value.to_le_bytes().to_vec());
+        }
+        oracle_blake2b_256(&parts)
+    }
+
+    fn oracle_fold_phase14_history_chunk(
+        layout_commitment: &str,
+        previous_sealed_commitment: &str,
+        previous_sealed_chunks: usize,
+        chunk_commitment: &str,
+    ) -> String {
+        oracle_blake2b_256(&[
+            STWO_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            b"history-sealed-fold".to_vec(),
+            previous_sealed_commitment.as_bytes().to_vec(),
+            (previous_sealed_chunks as u64).to_le_bytes().to_vec(),
+            chunk_commitment.as_bytes().to_vec(),
+        ])
+    }
+
+    fn oracle_commit_phase14_history_total(
+        layout_commitment: &str,
+        sealed_commitment: &str,
+        sealed_chunks: usize,
+        open_chunk_commitment: &str,
+        open_chunk_pairs: usize,
+        chunk_size: usize,
+        history_length: usize,
+    ) -> String {
+        oracle_blake2b_256(&[
+            STWO_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            b"history-total".to_vec(),
+            sealed_commitment.as_bytes().to_vec(),
+            (sealed_chunks as u64).to_le_bytes().to_vec(),
+            open_chunk_commitment.as_bytes().to_vec(),
+            (open_chunk_pairs as u64).to_le_bytes().to_vec(),
+            (chunk_size as u64).to_le_bytes().to_vec(),
+            (history_length as u64).to_le_bytes().to_vec(),
+        ])
+    }
+
+    fn oracle_commit_phase19_lookup_transcript_seed(
+        layout_commitment: &str,
+        lookup_rows_commitment: &str,
+    ) -> String {
+        oracle_blake2b_256(&[
+            STWO_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            b"lookup-transcript-seed".to_vec(),
+            (1u64).to_le_bytes().to_vec(),
+            lookup_rows_commitment.as_bytes().to_vec(),
+        ])
+    }
+
+    fn oracle_fold_phase19_lookup_transcript(
+        layout_commitment: &str,
+        previous_commitment: &str,
+        previous_entries: usize,
+        lookup_rows_commitment: &str,
+    ) -> String {
+        oracle_blake2b_256(&[
+            STWO_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            b"lookup-transcript-fold".to_vec(),
+            previous_commitment.as_bytes().to_vec(),
+            (previous_entries as u64).to_le_bytes().to_vec(),
+            lookup_rows_commitment.as_bytes().to_vec(),
+        ])
+    }
+
+    fn oracle_commit_phase20_lookup_frontier(
+        layout_commitment: &str,
+        lookup_rows_commitments: &[String],
+    ) -> String {
+        let mut parts = vec![
+            STWO_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            b"lookup-frontier".to_vec(),
+            (lookup_rows_commitments.len() as u64)
+                .to_le_bytes()
+                .to_vec(),
+        ];
+        for commitment in lookup_rows_commitments {
+            parts.push(commitment.as_bytes().to_vec());
+        }
+        oracle_blake2b_256(&parts)
+    }
+
+    fn oracle_advance_phase14_open_chunk(
+        layout_commitment: &str,
+        previous_open_chunk_commitment: &str,
+        previous_open_chunk_pairs: usize,
+        appended_pair: &[i16],
+        pair_width: usize,
+    ) -> String {
+        let mut parts = vec![
+            STWO_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            b"history-open-advance".to_vec(),
+            previous_open_chunk_commitment.as_bytes().to_vec(),
+            (previous_open_chunk_pairs as u64).to_le_bytes().to_vec(),
+            (pair_width as u64).to_le_bytes().to_vec(),
+        ];
+        for value in appended_pair {
+            parts.push(value.to_le_bytes().to_vec());
+        }
+        oracle_blake2b_256(&parts)
+    }
+
+    fn oracle_seed_phase14_history(
+        layout_commitment: &str,
+        kv_cache_values: &[i16],
+        lookup_rows_commitment: &str,
+        pair_width: usize,
+    ) -> Phase14HistoryAccumulator {
+        let mut sealed_commitment =
+            oracle_commit_phase14_history_empty_chunk(layout_commitment, pair_width);
+        let mut sealed_chunks = 0usize;
+        let mut open_chunk_pairs = 0usize;
+        let mut open_chunk_values = Vec::new();
+
+        for pair in kv_cache_values.chunks(pair_width) {
+            open_chunk_values.extend_from_slice(pair);
+            open_chunk_pairs += 1;
+            if open_chunk_pairs == PHASE14_HISTORY_CHUNK_PAIRS {
+                let chunk_commitment = oracle_commit_phase14_history_chunk(
+                    layout_commitment,
+                    pair_width,
+                    &open_chunk_values,
+                );
+                sealed_commitment = oracle_fold_phase14_history_chunk(
+                    layout_commitment,
+                    &sealed_commitment,
+                    sealed_chunks,
+                    &chunk_commitment,
+                );
+                sealed_chunks += 1;
+                open_chunk_pairs = 0;
+                open_chunk_values.clear();
+            }
+        }
+
+        let open_chunk_commitment = if open_chunk_pairs == 0 {
+            oracle_commit_phase14_history_empty_chunk(layout_commitment, pair_width)
+        } else {
+            oracle_commit_phase14_history_chunk(layout_commitment, pair_width, &open_chunk_values)
+        };
+        let history_length = kv_cache_values.len() / pair_width;
+        let frontier_values = kv_cache_values.to_vec();
+        Phase14HistoryAccumulator {
+            history_commitment: oracle_commit_phase14_history_total(
+                layout_commitment,
+                &sealed_commitment,
+                sealed_chunks,
+                &open_chunk_commitment,
+                open_chunk_pairs,
+                PHASE14_HISTORY_CHUNK_PAIRS,
+                history_length,
+            ),
+            history_length,
+            chunk_size: PHASE14_HISTORY_CHUNK_PAIRS,
+            sealed_commitment,
+            sealed_chunks,
+            open_chunk_commitment,
+            open_chunk_pairs,
+            frontier_commitment: oracle_commit_phase12_named_slice(
+                "kv-cache",
+                layout_commitment,
+                &frontier_values,
+            ),
+            frontier_pairs: history_length,
+            frontier_values,
+            lookup_transcript_commitment: oracle_commit_phase19_lookup_transcript_seed(
+                layout_commitment,
+                lookup_rows_commitment,
+            ),
+            lookup_transcript_entries: 1,
+            lookup_frontier_commitment: oracle_commit_phase20_lookup_frontier(
+                layout_commitment,
+                &[lookup_rows_commitment.to_string()],
+            ),
+            lookup_frontier_entries: 1,
+            lookup_frontier_values: vec![lookup_rows_commitment.to_string()],
+        }
+    }
+
+    fn oracle_advance_phase14_history(
+        layout_commitment: &str,
+        previous: &Phase14HistoryAccumulator,
+        appended_pair: &[i16],
+        lookup_rows_commitment: &str,
+        pair_width: usize,
+    ) -> Result<Phase14HistoryAccumulator> {
+        if appended_pair.len() != pair_width {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding history append expects pair_width={} values, got {}",
+                pair_width,
+                appended_pair.len()
+            )));
+        }
+        let next_history_length = previous.history_length.checked_add(1).ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "chunked decoding history length {} cannot be incremented",
+                previous.history_length
+            ))
+        })?;
+        let advanced_open_commitment = oracle_advance_phase14_open_chunk(
+            layout_commitment,
+            &previous.open_chunk_commitment,
+            previous.open_chunk_pairs,
+            appended_pair,
+            pair_width,
+        );
+        let next_open_chunk_pairs = previous.open_chunk_pairs + 1;
+        let (sealed_commitment, sealed_chunks, open_chunk_commitment, open_chunk_pairs) =
+            if next_open_chunk_pairs == previous.chunk_size {
+                let next_sealed_commitment = oracle_fold_phase14_history_chunk(
+                    layout_commitment,
+                    &previous.sealed_commitment,
+                    previous.sealed_chunks,
+                    &advanced_open_commitment,
+                );
+                (
+                    next_sealed_commitment,
+                    previous.sealed_chunks + 1,
+                    oracle_commit_phase14_history_empty_chunk(layout_commitment, pair_width),
+                    0,
+                )
+            } else {
+                (
+                    previous.sealed_commitment.clone(),
+                    previous.sealed_chunks,
+                    advanced_open_commitment,
+                    next_open_chunk_pairs,
+                )
+            };
+
+        let frontier_value_capacity =
+            previous
+                .frontier_pairs
+                .checked_mul(pair_width)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(
+                        "chunked decoding frontier value capacity overflowed".to_string(),
+                    )
+                })?;
+        let mut frontier_values = previous.frontier_values.clone();
+        frontier_values.extend_from_slice(appended_pair);
+        if frontier_values.len() > frontier_value_capacity {
+            let keep_from = frontier_values.len() - frontier_value_capacity;
+            frontier_values = frontier_values[keep_from..].to_vec();
+        }
+        let lookup_transcript_entries = previous
+            .lookup_transcript_entries
+            .checked_add(1)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "chunked decoding lookup transcript length overflowed".to_string(),
+                )
+            })?;
+        let mut lookup_frontier_values = previous.lookup_frontier_values.clone();
+        lookup_frontier_values.push(lookup_rows_commitment.to_string());
+        if lookup_frontier_values.len() > PHASE14_HISTORY_CHUNK_PAIRS {
+            let keep_from = lookup_frontier_values.len() - PHASE14_HISTORY_CHUNK_PAIRS;
+            lookup_frontier_values = lookup_frontier_values[keep_from..].to_vec();
+        }
+        Ok(Phase14HistoryAccumulator {
+            history_commitment: oracle_commit_phase14_history_total(
+                layout_commitment,
+                &sealed_commitment,
+                sealed_chunks,
+                &open_chunk_commitment,
+                open_chunk_pairs,
+                previous.chunk_size,
+                next_history_length,
+            ),
+            history_length: next_history_length,
+            chunk_size: previous.chunk_size,
+            sealed_commitment,
+            sealed_chunks,
+            open_chunk_commitment,
+            open_chunk_pairs,
+            frontier_commitment: oracle_commit_phase12_named_slice(
+                "kv-cache",
+                layout_commitment,
+                &frontier_values,
+            ),
+            frontier_pairs: previous.frontier_pairs,
+            frontier_values,
+            lookup_transcript_commitment: oracle_fold_phase19_lookup_transcript(
+                layout_commitment,
+                &previous.lookup_transcript_commitment,
+                previous.lookup_transcript_entries,
+                lookup_rows_commitment,
+            ),
+            lookup_transcript_entries,
+            lookup_frontier_commitment: oracle_commit_phase20_lookup_frontier(
+                layout_commitment,
+                &lookup_frontier_values,
+            ),
+            lookup_frontier_entries: lookup_frontier_values.len(),
+            lookup_frontier_values,
+        })
+    }
+
+    fn oracle_verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) -> Result<()> {
+        manifest.layout.validate()?;
+        let expected_layout_commitment = oracle_commit_phase12_layout(&manifest.layout);
+        let latest_cached_range = manifest.layout.latest_cached_pair_range()?;
+        if manifest.proof_backend != StarkProofBackend::Stwo {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding chain backend `{}` is not `stwo`",
+                manifest.proof_backend
+            )));
+        }
+        if manifest.chain_version != STWO_DECODING_CHAIN_VERSION_PHASE12 {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported decoding chain version `{}`",
+                manifest.chain_version
+            )));
+        }
+        if manifest.steps.is_empty() || manifest.total_steps != manifest.steps.len() {
+            return Err(VmError::InvalidConfig(
+                "decoding chain step count metadata is inconsistent".to_string(),
+            ));
+        }
+
+        let mut registry = std::collections::HashMap::new();
+        for artifact in &manifest.shared_lookup_artifacts {
+            if artifact.layout_commitment != expected_layout_commitment {
+                return Err(VmError::InvalidConfig(
+                    "decoding chain shared lookup artifact layout commitment is inconsistent"
+                        .to_string(),
+                ));
+            }
+            registry.insert(artifact.artifact_commitment.clone(), artifact);
+        }
+
+        let mut previous_history_commitment: Option<String> = None;
+        let mut previous_history_length: Option<usize> = None;
+        for (step_index, step) in manifest.steps.iter().enumerate() {
+            if step.proof.proof_backend != StarkProofBackend::Stwo {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding step {step_index} proof backend `{}` is not `stwo`",
+                    step.proof.proof_backend
+                )));
+            }
+            if step.proof.proof_backend_version != manifest.proof_backend_version
+                || step.proof.claim.statement_version != manifest.statement_version
+            {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding step {step_index} proof metadata does not match manifest"
+                )));
+            }
+            if !matches_decoding_step_v2_family_with_layout(
+                &step.proof.claim.program,
+                &manifest.layout,
+            ) {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding step {step_index} is not a decoding_step_v2-family proof for the manifest layout"
+                )));
+            }
+            let registry_artifact = registry
+                .get(&step.shared_lookup_artifact_commitment)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "shared lookup artifact `{}` is not present in the manifest registry",
+                        step.shared_lookup_artifact_commitment
+                    ))
+                })?;
+            let proof_artifact = oracle_phase12_shared_lookup_artifact_from_proof_payload(
+                &step.proof,
+                &expected_layout_commitment,
+            )?
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "decoding step {step_index} is missing its Phase 12 shared lookup artifact payload"
+                ))
+            })?;
+            if **registry_artifact != proof_artifact {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding step {step_index} shared lookup artifact `{}` does not match the proof payload",
+                    step.shared_lookup_artifact_commitment
+                )));
+            }
+
+            let from_view = oracle_phase12_state_view(
+                step.proof.claim.program.initial_memory(),
+                &manifest.layout,
+            )?;
+            let from_history_commitment =
+                previous_history_commitment.clone().unwrap_or_else(|| {
+                    oracle_commit_phase12_history_seed(
+                        &expected_layout_commitment,
+                        &step.proof.claim.program.initial_memory()
+                            [manifest.layout.kv_cache_range().expect("kv cache")],
+                        manifest.layout.pair_width,
+                    )
+                });
+            let from_history_length =
+                previous_history_length.unwrap_or(manifest.layout.rolling_kv_pairs);
+            let expected_from = Phase12DecodingState {
+                state_version: STWO_DECODING_STATE_VERSION_PHASE12.to_string(),
+                step_index,
+                position: from_view.position,
+                layout_commitment: from_view.layout_commitment.clone(),
+                persistent_state_commitment: from_view.persistent_state_commitment.clone(),
+                kv_history_commitment: from_history_commitment.clone(),
+                kv_history_length: from_history_length,
+                kv_cache_commitment: from_view.kv_cache_commitment.clone(),
+                incoming_token_commitment: from_view.incoming_token_commitment.clone(),
+                query_commitment: from_view.query_commitment.clone(),
+                output_commitment: from_view.output_commitment.clone(),
+                lookup_rows_commitment: from_view.lookup_rows_commitment.clone(),
+            };
+            if step.from_state != expected_from {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding step {step_index} recorded from_state does not match the oracle replay"
+                )));
+            }
+
+            let to_view =
+                oracle_phase12_state_view(&step.proof.claim.final_state.memory, &manifest.layout)?;
+            let to_history_length = from_history_length.checked_add(1).ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "decoding step {step_index} history length {from_history_length} cannot be incremented"
+                ))
+            })?;
+            let to_history_commitment = oracle_advance_phase12_history_commitment(
+                &expected_layout_commitment,
+                &from_history_commitment,
+                &step.proof.claim.final_state.memory[latest_cached_range.clone()],
+                to_history_length,
+            );
+            let expected_to = Phase12DecodingState {
+                state_version: STWO_DECODING_STATE_VERSION_PHASE12.to_string(),
+                step_index: step_index + 1,
+                position: to_view.position,
+                layout_commitment: to_view.layout_commitment.clone(),
+                persistent_state_commitment: to_view.persistent_state_commitment.clone(),
+                kv_history_commitment: to_history_commitment.clone(),
+                kv_history_length: to_history_length,
+                kv_cache_commitment: to_view.kv_cache_commitment.clone(),
+                incoming_token_commitment: to_view.incoming_token_commitment.clone(),
+                query_commitment: to_view.query_commitment.clone(),
+                output_commitment: to_view.output_commitment.clone(),
+                lookup_rows_commitment: registry_artifact.lookup_rows_commitment.clone(),
+            };
+            if step.to_state != expected_to {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding step {step_index} recorded to_state does not match the oracle replay"
+                )));
+            }
+            previous_history_commitment = Some(to_history_commitment);
+            previous_history_length = Some(to_history_length);
+        }
+        Ok(())
+    }
+
+    fn oracle_verify_phase14_decoding_chain(manifest: &Phase14DecodingChainManifest) -> Result<()> {
+        manifest.layout.validate()?;
+        let expected_layout_commitment = oracle_commit_phase12_layout(&manifest.layout);
+        let kv_cache_range = manifest.layout.kv_cache_range()?;
+        let latest_cached_range = manifest.layout.latest_cached_pair_range()?;
+        if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported chunked decoding statement version `{}`",
+                manifest.statement_version
+            )));
+        }
+        let mut registry = std::collections::HashMap::new();
+        for artifact in &manifest.shared_lookup_artifacts {
+            registry.insert(artifact.artifact_commitment.clone(), artifact);
+        }
+        let mut accumulator: Option<Phase14HistoryAccumulator> = None;
+        for (step_index, step) in manifest.steps.iter().enumerate() {
+            let artifact = registry
+                .get(&step.shared_lookup_artifact_commitment)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "shared lookup artifact `{}` is not present in the manifest registry",
+                        step.shared_lookup_artifact_commitment
+                    ))
+                })?;
+            let from_view = oracle_phase12_state_view(
+                step.proof.claim.program.initial_memory(),
+                &manifest.layout,
+            )?;
+            let current = accumulator.clone().unwrap_or_else(|| {
+                oracle_seed_phase14_history(
+                    &expected_layout_commitment,
+                    &step.proof.claim.program.initial_memory()[kv_cache_range.clone()],
+                    &from_view.lookup_rows_commitment,
+                    manifest.layout.pair_width,
+                )
+            });
+            let expected_from = Phase14DecodingState {
+                state_version: STWO_DECODING_STATE_VERSION_PHASE14.to_string(),
+                step_index,
+                position: from_view.position,
+                layout_commitment: from_view.layout_commitment.clone(),
+                persistent_state_commitment: from_view.persistent_state_commitment.clone(),
+                kv_history_commitment: current.history_commitment.clone(),
+                kv_history_length: current.history_length,
+                kv_history_chunk_size: current.chunk_size,
+                kv_history_sealed_commitment: current.sealed_commitment.clone(),
+                kv_history_sealed_chunks: current.sealed_chunks,
+                kv_history_open_chunk_commitment: current.open_chunk_commitment.clone(),
+                kv_history_open_chunk_pairs: current.open_chunk_pairs,
+                kv_history_frontier_commitment: current.frontier_commitment.clone(),
+                kv_history_frontier_pairs: current.frontier_pairs,
+                lookup_transcript_commitment: current.lookup_transcript_commitment.clone(),
+                lookup_transcript_entries: current.lookup_transcript_entries,
+                lookup_frontier_commitment: current.lookup_frontier_commitment.clone(),
+                lookup_frontier_entries: current.lookup_frontier_entries,
+                kv_cache_commitment: from_view.kv_cache_commitment.clone(),
+                incoming_token_commitment: from_view.incoming_token_commitment.clone(),
+                query_commitment: from_view.query_commitment.clone(),
+                output_commitment: from_view.output_commitment.clone(),
+                lookup_rows_commitment: from_view.lookup_rows_commitment.clone(),
+            };
+            if step.from_state != expected_from {
+                return Err(VmError::InvalidConfig(format!(
+                    "chunked decoding step {step_index} recorded from_state does not match the oracle replay"
+                )));
+            }
+
+            let to_view =
+                oracle_phase12_state_view(&step.proof.claim.final_state.memory, &manifest.layout)?;
+            let next = oracle_advance_phase14_history(
+                &expected_layout_commitment,
+                &current,
+                &step.proof.claim.final_state.memory[latest_cached_range.clone()],
+                &artifact.lookup_rows_commitment,
+                manifest.layout.pair_width,
+            )?;
+            let expected_to = Phase14DecodingState {
+                state_version: STWO_DECODING_STATE_VERSION_PHASE14.to_string(),
+                step_index: step_index + 1,
+                position: to_view.position,
+                layout_commitment: to_view.layout_commitment.clone(),
+                persistent_state_commitment: to_view.persistent_state_commitment.clone(),
+                kv_history_commitment: next.history_commitment.clone(),
+                kv_history_length: next.history_length,
+                kv_history_chunk_size: next.chunk_size,
+                kv_history_sealed_commitment: next.sealed_commitment.clone(),
+                kv_history_sealed_chunks: next.sealed_chunks,
+                kv_history_open_chunk_commitment: next.open_chunk_commitment.clone(),
+                kv_history_open_chunk_pairs: next.open_chunk_pairs,
+                kv_history_frontier_commitment: next.frontier_commitment.clone(),
+                kv_history_frontier_pairs: next.frontier_pairs,
+                lookup_transcript_commitment: next.lookup_transcript_commitment.clone(),
+                lookup_transcript_entries: next.lookup_transcript_entries,
+                lookup_frontier_commitment: next.lookup_frontier_commitment.clone(),
+                lookup_frontier_entries: next.lookup_frontier_entries,
+                kv_cache_commitment: to_view.kv_cache_commitment.clone(),
+                incoming_token_commitment: to_view.incoming_token_commitment.clone(),
+                query_commitment: to_view.query_commitment.clone(),
+                output_commitment: to_view.output_commitment.clone(),
+                lookup_rows_commitment: to_view.lookup_rows_commitment.clone(),
+            };
+            if step.to_state != expected_to {
+                return Err(VmError::InvalidConfig(format!(
+                    "chunked decoding step {step_index} recorded to_state does not match the oracle replay"
+                )));
+            }
+            accumulator = Some(next);
+        }
+        Ok(())
     }
 
     /// Requires `memory` to already contain `PHASE12_LOOKUP_ROW_VALUES` in the layout's lookup
@@ -5654,5 +6496,80 @@ mod tests {
         assert!(err
             .to_string()
             .contains("total_rollups=99 does not match derived total_rollups"));
+    }
+
+    #[test]
+    fn phase12_oracle_matches_production_on_demo_chain() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+
+        verify_phase12_decoding_chain(&manifest).expect("production verifier");
+        oracle_verify_phase12_decoding_chain(&manifest).expect("oracle verifier");
+    }
+
+    proptest! {
+        #[test]
+        fn phase12_oracle_matches_production_on_bounded_single_step_chain(
+            (layout, memory) in phase12_bounded_memory_strategy()
+        ) {
+            let proof = sample_phase12_step_proof(&layout, memory);
+            let manifest = phase12_prepare_decoding_chain(&layout, &[proof]).expect("phase12 manifest");
+            prop_assert!(verify_phase12_decoding_chain(&manifest).is_ok());
+            prop_assert!(oracle_verify_phase12_decoding_chain(&manifest).is_ok());
+        }
+    }
+
+    #[test]
+    fn phase12_oracle_and_production_reject_same_wrong_artifact_reference() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest =
+            phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        manifest.steps[0].shared_lookup_artifact_commitment = "missing-artifact".to_string();
+
+        assert!(verify_phase12_decoding_chain(&manifest).is_err());
+        assert!(oracle_verify_phase12_decoding_chain(&manifest).is_err());
+    }
+
+    #[test]
+    fn phase14_oracle_matches_production_on_demo_chain() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        let manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+
+        verify_phase14_decoding_chain(&manifest).expect("production verifier");
+        oracle_verify_phase14_decoding_chain(&manifest).expect("oracle verifier");
+    }
+
+    #[test]
+    fn phase14_oracle_and_production_reject_same_tampered_history_link() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        manifest.steps[1]
+            .from_state
+            .kv_history_open_chunk_commitment = "tampered".to_string();
+
+        assert!(verify_phase14_decoding_chain(&manifest).is_err());
+        assert!(oracle_verify_phase14_decoding_chain(&manifest).is_err());
     }
 }

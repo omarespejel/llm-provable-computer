@@ -393,6 +393,281 @@ mod tests {
     use crate::stwo_backend::lookup_prover::prove_phase10_shared_binary_step_lookup_envelope;
     use crate::stwo_backend::normalization_prover::prove_phase10_shared_normalization_lookup_envelope;
 
+    fn oracle_lower_hex(bytes: &[u8]) -> String {
+        const HEX: &[u8; 16] = b"0123456789abcdef";
+        let mut out = String::with_capacity(bytes.len() * 2);
+        for &byte in bytes {
+            out.push(HEX[(byte >> 4) as usize] as char);
+            out.push(HEX[(byte & 0x0f) as usize] as char);
+        }
+        out
+    }
+
+    fn oracle_blake2b_256(parts: &[Vec<u8>]) -> String {
+        let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+        for part in parts {
+            hasher.update(part);
+        }
+        let mut out = [0u8; 32];
+        hasher
+            .finalize_variable(&mut out)
+            .expect("blake2b finalize");
+        oracle_lower_hex(&out)
+    }
+
+    fn oracle_commit_phase12_shared_lookup_rows(
+        layout_commitment: &str,
+        flattened_lookup_rows: &[i16],
+    ) -> String {
+        let mut parts = vec![
+            STWO_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            b"lookup-rows".to_vec(),
+        ];
+        for value in flattened_lookup_rows {
+            parts.push(value.to_le_bytes().to_vec());
+        }
+        oracle_blake2b_256(&parts)
+    }
+
+    fn oracle_commit_phase12_shared_lookup_artifact(
+        layout_commitment: &str,
+        flattened_lookup_rows: &[i16],
+        normalization_proof_envelope: &EmbeddedSharedNormalizationProof,
+        activation_proof_envelope: &EmbeddedSharedActivationLookupProof,
+    ) -> String {
+        let rows_json = serde_json::to_vec(flattened_lookup_rows).expect("rows json");
+        let normalization_json =
+            serde_json::to_vec(normalization_proof_envelope).expect("normalization json");
+        let activation_json =
+            serde_json::to_vec(activation_proof_envelope).expect("activation json");
+        oracle_blake2b_256(&[
+            STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12
+                .as_bytes()
+                .to_vec(),
+            layout_commitment.as_bytes().to_vec(),
+            (rows_json.len() as u64).to_le_bytes().to_vec(),
+            rows_json,
+            (normalization_json.len() as u64).to_le_bytes().to_vec(),
+            normalization_json,
+            (activation_json.len() as u64).to_le_bytes().to_vec(),
+            activation_json,
+        ])
+    }
+
+    fn oracle_verify_phase12_shared_lookup_artifact(
+        artifact: &Phase12SharedLookupArtifact,
+        layout: &Phase12DecodingLayout,
+        expected_layout_commitment: &str,
+    ) -> Result<()> {
+        layout.validate()?;
+        if artifact.artifact_version != STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12 {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported Phase 12 shared lookup artifact version `{}`",
+                artifact.artifact_version
+            )));
+        }
+        if artifact.semantic_scope != STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12 {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported Phase 12 shared lookup artifact scope `{}`",
+                artifact.semantic_scope
+            )));
+        }
+        if artifact.layout_commitment != expected_layout_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 12 shared lookup artifact layout commitment `{}` does not match expected `{}`",
+                artifact.layout_commitment, expected_layout_commitment
+            )));
+        }
+
+        let expected_lookup_rows_commitment = oracle_commit_phase12_shared_lookup_rows(
+            expected_layout_commitment,
+            &artifact.flattened_lookup_rows,
+        );
+        if artifact.lookup_rows_commitment != expected_lookup_rows_commitment {
+            return Err(VmError::InvalidConfig(
+                "Phase 12 shared lookup artifact lookup_rows_commitment does not match its flattened rows"
+                    .to_string(),
+            ));
+        }
+
+        let expected_artifact_commitment = oracle_commit_phase12_shared_lookup_artifact(
+            expected_layout_commitment,
+            &artifact.flattened_lookup_rows,
+            &artifact.normalization_proof_envelope,
+            &artifact.activation_proof_envelope,
+        );
+        if artifact.artifact_commitment != expected_artifact_commitment {
+            return Err(VmError::InvalidConfig(
+                "Phase 12 shared lookup artifact commitment does not match its serialized contents"
+                    .to_string(),
+            ));
+        }
+
+        let lookup = layout.lookup_range()?;
+        let expected_norm_indices = [
+            (lookup.start as u8, (lookup.start + 1) as u8),
+            ((lookup.start + 4) as u8, (lookup.start + 5) as u8),
+        ];
+        let normalization_wrapper = &artifact.normalization_proof_envelope;
+        if normalization_wrapper.statement_version
+            != STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported Phase 12 shared lookup artifact normalization statement version `{}`",
+                normalization_wrapper.statement_version
+            )));
+        }
+        if normalization_wrapper.semantic_scope != DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported Phase 12 shared lookup artifact normalization scope `{}`",
+                normalization_wrapper.semantic_scope
+            )));
+        }
+        if normalization_wrapper.claimed_rows.len() != expected_norm_indices.len() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 12 shared lookup artifact normalization row count {} does not match expected {}",
+                normalization_wrapper.claimed_rows.len(),
+                expected_norm_indices.len()
+            )));
+        }
+        for (row, (expected_norm_idx, expected_inv_idx)) in normalization_wrapper
+            .claimed_rows
+            .iter()
+            .zip(expected_norm_indices)
+        {
+            if row.norm_sq_memory_index != expected_norm_idx
+                || row.inv_sqrt_q8_memory_index != expected_inv_idx
+            {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 12 shared lookup artifact normalization indices ({}, {}) do not match expected ({}, {})",
+                    row.norm_sq_memory_index,
+                    row.inv_sqrt_q8_memory_index,
+                    expected_norm_idx,
+                    expected_inv_idx
+                )));
+            }
+        }
+
+        let normalization_rows: Vec<(i16, i16)> = normalization_wrapper
+            .claimed_rows
+            .iter()
+            .map(|row| (row.expected_norm_sq, row.expected_inv_sqrt_q8))
+            .collect();
+        let normalization_envelope_rows: Vec<(u16, u16)> = normalization_rows
+            .iter()
+            .map(|(norm_sq, inv_sqrt_q8)| {
+                Ok((
+                    u16::try_from(*norm_sq).map_err(|_| {
+                        VmError::InvalidConfig(
+                            "Phase 12 shared lookup artifact normalization row is not a canonical u16"
+                                .to_string(),
+                        )
+                    })?,
+                    u16::try_from(*inv_sqrt_q8).map_err(|_| {
+                        VmError::InvalidConfig(
+                            "Phase 12 shared lookup artifact normalization inverse row is not a canonical u16"
+                                .to_string(),
+                        )
+                    })?,
+                ))
+            })
+            .collect::<Result<_>>()?;
+        if normalization_wrapper.proof_envelope.claimed_rows != normalization_envelope_rows {
+            return Err(VmError::InvalidConfig(
+                "Phase 12 shared lookup artifact normalization wrapper rows do not match the embedded proof envelope"
+                    .to_string(),
+            ));
+        }
+
+        let expected_activation_indices = [
+            ((lookup.start + 2) as u8, (lookup.start + 3) as u8),
+            ((lookup.start + 6) as u8, (lookup.start + 7) as u8),
+        ];
+        let activation_wrapper = &artifact.activation_proof_envelope;
+        if activation_wrapper.statement_version != STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10 {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported Phase 12 shared lookup artifact activation statement version `{}`",
+                activation_wrapper.statement_version
+            )));
+        }
+        if activation_wrapper.semantic_scope != DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported Phase 12 shared lookup artifact activation scope `{}`",
+                activation_wrapper.semantic_scope
+            )));
+        }
+        if activation_wrapper.claimed_rows.len() != expected_activation_indices.len() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 12 shared lookup artifact activation row count {} does not match expected {}",
+                activation_wrapper.claimed_rows.len(),
+                expected_activation_indices.len()
+            )));
+        }
+        for (row, (expected_input_idx, expected_output_idx)) in activation_wrapper
+            .claimed_rows
+            .iter()
+            .zip(expected_activation_indices)
+        {
+            if row.input_memory_index != expected_input_idx
+                || row.output_memory_index != expected_output_idx
+            {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 12 shared lookup artifact activation indices ({}, {}) do not match expected ({}, {})",
+                    row.input_memory_index,
+                    row.output_memory_index,
+                    expected_input_idx,
+                    expected_output_idx
+                )));
+            }
+        }
+        let activation_rows: Vec<Phase3LookupTableRow> = activation_wrapper
+            .claimed_rows
+            .iter()
+            .map(|row| {
+                let output = u8::try_from(row.expected_output).map_err(|_| {
+                    VmError::InvalidConfig(
+                        "Phase 12 shared lookup artifact activation output is not a canonical u8"
+                            .to_string(),
+                    )
+                })?;
+                if output > 1 {
+                    return Err(VmError::InvalidConfig(
+                        "Phase 12 shared lookup artifact activation output must be binary"
+                            .to_string(),
+                    ));
+                }
+                Ok(Phase3LookupTableRow {
+                    input: row.expected_input,
+                    output,
+                })
+            })
+            .collect::<Result<_>>()?;
+        if activation_wrapper.proof_envelope.claimed_rows != activation_rows {
+            return Err(VmError::InvalidConfig(
+                "Phase 12 shared lookup artifact activation wrapper rows do not match the embedded proof envelope"
+                    .to_string(),
+            ));
+        }
+
+        let mut expected_flattened_rows = Vec::with_capacity(normalization_rows.len() * 4);
+        for (normalization_row, activation_row) in
+            normalization_rows.iter().zip(activation_rows.iter())
+        {
+            expected_flattened_rows.push(normalization_row.0);
+            expected_flattened_rows.push(normalization_row.1);
+            expected_flattened_rows.push(activation_row.input);
+            expected_flattened_rows.push(i16::from(activation_row.output));
+        }
+        if artifact.flattened_lookup_rows != expected_flattened_rows {
+            return Err(VmError::InvalidConfig(
+                "Phase 12 shared lookup artifact flattened rows do not match the embedded lookup proofs"
+                    .to_string(),
+            ));
+        }
+        Ok(())
+    }
+
     fn sample_layout_and_commitment() -> (Phase12DecodingLayout, String) {
         let layout = phase12_default_decoding_layout();
         let commitment = commit_phase12_layout(&layout);
@@ -654,6 +929,138 @@ mod tests {
         assert!(
             error.to_string().contains("flattened rows do not match"),
             "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_oracle_matches_production_on_valid_artifact() {
+        let (layout, layout_commitment) = sample_layout_and_commitment();
+        let normalization_rows = vec![(16u16, 64u16), (4u16, 128u16)];
+        let activation_rows = vec![
+            Phase3LookupTableRow {
+                input: 1,
+                output: 1,
+            },
+            Phase3LookupTableRow {
+                input: 0,
+                output: 1,
+            },
+        ];
+        let artifact = build_phase12_shared_lookup_artifact(
+            &layout_commitment,
+            vec![16, 64, 1, 1, 4, 128, 0, 1],
+            normalization_wrapper(
+                prove_phase10_shared_normalization_lookup_envelope(&normalization_rows)
+                    .expect("normalization envelope"),
+            ),
+            activation_wrapper(
+                prove_phase10_shared_binary_step_lookup_envelope(&activation_rows)
+                    .expect("activation envelope"),
+            ),
+        )
+        .expect("artifact");
+
+        verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment)
+            .expect("production verifier");
+        oracle_verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment)
+            .expect("oracle verifier");
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_oracle_matches_production_on_tampered_indices() {
+        let (layout, layout_commitment) = sample_layout_and_commitment();
+        let normalization_rows = vec![(16u16, 64u16), (4u16, 128u16)];
+        let activation_rows = vec![
+            Phase3LookupTableRow {
+                input: 1,
+                output: 1,
+            },
+            Phase3LookupTableRow {
+                input: 0,
+                output: 1,
+            },
+        ];
+        let mut artifact = build_phase12_shared_lookup_artifact(
+            &layout_commitment,
+            vec![16, 64, 1, 1, 4, 128, 0, 1],
+            normalization_wrapper(
+                prove_phase10_shared_normalization_lookup_envelope(&normalization_rows)
+                    .expect("normalization envelope"),
+            ),
+            activation_wrapper(
+                prove_phase10_shared_binary_step_lookup_envelope(&activation_rows)
+                    .expect("activation envelope"),
+            ),
+        )
+        .expect("artifact");
+        artifact.normalization_proof_envelope.claimed_rows[0].norm_sq_memory_index += 1;
+        artifact.artifact_commitment = oracle_commit_phase12_shared_lookup_artifact(
+            &layout_commitment,
+            &artifact.flattened_lookup_rows,
+            &artifact.normalization_proof_envelope,
+            &artifact.activation_proof_envelope,
+        );
+
+        let production =
+            verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment);
+        let oracle =
+            oracle_verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment);
+        assert!(
+            production.is_err(),
+            "production unexpectedly accepted tampered artifact"
+        );
+        assert!(
+            oracle.is_err(),
+            "oracle unexpectedly accepted tampered artifact"
+        );
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_oracle_matches_production_on_tampered_proof_bytes() {
+        let (layout, layout_commitment) = sample_layout_and_commitment();
+        let normalization_rows = vec![(16u16, 64u16), (4u16, 128u16)];
+        let activation_rows = vec![
+            Phase3LookupTableRow {
+                input: 1,
+                output: 1,
+            },
+            Phase3LookupTableRow {
+                input: 0,
+                output: 1,
+            },
+        ];
+        let mut artifact = build_phase12_shared_lookup_artifact(
+            &layout_commitment,
+            vec![16, 64, 1, 1, 4, 128, 0, 1],
+            normalization_wrapper(
+                prove_phase10_shared_normalization_lookup_envelope(&normalization_rows)
+                    .expect("normalization envelope"),
+            ),
+            activation_wrapper(
+                prove_phase10_shared_binary_step_lookup_envelope(&activation_rows)
+                    .expect("activation envelope"),
+            ),
+        )
+        .expect("artifact");
+        artifact.activation_proof_envelope.proof_envelope.proof[0] ^= 0x01;
+        artifact.artifact_commitment = oracle_commit_phase12_shared_lookup_artifact(
+            &layout_commitment,
+            &artifact.flattened_lookup_rows,
+            &artifact.normalization_proof_envelope,
+            &artifact.activation_proof_envelope,
+        );
+
+        let production =
+            verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment);
+        let oracle =
+            oracle_verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment);
+        assert!(
+            production.is_err(),
+            "production unexpectedly accepted tampered proof bytes"
+        );
+        assert!(
+            oracle.is_err(),
+            "oracle unexpectedly accepted tampered proof bytes"
         );
     }
 }
