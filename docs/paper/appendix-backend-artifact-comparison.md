@@ -1,6 +1,6 @@
 # Appendix: Frozen Backend Artifact Comparison
 
-Snapshot date: **April 6, 2026**
+Snapshot date: **April 6, 2026** (bundle date; index generated April 7, 2026 UTC)
 
 This appendix complements Appendix A and the main paper’s Section 5 by placing the two frozen
 artifact tiers side by side:
