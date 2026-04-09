@@ -493,6 +493,13 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
                 f"expected={expected_values} from frozen artifact indices."
             )
 
+    unexpected_keys = sorted(set(appendix_rows) - set(expected))
+    for key in unexpected_keys:
+        findings.error(
+            f"{appendix_path}: unexpected Table C1 row for artifact/backend {key!r}; "
+            "no matching frozen artifact index entry."
+        )
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run publication preflight checks for docs/paper.")

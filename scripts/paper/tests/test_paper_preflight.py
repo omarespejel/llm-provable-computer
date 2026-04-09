@@ -186,6 +186,35 @@ class PaperPreflightTests(unittest.TestCase):
                 findings.errors,
             )
 
+    def test_check_backend_consistency_reports_unexpected_table_row(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            tampered_appendix = valid_appendix_table() + (
+                "| `unexpected_artifact` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `1,111` bytes | x |\n"
+            )
+            write_text(
+                repo / "docs/paper/appendix-backend-artifact-comparison.md",
+                tampered_appendix,
+            )
+            write_text(
+                repo / "docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md",
+                valid_prod_index(),
+            )
+            write_text(
+                repo / "docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md",
+                valid_stwo_index(),
+            )
+            findings = MOD.Findings()
+            MOD.check_backend_appendix_consistency(repo, findings)
+            self.assertTrue(
+                any(
+                    "unexpected Table C1 row for artifact/backend ('unexpected_artifact', 'stwo')"
+                    in msg
+                    for msg in findings.errors
+                ),
+                findings.errors,
+            )
+
     def test_check_backend_consistency_reports_missing_timing_keys_without_exception(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp)
