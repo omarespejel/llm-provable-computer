@@ -2419,8 +2419,16 @@ fn cli_verify_stwo_decoding_state_relation_accumulator_demo_rejects_tampered_rel
         .as_str()
         .expect("relation_template_commitment")
         .to_string();
+    assert!(
+        original.len() >= 2,
+        "relation_template_commitment must be at least one byte of hex"
+    );
     let mut tampered = original.clone();
-    let replacement = if &original[..2] == "00" { "ff" } else { "00" };
+    let replacement = if original.starts_with("00") {
+        "ff"
+    } else {
+        "00"
+    };
     tampered.replace_range(0..2, replacement);
     proof_json["relation_template_commitment"] = serde_json::Value::String(tampered);
     std::fs::write(
