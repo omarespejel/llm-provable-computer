@@ -1,0 +1,77 @@
+name: PR hardening contract
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  hardening-contract:
+    name: hardening contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+
+      - name: Validate PR hardening contract
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import subprocess
+          import sys
+
+          base = os.environ["BASE_SHA"]
+          head = os.environ["HEAD_SHA"]
+          body = os.environ.get("PR_BODY") or ""
+
+          changed = subprocess.check_output(
+              ["git", "diff", "--name-only", f"{base}...{head}"],
+              text=True,
+          ).splitlines()
+
+          trusted_prefixes = (
+              "src/stwo_backend/",
+              "src/bin/tvm.rs",
+              "src/proof.rs",
+              "src/verification.rs",
+              "tests/",
+              ".github/workflows/",
+          )
+
+          touches_trusted_core = any(
+              path.startswith(trusted_prefixes) or path in trusted_prefixes
+              for path in changed
+          )
+
+          if not touches_trusted_core:
+              print("No trusted-core paths changed; skipping hardening contract.")
+              sys.exit(0)
+
+          required_snippets = [
+              "## Validation",
+              "## Hardening",
+              "targeted regression and tamper-path coverage added or updated",
+              "oracle or differential checks added/updated, or marked not applicable below",
+              "resource-bound / untrusted-input impact reviewed, or marked not applicable below",
+              "Kani / formal-kernel impact reviewed, or marked not applicable below",
+          ]
+
+          missing = [snippet for snippet in required_snippets if snippet not in body]
+          if missing:
+              print("Trusted-core PRs must include the hardening contract in the PR body.")
+              print("Missing snippets:")
+              for snippet in missing:
+                  print(f"  - {snippet}")
+              sys.exit(1)
+
+          print("Trusted-core PR body includes the hardening contract.")
+          PY
