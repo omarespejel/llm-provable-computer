@@ -3912,6 +3912,30 @@ fn validate_phase24_decoding_state_relation_accumulator_shallow(
             manifest.total_rollups, MAX_PHASE24_ACCUMULATOR_ROLLUPS
         )));
     }
+    if manifest.source_template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator source_template_commitment must not be empty"
+                .to_string(),
+        ));
+    }
+    if manifest.start_state_commitment.is_empty() || manifest.end_state_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator state-boundary commitments must not be empty"
+                .to_string(),
+        ));
+    }
+    if manifest.relation_template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator relation_template_commitment must not be empty"
+                .to_string(),
+        ));
+    }
+    if manifest.relation_accumulator_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator relation_accumulator_commitment must not be empty"
+                .to_string(),
+        ));
+    }
     Ok(())
 }
 
@@ -4287,10 +4311,9 @@ pub fn verify_phase23_decoding_cross_step_lookup_accumulator(
     verify_phase23_decoding_cross_step_lookup_accumulator_with_summaries(manifest, &summaries)
 }
 
-pub fn verify_phase23_decoding_cross_step_lookup_accumulator_with_proof_checks(
+fn verify_phase23_decoding_cross_step_lookup_accumulator_members_with_proof_checks(
     manifest: &Phase23DecodingCrossStepLookupAccumulatorManifest,
 ) -> Result<()> {
-    verify_phase23_decoding_cross_step_lookup_accumulator(manifest)?;
     for (member_index, member) in manifest.members.iter().enumerate() {
         verify_phase22_decoding_lookup_accumulator_with_proof_checks(member).map_err(|error| {
             VmError::UnsupportedProof(format!(
@@ -4299,6 +4322,13 @@ pub fn verify_phase23_decoding_cross_step_lookup_accumulator_with_proof_checks(
         })?;
     }
     Ok(())
+}
+
+pub fn verify_phase23_decoding_cross_step_lookup_accumulator_with_proof_checks(
+    manifest: &Phase23DecodingCrossStepLookupAccumulatorManifest,
+) -> Result<()> {
+    verify_phase23_decoding_cross_step_lookup_accumulator(manifest)?;
+    verify_phase23_decoding_cross_step_lookup_accumulator_members_with_proof_checks(manifest)
 }
 
 fn commit_phase24_state_relation_accumulator_with_summaries(
@@ -4731,13 +4761,12 @@ pub fn verify_phase24_decoding_state_relation_accumulator_with_proof_checks(
 ) -> Result<()> {
     verify_phase24_decoding_state_relation_accumulator(manifest)?;
     for (member_index, member) in manifest.members.iter().enumerate() {
-        verify_phase23_decoding_cross_step_lookup_accumulator_with_proof_checks(member).map_err(
-            |error| {
+        verify_phase23_decoding_cross_step_lookup_accumulator_members_with_proof_checks(member)
+            .map_err(|error| {
                 VmError::UnsupportedProof(format!(
                     "decoding state relation accumulator member {member_index} failed verification: {error}"
                 ))
-            },
-        )?;
+            })?;
     }
     Ok(())
 }
@@ -13671,6 +13700,48 @@ mod tests {
             .contains("Phase 24 member 0 failed shallow Phase 23 validation"));
         assert!(err.to_string().contains("members.len()="));
         assert!(err.to_string().contains("exceeds the supported maximum"));
+    }
+
+    #[test]
+    fn phase24_state_relation_accumulator_rejects_empty_commitments_before_nested_checks() {
+        let seed = sample_phase24_decoding_state_relation_accumulator_manifest();
+
+        let mut empty_source = seed.clone();
+        empty_source.source_template_commitment.clear();
+        empty_source.members[0].members.clear();
+        let err = verify_phase24_decoding_state_relation_accumulator(&empty_source).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("source_template_commitment must not be empty"));
+
+        let mut empty_state_boundary = seed.clone();
+        empty_state_boundary.start_state_commitment.clear();
+        empty_state_boundary.members[0].members.clear();
+        let err =
+            verify_phase24_decoding_state_relation_accumulator(&empty_state_boundary).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("state-boundary commitments must not be empty"));
+
+        let mut empty_relation_template = seed.clone();
+        empty_relation_template.relation_template_commitment.clear();
+        empty_relation_template.members[0].members.clear();
+        let err = verify_phase24_decoding_state_relation_accumulator(&empty_relation_template)
+            .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("relation_template_commitment must not be empty"));
+
+        let mut empty_relation_accumulator = seed;
+        empty_relation_accumulator
+            .relation_accumulator_commitment
+            .clear();
+        empty_relation_accumulator.members[0].members.clear();
+        let err = verify_phase24_decoding_state_relation_accumulator(&empty_relation_accumulator)
+            .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("relation_accumulator_commitment must not be empty"));
     }
 
     #[test]
