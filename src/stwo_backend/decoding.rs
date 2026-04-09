@@ -9232,6 +9232,62 @@ mod tests {
     }
 
     #[test]
+    fn phase17_oracle_matches_production_on_demo_matrix() {
+        let manifest = sample_phase17_rollup_matrix_manifest();
+        verify_phase17_decoding_rollup_matrix(&manifest).expect("production verifier");
+        let oracle_commitment =
+            oracle_commit_phase17_matrix_public_state_boundary(&manifest).expect("oracle");
+        assert_eq!(manifest.public_state_boundary_commitment, oracle_commitment);
+    }
+
+    #[test]
+    fn phase17_oracle_and_production_reject_same_layout_order_tamper() {
+        let mut manifest = sample_phase17_rollup_matrix_manifest();
+        assert!(
+            manifest.rollups.len() >= 2,
+            "sample_phase17_rollup_matrix_manifest must include at least two layouts"
+        );
+        manifest.rollups.swap(0, 1);
+        assert!(verify_phase17_decoding_rollup_matrix(&manifest).is_err());
+        let oracle_commitment =
+            oracle_commit_phase17_matrix_public_state_boundary(&manifest).expect("oracle");
+        assert_ne!(manifest.public_state_boundary_commitment, oracle_commitment);
+    }
+
+    #[test]
+    fn phase17_oracle_and_production_reject_same_nested_rollup_boundary_tamper() {
+        let mut manifest = sample_phase17_rollup_matrix_manifest();
+        let first_layout = manifest
+            .rollups
+            .get_mut(0)
+            .expect("sample_phase17_rollup_matrix_manifest must include at least one layout");
+        let first_rollup = first_layout
+            .rollups
+            .get_mut(0)
+            .expect("sample_phase17_rollup_matrix_manifest layouts must include at least one rollup");
+        first_rollup.public_state_boundary_commitment = "tampered".to_string();
+
+        // First assert the matrix-level boundary check catches the nested tamper.
+        assert!(verify_phase17_decoding_rollup_matrix(&manifest).is_err());
+        let oracle_commitment_before =
+            oracle_commit_phase17_matrix_public_state_boundary(&manifest).expect("oracle");
+        assert_ne!(
+            manifest.public_state_boundary_commitment,
+            oracle_commitment_before
+        );
+
+        // Then recompute the matrix boundary and assert nested phase16 verification still fails.
+        manifest.public_state_boundary_commitment = oracle_commitment_before;
+        assert!(verify_phase17_decoding_rollup_matrix(&manifest).is_err());
+        let oracle_commitment_after =
+            oracle_commit_phase17_matrix_public_state_boundary(&manifest).expect("oracle");
+        assert_eq!(
+            manifest.public_state_boundary_commitment,
+            oracle_commitment_after
+        );
+    }
+
+    #[test]
     fn phase12_oracle_matches_production_on_demo_chain() {
         let layout = phase12_default_decoding_layout();
         let proofs = phase12_demo_initial_memories(&layout)
