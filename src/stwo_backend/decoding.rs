@@ -55,6 +55,10 @@ pub const STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17: &str =
     "stwo-phase17-decoding-history-rollup-matrix-v9";
 pub const STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_history_rollup_matrix";
+pub const STWO_DECODING_MATRIX_ACCUMULATOR_VERSION_PHASE21: &str =
+    "stwo-phase21-decoding-matrix-accumulator-v1";
+pub const STWO_DECODING_MATRIX_ACCUMULATOR_SCOPE_PHASE21: &str =
+    "stwo_execution_parameterized_proof_carrying_decoding_matrix_accumulator";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
 const DECODING_OUTPUT_RANGE: std::ops::Range<usize> = 10..13;
 const DECODING_POSITION_INDEX: usize = 21;
@@ -75,7 +79,9 @@ const MAX_PHASE14_DECODING_CHAIN_JSON_BYTES: usize = 16 * 1024 * 1024;
 const MAX_PHASE15_SEGMENT_BUNDLE_JSON_BYTES: usize = 12 * 1024 * 1024;
 const MAX_PHASE16_SEGMENT_ROLLUP_JSON_BYTES: usize = 12 * 1024 * 1024;
 const MAX_PHASE17_ROLLUP_MATRIX_JSON_BYTES: usize = 40 * 1024 * 1024;
+const MAX_PHASE21_MATRIX_ACCUMULATOR_JSON_BYTES: usize = 64 * 1024 * 1024;
 const MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES: usize = 24 * 1024 * 1024;
+const MAX_PHASE21_ACCUMULATOR_MATRICES: usize = 512;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase11DecodingState {
@@ -400,6 +406,23 @@ pub struct Phase17DecodingHistoryRollupMatrixManifest {
     pub total_steps: usize,
     pub public_state_boundary_commitment: String,
     pub rollups: Vec<Phase16DecodingHistoryRollupManifest>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Phase21DecodingMatrixAccumulatorManifest {
+    pub proof_backend: StarkProofBackend,
+    pub accumulator_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub total_matrices: usize,
+    pub total_layouts: usize,
+    pub total_rollups: usize,
+    pub total_segments: usize,
+    pub total_steps: usize,
+    pub template_commitment: String,
+    pub accumulator_commitment: String,
+    pub matrices: Vec<Phase17DecodingHistoryRollupMatrixManifest>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -2406,6 +2429,290 @@ pub fn verify_phase17_decoding_rollup_matrix_with_proof_checks(
     Ok(())
 }
 
+pub fn phase21_prepare_decoding_matrix_accumulator(
+    matrices: &[Phase17DecodingHistoryRollupMatrixManifest],
+) -> Result<Phase21DecodingMatrixAccumulatorManifest> {
+    if matrices.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 21 decoding matrix accumulator requires at least one matrix".to_string(),
+        ));
+    }
+    if matrices.len() > MAX_PHASE21_ACCUMULATOR_MATRICES {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 21 decoding matrix accumulator supports at most {MAX_PHASE21_ACCUMULATOR_MATRICES} matrices (got {})",
+            matrices.len()
+        )));
+    }
+
+    let first = &matrices[0];
+    let mut total_layouts = 0usize;
+    let mut total_rollups = 0usize;
+    let mut total_segments = 0usize;
+    let mut total_steps = 0usize;
+    let expected_template = commit_phase21_matrix_template(first)?;
+
+    for (matrix_index, matrix) in matrices.iter().enumerate() {
+        verify_phase17_decoding_rollup_matrix(matrix).map_err(|error| {
+            VmError::InvalidConfig(format!(
+                "Phase 21 matrix {matrix_index} failed Phase 17 verification: {error}"
+            ))
+        })?;
+        if matrix.proof_backend_version != first.proof_backend_version {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 21 matrix {matrix_index} proof backend version `{}` does not match the first matrix `{}`",
+                matrix.proof_backend_version, first.proof_backend_version
+            )));
+        }
+        if matrix.statement_version != first.statement_version {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 21 matrix {matrix_index} statement version `{}` does not match the first matrix `{}`",
+                matrix.statement_version, first.statement_version
+            )));
+        }
+        let matrix_template = commit_phase21_matrix_template(matrix)?;
+        if matrix_template != expected_template {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 21 matrix {matrix_index} does not match the shared template commitment"
+            )));
+        }
+        total_layouts = total_layouts
+            .checked_add(matrix.total_layouts)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "Phase 21 matrix accumulator total_layouts overflowed".to_string(),
+                )
+            })?;
+        total_rollups = total_rollups
+            .checked_add(matrix.total_rollups)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "Phase 21 matrix accumulator total_rollups overflowed".to_string(),
+                )
+            })?;
+        total_segments = total_segments
+            .checked_add(matrix.total_segments)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "Phase 21 matrix accumulator total_segments overflowed".to_string(),
+                )
+            })?;
+        total_steps = total_steps.checked_add(matrix.total_steps).ok_or_else(|| {
+            VmError::InvalidConfig("Phase 21 matrix accumulator total_steps overflowed".to_string())
+        })?;
+    }
+
+    let mut manifest = Phase21DecodingMatrixAccumulatorManifest {
+        proof_backend: StarkProofBackend::Stwo,
+        accumulator_version: STWO_DECODING_MATRIX_ACCUMULATOR_VERSION_PHASE21.to_string(),
+        semantic_scope: STWO_DECODING_MATRIX_ACCUMULATOR_SCOPE_PHASE21.to_string(),
+        proof_backend_version: first.proof_backend_version.clone(),
+        statement_version: first.statement_version.clone(),
+        total_matrices: matrices.len(),
+        total_layouts,
+        total_rollups,
+        total_segments,
+        total_steps,
+        template_commitment: expected_template,
+        accumulator_commitment: String::new(),
+        matrices: matrices.to_vec(),
+    };
+    manifest.accumulator_commitment = commit_phase21_matrix_accumulator(&manifest)?;
+    verify_phase21_decoding_matrix_accumulator(&manifest)?;
+    Ok(manifest)
+}
+
+pub fn verify_phase21_decoding_matrix_accumulator(
+    manifest: &Phase21DecodingMatrixAccumulatorManifest,
+) -> Result<()> {
+    if manifest.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding matrix accumulator backend `{}` is not `stwo`",
+            manifest.proof_backend
+        )));
+    }
+    if manifest.accumulator_version != STWO_DECODING_MATRIX_ACCUMULATOR_VERSION_PHASE21 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding matrix accumulator version `{}`",
+            manifest.accumulator_version
+        )));
+    }
+    if manifest.semantic_scope != STWO_DECODING_MATRIX_ACCUMULATOR_SCOPE_PHASE21 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding matrix accumulator semantic scope `{}`",
+            manifest.semantic_scope
+        )));
+    }
+    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding matrix accumulator proof backend version `{}` (expected `{}`)",
+            manifest.proof_backend_version,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+        )));
+    }
+    if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding matrix accumulator statement version `{}`",
+            manifest.statement_version
+        )));
+    }
+    if manifest.matrices.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding matrix accumulator must contain at least one matrix".to_string(),
+        ));
+    }
+    if manifest.matrices.len() > MAX_PHASE21_ACCUMULATOR_MATRICES {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding matrix accumulator matrices.len()={} exceeds the supported maximum {}",
+            manifest.matrices.len(),
+            MAX_PHASE21_ACCUMULATOR_MATRICES
+        )));
+    }
+    if manifest.total_matrices != manifest.matrices.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding matrix accumulator total_matrices={} does not match matrices.len()={}",
+            manifest.total_matrices,
+            manifest.matrices.len()
+        )));
+    }
+    if manifest.template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding matrix accumulator template_commitment must not be empty".to_string(),
+        ));
+    }
+    if manifest.accumulator_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding matrix accumulator accumulator_commitment must not be empty".to_string(),
+        ));
+    }
+
+    let mut total_layouts = 0usize;
+    let mut total_rollups = 0usize;
+    let mut total_segments = 0usize;
+    let mut total_steps = 0usize;
+    let mut derived_template_commitment: Option<String> = None;
+
+    for (matrix_index, matrix) in manifest.matrices.iter().enumerate() {
+        if matrix.proof_backend_version != manifest.proof_backend_version {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding matrix accumulator matrix {matrix_index} proof backend version `{}` does not match accumulator `{}`",
+                matrix.proof_backend_version, manifest.proof_backend_version
+            )));
+        }
+        if matrix.statement_version != manifest.statement_version {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding matrix accumulator matrix {matrix_index} statement version `{}` does not match accumulator `{}`",
+                matrix.statement_version, manifest.statement_version
+            )));
+        }
+        verify_phase17_decoding_rollup_matrix(matrix).map_err(|error| {
+            VmError::InvalidConfig(format!(
+                "decoding matrix accumulator matrix {matrix_index} failed verification: {error}"
+            ))
+        })?;
+
+        let matrix_template = commit_phase21_matrix_template(matrix)?;
+        if let Some(expected) = &derived_template_commitment {
+            if expected != &matrix_template {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding matrix accumulator matrix {matrix_index} does not match the shared template commitment"
+                )));
+            }
+        } else {
+            derived_template_commitment = Some(matrix_template);
+        }
+
+        total_layouts = total_layouts
+            .checked_add(matrix.total_layouts)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "decoding matrix accumulator total_layouts overflowed while summing matrices"
+                        .to_string(),
+                )
+            })?;
+        total_rollups = total_rollups
+            .checked_add(matrix.total_rollups)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "decoding matrix accumulator total_rollups overflowed while summing matrices"
+                        .to_string(),
+                )
+            })?;
+        total_segments = total_segments
+            .checked_add(matrix.total_segments)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "decoding matrix accumulator total_segments overflowed while summing matrices"
+                        .to_string(),
+                )
+            })?;
+        total_steps = total_steps.checked_add(matrix.total_steps).ok_or_else(|| {
+            VmError::InvalidConfig(
+                "decoding matrix accumulator total_steps overflowed while summing matrices"
+                    .to_string(),
+            )
+        })?;
+    }
+
+    if manifest.template_commitment
+        != derived_template_commitment.ok_or_else(|| {
+            VmError::InvalidConfig(
+                "decoding matrix accumulator must contain at least one matrix".to_string(),
+            )
+        })?
+    {
+        return Err(VmError::InvalidConfig(
+            "decoding matrix accumulator template_commitment does not match the computed template commitment"
+                .to_string(),
+        ));
+    }
+    if manifest.total_layouts != total_layouts {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding matrix accumulator total_layouts={} does not match derived total_layouts={}",
+            manifest.total_layouts, total_layouts
+        )));
+    }
+    if manifest.total_rollups != total_rollups {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding matrix accumulator total_rollups={} does not match derived total_rollups={}",
+            manifest.total_rollups, total_rollups
+        )));
+    }
+    if manifest.total_segments != total_segments {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding matrix accumulator total_segments={} does not match derived total_segments={}",
+            manifest.total_segments, total_segments
+        )));
+    }
+    if manifest.total_steps != total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding matrix accumulator total_steps={} does not match derived total_steps={}",
+            manifest.total_steps, total_steps
+        )));
+    }
+    let expected_accumulator_commitment = commit_phase21_matrix_accumulator(manifest)?;
+    if manifest.accumulator_commitment != expected_accumulator_commitment {
+        return Err(VmError::InvalidConfig(
+            "decoding matrix accumulator accumulator_commitment does not match the computed accumulator commitment"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+pub fn verify_phase21_decoding_matrix_accumulator_with_proof_checks(
+    manifest: &Phase21DecodingMatrixAccumulatorManifest,
+) -> Result<()> {
+    verify_phase21_decoding_matrix_accumulator(manifest)?;
+    for (matrix_index, matrix) in manifest.matrices.iter().enumerate() {
+        verify_phase17_decoding_rollup_matrix_with_proof_checks(matrix).map_err(|error| {
+            VmError::UnsupportedProof(format!(
+                "decoding matrix accumulator matrix {matrix_index} failed verification: {error}"
+            ))
+        })?;
+    }
+    Ok(())
+}
+
 pub fn save_phase11_decoding_chain(
     manifest: &Phase11DecodingChainManifest,
     path: &Path,
@@ -2492,8 +2799,8 @@ fn backfill_phase15_segment_boundary_commitment_if_missing(
 
     let mut candidate = serde_json::Value::Object(obj.clone());
     candidate["public_state_boundary_commitment"] = serde_json::Value::String(String::new());
-    let segment: Phase15DecodingHistorySegment = serde_json::from_value(candidate)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    let segment: Phase15DecodingHistorySegment =
+        serde_json::from_value(candidate).map_err(|err| VmError::Serialization(err.to_string()))?;
     obj.insert(
         "public_state_boundary_commitment".to_string(),
         serde_json::Value::String(commit_phase15_segment_public_state_boundary(&segment)),
@@ -2519,8 +2826,8 @@ fn backfill_phase16_rollup_boundary_commitment_if_missing(
 
     let mut candidate = serde_json::Value::Object(obj.clone());
     candidate["public_state_boundary_commitment"] = serde_json::Value::String(String::new());
-    let rollup: Phase16DecodingHistoryRollup = serde_json::from_value(candidate)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    let rollup: Phase16DecodingHistoryRollup =
+        serde_json::from_value(candidate).map_err(|err| VmError::Serialization(err.to_string()))?;
     obj.insert(
         "public_state_boundary_commitment".to_string(),
         serde_json::Value::String(commit_phase16_rollup_public_state_boundary(&rollup)),
@@ -2723,17 +3030,16 @@ fn commit_phase17_matrix_public_state_boundary_from_json(
     let obj = value.as_object().ok_or_else(|| {
         VmError::Serialization("Phase 17 rollup matrix manifest must be a JSON object".to_string())
     })?;
-    let parse_u64 = |map: &serde_json::Map<String, serde_json::Value>,
-                     field: &str|
-     -> Result<u64> {
-        map.get(field)
-            .and_then(serde_json::Value::as_u64)
-            .ok_or_else(|| {
-                VmError::Serialization(format!(
-                    "Phase 17 rollup matrix field `{field}` must be a non-negative integer"
-                ))
-            })
-    };
+    let parse_u64 =
+        |map: &serde_json::Map<String, serde_json::Value>, field: &str| -> Result<u64> {
+            map.get(field)
+                .and_then(serde_json::Value::as_u64)
+                .ok_or_else(|| {
+                    VmError::Serialization(format!(
+                        "Phase 17 rollup matrix field `{field}` must be a non-negative integer"
+                    ))
+                })
+        };
 
     let total_layouts = parse_u64(obj, "total_layouts")?;
     let total_rollups = parse_u64(obj, "total_rollups")?;
@@ -2943,6 +3249,29 @@ pub fn load_phase17_decoding_rollup_matrix(
     serde_json::from_value(value).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
+pub fn save_phase21_decoding_matrix_accumulator(
+    manifest: &Phase21DecodingMatrixAccumulatorManifest,
+    path: &Path,
+) -> Result<()> {
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE21_MATRIX_ACCUMULATOR_JSON_BYTES,
+        "Phase 21 decoding matrix accumulator",
+    )
+}
+
+pub fn load_phase21_decoding_matrix_accumulator(
+    path: &Path,
+) -> Result<Phase21DecodingMatrixAccumulatorManifest> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE21_MATRIX_ACCUMULATOR_JSON_BYTES,
+        "Phase 21 decoding matrix accumulator",
+    )?;
+    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+}
+
 pub fn save_phase13_decoding_layout_matrix(
     manifest: &Phase13DecodingLayoutMatrixManifest,
     path: &Path,
@@ -3119,6 +3448,15 @@ pub fn prove_phase17_decoding_rollup_matrix_demo(
     manifest.public_state_boundary_commitment =
         commit_phase17_matrix_public_state_boundary(&manifest)?;
     verify_phase17_decoding_rollup_matrix_with_proof_checks(&manifest)?;
+    Ok(manifest)
+}
+
+pub fn prove_phase21_decoding_matrix_accumulator_demo(
+) -> Result<Phase21DecodingMatrixAccumulatorManifest> {
+    let first = prove_phase17_decoding_rollup_matrix_demo()?;
+    let second = prove_phase17_decoding_rollup_matrix_demo()?;
+    let manifest = phase21_prepare_decoding_matrix_accumulator(&[first, second])?;
+    verify_phase21_decoding_matrix_accumulator_with_proof_checks(&manifest)?;
     Ok(manifest)
 }
 
@@ -4140,9 +4478,7 @@ fn commit_phase14_public_state(state: &Phase14DecodingState) -> String {
     lower_hex(&out)
 }
 
-fn commit_phase15_segment_public_state_boundary(
-    segment: &Phase15DecodingHistorySegment,
-) -> String {
+fn commit_phase15_segment_public_state_boundary(segment: &Phase15DecodingHistorySegment) -> String {
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15.as_bytes());
     hasher.update(b"public-state-boundary");
@@ -4217,6 +4553,81 @@ fn commit_phase17_matrix_public_state_boundary(
             hasher.update(&(rollup.total_steps as u64).to_le_bytes());
             hasher.update(rollup.public_state_boundary_commitment.as_bytes());
         }
+    }
+
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase21_matrix_template(
+    matrix: &Phase17DecodingHistoryRollupMatrixManifest,
+) -> Result<String> {
+    if matrix.rollups.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding matrix template source must contain at least one layout rollup".to_string(),
+        ));
+    }
+
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_MATRIX_ACCUMULATOR_VERSION_PHASE21.as_bytes());
+    hasher.update(b"template");
+    hasher.update(matrix.statement_version.as_bytes());
+    hasher.update(matrix.proof_backend_version.as_bytes());
+    hasher.update(&(matrix.total_layouts as u64).to_le_bytes());
+
+    for (layout_index, rollup_manifest) in matrix.rollups.iter().enumerate() {
+        let layout_commitment = commit_phase12_layout(&rollup_manifest.layout);
+        hasher.update(&(layout_index as u64).to_le_bytes());
+        hasher.update(layout_commitment.as_bytes());
+        hasher.update(&(rollup_manifest.history_chunk_pairs as u64).to_le_bytes());
+        hasher.update(&(rollup_manifest.max_rollup_segments as u64).to_le_bytes());
+    }
+
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase21_matrix_accumulator(
+    manifest: &Phase21DecodingMatrixAccumulatorManifest,
+) -> Result<String> {
+    if manifest.matrices.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding matrix accumulator must contain at least one matrix".to_string(),
+        ));
+    }
+
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_MATRIX_ACCUMULATOR_VERSION_PHASE21.as_bytes());
+    hasher.update(b"accumulator");
+    hasher.update(manifest.template_commitment.as_bytes());
+    hasher.update(&(manifest.total_matrices as u64).to_le_bytes());
+    hasher.update(&(manifest.total_layouts as u64).to_le_bytes());
+    hasher.update(&(manifest.total_rollups as u64).to_le_bytes());
+    hasher.update(&(manifest.total_segments as u64).to_le_bytes());
+    hasher.update(&(manifest.total_steps as u64).to_le_bytes());
+
+    for (matrix_index, matrix) in manifest.matrices.iter().enumerate() {
+        if matrix.public_state_boundary_commitment.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding matrix accumulator matrix {matrix_index} has an empty public_state_boundary_commitment"
+            )));
+        }
+        hasher.update(&(matrix_index as u64).to_le_bytes());
+        hasher.update(matrix.matrix_version.as_bytes());
+        hasher.update(matrix.semantic_scope.as_bytes());
+        hasher.update(matrix.proof_backend_version.as_bytes());
+        hasher.update(matrix.statement_version.as_bytes());
+        hasher.update(&(matrix.total_layouts as u64).to_le_bytes());
+        hasher.update(&(matrix.total_rollups as u64).to_le_bytes());
+        hasher.update(&(matrix.total_segments as u64).to_le_bytes());
+        hasher.update(&(matrix.total_steps as u64).to_le_bytes());
+        hasher.update(matrix.public_state_boundary_commitment.as_bytes());
     }
 
     let mut out = [0u8; 32];
@@ -6173,8 +6584,16 @@ mod tests {
                 )));
             }
             parts.push((layout_index as u64).to_le_bytes().to_vec());
-            parts.push((rollup_manifest.total_rollups as u64).to_le_bytes().to_vec());
-            parts.push((rollup_manifest.total_segments as u64).to_le_bytes().to_vec());
+            parts.push(
+                (rollup_manifest.total_rollups as u64)
+                    .to_le_bytes()
+                    .to_vec(),
+            );
+            parts.push(
+                (rollup_manifest.total_segments as u64)
+                    .to_le_bytes()
+                    .to_vec(),
+            );
             parts.push((rollup_manifest.total_steps as u64).to_le_bytes().to_vec());
             parts.push(oracle_commit_phase12_layout(&rollup_manifest.layout).into_bytes());
             for rollup in &rollup_manifest.rollups {
@@ -6184,11 +6603,90 @@ mod tests {
                     )));
                 }
                 parts.push((rollup.rollup_index as u64).to_le_bytes().to_vec());
-                parts.push((rollup.global_start_step_index as u64).to_le_bytes().to_vec());
+                parts.push(
+                    (rollup.global_start_step_index as u64)
+                        .to_le_bytes()
+                        .to_vec(),
+                );
                 parts.push((rollup.total_segments as u64).to_le_bytes().to_vec());
                 parts.push((rollup.total_steps as u64).to_le_bytes().to_vec());
                 parts.push(rollup.public_state_boundary_commitment.as_bytes().to_vec());
             }
+        }
+        Ok(oracle_blake2b_256(&parts))
+    }
+
+    fn oracle_commit_phase21_matrix_template(
+        matrix: &Phase17DecodingHistoryRollupMatrixManifest,
+    ) -> Result<String> {
+        if matrix.rollups.is_empty() {
+            return Err(VmError::InvalidConfig(
+                "decoding matrix template source must contain at least one layout rollup"
+                    .to_string(),
+            ));
+        }
+        let mut parts = vec![
+            STWO_DECODING_MATRIX_ACCUMULATOR_VERSION_PHASE21
+                .as_bytes()
+                .to_vec(),
+            b"template".to_vec(),
+            matrix.statement_version.as_bytes().to_vec(),
+            matrix.proof_backend_version.as_bytes().to_vec(),
+            (matrix.total_layouts as u64).to_le_bytes().to_vec(),
+        ];
+        for (layout_index, rollup_manifest) in matrix.rollups.iter().enumerate() {
+            parts.push((layout_index as u64).to_le_bytes().to_vec());
+            parts.push(oracle_commit_phase12_layout(&rollup_manifest.layout).into_bytes());
+            parts.push(
+                (rollup_manifest.history_chunk_pairs as u64)
+                    .to_le_bytes()
+                    .to_vec(),
+            );
+            parts.push(
+                (rollup_manifest.max_rollup_segments as u64)
+                    .to_le_bytes()
+                    .to_vec(),
+            );
+        }
+        Ok(oracle_blake2b_256(&parts))
+    }
+
+    fn oracle_commit_phase21_matrix_accumulator(
+        manifest: &Phase21DecodingMatrixAccumulatorManifest,
+    ) -> Result<String> {
+        if manifest.matrices.is_empty() {
+            return Err(VmError::InvalidConfig(
+                "decoding matrix accumulator must contain at least one matrix".to_string(),
+            ));
+        }
+        let mut parts = vec![
+            STWO_DECODING_MATRIX_ACCUMULATOR_VERSION_PHASE21
+                .as_bytes()
+                .to_vec(),
+            b"accumulator".to_vec(),
+            manifest.template_commitment.as_bytes().to_vec(),
+            (manifest.total_matrices as u64).to_le_bytes().to_vec(),
+            (manifest.total_layouts as u64).to_le_bytes().to_vec(),
+            (manifest.total_rollups as u64).to_le_bytes().to_vec(),
+            (manifest.total_segments as u64).to_le_bytes().to_vec(),
+            (manifest.total_steps as u64).to_le_bytes().to_vec(),
+        ];
+        for (matrix_index, matrix) in manifest.matrices.iter().enumerate() {
+            if matrix.public_state_boundary_commitment.is_empty() {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding matrix accumulator matrix {matrix_index} has an empty public_state_boundary_commitment"
+                )));
+            }
+            parts.push((matrix_index as u64).to_le_bytes().to_vec());
+            parts.push(matrix.matrix_version.as_bytes().to_vec());
+            parts.push(matrix.semantic_scope.as_bytes().to_vec());
+            parts.push(matrix.proof_backend_version.as_bytes().to_vec());
+            parts.push(matrix.statement_version.as_bytes().to_vec());
+            parts.push((matrix.total_layouts as u64).to_le_bytes().to_vec());
+            parts.push((matrix.total_rollups as u64).to_le_bytes().to_vec());
+            parts.push((matrix.total_segments as u64).to_le_bytes().to_vec());
+            parts.push((matrix.total_steps as u64).to_le_bytes().to_vec());
+            parts.push(matrix.public_state_boundary_commitment.as_bytes().to_vec());
         }
         Ok(oracle_blake2b_256(&parts))
     }
@@ -7128,6 +7626,13 @@ mod tests {
         manifest
     }
 
+    fn sample_phase21_matrix_accumulator_manifest() -> Phase21DecodingMatrixAccumulatorManifest {
+        let first = sample_phase17_rollup_matrix_manifest();
+        let second = sample_phase17_rollup_matrix_manifest();
+        phase21_prepare_decoding_matrix_accumulator(&[first, second])
+            .expect("phase21 accumulator manifest")
+    }
+
     #[test]
     fn decoding_step_family_ignores_initial_memory_but_requires_template() {
         let mut initial = vec![0; 23];
@@ -7563,7 +8068,10 @@ mod tests {
                         .as_object_mut()
                         .expect("phase15 global_to_state")
                         .remove("public_state_commitment");
-                    for step in segment["chain"]["steps"].as_array_mut().expect("phase14 steps") {
+                    for step in segment["chain"]["steps"]
+                        .as_array_mut()
+                        .expect("phase14 steps")
+                    {
                         step["from_state"]
                             .as_object_mut()
                             .expect("from_state")
@@ -7601,6 +8109,42 @@ mod tests {
             .expect_err("empty public-state boundary commitment should fail");
         assert!(err.to_string().contains("must not be empty"));
         let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn phase21_save_and_load_round_trip() {
+        let manifest = sample_phase21_matrix_accumulator_manifest();
+        let path = std::env::temp_dir().join(format!(
+            "phase21-decoding-matrix-accumulator-roundtrip-{}.json",
+            std::process::id()
+        ));
+        save_phase21_decoding_matrix_accumulator(&manifest, &path).expect("save");
+        let loaded = load_phase21_decoding_matrix_accumulator(&path).expect("load");
+        verify_phase21_decoding_matrix_accumulator(&loaded).expect("verify");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn save_phase21_decoding_matrix_accumulator_rejects_manifest_exceeding_json_budget() {
+        let mut manifest = sample_phase21_matrix_accumulator_manifest();
+        manifest.matrices[0].rollups[0].rollups[0].segments[0]
+            .chain
+            .steps[0]
+            .proof
+            .proof = vec![0; MAX_PHASE21_MATRIX_ACCUMULATOR_JSON_BYTES];
+        let path = std::env::temp_dir().join(format!(
+            "phase21-decoding-matrix-accumulator-save-oversized-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        let err = save_phase21_decoding_matrix_accumulator(&manifest, &path)
+            .expect_err("oversized phase21 manifest should be rejected on save");
+        assert!(err.to_string().contains("exceeding the limit"));
+        assert!(
+            !path.exists(),
+            "save should not write an unreadable manifest"
+        );
     }
 
     #[test]
@@ -7729,6 +8273,17 @@ mod tests {
             MAX_PHASE17_ROLLUP_MATRIX_JSON_BYTES,
             &manifest,
             save_phase17_decoding_rollup_matrix,
+        );
+    }
+
+    #[test]
+    fn phase21_demo_manifest_fits_json_budget() {
+        let manifest = sample_phase21_matrix_accumulator_manifest();
+        assert_saved_json_budget(
+            "phase21-demo",
+            MAX_PHASE21_MATRIX_ACCUMULATOR_JSON_BYTES,
+            &manifest,
+            save_phase21_decoding_matrix_accumulator,
         );
     }
 
@@ -9261,10 +9816,9 @@ mod tests {
             .rollups
             .get_mut(0)
             .expect("sample_phase17_rollup_matrix_manifest must include at least one layout");
-        let first_rollup = first_layout
-            .rollups
-            .get_mut(0)
-            .expect("sample_phase17_rollup_matrix_manifest layouts must include at least one rollup");
+        let first_rollup = first_layout.rollups.get_mut(0).expect(
+            "sample_phase17_rollup_matrix_manifest layouts must include at least one rollup",
+        );
         first_rollup.public_state_boundary_commitment = "tampered".to_string();
 
         // First assert the matrix-level boundary check catches the nested tamper.
@@ -9285,6 +9839,84 @@ mod tests {
             manifest.public_state_boundary_commitment,
             oracle_commitment_after
         );
+    }
+
+    #[test]
+    fn phase21_matrix_accumulator_accepts_shared_template_matrices() {
+        let manifest = sample_phase21_matrix_accumulator_manifest();
+        assert_eq!(manifest.total_matrices, 2);
+        assert!(manifest.total_layouts >= 2);
+        assert!(manifest.total_rollups >= 2);
+        assert!(manifest.total_segments >= 2);
+        assert!(manifest.total_steps >= 2);
+        verify_phase21_decoding_matrix_accumulator(&manifest).expect("phase21 verification");
+    }
+
+    #[test]
+    fn phase21_matrix_accumulator_rejects_tampered_template_commitment() {
+        let mut manifest = sample_phase21_matrix_accumulator_manifest();
+        manifest.template_commitment = "tampered".to_string();
+        let err = verify_phase21_decoding_matrix_accumulator(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("template_commitment does not match the computed template commitment"));
+    }
+
+    #[test]
+    fn phase21_matrix_accumulator_rejects_tampered_accumulator_commitment() {
+        let mut manifest = sample_phase21_matrix_accumulator_manifest();
+        manifest.accumulator_commitment = "tampered".to_string();
+        let err = verify_phase21_decoding_matrix_accumulator(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("accumulator_commitment does not match the computed accumulator commitment"));
+    }
+
+    #[test]
+    fn phase21_prepare_rejects_layout_template_mismatch() {
+        let first = sample_phase17_rollup_matrix_manifest();
+        let mut second = sample_phase17_rollup_matrix_manifest();
+        second.rollups.pop().expect("at least one layout");
+        second.total_layouts = second.rollups.len();
+        second.total_rollups = second
+            .rollups
+            .iter()
+            .map(|rollup| rollup.total_rollups)
+            .sum();
+        second.total_segments = second
+            .rollups
+            .iter()
+            .map(|rollup| rollup.total_segments)
+            .sum();
+        second.total_steps = second.rollups.iter().map(|rollup| rollup.total_steps).sum();
+        second.public_state_boundary_commitment =
+            commit_phase17_matrix_public_state_boundary(&second).expect("phase17 boundary");
+        verify_phase17_decoding_rollup_matrix(&second).expect("phase17 verification");
+
+        let err = phase21_prepare_decoding_matrix_accumulator(&[first, second]).unwrap_err();
+        assert!(err.to_string().contains("shared template commitment"));
+    }
+
+    #[test]
+    fn phase21_oracle_matches_production_commitments() {
+        let manifest = sample_phase21_matrix_accumulator_manifest();
+        verify_phase21_decoding_matrix_accumulator(&manifest).expect("production verifier");
+        let oracle_template =
+            oracle_commit_phase21_matrix_template(&manifest.matrices[0]).expect("oracle template");
+        let oracle_accumulator =
+            oracle_commit_phase21_matrix_accumulator(&manifest).expect("oracle accumulator");
+        assert_eq!(manifest.template_commitment, oracle_template);
+        assert_eq!(manifest.accumulator_commitment, oracle_accumulator);
+    }
+
+    #[test]
+    fn phase21_oracle_and_production_reject_same_accumulator_tamper() {
+        let mut manifest = sample_phase21_matrix_accumulator_manifest();
+        manifest.accumulator_commitment = "tampered".to_string();
+        assert!(verify_phase21_decoding_matrix_accumulator(&manifest).is_err());
+        let oracle_accumulator =
+            oracle_commit_phase21_matrix_accumulator(&manifest).expect("oracle accumulator");
+        assert_ne!(manifest.accumulator_commitment, oracle_accumulator);
     }
 
     #[test]
