@@ -32,6 +32,8 @@ The systems claim is directly artifact-backed. The analytic claim is model-based
 
 The contributions are threefold: an exact symbolic model separating arithmetic from non-arithmetic work, a semantics-hardened artifact with parameterized proof-carrying decoding over explicit carried-state boundaries, and an infrastructure read of current S-two/Starknet signals without overclaiming present implementation maturity.
 
+The rest of the paper follows that structure: Section 4 develops the analytic model, Section 5 anchors the systems claim in artifacts, and Sections 6-8 place those results in current infrastructure and future-work context.
+
 ---
 
 ## 2. Background
@@ -237,6 +239,8 @@ Figure 1 visualizes that distinction. The dense curve uses the GPT-2-small model
 
 **Figure 1.** `SNARK/STARK` symbolic ratio versus context length. The sparse curve is representative, not tied to one exact checkpoint. The dashed line is the dense asymptotic ceiling from Section 4.2. Reproducibility metadata and exact point generation details are recorded in the supplementary scaling appendix and committed figure script/TSV.
 
+With the analytic behavior established, we now turn to what the repository currently demonstrates and where the bridge to recursive accumulation begins.
+
 ---
 
 ## 5. Repository Artifact: From Trace-as-Witness to Parameterized Proof-Carrying Decoding
@@ -339,6 +343,8 @@ The most defensible comparative claim is therefore:
 > Once large linear algebra is handled efficiently on both sides, the remaining contest is dominated by lookup handling, transparent recursion, field arithmetic, and commitment backend. On those axes, STARK-native stacks remain highly compelling.
 
 This is stronger than “STARKs have already won” because it is narrower and better evidenced. A supplementary appendix summarizes comparison details.
+
+Against that external landscape, the remaining question is practical sequencing: which engineering steps most directly strengthen the next paper without diluting scope discipline.
 
 ---
 
