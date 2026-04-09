@@ -248,6 +248,7 @@ pub struct Phase12DecodingState {
     pub query_commitment: String,
     pub output_commitment: String,
     pub lookup_rows_commitment: String,
+    #[serde(default)]
     pub public_state_commitment: String,
 }
 
@@ -309,6 +310,7 @@ pub struct Phase14DecodingState {
     pub query_commitment: String,
     pub output_commitment: String,
     pub lookup_rows_commitment: String,
+    #[serde(default)]
     pub public_state_commitment: String,
 }
 
@@ -2399,13 +2401,86 @@ pub fn load_phase11_decoding_chain(path: &Path) -> Result<Phase11DecodingChainMa
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
+fn normalize_phase12_state_public_commitment(state: &mut Phase12DecodingState) {
+    if state.public_state_commitment.is_empty() {
+        state.public_state_commitment = commit_phase12_public_state(state);
+    }
+}
+
+fn normalize_phase14_state_public_commitment(state: &mut Phase14DecodingState) {
+    if state.public_state_commitment.is_empty() {
+        state.public_state_commitment = commit_phase14_public_state(state);
+    }
+}
+
+fn normalize_phase12_chain_manifest_public_commitments(
+    manifest: &mut Phase12DecodingChainManifest,
+) {
+    for step in &mut manifest.steps {
+        normalize_phase12_state_public_commitment(&mut step.from_state);
+        normalize_phase12_state_public_commitment(&mut step.to_state);
+    }
+}
+
+fn normalize_phase14_chain_manifest_public_commitments(
+    manifest: &mut Phase14DecodingChainManifest,
+) {
+    for step in &mut manifest.steps {
+        normalize_phase14_state_public_commitment(&mut step.from_state);
+        normalize_phase14_state_public_commitment(&mut step.to_state);
+    }
+}
+
+fn normalize_phase13_layout_matrix_public_commitments(
+    manifest: &mut Phase13DecodingLayoutMatrixManifest,
+) {
+    for chain in &mut manifest.chains {
+        normalize_phase12_chain_manifest_public_commitments(chain);
+    }
+}
+
+fn normalize_phase15_segment_bundle_public_commitments(
+    manifest: &mut Phase15DecodingHistorySegmentBundleManifest,
+) {
+    for segment in &mut manifest.segments {
+        normalize_phase14_state_public_commitment(&mut segment.global_from_state);
+        normalize_phase14_state_public_commitment(&mut segment.global_to_state);
+        normalize_phase14_chain_manifest_public_commitments(&mut segment.chain);
+    }
+}
+
+fn normalize_phase16_segment_rollup_public_commitments(
+    manifest: &mut Phase16DecodingHistoryRollupManifest,
+) {
+    for rollup in &mut manifest.rollups {
+        normalize_phase14_state_public_commitment(&mut rollup.global_from_state);
+        normalize_phase14_state_public_commitment(&mut rollup.global_to_state);
+        for segment in &mut rollup.segments {
+            normalize_phase14_state_public_commitment(&mut segment.global_from_state);
+            normalize_phase14_state_public_commitment(&mut segment.global_to_state);
+            normalize_phase14_chain_manifest_public_commitments(&mut segment.chain);
+        }
+    }
+}
+
+fn normalize_phase17_rollup_matrix_public_commitments(
+    manifest: &mut Phase17DecodingHistoryRollupMatrixManifest,
+) {
+    for rollup in &mut manifest.rollups {
+        normalize_phase16_segment_rollup_public_commitments(rollup);
+    }
+}
+
 pub fn load_phase12_decoding_chain(path: &Path) -> Result<Phase12DecodingChainManifest> {
     let bytes = read_json_bytes_with_limit(
         path,
         MAX_PHASE12_DECODING_CHAIN_JSON_BYTES,
         "Phase 12 decoding chain manifest",
     )?;
-    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+    let mut manifest: Phase12DecodingChainManifest =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    normalize_phase12_chain_manifest_public_commitments(&mut manifest);
+    Ok(manifest)
 }
 
 pub fn save_phase14_decoding_chain(
@@ -2426,7 +2501,10 @@ pub fn load_phase14_decoding_chain(path: &Path) -> Result<Phase14DecodingChainMa
         MAX_PHASE14_DECODING_CHAIN_JSON_BYTES,
         "Phase 14 decoding chain manifest",
     )?;
-    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+    let mut manifest: Phase14DecodingChainManifest =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    normalize_phase14_chain_manifest_public_commitments(&mut manifest);
+    Ok(manifest)
 }
 
 pub fn save_phase15_decoding_segment_bundle(
@@ -2449,7 +2527,10 @@ pub fn load_phase15_decoding_segment_bundle(
         MAX_PHASE15_SEGMENT_BUNDLE_JSON_BYTES,
         "Phase 15 decoding history segment bundle",
     )?;
-    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+    let mut manifest: Phase15DecodingHistorySegmentBundleManifest =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    normalize_phase15_segment_bundle_public_commitments(&mut manifest);
+    Ok(manifest)
 }
 
 pub fn save_phase16_decoding_segment_rollup(
@@ -2472,7 +2553,10 @@ pub fn load_phase16_decoding_segment_rollup(
         MAX_PHASE16_SEGMENT_ROLLUP_JSON_BYTES,
         "Phase 16 decoding history segment rollup",
     )?;
-    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+    let mut manifest: Phase16DecodingHistoryRollupManifest =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    normalize_phase16_segment_rollup_public_commitments(&mut manifest);
+    Ok(manifest)
 }
 
 pub fn save_phase17_decoding_rollup_matrix(
@@ -2495,7 +2579,10 @@ pub fn load_phase17_decoding_rollup_matrix(
         MAX_PHASE17_ROLLUP_MATRIX_JSON_BYTES,
         "Phase 17 decoding history rollup matrix",
     )?;
-    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+    let mut manifest: Phase17DecodingHistoryRollupMatrixManifest =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    normalize_phase17_rollup_matrix_public_commitments(&mut manifest);
+    Ok(manifest)
 }
 
 pub fn save_phase13_decoding_layout_matrix(
@@ -2518,7 +2605,10 @@ pub fn load_phase13_decoding_layout_matrix(
         MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES,
         "Phase 13 decoding layout matrix",
     )?;
-    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+    let mut manifest: Phase13DecodingLayoutMatrixManifest =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    normalize_phase13_layout_matrix_public_commitments(&mut manifest);
+    Ok(manifest)
 }
 
 pub fn prove_phase11_decoding_demo() -> Result<Phase11DecodingChainManifest> {
@@ -6638,6 +6728,37 @@ mod tests {
     }
 
     #[test]
+    fn load_phase12_decoding_chain_backfills_missing_public_state_commitment() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        let mut value = serde_json::to_value(&manifest).expect("manifest json");
+        for step in value["steps"].as_array_mut().expect("steps") {
+            step["from_state"]
+                .as_object_mut()
+                .expect("from_state")
+                .remove("public_state_commitment");
+            step["to_state"]
+                .as_object_mut()
+                .expect("to_state")
+                .remove("public_state_commitment");
+        }
+        let path = std::env::temp_dir().join(format!(
+            "phase12-decoding-legacy-{}.json",
+            std::process::id()
+        ));
+        fs::write(&path, serde_json::to_vec(&value).expect("legacy json")).expect("write");
+        let loaded = load_phase12_decoding_chain(&path).expect("load legacy manifest");
+        verify_phase12_decoding_chain(&loaded).expect("verify normalized manifest");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
     fn save_phase12_decoding_chain_rejects_manifest_exceeding_json_budget() {
         let layout = phase12_default_decoding_layout();
         let memories = phase12_demo_initial_memories(&layout).expect("memories");
@@ -6678,6 +6799,38 @@ mod tests {
             .expect_err("oversized phase14 manifest should be rejected on save");
         assert!(err.to_string().contains("exceeding the limit"));
         assert!(!path.exists(), "save should not write an unreadable manifest");
+    }
+
+    #[test]
+    fn load_phase14_decoding_chain_backfills_missing_public_state_commitment() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12");
+        let manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14");
+        let mut value = serde_json::to_value(&manifest).expect("manifest json");
+        for step in value["steps"].as_array_mut().expect("steps") {
+            step["from_state"]
+                .as_object_mut()
+                .expect("from_state")
+                .remove("public_state_commitment");
+            step["to_state"]
+                .as_object_mut()
+                .expect("to_state")
+                .remove("public_state_commitment");
+        }
+        let path = std::env::temp_dir().join(format!(
+            "phase14-decoding-legacy-{}.json",
+            std::process::id()
+        ));
+        fs::write(&path, serde_json::to_vec(&value).expect("legacy json")).expect("write");
+        let loaded = load_phase14_decoding_chain(&path).expect("load legacy manifest");
+        verify_phase14_decoding_chain(&loaded).expect("verify normalized manifest");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
     }
 
     #[test]
