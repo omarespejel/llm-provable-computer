@@ -2415,7 +2415,14 @@ fn cli_verify_stwo_decoding_state_relation_accumulator_demo_rejects_tampered_rel
     let mut proof_json: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
             .expect("json");
-    proof_json["relation_template_commitment"] = serde_json::Value::String("tampered".to_string());
+    let original = proof_json["relation_template_commitment"]
+        .as_str()
+        .expect("relation_template_commitment")
+        .to_string();
+    let mut tampered = original.clone();
+    let replacement = if &original[..2] == "00" { "ff" } else { "00" };
+    tampered.replace_range(0..2, replacement);
+    proof_json["relation_template_commitment"] = serde_json::Value::String(tampered);
     std::fs::write(
         &tampered_path,
         serde_json::to_vec_pretty(&proof_json).expect("serialize"),
