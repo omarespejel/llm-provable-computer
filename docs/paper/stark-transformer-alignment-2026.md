@@ -255,7 +255,7 @@ The snapshot provides:
 - semantic lockstep/multi-engine agreement checks with ONNX validation,
 - two frozen evidence tiers: `production-v1` (vanilla) and `stwo-experimental-v1` (narrow experimental),
 - a parameterized proof-carrying decoding family (`decoding_step_v2`) over multiple public layouts,
-- carried-state packaging (chain, segment, rollup, multi-layout matrix) with KV/lookup cumulative and frontier commitments,
+- carried-state packaging (chain, segment, rollup, multi-layout matrix) with KV/lookup cumulative and frontier commitments, plus experimental pre-recursive template-bound and lookup-side accumulators,
 - a verification-hardening stack: oracle/differential checks, fuzz smoke targets, mutation tests, Miri/ASAN, and bounded Kani contracts.
 
 This supports a stronger systems statement than earlier drafts: the same decode relation survives progressively more composable manifest layers without changing statement boundaries.
@@ -267,11 +267,10 @@ The repository remains deliberately narrow:
 - default reproducibility and primary transformer relation still use the vanilla backend,
 - the experimental `stwo` path is bounded research scope, not broad production zkML scope,
 - attention is currently `average-hard`, not full standard softmax,
-- shared-table lookup state is carried but not yet accumulated/compressed across decode steps,
-- recursive aggregation/compression is not yet public,
+- shared-table lookup state is carried and narrow pre-recursive accumulator artifacts now exist experimentally, but recursive cryptographic accumulation/compression across decode steps is not yet public,
 - learned-model end-to-end LLM proving, zero-knowledge hiding, and full-ISA AIR coverage remain out of scope.
 
-These limits are intentional scope discipline: the artifact supports structural systems and pre-recursive carried-state claims, but not full softmax-plus-recursion closure.
+These limits are intentional scope discipline: the artifact supports structural systems, pre-recursive carried-state claims, and narrow experimental accumulator artifacts, but not full softmax-plus-recursion closure.
 
 ### 5.3 Frozen reproducibility bundle
 
@@ -331,9 +330,9 @@ Related SNARK-side lines such as zkCNN and zkPyTorch reinforce that non-arithmet
 
 NANOZK and zkLLM reinforce the same trend: layerwise decomposition and attention/nonlinearity specialization with lookup-heavy machinery [10, 39]. Here they are architectural evidence, not matched benchmarks.
 
-### 7.4 BitSage stwo-ml as the closest public STARK-native comparator
+### 7.4 BitSage obelyzk.rs (formerly stwo-ml) as the closest public STARK-native comparator
 
-BitSage stwo-ml is the closest public STARK-native comparator. Public materials show GKR/sumcheck/LogUp-style machinery on an S-two/STWO path with Starknet verification paths [26, 27]. These remain project-reported evidence, not normalized benchmarks.
+BitSage obelyzk.rs (formerly stwo-ml) is the closest public STARK-native comparator. Current public materials show GKR/sumcheck/LogUp-style machinery on an S-two/STWO path with Starknet verification paths, including a single-transaction recursive STARK verification claim for a 30-layer SmolLM2-135M proof and a six-step streaming verification path for a Qwen2-0.5B one-layer model [26, 27]. These remain project-reported evidence, not normalized benchmarks, and the same public materials still show uneven component maturity (`Attention` remains listed as `Prover only`).
 
 ### 7.5 LuminAIR and the custom-AIR path
 
@@ -361,7 +360,7 @@ It does **not** support stronger claims such as “STARKs have conclusively beat
 
 ### 8.2 Highest-leverage repository milestones from this unified baseline
 
-With the parameterized decoding bridge present, the next highest-leverage milestone is **carry-state compression and accumulation**.
+With the parameterized decoding bridge present and pre-recursive accumulator artifacts already in-tree experimentally, the next highest-leverage milestone is **recursive cryptographic carry-state compression and accumulation**.
 
 Concretely, the strongest next move is to keep the same decode relation and statement discipline while adding:
 
@@ -439,8 +438,8 @@ This paper uses the maintained repository `omarespejel/provable-transformer-vm`,
 23. Starknet Community Forum. “SNIP-36: In-protocol Proof Verification.” Specification discussion. Accessed April 5, 2026. <https://community.starknet.io/t/snip-36-in-protocol-proof-verification/116123>
 24. Lagrange. “DeepProve-1.” *Lagrange Blog*, August 18, 2025. <https://www.lagrange.dev/blog/deepprove-1>
 25. Lagrange. “Engineering Update: September 2025.” *Lagrange Engineering Update*, published October 20, 2025. <https://www.lagrange.dev/engineering-updates/september-2025>
-26. BitSage Network. *stwo-ml*. GitHub repository. Accessed April 5, 2026. <https://github.com/Bitsage-Network/stwo-ml>
-27. BitSage Network. “elo-cairo-verifier/README.md.” GitHub documentation file. Accessed April 5, 2026. <https://github.com/Bitsage-Network/stwo-ml/blob/main/elo-cairo-verifier/README.md>
+26. BitSage Network. *obelyzk.rs* (formerly *stwo-ml*). GitHub repository. Accessed April 9, 2026. <https://github.com/Bitsage-Network/obelyzk.rs>
+27. BitSage Network. “elo-cairo-verifier/README.md.” GitHub documentation file in *obelyzk.rs*. Accessed April 9, 2026. <https://github.com/Bitsage-Network/obelyzk.rs/blob/main/elo-cairo-verifier/README.md>
 28. Giza. *LuminAIR*. GitHub repository. Accessed April 5, 2026. <https://github.com/gizatechxyz/LuminAIR>
 29. StarkWare. “Giza x S-two: Powering Verifiable ML with LuminAIR.” *StarkWare Blog*. Accessed April 5, 2026. <https://starkware.co/blog/giza-x-s-two-powering-verifiable-ml-with-luminair/>
 30. `omarespejel/provable-transformer-vm`. “Repository Snapshot Discussed in Sections 5 and 8.” GitHub repository snapshot, canonical launch commit `900ad5da657fb3b8085755657eb50c5f53580c23` (release tag `paper-publication-v3-2026-04-09`). <https://github.com/omarespejel/provable-transformer-vm/tree/900ad5da657fb3b8085755657eb50c5f53580c23>
