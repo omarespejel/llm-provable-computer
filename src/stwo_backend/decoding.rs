@@ -398,6 +398,7 @@ pub struct Phase17DecodingHistoryRollupMatrixManifest {
     pub total_rollups: usize,
     pub total_segments: usize,
     pub total_steps: usize,
+    pub public_state_boundary_commitment: String,
     pub rollups: Vec<Phase16DecodingHistoryRollupManifest>,
 }
 
@@ -2365,6 +2366,14 @@ pub fn verify_phase17_decoding_rollup_matrix(
             manifest.total_steps, derived_total_steps
         )));
     }
+    if manifest.public_state_boundary_commitment
+        != commit_phase17_matrix_public_state_boundary(manifest)?
+    {
+        return Err(VmError::InvalidConfig(
+            "decoding rollup matrix public_state_boundary_commitment does not match the computed boundary commitment"
+                .to_string(),
+        ));
+    }
     for (layout_index, rollup) in manifest.rollups.iter().enumerate() {
         if rollup.proof_backend_version != manifest.proof_backend_version {
             return Err(VmError::InvalidConfig(format!(
@@ -2672,7 +2681,152 @@ fn backfill_phase17_rollup_matrix_public_commitments(value: &mut serde_json::Val
     for rollup in rollups {
         backfill_phase16_segment_rollup_public_commitments(rollup)?;
     }
+    backfill_phase17_matrix_boundary_commitment_if_missing(value)?;
     Ok(())
+}
+
+fn backfill_phase17_matrix_boundary_commitment_if_missing(
+    value: &mut serde_json::Value,
+) -> Result<()> {
+    let obj = value.as_object().ok_or_else(|| {
+        VmError::Serialization("Phase 17 rollup matrix manifest must be a JSON object".to_string())
+    })?;
+    match obj.get("public_state_boundary_commitment") {
+        Some(serde_json::Value::String(current)) if current.is_empty() => {
+            return Err(VmError::Serialization(
+                "public_state_boundary_commitment must not be empty when present".to_string(),
+            ));
+        }
+        Some(serde_json::Value::String(_)) => return Ok(()),
+        Some(_) => {
+            return Err(VmError::Serialization(
+                "public_state_boundary_commitment must be a string".to_string(),
+            ));
+        }
+        None => {}
+    }
+
+    let boundary = commit_phase17_matrix_public_state_boundary_from_json(value)?;
+    let obj = value.as_object_mut().ok_or_else(|| {
+        VmError::Serialization("Phase 17 rollup matrix manifest must be a JSON object".to_string())
+    })?;
+    obj.insert(
+        "public_state_boundary_commitment".to_string(),
+        serde_json::Value::String(boundary),
+    );
+    Ok(())
+}
+
+fn commit_phase17_matrix_public_state_boundary_from_json(
+    value: &serde_json::Value,
+) -> Result<String> {
+    let obj = value.as_object().ok_or_else(|| {
+        VmError::Serialization("Phase 17 rollup matrix manifest must be a JSON object".to_string())
+    })?;
+    let parse_u64 = |map: &serde_json::Map<String, serde_json::Value>,
+                     field: &str|
+     -> Result<u64> {
+        map.get(field)
+            .and_then(serde_json::Value::as_u64)
+            .ok_or_else(|| {
+                VmError::Serialization(format!(
+                    "Phase 17 rollup matrix field `{field}` must be a non-negative integer"
+                ))
+            })
+    };
+
+    let total_layouts = parse_u64(obj, "total_layouts")?;
+    let total_rollups = parse_u64(obj, "total_rollups")?;
+    let total_segments = parse_u64(obj, "total_segments")?;
+    let total_steps = parse_u64(obj, "total_steps")?;
+    let rollups = obj
+        .get("rollups")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| {
+            VmError::Serialization(
+                "Phase 17 rollup matrix rollups must be a JSON array".to_string(),
+            )
+        })?;
+    if rollups.is_empty() {
+        return Err(VmError::Serialization(
+            "Phase 17 rollup matrix must contain at least one rollup manifest".to_string(),
+        ));
+    }
+
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17.as_bytes());
+    hasher.update(b"public-state-boundary");
+    hasher.update(&total_layouts.to_le_bytes());
+    hasher.update(&total_rollups.to_le_bytes());
+    hasher.update(&total_segments.to_le_bytes());
+    hasher.update(&total_steps.to_le_bytes());
+
+    for (layout_index, rollup_manifest_value) in rollups.iter().enumerate() {
+        let rollup_manifest_obj = rollup_manifest_value.as_object().ok_or_else(|| {
+            VmError::Serialization(format!(
+                "Phase 17 rollup manifest {layout_index} must be a JSON object"
+            ))
+        })?;
+        let layout_value = rollup_manifest_obj.get("layout").ok_or_else(|| {
+            VmError::Serialization(format!(
+                "Phase 17 rollup manifest {layout_index} is missing `layout`"
+            ))
+        })?;
+        let layout: Phase12DecodingLayout = serde_json::from_value(layout_value.clone())
+            .map_err(|err| VmError::Serialization(err.to_string()))?;
+        let layout_commitment = commit_phase12_layout(&layout);
+
+        hasher.update(&(layout_index as u64).to_le_bytes());
+        hasher.update(&parse_u64(rollup_manifest_obj, "total_rollups")?.to_le_bytes());
+        hasher.update(&parse_u64(rollup_manifest_obj, "total_segments")?.to_le_bytes());
+        hasher.update(&parse_u64(rollup_manifest_obj, "total_steps")?.to_le_bytes());
+        hasher.update(layout_commitment.as_bytes());
+
+        let nested_rollups = rollup_manifest_obj
+            .get("rollups")
+            .and_then(serde_json::Value::as_array)
+            .ok_or_else(|| {
+                VmError::Serialization(format!(
+                    "Phase 17 rollup manifest {layout_index} rollups must be a JSON array"
+                ))
+            })?;
+        if nested_rollups.is_empty() {
+            return Err(VmError::Serialization(format!(
+                "Phase 17 rollup manifest {layout_index} must contain at least one rollup"
+            )));
+        }
+        for (rollup_index, nested_rollup_value) in nested_rollups.iter().enumerate() {
+            let nested_rollup_obj = nested_rollup_value.as_object().ok_or_else(|| {
+                VmError::Serialization(format!(
+                    "Phase 17 rollup manifest {layout_index} nested rollup {rollup_index} must be a JSON object"
+                ))
+            })?;
+            hasher.update(&parse_u64(nested_rollup_obj, "rollup_index")?.to_le_bytes());
+            hasher.update(&parse_u64(nested_rollup_obj, "global_start_step_index")?.to_le_bytes());
+            hasher.update(&parse_u64(nested_rollup_obj, "total_segments")?.to_le_bytes());
+            hasher.update(&parse_u64(nested_rollup_obj, "total_steps")?.to_le_bytes());
+            let boundary = nested_rollup_obj
+                .get("public_state_boundary_commitment")
+                .and_then(serde_json::Value::as_str)
+                .ok_or_else(|| {
+                    VmError::Serialization(format!(
+                        "Phase 17 rollup manifest {layout_index} nested rollup {rollup_index} is missing `public_state_boundary_commitment`"
+                    ))
+                })?;
+            if boundary.is_empty() {
+                return Err(VmError::Serialization(format!(
+                    "Phase 17 rollup manifest {layout_index} nested rollup {rollup_index} has an empty `public_state_boundary_commitment`"
+                )));
+            }
+            hasher.update(boundary.as_bytes());
+        }
+    }
+
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
 }
 
 pub fn load_phase12_decoding_chain(path: &Path) -> Result<Phase12DecodingChainManifest> {
@@ -2958,8 +3112,12 @@ pub fn prove_phase17_decoding_rollup_matrix_demo(
         total_rollups: rollups.iter().map(|rollup| rollup.total_rollups).sum(),
         total_segments: rollups.iter().map(|rollup| rollup.total_segments).sum(),
         total_steps: rollups.iter().map(|rollup| rollup.total_steps).sum(),
+        public_state_boundary_commitment: String::new(),
         rollups,
     };
+    let mut manifest = manifest;
+    manifest.public_state_boundary_commitment =
+        commit_phase17_matrix_public_state_boundary(&manifest)?;
     verify_phase17_decoding_rollup_matrix_with_proof_checks(&manifest)?;
     Ok(manifest)
 }
@@ -4015,6 +4173,57 @@ fn commit_phase16_rollup_public_state_boundary(rollup: &Phase16DecodingHistoryRo
         .finalize_variable(&mut out)
         .expect("blake2b finalize");
     lower_hex(&out)
+}
+
+fn commit_phase17_matrix_public_state_boundary(
+    manifest: &Phase17DecodingHistoryRollupMatrixManifest,
+) -> Result<String> {
+    if manifest.rollups.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding rollup matrix must contain at least one rollup manifest".to_string(),
+        ));
+    }
+
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17.as_bytes());
+    hasher.update(b"public-state-boundary");
+    hasher.update(&(manifest.total_layouts as u64).to_le_bytes());
+    hasher.update(&(manifest.total_rollups as u64).to_le_bytes());
+    hasher.update(&(manifest.total_segments as u64).to_le_bytes());
+    hasher.update(&(manifest.total_steps as u64).to_le_bytes());
+
+    for (layout_index, rollup_manifest) in manifest.rollups.iter().enumerate() {
+        if rollup_manifest.rollups.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding rollup matrix manifest {layout_index} must contain at least one rollup"
+            )));
+        }
+        let layout_commitment = commit_phase12_layout(&rollup_manifest.layout);
+        hasher.update(&(layout_index as u64).to_le_bytes());
+        hasher.update(&(rollup_manifest.total_rollups as u64).to_le_bytes());
+        hasher.update(&(rollup_manifest.total_segments as u64).to_le_bytes());
+        hasher.update(&(rollup_manifest.total_steps as u64).to_le_bytes());
+        hasher.update(layout_commitment.as_bytes());
+
+        for rollup in &rollup_manifest.rollups {
+            if rollup.public_state_boundary_commitment.is_empty() {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding rollup matrix manifest {layout_index} contains a rollup with an empty public_state_boundary_commitment"
+                )));
+            }
+            hasher.update(&(rollup.rollup_index as u64).to_le_bytes());
+            hasher.update(&(rollup.global_start_step_index as u64).to_le_bytes());
+            hasher.update(&(rollup.total_segments as u64).to_le_bytes());
+            hasher.update(&(rollup.total_steps as u64).to_le_bytes());
+            hasher.update(rollup.public_state_boundary_commitment.as_bytes());
+        }
+    }
+
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
 }
 
 fn decoding_program_step_limit(program: &Program) -> Result<usize> {
@@ -5938,6 +6147,52 @@ mod tests {
         ])
     }
 
+    fn oracle_commit_phase17_matrix_public_state_boundary(
+        manifest: &Phase17DecodingHistoryRollupMatrixManifest,
+    ) -> Result<String> {
+        if manifest.rollups.is_empty() {
+            return Err(VmError::InvalidConfig(
+                "decoding rollup matrix must contain at least one rollup manifest".to_string(),
+            ));
+        }
+
+        let mut parts = vec![
+            STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17
+                .as_bytes()
+                .to_vec(),
+            b"public-state-boundary".to_vec(),
+            (manifest.total_layouts as u64).to_le_bytes().to_vec(),
+            (manifest.total_rollups as u64).to_le_bytes().to_vec(),
+            (manifest.total_segments as u64).to_le_bytes().to_vec(),
+            (manifest.total_steps as u64).to_le_bytes().to_vec(),
+        ];
+        for (layout_index, rollup_manifest) in manifest.rollups.iter().enumerate() {
+            if rollup_manifest.rollups.is_empty() {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding rollup matrix manifest {layout_index} must contain at least one rollup"
+                )));
+            }
+            parts.push((layout_index as u64).to_le_bytes().to_vec());
+            parts.push((rollup_manifest.total_rollups as u64).to_le_bytes().to_vec());
+            parts.push((rollup_manifest.total_segments as u64).to_le_bytes().to_vec());
+            parts.push((rollup_manifest.total_steps as u64).to_le_bytes().to_vec());
+            parts.push(oracle_commit_phase12_layout(&rollup_manifest.layout).into_bytes());
+            for rollup in &rollup_manifest.rollups {
+                if rollup.public_state_boundary_commitment.is_empty() {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding rollup matrix manifest {layout_index} contains a rollup with an empty public_state_boundary_commitment"
+                    )));
+                }
+                parts.push((rollup.rollup_index as u64).to_le_bytes().to_vec());
+                parts.push((rollup.global_start_step_index as u64).to_le_bytes().to_vec());
+                parts.push((rollup.total_segments as u64).to_le_bytes().to_vec());
+                parts.push((rollup.total_steps as u64).to_le_bytes().to_vec());
+                parts.push(rollup.public_state_boundary_commitment.as_bytes().to_vec());
+            }
+        }
+        Ok(oracle_blake2b_256(&parts))
+    }
+
     fn oracle_advance_phase14_open_chunk(
         layout_commitment: &str,
         previous_open_chunk_commitment: &str,
@@ -6854,7 +7109,7 @@ mod tests {
                     .expect("phase16 manifest");
             rollups.push(phase16);
         }
-        Phase17DecodingHistoryRollupMatrixManifest {
+        let mut manifest = Phase17DecodingHistoryRollupMatrixManifest {
             proof_backend: StarkProofBackend::Stwo,
             matrix_version: STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17.to_string(),
             semantic_scope: STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17.to_string(),
@@ -6864,8 +7119,13 @@ mod tests {
             total_rollups: rollups.iter().map(|rollup| rollup.total_rollups).sum(),
             total_segments: rollups.iter().map(|rollup| rollup.total_segments).sum(),
             total_steps: rollups.iter().map(|rollup| rollup.total_steps).sum(),
+            public_state_boundary_commitment: String::new(),
             rollups,
-        }
+        };
+        manifest.public_state_boundary_commitment =
+            commit_phase17_matrix_public_state_boundary(&manifest)
+                .expect("phase17 boundary commitment");
+        manifest
     }
 
     #[test]
@@ -7262,6 +7522,84 @@ mod tests {
         let loaded = load_phase16_decoding_segment_rollup(&path).expect("load legacy manifest");
         verify_phase16_decoding_segment_rollup(&loaded).expect("verify normalized manifest");
         assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn load_phase17_rollup_matrix_backfills_missing_public_state_boundary_commitment() {
+        let manifest = sample_phase17_rollup_matrix_manifest();
+        let mut value = serde_json::to_value(&manifest).expect("manifest json");
+        value
+            .as_object_mut()
+            .expect("matrix object")
+            .remove("public_state_boundary_commitment");
+        for rollup_manifest in value["rollups"].as_array_mut().expect("rollup manifests") {
+            for rollup in rollup_manifest["rollups"]
+                .as_array_mut()
+                .expect("phase16 rollups")
+            {
+                rollup
+                    .as_object_mut()
+                    .expect("phase16 rollup")
+                    .remove("public_state_boundary_commitment");
+                rollup["global_from_state"]
+                    .as_object_mut()
+                    .expect("phase16 global_from_state")
+                    .remove("public_state_commitment");
+                rollup["global_to_state"]
+                    .as_object_mut()
+                    .expect("phase16 global_to_state")
+                    .remove("public_state_commitment");
+                for segment in rollup["segments"].as_array_mut().expect("phase15 segments") {
+                    segment
+                        .as_object_mut()
+                        .expect("phase15 segment")
+                        .remove("public_state_boundary_commitment");
+                    segment["global_from_state"]
+                        .as_object_mut()
+                        .expect("phase15 global_from_state")
+                        .remove("public_state_commitment");
+                    segment["global_to_state"]
+                        .as_object_mut()
+                        .expect("phase15 global_to_state")
+                        .remove("public_state_commitment");
+                    for step in segment["chain"]["steps"].as_array_mut().expect("phase14 steps") {
+                        step["from_state"]
+                            .as_object_mut()
+                            .expect("from_state")
+                            .remove("public_state_commitment");
+                        step["to_state"]
+                            .as_object_mut()
+                            .expect("to_state")
+                            .remove("public_state_commitment");
+                    }
+                }
+            }
+        }
+        let path = std::env::temp_dir().join(format!(
+            "phase17-decoding-legacy-public-state-boundary-{}.json",
+            std::process::id()
+        ));
+        fs::write(&path, serde_json::to_vec(&value).expect("legacy json")).expect("write");
+        let loaded = load_phase17_decoding_rollup_matrix(&path).expect("load legacy manifest");
+        verify_phase17_decoding_rollup_matrix(&loaded).expect("verify normalized manifest");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn load_phase17_rollup_matrix_rejects_empty_public_state_boundary_commitment() {
+        let manifest = sample_phase17_rollup_matrix_manifest();
+        let mut value = serde_json::to_value(&manifest).expect("manifest json");
+        value["public_state_boundary_commitment"] = serde_json::Value::String(String::new());
+        let path = std::env::temp_dir().join(format!(
+            "phase17-decoding-empty-public-state-boundary-{}.json",
+            std::process::id()
+        ));
+        fs::write(&path, serde_json::to_vec(&value).expect("json")).expect("write");
+        let err = load_phase17_decoding_rollup_matrix(&path)
+            .expect_err("empty public-state boundary commitment should fail");
+        assert!(err.to_string().contains("must not be empty"));
         let _ = fs::remove_file(path);
     }
 
@@ -8864,6 +9202,33 @@ mod tests {
         assert!(err
             .to_string()
             .contains("total_rollups=99 does not match derived total_rollups"));
+    }
+
+    #[test]
+    fn phase17_rollup_matrix_rejects_tampered_public_state_boundary_commitment() {
+        let mut manifest = sample_phase17_rollup_matrix_manifest();
+        manifest.public_state_boundary_commitment = "tampered".to_string();
+        let err = verify_phase17_decoding_rollup_matrix(&manifest).unwrap_err();
+        assert!(err.to_string().contains("public_state_boundary_commitment"));
+    }
+
+    #[test]
+    fn phase17_oracle_matches_production_public_state_boundary_commitment() {
+        let manifest = sample_phase17_rollup_matrix_manifest();
+        verify_phase17_decoding_rollup_matrix(&manifest).expect("production verifier");
+        let oracle_commitment =
+            oracle_commit_phase17_matrix_public_state_boundary(&manifest).expect("oracle");
+        assert_eq!(manifest.public_state_boundary_commitment, oracle_commitment);
+    }
+
+    #[test]
+    fn phase17_oracle_and_production_reject_same_public_state_boundary_tamper() {
+        let mut manifest = sample_phase17_rollup_matrix_manifest();
+        manifest.public_state_boundary_commitment = "tampered".to_string();
+        assert!(verify_phase17_decoding_rollup_matrix(&manifest).is_err());
+        let oracle_commitment =
+            oracle_commit_phase17_matrix_public_state_boundary(&manifest).expect("oracle");
+        assert_ne!(manifest.public_state_boundary_commitment, oracle_commitment);
     }
 
     #[test]
