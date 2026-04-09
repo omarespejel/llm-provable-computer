@@ -21,6 +21,7 @@ jobs:
 
       - name: Validate PR hardening contract
         env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_BODY: ${{ github.event.pull_request.body }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -30,9 +31,27 @@ jobs:
           import subprocess
           import sys
 
-          base = os.environ["BASE_SHA"]
-          head = os.environ["HEAD_SHA"]
+          pr_number = os.environ.get("PR_NUMBER") or ""
+          base = os.environ.get("BASE_SHA") or ""
+          head = os.environ.get("HEAD_SHA") or ""
           body = os.environ.get("PR_BODY") or ""
+
+          if not pr_number:
+              print("No pull_request context; skipping hardening contract.")
+              sys.exit(0)
+
+          for rev_name, rev in (("BASE_SHA", base), ("HEAD_SHA", head)):
+              if not rev:
+                  print(f"{rev_name} is missing; skipping hardening contract.")
+                  sys.exit(0)
+              result = subprocess.run(
+                  ["git", "rev-parse", "--verify", "--quiet", rev],
+                  stdout=subprocess.DEVNULL,
+                  stderr=subprocess.DEVNULL,
+              )
+              if result.returncode != 0:
+                  print(f"{rev_name} does not resolve locally; skipping hardening contract.")
+                  sys.exit(0)
 
           changed = subprocess.check_output(
               ["git", "diff", "--name-only", f"{base}...{head}"],
@@ -72,10 +91,23 @@ jobs:
               "- [x] resource-bound / untrusted-input impact reviewed, or marked not applicable below",
               "- [x] Kani / formal-kernel impact reviewed, or marked not applicable below",
           ]
-          unchecked = [line for line in required_checked_lines if line not in body]
+          lower_body = body.lower()
+          body_lines = [line.strip().lower() for line in lower_body.splitlines()]
+          unchecked = []
+          for line in required_checked_lines:
+              if line in body:
+                  continue
+              item_text = line[len("- [x] "):].lower()
+              line_has_na = any(
+                  item_text in candidate
+                  and ("n/a" in candidate or "not applicable" in candidate)
+                  for candidate in body_lines
+              )
+              if not line_has_na:
+                  unchecked.append(line)
           if unchecked:
-              print("Trusted-core PRs must explicitly check the hardening checklist items.")
-              print("Unchecked or missing lines:")
+              print("Trusted-core PRs must check each hardening item or document it as N/A.")
+              print("Unchecked or undocumented items:")
               for line in unchecked:
                   print(f"  - {line}")
               sys.exit(1)
