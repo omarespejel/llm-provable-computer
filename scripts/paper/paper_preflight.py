@@ -5,7 +5,8 @@ Checks:
 1) citation integrity (numeric in-text citations must exist in local references section),
 2) immutable-link policy for this repository's GitHub links (commit-pinned only),
 3) figure/link cross-reference existence for local file links,
-4) source-note presence in appendix-system-comparison.
+4) source-note presence in appendix-system-comparison,
+5) backend appendix timing/size consistency against frozen artifact indices.
 """
 
 from __future__ import annotations
@@ -208,6 +209,177 @@ def check_appendix_source_note(repo_root: pathlib.Path, findings: Findings) -> N
         findings.error(f"{path}: missing standalone source note (expected 'Sources: ...').")
 
 
+def parse_markdown_table_after_heading(text: str, heading: str) -> list[list[str]]:
+    lines = text.splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        if line.strip() == heading:
+            start = i + 1
+            break
+    if start is None:
+        return []
+
+    rows: list[list[str]] = []
+    in_table = False
+    for line in lines[start:]:
+        stripped = line.strip()
+        if not stripped:
+            if in_table:
+                break
+            continue
+        if not stripped.startswith("|"):
+            if in_table:
+                break
+            continue
+        in_table = True
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        rows.append(cells)
+    return rows
+
+
+def parse_index_sizes(index_text: str) -> dict[str, int]:
+    rows = parse_markdown_table_after_heading(index_text, "## Primary Artifacts")
+    out: dict[str, int] = {}
+    if len(rows) < 3:
+        return out
+    header = rows[0]
+    try:
+        artifact_idx = header.index("Artifact")
+        size_idx = header.index("Size (bytes)")
+    except ValueError:
+        return out
+    # Skip header + separator.
+    for row in rows[2:]:
+        if len(row) <= max(artifact_idx, size_idx):
+            continue
+        artifact = row[artifact_idx].strip("`")
+        size_cell = row[size_idx]
+        digits = re.sub(r"[^0-9]", "", size_cell)
+        if not digits:
+            continue
+        out[artifact] = int(digits)
+    return out
+
+
+def parse_index_timings(index_text: str) -> dict[str, int]:
+    rows = parse_markdown_table_after_heading(index_text, "## Timing Summary (seconds)")
+    out: dict[str, int] = {}
+    if len(rows) < 3:
+        return out
+    # Skip header + separator.
+    for row in rows[2:]:
+        if len(row) < 2:
+            continue
+        label = row[0].strip("`")
+        seconds_cell = row[1]
+        digits = re.sub(r"[^0-9]", "", seconds_cell)
+        if not digits:
+            continue
+        out[label] = int(digits)
+    return out
+
+
+def parse_appendix_backend_rows(appendix_text: str) -> dict[tuple[str, str], tuple[int, int, int]]:
+    rows = parse_markdown_table_after_heading(
+        appendix_text, "## Table C1. Frozen artifact comparison by backend and scope"
+    )
+    out: dict[tuple[str, str], tuple[int, int, int]] = {}
+    if len(rows) < 3:
+        return out
+    # Skip header + separator.
+    for row in rows[2:]:
+        if len(row) < 6:
+            continue
+        artifact = row[0].strip().strip("`")
+        backend = row[1].strip().strip("`")
+        prove_digits = re.sub(r"[^0-9]", "", row[3])
+        verify_digits = re.sub(r"[^0-9]", "", row[4])
+        size_digits = re.sub(r"[^0-9]", "", row[5])
+        if not (prove_digits and verify_digits and size_digits):
+            continue
+        out[(artifact, backend)] = (int(prove_digits), int(verify_digits), int(size_digits))
+    return out
+
+
+def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findings) -> None:
+    appendix_path = repo_root / "docs/paper/appendix-backend-artifact-comparison.md"
+    prod_index_path = (
+        repo_root
+        / "docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md"
+    )
+    stwo_index_path = (
+        repo_root
+        / "docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md"
+    )
+
+    appendix_text = appendix_path.read_text(encoding="utf-8")
+    prod_text = prod_index_path.read_text(encoding="utf-8")
+    stwo_text = stwo_index_path.read_text(encoding="utf-8")
+
+    appendix_rows = parse_appendix_backend_rows(appendix_text)
+    if not appendix_rows:
+        findings.error(
+            f"{appendix_path}: failed to parse Table C1 rows for backend artifact consistency checks."
+        )
+        return
+
+    prod_sizes = parse_index_sizes(prod_text)
+    prod_timings = parse_index_timings(prod_text)
+    stwo_sizes = parse_index_sizes(stwo_text)
+    stwo_timings = parse_index_timings(stwo_text)
+
+    expected: dict[tuple[str, str], tuple[int, int, int]] = {
+        ("addition", "vanilla"): (
+            prod_timings["prove_addition"],
+            prod_timings["verify_addition"],
+            prod_sizes["addition.proof.json"],
+        ),
+        ("dot_product", "vanilla"): (
+            prod_timings["prove_dot_product"],
+            prod_timings["verify_dot_product"],
+            prod_sizes["dot_product.proof.json"],
+        ),
+        ("single_neuron", "vanilla"): (
+            prod_timings["prove_single_neuron"],
+            prod_timings["verify_single_neuron"],
+            prod_sizes["single_neuron.proof.json"],
+        ),
+        ("addition", "stwo"): (
+            stwo_timings["prove_addition_stwo"],
+            stwo_timings["verify_addition_stwo"],
+            stwo_sizes["addition.stwo.proof.json"],
+        ),
+        ("shared-normalization-demo", "stwo"): (
+            stwo_timings["prove_shared_normalization_stwo"],
+            stwo_timings["verify_shared_normalization_stwo"],
+            stwo_sizes["shared-normalization.stwo.proof.json"],
+        ),
+        ("gemma_block_v4", "stwo"): (
+            stwo_timings["prove_gemma_block_v4_stwo"],
+            stwo_timings["verify_gemma_block_v4_stwo"],
+            stwo_sizes["gemma_block_v4.stwo.proof.json"],
+        ),
+        ("decoding_demo", "stwo"): (
+            stwo_timings["prove_decoding_demo_stwo"],
+            stwo_timings["verify_decoding_demo_stwo"],
+            stwo_sizes["decoding.stwo.chain.json"],
+        ),
+    }
+
+    for key, expected_values in expected.items():
+        if key not in appendix_rows:
+            findings.error(
+                f"{appendix_path}: missing Table C1 row for artifact/backend {key!r}."
+            )
+            continue
+        found_values = appendix_rows[key]
+        if found_values != expected_values:
+            findings.error(
+                f"{appendix_path}: Table C1 mismatch for {key!r}: found prove/verify/size={found_values}, "
+                f"expected={expected_values} from frozen artifact indices."
+            )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run publication preflight checks for docs/paper.")
     parser.add_argument(
@@ -228,6 +400,7 @@ def main() -> int:
         run_file_checks(path, repo_root, findings)
 
     check_appendix_source_note(repo_root, findings)
+    check_backend_appendix_consistency(repo_root, findings)
 
     if findings.warnings:
         print("Warnings:")
