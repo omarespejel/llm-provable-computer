@@ -3263,19 +3263,27 @@ fn derive_phase23_member_boundary_commitment_at_step(
                 "Phase 23 member {member_index} segment {segment_index} must contain at least one step"
             )));
         }
-        consumed_steps = consumed_steps.checked_add(segment.total_steps).ok_or_else(|| {
-            VmError::InvalidConfig(format!(
-                "Phase 23 member {member_index} step count overflowed while deriving boundary commitments"
-            ))
-        })?;
+        let next_consumed_steps = consumed_steps
+            .checked_add(segment.total_steps)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 23 member {member_index} step count overflowed while deriving boundary commitments"
+                ))
+            })?;
+        if step_count < next_consumed_steps {
+            let local_step_count = step_count - consumed_steps;
+            debug_assert!(local_step_count < segment.total_steps);
+            let boundary_state = derive_phase23_boundary_state_within_segment(
+                segment,
+                member_index,
+                segment_index,
+                local_step_count,
+            )?;
+            return Ok(commit_phase23_boundary_state(boundary_state));
+        }
+        consumed_steps = next_consumed_steps;
         if step_count == consumed_steps {
             return Ok(commit_phase23_boundary_state(&segment.global_to_state));
-        }
-        if step_count < consumed_steps {
-            return Err(VmError::InvalidConfig(format!(
-                "Phase 23 member {member_index} cannot derive a boundary at step {} because it does not align to a segment boundary",
-                step_count
-            )));
         }
     }
 
@@ -3283,6 +3291,34 @@ fn derive_phase23_member_boundary_commitment_at_step(
         "Phase 23 member {member_index} step-aligned boundary derivation ended at {} instead of total_steps {}",
         consumed_steps, member.total_steps
     )))
+}
+
+fn derive_phase23_boundary_state_within_segment<'a>(
+    segment: &'a Phase15DecodingHistorySegment,
+    member_index: usize,
+    segment_index: usize,
+    local_step_count: usize,
+) -> Result<&'a Phase14DecodingState> {
+    if segment.chain.steps.len() != segment.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 23 member {member_index} segment {segment_index} chain step count {} does not match segment total_steps {}",
+            segment.chain.steps.len(),
+            segment.total_steps
+        )));
+    }
+    if local_step_count > segment.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 23 member {member_index} segment {segment_index} cannot derive local boundary {} beyond segment total_steps {}",
+            local_step_count, segment.total_steps
+        )));
+    }
+    if local_step_count == 0 {
+        return Ok(&segment.global_from_state);
+    }
+    if local_step_count == segment.total_steps {
+        return Ok(&segment.global_to_state);
+    }
+    Ok(&segment.chain.steps[local_step_count - 1].to_state)
 }
 
 fn derive_phase23_member_boundary_commitments(
@@ -4584,9 +4620,17 @@ fn phase23_prepare_member_from_proof_window(
     layout: &Phase12DecodingLayout,
     proofs: &[VanillaStarkExecutionProof],
 ) -> Result<Phase22DecodingLookupAccumulatorManifest> {
+    phase23_prepare_member_from_proof_window_with_segment_limit(layout, proofs, 1)
+}
+
+fn phase23_prepare_member_from_proof_window_with_segment_limit(
+    layout: &Phase12DecodingLayout,
+    proofs: &[VanillaStarkExecutionProof],
+    max_segment_steps: usize,
+) -> Result<Phase22DecodingLookupAccumulatorManifest> {
     let phase12 = phase12_prepare_decoding_chain(layout, proofs)?;
     let phase14 = phase14_prepare_decoding_chain(&phase12)?;
-    let bundle = phase15_prepare_segment_bundle(&phase14, 1)?;
+    let bundle = phase15_prepare_segment_bundle(&phase14, max_segment_steps)?;
     let rollup = phase16_prepare_segment_rollup(&bundle, phase16_default_rollup_segment_limit())?;
     let matrix = prepare_phase17_decoding_rollup_matrix(vec![rollup])?;
     let phase21 = phase21_prepare_decoding_matrix_accumulator(&[matrix])?;
@@ -8274,24 +8318,36 @@ mod tests {
         }
         let mut consumed_steps = 0usize;
         for segment in segments {
-            consumed_steps = consumed_steps
-                .checked_add(segment.total_steps)
-                .ok_or_else(|| {
-                    VmError::InvalidConfig(
-                        "decoding cross-step lookup accumulator oracle step count overflowed"
-                            .to_string(),
-                    )
-                })?;
+            let next_consumed_steps =
+                consumed_steps
+                    .checked_add(segment.total_steps)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(
+                            "decoding cross-step lookup accumulator oracle step count overflowed"
+                                .to_string(),
+                        )
+                    })?;
+            if segment.chain.steps.len() != segment.total_steps {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding cross-step lookup accumulator oracle segment chain step count {} does not match total_steps {}",
+                    segment.chain.steps.len(),
+                    segment.total_steps
+                )));
+            }
+            if step_count < next_consumed_steps {
+                let local_step_count = step_count - consumed_steps;
+                let boundary_state = if local_step_count == 0 {
+                    &segment.global_from_state
+                } else {
+                    &segment.chain.steps[local_step_count - 1].to_state
+                };
+                return Ok(oracle_commit_phase23_boundary_state(boundary_state));
+            }
+            consumed_steps = next_consumed_steps;
             if step_count == consumed_steps {
                 return Ok(oracle_commit_phase23_boundary_state(
                     &segment.global_to_state,
                 ));
-            }
-            if step_count < consumed_steps {
-                return Err(VmError::InvalidConfig(format!(
-                    "decoding cross-step lookup accumulator oracle step {} does not align to a segment boundary",
-                    step_count
-                )));
             }
         }
         Err(VmError::InvalidConfig(
@@ -11847,6 +11903,41 @@ mod tests {
         );
         verify_phase23_decoding_cross_step_lookup_accumulator(&manifest)
             .expect("phase23 verification");
+    }
+
+    #[test]
+    fn phase23_cross_step_lookup_accumulator_accepts_prefix_inside_multi_step_segment() {
+        let layout = phase12_default_decoding_layout();
+        let phase12 = prove_phase12_decoding_demo_for_layout(&layout).expect("phase12 demo");
+        let proofs = phase12
+            .steps
+            .iter()
+            .map(|step| step.proof.clone())
+            .collect::<Vec<_>>();
+        assert!(
+            proofs.len() >= 3,
+            "phase23 regression needs at least 3 proofs"
+        );
+
+        let first_member =
+            phase23_prepare_member_from_proof_window_with_segment_limit(&layout, &proofs[..1], 2)
+                .expect("first phase23 member");
+        let second_member =
+            phase23_prepare_member_from_proof_window_with_segment_limit(&layout, &proofs[..3], 2)
+                .expect("second phase23 member");
+
+        assert_eq!(first_member.total_steps, 1);
+        assert_eq!(second_member.total_steps, 3);
+        assert_eq!(
+            second_member.accumulator.matrices[0].rollups[0].rollups[0].segments[0].total_steps,
+            2
+        );
+
+        let manifest =
+            phase23_prepare_decoding_cross_step_lookup_accumulator(&[first_member, second_member])
+                .expect("phase23 manifest");
+        verify_phase23_decoding_cross_step_lookup_accumulator(&manifest)
+            .expect("phase23 verification across interior segment boundary");
     }
 
     #[test]
