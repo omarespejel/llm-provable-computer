@@ -900,6 +900,8 @@ but it is well past the old “dependency seam only” stage.
   `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/`
 - `stwo` publication bundle regeneration script:
   `scripts/paper/generate_stwo_publication_bundle.sh`
+- Experimental `stwo` accumulation bundle generation script:
+  `scripts/paper/generate_stwo_accumulation_bundle.sh`
 
 ### Project Lineage
 

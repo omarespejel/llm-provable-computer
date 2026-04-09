@@ -28,6 +28,12 @@ pip install -r scripts/requirements.txt
 ./scripts/generate_repro_bundle.sh
 ```
 
+For the carried/accumulated experimental `stwo` decode path:
+
+```bash
+./scripts/paper/generate_stwo_accumulation_bundle.sh
+```
+
 Optional output directory:
 
 ```bash
@@ -56,6 +62,18 @@ The script writes to `compiled/repro-bundle/` by default and produces:
 - `research-v2-*.json`: semantic equivalence certificates (step/trace/matrix)
 - `*.out` / `*.err`: full stdout/stderr capture for each command
 
+The accumulation bundle script writes under
+`docs/paper/artifacts/stwo-accumulation-v1-2026-04-09/` by default and
+produces:
+
+- `manifest.txt`: commit/toolchain/environment metadata
+- `commands.log`: exact executed commands with UTC timestamps
+- `benchmarks.tsv`: wall-clock timing per prove/verify command
+- `artifact_summary.tsv`: machine-readable size/count summary for the Phase 12,
+  Phase 17, Phase 21, Phase 22, and Phase 23 decode artifacts
+- `sha256sums.txt`: hashes for the bundle outputs
+- `decoding-*.json`: carried/accumulated `stwo` decode artifacts
+
 ## Intended Use
 
 - Attach `manifest.txt`, `benchmarks.tsv`, and `sha256sums.txt` in paper/blog
@@ -63,6 +81,8 @@ The script writes to `compiled/repro-bundle/` by default and produces:
 - Link generated `research-v2` artifacts as evidence for semantic-equivalence
   claims.
 - Link generated `*.proof.json` files for statement-v1 proof demonstrations.
+- Use `artifact_summary.tsv` from the accumulation bundle when comparing base,
+  carried, and accumulated decode paths inside the same artifact family.
 
 ## Claim Scope Reminder
 
