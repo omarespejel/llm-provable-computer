@@ -56,21 +56,27 @@ jobs:
               print("No trusted-core paths changed; skipping hardening contract.")
               sys.exit(0)
 
-          required_snippets = [
-              "## Validation",
-              "## Hardening",
-              "targeted regression and tamper-path coverage added or updated",
-              "oracle or differential checks added/updated, or marked not applicable below",
-              "resource-bound / untrusted-input impact reviewed, or marked not applicable below",
-              "Kani / formal-kernel impact reviewed, or marked not applicable below",
-          ]
-
+          required_snippets = ["## Validation", "## Hardening"]
           missing = [snippet for snippet in required_snippets if snippet not in body]
           if missing:
               print("Trusted-core PRs must include the hardening contract in the PR body.")
               print("Missing snippets:")
               for snippet in missing:
                   print(f"  - {snippet}")
+              sys.exit(1)
+
+          required_checked_lines = [
+              "- [x] targeted regression and tamper-path coverage added or updated",
+              "- [x] oracle or differential checks added/updated, or marked not applicable below",
+              "- [x] resource-bound / untrusted-input impact reviewed, or marked not applicable below",
+              "- [x] Kani / formal-kernel impact reviewed, or marked not applicable below",
+          ]
+          unchecked = [line for line in required_checked_lines if line not in body]
+          if unchecked:
+              print("Trusted-core PRs must explicitly check the hardening checklist items.")
+              print("Unchecked or missing lines:")
+              for line in unchecked:
+                  print(f"  - {line}")
               sys.exit(1)
 
           print("Trusted-core PR body includes the hardening contract.")
