@@ -19,7 +19,9 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
+        with:
+          toolchain: stable
 
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@v2
@@ -30,31 +32,53 @@ jobs:
           cargo test --quiet statement_spec_contract_is_synced_with_constants
 
   cargo-test:
-    name: cargo test (${{ matrix.name }})
+    name: cargo nextest (${{ matrix.name }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: default
-            cargo_args: ""
+            features: ""
             needs_python: false
+            nextest_profile: ci
+            rust_toolchain: stable
           - name: burn-model
-            cargo_args: "--features burn-model"
+            features: "burn-model"
             needs_python: false
+            nextest_profile: ci
+            rust_toolchain: stable
           - name: onnx-export
-            cargo_args: "--features onnx-export"
+            features: "onnx-export"
             needs_python: true
+            nextest_profile: ci
+            rust_toolchain: stable
           - name: full
-            cargo_args: "--features full"
+            features: "full"
             needs_python: true
+            nextest_profile: ci
+            rust_toolchain: stable
+          - name: full-stwo-backend
+            features: "full,stwo-backend"
+            needs_python: true
+            nextest_profile: ci-stwo
+            rust_toolchain: nightly-2025-07-14
+          - name: stwo-backend
+            features: "stwo-backend"
+            needs_python: false
+            nextest_profile: ci-stwo
+            rust_toolchain: nightly-2025-07-14
 
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
+        with:
+          toolchain: stable
+        with:
+          toolchain: ${{ matrix.rust_toolchain }}
 
       - name: Install Python
         if: matrix.needs_python
@@ -71,8 +95,39 @@ jobs:
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Run cargo test
-        run: cargo test ${{ matrix.cargo_args }}
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@80e6af7a2ec7f280fffe2d0a9d3a12a9d11d86e9
+        with:
+          tool: cargo-nextest@0.9.132
+
+      - name: Run cargo nextest
+        run: |
+          feature_args=()
+          if [ -n "${{ matrix.features }}" ]; then
+            feature_args+=(--features "${{ matrix.features }}")
+          fi
+          cargo nextest run \
+            --workspace \
+            --all-targets \
+            --profile ${{ matrix.nextest_profile }} \
+            --no-fail-fast \
+            "${feature_args[@]}"
+
+      - name: Run cargo doctests
+        run: |
+          feature_args=()
+          if [ -n "${{ matrix.features }}" ]; then
+            feature_args+=(--features "${{ matrix.features }}")
+          fi
+          cargo test --workspace --doc "${feature_args[@]}"
+
+      - name: Upload nextest junit report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: nextest-junit-${{ matrix.name }}
+          path: target/nextest/${{ matrix.nextest_profile }}/junit.xml
+          if-no-files-found: error
 
   milestone-1-proof:
     name: export and validate ONNX workflow
@@ -83,7 +138,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
 
       - name: Install Python
         uses: actions/setup-python@v5

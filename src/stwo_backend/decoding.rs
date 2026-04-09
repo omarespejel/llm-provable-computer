@@ -69,15 +69,14 @@ const MAX_DECODING_CHAIN_STEPS: usize = 4096;
 const MAX_DECODING_SHARED_LOOKUP_ARTIFACTS: usize = 4096;
 pub(crate) const MAX_DECODING_PROOF_PAYLOAD_BYTES: usize = 2 * 1024 * 1024;
 pub(crate) const MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES: usize = 512 * 1024;
-const MAX_PHASE11_DECODING_CHAIN_JSON_BYTES: usize = 2 * 1024 * 1024;
-const MAX_PHASE12_DECODING_CHAIN_JSON_BYTES: usize = 8 * 1024 * 1024;
-const MAX_PHASE14_DECODING_CHAIN_JSON_BYTES: usize =
-    MAX_PHASE12_DECODING_CHAIN_JSON_BYTES + (2 * 1024 * 1024);
-const MAX_PHASE15_SEGMENT_BUNDLE_JSON_BYTES: usize = 8 * 1024 * 1024;
-const MAX_PHASE16_SEGMENT_ROLLUP_JSON_BYTES: usize = 8 * 1024 * 1024;
-const MAX_PHASE17_ROLLUP_MATRIX_JSON_BYTES: usize = 16 * 1024 * 1024;
-const MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES: usize =
-    MAX_PHASE12_DECODING_CHAIN_JSON_BYTES + (512 * 1024);
+// Sized from the shipped decoding demos plus bounded headroom; regression tests below lock this.
+const MAX_PHASE11_DECODING_CHAIN_JSON_BYTES: usize = 6 * 1024 * 1024;
+const MAX_PHASE12_DECODING_CHAIN_JSON_BYTES: usize = 12 * 1024 * 1024;
+const MAX_PHASE14_DECODING_CHAIN_JSON_BYTES: usize = 16 * 1024 * 1024;
+const MAX_PHASE15_SEGMENT_BUNDLE_JSON_BYTES: usize = 12 * 1024 * 1024;
+const MAX_PHASE16_SEGMENT_ROLLUP_JSON_BYTES: usize = 12 * 1024 * 1024;
+const MAX_PHASE17_ROLLUP_MATRIX_JSON_BYTES: usize = 40 * 1024 * 1024;
+const MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES: usize = 24 * 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase11DecodingState {
@@ -6477,6 +6476,132 @@ mod tests {
             .expect_err("oversized phase14 manifest should be rejected on save");
         assert!(err.to_string().contains("exceeding the limit"));
         assert!(!path.exists(), "save should not write an unreadable manifest");
+    }
+
+    #[test]
+    fn save_phase15_decoding_segment_bundle_rejects_manifest_exceeding_json_budget() {
+        let mut manifest = prove_phase15_decoding_demo().expect("phase15 demo");
+        manifest.segments[0].chain.steps[0].proof.proof =
+            vec![0; MAX_PHASE15_SEGMENT_BUNDLE_JSON_BYTES];
+        let path = std::env::temp_dir().join(format!(
+            "phase15-decoding-save-oversized-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        let err = save_phase15_decoding_segment_bundle(&manifest, &path)
+            .expect_err("oversized phase15 manifest should be rejected on save");
+        assert!(err.to_string().contains("exceeding the limit"));
+        assert!(!path.exists(), "save should not write an unreadable manifest");
+    }
+
+    fn assert_saved_json_budget<T>(
+        label: &str,
+        limit: usize,
+        manifest: &T,
+        save: impl Fn(&T, &std::path::Path) -> Result<()>,
+    ) where
+        T: serde::Serialize,
+    {
+        let thread_label = std::thread::current()
+            .name()
+            .unwrap_or("anon")
+            .chars()
+            .map(|ch| match ch {
+                ':' | '/' | '\\' => '_',
+                other => other,
+            })
+            .collect::<String>();
+        let path = std::env::temp_dir().join(format!(
+            "{}-{}-{}.json",
+            label,
+            std::process::id(),
+            thread_label
+        ));
+        let _ = fs::remove_file(&path);
+        save(manifest, &path).expect("manifest should fit within the configured json budget");
+        let written = fs::metadata(&path).expect("metadata").len() as usize;
+        assert!(
+            written <= limit,
+            "{label} demo wrote {written} bytes, exceeding the configured limit of {limit}"
+        );
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn phase11_demo_manifest_fits_json_budget() {
+        let manifest = prove_phase11_decoding_demo().expect("phase11 demo");
+        assert_saved_json_budget(
+            "phase11-demo",
+            MAX_PHASE11_DECODING_CHAIN_JSON_BYTES,
+            &manifest,
+            save_phase11_decoding_chain,
+        );
+    }
+
+    #[test]
+    fn phase12_demo_manifest_fits_json_budget() {
+        let manifest = prove_phase12_decoding_demo().expect("phase12 demo");
+        assert_saved_json_budget(
+            "phase12-demo",
+            MAX_PHASE12_DECODING_CHAIN_JSON_BYTES,
+            &manifest,
+            save_phase12_decoding_chain,
+        );
+    }
+
+    #[test]
+    fn phase13_demo_manifest_fits_json_budget() {
+        let manifest = prove_phase13_decoding_layout_matrix_demo().expect("phase13 demo");
+        assert_saved_json_budget(
+            "phase13-demo",
+            MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES,
+            &manifest,
+            save_phase13_decoding_layout_matrix,
+        );
+    }
+
+    #[test]
+    fn phase14_demo_manifest_fits_json_budget() {
+        let manifest = prove_phase14_decoding_demo().expect("phase14 demo");
+        assert_saved_json_budget(
+            "phase14-demo",
+            MAX_PHASE14_DECODING_CHAIN_JSON_BYTES,
+            &manifest,
+            save_phase14_decoding_chain,
+        );
+    }
+
+    #[test]
+    fn phase15_demo_manifest_fits_json_budget() {
+        let manifest = prove_phase15_decoding_demo().expect("phase15 demo");
+        assert_saved_json_budget(
+            "phase15-demo",
+            MAX_PHASE15_SEGMENT_BUNDLE_JSON_BYTES,
+            &manifest,
+            save_phase15_decoding_segment_bundle,
+        );
+    }
+
+    #[test]
+    fn phase16_demo_manifest_fits_json_budget() {
+        let manifest = prove_phase16_decoding_demo().expect("phase16 demo");
+        assert_saved_json_budget(
+            "phase16-demo",
+            MAX_PHASE16_SEGMENT_ROLLUP_JSON_BYTES,
+            &manifest,
+            save_phase16_decoding_segment_rollup,
+        );
+    }
+
+    #[test]
+    fn phase17_demo_manifest_fits_json_budget() {
+        let manifest = prove_phase17_decoding_rollup_matrix_demo().expect("phase17 demo");
+        assert_saved_json_budget(
+            "phase17-demo",
+            MAX_PHASE17_ROLLUP_MATRIX_JSON_BYTES,
+            &manifest,
+            save_phase17_decoding_rollup_matrix,
+        );
     }
 
     #[test]
