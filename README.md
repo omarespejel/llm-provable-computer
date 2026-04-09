@@ -532,6 +532,10 @@ matrix/rollup-style packaging layers described in the next-paper track.
 - Phase 19: carried lookup transcripts over the same Phase 14-17 stack
 - Phase 20: explicit lookup frontier commitments over that same stack
 
+These phases define pre-recursive merge boundaries and carried-state bindings;
+they do not yet implement recursive cryptographic accumulation or cross-step
+shared-table accumulation.
+
 #### Explicit Non-Goals
 
 - not a full `stwo` zkML backend for standard-softmax transformers
@@ -849,6 +853,10 @@ lanes carry it forward.
 - Phase 11-14: fixed-shape decoding, parameterized decoding family, layout matrix, and chunked cumulative KV-history
 - Phase 15-17: mergeable history segments, rollups over segments, and multi-layout rollup matrices
 - Phase 18-20: explicit KV frontiers, carried lookup transcripts, and lookup frontier commitments
+
+These phases define pre-recursive merge boundaries and carried-state bindings;
+they do not yet implement recursive cryptographic accumulation or cross-step
+shared-table accumulation.
 
 #### Explicit Non-Goals
 
