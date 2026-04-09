@@ -248,6 +248,7 @@ pub struct Phase12DecodingState {
     pub query_commitment: String,
     pub output_commitment: String,
     pub lookup_rows_commitment: String,
+    pub public_state_commitment: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -308,6 +309,7 @@ pub struct Phase14DecodingState {
     pub query_commitment: String,
     pub output_commitment: String,
     pub lookup_rows_commitment: String,
+    pub public_state_commitment: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -2771,7 +2773,7 @@ fn build_phase12_state(
     kv_history_commitment: String,
     kv_history_length: usize,
 ) -> Phase12DecodingState {
-    Phase12DecodingState {
+    let mut state = Phase12DecodingState {
         state_version: STWO_DECODING_STATE_VERSION_PHASE12.to_string(),
         step_index,
         position: view.position,
@@ -2784,7 +2786,10 @@ fn build_phase12_state(
         query_commitment: view.query_commitment,
         output_commitment: view.output_commitment,
         lookup_rows_commitment: view.lookup_rows_commitment,
-    }
+        public_state_commitment: String::new(),
+    };
+    state.public_state_commitment = commit_phase12_public_state(&state);
+    state
 }
 
 fn build_phase14_state(
@@ -2792,7 +2797,7 @@ fn build_phase14_state(
     view: Phase12StateView,
     history: &Phase14HistoryAccumulator,
 ) -> Phase14DecodingState {
-    Phase14DecodingState {
+    let mut state = Phase14DecodingState {
         state_version: STWO_DECODING_STATE_VERSION_PHASE14.to_string(),
         step_index,
         position: view.position,
@@ -2816,7 +2821,10 @@ fn build_phase14_state(
         query_commitment: view.query_commitment,
         output_commitment: view.output_commitment,
         lookup_rows_commitment: view.lookup_rows_commitment,
-    }
+        public_state_commitment: String::new(),
+    };
+    state.public_state_commitment = commit_phase14_public_state(&state);
+    state
 }
 
 fn validate_phase11_chain_steps(steps: &[Phase11DecodingStep]) -> Result<()> {
@@ -2937,8 +2945,27 @@ fn validate_phase12_chain_steps_against_layout_commitment(
                 step.from_state.position, step.to_state.position
             )));
         }
+        if step.from_state.public_state_commitment != commit_phase12_public_state(&step.from_state) {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step {index} from_state public_state_commitment does not match its serialized contents"
+            )));
+        }
+        if step.to_state.public_state_commitment != commit_phase12_public_state(&step.to_state) {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step {index} to_state public_state_commitment does not match its serialized contents"
+            )));
+        }
     }
     for index in 1..steps.len() {
+        if steps[index - 1].to_state.public_state_commitment
+            != steps[index].from_state.public_state_commitment
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding chain link {} -> {} does not preserve the carried public-state commitment",
+                index - 1,
+                index
+            )));
+        }
         if steps[index - 1].to_state.persistent_state_commitment
             != steps[index].from_state.persistent_state_commitment
         {
@@ -3118,8 +3145,27 @@ fn validate_phase14_chain_steps_against_layout_commitment(
                 step.from_state.position, step.to_state.position
             )));
         }
+        if step.from_state.public_state_commitment != commit_phase14_public_state(&step.from_state) {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} from_state public_state_commitment does not match its serialized contents"
+            )));
+        }
+        if step.to_state.public_state_commitment != commit_phase14_public_state(&step.to_state) {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} to_state public_state_commitment does not match its serialized contents"
+            )));
+        }
     }
     for index in 1..steps.len() {
+        if steps[index - 1].to_state.public_state_commitment
+            != steps[index].from_state.public_state_commitment
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the carried public-state commitment",
+                index - 1,
+                index
+            )));
+        }
         if steps[index - 1].to_state.persistent_state_commitment
             != steps[index].from_state.persistent_state_commitment
         {
@@ -3580,6 +3626,55 @@ fn commit_phase12_persistent_state(
     for value in kv_cache_values {
         hasher.update(&value.to_le_bytes());
     }
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+fn commit_phase12_public_state(state: &Phase12DecodingState) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STATE_VERSION_PHASE12.as_bytes());
+    hasher.update(b"public-state");
+    hasher.update(state.state_version.as_bytes());
+    hasher.update(&(state.step_index as u64).to_le_bytes());
+    hasher.update(&state.position.to_le_bytes());
+    hasher.update(state.layout_commitment.as_bytes());
+    hasher.update(state.persistent_state_commitment.as_bytes());
+    hasher.update(state.kv_history_commitment.as_bytes());
+    hasher.update(&(state.kv_history_length as u64).to_le_bytes());
+    hasher.update(state.kv_cache_commitment.as_bytes());
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+fn commit_phase14_public_state(state: &Phase14DecodingState) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STATE_VERSION_PHASE14.as_bytes());
+    hasher.update(b"public-state");
+    hasher.update(state.state_version.as_bytes());
+    hasher.update(&(state.step_index as u64).to_le_bytes());
+    hasher.update(&state.position.to_le_bytes());
+    hasher.update(state.layout_commitment.as_bytes());
+    hasher.update(state.persistent_state_commitment.as_bytes());
+    hasher.update(state.kv_history_commitment.as_bytes());
+    hasher.update(&(state.kv_history_length as u64).to_le_bytes());
+    hasher.update(&(state.kv_history_chunk_size as u64).to_le_bytes());
+    hasher.update(state.kv_history_sealed_commitment.as_bytes());
+    hasher.update(&(state.kv_history_sealed_chunks as u64).to_le_bytes());
+    hasher.update(state.kv_history_open_chunk_commitment.as_bytes());
+    hasher.update(&(state.kv_history_open_chunk_pairs as u64).to_le_bytes());
+    hasher.update(state.kv_history_frontier_commitment.as_bytes());
+    hasher.update(&(state.kv_history_frontier_pairs as u64).to_le_bytes());
+    hasher.update(state.lookup_transcript_commitment.as_bytes());
+    hasher.update(&(state.lookup_transcript_entries as u64).to_le_bytes());
+    hasher.update(state.lookup_frontier_commitment.as_bytes());
+    hasher.update(&(state.lookup_frontier_entries as u64).to_le_bytes());
+    hasher.update(state.kv_cache_commitment.as_bytes());
     let mut out = [0u8; 32];
     hasher
         .finalize_variable(&mut out)
@@ -4164,13 +4259,15 @@ mod kani_proofs {
     }
 
     fn phase12_link_is_valid(
+        public_state_matches: bool,
         persistent_state_matches: bool,
         kv_cache_matches: bool,
         position_matches: bool,
         kv_history_commitment_matches: bool,
         kv_history_length_matches: bool,
     ) -> bool {
-        persistent_state_matches
+        public_state_matches
+            && persistent_state_matches
             && kv_cache_matches
             && position_matches
             && kv_history_commitment_matches
@@ -4242,6 +4339,7 @@ mod kani_proofs {
     }
 
     fn phase14_link_is_valid(
+        public_state_matches: bool,
         persistent_state_matches: bool,
         kv_cache_matches: bool,
         position_matches: bool,
@@ -4258,7 +4356,8 @@ mod kani_proofs {
         lookup_frontier_commitment_matches: bool,
         lookup_frontier_entries_matches: bool,
     ) -> bool {
-        persistent_state_matches
+        public_state_matches
+            && persistent_state_matches
             && kv_cache_matches
             && position_matches
             && kv_history_commitment_matches
@@ -4325,8 +4424,7 @@ mod kani_proofs {
         from_position: i16,
         to_position: i16,
     ) -> Phase12DecodingStep {
-        Phase12DecodingStep {
-            from_state: Phase12DecodingState {
+        let from_state = Phase12DecodingState {
                 state_version: STWO_DECODING_STATE_VERSION_PHASE12.to_string(),
                 step_index: from_step_index,
                 position: from_position,
@@ -4339,8 +4437,13 @@ mod kani_proofs {
                 query_commitment: "query".to_string(),
                 output_commitment: "output".to_string(),
                 lookup_rows_commitment: "lookup".to_string(),
-            },
-            to_state: Phase12DecodingState {
+                public_state_commitment: String::new(),
+            };
+        let from_state = Phase12DecodingState {
+            public_state_commitment: commit_phase12_public_state(&from_state),
+            ..from_state
+        };
+        let to_state = Phase12DecodingState {
                 state_version: STWO_DECODING_STATE_VERSION_PHASE12.to_string(),
                 step_index: to_step_index,
                 position: to_position,
@@ -4353,7 +4456,15 @@ mod kani_proofs {
                 query_commitment: "query-next".to_string(),
                 output_commitment: "output-next".to_string(),
                 lookup_rows_commitment: "lookup-next".to_string(),
-            },
+                public_state_commitment: String::new(),
+            };
+        let to_state = Phase12DecodingState {
+            public_state_commitment: commit_phase12_public_state(&to_state),
+            ..to_state
+        };
+        Phase12DecodingStep {
+            from_state,
+            to_state,
             shared_lookup_artifact_commitment: "artifact".to_string(),
             proof: kani_dummy_proof(),
         }
@@ -4368,8 +4479,7 @@ mod kani_proofs {
         from_position: i16,
         to_position: i16,
     ) -> Phase14DecodingStep {
-        Phase14DecodingStep {
-            from_state: Phase14DecodingState {
+        let from_state = Phase14DecodingState {
                 state_version: STWO_DECODING_STATE_VERSION_PHASE14.to_string(),
                 step_index: from_step_index,
                 position: from_position,
@@ -4393,8 +4503,13 @@ mod kani_proofs {
                 query_commitment: "query".to_string(),
                 output_commitment: "output".to_string(),
                 lookup_rows_commitment: "lookup".to_string(),
-            },
-            to_state: Phase14DecodingState {
+                public_state_commitment: String::new(),
+            };
+        let from_state = Phase14DecodingState {
+            public_state_commitment: commit_phase14_public_state(&from_state),
+            ..from_state
+        };
+        let to_state = Phase14DecodingState {
                 state_version: STWO_DECODING_STATE_VERSION_PHASE14.to_string(),
                 step_index: to_step_index,
                 position: to_position,
@@ -4418,7 +4533,15 @@ mod kani_proofs {
                 query_commitment: "query-next".to_string(),
                 output_commitment: "output-next".to_string(),
                 lookup_rows_commitment: "lookup-next".to_string(),
-            },
+                public_state_commitment: String::new(),
+            };
+        let to_state = Phase14DecodingState {
+            public_state_commitment: commit_phase14_public_state(&to_state),
+            ..to_state
+        };
+        Phase14DecodingStep {
+            from_state,
+            to_state,
             shared_lookup_artifact_commitment: "artifact".to_string(),
             proof: kani_dummy_proof(),
         }
@@ -4481,20 +4604,23 @@ mod kani_proofs {
     #[kani::proof]
     fn kani_phase12_validate_rejects_any_link_mismatch() {
         let which = kani::any::<u8>();
-        kani::assume(which < 5);
+        kani::assume(which < 6);
+        let mut public_state_matches = true;
         let mut persistent_state_matches = true;
         let mut kv_cache_matches = true;
         let mut position_matches = true;
         let mut kv_history_commitment_matches = true;
         let mut kv_history_length_matches = true;
         match which {
-            0 => persistent_state_matches = false,
-            1 => kv_cache_matches = false,
-            2 => position_matches = false,
-            3 => kv_history_commitment_matches = false,
+            0 => public_state_matches = false,
+            1 => persistent_state_matches = false,
+            2 => kv_cache_matches = false,
+            3 => position_matches = false,
+            4 => kv_history_commitment_matches = false,
             _ => kv_history_length_matches = false,
         }
         assert!(!phase12_link_is_valid(
+            public_state_matches,
             persistent_state_matches,
             kv_cache_matches,
             position_matches,
@@ -4678,12 +4804,13 @@ mod kani_proofs {
     #[kani::proof]
     fn kani_phase14_validate_rejects_any_link_mismatch() {
         let which = kani::any::<u8>();
-        kani::assume(which < 15);
-        let mut flags = [true; 15];
+        kani::assume(which < 16);
+        let mut flags = [true; 16];
         flags[which as usize] = false;
         assert!(!phase14_link_is_valid(
             flags[0], flags[1], flags[2], flags[3], flags[4], flags[5], flags[6], flags[7],
             flags[8], flags[9], flags[10], flags[11], flags[12], flags[13], flags[14],
+            flags[15],
         ));
     }
 
@@ -5051,6 +5178,21 @@ mod tests {
             parts.push(value.to_le_bytes().to_vec());
         }
         oracle_blake2b_256(&parts)
+    }
+
+    fn oracle_commit_phase12_public_state(state: &Phase12DecodingState) -> String {
+        oracle_blake2b_256(&[
+            ORACLE_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
+            b"public-state".to_vec(),
+            state.state_version.as_bytes().to_vec(),
+            (state.step_index as u64).to_le_bytes().to_vec(),
+            state.position.to_le_bytes().to_vec(),
+            state.layout_commitment.as_bytes().to_vec(),
+            state.persistent_state_commitment.as_bytes().to_vec(),
+            state.kv_history_commitment.as_bytes().to_vec(),
+            (state.kv_history_length as u64).to_le_bytes().to_vec(),
+            state.kv_cache_commitment.as_bytes().to_vec(),
+        ])
     }
 
     fn oracle_commit_phase12_shared_lookup_rows(layout_commitment: &str, values: &[i16]) -> String {
@@ -5421,6 +5563,32 @@ mod tests {
         oracle_blake2b_256(&parts)
     }
 
+    fn oracle_commit_phase14_public_state(state: &Phase14DecodingState) -> String {
+        oracle_blake2b_256(&[
+            ORACLE_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            b"public-state".to_vec(),
+            state.state_version.as_bytes().to_vec(),
+            (state.step_index as u64).to_le_bytes().to_vec(),
+            state.position.to_le_bytes().to_vec(),
+            state.layout_commitment.as_bytes().to_vec(),
+            state.persistent_state_commitment.as_bytes().to_vec(),
+            state.kv_history_commitment.as_bytes().to_vec(),
+            (state.kv_history_length as u64).to_le_bytes().to_vec(),
+            (state.kv_history_chunk_size as u64).to_le_bytes().to_vec(),
+            state.kv_history_sealed_commitment.as_bytes().to_vec(),
+            (state.kv_history_sealed_chunks as u64).to_le_bytes().to_vec(),
+            state.kv_history_open_chunk_commitment.as_bytes().to_vec(),
+            (state.kv_history_open_chunk_pairs as u64).to_le_bytes().to_vec(),
+            state.kv_history_frontier_commitment.as_bytes().to_vec(),
+            (state.kv_history_frontier_pairs as u64).to_le_bytes().to_vec(),
+            state.lookup_transcript_commitment.as_bytes().to_vec(),
+            (state.lookup_transcript_entries as u64).to_le_bytes().to_vec(),
+            state.lookup_frontier_commitment.as_bytes().to_vec(),
+            (state.lookup_frontier_entries as u64).to_le_bytes().to_vec(),
+            state.kv_cache_commitment.as_bytes().to_vec(),
+        ])
+    }
+
     fn oracle_advance_phase14_open_chunk(
         layout_commitment: &str,
         previous_open_chunk_commitment: &str,
@@ -5786,6 +5954,11 @@ mod tests {
                 query_commitment: from_view.query_commitment.clone(),
                 output_commitment: from_view.output_commitment.clone(),
                 lookup_rows_commitment: from_view.lookup_rows_commitment.clone(),
+                public_state_commitment: String::new(),
+            };
+            let expected_from = Phase12DecodingState {
+                public_state_commitment: oracle_commit_phase12_public_state(&expected_from),
+                ..expected_from
             };
             if step.from_state != expected_from {
                 return Err(VmError::InvalidConfig(format!(
@@ -5793,6 +5966,13 @@ mod tests {
                 )));
             }
             if let Some(previous) = &previous_expected_to {
+                if previous.public_state_commitment != expected_from.public_state_commitment {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding chain link {} -> {} does not preserve the carried public-state commitment",
+                        step_index - 1,
+                        step_index
+                    )));
+                }
                 if previous.persistent_state_commitment != expected_from.persistent_state_commitment
                 {
                     return Err(VmError::InvalidConfig(format!(
@@ -5863,6 +6043,11 @@ mod tests {
                 query_commitment: to_view.query_commitment.clone(),
                 output_commitment: to_view.output_commitment.clone(),
                 lookup_rows_commitment: to_view.lookup_rows_commitment.clone(),
+                public_state_commitment: String::new(),
+            };
+            let expected_to = Phase12DecodingState {
+                public_state_commitment: oracle_commit_phase12_public_state(&expected_to),
+                ..expected_to
             };
             if step.to_state != expected_to {
                 return Err(VmError::InvalidConfig(format!(
@@ -6030,6 +6215,11 @@ mod tests {
                 query_commitment: from_view.query_commitment.clone(),
                 output_commitment: from_view.output_commitment.clone(),
                 lookup_rows_commitment: from_view.lookup_rows_commitment.clone(),
+                public_state_commitment: String::new(),
+            };
+            let expected_from = Phase14DecodingState {
+                public_state_commitment: oracle_commit_phase14_public_state(&expected_from),
+                ..expected_from
             };
             if step.from_state != expected_from {
                 return Err(VmError::InvalidConfig(format!(
@@ -6037,6 +6227,13 @@ mod tests {
                 )));
             }
             if let Some(previous) = &previous_expected_to {
+                if previous.public_state_commitment != expected_from.public_state_commitment {
+                    return Err(VmError::InvalidConfig(format!(
+                        "chunked decoding chain link {} -> {} does not preserve the carried public-state commitment",
+                        step_index - 1,
+                        step_index
+                    )));
+                }
                 if previous.persistent_state_commitment != expected_from.persistent_state_commitment
                 {
                     return Err(VmError::InvalidConfig(format!(
@@ -6130,6 +6327,11 @@ mod tests {
                 query_commitment: to_view.query_commitment.clone(),
                 output_commitment: to_view.output_commitment.clone(),
                 lookup_rows_commitment: to_view.lookup_rows_commitment.clone(),
+                public_state_commitment: String::new(),
+            };
+            let expected_to = Phase14DecodingState {
+                public_state_commitment: oracle_commit_phase14_public_state(&expected_to),
+                ..expected_to
             };
             if step.to_state != expected_to {
                 return Err(VmError::InvalidConfig(format!(
@@ -7139,6 +7341,10 @@ mod tests {
             manifest.steps[0].to_state.kv_history_commitment,
             manifest.steps[1].from_state.kv_history_commitment
         );
+        assert_eq!(
+            manifest.steps[0].to_state.public_state_commitment,
+            manifest.steps[1].from_state.public_state_commitment
+        );
         assert_eq!(manifest.steps[0].from_state.kv_history_length, 4);
         assert_eq!(manifest.steps[2].to_state.kv_history_length, 7);
         assert_ne!(
@@ -7511,6 +7717,25 @@ mod tests {
     }
 
     #[test]
+    fn phase12_verify_decoding_chain_rejects_tampered_public_state_commitment() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        manifest.steps[1].from_state.public_state_commitment = "broken".to_string();
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        let message = err.to_string();
+        assert!(
+            message.contains("from_state public_state_commitment does not match")
+                || message.contains("recorded from_state does not match the proof's initial state"),
+            "unexpected error: {message}"
+        );
+    }
+
+    #[test]
     fn phase12_standalone_state_derivation_rejects_non_seed_steps() {
         let layout = phase12_default_decoding_layout();
         let memory = phase12_demo_initial_memories(&layout)
@@ -7653,6 +7878,10 @@ mod tests {
             manifest.steps[2].to_state.lookup_frontier_entries,
             PHASE14_HISTORY_CHUNK_PAIRS
         );
+        assert_eq!(
+            manifest.steps[0].to_state.public_state_commitment,
+            manifest.steps[1].from_state.public_state_commitment
+        );
         verify_phase14_decoding_chain(&manifest).expect("phase14 verification");
     }
 
@@ -7740,6 +7969,26 @@ mod tests {
         assert!(err
             .to_string()
             .contains("unsupported chunked decoding history_chunk_pairs=4"));
+    }
+
+    #[test]
+    fn phase14_verify_decoding_chain_rejects_tampered_public_state_commitment() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        manifest.steps[1].from_state.public_state_commitment = "broken".to_string();
+        let err = verify_phase14_decoding_chain(&manifest).unwrap_err();
+        let message = err.to_string();
+        assert!(
+            message.contains("from_state public_state_commitment does not match")
+                || message.contains("recorded from_state does not match the proof's initial state"),
+            "unexpected error: {message}"
+        );
     }
 
     #[test]
@@ -8067,6 +8316,22 @@ mod tests {
     }
 
     #[test]
+    fn phase12_oracle_and_production_reject_same_public_state_commitment_drift() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest =
+            phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        manifest.steps[1].from_state.public_state_commitment = "tampered".to_string();
+
+        assert!(verify_phase12_decoding_chain(&manifest).is_err());
+        assert!(oracle_verify_phase12_decoding_chain(&manifest).is_err());
+    }
+
+    #[test]
     fn phase12_oracle_and_production_reject_same_forged_semantic_scope_across_all_steps() {
         let layout = phase12_default_decoding_layout();
         let proofs = phase12_demo_initial_memories(&layout)
@@ -8146,6 +8411,22 @@ mod tests {
         let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
         let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
         manifest.steps[1].proof.claim.semantic_scope = "tampered-semantic-scope".to_string();
+
+        assert!(verify_phase14_decoding_chain(&manifest).is_err());
+        assert!(oracle_verify_phase14_decoding_chain(&manifest).is_err());
+    }
+
+    #[test]
+    fn phase14_oracle_and_production_reject_same_public_state_commitment_drift() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        manifest.steps[1].from_state.public_state_commitment = "tampered".to_string();
 
         assert!(verify_phase14_decoding_chain(&manifest).is_err());
         assert!(oracle_verify_phase14_decoding_chain(&manifest).is_err());
