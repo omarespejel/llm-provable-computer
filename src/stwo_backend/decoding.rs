@@ -3702,6 +3702,37 @@ fn summarize_phase24_members(
 fn validate_phase23_decoding_cross_step_lookup_accumulator_shallow(
     manifest: &Phase23DecodingCrossStepLookupAccumulatorManifest,
 ) -> Result<()> {
+    if manifest.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator backend `{}` is not `stwo`",
+            manifest.proof_backend
+        )));
+    }
+    if manifest.accumulator_version != STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding cross-step lookup accumulator version `{}`",
+            manifest.accumulator_version
+        )));
+    }
+    if manifest.semantic_scope != STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_SCOPE_PHASE23 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding cross-step lookup accumulator semantic scope `{}`",
+            manifest.semantic_scope
+        )));
+    }
+    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding cross-step lookup accumulator proof backend version `{}` (expected `{}`)",
+            manifest.proof_backend_version,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+        )));
+    }
+    if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding cross-step lookup accumulator statement version `{}`",
+            manifest.statement_version
+        )));
+    }
     if manifest.members.is_empty() {
         return Err(VmError::InvalidConfig(
             "decoding cross-step lookup accumulator must contain at least one member".to_string(),
@@ -3811,6 +3842,37 @@ fn verify_phase24_member_relation_sequence(summaries: &[Phase24MemberSummary]) -
 fn validate_phase24_decoding_state_relation_accumulator_shallow(
     manifest: &Phase24DecodingStateRelationAccumulatorManifest,
 ) -> Result<()> {
+    if manifest.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator backend `{}` is not `stwo`",
+            manifest.proof_backend
+        )));
+    }
+    if manifest.accumulator_version != STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding state relation accumulator version `{}`",
+            manifest.accumulator_version
+        )));
+    }
+    if manifest.semantic_scope != STWO_DECODING_STATE_RELATION_ACCUMULATOR_SCOPE_PHASE24 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding state relation accumulator semantic scope `{}`",
+            manifest.semantic_scope
+        )));
+    }
+    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding state relation accumulator proof backend version `{}` (expected `{}`)",
+            manifest.proof_backend_version,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+        )));
+    }
+    if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding state relation accumulator statement version `{}`",
+            manifest.statement_version
+        )));
+    }
     if manifest.members.len() < 2 {
         return Err(VmError::InvalidConfig(
             "decoding state relation accumulator must contain at least two members".to_string(),
@@ -13436,6 +13498,18 @@ mod tests {
     }
 
     #[test]
+    fn phase23_cross_step_lookup_accumulator_rejects_header_mismatch_before_nested_checks() {
+        let mut manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
+        manifest.proof_backend = StarkProofBackend::Vanilla;
+        manifest.members[0].accumulator.matrices.clear();
+
+        let err = verify_phase23_decoding_cross_step_lookup_accumulator(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("decoding cross-step lookup accumulator backend `vanilla` is not `stwo`"));
+    }
+
+    #[test]
     fn phase23_oracle_matches_production_commitments() {
         let manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
         verify_phase23_decoding_cross_step_lookup_accumulator(&manifest)
@@ -13573,6 +13647,18 @@ mod tests {
         let err = verify_phase24_decoding_state_relation_accumulator(&manifest).unwrap_err();
         assert!(err.to_string().contains("members.len()="));
         assert!(err.to_string().contains("exceeds the supported maximum"));
+    }
+
+    #[test]
+    fn phase24_state_relation_accumulator_rejects_header_mismatch_before_nested_checks() {
+        let mut manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        manifest.statement_version = "statement-v2".to_string();
+        manifest.members[0].members.clear();
+
+        let err = verify_phase24_decoding_state_relation_accumulator(&manifest).unwrap_err();
+        assert!(err.to_string().contains(
+            "unsupported decoding state relation accumulator statement version `statement-v2`"
+        ));
     }
 
     #[test]
