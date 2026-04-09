@@ -9,7 +9,7 @@ Working draft, April 2026
 This paper studies a narrower question than full zkML inference: how far an
 experimental small-field transformer proof stack can be pushed toward
 proof-carrying decoding before recursion or accumulation are introduced. We
-present an extension of `llm-provable-computer` that preserves the existing
+present an extension of `provable-transformer-vm` that preserves the existing
 `statement-v1` execution claim while adding a parameterized decoding relation,
 multi-layout carried state, cumulative and frontier KV-history commitments, and
 cumulative and frontier lookup commitments. The same base `decoding_step_v2`
@@ -424,15 +424,16 @@ That is enough to justify a real systems paper. It is also enough to make the la
 
 ## Acknowledgments
 
-This draft builds on the maintained `omarespejel/llm-provable-computer`
-research fork and the earlier architecture paper that motivated the current
+This draft builds on the maintained `omarespejel/provable-transformer-vm`
+repository (earlier phases developed under the `llm-provable-computer`
+project name) and the earlier architecture paper that motivated the current
 implementation path.
 
 ## References
 
-- [1] Omar Espejel. *On the Structural Fit of Transformer Workloads and STARK Proof Systems*. Starknet Foundation, April 2026. Submission-prep snapshot commit `49004aea27a5e02c3732a798d32a32675f0a08b9`. <https://github.com/omarespejel/llm-provable-computer/blob/49004aea27a5e02c3732a798d32a32675f0a08b9/docs/paper/stark-transformer-alignment-2026.md>
-- [2] `omarespejel/llm-provable-computer`. Maintained research repository and implementation base for the system described here. Submission-prep snapshot commit `49004aea27a5e02c3732a798d32a32675f0a08b9`. <https://github.com/omarespejel/llm-provable-computer/tree/49004aea27a5e02c3732a798d32a32675f0a08b9>
-- [3] `omarespejel/llm-provable-computer`. *Appendix Artifact Index (S-two Experimental V1).* Commit `3970277d964a0a9a5326b0db364cf16822c1ccd4`. <https://github.com/omarespejel/llm-provable-computer/blob/3970277d964a0a9a5326b0db364cf16822c1ccd4/docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md>
+- [1] Omar Espejel. *On the Structural Fit of Transformer Workloads and STARK Proof Systems*. Starknet Foundation, April 2026. Submission-prep snapshot commit `49004aea27a5e02c3732a798d32a32675f0a08b9`. <https://github.com/omarespejel/provable-transformer-vm/blob/49004aea27a5e02c3732a798d32a32675f0a08b9/docs/paper/stark-transformer-alignment-2026.md>
+- [2] `omarespejel/provable-transformer-vm`. Maintained research repository and implementation base for the system described here (earlier phases used the `llm-provable-computer` project name). Submission-prep snapshot commit `49004aea27a5e02c3732a798d32a32675f0a08b9`. <https://github.com/omarespejel/provable-transformer-vm/tree/49004aea27a5e02c3732a798d32a32675f0a08b9>
+- [3] `omarespejel/provable-transformer-vm`. *Appendix Artifact Index (S-two Experimental V1).* Commit `3970277d964a0a9a5326b0db364cf16822c1ccd4`. <https://github.com/omarespejel/provable-transformer-vm/blob/3970277d964a0a9a5326b0db364cf16822c1ccd4/docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md>
 - [4] Eli Ben-Sasson, Iddo Bentov, Yinon Horesh, and Michael Riabzev. *Scalable, Transparent, and Post-Quantum Secure Computational Integrity*. IACR ePrint 2018/046. <https://eprint.iacr.org/2018/046>
 - [5] Ulrich Haböck, David Levit, and Valeria Papini. *Circle STARKs*. IACR ePrint 2024/278. <https://eprint.iacr.org/2024/278>
 - [6] StarkWare Industries. *STWO Prover*. <https://github.com/starkware-libs/stwo>

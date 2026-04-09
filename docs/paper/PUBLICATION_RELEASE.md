@@ -8,6 +8,10 @@ Intended launch tag for the current paper-facing repository state:
 Canonical publication snapshot commit:
 `900ad5da657fb3b8085755657eb50c5f53580c23`
 
+Canonical launch repository:
+`https://github.com/omarespejel/provable-transformer-vm`
+(earlier phases of this research line used the `llm-provable-computer` project name).
+
 This repository state is the publication-facing package for the paper and its supporting
 artifacts. The package is intentionally split into evidence tiers rather than treated as one
 monolithic benchmark claim.

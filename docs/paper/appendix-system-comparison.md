@@ -8,9 +8,9 @@ Sources: rows inherit the main paper’s source set from Sections 6 and 7, espec
 
 It should be read with one rule in mind: these are **not** matched end-to-end benchmarks on identical workloads. They are a structured comparison of public claims, committed artifacts, and implementation scope.
 
-## Table A1. DeepProve vs. BitSage stwo-ml vs. `llm-provable-computer`
+## Table A1. DeepProve vs. BitSage stwo-ml vs. `provable-transformer-vm`
 
-| Dimension | Lagrange DeepProve | BitSage stwo-ml | `llm-provable-computer` |
+| Dimension | Lagrange DeepProve | BitSage stwo-ml | `provable-transformer-vm` |
 |---|---|---|---|
 | Primary role | Production-oriented zkML system | Public STARK-native zkML stack | Semantics-and-proof research artifact |
 | Proof family | SNARK / SNARK-hybrid | STARK-native on S-two / STWO | Vanilla STARK by default; frozen narrow `stwo` artifact tier plus a broader experimental S-two backend with shared-table lookup demos and a fixed-shape proof-carrying decoding path |
@@ -30,4 +30,4 @@ Use this appendix when the main paper needs one concise comparison object, but k
 
 - DeepProve is the strongest counterexample to categorical anti-SNARK claims.
 - BitSage is the strongest public STARK-native comparator, but public evidence should be separated into benchmark claims, onchain demos, and broader roadmap scope.
-- `llm-provable-computer` is not a frontier zkML prover; it is a trace-semantics and proof-architecture artifact with reproducible evidence.
+- `provable-transformer-vm` is not a frontier zkML prover; it is a trace-semantics and proof-architecture artifact with reproducible evidence.
