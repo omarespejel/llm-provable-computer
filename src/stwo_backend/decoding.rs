@@ -340,6 +340,7 @@ pub struct Phase15DecodingHistorySegment {
     pub total_steps: usize,
     pub global_from_state: Phase14DecodingState,
     pub global_to_state: Phase14DecodingState,
+    pub public_state_boundary_commitment: String,
     pub chain: Phase14DecodingChainManifest,
 }
 
@@ -366,6 +367,7 @@ pub struct Phase16DecodingHistoryRollup {
     pub total_steps: usize,
     pub global_from_state: Phase14DecodingState,
     pub global_to_state: Phase14DecodingState,
+    pub public_state_boundary_commitment: String,
     pub segments: Vec<Phase15DecodingHistorySegment>,
 }
 
@@ -1788,14 +1790,18 @@ pub fn phase15_prepare_segment_bundle(
             })?
             .to_state
             .clone();
-        segments.push(Phase15DecodingHistorySegment {
+        let mut segment = Phase15DecodingHistorySegment {
             segment_index,
             global_start_step_index,
             total_steps: segment_chain.total_steps,
             global_from_state,
             global_to_state,
+            public_state_boundary_commitment: String::new(),
             chain: segment_chain,
-        });
+        };
+        segment.public_state_boundary_commitment =
+            commit_phase15_segment_public_state_boundary(&segment);
+        segments.push(segment);
         global_start_step_index = global_start_step_index
             .checked_add(chunk.len())
             .ok_or_else(|| {
@@ -1929,6 +1935,13 @@ pub fn verify_phase15_decoding_segment_bundle(
                 segment.total_steps, segment.chain.total_steps
             )));
         }
+        if segment.public_state_boundary_commitment
+            != commit_phase15_segment_public_state_boundary(segment)
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment {segment_index} public_state_boundary_commitment does not match the computed boundary commitment"
+            )));
+        }
         expected_global_start_step_index = expected_global_start_step_index
             .checked_add(segment.total_steps)
             .ok_or_else(|| {
@@ -2001,15 +2014,19 @@ pub fn phase16_prepare_segment_rollup(
                     "Phase 16 rollup total_steps overflowed while summing segments".to_string(),
                 )
             })?;
-        rollups.push(Phase16DecodingHistoryRollup {
+        let mut rollup = Phase16DecodingHistoryRollup {
             rollup_index,
             global_start_step_index: first.global_start_step_index,
             total_segments: chunk.len(),
             total_steps,
             global_from_state: first.global_from_state.clone(),
             global_to_state: last.global_to_state.clone(),
+            public_state_boundary_commitment: String::new(),
             segments: chunk.to_vec(),
-        });
+        };
+        rollup.public_state_boundary_commitment =
+            commit_phase16_rollup_public_state_boundary(&rollup);
+        rollups.push(rollup);
     }
 
     let manifest = Phase16DecodingHistoryRollupManifest {
@@ -2153,6 +2170,13 @@ pub fn verify_phase16_decoding_segment_rollup(
                 "decoding history segment rollup {rollup_index} total_segments={} does not match segments.len()={}",
                 rollup.total_segments,
                 rollup.segments.len()
+            )));
+        }
+        if rollup.public_state_boundary_commitment
+            != commit_phase16_rollup_public_state_boundary(rollup)
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding history segment rollup {rollup_index} public_state_boundary_commitment does not match the computed boundary commitment"
             )));
         }
         let derived_rollup_total_steps = rollup
@@ -2441,6 +2465,60 @@ fn backfill_state_public_commitment_if_missing(
     Ok(())
 }
 
+fn backfill_phase15_segment_boundary_commitment_if_missing(
+    segment: &mut serde_json::Value,
+) -> Result<()> {
+    let obj = segment.as_object_mut().ok_or_else(|| {
+        VmError::Serialization("Phase 15 segment must deserialize from a JSON object".to_string())
+    })?;
+    match obj.get("public_state_boundary_commitment") {
+        Some(serde_json::Value::String(value)) if value.is_empty() => {
+            return Err(VmError::Serialization(
+                "public_state_boundary_commitment must not be empty when present".to_string(),
+            ));
+        }
+        Some(_) => return Ok(()),
+        None => {}
+    }
+
+    let mut candidate = serde_json::Value::Object(obj.clone());
+    candidate["public_state_boundary_commitment"] = serde_json::Value::String(String::new());
+    let segment: Phase15DecodingHistorySegment = serde_json::from_value(candidate)
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    obj.insert(
+        "public_state_boundary_commitment".to_string(),
+        serde_json::Value::String(commit_phase15_segment_public_state_boundary(&segment)),
+    );
+    Ok(())
+}
+
+fn backfill_phase16_rollup_boundary_commitment_if_missing(
+    rollup: &mut serde_json::Value,
+) -> Result<()> {
+    let obj = rollup.as_object_mut().ok_or_else(|| {
+        VmError::Serialization("Phase 16 rollup must deserialize from a JSON object".to_string())
+    })?;
+    match obj.get("public_state_boundary_commitment") {
+        Some(serde_json::Value::String(value)) if value.is_empty() => {
+            return Err(VmError::Serialization(
+                "public_state_boundary_commitment must not be empty when present".to_string(),
+            ));
+        }
+        Some(_) => return Ok(()),
+        None => {}
+    }
+
+    let mut candidate = serde_json::Value::Object(obj.clone());
+    candidate["public_state_boundary_commitment"] = serde_json::Value::String(String::new());
+    let rollup: Phase16DecodingHistoryRollup = serde_json::from_value(candidate)
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    obj.insert(
+        "public_state_boundary_commitment".to_string(),
+        serde_json::Value::String(commit_phase16_rollup_public_state_boundary(&rollup)),
+    );
+    Ok(())
+}
+
 fn backfill_phase12_chain_manifest_public_commitments(value: &mut serde_json::Value) -> Result<()> {
     let steps = value
         .get_mut("steps")
@@ -2529,6 +2607,7 @@ fn backfill_phase15_segment_bundle_public_commitments(value: &mut serde_json::Va
             .get_mut("chain")
             .ok_or_else(|| VmError::Serialization("Phase 15 segment missing chain".to_string()))?;
         backfill_phase14_chain_manifest_public_commitments(chain)?;
+        backfill_phase15_segment_boundary_commitment_if_missing(segment)?;
     }
     Ok(())
 }
@@ -2574,7 +2653,9 @@ fn backfill_phase16_segment_rollup_public_commitments(value: &mut serde_json::Va
                 VmError::Serialization("Phase 16 nested segment missing chain".to_string())
             })?;
             backfill_phase14_chain_manifest_public_commitments(chain)?;
+            backfill_phase15_segment_boundary_commitment_if_missing(segment)?;
         }
+        backfill_phase16_rollup_boundary_commitment_if_missing(rollup)?;
     }
     Ok(())
 }
@@ -3894,6 +3975,41 @@ fn commit_phase14_public_state(state: &Phase14DecodingState) -> String {
     hasher.update(state.lookup_frontier_commitment.as_bytes());
     hasher.update(&(state.lookup_frontier_entries as u64).to_le_bytes());
     hasher.update(state.kv_cache_commitment.as_bytes());
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+fn commit_phase15_segment_public_state_boundary(
+    segment: &Phase15DecodingHistorySegment,
+) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15.as_bytes());
+    hasher.update(b"public-state-boundary");
+    hasher.update(&(segment.segment_index as u64).to_le_bytes());
+    hasher.update(&(segment.global_start_step_index as u64).to_le_bytes());
+    hasher.update(&(segment.total_steps as u64).to_le_bytes());
+    hasher.update(segment.global_from_state.public_state_commitment.as_bytes());
+    hasher.update(segment.global_to_state.public_state_commitment.as_bytes());
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+fn commit_phase16_rollup_public_state_boundary(rollup: &Phase16DecodingHistoryRollup) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16.as_bytes());
+    hasher.update(b"public-state-boundary");
+    hasher.update(&(rollup.rollup_index as u64).to_le_bytes());
+    hasher.update(&(rollup.global_start_step_index as u64).to_le_bytes());
+    hasher.update(&(rollup.total_segments as u64).to_le_bytes());
+    hasher.update(&(rollup.total_steps as u64).to_le_bytes());
+    hasher.update(rollup.global_from_state.public_state_commitment.as_bytes());
+    hasher.update(rollup.global_to_state.public_state_commitment.as_bytes());
     let mut out = [0u8; 32];
     hasher
         .finalize_variable(&mut out)
@@ -7031,6 +7147,125 @@ mod tests {
     }
 
     #[test]
+    fn load_phase15_segment_bundle_backfills_nested_public_state_commitments() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12");
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14");
+        let manifest =
+            phase15_prepare_segment_bundle(&phase14, phase15_default_segment_step_limit())
+                .expect("phase15");
+        let mut value = serde_json::to_value(&manifest).expect("manifest json");
+        for segment in value["segments"].as_array_mut().expect("segments") {
+            segment
+                .as_object_mut()
+                .expect("segment")
+                .remove("public_state_boundary_commitment");
+            segment["global_from_state"]
+                .as_object_mut()
+                .expect("global_from_state")
+                .remove("public_state_commitment");
+            segment["global_to_state"]
+                .as_object_mut()
+                .expect("global_to_state")
+                .remove("public_state_commitment");
+            for step in segment["chain"]["steps"]
+                .as_array_mut()
+                .expect("phase14 steps")
+            {
+                step["from_state"]
+                    .as_object_mut()
+                    .expect("from_state")
+                    .remove("public_state_commitment");
+                step["to_state"]
+                    .as_object_mut()
+                    .expect("to_state")
+                    .remove("public_state_commitment");
+            }
+        }
+        let path = std::env::temp_dir().join(format!(
+            "phase15-decoding-legacy-public-state-{}.json",
+            std::process::id()
+        ));
+        fs::write(&path, serde_json::to_vec(&value).expect("legacy json")).expect("write");
+        let loaded = load_phase15_decoding_segment_bundle(&path).expect("load legacy manifest");
+        verify_phase15_decoding_segment_bundle(&loaded).expect("verify normalized manifest");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn load_phase16_rollup_backfills_nested_public_state_commitments() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12");
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14");
+        let phase15 = phase15_prepare_segment_bundle(&phase14, 1).expect("phase15");
+        let manifest =
+            phase16_prepare_segment_rollup(&phase15, phase16_default_rollup_segment_limit())
+                .expect("phase16");
+        let mut value = serde_json::to_value(&manifest).expect("manifest json");
+        for rollup in value["rollups"].as_array_mut().expect("rollups") {
+            rollup
+                .as_object_mut()
+                .expect("rollup")
+                .remove("public_state_boundary_commitment");
+            rollup["global_from_state"]
+                .as_object_mut()
+                .expect("global_from_state")
+                .remove("public_state_commitment");
+            rollup["global_to_state"]
+                .as_object_mut()
+                .expect("global_to_state")
+                .remove("public_state_commitment");
+            for segment in rollup["segments"].as_array_mut().expect("segments") {
+                segment
+                    .as_object_mut()
+                    .expect("segment")
+                    .remove("public_state_boundary_commitment");
+                segment["global_from_state"]
+                    .as_object_mut()
+                    .expect("segment global_from_state")
+                    .remove("public_state_commitment");
+                segment["global_to_state"]
+                    .as_object_mut()
+                    .expect("segment global_to_state")
+                    .remove("public_state_commitment");
+                for step in segment["chain"]["steps"]
+                    .as_array_mut()
+                    .expect("phase14 steps")
+                {
+                    step["from_state"]
+                        .as_object_mut()
+                        .expect("from_state")
+                        .remove("public_state_commitment");
+                    step["to_state"]
+                        .as_object_mut()
+                        .expect("to_state")
+                        .remove("public_state_commitment");
+                }
+            }
+        }
+        let path = std::env::temp_dir().join(format!(
+            "phase16-decoding-legacy-public-state-{}.json",
+            std::process::id()
+        ));
+        fs::write(&path, serde_json::to_vec(&value).expect("legacy json")).expect("write");
+        let loaded = load_phase16_decoding_segment_rollup(&path).expect("load legacy manifest");
+        verify_phase16_decoding_segment_rollup(&loaded).expect("verify normalized manifest");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
     fn save_phase15_decoding_segment_bundle_rejects_manifest_exceeding_json_budget() {
         let mut manifest = prove_phase15_decoding_demo().expect("phase15 demo");
         manifest.segments[0].chain.steps[0].proof.proof =
@@ -8508,6 +8743,24 @@ mod tests {
     }
 
     #[test]
+    fn phase15_verify_segment_bundle_rejects_tampered_public_state_boundary_commitment() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let mut manifest =
+            phase15_prepare_segment_bundle(&phase14, phase15_default_segment_step_limit())
+                .expect("phase15 manifest");
+        manifest.segments[0].public_state_boundary_commitment = "tampered".to_string();
+        let err = verify_phase15_decoding_segment_bundle(&manifest).unwrap_err();
+        assert!(err.to_string().contains("public_state_boundary_commitment"));
+    }
+
+    #[test]
     fn phase16_prepare_segment_rollup_accepts_segment_bundle() {
         let layout = phase12_default_decoding_layout();
         let proofs = phase12_demo_initial_memories(&layout)
@@ -8571,6 +8824,25 @@ mod tests {
         assert!(err
             .to_string()
             .contains("global_from_state does not match the first segment boundary"));
+    }
+
+    #[test]
+    fn phase16_verify_segment_rollup_rejects_tampered_public_state_boundary_commitment() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let phase15 = phase15_prepare_segment_bundle(&phase14, 1).expect("phase15 manifest");
+        let mut manifest =
+            phase16_prepare_segment_rollup(&phase15, phase16_default_rollup_segment_limit())
+                .expect("phase16 manifest");
+        manifest.rollups[0].public_state_boundary_commitment = "tampered".to_string();
+        let err = verify_phase16_decoding_segment_rollup(&manifest).unwrap_err();
+        assert!(err.to_string().contains("public_state_boundary_commitment"));
     }
 
     #[test]
