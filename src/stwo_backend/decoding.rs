@@ -3529,10 +3529,11 @@ fn verify_phase23_member_prefix_sequence(
     Ok(())
 }
 
-fn derive_phase24_member_boundary_commitment_at_step(
+fn derive_phase24_member_boundary_commitment_at_step_with_summaries(
     member: &Phase23DecodingCrossStepLookupAccumulatorManifest,
     member_index: usize,
     step_count: usize,
+    summaries: &[Phase23MemberSummary],
 ) -> Result<String> {
     if step_count > member.total_steps {
         return Err(VmError::InvalidConfig(format!(
@@ -3546,21 +3547,26 @@ fn derive_phase24_member_boundary_commitment_at_step(
     if step_count == member.total_steps {
         return Ok(member.end_boundary_commitment.clone());
     }
-
-    let summaries = summarize_phase23_members(&member.members)?;
-    verify_phase23_member_prefix_sequence(&member.members, &summaries).map_err(|error| {
-        VmError::InvalidConfig(format!(
-            "Phase 24 member {member_index} does not preserve its nested Phase 23 prefix sequence: {error}"
-        ))
-    })?;
+    if summaries.len() != member.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 24 member {member_index} summaries.len()={} does not match nested members.len()={}",
+            summaries.len(),
+            member.members.len()
+        )));
+    }
 
     for (nested_index, summary) in summaries.iter().enumerate() {
         if summary.total_steps >= step_count {
             return derive_phase23_member_boundary_commitment_at_step(
                 &member.members[nested_index],
-                member_index,
+                nested_index,
                 step_count,
-            );
+            )
+            .map_err(|error| {
+                VmError::InvalidConfig(format!(
+                    "Phase 24 member {member_index} nested Phase 23 member {nested_index} could not derive a boundary at step {step_count}: {error}"
+                ))
+            });
         }
     }
 
@@ -3582,7 +3588,12 @@ fn summarize_phase24_members(
     let mut previous_lookup_delta_entries = 0usize;
 
     for (member_index, member) in members.iter().enumerate() {
-        verify_phase23_decoding_cross_step_lookup_accumulator(member).map_err(|error| {
+        let phase23_summaries = summarize_phase23_members(&member.members)?;
+        verify_phase23_decoding_cross_step_lookup_accumulator_with_summaries(
+            member,
+            &phase23_summaries,
+        )
+        .map_err(|error| {
             VmError::InvalidConfig(format!(
                 "Phase 24 member {member_index} failed Phase 23 verification: {error}"
             ))
@@ -3604,16 +3615,20 @@ fn summarize_phase24_members(
             )));
         }
 
-        let start_state_commitment = derive_phase24_member_boundary_commitment_at_step(
-            member,
-            member_index,
-            previous_total_steps,
-        )?;
-        let end_state_commitment = derive_phase24_member_boundary_commitment_at_step(
-            member,
-            member_index,
-            member.total_steps,
-        )?;
+        let start_state_commitment =
+            derive_phase24_member_boundary_commitment_at_step_with_summaries(
+                member,
+                member_index,
+                previous_total_steps,
+                &phase23_summaries,
+            )?;
+        let end_state_commitment =
+            derive_phase24_member_boundary_commitment_at_step_with_summaries(
+                member,
+                member_index,
+                member.total_steps,
+                &phase23_summaries,
+            )?;
 
         summaries.push(Phase24MemberSummary {
             start_step: previous_total_steps,
@@ -8097,8 +8112,8 @@ mod kani_phase24_proofs {
             lookup_delta_entries: end_step - start_step,
             max_lookup_frontier_entries: 1,
             source_template_commitment: "shared-template".to_string(),
-            lookup_template_commitment: format!("lookup-template-{start_step}-{end_step}"),
-            lookup_accumulator_commitment: format!("lookup-acc-{start_step}-{end_step}"),
+            lookup_template_commitment: "shared-lookup-template".to_string(),
+            lookup_accumulator_commitment: "shared-lookup-accumulator".to_string(),
             start_state_commitment: start_state_commitment.to_string(),
             end_state_commitment: end_state_commitment.to_string(),
         }
@@ -8106,15 +8121,31 @@ mod kani_phase24_proofs {
 
     #[kani::proof]
     fn kani_phase24_relation_sequence_accepts_contiguous_members() {
+        let second_width = if kani::any::<bool>() { 1 } else { 2 };
         let first = kani_phase24_summary(0, 1, "s0", "s1");
-        let second = kani_phase24_summary(1, 3, "s1", "s3");
+        let second = kani_phase24_summary(1, 1 + second_width, "s1", "s2");
         assert!(verify_phase24_member_relation_sequence(&[first, second]).is_ok());
     }
 
     #[kani::proof]
-    fn kani_phase24_relation_sequence_rejects_boundary_mismatch() {
+    fn kani_phase24_relation_sequence_rejects_zero_width_member() {
+        let mut first = kani_phase24_summary(0, 1, "s0", "s1");
+        let mut second = kani_phase24_summary(1, 3, "s1", "s3");
+        if kani::any::<bool>() {
+            first.end_step = first.start_step;
+            first.total_steps = 0;
+        } else {
+            second.end_step = second.start_step;
+            second.total_steps = 0;
+        }
+        assert!(verify_phase24_member_relation_sequence(&[first, second]).is_err());
+    }
+
+    #[kani::proof]
+    fn kani_phase24_relation_sequence_rejects_non_contiguous_steps() {
+        let gap = 1 + (kani::any::<u8>() % 2) as usize;
         let first = kani_phase24_summary(0, 1, "s0", "s1");
-        let second = kani_phase24_summary(1, 3, "wrong", "s3");
+        let second = kani_phase24_summary(1 + gap, 3 + gap, "s1", "s3");
         assert!(verify_phase24_member_relation_sequence(&[first, second]).is_err());
     }
 }
@@ -13196,7 +13227,7 @@ mod tests {
         let err = verify_phase24_decoding_state_relation_accumulator(&manifest).unwrap_err();
         assert!(
             err.to_string()
-                .contains("member 1 failed Phase 23 verification")
+                .contains("Phase 23 member 0 failed Phase 22 verification")
                 || err.to_string().contains(
                     "member boundary 0 -> 1 does not preserve the full carried-state commitment"
                 )

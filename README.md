@@ -444,6 +444,14 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-decoding-cross-step-lookup-accumulator-demo \
   decoding-cross-step-lookup-accumulator.stwo.json
 
+# Produce and verify the Phase 24 full carried-state relation accumulator over Phase 23 members
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prove-stwo-decoding-state-relation-accumulator-demo \
+  -o decoding-state-relation-accumulator.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-decoding-state-relation-accumulator-demo \
+  decoding-state-relation-accumulator.stwo.json
+
 # Freeze a canonical pre-aggregation batch manifest for future recursion work
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-recursion-batch \
@@ -519,7 +527,9 @@ The public decoding artifacts currently cover:
 
 Those power the proof-carrying decoding demos, including layout-bound carried
 state, rolling KV-cache windows, cumulative KV-history commitments, and the
-matrix/rollup-style packaging layers described in the next-paper track.
+matrix/rollup-style packaging layers described in the next-paper track, now up
+through the pre-recursive cross-step lookup and full state-relation
+accumulators.
 
 #### Phase Highlights
 
@@ -554,6 +564,7 @@ matrix/rollup-style packaging layers described in the next-paper track.
 - Phase 21: template-bound accumulation over Phase 17 matrices with explicit template and accumulator commitments
 - Phase 22: lookup-side accumulation over a verified Phase 21 source accumulator with explicit source/template binding and derived frontier/count checks before recursion
 - Phase 23: pre-recursive cross-step lookup accumulation over cumulative Phase 22 prefixes with carried-state boundary commitments and derived counter checks
+- Phase 24: full carried-state relation accumulation over verified Phase 23 members with explicit relation-template and relation-accumulator commitments before recursive compression
 
 These phases define pre-recursive merge boundaries and carried-state bindings;
 they do not yet implement recursive cryptographic accumulation or compressed
