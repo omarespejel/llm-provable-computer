@@ -212,12 +212,13 @@ def check_appendix_source_note(repo_root: pathlib.Path, findings: Findings) -> N
 def parse_markdown_table_after_heading(text: str, heading: str) -> list[list[str]]:
     lines = text.splitlines()
     start = None
+    normalized_heading = heading.strip().lower()
     for i, line in enumerate(lines):
-        if line.strip() == heading:
+        if line.strip().lower() == normalized_heading:
             start = i + 1
             break
     if start is None:
-        return []
+        raise ValueError(f"heading not found: {heading}")
 
     rows: list[list[str]] = []
     in_table = False
@@ -238,14 +239,15 @@ def parse_markdown_table_after_heading(text: str, heading: str) -> list[list[str
 
 
 def normalize_table_header(cell: str) -> str:
-    normalized = cell.strip().strip("`").lower()
-    normalized = re.sub(r"\s+", " ", normalized)
-    return normalized
+    return re.sub(r"\s+", " ", cell.strip().strip("`").lower())
 
 
 def parse_index_sizes(index_text: str) -> dict[str, int]:
-    rows = parse_markdown_table_after_heading(index_text, "## Primary Artifacts")
     out: dict[str, int] = {}
+    try:
+        rows = parse_markdown_table_after_heading(index_text, "## Primary Artifacts")
+    except ValueError:
+        return out
     if len(rows) < 3:
         return out
     header_map = {
@@ -270,8 +272,11 @@ def parse_index_sizes(index_text: str) -> dict[str, int]:
 
 
 def parse_index_timings(index_text: str) -> dict[str, int]:
-    rows = parse_markdown_table_after_heading(index_text, "## Timing Summary (seconds)")
     out: dict[str, int] = {}
+    try:
+        rows = parse_markdown_table_after_heading(index_text, "## Timing Summary (seconds)")
+    except ValueError:
+        return out
     if len(rows) < 3:
         return out
     header_map = {
@@ -296,10 +301,13 @@ def parse_index_timings(index_text: str) -> dict[str, int]:
 
 
 def parse_appendix_backend_rows(appendix_text: str) -> dict[tuple[str, str], tuple[int, int, int]]:
-    rows = parse_markdown_table_after_heading(
-        appendix_text, "## Table C1. Frozen artifact comparison by backend and scope"
-    )
     out: dict[tuple[str, str], tuple[int, int, int]] = {}
+    try:
+        rows = parse_markdown_table_after_heading(
+            appendix_text, "## Table C1. Frozen artifact comparison by backend and scope"
+        )
+    except ValueError:
+        return out
     if len(rows) < 3:
         return out
     header_map = {
