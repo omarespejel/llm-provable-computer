@@ -15,8 +15,7 @@ use crate::instruction::{Instruction, Program};
 use crate::interpreter::NativeInterpreter;
 use crate::proof::{
     production_v1_stark_options, prove_execution_stark_with_backend_and_options,
-    verify_execution_stark, StarkProofBackend, VanillaStarkExecutionProof,
-    CLAIM_SEMANTIC_SCOPE_V1,
+    verify_execution_stark, StarkProofBackend, VanillaStarkExecutionProof, CLAIM_SEMANTIC_SCOPE_V1,
 };
 use crate::stwo_backend::{
     arithmetic_subset_prover::{
@@ -248,6 +247,7 @@ pub struct Phase12DecodingState {
     pub query_commitment: String,
     pub output_commitment: String,
     pub lookup_rows_commitment: String,
+    pub public_state_commitment: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -308,6 +308,7 @@ pub struct Phase14DecodingState {
     pub query_commitment: String,
     pub output_commitment: String,
     pub lookup_rows_commitment: String,
+    pub public_state_commitment: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -526,7 +527,11 @@ fn validate_phase12_shared_lookup_artifact_resource_bounds(
     artifact: &Phase12SharedLookupArtifact,
     registry_label: &str,
 ) -> Result<()> {
-    if artifact.normalization_proof_envelope.proof_envelope.proof.len()
+    if artifact
+        .normalization_proof_envelope
+        .proof_envelope
+        .proof
+        .len()
         > MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES
     {
         return Err(VmError::InvalidConfig(format!(
@@ -536,7 +541,11 @@ fn validate_phase12_shared_lookup_artifact_resource_bounds(
             MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES
         )));
     }
-    if artifact.activation_proof_envelope.proof_envelope.proof.len()
+    if artifact
+        .activation_proof_envelope
+        .proof_envelope
+        .proof
+        .len()
         > MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES
     {
         return Err(VmError::InvalidConfig(format!(
@@ -586,8 +595,8 @@ fn write_json_with_limit<T: Serialize>(
     max_bytes: usize,
     label: &str,
 ) -> Result<()> {
-    let bytes = serde_json::to_vec_pretty(value)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    let bytes =
+        serde_json::to_vec_pretty(value).map_err(|err| VmError::Serialization(err.to_string()))?;
     if bytes.len() > max_bytes {
         return Err(VmError::InvalidConfig(format!(
             "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
@@ -2397,13 +2406,204 @@ pub fn load_phase11_decoding_chain(path: &Path) -> Result<Phase11DecodingChainMa
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
+fn backfill_state_public_commitment_if_missing(
+    state: &mut serde_json::Value,
+    phase14: bool,
+) -> Result<()> {
+    let obj = state.as_object_mut().ok_or_else(|| {
+        VmError::Serialization("decoding state must deserialize from a JSON object".to_string())
+    })?;
+    match obj.get("public_state_commitment") {
+        Some(serde_json::Value::String(value)) if value.is_empty() => {
+            return Err(VmError::Serialization(
+                "public_state_commitment must not be empty when present".to_string(),
+            ));
+        }
+        Some(_) => return Ok(()),
+        None => {}
+    }
+
+    let mut candidate = serde_json::Value::Object(obj.clone());
+    candidate["public_state_commitment"] = serde_json::Value::String(String::new());
+    let commitment = if phase14 {
+        let state: Phase14DecodingState = serde_json::from_value(candidate)
+            .map_err(|err| VmError::Serialization(err.to_string()))?;
+        commit_phase14_public_state(&state)
+    } else {
+        let state: Phase12DecodingState = serde_json::from_value(candidate)
+            .map_err(|err| VmError::Serialization(err.to_string()))?;
+        commit_phase12_public_state(&state)
+    };
+    obj.insert(
+        "public_state_commitment".to_string(),
+        serde_json::Value::String(commitment),
+    );
+    Ok(())
+}
+
+fn backfill_phase12_chain_manifest_public_commitments(value: &mut serde_json::Value) -> Result<()> {
+    let steps = value
+        .get_mut("steps")
+        .and_then(serde_json::Value::as_array_mut)
+        .ok_or_else(|| {
+            VmError::Serialization(
+                "Phase 12 decoding chain manifest steps must be a JSON array".to_string(),
+            )
+        })?;
+    for step in steps {
+        let step_obj = step.as_object_mut().ok_or_else(|| {
+            VmError::Serialization(
+                "Phase 12 decoding step must deserialize from a JSON object".to_string(),
+            )
+        })?;
+        for key in ["from_state", "to_state"] {
+            let state = step_obj.get_mut(key).ok_or_else(|| {
+                VmError::Serialization(format!("Phase 12 decoding step missing {key}"))
+            })?;
+            backfill_state_public_commitment_if_missing(state, false)?;
+        }
+    }
+    Ok(())
+}
+
+fn backfill_phase14_chain_manifest_public_commitments(value: &mut serde_json::Value) -> Result<()> {
+    let steps = value
+        .get_mut("steps")
+        .and_then(serde_json::Value::as_array_mut)
+        .ok_or_else(|| {
+            VmError::Serialization(
+                "Phase 14 decoding chain manifest steps must be a JSON array".to_string(),
+            )
+        })?;
+    for step in steps {
+        let step_obj = step.as_object_mut().ok_or_else(|| {
+            VmError::Serialization(
+                "Phase 14 decoding step must deserialize from a JSON object".to_string(),
+            )
+        })?;
+        for key in ["from_state", "to_state"] {
+            let state = step_obj.get_mut(key).ok_or_else(|| {
+                VmError::Serialization(format!("Phase 14 decoding step missing {key}"))
+            })?;
+            backfill_state_public_commitment_if_missing(state, true)?;
+        }
+    }
+    Ok(())
+}
+
+fn backfill_phase13_layout_matrix_public_commitments(value: &mut serde_json::Value) -> Result<()> {
+    let chains = value
+        .get_mut("chains")
+        .and_then(serde_json::Value::as_array_mut)
+        .ok_or_else(|| {
+            VmError::Serialization("Phase 13 layout matrix chains must be a JSON array".to_string())
+        })?;
+    for chain in chains {
+        backfill_phase12_chain_manifest_public_commitments(chain)?;
+    }
+    Ok(())
+}
+
+fn backfill_phase15_segment_bundle_public_commitments(value: &mut serde_json::Value) -> Result<()> {
+    let segments = value
+        .get_mut("segments")
+        .and_then(serde_json::Value::as_array_mut)
+        .ok_or_else(|| {
+            VmError::Serialization(
+                "Phase 15 segment bundle segments must be a JSON array".to_string(),
+            )
+        })?;
+    for segment in segments {
+        let segment_obj = segment.as_object_mut().ok_or_else(|| {
+            VmError::Serialization(
+                "Phase 15 segment must deserialize from a JSON object".to_string(),
+            )
+        })?;
+        for key in ["global_from_state", "global_to_state"] {
+            let state = segment_obj
+                .get_mut(key)
+                .ok_or_else(|| VmError::Serialization(format!("Phase 15 segment missing {key}")))?;
+            backfill_state_public_commitment_if_missing(state, true)?;
+        }
+        let chain = segment_obj
+            .get_mut("chain")
+            .ok_or_else(|| VmError::Serialization("Phase 15 segment missing chain".to_string()))?;
+        backfill_phase14_chain_manifest_public_commitments(chain)?;
+    }
+    Ok(())
+}
+
+fn backfill_phase16_segment_rollup_public_commitments(value: &mut serde_json::Value) -> Result<()> {
+    let rollups = value
+        .get_mut("rollups")
+        .and_then(serde_json::Value::as_array_mut)
+        .ok_or_else(|| {
+            VmError::Serialization("Phase 16 segment rollups must be a JSON array".to_string())
+        })?;
+    for rollup in rollups {
+        let rollup_obj = rollup.as_object_mut().ok_or_else(|| {
+            VmError::Serialization(
+                "Phase 16 rollup must deserialize from a JSON object".to_string(),
+            )
+        })?;
+        for key in ["global_from_state", "global_to_state"] {
+            let state = rollup_obj
+                .get_mut(key)
+                .ok_or_else(|| VmError::Serialization(format!("Phase 16 rollup missing {key}")))?;
+            backfill_state_public_commitment_if_missing(state, true)?;
+        }
+        let segments = rollup_obj
+            .get_mut("segments")
+            .and_then(serde_json::Value::as_array_mut)
+            .ok_or_else(|| {
+                VmError::Serialization("Phase 16 rollup segments must be a JSON array".to_string())
+            })?;
+        for segment in segments {
+            let segment_obj = segment.as_object_mut().ok_or_else(|| {
+                VmError::Serialization(
+                    "Phase 16 nested segment must deserialize from a JSON object".to_string(),
+                )
+            })?;
+            for key in ["global_from_state", "global_to_state"] {
+                let state = segment_obj.get_mut(key).ok_or_else(|| {
+                    VmError::Serialization(format!("Phase 16 nested segment missing {key}"))
+                })?;
+                backfill_state_public_commitment_if_missing(state, true)?;
+            }
+            let chain = segment_obj.get_mut("chain").ok_or_else(|| {
+                VmError::Serialization("Phase 16 nested segment missing chain".to_string())
+            })?;
+            backfill_phase14_chain_manifest_public_commitments(chain)?;
+        }
+    }
+    Ok(())
+}
+
+fn backfill_phase17_rollup_matrix_public_commitments(value: &mut serde_json::Value) -> Result<()> {
+    let rollups = value
+        .get_mut("rollups")
+        .and_then(serde_json::Value::as_array_mut)
+        .ok_or_else(|| {
+            VmError::Serialization(
+                "Phase 17 rollup matrix rollups must be a JSON array".to_string(),
+            )
+        })?;
+    for rollup in rollups {
+        backfill_phase16_segment_rollup_public_commitments(rollup)?;
+    }
+    Ok(())
+}
+
 pub fn load_phase12_decoding_chain(path: &Path) -> Result<Phase12DecodingChainManifest> {
     let bytes = read_json_bytes_with_limit(
         path,
         MAX_PHASE12_DECODING_CHAIN_JSON_BYTES,
         "Phase 12 decoding chain manifest",
     )?;
-    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+    let mut value: serde_json::Value =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    backfill_phase12_chain_manifest_public_commitments(&mut value)?;
+    serde_json::from_value(value).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
 pub fn save_phase14_decoding_chain(
@@ -2424,7 +2624,10 @@ pub fn load_phase14_decoding_chain(path: &Path) -> Result<Phase14DecodingChainMa
         MAX_PHASE14_DECODING_CHAIN_JSON_BYTES,
         "Phase 14 decoding chain manifest",
     )?;
-    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+    let mut value: serde_json::Value =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    backfill_phase14_chain_manifest_public_commitments(&mut value)?;
+    serde_json::from_value(value).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
 pub fn save_phase15_decoding_segment_bundle(
@@ -2447,7 +2650,10 @@ pub fn load_phase15_decoding_segment_bundle(
         MAX_PHASE15_SEGMENT_BUNDLE_JSON_BYTES,
         "Phase 15 decoding history segment bundle",
     )?;
-    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+    let mut value: serde_json::Value =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    backfill_phase15_segment_bundle_public_commitments(&mut value)?;
+    serde_json::from_value(value).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
 pub fn save_phase16_decoding_segment_rollup(
@@ -2470,7 +2676,10 @@ pub fn load_phase16_decoding_segment_rollup(
         MAX_PHASE16_SEGMENT_ROLLUP_JSON_BYTES,
         "Phase 16 decoding history segment rollup",
     )?;
-    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+    let mut value: serde_json::Value =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    backfill_phase16_segment_rollup_public_commitments(&mut value)?;
+    serde_json::from_value(value).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
 pub fn save_phase17_decoding_rollup_matrix(
@@ -2493,7 +2702,10 @@ pub fn load_phase17_decoding_rollup_matrix(
         MAX_PHASE17_ROLLUP_MATRIX_JSON_BYTES,
         "Phase 17 decoding history rollup matrix",
     )?;
-    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+    let mut value: serde_json::Value =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    backfill_phase17_rollup_matrix_public_commitments(&mut value)?;
+    serde_json::from_value(value).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
 pub fn save_phase13_decoding_layout_matrix(
@@ -2516,7 +2728,10 @@ pub fn load_phase13_decoding_layout_matrix(
         MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES,
         "Phase 13 decoding layout matrix",
     )?;
-    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+    let mut value: serde_json::Value =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    backfill_phase13_layout_matrix_public_commitments(&mut value)?;
+    serde_json::from_value(value).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
 pub fn prove_phase11_decoding_demo() -> Result<Phase11DecodingChainManifest> {
@@ -2771,7 +2986,7 @@ fn build_phase12_state(
     kv_history_commitment: String,
     kv_history_length: usize,
 ) -> Phase12DecodingState {
-    Phase12DecodingState {
+    let mut state = Phase12DecodingState {
         state_version: STWO_DECODING_STATE_VERSION_PHASE12.to_string(),
         step_index,
         position: view.position,
@@ -2784,7 +2999,10 @@ fn build_phase12_state(
         query_commitment: view.query_commitment,
         output_commitment: view.output_commitment,
         lookup_rows_commitment: view.lookup_rows_commitment,
-    }
+        public_state_commitment: String::new(),
+    };
+    state.public_state_commitment = commit_phase12_public_state(&state);
+    state
 }
 
 fn build_phase14_state(
@@ -2792,7 +3010,7 @@ fn build_phase14_state(
     view: Phase12StateView,
     history: &Phase14HistoryAccumulator,
 ) -> Phase14DecodingState {
-    Phase14DecodingState {
+    let mut state = Phase14DecodingState {
         state_version: STWO_DECODING_STATE_VERSION_PHASE14.to_string(),
         step_index,
         position: view.position,
@@ -2816,7 +3034,10 @@ fn build_phase14_state(
         query_commitment: view.query_commitment,
         output_commitment: view.output_commitment,
         lookup_rows_commitment: view.lookup_rows_commitment,
-    }
+        public_state_commitment: String::new(),
+    };
+    state.public_state_commitment = commit_phase14_public_state(&state);
+    state
 }
 
 fn validate_phase11_chain_steps(steps: &[Phase11DecodingStep]) -> Result<()> {
@@ -2937,8 +3158,28 @@ fn validate_phase12_chain_steps_against_layout_commitment(
                 step.from_state.position, step.to_state.position
             )));
         }
+        if step.from_state.public_state_commitment != commit_phase12_public_state(&step.from_state)
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step {index} from_state public_state_commitment does not match its serialized contents"
+            )));
+        }
+        if step.to_state.public_state_commitment != commit_phase12_public_state(&step.to_state) {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step {index} to_state public_state_commitment does not match its serialized contents"
+            )));
+        }
     }
     for index in 1..steps.len() {
+        if steps[index - 1].to_state.public_state_commitment
+            != steps[index].from_state.public_state_commitment
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding chain link {} -> {} does not preserve the carried public-state commitment",
+                index - 1,
+                index
+            )));
+        }
         if steps[index - 1].to_state.persistent_state_commitment
             != steps[index].from_state.persistent_state_commitment
         {
@@ -3118,8 +3359,28 @@ fn validate_phase14_chain_steps_against_layout_commitment(
                 step.from_state.position, step.to_state.position
             )));
         }
+        if step.from_state.public_state_commitment != commit_phase14_public_state(&step.from_state)
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} from_state public_state_commitment does not match its serialized contents"
+            )));
+        }
+        if step.to_state.public_state_commitment != commit_phase14_public_state(&step.to_state) {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding step {index} to_state public_state_commitment does not match its serialized contents"
+            )));
+        }
     }
     for index in 1..steps.len() {
+        if steps[index - 1].to_state.public_state_commitment
+            != steps[index].from_state.public_state_commitment
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "chunked decoding chain link {} -> {} does not preserve the carried public-state commitment",
+                index - 1,
+                index
+            )));
+        }
         if steps[index - 1].to_state.persistent_state_commitment
             != steps[index].from_state.persistent_state_commitment
         {
@@ -3580,6 +3841,59 @@ fn commit_phase12_persistent_state(
     for value in kv_cache_values {
         hasher.update(&value.to_le_bytes());
     }
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+/// Commits only the carried Phase 12 state that must remain stable across links.
+/// Step-local I/O commitments are excluded because the execution proof already binds them.
+fn commit_phase12_public_state(state: &Phase12DecodingState) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STATE_VERSION_PHASE12.as_bytes());
+    hasher.update(b"public-state");
+    hasher.update(state.state_version.as_bytes());
+    hasher.update(&(state.step_index as u64).to_le_bytes());
+    hasher.update(&state.position.to_le_bytes());
+    hasher.update(state.layout_commitment.as_bytes());
+    hasher.update(state.persistent_state_commitment.as_bytes());
+    hasher.update(state.kv_history_commitment.as_bytes());
+    hasher.update(&(state.kv_history_length as u64).to_le_bytes());
+    hasher.update(state.kv_cache_commitment.as_bytes());
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+/// Commits only the carried Phase 14 state that must remain stable across links.
+/// Step-local I/O commitments are excluded because the execution proof already binds them.
+fn commit_phase14_public_state(state: &Phase14DecodingState) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STATE_VERSION_PHASE14.as_bytes());
+    hasher.update(b"public-state");
+    hasher.update(state.state_version.as_bytes());
+    hasher.update(&(state.step_index as u64).to_le_bytes());
+    hasher.update(&state.position.to_le_bytes());
+    hasher.update(state.layout_commitment.as_bytes());
+    hasher.update(state.persistent_state_commitment.as_bytes());
+    hasher.update(state.kv_history_commitment.as_bytes());
+    hasher.update(&(state.kv_history_length as u64).to_le_bytes());
+    hasher.update(&(state.kv_history_chunk_size as u64).to_le_bytes());
+    hasher.update(state.kv_history_sealed_commitment.as_bytes());
+    hasher.update(&(state.kv_history_sealed_chunks as u64).to_le_bytes());
+    hasher.update(state.kv_history_open_chunk_commitment.as_bytes());
+    hasher.update(&(state.kv_history_open_chunk_pairs as u64).to_le_bytes());
+    hasher.update(state.kv_history_frontier_commitment.as_bytes());
+    hasher.update(&(state.kv_history_frontier_pairs as u64).to_le_bytes());
+    hasher.update(state.lookup_transcript_commitment.as_bytes());
+    hasher.update(&(state.lookup_transcript_entries as u64).to_le_bytes());
+    hasher.update(state.lookup_frontier_commitment.as_bytes());
+    hasher.update(&(state.lookup_frontier_entries as u64).to_le_bytes());
+    hasher.update(state.kv_cache_commitment.as_bytes());
     let mut out = [0u8; 32];
     hasher
         .finalize_variable(&mut out)
@@ -4141,7 +4455,9 @@ pub fn matches_decoding_step_v2_family_with_layout(
 mod kani_proofs {
     use super::*;
     use crate::instruction::Program;
-    use crate::proof::{production_v1_stark_options, VanillaStarkExecutionClaim, VanillaStarkExecutionProof};
+    use crate::proof::{
+        production_v1_stark_options, VanillaStarkExecutionClaim, VanillaStarkExecutionProof,
+    };
     use crate::state::MachineState;
 
     fn phase12_step_header_is_valid(
@@ -4164,13 +4480,15 @@ mod kani_proofs {
     }
 
     fn phase12_link_is_valid(
+        public_state_matches: bool,
         persistent_state_matches: bool,
         kv_cache_matches: bool,
         position_matches: bool,
         kv_history_commitment_matches: bool,
         kv_history_length_matches: bool,
     ) -> bool {
-        persistent_state_matches
+        public_state_matches
+            && persistent_state_matches
             && kv_cache_matches
             && position_matches
             && kv_history_commitment_matches
@@ -4242,6 +4560,7 @@ mod kani_proofs {
     }
 
     fn phase14_link_is_valid(
+        public_state_matches: bool,
         persistent_state_matches: bool,
         kv_cache_matches: bool,
         position_matches: bool,
@@ -4258,7 +4577,8 @@ mod kani_proofs {
         lookup_frontier_commitment_matches: bool,
         lookup_frontier_entries_matches: bool,
     ) -> bool {
-        persistent_state_matches
+        public_state_matches
+            && persistent_state_matches
             && kv_cache_matches
             && position_matches
             && kv_history_commitment_matches
@@ -4303,8 +4623,8 @@ mod kani_proofs {
             stwo_auxiliary: None,
             claim: VanillaStarkExecutionClaim {
                 statement_version: "statement-v1".to_string(),
-                semantic_scope:
-                    "native_isa_execution_with_transformer_native_equivalence_check".to_string(),
+                semantic_scope: "native_isa_execution_with_transformer_native_equivalence_check"
+                    .to_string(),
                 program: Program::new(vec![], 1),
                 attention_mode: Attention2DMode::AverageHard,
                 transformer_config: None,
@@ -4325,35 +4645,47 @@ mod kani_proofs {
         from_position: i16,
         to_position: i16,
     ) -> Phase12DecodingStep {
+        let from_state = Phase12DecodingState {
+            state_version: STWO_DECODING_STATE_VERSION_PHASE12.to_string(),
+            step_index: from_step_index,
+            position: from_position,
+            layout_commitment: layout_commitment.to_string(),
+            persistent_state_commitment: "persistent".to_string(),
+            kv_history_commitment: "history".to_string(),
+            kv_history_length: 1,
+            kv_cache_commitment: "cache".to_string(),
+            incoming_token_commitment: "incoming".to_string(),
+            query_commitment: "query".to_string(),
+            output_commitment: "output".to_string(),
+            lookup_rows_commitment: "lookup".to_string(),
+            public_state_commitment: String::new(),
+        };
+        let from_state = Phase12DecodingState {
+            public_state_commitment: commit_phase12_public_state(&from_state),
+            ..from_state
+        };
+        let to_state = Phase12DecodingState {
+            state_version: STWO_DECODING_STATE_VERSION_PHASE12.to_string(),
+            step_index: to_step_index,
+            position: to_position,
+            layout_commitment: layout_commitment.to_string(),
+            persistent_state_commitment: "persistent-next".to_string(),
+            kv_history_commitment: "history-next".to_string(),
+            kv_history_length: 2,
+            kv_cache_commitment: "cache-next".to_string(),
+            incoming_token_commitment: "incoming-next".to_string(),
+            query_commitment: "query-next".to_string(),
+            output_commitment: "output-next".to_string(),
+            lookup_rows_commitment: "lookup-next".to_string(),
+            public_state_commitment: String::new(),
+        };
+        let to_state = Phase12DecodingState {
+            public_state_commitment: commit_phase12_public_state(&to_state),
+            ..to_state
+        };
         Phase12DecodingStep {
-            from_state: Phase12DecodingState {
-                state_version: STWO_DECODING_STATE_VERSION_PHASE12.to_string(),
-                step_index: from_step_index,
-                position: from_position,
-                layout_commitment: layout_commitment.to_string(),
-                persistent_state_commitment: "persistent".to_string(),
-                kv_history_commitment: "history".to_string(),
-                kv_history_length: 1,
-                kv_cache_commitment: "cache".to_string(),
-                incoming_token_commitment: "incoming".to_string(),
-                query_commitment: "query".to_string(),
-                output_commitment: "output".to_string(),
-                lookup_rows_commitment: "lookup".to_string(),
-            },
-            to_state: Phase12DecodingState {
-                state_version: STWO_DECODING_STATE_VERSION_PHASE12.to_string(),
-                step_index: to_step_index,
-                position: to_position,
-                layout_commitment: layout_commitment.to_string(),
-                persistent_state_commitment: "persistent-next".to_string(),
-                kv_history_commitment: "history-next".to_string(),
-                kv_history_length: 2,
-                kv_cache_commitment: "cache-next".to_string(),
-                incoming_token_commitment: "incoming-next".to_string(),
-                query_commitment: "query-next".to_string(),
-                output_commitment: "output-next".to_string(),
-                lookup_rows_commitment: "lookup-next".to_string(),
-            },
+            from_state,
+            to_state,
             shared_lookup_artifact_commitment: "artifact".to_string(),
             proof: kani_dummy_proof(),
         }
@@ -4368,57 +4700,69 @@ mod kani_proofs {
         from_position: i16,
         to_position: i16,
     ) -> Phase14DecodingStep {
+        let from_state = Phase14DecodingState {
+            state_version: STWO_DECODING_STATE_VERSION_PHASE14.to_string(),
+            step_index: from_step_index,
+            position: from_position,
+            layout_commitment: layout_commitment.to_string(),
+            persistent_state_commitment: "persistent".to_string(),
+            kv_history_commitment: "history".to_string(),
+            kv_history_length: 1,
+            kv_history_chunk_size: history_chunk_pairs,
+            kv_history_sealed_commitment: "sealed".to_string(),
+            kv_history_sealed_chunks: 0,
+            kv_history_open_chunk_commitment: "open".to_string(),
+            kv_history_open_chunk_pairs: 1,
+            kv_history_frontier_commitment: "cache".to_string(),
+            kv_history_frontier_pairs: rolling_kv_pairs,
+            lookup_transcript_commitment: "lookup-transcript".to_string(),
+            lookup_transcript_entries: 1,
+            lookup_frontier_commitment: "lookup-frontier".to_string(),
+            lookup_frontier_entries: 1,
+            kv_cache_commitment: "cache".to_string(),
+            incoming_token_commitment: "incoming".to_string(),
+            query_commitment: "query".to_string(),
+            output_commitment: "output".to_string(),
+            lookup_rows_commitment: "lookup".to_string(),
+            public_state_commitment: String::new(),
+        };
+        let from_state = Phase14DecodingState {
+            public_state_commitment: commit_phase14_public_state(&from_state),
+            ..from_state
+        };
+        let to_state = Phase14DecodingState {
+            state_version: STWO_DECODING_STATE_VERSION_PHASE14.to_string(),
+            step_index: to_step_index,
+            position: to_position,
+            layout_commitment: layout_commitment.to_string(),
+            persistent_state_commitment: "persistent-next".to_string(),
+            kv_history_commitment: "history-next".to_string(),
+            kv_history_length: 2,
+            kv_history_chunk_size: history_chunk_pairs,
+            kv_history_sealed_commitment: "sealed-next".to_string(),
+            kv_history_sealed_chunks: 1,
+            kv_history_open_chunk_commitment: "open-next".to_string(),
+            kv_history_open_chunk_pairs: 1,
+            kv_history_frontier_commitment: "cache-next".to_string(),
+            kv_history_frontier_pairs: rolling_kv_pairs,
+            lookup_transcript_commitment: "lookup-transcript-next".to_string(),
+            lookup_transcript_entries: 2,
+            lookup_frontier_commitment: "lookup-frontier-next".to_string(),
+            lookup_frontier_entries: 2,
+            kv_cache_commitment: "cache-next".to_string(),
+            incoming_token_commitment: "incoming-next".to_string(),
+            query_commitment: "query-next".to_string(),
+            output_commitment: "output-next".to_string(),
+            lookup_rows_commitment: "lookup-next".to_string(),
+            public_state_commitment: String::new(),
+        };
+        let to_state = Phase14DecodingState {
+            public_state_commitment: commit_phase14_public_state(&to_state),
+            ..to_state
+        };
         Phase14DecodingStep {
-            from_state: Phase14DecodingState {
-                state_version: STWO_DECODING_STATE_VERSION_PHASE14.to_string(),
-                step_index: from_step_index,
-                position: from_position,
-                layout_commitment: layout_commitment.to_string(),
-                persistent_state_commitment: "persistent".to_string(),
-                kv_history_commitment: "history".to_string(),
-                kv_history_length: 1,
-                kv_history_chunk_size: history_chunk_pairs,
-                kv_history_sealed_commitment: "sealed".to_string(),
-                kv_history_sealed_chunks: 0,
-                kv_history_open_chunk_commitment: "open".to_string(),
-                kv_history_open_chunk_pairs: 1,
-                kv_history_frontier_commitment: "cache".to_string(),
-                kv_history_frontier_pairs: rolling_kv_pairs,
-                lookup_transcript_commitment: "lookup-transcript".to_string(),
-                lookup_transcript_entries: 1,
-                lookup_frontier_commitment: "lookup-frontier".to_string(),
-                lookup_frontier_entries: 1,
-                kv_cache_commitment: "cache".to_string(),
-                incoming_token_commitment: "incoming".to_string(),
-                query_commitment: "query".to_string(),
-                output_commitment: "output".to_string(),
-                lookup_rows_commitment: "lookup".to_string(),
-            },
-            to_state: Phase14DecodingState {
-                state_version: STWO_DECODING_STATE_VERSION_PHASE14.to_string(),
-                step_index: to_step_index,
-                position: to_position,
-                layout_commitment: layout_commitment.to_string(),
-                persistent_state_commitment: "persistent-next".to_string(),
-                kv_history_commitment: "history-next".to_string(),
-                kv_history_length: 2,
-                kv_history_chunk_size: history_chunk_pairs,
-                kv_history_sealed_commitment: "sealed-next".to_string(),
-                kv_history_sealed_chunks: 1,
-                kv_history_open_chunk_commitment: "open-next".to_string(),
-                kv_history_open_chunk_pairs: 1,
-                kv_history_frontier_commitment: "cache-next".to_string(),
-                kv_history_frontier_pairs: rolling_kv_pairs,
-                lookup_transcript_commitment: "lookup-transcript-next".to_string(),
-                lookup_transcript_entries: 2,
-                lookup_frontier_commitment: "lookup-frontier-next".to_string(),
-                lookup_frontier_entries: 2,
-                kv_cache_commitment: "cache-next".to_string(),
-                incoming_token_commitment: "incoming-next".to_string(),
-                query_commitment: "query-next".to_string(),
-                output_commitment: "output-next".to_string(),
-                lookup_rows_commitment: "lookup-next".to_string(),
-            },
+            from_state,
+            to_state,
             shared_lookup_artifact_commitment: "artifact".to_string(),
             proof: kani_dummy_proof(),
         }
@@ -4443,10 +4787,11 @@ mod kani_proofs {
     fn kani_phase12_validator_accepts_canonical_single_step() {
         let layout_commitment = "layout-commitment".to_string();
         let step = kani_phase12_step(&layout_commitment, 0, 1, 0, 1);
-        assert!(
-            validate_phase12_chain_steps_against_layout_commitment(&layout_commitment, &[step])
-                .is_ok()
-        );
+        assert!(validate_phase12_chain_steps_against_layout_commitment(
+            &layout_commitment,
+            &[step]
+        )
+        .is_ok());
     }
 
     #[kani::proof]
@@ -4472,29 +4817,33 @@ mod kani_proofs {
         let bad_index = kani::any::<usize>();
         kani::assume(bad_index != 1);
         let step = kani_phase12_step(&layout_commitment, 0, bad_index, 0, 1);
-        assert!(
-            validate_phase12_chain_steps_against_layout_commitment(&layout_commitment, &[step])
-                .is_err()
-        );
+        assert!(validate_phase12_chain_steps_against_layout_commitment(
+            &layout_commitment,
+            &[step]
+        )
+        .is_err());
     }
 
     #[kani::proof]
     fn kani_phase12_validate_rejects_any_link_mismatch() {
         let which = kani::any::<u8>();
-        kani::assume(which < 5);
+        kani::assume(which < 6);
+        let mut public_state_matches = true;
         let mut persistent_state_matches = true;
         let mut kv_cache_matches = true;
         let mut position_matches = true;
         let mut kv_history_commitment_matches = true;
         let mut kv_history_length_matches = true;
         match which {
-            0 => persistent_state_matches = false,
-            1 => kv_cache_matches = false,
-            2 => position_matches = false,
-            3 => kv_history_commitment_matches = false,
+            0 => public_state_matches = false,
+            1 => persistent_state_matches = false,
+            2 => kv_cache_matches = false,
+            3 => position_matches = false,
+            4 => kv_history_commitment_matches = false,
             _ => kv_history_length_matches = false,
         }
         assert!(!phase12_link_is_valid(
+            public_state_matches,
             persistent_state_matches,
             kv_cache_matches,
             position_matches,
@@ -4542,7 +4891,12 @@ mod kani_proofs {
             0 => to_history_length = 3,
             _ => to_position = 2,
         }
-        assert!(!phase12_state_progress_is_valid(1, to_history_length, 0, to_position));
+        assert!(!phase12_state_progress_is_valid(
+            1,
+            to_history_length,
+            0,
+            to_position
+        ));
     }
 
     #[kani::proof]
@@ -4585,15 +4939,13 @@ mod kani_proofs {
             0,
             1,
         );
-        assert!(
-            validate_phase14_chain_steps_against_layout_commitment(
-                &layout,
-                &layout_commitment,
-                PHASE14_HISTORY_CHUNK_PAIRS,
-                &[step],
-            )
-            .is_ok()
-        );
+        assert!(validate_phase14_chain_steps_against_layout_commitment(
+            &layout,
+            &layout_commitment,
+            PHASE14_HISTORY_CHUNK_PAIRS,
+            &[step],
+        )
+        .is_ok());
     }
 
     #[kani::proof]
@@ -4637,15 +4989,13 @@ mod kani_proofs {
             1,
         );
         step.to_state.kv_history_chunk_size = PHASE14_HISTORY_CHUNK_PAIRS + 1;
-        assert!(
-            validate_phase14_chain_steps_against_layout_commitment(
-                &layout,
-                &layout_commitment,
-                PHASE14_HISTORY_CHUNK_PAIRS,
-                &[step],
-            )
-            .is_err()
-        );
+        assert!(validate_phase14_chain_steps_against_layout_commitment(
+            &layout,
+            &layout_commitment,
+            PHASE14_HISTORY_CHUNK_PAIRS,
+            &[step],
+        )
+        .is_err());
     }
 
     #[kani::proof]
@@ -4678,12 +5028,12 @@ mod kani_proofs {
     #[kani::proof]
     fn kani_phase14_validate_rejects_any_link_mismatch() {
         let which = kani::any::<u8>();
-        kani::assume(which < 15);
-        let mut flags = [true; 15];
+        kani::assume(which < 16);
+        let mut flags = [true; 16];
         flags[which as usize] = false;
         assert!(!phase14_link_is_valid(
             flags[0], flags[1], flags[2], flags[3], flags[4], flags[5], flags[6], flags[7],
-            flags[8], flags[9], flags[10], flags[11], flags[12], flags[13], flags[14],
+            flags[8], flags[9], flags[10], flags[11], flags[12], flags[13], flags[14], flags[15],
         ));
     }
 
@@ -5051,6 +5401,21 @@ mod tests {
             parts.push(value.to_le_bytes().to_vec());
         }
         oracle_blake2b_256(&parts)
+    }
+
+    fn oracle_commit_phase12_public_state(state: &Phase12DecodingState) -> String {
+        oracle_blake2b_256(&[
+            ORACLE_DECODING_STATE_VERSION_PHASE12.as_bytes().to_vec(),
+            b"public-state".to_vec(),
+            state.state_version.as_bytes().to_vec(),
+            (state.step_index as u64).to_le_bytes().to_vec(),
+            state.position.to_le_bytes().to_vec(),
+            state.layout_commitment.as_bytes().to_vec(),
+            state.persistent_state_commitment.as_bytes().to_vec(),
+            state.kv_history_commitment.as_bytes().to_vec(),
+            (state.kv_history_length as u64).to_le_bytes().to_vec(),
+            state.kv_cache_commitment.as_bytes().to_vec(),
+        ])
     }
 
     fn oracle_commit_phase12_shared_lookup_rows(layout_commitment: &str, values: &[i16]) -> String {
@@ -5421,6 +5786,42 @@ mod tests {
         oracle_blake2b_256(&parts)
     }
 
+    fn oracle_commit_phase14_public_state(state: &Phase14DecodingState) -> String {
+        oracle_blake2b_256(&[
+            ORACLE_DECODING_STATE_VERSION_PHASE14.as_bytes().to_vec(),
+            b"public-state".to_vec(),
+            state.state_version.as_bytes().to_vec(),
+            (state.step_index as u64).to_le_bytes().to_vec(),
+            state.position.to_le_bytes().to_vec(),
+            state.layout_commitment.as_bytes().to_vec(),
+            state.persistent_state_commitment.as_bytes().to_vec(),
+            state.kv_history_commitment.as_bytes().to_vec(),
+            (state.kv_history_length as u64).to_le_bytes().to_vec(),
+            (state.kv_history_chunk_size as u64).to_le_bytes().to_vec(),
+            state.kv_history_sealed_commitment.as_bytes().to_vec(),
+            (state.kv_history_sealed_chunks as u64)
+                .to_le_bytes()
+                .to_vec(),
+            state.kv_history_open_chunk_commitment.as_bytes().to_vec(),
+            (state.kv_history_open_chunk_pairs as u64)
+                .to_le_bytes()
+                .to_vec(),
+            state.kv_history_frontier_commitment.as_bytes().to_vec(),
+            (state.kv_history_frontier_pairs as u64)
+                .to_le_bytes()
+                .to_vec(),
+            state.lookup_transcript_commitment.as_bytes().to_vec(),
+            (state.lookup_transcript_entries as u64)
+                .to_le_bytes()
+                .to_vec(),
+            state.lookup_frontier_commitment.as_bytes().to_vec(),
+            (state.lookup_frontier_entries as u64)
+                .to_le_bytes()
+                .to_vec(),
+            state.kv_cache_commitment.as_bytes().to_vec(),
+        ])
+    }
+
     fn oracle_advance_phase14_open_chunk(
         layout_commitment: &str,
         previous_open_chunk_commitment: &str,
@@ -5786,6 +6187,11 @@ mod tests {
                 query_commitment: from_view.query_commitment.clone(),
                 output_commitment: from_view.output_commitment.clone(),
                 lookup_rows_commitment: from_view.lookup_rows_commitment.clone(),
+                public_state_commitment: String::new(),
+            };
+            let expected_from = Phase12DecodingState {
+                public_state_commitment: oracle_commit_phase12_public_state(&expected_from),
+                ..expected_from
             };
             if step.from_state != expected_from {
                 return Err(VmError::InvalidConfig(format!(
@@ -5793,6 +6199,13 @@ mod tests {
                 )));
             }
             if let Some(previous) = &previous_expected_to {
+                if previous.public_state_commitment != expected_from.public_state_commitment {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding chain link {} -> {} does not preserve the carried public-state commitment",
+                        step_index - 1,
+                        step_index
+                    )));
+                }
                 if previous.persistent_state_commitment != expected_from.persistent_state_commitment
                 {
                     return Err(VmError::InvalidConfig(format!(
@@ -5863,6 +6276,11 @@ mod tests {
                 query_commitment: to_view.query_commitment.clone(),
                 output_commitment: to_view.output_commitment.clone(),
                 lookup_rows_commitment: to_view.lookup_rows_commitment.clone(),
+                public_state_commitment: String::new(),
+            };
+            let expected_to = Phase12DecodingState {
+                public_state_commitment: oracle_commit_phase12_public_state(&expected_to),
+                ..expected_to
             };
             if step.to_state != expected_to {
                 return Err(VmError::InvalidConfig(format!(
@@ -6030,6 +6448,11 @@ mod tests {
                 query_commitment: from_view.query_commitment.clone(),
                 output_commitment: from_view.output_commitment.clone(),
                 lookup_rows_commitment: from_view.lookup_rows_commitment.clone(),
+                public_state_commitment: String::new(),
+            };
+            let expected_from = Phase14DecodingState {
+                public_state_commitment: oracle_commit_phase14_public_state(&expected_from),
+                ..expected_from
             };
             if step.from_state != expected_from {
                 return Err(VmError::InvalidConfig(format!(
@@ -6037,6 +6460,13 @@ mod tests {
                 )));
             }
             if let Some(previous) = &previous_expected_to {
+                if previous.public_state_commitment != expected_from.public_state_commitment {
+                    return Err(VmError::InvalidConfig(format!(
+                        "chunked decoding chain link {} -> {} does not preserve the carried public-state commitment",
+                        step_index - 1,
+                        step_index
+                    )));
+                }
                 if previous.persistent_state_commitment != expected_from.persistent_state_commitment
                 {
                     return Err(VmError::InvalidConfig(format!(
@@ -6130,6 +6560,11 @@ mod tests {
                 query_commitment: to_view.query_commitment.clone(),
                 output_commitment: to_view.output_commitment.clone(),
                 lookup_rows_commitment: to_view.lookup_rows_commitment.clone(),
+                public_state_commitment: String::new(),
+            };
+            let expected_to = Phase14DecodingState {
+                public_state_commitment: oracle_commit_phase14_public_state(&expected_to),
+                ..expected_to
             };
             if step.to_state != expected_to {
                 return Err(VmError::InvalidConfig(format!(
@@ -6428,11 +6863,66 @@ mod tests {
 
     #[test]
     fn load_phase12_decoding_chain_rejects_non_regular_file() {
-        let path = std::env::temp_dir().join(format!("phase12-decoding-dir-{}", std::process::id()));
+        let path =
+            std::env::temp_dir().join(format!("phase12-decoding-dir-{}", std::process::id()));
         fs::create_dir_all(&path).expect("create dir");
         let err = load_phase12_decoding_chain(&path).expect_err("directory should fail");
         assert!(err.to_string().contains("is not a regular file"));
         let _ = fs::remove_dir_all(path);
+    }
+
+    #[test]
+    fn load_phase12_decoding_chain_backfills_missing_public_state_commitment() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        let mut value = serde_json::to_value(&manifest).expect("manifest json");
+        for step in value["steps"].as_array_mut().expect("steps") {
+            step["from_state"]
+                .as_object_mut()
+                .expect("from_state")
+                .remove("public_state_commitment");
+            step["to_state"]
+                .as_object_mut()
+                .expect("to_state")
+                .remove("public_state_commitment");
+        }
+        let path = std::env::temp_dir().join(format!(
+            "phase12-decoding-legacy-{}.json",
+            std::process::id()
+        ));
+        fs::write(&path, serde_json::to_vec(&value).expect("legacy json")).expect("write");
+        let loaded = load_phase12_decoding_chain(&path).expect("load legacy manifest");
+        verify_phase12_decoding_chain(&loaded).expect("verify normalized manifest");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn load_phase12_decoding_chain_rejects_empty_public_state_commitment() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        let mut value = serde_json::to_value(&manifest).expect("manifest json");
+        value["steps"][0]["from_state"]["public_state_commitment"] =
+            serde_json::Value::String(String::new());
+        let path = std::env::temp_dir().join(format!(
+            "phase12-decoding-empty-public-state-{}.json",
+            std::process::id()
+        ));
+        fs::write(&path, serde_json::to_vec(&value).expect("json")).expect("write");
+        let err = load_phase12_decoding_chain(&path)
+            .expect_err("empty public-state commitment should fail");
+        assert!(err.to_string().contains("must not be empty"));
+        let _ = fs::remove_file(path);
     }
 
     #[test]
@@ -6453,7 +6943,10 @@ mod tests {
         let err = save_phase12_decoding_chain(&manifest, &path)
             .expect_err("oversized manifest should be rejected on save");
         assert!(err.to_string().contains("exceeding the limit"));
-        assert!(!path.exists(), "save should not write an unreadable manifest");
+        assert!(
+            !path.exists(),
+            "save should not write an unreadable manifest"
+        );
     }
 
     #[test]
@@ -6475,7 +6968,66 @@ mod tests {
         let err = save_phase14_decoding_chain(&manifest, &path)
             .expect_err("oversized phase14 manifest should be rejected on save");
         assert!(err.to_string().contains("exceeding the limit"));
-        assert!(!path.exists(), "save should not write an unreadable manifest");
+        assert!(
+            !path.exists(),
+            "save should not write an unreadable manifest"
+        );
+    }
+
+    #[test]
+    fn load_phase14_decoding_chain_backfills_missing_public_state_commitment() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12");
+        let manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14");
+        let mut value = serde_json::to_value(&manifest).expect("manifest json");
+        for step in value["steps"].as_array_mut().expect("steps") {
+            step["from_state"]
+                .as_object_mut()
+                .expect("from_state")
+                .remove("public_state_commitment");
+            step["to_state"]
+                .as_object_mut()
+                .expect("to_state")
+                .remove("public_state_commitment");
+        }
+        let path = std::env::temp_dir().join(format!(
+            "phase14-decoding-legacy-{}.json",
+            std::process::id()
+        ));
+        fs::write(&path, serde_json::to_vec(&value).expect("legacy json")).expect("write");
+        let loaded = load_phase14_decoding_chain(&path).expect("load legacy manifest");
+        verify_phase14_decoding_chain(&loaded).expect("verify normalized manifest");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn load_phase14_decoding_chain_rejects_empty_public_state_commitment() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12");
+        let manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14");
+        let mut value = serde_json::to_value(&manifest).expect("manifest json");
+        value["steps"][0]["from_state"]["public_state_commitment"] =
+            serde_json::Value::String(String::new());
+        let path = std::env::temp_dir().join(format!(
+            "phase14-decoding-empty-public-state-{}.json",
+            std::process::id()
+        ));
+        fs::write(&path, serde_json::to_vec(&value).expect("json")).expect("write");
+        let err = load_phase14_decoding_chain(&path)
+            .expect_err("empty public-state commitment should fail");
+        assert!(err.to_string().contains("must not be empty"));
+        let _ = fs::remove_file(path);
     }
 
     #[test]
@@ -6491,7 +7043,10 @@ mod tests {
         let err = save_phase15_decoding_segment_bundle(&manifest, &path)
             .expect_err("oversized phase15 manifest should be rejected on save");
         assert!(err.to_string().contains("exceeding the limit"));
-        assert!(!path.exists(), "save should not write an unreadable manifest");
+        assert!(
+            !path.exists(),
+            "save should not write an unreadable manifest"
+        );
     }
 
     fn assert_saved_json_budget<T>(
@@ -7139,6 +7694,10 @@ mod tests {
             manifest.steps[0].to_state.kv_history_commitment,
             manifest.steps[1].from_state.kv_history_commitment
         );
+        assert_eq!(
+            manifest.steps[0].to_state.public_state_commitment,
+            manifest.steps[1].from_state.public_state_commitment
+        );
         assert_eq!(manifest.steps[0].from_state.kv_history_length, 4);
         assert_eq!(manifest.steps[2].to_state.kv_history_length, 7);
         assert_ne!(
@@ -7401,7 +7960,8 @@ mod tests {
         let template = manifest.shared_lookup_artifacts[0].clone();
         while manifest.shared_lookup_artifacts.len() <= MAX_DECODING_SHARED_LOOKUP_ARTIFACTS {
             let mut extra = template.clone();
-            extra.artifact_commitment
+            extra
+                .artifact_commitment
                 .push_str(&format!("-{}", manifest.shared_lookup_artifacts.len()));
             manifest.shared_lookup_artifacts.push(extra);
         }
@@ -7508,6 +8068,25 @@ mod tests {
         assert!(err
             .to_string()
             .contains("unsupported decoding proof backend version"));
+    }
+
+    #[test]
+    fn phase12_verify_decoding_chain_rejects_tampered_public_state_commitment() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest = phase12_prepare_decoding_chain(&layout, &proofs).expect("manifest");
+        manifest.steps[1].from_state.public_state_commitment = "broken".to_string();
+        let err = verify_phase12_decoding_chain(&manifest).unwrap_err();
+        let message = err.to_string();
+        assert!(
+            message.contains("from_state public_state_commitment does not match")
+                || message.contains("recorded from_state does not match the proof's initial state"),
+            "unexpected error: {message}"
+        );
     }
 
     #[test]
@@ -7653,6 +8232,10 @@ mod tests {
             manifest.steps[2].to_state.lookup_frontier_entries,
             PHASE14_HISTORY_CHUNK_PAIRS
         );
+        assert_eq!(
+            manifest.steps[0].to_state.public_state_commitment,
+            manifest.steps[1].from_state.public_state_commitment
+        );
         verify_phase14_decoding_chain(&manifest).expect("phase14 verification");
     }
 
@@ -7743,6 +8326,26 @@ mod tests {
     }
 
     #[test]
+    fn phase14_verify_decoding_chain_rejects_tampered_public_state_commitment() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        manifest.steps[1].from_state.public_state_commitment = "broken".to_string();
+        let err = verify_phase14_decoding_chain(&manifest).unwrap_err();
+        let message = err.to_string();
+        assert!(
+            message.contains("from_state public_state_commitment does not match")
+                || message.contains("recorded from_state does not match the proof's initial state"),
+            "unexpected error: {message}"
+        );
+    }
+
+    #[test]
     fn phase14_verify_decoding_chain_rejects_too_many_steps() {
         let layout = phase12_default_decoding_layout();
         let proofs = phase12_demo_initial_memories(&layout)
@@ -7775,7 +8378,9 @@ mod tests {
         let template = manifest.shared_lookup_artifacts[0].clone();
         while manifest.shared_lookup_artifacts.len() <= MAX_DECODING_SHARED_LOOKUP_ARTIFACTS {
             let mut extra = template.clone();
-            extra.artifact_commitment.push_str(&format!("-{}", manifest.shared_lookup_artifacts.len()));
+            extra
+                .artifact_commitment
+                .push_str(&format!("-{}", manifest.shared_lookup_artifacts.len()));
             manifest.shared_lookup_artifacts.push(extra);
         }
         let err = verify_phase14_decoding_chain(&manifest).unwrap_err();
@@ -8042,9 +8647,9 @@ mod tests {
             .collect::<Vec<_>>();
         let mut manifest =
             phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
-        manifest
-            .shared_lookup_artifacts
-            .push(sample_phase12_valid_but_wrong_shared_lookup_artifact(&layout));
+        manifest.shared_lookup_artifacts.push(
+            sample_phase12_valid_but_wrong_shared_lookup_artifact(&layout),
+        );
 
         assert!(verify_phase12_decoding_chain(&manifest).is_err());
         assert!(oracle_verify_phase12_decoding_chain(&manifest).is_err());
@@ -8061,6 +8666,22 @@ mod tests {
         let mut manifest =
             phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
         manifest.steps[1].proof.claim.semantic_scope = "tampered-semantic-scope".to_string();
+
+        assert!(verify_phase12_decoding_chain(&manifest).is_err());
+        assert!(oracle_verify_phase12_decoding_chain(&manifest).is_err());
+    }
+
+    #[test]
+    fn phase12_oracle_and_production_reject_same_public_state_commitment_drift() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut manifest =
+            phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        manifest.steps[1].from_state.public_state_commitment = "tampered".to_string();
 
         assert!(verify_phase12_decoding_chain(&manifest).is_err());
         assert!(oracle_verify_phase12_decoding_chain(&manifest).is_err());
@@ -8146,6 +8767,22 @@ mod tests {
         let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
         let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
         manifest.steps[1].proof.claim.semantic_scope = "tampered-semantic-scope".to_string();
+
+        assert!(verify_phase14_decoding_chain(&manifest).is_err());
+        assert!(oracle_verify_phase14_decoding_chain(&manifest).is_err());
+    }
+
+    #[test]
+    fn phase14_oracle_and_production_reject_same_public_state_commitment_drift() {
+        let layout = phase12_default_decoding_layout();
+        let proofs = phase12_demo_initial_memories(&layout)
+            .expect("memories")
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let phase12 = phase12_prepare_decoding_chain(&layout, &proofs).expect("phase12 manifest");
+        let mut manifest = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        manifest.steps[1].from_state.public_state_commitment = "tampered".to_string();
 
         assert!(verify_phase14_decoding_chain(&manifest).is_err());
         assert!(oracle_verify_phase14_decoding_chain(&manifest).is_err());

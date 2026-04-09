@@ -9,6 +9,17 @@
 - When proof semantics, decoding-chain structure, manifest schema, or version constants change, add at least one failing-path, tamper-path, or compatibility regression test.
 - Happy-path-only tests are insufficient for changes to `src/stwo_backend/**`, `src/proof.rs`, `src/verification.rs`, or `src/bin/tvm.rs`.
 - If a change is motivated by a denial-of-service or untrusted-input concern, add a regression test that exercises the rejected input shape.
+- For trusted-core pull requests, include a `Validation` section and a `Hardening` section in the PR body. The PR should not merge without those sections.
+
+## Trusted-Core Default Harness
+
+- For changes to decoding, manifest verification, carried-state commitments, proof binding, or CLI verification paths, run the relevant subset of:
+  - targeted regression and tamper-path tests,
+  - oracle or differential checks,
+  - resource-bound verification tests,
+  - Kani / formal-kernel checks when the invariant is bounded,
+  - Miri / sanitizer coverage when parser or validator glue changes.
+- If a layer is not applicable, explain that explicitly in the PR body instead of silently skipping it.
 
 ## Documentation And Claim Discipline
 
