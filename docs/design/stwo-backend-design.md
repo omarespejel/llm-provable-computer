@@ -3,7 +3,7 @@
 ## Goal
 
 Harden and widen the existing experimental S-two / STWO proving backend in
-`llm-provable-computer` without breaking the current `statement-v1` claim contract or the
+`provable-transformer-vm` without breaking the current `statement-v1` claim contract or the
 existing vanilla STARK path.
 
 The design target remains conservative:
