@@ -430,7 +430,7 @@ implementation path.
 
 ## References
 
-- [1] Omar Espejel. *On the Alignment of Transformer Workloads and STARK Proof Systems*. Starknet Foundation, April 2026. Release tag `paper-publication-v2-2026-04-07`. <https://github.com/omarespejel/provable-transformer-vm/blob/paper-publication-v2-2026-04-07/docs/paper/stark-transformer-alignment-2026.md>
+- [1] Omar Espejel. *On the Structural Fit of Transformer Workloads and STARK Proof Systems*. Starknet Foundation, April 2026. Release tag `paper-publication-v2-2026-04-07`. <https://github.com/omarespejel/provable-transformer-vm/blob/paper-publication-v2-2026-04-07/docs/paper/stark-transformer-alignment-2026.md>
 - [2] `omarespejel/provable-transformer-vm`. Maintained research repository and implementation base for the system described here. Commit `68e08fb1d3fdb186cfcfab4f22c52ccf4264f542`. <https://github.com/omarespejel/provable-transformer-vm/tree/68e08fb1d3fdb186cfcfab4f22c52ccf4264f542>
 - [3] `omarespejel/provable-transformer-vm`. *Appendix Artifact Index (S-two Experimental V1).* Commit `3cb6d55e9fdc39ab729f7cff910976163e2814f0`. <https://github.com/omarespejel/provable-transformer-vm/blob/3cb6d55e9fdc39ab729f7cff910976163e2814f0/docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md>
 - [4] Eli Ben-Sasson, Iddo Bentov, Yinon Horesh, and Michael Riabzev. *Scalable, Transparent, and Post-Quantum Secure Computational Integrity*. IACR ePrint 2018/046. <https://eprint.iacr.org/2018/046>
