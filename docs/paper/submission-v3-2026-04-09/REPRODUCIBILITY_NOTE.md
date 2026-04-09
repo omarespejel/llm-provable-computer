@@ -61,10 +61,16 @@ Expected outputs live under:
 - `docs/paper/figures/section4-ratio-vs-context.*`
 - `docs/paper/figures/section4-decomposition-vs-context.*`
 
-Use git diff to inspect reproducibility drift:
+Use git status to detect reproducibility drift quickly:
 
 ```bash
 git status --short docs/paper/figures
+```
+
+Then inspect exact renderer-level drift with:
+
+```bash
+git diff -- docs/paper/figures
 ```
 
 Numeric TSV outputs should be stable for a fixed code path; renderer-specific

@@ -5,6 +5,9 @@ Snapshot date: **April 9, 2026**
 Intended launch tag for the current paper-facing repository state:
 `paper-publication-v3-2026-04-09`
 
+Canonical publication snapshot commit:
+`900ad5da657fb3b8085755657eb50c5f53580c23`
+
 This repository state is the publication-facing package for the paper and its supporting
 artifacts. The package is intentionally split into evidence tiers rather than treated as one
 monolithic benchmark claim.
