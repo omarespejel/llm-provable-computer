@@ -2047,7 +2047,11 @@ fn cli_verify_stwo_decoding_lookup_accumulator_demo_rejects_tampered_lookup_delt
     let mut proof_json: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
             .expect("json");
-    proof_json["lookup_delta_entries"] = serde_json::Value::from(0u64);
+    let original_lookup_delta_entries = proof_json["lookup_delta_entries"]
+        .as_u64()
+        .expect("lookup_delta_entries");
+    proof_json["lookup_delta_entries"] =
+        serde_json::Value::from(original_lookup_delta_entries.saturating_add(1));
     std::fs::write(
         &tampered_path,
         serde_json::to_vec_pretty(&proof_json).expect("serialize"),
@@ -2060,8 +2064,54 @@ fn cli_verify_stwo_decoding_lookup_accumulator_demo_rejects_tampered_lookup_delt
         .arg(&tampered_path)
         .assert()
         .failure()
+        .stderr(predicate::str::contains("lookup_delta_entries="))
         .stderr(predicate::str::contains(
-            "lookup_delta_entries=0 does not match derived lookup_delta_entries",
+            "does not match derived lookup_delta_entries",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_decoding_lookup_accumulator_demo_rejects_tampered_max_lookup_frontier_entries() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-lookup-accumulator-frontier").with_extension("json");
+    let tampered_path = unique_temp_dir("cli-stwo-decoding-lookup-accumulator-frontier-tampered")
+        .with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-decoding-lookup-accumulator-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    let original_max_lookup_frontier_entries = proof_json["max_lookup_frontier_entries"]
+        .as_u64()
+        .expect("max_lookup_frontier_entries");
+    proof_json["max_lookup_frontier_entries"] =
+        serde_json::Value::from(original_max_lookup_frontier_entries.saturating_add(1));
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-decoding-lookup-accumulator-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("max_lookup_frontier_entries="))
+        .stderr(predicate::str::contains(
+            "does not match derived max_lookup_frontier_entries",
         ));
 
     let _ = std::fs::remove_file(proof_path);

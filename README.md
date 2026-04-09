@@ -430,6 +430,12 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-decoding-matrix-accumulator-demo decoding-matrix-accumulator.stwo.json
 
+# Produce and verify the Phase 22 lookup accumulator over a Phase 21 matrix accumulator
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prove-stwo-decoding-lookup-accumulator-demo -o decoding-lookup-accumulator.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-decoding-lookup-accumulator-demo decoding-lookup-accumulator.stwo.json
+
 # Freeze a canonical pre-aggregation batch manifest for future recursion work
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-recursion-batch \

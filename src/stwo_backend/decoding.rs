@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use std::io::Read;
+use std::io::{BufWriter, Read, Write};
 use std::path::Path;
 
 use blake2::digest::{Update, VariableOutput};
@@ -648,17 +648,56 @@ fn write_json_with_limit<T: Serialize>(
     max_bytes: usize,
     label: &str,
 ) -> Result<()> {
-    let bytes =
-        serde_json::to_vec_pretty(value).map_err(|err| VmError::Serialization(err.to_string()))?;
-    if bytes.len() > max_bytes {
+    struct ByteLimitCounter {
+        written: usize,
+        max_bytes: usize,
+        limit_exceeded: bool,
+    }
+
+    impl Write for ByteLimitCounter {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            let next = self.written.saturating_add(buf.len());
+            if next > self.max_bytes {
+                self.limit_exceeded = true;
+                return Err(std::io::Error::other("json size limit exceeded"));
+            }
+            self.written = next;
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    let mut counter = ByteLimitCounter {
+        written: 0,
+        max_bytes,
+        limit_exceeded: false,
+    };
+    if let Err(err) = serde_json::to_writer_pretty(&mut counter, value) {
+        if counter.limit_exceeded {
+            return Err(VmError::InvalidConfig(format!(
+                "{label} `{}` would serialize to JSON exceeding the limit of {} bytes",
+                path.display(),
+                max_bytes
+            )));
+        }
+        return Err(VmError::Serialization(err.to_string()));
+    }
+    if counter.written > max_bytes {
         return Err(VmError::InvalidConfig(format!(
             "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
             path.display(),
-            bytes.len(),
+            counter.written,
             max_bytes
         )));
     }
-    fs::write(path, bytes)?;
+    let file = fs::File::create(path)?;
+    let mut writer = BufWriter::new(file);
+    serde_json::to_writer_pretty(&mut writer, value)
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    writer.flush()?;
     Ok(())
 }
 
@@ -3637,7 +3676,10 @@ pub fn load_phase22_decoding_lookup_accumulator(
         MAX_PHASE22_LOOKUP_ACCUMULATOR_JSON_BYTES,
         "Phase 22 decoding lookup accumulator",
     )?;
-    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+    let manifest: Phase22DecodingLookupAccumulatorManifest =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    verify_phase22_decoding_lookup_accumulator(&manifest)?;
+    Ok(manifest)
 }
 
 pub fn save_phase13_decoding_layout_matrix(
@@ -8804,6 +8846,28 @@ mod tests {
     }
 
     #[test]
+    fn load_phase22_decoding_lookup_accumulator_rejects_tampered_manifest() {
+        let mut manifest = sample_phase22_lookup_accumulator_manifest();
+        manifest.source_accumulator_commitment = "tampered".to_string();
+        let path = std::env::temp_dir().join(format!(
+            "phase22-decoding-lookup-accumulator-invalid-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        fs::write(
+            &path,
+            serde_json::to_vec_pretty(&manifest).expect("serialize invalid manifest"),
+        )
+        .expect("write invalid manifest");
+        let err =
+            load_phase22_decoding_lookup_accumulator(&path).expect_err("tampered load should fail");
+        assert!(err.to_string().contains(
+            "source_accumulator_commitment does not match the nested Phase 21 accumulator"
+        ));
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
     fn save_phase21_decoding_matrix_accumulator_rejects_manifest_exceeding_json_budget() {
         let mut manifest = sample_phase21_matrix_accumulator_manifest();
         manifest.matrices[0].rollups[0].rollups[0].segments[0]
@@ -8989,7 +9053,8 @@ mod tests {
 
     #[test]
     fn phase22_demo_manifest_fits_json_budget() {
-        let manifest = sample_phase22_lookup_accumulator_manifest();
+        let manifest =
+            prove_phase22_decoding_lookup_accumulator_demo().expect("phase22 lookup demo");
         assert_saved_json_budget(
             "phase22-demo",
             MAX_PHASE22_LOOKUP_ACCUMULATOR_JSON_BYTES,
@@ -10638,7 +10703,7 @@ mod tests {
         assert!(manifest.total_rollups >= 2);
         assert!(manifest.total_segments >= 2);
         assert!(manifest.total_steps >= 2);
-        assert!(manifest.lookup_delta_entries >= manifest.total_steps);
+        assert_eq!(manifest.lookup_delta_entries, manifest.total_steps);
         verify_phase22_decoding_lookup_accumulator(&manifest).expect("phase22 verification");
     }
 
@@ -10671,6 +10736,38 @@ mod tests {
         assert!(err
             .to_string()
             .contains("does not match derived lookup_delta_entries"));
+    }
+
+    #[test]
+    fn phase22_lookup_accumulator_rejects_tampered_max_lookup_frontier_entries() {
+        let mut manifest = sample_phase22_lookup_accumulator_manifest();
+        manifest.max_lookup_frontier_entries =
+            manifest.max_lookup_frontier_entries.saturating_add(1);
+        let err = verify_phase22_decoding_lookup_accumulator(&manifest).unwrap_err();
+        assert!(err.to_string().contains("max_lookup_frontier_entries="));
+        assert!(err
+            .to_string()
+            .contains("does not match derived max_lookup_frontier_entries"));
+    }
+
+    #[test]
+    fn phase22_lookup_accumulator_rejects_tampered_source_template_commitment() {
+        let mut manifest = sample_phase22_lookup_accumulator_manifest();
+        manifest.source_template_commitment = "tampered".to_string();
+        let err = verify_phase22_decoding_lookup_accumulator(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("source_template_commitment does not match the nested Phase 21 accumulator"));
+    }
+
+    #[test]
+    fn phase22_lookup_accumulator_rejects_tampered_source_accumulator_commitment() {
+        let mut manifest = sample_phase22_lookup_accumulator_manifest();
+        manifest.source_accumulator_commitment = "tampered".to_string();
+        let err = verify_phase22_decoding_lookup_accumulator(&manifest).unwrap_err();
+        assert!(err.to_string().contains(
+            "source_accumulator_commitment does not match the nested Phase 21 accumulator"
+        ));
     }
 
     #[test]
