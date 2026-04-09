@@ -257,6 +257,7 @@ The repository snapshot analyzed here provides:
 - a parameterized proof-carrying decoding family (`decoding_step_v2`) over multiple public layouts,
 - composable carried-state packaging layers (chain, segment, rollup, multi-layout rollup matrix),
 - explicit cumulative and frontier commitments for both KV-side and lookup-side state.
+- a verification-hardening stack for this carried-state path: oracle/differential checks, structure-aware fuzz smoke targets, targeted mutation testing, Miri/address-sanitizer suites, and a bounded Kani formal-contract kernel.
 
 These capabilities support a stronger systems statement than earlier drafts: not only that traces can be proved, but that the same base decode relation can be carried across progressively more composable manifest layers without changing the underlying statement boundary.
 
@@ -285,7 +286,7 @@ The bundle includes proofs for `addition`, `dot_product`, `single_neuron`, and `
 
 On April 6, 2026, we generated a second immutable bundle for the experimental `stwo` path and preserved it in an immutable snapshot (artifact-index commit `3970277`) with exact command logs, timings, hashes, and representative artifacts: an arithmetic `statement-v1` proof (`addition`), a shared-table normalization lookup envelope, a transformer-shaped `gemma_block_v4` proof with embedded lookup bindings, and a three-step decoding chain artifact [40]. This frozen `stwo-experimental-v1` tier complements the vanilla `production-v1` tier rather than replacing it.
 
-Beyond that frozen tier, the same repository line now carries the broader bridge artifact: parameterized `decoding_step_v2` proofs over several public layouts, then explicit carried-state packaging into chunked chains, segments, rollups, and a layout matrix, with both cumulative and frontier commitments for arithmetic/KV state and lookup/non-arithmetic state. These bridge artifacts are commit-pinned systems evidence, but they are not yet recursive compression evidence.
+Beyond that frozen tier, the same repository line now carries the broader bridge artifact: parameterized `decoding_step_v2` proofs over several public layouts, then explicit carried-state packaging into chunked chains, segments, rollups, and a layout matrix, with both cumulative and frontier commitments for arithmetic/KV state and lookup/non-arithmetic state. Concretely, the current bridge corresponds to the Phase 13 layout matrix, Phase 14 chunked history, Phase 15 segments, Phase 16 rollups, Phase 17 multi-layout rollup matrix, Phase 18 KV frontier, Phase 19 lookup transcript, and Phase 20 lookup frontier layers described in the repository design materials. These bridge artifacts are commit-pinned systems evidence, but they are not yet recursive compression evidence.
 
 ### 5.5 Why this artifact matters
 
