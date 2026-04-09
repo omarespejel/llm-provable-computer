@@ -46,6 +46,8 @@ monolithic benchmark claim.
   - `python3 scripts/paper/archive_supporting_web_evidence.py`
 - Gemma config extracts:
   - `python3 scripts/paper/extract_gemma_config_snapshots.py`
+- Paper preflight checks:
+  - `python3 scripts/paper/paper_preflight.py --repo-root .`
 
 ## Publication check
 
@@ -56,4 +58,5 @@ Before cutting a release tag, verify:
 3. the design note matches the current experimental `stwo` status,
 4. no stale top-level README language still describes S-two as merely prospective,
 5. Reference `[30]` in the paper points at the same release tag that is being
-   circulated.
+   circulated,
+6. `paper preflight` passes (citation integrity, immutable local repo links, figure/link paths, appendix source note).
