@@ -539,6 +539,10 @@ matrix/rollup-style packaging layers described in the next-paper track.
 - Phase 20: explicit lookup frontier commitments over that same stack
 - Phase 21: template-bound accumulation over Phase 17 matrices with explicit template and accumulator commitments
 
+These phases define pre-recursive merge boundaries and carried-state bindings;
+they do not yet implement recursive cryptographic accumulation or cross-step
+shared-table accumulation.
+
 #### Explicit Non-Goals
 
 - not a full `stwo` zkML backend for standard-softmax transformers
@@ -857,6 +861,10 @@ lanes carry it forward.
 - Phase 15-17: mergeable history segments, rollups over segments, and multi-layout rollup matrices
 - Phase 18-20: explicit KV frontiers, carried lookup transcripts, and lookup frontier commitments
 - Phase 21: template-bound accumulation over Phase 17 matrices for a reusable pre-recursive merge boundary
+
+These phases define pre-recursive merge boundaries and carried-state bindings;
+they do not yet implement recursive cryptographic accumulation or cross-step
+shared-table accumulation.
 
 #### Explicit Non-Goals
 
