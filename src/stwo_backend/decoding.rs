@@ -6346,6 +6346,22 @@ mod tests {
         assert!(!path.exists(), "save should not write an unreadable manifest");
     }
 
+    #[test]
+    fn save_phase15_decoding_segment_bundle_rejects_manifest_exceeding_json_budget() {
+        let mut manifest = prove_phase15_decoding_demo().expect("phase15 demo");
+        manifest.segments[0].chain.steps[0].proof.proof =
+            vec![0; MAX_PHASE15_SEGMENT_BUNDLE_JSON_BYTES];
+        let path = std::env::temp_dir().join(format!(
+            "phase15-decoding-save-oversized-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        let err = save_phase15_decoding_segment_bundle(&manifest, &path)
+            .expect_err("oversized phase15 manifest should be rejected on save");
+        assert!(err.to_string().contains("exceeding the limit"));
+        assert!(!path.exists(), "save should not write an unreadable manifest");
+    }
+
     fn assert_saved_json_budget<T>(
         label: &str,
         limit: usize,
@@ -6354,11 +6370,20 @@ mod tests {
     ) where
         T: serde::Serialize,
     {
+        let thread_label = std::thread::current()
+            .name()
+            .unwrap_or("anon")
+            .chars()
+            .map(|ch| match ch {
+                ':' | '/' | '\\' => '_',
+                other => other,
+            })
+            .collect::<String>();
         let path = std::env::temp_dir().join(format!(
             "{}-{}-{}.json",
             label,
             std::process::id(),
-            std::thread::current().name().unwrap_or("anon")
+            thread_label
         ));
         let _ = fs::remove_file(&path);
         save(manifest, &path).expect("manifest should fit within the configured json budget");
@@ -6382,6 +6407,17 @@ mod tests {
     }
 
     #[test]
+    fn phase12_demo_manifest_fits_json_budget() {
+        let manifest = prove_phase12_decoding_demo().expect("phase12 demo");
+        assert_saved_json_budget(
+            "phase12-demo",
+            MAX_PHASE12_DECODING_CHAIN_JSON_BYTES,
+            &manifest,
+            save_phase12_decoding_chain,
+        );
+    }
+
+    #[test]
     fn phase13_demo_manifest_fits_json_budget() {
         let manifest = prove_phase13_decoding_layout_matrix_demo().expect("phase13 demo");
         assert_saved_json_budget(
@@ -6389,6 +6425,28 @@ mod tests {
             MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES,
             &manifest,
             save_phase13_decoding_layout_matrix,
+        );
+    }
+
+    #[test]
+    fn phase14_demo_manifest_fits_json_budget() {
+        let manifest = prove_phase14_decoding_demo().expect("phase14 demo");
+        assert_saved_json_budget(
+            "phase14-demo",
+            MAX_PHASE14_DECODING_CHAIN_JSON_BYTES,
+            &manifest,
+            save_phase14_decoding_chain,
+        );
+    }
+
+    #[test]
+    fn phase15_demo_manifest_fits_json_budget() {
+        let manifest = prove_phase15_decoding_demo().expect("phase15 demo");
+        assert_saved_json_budget(
+            "phase15-demo",
+            MAX_PHASE15_SEGMENT_BUNDLE_JSON_BYTES,
+            &manifest,
+            save_phase15_decoding_segment_bundle,
         );
     }
 
