@@ -2185,7 +2185,14 @@ fn cli_verify_stwo_decoding_cross_step_lookup_accumulator_demo_rejects_tampered_
     let mut proof_json: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
             .expect("json");
-    proof_json["lookup_template_commitment"] = serde_json::Value::String("tampered".to_string());
+    let original = proof_json["lookup_template_commitment"]
+        .as_str()
+        .expect("lookup_template_commitment")
+        .to_string();
+    let mut tampered = original.clone();
+    let replacement = if &original[..2] == "00" { "ff" } else { "00" };
+    tampered.replace_range(0..2, replacement);
+    proof_json["lookup_template_commitment"] = serde_json::Value::String(tampered);
     std::fs::write(
         &tampered_path,
         serde_json::to_vec_pretty(&proof_json).expect("serialize"),
@@ -2200,6 +2207,52 @@ fn cli_verify_stwo_decoding_cross_step_lookup_accumulator_demo_rejects_tampered_
         .failure()
         .stderr(predicate::str::contains(
             "lookup_template_commitment does not match the computed member lookup template commitment",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_decoding_cross_step_lookup_accumulator_demo_rejects_tampered_lookup_delta_entries(
+) {
+    let proof_path = unique_temp_dir("cli-stwo-decoding-cross-step-lookup-accumulator-delta")
+        .with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-decoding-cross-step-lookup-accumulator-delta-tampered")
+            .with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-decoding-cross-step-lookup-accumulator-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    let value = proof_json["lookup_delta_entries"]
+        .as_u64()
+        .expect("lookup_delta_entries");
+    proof_json["lookup_delta_entries"] = serde_json::Value::from(value.saturating_add(1));
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-decoding-cross-step-lookup-accumulator-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("lookup_delta_entries="))
+        .stderr(predicate::str::contains(
+            "does not match derived lookup_delta_entries",
         ));
 
     let _ = std::fs::remove_file(proof_path);
