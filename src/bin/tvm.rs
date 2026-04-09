@@ -34,18 +34,20 @@ use llm_provable_computer::{
     load_phase11_decoding_chain, load_phase12_decoding_chain, load_phase13_decoding_layout_matrix,
     load_phase14_decoding_chain, load_phase15_decoding_segment_bundle,
     load_phase16_decoding_segment_rollup, load_phase17_decoding_rollup_matrix,
-    load_phase21_decoding_matrix_accumulator, load_phase3_binary_step_lookup_proof,
-    load_phase5_normalization_lookup_proof, prove_phase10_shared_binary_step_lookup_envelope,
+    load_phase21_decoding_matrix_accumulator, load_phase22_decoding_lookup_accumulator,
+    load_phase3_binary_step_lookup_proof, load_phase5_normalization_lookup_proof,
+    prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
     prove_phase12_decoding_demo, prove_phase13_decoding_layout_matrix_demo,
     prove_phase14_decoding_demo, prove_phase15_decoding_demo, prove_phase16_decoding_demo,
     prove_phase17_decoding_rollup_matrix_demo, prove_phase21_decoding_matrix_accumulator_demo,
-    prove_phase3_binary_step_lookup_demo_envelope, prove_phase5_normalization_lookup_demo_envelope,
-    save_phase10_shared_binary_step_lookup_proof, save_phase10_shared_normalization_lookup_proof,
-    save_phase11_decoding_chain, save_phase12_decoding_chain, save_phase13_decoding_layout_matrix,
-    save_phase14_decoding_chain, save_phase15_decoding_segment_bundle,
-    save_phase16_decoding_segment_rollup, save_phase17_decoding_rollup_matrix,
-    save_phase21_decoding_matrix_accumulator, save_phase3_binary_step_lookup_proof,
+    prove_phase22_decoding_lookup_accumulator_demo, prove_phase3_binary_step_lookup_demo_envelope,
+    prove_phase5_normalization_lookup_demo_envelope, save_phase10_shared_binary_step_lookup_proof,
+    save_phase10_shared_normalization_lookup_proof, save_phase11_decoding_chain,
+    save_phase12_decoding_chain, save_phase13_decoding_layout_matrix, save_phase14_decoding_chain,
+    save_phase15_decoding_segment_bundle, save_phase16_decoding_segment_rollup,
+    save_phase17_decoding_rollup_matrix, save_phase21_decoding_matrix_accumulator,
+    save_phase22_decoding_lookup_accumulator, save_phase3_binary_step_lookup_proof,
     save_phase5_normalization_lookup_proof, stwo_backend_enabled,
     verify_phase10_shared_binary_step_lookup_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
@@ -57,12 +59,15 @@ use llm_provable_computer::{
     verify_phase16_decoding_segment_rollup_with_proof_checks,
     verify_phase17_decoding_rollup_matrix_with_proof_checks,
     verify_phase21_decoding_matrix_accumulator_with_proof_checks,
+    verify_phase22_decoding_lookup_accumulator_with_proof_checks,
     verify_phase3_binary_step_lookup_demo_envelope,
     verify_phase5_normalization_lookup_demo_envelope, STWO_BACKEND_VERSION_PHASE12,
     STWO_DECODING_CHAIN_SCOPE_PHASE11, STWO_DECODING_CHAIN_SCOPE_PHASE12,
     STWO_DECODING_CHAIN_SCOPE_PHASE14, STWO_DECODING_CHAIN_VERSION_PHASE11,
     STWO_DECODING_CHAIN_VERSION_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE14,
     STWO_DECODING_LAYOUT_MATRIX_SCOPE_PHASE13, STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13,
+    STWO_DECODING_LOOKUP_ACCUMULATOR_SCOPE_PHASE22,
+    STWO_DECODING_LOOKUP_ACCUMULATOR_VERSION_PHASE22,
     STWO_DECODING_MATRIX_ACCUMULATOR_SCOPE_PHASE21,
     STWO_DECODING_MATRIX_ACCUMULATOR_VERSION_PHASE21, STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17,
     STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17, STWO_DECODING_SEGMENT_BUNDLE_SCOPE_PHASE15,
@@ -363,6 +368,17 @@ enum Command {
     /// Verify a serialized accumulator over multiple Phase 17 decoding history rollup matrices.
     VerifyStwoDecodingMatrixAccumulatorDemo {
         /// Path to the serialized accumulator JSON file.
+        proof: PathBuf,
+    },
+    /// Produce a serialized lookup-accumulator over a Phase 21 decoding matrix accumulator.
+    ProveStwoDecodingLookupAccumulatorDemo {
+        /// File where the serialized lookup-accumulator JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a serialized lookup-accumulator over a Phase 21 decoding matrix accumulator.
+    VerifyStwoDecodingLookupAccumulatorDemo {
+        /// Path to the serialized lookup-accumulator JSON file.
         proof: PathBuf,
     },
     /// Prepare a canonical multi-proof batch manifest for future S-two recursion.
@@ -922,6 +938,12 @@ fn run() -> llm_provable_computer::Result<()> {
         }
         Command::VerifyStwoDecodingMatrixAccumulatorDemo { proof } => {
             verify_stwo_decoding_matrix_accumulator_demo_command(&proof)?
+        }
+        Command::ProveStwoDecodingLookupAccumulatorDemo { output } => {
+            prove_stwo_decoding_lookup_accumulator_demo_command(&output)?
+        }
+        Command::VerifyStwoDecodingLookupAccumulatorDemo { proof } => {
+            verify_stwo_decoding_lookup_accumulator_demo_command(&proof)?
         }
         Command::PrepareStwoRecursionBatch { proofs, output } => {
             prepare_stwo_recursion_batch_command(&proofs, &output)?
@@ -2423,6 +2445,91 @@ fn verify_stwo_decoding_matrix_accumulator_demo_command(
     }
 }
 
+fn prove_stwo_decoding_lookup_accumulator_demo_command(
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    require_stwo_backend("S-two decoding lookup-accumulator demo")?;
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        let manifest = prove_phase22_decoding_lookup_accumulator_demo()?;
+        save_phase22_decoding_lookup_accumulator(&manifest, output)?;
+
+        println!("proof: {}", output.display());
+        println!("proof_backend: {}", manifest.proof_backend);
+        println!("accumulator_version: {}", manifest.accumulator_version);
+        println!("semantic_scope: {}", manifest.semantic_scope);
+        println!("proof_backend_version: {}", manifest.proof_backend_version);
+        println!("statement_version: {}", manifest.statement_version);
+        println!("total_matrices: {}", manifest.total_matrices);
+        println!("total_layouts: {}", manifest.total_layouts);
+        println!("total_rollups: {}", manifest.total_rollups);
+        println!("total_segments: {}", manifest.total_segments);
+        println!("total_steps: {}", manifest.total_steps);
+        println!("lookup_delta_entries: {}", manifest.lookup_delta_entries);
+        println!(
+            "max_lookup_frontier_entries: {}",
+            manifest.max_lookup_frontier_entries
+        );
+        Ok(())
+    }
+
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output;
+        unreachable!("require_stwo_backend must fail without `stwo-backend`");
+    }
+}
+
+fn verify_stwo_decoding_lookup_accumulator_demo_command(
+    proof_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    require_stwo_backend("S-two decoding lookup-accumulator demo")?;
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        let manifest = load_phase22_decoding_lookup_accumulator(proof_path)?;
+        verify_phase22_decoding_lookup_accumulator_with_proof_checks(&manifest)?;
+
+        println!("proof: {}", proof_path.display());
+        println!("verified_stark: true");
+        println!("proof_backend: {}", manifest.proof_backend);
+        println!("accumulator_version: {}", manifest.accumulator_version);
+        println!("semantic_scope: {}", manifest.semantic_scope);
+        println!("proof_backend_version: {}", manifest.proof_backend_version);
+        println!("statement_version: {}", manifest.statement_version);
+        println!("total_matrices: {}", manifest.total_matrices);
+        println!("total_layouts: {}", manifest.total_layouts);
+        println!("total_rollups: {}", manifest.total_rollups);
+        println!("total_segments: {}", manifest.total_segments);
+        println!("total_steps: {}", manifest.total_steps);
+        println!("lookup_delta_entries: {}", manifest.lookup_delta_entries);
+        println!(
+            "max_lookup_frontier_entries: {}",
+            manifest.max_lookup_frontier_entries
+        );
+        println!(
+            "expected_accumulator_version: {}",
+            STWO_DECODING_LOOKUP_ACCUMULATOR_VERSION_PHASE22
+        );
+        println!(
+            "expected_semantic_scope: {}",
+            STWO_DECODING_LOOKUP_ACCUMULATOR_SCOPE_PHASE22
+        );
+        println!(
+            "expected_proof_backend_version: {}",
+            STWO_BACKEND_VERSION_PHASE12
+        );
+        Ok(())
+    }
+
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = proof_path;
+        unreachable!("require_stwo_backend must fail without `stwo-backend`");
+    }
+}
+
 fn verify_stwo_normalization_demo_command(proof_path: &Path) -> llm_provable_computer::Result<()> {
     #[cfg(not(feature = "stwo-backend"))]
     {
@@ -3613,6 +3720,10 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-decoding-history-rollup-demo"
                 | "prove-stwo-decoding-history-rollup-matrix-demo"
                 | "verify-stwo-decoding-history-rollup-matrix-demo"
+                | "prove-stwo-decoding-matrix-accumulator-demo"
+                | "verify-stwo-decoding-matrix-accumulator-demo"
+                | "prove-stwo-decoding-lookup-accumulator-demo"
+                | "verify-stwo-decoding-lookup-accumulator-demo"
                 | "prepare-stwo-recursion-batch"
                 | "research-v2-step"
                 | "research-v2-trace"

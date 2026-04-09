@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use std::io::Read;
+use std::io::{BufWriter, Read, Write};
 use std::path::Path;
 
 use blake2::digest::{Update, VariableOutput};
@@ -59,6 +59,10 @@ pub const STWO_DECODING_MATRIX_ACCUMULATOR_VERSION_PHASE21: &str =
     "stwo-phase21-decoding-matrix-accumulator-v1";
 pub const STWO_DECODING_MATRIX_ACCUMULATOR_SCOPE_PHASE21: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_matrix_accumulator";
+pub const STWO_DECODING_LOOKUP_ACCUMULATOR_VERSION_PHASE22: &str =
+    "stwo-phase22-decoding-lookup-accumulator-v1";
+pub const STWO_DECODING_LOOKUP_ACCUMULATOR_SCOPE_PHASE22: &str =
+    "stwo_execution_parameterized_proof_carrying_decoding_lookup_accumulator";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
 const DECODING_OUTPUT_RANGE: std::ops::Range<usize> = 10..13;
 const DECODING_POSITION_INDEX: usize = 21;
@@ -80,8 +84,10 @@ const MAX_PHASE15_SEGMENT_BUNDLE_JSON_BYTES: usize = 12 * 1024 * 1024;
 const MAX_PHASE16_SEGMENT_ROLLUP_JSON_BYTES: usize = 12 * 1024 * 1024;
 const MAX_PHASE17_ROLLUP_MATRIX_JSON_BYTES: usize = 40 * 1024 * 1024;
 const MAX_PHASE21_MATRIX_ACCUMULATOR_JSON_BYTES: usize = 64 * 1024 * 1024;
+const MAX_PHASE22_LOOKUP_ACCUMULATOR_JSON_BYTES: usize = 96 * 1024 * 1024;
 const MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES: usize = 24 * 1024 * 1024;
 const MAX_PHASE21_ACCUMULATOR_MATRICES: usize = 512;
+const MAX_PHASE22_ACCUMULATOR_ROLLUPS: usize = 262_144;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase11DecodingState {
@@ -425,6 +431,27 @@ pub struct Phase21DecodingMatrixAccumulatorManifest {
     pub matrices: Vec<Phase17DecodingHistoryRollupMatrixManifest>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Phase22DecodingLookupAccumulatorManifest {
+    pub proof_backend: StarkProofBackend,
+    pub accumulator_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub total_matrices: usize,
+    pub total_layouts: usize,
+    pub total_rollups: usize,
+    pub total_segments: usize,
+    pub total_steps: usize,
+    pub lookup_delta_entries: usize,
+    pub max_lookup_frontier_entries: usize,
+    pub source_template_commitment: String,
+    pub source_accumulator_commitment: String,
+    pub lookup_template_commitment: String,
+    pub lookup_accumulator_commitment: String,
+    pub accumulator: Phase21DecodingMatrixAccumulatorManifest,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Phase12StateView {
     position: i16,
@@ -621,17 +648,56 @@ fn write_json_with_limit<T: Serialize>(
     max_bytes: usize,
     label: &str,
 ) -> Result<()> {
-    let bytes =
-        serde_json::to_vec_pretty(value).map_err(|err| VmError::Serialization(err.to_string()))?;
-    if bytes.len() > max_bytes {
+    struct ByteLimitCounter {
+        written: usize,
+        max_bytes: usize,
+        limit_exceeded: bool,
+    }
+
+    impl Write for ByteLimitCounter {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            let next = self.written.saturating_add(buf.len());
+            if next > self.max_bytes {
+                self.limit_exceeded = true;
+                return Err(std::io::Error::other("json size limit exceeded"));
+            }
+            self.written = next;
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    let mut counter = ByteLimitCounter {
+        written: 0,
+        max_bytes,
+        limit_exceeded: false,
+    };
+    if let Err(err) = serde_json::to_writer_pretty(&mut counter, value) {
+        if counter.limit_exceeded {
+            return Err(VmError::InvalidConfig(format!(
+                "{label} `{}` would serialize to JSON exceeding the limit of {} bytes",
+                path.display(),
+                max_bytes
+            )));
+        }
+        return Err(VmError::Serialization(err.to_string()));
+    }
+    if counter.written > max_bytes {
         return Err(VmError::InvalidConfig(format!(
             "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
             path.display(),
-            bytes.len(),
+            counter.written,
             max_bytes
         )));
     }
-    fs::write(path, bytes)?;
+    let file = fs::File::create(path)?;
+    let mut writer = BufWriter::new(file);
+    serde_json::to_writer_pretty(&mut writer, value)
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    writer.flush()?;
     Ok(())
 }
 
@@ -2713,6 +2779,324 @@ pub fn verify_phase21_decoding_matrix_accumulator_with_proof_checks(
     Ok(())
 }
 
+fn derive_phase22_lookup_stats(
+    accumulator: &Phase21DecodingMatrixAccumulatorManifest,
+) -> Result<(usize, usize, usize)> {
+    let mut total_lookup_delta_entries = 0usize;
+    let mut max_lookup_frontier_entries = 0usize;
+    let mut total_rollup_boundaries = 0usize;
+
+    for (matrix_index, matrix) in accumulator.matrices.iter().enumerate() {
+        for (layout_index, rollup_manifest) in matrix.rollups.iter().enumerate() {
+            for rollup in &rollup_manifest.rollups {
+                if rollup
+                    .global_from_state
+                    .lookup_transcript_commitment
+                    .is_empty()
+                {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding lookup accumulator matrix {matrix_index} layout {layout_index} rollup {} has an empty from-state lookup transcript commitment",
+                        rollup.rollup_index
+                    )));
+                }
+                if rollup
+                    .global_to_state
+                    .lookup_transcript_commitment
+                    .is_empty()
+                {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding lookup accumulator matrix {matrix_index} layout {layout_index} rollup {} has an empty to-state lookup transcript commitment",
+                        rollup.rollup_index
+                    )));
+                }
+                if rollup
+                    .global_from_state
+                    .lookup_frontier_commitment
+                    .is_empty()
+                {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding lookup accumulator matrix {matrix_index} layout {layout_index} rollup {} has an empty from-state lookup frontier commitment",
+                        rollup.rollup_index
+                    )));
+                }
+                if rollup.global_to_state.lookup_frontier_commitment.is_empty() {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding lookup accumulator matrix {matrix_index} layout {layout_index} rollup {} has an empty to-state lookup frontier commitment",
+                        rollup.rollup_index
+                    )));
+                }
+                if rollup.global_to_state.lookup_transcript_entries
+                    < rollup.global_from_state.lookup_transcript_entries
+                {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding lookup accumulator matrix {matrix_index} layout {layout_index} rollup {} decreases lookup transcript entries: from {} to {}",
+                        rollup.rollup_index,
+                        rollup.global_from_state.lookup_transcript_entries,
+                        rollup.global_to_state.lookup_transcript_entries
+                    )));
+                }
+                let rollup_lookup_delta = rollup.global_to_state.lookup_transcript_entries
+                    - rollup.global_from_state.lookup_transcript_entries;
+                if rollup_lookup_delta != rollup.total_steps {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding lookup accumulator matrix {matrix_index} layout {layout_index} rollup {} lookup delta {} does not match total_steps {}",
+                        rollup.rollup_index, rollup_lookup_delta, rollup.total_steps
+                    )));
+                }
+                total_lookup_delta_entries = total_lookup_delta_entries
+                    .checked_add(rollup_lookup_delta)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(
+                            "decoding lookup accumulator total_lookup_delta_entries overflowed"
+                                .to_string(),
+                        )
+                    })?;
+                if rollup.global_from_state.lookup_frontier_entries > PHASE14_HISTORY_CHUNK_PAIRS {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding lookup accumulator matrix {matrix_index} layout {layout_index} rollup {} from-state frontier entries {} exceed supported {}",
+                        rollup.rollup_index,
+                        rollup.global_from_state.lookup_frontier_entries,
+                        PHASE14_HISTORY_CHUNK_PAIRS
+                    )));
+                }
+                if rollup.global_to_state.lookup_frontier_entries > PHASE14_HISTORY_CHUNK_PAIRS {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding lookup accumulator matrix {matrix_index} layout {layout_index} rollup {} to-state frontier entries {} exceed supported {}",
+                        rollup.rollup_index,
+                        rollup.global_to_state.lookup_frontier_entries,
+                        PHASE14_HISTORY_CHUNK_PAIRS
+                    )));
+                }
+                max_lookup_frontier_entries = max_lookup_frontier_entries
+                    .max(rollup.global_from_state.lookup_frontier_entries)
+                    .max(rollup.global_to_state.lookup_frontier_entries);
+                total_rollup_boundaries =
+                    total_rollup_boundaries.checked_add(1).ok_or_else(|| {
+                        VmError::InvalidConfig(
+                            "decoding lookup accumulator total_rollup_boundaries overflowed"
+                                .to_string(),
+                        )
+                    })?;
+            }
+        }
+    }
+
+    if total_rollup_boundaries > MAX_PHASE22_ACCUMULATOR_ROLLUPS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding lookup accumulator rollup boundary count {} exceeds the supported maximum {}",
+            total_rollup_boundaries, MAX_PHASE22_ACCUMULATOR_ROLLUPS
+        )));
+    }
+
+    Ok((
+        total_lookup_delta_entries,
+        max_lookup_frontier_entries,
+        total_rollup_boundaries,
+    ))
+}
+
+pub fn phase22_prepare_decoding_lookup_accumulator(
+    accumulator: &Phase21DecodingMatrixAccumulatorManifest,
+) -> Result<Phase22DecodingLookupAccumulatorManifest> {
+    verify_phase21_decoding_matrix_accumulator(accumulator).map_err(|error| {
+        VmError::InvalidConfig(format!(
+            "Phase 22 source accumulator failed Phase 21 verification: {error}"
+        ))
+    })?;
+
+    let (lookup_delta_entries, max_lookup_frontier_entries, total_rollup_boundaries) =
+        derive_phase22_lookup_stats(accumulator)?;
+    if total_rollup_boundaries != accumulator.total_rollups {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 22 source rollup boundary count {} does not match Phase 21 total_rollups {}",
+            total_rollup_boundaries, accumulator.total_rollups
+        )));
+    }
+
+    let mut manifest = Phase22DecodingLookupAccumulatorManifest {
+        proof_backend: StarkProofBackend::Stwo,
+        accumulator_version: STWO_DECODING_LOOKUP_ACCUMULATOR_VERSION_PHASE22.to_string(),
+        semantic_scope: STWO_DECODING_LOOKUP_ACCUMULATOR_SCOPE_PHASE22.to_string(),
+        proof_backend_version: accumulator.proof_backend_version.clone(),
+        statement_version: accumulator.statement_version.clone(),
+        total_matrices: accumulator.total_matrices,
+        total_layouts: accumulator.total_layouts,
+        total_rollups: accumulator.total_rollups,
+        total_segments: accumulator.total_segments,
+        total_steps: accumulator.total_steps,
+        lookup_delta_entries,
+        max_lookup_frontier_entries,
+        source_template_commitment: accumulator.template_commitment.clone(),
+        source_accumulator_commitment: accumulator.accumulator_commitment.clone(),
+        lookup_template_commitment: commit_phase22_lookup_template(accumulator)?,
+        lookup_accumulator_commitment: String::new(),
+        accumulator: accumulator.clone(),
+    };
+    manifest.lookup_accumulator_commitment = commit_phase22_lookup_accumulator(&manifest)?;
+    verify_phase22_decoding_lookup_accumulator(&manifest)?;
+    Ok(manifest)
+}
+
+pub fn verify_phase22_decoding_lookup_accumulator(
+    manifest: &Phase22DecodingLookupAccumulatorManifest,
+) -> Result<()> {
+    if manifest.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding lookup accumulator backend `{}` is not `stwo`",
+            manifest.proof_backend
+        )));
+    }
+    if manifest.accumulator_version != STWO_DECODING_LOOKUP_ACCUMULATOR_VERSION_PHASE22 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding lookup accumulator version `{}`",
+            manifest.accumulator_version
+        )));
+    }
+    if manifest.semantic_scope != STWO_DECODING_LOOKUP_ACCUMULATOR_SCOPE_PHASE22 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding lookup accumulator semantic scope `{}`",
+            manifest.semantic_scope
+        )));
+    }
+    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding lookup accumulator proof backend version `{}` (expected `{}`)",
+            manifest.proof_backend_version,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+        )));
+    }
+    if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding lookup accumulator statement version `{}`",
+            manifest.statement_version
+        )));
+    }
+    if manifest.total_rollups > MAX_PHASE22_ACCUMULATOR_ROLLUPS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding lookup accumulator total_rollups={} exceeds the supported maximum {}",
+            manifest.total_rollups, MAX_PHASE22_ACCUMULATOR_ROLLUPS
+        )));
+    }
+    if manifest.source_template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding lookup accumulator source_template_commitment must not be empty".to_string(),
+        ));
+    }
+    if manifest.source_accumulator_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding lookup accumulator source_accumulator_commitment must not be empty"
+                .to_string(),
+        ));
+    }
+    if manifest.lookup_template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding lookup accumulator lookup_template_commitment must not be empty".to_string(),
+        ));
+    }
+    if manifest.lookup_accumulator_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding lookup accumulator lookup_accumulator_commitment must not be empty"
+                .to_string(),
+        ));
+    }
+
+    verify_phase21_decoding_matrix_accumulator(&manifest.accumulator).map_err(|error| {
+        VmError::InvalidConfig(format!(
+            "decoding lookup accumulator source verification failed: {error}"
+        ))
+    })?;
+
+    if manifest.source_template_commitment != manifest.accumulator.template_commitment {
+        return Err(VmError::InvalidConfig(
+            "decoding lookup accumulator source_template_commitment does not match the nested Phase 21 accumulator".to_string(),
+        ));
+    }
+    if manifest.source_accumulator_commitment != manifest.accumulator.accumulator_commitment {
+        return Err(VmError::InvalidConfig(
+            "decoding lookup accumulator source_accumulator_commitment does not match the nested Phase 21 accumulator".to_string(),
+        ));
+    }
+    if manifest.total_matrices != manifest.accumulator.total_matrices {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding lookup accumulator total_matrices={} does not match nested Phase 21 total_matrices={}",
+            manifest.total_matrices, manifest.accumulator.total_matrices
+        )));
+    }
+    if manifest.total_layouts != manifest.accumulator.total_layouts {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding lookup accumulator total_layouts={} does not match nested Phase 21 total_layouts={}",
+            manifest.total_layouts, manifest.accumulator.total_layouts
+        )));
+    }
+    if manifest.total_rollups != manifest.accumulator.total_rollups {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding lookup accumulator total_rollups={} does not match nested Phase 21 total_rollups={}",
+            manifest.total_rollups, manifest.accumulator.total_rollups
+        )));
+    }
+    if manifest.total_segments != manifest.accumulator.total_segments {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding lookup accumulator total_segments={} does not match nested Phase 21 total_segments={}",
+            manifest.total_segments, manifest.accumulator.total_segments
+        )));
+    }
+    if manifest.total_steps != manifest.accumulator.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding lookup accumulator total_steps={} does not match nested Phase 21 total_steps={}",
+            manifest.total_steps, manifest.accumulator.total_steps
+        )));
+    }
+
+    let (derived_lookup_delta, derived_max_frontier_entries, total_rollup_boundaries) =
+        derive_phase22_lookup_stats(&manifest.accumulator)?;
+    if total_rollup_boundaries != manifest.total_rollups {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding lookup accumulator derived total_rollups={} does not match declared total_rollups={}",
+            total_rollup_boundaries, manifest.total_rollups
+        )));
+    }
+    if manifest.lookup_delta_entries != derived_lookup_delta {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding lookup accumulator lookup_delta_entries={} does not match derived lookup_delta_entries={}",
+            manifest.lookup_delta_entries, derived_lookup_delta
+        )));
+    }
+    if manifest.max_lookup_frontier_entries != derived_max_frontier_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding lookup accumulator max_lookup_frontier_entries={} does not match derived max_lookup_frontier_entries={}",
+            manifest.max_lookup_frontier_entries, derived_max_frontier_entries
+        )));
+    }
+
+    let expected_lookup_template = commit_phase22_lookup_template(&manifest.accumulator)?;
+    if manifest.lookup_template_commitment != expected_lookup_template {
+        return Err(VmError::InvalidConfig(
+            "decoding lookup accumulator lookup_template_commitment does not match the computed lookup template commitment".to_string(),
+        ));
+    }
+    let expected_lookup_accumulator = commit_phase22_lookup_accumulator(manifest)?;
+    if manifest.lookup_accumulator_commitment != expected_lookup_accumulator {
+        return Err(VmError::InvalidConfig(
+            "decoding lookup accumulator lookup_accumulator_commitment does not match the computed lookup accumulator commitment".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+pub fn verify_phase22_decoding_lookup_accumulator_with_proof_checks(
+    manifest: &Phase22DecodingLookupAccumulatorManifest,
+) -> Result<()> {
+    verify_phase22_decoding_lookup_accumulator(manifest)?;
+    verify_phase21_decoding_matrix_accumulator_with_proof_checks(&manifest.accumulator).map_err(
+        |error| {
+            VmError::UnsupportedProof(format!(
+                "decoding lookup accumulator source proof verification failed: {error}"
+            ))
+        },
+    )?;
+    Ok(())
+}
+
 pub fn save_phase11_decoding_chain(
     manifest: &Phase11DecodingChainManifest,
     path: &Path,
@@ -3272,6 +3656,32 @@ pub fn load_phase21_decoding_matrix_accumulator(
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
+pub fn save_phase22_decoding_lookup_accumulator(
+    manifest: &Phase22DecodingLookupAccumulatorManifest,
+    path: &Path,
+) -> Result<()> {
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE22_LOOKUP_ACCUMULATOR_JSON_BYTES,
+        "Phase 22 decoding lookup accumulator",
+    )
+}
+
+pub fn load_phase22_decoding_lookup_accumulator(
+    path: &Path,
+) -> Result<Phase22DecodingLookupAccumulatorManifest> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE22_LOOKUP_ACCUMULATOR_JSON_BYTES,
+        "Phase 22 decoding lookup accumulator",
+    )?;
+    let manifest: Phase22DecodingLookupAccumulatorManifest =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    verify_phase22_decoding_lookup_accumulator(&manifest)?;
+    Ok(manifest)
+}
+
 pub fn save_phase13_decoding_layout_matrix(
     manifest: &Phase13DecodingLayoutMatrixManifest,
     path: &Path,
@@ -3457,6 +3867,14 @@ pub fn prove_phase21_decoding_matrix_accumulator_demo(
     let second = prove_phase17_decoding_rollup_matrix_demo()?;
     let manifest = phase21_prepare_decoding_matrix_accumulator(&[first, second])?;
     verify_phase21_decoding_matrix_accumulator_with_proof_checks(&manifest)?;
+    Ok(manifest)
+}
+
+pub fn prove_phase22_decoding_lookup_accumulator_demo(
+) -> Result<Phase22DecodingLookupAccumulatorManifest> {
+    let phase21 = prove_phase21_decoding_matrix_accumulator_demo()?;
+    let manifest = phase22_prepare_decoding_lookup_accumulator(&phase21)?;
+    verify_phase22_decoding_lookup_accumulator_with_proof_checks(&manifest)?;
     Ok(manifest)
 }
 
@@ -4628,6 +5046,152 @@ fn commit_phase21_matrix_accumulator(
         hasher.update(&(matrix.total_segments as u64).to_le_bytes());
         hasher.update(&(matrix.total_steps as u64).to_le_bytes());
         hasher.update(matrix.public_state_boundary_commitment.as_bytes());
+    }
+
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase22_lookup_template(
+    accumulator: &Phase21DecodingMatrixAccumulatorManifest,
+) -> Result<String> {
+    if accumulator.matrices.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding lookup template source must contain at least one matrix".to_string(),
+        ));
+    }
+
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_LOOKUP_ACCUMULATOR_VERSION_PHASE22.as_bytes());
+    hasher.update(b"lookup-template");
+    hasher.update(accumulator.template_commitment.as_bytes());
+    hasher.update(accumulator.proof_backend_version.as_bytes());
+    hasher.update(accumulator.statement_version.as_bytes());
+    hasher.update(&(accumulator.total_matrices as u64).to_le_bytes());
+    hasher.update(&(accumulator.total_layouts as u64).to_le_bytes());
+
+    for (matrix_index, matrix) in accumulator.matrices.iter().enumerate() {
+        hasher.update(&(matrix_index as u64).to_le_bytes());
+        hasher.update(&(matrix.total_layouts as u64).to_le_bytes());
+        hasher.update(matrix.public_state_boundary_commitment.as_bytes());
+        for (layout_index, rollup_manifest) in matrix.rollups.iter().enumerate() {
+            hasher.update(&(layout_index as u64).to_le_bytes());
+            hasher.update(commit_phase12_layout(&rollup_manifest.layout).as_bytes());
+            hasher.update(&(rollup_manifest.history_chunk_pairs as u64).to_le_bytes());
+            hasher.update(&(rollup_manifest.max_rollup_segments as u64).to_le_bytes());
+        }
+    }
+
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase22_lookup_accumulator(
+    manifest: &Phase22DecodingLookupAccumulatorManifest,
+) -> Result<String> {
+    if manifest.accumulator.matrices.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding lookup accumulator must contain at least one matrix".to_string(),
+        ));
+    }
+
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_LOOKUP_ACCUMULATOR_VERSION_PHASE22.as_bytes());
+    hasher.update(b"lookup-accumulator");
+    hasher.update(manifest.lookup_template_commitment.as_bytes());
+    hasher.update(manifest.source_accumulator_commitment.as_bytes());
+    hasher.update(&(manifest.total_matrices as u64).to_le_bytes());
+    hasher.update(&(manifest.total_layouts as u64).to_le_bytes());
+    hasher.update(&(manifest.total_rollups as u64).to_le_bytes());
+    hasher.update(&(manifest.total_segments as u64).to_le_bytes());
+    hasher.update(&(manifest.total_steps as u64).to_le_bytes());
+    hasher.update(&(manifest.lookup_delta_entries as u64).to_le_bytes());
+    hasher.update(&(manifest.max_lookup_frontier_entries as u64).to_le_bytes());
+
+    for (matrix_index, matrix) in manifest.accumulator.matrices.iter().enumerate() {
+        hasher.update(&(matrix_index as u64).to_le_bytes());
+        hasher.update(matrix.public_state_boundary_commitment.as_bytes());
+        for (layout_index, rollup_manifest) in matrix.rollups.iter().enumerate() {
+            hasher.update(&(layout_index as u64).to_le_bytes());
+            for rollup in &rollup_manifest.rollups {
+                if rollup
+                    .global_from_state
+                    .lookup_transcript_commitment
+                    .is_empty()
+                {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding lookup accumulator matrix {matrix_index} layout {layout_index} rollup {} has an empty from-state lookup transcript commitment",
+                        rollup.rollup_index
+                    )));
+                }
+                if rollup
+                    .global_to_state
+                    .lookup_transcript_commitment
+                    .is_empty()
+                {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding lookup accumulator matrix {matrix_index} layout {layout_index} rollup {} has an empty to-state lookup transcript commitment",
+                        rollup.rollup_index
+                    )));
+                }
+                if rollup
+                    .global_from_state
+                    .lookup_frontier_commitment
+                    .is_empty()
+                {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding lookup accumulator matrix {matrix_index} layout {layout_index} rollup {} has an empty from-state lookup frontier commitment",
+                        rollup.rollup_index
+                    )));
+                }
+                if rollup.global_to_state.lookup_frontier_commitment.is_empty() {
+                    return Err(VmError::InvalidConfig(format!(
+                        "decoding lookup accumulator matrix {matrix_index} layout {layout_index} rollup {} has an empty to-state lookup frontier commitment",
+                        rollup.rollup_index
+                    )));
+                }
+                hasher.update(&(rollup.rollup_index as u64).to_le_bytes());
+                hasher.update(&(rollup.global_start_step_index as u64).to_le_bytes());
+                hasher.update(&(rollup.total_steps as u64).to_le_bytes());
+                hasher.update(rollup.public_state_boundary_commitment.as_bytes());
+                hasher.update(
+                    rollup
+                        .global_from_state
+                        .lookup_transcript_commitment
+                        .as_bytes(),
+                );
+                hasher.update(
+                    &(rollup.global_from_state.lookup_transcript_entries as u64).to_le_bytes(),
+                );
+                hasher.update(
+                    rollup
+                        .global_to_state
+                        .lookup_transcript_commitment
+                        .as_bytes(),
+                );
+                hasher.update(
+                    &(rollup.global_to_state.lookup_transcript_entries as u64).to_le_bytes(),
+                );
+                hasher.update(
+                    rollup
+                        .global_from_state
+                        .lookup_frontier_commitment
+                        .as_bytes(),
+                );
+                hasher.update(
+                    &(rollup.global_from_state.lookup_frontier_entries as u64).to_le_bytes(),
+                );
+                hasher.update(rollup.global_to_state.lookup_frontier_commitment.as_bytes());
+                hasher
+                    .update(&(rollup.global_to_state.lookup_frontier_entries as u64).to_le_bytes());
+            }
+        }
     }
 
     let mut out = [0u8; 32];
@@ -6691,6 +7255,142 @@ mod tests {
         Ok(oracle_blake2b_256(&parts))
     }
 
+    fn oracle_commit_phase22_lookup_template(
+        accumulator: &Phase21DecodingMatrixAccumulatorManifest,
+    ) -> Result<String> {
+        if accumulator.matrices.is_empty() {
+            return Err(VmError::InvalidConfig(
+                "decoding lookup template source must contain at least one matrix".to_string(),
+            ));
+        }
+        let mut parts = vec![
+            STWO_DECODING_LOOKUP_ACCUMULATOR_VERSION_PHASE22
+                .as_bytes()
+                .to_vec(),
+            b"lookup-template".to_vec(),
+            accumulator.template_commitment.as_bytes().to_vec(),
+            accumulator.proof_backend_version.as_bytes().to_vec(),
+            accumulator.statement_version.as_bytes().to_vec(),
+            (accumulator.total_matrices as u64).to_le_bytes().to_vec(),
+            (accumulator.total_layouts as u64).to_le_bytes().to_vec(),
+        ];
+        for (matrix_index, matrix) in accumulator.matrices.iter().enumerate() {
+            parts.push((matrix_index as u64).to_le_bytes().to_vec());
+            parts.push((matrix.total_layouts as u64).to_le_bytes().to_vec());
+            parts.push(matrix.public_state_boundary_commitment.as_bytes().to_vec());
+            for (layout_index, rollup_manifest) in matrix.rollups.iter().enumerate() {
+                parts.push((layout_index as u64).to_le_bytes().to_vec());
+                parts.push(oracle_commit_phase12_layout(&rollup_manifest.layout).into_bytes());
+                parts.push(
+                    (rollup_manifest.history_chunk_pairs as u64)
+                        .to_le_bytes()
+                        .to_vec(),
+                );
+                parts.push(
+                    (rollup_manifest.max_rollup_segments as u64)
+                        .to_le_bytes()
+                        .to_vec(),
+                );
+            }
+        }
+        Ok(oracle_blake2b_256(&parts))
+    }
+
+    fn oracle_commit_phase22_lookup_accumulator(
+        manifest: &Phase22DecodingLookupAccumulatorManifest,
+    ) -> Result<String> {
+        if manifest.accumulator.matrices.is_empty() {
+            return Err(VmError::InvalidConfig(
+                "decoding lookup accumulator must contain at least one matrix".to_string(),
+            ));
+        }
+        let mut parts = vec![
+            STWO_DECODING_LOOKUP_ACCUMULATOR_VERSION_PHASE22
+                .as_bytes()
+                .to_vec(),
+            b"lookup-accumulator".to_vec(),
+            manifest.lookup_template_commitment.as_bytes().to_vec(),
+            manifest.source_accumulator_commitment.as_bytes().to_vec(),
+            (manifest.total_matrices as u64).to_le_bytes().to_vec(),
+            (manifest.total_layouts as u64).to_le_bytes().to_vec(),
+            (manifest.total_rollups as u64).to_le_bytes().to_vec(),
+            (manifest.total_segments as u64).to_le_bytes().to_vec(),
+            (manifest.total_steps as u64).to_le_bytes().to_vec(),
+            (manifest.lookup_delta_entries as u64)
+                .to_le_bytes()
+                .to_vec(),
+            (manifest.max_lookup_frontier_entries as u64)
+                .to_le_bytes()
+                .to_vec(),
+        ];
+        for (matrix_index, matrix) in manifest.accumulator.matrices.iter().enumerate() {
+            parts.push((matrix_index as u64).to_le_bytes().to_vec());
+            parts.push(matrix.public_state_boundary_commitment.as_bytes().to_vec());
+            for (layout_index, rollup_manifest) in matrix.rollups.iter().enumerate() {
+                parts.push((layout_index as u64).to_le_bytes().to_vec());
+                for rollup in &rollup_manifest.rollups {
+                    parts.push((rollup.rollup_index as u64).to_le_bytes().to_vec());
+                    parts.push(
+                        (rollup.global_start_step_index as u64)
+                            .to_le_bytes()
+                            .to_vec(),
+                    );
+                    parts.push((rollup.total_steps as u64).to_le_bytes().to_vec());
+                    parts.push(rollup.public_state_boundary_commitment.as_bytes().to_vec());
+                    parts.push(
+                        rollup
+                            .global_from_state
+                            .lookup_transcript_commitment
+                            .as_bytes()
+                            .to_vec(),
+                    );
+                    parts.push(
+                        (rollup.global_from_state.lookup_transcript_entries as u64)
+                            .to_le_bytes()
+                            .to_vec(),
+                    );
+                    parts.push(
+                        rollup
+                            .global_to_state
+                            .lookup_transcript_commitment
+                            .as_bytes()
+                            .to_vec(),
+                    );
+                    parts.push(
+                        (rollup.global_to_state.lookup_transcript_entries as u64)
+                            .to_le_bytes()
+                            .to_vec(),
+                    );
+                    parts.push(
+                        rollup
+                            .global_from_state
+                            .lookup_frontier_commitment
+                            .as_bytes()
+                            .to_vec(),
+                    );
+                    parts.push(
+                        (rollup.global_from_state.lookup_frontier_entries as u64)
+                            .to_le_bytes()
+                            .to_vec(),
+                    );
+                    parts.push(
+                        rollup
+                            .global_to_state
+                            .lookup_frontier_commitment
+                            .as_bytes()
+                            .to_vec(),
+                    );
+                    parts.push(
+                        (rollup.global_to_state.lookup_frontier_entries as u64)
+                            .to_le_bytes()
+                            .to_vec(),
+                    );
+                }
+            }
+        }
+        Ok(oracle_blake2b_256(&parts))
+    }
+
     fn oracle_advance_phase14_open_chunk(
         layout_commitment: &str,
         previous_open_chunk_commitment: &str,
@@ -7633,6 +8333,12 @@ mod tests {
             .expect("phase21 accumulator manifest")
     }
 
+    fn sample_phase22_lookup_accumulator_manifest() -> Phase22DecodingLookupAccumulatorManifest {
+        let phase21 = sample_phase21_matrix_accumulator_manifest();
+        phase22_prepare_decoding_lookup_accumulator(&phase21)
+            .expect("phase22 lookup accumulator manifest")
+    }
+
     #[test]
     fn decoding_step_family_ignores_initial_memory_but_requires_template() {
         let mut initial = vec![0; 23];
@@ -8126,6 +8832,42 @@ mod tests {
     }
 
     #[test]
+    fn phase22_save_and_load_round_trip() {
+        let manifest = sample_phase22_lookup_accumulator_manifest();
+        let path = std::env::temp_dir().join(format!(
+            "phase22-decoding-lookup-accumulator-roundtrip-{}.json",
+            std::process::id()
+        ));
+        save_phase22_decoding_lookup_accumulator(&manifest, &path).expect("save");
+        let loaded = load_phase22_decoding_lookup_accumulator(&path).expect("load");
+        verify_phase22_decoding_lookup_accumulator(&loaded).expect("verify");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn load_phase22_decoding_lookup_accumulator_rejects_tampered_manifest() {
+        let mut manifest = sample_phase22_lookup_accumulator_manifest();
+        manifest.source_accumulator_commitment = "tampered".to_string();
+        let path = std::env::temp_dir().join(format!(
+            "phase22-decoding-lookup-accumulator-invalid-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        fs::write(
+            &path,
+            serde_json::to_vec_pretty(&manifest).expect("serialize invalid manifest"),
+        )
+        .expect("write invalid manifest");
+        let err =
+            load_phase22_decoding_lookup_accumulator(&path).expect_err("tampered load should fail");
+        assert!(err.to_string().contains(
+            "source_accumulator_commitment does not match the nested Phase 21 accumulator"
+        ));
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
     fn save_phase21_decoding_matrix_accumulator_rejects_manifest_exceeding_json_budget() {
         let mut manifest = sample_phase21_matrix_accumulator_manifest();
         manifest.matrices[0].rollups[0].rollups[0].segments[0]
@@ -8140,6 +8882,28 @@ mod tests {
         let _ = fs::remove_file(&path);
         let err = save_phase21_decoding_matrix_accumulator(&manifest, &path)
             .expect_err("oversized phase21 manifest should be rejected on save");
+        assert!(err.to_string().contains("exceeding the limit"));
+        assert!(
+            !path.exists(),
+            "save should not write an unreadable manifest"
+        );
+    }
+
+    #[test]
+    fn save_phase22_decoding_lookup_accumulator_rejects_manifest_exceeding_json_budget() {
+        let mut manifest = sample_phase22_lookup_accumulator_manifest();
+        manifest.accumulator.matrices[0].rollups[0].rollups[0].segments[0]
+            .chain
+            .steps[0]
+            .proof
+            .proof = vec![0; MAX_PHASE22_LOOKUP_ACCUMULATOR_JSON_BYTES];
+        let path = std::env::temp_dir().join(format!(
+            "phase22-decoding-lookup-accumulator-save-oversized-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        let err = save_phase22_decoding_lookup_accumulator(&manifest, &path)
+            .expect_err("oversized phase22 manifest should be rejected on save");
         assert!(err.to_string().contains("exceeding the limit"));
         assert!(
             !path.exists(),
@@ -8284,6 +9048,18 @@ mod tests {
             MAX_PHASE21_MATRIX_ACCUMULATOR_JSON_BYTES,
             &manifest,
             save_phase21_decoding_matrix_accumulator,
+        );
+    }
+
+    #[test]
+    fn phase22_demo_manifest_fits_json_budget() {
+        let manifest =
+            prove_phase22_decoding_lookup_accumulator_demo().expect("phase22 lookup demo");
+        assert_saved_json_budget(
+            "phase22-demo",
+            MAX_PHASE22_LOOKUP_ACCUMULATOR_JSON_BYTES,
+            &manifest,
+            save_phase22_decoding_lookup_accumulator,
         );
     }
 
@@ -9917,6 +10693,103 @@ mod tests {
         let oracle_accumulator =
             oracle_commit_phase21_matrix_accumulator(&manifest).expect("oracle accumulator");
         assert_ne!(manifest.accumulator_commitment, oracle_accumulator);
+    }
+
+    #[test]
+    fn phase22_lookup_accumulator_accepts_phase21_source_accumulator() {
+        let manifest = sample_phase22_lookup_accumulator_manifest();
+        assert_eq!(manifest.total_matrices, 2);
+        assert!(manifest.total_layouts >= 2);
+        assert!(manifest.total_rollups >= 2);
+        assert!(manifest.total_segments >= 2);
+        assert!(manifest.total_steps >= 2);
+        assert_eq!(manifest.lookup_delta_entries, manifest.total_steps);
+        verify_phase22_decoding_lookup_accumulator(&manifest).expect("phase22 verification");
+    }
+
+    #[test]
+    fn phase22_lookup_accumulator_rejects_tampered_lookup_template_commitment() {
+        let mut manifest = sample_phase22_lookup_accumulator_manifest();
+        manifest.lookup_template_commitment = "tampered".to_string();
+        let err = verify_phase22_decoding_lookup_accumulator(&manifest).unwrap_err();
+        assert!(err.to_string().contains(
+            "lookup_template_commitment does not match the computed lookup template commitment"
+        ));
+    }
+
+    #[test]
+    fn phase22_lookup_accumulator_rejects_tampered_lookup_accumulator_commitment() {
+        let mut manifest = sample_phase22_lookup_accumulator_manifest();
+        manifest.lookup_accumulator_commitment = "tampered".to_string();
+        let err = verify_phase22_decoding_lookup_accumulator(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("lookup_accumulator_commitment does not match the computed lookup accumulator commitment"));
+    }
+
+    #[test]
+    fn phase22_lookup_accumulator_rejects_tampered_lookup_delta_entries() {
+        let mut manifest = sample_phase22_lookup_accumulator_manifest();
+        manifest.lookup_delta_entries = manifest.lookup_delta_entries.saturating_add(1);
+        let err = verify_phase22_decoding_lookup_accumulator(&manifest).unwrap_err();
+        assert!(err.to_string().contains("lookup_delta_entries="));
+        assert!(err
+            .to_string()
+            .contains("does not match derived lookup_delta_entries"));
+    }
+
+    #[test]
+    fn phase22_lookup_accumulator_rejects_tampered_max_lookup_frontier_entries() {
+        let mut manifest = sample_phase22_lookup_accumulator_manifest();
+        manifest.max_lookup_frontier_entries =
+            manifest.max_lookup_frontier_entries.saturating_add(1);
+        let err = verify_phase22_decoding_lookup_accumulator(&manifest).unwrap_err();
+        assert!(err.to_string().contains("max_lookup_frontier_entries="));
+        assert!(err
+            .to_string()
+            .contains("does not match derived max_lookup_frontier_entries"));
+    }
+
+    #[test]
+    fn phase22_lookup_accumulator_rejects_tampered_source_template_commitment() {
+        let mut manifest = sample_phase22_lookup_accumulator_manifest();
+        manifest.source_template_commitment = "tampered".to_string();
+        let err = verify_phase22_decoding_lookup_accumulator(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("source_template_commitment does not match the nested Phase 21 accumulator"));
+    }
+
+    #[test]
+    fn phase22_lookup_accumulator_rejects_tampered_source_accumulator_commitment() {
+        let mut manifest = sample_phase22_lookup_accumulator_manifest();
+        manifest.source_accumulator_commitment = "tampered".to_string();
+        let err = verify_phase22_decoding_lookup_accumulator(&manifest).unwrap_err();
+        assert!(err.to_string().contains(
+            "source_accumulator_commitment does not match the nested Phase 21 accumulator"
+        ));
+    }
+
+    #[test]
+    fn phase22_oracle_matches_production_commitments() {
+        let manifest = sample_phase22_lookup_accumulator_manifest();
+        verify_phase22_decoding_lookup_accumulator(&manifest).expect("production verifier");
+        let oracle_template =
+            oracle_commit_phase22_lookup_template(&manifest.accumulator).expect("oracle template");
+        let oracle_accumulator =
+            oracle_commit_phase22_lookup_accumulator(&manifest).expect("oracle accumulator");
+        assert_eq!(manifest.lookup_template_commitment, oracle_template);
+        assert_eq!(manifest.lookup_accumulator_commitment, oracle_accumulator);
+    }
+
+    #[test]
+    fn phase22_oracle_and_production_reject_same_lookup_accumulator_tamper() {
+        let mut manifest = sample_phase22_lookup_accumulator_manifest();
+        manifest.lookup_accumulator_commitment = "tampered".to_string();
+        assert!(verify_phase22_decoding_lookup_accumulator(&manifest).is_err());
+        let oracle_accumulator =
+            oracle_commit_phase22_lookup_accumulator(&manifest).expect("oracle accumulator");
+        assert_ne!(manifest.lookup_accumulator_commitment, oracle_accumulator);
     }
 
     #[test]
