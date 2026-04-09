@@ -11,12 +11,18 @@ MUTATION_TARGETS=(
   src/stwo_backend/arithmetic_subset_prover.rs
 )
 
+missing_targets=()
 for target in "${MUTATION_TARGETS[@]}"; do
   if [[ ! -f "$target" ]]; then
-    echo "mutation target not found: $target" >&2
-    exit 1
+    missing_targets+=("$target")
   fi
 done
+
+if (( ${#missing_targets[@]} > 0 )); then
+  printf 'missing mutation targets:\n' >&2
+  printf '  %s\n' "${missing_targets[@]}" >&2
+  exit 1
+fi
 
 args=(
   cargo
