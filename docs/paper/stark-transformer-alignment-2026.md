@@ -1,4 +1,4 @@
-# On the Alignment of Transformer Workloads and STARK Proof Systems
+# On the Structural Fit of Transformer Workloads and STARK Proof Systems
 
 **Omar Espejel**  
 Starknet Foundation  
@@ -8,29 +8,31 @@ April 2026
 
 ## Abstract
 
-This paper presents a transformer-specific complexity analysis comparing SNARK circuit size and STARK trace length for verifiable inference. Arithmetic work in a standard transformer block maps similarly in both settings, but non-arithmetic primitives such as softmax, normalization, and activation functions stress the two proving families differently. Under the stylized worked-example constants used throughout this paper (`C_exp = 300`, `C_norm = 30`, `C_nonlin = 150`), GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields approximately `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK trace rows across 12 layers, or about `1.48x` more symbolic proving work on the SNARK side under these assumptions. Over the practically relevant range studied here, the ratio increases with sequence length as softmax-related work becomes a larger share of total symbolic work, before approaching a finite architecture-dependent ceiling.
+This paper gives a transformer-specific symbolic cost comparison between SNARK constraints and STARK trace rows for verifiable inference. Under the worked constants used throughout (`C_exp = 300`, `C_norm = 30`, `C_nonlin = 150`), GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields about `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK rows across 12 layers (`1.48x`). Over practical context ranges, the ratio rises and then approaches a finite architecture-dependent ceiling.
 
-We complement this analytic comparison with a concrete proof-stack artifact, `llm-provable-computer`, in which execution traces from a deterministic transformer-shaped virtual machine are directly consumable as AIR witnesses [30]. The repository now includes a frozen reproducibility bundle together with exploratory `stwo` artifacts, shared-table lookup proofs, and a fixed-shape proof-carrying decoding demo, but it does not yet prove full standard-softmax transformer inference on S-two. The resulting claim is therefore narrower and stronger than a generic “STARKs beat SNARKs” position: transformer workloads emphasize exactly the dimensions on which STARK-native systems may compound advantages, while modern SNARK systems remain serious and rapidly improving competitors.
+We pair that analysis with a repository artifact, `llm-provable-computer`, that now includes a frozen baseline tier, a frozen narrow experimental `stwo` tier, and a broader commit-pinned parameterized proof-carrying decoding path (`decoding_step_v2`) with carried-state commitments [30]. This paper does not claim full standard-softmax inference on S-two, shared-table accumulation, or recursive compression. The claim is narrower: transformer workloads emphasize dimensions where STARK-native systems may compound advantages while SNARK systems remain strong competitors.
 
 ---
 
 ## 1. Introduction
 
-Verifiable inference matters because model outputs are now operational inputs. If a model score can trigger a trade or authorize an onchain action, then “trust me, the model ran” is not enough. The problem is one of computational integrity, not only privacy or provenance.
+Verifiable inference matters because model outputs are operational inputs. Where outputs trigger trades or onchain actions, computational integrity is the core requirement.
 
-The zkML ecosystem has already shown that proving neural network inference is feasible. Sumcheck-based systems have made linear layers practical. Lookup-based systems have shown that non-polynomial functions can be handled efficiently enough to support real workloads. Public product and engineering materials from Lagrange report that DeepProve has proven full GPT-2 inference and later Gemma-class progress [24, 25]. Public repo and product materials from BitSage and Giza/StarkWare similarly show active and increasingly concrete STARK-native development, even if maturity remains uneven across systems and components [26, 28, 29]. Recent ZKML surveys now organize the field across verifiable training, testing, and inference, which helps situate this paper as primarily an inference-and-systems contribution [33].
+The ecosystem already shows feasibility: modern systems can prove substantial inference workloads, and public materials report progress on both SNARK-heavy and STARK-native paths [24, 25, 26, 28, 29, 33].
 
 The question addressed here is therefore narrower and more useful than “can transformers be proved?” The question is: **which proof architecture compounds most cleanly as transformer workloads scale in model size, sequence length, and deployment complexity?**
 
-This paper makes three distinct claims:
+This paper makes three claims:
 
 1. **Analytic claim.** Under a stated transformer cost model, non-arithmetic operations such as softmax, LayerNorm, and GELU can shift prover economics in favor of STARK-native systems.
-2. **Systems claim.** Deterministic execution of transformer-relevant programs can be compiled into traces that are directly consumable as AIR witnesses.
-3. **Infrastructure claim.** The S-two / Starknet stack makes this direction increasingly practical, even though the reference repository used here still relies on the vanilla backend for its default artifact bundle and primary transformer proof relation, while exposing `stwo` only through an experimental narrow fixture set, shared-table lookup demos, and a fixed-shape proof-carrying decoding path.
+2. **Systems claim.** Deterministic execution of transformer-relevant programs can be compiled into traces that are directly consumable as AIR witnesses, and can be organized as a parameterized proof-carrying decoding relation with carried-state boundaries that survive chain, segment, rollup, and multi-layout matrix packaging.
+3. **Infrastructure claim.** The S-two / Starknet stack makes this direction increasingly practical, even though the reference repository used here still relies on the vanilla backend for its default artifact bundle and primary transformer proof relation, while exposing `stwo` through a frozen narrow evidence tier and a broader experimental carried-state path.
 
-The repository artifact supports the second claim directly. The first claim is a model-based comparison, not an apples-to-apples end-to-end benchmark of production provers on identical hardware. The third claim is partially supported by recent StarkWare and Starknet releases, but remains ahead of the current repository implementation. The paper therefore aims to be a rigorous architecture-and-systems thesis, not a final empirical verdict on STARK versus SNARK transformer proving. Throughout, archival literature, official engineering/product materials, and commit-pinned repository artifacts are treated as distinct evidence classes rather than as one matched benchmark surface.
+The systems claim is directly artifact-backed. The analytic claim is model-based, not a matched benchmark on identical hardware. The infrastructure claim is supported by current public releases but extends beyond current repository breadth. This is an architecture-and-systems thesis, not a final empirical verdict.
 
-This paper contributes three concrete things: an exact transformer-specific symbolic cost model that separates arithmetic from non-arithmetic proving work, a semantics-hardened repository artifact showing that transformer-relevant execution traces can serve directly as AIR witnesses, and a current infrastructure analysis connecting that artifact to public S-two and Starknet developments without overstating present implementation maturity.
+The contributions are threefold: an exact symbolic model separating arithmetic from non-arithmetic work, a semantics-hardened artifact with parameterized proof-carrying decoding over explicit carried-state boundaries, and an infrastructure read of current S-two/Starknet signals without overclaiming present implementation maturity.
+
+The rest of the paper follows that structure: Section 4 develops the analytic model, Section 5 anchors the systems claim in artifacts, and Sections 6-8 place those results in current infrastructure and future-work context.
 
 ---
 
@@ -38,19 +40,19 @@ This paper contributes three concrete things: an exact transformer-specific symb
 
 ### 2.1 STARKs, AIR, and Circle STARKs
 
-STARKs arithmetize computation as an execution trace together with low-degree transition constraints and then reduce soundness to polynomial proximity testing via FRI and related machinery [1, 2, 3, 4]. For prover-heavy workloads, the appeal is transparent setup, post-quantum security, and a prover dominated by field arithmetic, FFT-style operations, and hash commitments rather than elliptic-curve MSMs.
+STARKs arithmetize computation as execution traces with low-degree transition constraints and FRI-style proximity testing [1, 2, 3, 4].
 
-Circle STARKs adapt this framework to the Mersenne-31 field (`2^31 - 1`), enabling efficient arithmetic over a chip-friendly field. StarkWare’s S-two prover is the current flagship implementation of this direction and is explicitly positioned for recursion, client-side proving, zkML, and Starknet integration [17, 18, 20]. StarkWare’s March 31, 2026 recursion update is especially relevant here because it reports a reduction from roughly one minute to roughly three seconds for proof verification in the recursive path [19]. These are public engineering/product claims, not archival benchmark results.
+Circle STARKs specialize this direction to Mersenne-31 (`2^31 - 1`). StarkWare positions S-two for recursion and Starknet integration [17, 18, 20], with a March 31, 2026 update reporting verification-path reduction from roughly one minute to roughly three seconds [19]. These are engineering/product claims, not archival benchmark results.
 
 ### 2.2 SNARKs, GKR, and modern zkML
 
-Modern zkML systems rarely rely on naive gate-by-gate circuits for the entire model. They combine multiple proof techniques: GKR and sumcheck for large linear algebra, and lookup arguments or custom circuits for non-polynomial functions such as exponentials, normalization, and activation [5, 6, 7, 10, 11]. The practical comparison is therefore among whole systems architectures, not “R1CS vs AIR” in isolation.
+Modern zkML systems combine multiple techniques: GKR/sumcheck for large linear algebra, and lookups/custom circuits for non-polynomial functions [5, 6, 7, 10, 11]. The practical comparison is therefore whole-system architecture, not “R1CS vs AIR” in isolation.
 
-That distinction matters here. The model developed below does **not** claim that every modern SNARK implementation literally pays the same naive non-arithmetic cost. It uses representative constants to show how transformer workloads can amplify overhead when non-arithmetic primitives are handled less natively than on the lookup-centric STARK path.
+The model below does **not** claim all SNARK stacks pay one naive non-arithmetic cost; it uses representative constants to isolate sensitivity to non-arithmetic handling.
 
 ### 2.3 LogUp and lookup-heavy workloads
 
-Lookup arguments are central because the relevant transformer bottlenecks are not just matrix multiplies. Softmax, LayerNorm, and GELU all require non-polynomial structure, and LogUp-style arguments make these operations comparatively natural in STARK-native designs [8, 10, 38, 39].
+Lookup arguments are central because transformer bottlenecks include non-polynomial components (softmax, LayerNorm, GELU), not only matrix multiplies [8, 10, 38, 39].
 
 ---
 
@@ -89,13 +91,13 @@ Summing these terms gives:
 T^2H + 6Td
 ```
 
-The `8Td^2` feedforward term is the GPT-2-style dense-MLP case with expansion factor `4d`; Section 4.5 switches to the architecture-specific Gemma/GeGLU-style form `3Tdm` when analyzing released sparse long-context models. The key structural point is not just that these terms exist, but that they become more important precisely in the regimes that matter for modern transformers: long contexts and repeated normalization / activation over wide hidden states.
+The `8Td^2` feedforward term is the GPT-2-style dense-MLP case (`4d` expansion); Section 4.5 switches to the Gemma/GeGLU-style form `3Tdm`.
 
 ---
 
 ## 4. A Transformer-Specific Cost Model
 
-This section is the analytic core of the paper. It should be read as a **model-based comparison of symbolic proving work**, not as a controlled head-to-head benchmark of complete production systems. Throughout this section, raw SNARK constraint counts and raw STARK trace rows are used as symbolic proxies for prover-side work under the simplifying assumption that prover cost is dominated by algebraic operations that scale approximately linearly with these objects. That is a modeling assumption, not a claim that one constraint and one trace row are identical units of runtime cost in production systems.
+This section is a **model-based** comparison of symbolic proving work, not a controlled benchmark of complete production systems. SNARK constraints and STARK rows are treated as symbolic proxies, not equal runtime units.
 
 ### 4.1 SNARK-side symbolic cost
 
@@ -113,11 +115,11 @@ C_SNARK = 12Td^2 + 2T^2d + 2Td + T^2H * C_exp + 2Td * C_norm + 4Td * C_nonlin
 
 This keeps the arithmetic term shared with the STARK side and makes explicit where the non-arithmetic amplification enters.
 
-The constants `C_exp`, `C_norm`, and `C_nonlin` are **stylized worked-example constants**, not normalized measurements extracted from one production prover stack running on one fixed hardware configuration. Their role is to make the model’s sensitivity to non-arithmetic work explicit, not to claim benchmark equivalence with any single deployed system. Appendix B sweeps `C_exp` across `50, 100, 300, 500` precisely so the argument does not rest on one fixed constant choice.
+The constants `C_exp`, `C_norm`, and `C_nonlin` are **stylized worked-example constants**, not normalized measurements from one prover/hardware stack. Their role is to expose sensitivity; Appendix B sweeps `C_exp` across `50, 100, 300, 500`.
 
-The model isolates the non-arithmetic component of softmax; row-wise reductions, max-subtraction for numerical stability, and backend-specific normalization lowerings are not modeled separately and are instead absorbed into the arithmetic proxy or left to the threats-to-validity discussion.
+The model isolates softmax-related non-arithmetic cost; backend-specific lowerings are not modeled separately.
 
-Because softmax dominates the non-arithmetic budget in this model, `C_exp` is the highest-leverage constant. On the corrected GPT-2-small instantiation below, holding `C_norm = 30` and `C_nonlin = 150` fixed changes the overall SNARK/STARK ratio from about `1.13x` at `C_exp = 50` to `1.20x` at `C_exp = 100`, `1.48x` at `C_exp = 300`, and `1.77x` at `C_exp = 500`. By contrast, varying `C_norm` from `10` to `50` changes the ratio only from about `1.48x` to `1.49x`, while varying `C_nonlin` from `50` to `250` changes it from about `1.45x` to `1.52x`. Full sensitivities are reported in Appendix B. This sensitivity analysis should be read as a stress test of the model, not as a benchmark of deployed proving stacks.
+Because softmax dominates the non-arithmetic budget in this model, `C_exp` is the highest-leverage constant. On the GPT-2-small instantiation, moving `C_exp` from `50` to `500` changes the overall ratio from about `1.13x` to `1.77x`, while comparable sweeps over `C_norm` and `C_nonlin` move it only modestly. Full sensitivities are in Appendix B; this is a model stress test, not a deployed benchmark.
 
 ### 4.2 STARK-side symbolic cost
 
@@ -127,9 +129,9 @@ For the STARK side, we keep the exact expression:
 L_STARK = 12Td^2 + 2T^2d + T^2H + 8Td
 ```
 
-A naive approximation such as `12Td^2 + 3T^2d` would not be justified for GPT-2 small because `H << d`. For GPT-2 small, `H = 12` and `d = 768`, so the `T^2H` term is `64x` smaller than a `T^2d` term. The asymptotic point remains valid, but that approximation materially inflates the STARK side numerically.
+A naive approximation such as `12Td^2 + 3T^2d` is not justified for GPT-2 small because `H << d` (`H = 12`, `d = 768`), which would materially inflate the STARK side.
 
-This STARK-side lookup treatment is also optimistic. Real LogUp-style or lookup-backed implementations do not get non-arithmetic operations “for free”: they pay additional overhead in auxiliary trace columns, interaction phases, logarithmic-derivative machinery, and commitment work. The one-row-per-symbolic-lookup abstraction is therefore a simplifying modeling choice, just as the SNARK-side constants are. Any multiplicative overhead on those STARK-side lookup rows would narrow the symbolic gap; the present model does not attempt to calibrate that overhead empirically.
+This lookup treatment is also optimistic: real lookup-backed implementations pay overhead in auxiliary columns, interaction phases, and commitments. The one-row-per-symbolic-lookup abstraction is a modeling choice; higher lookup overhead would narrow the symbolic gap.
 
 **Proposition 1.** Under the symbolic model of Sections 4.1 and 4.2, with `T, d, H > 0` and `C_exp, C_norm, C_nonlin >= 1`,
 
@@ -165,7 +167,7 @@ and keeping `d`, `H`, and the non-arithmetic constants fixed gives
 lim_{T -> ∞} R(T) = (2d + H C_exp) / (2d + H) = (2d_h + C_exp) / (2d_h + 1).
 ```
 
-For GPT-2-small, `d_h = 64`, so under `C_exp = 300` the dense asymptote is approximately `3.32x`. The right interpretation is therefore not that the symbolic ratio diverges without bound, but that over the practical ranges studied here it rises as non-arithmetic work becomes a larger share of total work before saturating at a finite architecture-dependent ceiling.
+For GPT-2-small, `d_h = 64`, so under `C_exp = 300` the dense asymptote is approximately `3.32x`. The ratio rises over practical ranges and then saturates at a finite ceiling.
 
 ### 4.3 Concrete analysis: GPT-2 small
 
@@ -186,15 +188,17 @@ Under this cost model, the non-arithmetic overhead adds about `4.29B` SNARK cons
 
 ### 4.4 Interpretation
 
-This analysis does **not** prove that every STARK system is faster than every SNARK system on every transformer workload. It supports a narrower claim: once both sides handle large linear algebra efficiently, the remaining battleground is dominated by lookup handling, recursion, field arithmetic, and commitment backend. Transformer workloads expose these differences more sharply than many standard proving benchmarks do.
+This analysis does **not** prove that every STARK system is faster than every SNARK system. It supports a narrower claim: once both sides handle large linear algebra efficiently, differences are increasingly driven by lookup handling, recursion, field arithmetic, and commitments.
 
-One further scope boundary matters here: the model abstracts each activation or normalized value as one algebraic object. It does **not** model int8/int4 quantization layouts, packing strategies, or backend-specific decompositions. Practical zkML systems often rely heavily on quantization, and that can change absolute constraint counts differently across SNARK and STARK systems. The present model is therefore best read as a structural comparison of symbolic work, not as a quantization-aware production estimate.
+The model also abstracts each activation/normalized value as one algebraic object; it does not model quantization layouts, packing strategies, or backend-specific decompositions.
 
 Appendix B2 shows the same model on a wider Llama-2-7B-style dense reference. Under the exact formula, a wider production-style dense model can remain near parity at shorter contexts under lower softmax constants while still widening materially at longer windows.
 
-Recent implementation-level comparisons reinforce that point. A December 2025 empirical comparison of Groth16 and a reference STARK implementation on consumer ARM hardware reports much faster proving and dramatically smaller proofs for the Groth16 side, alongside faster verification and transparency/post-quantum advantages for the STARK side [34]. That result is relevant because it shows exactly what this section does **not** measure: symbolic row and constraint counts are not direct runtime measurements, and real STARK provers also pay for low-degree extension, Merkle commitments, and FRI rounds. At the same time, that benchmark is not a transformer-specific zkML evaluation and does not study S-two-class STARK implementations, so it should be read as a boundary condition on the present model rather than as a direct refutation of it.
+Recent implementation-level comparisons reinforce that boundary. A December 2025 Groth16-vs-STARK comparison on consumer ARM hardware reports faster proving and smaller proofs for the Groth16 side, alongside faster verification and transparency/post-quantum advantages for the STARK side [34].
 
-Threats to validity for this section are therefore concentrated in four places: quantization and packing strategy, lookup-table reuse and non-arithmetic circuit lowering, recursion and proof-compression strategy, and hardware parallelism. The model intentionally abstracts over these dimensions in order to isolate the architectural role of non-arithmetic transformer work, but they matter materially to real deployed systems.
+Threats to validity concentrate in four places: quantization/packing strategy, lookup-table reuse and non-arithmetic lowering, recursion/compression strategy, and hardware parallelism.
+
+These caveats do not remove the structural result; they bound its interpretation. In this paper, symbolic counts are used to locate architectural pressure points, not to predict wall-clock performance for any one deployed prover stack.
 
 Figure 2 makes the symbolic-work decomposition behind that sensitivity visible for both the GPT-2-small worked example and a wider dense reference.
 
@@ -204,11 +208,11 @@ Figure 2 makes the symbolic-work decomposition behind that sensitivity visible f
 
 ### 4.5 Analytic extension to released Gemma 3 architectures
 
-The GPT-2-small analysis is useful because it keeps the algebra transparent, but it is no longer enough on its own. Public Lagrange engineering materials report DeepProve progress on Gemma 3-class inference, and that engineering update for **September 2025**, published on **October 20, 2025**, is explicit that supporting Gemma 3 required handling grouped-query attention (GQA), alternating local/global attention, RMSNorm, GeGLU, and RoPE [25]. Official Google Gemma 3 materials describe the family as a decoder-only transformer with GQA, RMSNorm, long-context support, and a `5:1` interleaving of local and global attention layers, with the 4B, 12B, and 27B variants supporting `128K` context and the smaller variants supporting shorter windows [14, 15].
+GPT-2-small keeps the algebra transparent, but newer deployments motivate a sparse long-context extension. Public materials report Gemma-3-class requirements including GQA, alternating local/global attention, RMSNorm, and GeGLU [14, 15, 25].
 
-This subsection is an analytic scaling extension only. It asks a narrower question: if one carries the paper’s symbolic comparison logic forward to a released sparse long-context architecture, does the qualitative divergence still persist?
+This subsection asks whether the same symbolic logic still shows divergence under released sparse long-context patterns.
 
-For Gemma-style layers, we refine the notation from the GPT-2-style dense-attention case. Let `n_q` be the number of query heads, `n_kv` the number of key/value heads, `d_h` the head dimension, `q = n_q d_h`, `k = n_kv d_h`, `m` the MLP intermediate size, `L_g` the number of global-attention layers, `L_l` the number of local-attention layers, `W` the local sliding-window span, and `W_eff(T) = min(T, W)`. Using the same stylized worked-example constants as above, the architecture-aware symbolic model becomes:
+For Gemma-style layers, let `n_q` be query heads, `n_kv` key/value heads, `d_h` head dimension, `q = n_q d_h`, `k = n_kv d_h`, `m` MLP intermediate size, `L_g` global-attention layers, `L_l` local-attention layers, and `W_eff(T) = min(T, W)`. Using the same constants, the model becomes:
 
 ```text
 A_Gemma(T) = L[Td(q + 2k) + Tdq + 3Tdm] + 2q[L_g T^2 + L_l T W_eff(T)]
@@ -217,9 +221,9 @@ C_SNARK^Gemma(T) = A_Gemma(T) + S_Gemma(T) * C_exp + 2LTd * C_norm + LTm * C_non
 L_STARK^Gemma(T) = A_Gemma(T) + S_Gemma(T) + 2LTd + LTm
 ```
 
-The main analytic consequence is clear. Gemma 3 is a harder test for this paper’s thesis than GPT-2-small because its released architecture already suppresses long-context cost through local/global sparsity. That sparsity tempers the gap, but it does not eliminate the direction of the argument: as context grows, the softmax- and normalization-heavy non-arithmetic share remains structurally important while the arithmetic side is increasingly amortized by system architectures that already handle large linear layers efficiently.
+Gemma-style sparsity is a harder test for this thesis than GPT-2-small because local/global attention suppresses long-context cost. It tempers the gap but does not erase the direction: as context grows, non-arithmetic share remains structurally important.
 
-The same asymptotic logic remains useful in the sparse case. With a fixed local window `W` and a nonzero fixed fraction of global layers, the long-context ratio remains finite rather than diverging. In the representative `5:1` schedule used in Figure 1, the global-attention fraction is constant, so the ratio still rises toward a finite ceiling rather than growing without bound.
+With fixed local window `W` and nonzero global-layer fraction, the long-context ratio remains finite. In the representative `5:1` schedule used in Figure 1, the ratio still rises toward a finite ceiling.
 
 **Corollary.** For a fixed positive global-attention fraction and fixed local window `W`, the representative sparse long-context ratio has the same large-context ceiling as the dense case:
 
@@ -227,96 +231,86 @@ The same asymptotic logic remains useful in the sparse case. With a fixed local 
 lim_{T -> ∞} R_sparse(T) = (2d_h + C_exp) / (2d_h + 1).
 ```
 
-The reason is that the local `T W_eff(T)` terms are lower order than the global `T^2` terms once `T` grows large, so sparsity delays the approach to the ceiling rather than lowering the ceiling itself.
+The local `T W_eff(T)` terms are lower order than global `T^2` terms at large `T`, so sparsity delays the approach to the ceiling rather than lowering it.
 
-Figure 1 visualizes that distinction. The dense curve uses the GPT-2-small symbolic model from Sections 4.1-4.3 and the sparse curve is a **representative `5:1` local/global sparse attention schedule**, Gemma-style in spirit, under the same stylized constants and a local sliding window `W = 1024`. It is included to illustrate how sparse production-style attention dampens, but does not erase, the symbolic SNARK/STARK divergence as context grows.
+Figure 1 visualizes that distinction. The dense curve uses the GPT-2-small model from Sections 4.1-4.3, and the sparse curve is a representative Gemma-style `5:1` local/global schedule with `W = 1024` under the same constants.
 
 ![Figure 1. SNARK/STARK symbolic ratio versus context length for a dense GPT-style model and a representative 5:1 local/global sparse schedule.](figures/section4-ratio-vs-context.svg)
 
-**Figure 1.** `SNARK/STARK` symbolic ratio versus context length. The dense curve uses the GPT-2-small symbolic model from Section 4.3. The sparse curve is not tied to one exact released checkpoint; it is a representative `5:1` local/global sparse attention schedule, Gemma-style in spirit, with `W = 1024`, included to show the architectural damping effect of sparse long-context attention under the paper's stylized cost model. The horizontal dashed line marks the dense asymptotic ceiling from Section 4.2, making the “rises but saturates” behavior explicit.
+**Figure 1.** `SNARK/STARK` symbolic ratio versus context length. The sparse curve is representative, not tied to one exact checkpoint. The dashed line is the dense asymptotic ceiling from Section 4.2. Reproducibility metadata and exact point generation details are recorded in the supplementary scaling appendix and committed figure script/TSV.
 
-For reproducibility, Figure 1 is generated by the repository's Section 4 figure script. The dense curve evaluates the Section 4 GPT-2-style symbolic model at context lengths `T ∈ {128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072}` using `d = 768`, `H = 12`, `C_exp = 300`, `C_norm = 30`, and `C_nonlin = 150`. The sparse curve keeps the same hidden width and stylized constants but replaces fully global attention with a representative `5:1` local/global sparse schedule, Gemma-style in spirit: five local-attention layers for every one global-attention layer, a local sliding window `W = 1024`, and an average attention span of `(T^2 + 5TW_eff(T)) / 6`, where `W_eff(T) = min(T, W)`. The dashed ceiling is the dense asymptote `(2d + HC_exp)/(2d + H)`. The figure is therefore an architectural comparison of dense versus sparse attention schedules under matched symbolic constants, not a claim about one exact released Gemma checkpoint. A supplementary scaling appendix provides exact numeric ratios for selected contexts together with the figure’s reproducibility metadata.
+With the analytic behavior established, we now turn to what the repository currently demonstrates and where the bridge to recursive accumulation begins.
 
 ---
 
-## 5. Repository Artifact: A Semantics-Hardened Transformer-VM Proof Stack
+## 5. Repository Artifact: From Trace-as-Witness to Parameterized Proof-Carrying Decoding
 
-The implementation artifact used in this paper is the open repository `omarespejel/llm-provable-computer` [30]. The current fork extends the upstream prototype with the paper draft, reproducibility artifacts, research-oriented semantic agreement artifacts, neural-style programs, an experimental S-two backend for a narrow arithmetic fixture set, shared-table lookup demos, fixed-shape Gemma-inspired artifacts, and a fixed-shape proof-carrying decoding demo. It does not yet prove full standard-softmax transformer inference on S-two. In its current form, it is best understood as **a semantics-and-proof artifact demonstrating that deterministic execution of transformer-relevant programs can be compiled into traces that are directly usable as AIR witnesses**.
+The implementation artifact is `omarespejel/llm-provable-computer` [30]. In this paper it is treated as a **semantics-and-proof artifact**: deterministic transformer-relevant execution is compiled into AIR-consumable traces and packaged into carried-state proof objects for later recursion/accumulation work.
 
 ### 5.1 What the repository demonstrates today
 
-The repository snapshot analyzed here provides:
+The snapshot provides:
 
-- a deterministic transformer-shaped virtual machine,
-- a statement-versioned proof claim (`statement-v1`),
-- transformer/native lockstep verification,
-- multi-engine differential checks across transformer, native, Burn, and ONNX paths,
-- ONNX export and independent validation,
-- `research-v2` semantic agreement artifacts for one-step, prefix-trace, and matrix agreement checks,
-- a production-oriented local proving profile (`production-v1`),
-- a frozen reproducibility bundle with artifact hashes and benchmark metadata, and
-- a second frozen experimental `stwo` bundle spanning shipped arithmetic, a shared-table lookup proof envelope, a transformer-shaped fixed-shape proof, and a three-step proof-carrying decoding demo over explicit carried-state commitments.
+- a deterministic transformer-shaped VM and statement-versioned claim (`statement-v1`),
+- semantic lockstep/multi-engine agreement checks with ONNX validation,
+- two frozen evidence tiers: `production-v1` (vanilla) and `stwo-experimental-v1` (narrow experimental),
+- a parameterized proof-carrying decoding family (`decoding_step_v2`) over multiple public layouts,
+- carried-state packaging (chain, segment, rollup, multi-layout matrix) with KV/lookup cumulative and frontier commitments,
+- a verification-hardening stack: oracle/differential checks, fuzz smoke targets, mutation tests, Miri/ASAN, and bounded Kani contracts.
 
-These capabilities support the trace-as-witness thesis directly and move the repository beyond a minimal proof-of-concept interpreter.
+This supports a stronger systems statement than earlier drafts: the same decode relation survives progressively more composable manifest layers without changing statement boundaries.
 
 ### 5.2 What the repository does **not** yet demonstrate
 
-The repository remains deliberately narrow in several important ways:
+The repository remains deliberately narrow:
 
-- the default reproducibility bundle and primary transformer proof relation still use a custom vanilla STARK backend,
-- the repo now also exposes a frozen experimental `stwo` bundle together with a broader exploratory `stwo-backend`,
-- that experimental `stwo` surface remains narrow: a public arithmetic fixture set, dedicated lookup demos, shared-table lookup proofs, fixed-shape Gemma-inspired artifacts, and a fixed-shape proof-carrying decoding demo,
-- the proved attention mode is currently `average-hard`, not standard softmax,
-- learned/trained weights remain out of scope,
-- zero-knowledge hiding is not implemented,
-- full-ISA AIR coverage for all bitwise and compare instructions is not complete.
+- default reproducibility and primary transformer relation still use the vanilla backend,
+- the experimental `stwo` path is bounded research scope, not broad production zkML scope,
+- attention is currently `average-hard`, not full standard softmax,
+- shared-table lookup state is carried but not yet accumulated/compressed across decode steps,
+- recursive aggregation/compression is not yet public,
+- learned-model end-to-end LLM proving, zero-knowledge hiding, and full-ISA AIR coverage remain out of scope.
 
-These limits matter because the paper’s strongest architectural claim is about lookup-heavy standard transformer nonlinearities on an S-two-style stack. The repository supports the structural trace thesis, but it does not yet close the loop on that full claim.
+These limits are intentional scope discipline: the artifact supports structural systems and pre-recursive carried-state claims, but not full softmax-plus-recursion closure.
 
 ### 5.3 Frozen reproducibility bundle
 
-On April 4, 2026, we generated a `production-v1` reproducibility bundle from execution/proof commit `58bb05f` and documented it in an immutable repository artifact snapshot (artifact-index commit `8d435d5`) with benchmark metadata, exact command logs, SHA-256 hashes, and proof artifacts. The full index and raw metadata are preserved in the repository artifact bundle and supplementary appendix materials [31].
+On April 4, 2026, we generated `production-v1` from execution/proof commit `58bb05f` and documented it in immutable artifact snapshot `8d435d5` with command logs, hashes, and proof artifacts [31]. Timings/sizes are kept in the artifact appendix as reproducibility evidence, not performance evidence.
 
-The artifact bundle includes STARK proofs for `addition`, `dot_product`, `single_neuron`, and `fibonacci`, together with `research-v2` semantic agreement artifacts and a committed transformer-specific attention-semantics fixture, `run_soft_attention_memory`. On the frozen `production-v1` profile, the four proof artifacts span roughly `71–856s` proving time, `2–5s` verification time, and `7.6–12.8 MB` proof sizes on the recorded `arm64` macOS host. These measurements should be read as artifact reproducibility evidence and semantic/proof-stack evidence, not as comparative prover-performance evidence or frontier-model performance claims.
+### 5.4 Frozen experimental S-two tier and post-freeze bridge artifacts
 
-### 5.4 Frozen experimental S-two bundle
+On April 6, 2026, we generated `stwo-experimental-v1` (artifact-index commit `3970277`) with representative arithmetic, lookup-envelope, transformer-shaped, and decoding-chain artifacts [40]. This complements rather than replaces `production-v1`.
 
-On April 6, 2026, we generated a second immutable bundle for the experimental `stwo` path and preserved it in an immutable repository snapshot (artifact-index commit `3970277`) with exact command logs, wall-clock timings, SHA-256 hashes, and proof artifacts for four representative outputs: an arithmetic `statement-v1` execution proof (`addition`), a shared-table normalization lookup proof envelope, a Gemma-inspired fixed-shape execution proof (`gemma_block_v4`) with embedded shared lookup bindings, and a three-step proof-carrying decoding chain over explicit carried-state commitments. This frozen `stwo-experimental-v1` bundle intentionally complements the vanilla `production-v1` bundle rather than replacing it [40]. Appendix C1 summarizes the two frozen backend-facing tiers in one compact comparison table.
-
-The later experimental history still matters because the bundle stands on earlier fixed-shape `stwo` artifacts (`gemma_block_v1` through `gemma_block_v3`) and the dedicated lookup/normalization demos. But for publication purposes the relevant distinction is now cleaner: the repo has one frozen vanilla evidence tier and one frozen narrow `stwo` evidence tier. The same repository state also archives the mutable web evidence used by the paper and stores the appendix-only extracted Gemma parameter snapshots referenced in Appendix B.
+Beyond that frozen tier, the same line carries the broader bridge artifact: parameterized `decoding_step_v2` proofs over multiple layouts, then chains/segments/rollups/matrix packaging with KV and lookup commitments (Phase 13-20 in design materials). These are commit-pinned systems evidence, not recursive compression evidence [30, 40].
 
 ### 5.5 Why this artifact matters
 
-The artifact matters because it narrows the gap between theory and system design. It shows that:
+This artifact narrows the gap between analytic and systems claims by showing:
 
-1. execution traces can be proved directly,
-2. semantics can be checked across multiple runtimes before proof generation,
-3. portable representations such as ONNX can be tied back to the same claimed computation, and
-4. reproducibility can be anchored in concrete committed artifacts rather than narrative description alone.
+1. transformer-relevant traces can be proved directly,
+2. semantic equivalence can be checked across runtimes before proving,
+3. one parameterized decode relation preserves carried state across layouts and packaging layers,
+4. reproducibility can be anchored in immutable bundles and commit-pinned post-freeze artifacts.
 
 ---
 
 ## 6. Infrastructure Context: S-two and Starknet
 
-The infrastructure argument is stronger now than it was a year ago.
+The infrastructure argument is stronger than one year ago.
 
 ### 6.1 S-two is no longer merely prospective
 
-StarkWare’s public materials position S-two as its next-generation prover, fully open source and built around Circle STARKs over M31. The March 31, 2026 recursion update is particularly relevant to verifiable AI because proof aggregation is not optional once workloads become large or modular. If one wants many local proofs, batched proofs, or compressed proofs that can be checked cheaply onchain, recursion is the mechanism that keeps the system practical.
+StarkWare’s public materials position S-two as a next-generation open-source prover around Circle STARKs over M31. The March 31, 2026 recursion update matters because aggregation is required once workloads become large or modular [19].
 
-For this paper, however, the key distinction is: **S-two’s progress strengthens the architectural roadmap, while the repository analyzed here still keeps its default artifact bundle and primary transformer proof relation on the vanilla backend.** It exposes `stwo` through a frozen narrow evidence tier plus a broader experimental fixture set, shared-table lookup demos, fixed-shape Gemma-inspired artifacts, and a fixed-shape proof-carrying decoding demo.
+For this paper, the key distinction is: **S-two progress strengthens the roadmap, while the repository still keeps its default artifact bundle and primary transformer relation on the vanilla backend.**
 
-Verifier cost and proof size remain part of that roadmap, not a side note. The frozen vanilla-backend artifact bundle still produces `7.6–12.8 MB` proof files for tiny fixtures, which is far from an onchain-friendly footprint. That is why recursion matters to the infrastructure claim: if STARK-native systems are to be practical for verifiable AI onchain, aggregation and compression must narrow verifier workload and proof-size overhead rather than only improving raw prover throughput [19, 34].
+Verifier cost and proof size remain part of that roadmap. The frozen vanilla tier still produces multi-megabyte proofs for tiny fixtures, so aggregation/compression remains necessary for practical onchain use [19, 34].
+
+The repository nevertheless exposes meaningful S-two evidence through a frozen experimental tier and a broader carried-state experimental path, which is why the paper frames the current stage as a bridge rather than a finished recursion system.
 
 ### 6.2 Starknet proof verification and privacy
 
-Starknet’s public version materials for `0.14.2` list in-protocol S-two proof verification as a network feature, and `SNIP-36` gives the corresponding technical shape for proof-carrying transactions and `proof_facts` [22, 23]. This is highly relevant to verifiable AI because it reduces the friction of taking a locally generated proof and making it legible to onchain execution. Where this paper discusses Starknet `0.14.2`, it relies on public release and specification materials rather than on a matched benchmark or archival systems paper.
-
-Separately, Starknet’s March 10, 2026 STRK20 announcement states that any ERC-20 on Starknet can now be private, with client-side proof generation and unified Cairo-based logic [21]. That makes the privacy side of “private verifiable inference” more concrete in current public infrastructure terms.
-
-### 6.3 Native account abstraction
-
-Starknet’s account model remains strategically relevant because accounts are smart contracts rather than externally owned accounts, which makes it easier to embed proof handling, policy logic, and asset movement inside the account abstraction itself [32].
+Starknet `0.14.2` public materials list in-protocol S-two verification, and `SNIP-36` describes proof-carrying transaction structure (`proof_facts`) [22, 23]. Starknet’s March 10, 2026 STRK20 announcement adds privacy relevance by stating any ERC-20 on Starknet can now be private [21].
 
 ---
 
@@ -324,31 +318,23 @@ Starknet’s account model remains strategically relevant because accounts are s
 
 ### 7.1 DeepProve as a strong SNARK counterexample
 
-Any serious paper on this topic must treat Lagrange’s DeepProve as a strong counterexample to sweeping anti-SNARK claims. Public Lagrange product and engineering materials report full GPT-2 inference and later Gemma-class progress. Those same materials describe a system that combines sumcheck-based treatment of linear layers with custom handling of softmax and lookup-based handling of LayerNorm and GELU [24, 25]. This is enough to reject simplistic claims such as “transformers are intrinsically ill-suited to SNARKs.”
-
-The right conclusion is narrower: modern SNARK systems can clearly prove transformer workloads, but they may do so with different prover-side economics, especially once recursion, field size, and lookup handling become first-order bottlenecks.
+DeepProve is a direct counterexample to sweeping anti-SNARK claims: public Lagrange materials report full GPT-2 inference and later Gemma-class progress with specialized non-arithmetic handling [24, 25]. The relevant conclusion is narrower: SNARK systems can prove transformer workloads, but with different prover-side economics.
 
 ### 7.2 Jolt Atlas and lookup-native SNARK convergence
 
-Jolt Atlas adds an important newer counterpoint because it arrives at a lookup-centric architecture from the SNARK side rather than the STARK side. The system extends Jolt directly to ONNX tensor operations, avoids CPU-register emulation, and argues that lookup arguments are a natural fit for the non-linear structure that dominates modern ML workloads [38]. That is directly relevant to this paper’s thesis. If a lookup-native design emerges independently inside the SNARK ecosystem, the right inference is not that the STARK-native argument collapses; it is that the field has converged on the same bottleneck diagnosis. Compiler-driven systems such as zkPyTorch point in a similar direction, but they are less central to the argument here than this lookup-native convergence itself [35, 36].
-
-That convergence still leaves real differences. Jolt Atlas remains a SNARK-family system, so the comparison space still includes trusted-setup assumptions, different recursion and commitment choices, and different field arithmetic. But it validates the narrower architectural claim of this paper: non-arithmetic transformer work is important enough that successful systems increasingly reorganize themselves around lookup-heavy handling rather than treating softmax- and normalization-like structure as a minor edge case.
+Jolt Atlas reaches a lookup-centric architecture from the SNARK side, extending Jolt to ONNX tensor operations and emphasizing non-linear workload handling [38]. The main relevance is convergence around lookup-heavy non-arithmetic handling.
 
 ### 7.3 NANOZK and zkLLM on layerwise and attention-specific specialization
 
-NANOZK and zkLLM strengthen the same point from two different directions. NANOZK proposes a layerwise proof decomposition for transformer inference together with lookup-based approximations for softmax, GELU, and LayerNorm, explicitly reporting constant-size layer proofs and exact-preservation claims for lookup approximations on its evaluated workloads [39]. zkLLM, earlier, introduced `tlookup` and `zkAttn` as specialized machinery for non-arithmetic tensor operations and attention-specific proving, reporting full LLM-inference proofs at the system level [10].
-
-For this paper, these systems matter less as direct benchmarks than as independent architectural evidence. They suggest that even aggressive SNARK-side systems increasingly specialize around lookup-heavy nonlinearities, layerwise decomposition, and attention-aware proof design. That does not prove the present symbolic model numerically correct for all deployments, but it does support the paper’s narrower structural claim about where the proving bottlenecks actually live.
+NANOZK and zkLLM reinforce the same trend: layerwise decomposition and attention/nonlinearity specialization with lookup-heavy machinery [10, 39]. Here they are architectural evidence, not matched benchmarks.
 
 ### 7.4 BitSage stwo-ml as the closest public STARK-native comparator
 
-BitSage stwo-ml is the closest public STARK-native system to the architectural thesis of this paper. Public repo and verifier materials show GKR, sumcheck, and LogUp-style machinery on an S-two/STWO backend together with Starknet verification paths and aggressive single-block transformer benchmark claims [26, 27]. For this paper, those claims are treated as public repo- and project-reported evidence, not as independently normalized benchmarks or archival systems results.
-
-The public record should still be described carefully. Repo-reported benchmark claims, publicly surfaced onchain demos, and full transformer-roadmap claims are not the same thing. The strongest defensible wording is that BitSage is the clearest public STARK-native development signal and a serious comparator, while the maturity across components is still uneven and rapidly evolving.
+BitSage stwo-ml is the closest public STARK-native comparator. Public materials show GKR/sumcheck/LogUp-style machinery on an S-two/STWO path with Starknet verification paths [26, 27]. These remain project-reported evidence, not normalized benchmarks.
 
 ### 7.5 LuminAIR and the custom-AIR path
 
-Giza and StarkWare’s LuminAIR points to a different STARK-native design path: compile ML graphs into custom AIR components rather than primarily leaning on a transformer-VM or GKR-style substrate. Public GitHub and product materials describe it as a Circle STARK-based zkML framework for computational graphs rather than as a transformer-VM system [28, 29]. That matters because it shows there is more than one way to capitalize on the same architectural hypothesis. The contest is not just SNARK vs STARK; it is also **which STARK-native systems architecture best absorbs ML workloads**.
+LuminAIR shows a different STARK-native path: custom AIR compilation for computational graphs rather than a transformer-VM-first substrate [28, 29]. The contest is therefore also between STARK-native architectures.
 
 ### 7.6 A more defensible comparative claim
 
@@ -356,7 +342,9 @@ The most defensible comparative claim is therefore:
 
 > Once large linear algebra is handled efficiently on both sides, the remaining contest is dominated by lookup handling, transparent recursion, field arithmetic, and commitment backend. On those axes, STARK-native stacks remain highly compelling.
 
-That is a stronger academic posture than “STARKs have already won.” It is narrower, better supported, and harder to dismiss. A supplementary comparison appendix summarizes this three-way comparison against DeepProve, BitSage stwo-ml, and this repository artifact.
+This is stronger than “STARKs have already won” because it is narrower and better evidenced. A supplementary appendix summarizes comparison details.
+
+Against that external landscape, the remaining question is practical sequencing: which engineering steps most directly strengthen the next paper without diluting scope discipline.
 
 ---
 
@@ -364,34 +352,54 @@ That is a stronger academic posture than “STARKs have already won.” It is na
 
 ### 8.1 What the paper supports, and what it does not
 
-Taken together, the paper supports a transformer-specific analytic argument for why STARK-native systems may enjoy structural prover-side advantages, a concrete semantics-and-proof artifact showing that transformer-relevant execution traces can already serve as AIR witnesses, and a live infrastructure roadmap in which S-two recursion, Starknet proof verification, and privacy tooling make the direction increasingly practical.
+Taken together, the paper supports: a transformer-specific symbolic argument, a concrete semantics-and-proof artifact with parameterized carried-state decoding, and a live infrastructure roadmap.
 
-It does **not** yet support stronger claims such as: that STARKs have conclusively beaten SNARKs for transformer proving, that the repository proves full standard-softmax transformer inference end-to-end, that the repository is already an S-two-based zkML system, or that the benchmark bundle is evidence of production-scale LLM proving.
+It does **not** support stronger claims such as “STARKs have conclusively beaten SNARKs,” full standard-softmax end-to-end inference in this repository, or production-scale LLM proving evidence.
 
-### 8.2 Highest-leverage repository milestones
+### 8.2 Highest-leverage repository milestones from this unified baseline
 
-If the goal is to make the paper materially stronger with one next technical milestone, the highest-leverage move is to widen the now-frozen narrow `stwo` path into a broader transformer-relevant execution relation: promote the proof-carrying decoding demo from a bounded research fixture into a parameterized decode-step family, carry a richer KV-cache commitment than a fixed memory slice, and bring a more faithful non-arithmetic attention path into the same experimental backend.
+With the parameterized decoding bridge present, the next highest-leverage milestone is **carry-state compression and accumulation**.
 
-That combination would connect the paper’s strongest analytical claim to the strongest missing implementation piece without pretending that recursion or full standard-softmax proving has already landed. The corresponding repository migration plan is captured in supplementary design materials.
+Concretely, the strongest next move is to keep the same decode relation and statement discipline while adding:
 
-The next most valuable repository advances are:
+- shared-table accumulation across decode steps for lookup-side state,
+- recursive aggregation/compression over segment/rollup/matrix boundaries,
+- one more faithful non-arithmetic attention path on the experimental `stwo` route.
 
-- promote `research-v2` into a stable `statement-v2` contract,
+This connects the current analytic bottleneck (lookup-heavy non-arithmetic pressure) to the next systems bottleneck (proof-size/verifier-cost compression).
+
+Methodologically, this sequencing matters: it keeps the statement boundary fixed while changing only how repeated steps are carried and compressed. That makes each empirical gain attributable to accumulation/recursion decisions rather than to a moving execution relation.
+
+The next supporting engineering moves remain:
+
 - complete full-ISA AIR coverage,
-- add a fixed benchmark harness that emits machine-readable metadata in CI,
-- bridge from the current VM to a tiny real learned model fragment or quantized transformer block.
+- keep artifact generation and benchmark metadata machine-readable in CI,
+- add a minimal learned-model fragment or quantized transformer block only once the accumulation path is stable.
+
+### 8.3 Future work that would materially strengthen the next paper
+
+The next-paper opportunity is narrower and more technical: transformer-specific accumulation, not another broad STARK-vs-SNARK framing.
+
+Recent folding literature already covers generalized recursive arguments and CCS/AIR-compatible folding abstractions [41, 43, 44, 45]. Newer small-field and post-quantum folding directions further reduce the novelty space for generic claims [41]. Therefore, the strongest defensible future contribution is:
+
+1. keep one fixed transformer-block relation and one decode transition relation,
+2. accumulate repeated block/step instances with shared lookup tables,
+3. preserve explicit KV/lookup boundary commitments under that accumulation,
+4. measure flat vs carried vs accumulated modes on the same artifact family.
+
+A second high-value track is trust-core assurance: maintain differential/oracle tests, fuzzing, and bounded model-checking around carried-state verifier kernels, then selectively formalize the smallest trust-critical binding layer [42].
+
+This future-work split is deliberate. One track expands capability (accumulation/compression); the other reduces trust risk (verification-kernel assurance). Keeping them explicit helps avoid the common failure mode of adding feature breadth without maintaining explicit proof-binding guarantees.
 
 ---
 
 ## 9. Conclusion
 
-This paper does not argue that SNARKs are incapable of proving transformers, nor that STARK-based systems have already won verifiable AI. It argues something more precise.
+This paper does not argue that SNARKs cannot prove transformers or that STARKs have already won. It argues a narrower point: transformer workloads emphasize lookup-heavy nonlinearities, recursion, and field/commitment design choices where STARK-native systems may compound advantages.
 
-Transformer workloads expose exactly the dimensions on which STARK-native systems may compound advantages: lookup-heavy nonlinearities, transparent recursion, and fast M31-style field arithmetic. At the same time, modern SNARK systems continue to narrow the gap through custom circuits, lookup techniques, and increasingly sophisticated handling of non-polynomial functions.
+The repository contributes evidence at two layers: trace semantics and pre-recursive carried state. It shows direct proving of transformer-relevant traces, semantic checks across runtimes, and a parameterized decode relation that preserves commitments across chains, segments, rollups, and layout matrices.
 
-The repository artifact contributes evidence at the trace-semantics layer. Execution traces can be proved directly. Semantic equivalence can be enforced across runtimes. Portable artifacts can be generated and hashed. Reproducibility can be grounded in committed benchmark metadata. That is not the end state of verifiable AI, but it is a defensible and useful piece of the path toward it.
-
-The frontier is therefore no longer “can transformers be proved?” The frontier is: **which proving architecture scales most cleanly to long-context, production verifiable inference while preserving practical deployment properties such as transparency, post-quantum security, and recursive aggregation?**
+The frontier is no longer “can transformers be proved?” It is: **which architecture scales most cleanly to long-context, production verifiable inference while preserving transparency/post-quantum properties and compressing repeated transformer structure without losing semantic discipline?**
 
 ---
 
@@ -432,7 +440,7 @@ This paper uses the maintained fork `omarespejel/llm-provable-computer`, which b
 27. BitSage Network. “elo-cairo-verifier/README.md.” GitHub documentation file. Accessed April 5, 2026. <https://github.com/Bitsage-Network/stwo-ml/blob/main/elo-cairo-verifier/README.md>
 28. Giza. *LuminAIR*. GitHub repository. Accessed April 5, 2026. <https://github.com/gizatechxyz/LuminAIR>
 29. StarkWare. “Giza x S-two: Powering Verifiable ML with LuminAIR.” *StarkWare Blog*. Accessed April 5, 2026. <https://starkware.co/blog/giza-x-s-two-powering-verifiable-ml-with-luminair/>
-30. `omarespejel/llm-provable-computer`. “Repository Snapshot Discussed in Sections 5 and 8.” GitHub repository snapshot, release tag `paper-publication-v2-2026-04-07`. <https://github.com/omarespejel/llm-provable-computer/tree/paper-publication-v2-2026-04-07>
+30. `omarespejel/llm-provable-computer`. “Repository Snapshot Discussed in Sections 5 and 8.” GitHub repository snapshot, release tag `paper-publication-v2-2026-04-07` (commit `bc9037296804914fe9ad799a8d494b27f4cafbeb`). <https://github.com/omarespejel/llm-provable-computer/tree/bc9037296804914fe9ad799a8d494b27f4cafbeb>
 31. `omarespejel/llm-provable-computer`. “Appendix Artifact Index (Production V1).” GitHub artifact snapshot, commit `8d435d540b8e3cf33ec4381bb820a00b6fe7aae6`, documenting a bundle generated from execution/proof commit `58bb05fdd57ee9816e5935eb004396fea6a9fac3`. <https://github.com/omarespejel/llm-provable-computer/blob/8d435d540b8e3cf33ec4381bb820a00b6fe7aae6/docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md>
 32. Starknet Docs. “Accounts.” *Starknet Documentation*. Accessed April 5, 2026. <https://docs.starknet.io/architecture/accounts>
 33. Zhizhi Peng, Chonghe Zhao, Taotao Wang, Guofu Liao, Zibin Lin, Yifeng Liu, Bin Cao, Long Shi, Qing Yang, and Shengli Zhang. “A Survey of Zero-Knowledge Proof-Based Verifiable Machine Learning.” *Artificial Intelligence Review* (accepted manuscript), arXiv:2502.18535v2, 2026. <https://arxiv.org/abs/2502.18535>
@@ -443,3 +451,8 @@ This paper uses the maintained fork `omarespejel/llm-provable-computer`, which b
 38. Wyatt Benno, Alberto Centelles, Antoine Douchet, and Khalil Gibran. “Jolt Atlas: Verifiable Inference via Lookup Arguments in Zero Knowledge.” *arXiv preprint* arXiv:2602.17452, 2026. <https://arxiv.org/abs/2602.17452>
 39. Zhaohui Geoffrey Wang. “NANOZK: Layerwise Zero-Knowledge Proofs for Verifiable Large Language Model Inference.” *arXiv preprint* arXiv:2603.18046, 2026. <https://arxiv.org/abs/2603.18046>
 40. `omarespejel/llm-provable-computer`. “Appendix Artifact Index (S-two Experimental V1).” GitHub artifact snapshot, commit `3970277d964a0a9a5326b0db364cf16822c1ccd4`, at `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md`. <https://github.com/omarespejel/llm-provable-computer/blob/3970277d964a0a9a5326b0db364cf16822c1ccd4/docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md>
+41. Wilson Nguyen and Srinath Setty. “Neo: Lattice-based folding scheme for CCS over small fields and pay-per-bit commitments.” *IACR Cryptology ePrint Archive*, Paper 2025/294, 2025. <https://eprint.iacr.org/2025/294>
+42. StarkWare. “How StarkWare Uses Formal Verification to Prove Tech Soundness.” *StarkWare Blog*, March 5, 2026. <https://starkware.co/blog/starkwares-gold-standard-of-soundness-with-formal-verification/>
+43. Abhiram Kothapalli and Srinath Setty. “HyperNova: Recursive Arguments for Customizable Constraint Systems.” *IACR Cryptology ePrint Archive*, Paper 2023/573, 2023. <https://eprint.iacr.org/2023/573>
+44. Abhiram Kothapalli and Srinath Setty. “NeutronNova: Folding Everything that Reduces to Zero-Check.” *IACR Cryptology ePrint Archive*, Paper 2024/1606, 2024. <https://eprint.iacr.org/2024/1606>
+45. Abhiram Kothapalli and Srinath Setty. “ProtoStar: Generic Efficient Accumulation/Folding for Special Sound Protocols.” *IACR Cryptology ePrint Archive*, Paper 2023/620, 2023. <https://eprint.iacr.org/2023/620>

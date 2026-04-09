@@ -424,15 +424,15 @@ That is enough to justify a real systems paper. It is also enough to make the la
 
 ## Acknowledgments
 
-This draft builds on the maintained `omarespejel/provable-transformer-vm`
+This draft builds on the maintained `omarespejel/llm-provable-computer`
 research fork and the earlier architecture paper that motivated the current
 implementation path.
 
 ## References
 
-- [1] Omar Espejel. *On the Alignment of Transformer Workloads and STARK Proof Systems*. Starknet Foundation, April 2026. Release tag `paper-publication-v2-2026-04-07`. <https://github.com/omarespejel/provable-transformer-vm/blob/paper-publication-v2-2026-04-07/docs/paper/stark-transformer-alignment-2026.md>
-- [2] `omarespejel/provable-transformer-vm`. Maintained research repository and implementation base for the system described here. Commit `68e08fb1d3fdb186cfcfab4f22c52ccf4264f542`. <https://github.com/omarespejel/provable-transformer-vm/tree/68e08fb1d3fdb186cfcfab4f22c52ccf4264f542>
-- [3] `omarespejel/provable-transformer-vm`. *Appendix Artifact Index (S-two Experimental V1).* Commit `3cb6d55e9fdc39ab729f7cff910976163e2814f0`. <https://github.com/omarespejel/provable-transformer-vm/blob/3cb6d55e9fdc39ab729f7cff910976163e2814f0/docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md>
+- [1] Omar Espejel. *On the Structural Fit of Transformer Workloads and STARK Proof Systems*. Starknet Foundation, April 2026. Release tag `paper-publication-v2-2026-04-07` (commit `bc9037296804914fe9ad799a8d494b27f4cafbeb`). <https://github.com/omarespejel/llm-provable-computer/blob/bc9037296804914fe9ad799a8d494b27f4cafbeb/docs/paper/stark-transformer-alignment-2026.md>
+- [2] `omarespejel/llm-provable-computer`. Maintained research repository and implementation base for the system described here. Release tag `paper-publication-v2-2026-04-07` (commit `bc9037296804914fe9ad799a8d494b27f4cafbeb`). <https://github.com/omarespejel/llm-provable-computer/tree/bc9037296804914fe9ad799a8d494b27f4cafbeb>
+- [3] `omarespejel/llm-provable-computer`. *Appendix Artifact Index (S-two Experimental V1).* Commit `3970277d964a0a9a5326b0db364cf16822c1ccd4`. <https://github.com/omarespejel/llm-provable-computer/blob/3970277d964a0a9a5326b0db364cf16822c1ccd4/docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md>
 - [4] Eli Ben-Sasson, Iddo Bentov, Yinon Horesh, and Michael Riabzev. *Scalable, Transparent, and Post-Quantum Secure Computational Integrity*. IACR ePrint 2018/046. <https://eprint.iacr.org/2018/046>
 - [5] Ulrich Haböck, David Levit, and Valeria Papini. *Circle STARKs*. IACR ePrint 2024/278. <https://eprint.iacr.org/2024/278>
 - [6] StarkWare Industries. *STWO Prover*. <https://github.com/starkware-libs/stwo>
