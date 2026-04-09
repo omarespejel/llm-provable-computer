@@ -8148,6 +8148,18 @@ mod kani_phase24_proofs {
         let second = kani_phase24_summary(1 + gap, 3 + gap, "s1", "s3");
         assert!(verify_phase24_member_relation_sequence(&[first, second]).is_err());
     }
+
+    #[kani::proof]
+    fn kani_phase24_relation_sequence_rejects_boundary_mismatch() {
+        let mut first = kani_phase24_summary(0, 1, "s0", "s1");
+        let mut second = kani_phase24_summary(1, 3, "s1", "s3");
+        if kani::any::<bool>() {
+            first.end_state_commitment = "not-s1".to_string();
+        } else {
+            second.start_state_commitment = "not-s1".to_string();
+        }
+        assert!(verify_phase24_member_relation_sequence(&[first, second]).is_err());
+    }
 }
 
 #[cfg(test)]
@@ -9326,25 +9338,24 @@ mod tests {
         Ok(oracle_blake2b_256(&parts))
     }
 
-    fn oracle_commit_phase24_relation_template(
-        manifest: &Phase24DecodingStateRelationAccumulatorManifest,
+    fn oracle_commit_phase24_relation_template_from_summaries(
+        summaries: &[Phase24MemberSummary],
     ) -> Result<String> {
-        if manifest.member_summaries.len() < 2 {
+        if summaries.len() < 2 {
             return Err(VmError::InvalidConfig(
                 "decoding state relation accumulator must contain at least two members".to_string(),
             ));
         }
+        verify_phase24_member_relation_sequence(summaries)?;
         let mut parts = vec![
             STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24
                 .as_bytes()
                 .to_vec(),
             b"relation-template".to_vec(),
-            (manifest.member_summaries.len() as u64)
-                .to_le_bytes()
-                .to_vec(),
-            manifest.source_template_commitment.as_bytes().to_vec(),
+            (summaries.len() as u64).to_le_bytes().to_vec(),
+            summaries[0].source_template_commitment.as_bytes().to_vec(),
         ];
-        for (member_index, member) in manifest.member_summaries.iter().enumerate() {
+        for (member_index, member) in summaries.iter().enumerate() {
             parts.push((member_index as u64).to_le_bytes().to_vec());
             parts.push(member.lookup_template_commitment.as_bytes().to_vec());
             parts.push((member.total_matrices as u64).to_le_bytes().to_vec());
@@ -9356,37 +9367,97 @@ mod tests {
         Ok(oracle_blake2b_256(&parts))
     }
 
+    fn oracle_commit_phase24_relation_template(
+        manifest: &Phase24DecodingStateRelationAccumulatorManifest,
+    ) -> Result<String> {
+        let summaries = summarize_phase24_members(&manifest.members)?;
+        oracle_commit_phase24_relation_template_from_summaries(&summaries)
+    }
+
     fn oracle_commit_phase24_state_relation_accumulator(
         manifest: &Phase24DecodingStateRelationAccumulatorManifest,
     ) -> Result<String> {
-        if manifest.member_summaries.len() < 2 {
+        let summaries = summarize_phase24_members(&manifest.members)?;
+        if summaries.len() < 2 {
             return Err(VmError::InvalidConfig(
                 "decoding state relation accumulator must contain at least two members".to_string(),
             ));
+        }
+        verify_phase24_member_relation_sequence(&summaries)?;
+        let first = summaries.first().expect("phase24 summaries are non-empty");
+        let last = summaries.last().expect("phase24 summaries are non-empty");
+        let relation_template_commitment =
+            oracle_commit_phase24_relation_template_from_summaries(&summaries)?;
+        let mut total_matrices = 0usize;
+        let mut total_layouts = 0usize;
+        let mut total_rollups = 0usize;
+        let mut total_segments = 0usize;
+        let mut total_steps = 0usize;
+        let mut lookup_delta_entries = 0usize;
+        let mut max_lookup_frontier_entries = 0usize;
+        for (member_index, summary) in summaries.iter().enumerate() {
+            total_matrices = total_matrices
+                .checked_add(summary.total_matrices)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "decoding state relation accumulator total_matrices overflowed while adding member {member_index}"
+                    ))
+                })?;
+            total_layouts = total_layouts
+                .checked_add(summary.total_layouts)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "decoding state relation accumulator total_layouts overflowed while adding member {member_index}"
+                    ))
+                })?;
+            total_rollups = total_rollups
+                .checked_add(summary.total_rollups)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "decoding state relation accumulator total_rollups overflowed while adding member {member_index}"
+                    ))
+                })?;
+            total_segments = total_segments
+                .checked_add(summary.total_segments)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "decoding state relation accumulator total_segments overflowed while adding member {member_index}"
+                    ))
+                })?;
+            total_steps = total_steps.checked_add(summary.total_steps).ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "decoding state relation accumulator total_steps overflowed while adding member {member_index}"
+                ))
+            })?;
+            lookup_delta_entries = lookup_delta_entries
+                .checked_add(summary.lookup_delta_entries)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "decoding state relation accumulator lookup_delta_entries overflowed while adding member {member_index}"
+                    ))
+                })?;
+            max_lookup_frontier_entries =
+                max_lookup_frontier_entries.max(summary.max_lookup_frontier_entries);
         }
         let mut parts = vec![
             STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24
                 .as_bytes()
                 .to_vec(),
             b"state-relation-accumulator".to_vec(),
-            manifest.source_template_commitment.as_bytes().to_vec(),
-            manifest.relation_template_commitment.as_bytes().to_vec(),
-            manifest.start_state_commitment.as_bytes().to_vec(),
-            manifest.end_state_commitment.as_bytes().to_vec(),
-            (manifest.member_count as u64).to_le_bytes().to_vec(),
-            (manifest.total_matrices as u64).to_le_bytes().to_vec(),
-            (manifest.total_layouts as u64).to_le_bytes().to_vec(),
-            (manifest.total_rollups as u64).to_le_bytes().to_vec(),
-            (manifest.total_segments as u64).to_le_bytes().to_vec(),
-            (manifest.total_steps as u64).to_le_bytes().to_vec(),
-            (manifest.lookup_delta_entries as u64)
-                .to_le_bytes()
-                .to_vec(),
-            (manifest.max_lookup_frontier_entries as u64)
-                .to_le_bytes()
-                .to_vec(),
+            first.source_template_commitment.as_bytes().to_vec(),
+            relation_template_commitment.as_bytes().to_vec(),
+            first.start_state_commitment.as_bytes().to_vec(),
+            last.end_state_commitment.as_bytes().to_vec(),
+            (summaries.len() as u64).to_le_bytes().to_vec(),
+            (total_matrices as u64).to_le_bytes().to_vec(),
+            (total_layouts as u64).to_le_bytes().to_vec(),
+            (total_rollups as u64).to_le_bytes().to_vec(),
+            (total_segments as u64).to_le_bytes().to_vec(),
+            (total_steps as u64).to_le_bytes().to_vec(),
+            (lookup_delta_entries as u64).to_le_bytes().to_vec(),
+            (max_lookup_frontier_entries as u64).to_le_bytes().to_vec(),
         ];
-        for (member_index, member) in manifest.member_summaries.iter().enumerate() {
+        for (member_index, member) in summaries.iter().enumerate() {
             parts.push((member_index as u64).to_le_bytes().to_vec());
             parts.push((member.start_step as u64).to_le_bytes().to_vec());
             parts.push((member.end_step as u64).to_le_bytes().to_vec());
@@ -13267,14 +13338,29 @@ mod tests {
     }
 
     #[test]
-    fn phase24_state_relation_accumulator_commitment_changes_when_lookup_delta_changes() {
+    fn phase24_oracle_ignores_tampered_member_summary_mirror() {
+        let mut manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        let expected_template = manifest.relation_template_commitment.clone();
+        let expected_accumulator = manifest.relation_accumulator_commitment.clone();
+        manifest.member_summaries[1].start_step = 99;
+        manifest.member_summaries[1].lookup_accumulator_commitment = "mirror-tamper".to_string();
+        let oracle_template =
+            oracle_commit_phase24_relation_template(&manifest).expect("oracle template");
+        let oracle_accumulator = oracle_commit_phase24_state_relation_accumulator(&manifest)
+            .expect("oracle accumulator");
+        assert_eq!(oracle_template, expected_template);
+        assert_eq!(oracle_accumulator, expected_accumulator);
+    }
+
+    #[test]
+    fn phase24_oracle_ignores_tampered_top_level_lookup_delta_mirror() {
         let mut manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
         let original = manifest.relation_accumulator_commitment.clone();
         manifest.lookup_delta_entries = manifest.lookup_delta_entries.saturating_add(1);
         assert!(verify_phase24_decoding_state_relation_accumulator(&manifest).is_err());
         let oracle = oracle_commit_phase24_state_relation_accumulator(&manifest)
             .expect("oracle accumulator");
-        assert_ne!(oracle, original);
+        assert_eq!(oracle, original);
     }
 
     #[test]

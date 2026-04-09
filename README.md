@@ -527,9 +527,9 @@ The public decoding artifacts currently cover:
 
 Those power the proof-carrying decoding demos, including layout-bound carried
 state, rolling KV-cache windows, cumulative KV-history commitments, and the
-matrix/rollup-style packaging layers described in the next-paper track, now up
-through the pre-recursive cross-step lookup and full state-relation
-accumulators.
+matrix/rollup-style packaging layers described in the next-paper track,
+including pre-recursive cross-step lookup accumulators (Phase 23) and full
+state-relation accumulators (Phase 24).
 
 #### Phase Highlights
 

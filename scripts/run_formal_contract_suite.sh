@@ -33,6 +33,8 @@ KANI_ARGS=(
   kani_phase24_relation_sequence_rejects_zero_width_member
   --harness
   kani_phase24_relation_sequence_rejects_non_contiguous_steps
+  --harness
+  kani_phase24_relation_sequence_rejects_boundary_mismatch
 )
 
 "${KANI_ARGS[@]}"
