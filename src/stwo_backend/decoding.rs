@@ -3699,6 +3699,38 @@ fn summarize_phase24_members(
     Ok(summaries)
 }
 
+fn validate_phase23_decoding_cross_step_lookup_accumulator_shallow(
+    manifest: &Phase23DecodingCrossStepLookupAccumulatorManifest,
+) -> Result<()> {
+    if manifest.members.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding cross-step lookup accumulator must contain at least one member".to_string(),
+        ));
+    }
+    if manifest.members.len() > MAX_PHASE23_ACCUMULATOR_MEMBERS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator members.len()={} exceeds the supported maximum {}",
+            manifest.members.len(),
+            MAX_PHASE23_ACCUMULATOR_MEMBERS
+        )));
+    }
+    if manifest.member_count != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator member_count={} does not match members.len()={}",
+            manifest.member_count,
+            manifest.members.len()
+        )));
+    }
+    if manifest.total_rollups > MAX_PHASE23_ACCUMULATOR_ROLLUPS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator total_rollups={} exceeds the supported maximum {}",
+            manifest.total_rollups,
+            MAX_PHASE23_ACCUMULATOR_ROLLUPS
+        )));
+    }
+    Ok(())
+}
+
 fn verify_phase24_member_relation_sequence(summaries: &[Phase24MemberSummary]) -> Result<()> {
     if summaries.len() < 2 {
         return Err(VmError::InvalidConfig(
@@ -3772,6 +3804,44 @@ fn verify_phase24_member_relation_sequence(summaries: &[Phase24MemberSummary]) -
                 member_index
             )));
         }
+    }
+    Ok(())
+}
+
+fn validate_phase24_decoding_state_relation_accumulator_shallow(
+    manifest: &Phase24DecodingStateRelationAccumulatorManifest,
+) -> Result<()> {
+    if manifest.members.len() < 2 {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator must contain at least two members".to_string(),
+        ));
+    }
+    if manifest.members.len() > MAX_PHASE24_ACCUMULATOR_MEMBERS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator members.len()={} exceeds the supported maximum {}",
+            manifest.members.len(),
+            MAX_PHASE24_ACCUMULATOR_MEMBERS
+        )));
+    }
+    if manifest.member_count != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator member_count={} does not match members.len()={}",
+            manifest.member_count,
+            manifest.members.len()
+        )));
+    }
+    if manifest.member_summaries.len() != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator member_summaries.len()={} does not match members.len()={}",
+            manifest.member_summaries.len(),
+            manifest.members.len()
+        )));
+    }
+    if manifest.total_rollups > MAX_PHASE24_ACCUMULATOR_ROLLUPS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator total_rollups={} exceeds the supported maximum {}",
+            manifest.total_rollups, MAX_PHASE24_ACCUMULATOR_ROLLUPS
+        )));
     }
     Ok(())
 }
@@ -4143,6 +4213,7 @@ fn verify_phase23_decoding_cross_step_lookup_accumulator_with_summaries(
 pub fn verify_phase23_decoding_cross_step_lookup_accumulator(
     manifest: &Phase23DecodingCrossStepLookupAccumulatorManifest,
 ) -> Result<()> {
+    validate_phase23_decoding_cross_step_lookup_accumulator_shallow(manifest)?;
     let summaries = summarize_phase23_members(&manifest.members)?;
     verify_phase23_decoding_cross_step_lookup_accumulator_with_summaries(manifest, &summaries)
 }
@@ -4581,6 +4652,7 @@ fn verify_phase24_decoding_state_relation_accumulator_with_summaries(
 pub fn verify_phase24_decoding_state_relation_accumulator(
     manifest: &Phase24DecodingStateRelationAccumulatorManifest,
 ) -> Result<()> {
+    validate_phase24_decoding_state_relation_accumulator_shallow(manifest)?;
     let summaries = summarize_phase24_members(&manifest.members)?;
     verify_phase24_decoding_state_relation_accumulator_with_summaries(manifest, &summaries)
 }
@@ -9367,17 +9439,178 @@ mod tests {
         Ok(oracle_blake2b_256(&parts))
     }
 
+    fn oracle_phase24_member_boundary_at_step(
+        member: &Phase23DecodingCrossStepLookupAccumulatorManifest,
+        step_count: usize,
+    ) -> Result<String> {
+        if member.members.is_empty() {
+            return Err(VmError::InvalidConfig(
+                "decoding state relation accumulator member must contain at least one nested member"
+                    .to_string(),
+            ));
+        }
+        if step_count > member.total_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding state relation accumulator oracle cannot derive step {} beyond total_steps {}",
+                step_count, member.total_steps
+            )));
+        }
+        if step_count == 0 {
+            return oracle_phase23_member_boundary_at_step(&member.members[0], 0);
+        }
+        if step_count == member.total_steps {
+            let last_member = member.members.last().ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "decoding state relation accumulator member must contain at least one nested member"
+                        .to_string(),
+                )
+            })?;
+            return oracle_phase23_member_boundary_at_step(last_member, step_count);
+        }
+        for nested_member in &member.members {
+            if nested_member.total_steps >= step_count {
+                return oracle_phase23_member_boundary_at_step(nested_member, step_count);
+            }
+        }
+        Err(VmError::InvalidConfig(
+            "decoding state relation accumulator oracle did not reach the requested boundary"
+                .to_string(),
+        ))
+    }
+
+    fn oracle_summarize_phase24_members(
+        members: &[Phase23DecodingCrossStepLookupAccumulatorManifest],
+    ) -> Result<Vec<Phase24MemberSummary>> {
+        let mut summaries = Vec::with_capacity(members.len());
+        let mut previous_total_matrices = 0usize;
+        let mut previous_total_layouts = 0usize;
+        let mut previous_total_rollups = 0usize;
+        let mut previous_total_segments = 0usize;
+        let mut previous_total_steps = 0usize;
+        let mut previous_lookup_delta_entries = 0usize;
+
+        for (member_index, member) in members.iter().enumerate() {
+            validate_phase23_decoding_cross_step_lookup_accumulator_shallow(member).map_err(
+                |error| {
+                    VmError::InvalidConfig(format!(
+                        "Phase 24 oracle member {member_index} failed shallow Phase 23 validation: {error}"
+                    ))
+                },
+            )?;
+            let expected_lookup_accumulator = oracle_commit_phase23_lookup_accumulator(member)
+                .map_err(|error| {
+                    VmError::InvalidConfig(format!(
+                        "Phase 24 oracle member {member_index} failed nested Phase 23 accumulation reconstruction: {error}"
+                    ))
+                })?;
+            if member.accumulator_commitment != expected_lookup_accumulator {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 24 oracle member {member_index} accumulator_commitment does not match the oracle-reconstructed Phase 23 lookup accumulator commitment"
+                )));
+            }
+            if member.total_steps <= previous_total_steps {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 24 oracle member {member_index} total_steps {} must strictly increase beyond the previous total_steps {}",
+                    member.total_steps, previous_total_steps
+                )));
+            }
+            if member.total_matrices < previous_total_matrices
+                || member.total_layouts < previous_total_layouts
+                || member.total_rollups < previous_total_rollups
+                || member.total_segments < previous_total_segments
+                || member.lookup_delta_entries < previous_lookup_delta_entries
+            {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 24 oracle member {member_index} must extend, not shrink, the previous cumulative member counts"
+                )));
+            }
+
+            let start_state_commitment =
+                oracle_phase24_member_boundary_at_step(member, previous_total_steps)?;
+            let end_state_commitment =
+                oracle_phase24_member_boundary_at_step(member, member.total_steps)?;
+
+            summaries.push(Phase24MemberSummary {
+                start_step: previous_total_steps,
+                end_step: member.total_steps,
+                total_matrices: member
+                    .total_matrices
+                    .checked_sub(previous_total_matrices)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "Phase 24 oracle member {member_index} total_matrices underflowed while deriving interval counts"
+                        ))
+                    })?,
+                total_layouts: member
+                    .total_layouts
+                    .checked_sub(previous_total_layouts)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "Phase 24 oracle member {member_index} total_layouts underflowed while deriving interval counts"
+                        ))
+                    })?,
+                total_rollups: member
+                    .total_rollups
+                    .checked_sub(previous_total_rollups)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "Phase 24 oracle member {member_index} total_rollups underflowed while deriving interval counts"
+                        ))
+                    })?,
+                total_segments: member
+                    .total_segments
+                    .checked_sub(previous_total_segments)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "Phase 24 oracle member {member_index} total_segments underflowed while deriving interval counts"
+                        ))
+                    })?,
+                total_steps: member
+                    .total_steps
+                    .checked_sub(previous_total_steps)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "Phase 24 oracle member {member_index} total_steps underflowed while deriving interval counts"
+                        ))
+                    })?,
+                lookup_delta_entries: member
+                    .lookup_delta_entries
+                    .checked_sub(previous_lookup_delta_entries)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "Phase 24 oracle member {member_index} lookup_delta_entries underflowed while deriving interval counts"
+                        ))
+                    })?,
+                max_lookup_frontier_entries: member.max_lookup_frontier_entries,
+                source_template_commitment: member.source_template_commitment.clone(),
+                lookup_template_commitment: member.lookup_template_commitment.clone(),
+                lookup_accumulator_commitment: member.accumulator_commitment.clone(),
+                start_state_commitment,
+                end_state_commitment,
+            });
+
+            previous_total_matrices = member.total_matrices;
+            previous_total_layouts = member.total_layouts;
+            previous_total_rollups = member.total_rollups;
+            previous_total_segments = member.total_segments;
+            previous_total_steps = member.total_steps;
+            previous_lookup_delta_entries = member.lookup_delta_entries;
+        }
+
+        Ok(summaries)
+    }
+
     fn oracle_commit_phase24_relation_template(
         manifest: &Phase24DecodingStateRelationAccumulatorManifest,
     ) -> Result<String> {
-        let summaries = summarize_phase24_members(&manifest.members)?;
+        let summaries = oracle_summarize_phase24_members(&manifest.members)?;
         oracle_commit_phase24_relation_template_from_summaries(&summaries)
     }
 
     fn oracle_commit_phase24_state_relation_accumulator(
         manifest: &Phase24DecodingStateRelationAccumulatorManifest,
     ) -> Result<String> {
-        let summaries = summarize_phase24_members(&manifest.members)?;
+        let summaries = oracle_summarize_phase24_members(&manifest.members)?;
         if summaries.len() < 2 {
             return Err(VmError::InvalidConfig(
                 "decoding state relation accumulator must contain at least two members".to_string(),
@@ -13190,6 +13423,19 @@ mod tests {
     }
 
     #[test]
+    fn phase23_cross_step_lookup_accumulator_rejects_oversized_manifest_before_nested_checks() {
+        let seed = sample_phase23_cross_step_lookup_accumulator_manifest();
+        let mut manifest = seed.clone();
+        manifest.members = vec![seed.members[0].clone(); MAX_PHASE23_ACCUMULATOR_MEMBERS + 1];
+        manifest.member_count = manifest.members.len();
+        manifest.members[0].accumulator.matrices.clear();
+
+        let err = verify_phase23_decoding_cross_step_lookup_accumulator(&manifest).unwrap_err();
+        assert!(err.to_string().contains("members.len()="));
+        assert!(err.to_string().contains("exceeds the supported maximum"));
+    }
+
+    #[test]
     fn phase23_oracle_matches_production_commitments() {
         let manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
         verify_phase23_decoding_cross_step_lookup_accumulator(&manifest)
@@ -13313,6 +13559,20 @@ mod tests {
         assert!(err
             .to_string()
             .contains("member_summaries do not match the derived member summaries"));
+    }
+
+    #[test]
+    fn phase24_state_relation_accumulator_rejects_oversized_manifest_before_nested_checks() {
+        let seed = sample_phase24_decoding_state_relation_accumulator_manifest();
+        let mut manifest = seed.clone();
+        manifest.members = vec![seed.members[0].clone(); MAX_PHASE24_ACCUMULATOR_MEMBERS + 1];
+        manifest.member_summaries = vec![seed.member_summaries[0].clone(); manifest.members.len()];
+        manifest.member_count = manifest.members.len();
+        manifest.members[0].members.clear();
+
+        let err = verify_phase24_decoding_state_relation_accumulator(&manifest).unwrap_err();
+        assert!(err.to_string().contains("members.len()="));
+        assert!(err.to_string().contains("exceeds the supported maximum"));
     }
 
     #[test]
