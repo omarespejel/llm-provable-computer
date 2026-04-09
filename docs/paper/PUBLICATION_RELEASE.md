@@ -1,13 +1,19 @@
 # Publication Release Package
 
-Snapshot date: **April 7, 2026**
+Snapshot date: **April 9, 2026**
 
 Intended launch tag for the current paper-facing repository state:
-`paper-publication-v2-2026-04-07`
+`paper-publication-v3-2026-04-09`
+
+Canonical publication snapshot commit:
+`900ad5da657fb3b8085755657eb50c5f53580c23`
 
 This repository state is the publication-facing package for the paper and its supporting
 artifacts. The package is intentionally split into evidence tiers rather than treated as one
 monolithic benchmark claim.
+
+This is a rolling publication checkpoint: additional paper feedback may lead to small follow-up
+patches and a subsequent publication tag.
 
 ## Included materials
 
@@ -57,6 +63,6 @@ Before cutting a release tag, verify:
 2. the main paper and appendices refer to the same repo state and evidence tiers,
 3. the design note matches the current experimental `stwo` status,
 4. no stale top-level README language still describes S-two as merely prospective,
-5. Reference `[30]` in the paper points at the same release tag that is being
-   circulated,
+5. Reference `[30]` in the paper points at the intended submission snapshot
+   commit (and, when a release tag is circulated, that tag resolves to the same commit),
 6. `paper preflight` passes (citation integrity, immutable local repo links, figure/link paths, appendix source note).

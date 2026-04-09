@@ -25,6 +25,8 @@ PAPER_FILES = [
     "docs/paper/appendix-scaling-companion.md",
     "docs/paper/appendix-backend-artifact-comparison.md",
     "docs/paper/PUBLICATION_RELEASE.md",
+    "docs/paper/submission-v3-2026-04-09/BUNDLE_INDEX.md",
+    "docs/paper/submission-v3-2026-04-09/REPRODUCIBILITY_NOTE.md",
 ]
 
 LOCAL_REPOS = {
@@ -102,6 +104,7 @@ def extract_markdown_links(text: str) -> list[str]:
     for pat in (
         r"!\[[^\]]*\]\(([^)]+)\)",
         r"(?<!!)\[[^\]]*\]\(([^)]+)\)",
+        r"<(https?://[^>\s]+)>",
     ):
         for m in re.finditer(pat, text):
             links.append(m.group(1).strip())
