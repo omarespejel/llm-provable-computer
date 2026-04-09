@@ -11982,6 +11982,35 @@ mod tests {
     }
 
     #[test]
+    fn phase23_cross_step_lookup_accumulator_rejects_member_with_different_start_boundary() {
+        let layout = phase12_default_decoding_layout();
+        let phase12 = prove_phase12_decoding_demo_for_layout(&layout).expect("phase12 demo");
+        let proofs = phase12
+            .steps
+            .iter()
+            .map(|step| step.proof.clone())
+            .collect::<Vec<_>>();
+        assert!(
+            proofs.len() >= 3,
+            "phase23 regression needs at least 3 proofs"
+        );
+
+        let first_member =
+            phase23_prepare_member_from_proof_window_with_segment_limit(&layout, &proofs[..1], 2)
+                .expect("first phase23 member");
+        let shifted_member =
+            phase23_prepare_member_from_proof_window_with_segment_limit(&layout, &proofs[1..3], 2)
+                .expect("shifted phase23 member");
+
+        let err =
+            phase23_prepare_decoding_cross_step_lookup_accumulator(&[first_member, shifted_member])
+                .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("does not share the starting decode-state boundary commitment of member 0"));
+    }
+
+    #[test]
     fn phase23_cross_step_lookup_accumulator_rejects_non_contiguous_member_boundary() {
         let mut manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
         manifest.members[1].accumulator.matrices[0].rollups[0].rollups[0]
