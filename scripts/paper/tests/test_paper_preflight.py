@@ -3,6 +3,7 @@ import pathlib
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 def load_preflight_module():
@@ -90,13 +91,19 @@ def valid_stwo_index() -> str:
 
 class PaperPreflightTests(unittest.TestCase):
     def test_parse_appendix_rows_handles_reordered_columns(self):
-        text = """## Table C1. Frozen artifact comparison by backend and scope
-| Backend | Artifact | Verify | Prove | Semantic scope | Proof size | Bundle |
+        variants = [
+            ("Proof size", "`Artifact`", "backend"),
+            ("Proof size (bytes)", "artifact", "Backend"),
+            ("Size (bytes)", "ARTIFACT", "BACKEND"),
+        ]
+        for size_header, artifact_header, backend_header in variants:
+            text = f"""## Table C1. Frozen artifact comparison by backend and scope
+| {backend_header} | {artifact_header} | Verify | Prove | Semantic Scope | {size_header} | Bundle |
 |---|---|---:|---:|---|---:|---|
 | vanilla | `addition` | `2s` | `71s` | x | `7,644,769` bytes | production-v1 |
 """
-        rows = MOD.parse_appendix_backend_rows(text)
-        self.assertEqual(rows[("addition", "vanilla")], (71, 2, 7644769))
+            rows = MOD.parse_appendix_backend_rows(text)
+            self.assertEqual(rows[("addition", "vanilla")], (71, 2, 7644769))
 
     def test_check_backend_consistency_reports_missing_required_files(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -104,7 +111,35 @@ class PaperPreflightTests(unittest.TestCase):
             findings = MOD.Findings()
             MOD.check_backend_appendix_consistency(repo, findings)
             self.assertTrue(findings.errors)
-            self.assertIn("missing required file", findings.errors[0])
+            expected_missing = (
+                repo / "docs/paper/appendix-backend-artifact-comparison.md"
+            )
+            self.assertEqual(
+                findings.errors[0],
+                f"{expected_missing}: missing required file for backend artifact consistency check.",
+            )
+
+    def test_check_backend_consistency_reports_read_failures_without_exception(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(
+                repo / "docs/paper/appendix-backend-artifact-comparison.md",
+                valid_appendix_table(),
+            )
+            write_text(
+                repo / "docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md",
+                valid_prod_index(),
+            )
+            write_text(
+                repo / "docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md",
+                valid_stwo_index(),
+            )
+            findings = MOD.Findings()
+            with mock.patch.object(pathlib.Path, "read_text", side_effect=OSError("boom")):
+                MOD.check_backend_appendix_consistency(repo, findings)
+            self.assertTrue(findings.errors)
+            self.assertIn("failed to read backend artifact consistency inputs", findings.errors[0])
+            self.assertIn("boom", findings.errors[0])
 
     def test_check_backend_consistency_passes_for_valid_fixture_files(self):
         with tempfile.TemporaryDirectory() as tmp:
