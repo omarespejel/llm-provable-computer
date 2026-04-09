@@ -424,6 +424,12 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-decoding-history-rollup-matrix-demo decoding-history-rollup-matrix.stwo.json
 
+# Produce and verify the Phase 21 matrix accumulator over Phase 17 rollup matrices
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prove-stwo-decoding-matrix-accumulator-demo -o decoding-matrix-accumulator.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-decoding-matrix-accumulator-demo decoding-matrix-accumulator.stwo.json
+
 # Freeze a canonical pre-aggregation batch manifest for future recursion work
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-recursion-batch \
@@ -531,6 +537,7 @@ matrix/rollup-style packaging layers described in the next-paper track.
 - Phase 18: explicit KV-history frontier commitments tied to the live rolling cache
 - Phase 19: carried lookup transcripts over the same Phase 14-17 stack
 - Phase 20: explicit lookup frontier commitments over that same stack
+- Phase 21: template-bound accumulation over Phase 17 matrices with explicit template and accumulator commitments
 
 #### Explicit Non-Goals
 
@@ -849,6 +856,7 @@ lanes carry it forward.
 - Phase 11-14: fixed-shape decoding, parameterized decoding family, layout matrix, and chunked cumulative KV-history
 - Phase 15-17: mergeable history segments, rollups over segments, and multi-layout rollup matrices
 - Phase 18-20: explicit KV frontiers, carried lookup transcripts, and lookup frontier commitments
+- Phase 21: template-bound accumulation over Phase 17 matrices for a reusable pre-recursive merge boundary
 
 #### Explicit Non-Goals
 
