@@ -63,6 +63,10 @@ pub const STWO_DECODING_LOOKUP_ACCUMULATOR_VERSION_PHASE22: &str =
     "stwo-phase22-decoding-lookup-accumulator-v1";
 pub const STWO_DECODING_LOOKUP_ACCUMULATOR_SCOPE_PHASE22: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_lookup_accumulator";
+pub const STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23: &str =
+    "stwo-phase23-decoding-cross-step-lookup-accumulator-v1";
+pub const STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_SCOPE_PHASE23: &str =
+    "stwo_execution_parameterized_proof_carrying_decoding_cross_step_lookup_accumulator";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
 const DECODING_OUTPUT_RANGE: std::ops::Range<usize> = 10..13;
 const DECODING_POSITION_INDEX: usize = 21;
@@ -85,9 +89,12 @@ const MAX_PHASE16_SEGMENT_ROLLUP_JSON_BYTES: usize = 12 * 1024 * 1024;
 const MAX_PHASE17_ROLLUP_MATRIX_JSON_BYTES: usize = 40 * 1024 * 1024;
 const MAX_PHASE21_MATRIX_ACCUMULATOR_JSON_BYTES: usize = 64 * 1024 * 1024;
 const MAX_PHASE22_LOOKUP_ACCUMULATOR_JSON_BYTES: usize = 96 * 1024 * 1024;
+const MAX_PHASE23_CROSS_STEP_LOOKUP_ACCUMULATOR_JSON_BYTES: usize = 128 * 1024 * 1024;
 const MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES: usize = 24 * 1024 * 1024;
 const MAX_PHASE21_ACCUMULATOR_MATRICES: usize = 512;
 const MAX_PHASE22_ACCUMULATOR_ROLLUPS: usize = 262_144;
+const MAX_PHASE23_ACCUMULATOR_MEMBERS: usize = 512;
+const MAX_PHASE23_ACCUMULATOR_ROLLUPS: usize = 1_048_576;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase11DecodingState {
@@ -452,6 +459,29 @@ pub struct Phase22DecodingLookupAccumulatorManifest {
     pub accumulator: Phase21DecodingMatrixAccumulatorManifest,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Phase23DecodingCrossStepLookupAccumulatorManifest {
+    pub proof_backend: StarkProofBackend,
+    pub accumulator_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub member_count: usize,
+    pub total_matrices: usize,
+    pub total_layouts: usize,
+    pub total_rollups: usize,
+    pub total_segments: usize,
+    pub total_steps: usize,
+    pub lookup_delta_entries: usize,
+    pub max_lookup_frontier_entries: usize,
+    pub source_template_commitment: String,
+    pub lookup_template_commitment: String,
+    pub start_boundary_commitment: String,
+    pub end_boundary_commitment: String,
+    pub accumulator_commitment: String,
+    pub members: Vec<Phase22DecodingLookupAccumulatorManifest>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Phase12StateView {
     position: i16,
@@ -481,6 +511,20 @@ struct Phase14HistoryAccumulator {
     lookup_frontier_commitment: String,
     lookup_frontier_entries: usize,
     lookup_frontier_values: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+struct Phase23MemberSummary {
+    total_matrices: usize,
+    total_layouts: usize,
+    total_rollups: usize,
+    total_segments: usize,
+    total_steps: usize,
+    lookup_delta_entries: usize,
+    max_lookup_frontier_entries: usize,
+    source_template_commitment: String,
+    start_boundary_commitment: String,
+    end_boundary_commitment: String,
 }
 
 fn build_phase12_shared_lookup_artifact_registry(
@@ -3097,6 +3141,663 @@ pub fn verify_phase22_decoding_lookup_accumulator_with_proof_checks(
     Ok(())
 }
 
+fn collect_phase23_member_rollups<'a>(
+    member: &'a Phase22DecodingLookupAccumulatorManifest,
+    member_index: usize,
+) -> Result<Vec<&'a Phase16DecodingHistoryRollup>> {
+    let mut rollups = Vec::with_capacity(member.total_rollups);
+    for (matrix_index, matrix) in member.accumulator.matrices.iter().enumerate() {
+        for (layout_index, rollup_manifest) in matrix.rollups.iter().enumerate() {
+            if rollup_manifest.rollups.is_empty() {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 23 member {member_index} matrix {matrix_index} layout {layout_index} must contain at least one rollup"
+                )));
+            }
+            for rollup in &rollup_manifest.rollups {
+                rollups.push(rollup);
+            }
+        }
+    }
+    if rollups.is_empty() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 23 member {member_index} must contain at least one flattened rollup"
+        )));
+    }
+    Ok(rollups)
+}
+
+fn commit_phase23_boundary_state(state: &Phase14DecodingState) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23.as_bytes());
+    hasher.update(b"boundary-state");
+    hasher.update(&state.position.to_le_bytes());
+    hasher.update(state.layout_commitment.as_bytes());
+    hasher.update(state.persistent_state_commitment.as_bytes());
+    hasher.update(state.kv_history_commitment.as_bytes());
+    hasher.update(&(state.kv_history_length as u64).to_le_bytes());
+    hasher.update(&(state.kv_history_chunk_size as u64).to_le_bytes());
+    hasher.update(state.kv_history_sealed_commitment.as_bytes());
+    hasher.update(&(state.kv_history_sealed_chunks as u64).to_le_bytes());
+    hasher.update(state.kv_history_open_chunk_commitment.as_bytes());
+    hasher.update(&(state.kv_history_open_chunk_pairs as u64).to_le_bytes());
+    hasher.update(state.kv_history_frontier_commitment.as_bytes());
+    hasher.update(&(state.kv_history_frontier_pairs as u64).to_le_bytes());
+    hasher.update(state.lookup_transcript_commitment.as_bytes());
+    hasher.update(&(state.lookup_transcript_entries as u64).to_le_bytes());
+    hasher.update(state.lookup_frontier_commitment.as_bytes());
+    hasher.update(&(state.lookup_frontier_entries as u64).to_le_bytes());
+    hasher.update(state.kv_cache_commitment.as_bytes());
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+fn collect_phase23_member_segments<'a>(
+    member: &'a Phase22DecodingLookupAccumulatorManifest,
+    member_index: usize,
+) -> Result<Vec<&'a Phase15DecodingHistorySegment>> {
+    let mut segments = Vec::new();
+    for (matrix_index, matrix) in member.accumulator.matrices.iter().enumerate() {
+        for (layout_index, rollup_manifest) in matrix.rollups.iter().enumerate() {
+            if rollup_manifest.rollups.is_empty() {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 23 member {member_index} matrix {matrix_index} layout {layout_index} must contain at least one rollup"
+                )));
+            }
+            for (rollup_index, rollup) in rollup_manifest.rollups.iter().enumerate() {
+                if rollup.segments.is_empty() {
+                    return Err(VmError::InvalidConfig(format!(
+                        "Phase 23 member {member_index} matrix {matrix_index} layout {layout_index} rollup {rollup_index} must contain at least one segment"
+                    )));
+                }
+                for segment in &rollup.segments {
+                    segments.push(segment);
+                }
+            }
+        }
+    }
+    if segments.is_empty() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 23 member {member_index} must contain at least one flattened segment"
+        )));
+    }
+    Ok(segments)
+}
+
+fn derive_phase23_member_boundary_commitment_at_step(
+    member: &Phase22DecodingLookupAccumulatorManifest,
+    member_index: usize,
+    step_count: usize,
+) -> Result<String> {
+    let flattened_segments = collect_phase23_member_segments(member, member_index)?;
+    if flattened_segments.len() != member.total_segments {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 23 member {member_index} flattened segment count {} does not match declared total_segments {}",
+            flattened_segments.len(),
+            member.total_segments
+        )));
+    }
+    if step_count > member.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 23 member {member_index} cannot derive a boundary at step {} beyond total_steps {}",
+            step_count, member.total_steps
+        )));
+    }
+    let first_segment = flattened_segments.first().ok_or_else(|| {
+        VmError::InvalidConfig(format!(
+            "Phase 23 member {member_index} must contain at least one flattened segment"
+        ))
+    })?;
+    if step_count == 0 {
+        return Ok(commit_phase23_boundary_state(
+            &first_segment.global_from_state,
+        ));
+    }
+
+    let mut consumed_steps = 0usize;
+    for (segment_index, segment) in flattened_segments.iter().enumerate() {
+        if segment.total_steps == 0 {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 23 member {member_index} segment {segment_index} must contain at least one step"
+            )));
+        }
+        let next_consumed_steps = consumed_steps
+            .checked_add(segment.total_steps)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 23 member {member_index} step count overflowed while deriving boundary commitments"
+                ))
+            })?;
+        if step_count < next_consumed_steps {
+            let local_step_count = step_count - consumed_steps;
+            debug_assert!(local_step_count < segment.total_steps);
+            let boundary_state = derive_phase23_boundary_state_within_segment(
+                segment,
+                member_index,
+                segment_index,
+                local_step_count,
+            )?;
+            return Ok(commit_phase23_boundary_state(boundary_state));
+        }
+        consumed_steps = next_consumed_steps;
+        if step_count == consumed_steps {
+            return Ok(commit_phase23_boundary_state(&segment.global_to_state));
+        }
+    }
+
+    Err(VmError::InvalidConfig(format!(
+        "Phase 23 member {member_index} step-aligned boundary derivation ended at {} instead of total_steps {}",
+        consumed_steps, member.total_steps
+    )))
+}
+
+fn derive_phase23_boundary_state_within_segment<'a>(
+    segment: &'a Phase15DecodingHistorySegment,
+    member_index: usize,
+    segment_index: usize,
+    local_step_count: usize,
+) -> Result<&'a Phase14DecodingState> {
+    if segment.chain.steps.len() != segment.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 23 member {member_index} segment {segment_index} chain step count {} does not match segment total_steps {}",
+            segment.chain.steps.len(),
+            segment.total_steps
+        )));
+    }
+    if local_step_count > segment.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 23 member {member_index} segment {segment_index} cannot derive local boundary {} beyond segment total_steps {}",
+            local_step_count, segment.total_steps
+        )));
+    }
+    if local_step_count == 0 {
+        return Ok(&segment.global_from_state);
+    }
+    if local_step_count == segment.total_steps {
+        return Ok(&segment.global_to_state);
+    }
+    Ok(&segment.chain.steps[local_step_count - 1].to_state)
+}
+
+fn derive_phase23_member_boundary_commitments(
+    member: &Phase22DecodingLookupAccumulatorManifest,
+    member_index: usize,
+) -> Result<(String, String)> {
+    Ok((
+        derive_phase23_member_boundary_commitment_at_step(member, member_index, 0)?,
+        derive_phase23_member_boundary_commitment_at_step(
+            member,
+            member_index,
+            member.total_steps,
+        )?,
+    ))
+}
+
+fn summarize_phase23_member(
+    member: &Phase22DecodingLookupAccumulatorManifest,
+    member_index: usize,
+) -> Result<Phase23MemberSummary> {
+    verify_phase22_decoding_lookup_accumulator(member).map_err(|error| {
+        VmError::InvalidConfig(format!(
+            "Phase 23 member {member_index} failed Phase 22 verification: {error}"
+        ))
+    })?;
+
+    let flattened_rollups = collect_phase23_member_rollups(member, member_index)?;
+    if flattened_rollups.len() != member.total_rollups {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 23 member {member_index} flattened rollup count {} does not match declared total_rollups {}",
+            flattened_rollups.len(),
+            member.total_rollups
+        )));
+    }
+    if member.total_rollups > MAX_PHASE23_ACCUMULATOR_ROLLUPS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 23 member {member_index} total_rollups {} exceed the supported maximum {}",
+            member.total_rollups, MAX_PHASE23_ACCUMULATOR_ROLLUPS
+        )));
+    }
+
+    for (flattened_index, window) in flattened_rollups.windows(2).enumerate() {
+        validate_phase16_rollup_boundary(
+            &window[0].global_to_state,
+            &window[1].global_from_state,
+            flattened_index + 1,
+        )
+        .map_err(|error| match error {
+            VmError::InvalidConfig(message) => VmError::InvalidConfig(format!(
+                "Phase 23 member {member_index} flattened rollup boundary {} -> {} failed: {message}",
+                flattened_index,
+                flattened_index + 1
+            )),
+            other => other,
+        })?;
+    }
+
+    let (start_boundary_commitment, end_boundary_commitment) =
+        derive_phase23_member_boundary_commitments(member, member_index)?;
+
+    Ok(Phase23MemberSummary {
+        total_matrices: member.total_matrices,
+        total_layouts: member.total_layouts,
+        total_rollups: member.total_rollups,
+        total_segments: member.total_segments,
+        total_steps: member.total_steps,
+        lookup_delta_entries: member.lookup_delta_entries,
+        max_lookup_frontier_entries: member.max_lookup_frontier_entries,
+        source_template_commitment: member.source_template_commitment.clone(),
+        start_boundary_commitment,
+        end_boundary_commitment,
+    })
+}
+
+fn summarize_phase23_members(
+    members: &[Phase22DecodingLookupAccumulatorManifest],
+) -> Result<Vec<Phase23MemberSummary>> {
+    let mut summaries = Vec::with_capacity(members.len());
+    for (member_index, member) in members.iter().enumerate() {
+        summaries.push(summarize_phase23_member(member, member_index)?);
+    }
+    Ok(summaries)
+}
+
+fn verify_phase23_member_prefix_sequence(
+    members: &[Phase22DecodingLookupAccumulatorManifest],
+    summaries: &[Phase23MemberSummary],
+) -> Result<()> {
+    if members.is_empty() || summaries.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 23 cross-step lookup accumulator requires at least one member".to_string(),
+        ));
+    }
+    let first = summaries.first().expect("phase23 summaries are non-empty");
+    for (member_index, summary) in summaries.iter().enumerate() {
+        if summary.source_template_commitment != first.source_template_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 23 member {member_index} does not share the source template commitment of member 0"
+            )));
+        }
+        if summary.start_boundary_commitment != first.start_boundary_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 23 member {member_index} does not share the starting decode-state boundary commitment of member 0"
+            )));
+        }
+        if member_index == 0 {
+            continue;
+        }
+        let previous = &summaries[member_index - 1];
+        if summary.total_steps <= previous.total_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 23 member {member_index} total_steps {} must strictly increase beyond member {} total_steps {}",
+                summary.total_steps,
+                member_index - 1,
+                previous.total_steps
+            )));
+        }
+        if summary.total_matrices < previous.total_matrices
+            || summary.total_layouts < previous.total_layouts
+            || summary.total_rollups < previous.total_rollups
+            || summary.total_segments < previous.total_segments
+            || summary.lookup_delta_entries < previous.lookup_delta_entries
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 23 member {member_index} must extend, not shrink, the previous cumulative member counts"
+            )));
+        }
+        let expected_prefix_boundary = derive_phase23_member_boundary_commitment_at_step(
+            &members[member_index],
+            member_index,
+            previous.total_steps,
+        )?;
+        if previous.end_boundary_commitment != expected_prefix_boundary {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 23 member boundary {} -> {} does not preserve the decode-state boundary commitment",
+                member_index - 1,
+                member_index
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn commit_phase23_lookup_template(
+    members: &[Phase22DecodingLookupAccumulatorManifest],
+) -> Result<String> {
+    if members.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 23 lookup template requires at least one member".to_string(),
+        ));
+    }
+
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23.as_bytes());
+    hasher.update(b"lookup-template");
+    hasher.update(&(members.len() as u64).to_le_bytes());
+    for (member_index, member) in members.iter().enumerate() {
+        if member.lookup_template_commitment.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 23 lookup template member {member_index} has an empty lookup_template_commitment"
+            )));
+        }
+        hasher.update(&(member_index as u64).to_le_bytes());
+        hasher.update(member.source_template_commitment.as_bytes());
+        hasher.update(member.lookup_template_commitment.as_bytes());
+        hasher.update(&(member.total_matrices as u64).to_le_bytes());
+        hasher.update(&(member.total_layouts as u64).to_le_bytes());
+        hasher.update(&(member.total_rollups as u64).to_le_bytes());
+        hasher.update(&(member.total_segments as u64).to_le_bytes());
+        hasher.update(&(member.total_steps as u64).to_le_bytes());
+    }
+
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+pub fn phase23_prepare_decoding_cross_step_lookup_accumulator(
+    members: &[Phase22DecodingLookupAccumulatorManifest],
+) -> Result<Phase23DecodingCrossStepLookupAccumulatorManifest> {
+    if members.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 23 cross-step lookup accumulator requires at least one Phase 22 member"
+                .to_string(),
+        ));
+    }
+    if members.len() > MAX_PHASE23_ACCUMULATOR_MEMBERS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 23 cross-step lookup accumulator supports at most {MAX_PHASE23_ACCUMULATOR_MEMBERS} members (got {})",
+            members.len()
+        )));
+    }
+
+    let summaries = summarize_phase23_members(members)?;
+    verify_phase23_member_prefix_sequence(members, &summaries)?;
+
+    let first = summaries.first().expect("phase23 summaries are non-empty");
+    let last = summaries.last().expect("phase23 summaries are non-empty");
+    let total_matrices = last.total_matrices;
+    let total_layouts = last.total_layouts;
+    let total_rollups = last.total_rollups;
+    let total_segments = last.total_segments;
+    let total_steps = last.total_steps;
+    let lookup_delta_entries = last.lookup_delta_entries;
+    let max_lookup_frontier_entries = summaries
+        .iter()
+        .map(|summary| summary.max_lookup_frontier_entries)
+        .max()
+        .unwrap_or(0);
+
+    if total_rollups > MAX_PHASE23_ACCUMULATOR_ROLLUPS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 23 total_rollups {} exceed the supported maximum {}",
+            total_rollups, MAX_PHASE23_ACCUMULATOR_ROLLUPS
+        )));
+    }
+
+    let mut manifest = Phase23DecodingCrossStepLookupAccumulatorManifest {
+        proof_backend: StarkProofBackend::Stwo,
+        accumulator_version: STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23
+            .to_string(),
+        semantic_scope: STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_SCOPE_PHASE23.to_string(),
+        proof_backend_version: members[0].proof_backend_version.clone(),
+        statement_version: members[0].statement_version.clone(),
+        member_count: members.len(),
+        total_matrices,
+        total_layouts,
+        total_rollups,
+        total_segments,
+        total_steps,
+        lookup_delta_entries,
+        max_lookup_frontier_entries,
+        source_template_commitment: first.source_template_commitment.clone(),
+        lookup_template_commitment: commit_phase23_lookup_template(members)?,
+        start_boundary_commitment: first.start_boundary_commitment.clone(),
+        end_boundary_commitment: last.end_boundary_commitment.clone(),
+        accumulator_commitment: String::new(),
+        members: members.to_vec(),
+    };
+    manifest.accumulator_commitment =
+        commit_phase23_lookup_accumulator_with_summaries(&manifest, &summaries)?;
+    verify_phase23_decoding_cross_step_lookup_accumulator_with_summaries(&manifest, &summaries)?;
+    Ok(manifest)
+}
+
+fn verify_phase23_decoding_cross_step_lookup_accumulator_with_summaries(
+    manifest: &Phase23DecodingCrossStepLookupAccumulatorManifest,
+    summaries: &[Phase23MemberSummary],
+) -> Result<()> {
+    if manifest.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator backend `{}` is not `stwo`",
+            manifest.proof_backend
+        )));
+    }
+    if manifest.accumulator_version != STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding cross-step lookup accumulator version `{}`",
+            manifest.accumulator_version
+        )));
+    }
+    if manifest.semantic_scope != STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_SCOPE_PHASE23 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding cross-step lookup accumulator semantic scope `{}`",
+            manifest.semantic_scope
+        )));
+    }
+    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding cross-step lookup accumulator proof backend version `{}` (expected `{}`)",
+            manifest.proof_backend_version,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+        )));
+    }
+    if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding cross-step lookup accumulator statement version `{}`",
+            manifest.statement_version
+        )));
+    }
+    if manifest.members.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding cross-step lookup accumulator must contain at least one member".to_string(),
+        ));
+    }
+    if manifest.members.len() > MAX_PHASE23_ACCUMULATOR_MEMBERS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator members.len()={} exceeds the supported maximum {}",
+            manifest.members.len(),
+            MAX_PHASE23_ACCUMULATOR_MEMBERS
+        )));
+    }
+    if manifest.member_count != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator member_count={} does not match members.len()={}",
+            manifest.member_count,
+            manifest.members.len()
+        )));
+    }
+    if manifest.total_rollups > MAX_PHASE23_ACCUMULATOR_ROLLUPS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator total_rollups={} exceeds the supported maximum {}",
+            manifest.total_rollups, MAX_PHASE23_ACCUMULATOR_ROLLUPS
+        )));
+    }
+    if manifest.source_template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding cross-step lookup accumulator source_template_commitment must not be empty"
+                .to_string(),
+        ));
+    }
+    if manifest.lookup_template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding cross-step lookup accumulator lookup_template_commitment must not be empty"
+                .to_string(),
+        ));
+    }
+    if manifest.start_boundary_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding cross-step lookup accumulator start_boundary_commitment must not be empty"
+                .to_string(),
+        ));
+    }
+    if manifest.end_boundary_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding cross-step lookup accumulator end_boundary_commitment must not be empty"
+                .to_string(),
+        ));
+    }
+    if manifest.accumulator_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding cross-step lookup accumulator accumulator_commitment must not be empty"
+                .to_string(),
+        ));
+    }
+
+    for (member_index, member) in manifest.members.iter().enumerate() {
+        if member.proof_backend_version != manifest.proof_backend_version {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding cross-step lookup accumulator member {member_index} proof backend version `{}` does not match manifest `{}`",
+                member.proof_backend_version, manifest.proof_backend_version
+            )));
+        }
+        if member.statement_version != manifest.statement_version {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding cross-step lookup accumulator member {member_index} statement version `{}` does not match manifest `{}`",
+                member.statement_version, manifest.statement_version
+            )));
+        }
+    }
+    if summaries.len() != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator summaries.len()={} does not match members.len()={}",
+            summaries.len(),
+            manifest.members.len()
+        )));
+    }
+    verify_phase23_member_prefix_sequence(&manifest.members, summaries)?;
+
+    let first = summaries.first().expect("phase23 summaries are non-empty");
+    let last = summaries.last().expect("phase23 summaries are non-empty");
+
+    let derived_total_matrices: usize = last.total_matrices;
+    if manifest.total_matrices != derived_total_matrices {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator total_matrices={} does not match derived total_matrices={}",
+            manifest.total_matrices, derived_total_matrices
+        )));
+    }
+    let derived_total_layouts: usize = last.total_layouts;
+    if manifest.total_layouts != derived_total_layouts {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator total_layouts={} does not match derived total_layouts={}",
+            manifest.total_layouts, derived_total_layouts
+        )));
+    }
+    let derived_total_rollups: usize = last.total_rollups;
+    if manifest.total_rollups != derived_total_rollups {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator total_rollups={} does not match derived total_rollups={}",
+            manifest.total_rollups, derived_total_rollups
+        )));
+    }
+    let derived_total_segments: usize = last.total_segments;
+    if manifest.total_segments != derived_total_segments {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator total_segments={} does not match derived total_segments={}",
+            manifest.total_segments, derived_total_segments
+        )));
+    }
+    let derived_total_steps: usize = last.total_steps;
+    if manifest.total_steps != derived_total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator total_steps={} does not match derived total_steps={}",
+            manifest.total_steps, derived_total_steps
+        )));
+    }
+    let derived_lookup_delta_entries: usize = last.lookup_delta_entries;
+    if manifest.lookup_delta_entries != derived_lookup_delta_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator lookup_delta_entries={} does not match derived lookup_delta_entries={}",
+            manifest.lookup_delta_entries, derived_lookup_delta_entries
+        )));
+    }
+    let derived_max_lookup_frontier_entries = summaries
+        .iter()
+        .map(|summary| summary.max_lookup_frontier_entries)
+        .max()
+        .unwrap_or(0);
+    if manifest.max_lookup_frontier_entries != derived_max_lookup_frontier_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator max_lookup_frontier_entries={} does not match derived max_lookup_frontier_entries={}",
+            manifest.max_lookup_frontier_entries, derived_max_lookup_frontier_entries
+        )));
+    }
+    if manifest.source_template_commitment != first.source_template_commitment {
+        return Err(VmError::InvalidConfig(
+            "decoding cross-step lookup accumulator source_template_commitment does not match the shared member template commitment".to_string(),
+        ));
+    }
+    if summaries
+        .iter()
+        .any(|summary| summary.source_template_commitment != first.source_template_commitment)
+    {
+        return Err(VmError::InvalidConfig(
+            "decoding cross-step lookup accumulator members do not share a common source template commitment".to_string(),
+        ));
+    }
+    if manifest.start_boundary_commitment != first.start_boundary_commitment {
+        return Err(VmError::InvalidConfig(
+            "decoding cross-step lookup accumulator start_boundary_commitment does not match the first member boundary".to_string(),
+        ));
+    }
+    if manifest.end_boundary_commitment != last.end_boundary_commitment {
+        return Err(VmError::InvalidConfig(
+            "decoding cross-step lookup accumulator end_boundary_commitment does not match the last member boundary".to_string(),
+        ));
+    }
+
+    let expected_lookup_template_commitment = commit_phase23_lookup_template(&manifest.members)?;
+    if manifest.lookup_template_commitment != expected_lookup_template_commitment {
+        return Err(VmError::InvalidConfig(
+            "decoding cross-step lookup accumulator lookup_template_commitment does not match the computed member lookup template commitment".to_string(),
+        ));
+    }
+
+    let expected_accumulator_commitment =
+        commit_phase23_lookup_accumulator_with_summaries(manifest, summaries)?;
+    if manifest.accumulator_commitment != expected_accumulator_commitment {
+        return Err(VmError::InvalidConfig(
+            "decoding cross-step lookup accumulator accumulator_commitment does not match the computed accumulator commitment".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+pub fn verify_phase23_decoding_cross_step_lookup_accumulator(
+    manifest: &Phase23DecodingCrossStepLookupAccumulatorManifest,
+) -> Result<()> {
+    let summaries = summarize_phase23_members(&manifest.members)?;
+    verify_phase23_decoding_cross_step_lookup_accumulator_with_summaries(manifest, &summaries)
+}
+
+pub fn verify_phase23_decoding_cross_step_lookup_accumulator_with_proof_checks(
+    manifest: &Phase23DecodingCrossStepLookupAccumulatorManifest,
+) -> Result<()> {
+    verify_phase23_decoding_cross_step_lookup_accumulator(manifest)?;
+    for (member_index, member) in manifest.members.iter().enumerate() {
+        verify_phase22_decoding_lookup_accumulator_with_proof_checks(member).map_err(|error| {
+            VmError::UnsupportedProof(format!(
+                "decoding cross-step lookup accumulator member {member_index} failed verification: {error}"
+            ))
+        })?;
+    }
+    Ok(())
+}
+
 pub fn save_phase11_decoding_chain(
     manifest: &Phase11DecodingChainManifest,
     path: &Path,
@@ -3682,6 +4383,32 @@ pub fn load_phase22_decoding_lookup_accumulator(
     Ok(manifest)
 }
 
+pub fn save_phase23_decoding_cross_step_lookup_accumulator(
+    manifest: &Phase23DecodingCrossStepLookupAccumulatorManifest,
+    path: &Path,
+) -> Result<()> {
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE23_CROSS_STEP_LOOKUP_ACCUMULATOR_JSON_BYTES,
+        "Phase 23 decoding cross-step lookup accumulator",
+    )
+}
+
+pub fn load_phase23_decoding_cross_step_lookup_accumulator(
+    path: &Path,
+) -> Result<Phase23DecodingCrossStepLookupAccumulatorManifest> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE23_CROSS_STEP_LOOKUP_ACCUMULATOR_JSON_BYTES,
+        "Phase 23 decoding cross-step lookup accumulator",
+    )?;
+    let manifest: Phase23DecodingCrossStepLookupAccumulatorManifest =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    verify_phase23_decoding_cross_step_lookup_accumulator(&manifest)?;
+    Ok(manifest)
+}
+
 pub fn save_phase13_decoding_layout_matrix(
     manifest: &Phase13DecodingLayoutMatrixManifest,
     path: &Path,
@@ -3834,14 +4561,16 @@ pub fn prove_phase16_decoding_demo() -> Result<Phase16DecodingHistoryRollupManif
     prove_phase16_decoding_demo_for_layout(&layout)
 }
 
-pub fn prove_phase17_decoding_rollup_matrix_demo(
+fn prepare_phase17_decoding_rollup_matrix(
+    rollups: Vec<Phase16DecodingHistoryRollupManifest>,
 ) -> Result<Phase17DecodingHistoryRollupMatrixManifest> {
-    let layouts = phase13_default_decoding_layout_matrix()?;
-    let mut rollups = Vec::with_capacity(layouts.len());
-    for layout in &layouts {
-        rollups.push(prove_phase16_decoding_demo_for_layout(layout)?);
+    if rollups.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 17 decoding rollup matrix requires at least one rollup manifest".to_string(),
+        ));
     }
-    let manifest = Phase17DecodingHistoryRollupMatrixManifest {
+
+    let mut manifest = Phase17DecodingHistoryRollupMatrixManifest {
         proof_backend: StarkProofBackend::Stwo,
         matrix_version: STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17.to_string(),
         semantic_scope: STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17.to_string(),
@@ -3854,11 +4583,20 @@ pub fn prove_phase17_decoding_rollup_matrix_demo(
         public_state_boundary_commitment: String::new(),
         rollups,
     };
-    let mut manifest = manifest;
     manifest.public_state_boundary_commitment =
         commit_phase17_matrix_public_state_boundary(&manifest)?;
     verify_phase17_decoding_rollup_matrix_with_proof_checks(&manifest)?;
     Ok(manifest)
+}
+
+pub fn prove_phase17_decoding_rollup_matrix_demo(
+) -> Result<Phase17DecodingHistoryRollupMatrixManifest> {
+    let layouts = phase13_default_decoding_layout_matrix()?;
+    let mut rollups = Vec::with_capacity(layouts.len());
+    for layout in &layouts {
+        rollups.push(prove_phase16_decoding_demo_for_layout(layout)?);
+    }
+    prepare_phase17_decoding_rollup_matrix(rollups)
 }
 
 pub fn prove_phase21_decoding_matrix_accumulator_demo(
@@ -3875,6 +4613,52 @@ pub fn prove_phase22_decoding_lookup_accumulator_demo(
     let phase21 = prove_phase21_decoding_matrix_accumulator_demo()?;
     let manifest = phase22_prepare_decoding_lookup_accumulator(&phase21)?;
     verify_phase22_decoding_lookup_accumulator_with_proof_checks(&manifest)?;
+    Ok(manifest)
+}
+
+fn phase23_prepare_member_from_proof_window(
+    layout: &Phase12DecodingLayout,
+    proofs: &[VanillaStarkExecutionProof],
+) -> Result<Phase22DecodingLookupAccumulatorManifest> {
+    phase23_prepare_member_from_proof_window_with_segment_limit(layout, proofs, 1)
+}
+
+fn phase23_prepare_member_from_proof_window_with_segment_limit(
+    layout: &Phase12DecodingLayout,
+    proofs: &[VanillaStarkExecutionProof],
+    max_segment_steps: usize,
+) -> Result<Phase22DecodingLookupAccumulatorManifest> {
+    let phase12 = phase12_prepare_decoding_chain(layout, proofs)?;
+    let phase14 = phase14_prepare_decoding_chain(&phase12)?;
+    let bundle = phase15_prepare_segment_bundle(&phase14, max_segment_steps)?;
+    let rollup = phase16_prepare_segment_rollup(&bundle, phase16_default_rollup_segment_limit())?;
+    let matrix = prepare_phase17_decoding_rollup_matrix(vec![rollup])?;
+    let phase21 = phase21_prepare_decoding_matrix_accumulator(&[matrix])?;
+    phase22_prepare_decoding_lookup_accumulator(&phase21)
+}
+
+pub fn prove_phase23_decoding_cross_step_lookup_accumulator_demo(
+) -> Result<Phase23DecodingCrossStepLookupAccumulatorManifest> {
+    let layout = phase12_default_decoding_layout();
+    let phase12 = prove_phase12_decoding_demo_for_layout(&layout)?;
+    let proofs = phase12
+        .steps
+        .iter()
+        .map(|step| step.proof.clone())
+        .collect::<Vec<_>>();
+    if proofs.len() < 2 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 23 demo requires at least two proof windows, got {}",
+            proofs.len()
+        )));
+    }
+
+    let split_index = proofs.len() - 1;
+    let first_member = phase23_prepare_member_from_proof_window(&layout, &proofs[..split_index])?;
+    let second_member = phase23_prepare_member_from_proof_window(&layout, &proofs)?;
+    let manifest =
+        phase23_prepare_decoding_cross_step_lookup_accumulator(&[first_member, second_member])?;
+    verify_phase23_decoding_cross_step_lookup_accumulator_with_proof_checks(&manifest)?;
     Ok(manifest)
 }
 
@@ -5192,6 +5976,67 @@ fn commit_phase22_lookup_accumulator(
                     .update(&(rollup.global_to_state.lookup_frontier_entries as u64).to_le_bytes());
             }
         }
+    }
+
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase23_lookup_accumulator_with_summaries(
+    manifest: &Phase23DecodingCrossStepLookupAccumulatorManifest,
+    summaries: &[Phase23MemberSummary],
+) -> Result<String> {
+    if manifest.members.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding cross-step lookup accumulator must contain at least one member".to_string(),
+        ));
+    }
+    if summaries.len() != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding cross-step lookup accumulator summaries.len()={} does not match members.len()={}",
+            summaries.len(),
+            manifest.members.len()
+        )));
+    }
+
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23.as_bytes());
+    hasher.update(b"cross-step-lookup-accumulator");
+    hasher.update(manifest.source_template_commitment.as_bytes());
+    hasher.update(manifest.lookup_template_commitment.as_bytes());
+    hasher.update(manifest.start_boundary_commitment.as_bytes());
+    hasher.update(manifest.end_boundary_commitment.as_bytes());
+    hasher.update(&(manifest.member_count as u64).to_le_bytes());
+    hasher.update(&(manifest.total_matrices as u64).to_le_bytes());
+    hasher.update(&(manifest.total_layouts as u64).to_le_bytes());
+    hasher.update(&(manifest.total_rollups as u64).to_le_bytes());
+    hasher.update(&(manifest.total_segments as u64).to_le_bytes());
+    hasher.update(&(manifest.total_steps as u64).to_le_bytes());
+    hasher.update(&(manifest.lookup_delta_entries as u64).to_le_bytes());
+    hasher.update(&(manifest.max_lookup_frontier_entries as u64).to_le_bytes());
+
+    for (member_index, (member, summary)) in
+        manifest.members.iter().zip(summaries.iter()).enumerate()
+    {
+        if member.lookup_accumulator_commitment.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding cross-step lookup accumulator member {member_index} has an empty lookup_accumulator_commitment"
+            )));
+        }
+        hasher.update(&(member_index as u64).to_le_bytes());
+        hasher.update(member.lookup_accumulator_commitment.as_bytes());
+        hasher.update(summary.start_boundary_commitment.as_bytes());
+        hasher.update(summary.end_boundary_commitment.as_bytes());
+        hasher.update(&(summary.total_matrices as u64).to_le_bytes());
+        hasher.update(&(summary.total_layouts as u64).to_le_bytes());
+        hasher.update(&(summary.total_rollups as u64).to_le_bytes());
+        hasher.update(&(summary.total_segments as u64).to_le_bytes());
+        hasher.update(&(summary.total_steps as u64).to_le_bytes());
+        hasher.update(&(summary.lookup_delta_entries as u64).to_le_bytes());
+        hasher.update(&(summary.max_lookup_frontier_entries as u64).to_le_bytes());
     }
 
     let mut out = [0u8; 32];
@@ -7391,6 +8236,180 @@ mod tests {
         Ok(oracle_blake2b_256(&parts))
     }
 
+    fn oracle_commit_phase23_boundary_state(state: &Phase14DecodingState) -> String {
+        oracle_blake2b_256(&[
+            STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23
+                .as_bytes()
+                .to_vec(),
+            b"boundary-state".to_vec(),
+            state.position.to_le_bytes().to_vec(),
+            state.layout_commitment.as_bytes().to_vec(),
+            state.persistent_state_commitment.as_bytes().to_vec(),
+            state.kv_history_commitment.as_bytes().to_vec(),
+            (state.kv_history_length as u64).to_le_bytes().to_vec(),
+            (state.kv_history_chunk_size as u64).to_le_bytes().to_vec(),
+            state.kv_history_sealed_commitment.as_bytes().to_vec(),
+            (state.kv_history_sealed_chunks as u64)
+                .to_le_bytes()
+                .to_vec(),
+            state.kv_history_open_chunk_commitment.as_bytes().to_vec(),
+            (state.kv_history_open_chunk_pairs as u64)
+                .to_le_bytes()
+                .to_vec(),
+            state.kv_history_frontier_commitment.as_bytes().to_vec(),
+            (state.kv_history_frontier_pairs as u64)
+                .to_le_bytes()
+                .to_vec(),
+            state.lookup_transcript_commitment.as_bytes().to_vec(),
+            (state.lookup_transcript_entries as u64)
+                .to_le_bytes()
+                .to_vec(),
+            state.lookup_frontier_commitment.as_bytes().to_vec(),
+            (state.lookup_frontier_entries as u64)
+                .to_le_bytes()
+                .to_vec(),
+            state.kv_cache_commitment.as_bytes().to_vec(),
+        ])
+    }
+
+    fn oracle_collect_phase23_member_segments<'a>(
+        member: &'a Phase22DecodingLookupAccumulatorManifest,
+    ) -> Result<Vec<&'a Phase15DecodingHistorySegment>> {
+        let mut segments = Vec::new();
+        for matrix in &member.accumulator.matrices {
+            for rollup_manifest in &matrix.rollups {
+                for rollup in &rollup_manifest.rollups {
+                    for segment in &rollup.segments {
+                        segments.push(segment);
+                    }
+                }
+            }
+        }
+        if segments.is_empty() {
+            return Err(VmError::InvalidConfig(
+                "decoding cross-step lookup accumulator member must contain at least one segment"
+                    .to_string(),
+            ));
+        }
+        Ok(segments)
+    }
+
+    fn oracle_phase23_member_boundary_at_step(
+        member: &Phase22DecodingLookupAccumulatorManifest,
+        step_count: usize,
+    ) -> Result<String> {
+        let segments = oracle_collect_phase23_member_segments(member)?;
+        if step_count > member.total_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding cross-step lookup accumulator oracle cannot derive step {} beyond total_steps {}",
+                step_count, member.total_steps
+            )));
+        }
+        let first_segment = segments.first().ok_or_else(|| {
+            VmError::InvalidConfig(
+                "decoding cross-step lookup accumulator member must contain at least one segment"
+                    .to_string(),
+            )
+        })?;
+        if step_count == 0 {
+            return Ok(oracle_commit_phase23_boundary_state(
+                &first_segment.global_from_state,
+            ));
+        }
+        let mut consumed_steps = 0usize;
+        for segment in segments {
+            let next_consumed_steps =
+                consumed_steps
+                    .checked_add(segment.total_steps)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(
+                            "decoding cross-step lookup accumulator oracle step count overflowed"
+                                .to_string(),
+                        )
+                    })?;
+            if segment.chain.steps.len() != segment.total_steps {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding cross-step lookup accumulator oracle segment chain step count {} does not match total_steps {}",
+                    segment.chain.steps.len(),
+                    segment.total_steps
+                )));
+            }
+            if step_count < next_consumed_steps {
+                let local_step_count = step_count - consumed_steps;
+                let boundary_state = if local_step_count == 0 {
+                    &segment.global_from_state
+                } else {
+                    &segment.chain.steps[local_step_count - 1].to_state
+                };
+                return Ok(oracle_commit_phase23_boundary_state(boundary_state));
+            }
+            consumed_steps = next_consumed_steps;
+            if step_count == consumed_steps {
+                return Ok(oracle_commit_phase23_boundary_state(
+                    &segment.global_to_state,
+                ));
+            }
+        }
+        Err(VmError::InvalidConfig(
+            "decoding cross-step lookup accumulator oracle did not reach the requested boundary"
+                .to_string(),
+        ))
+    }
+
+    fn oracle_commit_phase23_lookup_accumulator(
+        manifest: &Phase23DecodingCrossStepLookupAccumulatorManifest,
+    ) -> Result<String> {
+        if manifest.members.is_empty() {
+            return Err(VmError::InvalidConfig(
+                "decoding cross-step lookup accumulator must contain at least one member"
+                    .to_string(),
+            ));
+        }
+        let mut parts = vec![
+            STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23
+                .as_bytes()
+                .to_vec(),
+            b"cross-step-lookup-accumulator".to_vec(),
+            manifest.source_template_commitment.as_bytes().to_vec(),
+            manifest.lookup_template_commitment.as_bytes().to_vec(),
+            manifest.start_boundary_commitment.as_bytes().to_vec(),
+            manifest.end_boundary_commitment.as_bytes().to_vec(),
+            (manifest.member_count as u64).to_le_bytes().to_vec(),
+            (manifest.total_matrices as u64).to_le_bytes().to_vec(),
+            (manifest.total_layouts as u64).to_le_bytes().to_vec(),
+            (manifest.total_rollups as u64).to_le_bytes().to_vec(),
+            (manifest.total_segments as u64).to_le_bytes().to_vec(),
+            (manifest.total_steps as u64).to_le_bytes().to_vec(),
+            (manifest.lookup_delta_entries as u64)
+                .to_le_bytes()
+                .to_vec(),
+            (manifest.max_lookup_frontier_entries as u64)
+                .to_le_bytes()
+                .to_vec(),
+        ];
+        for (member_index, member) in manifest.members.iter().enumerate() {
+            let start_boundary_commitment = oracle_phase23_member_boundary_at_step(member, 0)?;
+            let end_boundary_commitment =
+                oracle_phase23_member_boundary_at_step(member, member.total_steps)?;
+            parts.push((member_index as u64).to_le_bytes().to_vec());
+            parts.push(member.lookup_accumulator_commitment.as_bytes().to_vec());
+            parts.push(start_boundary_commitment.into_bytes());
+            parts.push(end_boundary_commitment.into_bytes());
+            parts.push((member.total_matrices as u64).to_le_bytes().to_vec());
+            parts.push((member.total_layouts as u64).to_le_bytes().to_vec());
+            parts.push((member.total_rollups as u64).to_le_bytes().to_vec());
+            parts.push((member.total_segments as u64).to_le_bytes().to_vec());
+            parts.push((member.total_steps as u64).to_le_bytes().to_vec());
+            parts.push((member.lookup_delta_entries as u64).to_le_bytes().to_vec());
+            parts.push(
+                (member.max_lookup_frontier_entries as u64)
+                    .to_le_bytes()
+                    .to_vec(),
+            );
+        }
+        Ok(oracle_blake2b_256(&parts))
+    }
+
     fn oracle_advance_phase14_open_chunk(
         layout_commitment: &str,
         previous_open_chunk_commitment: &str,
@@ -8339,6 +9358,12 @@ mod tests {
             .expect("phase22 lookup accumulator manifest")
     }
 
+    fn sample_phase23_cross_step_lookup_accumulator_manifest(
+    ) -> Phase23DecodingCrossStepLookupAccumulatorManifest {
+        prove_phase23_decoding_cross_step_lookup_accumulator_demo()
+            .expect("phase23 cross-step lookup accumulator manifest")
+    }
+
     #[test]
     fn decoding_step_family_ignores_initial_memory_but_requires_template() {
         let mut initial = vec![0; 23];
@@ -8846,6 +9871,20 @@ mod tests {
     }
 
     #[test]
+    fn phase23_save_and_load_round_trip() {
+        let manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
+        let path = std::env::temp_dir().join(format!(
+            "phase23-decoding-cross-step-lookup-accumulator-roundtrip-{}.json",
+            std::process::id()
+        ));
+        save_phase23_decoding_cross_step_lookup_accumulator(&manifest, &path).expect("save");
+        let loaded = load_phase23_decoding_cross_step_lookup_accumulator(&path).expect("load");
+        verify_phase23_decoding_cross_step_lookup_accumulator(&loaded).expect("verify");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
     fn load_phase22_decoding_lookup_accumulator_rejects_tampered_manifest() {
         let mut manifest = sample_phase22_lookup_accumulator_manifest();
         manifest.source_accumulator_commitment = "tampered".to_string();
@@ -8864,6 +9903,28 @@ mod tests {
         assert!(err.to_string().contains(
             "source_accumulator_commitment does not match the nested Phase 21 accumulator"
         ));
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn load_phase23_decoding_cross_step_lookup_accumulator_rejects_tampered_manifest() {
+        let mut manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
+        manifest.start_boundary_commitment = "tampered".to_string();
+        let path = std::env::temp_dir().join(format!(
+            "phase23-decoding-cross-step-lookup-accumulator-invalid-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        fs::write(
+            &path,
+            serde_json::to_vec_pretty(&manifest).expect("serialize invalid manifest"),
+        )
+        .expect("write invalid manifest");
+        let err = load_phase23_decoding_cross_step_lookup_accumulator(&path)
+            .expect_err("tampered load should fail");
+        assert!(err
+            .to_string()
+            .contains("start_boundary_commitment does not match the first member boundary"));
         let _ = fs::remove_file(path);
     }
 
@@ -8904,6 +9965,29 @@ mod tests {
         let _ = fs::remove_file(&path);
         let err = save_phase22_decoding_lookup_accumulator(&manifest, &path)
             .expect_err("oversized phase22 manifest should be rejected on save");
+        assert!(err.to_string().contains("exceeding the limit"));
+        assert!(
+            !path.exists(),
+            "save should not write an unreadable manifest"
+        );
+    }
+
+    #[test]
+    fn save_phase23_decoding_cross_step_lookup_accumulator_rejects_manifest_exceeding_json_budget()
+    {
+        let mut manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
+        manifest.members[0].accumulator.matrices[0].rollups[0].rollups[0].segments[0]
+            .chain
+            .steps[0]
+            .proof
+            .proof = vec![0; MAX_PHASE23_CROSS_STEP_LOOKUP_ACCUMULATOR_JSON_BYTES];
+        let path = std::env::temp_dir().join(format!(
+            "phase23-decoding-cross-step-lookup-accumulator-save-oversized-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        let err = save_phase23_decoding_cross_step_lookup_accumulator(&manifest, &path)
+            .expect_err("oversized phase23 manifest should be rejected on save");
         assert!(err.to_string().contains("exceeding the limit"));
         assert!(
             !path.exists(),
@@ -9060,6 +10144,18 @@ mod tests {
             MAX_PHASE22_LOOKUP_ACCUMULATOR_JSON_BYTES,
             &manifest,
             save_phase22_decoding_lookup_accumulator,
+        );
+    }
+
+    #[test]
+    fn phase23_demo_manifest_fits_json_budget() {
+        let manifest = prove_phase23_decoding_cross_step_lookup_accumulator_demo()
+            .expect("phase23 cross-step lookup demo");
+        assert_saved_json_budget(
+            "phase23-demo",
+            MAX_PHASE23_CROSS_STEP_LOOKUP_ACCUMULATOR_JSON_BYTES,
+            &manifest,
+            save_phase23_decoding_cross_step_lookup_accumulator,
         );
     }
 
@@ -10790,6 +11886,181 @@ mod tests {
         let oracle_accumulator =
             oracle_commit_phase22_lookup_accumulator(&manifest).expect("oracle accumulator");
         assert_ne!(manifest.lookup_accumulator_commitment, oracle_accumulator);
+    }
+
+    #[test]
+    fn phase23_cross_step_lookup_accumulator_accepts_contiguous_members() {
+        let manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
+        assert_eq!(manifest.member_count, 2);
+        assert!(manifest.total_matrices >= 1);
+        assert!(manifest.total_layouts >= 1);
+        assert!(manifest.total_rollups >= 1);
+        assert!(manifest.total_segments >= 1);
+        assert!(manifest.total_steps >= 2);
+        assert_eq!(
+            manifest.total_steps,
+            manifest.members.last().expect("phase23 member").total_steps
+        );
+        verify_phase23_decoding_cross_step_lookup_accumulator(&manifest)
+            .expect("phase23 verification");
+    }
+
+    #[test]
+    fn phase23_cross_step_lookup_accumulator_accepts_prefix_inside_multi_step_segment() {
+        let layout = phase12_default_decoding_layout();
+        let phase12 = prove_phase12_decoding_demo_for_layout(&layout).expect("phase12 demo");
+        let proofs = phase12
+            .steps
+            .iter()
+            .map(|step| step.proof.clone())
+            .collect::<Vec<_>>();
+        assert!(
+            proofs.len() >= 3,
+            "phase23 regression needs at least 3 proofs"
+        );
+
+        let first_member =
+            phase23_prepare_member_from_proof_window_with_segment_limit(&layout, &proofs[..1], 2)
+                .expect("first phase23 member");
+        let second_member =
+            phase23_prepare_member_from_proof_window_with_segment_limit(&layout, &proofs[..3], 2)
+                .expect("second phase23 member");
+
+        assert_eq!(first_member.total_steps, 1);
+        assert_eq!(second_member.total_steps, 3);
+        assert_eq!(
+            second_member.accumulator.matrices[0].rollups[0].rollups[0].segments[0].total_steps,
+            2
+        );
+
+        let manifest =
+            phase23_prepare_decoding_cross_step_lookup_accumulator(&[first_member, second_member])
+                .expect("phase23 manifest");
+        verify_phase23_decoding_cross_step_lookup_accumulator(&manifest)
+            .expect("phase23 verification across interior segment boundary");
+    }
+
+    #[test]
+    fn phase23_cross_step_lookup_accumulator_rejects_tampered_accumulator_commitment() {
+        let mut manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
+        manifest.accumulator_commitment = "tampered".to_string();
+        let err = verify_phase23_decoding_cross_step_lookup_accumulator(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("accumulator_commitment does not match the computed accumulator commitment"));
+    }
+
+    #[test]
+    fn phase23_cross_step_lookup_accumulator_rejects_tampered_start_boundary_commitment() {
+        let mut manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
+        manifest.start_boundary_commitment = "tampered".to_string();
+        let err = verify_phase23_decoding_cross_step_lookup_accumulator(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("start_boundary_commitment does not match the first member boundary"));
+    }
+
+    #[test]
+    fn phase23_cross_step_lookup_accumulator_rejects_tampered_end_boundary_commitment() {
+        let mut manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
+        manifest.end_boundary_commitment = "tampered".to_string();
+        let err = verify_phase23_decoding_cross_step_lookup_accumulator(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("end_boundary_commitment does not match the last member boundary"));
+    }
+
+    #[test]
+    fn phase23_cross_step_lookup_accumulator_rejects_tampered_lookup_delta_entries() {
+        let mut manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
+        manifest.lookup_delta_entries = manifest.lookup_delta_entries.saturating_add(1);
+        let err = verify_phase23_decoding_cross_step_lookup_accumulator(&manifest).unwrap_err();
+        assert!(err.to_string().contains("lookup_delta_entries="));
+        assert!(err
+            .to_string()
+            .contains("does not match derived lookup_delta_entries"));
+    }
+
+    #[test]
+    fn phase23_cross_step_lookup_accumulator_rejects_member_with_different_start_boundary() {
+        let layout = phase12_default_decoding_layout();
+        let phase12 = prove_phase12_decoding_demo_for_layout(&layout).expect("phase12 demo");
+        let proofs = phase12
+            .steps
+            .iter()
+            .map(|step| step.proof.clone())
+            .collect::<Vec<_>>();
+        assert!(
+            proofs.len() >= 3,
+            "phase23 regression needs at least 3 proofs"
+        );
+
+        let first_member =
+            phase23_prepare_member_from_proof_window_with_segment_limit(&layout, &proofs[..1], 2)
+                .expect("first phase23 member");
+        let shifted_member =
+            phase23_prepare_member_from_proof_window_with_segment_limit(&layout, &proofs[1..3], 2)
+                .expect("shifted phase23 member");
+
+        let err =
+            phase23_prepare_decoding_cross_step_lookup_accumulator(&[first_member, shifted_member])
+                .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("does not share the starting decode-state boundary commitment of member 0"));
+    }
+
+    #[test]
+    fn phase23_cross_step_lookup_accumulator_rejects_non_contiguous_member_boundary() {
+        let mut manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
+        manifest.members[1].accumulator.matrices[0].rollups[0].rollups[0]
+            .global_from_state
+            .lookup_transcript_entries = manifest.members[1].accumulator.matrices[0].rollups[0]
+            .rollups[0]
+            .global_from_state
+            .lookup_transcript_entries
+            .saturating_add(1);
+        manifest.members[1].accumulator.matrices[0].rollups[0].rollups[0]
+            .global_from_state
+            .public_state_commitment = commit_phase14_public_state(
+            &manifest.members[1].accumulator.matrices[0].rollups[0].rollups[0].global_from_state,
+        );
+        let err = verify_phase23_decoding_cross_step_lookup_accumulator(&manifest).unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("member 1 failed Phase 22 verification")
+                || err.to_string().contains("member boundary 0 -> 1 failed")
+        );
+    }
+
+    #[test]
+    fn phase23_cross_step_lookup_accumulator_rejects_tampered_lookup_template_commitment() {
+        let mut manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
+        manifest.lookup_template_commitment = "tampered".to_string();
+        let err = verify_phase23_decoding_cross_step_lookup_accumulator(&manifest).unwrap_err();
+        assert!(err.to_string().contains(
+            "lookup_template_commitment does not match the computed member lookup template commitment"
+        ));
+    }
+
+    #[test]
+    fn phase23_oracle_matches_production_commitments() {
+        let manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
+        verify_phase23_decoding_cross_step_lookup_accumulator(&manifest)
+            .expect("production verifier");
+        let oracle_accumulator =
+            oracle_commit_phase23_lookup_accumulator(&manifest).expect("oracle accumulator");
+        assert_eq!(manifest.accumulator_commitment, oracle_accumulator);
+    }
+
+    #[test]
+    fn phase23_oracle_and_production_reject_same_accumulator_tamper() {
+        let mut manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
+        manifest.accumulator_commitment = "tampered".to_string();
+        assert!(verify_phase23_decoding_cross_step_lookup_accumulator(&manifest).is_err());
+        let oracle_accumulator =
+            oracle_commit_phase23_lookup_accumulator(&manifest).expect("oracle accumulator");
+        assert_ne!(manifest.accumulator_commitment, oracle_accumulator);
     }
 
     #[test]

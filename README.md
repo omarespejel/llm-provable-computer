@@ -436,6 +436,14 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-decoding-lookup-accumulator-demo decoding-lookup-accumulator.stwo.json
 
+# Produce and verify the Phase 23 cross-step lookup accumulator over cumulative Phase 22 prefixes
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prove-stwo-decoding-cross-step-lookup-accumulator-demo \
+  -o decoding-cross-step-lookup-accumulator.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-decoding-cross-step-lookup-accumulator-demo \
+  decoding-cross-step-lookup-accumulator.stwo.json
+
 # Freeze a canonical pre-aggregation batch manifest for future recursion work
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-recursion-batch \
@@ -545,10 +553,11 @@ matrix/rollup-style packaging layers described in the next-paper track.
 - Phase 20: explicit lookup frontier commitments over that same stack
 - Phase 21: template-bound accumulation over Phase 17 matrices with explicit template and accumulator commitments
 - Phase 22: lookup-side accumulation over a verified Phase 21 source accumulator with explicit source/template binding and derived frontier/count checks before recursion
+- Phase 23: pre-recursive cross-step lookup accumulation over cumulative Phase 22 prefixes with carried-state boundary commitments and derived counter checks
 
 These phases define pre-recursive merge boundaries and carried-state bindings;
-they do not yet implement recursive cryptographic accumulation or cross-step
-shared-table accumulation.
+they do not yet implement recursive cryptographic accumulation or compressed
+cross-member shared-table reuse.
 
 #### Explicit Non-Goals
 
@@ -869,10 +878,11 @@ lanes carry it forward.
 - Phase 18-20: explicit KV frontiers, carried lookup transcripts, and lookup frontier commitments
 - Phase 21: template-bound accumulation over Phase 17 matrices for a reusable pre-recursive merge boundary
 - Phase 22: lookup-side accumulation over a verified Phase 21 source accumulator with explicit source/template binding and derived frontier/count checks before recursion
+- Phase 23: pre-recursive cross-step lookup accumulation over cumulative Phase 22 prefixes with carried-state boundary commitments and derived counter checks
 
 These phases define pre-recursive merge boundaries and carried-state bindings;
-they do not yet implement recursive cryptographic accumulation or cross-step
-shared-table accumulation.
+they do not yet implement recursive cryptographic accumulation or compressed
+cross-member shared-table reuse.
 
 #### Explicit Non-Goals
 
