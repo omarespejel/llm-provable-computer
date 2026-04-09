@@ -115,7 +115,7 @@ jobs:
           if [ -n "${{ matrix.features }}" ]; then
             feature_args+=(--features "${{ matrix.features }}")
           fi
-          cargo test --doc "${feature_args[@]}"
+          cargo test --workspace --doc "${feature_args[@]}"
 
       - name: Upload nextest junit report
         if: always()
