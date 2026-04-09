@@ -18,12 +18,12 @@ artifact facts drawn from the committed bundle indices under
 | Artifact | Backend | Bundle | Prove | Verify | Proof size | Semantic scope |
 |---|---|---|---:|---:|---:|---|
 | `addition` | vanilla | `production-v1` | `71s` | `2s` | `7,644,769` bytes | arithmetic `statement-v1` execution proof |
-| `addition` | `stwo` | `stwo-experimental-v1` | `52s` | `2s` | `54,563` bytes | arithmetic `statement-v1` execution proof |
+| `addition` | `stwo` | `stwo-experimental-v1` | `2s` | `1s` | `54,563` bytes | arithmetic `statement-v1` execution proof |
 | `dot_product` | vanilla | `production-v1` | `430s` | `5s` | `12,835,175` bytes | neural-style arithmetic `statement-v1` execution proof |
 | `single_neuron` | vanilla | `production-v1` | `390s` | `4s` | `11,767,989` bytes | neural-style arithmetic `statement-v1` execution proof |
 | `shared-normalization-demo` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `74,074` bytes | shared-table normalization lookup proof envelope |
 | `gemma_block_v4` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `751,737` bytes | fixed-shape Gemma-inspired `statement-v1` proof with shared lookup bindings |
-| `decoding_demo` | `stwo` | `stwo-experimental-v1` | `2s` | `1s` | `4,032,182` bytes | three-step proof-carrying decoding chain |
+| `decoding_demo` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `4,032,182` bytes | three-step proof-carrying decoding chain |
 
 ## How to read this appendix
 

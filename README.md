@@ -869,11 +869,12 @@ but it is well past the old “dependency seam only” stage.
 
 ### Project Lineage
 
-`omarespejel/llm-provable-computer` is the maintained research fork used for the
-paper, the frozen reproducibility bundles, and the experimental `stwo` proof
-path. It builds directly on Abdelhamid Bakhta's original public repository,
-`AbdelStark/llm-provable-computer`, and extends that line with committed
-artifact bundles, research-oriented semantic agreement artifacts,
+The canonical launch repository is
+`omarespejel/provable-transformer-vm` (this repository). Earlier phases of the
+same research line were developed under the `llm-provable-computer` naming.
+This codebase builds directly on Abdelhamid Bakhta's original public
+repository, `AbdelStark/llm-provable-computer`, and extends that line with
+committed artifact bundles, research-oriented semantic agreement artifacts,
 transformer-shaped fixtures, shared-table lookup proofs, and proof-carrying
 decoding artifacts.
 

@@ -10,7 +10,7 @@ April 2026
 
 This paper gives a transformer-specific symbolic cost comparison between SNARK constraints and STARK trace rows for verifiable inference. Under the worked constants used throughout (`C_exp = 300`, `C_norm = 30`, `C_nonlin = 150`), GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields about `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK rows across 12 layers (`1.48x`). Over practical context ranges, the ratio rises and then approaches a finite architecture-dependent ceiling.
 
-We pair that analysis with a repository artifact, `llm-provable-computer`, that now includes a frozen baseline tier, a frozen narrow experimental `stwo` tier, and a broader commit-pinned parameterized proof-carrying decoding path (`decoding_step_v2`) with carried-state commitments [30]. This paper does not claim full standard-softmax inference on S-two, shared-table accumulation, or recursive compression. The claim is narrower: transformer workloads emphasize dimensions where STARK-native systems may compound advantages while SNARK systems remain strong competitors.
+We pair that analysis with a repository artifact, `provable-transformer-vm`, that now includes a frozen baseline tier, a frozen narrow experimental `stwo` tier, and a broader commit-pinned parameterized proof-carrying decoding path (`decoding_step_v2`) with carried-state commitments [30]. This paper does not claim full standard-softmax inference on S-two, shared-table accumulation, or recursive compression. The claim is narrower: transformer workloads emphasize dimensions where STARK-native systems may compound advantages while SNARK systems remain strong competitors.
 
 ---
 
@@ -245,7 +245,7 @@ With the analytic behavior established, we now turn to what the repository curre
 
 ## 5. Repository Artifact: From Trace-as-Witness to Parameterized Proof-Carrying Decoding
 
-The implementation artifact is `omarespejel/llm-provable-computer` [30]. In this paper it is treated as a **semantics-and-proof artifact**: deterministic transformer-relevant execution is compiled into AIR-consumable traces and packaged into carried-state proof objects for later recursion/accumulation work.
+The implementation artifact is `omarespejel/provable-transformer-vm` [30]. In this paper it is treated as a **semantics-and-proof artifact**: deterministic transformer-relevant execution is compiled into AIR-consumable traces and packaged into carried-state proof objects for later recursion/accumulation work. Earlier phases of this line were developed under the `llm-provable-computer` project name.
 
 ### 5.1 What the repository demonstrates today
 
@@ -406,7 +406,7 @@ The frontier is no longer “can transformers be proved?” It is: **which archi
 
 ## Acknowledgments
 
-This paper uses the maintained fork `omarespejel/llm-provable-computer`, which builds directly on Abdelhamid Bakhta’s upstream public repository `AbdelStark/llm-provable-computer`.
+This paper uses the maintained repository `omarespejel/provable-transformer-vm`, which builds directly on Abdelhamid Bakhta’s upstream public repository `AbdelStark/llm-provable-computer` and earlier project phases developed under the `llm-provable-computer` name.
 
 ---
 
@@ -441,8 +441,8 @@ This paper uses the maintained fork `omarespejel/llm-provable-computer`, which b
 27. BitSage Network. “elo-cairo-verifier/README.md.” GitHub documentation file. Accessed April 5, 2026. <https://github.com/Bitsage-Network/stwo-ml/blob/main/elo-cairo-verifier/README.md>
 28. Giza. *LuminAIR*. GitHub repository. Accessed April 5, 2026. <https://github.com/gizatechxyz/LuminAIR>
 29. StarkWare. “Giza x S-two: Powering Verifiable ML with LuminAIR.” *StarkWare Blog*. Accessed April 5, 2026. <https://starkware.co/blog/giza-x-s-two-powering-verifiable-ml-with-luminair/>
-30. `omarespejel/llm-provable-computer`. “Repository Snapshot Discussed in Sections 5 and 8.” GitHub repository snapshot, submission-prep commit `49004aea27a5e02c3732a798d32a32675f0a08b9`. <https://github.com/omarespejel/llm-provable-computer/tree/49004aea27a5e02c3732a798d32a32675f0a08b9>
-31. `omarespejel/llm-provable-computer`. “Appendix Artifact Index (Production V1).” GitHub artifact snapshot, commit `8d435d540b8e3cf33ec4381bb820a00b6fe7aae6`, documenting a bundle generated from execution/proof commit `58bb05fdd57ee9816e5935eb004396fea6a9fac3`. <https://github.com/omarespejel/llm-provable-computer/blob/8d435d540b8e3cf33ec4381bb820a00b6fe7aae6/docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md>
+30. `omarespejel/provable-transformer-vm`. “Repository Snapshot Discussed in Sections 5 and 8.” GitHub repository snapshot, submission-prep commit `49004aea27a5e02c3732a798d32a32675f0a08b9`. <https://github.com/omarespejel/provable-transformer-vm/tree/49004aea27a5e02c3732a798d32a32675f0a08b9>
+31. `omarespejel/provable-transformer-vm`. “Appendix Artifact Index (Production V1).” GitHub artifact snapshot, commit `8d435d540b8e3cf33ec4381bb820a00b6fe7aae6`, documenting a bundle generated from execution/proof commit `58bb05fdd57ee9816e5935eb004396fea6a9fac3`. <https://github.com/omarespejel/provable-transformer-vm/blob/8d435d540b8e3cf33ec4381bb820a00b6fe7aae6/docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md>
 32. Starknet Docs. “Accounts.” *Starknet Documentation*. Accessed April 5, 2026. <https://docs.starknet.io/architecture/accounts>
 33. Zhizhi Peng, Chonghe Zhao, Taotao Wang, Guofu Liao, Zibin Lin, Yifeng Liu, Bin Cao, Long Shi, Qing Yang, and Shengli Zhang. “A Survey of Zero-Knowledge Proof-Based Verifiable Machine Learning.” *Artificial Intelligence Review* (accepted manuscript), arXiv:2502.18535v2, 2026. <https://arxiv.org/abs/2502.18535>
 34. Ayush Nainwal, Atharva Kamble, and Nitin Awathare. “A Comparative Analysis of zk-SNARKs and zk-STARKs: Theory and Practice.” *arXiv preprint* arXiv:2512.10020, 2025. <https://arxiv.org/abs/2512.10020>
@@ -451,7 +451,7 @@ This paper uses the maintained fork `omarespejel/llm-provable-computer`, which b
 37. Hugo Touvron, Louis Martin, Kevin Stone, et al. “Llama 2: Open Foundation and Fine-Tuned Chat Models.” *arXiv preprint* arXiv:2307.09288, 2023. <https://arxiv.org/abs/2307.09288>
 38. Wyatt Benno, Alberto Centelles, Antoine Douchet, and Khalil Gibran. “Jolt Atlas: Verifiable Inference via Lookup Arguments in Zero Knowledge.” *arXiv preprint* arXiv:2602.17452, 2026. <https://arxiv.org/abs/2602.17452>
 39. Zhaohui Geoffrey Wang. “NANOZK: Layerwise Zero-Knowledge Proofs for Verifiable Large Language Model Inference.” *arXiv preprint* arXiv:2603.18046, 2026. <https://arxiv.org/abs/2603.18046>
-40. `omarespejel/llm-provable-computer`. “Appendix Artifact Index (S-two Experimental V1).” GitHub artifact snapshot, commit `3970277d964a0a9a5326b0db364cf16822c1ccd4`, at `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md`. <https://github.com/omarespejel/llm-provable-computer/blob/3970277d964a0a9a5326b0db364cf16822c1ccd4/docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md>
+40. `omarespejel/provable-transformer-vm`. “Appendix Artifact Index (S-two Experimental V1).” GitHub artifact snapshot, commit `3970277d964a0a9a5326b0db364cf16822c1ccd4`, at `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md`. <https://github.com/omarespejel/provable-transformer-vm/blob/3970277d964a0a9a5326b0db364cf16822c1ccd4/docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md>
 41. Wilson Nguyen and Srinath Setty. “Neo: Lattice-based folding scheme for CCS over small fields and pay-per-bit commitments.” *IACR Cryptology ePrint Archive*, Paper 2025/294, 2025. <https://eprint.iacr.org/2025/294>
 42. StarkWare. “How StarkWare Uses Formal Verification to Prove Tech Soundness.” *StarkWare Blog*, March 5, 2026. <https://starkware.co/blog/starkwares-gold-standard-of-soundness-with-formal-verification/>
 43. Abhiram Kothapalli and Srinath Setty. “HyperNova: Recursive Arguments for Customizable Constraint Systems.” *IACR Cryptology ePrint Archive*, Paper 2023/573, 2023. <https://eprint.iacr.org/2023/573>
