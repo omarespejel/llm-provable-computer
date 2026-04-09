@@ -1,13 +1,16 @@
 # Publication Release Package
 
-Snapshot date: **April 7, 2026**
+Snapshot date: **April 9, 2026**
 
 Intended launch tag for the current paper-facing repository state:
-`paper-publication-v2-2026-04-07`
+`paper-publication-v3-2026-04-09`
 
 This repository state is the publication-facing package for the paper and its supporting
 artifacts. The package is intentionally split into evidence tiers rather than treated as one
 monolithic benchmark claim.
+
+This is a rolling publication checkpoint: additional paper feedback may lead to small follow-up
+patches and a subsequent publication tag.
 
 ## Included materials
 

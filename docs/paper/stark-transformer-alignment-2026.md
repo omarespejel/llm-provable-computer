@@ -18,7 +18,7 @@ We pair that analysis with a repository artifact, `llm-provable-computer`, that 
 
 Verifiable inference matters because model outputs are operational inputs. Where outputs trigger trades or onchain actions, computational integrity is the core requirement.
 
-The ecosystem already shows feasibility: modern systems can prove substantial inference workloads, and public materials report progress on both SNARK-heavy and STARK-native paths [24, 25, 26, 28, 29, 33].
+The ecosystem already shows feasibility: modern systems can prove substantial inference workloads, and public materials report progress on both SNARK-heavy and STARK-native paths [13, 24, 25, 26, 28, 29, 33].
 
 The question addressed here is therefore narrower and more useful than “can transformers be proved?” The question is: **which proof architecture compounds most cleanly as transformer workloads scale in model size, sequence length, and deployment complexity?**
 
@@ -192,7 +192,7 @@ This analysis does **not** prove that every STARK system is faster than every SN
 
 The model also abstracts each activation/normalized value as one algebraic object; it does not model quantization layouts, packing strategies, or backend-specific decompositions.
 
-Appendix B2 shows the same model on a wider Llama-2-7B-style dense reference. Under the exact formula, a wider production-style dense model can remain near parity at shorter contexts under lower softmax constants while still widening materially at longer windows.
+Appendix B2 shows the same model on a wider Llama-2-7B-style dense reference [37]. Under the exact formula, a wider production-style dense model can remain near parity at shorter contexts under lower softmax constants while still widening materially at longer windows.
 
 Recent implementation-level comparisons reinforce that boundary. A December 2025 Groth16-vs-STARK comparison on consumer ARM hardware reports faster proving and smaller proofs for the Groth16 side, alongside faster verification and transparency/post-quantum advantages for the STARK side [34].
 
@@ -208,7 +208,7 @@ Figure 2 makes the symbolic-work decomposition behind that sensitivity visible f
 
 ### 4.5 Analytic extension to released Gemma 3 architectures
 
-GPT-2-small keeps the algebra transparent, but newer deployments motivate a sparse long-context extension. Public materials report Gemma-3-class requirements including GQA, alternating local/global attention, RMSNorm, and GeGLU [14, 15, 25].
+GPT-2-small keeps the algebra transparent, but newer deployments motivate a sparse long-context extension. Public materials report Gemma-3-class requirements including GQA, alternating local/global attention, RMSNorm, and GeGLU [14, 15, 16, 25].
 
 This subsection asks whether the same symbolic logic still shows divergence under released sparse long-context patterns.
 
@@ -310,7 +310,7 @@ The repository nevertheless exposes meaningful S-two evidence through a frozen e
 
 ### 6.2 Starknet proof verification and privacy
 
-Starknet `0.14.2` public materials list in-protocol S-two verification, and `SNIP-36` describes proof-carrying transaction structure (`proof_facts`) [22, 23]. Starknet’s March 10, 2026 STRK20 announcement adds privacy relevance by stating any ERC-20 on Starknet can now be private [21].
+Starknet `0.14.2` public materials list in-protocol S-two verification, and `SNIP-36` describes proof-carrying transaction structure (`proof_facts`) [22, 23]. Starknet’s account model remains relevant to this integration boundary [32]. Starknet’s March 10, 2026 STRK20 announcement adds privacy relevance by stating any ERC-20 on Starknet can now be private [21].
 
 ---
 
@@ -323,6 +323,7 @@ DeepProve is a direct counterexample to sweeping anti-SNARK claims: public Lagra
 ### 7.2 Jolt Atlas and lookup-native SNARK convergence
 
 Jolt Atlas reaches a lookup-centric architecture from the SNARK side, extending Jolt to ONNX tensor operations and emphasizing non-linear workload handling [38]. The main relevance is convergence around lookup-heavy non-arithmetic handling.
+Related SNARK-side lines such as zkCNN and zkPyTorch reinforce that non-arithmetic handling remains a central systems concern even when benchmark setups differ [9, 35, 36].
 
 ### 7.3 NANOZK and zkLLM on layerwise and attention-specific specialization
 
@@ -440,7 +441,7 @@ This paper uses the maintained fork `omarespejel/llm-provable-computer`, which b
 27. BitSage Network. “elo-cairo-verifier/README.md.” GitHub documentation file. Accessed April 5, 2026. <https://github.com/Bitsage-Network/stwo-ml/blob/main/elo-cairo-verifier/README.md>
 28. Giza. *LuminAIR*. GitHub repository. Accessed April 5, 2026. <https://github.com/gizatechxyz/LuminAIR>
 29. StarkWare. “Giza x S-two: Powering Verifiable ML with LuminAIR.” *StarkWare Blog*. Accessed April 5, 2026. <https://starkware.co/blog/giza-x-s-two-powering-verifiable-ml-with-luminair/>
-30. `omarespejel/llm-provable-computer`. “Repository Snapshot Discussed in Sections 5 and 8.” GitHub repository snapshot, release tag `paper-publication-v2-2026-04-07` (commit `bc9037296804914fe9ad799a8d494b27f4cafbeb`). <https://github.com/omarespejel/llm-provable-computer/tree/bc9037296804914fe9ad799a8d494b27f4cafbeb>
+30. `omarespejel/llm-provable-computer`. “Repository Snapshot Discussed in Sections 5 and 8.” GitHub repository snapshot, release tag `paper-publication-v3-2026-04-09` (commit `900ad5da657fb3b8085755657eb50c5f53580c23`). <https://github.com/omarespejel/llm-provable-computer/tree/900ad5da657fb3b8085755657eb50c5f53580c23>
 31. `omarespejel/llm-provable-computer`. “Appendix Artifact Index (Production V1).” GitHub artifact snapshot, commit `8d435d540b8e3cf33ec4381bb820a00b6fe7aae6`, documenting a bundle generated from execution/proof commit `58bb05fdd57ee9816e5935eb004396fea6a9fac3`. <https://github.com/omarespejel/llm-provable-computer/blob/8d435d540b8e3cf33ec4381bb820a00b6fe7aae6/docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md>
 32. Starknet Docs. “Accounts.” *Starknet Documentation*. Accessed April 5, 2026. <https://docs.starknet.io/architecture/accounts>
 33. Zhizhi Peng, Chonghe Zhao, Taotao Wang, Guofu Liao, Zibin Lin, Yifeng Liu, Bin Cao, Long Shi, Qing Yang, and Shengli Zhang. “A Survey of Zero-Knowledge Proof-Based Verifiable Machine Learning.” *Artificial Intelligence Review* (accepted manuscript), arXiv:2502.18535v2, 2026. <https://arxiv.org/abs/2502.18535>
