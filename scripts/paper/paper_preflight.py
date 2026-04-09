@@ -327,9 +327,23 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
         / "docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md"
     )
 
-    appendix_text = appendix_path.read_text(encoding="utf-8")
-    prod_text = prod_index_path.read_text(encoding="utf-8")
-    stwo_text = stwo_index_path.read_text(encoding="utf-8")
+    for required_path in (appendix_path, prod_index_path, stwo_index_path):
+        if not required_path.exists():
+            findings.error(
+                f"{required_path}: missing required file for backend artifact consistency check."
+            )
+            return
+
+    try:
+        appendix_text = appendix_path.read_text(encoding="utf-8")
+        prod_text = prod_index_path.read_text(encoding="utf-8")
+        stwo_text = stwo_index_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        findings.error(
+            "failed to read backend artifact consistency inputs "
+            f"({appendix_path}, {prod_index_path}, {stwo_index_path}): {exc}"
+        )
+        return
 
     appendix_rows = parse_appendix_backend_rows(appendix_text)
     if not appendix_rows:
