@@ -1,8 +1,8 @@
 # Reproducibility Note (One Page)
 
 This note describes how to reproduce the publication-facing paper artifacts for
-tag `paper-publication-v3-2026-04-09` and repository commit
-`900ad5da657fb3b8085755657eb50c5f53580c23`.
+the rolling base tag `paper-publication-v3-2026-04-09` and the submission-prep
+snapshot commit `49004aea27a5e02c3732a798d32a32675f0a08b9`.
 
 ## 1) Scope and Intended Reproduction Target
 
@@ -105,4 +105,3 @@ Before sharing a draft externally, verify:
 
 If additional reviewer feedback lands, patch on top and cut a follow-up
 publication tag rather than mutating existing evidence claims.
-

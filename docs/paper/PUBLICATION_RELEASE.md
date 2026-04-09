@@ -60,6 +60,6 @@ Before cutting a release tag, verify:
 2. the main paper and appendices refer to the same repo state and evidence tiers,
 3. the design note matches the current experimental `stwo` status,
 4. no stale top-level README language still describes S-two as merely prospective,
-5. Reference `[30]` in the paper points at the same release tag that is being
-   circulated,
+5. Reference `[30]` in the paper points at the intended submission snapshot
+   commit (and, when a release tag is circulated, that tag resolves to the same commit),
 6. `paper preflight` passes (citation integrity, immutable local repo links, figure/link paths, appendix source note).

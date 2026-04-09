@@ -1,10 +1,10 @@
 # Submission Bundle Index (v3, 2026-04-09)
 
-Publication tag:
-- `paper-publication-v3-2026-04-09`
+Publication base tag:
+- `paper-publication-v3-2026-04-09` (rolling checkpoint)
 
 Canonical repository snapshot:
-- `900ad5da657fb3b8085755657eb50c5f53580c23`
+- `49004aea27a5e02c3732a798d32a32675f0a08b9` (submission-prep snapshot)
 
 ## Core Paper Files
 
@@ -44,4 +44,3 @@ Canonical repository snapshot:
 - Regenerate Section 4 figures and TSVs:
   - `python3 scripts/paper/generate_section4_ratio_figure.py`
   - `python3 scripts/paper/generate_section4_decomposition_figure.py`
-

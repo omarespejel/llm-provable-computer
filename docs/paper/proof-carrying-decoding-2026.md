@@ -430,8 +430,8 @@ implementation path.
 
 ## References
 
-- [1] Omar Espejel. *On the Structural Fit of Transformer Workloads and STARK Proof Systems*. Starknet Foundation, April 2026. Release tag `paper-publication-v3-2026-04-09` (commit `900ad5da657fb3b8085755657eb50c5f53580c23`). <https://github.com/omarespejel/llm-provable-computer/blob/900ad5da657fb3b8085755657eb50c5f53580c23/docs/paper/stark-transformer-alignment-2026.md>
-- [2] `omarespejel/llm-provable-computer`. Maintained research repository and implementation base for the system described here. Release tag `paper-publication-v3-2026-04-09` (commit `900ad5da657fb3b8085755657eb50c5f53580c23`). <https://github.com/omarespejel/llm-provable-computer/tree/900ad5da657fb3b8085755657eb50c5f53580c23>
+- [1] Omar Espejel. *On the Structural Fit of Transformer Workloads and STARK Proof Systems*. Starknet Foundation, April 2026. Submission-prep snapshot commit `49004aea27a5e02c3732a798d32a32675f0a08b9`. <https://github.com/omarespejel/llm-provable-computer/blob/49004aea27a5e02c3732a798d32a32675f0a08b9/docs/paper/stark-transformer-alignment-2026.md>
+- [2] `omarespejel/llm-provable-computer`. Maintained research repository and implementation base for the system described here. Submission-prep snapshot commit `49004aea27a5e02c3732a798d32a32675f0a08b9`. <https://github.com/omarespejel/llm-provable-computer/tree/49004aea27a5e02c3732a798d32a32675f0a08b9>
 - [3] `omarespejel/llm-provable-computer`. *Appendix Artifact Index (S-two Experimental V1).* Commit `3970277d964a0a9a5326b0db364cf16822c1ccd4`. <https://github.com/omarespejel/llm-provable-computer/blob/3970277d964a0a9a5326b0db364cf16822c1ccd4/docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md>
 - [4] Eli Ben-Sasson, Iddo Bentov, Yinon Horesh, and Michael Riabzev. *Scalable, Transparent, and Post-Quantum Secure Computational Integrity*. IACR ePrint 2018/046. <https://eprint.iacr.org/2018/046>
 - [5] Ulrich Haböck, David Levit, and Valeria Papini. *Circle STARKs*. IACR ePrint 2024/278. <https://eprint.iacr.org/2024/278>
