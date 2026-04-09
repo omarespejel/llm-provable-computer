@@ -7092,6 +7092,126 @@ mod tests {
         })
     }
 
+    fn oracle_verify_phase17_decoding_rollup_matrix(
+        manifest: &Phase17DecodingHistoryRollupMatrixManifest,
+    ) -> Result<()> {
+        if manifest.proof_backend != StarkProofBackend::Stwo {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding rollup matrix backend `{}` is not `stwo`",
+                manifest.proof_backend
+            )));
+        }
+        if manifest.matrix_version != STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17 {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported decoding rollup matrix version `{}`",
+                manifest.matrix_version
+            )));
+        }
+        if manifest.semantic_scope != STWO_DECODING_ROLLUP_MATRIX_SCOPE_PHASE17 {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported decoding rollup matrix semantic scope `{}`",
+                manifest.semantic_scope
+            )));
+        }
+        if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported decoding rollup matrix proof backend version `{}` (expected `{}`)",
+                manifest.proof_backend_version,
+                crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+            )));
+        }
+        if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported decoding rollup matrix statement version `{}`",
+                manifest.statement_version
+            )));
+        }
+        if manifest.rollups.is_empty() {
+            return Err(VmError::InvalidConfig(
+                "decoding rollup matrix must contain at least one rollup manifest".to_string(),
+            ));
+        }
+        if manifest.total_layouts != manifest.rollups.len() {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding rollup matrix total_layouts={} does not match rollups.len()={}",
+                manifest.total_layouts,
+                manifest.rollups.len()
+            )));
+        }
+        let derived_total_rollups = manifest
+            .rollups
+            .iter()
+            .try_fold(0usize, |acc, rollup| acc.checked_add(rollup.total_rollups))
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "decoding rollup matrix total_rollups overflowed while summing manifests"
+                        .to_string(),
+                )
+            })?;
+        if manifest.total_rollups != derived_total_rollups {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding rollup matrix total_rollups={} does not match derived total_rollups={}",
+                manifest.total_rollups, derived_total_rollups
+            )));
+        }
+        let derived_total_segments = manifest
+            .rollups
+            .iter()
+            .try_fold(0usize, |acc, rollup| acc.checked_add(rollup.total_segments))
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "decoding rollup matrix total_segments overflowed while summing manifests"
+                        .to_string(),
+                )
+            })?;
+        if manifest.total_segments != derived_total_segments {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding rollup matrix total_segments={} does not match derived total_segments={}",
+                manifest.total_segments, derived_total_segments
+            )));
+        }
+        let derived_total_steps = manifest
+            .rollups
+            .iter()
+            .try_fold(0usize, |acc, rollup| acc.checked_add(rollup.total_steps))
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "decoding rollup matrix total_steps overflowed while summing manifests"
+                        .to_string(),
+                )
+            })?;
+        if manifest.total_steps != derived_total_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding rollup matrix total_steps={} does not match derived total_steps={}",
+                manifest.total_steps, derived_total_steps
+            )));
+        }
+        if manifest.public_state_boundary_commitment
+            != oracle_commit_phase17_matrix_public_state_boundary(manifest)?
+        {
+            return Err(VmError::InvalidConfig(
+                "decoding rollup matrix public_state_boundary_commitment does not match the computed boundary commitment"
+                    .to_string(),
+            ));
+        }
+        for (layout_index, rollup) in manifest.rollups.iter().enumerate() {
+            if rollup.proof_backend_version != manifest.proof_backend_version {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding rollup matrix manifest {layout_index} proof backend version `{}` does not match matrix `{}`",
+                    rollup.proof_backend_version, manifest.proof_backend_version
+                )));
+            }
+            if rollup.statement_version != manifest.statement_version {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding rollup matrix manifest {layout_index} statement version `{}` does not match matrix `{}`",
+                    rollup.statement_version, manifest.statement_version
+                )));
+            }
+            verify_phase16_decoding_segment_rollup(rollup)?;
+        }
+        Ok(())
+    }
+
     fn sample_phase17_rollup_matrix_manifest() -> Phase17DecodingHistoryRollupMatrixManifest {
         let layouts = phase13_default_decoding_layout_matrix().expect("layout matrix");
         let mut rollups = Vec::with_capacity(layouts.len());
@@ -9229,6 +9349,31 @@ mod tests {
         let oracle_commitment =
             oracle_commit_phase17_matrix_public_state_boundary(&manifest).expect("oracle");
         assert_ne!(manifest.public_state_boundary_commitment, oracle_commitment);
+    }
+
+    #[test]
+    fn phase17_oracle_matches_production_on_demo_matrix() {
+        let manifest = sample_phase17_rollup_matrix_manifest();
+        verify_phase17_decoding_rollup_matrix(&manifest).expect("production verifier");
+        oracle_verify_phase17_decoding_rollup_matrix(&manifest).expect("oracle verifier");
+    }
+
+    #[test]
+    fn phase17_oracle_and_production_reject_same_layout_order_tamper() {
+        let mut manifest = sample_phase17_rollup_matrix_manifest();
+        manifest.rollups.swap(0, 1);
+        assert!(verify_phase17_decoding_rollup_matrix(&manifest).is_err());
+        assert!(oracle_verify_phase17_decoding_rollup_matrix(&manifest).is_err());
+    }
+
+    #[test]
+    fn phase17_oracle_and_production_reject_same_nested_rollup_boundary_tamper() {
+        let mut manifest = sample_phase17_rollup_matrix_manifest();
+        manifest.rollups[0].rollups[0].public_state_boundary_commitment = "tampered".to_string();
+        manifest.public_state_boundary_commitment =
+            oracle_commit_phase17_matrix_public_state_boundary(&manifest).expect("oracle");
+        assert!(verify_phase17_decoding_rollup_matrix(&manifest).is_err());
+        assert!(oracle_verify_phase17_decoding_rollup_matrix(&manifest).is_err());
     }
 
     #[test]
