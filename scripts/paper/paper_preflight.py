@@ -237,16 +237,24 @@ def parse_markdown_table_after_heading(text: str, heading: str) -> list[list[str
     return rows
 
 
+def normalize_table_header(cell: str) -> str:
+    normalized = cell.strip().strip("`").lower()
+    normalized = re.sub(r"\s+", " ", normalized)
+    return normalized
+
+
 def parse_index_sizes(index_text: str) -> dict[str, int]:
     rows = parse_markdown_table_after_heading(index_text, "## Primary Artifacts")
     out: dict[str, int] = {}
     if len(rows) < 3:
         return out
-    header = rows[0]
+    header_map = {
+        normalize_table_header(name): idx for idx, name in enumerate(rows[0])
+    }
     try:
-        artifact_idx = header.index("Artifact")
-        size_idx = header.index("Size (bytes)")
-    except ValueError:
+        artifact_idx = header_map["artifact"]
+        size_idx = header_map["size (bytes)"]
+    except KeyError:
         return out
     # Skip header + separator.
     for row in rows[2:]:
@@ -266,11 +274,13 @@ def parse_index_timings(index_text: str) -> dict[str, int]:
     out: dict[str, int] = {}
     if len(rows) < 3:
         return out
-    header = rows[0]
+    header_map = {
+        normalize_table_header(name): idx for idx, name in enumerate(rows[0])
+    }
     try:
-        label_idx = header.index("Label")
-        seconds_idx = header.index("Seconds")
-    except ValueError:
+        label_idx = header_map["label"]
+        seconds_idx = header_map["seconds"]
+    except KeyError:
         return out
     # Skip header + separator.
     for row in rows[2:]:
@@ -292,14 +302,24 @@ def parse_appendix_backend_rows(appendix_text: str) -> dict[tuple[str, str], tup
     out: dict[tuple[str, str], tuple[int, int, int]] = {}
     if len(rows) < 3:
         return out
-    header = rows[0]
+    header_map = {
+        normalize_table_header(name): idx for idx, name in enumerate(rows[0])
+    }
+
+    def first_matching_header(*aliases: str) -> int:
+        for alias in aliases:
+            key = normalize_table_header(alias)
+            if key in header_map:
+                return header_map[key]
+        raise KeyError(aliases[0])
+
     try:
-        artifact_idx = header.index("Artifact")
-        backend_idx = header.index("Backend")
-        prove_idx = header.index("Prove")
-        verify_idx = header.index("Verify")
-        size_idx = header.index("Proof size")
-    except ValueError:
+        artifact_idx = first_matching_header("Artifact")
+        backend_idx = first_matching_header("Backend")
+        prove_idx = first_matching_header("Prove")
+        verify_idx = first_matching_header("Verify")
+        size_idx = first_matching_header("Proof size", "Proof size (bytes)", "Size (bytes)")
+    except KeyError:
         return out
     # Skip header + separator.
     for row in rows[2:]:
