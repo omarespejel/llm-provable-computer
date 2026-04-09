@@ -281,7 +281,7 @@ On April 4, 2026, we generated `production-v1` from execution/proof commit `58bb
 
 On April 6, 2026, we generated `stwo-experimental-v1` (artifact-index commit `3970277`) with representative arithmetic, lookup-envelope, transformer-shaped, and decoding-chain artifacts [40]. This complements rather than replaces `production-v1`.
 
-Beyond that frozen tier, the same line carries the broader bridge artifact: parameterized `decoding_step_v2` proofs over multiple layouts, then chains/segments/rollups/matrix packaging with KV and lookup commitments (Phase 13-20 in design materials). These are commit-pinned systems evidence, not recursive compression evidence.
+Beyond that frozen tier, the same line carries the broader bridge artifact: parameterized `decoding_step_v2` proofs over multiple layouts, then chains/segments/rollups/matrix packaging with KV and lookup commitments (Phase 13-20 in design materials). These are commit-pinned systems evidence, not recursive compression evidence [30, 40].
 
 ### 5.5 Why this artifact matters
 
