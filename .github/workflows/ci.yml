@@ -20,6 +20,8 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
+        with:
+          toolchain: stable
 
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@v2
@@ -73,6 +75,8 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
+        with:
+          toolchain: stable
         with:
           toolchain: ${{ matrix.rust_toolchain }}
 
