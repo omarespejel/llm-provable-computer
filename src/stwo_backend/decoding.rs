@@ -9370,6 +9370,12 @@ mod tests {
     fn phase17_oracle_and_production_reject_same_nested_rollup_boundary_tamper() {
         let mut manifest = sample_phase17_rollup_matrix_manifest();
         manifest.rollups[0].rollups[0].public_state_boundary_commitment = "tampered".to_string();
+
+        // First assert the matrix-level boundary check catches the nested tamper.
+        assert!(verify_phase17_decoding_rollup_matrix(&manifest).is_err());
+        assert!(oracle_verify_phase17_decoding_rollup_matrix(&manifest).is_err());
+
+        // Then recompute the matrix boundary and assert nested phase16 verification still fails.
         manifest.public_state_boundary_commitment =
             oracle_commit_phase17_matrix_public_state_boundary(&manifest).expect("oracle");
         assert!(verify_phase17_decoding_rollup_matrix(&manifest).is_err());
