@@ -102,6 +102,7 @@ const MAX_PHASE23_ACCUMULATOR_MEMBERS: usize = 512;
 const MAX_PHASE23_ACCUMULATOR_ROLLUPS: usize = 1_048_576;
 const MAX_PHASE24_ACCUMULATOR_MEMBERS: usize = 512;
 const MAX_PHASE24_ACCUMULATOR_ROLLUPS: usize = 1_048_576;
+const MAX_PHASE24_TOTAL_NESTED_PHASE23_MEMBERS: usize = 4_096;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase11DecodingState {
@@ -3911,6 +3912,25 @@ fn validate_phase24_decoding_state_relation_accumulator_shallow(
             "decoding state relation accumulator total_rollups={} exceeds the supported maximum {}",
             manifest.total_rollups, MAX_PHASE24_ACCUMULATOR_ROLLUPS
         )));
+    }
+    let mut total_nested_phase23_members = 0usize;
+    for (member_index, member) in manifest.members.iter().enumerate() {
+        total_nested_phase23_members = total_nested_phase23_members
+            .checked_add(member.members.len())
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "decoding state relation accumulator total nested Phase 23 members overflowed"
+                        .to_string(),
+                )
+            })?;
+        if total_nested_phase23_members > MAX_PHASE24_TOTAL_NESTED_PHASE23_MEMBERS {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding state relation accumulator total nested Phase 23 members {} exceeds the supported maximum {} at member {}",
+                total_nested_phase23_members,
+                MAX_PHASE24_TOTAL_NESTED_PHASE23_MEMBERS,
+                member_index
+            )));
+        }
     }
     if manifest.source_template_commitment.is_empty() {
         return Err(VmError::InvalidConfig(
@@ -13682,6 +13702,28 @@ mod tests {
 
         let err = verify_phase24_decoding_state_relation_accumulator(&manifest).unwrap_err();
         assert!(err.to_string().contains("members.len()="));
+        assert!(err.to_string().contains("exceeds the supported maximum"));
+    }
+
+    #[test]
+    fn phase24_state_relation_accumulator_rejects_excess_total_nested_phase23_members_before_deep_walk(
+    ) {
+        let seed = sample_phase24_decoding_state_relation_accumulator_manifest();
+        let mut oversized_member = seed.members[0].clone();
+        oversized_member.members =
+            vec![seed.members[0].members[0].clone(); MAX_PHASE23_ACCUMULATOR_MEMBERS];
+        oversized_member.member_count = oversized_member.members.len();
+
+        let repeat_count =
+            (MAX_PHASE24_TOTAL_NESTED_PHASE23_MEMBERS / MAX_PHASE23_ACCUMULATOR_MEMBERS) + 1;
+        let mut manifest = seed.clone();
+        manifest.members = vec![oversized_member; repeat_count];
+        manifest.member_summaries = vec![seed.member_summaries[0].clone(); repeat_count];
+        manifest.member_count = repeat_count;
+        manifest.members[0].members[0].accumulator.matrices.clear();
+
+        let err = verify_phase24_decoding_state_relation_accumulator(&manifest).unwrap_err();
+        assert!(err.to_string().contains("total nested Phase 23 members"));
         assert!(err.to_string().contains("exceeds the supported maximum"));
     }
 
