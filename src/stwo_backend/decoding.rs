@@ -3383,6 +3383,11 @@ fn verify_phase23_member_prefix_sequence(
                 "Phase 23 member {member_index} does not share the source template commitment of member 0"
             )));
         }
+        if summary.start_boundary_commitment != first.start_boundary_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 23 member {member_index} does not share the starting decode-state boundary commitment of member 0"
+            )));
+        }
         if member_index == 0 {
             continue;
         }
