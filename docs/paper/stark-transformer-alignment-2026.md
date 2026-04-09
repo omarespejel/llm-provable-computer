@@ -316,10 +316,6 @@ Starknet’s public version materials for `0.14.2` list in-protocol S-two proof 
 
 Separately, Starknet’s March 10, 2026 STRK20 announcement states that any ERC-20 on Starknet can now be private, with client-side proof generation and unified Cairo-based logic [21]. That makes the privacy side of “private verifiable inference” more concrete in current public infrastructure terms.
 
-### 6.3 Native account abstraction
-
-Starknet’s account model remains strategically relevant because accounts are smart contracts rather than externally owned accounts, which makes it easier to embed proof handling, policy logic, and asset movement inside the account abstraction itself [32].
-
 ---
 
 ## 7. Related Systems and Competitive Landscape
@@ -332,7 +328,7 @@ The right conclusion is narrower: modern SNARK systems can clearly prove transfo
 
 ### 7.2 Jolt Atlas and lookup-native SNARK convergence
 
-Jolt Atlas adds an important newer counterpoint because it arrives at a lookup-centric architecture from the SNARK side rather than the STARK side. The system extends Jolt directly to ONNX tensor operations, avoids CPU-register emulation, and argues that lookup arguments are a natural fit for the non-linear structure that dominates modern ML workloads [38]. That is directly relevant to this paper’s thesis. If a lookup-native design emerges independently inside the SNARK ecosystem, the right inference is not that the STARK-native argument collapses; it is that the field has converged on the same bottleneck diagnosis. Compiler-driven systems such as zkPyTorch point in a similar direction, but they are less central to the argument here than this lookup-native convergence itself [35, 36].
+Jolt Atlas adds an important newer counterpoint because it arrives at a lookup-centric architecture from the SNARK side rather than the STARK side. The system extends Jolt directly to ONNX tensor operations, avoids CPU-register emulation, and argues that lookup arguments are a natural fit for the non-linear structure that dominates modern ML workloads [38]. That is directly relevant to this paper’s thesis. If a lookup-native design emerges independently inside the SNARK ecosystem, the right inference is not that the STARK-native argument collapses; it is that the field has converged on the same bottleneck diagnosis.
 
 That convergence still leaves real differences. Jolt Atlas remains a SNARK-family system, so the comparison space still includes trusted-setup assumptions, different recursion and commitment choices, and different field arithmetic. But it validates the narrower architectural claim of this paper: non-arithmetic transformer work is important enough that successful systems increasingly reorganize themselves around lookup-heavy handling rather than treating softmax- and normalization-like structure as a minor edge case.
 
@@ -387,6 +383,19 @@ The next supporting engineering moves remain:
 - complete full-ISA AIR coverage,
 - keep artifact generation and benchmark metadata machine-readable in CI,
 - add a minimal learned-model fragment or quantized transformer block only once the accumulation path is stable.
+
+### 8.3 Future work that would materially strengthen the next paper
+
+The next-paper opportunity is now narrower and more technical: transformer-specific accumulation, not another broad STARK-vs-SNARK framing.
+
+Recent folding literature already covers generalized recursive arguments and CCS/AIR-compatible folding abstractions [8, 9, 10]. Newer small-field and post-quantum folding directions further reduce the novelty space for generic claims [41]. Therefore, the strongest defensible future contribution is:
+
+1. keep one fixed transformer-block relation and one decode transition relation,
+2. accumulate repeated block/step instances with shared lookup tables,
+3. preserve explicit KV/lookup boundary commitments under that accumulation,
+4. measure flat vs carried vs accumulated modes on the same artifact family.
+
+A second high-value future track is trust-core assurance rather than feature breadth: keep differential/oracle tests, fuzzing, and bounded model-checking around the carried-state verifier kernels, then selectively formalize only the smallest trust-critical binding layer [42].
 
 ---
 
@@ -450,3 +459,5 @@ This paper uses the maintained fork `omarespejel/llm-provable-computer`, which b
 38. Wyatt Benno, Alberto Centelles, Antoine Douchet, and Khalil Gibran. “Jolt Atlas: Verifiable Inference via Lookup Arguments in Zero Knowledge.” *arXiv preprint* arXiv:2602.17452, 2026. <https://arxiv.org/abs/2602.17452>
 39. Zhaohui Geoffrey Wang. “NANOZK: Layerwise Zero-Knowledge Proofs for Verifiable Large Language Model Inference.” *arXiv preprint* arXiv:2603.18046, 2026. <https://arxiv.org/abs/2603.18046>
 40. `omarespejel/llm-provable-computer`. “Appendix Artifact Index (S-two Experimental V1).” GitHub artifact snapshot, commit `3970277d964a0a9a5326b0db364cf16822c1ccd4`, at `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md`. <https://github.com/omarespejel/llm-provable-computer/blob/3970277d964a0a9a5326b0db364cf16822c1ccd4/docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md>
+41. Wilson Nguyen and Srinath Setty. “Neo: Lattice-based folding scheme for CCS over small fields and pay-per-bit commitments.” *IACR Cryptology ePrint Archive*, Paper 2025/294, 2025. <https://eprint.iacr.org/2025/294>
+42. StarkWare. “How StarkWare Uses Formal Verification to Prove Tech Soundness.” *StarkWare Blog*, March 5, 2026. <https://starkware.co/blog/starkwares-gold-standard-of-soundness-with-formal-verification/>
