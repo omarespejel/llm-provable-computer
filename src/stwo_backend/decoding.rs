@@ -3588,6 +3588,13 @@ fn summarize_phase24_members(
     let mut previous_lookup_delta_entries = 0usize;
 
     for (member_index, member) in members.iter().enumerate() {
+        validate_phase23_decoding_cross_step_lookup_accumulator_shallow(member).map_err(
+            |error| {
+                VmError::InvalidConfig(format!(
+                    "Phase 24 member {member_index} failed shallow Phase 23 validation: {error}"
+                ))
+            },
+        )?;
         let phase23_summaries = summarize_phase23_members(&member.members)?;
         verify_phase23_decoding_cross_step_lookup_accumulator_with_summaries(
             member,
@@ -13645,6 +13652,23 @@ mod tests {
         manifest.members[0].members.clear();
 
         let err = verify_phase24_decoding_state_relation_accumulator(&manifest).unwrap_err();
+        assert!(err.to_string().contains("members.len()="));
+        assert!(err.to_string().contains("exceeds the supported maximum"));
+    }
+
+    #[test]
+    fn phase24_state_relation_accumulator_rejects_oversized_nested_phase23_before_deep_walk() {
+        let seed = sample_phase24_decoding_state_relation_accumulator_manifest();
+        let mut manifest = seed.clone();
+        manifest.members[0].members =
+            vec![seed.members[0].members[0].clone(); MAX_PHASE23_ACCUMULATOR_MEMBERS + 1];
+        manifest.members[0].member_count = manifest.members[0].members.len();
+        manifest.members[0].members[0].accumulator.matrices.clear();
+
+        let err = verify_phase24_decoding_state_relation_accumulator(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("Phase 24 member 0 failed shallow Phase 23 validation"));
         assert!(err.to_string().contains("members.len()="));
         assert!(err.to_string().contains("exceeds the supported maximum"));
     }
