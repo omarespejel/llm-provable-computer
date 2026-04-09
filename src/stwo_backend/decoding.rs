@@ -87,7 +87,7 @@ const MAX_PHASE14_DECODING_CHAIN_JSON_BYTES: usize = 16 * 1024 * 1024;
 const MAX_PHASE15_SEGMENT_BUNDLE_JSON_BYTES: usize = 12 * 1024 * 1024;
 const MAX_PHASE16_SEGMENT_ROLLUP_JSON_BYTES: usize = 12 * 1024 * 1024;
 const MAX_PHASE17_ROLLUP_MATRIX_JSON_BYTES: usize = 40 * 1024 * 1024;
-const MAX_PHASE21_MATRIX_ACCUMULATOR_JSON_BYTES: usize = 64 * 1024 * 1024;
+const MAX_PHASE21_MATRIX_ACCUMULATOR_JSON_BYTES: usize = 96 * 1024 * 1024;
 const MAX_PHASE22_LOOKUP_ACCUMULATOR_JSON_BYTES: usize = 96 * 1024 * 1024;
 const MAX_PHASE23_CROSS_STEP_LOOKUP_ACCUMULATOR_JSON_BYTES: usize = 128 * 1024 * 1024;
 const MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES: usize = 24 * 1024 * 1024;
@@ -10126,7 +10126,8 @@ mod tests {
 
     #[test]
     fn phase21_demo_manifest_fits_json_budget() {
-        let manifest = sample_phase21_matrix_accumulator_manifest();
+        let manifest = prove_phase21_decoding_matrix_accumulator_demo()
+            .expect("phase21 matrix accumulator demo");
         assert_saved_json_budget(
             "phase21-demo",
             MAX_PHASE21_MATRIX_ACCUMULATOR_JSON_BYTES,
