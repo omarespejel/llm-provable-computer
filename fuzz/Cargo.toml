@@ -34,5 +34,12 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "phase24_decoding_state_relation_accumulator"
+path = "fuzz_targets/phase24_decoding_state_relation_accumulator.rs"
+test = false
+doc = false
+bench = false
+
 [workspace]
 members = ["."]

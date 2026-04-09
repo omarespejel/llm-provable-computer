@@ -67,6 +67,10 @@ pub const STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23: &str =
     "stwo-phase23-decoding-cross-step-lookup-accumulator-v1";
 pub const STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_SCOPE_PHASE23: &str =
     "stwo_execution_parameterized_proof_carrying_decoding_cross_step_lookup_accumulator";
+pub const STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24: &str =
+    "stwo-phase24-decoding-state-relation-accumulator-v1";
+pub const STWO_DECODING_STATE_RELATION_ACCUMULATOR_SCOPE_PHASE24: &str =
+    "stwo_execution_parameterized_proof_carrying_decoding_state_relation_accumulator";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
 const DECODING_OUTPUT_RANGE: std::ops::Range<usize> = 10..13;
 const DECODING_POSITION_INDEX: usize = 21;
@@ -90,11 +94,14 @@ const MAX_PHASE17_ROLLUP_MATRIX_JSON_BYTES: usize = 40 * 1024 * 1024;
 const MAX_PHASE21_MATRIX_ACCUMULATOR_JSON_BYTES: usize = 96 * 1024 * 1024;
 const MAX_PHASE22_LOOKUP_ACCUMULATOR_JSON_BYTES: usize = 96 * 1024 * 1024;
 const MAX_PHASE23_CROSS_STEP_LOOKUP_ACCUMULATOR_JSON_BYTES: usize = 128 * 1024 * 1024;
+const MAX_PHASE24_STATE_RELATION_ACCUMULATOR_JSON_BYTES: usize = 160 * 1024 * 1024;
 const MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES: usize = 24 * 1024 * 1024;
 const MAX_PHASE21_ACCUMULATOR_MATRICES: usize = 512;
 const MAX_PHASE22_ACCUMULATOR_ROLLUPS: usize = 262_144;
 const MAX_PHASE23_ACCUMULATOR_MEMBERS: usize = 512;
 const MAX_PHASE23_ACCUMULATOR_ROLLUPS: usize = 1_048_576;
+const MAX_PHASE24_ACCUMULATOR_MEMBERS: usize = 512;
+const MAX_PHASE24_ACCUMULATOR_ROLLUPS: usize = 1_048_576;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase11DecodingState {
@@ -482,6 +489,48 @@ pub struct Phase23DecodingCrossStepLookupAccumulatorManifest {
     pub members: Vec<Phase22DecodingLookupAccumulatorManifest>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase24DecodingStateRelationMemberSummary {
+    pub start_step: usize,
+    pub end_step: usize,
+    pub total_matrices: usize,
+    pub total_layouts: usize,
+    pub total_rollups: usize,
+    pub total_segments: usize,
+    pub total_steps: usize,
+    pub lookup_delta_entries: usize,
+    pub max_lookup_frontier_entries: usize,
+    pub source_template_commitment: String,
+    pub lookup_template_commitment: String,
+    pub lookup_accumulator_commitment: String,
+    pub start_state_commitment: String,
+    pub end_state_commitment: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Phase24DecodingStateRelationAccumulatorManifest {
+    pub proof_backend: StarkProofBackend,
+    pub accumulator_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub member_count: usize,
+    pub total_matrices: usize,
+    pub total_layouts: usize,
+    pub total_rollups: usize,
+    pub total_segments: usize,
+    pub total_steps: usize,
+    pub lookup_delta_entries: usize,
+    pub max_lookup_frontier_entries: usize,
+    pub source_template_commitment: String,
+    pub start_state_commitment: String,
+    pub end_state_commitment: String,
+    pub relation_template_commitment: String,
+    pub relation_accumulator_commitment: String,
+    pub member_summaries: Vec<Phase24DecodingStateRelationMemberSummary>,
+    pub members: Vec<Phase23DecodingCrossStepLookupAccumulatorManifest>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Phase12StateView {
     position: i16,
@@ -525,6 +574,24 @@ struct Phase23MemberSummary {
     source_template_commitment: String,
     start_boundary_commitment: String,
     end_boundary_commitment: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Phase24MemberSummary {
+    start_step: usize,
+    end_step: usize,
+    total_matrices: usize,
+    total_layouts: usize,
+    total_rollups: usize,
+    total_segments: usize,
+    total_steps: usize,
+    lookup_delta_entries: usize,
+    max_lookup_frontier_entries: usize,
+    source_template_commitment: String,
+    lookup_template_commitment: String,
+    lookup_accumulator_commitment: String,
+    start_state_commitment: String,
+    end_state_commitment: String,
 }
 
 fn build_phase12_shared_lookup_artifact_registry(
@@ -3462,6 +3529,287 @@ fn verify_phase23_member_prefix_sequence(
     Ok(())
 }
 
+fn derive_phase24_member_boundary_commitment_at_step(
+    member: &Phase23DecodingCrossStepLookupAccumulatorManifest,
+    member_index: usize,
+    step_count: usize,
+) -> Result<String> {
+    if step_count > member.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 24 member {member_index} cannot derive a boundary at step {} beyond total_steps {}",
+            step_count, member.total_steps
+        )));
+    }
+    if step_count == 0 {
+        return Ok(member.start_boundary_commitment.clone());
+    }
+    if step_count == member.total_steps {
+        return Ok(member.end_boundary_commitment.clone());
+    }
+
+    let summaries = summarize_phase23_members(&member.members)?;
+    verify_phase23_member_prefix_sequence(&member.members, &summaries).map_err(|error| {
+        VmError::InvalidConfig(format!(
+            "Phase 24 member {member_index} does not preserve its nested Phase 23 prefix sequence: {error}"
+        ))
+    })?;
+
+    for (nested_index, summary) in summaries.iter().enumerate() {
+        if summary.total_steps >= step_count {
+            return derive_phase23_member_boundary_commitment_at_step(
+                &member.members[nested_index],
+                member_index,
+                step_count,
+            );
+        }
+    }
+
+    Err(VmError::InvalidConfig(format!(
+        "Phase 24 member {member_index} could not derive a nested boundary commitment at step {}",
+        step_count
+    )))
+}
+
+fn summarize_phase24_members(
+    members: &[Phase23DecodingCrossStepLookupAccumulatorManifest],
+) -> Result<Vec<Phase24MemberSummary>> {
+    let mut summaries = Vec::with_capacity(members.len());
+    let mut previous_total_matrices = 0usize;
+    let mut previous_total_layouts = 0usize;
+    let mut previous_total_rollups = 0usize;
+    let mut previous_total_segments = 0usize;
+    let mut previous_total_steps = 0usize;
+    let mut previous_lookup_delta_entries = 0usize;
+
+    for (member_index, member) in members.iter().enumerate() {
+        verify_phase23_decoding_cross_step_lookup_accumulator(member).map_err(|error| {
+            VmError::InvalidConfig(format!(
+                "Phase 24 member {member_index} failed Phase 23 verification: {error}"
+            ))
+        })?;
+        if member.total_steps <= previous_total_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 24 member {member_index} total_steps {} must strictly increase beyond the previous total_steps {}",
+                member.total_steps, previous_total_steps
+            )));
+        }
+        if member.total_matrices < previous_total_matrices
+            || member.total_layouts < previous_total_layouts
+            || member.total_rollups < previous_total_rollups
+            || member.total_segments < previous_total_segments
+            || member.lookup_delta_entries < previous_lookup_delta_entries
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 24 member {member_index} must extend, not shrink, the previous cumulative member counts"
+            )));
+        }
+
+        let start_state_commitment = derive_phase24_member_boundary_commitment_at_step(
+            member,
+            member_index,
+            previous_total_steps,
+        )?;
+        let end_state_commitment = derive_phase24_member_boundary_commitment_at_step(
+            member,
+            member_index,
+            member.total_steps,
+        )?;
+
+        summaries.push(Phase24MemberSummary {
+            start_step: previous_total_steps,
+            end_step: member.total_steps,
+            total_matrices: member
+                .total_matrices
+                .checked_sub(previous_total_matrices)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "Phase 24 member {member_index} total_matrices underflowed while deriving interval counts"
+                    ))
+                })?,
+            total_layouts: member
+                .total_layouts
+                .checked_sub(previous_total_layouts)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "Phase 24 member {member_index} total_layouts underflowed while deriving interval counts"
+                    ))
+                })?,
+            total_rollups: member
+                .total_rollups
+                .checked_sub(previous_total_rollups)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "Phase 24 member {member_index} total_rollups underflowed while deriving interval counts"
+                    ))
+                })?,
+            total_segments: member
+                .total_segments
+                .checked_sub(previous_total_segments)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "Phase 24 member {member_index} total_segments underflowed while deriving interval counts"
+                    ))
+                })?,
+            total_steps: member
+                .total_steps
+                .checked_sub(previous_total_steps)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "Phase 24 member {member_index} total_steps underflowed while deriving interval counts"
+                    ))
+                })?,
+            lookup_delta_entries: member
+                .lookup_delta_entries
+                .checked_sub(previous_lookup_delta_entries)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "Phase 24 member {member_index} lookup_delta_entries underflowed while deriving interval counts"
+                    ))
+                })?,
+            max_lookup_frontier_entries: member.max_lookup_frontier_entries,
+            source_template_commitment: member.source_template_commitment.clone(),
+            lookup_template_commitment: member.lookup_template_commitment.clone(),
+            lookup_accumulator_commitment: member.accumulator_commitment.clone(),
+            start_state_commitment,
+            end_state_commitment,
+        });
+
+        previous_total_matrices = member.total_matrices;
+        previous_total_layouts = member.total_layouts;
+        previous_total_rollups = member.total_rollups;
+        previous_total_segments = member.total_segments;
+        previous_total_steps = member.total_steps;
+        previous_lookup_delta_entries = member.lookup_delta_entries;
+    }
+    Ok(summaries)
+}
+
+fn verify_phase24_member_relation_sequence(summaries: &[Phase24MemberSummary]) -> Result<()> {
+    if summaries.len() < 2 {
+        return Err(VmError::InvalidConfig(
+            "Phase 24 state relation accumulator requires at least two members".to_string(),
+        ));
+    }
+    let first = summaries.first().expect("phase24 summaries are non-empty");
+    if first.total_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 24 member 0 must cover at least one step".to_string(),
+        ));
+    }
+    for (member_index, summary) in summaries.iter().enumerate() {
+        if summary.total_steps == 0 {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 24 member {member_index} must cover at least one step"
+            )));
+        }
+        if summary.start_step >= summary.end_step {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 24 member {member_index} has invalid interval [{}..{})",
+                summary.start_step, summary.end_step
+            )));
+        }
+        if summary.end_step - summary.start_step != summary.total_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 24 member {member_index} interval width {} does not match total_steps {}",
+                summary.end_step - summary.start_step,
+                summary.total_steps
+            )));
+        }
+        if summary.source_template_commitment != first.source_template_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 24 member {member_index} does not share the source template commitment of member 0"
+            )));
+        }
+        if summary.lookup_template_commitment.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 24 member {member_index} has an empty lookup_template_commitment"
+            )));
+        }
+        if summary.lookup_accumulator_commitment.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 24 member {member_index} has an empty lookup_accumulator_commitment"
+            )));
+        }
+        if summary.start_state_commitment.is_empty() || summary.end_state_commitment.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 24 member {member_index} has an empty state-boundary commitment"
+            )));
+        }
+        if member_index == 0 {
+            continue;
+        }
+        let previous = &summaries[member_index - 1];
+        if summary.start_step != previous.end_step {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 24 member {} interval [{}..{}) is not contiguous with member {} interval [{}..{})",
+                member_index,
+                summary.start_step,
+                summary.end_step,
+                member_index - 1,
+                previous.start_step,
+                previous.end_step
+            )));
+        }
+        if summary.start_state_commitment != previous.end_state_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 24 member boundary {} -> {} does not preserve the full carried-state commitment",
+                member_index - 1,
+                member_index
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn phase24_public_member_summaries(
+    summaries: &[Phase24MemberSummary],
+) -> Vec<Phase24DecodingStateRelationMemberSummary> {
+    summaries
+        .iter()
+        .map(|summary| Phase24DecodingStateRelationMemberSummary {
+            start_step: summary.start_step,
+            end_step: summary.end_step,
+            total_matrices: summary.total_matrices,
+            total_layouts: summary.total_layouts,
+            total_rollups: summary.total_rollups,
+            total_segments: summary.total_segments,
+            total_steps: summary.total_steps,
+            lookup_delta_entries: summary.lookup_delta_entries,
+            max_lookup_frontier_entries: summary.max_lookup_frontier_entries,
+            source_template_commitment: summary.source_template_commitment.clone(),
+            lookup_template_commitment: summary.lookup_template_commitment.clone(),
+            lookup_accumulator_commitment: summary.lookup_accumulator_commitment.clone(),
+            start_state_commitment: summary.start_state_commitment.clone(),
+            end_state_commitment: summary.end_state_commitment.clone(),
+        })
+        .collect()
+}
+
+fn commit_phase24_relation_template(summaries: &[Phase24MemberSummary]) -> Result<String> {
+    verify_phase24_member_relation_sequence(summaries)?;
+
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24.as_bytes());
+    hasher.update(b"relation-template");
+    hasher.update(&(summaries.len() as u64).to_le_bytes());
+    hasher.update(summaries[0].source_template_commitment.as_bytes());
+    for (member_index, summary) in summaries.iter().enumerate() {
+        hasher.update(&(member_index as u64).to_le_bytes());
+        hasher.update(summary.lookup_template_commitment.as_bytes());
+        hasher.update(&(summary.total_matrices as u64).to_le_bytes());
+        hasher.update(&(summary.total_layouts as u64).to_le_bytes());
+        hasher.update(&(summary.total_rollups as u64).to_le_bytes());
+        hasher.update(&(summary.total_segments as u64).to_le_bytes());
+        hasher.update(&(summary.total_steps as u64).to_le_bytes());
+    }
+
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
 fn commit_phase23_lookup_template(
     members: &[Phase22DecodingLookupAccumulatorManifest],
 ) -> Result<String> {
@@ -3794,6 +4142,446 @@ pub fn verify_phase23_decoding_cross_step_lookup_accumulator_with_proof_checks(
                 "decoding cross-step lookup accumulator member {member_index} failed verification: {error}"
             ))
         })?;
+    }
+    Ok(())
+}
+
+fn commit_phase24_state_relation_accumulator_with_summaries(
+    manifest: &Phase24DecodingStateRelationAccumulatorManifest,
+    summaries: &[Phase24MemberSummary],
+) -> Result<String> {
+    if manifest.members.len() < 2 {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator must contain at least two members".to_string(),
+        ));
+    }
+    if summaries.len() != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator summaries.len()={} does not match members.len()={}",
+            summaries.len(),
+            manifest.members.len()
+        )));
+    }
+
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24.as_bytes());
+    hasher.update(b"state-relation-accumulator");
+    hasher.update(manifest.source_template_commitment.as_bytes());
+    hasher.update(manifest.relation_template_commitment.as_bytes());
+    hasher.update(manifest.start_state_commitment.as_bytes());
+    hasher.update(manifest.end_state_commitment.as_bytes());
+    hasher.update(&(manifest.member_count as u64).to_le_bytes());
+    hasher.update(&(manifest.total_matrices as u64).to_le_bytes());
+    hasher.update(&(manifest.total_layouts as u64).to_le_bytes());
+    hasher.update(&(manifest.total_rollups as u64).to_le_bytes());
+    hasher.update(&(manifest.total_segments as u64).to_le_bytes());
+    hasher.update(&(manifest.total_steps as u64).to_le_bytes());
+    hasher.update(&(manifest.lookup_delta_entries as u64).to_le_bytes());
+    hasher.update(&(manifest.max_lookup_frontier_entries as u64).to_le_bytes());
+    for (member_index, summary) in summaries.iter().enumerate() {
+        hasher.update(&(member_index as u64).to_le_bytes());
+        hasher.update(&(summary.start_step as u64).to_le_bytes());
+        hasher.update(&(summary.end_step as u64).to_le_bytes());
+        hasher.update(summary.lookup_accumulator_commitment.as_bytes());
+        hasher.update(summary.start_state_commitment.as_bytes());
+        hasher.update(summary.end_state_commitment.as_bytes());
+        hasher.update(&(summary.total_matrices as u64).to_le_bytes());
+        hasher.update(&(summary.total_layouts as u64).to_le_bytes());
+        hasher.update(&(summary.total_rollups as u64).to_le_bytes());
+        hasher.update(&(summary.total_segments as u64).to_le_bytes());
+        hasher.update(&(summary.total_steps as u64).to_le_bytes());
+        hasher.update(&(summary.lookup_delta_entries as u64).to_le_bytes());
+        hasher.update(&(summary.max_lookup_frontier_entries as u64).to_le_bytes());
+    }
+
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+pub fn phase24_prepare_decoding_state_relation_accumulator(
+    members: &[Phase23DecodingCrossStepLookupAccumulatorManifest],
+) -> Result<Phase24DecodingStateRelationAccumulatorManifest> {
+    if members.len() < 2 {
+        return Err(VmError::InvalidConfig(
+            "Phase 24 state relation accumulator requires at least two Phase 23 members"
+                .to_string(),
+        ));
+    }
+    if members.len() > MAX_PHASE24_ACCUMULATOR_MEMBERS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 24 state relation accumulator supports at most {MAX_PHASE24_ACCUMULATOR_MEMBERS} members (got {})",
+            members.len()
+        )));
+    }
+
+    let summaries = summarize_phase24_members(members)?;
+    verify_phase24_member_relation_sequence(&summaries)?;
+
+    let mut total_matrices = 0usize;
+    let mut total_layouts = 0usize;
+    let mut total_rollups = 0usize;
+    let mut total_segments = 0usize;
+    let mut total_steps = 0usize;
+    let mut lookup_delta_entries = 0usize;
+    let mut max_lookup_frontier_entries = 0usize;
+    for (member_index, summary) in summaries.iter().enumerate() {
+        total_matrices = total_matrices
+            .checked_add(summary.total_matrices)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 24 total_matrices overflowed while adding member {member_index}"
+                ))
+            })?;
+        total_layouts = total_layouts
+            .checked_add(summary.total_layouts)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 24 total_layouts overflowed while adding member {member_index}"
+                ))
+            })?;
+        total_rollups = total_rollups
+            .checked_add(summary.total_rollups)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 24 total_rollups overflowed while adding member {member_index}"
+                ))
+            })?;
+        total_segments = total_segments
+            .checked_add(summary.total_segments)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 24 total_segments overflowed while adding member {member_index}"
+                ))
+            })?;
+        total_steps = total_steps
+            .checked_add(summary.total_steps)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 24 total_steps overflowed while adding member {member_index}"
+                ))
+            })?;
+        lookup_delta_entries = lookup_delta_entries
+            .checked_add(summary.lookup_delta_entries)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 24 lookup_delta_entries overflowed while adding member {member_index}"
+                ))
+            })?;
+        max_lookup_frontier_entries =
+            max_lookup_frontier_entries.max(summary.max_lookup_frontier_entries);
+    }
+    if total_rollups > MAX_PHASE24_ACCUMULATOR_ROLLUPS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 24 total_rollups {} exceed the supported maximum {}",
+            total_rollups, MAX_PHASE24_ACCUMULATOR_ROLLUPS
+        )));
+    }
+
+    let first = summaries.first().expect("phase24 summaries are non-empty");
+    let last = summaries.last().expect("phase24 summaries are non-empty");
+    let relation_template_commitment = commit_phase24_relation_template(&summaries)?;
+    let mut manifest = Phase24DecodingStateRelationAccumulatorManifest {
+        proof_backend: StarkProofBackend::Stwo,
+        accumulator_version: STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24.to_string(),
+        semantic_scope: STWO_DECODING_STATE_RELATION_ACCUMULATOR_SCOPE_PHASE24.to_string(),
+        proof_backend_version: members[0].proof_backend_version.clone(),
+        statement_version: members[0].statement_version.clone(),
+        member_count: members.len(),
+        total_matrices,
+        total_layouts,
+        total_rollups,
+        total_segments,
+        total_steps,
+        lookup_delta_entries,
+        max_lookup_frontier_entries,
+        source_template_commitment: first.source_template_commitment.clone(),
+        start_state_commitment: first.start_state_commitment.clone(),
+        end_state_commitment: last.end_state_commitment.clone(),
+        relation_template_commitment,
+        relation_accumulator_commitment: String::new(),
+        member_summaries: phase24_public_member_summaries(&summaries),
+        members: members.to_vec(),
+    };
+    manifest.relation_accumulator_commitment =
+        commit_phase24_state_relation_accumulator_with_summaries(&manifest, &summaries)?;
+    verify_phase24_decoding_state_relation_accumulator_with_summaries(&manifest, &summaries)?;
+    Ok(manifest)
+}
+
+fn verify_phase24_decoding_state_relation_accumulator_with_summaries(
+    manifest: &Phase24DecodingStateRelationAccumulatorManifest,
+    summaries: &[Phase24MemberSummary],
+) -> Result<()> {
+    if manifest.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator backend `{}` is not `stwo`",
+            manifest.proof_backend
+        )));
+    }
+    if manifest.accumulator_version != STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding state relation accumulator version `{}`",
+            manifest.accumulator_version
+        )));
+    }
+    if manifest.semantic_scope != STWO_DECODING_STATE_RELATION_ACCUMULATOR_SCOPE_PHASE24 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding state relation accumulator semantic scope `{}`",
+            manifest.semantic_scope
+        )));
+    }
+    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding state relation accumulator proof backend version `{}` (expected `{}`)",
+            manifest.proof_backend_version,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+        )));
+    }
+    if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding state relation accumulator statement version `{}`",
+            manifest.statement_version
+        )));
+    }
+    if manifest.members.len() < 2 {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator must contain at least two members".to_string(),
+        ));
+    }
+    if manifest.members.len() > MAX_PHASE24_ACCUMULATOR_MEMBERS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator members.len()={} exceeds the supported maximum {}",
+            manifest.members.len(),
+            MAX_PHASE24_ACCUMULATOR_MEMBERS
+        )));
+    }
+    if manifest.member_count != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator member_count={} does not match members.len()={}",
+            manifest.member_count,
+            manifest.members.len()
+        )));
+    }
+    if manifest.member_summaries.len() != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator member_summaries.len()={} does not match members.len()={}",
+            manifest.member_summaries.len(),
+            manifest.members.len()
+        )));
+    }
+    if manifest.total_rollups > MAX_PHASE24_ACCUMULATOR_ROLLUPS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator total_rollups={} exceeds the supported maximum {}",
+            manifest.total_rollups, MAX_PHASE24_ACCUMULATOR_ROLLUPS
+        )));
+    }
+    if manifest.source_template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator source_template_commitment must not be empty"
+                .to_string(),
+        ));
+    }
+    if manifest.start_state_commitment.is_empty() || manifest.end_state_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator state-boundary commitments must not be empty"
+                .to_string(),
+        ));
+    }
+    if manifest.relation_template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator relation_template_commitment must not be empty"
+                .to_string(),
+        ));
+    }
+    if manifest.relation_accumulator_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator relation_accumulator_commitment must not be empty"
+                .to_string(),
+        ));
+    }
+    for (member_index, member) in manifest.members.iter().enumerate() {
+        if member.proof_backend_version != manifest.proof_backend_version {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding state relation accumulator member {member_index} proof backend version `{}` does not match manifest `{}`",
+                member.proof_backend_version, manifest.proof_backend_version
+            )));
+        }
+        if member.statement_version != manifest.statement_version {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding state relation accumulator member {member_index} statement version `{}` does not match manifest `{}`",
+                member.statement_version, manifest.statement_version
+            )));
+        }
+    }
+    if summaries.len() != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator summaries.len()={} does not match members.len()={}",
+            summaries.len(),
+            manifest.members.len()
+        )));
+    }
+    verify_phase24_member_relation_sequence(summaries)?;
+
+    let expected_public_summaries = phase24_public_member_summaries(summaries);
+    if manifest.member_summaries != expected_public_summaries {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator member_summaries do not match the derived member summaries".to_string(),
+        ));
+    }
+
+    let mut derived_total_matrices = 0usize;
+    let mut derived_total_layouts = 0usize;
+    let mut derived_total_rollups = 0usize;
+    let mut derived_total_segments = 0usize;
+    let mut derived_total_steps = 0usize;
+    let mut derived_lookup_delta_entries = 0usize;
+    let mut derived_max_lookup_frontier_entries = 0usize;
+    for (member_index, summary) in summaries.iter().enumerate() {
+        derived_total_matrices =
+            derived_total_matrices
+                .checked_add(summary.total_matrices)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "decoding state relation accumulator total_matrices overflowed while adding member {member_index}"
+                    ))
+                })?;
+        derived_total_layouts = derived_total_layouts
+            .checked_add(summary.total_layouts)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "decoding state relation accumulator total_layouts overflowed while adding member {member_index}"
+                ))
+            })?;
+        derived_total_rollups = derived_total_rollups
+            .checked_add(summary.total_rollups)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "decoding state relation accumulator total_rollups overflowed while adding member {member_index}"
+                ))
+            })?;
+        derived_total_segments = derived_total_segments
+            .checked_add(summary.total_segments)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "decoding state relation accumulator total_segments overflowed while adding member {member_index}"
+                ))
+            })?;
+        derived_total_steps = derived_total_steps
+            .checked_add(summary.total_steps)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "decoding state relation accumulator total_steps overflowed while adding member {member_index}"
+                ))
+            })?;
+        derived_lookup_delta_entries = derived_lookup_delta_entries
+            .checked_add(summary.lookup_delta_entries)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "decoding state relation accumulator lookup_delta_entries overflowed while adding member {member_index}"
+                ))
+            })?;
+        derived_max_lookup_frontier_entries =
+            derived_max_lookup_frontier_entries.max(summary.max_lookup_frontier_entries);
+    }
+    if manifest.total_matrices != derived_total_matrices {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator total_matrices={} does not match derived total_matrices={}",
+            manifest.total_matrices, derived_total_matrices
+        )));
+    }
+    if manifest.total_layouts != derived_total_layouts {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator total_layouts={} does not match derived total_layouts={}",
+            manifest.total_layouts, derived_total_layouts
+        )));
+    }
+    if manifest.total_rollups != derived_total_rollups {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator total_rollups={} does not match derived total_rollups={}",
+            manifest.total_rollups, derived_total_rollups
+        )));
+    }
+    if manifest.total_segments != derived_total_segments {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator total_segments={} does not match derived total_segments={}",
+            manifest.total_segments, derived_total_segments
+        )));
+    }
+    if manifest.total_steps != derived_total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator total_steps={} does not match derived total_steps={}",
+            manifest.total_steps, derived_total_steps
+        )));
+    }
+    if manifest.lookup_delta_entries != derived_lookup_delta_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator lookup_delta_entries={} does not match derived lookup_delta_entries={}",
+            manifest.lookup_delta_entries, derived_lookup_delta_entries
+        )));
+    }
+    if manifest.max_lookup_frontier_entries != derived_max_lookup_frontier_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding state relation accumulator max_lookup_frontier_entries={} does not match derived max_lookup_frontier_entries={}",
+            manifest.max_lookup_frontier_entries, derived_max_lookup_frontier_entries
+        )));
+    }
+
+    let first = summaries.first().expect("phase24 summaries are non-empty");
+    let last = summaries.last().expect("phase24 summaries are non-empty");
+    if manifest.source_template_commitment != first.source_template_commitment {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator source_template_commitment does not match the shared member template commitment".to_string(),
+        ));
+    }
+    if manifest.start_state_commitment != first.start_state_commitment {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator start_state_commitment does not match the first member boundary".to_string(),
+        ));
+    }
+    if manifest.end_state_commitment != last.end_state_commitment {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator end_state_commitment does not match the last member boundary".to_string(),
+        ));
+    }
+
+    let expected_relation_template_commitment = commit_phase24_relation_template(summaries)?;
+    if manifest.relation_template_commitment != expected_relation_template_commitment {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator relation_template_commitment does not match the computed member relation template commitment".to_string(),
+        ));
+    }
+    let expected_relation_accumulator_commitment =
+        commit_phase24_state_relation_accumulator_with_summaries(manifest, summaries)?;
+    if manifest.relation_accumulator_commitment != expected_relation_accumulator_commitment {
+        return Err(VmError::InvalidConfig(
+            "decoding state relation accumulator relation_accumulator_commitment does not match the computed accumulator commitment".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+pub fn verify_phase24_decoding_state_relation_accumulator(
+    manifest: &Phase24DecodingStateRelationAccumulatorManifest,
+) -> Result<()> {
+    let summaries = summarize_phase24_members(&manifest.members)?;
+    verify_phase24_decoding_state_relation_accumulator_with_summaries(manifest, &summaries)
+}
+
+pub fn verify_phase24_decoding_state_relation_accumulator_with_proof_checks(
+    manifest: &Phase24DecodingStateRelationAccumulatorManifest,
+) -> Result<()> {
+    verify_phase24_decoding_state_relation_accumulator(manifest)?;
+    for (member_index, member) in manifest.members.iter().enumerate() {
+        verify_phase23_decoding_cross_step_lookup_accumulator_with_proof_checks(member).map_err(
+            |error| {
+                VmError::UnsupportedProof(format!(
+                    "decoding state relation accumulator member {member_index} failed verification: {error}"
+                ))
+            },
+        )?;
     }
     Ok(())
 }
@@ -4409,6 +5197,32 @@ pub fn load_phase23_decoding_cross_step_lookup_accumulator(
     Ok(manifest)
 }
 
+pub fn save_phase24_decoding_state_relation_accumulator(
+    manifest: &Phase24DecodingStateRelationAccumulatorManifest,
+    path: &Path,
+) -> Result<()> {
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE24_STATE_RELATION_ACCUMULATOR_JSON_BYTES,
+        "Phase 24 decoding state relation accumulator",
+    )
+}
+
+pub fn load_phase24_decoding_state_relation_accumulator(
+    path: &Path,
+) -> Result<Phase24DecodingStateRelationAccumulatorManifest> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE24_STATE_RELATION_ACCUMULATOR_JSON_BYTES,
+        "Phase 24 decoding state relation accumulator",
+    )?;
+    let manifest: Phase24DecodingStateRelationAccumulatorManifest =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    verify_phase24_decoding_state_relation_accumulator(&manifest)?;
+    Ok(manifest)
+}
+
 pub fn save_phase13_decoding_layout_matrix(
     manifest: &Phase13DecodingLayoutMatrixManifest,
     path: &Path,
@@ -4659,6 +5473,34 @@ pub fn prove_phase23_decoding_cross_step_lookup_accumulator_demo(
     let manifest =
         phase23_prepare_decoding_cross_step_lookup_accumulator(&[first_member, second_member])?;
     verify_phase23_decoding_cross_step_lookup_accumulator_with_proof_checks(&manifest)?;
+    Ok(manifest)
+}
+
+pub fn prove_phase24_decoding_state_relation_accumulator_demo(
+) -> Result<Phase24DecodingStateRelationAccumulatorManifest> {
+    let layout = phase12_default_decoding_layout();
+    let phase12 = prove_phase12_decoding_demo_for_layout(&layout)?;
+    let proofs = phase12
+        .steps
+        .iter()
+        .map(|step| step.proof.clone())
+        .collect::<Vec<_>>();
+    if proofs.len() < 2 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 24 demo requires at least two proof windows, got {}",
+            proofs.len()
+        )));
+    }
+
+    let first_phase22 = phase23_prepare_member_from_proof_window(&layout, &proofs[..1])?;
+    let second_phase22 = phase23_prepare_member_from_proof_window(&layout, &proofs)?;
+    let first_member =
+        phase23_prepare_decoding_cross_step_lookup_accumulator(&[first_phase22.clone()])?;
+    let second_member =
+        phase23_prepare_decoding_cross_step_lookup_accumulator(&[first_phase22, second_phase22])?;
+    let manifest =
+        phase24_prepare_decoding_state_relation_accumulator(&[first_member, second_member])?;
+    verify_phase24_decoding_state_relation_accumulator_with_proof_checks(&manifest)?;
     Ok(manifest)
 }
 
@@ -7234,6 +8076,49 @@ mod kani_proofs {
     }
 }
 
+#[cfg(kani)]
+mod kani_phase24_proofs {
+    use super::*;
+
+    fn kani_phase24_summary(
+        start_step: usize,
+        end_step: usize,
+        start_state_commitment: &str,
+        end_state_commitment: &str,
+    ) -> Phase24MemberSummary {
+        Phase24MemberSummary {
+            start_step,
+            end_step,
+            total_matrices: 1,
+            total_layouts: 1,
+            total_rollups: 1,
+            total_segments: 1,
+            total_steps: end_step - start_step,
+            lookup_delta_entries: end_step - start_step,
+            max_lookup_frontier_entries: 1,
+            source_template_commitment: "shared-template".to_string(),
+            lookup_template_commitment: format!("lookup-template-{start_step}-{end_step}"),
+            lookup_accumulator_commitment: format!("lookup-acc-{start_step}-{end_step}"),
+            start_state_commitment: start_state_commitment.to_string(),
+            end_state_commitment: end_state_commitment.to_string(),
+        }
+    }
+
+    #[kani::proof]
+    fn kani_phase24_relation_sequence_accepts_contiguous_members() {
+        let first = kani_phase24_summary(0, 1, "s0", "s1");
+        let second = kani_phase24_summary(1, 3, "s1", "s3");
+        assert!(verify_phase24_member_relation_sequence(&[first, second]).is_ok());
+    }
+
+    #[kani::proof]
+    fn kani_phase24_relation_sequence_rejects_boundary_mismatch() {
+        let first = kani_phase24_summary(0, 1, "s0", "s1");
+        let second = kani_phase24_summary(1, 3, "wrong", "s3");
+        assert!(verify_phase24_member_relation_sequence(&[first, second]).is_err());
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -8410,6 +9295,88 @@ mod tests {
         Ok(oracle_blake2b_256(&parts))
     }
 
+    fn oracle_commit_phase24_relation_template(
+        manifest: &Phase24DecodingStateRelationAccumulatorManifest,
+    ) -> Result<String> {
+        if manifest.member_summaries.len() < 2 {
+            return Err(VmError::InvalidConfig(
+                "decoding state relation accumulator must contain at least two members".to_string(),
+            ));
+        }
+        let mut parts = vec![
+            STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24
+                .as_bytes()
+                .to_vec(),
+            b"relation-template".to_vec(),
+            (manifest.member_summaries.len() as u64)
+                .to_le_bytes()
+                .to_vec(),
+            manifest.source_template_commitment.as_bytes().to_vec(),
+        ];
+        for (member_index, member) in manifest.member_summaries.iter().enumerate() {
+            parts.push((member_index as u64).to_le_bytes().to_vec());
+            parts.push(member.lookup_template_commitment.as_bytes().to_vec());
+            parts.push((member.total_matrices as u64).to_le_bytes().to_vec());
+            parts.push((member.total_layouts as u64).to_le_bytes().to_vec());
+            parts.push((member.total_rollups as u64).to_le_bytes().to_vec());
+            parts.push((member.total_segments as u64).to_le_bytes().to_vec());
+            parts.push((member.total_steps as u64).to_le_bytes().to_vec());
+        }
+        Ok(oracle_blake2b_256(&parts))
+    }
+
+    fn oracle_commit_phase24_state_relation_accumulator(
+        manifest: &Phase24DecodingStateRelationAccumulatorManifest,
+    ) -> Result<String> {
+        if manifest.member_summaries.len() < 2 {
+            return Err(VmError::InvalidConfig(
+                "decoding state relation accumulator must contain at least two members".to_string(),
+            ));
+        }
+        let mut parts = vec![
+            STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24
+                .as_bytes()
+                .to_vec(),
+            b"state-relation-accumulator".to_vec(),
+            manifest.source_template_commitment.as_bytes().to_vec(),
+            manifest.relation_template_commitment.as_bytes().to_vec(),
+            manifest.start_state_commitment.as_bytes().to_vec(),
+            manifest.end_state_commitment.as_bytes().to_vec(),
+            (manifest.member_count as u64).to_le_bytes().to_vec(),
+            (manifest.total_matrices as u64).to_le_bytes().to_vec(),
+            (manifest.total_layouts as u64).to_le_bytes().to_vec(),
+            (manifest.total_rollups as u64).to_le_bytes().to_vec(),
+            (manifest.total_segments as u64).to_le_bytes().to_vec(),
+            (manifest.total_steps as u64).to_le_bytes().to_vec(),
+            (manifest.lookup_delta_entries as u64)
+                .to_le_bytes()
+                .to_vec(),
+            (manifest.max_lookup_frontier_entries as u64)
+                .to_le_bytes()
+                .to_vec(),
+        ];
+        for (member_index, member) in manifest.member_summaries.iter().enumerate() {
+            parts.push((member_index as u64).to_le_bytes().to_vec());
+            parts.push((member.start_step as u64).to_le_bytes().to_vec());
+            parts.push((member.end_step as u64).to_le_bytes().to_vec());
+            parts.push(member.lookup_accumulator_commitment.as_bytes().to_vec());
+            parts.push(member.start_state_commitment.as_bytes().to_vec());
+            parts.push(member.end_state_commitment.as_bytes().to_vec());
+            parts.push((member.total_matrices as u64).to_le_bytes().to_vec());
+            parts.push((member.total_layouts as u64).to_le_bytes().to_vec());
+            parts.push((member.total_rollups as u64).to_le_bytes().to_vec());
+            parts.push((member.total_segments as u64).to_le_bytes().to_vec());
+            parts.push((member.total_steps as u64).to_le_bytes().to_vec());
+            parts.push((member.lookup_delta_entries as u64).to_le_bytes().to_vec());
+            parts.push(
+                (member.max_lookup_frontier_entries as u64)
+                    .to_le_bytes()
+                    .to_vec(),
+            );
+        }
+        Ok(oracle_blake2b_256(&parts))
+    }
+
     fn oracle_advance_phase14_open_chunk(
         layout_commitment: &str,
         previous_open_chunk_commitment: &str,
@@ -9364,6 +10331,12 @@ mod tests {
             .expect("phase23 cross-step lookup accumulator manifest")
     }
 
+    fn sample_phase24_decoding_state_relation_accumulator_manifest(
+    ) -> Phase24DecodingStateRelationAccumulatorManifest {
+        prove_phase24_decoding_state_relation_accumulator_demo()
+            .expect("phase24 state relation accumulator manifest")
+    }
+
     #[test]
     fn decoding_step_family_ignores_initial_memory_but_requires_template() {
         let mut initial = vec![0; 23];
@@ -9885,6 +10858,20 @@ mod tests {
     }
 
     #[test]
+    fn phase24_save_and_load_round_trip() {
+        let manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        let path = std::env::temp_dir().join(format!(
+            "phase24-decoding-state-relation-accumulator-roundtrip-{}.json",
+            std::process::id()
+        ));
+        save_phase24_decoding_state_relation_accumulator(&manifest, &path).expect("save");
+        let loaded = load_phase24_decoding_state_relation_accumulator(&path).expect("load");
+        verify_phase24_decoding_state_relation_accumulator(&loaded).expect("verify");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
     fn load_phase22_decoding_lookup_accumulator_rejects_tampered_manifest() {
         let mut manifest = sample_phase22_lookup_accumulator_manifest();
         manifest.source_accumulator_commitment = "tampered".to_string();
@@ -9925,6 +10912,28 @@ mod tests {
         assert!(err
             .to_string()
             .contains("start_boundary_commitment does not match the first member boundary"));
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn load_phase24_decoding_state_relation_accumulator_rejects_tampered_manifest() {
+        let mut manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        manifest.start_state_commitment = "tampered".to_string();
+        let path = std::env::temp_dir().join(format!(
+            "phase24-decoding-state-relation-accumulator-invalid-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        fs::write(
+            &path,
+            serde_json::to_vec_pretty(&manifest).expect("serialize invalid manifest"),
+        )
+        .expect("write invalid manifest");
+        let err = load_phase24_decoding_state_relation_accumulator(&path)
+            .expect_err("tampered load should fail");
+        assert!(err
+            .to_string()
+            .contains("start_state_commitment does not match the first member boundary"));
         let _ = fs::remove_file(path);
     }
 
@@ -9988,6 +10997,28 @@ mod tests {
         let _ = fs::remove_file(&path);
         let err = save_phase23_decoding_cross_step_lookup_accumulator(&manifest, &path)
             .expect_err("oversized phase23 manifest should be rejected on save");
+        assert!(err.to_string().contains("exceeding the limit"));
+        assert!(
+            !path.exists(),
+            "save should not write an unreadable manifest"
+        );
+    }
+
+    #[test]
+    fn save_phase24_decoding_state_relation_accumulator_rejects_manifest_exceeding_json_budget() {
+        let mut manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        manifest.members[0].members[0].accumulator.matrices[0].rollups[0].rollups[0].segments[0]
+            .chain
+            .steps[0]
+            .proof
+            .proof = vec![0; MAX_PHASE24_STATE_RELATION_ACCUMULATOR_JSON_BYTES];
+        let path = std::env::temp_dir().join(format!(
+            "phase24-decoding-state-relation-accumulator-save-oversized-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        let err = save_phase24_decoding_state_relation_accumulator(&manifest, &path)
+            .expect_err("oversized phase24 manifest should be rejected on save");
         assert!(err.to_string().contains("exceeding the limit"));
         assert!(
             !path.exists(),
@@ -10157,6 +11188,18 @@ mod tests {
             MAX_PHASE23_CROSS_STEP_LOOKUP_ACCUMULATOR_JSON_BYTES,
             &manifest,
             save_phase23_decoding_cross_step_lookup_accumulator,
+        );
+    }
+
+    #[test]
+    fn phase24_demo_manifest_fits_json_budget() {
+        let manifest = prove_phase24_decoding_state_relation_accumulator_demo()
+            .expect("phase24 state relation demo");
+        assert_saved_json_budget(
+            "phase24-demo",
+            MAX_PHASE24_STATE_RELATION_ACCUMULATOR_JSON_BYTES,
+            &manifest,
+            save_phase24_decoding_state_relation_accumulator,
         );
     }
 
@@ -12062,6 +13105,145 @@ mod tests {
         let oracle_accumulator =
             oracle_commit_phase23_lookup_accumulator(&manifest).expect("oracle accumulator");
         assert_ne!(manifest.accumulator_commitment, oracle_accumulator);
+    }
+
+    #[test]
+    fn phase24_state_relation_accumulator_accepts_contiguous_members() {
+        let manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        assert_eq!(manifest.member_count, 2);
+        assert_eq!(manifest.member_summaries.len(), 2);
+        assert!(manifest.total_steps >= 2);
+        assert_eq!(manifest.member_summaries[0].start_step, 0);
+        assert_eq!(
+            manifest.member_summaries[0].end_step,
+            manifest.member_summaries[0].total_steps
+        );
+        assert_eq!(
+            manifest.member_summaries[1].start_state_commitment,
+            manifest.member_summaries[0].end_state_commitment
+        );
+        verify_phase24_decoding_state_relation_accumulator(&manifest)
+            .expect("phase24 verification");
+    }
+
+    #[test]
+    fn phase24_state_relation_accumulator_rejects_tampered_relation_accumulator_commitment() {
+        let mut manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        manifest.relation_accumulator_commitment = "tampered".to_string();
+        let err = verify_phase24_decoding_state_relation_accumulator(&manifest).unwrap_err();
+        assert!(err.to_string().contains(
+            "relation_accumulator_commitment does not match the computed accumulator commitment"
+        ));
+    }
+
+    #[test]
+    fn phase24_state_relation_accumulator_rejects_tampered_relation_template_commitment() {
+        let mut manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        manifest.relation_template_commitment = "tampered".to_string();
+        let err = verify_phase24_decoding_state_relation_accumulator(&manifest).unwrap_err();
+        assert!(err.to_string().contains(
+            "relation_template_commitment does not match the computed member relation template commitment"
+        ));
+    }
+
+    #[test]
+    fn phase24_state_relation_accumulator_rejects_tampered_start_state_commitment() {
+        let mut manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        manifest.start_state_commitment = "tampered".to_string();
+        let err = verify_phase24_decoding_state_relation_accumulator(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("start_state_commitment does not match the first member boundary"));
+    }
+
+    #[test]
+    fn phase24_state_relation_accumulator_rejects_tampered_end_state_commitment() {
+        let mut manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        manifest.end_state_commitment = "tampered".to_string();
+        let err = verify_phase24_decoding_state_relation_accumulator(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("end_state_commitment does not match the last member boundary"));
+    }
+
+    #[test]
+    fn phase24_state_relation_accumulator_rejects_tampered_lookup_delta_entries() {
+        let mut manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        manifest.lookup_delta_entries = manifest.lookup_delta_entries.saturating_add(1);
+        let err = verify_phase24_decoding_state_relation_accumulator(&manifest).unwrap_err();
+        assert!(err.to_string().contains("lookup_delta_entries="));
+        assert!(err
+            .to_string()
+            .contains("does not match derived lookup_delta_entries"));
+    }
+
+    #[test]
+    fn phase24_state_relation_accumulator_rejects_non_contiguous_member_boundary() {
+        let mut manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        manifest.members[1].members[0].accumulator.matrices[0].rollups[0].rollups[0]
+            .global_to_state
+            .lookup_transcript_entries =
+            manifest.members[1].members[0].accumulator.matrices[0].rollups[0].rollups[0]
+                .global_to_state
+                .lookup_transcript_entries
+                .saturating_add(1);
+        manifest.members[1].members[0].accumulator.matrices[0].rollups[0].rollups[0]
+            .global_to_state
+            .public_state_commitment = commit_phase14_public_state(
+            &manifest.members[1].members[0].accumulator.matrices[0].rollups[0].rollups[0]
+                .global_to_state,
+        );
+        let err = verify_phase24_decoding_state_relation_accumulator(&manifest).unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("member 1 failed Phase 23 verification")
+                || err.to_string().contains(
+                    "member boundary 0 -> 1 does not preserve the full carried-state commitment"
+                )
+        );
+    }
+
+    #[test]
+    fn phase24_state_relation_accumulator_rejects_tampered_member_summaries() {
+        let mut manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        manifest.member_summaries[1].start_step = 99;
+        let err = verify_phase24_decoding_state_relation_accumulator(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("member_summaries do not match the derived member summaries"));
+    }
+
+    #[test]
+    fn phase24_oracle_matches_production_commitments() {
+        let manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        verify_phase24_decoding_state_relation_accumulator(&manifest).expect("production verifier");
+        let oracle_template =
+            oracle_commit_phase24_relation_template(&manifest).expect("oracle template");
+        let oracle_accumulator = oracle_commit_phase24_state_relation_accumulator(&manifest)
+            .expect("oracle accumulator");
+        assert_eq!(manifest.relation_template_commitment, oracle_template);
+        assert_eq!(manifest.relation_accumulator_commitment, oracle_accumulator);
+    }
+
+    #[test]
+    fn phase24_oracle_and_production_reject_same_accumulator_tamper() {
+        let mut manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        manifest.relation_accumulator_commitment = "tampered".to_string();
+        assert!(verify_phase24_decoding_state_relation_accumulator(&manifest).is_err());
+        let oracle_accumulator = oracle_commit_phase24_state_relation_accumulator(&manifest)
+            .expect("oracle accumulator");
+        assert_ne!(manifest.relation_accumulator_commitment, oracle_accumulator);
+    }
+
+    #[test]
+    fn phase24_state_relation_accumulator_commitment_changes_when_lookup_delta_changes() {
+        let mut manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        let original = manifest.relation_accumulator_commitment.clone();
+        manifest.lookup_delta_entries = manifest.lookup_delta_entries.saturating_add(1);
+        assert!(verify_phase24_decoding_state_relation_accumulator(&manifest).is_err());
+        let oracle = oracle_commit_phase24_state_relation_accumulator(&manifest)
+            .expect("oracle accumulator");
+        assert_ne!(oracle, original);
     }
 
     #[test]
