@@ -436,6 +436,14 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-decoding-lookup-accumulator-demo decoding-lookup-accumulator.stwo.json
 
+# Produce and verify the Phase 23 cross-step lookup accumulator over multiple Phase 22 windows
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prove-stwo-decoding-cross-step-lookup-accumulator-demo \
+  -o decoding-cross-step-lookup-accumulator.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-decoding-cross-step-lookup-accumulator-demo \
+  decoding-cross-step-lookup-accumulator.stwo.json
+
 # Freeze a canonical pre-aggregation batch manifest for future recursion work
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-recursion-batch \

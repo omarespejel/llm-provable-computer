@@ -597,7 +597,9 @@ mod tests {
                 normalization_wrapper.statement_version
             )));
         }
-        if normalization_wrapper.semantic_scope != ORACLE_DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE {
+        if normalization_wrapper.semantic_scope
+            != ORACLE_DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE
+        {
             return Err(VmError::InvalidConfig(format!(
                 "unsupported Phase 12 shared lookup artifact normalization scope `{}`",
                 normalization_wrapper.semantic_scope
