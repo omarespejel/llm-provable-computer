@@ -266,12 +266,18 @@ def parse_index_timings(index_text: str) -> dict[str, int]:
     out: dict[str, int] = {}
     if len(rows) < 3:
         return out
+    header = rows[0]
+    try:
+        label_idx = header.index("Label")
+        seconds_idx = header.index("Seconds")
+    except ValueError:
+        return out
     # Skip header + separator.
     for row in rows[2:]:
-        if len(row) < 2:
+        if len(row) <= max(label_idx, seconds_idx):
             continue
-        label = row[0].strip("`")
-        seconds_cell = row[1]
+        label = row[label_idx].strip("`")
+        seconds_cell = row[seconds_idx]
         digits = re.sub(r"[^0-9]", "", seconds_cell)
         if not digits:
             continue
@@ -286,15 +292,24 @@ def parse_appendix_backend_rows(appendix_text: str) -> dict[tuple[str, str], tup
     out: dict[tuple[str, str], tuple[int, int, int]] = {}
     if len(rows) < 3:
         return out
+    header = rows[0]
+    try:
+        artifact_idx = header.index("Artifact")
+        backend_idx = header.index("Backend")
+        prove_idx = header.index("Prove")
+        verify_idx = header.index("Verify")
+        size_idx = header.index("Proof size")
+    except ValueError:
+        return out
     # Skip header + separator.
     for row in rows[2:]:
-        if len(row) < 6:
+        if len(row) <= max(artifact_idx, backend_idx, prove_idx, verify_idx, size_idx):
             continue
-        artifact = row[0].strip().strip("`")
-        backend = row[1].strip().strip("`")
-        prove_digits = re.sub(r"[^0-9]", "", row[3])
-        verify_digits = re.sub(r"[^0-9]", "", row[4])
-        size_digits = re.sub(r"[^0-9]", "", row[5])
+        artifact = row[artifact_idx].strip().strip("`")
+        backend = row[backend_idx].strip().strip("`")
+        prove_digits = re.sub(r"[^0-9]", "", row[prove_idx])
+        verify_digits = re.sub(r"[^0-9]", "", row[verify_idx])
+        size_digits = re.sub(r"[^0-9]", "", row[size_idx])
         if not (prove_digits and verify_digits and size_digits):
             continue
         out[(artifact, backend)] = (int(prove_digits), int(verify_digits), int(size_digits))
@@ -327,6 +342,63 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
     prod_timings = parse_index_timings(prod_text)
     stwo_sizes = parse_index_sizes(stwo_text)
     stwo_timings = parse_index_timings(stwo_text)
+
+    required_prod_timing_keys = [
+        "prove_addition",
+        "verify_addition",
+        "prove_dot_product",
+        "verify_dot_product",
+        "prove_single_neuron",
+        "verify_single_neuron",
+    ]
+    required_prod_size_keys = [
+        "addition.proof.json",
+        "dot_product.proof.json",
+        "single_neuron.proof.json",
+    ]
+    required_stwo_timing_keys = [
+        "prove_addition_stwo",
+        "verify_addition_stwo",
+        "prove_shared_normalization_stwo",
+        "verify_shared_normalization_stwo",
+        "prove_gemma_block_v4_stwo",
+        "verify_gemma_block_v4_stwo",
+        "prove_decoding_demo_stwo",
+        "verify_decoding_demo_stwo",
+    ]
+    required_stwo_size_keys = [
+        "addition.stwo.proof.json",
+        "shared-normalization.stwo.proof.json",
+        "gemma_block_v4.stwo.proof.json",
+        "decoding.stwo.chain.json",
+    ]
+
+    missing_prod_timing = sorted(k for k in required_prod_timing_keys if k not in prod_timings)
+    missing_prod_sizes = sorted(k for k in required_prod_size_keys if k not in prod_sizes)
+    missing_stwo_timing = sorted(k for k in required_stwo_timing_keys if k not in stwo_timings)
+    missing_stwo_sizes = sorted(k for k in required_stwo_size_keys if k not in stwo_sizes)
+    if missing_prod_timing:
+        findings.error(
+            f"{prod_index_path}: missing timing keys required for Appendix C consistency check: "
+            f"{missing_prod_timing}"
+        )
+    if missing_prod_sizes:
+        findings.error(
+            f"{prod_index_path}: missing artifact-size keys required for Appendix C consistency check: "
+            f"{missing_prod_sizes}"
+        )
+    if missing_stwo_timing:
+        findings.error(
+            f"{stwo_index_path}: missing timing keys required for Appendix C consistency check: "
+            f"{missing_stwo_timing}"
+        )
+    if missing_stwo_sizes:
+        findings.error(
+            f"{stwo_index_path}: missing artifact-size keys required for Appendix C consistency check: "
+            f"{missing_stwo_sizes}"
+        )
+    if missing_prod_timing or missing_prod_sizes or missing_stwo_timing or missing_stwo_sizes:
+        return
 
     expected: dict[tuple[str, str], tuple[int, int, int]] = {
         ("addition", "vanilla"): (
