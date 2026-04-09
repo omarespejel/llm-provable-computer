@@ -544,7 +544,7 @@ matrix/rollup-style packaging layers described in the next-paper track.
 - Phase 19: carried lookup transcripts over the same Phase 14-17 stack
 - Phase 20: explicit lookup frontier commitments over that same stack
 - Phase 21: template-bound accumulation over Phase 17 matrices with explicit template and accumulator commitments
-- Phase 22: lookup-side accumulation over a verified Phase 21 source accumulator with explicit source/template binding and derived frontier/count checks
+- Phase 22: lookup-side accumulation over a verified Phase 21 source accumulator with explicit source/template binding and derived frontier/count checks before recursion
 
 #### Explicit Non-Goals
 
