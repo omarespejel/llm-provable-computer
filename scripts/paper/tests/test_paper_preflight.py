@@ -239,6 +239,33 @@ class PaperPreflightTests(unittest.TestCase):
                 findings.errors,
             )
 
+    def test_check_backend_consistency_reports_missing_size_keys_without_exception(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(
+                repo / "docs/paper/appendix-backend-artifact-comparison.md",
+                valid_appendix_table(),
+            )
+            write_text(
+                repo / "docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md",
+                valid_prod_index(),
+            )
+            broken_stwo = valid_stwo_index().replace(
+                "| addition.stwo.proof.json | x | arithmetic | 54563 | a |\n",
+                "",
+            )
+            write_text(
+                repo / "docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md",
+                broken_stwo,
+            )
+            findings = MOD.Findings()
+            MOD.check_backend_appendix_consistency(repo, findings)
+            self.assertTrue(findings.errors)
+            self.assertTrue(
+                any("missing artifact-size keys" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

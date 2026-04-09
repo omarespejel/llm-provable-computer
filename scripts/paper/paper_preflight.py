@@ -442,6 +442,10 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
     if missing_prod_timing or missing_prod_sizes or missing_stwo_timing or missing_stwo_sizes:
         return
 
+    # NOTE: This mapping is intentionally strict for frozen-artifact validation.
+    # Table C1 artifact/backend labels (after backtick stripping) and frozen index
+    # timing/size keys must match these entries exactly. If naming conventions or
+    # compared artifact rows change, update this mapping explicitly.
     expected: dict[tuple[str, str], tuple[int, int, int]] = {
         ("addition", "vanilla"): (
             prod_timings["prove_addition"],
