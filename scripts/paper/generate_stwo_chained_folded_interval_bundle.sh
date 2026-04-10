@@ -67,11 +67,11 @@ PY
 BUNDLE_DIR="$CANON_BUNDLE_DIR"
 REL_BUNDLE_DIR="$(relpath_from "$BUNDLE_DIR" "$REPO_ROOT")"
 REL_TVM_BIN="$(relpath_from "$TVM_BIN" "$REPO_ROOT")"
-rm -rf -- "$BUNDLE_DIR"
 if [ -n "$(git status --porcelain --untracked-files=normal)" ]; then
   echo "Refusing to generate frozen bundle from a dirty worktree; commit or stash local changes first" >&2
   exit 1
 fi
+rm -rf -- "$BUNDLE_DIR"
 mkdir -p "$BUNDLE_DIR"
 
 MANIFEST="$BUNDLE_DIR/manifest.txt"
