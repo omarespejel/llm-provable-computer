@@ -78,7 +78,7 @@ pub use stwo_backend::{
     load_phase25_intervalized_decoding_state_relation,
     load_phase26_folded_intervalized_decoding_state_relation,
     load_phase27_chained_folded_intervalized_decoding_state_relation,
-    load_phase27_chained_folded_intervalized_decoding_state_relation_unchecked,
+    load_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     load_phase3_binary_step_lookup_proof, load_phase5_normalization_lookup_proof,
     matches_decoding_step_v1_family, matches_decoding_step_v2_family,
     phase11_prepare_decoding_chain, phase12_default_decoding_layout,

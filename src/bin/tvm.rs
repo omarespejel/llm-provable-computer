@@ -39,7 +39,7 @@ use llm_provable_computer::{
     load_phase24_decoding_state_relation_accumulator,
     load_phase25_intervalized_decoding_state_relation,
     load_phase26_folded_intervalized_decoding_state_relation,
-    load_phase27_chained_folded_intervalized_decoding_state_relation_unchecked,
+    load_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     load_phase3_binary_step_lookup_proof, load_phase5_normalization_lookup_proof,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
@@ -79,7 +79,6 @@ use llm_provable_computer::{
     verify_phase24_decoding_state_relation_accumulator_with_proof_checks,
     verify_phase25_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase26_folded_intervalized_decoding_state_relation_with_proof_checks,
-    verify_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase3_binary_step_lookup_demo_envelope,
     verify_phase5_normalization_lookup_demo_envelope, STWO_BACKEND_VERSION_PHASE12,
     STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
@@ -3032,10 +3031,9 @@ fn verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_command(
     #[cfg(feature = "stwo-backend")]
     {
         let manifest =
-            load_phase27_chained_folded_intervalized_decoding_state_relation_unchecked(proof_path)?;
-        verify_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks(
-            &manifest,
-        )?;
+            load_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks(
+                proof_path,
+            )?;
 
         println!("proof: {}", proof_path.display());
         println!("verified_stark: true");
@@ -3899,6 +3897,11 @@ mod tests {
         assert!(suite.contains(&PathBuf::from("programs/matmul_2x2.tvm")));
         assert!(suite.contains(&PathBuf::from("programs/single_neuron.tvm")));
     }
+}
+
+#[cfg(test)]
+mod cli_dispatch_tests {
+    use super::needs_run_subcommand;
 
     #[test]
     fn intervalized_phase25_commands_do_not_fall_back_to_run_shorthand() {

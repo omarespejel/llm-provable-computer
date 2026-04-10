@@ -8031,7 +8031,7 @@ pub fn save_phase27_chained_folded_intervalized_decoding_state_relation(
     )
 }
 
-pub fn load_phase27_chained_folded_intervalized_decoding_state_relation_unchecked(
+fn load_phase27_chained_folded_intervalized_decoding_state_relation_unchecked(
     path: &Path,
 ) -> Result<Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest> {
     let bytes = read_json_bytes_with_limit(
@@ -8048,6 +8048,17 @@ pub fn load_phase27_chained_folded_intervalized_decoding_state_relation(
     let manifest =
         load_phase27_chained_folded_intervalized_decoding_state_relation_unchecked(path)?;
     verify_phase27_chained_folded_intervalized_decoding_state_relation(&manifest)?;
+    Ok(manifest)
+}
+
+pub fn load_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks(
+    path: &Path,
+) -> Result<Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest> {
+    let manifest =
+        load_phase27_chained_folded_intervalized_decoding_state_relation_unchecked(path)?;
+    verify_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks(
+        &manifest,
+    )?;
     Ok(manifest)
 }
 
