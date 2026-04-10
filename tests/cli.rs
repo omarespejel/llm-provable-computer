@@ -13,14 +13,17 @@ use jsonschema::{Draft, JSONSchema};
 use predicates::prelude::*;
 #[cfg(feature = "stwo-backend")]
 use std::io::Write;
+#[cfg(feature = "stwo-backend")]
+use std::sync::{Mutex, OnceLock};
 
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::stwo_backend::{
     commit_phase12_shared_lookup_rows, prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, Phase10SharedLookupProofEnvelope,
     Phase10SharedNormalizationLookupProofEnvelope, Phase3LookupTableRow,
-    STWO_BACKEND_VERSION_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE12,
-    STWO_DECODING_CHAIN_VERSION_PHASE14,
+    STWO_BACKEND_VERSION_PHASE12,
+    STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
+    STWO_DECODING_CHAIN_VERSION_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE14,
     STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23,
     STWO_DECODING_LAYOUT_MATRIX_VERSION_PHASE13, STWO_DECODING_LOOKUP_ACCUMULATOR_VERSION_PHASE22,
     STWO_DECODING_MATRIX_ACCUMULATOR_VERSION_PHASE21, STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17,
@@ -48,6 +51,73 @@ fn write_test_gzip_copy(source: &std::path::Path, target: &std::path::Path) {
         .write(file, flate2::Compression::best());
     encoder.write_all(&bytes).expect("write gzip bytes");
     encoder.finish().expect("finish gzip copy");
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase27_cli_test_guard() -> std::sync::MutexGuard<'static, ()> {
+    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    LOCK.get_or_init(|| Mutex::new(()))
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+fn tvm_command() -> Command {
+    let binary = std::env::var_os("CARGO_BIN_EXE_tvm")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            let target_dir = std::env::var_os("CARGO_TARGET_DIR")
+                .map(PathBuf::from)
+                .map(|path| {
+                    if path.is_absolute() {
+                        path
+                    } else {
+                        manifest_dir.join(path)
+                    }
+                })
+                .unwrap_or_else(|| manifest_dir.join("target"));
+            let profile = std::env::var("PROFILE").unwrap_or_else(|_| "debug".to_string());
+            let binary_name = format!("tvm{}", std::env::consts::EXE_SUFFIX);
+            let mut candidates = Vec::new();
+            if let Some(target_triple) = std::env::var_os("CARGO_BUILD_TARGET")
+                .or_else(|| std::env::var_os("TARGET"))
+            {
+                candidates.push(target_dir.join(target_triple).join(&profile).join(&binary_name));
+            }
+            candidates.push(target_dir.join(&profile).join(&binary_name));
+            candidates.push(manifest_dir.join("target").join(&profile).join(&binary_name));
+            candidates
+                .into_iter()
+                .find(|candidate| candidate.exists())
+                .unwrap_or_else(|| {
+                    panic!(
+                        "could not resolve `tvm` binary; checked CARGO_BIN_EXE_tvm and fallback candidates under `{}`",
+                        target_dir.display()
+                    )
+                })
+        });
+    Command::from_std(std::process::Command::new(binary))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase27_cli_demo_fixture_path() -> PathBuf {
+    static FIXTURE: OnceLock<PathBuf> = OnceLock::new();
+    FIXTURE
+        .get_or_init(|| {
+            let path = unique_temp_dir(
+                "cli-stwo-chained-folded-intervalized-decoding-state-relation-fixture",
+            )
+            .with_extension("json");
+            let mut prove = tvm_command();
+            prove
+                .arg("prove-stwo-chained-folded-intervalized-decoding-state-relation-demo")
+                .arg("-o")
+                .arg(&path)
+                .assert()
+                .success();
+            path
+        })
+        .clone()
 }
 
 #[cfg(feature = "onnx-export")]
@@ -228,7 +298,7 @@ fn assert_research_v2_spec_commitments(
 
 #[test]
 fn cli_runs_addition_program() {
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("run")
         .arg("programs/addition.tvm")
@@ -241,7 +311,7 @@ fn cli_runs_addition_program() {
 
 #[test]
 fn cli_supports_program_path_shortcut() {
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("programs/addition.tvm")
         .assert()
@@ -252,7 +322,7 @@ fn cli_supports_program_path_shortcut() {
 
 #[test]
 fn cli_help_describes_subcommands() {
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("--help")
         .assert()
@@ -267,7 +337,7 @@ fn cli_help_describes_subcommands() {
 
 #[test]
 fn cli_run_help_describes_core_flags() {
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("run")
         .arg("--help")
@@ -286,7 +356,7 @@ fn cli_run_help_describes_core_flags() {
 
 #[test]
 fn cli_stark_help_describes_profile_flags() {
-    let mut prove_help = Command::cargo_bin("tvm").expect("binary");
+    let mut prove_help = tvm_command();
     prove_help
         .arg("prove-stark")
         .arg("--help")
@@ -296,7 +366,7 @@ fn cli_stark_help_describes_profile_flags() {
         .stdout(predicate::str::contains("--backend"))
         .stdout(predicate::str::contains("production-v1"));
 
-    let mut verify_help = Command::cargo_bin("tvm").expect("binary");
+    let mut verify_help = tvm_command();
     verify_help
         .arg("verify-stark")
         .arg("--help")
@@ -309,7 +379,7 @@ fn cli_stark_help_describes_profile_flags() {
 
 #[test]
 fn cli_supports_multi_layer_trace_output() {
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("run")
         .arg("programs/addition.tvm")
@@ -326,7 +396,7 @@ fn cli_supports_multi_layer_trace_output() {
 
 #[test]
 fn cli_runs_subroutine_program() {
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("run")
         .arg("programs/subroutine_addition.tvm")
@@ -340,7 +410,7 @@ fn cli_runs_subroutine_program() {
 
 #[test]
 fn cli_supports_native_engine_selection() {
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("run")
         .arg("programs/addition.tvm")
@@ -354,7 +424,7 @@ fn cli_supports_native_engine_selection() {
 
 #[test]
 fn cli_accepts_attention_mode_flag() {
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("run")
         .arg("programs/soft_attention_memory.tvm")
@@ -368,7 +438,7 @@ fn cli_accepts_attention_mode_flag() {
 
 #[test]
 fn cli_can_verify_against_native_interpreter() {
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("run")
         .arg("programs/fibonacci.tvm")
@@ -386,7 +456,7 @@ fn cli_can_verify_against_native_interpreter() {
 fn cli_can_prove_and_verify_stark_execution() {
     let proof_path = unique_temp_dir("cli-stark-proof").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stark")
         .arg("programs/addition.tvm")
@@ -410,7 +480,7 @@ fn cli_can_prove_and_verify_stark_execution() {
 
     assert!(proof_path.exists());
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stark")
         .arg(&proof_path)
@@ -437,7 +507,7 @@ fn cli_can_prove_and_verify_stark_execution() {
 fn cli_prove_stark_requires_stwo_feature_flag() {
     let proof_path = unique_temp_dir("cli-stark-proof-stwo").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stark")
         .arg("programs/addition.tvm")
@@ -472,7 +542,7 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
         let proof_path =
             unique_temp_dir(&format!("cli-stark-proof-stwo-phase5-{stem}")).with_extension("json");
 
-        let mut prove = Command::cargo_bin("tvm").expect("binary");
+        let mut prove = tvm_command();
         prove
             .arg("prove-stark")
             .arg(program)
@@ -571,7 +641,7 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
             }
         }
 
-        let mut verify = Command::cargo_bin("tvm").expect("binary");
+        let mut verify = tvm_command();
         verify
             .arg("verify-stark")
             .arg(&proof_path)
@@ -597,7 +667,7 @@ fn cli_verify_stark_rejects_tampered_gemma_block_normalization_companion() {
     let invalid_path =
         unique_temp_dir("cli-stwo-gemma-block-proof-tampered").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stark")
         .arg("programs/gemma_block_v1.tvm")
@@ -616,11 +686,11 @@ fn cli_verify_stark_rejects_tampered_gemma_block_normalization_companion() {
         serde_json::json!(65);
     std::fs::write(
         &invalid_path,
-        serde_json::to_vec_pretty(&proof_json).expect("encode bad proof"),
+        serde_json::to_vec(&proof_json).expect("encode bad proof"),
     )
     .expect("write bad proof");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stark")
         .arg(&invalid_path)
@@ -642,7 +712,7 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v2_embedded_normalization() {
     let invalid_path =
         unique_temp_dir("cli-stwo-gemma-block-v2-proof-tampered").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stark")
         .arg("programs/gemma_block_v2.tvm")
@@ -674,11 +744,11 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v2_embedded_normalization() {
     );
     std::fs::write(
         &invalid_path,
-        serde_json::to_vec_pretty(&proof_json).expect("encode bad proof"),
+        serde_json::to_vec(&proof_json).expect("encode bad proof"),
     )
     .expect("write bad proof");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stark")
         .arg(&invalid_path)
@@ -700,7 +770,7 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v3_embedded_activation() {
     let invalid_path =
         unique_temp_dir("cli-stwo-gemma-block-v3-proof-tampered").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stark")
         .arg("programs/gemma_block_v3.tvm")
@@ -732,11 +802,11 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v3_embedded_activation() {
     );
     std::fs::write(
         &invalid_path,
-        serde_json::to_vec_pretty(&proof_json).expect("encode bad proof"),
+        serde_json::to_vec(&proof_json).expect("encode bad proof"),
     )
     .expect("write bad proof");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stark")
         .arg(&invalid_path)
@@ -758,7 +828,7 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v4_shared_normalization() {
     let invalid_path =
         unique_temp_dir("cli-stwo-gemma-block-v4-proof-tampered-norm").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stark")
         .arg("programs/gemma_block_v4.tvm")
@@ -791,11 +861,11 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v4_shared_normalization() {
     );
     std::fs::write(
         &invalid_path,
-        serde_json::to_vec_pretty(&proof_json).expect("encode bad proof"),
+        serde_json::to_vec(&proof_json).expect("encode bad proof"),
     )
     .expect("write bad proof");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stark")
         .arg(&invalid_path)
@@ -817,7 +887,7 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v4_shared_activation() {
     let invalid_path =
         unique_temp_dir("cli-stwo-gemma-block-v4-proof-tampered-act").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stark")
         .arg("programs/gemma_block_v4.tvm")
@@ -850,11 +920,11 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v4_shared_activation() {
     );
     std::fs::write(
         &invalid_path,
-        serde_json::to_vec_pretty(&proof_json).expect("encode bad proof"),
+        serde_json::to_vec(&proof_json).expect("encode bad proof"),
     )
     .expect("write bad proof");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stark")
         .arg(&invalid_path)
@@ -881,7 +951,7 @@ fn cli_verify_stark_rejects_mismatched_stwo_backend_version_for_program_family()
     let invalid_path =
         unique_temp_dir("cli-stwo-gemma-block-v4-proof-bad-version").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stark")
         .arg("programs/gemma_block_v4.tvm")
@@ -900,11 +970,11 @@ fn cli_verify_stark_rejects_mismatched_stwo_backend_version_for_program_family()
         serde_json::Value::String("stwo-phase11-decoding-step-v1".to_string());
     std::fs::write(
         &invalid_path,
-        serde_json::to_vec_pretty(&proof_json).expect("encode bad proof"),
+        serde_json::to_vec(&proof_json).expect("encode bad proof"),
     )
     .expect("write bad proof");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stark")
         .arg(&invalid_path)
@@ -924,7 +994,7 @@ fn cli_verify_stark_rejects_mismatched_stwo_backend_version_for_program_family()
 fn cli_prove_stark_rejects_program_outside_stwo_phase2_subset() {
     let proof_path = unique_temp_dir("cli-stark-proof-stwo-subset").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stark")
         .arg("programs/subroutine_addition.tvm")
@@ -947,7 +1017,7 @@ fn cli_prove_stark_rejects_phase5_programs_outside_shipped_fixtures() {
     let proof_path = temp_dir.with_extension("json");
     std::fs::write(&program_path, ".memory 4\n\nLOADI 9\nHALT\n").expect("write program");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stark")
         .arg(&program_path)
@@ -969,7 +1039,7 @@ fn cli_prove_stark_rejects_phase5_programs_outside_shipped_fixtures() {
 fn cli_can_prove_and_verify_stwo_lookup_demo() {
     let proof_path = unique_temp_dir("cli-stwo-lookup-demo-proof").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-lookup-demo")
         .arg("-o")
@@ -988,7 +1058,7 @@ fn cli_can_prove_and_verify_stwo_lookup_demo() {
     assert!(proof_json.contains("\"proof_backend\": \"stwo\""));
     assert!(proof_json.contains("stwo-phase3-binary-step-lookup-demo-v1"));
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-lookup-demo")
         .arg(&proof_path)
@@ -1010,7 +1080,7 @@ fn cli_can_prove_and_verify_stwo_lookup_demo() {
 fn cli_can_prove_and_verify_stwo_normalization_demo() {
     let proof_path = unique_temp_dir("cli-stwo-normalization-demo-proof").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-normalization-demo")
         .arg("-o")
@@ -1029,7 +1099,7 @@ fn cli_can_prove_and_verify_stwo_normalization_demo() {
     assert!(proof_json.contains("\"proof_backend\": \"stwo\""));
     assert!(proof_json.contains("stwo-phase5-normalization-demo-v1"));
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-normalization-demo")
         .arg(&proof_path)
@@ -1051,7 +1121,7 @@ fn cli_can_prove_and_verify_stwo_normalization_demo() {
 fn cli_can_prove_and_verify_stwo_shared_lookup_demo() {
     let proof_path = unique_temp_dir("cli-stwo-shared-lookup-demo-proof").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-shared-lookup-demo")
         .arg("-o")
@@ -1071,7 +1141,7 @@ fn cli_can_prove_and_verify_stwo_shared_lookup_demo() {
     assert!(proof_json.contains("\"proof_backend\": \"stwo\""));
     assert!(proof_json.contains("stwo-phase10-shared-binary-step-lookup-v1"));
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-shared-lookup-demo")
         .arg(&proof_path)
@@ -1091,7 +1161,7 @@ fn cli_can_prove_and_verify_stwo_shared_normalization_demo() {
     let proof_path =
         unique_temp_dir("cli-stwo-shared-normalization-demo-proof").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-shared-normalization-demo")
         .arg("-o")
@@ -1111,7 +1181,7 @@ fn cli_can_prove_and_verify_stwo_shared_normalization_demo() {
     assert!(proof_json.contains("\"proof_backend\": \"stwo\""));
     assert!(proof_json.contains("stwo-phase10-shared-normalization-lookup-v1"));
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-shared-normalization-demo")
         .arg(&proof_path)
@@ -1130,7 +1200,7 @@ fn cli_can_prove_and_verify_stwo_shared_normalization_demo() {
 fn cli_can_prove_and_verify_stwo_decoding_demo() {
     let proof_path = unique_temp_dir("cli-stwo-decoding-demo-proof").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-demo")
         .arg("-o")
@@ -1151,7 +1221,7 @@ fn cli_can_prove_and_verify_stwo_decoding_demo() {
     assert!(proof_json.contains("stwo-phase11-decoding-chain-v1"));
     assert!(proof_json.contains("stwo-phase11-decoding-step-v1"));
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-demo")
         .arg(&proof_path)
@@ -1172,7 +1242,7 @@ fn cli_verify_stwo_decoding_demo_rejects_tampered_kv_link() {
     let tampered_path =
         unique_temp_dir("cli-stwo-decoding-demo-proof-tampered").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-demo")
         .arg("-o")
@@ -1187,11 +1257,11 @@ fn cli_verify_stwo_decoding_demo_rejects_tampered_kv_link() {
         serde_json::Value::String("deadbeef".repeat(8));
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-demo")
         .arg(&tampered_path)
@@ -1210,7 +1280,7 @@ fn cli_verify_stwo_decoding_demo_rejects_tampered_kv_link() {
 fn cli_can_prove_and_verify_stwo_decoding_family_demo() {
     let proof_path = unique_temp_dir("cli-stwo-decoding-family-demo-proof").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-family-demo")
         .arg("-o")
@@ -1251,7 +1321,7 @@ fn cli_can_prove_and_verify_stwo_decoding_family_demo() {
         Some(STWO_BACKEND_VERSION_PHASE12)
     );
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-family-demo")
         .arg(&proof_path)
@@ -1280,7 +1350,7 @@ fn cli_verify_stwo_decoding_family_demo_rejects_tampered_persistent_link() {
     let tampered_path =
         unique_temp_dir("cli-stwo-decoding-family-demo-proof-tampered").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-family-demo")
         .arg("-o")
@@ -1295,11 +1365,11 @@ fn cli_verify_stwo_decoding_family_demo_rejects_tampered_persistent_link() {
         serde_json::Value::String("deadbeef".repeat(8));
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-family-demo")
         .arg(&tampered_path)
@@ -1321,7 +1391,7 @@ fn cli_verify_stwo_decoding_family_demo_rejects_tampered_history_link() {
     let tampered_path =
         unique_temp_dir("cli-stwo-decoding-family-demo-history-tampered").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-family-demo")
         .arg("-o")
@@ -1336,11 +1406,11 @@ fn cli_verify_stwo_decoding_family_demo_rejects_tampered_history_link() {
         serde_json::Value::String("beadfeed".repeat(8));
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-family-demo")
         .arg(&tampered_path)
@@ -1364,7 +1434,7 @@ fn cli_verify_stwo_decoding_family_demo_rejects_missing_shared_lookup_artifact()
     let wrong_ref_path =
         unique_temp_dir("cli-stwo-decoding-family-demo-artifact-wrong-ref").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-family-demo")
         .arg("-o")
@@ -1378,11 +1448,11 @@ fn cli_verify_stwo_decoding_family_demo_rejects_missing_shared_lookup_artifact()
     proof_json["shared_lookup_artifacts"] = serde_json::Value::Array(Vec::new());
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-family-demo")
         .arg(&tampered_path)
@@ -1462,11 +1532,11 @@ fn cli_verify_stwo_decoding_family_demo_rejects_missing_shared_lookup_artifact()
         serde_json::Value::String(wrong_commitment);
     std::fs::write(
         &wrong_ref_path,
-        serde_json::to_vec_pretty(&wrong_ref_json).expect("serialize"),
+        serde_json::to_vec(&wrong_ref_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify_wrong_ref = Command::cargo_bin("tvm").expect("binary");
+    let mut verify_wrong_ref = tvm_command();
     verify_wrong_ref
         .arg("verify-stwo-decoding-family-demo")
         .arg(&wrong_ref_path)
@@ -1487,7 +1557,7 @@ fn cli_verify_stwo_decoding_family_demo_rejects_tampered_layout() {
     let tampered_path =
         unique_temp_dir("cli-stwo-decoding-family-demo-layout-tampered").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-family-demo")
         .arg("-o")
@@ -1501,11 +1571,11 @@ fn cli_verify_stwo_decoding_family_demo_rejects_tampered_layout() {
     proof_json["layout"]["rolling_kv_pairs"] = serde_json::Value::from(3u64);
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-family-demo")
         .arg(&tampered_path)
@@ -1530,7 +1600,7 @@ fn cli_can_prove_and_verify_stwo_decoding_layout_matrix_demo() {
     let proof_path =
         unique_temp_dir("cli-stwo-decoding-layout-matrix-proof").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-layout-matrix-demo")
         .arg("-o")
@@ -1560,7 +1630,7 @@ fn cli_can_prove_and_verify_stwo_decoding_layout_matrix_demo() {
         Some(3)
     );
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-layout-matrix-demo")
         .arg(&proof_path)
@@ -1585,7 +1655,7 @@ fn cli_verify_stwo_decoding_layout_matrix_demo_rejects_tampered_totals() {
     let tampered_path =
         unique_temp_dir("cli-stwo-decoding-layout-matrix-tampered").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-layout-matrix-demo")
         .arg("-o")
@@ -1599,11 +1669,11 @@ fn cli_verify_stwo_decoding_layout_matrix_demo_rejects_tampered_totals() {
     proof_json["total_layouts"] = serde_json::Value::from(99u64);
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-layout-matrix-demo")
         .arg(&tampered_path)
@@ -1623,7 +1693,7 @@ fn cli_can_prove_and_verify_stwo_decoding_chunked_history_demo() {
     let proof_path =
         unique_temp_dir("cli-stwo-decoding-chunked-history-proof").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-chunked-history-demo")
         .arg("-o")
@@ -1655,7 +1725,7 @@ fn cli_can_prove_and_verify_stwo_decoding_chunked_history_demo() {
         Some(2)
     );
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-chunked-history-demo")
         .arg(&proof_path)
@@ -1682,7 +1752,7 @@ fn cli_verify_stwo_decoding_chunked_history_demo_rejects_tampered_chunk_state() 
     let tampered_path =
         unique_temp_dir("cli-stwo-decoding-chunked-history-tampered").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-chunked-history-demo")
         .arg("-o")
@@ -1697,11 +1767,11 @@ fn cli_verify_stwo_decoding_chunked_history_demo_rejects_tampered_chunk_state() 
         serde_json::Value::from(0u64);
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-chunked-history-demo")
         .arg(&tampered_path)
@@ -1721,7 +1791,7 @@ fn cli_can_prove_and_verify_stwo_decoding_history_segments_demo() {
     let proof_path =
         unique_temp_dir("cli-stwo-decoding-history-segments-proof").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-history-segments-demo")
         .arg("-o")
@@ -1752,7 +1822,7 @@ fn cli_can_prove_and_verify_stwo_decoding_history_segments_demo() {
         Some(2)
     );
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-history-segments-demo")
         .arg(&proof_path)
@@ -1778,7 +1848,7 @@ fn cli_verify_stwo_decoding_history_segments_demo_rejects_tampered_segment_start
     let tampered_path =
         unique_temp_dir("cli-stwo-decoding-history-segments-tampered").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-history-segments-demo")
         .arg("-o")
@@ -1792,11 +1862,11 @@ fn cli_verify_stwo_decoding_history_segments_demo_rejects_tampered_segment_start
     proof_json["segments"][1]["global_start_step_index"] = serde_json::Value::from(99u64);
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-history-segments-demo")
         .arg(&tampered_path)
@@ -1816,7 +1886,7 @@ fn cli_can_prove_and_verify_stwo_decoding_history_rollup_demo() {
     let proof_path =
         unique_temp_dir("cli-stwo-decoding-history-rollup-proof").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-history-rollup-demo")
         .arg("-o")
@@ -1847,7 +1917,7 @@ fn cli_can_prove_and_verify_stwo_decoding_history_rollup_demo() {
         Some(2)
     );
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-history-rollup-demo")
         .arg(&proof_path)
@@ -1873,7 +1943,7 @@ fn cli_verify_stwo_decoding_history_rollup_demo_rejects_tampered_rollup_start() 
     let tampered_path =
         unique_temp_dir("cli-stwo-decoding-history-rollup-tampered").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-history-rollup-demo")
         .arg("-o")
@@ -1897,11 +1967,11 @@ fn cli_verify_stwo_decoding_history_rollup_demo_rejects_tampered_rollup_start() 
     rollup["global_start_step_index"] = serde_json::Value::from(99u64);
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-history-rollup-demo")
         .arg(&tampered_path)
@@ -1921,7 +1991,7 @@ fn cli_can_prove_and_verify_stwo_decoding_history_rollup_matrix_demo() {
     let proof_path =
         unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-proof").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-history-rollup-matrix-demo")
         .arg("-o")
@@ -1944,7 +2014,7 @@ fn cli_can_prove_and_verify_stwo_decoding_history_rollup_matrix_demo() {
         Some(STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17)
     );
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-history-rollup-matrix-demo")
         .arg(&proof_path)
@@ -1969,7 +2039,7 @@ fn cli_verify_stwo_decoding_history_rollup_matrix_demo_rejects_tampered_total_ro
     let tampered_path =
         unique_temp_dir("cli-stwo-decoding-history-rollup-matrix-tampered").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-history-rollup-matrix-demo")
         .arg("-o")
@@ -1983,11 +2053,11 @@ fn cli_verify_stwo_decoding_history_rollup_matrix_demo_rejects_tampered_total_ro
     proof_json["total_rollups"] = serde_json::Value::from(99u64);
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-history-rollup-matrix-demo")
         .arg(&tampered_path)
@@ -2007,7 +2077,7 @@ fn cli_can_prove_and_verify_stwo_decoding_matrix_accumulator_demo() {
     let proof_path =
         unique_temp_dir("cli-stwo-decoding-matrix-accumulator-proof").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-matrix-accumulator-demo")
         .arg("-o")
@@ -2031,7 +2101,7 @@ fn cli_can_prove_and_verify_stwo_decoding_matrix_accumulator_demo() {
         Some(STWO_DECODING_MATRIX_ACCUMULATOR_VERSION_PHASE21)
     );
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-matrix-accumulator-demo")
         .arg(&proof_path)
@@ -2056,7 +2126,7 @@ fn cli_verify_stwo_decoding_matrix_accumulator_demo_rejects_tampered_accumulator
     let tampered_path =
         unique_temp_dir("cli-stwo-decoding-matrix-accumulator-tampered").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-matrix-accumulator-demo")
         .arg("-o")
@@ -2070,11 +2140,11 @@ fn cli_verify_stwo_decoding_matrix_accumulator_demo_rejects_tampered_accumulator
     proof_json["accumulator_commitment"] = serde_json::Value::from("tampered");
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-matrix-accumulator-demo")
         .arg(&tampered_path)
@@ -2094,7 +2164,7 @@ fn cli_can_prove_and_verify_stwo_decoding_lookup_accumulator_demo() {
     let proof_path =
         unique_temp_dir("cli-stwo-decoding-lookup-accumulator-proof").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-lookup-accumulator-demo")
         .arg("-o")
@@ -2118,7 +2188,7 @@ fn cli_can_prove_and_verify_stwo_decoding_lookup_accumulator_demo() {
         Some(STWO_DECODING_LOOKUP_ACCUMULATOR_VERSION_PHASE22)
     );
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-lookup-accumulator-demo")
         .arg(&proof_path)
@@ -2143,7 +2213,7 @@ fn cli_verify_stwo_decoding_lookup_accumulator_demo_rejects_tampered_lookup_delt
     let tampered_path =
         unique_temp_dir("cli-stwo-decoding-lookup-accumulator-tampered").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-lookup-accumulator-demo")
         .arg("-o")
@@ -2161,11 +2231,11 @@ fn cli_verify_stwo_decoding_lookup_accumulator_demo_rejects_tampered_lookup_delt
         serde_json::Value::from(original_lookup_delta_entries.saturating_add(1));
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-lookup-accumulator-demo")
         .arg(&tampered_path)
@@ -2188,7 +2258,7 @@ fn cli_verify_stwo_decoding_lookup_accumulator_demo_rejects_tampered_max_lookup_
     let tampered_path = unique_temp_dir("cli-stwo-decoding-lookup-accumulator-frontier-tampered")
         .with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-lookup-accumulator-demo")
         .arg("-o")
@@ -2206,11 +2276,11 @@ fn cli_verify_stwo_decoding_lookup_accumulator_demo_rejects_tampered_max_lookup_
         serde_json::Value::from(original_max_lookup_frontier_entries.saturating_add(1));
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-lookup-accumulator-demo")
         .arg(&tampered_path)
@@ -2231,7 +2301,7 @@ fn cli_can_prove_and_verify_stwo_decoding_cross_step_lookup_accumulator_demo() {
     let proof_path = unique_temp_dir("cli-stwo-decoding-cross-step-lookup-accumulator-proof")
         .with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-cross-step-lookup-accumulator-demo")
         .arg("-o")
@@ -2255,7 +2325,7 @@ fn cli_can_prove_and_verify_stwo_decoding_cross_step_lookup_accumulator_demo() {
         Some(STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23)
     );
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-cross-step-lookup-accumulator-demo")
         .arg(&proof_path)
@@ -2280,7 +2350,7 @@ fn cli_verify_stwo_decoding_cross_step_lookup_accumulator_demo_rejects_tampered_
     let tampered_path = unique_temp_dir("cli-stwo-decoding-cross-step-lookup-accumulator-tampered")
         .with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-cross-step-lookup-accumulator-demo")
         .arg("-o")
@@ -2301,11 +2371,11 @@ fn cli_verify_stwo_decoding_cross_step_lookup_accumulator_demo_rejects_tampered_
     proof_json["lookup_template_commitment"] = serde_json::Value::String(tampered);
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-cross-step-lookup-accumulator-demo")
         .arg(&tampered_path)
@@ -2329,7 +2399,7 @@ fn cli_verify_stwo_decoding_cross_step_lookup_accumulator_demo_rejects_tampered_
         unique_temp_dir("cli-stwo-decoding-cross-step-lookup-accumulator-delta-tampered")
             .with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-cross-step-lookup-accumulator-demo")
         .arg("-o")
@@ -2346,11 +2416,11 @@ fn cli_verify_stwo_decoding_cross_step_lookup_accumulator_demo_rejects_tampered_
     proof_json["lookup_delta_entries"] = serde_json::Value::from(value.saturating_add(1));
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-cross-step-lookup-accumulator-demo")
         .arg(&tampered_path)
@@ -2371,7 +2441,7 @@ fn cli_can_prove_and_verify_stwo_decoding_state_relation_accumulator_demo() {
     let proof_path = unique_temp_dir("cli-stwo-decoding-state-relation-accumulator-proof")
         .with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-state-relation-accumulator-demo")
         .arg("-o")
@@ -2395,7 +2465,7 @@ fn cli_can_prove_and_verify_stwo_decoding_state_relation_accumulator_demo() {
         Some(STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24)
     );
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-state-relation-accumulator-demo")
         .arg(&proof_path)
@@ -2421,7 +2491,7 @@ fn cli_verify_stwo_decoding_state_relation_accumulator_demo_rejects_tampered_rel
         unique_temp_dir("cli-stwo-decoding-state-relation-accumulator-template-tampered")
             .with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-state-relation-accumulator-demo")
         .arg("-o")
@@ -2450,11 +2520,11 @@ fn cli_verify_stwo_decoding_state_relation_accumulator_demo_rejects_tampered_rel
     proof_json["relation_template_commitment"] = serde_json::Value::String(tampered);
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-state-relation-accumulator-demo")
         .arg(&tampered_path)
@@ -2478,7 +2548,7 @@ fn cli_verify_stwo_decoding_state_relation_accumulator_demo_rejects_tampered_loo
         unique_temp_dir("cli-stwo-decoding-state-relation-accumulator-delta-tampered")
             .with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-decoding-state-relation-accumulator-demo")
         .arg("-o")
@@ -2495,11 +2565,11 @@ fn cli_verify_stwo_decoding_state_relation_accumulator_demo_rejects_tampered_loo
     proof_json["lookup_delta_entries"] = serde_json::Value::from(value.saturating_add(1));
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-decoding-state-relation-accumulator-demo")
         .arg(&tampered_path)
@@ -2520,7 +2590,7 @@ fn cli_can_prove_and_verify_stwo_intervalized_decoding_state_relation_demo() {
     let proof_path = unique_temp_dir("cli-stwo-intervalized-decoding-state-relation-proof")
         .with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-intervalized-decoding-state-relation-demo")
         .arg("-o")
@@ -2544,7 +2614,7 @@ fn cli_can_prove_and_verify_stwo_intervalized_decoding_state_relation_demo() {
         Some(STWO_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE25)
     );
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-intervalized-decoding-state-relation-demo")
         .arg(&proof_path)
@@ -2570,7 +2640,7 @@ fn cli_verify_stwo_intervalized_decoding_state_relation_demo_rejects_tampered_in
         unique_temp_dir("cli-stwo-intervalized-decoding-state-relation-template-tampered")
             .with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-intervalized-decoding-state-relation-demo")
         .arg("-o")
@@ -2595,11 +2665,11 @@ fn cli_verify_stwo_intervalized_decoding_state_relation_demo_rejects_tampered_in
     proof_json["interval_template_commitment"] = serde_json::Value::String(tampered);
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-intervalized-decoding-state-relation-demo")
         .arg(&tampered_path)
@@ -2623,7 +2693,7 @@ fn cli_verify_stwo_intervalized_decoding_state_relation_demo_rejects_tampered_lo
         unique_temp_dir("cli-stwo-intervalized-decoding-state-relation-delta-tampered")
             .with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-intervalized-decoding-state-relation-demo")
         .arg("-o")
@@ -2640,11 +2710,11 @@ fn cli_verify_stwo_intervalized_decoding_state_relation_demo_rejects_tampered_lo
     proof_json["lookup_delta_entries"] = serde_json::Value::from(value.saturating_add(1));
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-intervalized-decoding-state-relation-demo")
         .arg(&tampered_path)
@@ -2666,7 +2736,7 @@ fn cli_can_prove_and_verify_stwo_folded_intervalized_decoding_state_relation_dem
         .with_extension("json");
     let gzip_path = proof_path.with_extension("json.gz");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-folded-intervalized-decoding-state-relation-demo")
         .arg("-o")
@@ -2690,7 +2760,7 @@ fn cli_can_prove_and_verify_stwo_folded_intervalized_decoding_state_relation_dem
         Some(STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26)
     );
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-folded-intervalized-decoding-state-relation-demo")
         .arg(&proof_path)
@@ -2706,7 +2776,7 @@ fn cli_can_prove_and_verify_stwo_folded_intervalized_decoding_state_relation_dem
 
     write_test_gzip_copy(&proof_path, &gzip_path);
 
-    let mut verify_gzip = Command::cargo_bin("tvm").expect("binary");
+    let mut verify_gzip = tvm_command();
     verify_gzip
         .arg("verify-stwo-folded-intervalized-decoding-state-relation-demo")
         .arg(&gzip_path)
@@ -2728,7 +2798,7 @@ fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_corr
         .with_extension("json");
     let gzip_path = proof_path.with_extension("json.gz");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-folded-intervalized-decoding-state-relation-demo")
         .arg("-o")
@@ -2741,13 +2811,15 @@ fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_corr
     bytes.truncate(bytes.len().saturating_sub(8));
     std::fs::write(&gzip_path, bytes).expect("write corrupt gzip");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-folded-intervalized-decoding-state-relation-demo")
         .arg(&gzip_path)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("could not be decompressed as gzip"))
+        .stderr(predicate::str::contains(
+            "could not be decompressed as gzip",
+        ))
         .stderr(predicate::str::contains("panicked at").not());
 
     let _ = std::fs::remove_file(proof_path);
@@ -2765,7 +2837,7 @@ fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_tamp
         unique_temp_dir("cli-stwo-folded-intervalized-decoding-state-relation-template-tampered")
             .with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-folded-intervalized-decoding-state-relation-demo")
         .arg("-o")
@@ -2790,11 +2862,11 @@ fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_tamp
     proof_json["fold_template_commitment"] = serde_json::Value::String(tampered);
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-folded-intervalized-decoding-state-relation-demo")
         .arg(&tampered_path)
@@ -2818,7 +2890,7 @@ fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_tamp
         unique_temp_dir("cli-stwo-folded-intervalized-decoding-state-relation-delta-tampered")
             .with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-folded-intervalized-decoding-state-relation-demo")
         .arg("-o")
@@ -2835,11 +2907,11 @@ fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_tamp
     proof_json["lookup_delta_entries"] = serde_json::Value::from(value.saturating_add(1));
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-folded-intervalized-decoding-state-relation-demo")
         .arg(&tampered_path)
@@ -2864,7 +2936,7 @@ fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_tamp
         unique_temp_dir("cli-stwo-folded-intervalized-decoding-state-relation-order-tampered")
             .with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stwo-folded-intervalized-decoding-state-relation-demo")
         .arg("-o")
@@ -2876,7 +2948,10 @@ fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_tamp
         serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
             .expect("json");
     let members = proof_json["members"].as_array_mut().expect("members array");
-    assert!(members.len() >= 2, "phase26 demo must emit at least two members");
+    assert!(
+        members.len() >= 2,
+        "phase26 demo must emit at least two members"
+    );
     members.swap(0, 1);
     let summaries = proof_json["member_summaries"]
         .as_array_mut()
@@ -2884,11 +2959,11 @@ fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_tamp
     summaries.swap(0, 1);
     std::fs::write(
         &tampered_path,
-        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+        serde_json::to_vec(&proof_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stwo-folded-intervalized-decoding-state-relation-demo")
         .arg(&tampered_path)
@@ -2904,12 +2979,367 @@ fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_tamp
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_can_prove_and_verify_stwo_chained_folded_intervalized_decoding_state_relation_demo() {
+    let _guard = phase27_cli_test_guard();
+    let proof_path =
+        unique_temp_dir("cli-stwo-chained-folded-intervalized-decoding-state-relation-proof")
+            .with_extension("json");
+    let gzip_path = proof_path.with_extension("json.gz");
+
+    let mut prove = tvm_command();
+    prove
+        .arg("prove-stwo-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("proof_backend: stwo"))
+        .stdout(predicate::str::contains(format!(
+            "artifact_version: {STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27}",
+        )))
+        .stdout(predicate::str::contains("bounded_chain_arity:"))
+        .stdout(predicate::str::contains("total_phase25_members:"));
+
+    let proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    assert_eq!(
+        proof_json
+            .get("artifact_version")
+            .and_then(serde_json::Value::as_str),
+        Some(STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27)
+    );
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(format!(
+            "expected_artifact_version: {STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27}",
+        )))
+        .stdout(predicate::str::contains(format!(
+            "expected_proof_backend_version: {STWO_BACKEND_VERSION_PHASE12}",
+        )));
+
+    write_test_gzip_copy(&proof_path, &gzip_path);
+
+    let mut verify_gzip = tvm_command();
+    verify_gzip
+        .arg("verify-stwo-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&gzip_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(gzip_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_rejects_corrupt_gzip() {
+    let _guard = phase27_cli_test_guard();
+    let proof_path =
+        unique_temp_dir("cli-stwo-chained-folded-intervalized-decoding-state-relation-gzip")
+            .with_extension("json");
+    let gzip_path = proof_path.with_extension("json.gz");
+
+    std::fs::copy(phase27_cli_demo_fixture_path(), &proof_path).expect("copy proof");
+
+    write_test_gzip_copy(&proof_path, &gzip_path);
+    let mut bytes = std::fs::read(&gzip_path).expect("read gzip");
+    bytes.truncate(bytes.len().saturating_sub(8));
+    std::fs::write(&gzip_path, bytes).expect("write corrupt gzip");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&gzip_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "could not be decompressed as gzip",
+        ))
+        .stderr(predicate::str::contains("panicked at").not());
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(gzip_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_rejects_tampered_accumulator_commitment(
+) {
+    let _guard = phase27_cli_test_guard();
+    let proof_path =
+        unique_temp_dir("cli-stwo-chained-folded-intervalized-decoding-state-relation-accumulator")
+            .with_extension("json");
+    let tampered_path = unique_temp_dir(
+        "cli-stwo-chained-folded-intervalized-decoding-state-relation-accumulator-tampered",
+    )
+    .with_extension("json");
+
+    std::fs::copy(phase27_cli_demo_fixture_path(), &proof_path).expect("copy proof");
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    proof_json["chained_folded_interval_accumulator_commitment"] =
+        serde_json::Value::String("tampered".to_string());
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "chained_folded_interval_accumulator_commitment does not match the computed chained fold accumulator commitment",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_rejects_tampered_chain_template(
+) {
+    let _guard = phase27_cli_test_guard();
+    let proof_path =
+        unique_temp_dir("cli-stwo-chained-folded-intervalized-decoding-state-relation-template")
+            .with_extension("json");
+    let tampered_path = unique_temp_dir(
+        "cli-stwo-chained-folded-intervalized-decoding-state-relation-template-tampered",
+    )
+    .with_extension("json");
+
+    std::fs::copy(phase27_cli_demo_fixture_path(), &proof_path).expect("copy proof");
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    let original = proof_json["chain_template_commitment"]
+        .as_str()
+        .expect("chain_template_commitment")
+        .to_string();
+    let mut tampered = original.clone();
+    let replacement = if original.starts_with("00") {
+        "ff"
+    } else {
+        "00"
+    };
+    tampered.replace_range(0..2, replacement);
+    proof_json["chain_template_commitment"] = serde_json::Value::String(tampered);
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "chain_template_commitment does not match the computed chain template commitment",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_rejects_tampered_total_phase25_members(
+) {
+    let _guard = phase27_cli_test_guard();
+    let proof_path = unique_temp_dir(
+        "cli-stwo-chained-folded-intervalized-decoding-state-relation-total-phase25",
+    )
+    .with_extension("json");
+    let tampered_path = unique_temp_dir(
+        "cli-stwo-chained-folded-intervalized-decoding-state-relation-total-phase25-tampered",
+    )
+    .with_extension("json");
+
+    std::fs::copy(phase27_cli_demo_fixture_path(), &proof_path).expect("copy proof");
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    let value = proof_json["total_phase25_members"]
+        .as_u64()
+        .expect("total_phase25_members");
+    proof_json["total_phase25_members"] = serde_json::Value::from(value.saturating_add(1));
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("total_phase25_members="))
+        .stderr(predicate::str::contains(
+            "does not match derived total_phase25_members",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_rejects_underreported_total_phase25_members(
+) {
+    let _guard = phase27_cli_test_guard();
+    let proof_path = unique_temp_dir(
+        "cli-stwo-chained-folded-intervalized-decoding-state-relation-total-phase25-underflow",
+    )
+    .with_extension("json");
+    let tampered_path = unique_temp_dir(
+        "cli-stwo-chained-folded-intervalized-decoding-state-relation-total-phase25-underflow-tampered",
+    )
+    .with_extension("json");
+
+    std::fs::copy(phase27_cli_demo_fixture_path(), &proof_path).expect("copy proof");
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    proof_json["total_phase25_members"] = serde_json::Value::from(1_u64);
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("total_phase25_members=1"))
+        .stderr(predicate::str::contains(
+            "must be between 4 and supported maximum",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_rejects_semantic_scope_drift(
+) {
+    let _guard = phase27_cli_test_guard();
+    let proof_path =
+        unique_temp_dir("cli-stwo-chained-folded-intervalized-decoding-state-relation-scope")
+            .with_extension("json");
+    let tampered_path = unique_temp_dir(
+        "cli-stwo-chained-folded-intervalized-decoding-state-relation-scope-tampered",
+    )
+    .with_extension("json");
+
+    std::fs::copy(phase27_cli_demo_fixture_path(), &proof_path).expect("copy proof");
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    proof_json["semantic_scope"] =
+        serde_json::Value::String("forged-phase27-semantic-scope".to_string());
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "unsupported chained folded intervalized decoding state relation semantic scope",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_rejects_tampered_member_continuity(
+) {
+    let _guard = phase27_cli_test_guard();
+    let proof_path =
+        unique_temp_dir("cli-stwo-chained-folded-intervalized-decoding-state-relation-order")
+            .with_extension("json");
+    let tampered_path = unique_temp_dir(
+        "cli-stwo-chained-folded-intervalized-decoding-state-relation-order-tampered",
+    )
+    .with_extension("json");
+
+    std::fs::copy(phase27_cli_demo_fixture_path(), &proof_path).expect("copy proof");
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    let members = proof_json["members"].as_array_mut().expect("members array");
+    assert!(
+        members.len() >= 2,
+        "phase27 demo must emit at least two members"
+    );
+    members.swap(0, 1);
+    let summaries = proof_json["member_summaries"]
+        .as_array_mut()
+        .expect("member_summaries array");
+    summaries.swap(0, 1);
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "does not preserve the carried-state commitment from the previous folded interval member",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_can_prepare_stwo_recursion_batch_manifest() {
     let proof_a = unique_temp_dir("cli-stwo-recursion-proof-a").with_extension("json");
     let proof_b = unique_temp_dir("cli-stwo-recursion-proof-b").with_extension("json");
     let manifest_path = unique_temp_dir("cli-stwo-recursion-manifest").with_extension("json");
 
-    let mut prove_a = Command::cargo_bin("tvm").expect("binary");
+    let mut prove_a = tvm_command();
     prove_a
         .arg("prove-stark")
         .arg("programs/addition.tvm")
@@ -2922,7 +3352,7 @@ fn cli_can_prepare_stwo_recursion_batch_manifest() {
         .assert()
         .success();
 
-    let mut prove_b = Command::cargo_bin("tvm").expect("binary");
+    let mut prove_b = tvm_command();
     prove_b
         .arg("prove-stark")
         .arg("programs/counter.tvm")
@@ -2935,7 +3365,7 @@ fn cli_can_prepare_stwo_recursion_batch_manifest() {
         .assert()
         .success();
 
-    let mut prepare = Command::cargo_bin("tvm").expect("binary");
+    let mut prepare = tvm_command();
     prepare
         .arg("prepare-stwo-recursion-batch")
         .arg("--proof")
@@ -2965,7 +3395,7 @@ fn cli_can_prepare_stwo_recursion_batch_manifest() {
 fn cli_verify_stark_rejects_backend_override_mismatch() {
     let proof_path = unique_temp_dir("cli-stark-proof-backend-mismatch").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stark")
         .arg("programs/addition.tvm")
@@ -2974,7 +3404,7 @@ fn cli_verify_stark_rejects_backend_override_mismatch() {
         .assert()
         .success();
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stark")
         .arg(&proof_path)
@@ -2998,7 +3428,7 @@ fn cli_runs_neural_style_programs_with_verify_native() {
     ];
 
     for (program, expected_acc) in cases {
-        let mut run = Command::cargo_bin("tvm").expect("binary");
+        let mut run = tvm_command();
         run.arg("run")
             .arg(program)
             .arg("--verify-native")
@@ -3016,7 +3446,7 @@ fn cli_verify_stark_rejects_malformed_proof_without_panic() {
     let valid_path = unique_temp_dir("cli-stark-proof-valid").with_extension("json");
     let bad_path = unique_temp_dir("cli-stark-proof-bad").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stark")
         .arg("programs/addition.tvm")
@@ -3030,11 +3460,11 @@ fn cli_verify_stark_rejects_malformed_proof_without_panic() {
     proof_json["proof"] = serde_json::json!([0]);
     std::fs::write(
         &bad_path,
-        serde_json::to_vec_pretty(&proof_json).expect("encode bad proof"),
+        serde_json::to_vec(&proof_json).expect("encode bad proof"),
     )
     .expect("write bad proof");
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stark")
         .arg(&bad_path)
@@ -3051,7 +3481,7 @@ fn cli_verify_stark_rejects_malformed_proof_without_panic() {
 fn cli_verify_stark_strict_policy_rejects_low_security_proof() {
     let proof_path = unique_temp_dir("cli-stark-proof-low-security").with_extension("json");
 
-    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    let mut prove = tvm_command();
     prove
         .arg("prove-stark")
         .arg("programs/addition.tvm")
@@ -3060,7 +3490,7 @@ fn cli_verify_stark_strict_policy_rejects_low_security_proof() {
         .assert()
         .success();
 
-    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    let mut verify = tvm_command();
     verify
         .arg("verify-stark")
         .arg(&proof_path)
@@ -3076,7 +3506,7 @@ fn cli_verify_stark_strict_policy_rejects_low_security_proof() {
 #[cfg(not(feature = "burn-model"))]
 #[test]
 fn cli_reports_missing_burn_feature_for_burn_engine() {
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("run")
         .arg("programs/addition.tvm")
@@ -3092,7 +3522,7 @@ fn cli_reports_missing_burn_feature_for_burn_engine() {
 #[cfg(feature = "burn-model")]
 #[test]
 fn cli_supports_burn_engine_selection() {
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("run")
         .arg("programs/addition.tvm")
@@ -3107,7 +3537,7 @@ fn cli_supports_burn_engine_selection() {
 #[cfg(feature = "burn-model")]
 #[test]
 fn cli_supports_verify_burn_flag() {
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("run")
         .arg("programs/fibonacci.tvm")
@@ -3125,7 +3555,7 @@ fn cli_supports_verify_burn_flag() {
 #[test]
 fn cli_reports_missing_onnx_feature_for_export_command() {
     let export_dir = unique_temp_dir("cli-export-missing-feature");
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("export-onnx")
         .arg("programs/fibonacci.tvm")
@@ -3141,7 +3571,7 @@ fn cli_reports_missing_onnx_feature_for_export_command() {
 #[cfg(not(feature = "onnx-export"))]
 #[test]
 fn cli_reports_missing_onnx_feature_for_onnx_engine() {
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("run")
         .arg("programs/addition.tvm")
@@ -3158,7 +3588,7 @@ fn cli_reports_missing_onnx_feature_for_onnx_engine() {
 #[test]
 fn cli_reports_missing_onnx_feature_for_research_v2_step() {
     let output_path = unique_temp_dir("cli-research-v2-step-missing").with_extension("json");
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("research-v2-step")
         .arg("programs/addition.tvm")
@@ -3175,7 +3605,7 @@ fn cli_reports_missing_onnx_feature_for_research_v2_step() {
 #[test]
 fn cli_reports_missing_onnx_feature_for_research_v2_trace() {
     let output_path = unique_temp_dir("cli-research-v2-trace-missing").with_extension("json");
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("research-v2-trace")
         .arg("programs/addition.tvm")
@@ -3192,7 +3622,7 @@ fn cli_reports_missing_onnx_feature_for_research_v2_trace() {
 #[test]
 fn cli_reports_missing_onnx_feature_for_research_v2_matrix() {
     let output_path = unique_temp_dir("cli-research-v2-matrix-missing").with_extension("json");
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("research-v2-matrix")
         .arg("-o")
@@ -3210,7 +3640,7 @@ fn cli_reports_missing_onnx_feature_for_research_v2_matrix() {
 #[test]
 fn cli_supports_export_onnx_command() {
     let export_dir = unique_temp_dir("cli-export-onnx");
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("export-onnx")
         .arg("programs/fibonacci.tvm")
@@ -3230,7 +3660,7 @@ fn cli_supports_export_onnx_command() {
 #[cfg(feature = "onnx-export")]
 #[test]
 fn cli_supports_onnx_engine_selection() {
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("run")
         .arg("programs/addition.tvm")
@@ -3245,7 +3675,7 @@ fn cli_supports_onnx_engine_selection() {
 #[cfg(feature = "onnx-export")]
 #[test]
 fn cli_supports_verify_onnx_flag() {
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("run")
         .arg("programs/fibonacci.tvm")
@@ -3263,7 +3693,7 @@ fn cli_supports_verify_onnx_flag() {
 #[test]
 fn cli_supports_research_v2_step_command() {
     let output_path = unique_temp_dir("cli-research-v2-step").with_extension("json");
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("research-v2-step")
         .arg("programs/addition.tvm")
@@ -3311,7 +3741,7 @@ fn cli_supports_research_v2_step_command() {
 #[test]
 fn cli_supports_research_v2_trace_command() {
     let output_path = unique_temp_dir("cli-research-v2-trace").with_extension("json");
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("research-v2-trace")
         .arg("programs/addition.tvm")
@@ -3365,7 +3795,7 @@ fn cli_supports_research_v2_trace_command() {
 #[test]
 fn cli_supports_research_v2_matrix_command() {
     let output_path = unique_temp_dir("cli-research-v2-matrix").with_extension("json");
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("research-v2-matrix")
         .arg("-o")
@@ -3421,7 +3851,7 @@ fn cli_supports_research_v2_matrix_command() {
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 #[test]
 fn cli_supports_verify_all_flag() {
-    let mut command = Command::cargo_bin("tvm").expect("binary");
+    let mut command = tvm_command();
     command
         .arg("run")
         .arg("programs/fibonacci.tvm")

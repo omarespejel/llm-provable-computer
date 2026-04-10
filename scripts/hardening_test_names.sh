@@ -27,6 +27,9 @@ hardening_stwo_test_filters=(
   "stwo_backend::decoding::tests::phase26_folded_intervalized_state_relation_rejects_oversized_manifest_before_nested_checks"
   "stwo_backend::decoding::tests::phase26_folded_intervalized_state_relation_rejects_empty_commitments_before_nested_checks"
   "stwo_backend::decoding::tests::phase26_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks"
+  "stwo_backend::decoding::tests::phase27_chained_folded_intervalized_state_relation_rejects_oversized_manifest_before_nested_checks"
+  "stwo_backend::decoding::tests::phase27_chained_folded_intervalized_state_relation_rejects_empty_commitments_before_nested_checks"
+  "stwo_backend::decoding::tests::phase27_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks"
 )
 
 hardening_test_filters=(
