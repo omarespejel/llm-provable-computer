@@ -67,11 +67,11 @@ PY
 BUNDLE_DIR="$CANON_BUNDLE_DIR"
 REL_BUNDLE_DIR="$(relpath_from "$BUNDLE_DIR" "$REPO_ROOT")"
 REL_TVM_BIN="$(relpath_from "$TVM_BIN" "$REPO_ROOT")"
+rm -rf -- "$BUNDLE_DIR"
 if [ -n "$(git status --porcelain --untracked-files=normal)" ]; then
   echo "Refusing to generate frozen bundle from a dirty worktree; commit or stash local changes first" >&2
   exit 1
 fi
-rm -rf -- "$BUNDLE_DIR"
 mkdir -p "$BUNDLE_DIR"
 
 MANIFEST="$BUNDLE_DIR/manifest.txt"
@@ -228,6 +228,31 @@ do
   gzip -n -9 -c "$artifact" > "$artifact.gz"
   rm -f "$artifact"
 done
+
+run_timed verify_decoding_state_relation_accumulator_phase24_stwo_gzip \
+  "$TVM_BIN" \
+  verify-stwo-decoding-state-relation-accumulator-demo \
+  "$BUNDLE_DIR/decoding-phase24.state-relation-accumulator.json.gz"
+
+run_timed verify_intervalized_decoding_state_relation_phase25_stwo_gzip \
+  "$TVM_BIN" \
+  verify-stwo-intervalized-decoding-state-relation-demo \
+  "$BUNDLE_DIR/decoding-phase25.intervalized-state-relation.json.gz"
+
+run_timed verify_folded_intervalized_decoding_state_relation_phase26_stwo_gzip \
+  "$TVM_BIN" \
+  verify-stwo-folded-intervalized-decoding-state-relation-demo \
+  "$BUNDLE_DIR/decoding-phase26.folded-intervalized-state-relation.json.gz"
+
+run_timed verify_chained_folded_intervalized_decoding_state_relation_phase27_stwo_gzip \
+  "$TVM_BIN" \
+  verify-stwo-chained-folded-intervalized-decoding-state-relation-demo \
+  "$BUNDLE_DIR/decoding-phase27.chained-folded-intervalized-state-relation.json.gz"
+
+run_timed verify_aggregated_chained_folded_intervalized_decoding_state_relation_phase28_stwo_gzip \
+  "$TVM_BIN" \
+  verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo \
+  "$BUNDLE_DIR/decoding-phase28.aggregated-chained-folded-intervalized-state-relation.json.gz"
 
 python3 - "$BUNDLE_DIR" "$INDEX_MD" "$README_MD" "$SUMMARY_TSV" <<'PY'
 import csv

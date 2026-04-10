@@ -468,12 +468,14 @@ enum Command {
         proof: PathBuf,
     },
     /// Produce a serialized proof-carrying aggregate over multiple Phase 27 chained folded artifacts.
+    #[cfg(feature = "stwo-backend")]
     ProveStwoAggregatedChainedFoldedIntervalizedDecodingStateRelationDemo {
         /// File where the serialized aggregated chained folded intervalized state relation JSON will be written.
         #[arg(short = 'o', long = "output")]
         output: PathBuf,
     },
     /// Verify a serialized proof-carrying aggregate over multiple Phase 27 chained folded artifacts.
+    #[cfg(feature = "stwo-backend")]
     VerifyStwoAggregatedChainedFoldedIntervalizedDecodingStateRelationDemo {
         /// Path to the serialized aggregated chained folded intervalized state relation JSON file.
         proof: PathBuf,
@@ -1072,6 +1074,7 @@ fn run() -> llm_provable_computer::Result<()> {
         Command::VerifyStwoChainedFoldedIntervalizedDecodingStateRelationDemo { proof } => {
             verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_command(&proof)?
         }
+        #[cfg(feature = "stwo-backend")]
         Command::ProveStwoAggregatedChainedFoldedIntervalizedDecodingStateRelationDemo {
             output,
         } => {
@@ -1079,6 +1082,7 @@ fn run() -> llm_provable_computer::Result<()> {
                 &output,
             )?
         }
+        #[cfg(feature = "stwo-backend")]
         Command::VerifyStwoAggregatedChainedFoldedIntervalizedDecodingStateRelationDemo {
             proof,
         } => {
@@ -3104,6 +3108,7 @@ fn verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_command(
     }
 }
 
+#[cfg(feature = "stwo-backend")]
 fn prove_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_demo_command(
     output: &Path,
 ) -> llm_provable_computer::Result<()> {
@@ -3157,6 +3162,7 @@ fn prove_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_dem
     }
 }
 
+#[cfg(feature = "stwo-backend")]
 fn verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_demo_command(
     proof_path: &Path,
 ) -> llm_provable_computer::Result<()> {

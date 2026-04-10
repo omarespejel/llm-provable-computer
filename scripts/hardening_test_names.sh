@@ -36,6 +36,9 @@ hardening_stwo_test_filters=(
   "stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks"
   "stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_accepts_max_nested_chain_arity_boundary"
   "stwo_backend::decoding::tests::phase28_aggregation_sequence_rejects_member_with_insufficient_phase25_members"
+  "stwo_backend::decoding::tests::phase28_public_verifier_rejects_synthetic_member_shells_without_nested_phase27_evidence"
+  "stwo_backend::decoding::tests::phase28_member_proof_checks_reject_synthetic_member_shells_without_nested_phase27_evidence"
+  "stwo_backend::decoding::tests::phase28_proof_checks_reject_synthetic_member_shells_without_nested_phase27_evidence"
 )
 
 hardening_test_filters=(

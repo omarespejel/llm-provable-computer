@@ -7898,6 +7898,11 @@ fn validate_phase28_aggregated_chained_folded_intervalized_decoding_state_relati
     Ok(())
 }
 
+fn update_phase28_len_prefixed_commitment_bytes(hasher: &mut Blake2bVar, bytes: &[u8]) {
+    hasher.update(&(bytes.len() as u64).to_le_bytes());
+    hasher.update(bytes);
+}
+
 fn commit_phase28_aggregation_template(
     source_template_commitment: &str,
     bounded_aggregation_arity: usize,
@@ -7922,21 +7927,28 @@ fn commit_phase28_aggregation_template(
     }
 
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
-    hasher.update(
+    update_phase28_len_prefixed_commitment_bytes(
+        &mut hasher,
         STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28
             .as_bytes(),
     );
-    hasher.update(b"aggregation-template");
+    update_phase28_len_prefixed_commitment_bytes(&mut hasher, b"aggregation-template");
     hasher.update(&(bounded_aggregation_arity as u64).to_le_bytes());
     hasher.update(&(summaries.len() as u64).to_le_bytes());
-    hasher.update(source_template_commitment.as_bytes());
+    update_phase28_len_prefixed_commitment_bytes(
+        &mut hasher,
+        source_template_commitment.as_bytes(),
+    );
     for (member_index, summary) in summaries.iter().enumerate() {
         hasher.update(&(member_index as u64).to_le_bytes());
         hasher.update(&(summary.bounded_chain_arity as u64).to_le_bytes());
         hasher.update(&(summary.total_phase26_members as u64).to_le_bytes());
         hasher.update(&(summary.total_phase25_members as u64).to_le_bytes());
         hasher.update(&(summary.max_nested_fold_arity as u64).to_le_bytes());
-        hasher.update(summary.chain_template_commitment.as_bytes());
+        update_phase28_len_prefixed_commitment_bytes(
+            &mut hasher,
+            summary.chain_template_commitment.as_bytes(),
+        );
         hasher.update(&(summary.start_step as u64).to_le_bytes());
         hasher.update(&(summary.end_step as u64).to_le_bytes());
         hasher.update(&(summary.total_matrices as u64).to_le_bytes());
@@ -7969,20 +7981,36 @@ fn commit_phase28_aggregated_chained_folded_intervalized_state_relation_with_sum
     verify_phase28_aggregation_sequence(summaries)?;
 
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
-    hasher.update(
+    update_phase28_len_prefixed_commitment_bytes(
+        &mut hasher,
         STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28
             .as_bytes(),
     );
-    hasher.update(b"aggregated-chained-folded-intervalized-state-relation");
+    update_phase28_len_prefixed_commitment_bytes(
+        &mut hasher,
+        b"aggregated-chained-folded-intervalized-state-relation",
+    );
     hasher.update(&(manifest.bounded_aggregation_arity as u64).to_le_bytes());
     hasher.update(&(manifest.total_phase26_members as u64).to_le_bytes());
     hasher.update(&(manifest.total_phase25_members as u64).to_le_bytes());
     hasher.update(&(manifest.max_nested_chain_arity as u64).to_le_bytes());
     hasher.update(&(manifest.max_nested_fold_arity as u64).to_le_bytes());
-    hasher.update(manifest.source_template_commitment.as_bytes());
-    hasher.update(manifest.global_start_state_commitment.as_bytes());
-    hasher.update(manifest.global_end_state_commitment.as_bytes());
-    hasher.update(manifest.aggregation_template_commitment.as_bytes());
+    update_phase28_len_prefixed_commitment_bytes(
+        &mut hasher,
+        manifest.source_template_commitment.as_bytes(),
+    );
+    update_phase28_len_prefixed_commitment_bytes(
+        &mut hasher,
+        manifest.global_start_state_commitment.as_bytes(),
+    );
+    update_phase28_len_prefixed_commitment_bytes(
+        &mut hasher,
+        manifest.global_end_state_commitment.as_bytes(),
+    );
+    update_phase28_len_prefixed_commitment_bytes(
+        &mut hasher,
+        manifest.aggregation_template_commitment.as_bytes(),
+    );
     hasher.update(&(manifest.member_count as u64).to_le_bytes());
     hasher.update(&(manifest.total_matrices as u64).to_le_bytes());
     hasher.update(&(manifest.total_layouts as u64).to_le_bytes());
@@ -7999,14 +8027,24 @@ fn commit_phase28_aggregated_chained_folded_intervalized_state_relation_with_sum
         hasher.update(&(summary.total_phase26_members as u64).to_le_bytes());
         hasher.update(&(summary.total_phase25_members as u64).to_le_bytes());
         hasher.update(&(summary.max_nested_fold_arity as u64).to_le_bytes());
-        hasher.update(summary.chain_template_commitment.as_bytes());
-        hasher.update(
+        update_phase28_len_prefixed_commitment_bytes(
+            &mut hasher,
+            summary.chain_template_commitment.as_bytes(),
+        );
+        update_phase28_len_prefixed_commitment_bytes(
+            &mut hasher,
             summary
                 .chained_folded_interval_accumulator_commitment
                 .as_bytes(),
         );
-        hasher.update(summary.start_state_commitment.as_bytes());
-        hasher.update(summary.end_state_commitment.as_bytes());
+        update_phase28_len_prefixed_commitment_bytes(
+            &mut hasher,
+            summary.start_state_commitment.as_bytes(),
+        );
+        update_phase28_len_prefixed_commitment_bytes(
+            &mut hasher,
+            summary.end_state_commitment.as_bytes(),
+        );
         hasher.update(&(summary.total_matrices as u64).to_le_bytes());
         hasher.update(&(summary.total_layouts as u64).to_le_bytes());
         hasher.update(&(summary.total_rollups as u64).to_le_bytes());
@@ -8256,10 +8294,15 @@ fn verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation
     manifest: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
 ) -> Result<()> {
     for (member_index, member) in manifest.members.iter().enumerate() {
-        verify_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks(
+        validate_phase27_chained_folded_intervalized_decoding_state_relation_shallow(member)
+            .map_err(|error| {
+                VmError::InvalidConfig(format!(
+                    "Phase 28 member {member_index} failed Phase 27 proof-bearing shell validation: {error}"
+                ))
+            })?;
+        verify_phase27_chained_folded_intervalized_decoding_state_relation_members_with_proof_checks(
             member,
-        )
-        .map_err(|error| {
+        ).map_err(|error| {
             VmError::InvalidConfig(format!(
                 "Phase 28 member {member_index} failed proof-bearing Phase 27 verification: {error}"
             ))
@@ -8271,7 +8314,13 @@ fn verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation
 pub fn verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks(
     manifest: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
 ) -> Result<()> {
-    verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation(manifest)?;
+    validate_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_shallow(
+        manifest,
+    )?;
+    let summaries = summarize_phase28_members(&manifest.members)?;
+    verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_summaries(
+        manifest, &summaries,
+    )?;
     verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_members_with_proof_checks(
         manifest,
     )
@@ -9744,7 +9793,7 @@ pub fn prove_phase28_aggregated_chained_folded_intervalized_decoding_state_relat
     for layout in phase25_default_decoding_layouts()? {
         match phase28_prepare_demo_manifest_for_layout(&layout) {
             Ok(manifest) => {
-                verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation(
+                verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks(
                     &manifest,
                 )?;
                 return Ok(manifest);
@@ -13043,6 +13092,11 @@ mod tests {
         oracle_lower_hex(&out)
     }
 
+    fn oracle_push_len_prefixed_part(parts: &mut Vec<Vec<u8>>, bytes: &[u8]) {
+        parts.push((bytes.len() as u64).to_le_bytes().to_vec());
+        parts.push(bytes.to_vec());
+    }
+
     fn oracle_commit_phase12_layout(layout: &Phase12DecodingLayout) -> String {
         oracle_blake2b_256(&[
             STWO_DECODING_LAYOUT_VERSION_PHASE12.as_bytes().to_vec(),
@@ -14930,24 +14984,27 @@ mod tests {
             manifest,
         )?;
         verify_phase28_aggregation_sequence(summaries)?;
-        let mut parts = vec![
+        let mut parts = Vec::new();
+        oracle_push_len_prefixed_part(
+            &mut parts,
             STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28
-                .as_bytes()
-                .to_vec(),
-            b"aggregation-template".to_vec(),
+                .as_bytes(),
+        );
+        oracle_push_len_prefixed_part(&mut parts, b"aggregation-template");
+        parts.push(
             (manifest.bounded_aggregation_arity as u64)
                 .to_le_bytes()
                 .to_vec(),
-            (summaries.len() as u64).to_le_bytes().to_vec(),
-            manifest.source_template_commitment.as_bytes().to_vec(),
-        ];
+        );
+        parts.push((summaries.len() as u64).to_le_bytes().to_vec());
+        oracle_push_len_prefixed_part(&mut parts, manifest.source_template_commitment.as_bytes());
         for (member_index, member) in summaries.iter().enumerate() {
             parts.push((member_index as u64).to_le_bytes().to_vec());
             parts.push((member.bounded_chain_arity as u64).to_le_bytes().to_vec());
             parts.push((member.total_phase26_members as u64).to_le_bytes().to_vec());
             parts.push((member.total_phase25_members as u64).to_le_bytes().to_vec());
             parts.push((member.max_nested_fold_arity as u64).to_le_bytes().to_vec());
-            parts.push(member.chain_template_commitment.as_bytes().to_vec());
+            oracle_push_len_prefixed_part(&mut parts, member.chain_template_commitment.as_bytes());
             parts.push((member.start_step as u64).to_le_bytes().to_vec());
             parts.push((member.end_step as u64).to_le_bytes().to_vec());
             parts.push((member.total_matrices as u64).to_le_bytes().to_vec());
@@ -14975,43 +15032,64 @@ mod tests {
         verify_phase28_aggregation_sequence(summaries)?;
         let aggregation_template_commitment =
             oracle_commit_phase28_aggregation_template_from_summaries(manifest, summaries)?;
-        let mut parts = vec![
+        let mut parts = Vec::new();
+        oracle_push_len_prefixed_part(
+            &mut parts,
             STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28
-                .as_bytes()
-                .to_vec(),
-            b"aggregated-chained-folded-intervalized-state-relation".to_vec(),
+                .as_bytes(),
+        );
+        oracle_push_len_prefixed_part(
+            &mut parts,
+            b"aggregated-chained-folded-intervalized-state-relation",
+        );
+        parts.push(
             (manifest.bounded_aggregation_arity as u64)
                 .to_le_bytes()
                 .to_vec(),
+        );
+        parts.push(
             (manifest.total_phase26_members as u64)
                 .to_le_bytes()
                 .to_vec(),
+        );
+        parts.push(
             (manifest.total_phase25_members as u64)
                 .to_le_bytes()
                 .to_vec(),
+        );
+        parts.push(
             (manifest.max_nested_chain_arity as u64)
                 .to_le_bytes()
                 .to_vec(),
+        );
+        parts.push(
             (manifest.max_nested_fold_arity as u64)
                 .to_le_bytes()
                 .to_vec(),
-            manifest.source_template_commitment.as_bytes().to_vec(),
-            manifest.global_start_state_commitment.as_bytes().to_vec(),
-            manifest.global_end_state_commitment.as_bytes().to_vec(),
-            aggregation_template_commitment.as_bytes().to_vec(),
-            (summaries.len() as u64).to_le_bytes().to_vec(),
-            (manifest.total_matrices as u64).to_le_bytes().to_vec(),
-            (manifest.total_layouts as u64).to_le_bytes().to_vec(),
-            (manifest.total_rollups as u64).to_le_bytes().to_vec(),
-            (manifest.total_segments as u64).to_le_bytes().to_vec(),
-            (manifest.total_steps as u64).to_le_bytes().to_vec(),
+        );
+        oracle_push_len_prefixed_part(&mut parts, manifest.source_template_commitment.as_bytes());
+        oracle_push_len_prefixed_part(
+            &mut parts,
+            manifest.global_start_state_commitment.as_bytes(),
+        );
+        oracle_push_len_prefixed_part(&mut parts, manifest.global_end_state_commitment.as_bytes());
+        oracle_push_len_prefixed_part(&mut parts, aggregation_template_commitment.as_bytes());
+        parts.push((summaries.len() as u64).to_le_bytes().to_vec());
+        parts.push((manifest.total_matrices as u64).to_le_bytes().to_vec());
+        parts.push((manifest.total_layouts as u64).to_le_bytes().to_vec());
+        parts.push((manifest.total_rollups as u64).to_le_bytes().to_vec());
+        parts.push((manifest.total_segments as u64).to_le_bytes().to_vec());
+        parts.push((manifest.total_steps as u64).to_le_bytes().to_vec());
+        parts.push(
             (manifest.lookup_delta_entries as u64)
                 .to_le_bytes()
                 .to_vec(),
+        );
+        parts.push(
             (manifest.max_lookup_frontier_entries as u64)
                 .to_le_bytes()
                 .to_vec(),
-        ];
+        );
         for (member_index, member) in summaries.iter().enumerate() {
             parts.push((member_index as u64).to_le_bytes().to_vec());
             parts.push((member.start_step as u64).to_le_bytes().to_vec());
@@ -15020,15 +15098,15 @@ mod tests {
             parts.push((member.total_phase26_members as u64).to_le_bytes().to_vec());
             parts.push((member.total_phase25_members as u64).to_le_bytes().to_vec());
             parts.push((member.max_nested_fold_arity as u64).to_le_bytes().to_vec());
-            parts.push(member.chain_template_commitment.as_bytes().to_vec());
-            parts.push(
+            oracle_push_len_prefixed_part(&mut parts, member.chain_template_commitment.as_bytes());
+            oracle_push_len_prefixed_part(
+                &mut parts,
                 member
                     .chained_folded_interval_accumulator_commitment
-                    .as_bytes()
-                    .to_vec(),
+                    .as_bytes(),
             );
-            parts.push(member.start_state_commitment.as_bytes().to_vec());
-            parts.push(member.end_state_commitment.as_bytes().to_vec());
+            oracle_push_len_prefixed_part(&mut parts, member.start_state_commitment.as_bytes());
+            oracle_push_len_prefixed_part(&mut parts, member.end_state_commitment.as_bytes());
             parts.push((member.total_matrices as u64).to_le_bytes().to_vec());
             parts.push((member.total_layouts as u64).to_le_bytes().to_vec());
             parts.push((member.total_rollups as u64).to_le_bytes().to_vec());
@@ -20363,6 +20441,66 @@ mod tests {
             &summaries,
         )
         .expect("phase28 verification");
+    }
+
+    #[test]
+    fn phase28_public_verifier_rejects_synthetic_member_shells_without_nested_phase27_evidence() {
+        let (manifest, _) =
+            sample_phase28_aggregated_chained_folded_intervalized_decoding_state_relation();
+        let err = verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation(
+            &manifest,
+        )
+        .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("must contain at least two members"));
+    }
+
+    #[test]
+    fn phase28_member_proof_checks_reject_synthetic_member_shells_without_nested_phase27_evidence()
+    {
+        let (manifest, _) =
+            sample_phase28_aggregated_chained_folded_intervalized_decoding_state_relation();
+        let err =
+            verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_members_with_proof_checks(
+                &manifest,
+            )
+            .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("failed Phase 27 proof-bearing shell validation"));
+        assert!(err
+            .to_string()
+            .contains("must contain at least two members"));
+    }
+
+    #[test]
+    fn phase28_proof_checks_reject_synthetic_member_shells_without_nested_phase27_evidence() {
+        let (manifest, _) =
+            sample_phase28_aggregated_chained_folded_intervalized_decoding_state_relation();
+        let err =
+            verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks(
+                &manifest,
+            )
+            .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("must contain at least two members"));
+    }
+
+    #[test]
+    #[ignore = "expensive live Phase 28 public verifier gate over 16 nested proofs"]
+    fn phase28_public_verifier_accepts_live_nested_phase27_members() {
+        let layout = Phase12DecodingLayout::new(2, 2).expect("layout");
+        let manifest =
+            phase28_prepare_demo_manifest_for_layout(&layout).expect("live phase28 manifest");
+        assert_eq!(manifest.member_count, 2);
+        assert!(manifest
+            .members
+            .iter()
+            .all(|member| member.member_count == 2 && member.member_summaries.len() == 2));
+        verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation(&manifest)
+            .expect("public verifier accepts live nested Phase 27 members");
     }
 
     #[test]

@@ -57,10 +57,11 @@ The current demo path is intentionally simple and bounded:
 
 1. generate `16` proving-safe decoding proofs for one layout,
 2. derive cumulative Phase 23 members from prefixes `1..=16`,
-3. partition them into `8` contiguous Phase 25 interval members using chunk size `2`,
-4. partition those into `4` Phase 26 folded members using fold arity `2`,
-5. partition those into `2` Phase 27 chained members using chain arity `2`,
-6. aggregate those `2` Phase 27 members into one Phase 28 manifest.
+3. accumulate them into one Phase 24 carried-state relation source,
+4. partition that Phase 24 source into `8` contiguous Phase 25 interval members using chunk size `2`,
+5. partition those into `4` Phase 26 folded members using fold arity `2`,
+6. partition those into `2` Phase 27 chained members using chain arity `2`,
+7. aggregate those `2` Phase 27 members into one Phase 28 manifest.
 
 This gives a real cross-bundle proof-carrying aggregation over honest carried-state intervals, not a relabeled single-chain demo.
 
@@ -83,7 +84,7 @@ Phase 28 should ship only with:
 The default unit hardening path uses synthetic Phase 27 member summaries to test
 the Phase 28 aggregation contract directly. The full CLI path remains an
 explicit ignored end-to-end gate because it generates and verifies the live
-16-proof Phase 25 -> Phase 28 demo and is too expensive for the fast default
+16-proof Phase 24 -> Phase 28 demo and is too expensive for the fast default
 test cycle.
 
 ## Non-Goals

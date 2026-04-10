@@ -3889,6 +3889,29 @@ fn cli_supports_verify_all_flag() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_demo_rejects_missing_file(
+) {
+    let proof_path = unique_temp_dir(
+        "cli-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-missing",
+    )
+    .with_extension("json.gz");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&proof_path)
+        .assert()
+        .failure()
+        .stderr(
+            predicate::str::contains("No such file")
+                .or(predicate::str::contains("not found"))
+                .or(predicate::str::contains("failed to read")),
+        )
+        .stderr(predicate::str::contains("panicked at").not());
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 #[ignore = "expensive Phase 28 16-proof end-to-end CLI gate"]
 fn cli_can_prove_and_verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_demo(
 ) {

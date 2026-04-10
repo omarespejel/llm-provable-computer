@@ -476,6 +476,14 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-chained-folded-intervalized-decoding-state-relation-demo \
   decoding-chained-folded-intervalized-state-relation.stwo.json
 
+# Produce and verify the Phase 28 proof-carrying aggregate over Phase 27 chained artifacts
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prove-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo \
+  -o decoding-aggregated-chained-folded-intervalized-state-relation.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo \
+  decoding-aggregated-chained-folded-intervalized-state-relation.stwo.json
+
 # Freeze a canonical pre-aggregation batch manifest for future recursion work
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-recursion-batch \
@@ -555,7 +563,8 @@ matrix/rollup-style packaging layers described in the next-paper track,
 including pre-recursive cross-step lookup accumulators (Phase 23) and full
 state-relation accumulators (Phase 24), honest intervalized carried-state
 artifacts (Phase 25), folded intervalized carried-state accumulators
-(Phase 26), and chained fold-of-folds carried-state accumulators (Phase 27).
+(Phase 26), chained fold-of-folds carried-state accumulators (Phase 27), and
+proof-carrying aggregation across chained carried-state artifacts (Phase 28).
 
 #### Phase Highlights
 
@@ -594,6 +603,7 @@ artifacts (Phase 25), folded intervalized carried-state accumulators
 - Phase 25: honest intervalization of the Phase 24 carried-state relation into explicit contiguous carried-state intervals with derived interval-template and interval-accumulator commitments
 - Phase 26: folded accumulation over verified Phase 25 intervals with explicit fold-template binding and folded interval accumulator commitments over real carried-state intervals
 - Phase 27: chained fold-of-folds accumulation over verified Phase 26 members with explicit chain-template binding and chained accumulator commitments over honest carried-state intervals
+- Phase 28: proof-carrying aggregation over verified Phase 27 chained artifacts with explicit aggregation-template binding, length-framed aggregation transcripts, and aggregate carried-state boundary checks
 
 These phases define pre-recursive merge boundaries and carried-state bindings;
 they do not yet implement recursive cryptographic accumulation or compressed
@@ -923,6 +933,7 @@ lanes carry it forward.
 - Phase 25: honest intervalization of the Phase 24 carried-state relation into explicit contiguous carried-state intervals with derived interval-template and interval-accumulator commitments
 - Phase 26: folded accumulation over verified Phase 25 intervals with explicit fold-template binding and folded interval accumulator commitments over real carried-state intervals
 - Phase 27: chained fold-of-folds accumulation over verified Phase 26 members with explicit chain-template binding and chained accumulator commitments over honest carried-state intervals
+- Phase 28: proof-carrying aggregation over verified Phase 27 chained artifacts with explicit aggregation-template binding, length-framed aggregation transcripts, and aggregate carried-state boundary checks
 
 These phases define pre-recursive merge boundaries and carried-state bindings;
 they do not yet implement recursive cryptographic accumulation or compressed
@@ -944,6 +955,8 @@ but it is well past the old “dependency seam only” stage.
   `docs/paper/artifacts/stwo-chained-folded-interval-v1-2026-04-10/`
 - Chained-folded `stwo` bundle regeneration script:
   `scripts/paper/generate_stwo_chained_folded_interval_bundle.sh`
+- Proof-carrying aggregation `stwo` bundle regeneration script:
+  `scripts/paper/generate_stwo_proof_carrying_aggregation_bundle.sh`
 - `stwo` publication bundle regeneration script:
   `scripts/paper/generate_stwo_publication_bundle.sh`
 - Experimental `stwo` accumulation bundle generation script:
@@ -953,12 +966,10 @@ but it is well past the old “dependency seam only” stage.
 
 The canonical launch repository is
 `omarespejel/provable-transformer-vm` (this repository). Earlier phases of the
-same research line were developed under the `llm-provable-computer` naming.
-This codebase builds directly on Abdelhamid Bakhta's original public
-repository, `AbdelStark/llm-provable-computer`, and extends that line with
-committed artifact bundles, research-oriented semantic agreement artifacts,
-transformer-shaped fixtures, shared-table lookup proofs, and proof-carrying
-decoding artifacts.
+same research line were developed under the `llm-provable-computer` naming
+before consolidation here. This repository carries the maintained artifact
+bundles, research-oriented semantic agreement artifacts, transformer-shaped
+fixtures, shared-table lookup proofs, and proof-carrying decoding artifacts.
 
 ---
 

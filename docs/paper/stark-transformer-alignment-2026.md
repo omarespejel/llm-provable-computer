@@ -407,7 +407,7 @@ The frontier is no longer “can transformers be proved?” It is: **which archi
 
 ## Acknowledgments
 
-This paper uses the maintained repository `omarespejel/provable-transformer-vm`, which builds directly on Abdelhamid Bakhta’s upstream public repository `AbdelStark/llm-provable-computer` and earlier project phases developed under the `llm-provable-computer` name.
+This paper uses the maintained repository `omarespejel/provable-transformer-vm`, which consolidates the current artifact bundles and earlier project phases developed under the `llm-provable-computer` name.
 
 ---
 
