@@ -18,7 +18,7 @@
   - oracle or differential checks,
   - resource-bound verification tests,
   - Kani / formal-kernel checks when the invariant is bounded,
-  - Miri / sanitizer coverage when parser or validator glue changes.
+  - Miri / ASAN / UB-check coverage when parser or validator glue changes.
 - If a layer is not applicable, explain that explicitly in the PR body instead of silently skipping it.
 
 ## Documentation And Claim Discipline
