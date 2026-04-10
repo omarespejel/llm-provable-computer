@@ -24,6 +24,17 @@ if (( ${#missing_targets[@]} > 0 )); then
   exit 1
 fi
 
+if [[ -n "${MUTATION_DIFF_FILE:-}" ]]; then
+  if [[ ! -f "${MUTATION_DIFF_FILE}" ]]; then
+    echo "MUTATION_DIFF_FILE points to a missing file: ${MUTATION_DIFF_FILE}" >&2
+    exit 1
+  fi
+  if [[ ! -s "${MUTATION_DIFF_FILE}" ]]; then
+    echo "MUTATION_DIFF_FILE is empty; refusing to run a zero-diff mutation slice" >&2
+    exit 1
+  fi
+fi
+
 args=(
   cargo
   +"${MUTATION_TOOLCHAIN}"
@@ -45,6 +56,10 @@ done
 
 if [[ -n "${MUTATION_SHARD:-}" ]]; then
   args+=(--shard "$MUTATION_SHARD")
+fi
+
+if [[ -n "${MUTATION_DIFF_FILE:-}" ]]; then
+  args+=(--in-diff "${MUTATION_DIFF_FILE}")
 fi
 
 "${args[@]}" "$@"
