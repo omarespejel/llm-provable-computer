@@ -2,63 +2,56 @@
 
 ## Purpose
 
-Phase 24 proved the right relation-level bridge, but it exposed a structural mismatch
-for the next folding layer.
+Phase 24 proves a full carried-state relation over an ordered list of cumulative
+Phase 23 members, but the public artifact is still shaped around the cumulative
+source relation object.
 
-The current Phase 24 members are cumulative prefixes:
+That is acceptable for verification.
+It is not yet the clean folding input.
 
-- member `R_0` covers `[t_0, u_0)`,
-- member `R_1` covers `[t_0, u_1)`,
-- member `R_2` covers `[t_0, u_2)`,
-- and so on.
+The folding layer should consume one explicit intervalized artifact whose public
+surface is the ordered list of local interval relations, not the cumulative
+Phase 23 prefix machinery that was only needed to derive them.
 
-That is enough for relation accumulation and verification.
-It is **not** enough for honest folding.
-
-A folded layer needs members that behave like true intervals:
-
-```math
-I_i : \Sigma_{u_i} \to \Sigma_{u_{i+1}}
-```
-
-not cumulative prefixes repeatedly anchored at the original start state.
-
-Phase 25 therefore introduces one explicit intervalization / rebasing step.
+Phase 25 therefore introduces one explicit intervalization step.
 
 ## Core Goal
 
-Convert verified cumulative Phase 24 relation accumulators into intervalized relation
-artifacts that preserve the same carried-state semantics while exposing one local
-start-state to end-state transition per interval.
+Given one verified Phase 24 decoding state-relation accumulator, derive and bind
+one new artifact whose primary committed object is the ordered interval sequence
+already implicit inside the nested cumulative Phase 23 members of that Phase 24
+source artifact.
 
 This phase is still pre-recursive.
-It does not claim folding, recursive verification, proof compression, or generic
-accumulation.
+It does not claim folded accumulation, recursive verification, proof compression,
+or generic rebasing beyond the carried-state decoding relation already proven in
+Phase 24.
 
 ## Claim Boundary
 
-Given a verified ordered sequence of cumulative Phase 24 members
-
-```math
-R_0, R_1, ..., R_{k-1}
-```
-
-with strictly increasing end steps and a shared relation template, Phase 25 should
-produce intervalized members
+Let `R` be one verified Phase 24 decoding state-relation accumulator over
+ordered cumulative Phase 23 members.
+Let
 
 ```math
 I_0, I_1, ..., I_{k-1}
 ```
 
-such that:
+be the interval summaries derived from those cumulative members by checked
+subtraction and rebased boundaries.
 
-1. `I_0` preserves the same relation as `R_0`,
-2. for `i > 0`, `I_i` preserves exactly the incremental relation from the end state
-   of `R_{i-1}` to the end state of `R_i`,
-3. concatenating `I_0, ..., I_{k-1}` yields the same global start-state to end-state
-   claim as the original cumulative sequence,
-4. all derived interval totals are exact checked differences of cumulative totals,
-5. and any boundary or total mismatch invalidates the artifact.
+Phase 25 should support this narrow claim:
+
+1. the Phase 25 artifact preserves the same global start-state to end-state
+   relation already proven by `R`,
+2. its committed public surface is the ordered interval sequence
+   `I_0, ..., I_{k-1}`,
+3. each interval summary exposes one local `Sigma_from -> Sigma_to` relation with
+   exact interval totals,
+4. all interval totals are exact checked differences of the cumulative Phase 23
+   source members embedded in the verified Phase 24 source artifact,
+5. and any mismatch between the Phase 24 source relation and the derived
+   intervalized view invalidates the artifact.
 
 ## Non-Claims
 
@@ -71,126 +64,153 @@ such that:
 
 ## Why This Step Is Necessary
 
-The failed Phase 25 folding attempt exposed the exact problem:
+The failed folded-relation attempt exposed the exact problem:
 
-- cumulative prefixes repeat prior history,
-- folding expects disjoint or explicitly composable interval objects,
-- and direct folding over cumulative prefixes confuses boundary continuity with
-  interval continuity.
+- the repository already knew how to derive local interval summaries,
+- but the proof-bearing artifact boundary still centered the cumulative source
+  relation object,
+- and the folding layer was at risk of consuming the wrong surface.
 
-Without intervalization, a "green" folded artifact would risk proving the wrong
-object.
+Without one explicit intervalized artifact, a later folded result could look
+"green" while still binding the wrong intermediate object.
 
-This step exists to remove that ambiguity before any folded result is claimed.
+Phase 25 exists to make the interval view canonical before any folding claim is
+reintroduced.
 
 ## Input Requirements
 
-Each input member must be a verified Phase 24 relation accumulator with:
+The Phase 25 constructor takes one verified Phase 24 relation accumulator with:
 
-- identical `statement_version = statement-v1`,
-- identical `source_template_commitment`,
-- identical `relation_template_commitment`,
-- strictly increasing `total_steps`,
-- and exact carried-state boundary continuity.
-
-The ordered input sequence must contain at least two members.
+- `statement_version = statement-v1`,
+- `proof_backend = stwo`,
+- a non-empty `source_template_commitment`,
+- a non-empty Phase 24 `relation_template_commitment`,
+- a non-empty Phase 24 `relation_accumulator_commitment`,
+- at least two ordered Phase 23 source members,
+- and exact carried-state boundary continuity across the derived intervals.
 
 ## Output Artifact
 
-The Phase 25 intervalized artifact should contain:
+The Phase 25 intervalized artifact contains:
 
-- `version = stwo-phase25-intervalized-decoding-state-relation-v1`,
+- `artifact_version = stwo-phase25-intervalized-decoding-state-relation-v1`,
 - `semantic_scope = stwo_execution_parameterized_intervalized_proof_carrying_decoding_state_relation`,
 - `proof_backend = stwo`,
 - `proof_backend_version`,
 - `statement_version = statement-v1`,
 - `member_count`,
+- `source_template_commitment`,
+- `source_relation_template_commitment`,
+- `source_relation_accumulator_commitment`,
 - `global_start_state_commitment`,
 - `global_end_state_commitment`,
-- `relation_template_commitment`,
+- `interval_template_commitment`,
 - `interval_accumulator_commitment`,
-- and one bounded ordered list of interval summaries.
+- and one bounded ordered list of interval summaries derived from the verified
+  Phase 24 source relation.
 
-Each interval summary should expose:
+Each interval summary exposes:
 
-- local interval `[u_i, u_{i+1})`,
+- local interval `[t_i, u_i)`,
 - local start-state commitment,
 - local end-state commitment,
 - exact interval step count,
 - exact interval lookup-delta count,
 - exact interval matrix/layout/rollup/segment counts,
-- and the source cumulative member commitments from which the interval was derived.
+- the shared source template commitment,
+- and the cumulative Phase 23 lookup accumulator commitment from which that
+  interval was derived.
 
-## Rebasing Rule
+## Derivation Rule
 
-For cumulative members `R_{i-1}` and `R_i`, define the intervalized member `I_i`
-by checked subtraction and boundary rebasing:
+For ordered cumulative Phase 23 members `A_0, ..., A_{k-1}` inside one verified
+Phase 24 source relation, derive interval summary `I_i` by:
 
 ```math
-steps(I_i) = steps(R_i) - steps(R_{i-1})
-counts(I_i) = counts(R_i) - counts(R_{i-1})
-start(I_i) = end(R_{i-1})
-end(I_i) = end(R_i)
+steps(I_i) = steps(A_i) - steps(A_{i-1})
+counts(I_i) = counts(A_i) - counts(A_{i-1})
+start(I_i) = boundary(A_i, steps(A_{i-1}))
+end(I_i) = boundary(A_i, steps(A_i))
 ```
 
-with `I_0` defined directly from `R_0`.
+with `I_0` anchored at the Phase 24 global start boundary.
 
-No interval may be accepted if any checked difference underflows, any local width is
-zero, or any rebased boundary fails to match the previous cumulative endpoint.
+No interval may be accepted if any checked difference underflows, any interval
+width is zero, or any rebased boundary fails to match the previous interval end.
+
+The Phase 25 interval template is a new commitment.
+It is derived from:
+
+- the verified Phase 24 `source_relation_template_commitment`, and
+- the exact ordered interval summaries derived from the nested cumulative Phase
+  23 members.
+
+Phase 25 does not claim that distinct top-level Phase 24 cumulative artifacts
+share one literal relation-template commitment.
+That stronger statement would be false for the current implementation because
+the Phase 24 relation-template commitment already binds aggregate metadata such
+as member counts and totals.
 
 ## Verifier Invariants
 
 The Phase 25 verifier must reject unless all of the following hold:
 
-- input cumulative members are already valid Phase 24 members,
-- interval totals are exact checked differences of cumulative totals,
-- interval start equals the previous cumulative end,
-- interval end equals the current cumulative end,
-- interval width is strictly positive,
-- the sum of interval totals reconstructs the final cumulative totals,
-- the first interval start equals the global start,
-- the last interval end equals the global end,
-- and all members share the same relation template commitment.
+- the embedded Phase 23 source members still re-derive a valid Phase 24 source
+  relation,
+- the derived interval summaries match the serialized Phase 25 member summaries
+  exactly,
+- the first interval start equals the global start commitment,
+- the last interval end equals the global end commitment,
+- interval totals reconstruct the Phase 24 source totals exactly,
+- the serialized Phase 24 source relation commitments match the re-derived
+  commitments,
+- the interval template commitment matches the re-derived interval template,
+- and the interval accumulator commitment matches the re-derived interval
+  accumulator.
 
 ## MVP Theorem Target
 
 The theorem-facing statement should be:
 
-> Let `R_0, ..., R_{k-1}` be verified cumulative Phase 24 relation accumulators with
-> one fixed relation template and strictly increasing endpoints. If every adjacent
-> pair is boundary-consistent, then the derived intervalized sequence
-> `I_0, ..., I_{k-1}` preserves the same global decode relation as the cumulative
-> sequence while exposing exact local interval relations suitable for later folding.
+> Let `R` be a verified Phase 24 decoding state-relation accumulator. If the
+> interval summaries derived from the cumulative Phase 23 members nested inside
+> `R` are contiguous, positive-width, and boundary-consistent, then the Phase 25
+> intervalized artifact preserves the same global decode relation as `R` while
+> exposing an explicit ordered sequence of local interval relations suitable for
+> later folding.
 
-This is the theorem the folding layer actually needs.
+This is the theorem the later folding layer actually needs.
 
 ## Implementation Plan
 
-1. Add a Phase 25 intervalized manifest type in `src/stwo_backend/decoding.rs`.
-2. Add a helper that derives interval summaries from ordered Phase 24 cumulative
-   members using checked subtraction.
-3. Add `phase25_prepare_intervalized_decoding_state_relation(...)`.
+1. Add a Phase 25 intervalized manifest type in
+   `src/stwo_backend/decoding.rs`.
+2. Reuse the checked Phase 24 interval-summary derivation as the Phase 25 source
+   of truth.
+3. Add `phase25_prepare_intervalized_decoding_state_relation(...)` over one
+   verified Phase 24 source relation.
 4. Add `verify_phase25_intervalized_decoding_state_relation(...)`.
-5. Add save/load helpers and a small CLI demo.
-6. Keep the existing folded-relation work paused until the intervalized artifact is
-   the canonical folding input.
+5. Add save/load helpers and a CLI demo.
+6. Keep folded-relation work paused until it consumes Phase 25 artifacts rather
+   than the raw cumulative source object.
 
 ## Hardening Requirements
 
 Required before merge:
 
-- regressions for underflow, zero-width interval, and boundary mismatch rejection,
-- oracle checks reconstructing the final cumulative totals from interval members,
-- tamper tests on every derived count field,
-- fuzz coverage for load/verify on interval manifests,
+- regressions for tampered source relation commitments,
+- regressions for tampered interval commitments,
+- regressions for mirrored interval-summary drift,
+- fuzz coverage for load/verify on intervalized manifests,
 - bounded Kani harnesses for checked-difference and adjacency invariants,
-- and explicit caps on member count and JSON size.
+- explicit caps on member count and JSON size,
+- and oracle checks for interval template and interval accumulator commitments.
 
 ## Exit Criteria
 
-- one intervalized artifact verifies over at least two cumulative Phase 24 members,
-- oracle and production interval commitments match,
-- reconstructing interval totals yields the original cumulative final totals,
-- tamper tests cover rebased boundaries and derived-count drift,
-- and the Phase 25 folded relation implementation can consume intervalized members
-  instead of cumulative prefixes.
+- one intervalized artifact verifies over at least two carried-state intervals,
+- oracle and production commitments match,
+- tamper tests cover both source-relation drift and interval-view drift,
+- the artifact survives fuzz/load/verify and formal-kernel slices,
+- and the later folded-relation work can consume the Phase 25 artifact instead
+  of the raw cumulative Phase 24 source relation.

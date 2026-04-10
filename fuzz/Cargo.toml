@@ -41,5 +41,12 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "phase25_intervalized_decoding_state_relation"
+path = "fuzz_targets/phase25_intervalized_decoding_state_relation.rs"
+test = false
+doc = false
+bench = false
+
 [workspace]
 members = ["."]
