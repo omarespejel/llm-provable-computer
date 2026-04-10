@@ -38,8 +38,10 @@ use llm_provable_computer::{
     load_phase23_decoding_cross_step_lookup_accumulator,
     load_phase24_decoding_state_relation_accumulator,
     load_phase25_intervalized_decoding_state_relation,
-    load_phase26_folded_intervalized_decoding_state_relation, load_phase3_binary_step_lookup_proof,
-    load_phase5_normalization_lookup_proof, prove_phase10_shared_binary_step_lookup_envelope,
+    load_phase26_folded_intervalized_decoding_state_relation,
+    load_phase27_chained_folded_intervalized_decoding_state_relation,
+    load_phase3_binary_step_lookup_proof, load_phase5_normalization_lookup_proof,
+    prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
     prove_phase12_decoding_demo, prove_phase13_decoding_layout_matrix_demo,
     prove_phase14_decoding_demo, prove_phase15_decoding_demo, prove_phase16_decoding_demo,
@@ -49,6 +51,7 @@ use llm_provable_computer::{
     prove_phase24_decoding_state_relation_accumulator_demo,
     prove_phase25_intervalized_decoding_state_relation_demo,
     prove_phase26_folded_intervalized_decoding_state_relation_demo,
+    prove_phase27_chained_folded_intervalized_decoding_state_relation_demo,
     prove_phase3_binary_step_lookup_demo_envelope, prove_phase5_normalization_lookup_demo_envelope,
     save_phase10_shared_binary_step_lookup_proof, save_phase10_shared_normalization_lookup_proof,
     save_phase11_decoding_chain, save_phase12_decoding_chain, save_phase13_decoding_layout_matrix,
@@ -58,9 +61,10 @@ use llm_provable_computer::{
     save_phase23_decoding_cross_step_lookup_accumulator,
     save_phase24_decoding_state_relation_accumulator,
     save_phase25_intervalized_decoding_state_relation,
-    save_phase26_folded_intervalized_decoding_state_relation, save_phase3_binary_step_lookup_proof,
-    save_phase5_normalization_lookup_proof, stwo_backend_enabled,
-    verify_phase10_shared_binary_step_lookup_envelope,
+    save_phase26_folded_intervalized_decoding_state_relation,
+    save_phase27_chained_folded_intervalized_decoding_state_relation,
+    save_phase3_binary_step_lookup_proof, save_phase5_normalization_lookup_proof,
+    stwo_backend_enabled, verify_phase10_shared_binary_step_lookup_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
     verify_phase11_decoding_chain_with_proof_checks,
     verify_phase12_decoding_chain_with_proof_checks,
@@ -75,8 +79,10 @@ use llm_provable_computer::{
     verify_phase24_decoding_state_relation_accumulator_with_proof_checks,
     verify_phase25_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase26_folded_intervalized_decoding_state_relation_with_proof_checks,
+    verify_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase3_binary_step_lookup_demo_envelope,
     verify_phase5_normalization_lookup_demo_envelope, STWO_BACKEND_VERSION_PHASE12,
+    STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
     STWO_DECODING_CHAIN_SCOPE_PHASE11, STWO_DECODING_CHAIN_SCOPE_PHASE12,
     STWO_DECODING_CHAIN_SCOPE_PHASE14, STWO_DECODING_CHAIN_VERSION_PHASE11,
     STWO_DECODING_CHAIN_VERSION_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE14,
@@ -444,6 +450,17 @@ enum Command {
     /// Verify a serialized folded intervalized carried-state relation artifact over multiple Phase 25 intervals.
     VerifyStwoFoldedIntervalizedDecodingStateRelationDemo {
         /// Path to the serialized folded intervalized state relation JSON file.
+        proof: PathBuf,
+    },
+    /// Produce a serialized chained folded intervalized carried-state relation artifact over multiple Phase 26 folds.
+    ProveStwoChainedFoldedIntervalizedDecodingStateRelationDemo {
+        /// File where the serialized chained folded intervalized state relation JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a serialized chained folded intervalized carried-state relation artifact over multiple Phase 26 folds.
+    VerifyStwoChainedFoldedIntervalizedDecodingStateRelationDemo {
+        /// Path to the serialized chained folded intervalized state relation JSON file.
         proof: PathBuf,
     },
     /// Prepare a canonical multi-proof batch manifest for future S-two recursion.
@@ -1033,6 +1050,12 @@ fn run() -> llm_provable_computer::Result<()> {
         }
         Command::VerifyStwoFoldedIntervalizedDecodingStateRelationDemo { proof } => {
             verify_stwo_folded_intervalized_decoding_state_relation_demo_command(&proof)?
+        }
+        Command::ProveStwoChainedFoldedIntervalizedDecodingStateRelationDemo { output } => {
+            prove_stwo_chained_folded_intervalized_decoding_state_relation_demo_command(&output)?
+        }
+        Command::VerifyStwoChainedFoldedIntervalizedDecodingStateRelationDemo { proof } => {
+            verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_command(&proof)?
         }
         Command::PrepareStwoRecursionBatch { proofs, output } => {
             prepare_stwo_recursion_batch_command(&proofs, &output)?
@@ -2961,6 +2984,98 @@ fn verify_stwo_folded_intervalized_decoding_state_relation_demo_command(
     }
 }
 
+fn prove_stwo_chained_folded_intervalized_decoding_state_relation_demo_command(
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    require_stwo_backend("S-two chained folded intervalized decoding state relation demo")?;
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        let manifest = prove_phase27_chained_folded_intervalized_decoding_state_relation_demo()?;
+        save_phase27_chained_folded_intervalized_decoding_state_relation(&manifest, output)?;
+
+        println!("proof: {}", output.display());
+        println!("proof_backend: {}", manifest.proof_backend);
+        println!("artifact_version: {}", manifest.artifact_version);
+        println!("semantic_scope: {}", manifest.semantic_scope);
+        println!("proof_backend_version: {}", manifest.proof_backend_version);
+        println!("statement_version: {}", manifest.statement_version);
+        println!("bounded_chain_arity: {}", manifest.bounded_chain_arity);
+        println!("member_count: {}", manifest.member_count);
+        println!("total_phase25_members: {}", manifest.total_phase25_members);
+        println!("max_nested_fold_arity: {}", manifest.max_nested_fold_arity);
+        println!("total_matrices: {}", manifest.total_matrices);
+        println!("total_layouts: {}", manifest.total_layouts);
+        println!("total_rollups: {}", manifest.total_rollups);
+        println!("total_segments: {}", manifest.total_segments);
+        println!("total_steps: {}", manifest.total_steps);
+        println!("lookup_delta_entries: {}", manifest.lookup_delta_entries);
+        println!(
+            "max_lookup_frontier_entries: {}",
+            manifest.max_lookup_frontier_entries
+        );
+        Ok(())
+    }
+
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output;
+        unreachable!("require_stwo_backend must fail without `stwo-backend`");
+    }
+}
+
+fn verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_command(
+    proof_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    require_stwo_backend("S-two chained folded intervalized decoding state relation demo")?;
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        let manifest =
+            load_phase27_chained_folded_intervalized_decoding_state_relation(proof_path)?;
+        verify_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks(
+            &manifest,
+        )?;
+
+        println!("proof: {}", proof_path.display());
+        println!("verified_stark: true");
+        println!("proof_backend: {}", manifest.proof_backend);
+        println!("artifact_version: {}", manifest.artifact_version);
+        println!("semantic_scope: {}", manifest.semantic_scope);
+        println!("proof_backend_version: {}", manifest.proof_backend_version);
+        println!("statement_version: {}", manifest.statement_version);
+        println!("bounded_chain_arity: {}", manifest.bounded_chain_arity);
+        println!("member_count: {}", manifest.member_count);
+        println!("total_phase25_members: {}", manifest.total_phase25_members);
+        println!("max_nested_fold_arity: {}", manifest.max_nested_fold_arity);
+        println!("total_matrices: {}", manifest.total_matrices);
+        println!("total_layouts: {}", manifest.total_layouts);
+        println!("total_rollups: {}", manifest.total_rollups);
+        println!("total_segments: {}", manifest.total_segments);
+        println!("total_steps: {}", manifest.total_steps);
+        println!("lookup_delta_entries: {}", manifest.lookup_delta_entries);
+        println!(
+            "max_lookup_frontier_entries: {}",
+            manifest.max_lookup_frontier_entries
+        );
+        println!(
+            "expected_artifact_version: {}",
+            STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27
+        );
+        println!(
+            "expected_proof_backend_version: {}",
+            STWO_BACKEND_VERSION_PHASE12
+        );
+        Ok(())
+    }
+
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = proof_path;
+        unreachable!("require_stwo_backend must fail without `stwo-backend`");
+    }
+}
+
 fn verify_stwo_normalization_demo_command(proof_path: &Path) -> llm_provable_computer::Result<()> {
     #[cfg(not(feature = "stwo-backend"))]
     {
@@ -3799,6 +3914,12 @@ mod tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-folded-intervalized-decoding-state-relation-demo"
         ));
+        assert!(!needs_run_subcommand(
+            "prove-stwo-chained-folded-intervalized-decoding-state-relation-demo"
+        ));
+        assert!(!needs_run_subcommand(
+            "verify-stwo-chained-folded-intervalized-decoding-state-relation-demo"
+        ));
     }
 }
 
@@ -4179,6 +4300,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-intervalized-decoding-state-relation-demo"
                 | "prove-stwo-folded-intervalized-decoding-state-relation-demo"
                 | "verify-stwo-folded-intervalized-decoding-state-relation-demo"
+                | "prove-stwo-chained-folded-intervalized-decoding-state-relation-demo"
+                | "verify-stwo-chained-folded-intervalized-decoding-state-relation-demo"
                 | "prepare-stwo-recursion-batch"
                 | "research-v2-step"
                 | "research-v2-trace"

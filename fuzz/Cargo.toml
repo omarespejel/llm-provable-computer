@@ -55,5 +55,12 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "phase27_chained_folded_intervalized_decoding_state_relation"
+path = "fuzz_targets/phase27_chained_folded_intervalized_decoding_state_relation.rs"
+test = false
+doc = false
+bench = false
+
 [workspace]
 members = ["."]

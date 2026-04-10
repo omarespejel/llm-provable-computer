@@ -80,6 +80,10 @@ pub const STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26: &str
     "stwo-phase26-folded-intervalized-decoding-state-relation-v1";
 pub const STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE26: &str =
     "stwo_execution_parameterized_folded_intervalized_proof_carrying_decoding_state_relation";
+pub const STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27: &str =
+    "stwo-phase27-chained-folded-intervalized-decoding-state-relation-v1";
+pub const STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE27: &str =
+    "stwo_execution_parameterized_chained_folded_intervalized_proof_carrying_decoding_state_relation";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
 const DECODING_OUTPUT_RANGE: std::ops::Range<usize> = 10..13;
 const DECODING_POSITION_INDEX: usize = 21;
@@ -106,6 +110,7 @@ const MAX_PHASE23_CROSS_STEP_LOOKUP_ACCUMULATOR_JSON_BYTES: usize = 128 * 1024 *
 const MAX_PHASE24_STATE_RELATION_ACCUMULATOR_JSON_BYTES: usize = 160 * 1024 * 1024;
 const MAX_PHASE25_INTERVALIZED_STATE_RELATION_JSON_BYTES: usize = 192 * 1024 * 1024;
 const MAX_PHASE26_FOLDED_INTERVALIZED_STATE_RELATION_JSON_BYTES: usize = 224 * 1024 * 1024;
+const MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_STATE_RELATION_JSON_BYTES: usize = 256 * 1024 * 1024;
 const MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES: usize = 24 * 1024 * 1024;
 const MAX_PHASE21_ACCUMULATOR_MATRICES: usize = 512;
 const MAX_PHASE22_ACCUMULATOR_ROLLUPS: usize = 262_144;
@@ -118,6 +123,9 @@ const MAX_PHASE25_INTERVALIZED_MEMBERS: usize = 512;
 const MAX_PHASE25_INTERVALIZED_ROLLUPS: usize = 1_048_576;
 const MAX_PHASE26_FOLDED_INTERVALIZED_MEMBERS: usize = 512;
 const MAX_PHASE26_FOLDED_INTERVALIZED_ROLLUPS: usize = 1_048_576;
+const MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_MEMBERS: usize = 512;
+const MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_ROLLUPS: usize = 4_194_304;
+const MAX_PHASE27_TOTAL_NESTED_PHASE25_MEMBERS: usize = 4_096;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase11DecodingState {
@@ -634,6 +642,53 @@ pub struct Phase26FoldedIntervalizedDecodingStateRelationManifest {
     pub members: Vec<Phase25IntervalizedDecodingStateRelationManifest>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase27ChainedFoldedIntervalizedDecodingStateRelationMemberSummary {
+    pub start_step: usize,
+    pub end_step: usize,
+    pub bounded_fold_arity: usize,
+    pub total_phase25_members: usize,
+    pub total_matrices: usize,
+    pub total_layouts: usize,
+    pub total_rollups: usize,
+    pub total_segments: usize,
+    pub total_steps: usize,
+    pub lookup_delta_entries: usize,
+    pub max_lookup_frontier_entries: usize,
+    pub source_template_commitment: String,
+    pub fold_template_commitment: String,
+    pub folded_interval_accumulator_commitment: String,
+    pub start_state_commitment: String,
+    pub end_state_commitment: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest {
+    pub proof_backend: StarkProofBackend,
+    pub artifact_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub bounded_chain_arity: usize,
+    pub member_count: usize,
+    pub total_phase25_members: usize,
+    pub max_nested_fold_arity: usize,
+    pub total_matrices: usize,
+    pub total_layouts: usize,
+    pub total_rollups: usize,
+    pub total_segments: usize,
+    pub total_steps: usize,
+    pub lookup_delta_entries: usize,
+    pub max_lookup_frontier_entries: usize,
+    pub source_template_commitment: String,
+    pub global_start_state_commitment: String,
+    pub global_end_state_commitment: String,
+    pub chain_template_commitment: String,
+    pub chained_folded_interval_accumulator_commitment: String,
+    pub member_summaries: Vec<Phase27ChainedFoldedIntervalizedDecodingStateRelationMemberSummary>,
+    pub members: Vec<Phase26FoldedIntervalizedDecodingStateRelationManifest>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Phase12StateView {
     position: i16,
@@ -727,6 +782,39 @@ struct Phase26MemberSummary {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Phase26AggregateTotals {
+    total_matrices: usize,
+    total_layouts: usize,
+    total_rollups: usize,
+    total_segments: usize,
+    total_steps: usize,
+    lookup_delta_entries: usize,
+    max_lookup_frontier_entries: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Phase27MemberSummary {
+    start_step: usize,
+    end_step: usize,
+    bounded_fold_arity: usize,
+    total_phase25_members: usize,
+    total_matrices: usize,
+    total_layouts: usize,
+    total_rollups: usize,
+    total_segments: usize,
+    total_steps: usize,
+    lookup_delta_entries: usize,
+    max_lookup_frontier_entries: usize,
+    source_template_commitment: String,
+    fold_template_commitment: String,
+    folded_interval_accumulator_commitment: String,
+    start_state_commitment: String,
+    end_state_commitment: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Phase27AggregateTotals {
+    total_phase25_members: usize,
+    max_nested_fold_arity: usize,
     total_matrices: usize,
     total_layouts: usize,
     total_rollups: usize,
@@ -969,6 +1057,65 @@ fn write_json_with_limit<T: Serialize>(
     let file = fs::File::create(path)?;
     let mut writer = BufWriter::new(file);
     serde_json::to_writer_pretty(&mut writer, value)
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    writer.flush()?;
+    Ok(())
+}
+
+fn write_json_compact_with_limit<T: Serialize>(
+    value: &T,
+    path: &Path,
+    max_bytes: usize,
+    label: &str,
+) -> Result<()> {
+    struct ByteLimitCounter {
+        written: usize,
+        max_bytes: usize,
+        limit_exceeded: bool,
+    }
+
+    impl Write for ByteLimitCounter {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            let next = self.written.saturating_add(buf.len());
+            if next > self.max_bytes {
+                self.limit_exceeded = true;
+                return Err(std::io::Error::other("json size limit exceeded"));
+            }
+            self.written = next;
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    let mut counter = ByteLimitCounter {
+        written: 0,
+        max_bytes,
+        limit_exceeded: false,
+    };
+    if let Err(err) = serde_json::to_writer(&mut counter, value) {
+        if counter.limit_exceeded {
+            return Err(VmError::InvalidConfig(format!(
+                "{label} `{}` would serialize to JSON exceeding the limit of {} bytes",
+                path.display(),
+                max_bytes
+            )));
+        }
+        return Err(VmError::Serialization(err.to_string()));
+    }
+    if counter.written > max_bytes {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
+            path.display(),
+            counter.written,
+            max_bytes
+        )));
+    }
+    let file = fs::File::create(path)?;
+    let mut writer = BufWriter::new(file);
+    serde_json::to_writer(&mut writer, value)
         .map_err(|err| VmError::Serialization(err.to_string()))?;
     writer.flush()?;
     Ok(())
@@ -6428,6 +6575,683 @@ pub fn verify_phase26_folded_intervalized_decoding_state_relation_with_proof_che
     verify_phase26_folded_intervalized_decoding_state_relation_members_with_proof_checks(manifest)
 }
 
+fn summarize_phase27_members(
+    members: &[Phase26FoldedIntervalizedDecodingStateRelationManifest],
+) -> Result<Vec<Phase27MemberSummary>> {
+    let mut step_cursor = 0usize;
+    let mut summaries = Vec::with_capacity(members.len());
+    for (member_index, member) in members.iter().enumerate() {
+        verify_phase26_folded_intervalized_decoding_state_relation(member).map_err(|error| {
+            VmError::InvalidConfig(format!(
+                "Phase 27 member {member_index} is not a valid folded intervalized decoding state relation: {error}"
+            ))
+        })?;
+        let end_step = step_cursor.checked_add(member.total_steps).ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "Phase 27 member {member_index} total_steps overflowed the chained step cursor"
+            ))
+        })?;
+        summaries.push(Phase27MemberSummary {
+            start_step: step_cursor,
+            end_step,
+            bounded_fold_arity: member.bounded_fold_arity,
+            total_phase25_members: member.member_count,
+            total_matrices: member.total_matrices,
+            total_layouts: member.total_layouts,
+            total_rollups: member.total_rollups,
+            total_segments: member.total_segments,
+            total_steps: member.total_steps,
+            lookup_delta_entries: member.lookup_delta_entries,
+            max_lookup_frontier_entries: member.max_lookup_frontier_entries,
+            source_template_commitment: member.source_template_commitment.clone(),
+            fold_template_commitment: member.fold_template_commitment.clone(),
+            folded_interval_accumulator_commitment: member
+                .folded_interval_accumulator_commitment
+                .clone(),
+            start_state_commitment: member.global_start_state_commitment.clone(),
+            end_state_commitment: member.global_end_state_commitment.clone(),
+        });
+        step_cursor = end_step;
+    }
+    Ok(summaries)
+}
+
+fn verify_phase27_chain_sequence(summaries: &[Phase27MemberSummary]) -> Result<()> {
+    if summaries.len() < 2 {
+        return Err(VmError::InvalidConfig(
+            "Phase 27 chained folded intervalized decoding state relation requires at least two members"
+                .to_string(),
+        ));
+    }
+    let first = summaries.first().expect("phase27 summaries are non-empty");
+    if first.start_step != 0 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 27 first member must start at step 0 (got {})",
+            first.start_step
+        )));
+    }
+    if first.source_template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 27 source_template_commitment must not be empty".to_string(),
+        ));
+    }
+    for (member_index, summary) in summaries.iter().enumerate() {
+        if summary.end_step <= summary.start_step {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 27 member {member_index} has non-positive width interval [{}..{})",
+                summary.start_step, summary.end_step
+            )));
+        }
+        let derived_total_steps = summary.end_step - summary.start_step;
+        if summary.total_steps != derived_total_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 27 member {member_index} total_steps={} does not match interval width {}",
+                summary.total_steps, derived_total_steps
+            )));
+        }
+        if summary.source_template_commitment != first.source_template_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 27 member {member_index} changed source_template_commitment"
+            )));
+        }
+        if summary.bounded_fold_arity < summary.total_phase25_members {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 27 member {member_index} bounded_fold_arity={} is smaller than nested member_count={}",
+                summary.bounded_fold_arity, summary.total_phase25_members
+            )));
+        }
+        if summary.total_phase25_members < 2 {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 27 member {member_index} must summarize at least two Phase 25 members"
+            )));
+        }
+        if member_index == 0 {
+            continue;
+        }
+        let previous = &summaries[member_index - 1];
+        if summary.start_step != previous.end_step {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 27 member {member_index} starts at step {} but previous member ended at step {}",
+                summary.start_step, previous.end_step
+            )));
+        }
+        if summary.start_state_commitment != previous.end_state_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 27 member {member_index} does not preserve the carried-state commitment from the previous folded interval member"
+            )));
+        }
+    }
+    Ok(())
+}
+
+fn aggregate_phase27_summary_totals(
+    summaries: &[Phase27MemberSummary],
+) -> Result<Phase27AggregateTotals> {
+    verify_phase27_chain_sequence(summaries)?;
+    let mut totals = Phase27AggregateTotals {
+        total_phase25_members: 0,
+        max_nested_fold_arity: 0,
+        total_matrices: 0,
+        total_layouts: 0,
+        total_rollups: 0,
+        total_segments: 0,
+        total_steps: 0,
+        lookup_delta_entries: 0,
+        max_lookup_frontier_entries: 0,
+    };
+    for summary in summaries {
+        totals.total_phase25_members = totals
+            .total_phase25_members
+            .checked_add(summary.total_phase25_members)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "Phase 27 total_phase25_members overflowed usize".to_string(),
+                )
+            })?;
+        totals.max_nested_fold_arity = totals.max_nested_fold_arity.max(summary.bounded_fold_arity);
+        totals.total_matrices = totals
+            .total_matrices
+            .checked_add(summary.total_matrices)
+            .ok_or_else(|| {
+                VmError::InvalidConfig("Phase 27 total_matrices overflowed usize".to_string())
+            })?;
+        totals.total_layouts = totals
+            .total_layouts
+            .checked_add(summary.total_layouts)
+            .ok_or_else(|| {
+                VmError::InvalidConfig("Phase 27 total_layouts overflowed usize".to_string())
+            })?;
+        totals.total_rollups = totals
+            .total_rollups
+            .checked_add(summary.total_rollups)
+            .ok_or_else(|| {
+                VmError::InvalidConfig("Phase 27 total_rollups overflowed usize".to_string())
+            })?;
+        totals.total_segments = totals
+            .total_segments
+            .checked_add(summary.total_segments)
+            .ok_or_else(|| {
+                VmError::InvalidConfig("Phase 27 total_segments overflowed usize".to_string())
+            })?;
+        totals.total_steps = totals
+            .total_steps
+            .checked_add(summary.total_steps)
+            .ok_or_else(|| {
+                VmError::InvalidConfig("Phase 27 total_steps overflowed usize".to_string())
+            })?;
+        totals.lookup_delta_entries = totals
+            .lookup_delta_entries
+            .checked_add(summary.lookup_delta_entries)
+            .ok_or_else(|| {
+                VmError::InvalidConfig("Phase 27 lookup_delta_entries overflowed usize".to_string())
+            })?;
+        totals.max_lookup_frontier_entries = totals
+            .max_lookup_frontier_entries
+            .max(summary.max_lookup_frontier_entries);
+    }
+    Ok(totals)
+}
+
+fn phase27_public_member_summaries(
+    summaries: &[Phase27MemberSummary],
+) -> Vec<Phase27ChainedFoldedIntervalizedDecodingStateRelationMemberSummary> {
+    summaries
+        .iter()
+        .map(
+            |summary| Phase27ChainedFoldedIntervalizedDecodingStateRelationMemberSummary {
+                start_step: summary.start_step,
+                end_step: summary.end_step,
+                bounded_fold_arity: summary.bounded_fold_arity,
+                total_phase25_members: summary.total_phase25_members,
+                total_matrices: summary.total_matrices,
+                total_layouts: summary.total_layouts,
+                total_rollups: summary.total_rollups,
+                total_segments: summary.total_segments,
+                total_steps: summary.total_steps,
+                lookup_delta_entries: summary.lookup_delta_entries,
+                max_lookup_frontier_entries: summary.max_lookup_frontier_entries,
+                source_template_commitment: summary.source_template_commitment.clone(),
+                fold_template_commitment: summary.fold_template_commitment.clone(),
+                folded_interval_accumulator_commitment: summary
+                    .folded_interval_accumulator_commitment
+                    .clone(),
+                start_state_commitment: summary.start_state_commitment.clone(),
+                end_state_commitment: summary.end_state_commitment.clone(),
+            },
+        )
+        .collect()
+}
+
+fn validate_phase27_chained_folded_intervalized_decoding_state_relation_shallow(
+    manifest: &Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest,
+) -> Result<()> {
+    if manifest.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation backend `{}` is not `stwo`",
+            manifest.proof_backend
+        )));
+    }
+    if manifest.artifact_version
+        != STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported chained folded intervalized decoding state relation version `{}`",
+            manifest.artifact_version
+        )));
+    }
+    if manifest.semantic_scope
+        != STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE27
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported chained folded intervalized decoding state relation semantic scope `{}`",
+            manifest.semantic_scope
+        )));
+    }
+    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported chained folded intervalized decoding state relation proof backend version `{}` (expected `{}`)",
+            manifest.proof_backend_version,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+        )));
+    }
+    if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported chained folded intervalized decoding state relation statement version `{}`",
+            manifest.statement_version
+        )));
+    }
+    if manifest.members.len() < 2 {
+        return Err(VmError::InvalidConfig(
+            "chained folded intervalized decoding state relation must contain at least two members"
+                .to_string(),
+        ));
+    }
+    if manifest.members.len() > MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_MEMBERS {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation members.len()={} exceeds the supported maximum {}",
+            manifest.members.len(),
+            MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_MEMBERS
+        )));
+    }
+    if manifest.member_count != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation member_count={} does not match members.len()={}",
+            manifest.member_count,
+            manifest.members.len()
+        )));
+    }
+    if manifest.member_summaries.len() != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation member_summaries.len()={} does not match members.len()={}",
+            manifest.member_summaries.len(),
+            manifest.members.len()
+        )));
+    }
+    if manifest.bounded_chain_arity < manifest.member_count
+        || manifest.bounded_chain_arity > MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_MEMBERS
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation bounded_chain_arity={} must be between member_count {} and supported maximum {}",
+            manifest.bounded_chain_arity,
+            manifest.member_count,
+            MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_MEMBERS
+        )));
+    }
+    if manifest.total_phase25_members < manifest.member_count
+        || manifest.total_phase25_members > MAX_PHASE27_TOTAL_NESTED_PHASE25_MEMBERS
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation total_phase25_members={} must be between member_count {} and supported maximum {}",
+            manifest.total_phase25_members,
+            manifest.member_count,
+            MAX_PHASE27_TOTAL_NESTED_PHASE25_MEMBERS
+        )));
+    }
+    if manifest.max_nested_fold_arity < 2
+        || manifest.max_nested_fold_arity > MAX_PHASE26_FOLDED_INTERVALIZED_MEMBERS
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation max_nested_fold_arity={} must be between 2 and {}",
+            manifest.max_nested_fold_arity,
+            MAX_PHASE26_FOLDED_INTERVALIZED_MEMBERS
+        )));
+    }
+    if manifest.total_rollups > MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_ROLLUPS {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation total_rollups={} exceeds the supported maximum {}",
+            manifest.total_rollups,
+            MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_ROLLUPS
+        )));
+    }
+    if manifest.source_template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "chained folded intervalized decoding state relation source_template_commitment must not be empty".to_string(),
+        ));
+    }
+    if manifest.global_start_state_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "chained folded intervalized decoding state relation global_start_state_commitment must not be empty".to_string(),
+        ));
+    }
+    if manifest.global_end_state_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "chained folded intervalized decoding state relation global_end_state_commitment must not be empty".to_string(),
+        ));
+    }
+    if manifest.chain_template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "chained folded intervalized decoding state relation chain_template_commitment must not be empty".to_string(),
+        ));
+    }
+    if manifest
+        .chained_folded_interval_accumulator_commitment
+        .is_empty()
+    {
+        return Err(VmError::InvalidConfig(
+            "chained folded intervalized decoding state relation chained_folded_interval_accumulator_commitment must not be empty".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn commit_phase27_chain_template(
+    source_template_commitment: &str,
+    bounded_chain_arity: usize,
+    summaries: &[Phase27MemberSummary],
+) -> Result<String> {
+    verify_phase27_chain_sequence(summaries)?;
+    if source_template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 27 chain template source_template_commitment must not be empty".to_string(),
+        ));
+    }
+    if bounded_chain_arity < summaries.len()
+        || bounded_chain_arity > MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_MEMBERS
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 27 bounded_chain_arity={} must be between member_count {} and supported maximum {}",
+            bounded_chain_arity,
+            summaries.len(),
+            MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_MEMBERS
+        )));
+    }
+
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(
+        STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27.as_bytes(),
+    );
+    hasher.update(b"chain-template");
+    hasher.update(&(bounded_chain_arity as u64).to_le_bytes());
+    hasher.update(&(summaries.len() as u64).to_le_bytes());
+    hasher.update(source_template_commitment.as_bytes());
+    for (member_index, summary) in summaries.iter().enumerate() {
+        hasher.update(&(member_index as u64).to_le_bytes());
+        hasher.update(&(summary.bounded_fold_arity as u64).to_le_bytes());
+        hasher.update(&(summary.total_phase25_members as u64).to_le_bytes());
+        hasher.update(summary.fold_template_commitment.as_bytes());
+        hasher.update(&(summary.start_step as u64).to_le_bytes());
+        hasher.update(&(summary.end_step as u64).to_le_bytes());
+        hasher.update(&(summary.total_matrices as u64).to_le_bytes());
+        hasher.update(&(summary.total_layouts as u64).to_le_bytes());
+        hasher.update(&(summary.total_rollups as u64).to_le_bytes());
+        hasher.update(&(summary.total_segments as u64).to_le_bytes());
+        hasher.update(&(summary.total_steps as u64).to_le_bytes());
+        hasher.update(&(summary.lookup_delta_entries as u64).to_le_bytes());
+        hasher.update(&(summary.max_lookup_frontier_entries as u64).to_le_bytes());
+    }
+
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase27_chained_folded_intervalized_state_relation_with_summaries(
+    manifest: &Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest,
+    summaries: &[Phase27MemberSummary],
+) -> Result<String> {
+    if summaries.len() != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation summaries.len()={} does not match members.len()={}",
+            summaries.len(),
+            manifest.members.len()
+        )));
+    }
+    verify_phase27_chain_sequence(summaries)?;
+
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(
+        STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27.as_bytes(),
+    );
+    hasher.update(b"chained-folded-intervalized-state-relation");
+    hasher.update(&(manifest.bounded_chain_arity as u64).to_le_bytes());
+    hasher.update(&(manifest.total_phase25_members as u64).to_le_bytes());
+    hasher.update(&(manifest.max_nested_fold_arity as u64).to_le_bytes());
+    hasher.update(manifest.source_template_commitment.as_bytes());
+    hasher.update(manifest.global_start_state_commitment.as_bytes());
+    hasher.update(manifest.global_end_state_commitment.as_bytes());
+    hasher.update(manifest.chain_template_commitment.as_bytes());
+    hasher.update(&(manifest.member_count as u64).to_le_bytes());
+    hasher.update(&(manifest.total_matrices as u64).to_le_bytes());
+    hasher.update(&(manifest.total_layouts as u64).to_le_bytes());
+    hasher.update(&(manifest.total_rollups as u64).to_le_bytes());
+    hasher.update(&(manifest.total_segments as u64).to_le_bytes());
+    hasher.update(&(manifest.total_steps as u64).to_le_bytes());
+    hasher.update(&(manifest.lookup_delta_entries as u64).to_le_bytes());
+    hasher.update(&(manifest.max_lookup_frontier_entries as u64).to_le_bytes());
+    for (member_index, summary) in summaries.iter().enumerate() {
+        hasher.update(&(member_index as u64).to_le_bytes());
+        hasher.update(&(summary.start_step as u64).to_le_bytes());
+        hasher.update(&(summary.end_step as u64).to_le_bytes());
+        hasher.update(&(summary.bounded_fold_arity as u64).to_le_bytes());
+        hasher.update(&(summary.total_phase25_members as u64).to_le_bytes());
+        hasher.update(summary.fold_template_commitment.as_bytes());
+        hasher.update(summary.folded_interval_accumulator_commitment.as_bytes());
+        hasher.update(summary.start_state_commitment.as_bytes());
+        hasher.update(summary.end_state_commitment.as_bytes());
+        hasher.update(&(summary.total_matrices as u64).to_le_bytes());
+        hasher.update(&(summary.total_layouts as u64).to_le_bytes());
+        hasher.update(&(summary.total_rollups as u64).to_le_bytes());
+        hasher.update(&(summary.total_segments as u64).to_le_bytes());
+        hasher.update(&(summary.total_steps as u64).to_le_bytes());
+        hasher.update(&(summary.lookup_delta_entries as u64).to_le_bytes());
+        hasher.update(&(summary.max_lookup_frontier_entries as u64).to_le_bytes());
+    }
+
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+pub fn phase27_prepare_chained_folded_intervalized_decoding_state_relation(
+    members: &[Phase26FoldedIntervalizedDecodingStateRelationManifest],
+) -> Result<Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest> {
+    if members.len() < 2 {
+        return Err(VmError::InvalidConfig(
+            "Phase 27 chained folded intervalized decoding state relation requires at least two members"
+                .to_string(),
+        ));
+    }
+    if members.len() > MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_MEMBERS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 27 chained folded intervalized decoding state relation supports at most {MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_MEMBERS} members (got {})",
+            members.len()
+        )));
+    }
+
+    let summaries = summarize_phase27_members(members)?;
+    let totals = aggregate_phase27_summary_totals(&summaries)?;
+    if totals.total_phase25_members > MAX_PHASE27_TOTAL_NESTED_PHASE25_MEMBERS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 27 chained folded intervalized decoding state relation total_phase25_members={} exceeds the supported maximum {}",
+            totals.total_phase25_members, MAX_PHASE27_TOTAL_NESTED_PHASE25_MEMBERS
+        )));
+    }
+    if totals.total_rollups > MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_ROLLUPS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 27 chained folded intervalized decoding state relation total_rollups={} exceeds the supported maximum {}",
+            totals.total_rollups, MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_ROLLUPS
+        )));
+    }
+
+    let bounded_chain_arity = members.len();
+    let chain_template_commitment = commit_phase27_chain_template(
+        &summaries[0].source_template_commitment,
+        bounded_chain_arity,
+        &summaries,
+    )?;
+    let mut manifest = Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest {
+        proof_backend: StarkProofBackend::Stwo,
+        artifact_version: STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27
+            .to_string(),
+        semantic_scope: STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE27
+            .to_string(),
+        proof_backend_version: members[0].proof_backend_version.clone(),
+        statement_version: members[0].statement_version.clone(),
+        bounded_chain_arity,
+        member_count: members.len(),
+        total_phase25_members: totals.total_phase25_members,
+        max_nested_fold_arity: totals.max_nested_fold_arity,
+        total_matrices: totals.total_matrices,
+        total_layouts: totals.total_layouts,
+        total_rollups: totals.total_rollups,
+        total_segments: totals.total_segments,
+        total_steps: totals.total_steps,
+        lookup_delta_entries: totals.lookup_delta_entries,
+        max_lookup_frontier_entries: totals.max_lookup_frontier_entries,
+        source_template_commitment: summaries[0].source_template_commitment.clone(),
+        global_start_state_commitment: summaries[0].start_state_commitment.clone(),
+        global_end_state_commitment: summaries
+            .last()
+            .expect("phase27 summaries are non-empty")
+            .end_state_commitment
+            .clone(),
+        chain_template_commitment,
+        chained_folded_interval_accumulator_commitment: String::new(),
+        member_summaries: phase27_public_member_summaries(&summaries),
+        members: members.to_vec(),
+    };
+    manifest.chained_folded_interval_accumulator_commitment =
+        commit_phase27_chained_folded_intervalized_state_relation_with_summaries(
+            &manifest, &summaries,
+        )?;
+    verify_phase27_chained_folded_intervalized_decoding_state_relation_with_summaries(
+        &manifest, &summaries,
+    )?;
+    Ok(manifest)
+}
+
+fn verify_phase27_chained_folded_intervalized_decoding_state_relation_with_summaries(
+    manifest: &Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest,
+    summaries: &[Phase27MemberSummary],
+) -> Result<()> {
+    validate_phase27_chained_folded_intervalized_decoding_state_relation_shallow(manifest)?;
+    if summaries.len() != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation summaries.len()={} does not match members.len()={}",
+            summaries.len(),
+            manifest.members.len()
+        )));
+    }
+    verify_phase27_chain_sequence(summaries)?;
+    let totals = aggregate_phase27_summary_totals(summaries)?;
+    if manifest.total_phase25_members != totals.total_phase25_members {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation total_phase25_members={} does not match derived total_phase25_members {}",
+            manifest.total_phase25_members, totals.total_phase25_members
+        )));
+    }
+    if manifest.max_nested_fold_arity != totals.max_nested_fold_arity {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation max_nested_fold_arity={} does not match derived max_nested_fold_arity {}",
+            manifest.max_nested_fold_arity, totals.max_nested_fold_arity
+        )));
+    }
+    if manifest.total_matrices != totals.total_matrices {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation total_matrices={} does not match derived total_matrices {}",
+            manifest.total_matrices, totals.total_matrices
+        )));
+    }
+    if manifest.total_layouts != totals.total_layouts {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation total_layouts={} does not match derived total_layouts {}",
+            manifest.total_layouts, totals.total_layouts
+        )));
+    }
+    if manifest.total_rollups != totals.total_rollups {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation total_rollups={} does not match derived total_rollups {}",
+            manifest.total_rollups, totals.total_rollups
+        )));
+    }
+    if manifest.total_segments != totals.total_segments {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation total_segments={} does not match derived total_segments {}",
+            manifest.total_segments, totals.total_segments
+        )));
+    }
+    if manifest.total_steps != totals.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation total_steps={} does not match derived total_steps {}",
+            manifest.total_steps, totals.total_steps
+        )));
+    }
+    if manifest.lookup_delta_entries != totals.lookup_delta_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation lookup_delta_entries={} does not match derived lookup_delta_entries {}",
+            manifest.lookup_delta_entries, totals.lookup_delta_entries
+        )));
+    }
+    if manifest.max_lookup_frontier_entries != totals.max_lookup_frontier_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "chained folded intervalized decoding state relation max_lookup_frontier_entries={} does not match derived max_lookup_frontier_entries {}",
+            manifest.max_lookup_frontier_entries, totals.max_lookup_frontier_entries
+        )));
+    }
+    let expected_member_summaries = phase27_public_member_summaries(summaries);
+    if manifest.member_summaries != expected_member_summaries {
+        return Err(VmError::InvalidConfig(
+            "chained folded intervalized decoding state relation member_summaries do not match the derived chain summaries".to_string(),
+        ));
+    }
+    let first = summaries.first().expect("phase27 summaries are non-empty");
+    let last = summaries.last().expect("phase27 summaries are non-empty");
+    if manifest.source_template_commitment != first.source_template_commitment {
+        return Err(VmError::InvalidConfig(
+            "chained folded intervalized decoding state relation source_template_commitment does not match the first member source template".to_string(),
+        ));
+    }
+    if manifest.global_start_state_commitment != first.start_state_commitment {
+        return Err(VmError::InvalidConfig(
+            "chained folded intervalized decoding state relation global_start_state_commitment does not match the first member boundary".to_string(),
+        ));
+    }
+    if manifest.global_end_state_commitment != last.end_state_commitment {
+        return Err(VmError::InvalidConfig(
+            "chained folded intervalized decoding state relation global_end_state_commitment does not match the last member boundary".to_string(),
+        ));
+    }
+    let expected_chain_template_commitment = commit_phase27_chain_template(
+        &manifest.source_template_commitment,
+        manifest.bounded_chain_arity,
+        summaries,
+    )?;
+    if manifest.chain_template_commitment != expected_chain_template_commitment {
+        return Err(VmError::InvalidConfig(
+            "chained folded intervalized decoding state relation chain_template_commitment does not match the computed chain template commitment".to_string(),
+        ));
+    }
+    let expected_chained_folded_interval_accumulator_commitment =
+        commit_phase27_chained_folded_intervalized_state_relation_with_summaries(
+            manifest, summaries,
+        )?;
+    if manifest.chained_folded_interval_accumulator_commitment
+        != expected_chained_folded_interval_accumulator_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "chained folded intervalized decoding state relation chained_folded_interval_accumulator_commitment does not match the computed chained fold accumulator commitment".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+pub fn verify_phase27_chained_folded_intervalized_decoding_state_relation(
+    manifest: &Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest,
+) -> Result<()> {
+    validate_phase27_chained_folded_intervalized_decoding_state_relation_shallow(manifest)?;
+    let summaries = summarize_phase27_members(&manifest.members)?;
+    verify_phase27_chained_folded_intervalized_decoding_state_relation_with_summaries(
+        manifest, &summaries,
+    )
+}
+
+fn verify_phase27_chained_folded_intervalized_decoding_state_relation_members_with_proof_checks(
+    manifest: &Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest,
+) -> Result<()> {
+    for (member_index, member) in manifest.members.iter().enumerate() {
+        verify_phase26_folded_intervalized_decoding_state_relation_with_proof_checks(member)
+            .map_err(|error| {
+                VmError::InvalidConfig(format!(
+                    "Phase 27 member {member_index} failed proof-bearing Phase 26 verification: {error}"
+                ))
+            })?;
+    }
+    Ok(())
+}
+
+pub fn verify_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks(
+    manifest: &Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest,
+) -> Result<()> {
+    verify_phase27_chained_folded_intervalized_decoding_state_relation(manifest)?;
+    verify_phase27_chained_folded_intervalized_decoding_state_relation_members_with_proof_checks(
+        manifest,
+    )
+}
+
 pub fn save_phase11_decoding_chain(
     manifest: &Phase11DecodingChainManifest,
     path: &Path,
@@ -7117,6 +7941,32 @@ pub fn load_phase26_folded_intervalized_decoding_state_relation(
     Ok(manifest)
 }
 
+pub fn save_phase27_chained_folded_intervalized_decoding_state_relation(
+    manifest: &Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest,
+    path: &Path,
+) -> Result<()> {
+    write_json_compact_with_limit(
+        manifest,
+        path,
+        MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_STATE_RELATION_JSON_BYTES,
+        "Phase 27 chained folded intervalized decoding state relation",
+    )
+}
+
+pub fn load_phase27_chained_folded_intervalized_decoding_state_relation(
+    path: &Path,
+) -> Result<Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_STATE_RELATION_JSON_BYTES,
+        "Phase 27 chained folded intervalized decoding state relation",
+    )?;
+    let manifest: Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    verify_phase27_chained_folded_intervalized_decoding_state_relation(&manifest)?;
+    Ok(manifest)
+}
+
 pub fn save_phase13_decoding_layout_matrix(
     manifest: &Phase13DecodingLayoutMatrixManifest,
     path: &Path,
@@ -7573,6 +8423,73 @@ fn phase25_prepare_intervalized_member_from_cumulative_members(
     )
 }
 
+fn phase25_prepare_intervalized_members_from_cumulative_members(
+    cumulative_members: &[Phase23DecodingCrossStepLookupAccumulatorManifest],
+    cumulative_chunk_len: usize,
+) -> Result<Vec<Phase25IntervalizedDecodingStateRelationManifest>> {
+    if cumulative_chunk_len < 2 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 25 interval chunk length must be at least 2 cumulative members (got {cumulative_chunk_len})"
+        )));
+    }
+    if cumulative_members.len() < cumulative_chunk_len {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 25 interval chunking requires at least {cumulative_chunk_len} cumulative members, got {}",
+            cumulative_members.len()
+        )));
+    }
+    if cumulative_members.len() % cumulative_chunk_len != 0 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 25 interval chunking requires cumulative_members.len()={} to be divisible by chunk length {}",
+            cumulative_members.len(),
+            cumulative_chunk_len
+        )));
+    }
+
+    let mut interval_members = Vec::with_capacity(cumulative_members.len() / cumulative_chunk_len);
+    for (chunk_index, chunk) in cumulative_members.chunks(cumulative_chunk_len).enumerate() {
+        let start_index = chunk_index * cumulative_chunk_len;
+        let baseline = if start_index == 0 {
+            None
+        } else {
+            cumulative_members.get(start_index - 1)
+        };
+        interval_members.push(phase25_prepare_intervalized_member_from_cumulative_members(
+            chunk, baseline,
+        )?);
+    }
+    Ok(interval_members)
+}
+
+fn phase26_prepare_folded_members_from_interval_members(
+    members: &[Phase25IntervalizedDecodingStateRelationManifest],
+    fold_chunk_len: usize,
+) -> Result<Vec<Phase26FoldedIntervalizedDecodingStateRelationManifest>> {
+    if fold_chunk_len < 2 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 26 fold chunk length must be at least 2 interval members (got {fold_chunk_len})"
+        )));
+    }
+    if members.len() < fold_chunk_len {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 26 fold chunking requires at least {fold_chunk_len} interval members, got {}",
+            members.len()
+        )));
+    }
+    if members.len() % fold_chunk_len != 0 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 26 fold chunking requires interval_members.len()={} to be divisible by chunk length {}",
+            members.len(),
+            fold_chunk_len
+        )));
+    }
+
+    members
+        .chunks(fold_chunk_len)
+        .map(phase26_prepare_folded_intervalized_decoding_state_relation)
+        .collect()
+}
+
 fn phase26_prepare_demo_manifest_for_layout(
     layout: &Phase12DecodingLayout,
 ) -> Result<Phase26FoldedIntervalizedDecodingStateRelationManifest> {
@@ -7589,6 +8506,19 @@ fn phase26_prepare_demo_manifest_for_layout(
         cumulative_members.get(midpoint - 1),
     )?;
     phase26_prepare_folded_intervalized_decoding_state_relation(&[first_member, second_member])
+}
+
+fn phase27_prepare_demo_manifest_for_layout(
+    layout: &Phase12DecodingLayout,
+) -> Result<Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest> {
+    let proofs = phase25_demo_proofs_for_layout(layout, 8)?;
+    let cumulative_members =
+        phase25_prepare_cumulative_members_from_proof_prefixes(layout, &proofs)?;
+    let interval_members =
+        phase25_prepare_intervalized_members_from_cumulative_members(&cumulative_members, 2)?;
+    let folded_members =
+        phase26_prepare_folded_members_from_interval_members(&interval_members, 2)?;
+    phase27_prepare_chained_folded_intervalized_decoding_state_relation(&folded_members)
 }
 
 pub fn prove_phase24_decoding_state_relation_accumulator_demo(
@@ -7637,6 +8567,28 @@ pub fn prove_phase26_folded_intervalized_decoding_state_relation_demo(
     Err(last_error.unwrap_or_else(|| {
         VmError::InvalidConfig(
             "Phase 26 folded intervalized demo did not have any candidate layouts to try"
+                .to_string(),
+        )
+    }))
+}
+
+pub fn prove_phase27_chained_folded_intervalized_decoding_state_relation_demo(
+) -> Result<Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest> {
+    let mut last_error = None;
+    for layout in phase25_default_decoding_layouts()? {
+        match phase27_prepare_demo_manifest_for_layout(&layout) {
+            Ok(manifest) => {
+                verify_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks(
+                    &manifest,
+                )?;
+                return Ok(manifest);
+            }
+            Err(error) => last_error = Some(error),
+        }
+    }
+    Err(last_error.unwrap_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 27 chained folded intervalized demo did not have any candidate layouts to try"
                 .to_string(),
         )
     }))
@@ -10494,6 +11446,78 @@ mod kani_phase26_proofs {
     }
 }
 
+#[cfg(kani)]
+mod kani_phase27_proofs {
+    fn phase27_chain_shape_is_valid(
+        first_fold_steps: usize,
+        second_fold_steps: usize,
+        reconstructed_total_steps: usize,
+        first_end_state_tag: u8,
+        second_start_state_tag: u8,
+        first_nested_member_count: usize,
+        second_nested_member_count: usize,
+        bounded_chain_arity: usize,
+        member_count: usize,
+    ) -> bool {
+        first_fold_steps > 0
+            && second_fold_steps > 0
+            && first_fold_steps.checked_add(second_fold_steps) == Some(reconstructed_total_steps)
+            && first_end_state_tag != 0
+            && first_end_state_tag == second_start_state_tag
+            && first_nested_member_count >= 2
+            && second_nested_member_count >= 2
+            && member_count >= 2
+            && bounded_chain_arity >= member_count
+    }
+
+    #[kani::proof]
+    fn kani_phase27_chain_shape_accepts_contiguous_pair() {
+        assert!(phase27_chain_shape_is_valid(2, 3, 5, 1, 1, 2, 2, 2, 2));
+    }
+
+    #[kani::proof]
+    fn kani_phase27_chain_shape_covers_nonzero_lookup_delta_chain() {
+        let first_fold_steps = (kani::any::<u8>() % 4) as usize + 1;
+        let second_fold_steps = (kani::any::<u8>() % 4) as usize + 1;
+        let reconstructed_total_steps = first_fold_steps + second_fold_steps;
+        let shared_boundary_tag = 1u8 + (kani::any::<u8>() % 2);
+
+        kani::cover!(phase27_chain_shape_is_valid(
+            first_fold_steps,
+            second_fold_steps,
+            reconstructed_total_steps,
+            shared_boundary_tag,
+            shared_boundary_tag,
+            2,
+            3,
+            2,
+            2,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase27_chain_shape_rejects_boundary_mismatch() {
+        let first_end_tag = 1u8 + (kani::any::<u8>() % 2);
+        let second_start_tag = if first_end_tag == 1 { 2 } else { 1 };
+        assert!(!phase27_chain_shape_is_valid(
+            1,
+            2,
+            3,
+            first_end_tag,
+            second_start_tag,
+            2,
+            2,
+            2,
+            2,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase27_chain_shape_rejects_insufficient_bounded_arity() {
+        assert!(!phase27_chain_shape_is_valid(1, 2, 3, 1, 1, 2, 2, 1, 2));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -12458,6 +13482,196 @@ mod tests {
         Ok(oracle_blake2b_256(&parts))
     }
 
+    fn oracle_summarize_phase27_members(
+        members: &[Phase26FoldedIntervalizedDecodingStateRelationManifest],
+    ) -> Result<Vec<Phase27MemberSummary>> {
+        let mut summaries = Vec::with_capacity(members.len());
+        let mut cumulative_steps = 0usize;
+
+        for (member_index, member) in members.iter().enumerate() {
+            validate_phase26_folded_intervalized_decoding_state_relation_shallow(member).map_err(
+                |error| {
+                    VmError::InvalidConfig(format!(
+                        "Phase 27 oracle member {member_index} failed shallow Phase 26 validation: {error}"
+                    ))
+                },
+            )?;
+            let expected_fold_template =
+                oracle_commit_phase26_fold_template(member).map_err(|error| {
+                    VmError::InvalidConfig(format!(
+                        "Phase 27 oracle member {member_index} failed fold template reconstruction: {error}"
+                    ))
+                })?;
+            if member.fold_template_commitment != expected_fold_template {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 27 oracle member {member_index} fold_template_commitment does not match the oracle-reconstructed Phase 26 fold template commitment"
+                )));
+            }
+            let expected_folded_accumulator =
+                oracle_commit_phase26_folded_intervalized_state_relation(member).map_err(
+                    |error| {
+                        VmError::InvalidConfig(format!(
+                            "Phase 27 oracle member {member_index} failed folded interval accumulator reconstruction: {error}"
+                        ))
+                    },
+                )?;
+            if member.folded_interval_accumulator_commitment != expected_folded_accumulator {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 27 oracle member {member_index} folded_interval_accumulator_commitment does not match the oracle-reconstructed Phase 26 folded interval accumulator commitment"
+                )));
+            }
+            if member.total_steps == 0 {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 27 oracle member {member_index} must cover at least one step"
+                )));
+            }
+            if member.source_template_commitment.is_empty() {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 27 oracle member {member_index} has an empty source_template_commitment"
+                )));
+            }
+            if member.global_start_state_commitment.is_empty()
+                || member.global_end_state_commitment.is_empty()
+            {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 27 oracle member {member_index} has an empty state-boundary commitment"
+                )));
+            }
+
+            let start_step = cumulative_steps;
+            let end_step = cumulative_steps.checked_add(member.total_steps).ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 27 oracle member {member_index} total_steps overflowed while deriving chained folds"
+                ))
+            })?;
+            summaries.push(Phase27MemberSummary {
+                start_step,
+                end_step,
+                bounded_fold_arity: member.bounded_fold_arity,
+                total_phase25_members: member.member_count,
+                total_matrices: member.total_matrices,
+                total_layouts: member.total_layouts,
+                total_rollups: member.total_rollups,
+                total_segments: member.total_segments,
+                total_steps: member.total_steps,
+                lookup_delta_entries: member.lookup_delta_entries,
+                max_lookup_frontier_entries: member.max_lookup_frontier_entries,
+                source_template_commitment: member.source_template_commitment.clone(),
+                fold_template_commitment: member.fold_template_commitment.clone(),
+                folded_interval_accumulator_commitment: member
+                    .folded_interval_accumulator_commitment
+                    .clone(),
+                start_state_commitment: member.global_start_state_commitment.clone(),
+                end_state_commitment: member.global_end_state_commitment.clone(),
+            });
+            cumulative_steps = end_step;
+        }
+
+        verify_phase27_chain_sequence(&summaries)?;
+        Ok(summaries)
+    }
+
+    fn oracle_commit_phase27_chain_template(
+        manifest: &Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest,
+    ) -> Result<String> {
+        validate_phase27_chained_folded_intervalized_decoding_state_relation_shallow(manifest)?;
+        let summaries = oracle_summarize_phase27_members(&manifest.members)?;
+        let mut parts = vec![
+            STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27
+                .as_bytes()
+                .to_vec(),
+            b"chain-template".to_vec(),
+            (manifest.bounded_chain_arity as u64).to_le_bytes().to_vec(),
+            (summaries.len() as u64).to_le_bytes().to_vec(),
+            manifest.source_template_commitment.as_bytes().to_vec(),
+        ];
+        for (member_index, member) in summaries.iter().enumerate() {
+            parts.push((member_index as u64).to_le_bytes().to_vec());
+            parts.push((member.bounded_fold_arity as u64).to_le_bytes().to_vec());
+            parts.push((member.total_phase25_members as u64).to_le_bytes().to_vec());
+            parts.push(member.fold_template_commitment.as_bytes().to_vec());
+            parts.push((member.start_step as u64).to_le_bytes().to_vec());
+            parts.push((member.end_step as u64).to_le_bytes().to_vec());
+            parts.push((member.total_matrices as u64).to_le_bytes().to_vec());
+            parts.push((member.total_layouts as u64).to_le_bytes().to_vec());
+            parts.push((member.total_rollups as u64).to_le_bytes().to_vec());
+            parts.push((member.total_segments as u64).to_le_bytes().to_vec());
+            parts.push((member.total_steps as u64).to_le_bytes().to_vec());
+            parts.push((member.lookup_delta_entries as u64).to_le_bytes().to_vec());
+            parts.push(
+                (member.max_lookup_frontier_entries as u64)
+                    .to_le_bytes()
+                    .to_vec(),
+            );
+        }
+        Ok(oracle_blake2b_256(&parts))
+    }
+
+    fn oracle_commit_phase27_chained_folded_intervalized_state_relation(
+        manifest: &Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest,
+    ) -> Result<String> {
+        validate_phase27_chained_folded_intervalized_decoding_state_relation_shallow(manifest)?;
+        let summaries = oracle_summarize_phase27_members(&manifest.members)?;
+        let chain_template_commitment = oracle_commit_phase27_chain_template(manifest)?;
+        let mut parts = vec![
+            STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27
+                .as_bytes()
+                .to_vec(),
+            b"chained-folded-intervalized-state-relation".to_vec(),
+            (manifest.bounded_chain_arity as u64).to_le_bytes().to_vec(),
+            (manifest.total_phase25_members as u64)
+                .to_le_bytes()
+                .to_vec(),
+            (manifest.max_nested_fold_arity as u64)
+                .to_le_bytes()
+                .to_vec(),
+            manifest.source_template_commitment.as_bytes().to_vec(),
+            manifest.global_start_state_commitment.as_bytes().to_vec(),
+            manifest.global_end_state_commitment.as_bytes().to_vec(),
+            chain_template_commitment.as_bytes().to_vec(),
+            (summaries.len() as u64).to_le_bytes().to_vec(),
+            (manifest.total_matrices as u64).to_le_bytes().to_vec(),
+            (manifest.total_layouts as u64).to_le_bytes().to_vec(),
+            (manifest.total_rollups as u64).to_le_bytes().to_vec(),
+            (manifest.total_segments as u64).to_le_bytes().to_vec(),
+            (manifest.total_steps as u64).to_le_bytes().to_vec(),
+            (manifest.lookup_delta_entries as u64)
+                .to_le_bytes()
+                .to_vec(),
+            (manifest.max_lookup_frontier_entries as u64)
+                .to_le_bytes()
+                .to_vec(),
+        ];
+        for (member_index, member) in summaries.iter().enumerate() {
+            parts.push((member_index as u64).to_le_bytes().to_vec());
+            parts.push((member.start_step as u64).to_le_bytes().to_vec());
+            parts.push((member.end_step as u64).to_le_bytes().to_vec());
+            parts.push((member.bounded_fold_arity as u64).to_le_bytes().to_vec());
+            parts.push((member.total_phase25_members as u64).to_le_bytes().to_vec());
+            parts.push(member.fold_template_commitment.as_bytes().to_vec());
+            parts.push(
+                member
+                    .folded_interval_accumulator_commitment
+                    .as_bytes()
+                    .to_vec(),
+            );
+            parts.push(member.start_state_commitment.as_bytes().to_vec());
+            parts.push(member.end_state_commitment.as_bytes().to_vec());
+            parts.push((member.total_matrices as u64).to_le_bytes().to_vec());
+            parts.push((member.total_layouts as u64).to_le_bytes().to_vec());
+            parts.push((member.total_rollups as u64).to_le_bytes().to_vec());
+            parts.push((member.total_segments as u64).to_le_bytes().to_vec());
+            parts.push((member.total_steps as u64).to_le_bytes().to_vec());
+            parts.push((member.lookup_delta_entries as u64).to_le_bytes().to_vec());
+            parts.push(
+                (member.max_lookup_frontier_entries as u64)
+                    .to_le_bytes()
+                    .to_vec(),
+            );
+        }
+        Ok(oracle_blake2b_256(&parts))
+    }
+
     fn oracle_advance_phase14_open_chunk(
         layout_commitment: &str,
         previous_open_chunk_commitment: &str,
@@ -13434,6 +14648,20 @@ mod tests {
             .get_or_init(|| {
                 prove_phase26_folded_intervalized_decoding_state_relation_demo()
                     .expect("phase26 folded intervalized state relation manifest")
+            })
+            .clone()
+    }
+
+    static PHASE27_SAMPLE_MANIFEST: OnceLock<
+        Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest,
+    > = OnceLock::new();
+
+    fn sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest(
+    ) -> Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest {
+        PHASE27_SAMPLE_MANIFEST
+            .get_or_init(|| {
+                prove_phase27_chained_folded_intervalized_decoding_state_relation_demo()
+                    .expect("phase27 chained folded intervalized state relation manifest")
             })
             .clone()
     }
@@ -17244,5 +18472,264 @@ mod tests {
 
         assert!(verify_phase14_decoding_chain(&manifest).is_err());
         assert!(oracle_verify_phase14_decoding_chain(&manifest).is_err());
+    }
+
+    #[test]
+    fn phase27_save_and_load_round_trip() {
+        let manifest =
+            sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
+        let path = std::env::temp_dir().join(format!(
+            "phase27-chained-folded-intervalized-decoding-state-relation-roundtrip-json-{}.json",
+            std::process::id()
+        ));
+        save_phase27_chained_folded_intervalized_decoding_state_relation(&manifest, &path)
+            .expect("save");
+        let loaded =
+            load_phase27_chained_folded_intervalized_decoding_state_relation(&path).expect("load");
+        verify_phase27_chained_folded_intervalized_decoding_state_relation(&loaded)
+            .expect("verify");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn phase27_load_accepts_gzip_round_trip() {
+        let manifest =
+            sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
+        let path = std::env::temp_dir().join(format!(
+            "phase27-chained-folded-intervalized-decoding-state-relation-roundtrip-gzip-{}.json",
+            std::process::id()
+        ));
+        let gzip_path = path.with_extension("json.gz");
+        save_phase27_chained_folded_intervalized_decoding_state_relation(&manifest, &path)
+            .expect("save");
+        write_test_gzip_copy(&path, &gzip_path);
+        let loaded = load_phase27_chained_folded_intervalized_decoding_state_relation(&gzip_path)
+            .expect("load");
+        verify_phase27_chained_folded_intervalized_decoding_state_relation(&loaded)
+            .expect("verify");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+        let _ = fs::remove_file(gzip_path);
+    }
+
+    #[test]
+    fn phase27_demo_manifest_fits_json_budget() {
+        let manifest =
+            sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
+        let bytes = serde_json::to_vec(&manifest).expect("serialize");
+        eprintln!("phase27_json_bytes={}", bytes.len());
+        assert!(
+            bytes.len() <= MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_STATE_RELATION_JSON_BYTES,
+            "Phase 27 demo manifest serialized to {} bytes, exceeding the {} byte budget",
+            bytes.len(),
+            MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_STATE_RELATION_JSON_BYTES
+        );
+    }
+
+    #[test]
+    fn phase27_chained_folded_intervalized_state_relation_accepts_contiguous_members() {
+        let manifest =
+            sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
+        assert_eq!(manifest.member_count, 2);
+        assert_eq!(manifest.member_summaries.len(), 2);
+        assert!(manifest.total_phase25_members >= 4);
+        assert_eq!(manifest.member_summaries[0].start_step, 0);
+        assert_eq!(
+            manifest.member_summaries[1].start_state_commitment,
+            manifest.member_summaries[0].end_state_commitment
+        );
+        verify_phase27_chained_folded_intervalized_decoding_state_relation(&manifest)
+            .expect("phase27 verification");
+    }
+
+    #[test]
+    fn phase27_chained_folded_intervalized_state_relation_rejects_tampered_accumulator_commitment()
+    {
+        let mut manifest =
+            sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
+        manifest.chained_folded_interval_accumulator_commitment = "tampered".to_string();
+        let err = verify_phase27_chained_folded_intervalized_decoding_state_relation(&manifest)
+            .unwrap_err();
+        assert!(err.to_string().contains(
+            "chained_folded_interval_accumulator_commitment does not match the computed chained fold accumulator commitment"
+        ));
+    }
+
+    #[test]
+    fn phase27_chained_folded_intervalized_state_relation_rejects_tampered_chain_template_commitment(
+    ) {
+        let mut manifest =
+            sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
+        manifest.chain_template_commitment = "tampered".to_string();
+        let err = verify_phase27_chained_folded_intervalized_decoding_state_relation(&manifest)
+            .unwrap_err();
+        assert!(err.to_string().contains(
+            "chain_template_commitment does not match the computed chain template commitment"
+        ));
+    }
+
+    #[test]
+    fn phase27_chained_folded_intervalized_state_relation_rejects_tampered_total_phase25_members() {
+        let mut manifest =
+            sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
+        manifest.total_phase25_members = manifest.total_phase25_members.saturating_add(1);
+        let err = verify_phase27_chained_folded_intervalized_decoding_state_relation(&manifest)
+            .unwrap_err();
+        assert!(err.to_string().contains("total_phase25_members="));
+        assert!(err
+            .to_string()
+            .contains("does not match derived total_phase25_members"));
+    }
+
+    #[test]
+    fn phase27_chained_folded_intervalized_state_relation_rejects_tampered_member_summaries() {
+        let mut manifest =
+            sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
+        manifest.member_summaries[1].start_step = 99;
+        let err = verify_phase27_chained_folded_intervalized_decoding_state_relation(&manifest)
+            .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("member_summaries do not match the derived chain summaries"));
+    }
+
+    #[test]
+    fn phase27_chained_folded_intervalized_state_relation_rejects_oversized_manifest_before_nested_checks(
+    ) {
+        let seed = sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
+        let mut manifest = seed.clone();
+        manifest.members =
+            vec![seed.members[0].clone(); MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_MEMBERS + 1];
+        manifest.member_summaries = vec![seed.member_summaries[0].clone(); manifest.members.len()];
+        manifest.member_count = manifest.members.len();
+        manifest.members[0].members.clear();
+
+        let err = verify_phase27_chained_folded_intervalized_decoding_state_relation(&manifest)
+            .unwrap_err();
+        assert!(err.to_string().contains("members.len()="));
+        assert!(err.to_string().contains("exceeds the supported maximum"));
+    }
+
+    #[test]
+    fn phase27_chained_folded_intervalized_state_relation_rejects_empty_commitments_before_nested_checks(
+    ) {
+        let seed = sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
+
+        let mut empty_source = seed.clone();
+        empty_source.source_template_commitment.clear();
+        empty_source.members[0].members.clear();
+        let err = verify_phase27_chained_folded_intervalized_decoding_state_relation(&empty_source)
+            .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("source_template_commitment must not be empty"));
+
+        let mut empty_global_boundary = seed.clone();
+        empty_global_boundary.global_start_state_commitment.clear();
+        empty_global_boundary.members[0].members.clear();
+        let err = verify_phase27_chained_folded_intervalized_decoding_state_relation(
+            &empty_global_boundary,
+        )
+        .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("global_start_state_commitment must not be empty"));
+
+        let mut empty_chain_template = seed.clone();
+        empty_chain_template.chain_template_commitment.clear();
+        empty_chain_template.members[0].members.clear();
+        let err = verify_phase27_chained_folded_intervalized_decoding_state_relation(
+            &empty_chain_template,
+        )
+        .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("chain_template_commitment must not be empty"));
+
+        let mut empty_chained_accumulator = seed;
+        empty_chained_accumulator
+            .chained_folded_interval_accumulator_commitment
+            .clear();
+        empty_chained_accumulator.members[0].members.clear();
+        let err = verify_phase27_chained_folded_intervalized_decoding_state_relation(
+            &empty_chained_accumulator,
+        )
+        .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("chained_folded_interval_accumulator_commitment must not be empty"));
+    }
+
+    #[test]
+    fn phase27_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks(
+    ) {
+        let mut manifest =
+            sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
+        manifest.statement_version = "statement-v2".to_string();
+        manifest.members[0].members.clear();
+
+        let err = verify_phase27_chained_folded_intervalized_decoding_state_relation(&manifest)
+            .unwrap_err();
+        assert!(err.to_string().contains(
+            "unsupported chained folded intervalized decoding state relation statement version `statement-v2`"
+        ));
+    }
+
+    #[test]
+    fn phase27_oracle_matches_production_commitments() {
+        let manifest =
+            sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
+        verify_phase27_chained_folded_intervalized_decoding_state_relation(&manifest)
+            .expect("production verifier");
+        let oracle_template =
+            oracle_commit_phase27_chain_template(&manifest).expect("oracle chain template");
+        let oracle_accumulator =
+            oracle_commit_phase27_chained_folded_intervalized_state_relation(&manifest)
+                .expect("oracle chained fold accumulator");
+        assert_eq!(manifest.chain_template_commitment, oracle_template);
+        assert_eq!(
+            manifest.chained_folded_interval_accumulator_commitment,
+            oracle_accumulator
+        );
+    }
+
+    #[test]
+    fn phase27_oracle_and_production_reject_same_accumulator_tamper() {
+        let mut manifest =
+            sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
+        manifest.chained_folded_interval_accumulator_commitment = "tampered".to_string();
+        assert!(
+            verify_phase27_chained_folded_intervalized_decoding_state_relation(&manifest).is_err()
+        );
+        let oracle_accumulator =
+            oracle_commit_phase27_chained_folded_intervalized_state_relation(&manifest)
+                .expect("oracle accumulator");
+        assert_ne!(
+            manifest.chained_folded_interval_accumulator_commitment,
+            oracle_accumulator
+        );
+    }
+
+    #[test]
+    fn save_phase27_chained_folded_intervalized_decoding_state_relation_rejects_manifest_exceeding_json_budget(
+    ) {
+        let mut manifest =
+            sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
+        manifest.chain_template_commitment =
+            "x".repeat(MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_STATE_RELATION_JSON_BYTES);
+        let path = std::env::temp_dir().join(format!(
+            "phase27-chained-folded-intervalized-save-oversized-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        let err =
+            save_phase27_chained_folded_intervalized_decoding_state_relation(&manifest, &path)
+                .expect_err("oversized phase27 manifest should be rejected on save");
+        assert!(err.to_string().contains("exceeding the limit"));
+        assert!(
+            !path.exists(),
+            "save should not write an unreadable manifest"
+        );
     }
 }
