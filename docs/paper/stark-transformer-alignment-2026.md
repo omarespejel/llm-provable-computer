@@ -256,7 +256,7 @@ The snapshot provides:
 - two frozen evidence tiers: `production-v1` (vanilla) and `stwo-experimental-v1` (narrow experimental),
 - a parameterized proof-carrying decoding family (`decoding_step_v2`) over multiple public layouts,
 - carried-state packaging (chain, segment, rollup, multi-layout matrix) with KV/lookup cumulative and frontier commitments, plus experimental pre-recursive template-bound and lookup-side accumulators,
-- a verification-hardening stack: oracle/differential checks, fuzz smoke targets, mutation tests, Miri/ASAN, and bounded Kani contracts.
+- a verification-hardening stack: oracle/differential checks, fuzz smoke targets, mutation tests, Miri/ASAN/UB-checks, and bounded Kani contracts.
 
 This supports a stronger systems statement than earlier drafts: the same decode relation survives progressively more composable manifest layers without changing statement boundaries.
 
