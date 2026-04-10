@@ -2723,6 +2723,38 @@ fn cli_can_prove_and_verify_stwo_folded_intervalized_decoding_state_relation_dem
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_corrupt_gzip() {
+    let proof_path = unique_temp_dir("cli-stwo-folded-intervalized-decoding-state-relation-gzip")
+        .with_extension("json");
+    let gzip_path = proof_path.with_extension("json.gz");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-folded-intervalized-decoding-state-relation-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    write_test_gzip_copy(&proof_path, &gzip_path);
+    let mut bytes = std::fs::read(&gzip_path).expect("read gzip");
+    bytes.truncate(bytes.len().saturating_sub(8));
+    std::fs::write(&gzip_path, bytes).expect("write corrupt gzip");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-folded-intervalized-decoding-state-relation-demo")
+        .arg(&gzip_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("could not be decompressed as gzip"));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(gzip_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_tampered_fold_template()
 {
     let proof_path =
