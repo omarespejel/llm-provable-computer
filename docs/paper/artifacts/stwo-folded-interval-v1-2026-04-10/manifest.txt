@@ -1,7 +1,7 @@
-generated_at_utc: 2026-04-10T09:55:46Z
+generated_at_utc: 2026-04-10T10:13:41Z
 repo_root: .
-git_commit: ef5ddbde7c8bf6721466a74b558c8430af752bff
-git_commit_short: ef5ddbd
+git_commit: d5b16c34b31dc2bc610e6d56505306f02e5c0f99
+git_commit_short: d5b16c3
 git_branch: codex/phase26-folded-interval-accumulator-v1
 rustc: rustc 1.90.0-nightly (e9182f195 2025-07-13)
 cargo: cargo 1.90.0-nightly (eabb4cd92 2025-07-09)

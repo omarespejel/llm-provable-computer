@@ -10,4 +10,5 @@ Files:
 - `decoding-phase24.state-relation-accumulator.json.gz`: compressed Phase 24 artifact
 - `decoding-phase25.intervalized-state-relation.json.gz`: compressed Phase 25 artifact
 - `decoding-phase26.folded-intervalized-state-relation.json.gz`: compressed Phase 26 artifact
-- `sha256sums.txt`: file checksums
+- `sha256sums.txt`: deterministic canonical artifact checksums
+- `provenance_sha256sums.txt`: checksums for the full emitted bundle, including volatile provenance and timing files
