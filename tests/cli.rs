@@ -3071,6 +3071,46 @@ fn cli_verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_reje
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_rejects_tampered_accumulator_commitment(
+) {
+    let _guard = phase27_cli_test_guard();
+    let proof_path =
+        unique_temp_dir("cli-stwo-chained-folded-intervalized-decoding-state-relation-accumulator")
+            .with_extension("json");
+    let tampered_path = unique_temp_dir(
+        "cli-stwo-chained-folded-intervalized-decoding-state-relation-accumulator-tampered",
+    )
+    .with_extension("json");
+
+    std::fs::copy(phase27_cli_demo_fixture_path(), &proof_path).expect("copy proof");
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    proof_json["chained_folded_interval_accumulator_commitment"] =
+        serde_json::Value::String("tampered".to_string());
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "chained_folded_interval_accumulator_commitment does not match the computed chained fold accumulator commitment",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_rejects_tampered_chain_template(
 ) {
     let _guard = phase27_cli_test_guard();

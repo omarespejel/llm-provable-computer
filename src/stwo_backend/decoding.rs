@@ -1109,7 +1109,10 @@ fn write_json_atomically_with_limit<T: Serialize>(
                         max_bytes
                     )));
                 }
-                file.sync_all()?;
+                if let Err(err) = file.sync_all() {
+                    let _ = fs::remove_file(&temp_path);
+                    return Err(err.into());
+                }
                 if let Err(err) = persist_atomic_json_output(&temp_path, path) {
                     let _ = fs::remove_file(&temp_path);
                     return Err(err);
@@ -1145,13 +1148,80 @@ fn persist_atomic_json_output(temp_path: &Path, path: &Path) -> Result<()> {
             if err.kind() == std::io::ErrorKind::AlreadyExists
                 || err.kind() == std::io::ErrorKind::PermissionDenied =>
         {
-            fs::remove_file(path)?;
-            fs::rename(temp_path, path)?;
-            sync_parent_directory(path)?;
-            Ok(())
+            persist_atomic_json_output_with_backup(temp_path, path, err)
         }
         Err(err) => Err(err.into()),
     }
+}
+
+fn persist_atomic_json_output_with_backup(
+    temp_path: &Path,
+    path: &Path,
+    rename_err: std::io::Error,
+) -> Result<()> {
+    if !path.exists() {
+        return Err(rename_err.into());
+    }
+
+    let mut last_backup_collision = None;
+    for attempt in 0..16 {
+        let backup_path = temporary_backup_output_path(path, attempt);
+        match fs::rename(path, &backup_path) {
+            Ok(()) => {
+                if let Err(err) = sync_parent_directory(path) {
+                    let _ = fs::rename(&backup_path, path);
+                    let _ = sync_parent_directory(path);
+                    return Err(err.into());
+                }
+                if let Err(err) = fs::rename(temp_path, path) {
+                    let restore_result = fs::rename(&backup_path, path);
+                    let _ = sync_parent_directory(path);
+                    return match restore_result {
+                        Ok(()) => Err(err.into()),
+                        Err(restore_err) => Err(VmError::Io(std::io::Error::new(
+                            err.kind(),
+                            format!(
+                                "failed to replace `{}` from `{}` and could not restore backup `{}`: {}",
+                                path.display(),
+                                temp_path.display(),
+                                backup_path.display(),
+                                restore_err
+                            ),
+                        ))),
+                    };
+                }
+                if let Err(err) = sync_parent_directory(path) {
+                    let _ = fs::remove_file(path);
+                    let restore_result = fs::rename(&backup_path, path);
+                    let _ = sync_parent_directory(path);
+                    return match restore_result {
+                        Ok(()) => Err(err.into()),
+                        Err(restore_err) => Err(VmError::Io(std::io::Error::new(
+                            std::io::ErrorKind::Other,
+                            format!(
+                                "persisted `{}` but could not durably finalize it and also failed to restore backup `{}`: {}",
+                                path.display(),
+                                backup_path.display(),
+                                restore_err
+                            ),
+                        ))),
+                    };
+                }
+                fs::remove_file(&backup_path)?;
+                sync_parent_directory(path)?;
+                return Ok(());
+            }
+            Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => {
+                last_backup_collision = Some(err);
+            }
+            Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
+                return Err(rename_err.into());
+            }
+            Err(err) => return Err(err.into()),
+        }
+    }
+
+    Err(last_backup_collision.unwrap_or(rename_err).into())
 }
 
 fn sync_parent_directory(path: &Path) -> Result<()> {
@@ -1173,6 +1243,23 @@ fn temporary_json_output_path(path: &Path, attempt: u32) -> PathBuf {
         .as_nanos();
     name.push(format!(
         ".tmp-{}-{monotonic_tag}-{attempt}",
+        std::process::id()
+    ));
+    parent.join(name)
+}
+
+fn temporary_backup_output_path(path: &Path, attempt: u32) -> PathBuf {
+    let parent = path.parent().unwrap_or_else(|| Path::new("."));
+    let mut name = path
+        .file_name()
+        .map(|file_name| file_name.to_os_string())
+        .unwrap_or_else(|| OsString::from("artifact.json"));
+    let monotonic_tag = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
+    name.push(format!(
+        ".bak-{}-{monotonic_tag}-{attempt}",
         std::process::id()
     ));
     parent.join(name)
