@@ -529,7 +529,9 @@ Those power the proof-carrying decoding demos, including layout-bound carried
 state, rolling KV-cache windows, cumulative KV-history commitments, and the
 matrix/rollup-style packaging layers described in the next-paper track,
 including pre-recursive cross-step lookup accumulators (Phase 23) and full
-state-relation accumulators (Phase 24).
+state-relation accumulators (Phase 24), honest intervalized carried-state
+artifacts (Phase 25), and folded intervalized carried-state accumulators
+(Phase 26).
 
 #### Phase Highlights
 
@@ -565,6 +567,8 @@ state-relation accumulators (Phase 24).
 - Phase 22: lookup-side accumulation over a verified Phase 21 source accumulator with explicit source/template binding and derived frontier/count checks before recursion
 - Phase 23: pre-recursive cross-step lookup accumulation over cumulative Phase 22 prefixes with carried-state boundary commitments and derived counter checks
 - Phase 24: full carried-state relation accumulation over verified Phase 23 members with explicit relation-template and relation-accumulator commitments before recursive compression
+- Phase 25: honest intervalization of the Phase 24 carried-state relation into explicit contiguous carried-state intervals with derived interval-template and interval-accumulator commitments
+- Phase 26: folded accumulation over verified Phase 25 intervals with explicit fold-template binding and folded interval accumulator commitments over real carried-state intervals
 
 These phases define pre-recursive merge boundaries and carried-state bindings;
 they do not yet implement recursive cryptographic accumulation or compressed
@@ -891,6 +895,8 @@ lanes carry it forward.
 - Phase 22: lookup-side accumulation over a verified Phase 21 source accumulator with explicit source/template binding and derived frontier/count checks before recursion
 - Phase 23: pre-recursive cross-step lookup accumulation over cumulative Phase 22 prefixes with carried-state boundary commitments and derived counter checks
 - Phase 24: full carried-state relation accumulation over verified Phase 23 members with explicit relation-template and relation-accumulator commitments before recursive compression
+- Phase 25: honest intervalization of the Phase 24 carried-state relation into explicit contiguous carried-state intervals with derived interval-template and interval-accumulator commitments
+- Phase 26: folded accumulation over verified Phase 25 intervals with explicit fold-template binding and folded interval accumulator commitments over real carried-state intervals
 
 These phases define pre-recursive merge boundaries and carried-state bindings;
 they do not yet implement recursive cryptographic accumulation or compressed
