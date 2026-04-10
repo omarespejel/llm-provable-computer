@@ -10,7 +10,30 @@ cd "$REPO_ROOT"
 
 BUNDLE_DIR="${BUNDLE_DIR:-$REPO_ROOT/docs/paper/artifacts/stwo-chained-folded-interval-v1-2026-04-10}"
 NIGHTLY_TOOLCHAIN="${NIGHTLY_TOOLCHAIN:-+nightly-2025-07-14}"
-CARGO_STWO=(cargo "$NIGHTLY_TOOLCHAIN" run --features stwo-backend --bin tvm --)
+BUILD_PROFILE="${BUILD_PROFILE:-debug}"
+CARGO_BUILD_STWO=(cargo "$NIGHTLY_TOOLCHAIN" build --features stwo-backend --bin tvm)
+if [ "$BUILD_PROFILE" = "release" ]; then
+  CARGO_BUILD_STWO=(cargo "$NIGHTLY_TOOLCHAIN" build --release --features stwo-backend --bin tvm)
+fi
+TVM_BIN="$(
+  BUILD_PROFILE="$BUILD_PROFILE" python3 - "$REPO_ROOT" <<'PY'
+import os
+import sys
+
+repo_root = sys.argv[1]
+target_dir = os.environ.get("CARGO_TARGET_DIR", os.path.join(repo_root, "target"))
+if not os.path.isabs(target_dir):
+    target_dir = os.path.join(repo_root, target_dir)
+target = os.environ.get("CARGO_BUILD_TARGET") or os.environ.get("TARGET")
+profile = os.environ.get("BUILD_PROFILE", "debug")
+binary = "tvm.exe" if os.name == "nt" else "tvm"
+parts = [target_dir]
+if target:
+    parts.append(target)
+parts.extend([profile, binary])
+print(os.path.realpath(os.path.join(*parts)))
+PY
+)"
 
 EXPECTED_PREFIX="$REPO_ROOT/docs/paper/artifacts"
 CANON_EXPECTED_PREFIX="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$EXPECTED_PREFIX")"
@@ -65,16 +88,38 @@ PROVENANCE_CHECKSUM_FILES=(
 : > "$COMMANDS_LOG"
 printf 'label\tseconds\n' > "$BENCHMARKS"
 
+run_logged() {
+  local started_iso
+  started_iso="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  printf '[%s] %s\n' "$started_iso" "$*" | tee -a "$COMMANDS_LOG"
+}
+
+monotonic_ns() {
+  python3 - <<'PY'
+import time
+print(time.monotonic_ns())
+PY
+}
+
+elapsed_seconds() {
+  python3 - "$1" "$2" <<'PY'
+import sys
+
+start = int(sys.argv[1])
+end = int(sys.argv[2])
+print(f"{(end - start) / 1_000_000_000:.6f}")
+PY
+}
+
 run_timed() {
   local label="$1"
   shift
-  local started_iso started_epoch ended_epoch elapsed
-  started_iso="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-  started_epoch="$(date +%s)"
-  printf '[%s] %s\n' "$started_iso" "$*" | tee -a "$COMMANDS_LOG"
+  local started_ns ended_ns elapsed
+  started_ns="$(monotonic_ns)"
+  run_logged "$@"
   "$@"
-  ended_epoch="$(date +%s)"
-  elapsed="$((ended_epoch - started_epoch))"
+  ended_ns="$(monotonic_ns)"
+  elapsed="$(elapsed_seconds "$started_ns" "$ended_ns")"
   printf '%s\t%s\n' "$label" "$elapsed" >> "$BENCHMARKS"
 }
 
@@ -90,45 +135,53 @@ host_platform: $(uname -srm)
 nightly_toolchain: $NIGHTLY_TOOLCHAIN
 bundle_dir: docs/paper/artifacts/$(basename "$BUNDLE_DIR")
 fixtures: decoding_state_relation_accumulator_phase24, intervalized_decoding_state_relation_phase25, folded_intervalized_decoding_state_relation_phase26, chained_folded_intervalized_decoding_state_relation_phase27
+benchmark_binary: ${TVM_BIN#$REPO_ROOT/}
 MANIFEST
 
+run_logged "${CARGO_BUILD_STWO[@]}"
+"${CARGO_BUILD_STWO[@]}"
+[ -x "$TVM_BIN" ] || {
+  echo "Expected tvm binary at $TVM_BIN after build, but it was not found or is not executable" >&2
+  exit 1
+}
+
 run_timed prove_decoding_state_relation_accumulator_phase24_stwo \
-  "${CARGO_STWO[@]}" \
+  "$TVM_BIN" \
   prove-stwo-decoding-state-relation-accumulator-demo \
   -o "$BUNDLE_DIR/decoding-phase24.state-relation-accumulator.json"
 
 run_timed verify_decoding_state_relation_accumulator_phase24_stwo \
-  "${CARGO_STWO[@]}" \
+  "$TVM_BIN" \
   verify-stwo-decoding-state-relation-accumulator-demo \
   "$BUNDLE_DIR/decoding-phase24.state-relation-accumulator.json"
 
 run_timed prove_intervalized_decoding_state_relation_phase25_stwo \
-  "${CARGO_STWO[@]}" \
+  "$TVM_BIN" \
   prove-stwo-intervalized-decoding-state-relation-demo \
   -o "$BUNDLE_DIR/decoding-phase25.intervalized-state-relation.json"
 
 run_timed verify_intervalized_decoding_state_relation_phase25_stwo \
-  "${CARGO_STWO[@]}" \
+  "$TVM_BIN" \
   verify-stwo-intervalized-decoding-state-relation-demo \
   "$BUNDLE_DIR/decoding-phase25.intervalized-state-relation.json"
 
 run_timed prove_folded_intervalized_decoding_state_relation_phase26_stwo \
-  "${CARGO_STWO[@]}" \
+  "$TVM_BIN" \
   prove-stwo-folded-intervalized-decoding-state-relation-demo \
   -o "$BUNDLE_DIR/decoding-phase26.folded-intervalized-state-relation.json"
 
 run_timed verify_folded_intervalized_decoding_state_relation_phase26_stwo \
-  "${CARGO_STWO[@]}" \
+  "$TVM_BIN" \
   verify-stwo-folded-intervalized-decoding-state-relation-demo \
   "$BUNDLE_DIR/decoding-phase26.folded-intervalized-state-relation.json"
 
 run_timed prove_chained_folded_intervalized_decoding_state_relation_phase27_stwo \
-  "${CARGO_STWO[@]}" \
+  "$TVM_BIN" \
   prove-stwo-chained-folded-intervalized-decoding-state-relation-demo \
   -o "$BUNDLE_DIR/decoding-phase27.chained-folded-intervalized-state-relation.json"
 
 run_timed verify_chained_folded_intervalized_decoding_state_relation_phase27_stwo \
-  "${CARGO_STWO[@]}" \
+  "$TVM_BIN" \
   verify-stwo-chained-folded-intervalized-decoding-state-relation-demo \
   "$BUNDLE_DIR/decoding-phase27.chained-folded-intervalized-state-relation.json"
 

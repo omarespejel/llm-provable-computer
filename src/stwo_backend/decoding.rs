@@ -1,7 +1,9 @@
 use std::collections::{HashMap, HashSet};
+use std::ffi::OsString;
 use std::fs;
 use std::io::{BufWriter, Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
@@ -1054,12 +1056,17 @@ fn write_json_with_limit<T: Serialize>(
             max_bytes
         )));
     }
-    let file = fs::File::create(path)?;
-    let mut writer = BufWriter::new(file);
-    serde_json::to_writer_pretty(&mut writer, value)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
-    writer.flush()?;
-    Ok(())
+    let bytes =
+        serde_json::to_vec_pretty(value).map_err(|err| VmError::Serialization(err.to_string()))?;
+    if bytes.len() > max_bytes {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
+            path.display(),
+            bytes.len(),
+            max_bytes
+        )));
+    }
+    write_json_bytes_atomically(&bytes, path, label)
 }
 
 fn write_json_compact_with_limit<T: Serialize>(
@@ -1113,12 +1120,83 @@ fn write_json_compact_with_limit<T: Serialize>(
             max_bytes
         )));
     }
-    let file = fs::File::create(path)?;
-    let mut writer = BufWriter::new(file);
-    serde_json::to_writer(&mut writer, value)
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
-    writer.flush()?;
-    Ok(())
+    let bytes = serde_json::to_vec(value).map_err(|err| VmError::Serialization(err.to_string()))?;
+    if bytes.len() > max_bytes {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
+            path.display(),
+            bytes.len(),
+            max_bytes
+        )));
+    }
+    write_json_bytes_atomically(&bytes, path, label)
+}
+
+fn write_json_bytes_atomically(bytes: &[u8], path: &Path, label: &str) -> Result<()> {
+    let mut last_exists_error = None;
+
+    for attempt in 0..16_u32 {
+        let temp_path = temporary_json_output_path(path, attempt);
+        match fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temp_path)
+        {
+            Ok(file) => {
+                let mut writer = BufWriter::new(file);
+                let write_result = (|| -> Result<()> {
+                    writer.write_all(bytes)?;
+                    writer.flush()?;
+                    let file = writer
+                        .into_inner()
+                        .map_err(|err| VmError::Io(err.into_error()))?;
+                    file.sync_all()?;
+                    Ok(())
+                })();
+                if let Err(err) = write_result {
+                    let _ = fs::remove_file(&temp_path);
+                    return Err(err);
+                }
+                if let Err(err) = fs::rename(&temp_path, path) {
+                    let _ = fs::remove_file(&temp_path);
+                    return Err(err.into());
+                }
+                return Ok(());
+            }
+            Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => {
+                last_exists_error = Some(err);
+            }
+            Err(err) => return Err(err.into()),
+        }
+    }
+
+    let err = last_exists_error.unwrap_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::AlreadyExists,
+            format!(
+                "{label} `{}` could not allocate a unique temporary output path",
+                path.display()
+            ),
+        )
+    });
+    Err(err.into())
+}
+
+fn temporary_json_output_path(path: &Path, attempt: u32) -> PathBuf {
+    let parent = path.parent().unwrap_or_else(|| Path::new("."));
+    let mut name = path
+        .file_name()
+        .map(|file_name| file_name.to_os_string())
+        .unwrap_or_else(|| OsString::from("artifact.json"));
+    let monotonic_tag = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
+    name.push(format!(
+        ".tmp-{}-{monotonic_tag}-{attempt}",
+        std::process::id()
+    ));
+    parent.join(name)
 }
 
 pub fn decoding_step_v1_template_program() -> Result<Program> {
