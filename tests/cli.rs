@@ -2747,7 +2747,8 @@ fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_corr
         .arg(&gzip_path)
         .assert()
         .failure()
-        .stderr(predicate::str::contains("could not be decompressed as gzip"));
+        .stderr(predicate::str::contains("could not be decompressed as gzip"))
+        .stderr(predicate::str::contains("panicked at").not());
 
     let _ = std::fs::remove_file(proof_path);
     let _ = std::fs::remove_file(gzip_path);
