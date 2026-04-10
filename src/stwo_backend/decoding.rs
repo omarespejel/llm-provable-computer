@@ -1011,62 +1011,7 @@ fn write_json_with_limit<T: Serialize>(
     max_bytes: usize,
     label: &str,
 ) -> Result<()> {
-    struct ByteLimitCounter {
-        written: usize,
-        max_bytes: usize,
-        limit_exceeded: bool,
-    }
-
-    impl Write for ByteLimitCounter {
-        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-            let next = self.written.saturating_add(buf.len());
-            if next > self.max_bytes {
-                self.limit_exceeded = true;
-                return Err(std::io::Error::other("json size limit exceeded"));
-            }
-            self.written = next;
-            Ok(buf.len())
-        }
-
-        fn flush(&mut self) -> std::io::Result<()> {
-            Ok(())
-        }
-    }
-
-    let mut counter = ByteLimitCounter {
-        written: 0,
-        max_bytes,
-        limit_exceeded: false,
-    };
-    if let Err(err) = serde_json::to_writer_pretty(&mut counter, value) {
-        if counter.limit_exceeded {
-            return Err(VmError::InvalidConfig(format!(
-                "{label} `{}` would serialize to JSON exceeding the limit of {} bytes",
-                path.display(),
-                max_bytes
-            )));
-        }
-        return Err(VmError::Serialization(err.to_string()));
-    }
-    if counter.written > max_bytes {
-        return Err(VmError::InvalidConfig(format!(
-            "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
-            path.display(),
-            counter.written,
-            max_bytes
-        )));
-    }
-    let bytes =
-        serde_json::to_vec_pretty(value).map_err(|err| VmError::Serialization(err.to_string()))?;
-    if bytes.len() > max_bytes {
-        return Err(VmError::InvalidConfig(format!(
-            "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
-            path.display(),
-            bytes.len(),
-            max_bytes
-        )));
-    }
-    write_json_bytes_atomically(&bytes, path, label)
+    write_json_atomically_with_limit(value, path, max_bytes, label, true)
 }
 
 fn write_json_compact_with_limit<T: Serialize>(
@@ -1075,64 +1020,46 @@ fn write_json_compact_with_limit<T: Serialize>(
     max_bytes: usize,
     label: &str,
 ) -> Result<()> {
-    struct ByteLimitCounter {
-        written: usize,
-        max_bytes: usize,
-        limit_exceeded: bool,
-    }
-
-    impl Write for ByteLimitCounter {
-        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-            let next = self.written.saturating_add(buf.len());
-            if next > self.max_bytes {
-                self.limit_exceeded = true;
-                return Err(std::io::Error::other("json size limit exceeded"));
-            }
-            self.written = next;
-            Ok(buf.len())
-        }
-
-        fn flush(&mut self) -> std::io::Result<()> {
-            Ok(())
-        }
-    }
-
-    let mut counter = ByteLimitCounter {
-        written: 0,
-        max_bytes,
-        limit_exceeded: false,
-    };
-    if let Err(err) = serde_json::to_writer(&mut counter, value) {
-        if counter.limit_exceeded {
-            return Err(VmError::InvalidConfig(format!(
-                "{label} `{}` would serialize to JSON exceeding the limit of {} bytes",
-                path.display(),
-                max_bytes
-            )));
-        }
-        return Err(VmError::Serialization(err.to_string()));
-    }
-    if counter.written > max_bytes {
-        return Err(VmError::InvalidConfig(format!(
-            "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
-            path.display(),
-            counter.written,
-            max_bytes
-        )));
-    }
-    let bytes = serde_json::to_vec(value).map_err(|err| VmError::Serialization(err.to_string()))?;
-    if bytes.len() > max_bytes {
-        return Err(VmError::InvalidConfig(format!(
-            "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
-            path.display(),
-            bytes.len(),
-            max_bytes
-        )));
-    }
-    write_json_bytes_atomically(&bytes, path, label)
+    write_json_atomically_with_limit(value, path, max_bytes, label, false)
 }
 
-fn write_json_bytes_atomically(bytes: &[u8], path: &Path, label: &str) -> Result<()> {
+struct CountingWriter<W> {
+    inner: W,
+    written: usize,
+    max_bytes: usize,
+    limit_exceeded: bool,
+}
+
+impl<W: Write> Write for CountingWriter<W> {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let next = self.written.saturating_add(buf.len());
+        if next > self.max_bytes {
+            self.limit_exceeded = true;
+            return Err(std::io::Error::other("json size limit exceeded"));
+        }
+        self.inner.write_all(buf)?;
+        self.written = next;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.inner.flush()
+    }
+}
+
+impl<W> CountingWriter<W> {
+    fn into_inner(self) -> W {
+        self.inner
+    }
+}
+
+fn write_json_atomically_with_limit<T: Serialize>(
+    value: &T,
+    path: &Path,
+    max_bytes: usize,
+    label: &str,
+    pretty: bool,
+) -> Result<()> {
     let mut last_exists_error = None;
 
     for attempt in 0..16_u32 {
@@ -1143,23 +1070,49 @@ fn write_json_bytes_atomically(bytes: &[u8], path: &Path, label: &str) -> Result
             .open(&temp_path)
         {
             Ok(file) => {
-                let mut writer = BufWriter::new(file);
-                let write_result = (|| -> Result<()> {
-                    writer.write_all(bytes)?;
-                    writer.flush()?;
-                    let file = writer
-                        .into_inner()
-                        .map_err(|err| VmError::Io(err.into_error()))?;
-                    file.sync_all()?;
-                    Ok(())
-                })();
+                let writer = BufWriter::new(file);
+                let mut counting_writer = CountingWriter {
+                    inner: writer,
+                    written: 0,
+                    max_bytes,
+                    limit_exceeded: false,
+                };
+                let write_result = if pretty {
+                    serde_json::to_writer_pretty(&mut counting_writer, value)
+                } else {
+                    serde_json::to_writer(&mut counting_writer, value)
+                };
                 if let Err(err) = write_result {
+                    let limit_exceeded = counting_writer.limit_exceeded;
+                    drop(counting_writer);
+                    let _ = fs::remove_file(&temp_path);
+                    if limit_exceeded {
+                        return Err(VmError::InvalidConfig(format!(
+                            "{label} `{}` would serialize to JSON exceeding the limit of {} bytes",
+                            path.display(),
+                            max_bytes
+                        )));
+                    }
+                    return Err(VmError::Serialization(err.to_string()));
+                }
+                let written = counting_writer.written;
+                let file = counting_writer
+                    .into_inner()
+                    .into_inner()
+                    .map_err(|err| VmError::Io(err.into_error()))?;
+                if written > max_bytes {
+                    let _ = fs::remove_file(&temp_path);
+                    return Err(VmError::InvalidConfig(format!(
+                        "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
+                        path.display(),
+                        written,
+                        max_bytes
+                    )));
+                }
+                file.sync_all()?;
+                if let Err(err) = persist_atomic_json_output(&temp_path, path) {
                     let _ = fs::remove_file(&temp_path);
                     return Err(err);
-                }
-                if let Err(err) = fs::rename(&temp_path, path) {
-                    let _ = fs::remove_file(&temp_path);
-                    return Err(err.into());
                 }
                 return Ok(());
             }
@@ -1180,6 +1133,32 @@ fn write_json_bytes_atomically(bytes: &[u8], path: &Path, label: &str) -> Result
         )
     });
     Err(err.into())
+}
+
+fn persist_atomic_json_output(temp_path: &Path, path: &Path) -> Result<()> {
+    match fs::rename(temp_path, path) {
+        Ok(()) => {
+            sync_parent_directory(path)?;
+            Ok(())
+        }
+        Err(err)
+            if err.kind() == std::io::ErrorKind::AlreadyExists
+                || err.kind() == std::io::ErrorKind::PermissionDenied =>
+        {
+            fs::remove_file(path)?;
+            fs::rename(temp_path, path)?;
+            sync_parent_directory(path)?;
+            Ok(())
+        }
+        Err(err) => Err(err.into()),
+    }
+}
+
+fn sync_parent_directory(path: &Path) -> Result<()> {
+    let parent = path.parent().unwrap_or_else(|| Path::new("."));
+    let dir = fs::File::open(parent)?;
+    dir.sync_all()?;
+    Ok(())
 }
 
 fn temporary_json_output_path(path: &Path, attempt: u32) -> PathBuf {
@@ -6935,13 +6914,19 @@ fn validate_phase27_chained_folded_intervalized_decoding_state_relation_shallow(
             MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_MEMBERS
         )));
     }
-    if manifest.total_phase25_members < manifest.member_count
+    let min_total_phase25_members = manifest.member_count.checked_mul(2).ok_or_else(|| {
+        VmError::InvalidConfig(
+            "chained folded intervalized decoding state relation member_count overflowed while deriving the minimum nested Phase 25 member bound"
+                .to_string(),
+        )
+    })?;
+    if manifest.total_phase25_members < min_total_phase25_members
         || manifest.total_phase25_members > MAX_PHASE27_TOTAL_NESTED_PHASE25_MEMBERS
     {
         return Err(VmError::InvalidConfig(format!(
-            "chained folded intervalized decoding state relation total_phase25_members={} must be between member_count {} and supported maximum {}",
+            "chained folded intervalized decoding state relation total_phase25_members={} must be between {} and supported maximum {}",
             manifest.total_phase25_members,
-            manifest.member_count,
+            min_total_phase25_members,
             MAX_PHASE27_TOTAL_NESTED_PHASE25_MEMBERS
         )));
     }

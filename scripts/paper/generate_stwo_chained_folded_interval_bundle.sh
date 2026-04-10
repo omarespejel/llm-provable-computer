@@ -53,7 +53,20 @@ esac
 [ "$CANON_BUNDLE_DIR" != "/" ] || { echo "Refusing to delete /" >&2; exit 1; }
 [ "$CANON_BUNDLE_DIR" != "$REPO_ROOT" ] || { echo "Refusing to delete repo root" >&2; exit 1; }
 
+relpath_from() {
+  python3 - "$1" "$2" <<'PY'
+import os
+import sys
+
+target = os.path.realpath(sys.argv[1])
+base = os.path.realpath(sys.argv[2])
+print(os.path.relpath(target, base))
+PY
+}
+
 BUNDLE_DIR="$CANON_BUNDLE_DIR"
+REL_BUNDLE_DIR="$(relpath_from "$BUNDLE_DIR" "$REPO_ROOT")"
+REL_TVM_BIN="$(relpath_from "$TVM_BIN" "$REPO_ROOT")"
 rm -rf -- "$BUNDLE_DIR"
 mkdir -p "$BUNDLE_DIR"
 
@@ -91,7 +104,11 @@ printf 'label\tseconds\n' > "$BENCHMARKS"
 run_logged() {
   local started_iso
   started_iso="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-  printf '[%s] %s\n' "$started_iso" "$*" | tee -a "$COMMANDS_LOG"
+  {
+    printf '[%s] ' "$started_iso"
+    printf '%q ' "$@"
+    printf '\n'
+  } | tee -a "$COMMANDS_LOG"
 }
 
 monotonic_ns() {
@@ -133,9 +150,9 @@ rustc: $(rustup run "${NIGHTLY_TOOLCHAIN#+}" rustc --version)
 cargo: $(cargo "$NIGHTLY_TOOLCHAIN" --version)
 host_platform: $(uname -srm)
 nightly_toolchain: $NIGHTLY_TOOLCHAIN
-bundle_dir: docs/paper/artifacts/$(basename "$BUNDLE_DIR")
+bundle_dir: $REL_BUNDLE_DIR
 fixtures: decoding_state_relation_accumulator_phase24, intervalized_decoding_state_relation_phase25, folded_intervalized_decoding_state_relation_phase26, chained_folded_intervalized_decoding_state_relation_phase27
-benchmark_binary: ${TVM_BIN#$REPO_ROOT/}
+benchmark_binary: $REL_TVM_BIN
 MANIFEST
 
 run_logged "${CARGO_BUILD_STWO[@]}"
