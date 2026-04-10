@@ -5,6 +5,7 @@ use std::path::Path;
 
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
+use flate2::read::GzDecoder;
 use serde::{Deserialize, Serialize};
 
 use crate::assembly::parse_program;
@@ -75,6 +76,10 @@ pub const STWO_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE25: &str =
     "stwo-phase25-intervalized-decoding-state-relation-v1";
 pub const STWO_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE25: &str =
     "stwo_execution_parameterized_intervalized_proof_carrying_decoding_state_relation";
+pub const STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26: &str =
+    "stwo-phase26-folded-intervalized-decoding-state-relation-v1";
+pub const STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE26: &str =
+    "stwo_execution_parameterized_folded_intervalized_proof_carrying_decoding_state_relation";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
 const DECODING_OUTPUT_RANGE: std::ops::Range<usize> = 10..13;
 const DECODING_POSITION_INDEX: usize = 21;
@@ -100,6 +105,7 @@ const MAX_PHASE22_LOOKUP_ACCUMULATOR_JSON_BYTES: usize = 96 * 1024 * 1024;
 const MAX_PHASE23_CROSS_STEP_LOOKUP_ACCUMULATOR_JSON_BYTES: usize = 128 * 1024 * 1024;
 const MAX_PHASE24_STATE_RELATION_ACCUMULATOR_JSON_BYTES: usize = 160 * 1024 * 1024;
 const MAX_PHASE25_INTERVALIZED_STATE_RELATION_JSON_BYTES: usize = 192 * 1024 * 1024;
+const MAX_PHASE26_FOLDED_INTERVALIZED_STATE_RELATION_JSON_BYTES: usize = 224 * 1024 * 1024;
 const MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES: usize = 24 * 1024 * 1024;
 const MAX_PHASE21_ACCUMULATOR_MATRICES: usize = 512;
 const MAX_PHASE22_ACCUMULATOR_ROLLUPS: usize = 262_144;
@@ -110,6 +116,8 @@ const MAX_PHASE24_ACCUMULATOR_ROLLUPS: usize = 1_048_576;
 const MAX_PHASE24_TOTAL_NESTED_PHASE23_MEMBERS: usize = 4_096;
 const MAX_PHASE25_INTERVALIZED_MEMBERS: usize = 512;
 const MAX_PHASE25_INTERVALIZED_ROLLUPS: usize = 1_048_576;
+const MAX_PHASE26_FOLDED_INTERVALIZED_MEMBERS: usize = 512;
+const MAX_PHASE26_FOLDED_INTERVALIZED_ROLLUPS: usize = 1_048_576;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase11DecodingState {
@@ -583,6 +591,49 @@ pub struct Phase25IntervalizedDecodingStateRelationManifest {
     pub members: Vec<Phase23DecodingCrossStepLookupAccumulatorManifest>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase26FoldedIntervalizedDecodingStateRelationMemberSummary {
+    pub start_step: usize,
+    pub end_step: usize,
+    pub total_matrices: usize,
+    pub total_layouts: usize,
+    pub total_rollups: usize,
+    pub total_segments: usize,
+    pub total_steps: usize,
+    pub lookup_delta_entries: usize,
+    pub max_lookup_frontier_entries: usize,
+    pub source_template_commitment: String,
+    pub interval_template_commitment: String,
+    pub interval_accumulator_commitment: String,
+    pub start_state_commitment: String,
+    pub end_state_commitment: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Phase26FoldedIntervalizedDecodingStateRelationManifest {
+    pub proof_backend: StarkProofBackend,
+    pub artifact_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub bounded_fold_arity: usize,
+    pub member_count: usize,
+    pub total_matrices: usize,
+    pub total_layouts: usize,
+    pub total_rollups: usize,
+    pub total_segments: usize,
+    pub total_steps: usize,
+    pub lookup_delta_entries: usize,
+    pub max_lookup_frontier_entries: usize,
+    pub source_template_commitment: String,
+    pub global_start_state_commitment: String,
+    pub global_end_state_commitment: String,
+    pub fold_template_commitment: String,
+    pub folded_interval_accumulator_commitment: String,
+    pub member_summaries: Vec<Phase26FoldedIntervalizedDecodingStateRelationMemberSummary>,
+    pub members: Vec<Phase25IntervalizedDecodingStateRelationManifest>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Phase12StateView {
     position: i16,
@@ -644,6 +695,45 @@ struct Phase24MemberSummary {
     lookup_accumulator_commitment: String,
     start_state_commitment: String,
     end_state_commitment: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Phase24RebaseBaseline {
+    total_matrices: usize,
+    total_layouts: usize,
+    total_rollups: usize,
+    total_segments: usize,
+    total_steps: usize,
+    lookup_delta_entries: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct Phase26MemberSummary {
+    start_step: usize,
+    end_step: usize,
+    total_matrices: usize,
+    total_layouts: usize,
+    total_rollups: usize,
+    total_segments: usize,
+    total_steps: usize,
+    lookup_delta_entries: usize,
+    max_lookup_frontier_entries: usize,
+    source_template_commitment: String,
+    interval_template_commitment: String,
+    interval_accumulator_commitment: String,
+    start_state_commitment: String,
+    end_state_commitment: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Phase26AggregateTotals {
+    total_matrices: usize,
+    total_layouts: usize,
+    total_rollups: usize,
+    total_segments: usize,
+    total_steps: usize,
+    lookup_delta_entries: usize,
+    max_lookup_frontier_entries: usize,
 }
 
 fn build_phase12_shared_lookup_artifact_registry(
@@ -783,6 +873,26 @@ fn read_json_bytes_with_limit(path: &Path, max_bytes: usize, label: &str) -> Res
         )));
     }
     let file = fs::File::open(path)?;
+    let is_gzip = matches!(path.extension().and_then(|ext| ext.to_str()), Some("gz"));
+    if is_gzip {
+        let mut limited = GzDecoder::new(file).take((max_bytes as u64).saturating_add(1));
+        let mut bytes = Vec::new();
+        limited.read_to_end(&mut bytes).map_err(|error| {
+            VmError::InvalidConfig(format!(
+                "{label} `{}` could not be decompressed as gzip: {error}",
+                path.display()
+            ))
+        })?;
+        if bytes.len() > max_bytes {
+            return Err(VmError::InvalidConfig(format!(
+                "{label} `{}` decompresses to {} bytes, exceeding the limit of {} bytes",
+                path.display(),
+                bytes.len(),
+                max_bytes
+            )));
+        }
+        return Ok(bytes);
+    }
     if metadata.len() > max_bytes as u64 {
         return Err(VmError::InvalidConfig(format!(
             "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
@@ -3758,6 +3868,291 @@ fn summarize_phase24_members(
     Ok(summaries)
 }
 
+fn phase24_zero_rebase_baseline() -> Phase24RebaseBaseline {
+    Phase24RebaseBaseline {
+        total_matrices: 0,
+        total_layouts: 0,
+        total_rollups: 0,
+        total_segments: 0,
+        total_steps: 0,
+        lookup_delta_entries: 0,
+    }
+}
+
+fn phase24_rebase_baseline_from_cumulative_member(
+    member: &Phase23DecodingCrossStepLookupAccumulatorManifest,
+) -> Phase24RebaseBaseline {
+    Phase24RebaseBaseline {
+        total_matrices: member.total_matrices,
+        total_layouts: member.total_layouts,
+        total_rollups: member.total_rollups,
+        total_segments: member.total_segments,
+        total_steps: member.total_steps,
+        lookup_delta_entries: member.lookup_delta_entries,
+    }
+}
+
+fn derive_phase24_rebased_member_summaries(
+    members: &[Phase23DecodingCrossStepLookupAccumulatorManifest],
+    baseline: Phase24RebaseBaseline,
+) -> Result<Vec<Phase24MemberSummary>> {
+    let mut summaries = Vec::with_capacity(members.len());
+    let mut previous_total_matrices = baseline.total_matrices;
+    let mut previous_total_layouts = baseline.total_layouts;
+    let mut previous_total_rollups = baseline.total_rollups;
+    let mut previous_total_segments = baseline.total_segments;
+    let mut previous_total_steps = baseline.total_steps;
+    let mut previous_lookup_delta_entries = baseline.lookup_delta_entries;
+
+    for (member_index, member) in members.iter().enumerate() {
+        validate_phase23_decoding_cross_step_lookup_accumulator_shallow(member).map_err(
+            |error| {
+                VmError::InvalidConfig(format!(
+                    "rebased Phase 24 member {member_index} failed shallow Phase 23 validation: {error}"
+                ))
+            },
+        )?;
+        let phase23_summaries = summarize_phase23_members(&member.members)?;
+        verify_phase23_decoding_cross_step_lookup_accumulator_with_summaries(
+            member,
+            &phase23_summaries,
+        )
+        .map_err(|error| {
+            VmError::InvalidConfig(format!(
+                "rebased Phase 24 member {member_index} failed Phase 23 verification: {error}"
+            ))
+        })?;
+        if member.total_steps <= previous_total_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "rebased Phase 24 member {member_index} total_steps {} must strictly increase beyond the previous total_steps {}",
+                member.total_steps, previous_total_steps
+            )));
+        }
+        if member.total_matrices < previous_total_matrices
+            || member.total_layouts < previous_total_layouts
+            || member.total_rollups < previous_total_rollups
+            || member.total_segments < previous_total_segments
+            || member.lookup_delta_entries < previous_lookup_delta_entries
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "rebased Phase 24 member {member_index} must extend, not shrink, the rebased cumulative counts"
+            )));
+        }
+
+        let start_state_commitment =
+            derive_phase24_member_boundary_commitment_at_step_with_summaries(
+                member,
+                member_index,
+                previous_total_steps,
+                &phase23_summaries,
+            )?;
+        let end_state_commitment =
+            derive_phase24_member_boundary_commitment_at_step_with_summaries(
+                member,
+                member_index,
+                member.total_steps,
+                &phase23_summaries,
+            )?;
+
+        summaries.push(Phase24MemberSummary {
+            start_step: previous_total_steps
+                .checked_sub(baseline.total_steps)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "rebased Phase 24 member {member_index} start_step underflowed"
+                    ))
+                })?,
+            end_step: member
+                .total_steps
+                .checked_sub(baseline.total_steps)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "rebased Phase 24 member {member_index} end_step underflowed"
+                    ))
+                })?,
+            total_matrices: member
+                .total_matrices
+                .checked_sub(previous_total_matrices)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "rebased Phase 24 member {member_index} total_matrices underflowed while deriving interval counts"
+                    ))
+                })?,
+            total_layouts: member
+                .total_layouts
+                .checked_sub(previous_total_layouts)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "rebased Phase 24 member {member_index} total_layouts underflowed while deriving interval counts"
+                    ))
+                })?,
+            total_rollups: member
+                .total_rollups
+                .checked_sub(previous_total_rollups)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "rebased Phase 24 member {member_index} total_rollups underflowed while deriving interval counts"
+                    ))
+                })?,
+            total_segments: member
+                .total_segments
+                .checked_sub(previous_total_segments)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "rebased Phase 24 member {member_index} total_segments underflowed while deriving interval counts"
+                    ))
+                })?,
+            total_steps: member.total_steps.checked_sub(previous_total_steps).ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "rebased Phase 24 member {member_index} total_steps underflowed while deriving interval counts"
+                ))
+            })?,
+            lookup_delta_entries: member
+                .lookup_delta_entries
+                .checked_sub(previous_lookup_delta_entries)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "rebased Phase 24 member {member_index} lookup_delta_entries underflowed while deriving interval counts"
+                    ))
+                })?,
+            max_lookup_frontier_entries: member.max_lookup_frontier_entries,
+            source_template_commitment: member.source_template_commitment.clone(),
+            lookup_template_commitment: member.lookup_template_commitment.clone(),
+            lookup_accumulator_commitment: member.accumulator_commitment.clone(),
+            start_state_commitment,
+            end_state_commitment,
+        });
+
+        previous_total_matrices = member.total_matrices;
+        previous_total_layouts = member.total_layouts;
+        previous_total_rollups = member.total_rollups;
+        previous_total_segments = member.total_segments;
+        previous_total_steps = member.total_steps;
+        previous_lookup_delta_entries = member.lookup_delta_entries;
+    }
+
+    Ok(summaries)
+}
+
+fn prepare_phase24_rebased_source_manifest(
+    members: &[Phase23DecodingCrossStepLookupAccumulatorManifest],
+    baseline: Phase24RebaseBaseline,
+    proof_backend_version: &str,
+    statement_version: &str,
+) -> Result<(
+    Phase24DecodingStateRelationAccumulatorManifest,
+    Vec<Phase24MemberSummary>,
+)> {
+    if members.len() < 2 {
+        return Err(VmError::InvalidConfig(
+            "rebased Phase 24 source requires at least two cumulative members".to_string(),
+        ));
+    }
+    if members.len() > MAX_PHASE24_ACCUMULATOR_MEMBERS {
+        return Err(VmError::InvalidConfig(format!(
+            "rebased Phase 24 source supports at most {MAX_PHASE24_ACCUMULATOR_MEMBERS} members (got {})",
+            members.len()
+        )));
+    }
+
+    let summaries = derive_phase24_rebased_member_summaries(members, baseline)?;
+    verify_phase24_member_relation_sequence(&summaries)?;
+
+    let mut total_matrices = 0usize;
+    let mut total_layouts = 0usize;
+    let mut total_rollups = 0usize;
+    let mut total_segments = 0usize;
+    let mut total_steps = 0usize;
+    let mut lookup_delta_entries = 0usize;
+    let mut max_lookup_frontier_entries = 0usize;
+    for (member_index, summary) in summaries.iter().enumerate() {
+        total_matrices = total_matrices
+            .checked_add(summary.total_matrices)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "rebased Phase 24 total_matrices overflowed while adding member {member_index}"
+                ))
+            })?;
+        total_layouts = total_layouts
+            .checked_add(summary.total_layouts)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "rebased Phase 24 total_layouts overflowed while adding member {member_index}"
+                ))
+            })?;
+        total_rollups = total_rollups
+            .checked_add(summary.total_rollups)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "rebased Phase 24 total_rollups overflowed while adding member {member_index}"
+                ))
+            })?;
+        total_segments = total_segments
+            .checked_add(summary.total_segments)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "rebased Phase 24 total_segments overflowed while adding member {member_index}"
+                ))
+            })?;
+        total_steps = total_steps
+            .checked_add(summary.total_steps)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "rebased Phase 24 total_steps overflowed while adding member {member_index}"
+                ))
+            })?;
+        lookup_delta_entries = lookup_delta_entries
+            .checked_add(summary.lookup_delta_entries)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "rebased Phase 24 lookup_delta_entries overflowed while adding member {member_index}"
+                ))
+            })?;
+        max_lookup_frontier_entries =
+            max_lookup_frontier_entries.max(summary.max_lookup_frontier_entries);
+    }
+    if total_rollups > MAX_PHASE24_ACCUMULATOR_ROLLUPS {
+        return Err(VmError::InvalidConfig(format!(
+            "rebased Phase 24 total_rollups {} exceed the supported maximum {}",
+            total_rollups, MAX_PHASE24_ACCUMULATOR_ROLLUPS
+        )));
+    }
+
+    let first = summaries
+        .first()
+        .expect("rebased phase24 summaries are non-empty");
+    let last = summaries
+        .last()
+        .expect("rebased phase24 summaries are non-empty");
+    let relation_template_commitment = commit_phase24_relation_template(&summaries)?;
+    let mut manifest = Phase24DecodingStateRelationAccumulatorManifest {
+        proof_backend: StarkProofBackend::Stwo,
+        accumulator_version: STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24.to_string(),
+        semantic_scope: STWO_DECODING_STATE_RELATION_ACCUMULATOR_SCOPE_PHASE24.to_string(),
+        proof_backend_version: proof_backend_version.to_string(),
+        statement_version: statement_version.to_string(),
+        member_count: members.len(),
+        total_matrices,
+        total_layouts,
+        total_rollups,
+        total_segments,
+        total_steps,
+        lookup_delta_entries,
+        max_lookup_frontier_entries,
+        source_template_commitment: first.source_template_commitment.clone(),
+        start_state_commitment: first.start_state_commitment.clone(),
+        end_state_commitment: last.end_state_commitment.clone(),
+        relation_template_commitment,
+        relation_accumulator_commitment: String::new(),
+        member_summaries: phase24_public_member_summaries(&summaries),
+        members: members.to_vec(),
+    };
+    manifest.relation_accumulator_commitment =
+        commit_phase24_state_relation_accumulator_with_summaries(&manifest, &summaries)?;
+    verify_phase24_decoding_state_relation_accumulator_with_summaries(&manifest, &summaries)?;
+    Ok((manifest, summaries))
+}
+
 fn validate_phase23_decoding_cross_step_lookup_accumulator_shallow(
     manifest: &Phase23DecodingCrossStepLookupAccumulatorManifest,
 ) -> Result<()> {
@@ -5074,20 +5469,10 @@ fn commit_phase25_intervalized_state_relation_with_summaries(
     Ok(lower_hex(&out))
 }
 
-pub fn phase25_prepare_intervalized_decoding_state_relation(
+fn prepare_phase25_intervalized_decoding_state_relation_from_phase24_source(
     source: &Phase24DecodingStateRelationAccumulatorManifest,
+    summaries: &[Phase24MemberSummary],
 ) -> Result<Phase25IntervalizedDecodingStateRelationManifest> {
-    verify_phase24_decoding_state_relation_accumulator(source)?;
-    if source.members.len() > MAX_PHASE25_INTERVALIZED_MEMBERS {
-        return Err(VmError::InvalidConfig(format!(
-            "Phase 25 intervalized decoding state relation supports at most {MAX_PHASE25_INTERVALIZED_MEMBERS} members (got {})",
-            source.members.len()
-        )));
-    }
-
-    let summaries = summarize_phase24_members(&source.members)?;
-    verify_phase24_member_relation_sequence(&summaries)?;
-
     let interval_template_commitment = commit_phase25_interval_template_from_summaries(
         &source.relation_template_commitment,
         &summaries,
@@ -5122,6 +5507,103 @@ pub fn phase25_prepare_intervalized_decoding_state_relation(
     Ok(manifest)
 }
 
+fn phase25_prepare_intervalized_decoding_state_relation_from_phase23_members(
+    members: &[Phase23DecodingCrossStepLookupAccumulatorManifest],
+    baseline: Phase24RebaseBaseline,
+    proof_backend_version: &str,
+    statement_version: &str,
+) -> Result<Phase25IntervalizedDecodingStateRelationManifest> {
+    let (source_manifest, summaries) = prepare_phase24_rebased_source_manifest(
+        members,
+        baseline,
+        proof_backend_version,
+        statement_version,
+    )?;
+    prepare_phase25_intervalized_decoding_state_relation_from_phase24_source(
+        &source_manifest,
+        &summaries,
+    )
+}
+
+pub fn phase25_prepare_intervalized_decoding_state_relation(
+    source: &Phase24DecodingStateRelationAccumulatorManifest,
+) -> Result<Phase25IntervalizedDecodingStateRelationManifest> {
+    verify_phase24_decoding_state_relation_accumulator(source)?;
+    if source.members.len() > MAX_PHASE25_INTERVALIZED_MEMBERS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 25 intervalized decoding state relation supports at most {MAX_PHASE25_INTERVALIZED_MEMBERS} members (got {})",
+            source.members.len()
+        )));
+    }
+
+    let summaries = summarize_phase24_members(&source.members)?;
+    verify_phase24_member_relation_sequence(&summaries)?;
+    prepare_phase25_intervalized_decoding_state_relation_from_phase24_source(source, &summaries)
+}
+
+fn infer_phase24_rebase_baseline_from_phase25_manifest(
+    manifest: &Phase25IntervalizedDecodingStateRelationManifest,
+) -> Result<Phase24RebaseBaseline> {
+    let last_member = manifest.members.last().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "intervalized decoding state relation must contain at least one member".to_string(),
+        )
+    })?;
+    Ok(Phase24RebaseBaseline {
+        total_matrices: last_member
+            .total_matrices
+            .checked_sub(manifest.total_matrices)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "intervalized decoding state relation total_matrices={} exceed the final nested cumulative total {}",
+                    manifest.total_matrices, last_member.total_matrices
+                ))
+            })?,
+        total_layouts: last_member
+            .total_layouts
+            .checked_sub(manifest.total_layouts)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "intervalized decoding state relation total_layouts={} exceed the final nested cumulative total {}",
+                    manifest.total_layouts, last_member.total_layouts
+                ))
+            })?,
+        total_rollups: last_member
+            .total_rollups
+            .checked_sub(manifest.total_rollups)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "intervalized decoding state relation total_rollups={} exceed the final nested cumulative total {}",
+                    manifest.total_rollups, last_member.total_rollups
+                ))
+            })?,
+        total_segments: last_member
+            .total_segments
+            .checked_sub(manifest.total_segments)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "intervalized decoding state relation total_segments={} exceed the final nested cumulative total {}",
+                    manifest.total_segments, last_member.total_segments
+                ))
+            })?,
+        total_steps: last_member.total_steps.checked_sub(manifest.total_steps).ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "intervalized decoding state relation total_steps={} exceed the final nested cumulative total {}",
+                manifest.total_steps, last_member.total_steps
+            ))
+        })?,
+        lookup_delta_entries: last_member
+            .lookup_delta_entries
+            .checked_sub(manifest.lookup_delta_entries)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "intervalized decoding state relation lookup_delta_entries={} exceed the final nested cumulative total {}",
+                    manifest.lookup_delta_entries, last_member.lookup_delta_entries
+                ))
+            })?,
+    })
+}
+
 fn verify_phase25_intervalized_decoding_state_relation_with_summaries(
     manifest: &Phase25IntervalizedDecodingStateRelationManifest,
     summaries: &[Phase24MemberSummary],
@@ -5134,31 +5616,97 @@ fn verify_phase25_intervalized_decoding_state_relation_with_summaries(
             manifest.members.len()
         )));
     }
+    let baseline = infer_phase24_rebase_baseline_from_phase25_manifest(manifest)?;
+    let expected_summaries = derive_phase24_rebased_member_summaries(&manifest.members, baseline)?;
+    if summaries != expected_summaries.as_slice() {
+        return Err(VmError::InvalidConfig(
+            "intervalized decoding state relation summaries do not match the rebased summaries derived from the nested cumulative members".to_string(),
+        ));
+    }
     verify_phase24_member_relation_sequence(summaries)?;
 
-    let source_manifest = Phase24DecodingStateRelationAccumulatorManifest {
-        proof_backend: manifest.proof_backend.clone(),
-        accumulator_version: STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24.to_string(),
-        semantic_scope: STWO_DECODING_STATE_RELATION_ACCUMULATOR_SCOPE_PHASE24.to_string(),
-        proof_backend_version: manifest.proof_backend_version.clone(),
-        statement_version: manifest.statement_version.clone(),
-        member_count: manifest.member_count,
-        total_matrices: manifest.total_matrices,
-        total_layouts: manifest.total_layouts,
-        total_rollups: manifest.total_rollups,
-        total_segments: manifest.total_segments,
-        total_steps: manifest.total_steps,
-        lookup_delta_entries: manifest.lookup_delta_entries,
-        max_lookup_frontier_entries: manifest.max_lookup_frontier_entries,
-        source_template_commitment: manifest.source_template_commitment.clone(),
-        start_state_commitment: manifest.global_start_state_commitment.clone(),
-        end_state_commitment: manifest.global_end_state_commitment.clone(),
-        relation_template_commitment: manifest.source_relation_template_commitment.clone(),
-        relation_accumulator_commitment: manifest.source_relation_accumulator_commitment.clone(),
-        member_summaries: phase24_public_member_summaries(summaries),
-        members: manifest.members.clone(),
-    };
-    verify_phase24_decoding_state_relation_accumulator_with_summaries(&source_manifest, summaries)?;
+    let (source_manifest, _) = prepare_phase24_rebased_source_manifest(
+        &manifest.members,
+        baseline,
+        &manifest.proof_backend_version,
+        &manifest.statement_version,
+    )?;
+    if manifest.member_count != source_manifest.member_count {
+        return Err(VmError::InvalidConfig(format!(
+            "intervalized decoding state relation member_count={} does not match derived member_count {}",
+            manifest.member_count, source_manifest.member_count
+        )));
+    }
+    if manifest.total_matrices != source_manifest.total_matrices {
+        return Err(VmError::InvalidConfig(format!(
+            "intervalized decoding state relation total_matrices={} does not match derived total_matrices {}",
+            manifest.total_matrices, source_manifest.total_matrices
+        )));
+    }
+    if manifest.total_layouts != source_manifest.total_layouts {
+        return Err(VmError::InvalidConfig(format!(
+            "intervalized decoding state relation total_layouts={} does not match derived total_layouts {}",
+            manifest.total_layouts, source_manifest.total_layouts
+        )));
+    }
+    if manifest.total_rollups != source_manifest.total_rollups {
+        return Err(VmError::InvalidConfig(format!(
+            "intervalized decoding state relation total_rollups={} does not match derived total_rollups {}",
+            manifest.total_rollups, source_manifest.total_rollups
+        )));
+    }
+    if manifest.total_segments != source_manifest.total_segments {
+        return Err(VmError::InvalidConfig(format!(
+            "intervalized decoding state relation total_segments={} does not match derived total_segments {}",
+            manifest.total_segments, source_manifest.total_segments
+        )));
+    }
+    if manifest.total_steps != source_manifest.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "intervalized decoding state relation total_steps={} does not match derived total_steps {}",
+            manifest.total_steps, source_manifest.total_steps
+        )));
+    }
+    if manifest.lookup_delta_entries != source_manifest.lookup_delta_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "intervalized decoding state relation lookup_delta_entries={} does not match derived lookup_delta_entries {}",
+            manifest.lookup_delta_entries, source_manifest.lookup_delta_entries
+        )));
+    }
+    if manifest.max_lookup_frontier_entries != source_manifest.max_lookup_frontier_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "intervalized decoding state relation max_lookup_frontier_entries={} does not match derived max_lookup_frontier_entries {}",
+            manifest.max_lookup_frontier_entries, source_manifest.max_lookup_frontier_entries
+        )));
+    }
+    if manifest.source_template_commitment != source_manifest.source_template_commitment {
+        return Err(VmError::InvalidConfig(
+            "intervalized decoding state relation source_template_commitment does not match the derived rebased Phase 24 source".to_string(),
+        ));
+    }
+    if manifest.source_relation_template_commitment != source_manifest.relation_template_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "intervalized decoding state relation source_relation_template_commitment does not match the derived rebased Phase 24 source".to_string(),
+        ));
+    }
+    if manifest.source_relation_accumulator_commitment
+        != source_manifest.relation_accumulator_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "intervalized decoding state relation source_relation_accumulator_commitment does not match the derived rebased Phase 24 source".to_string(),
+        ));
+    }
+    if manifest.global_start_state_commitment != source_manifest.start_state_commitment {
+        return Err(VmError::InvalidConfig(
+            "intervalized decoding state relation global_start_state_commitment does not match the derived rebased Phase 24 source".to_string(),
+        ));
+    }
+    if manifest.global_end_state_commitment != source_manifest.end_state_commitment {
+        return Err(VmError::InvalidConfig(
+            "intervalized decoding state relation global_end_state_commitment does not match the derived rebased Phase 24 source".to_string(),
+        ));
+    }
 
     let expected_member_summaries = phase25_intervalized_public_member_summaries(summaries);
     if manifest.member_summaries != expected_member_summaries {
@@ -5191,7 +5739,8 @@ pub fn verify_phase25_intervalized_decoding_state_relation(
     manifest: &Phase25IntervalizedDecodingStateRelationManifest,
 ) -> Result<()> {
     validate_phase25_intervalized_decoding_state_relation_shallow(manifest)?;
-    let summaries = summarize_phase24_members(&manifest.members)?;
+    let baseline = infer_phase24_rebase_baseline_from_phase25_manifest(manifest)?;
+    let summaries = derive_phase24_rebased_member_summaries(&manifest.members, baseline)?;
     verify_phase25_intervalized_decoding_state_relation_with_summaries(manifest, &summaries)
 }
 
@@ -5215,6 +5764,668 @@ pub fn verify_phase25_intervalized_decoding_state_relation_with_proof_checks(
 ) -> Result<()> {
     verify_phase25_intervalized_decoding_state_relation(manifest)?;
     verify_phase25_intervalized_decoding_state_relation_members_with_proof_checks(manifest)
+}
+
+fn summarize_phase26_members(
+    members: &[Phase25IntervalizedDecodingStateRelationManifest],
+) -> Result<Vec<Phase26MemberSummary>> {
+    let mut summaries = Vec::with_capacity(members.len());
+    let mut cumulative_steps = 0usize;
+
+    for (member_index, member) in members.iter().enumerate() {
+        verify_phase25_intervalized_decoding_state_relation(member).map_err(|error| {
+            VmError::InvalidConfig(format!(
+                "Phase 26 member {member_index} failed Phase 25 verification: {error}"
+            ))
+        })?;
+        if member.total_steps == 0 {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 26 member {member_index} must cover at least one step"
+            )));
+        }
+        if member.source_template_commitment.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 26 member {member_index} has an empty source_template_commitment"
+            )));
+        }
+        if member.interval_template_commitment.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 26 member {member_index} has an empty interval_template_commitment"
+            )));
+        }
+        if member.interval_accumulator_commitment.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 26 member {member_index} has an empty interval_accumulator_commitment"
+            )));
+        }
+        if member.global_start_state_commitment.is_empty()
+            || member.global_end_state_commitment.is_empty()
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 26 member {member_index} has an empty state-boundary commitment"
+            )));
+        }
+
+        let start_step = cumulative_steps;
+        let end_step = cumulative_steps.checked_add(member.total_steps).ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "Phase 26 member {member_index} total_steps overflowed while deriving folded intervals"
+            ))
+        })?;
+        summaries.push(Phase26MemberSummary {
+            start_step,
+            end_step,
+            total_matrices: member.total_matrices,
+            total_layouts: member.total_layouts,
+            total_rollups: member.total_rollups,
+            total_segments: member.total_segments,
+            total_steps: member.total_steps,
+            lookup_delta_entries: member.lookup_delta_entries,
+            max_lookup_frontier_entries: member.max_lookup_frontier_entries,
+            source_template_commitment: member.source_template_commitment.clone(),
+            interval_template_commitment: member.interval_template_commitment.clone(),
+            interval_accumulator_commitment: member.interval_accumulator_commitment.clone(),
+            start_state_commitment: member.global_start_state_commitment.clone(),
+            end_state_commitment: member.global_end_state_commitment.clone(),
+        });
+        cumulative_steps = end_step;
+    }
+
+    Ok(summaries)
+}
+
+fn verify_phase26_fold_sequence(summaries: &[Phase26MemberSummary]) -> Result<()> {
+    if summaries.len() < 2 {
+        return Err(VmError::InvalidConfig(
+            "folded intervalized decoding state relation must contain at least two members"
+                .to_string(),
+        ));
+    }
+
+    let shared_source_template_commitment = summaries[0].source_template_commitment.clone();
+    if shared_source_template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "folded intervalized decoding state relation source_template_commitment must not be empty"
+                .to_string(),
+        ));
+    }
+
+    for (member_index, summary) in summaries.iter().enumerate() {
+        if summary.total_steps == 0 {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 26 member {member_index} must cover at least one step"
+            )));
+        }
+        if summary.start_step >= summary.end_step {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 26 member {member_index} has invalid interval [{}..{})",
+                summary.start_step, summary.end_step
+            )));
+        }
+        if summary.end_step - summary.start_step != summary.total_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 26 member {member_index} interval width {} does not match total_steps {}",
+                summary.end_step - summary.start_step,
+                summary.total_steps
+            )));
+        }
+        if summary.source_template_commitment != shared_source_template_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 26 member {member_index} does not share the source_template_commitment of member 0"
+            )));
+        }
+        if summary.interval_template_commitment.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 26 member {member_index} has an empty interval_template_commitment"
+            )));
+        }
+        if summary.interval_accumulator_commitment.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 26 member {member_index} has an empty interval_accumulator_commitment"
+            )));
+        }
+        if summary.start_state_commitment.is_empty() || summary.end_state_commitment.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 26 member {member_index} has an empty state-boundary commitment"
+            )));
+        }
+        if member_index == 0 {
+            if summary.start_step != 0 {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 26 member 0 must start at step 0, got {}",
+                    summary.start_step
+                )));
+            }
+            continue;
+        }
+        let previous = &summaries[member_index - 1];
+        if summary.start_step != previous.end_step {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 26 member {} interval [{}..{}) is not contiguous with member {} interval [{}..{})",
+                member_index,
+                summary.start_step,
+                summary.end_step,
+                member_index - 1,
+                previous.start_step,
+                previous.end_step
+            )));
+        }
+        if summary.start_state_commitment != previous.end_state_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 26 member boundary {} -> {} does not preserve the carried-state commitment",
+                member_index - 1,
+                member_index
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+fn aggregate_phase26_summary_totals(
+    summaries: &[Phase26MemberSummary],
+) -> Result<Phase26AggregateTotals> {
+    verify_phase26_fold_sequence(summaries)?;
+
+    let mut totals = Phase26AggregateTotals {
+        total_matrices: 0,
+        total_layouts: 0,
+        total_rollups: 0,
+        total_segments: 0,
+        total_steps: 0,
+        lookup_delta_entries: 0,
+        max_lookup_frontier_entries: 0,
+    };
+
+    for (member_index, summary) in summaries.iter().enumerate() {
+        totals.total_matrices = totals
+            .total_matrices
+            .checked_add(summary.total_matrices)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 26 total_matrices overflowed while adding member {member_index}"
+                ))
+            })?;
+        totals.total_layouts = totals
+            .total_layouts
+            .checked_add(summary.total_layouts)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 26 total_layouts overflowed while adding member {member_index}"
+                ))
+            })?;
+        totals.total_rollups = totals
+            .total_rollups
+            .checked_add(summary.total_rollups)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 26 total_rollups overflowed while adding member {member_index}"
+                ))
+            })?;
+        totals.total_segments = totals
+            .total_segments
+            .checked_add(summary.total_segments)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 26 total_segments overflowed while adding member {member_index}"
+                ))
+            })?;
+        totals.total_steps = totals
+            .total_steps
+            .checked_add(summary.total_steps)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 26 total_steps overflowed while adding member {member_index}"
+                ))
+            })?;
+        totals.lookup_delta_entries = totals
+            .lookup_delta_entries
+            .checked_add(summary.lookup_delta_entries)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 26 lookup_delta_entries overflowed while adding member {member_index}"
+                ))
+            })?;
+        totals.max_lookup_frontier_entries = totals
+            .max_lookup_frontier_entries
+            .max(summary.max_lookup_frontier_entries);
+    }
+
+    Ok(totals)
+}
+
+fn phase26_public_member_summaries(
+    summaries: &[Phase26MemberSummary],
+) -> Vec<Phase26FoldedIntervalizedDecodingStateRelationMemberSummary> {
+    summaries
+        .iter()
+        .map(
+            |summary| Phase26FoldedIntervalizedDecodingStateRelationMemberSummary {
+                start_step: summary.start_step,
+                end_step: summary.end_step,
+                total_matrices: summary.total_matrices,
+                total_layouts: summary.total_layouts,
+                total_rollups: summary.total_rollups,
+                total_segments: summary.total_segments,
+                total_steps: summary.total_steps,
+                lookup_delta_entries: summary.lookup_delta_entries,
+                max_lookup_frontier_entries: summary.max_lookup_frontier_entries,
+                source_template_commitment: summary.source_template_commitment.clone(),
+                interval_template_commitment: summary.interval_template_commitment.clone(),
+                interval_accumulator_commitment: summary.interval_accumulator_commitment.clone(),
+                start_state_commitment: summary.start_state_commitment.clone(),
+                end_state_commitment: summary.end_state_commitment.clone(),
+            },
+        )
+        .collect()
+}
+
+fn validate_phase26_folded_intervalized_decoding_state_relation_shallow(
+    manifest: &Phase26FoldedIntervalizedDecodingStateRelationManifest,
+) -> Result<()> {
+    if manifest.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "folded intervalized decoding state relation backend `{}` is not `stwo`",
+            manifest.proof_backend
+        )));
+    }
+    if manifest.artifact_version != STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported folded intervalized decoding state relation version `{}`",
+            manifest.artifact_version
+        )));
+    }
+    if manifest.semantic_scope != STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE26 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported folded intervalized decoding state relation semantic scope `{}`",
+            manifest.semantic_scope
+        )));
+    }
+    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported folded intervalized decoding state relation proof backend version `{}` (expected `{}`)",
+            manifest.proof_backend_version,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+        )));
+    }
+    if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported folded intervalized decoding state relation statement version `{}`",
+            manifest.statement_version
+        )));
+    }
+    if manifest.members.len() < 2 {
+        return Err(VmError::InvalidConfig(
+            "folded intervalized decoding state relation must contain at least two members"
+                .to_string(),
+        ));
+    }
+    if manifest.members.len() > MAX_PHASE26_FOLDED_INTERVALIZED_MEMBERS {
+        return Err(VmError::InvalidConfig(format!(
+            "folded intervalized decoding state relation members.len()={} exceeds the supported maximum {}",
+            manifest.members.len(),
+            MAX_PHASE26_FOLDED_INTERVALIZED_MEMBERS
+        )));
+    }
+    if manifest.member_count != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "folded intervalized decoding state relation member_count={} does not match members.len()={}",
+            manifest.member_count,
+            manifest.members.len()
+        )));
+    }
+    if manifest.member_summaries.len() != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "folded intervalized decoding state relation member_summaries.len()={} does not match members.len()={}",
+            manifest.member_summaries.len(),
+            manifest.members.len()
+        )));
+    }
+    if manifest.bounded_fold_arity < manifest.member_count
+        || manifest.bounded_fold_arity > MAX_PHASE26_FOLDED_INTERVALIZED_MEMBERS
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "folded intervalized decoding state relation bounded_fold_arity={} must be between member_count {} and supported maximum {}",
+            manifest.bounded_fold_arity,
+            manifest.member_count,
+            MAX_PHASE26_FOLDED_INTERVALIZED_MEMBERS
+        )));
+    }
+    if manifest.total_rollups > MAX_PHASE26_FOLDED_INTERVALIZED_ROLLUPS {
+        return Err(VmError::InvalidConfig(format!(
+            "folded intervalized decoding state relation total_rollups={} exceeds the supported maximum {}",
+            manifest.total_rollups,
+            MAX_PHASE26_FOLDED_INTERVALIZED_ROLLUPS
+        )));
+    }
+    if manifest.source_template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "folded intervalized decoding state relation source_template_commitment must not be empty"
+                .to_string(),
+        ));
+    }
+    if manifest.global_start_state_commitment.is_empty()
+        || manifest.global_end_state_commitment.is_empty()
+    {
+        return Err(VmError::InvalidConfig(
+            "folded intervalized decoding state relation global state-boundary commitments must not be empty"
+                .to_string(),
+        ));
+    }
+    if manifest.fold_template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "folded intervalized decoding state relation fold_template_commitment must not be empty"
+                .to_string(),
+        ));
+    }
+    if manifest.folded_interval_accumulator_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "folded intervalized decoding state relation folded_interval_accumulator_commitment must not be empty"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn commit_phase26_fold_template(
+    source_template_commitment: &str,
+    bounded_fold_arity: usize,
+    summaries: &[Phase26MemberSummary],
+) -> Result<String> {
+    verify_phase26_fold_sequence(summaries)?;
+    if source_template_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 26 fold template source_template_commitment must not be empty".to_string(),
+        ));
+    }
+    if bounded_fold_arity < summaries.len()
+        || bounded_fold_arity > MAX_PHASE26_FOLDED_INTERVALIZED_MEMBERS
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 26 bounded_fold_arity={} must be between member_count {} and supported maximum {}",
+            bounded_fold_arity,
+            summaries.len(),
+            MAX_PHASE26_FOLDED_INTERVALIZED_MEMBERS
+        )));
+    }
+
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26.as_bytes());
+    hasher.update(b"fold-template");
+    hasher.update(&(bounded_fold_arity as u64).to_le_bytes());
+    hasher.update(&(summaries.len() as u64).to_le_bytes());
+    hasher.update(source_template_commitment.as_bytes());
+    for (member_index, summary) in summaries.iter().enumerate() {
+        hasher.update(&(member_index as u64).to_le_bytes());
+        hasher.update(summary.interval_template_commitment.as_bytes());
+        hasher.update(&(summary.start_step as u64).to_le_bytes());
+        hasher.update(&(summary.end_step as u64).to_le_bytes());
+        hasher.update(&(summary.total_matrices as u64).to_le_bytes());
+        hasher.update(&(summary.total_layouts as u64).to_le_bytes());
+        hasher.update(&(summary.total_rollups as u64).to_le_bytes());
+        hasher.update(&(summary.total_segments as u64).to_le_bytes());
+        hasher.update(&(summary.total_steps as u64).to_le_bytes());
+        hasher.update(&(summary.lookup_delta_entries as u64).to_le_bytes());
+        hasher.update(&(summary.max_lookup_frontier_entries as u64).to_le_bytes());
+    }
+
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase26_folded_intervalized_state_relation_with_summaries(
+    manifest: &Phase26FoldedIntervalizedDecodingStateRelationManifest,
+    summaries: &[Phase26MemberSummary],
+) -> Result<String> {
+    if summaries.len() != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "folded intervalized decoding state relation summaries.len()={} does not match members.len()={}",
+            summaries.len(),
+            manifest.members.len()
+        )));
+    }
+    verify_phase26_fold_sequence(summaries)?;
+
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26.as_bytes());
+    hasher.update(b"folded-intervalized-state-relation");
+    hasher.update(&(manifest.bounded_fold_arity as u64).to_le_bytes());
+    hasher.update(manifest.source_template_commitment.as_bytes());
+    hasher.update(manifest.global_start_state_commitment.as_bytes());
+    hasher.update(manifest.global_end_state_commitment.as_bytes());
+    hasher.update(manifest.fold_template_commitment.as_bytes());
+    hasher.update(&(manifest.member_count as u64).to_le_bytes());
+    hasher.update(&(manifest.total_matrices as u64).to_le_bytes());
+    hasher.update(&(manifest.total_layouts as u64).to_le_bytes());
+    hasher.update(&(manifest.total_rollups as u64).to_le_bytes());
+    hasher.update(&(manifest.total_segments as u64).to_le_bytes());
+    hasher.update(&(manifest.total_steps as u64).to_le_bytes());
+    hasher.update(&(manifest.lookup_delta_entries as u64).to_le_bytes());
+    hasher.update(&(manifest.max_lookup_frontier_entries as u64).to_le_bytes());
+    for (member_index, summary) in summaries.iter().enumerate() {
+        hasher.update(&(member_index as u64).to_le_bytes());
+        hasher.update(&(summary.start_step as u64).to_le_bytes());
+        hasher.update(&(summary.end_step as u64).to_le_bytes());
+        hasher.update(summary.interval_template_commitment.as_bytes());
+        hasher.update(summary.interval_accumulator_commitment.as_bytes());
+        hasher.update(summary.start_state_commitment.as_bytes());
+        hasher.update(summary.end_state_commitment.as_bytes());
+        hasher.update(&(summary.total_matrices as u64).to_le_bytes());
+        hasher.update(&(summary.total_layouts as u64).to_le_bytes());
+        hasher.update(&(summary.total_rollups as u64).to_le_bytes());
+        hasher.update(&(summary.total_segments as u64).to_le_bytes());
+        hasher.update(&(summary.total_steps as u64).to_le_bytes());
+        hasher.update(&(summary.lookup_delta_entries as u64).to_le_bytes());
+        hasher.update(&(summary.max_lookup_frontier_entries as u64).to_le_bytes());
+    }
+
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+pub fn phase26_prepare_folded_intervalized_decoding_state_relation(
+    members: &[Phase25IntervalizedDecodingStateRelationManifest],
+) -> Result<Phase26FoldedIntervalizedDecodingStateRelationManifest> {
+    if members.len() < 2 {
+        return Err(VmError::InvalidConfig(
+            "Phase 26 folded intervalized decoding state relation requires at least two members"
+                .to_string(),
+        ));
+    }
+    if members.len() > MAX_PHASE26_FOLDED_INTERVALIZED_MEMBERS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 26 folded intervalized decoding state relation supports at most {MAX_PHASE26_FOLDED_INTERVALIZED_MEMBERS} members (got {})",
+            members.len()
+        )));
+    }
+
+    let summaries = summarize_phase26_members(members)?;
+    let totals = aggregate_phase26_summary_totals(&summaries)?;
+    if totals.total_rollups > MAX_PHASE26_FOLDED_INTERVALIZED_ROLLUPS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 26 folded intervalized decoding state relation total_rollups={} exceeds the supported maximum {}",
+            totals.total_rollups, MAX_PHASE26_FOLDED_INTERVALIZED_ROLLUPS
+        )));
+    }
+
+    let bounded_fold_arity = members.len();
+    let fold_template_commitment = commit_phase26_fold_template(
+        &summaries[0].source_template_commitment,
+        bounded_fold_arity,
+        &summaries,
+    )?;
+    let mut manifest = Phase26FoldedIntervalizedDecodingStateRelationManifest {
+        proof_backend: StarkProofBackend::Stwo,
+        artifact_version: STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26
+            .to_string(),
+        semantic_scope: STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE26.to_string(),
+        proof_backend_version: members[0].proof_backend_version.clone(),
+        statement_version: members[0].statement_version.clone(),
+        bounded_fold_arity,
+        member_count: members.len(),
+        total_matrices: totals.total_matrices,
+        total_layouts: totals.total_layouts,
+        total_rollups: totals.total_rollups,
+        total_segments: totals.total_segments,
+        total_steps: totals.total_steps,
+        lookup_delta_entries: totals.lookup_delta_entries,
+        max_lookup_frontier_entries: totals.max_lookup_frontier_entries,
+        source_template_commitment: summaries[0].source_template_commitment.clone(),
+        global_start_state_commitment: summaries[0].start_state_commitment.clone(),
+        global_end_state_commitment: summaries
+            .last()
+            .expect("phase26 summaries are non-empty")
+            .end_state_commitment
+            .clone(),
+        fold_template_commitment,
+        folded_interval_accumulator_commitment: String::new(),
+        member_summaries: phase26_public_member_summaries(&summaries),
+        members: members.to_vec(),
+    };
+    manifest.folded_interval_accumulator_commitment =
+        commit_phase26_folded_intervalized_state_relation_with_summaries(&manifest, &summaries)?;
+    verify_phase26_folded_intervalized_decoding_state_relation_with_summaries(
+        &manifest, &summaries,
+    )?;
+    Ok(manifest)
+}
+
+fn verify_phase26_folded_intervalized_decoding_state_relation_with_summaries(
+    manifest: &Phase26FoldedIntervalizedDecodingStateRelationManifest,
+    summaries: &[Phase26MemberSummary],
+) -> Result<()> {
+    validate_phase26_folded_intervalized_decoding_state_relation_shallow(manifest)?;
+    if summaries.len() != manifest.members.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "folded intervalized decoding state relation summaries.len()={} does not match members.len()={}",
+            summaries.len(),
+            manifest.members.len()
+        )));
+    }
+    verify_phase26_fold_sequence(summaries)?;
+    let totals = aggregate_phase26_summary_totals(summaries)?;
+    if manifest.total_matrices != totals.total_matrices {
+        return Err(VmError::InvalidConfig(format!(
+            "folded intervalized decoding state relation total_matrices={} does not match derived total_matrices {}",
+            manifest.total_matrices, totals.total_matrices
+        )));
+    }
+    if manifest.total_layouts != totals.total_layouts {
+        return Err(VmError::InvalidConfig(format!(
+            "folded intervalized decoding state relation total_layouts={} does not match derived total_layouts {}",
+            manifest.total_layouts, totals.total_layouts
+        )));
+    }
+    if manifest.total_rollups != totals.total_rollups {
+        return Err(VmError::InvalidConfig(format!(
+            "folded intervalized decoding state relation total_rollups={} does not match derived total_rollups {}",
+            manifest.total_rollups, totals.total_rollups
+        )));
+    }
+    if manifest.total_segments != totals.total_segments {
+        return Err(VmError::InvalidConfig(format!(
+            "folded intervalized decoding state relation total_segments={} does not match derived total_segments {}",
+            manifest.total_segments, totals.total_segments
+        )));
+    }
+    if manifest.total_steps != totals.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "folded intervalized decoding state relation total_steps={} does not match derived total_steps {}",
+            manifest.total_steps, totals.total_steps
+        )));
+    }
+    if manifest.lookup_delta_entries != totals.lookup_delta_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "folded intervalized decoding state relation lookup_delta_entries={} does not match derived lookup_delta_entries {}",
+            manifest.lookup_delta_entries, totals.lookup_delta_entries
+        )));
+    }
+    if manifest.max_lookup_frontier_entries != totals.max_lookup_frontier_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "folded intervalized decoding state relation max_lookup_frontier_entries={} does not match derived max_lookup_frontier_entries {}",
+            manifest.max_lookup_frontier_entries, totals.max_lookup_frontier_entries
+        )));
+    }
+    let expected_member_summaries = phase26_public_member_summaries(summaries);
+    if manifest.member_summaries != expected_member_summaries {
+        return Err(VmError::InvalidConfig(
+            "folded intervalized decoding state relation member_summaries do not match the derived fold summaries".to_string(),
+        ));
+    }
+    let first = summaries.first().expect("phase26 summaries are non-empty");
+    let last = summaries.last().expect("phase26 summaries are non-empty");
+    if manifest.source_template_commitment != first.source_template_commitment {
+        return Err(VmError::InvalidConfig(
+            "folded intervalized decoding state relation source_template_commitment does not match the first member source template".to_string(),
+        ));
+    }
+    if manifest.global_start_state_commitment != first.start_state_commitment {
+        return Err(VmError::InvalidConfig(
+            "folded intervalized decoding state relation global_start_state_commitment does not match the first member boundary".to_string(),
+        ));
+    }
+    if manifest.global_end_state_commitment != last.end_state_commitment {
+        return Err(VmError::InvalidConfig(
+            "folded intervalized decoding state relation global_end_state_commitment does not match the last member boundary".to_string(),
+        ));
+    }
+    let expected_fold_template_commitment = commit_phase26_fold_template(
+        &manifest.source_template_commitment,
+        manifest.bounded_fold_arity,
+        summaries,
+    )?;
+    if manifest.fold_template_commitment != expected_fold_template_commitment {
+        return Err(VmError::InvalidConfig(
+            "folded intervalized decoding state relation fold_template_commitment does not match the computed fold template commitment".to_string(),
+        ));
+    }
+    let expected_folded_interval_accumulator_commitment =
+        commit_phase26_folded_intervalized_state_relation_with_summaries(manifest, summaries)?;
+    if manifest.folded_interval_accumulator_commitment
+        != expected_folded_interval_accumulator_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "folded intervalized decoding state relation folded_interval_accumulator_commitment does not match the computed folded interval accumulator commitment".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+pub fn verify_phase26_folded_intervalized_decoding_state_relation(
+    manifest: &Phase26FoldedIntervalizedDecodingStateRelationManifest,
+) -> Result<()> {
+    validate_phase26_folded_intervalized_decoding_state_relation_shallow(manifest)?;
+    let summaries = summarize_phase26_members(&manifest.members)?;
+    verify_phase26_folded_intervalized_decoding_state_relation_with_summaries(manifest, &summaries)
+}
+
+fn verify_phase26_folded_intervalized_decoding_state_relation_members_with_proof_checks(
+    manifest: &Phase26FoldedIntervalizedDecodingStateRelationManifest,
+) -> Result<()> {
+    for (member_index, member) in manifest.members.iter().enumerate() {
+        verify_phase25_intervalized_decoding_state_relation_with_proof_checks(member).map_err(
+            |error| {
+                VmError::InvalidConfig(format!(
+                    "Phase 26 member {member_index} failed proof-bearing Phase 25 verification: {error}"
+                ))
+            },
+        )?;
+    }
+    Ok(())
+}
+
+pub fn verify_phase26_folded_intervalized_decoding_state_relation_with_proof_checks(
+    manifest: &Phase26FoldedIntervalizedDecodingStateRelationManifest,
+) -> Result<()> {
+    verify_phase26_folded_intervalized_decoding_state_relation(manifest)?;
+    verify_phase26_folded_intervalized_decoding_state_relation_members_with_proof_checks(manifest)
 }
 
 pub fn save_phase11_decoding_chain(
@@ -5880,6 +7091,32 @@ pub fn load_phase25_intervalized_decoding_state_relation(
     Ok(manifest)
 }
 
+pub fn save_phase26_folded_intervalized_decoding_state_relation(
+    manifest: &Phase26FoldedIntervalizedDecodingStateRelationManifest,
+    path: &Path,
+) -> Result<()> {
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE26_FOLDED_INTERVALIZED_STATE_RELATION_JSON_BYTES,
+        "Phase 26 folded intervalized decoding state relation",
+    )
+}
+
+pub fn load_phase26_folded_intervalized_decoding_state_relation(
+    path: &Path,
+) -> Result<Phase26FoldedIntervalizedDecodingStateRelationManifest> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE26_FOLDED_INTERVALIZED_STATE_RELATION_JSON_BYTES,
+        "Phase 26 folded intervalized decoding state relation",
+    )?;
+    let manifest: Phase26FoldedIntervalizedDecodingStateRelationManifest =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    verify_phase26_folded_intervalized_decoding_state_relation(&manifest)?;
+    Ok(manifest)
+}
+
 pub fn save_phase13_decoding_layout_matrix(
     manifest: &Phase13DecodingLayoutMatrixManifest,
     path: &Path,
@@ -6133,6 +7370,227 @@ pub fn prove_phase23_decoding_cross_step_lookup_accumulator_demo(
     Ok(manifest)
 }
 
+fn phase24_prepare_member_from_proof_window(
+    layout: &Phase12DecodingLayout,
+    proofs: &[VanillaStarkExecutionProof],
+) -> Result<Phase24DecodingStateRelationAccumulatorManifest> {
+    if proofs.len() < 2 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 24 member window requires at least two proofs, got {}",
+            proofs.len()
+        )));
+    }
+
+    let first_phase22 = phase23_prepare_member_from_proof_window(layout, &proofs[..1])?;
+    let second_phase22 = phase23_prepare_member_from_proof_window(layout, proofs)?;
+    let first_member =
+        phase23_prepare_decoding_cross_step_lookup_accumulator(&[first_phase22.clone()])?;
+    let second_member =
+        phase23_prepare_decoding_cross_step_lookup_accumulator(&[first_phase22, second_phase22])?;
+    phase24_prepare_decoding_state_relation_accumulator(&[first_member, second_member])
+}
+
+fn phase25_demo_memory_from_seed(
+    layout: &Phase12DecodingLayout,
+    kv_cache: &[i16],
+    position: usize,
+    incoming_values: &[i16],
+    query_values: &[i16],
+) -> Result<Vec<i16>> {
+    layout.validate()?;
+    let kv_cache_range = layout.kv_cache_range()?;
+    let incoming_token_range = layout.incoming_token_range()?;
+    let query_range = layout.query_range()?;
+    let lookup_range = layout.lookup_range()?;
+    let position_index = layout.position_index()?;
+    let position_increment_index = layout.position_increment_index()?;
+    if kv_cache.len() != kv_cache_range.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 25 demo expected {} KV-cache values, got {}",
+            kv_cache_range.len(),
+            kv_cache.len()
+        )));
+    }
+    if incoming_values.len() != incoming_token_range.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 25 demo expected {} incoming-token values, got {}",
+            incoming_token_range.len(),
+            incoming_values.len()
+        )));
+    }
+    if query_values.len() != query_range.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 25 demo expected {} query values, got {}",
+            query_range.len(),
+            query_values.len()
+        )));
+    }
+
+    let mut memory = vec![0; layout.memory_size()?];
+    memory[kv_cache_range].copy_from_slice(kv_cache);
+    memory[incoming_token_range].copy_from_slice(incoming_values);
+    memory[query_range].copy_from_slice(query_values);
+    write_phase12_noncanonical_lookup_seed(&mut memory, lookup_range);
+    memory[position_index] = position as i16;
+    memory[position_increment_index] = 1;
+    Ok(memory)
+}
+
+fn phase25_demo_seed_palette(pair_width: usize, position: usize) -> Vec<(Vec<i16>, Vec<i16>)> {
+    let base_indices = [position % 3, 0, 1, 2];
+    let mut unique_indices = Vec::with_capacity(base_indices.len());
+    for index in base_indices {
+        if !unique_indices.contains(&index) {
+            unique_indices.push(index);
+        }
+    }
+
+    let mut seeds = Vec::with_capacity(unique_indices.len() * unique_indices.len());
+    for &incoming_index in &unique_indices {
+        for &query_index in &unique_indices {
+            seeds.push((
+                phase12_demo_incoming_values(pair_width, incoming_index),
+                phase12_demo_query_values(pair_width, query_index),
+            ));
+        }
+    }
+    seeds
+}
+
+fn phase25_demo_proofs_for_layout(
+    layout: &Phase12DecodingLayout,
+    positions: usize,
+) -> Result<Vec<VanillaStarkExecutionProof>> {
+    let config = TransformerVmConfig {
+        num_layers: 1,
+        attention_mode: Attention2DMode::AverageHard,
+        ..TransformerVmConfig::default()
+    };
+    let kv_cache_range = layout.kv_cache_range()?;
+    let mut kv_cache = vec![0; kv_cache_range.len()];
+    let mut proofs = Vec::with_capacity(positions);
+    for position in 0..positions {
+        let mut accepted_proof = None;
+        let mut last_overflow = None;
+        for (incoming_values, query_values) in
+            phase25_demo_seed_palette(layout.pair_width, position)
+        {
+            let initial_memory = phase25_demo_memory_from_seed(
+                layout,
+                &kv_cache,
+                position,
+                &incoming_values,
+                &query_values,
+            )?;
+            let program = decoding_step_v2_program_with_initial_memory(layout, initial_memory)?;
+            let model = ProgramCompiler.compile_program(program, config.clone())?;
+            match prove_execution_stark_with_backend_and_options(
+                &model,
+                128,
+                StarkProofBackend::Stwo,
+                production_v1_stark_options(),
+            ) {
+                Ok(proof) => {
+                    kv_cache
+                        .copy_from_slice(&proof.claim.final_state.memory[kv_cache_range.clone()]);
+                    accepted_proof = Some(proof);
+                    break;
+                }
+                Err(VmError::UnsupportedProof(message))
+                    if message.contains("overflowing arithmetic is not supported") =>
+                {
+                    last_overflow = Some(message);
+                }
+                Err(err) => return Err(err),
+            }
+        }
+        let proof = accepted_proof.ok_or_else(|| {
+            let overflow_suffix = last_overflow
+                .as_deref()
+                .map(|message| format!(" last rejection: {message}"))
+                .unwrap_or_default();
+            VmError::InvalidConfig(format!(
+                "Phase 25 demo could not find a bounded proving-safe seed for position {position} after {} deterministic candidates.{overflow_suffix}",
+                phase25_demo_seed_palette(layout.pair_width, position).len(),
+            ))
+        })?;
+        proofs.push(proof);
+    }
+    Ok(proofs)
+}
+
+fn phase25_default_decoding_layouts() -> Result<Vec<Phase12DecodingLayout>> {
+    Ok(vec![
+        Phase12DecodingLayout::new(2, 2)?,
+        Phase12DecodingLayout::new(3, 3)?,
+        phase12_default_decoding_layout(),
+    ])
+}
+
+fn phase25_prepare_cumulative_members_from_proof_prefixes(
+    layout: &Phase12DecodingLayout,
+    proofs: &[VanillaStarkExecutionProof],
+) -> Result<Vec<Phase23DecodingCrossStepLookupAccumulatorManifest>> {
+    if proofs.len() < 2 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 25 interval extraction requires at least two proofs, got {}",
+            proofs.len()
+        )));
+    }
+    let mut phase22_prefixes = Vec::with_capacity(proofs.len());
+    let mut members = Vec::with_capacity(proofs.len());
+    for prefix_len in 1..=proofs.len() {
+        phase22_prefixes.push(phase23_prepare_member_from_proof_window(
+            layout,
+            &proofs[..prefix_len],
+        )?);
+        members.push(phase23_prepare_decoding_cross_step_lookup_accumulator(
+            &phase22_prefixes,
+        )?);
+    }
+    Ok(members)
+}
+
+fn phase25_prepare_intervalized_member_from_cumulative_members(
+    members: &[Phase23DecodingCrossStepLookupAccumulatorManifest],
+    baseline_member: Option<&Phase23DecodingCrossStepLookupAccumulatorManifest>,
+) -> Result<Phase25IntervalizedDecodingStateRelationManifest> {
+    if members.len() < 2 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 25 interval extraction requires at least two cumulative members, got {}",
+            members.len()
+        )));
+    }
+    let first_member = members.first().expect("phase25 members are non-empty");
+    let baseline = baseline_member
+        .map(phase24_rebase_baseline_from_cumulative_member)
+        .unwrap_or_else(phase24_zero_rebase_baseline);
+    phase25_prepare_intervalized_decoding_state_relation_from_phase23_members(
+        members,
+        baseline,
+        &first_member.proof_backend_version,
+        &first_member.statement_version,
+    )
+}
+
+fn phase26_prepare_demo_manifest_for_layout(
+    layout: &Phase12DecodingLayout,
+) -> Result<Phase26FoldedIntervalizedDecodingStateRelationManifest> {
+    let proofs = phase25_demo_proofs_for_layout(layout, 4)?;
+    let cumulative_members =
+        phase25_prepare_cumulative_members_from_proof_prefixes(layout, &proofs)?;
+    let midpoint = cumulative_members.len() / 2;
+    let first_member = phase25_prepare_intervalized_member_from_cumulative_members(
+        &cumulative_members[..midpoint],
+        None,
+    )?;
+    let second_member = phase25_prepare_intervalized_member_from_cumulative_members(
+        &cumulative_members[midpoint..],
+        cumulative_members.get(midpoint - 1),
+    )?;
+    phase26_prepare_folded_intervalized_decoding_state_relation(&[first_member, second_member])
+}
+
 pub fn prove_phase24_decoding_state_relation_accumulator_demo(
 ) -> Result<Phase24DecodingStateRelationAccumulatorManifest> {
     let layout = phase12_default_decoding_layout();
@@ -6149,14 +7607,7 @@ pub fn prove_phase24_decoding_state_relation_accumulator_demo(
         )));
     }
 
-    let first_phase22 = phase23_prepare_member_from_proof_window(&layout, &proofs[..1])?;
-    let second_phase22 = phase23_prepare_member_from_proof_window(&layout, &proofs)?;
-    let first_member =
-        phase23_prepare_decoding_cross_step_lookup_accumulator(&[first_phase22.clone()])?;
-    let second_member =
-        phase23_prepare_decoding_cross_step_lookup_accumulator(&[first_phase22, second_phase22])?;
-    let manifest =
-        phase24_prepare_decoding_state_relation_accumulator(&[first_member, second_member])?;
+    let manifest = phase24_prepare_member_from_proof_window(&layout, &proofs)?;
     verify_phase24_decoding_state_relation_accumulator_with_proof_checks(&manifest)?;
     Ok(manifest)
 }
@@ -6167,6 +7618,28 @@ pub fn prove_phase25_intervalized_decoding_state_relation_demo(
     let manifest = phase25_prepare_intervalized_decoding_state_relation(&source)?;
     verify_phase25_intervalized_decoding_state_relation_with_proof_checks(&manifest)?;
     Ok(manifest)
+}
+
+pub fn prove_phase26_folded_intervalized_decoding_state_relation_demo(
+) -> Result<Phase26FoldedIntervalizedDecodingStateRelationManifest> {
+    let mut last_error = None;
+    for layout in phase25_default_decoding_layouts()? {
+        match phase26_prepare_demo_manifest_for_layout(&layout) {
+            Ok(manifest) => {
+                verify_phase26_folded_intervalized_decoding_state_relation_with_proof_checks(
+                    &manifest,
+                )?;
+                return Ok(manifest);
+            }
+            Err(error) => last_error = Some(error),
+        }
+    }
+    Err(last_error.unwrap_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 26 folded intervalized demo did not have any candidate layouts to try"
+                .to_string(),
+        )
+    }))
 }
 
 fn derive_phase11_state(memory: &[i16], step_index: usize) -> Result<Phase11DecodingState> {
@@ -8956,6 +10429,71 @@ mod kani_phase25_proofs {
     }
 }
 
+#[cfg(kani)]
+mod kani_phase26_proofs {
+    fn phase26_fold_shape_is_valid(
+        first_interval_steps: usize,
+        second_interval_steps: usize,
+        reconstructed_total_steps: usize,
+        first_end_state_tag: u8,
+        second_start_state_tag: u8,
+        bounded_fold_arity: usize,
+        member_count: usize,
+    ) -> bool {
+        first_interval_steps > 0
+            && second_interval_steps > 0
+            && first_interval_steps.checked_add(second_interval_steps)
+                == Some(reconstructed_total_steps)
+            && first_end_state_tag != 0
+            && first_end_state_tag == second_start_state_tag
+            && member_count >= 2
+            && bounded_fold_arity >= member_count
+    }
+
+    #[kani::proof]
+    fn kani_phase26_fold_shape_accepts_contiguous_pair() {
+        assert!(phase26_fold_shape_is_valid(2, 3, 5, 1, 1, 2, 2));
+    }
+
+    #[kani::proof]
+    fn kani_phase26_fold_shape_covers_nonzero_lookup_delta_fold() {
+        let first_interval_steps = (kani::any::<u8>() % 4) as usize + 1;
+        let second_interval_steps = (kani::any::<u8>() % 4) as usize + 1;
+        let reconstructed_total_steps = first_interval_steps + second_interval_steps;
+        let shared_boundary_tag = 1u8 + (kani::any::<u8>() % 2);
+
+        kani::cover!(phase26_fold_shape_is_valid(
+            first_interval_steps,
+            second_interval_steps,
+            reconstructed_total_steps,
+            shared_boundary_tag,
+            shared_boundary_tag,
+            2,
+            2,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase26_fold_shape_rejects_boundary_mismatch() {
+        let first_end_tag = 1u8 + (kani::any::<u8>() % 2);
+        let second_start_tag = if first_end_tag == 1 { 2 } else { 1 };
+        assert!(!phase26_fold_shape_is_valid(
+            1,
+            2,
+            3,
+            first_end_tag,
+            second_start_tag,
+            2,
+            2,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase26_fold_shape_rejects_insufficient_bounded_arity() {
+        assert!(!phase26_fold_shape_is_valid(1, 2, 3, 1, 1, 1, 2));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -8979,6 +10517,7 @@ mod tests {
     use crate::{ProgramCompiler, TransformerVmConfig};
     use proptest::prelude::*;
     use rand::{rngs::StdRng, Rng, SeedableRng};
+    use std::sync::OnceLock;
 
     fn sample_commitments() -> ExecutionClaimCommitments {
         ExecutionClaimCommitments {
@@ -10322,6 +11861,208 @@ mod tests {
         Ok(summaries)
     }
 
+    fn oracle_infer_phase24_rebase_baseline_from_phase25_manifest(
+        manifest: &Phase25IntervalizedDecodingStateRelationManifest,
+    ) -> Result<Phase24RebaseBaseline> {
+        let last_member = manifest.members.last().ok_or_else(|| {
+            VmError::InvalidConfig(
+                "intervalized decoding state relation must contain at least one member".to_string(),
+            )
+        })?;
+        Ok(Phase24RebaseBaseline {
+            total_matrices: last_member
+                .total_matrices
+                .checked_sub(manifest.total_matrices)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "intervalized decoding state relation total_matrices={} exceed the final nested cumulative total {}",
+                        manifest.total_matrices, last_member.total_matrices
+                    ))
+                })?,
+            total_layouts: last_member
+                .total_layouts
+                .checked_sub(manifest.total_layouts)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "intervalized decoding state relation total_layouts={} exceed the final nested cumulative total {}",
+                        manifest.total_layouts, last_member.total_layouts
+                    ))
+                })?,
+            total_rollups: last_member
+                .total_rollups
+                .checked_sub(manifest.total_rollups)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "intervalized decoding state relation total_rollups={} exceed the final nested cumulative total {}",
+                        manifest.total_rollups, last_member.total_rollups
+                    ))
+                })?,
+            total_segments: last_member
+                .total_segments
+                .checked_sub(manifest.total_segments)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "intervalized decoding state relation total_segments={} exceed the final nested cumulative total {}",
+                        manifest.total_segments, last_member.total_segments
+                    ))
+                })?,
+            total_steps: last_member
+                .total_steps
+                .checked_sub(manifest.total_steps)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "intervalized decoding state relation total_steps={} exceed the final nested cumulative total {}",
+                        manifest.total_steps, last_member.total_steps
+                    ))
+                })?,
+            lookup_delta_entries: last_member
+                .lookup_delta_entries
+                .checked_sub(manifest.lookup_delta_entries)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "intervalized decoding state relation lookup_delta_entries={} exceed the final nested cumulative total {}",
+                        manifest.lookup_delta_entries, last_member.lookup_delta_entries
+                    ))
+                })?,
+        })
+    }
+
+    fn oracle_derive_phase24_rebased_member_summaries(
+        members: &[Phase23DecodingCrossStepLookupAccumulatorManifest],
+        baseline: Phase24RebaseBaseline,
+    ) -> Result<Vec<Phase24MemberSummary>> {
+        let mut summaries = Vec::with_capacity(members.len());
+        let mut previous_total_matrices = baseline.total_matrices;
+        let mut previous_total_layouts = baseline.total_layouts;
+        let mut previous_total_rollups = baseline.total_rollups;
+        let mut previous_total_segments = baseline.total_segments;
+        let mut previous_total_steps = baseline.total_steps;
+        let mut previous_lookup_delta_entries = baseline.lookup_delta_entries;
+
+        for (member_index, member) in members.iter().enumerate() {
+            validate_phase23_decoding_cross_step_lookup_accumulator_shallow(member).map_err(
+                |error| {
+                    VmError::InvalidConfig(format!(
+                        "rebased Phase 24 oracle member {member_index} failed shallow Phase 23 validation: {error}"
+                    ))
+                },
+            )?;
+            let expected_lookup_accumulator =
+                oracle_commit_phase23_lookup_accumulator(member).map_err(|error| {
+                    VmError::InvalidConfig(format!(
+                        "rebased Phase 24 oracle member {member_index} failed nested Phase 23 accumulation reconstruction: {error}"
+                    ))
+                })?;
+            if member.accumulator_commitment != expected_lookup_accumulator {
+                return Err(VmError::InvalidConfig(format!(
+                    "rebased Phase 24 oracle member {member_index} accumulator_commitment does not match the oracle-reconstructed Phase 23 lookup accumulator commitment"
+                )));
+            }
+            if member.total_steps <= previous_total_steps {
+                return Err(VmError::InvalidConfig(format!(
+                    "rebased Phase 24 oracle member {member_index} total_steps {} must strictly increase beyond the previous total_steps {}",
+                    member.total_steps, previous_total_steps
+                )));
+            }
+            if member.total_matrices < previous_total_matrices
+                || member.total_layouts < previous_total_layouts
+                || member.total_rollups < previous_total_rollups
+                || member.total_segments < previous_total_segments
+                || member.lookup_delta_entries < previous_lookup_delta_entries
+            {
+                return Err(VmError::InvalidConfig(format!(
+                    "rebased Phase 24 oracle member {member_index} must extend, not shrink, the rebased cumulative member counts"
+                )));
+            }
+
+            let start_state_commitment =
+                oracle_phase24_member_boundary_at_step(member, previous_total_steps)?;
+            let end_state_commitment =
+                oracle_phase24_member_boundary_at_step(member, member.total_steps)?;
+
+            summaries.push(Phase24MemberSummary {
+                start_step: previous_total_steps
+                    .checked_sub(baseline.total_steps)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "rebased Phase 24 oracle member {member_index} start_step underflowed"
+                        ))
+                    })?,
+                end_step: member
+                    .total_steps
+                    .checked_sub(baseline.total_steps)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "rebased Phase 24 oracle member {member_index} end_step underflowed"
+                        ))
+                    })?,
+                total_matrices: member
+                    .total_matrices
+                    .checked_sub(previous_total_matrices)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "rebased Phase 24 oracle member {member_index} total_matrices underflowed while deriving interval counts"
+                        ))
+                    })?,
+                total_layouts: member
+                    .total_layouts
+                    .checked_sub(previous_total_layouts)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "rebased Phase 24 oracle member {member_index} total_layouts underflowed while deriving interval counts"
+                        ))
+                    })?,
+                total_rollups: member
+                    .total_rollups
+                    .checked_sub(previous_total_rollups)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "rebased Phase 24 oracle member {member_index} total_rollups underflowed while deriving interval counts"
+                        ))
+                    })?,
+                total_segments: member
+                    .total_segments
+                    .checked_sub(previous_total_segments)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "rebased Phase 24 oracle member {member_index} total_segments underflowed while deriving interval counts"
+                        ))
+                    })?,
+                total_steps: member
+                    .total_steps
+                    .checked_sub(previous_total_steps)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "rebased Phase 24 oracle member {member_index} total_steps underflowed while deriving interval counts"
+                        ))
+                    })?,
+                lookup_delta_entries: member
+                    .lookup_delta_entries
+                    .checked_sub(previous_lookup_delta_entries)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "rebased Phase 24 oracle member {member_index} lookup_delta_entries underflowed while deriving interval counts"
+                        ))
+                    })?,
+                max_lookup_frontier_entries: member.max_lookup_frontier_entries,
+                source_template_commitment: member.source_template_commitment.clone(),
+                lookup_template_commitment: member.lookup_template_commitment.clone(),
+                lookup_accumulator_commitment: member.accumulator_commitment.clone(),
+                start_state_commitment,
+                end_state_commitment,
+            });
+
+            previous_total_matrices = member.total_matrices;
+            previous_total_layouts = member.total_layouts;
+            previous_total_rollups = member.total_rollups;
+            previous_total_segments = member.total_segments;
+            previous_total_steps = member.total_steps;
+            previous_lookup_delta_entries = member.lookup_delta_entries;
+        }
+
+        Ok(summaries)
+    }
+
     fn oracle_commit_phase24_relation_template(
         manifest: &Phase24DecodingStateRelationAccumulatorManifest,
     ) -> Result<String> {
@@ -10437,7 +12178,9 @@ mod tests {
     fn oracle_commit_phase25_interval_template(
         manifest: &Phase25IntervalizedDecodingStateRelationManifest,
     ) -> Result<String> {
-        let summaries = oracle_summarize_phase24_members(&manifest.members)?;
+        let baseline = oracle_infer_phase24_rebase_baseline_from_phase25_manifest(manifest)?;
+        let summaries =
+            oracle_derive_phase24_rebased_member_summaries(&manifest.members, baseline)?;
         if summaries.len() < 2 {
             return Err(VmError::InvalidConfig(
                 "intervalized decoding state relation must contain at least two members"
@@ -10483,7 +12226,9 @@ mod tests {
         manifest: &Phase25IntervalizedDecodingStateRelationManifest,
     ) -> Result<String> {
         validate_phase25_intervalized_decoding_state_relation_shallow(manifest)?;
-        let summaries = oracle_summarize_phase24_members(&manifest.members)?;
+        let baseline = oracle_infer_phase24_rebase_baseline_from_phase25_manifest(manifest)?;
+        let summaries =
+            oracle_derive_phase24_rebased_member_summaries(&manifest.members, baseline)?;
         if summaries.len() < 2 {
             return Err(VmError::InvalidConfig(
                 "intervalized decoding state relation must contain at least two members"
@@ -10527,6 +12272,175 @@ mod tests {
             parts.push((member.start_step as u64).to_le_bytes().to_vec());
             parts.push((member.end_step as u64).to_le_bytes().to_vec());
             parts.push(member.lookup_accumulator_commitment.as_bytes().to_vec());
+            parts.push(member.start_state_commitment.as_bytes().to_vec());
+            parts.push(member.end_state_commitment.as_bytes().to_vec());
+            parts.push((member.total_matrices as u64).to_le_bytes().to_vec());
+            parts.push((member.total_layouts as u64).to_le_bytes().to_vec());
+            parts.push((member.total_rollups as u64).to_le_bytes().to_vec());
+            parts.push((member.total_segments as u64).to_le_bytes().to_vec());
+            parts.push((member.total_steps as u64).to_le_bytes().to_vec());
+            parts.push((member.lookup_delta_entries as u64).to_le_bytes().to_vec());
+            parts.push(
+                (member.max_lookup_frontier_entries as u64)
+                    .to_le_bytes()
+                    .to_vec(),
+            );
+        }
+        Ok(oracle_blake2b_256(&parts))
+    }
+
+    fn oracle_summarize_phase26_members(
+        members: &[Phase25IntervalizedDecodingStateRelationManifest],
+    ) -> Result<Vec<Phase26MemberSummary>> {
+        let mut summaries = Vec::with_capacity(members.len());
+        let mut cumulative_steps = 0usize;
+
+        for (member_index, member) in members.iter().enumerate() {
+            validate_phase25_intervalized_decoding_state_relation_shallow(member).map_err(
+                |error| {
+                    VmError::InvalidConfig(format!(
+                        "Phase 26 oracle member {member_index} failed shallow Phase 25 validation: {error}"
+                    ))
+                },
+            )?;
+            let expected_interval_template =
+                oracle_commit_phase25_interval_template(member).map_err(|error| {
+                    VmError::InvalidConfig(format!(
+                        "Phase 26 oracle member {member_index} failed interval template reconstruction: {error}"
+                    ))
+                })?;
+            if member.interval_template_commitment != expected_interval_template {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 26 oracle member {member_index} interval_template_commitment does not match the oracle-reconstructed Phase 25 interval template commitment"
+                )));
+            }
+            let expected_interval_accumulator =
+                oracle_commit_phase25_intervalized_state_relation(member).map_err(|error| {
+                    VmError::InvalidConfig(format!(
+                        "Phase 26 oracle member {member_index} failed interval accumulator reconstruction: {error}"
+                    ))
+                })?;
+            if member.interval_accumulator_commitment != expected_interval_accumulator {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 26 oracle member {member_index} interval_accumulator_commitment does not match the oracle-reconstructed Phase 25 interval accumulator commitment"
+                )));
+            }
+            if member.total_steps == 0 {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 26 oracle member {member_index} must cover at least one step"
+                )));
+            }
+            if member.source_template_commitment.is_empty() {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 26 oracle member {member_index} has an empty source_template_commitment"
+                )));
+            }
+            if member.global_start_state_commitment.is_empty()
+                || member.global_end_state_commitment.is_empty()
+            {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 26 oracle member {member_index} has an empty state-boundary commitment"
+                )));
+            }
+
+            let start_step = cumulative_steps;
+            let end_step = cumulative_steps.checked_add(member.total_steps).ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 26 oracle member {member_index} total_steps overflowed while deriving folded intervals"
+                ))
+            })?;
+            summaries.push(Phase26MemberSummary {
+                start_step,
+                end_step,
+                total_matrices: member.total_matrices,
+                total_layouts: member.total_layouts,
+                total_rollups: member.total_rollups,
+                total_segments: member.total_segments,
+                total_steps: member.total_steps,
+                lookup_delta_entries: member.lookup_delta_entries,
+                max_lookup_frontier_entries: member.max_lookup_frontier_entries,
+                source_template_commitment: member.source_template_commitment.clone(),
+                interval_template_commitment: member.interval_template_commitment.clone(),
+                interval_accumulator_commitment: member.interval_accumulator_commitment.clone(),
+                start_state_commitment: member.global_start_state_commitment.clone(),
+                end_state_commitment: member.global_end_state_commitment.clone(),
+            });
+            cumulative_steps = end_step;
+        }
+
+        verify_phase26_fold_sequence(&summaries)?;
+        Ok(summaries)
+    }
+
+    fn oracle_commit_phase26_fold_template(
+        manifest: &Phase26FoldedIntervalizedDecodingStateRelationManifest,
+    ) -> Result<String> {
+        validate_phase26_folded_intervalized_decoding_state_relation_shallow(manifest)?;
+        let summaries = oracle_summarize_phase26_members(&manifest.members)?;
+        let mut parts = vec![
+            STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26
+                .as_bytes()
+                .to_vec(),
+            b"fold-template".to_vec(),
+            (manifest.bounded_fold_arity as u64).to_le_bytes().to_vec(),
+            (summaries.len() as u64).to_le_bytes().to_vec(),
+            manifest.source_template_commitment.as_bytes().to_vec(),
+        ];
+        for (member_index, member) in summaries.iter().enumerate() {
+            parts.push((member_index as u64).to_le_bytes().to_vec());
+            parts.push(member.interval_template_commitment.as_bytes().to_vec());
+            parts.push((member.start_step as u64).to_le_bytes().to_vec());
+            parts.push((member.end_step as u64).to_le_bytes().to_vec());
+            parts.push((member.total_matrices as u64).to_le_bytes().to_vec());
+            parts.push((member.total_layouts as u64).to_le_bytes().to_vec());
+            parts.push((member.total_rollups as u64).to_le_bytes().to_vec());
+            parts.push((member.total_segments as u64).to_le_bytes().to_vec());
+            parts.push((member.total_steps as u64).to_le_bytes().to_vec());
+            parts.push((member.lookup_delta_entries as u64).to_le_bytes().to_vec());
+            parts.push(
+                (member.max_lookup_frontier_entries as u64)
+                    .to_le_bytes()
+                    .to_vec(),
+            );
+        }
+        Ok(oracle_blake2b_256(&parts))
+    }
+
+    fn oracle_commit_phase26_folded_intervalized_state_relation(
+        manifest: &Phase26FoldedIntervalizedDecodingStateRelationManifest,
+    ) -> Result<String> {
+        validate_phase26_folded_intervalized_decoding_state_relation_shallow(manifest)?;
+        let summaries = oracle_summarize_phase26_members(&manifest.members)?;
+        let fold_template_commitment = oracle_commit_phase26_fold_template(manifest)?;
+        let mut parts = vec![
+            STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26
+                .as_bytes()
+                .to_vec(),
+            b"folded-intervalized-state-relation".to_vec(),
+            (manifest.bounded_fold_arity as u64).to_le_bytes().to_vec(),
+            manifest.source_template_commitment.as_bytes().to_vec(),
+            manifest.global_start_state_commitment.as_bytes().to_vec(),
+            manifest.global_end_state_commitment.as_bytes().to_vec(),
+            fold_template_commitment.as_bytes().to_vec(),
+            (summaries.len() as u64).to_le_bytes().to_vec(),
+            (manifest.total_matrices as u64).to_le_bytes().to_vec(),
+            (manifest.total_layouts as u64).to_le_bytes().to_vec(),
+            (manifest.total_rollups as u64).to_le_bytes().to_vec(),
+            (manifest.total_segments as u64).to_le_bytes().to_vec(),
+            (manifest.total_steps as u64).to_le_bytes().to_vec(),
+            (manifest.lookup_delta_entries as u64)
+                .to_le_bytes()
+                .to_vec(),
+            (manifest.max_lookup_frontier_entries as u64)
+                .to_le_bytes()
+                .to_vec(),
+        ];
+        for (member_index, member) in summaries.iter().enumerate() {
+            parts.push((member_index as u64).to_le_bytes().to_vec());
+            parts.push((member.start_step as u64).to_le_bytes().to_vec());
+            parts.push((member.end_step as u64).to_le_bytes().to_vec());
+            parts.push(member.interval_template_commitment.as_bytes().to_vec());
+            parts.push(member.interval_accumulator_commitment.as_bytes().to_vec());
             parts.push(member.start_state_commitment.as_bytes().to_vec());
             parts.push(member.end_state_commitment.as_bytes().to_vec());
             parts.push((member.total_matrices as u64).to_le_bytes().to_vec());
@@ -11510,6 +13424,20 @@ mod tests {
             .expect("phase25 intervalized state relation manifest")
     }
 
+    static PHASE26_SAMPLE_MANIFEST: OnceLock<
+        Phase26FoldedIntervalizedDecodingStateRelationManifest,
+    > = OnceLock::new();
+
+    fn sample_phase26_folded_intervalized_decoding_state_relation_manifest(
+    ) -> Phase26FoldedIntervalizedDecodingStateRelationManifest {
+        PHASE26_SAMPLE_MANIFEST
+            .get_or_init(|| {
+                prove_phase26_folded_intervalized_decoding_state_relation_demo()
+                    .expect("phase26 folded intervalized state relation manifest")
+            })
+            .clone()
+    }
+
     #[test]
     fn decoding_step_family_ignores_initial_memory_but_requires_template() {
         let mut initial = vec![0; 23];
@@ -12044,6 +13972,33 @@ mod tests {
         let _ = fs::remove_file(path);
     }
 
+    fn write_test_gzip_copy(source: &Path, target: &Path) {
+        let bytes = fs::read(source).expect("read source json");
+        let file = fs::File::create(target).expect("create gzip target");
+        let mut encoder = flate2::GzBuilder::new()
+            .mtime(0)
+            .write(file, flate2::Compression::best());
+        encoder.write_all(&bytes).expect("write gzip bytes");
+        encoder.finish().expect("finish gzip copy");
+    }
+
+    #[test]
+    fn phase24_load_accepts_gzip_round_trip() {
+        let manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        let path = std::env::temp_dir().join(format!(
+            "phase24-decoding-state-relation-accumulator-roundtrip-{}.json",
+            std::process::id()
+        ));
+        let gzip_path = path.with_extension("json.gz");
+        save_phase24_decoding_state_relation_accumulator(&manifest, &path).expect("save");
+        write_test_gzip_copy(&path, &gzip_path);
+        let loaded = load_phase24_decoding_state_relation_accumulator(&gzip_path).expect("load");
+        verify_phase24_decoding_state_relation_accumulator(&loaded).expect("verify");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+        let _ = fs::remove_file(gzip_path);
+    }
+
     #[test]
     fn phase25_save_and_load_round_trip() {
         let manifest = sample_phase25_intervalized_decoding_state_relation_manifest();
@@ -12056,6 +14011,55 @@ mod tests {
         verify_phase25_intervalized_decoding_state_relation(&loaded).expect("verify");
         assert_eq!(loaded, manifest);
         let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn phase25_load_accepts_gzip_round_trip() {
+        let manifest = sample_phase25_intervalized_decoding_state_relation_manifest();
+        let path = std::env::temp_dir().join(format!(
+            "phase25-intervalized-decoding-state-relation-roundtrip-{}.json",
+            std::process::id()
+        ));
+        let gzip_path = path.with_extension("json.gz");
+        save_phase25_intervalized_decoding_state_relation(&manifest, &path).expect("save");
+        write_test_gzip_copy(&path, &gzip_path);
+        let loaded = load_phase25_intervalized_decoding_state_relation(&gzip_path).expect("load");
+        verify_phase25_intervalized_decoding_state_relation(&loaded).expect("verify");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+        let _ = fs::remove_file(gzip_path);
+    }
+
+    #[test]
+    fn phase26_save_and_load_round_trip() {
+        let manifest = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
+        let path = std::env::temp_dir().join(format!(
+            "phase26-folded-intervalized-decoding-state-relation-roundtrip-{}.json",
+            std::process::id()
+        ));
+        save_phase26_folded_intervalized_decoding_state_relation(&manifest, &path).expect("save");
+        let loaded = load_phase26_folded_intervalized_decoding_state_relation(&path).expect("load");
+        verify_phase26_folded_intervalized_decoding_state_relation(&loaded).expect("verify");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn phase26_load_accepts_gzip_round_trip() {
+        let manifest = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
+        let path = std::env::temp_dir().join(format!(
+            "phase26-folded-intervalized-decoding-state-relation-roundtrip-{}.json",
+            std::process::id()
+        ));
+        let gzip_path = path.with_extension("json.gz");
+        save_phase26_folded_intervalized_decoding_state_relation(&manifest, &path).expect("save");
+        write_test_gzip_copy(&path, &gzip_path);
+        let loaded =
+            load_phase26_folded_intervalized_decoding_state_relation(&gzip_path).expect("load");
+        verify_phase26_folded_intervalized_decoding_state_relation(&loaded).expect("verify");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+        let _ = fs::remove_file(gzip_path);
     }
 
     #[test]
@@ -12143,6 +14147,28 @@ mod tests {
         assert!(err
             .to_string()
             .contains("start_state_commitment does not match the first member boundary"));
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn load_phase26_folded_intervalized_decoding_state_relation_rejects_tampered_manifest() {
+        let mut manifest = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
+        manifest.global_start_state_commitment = "tampered".to_string();
+        let path = std::env::temp_dir().join(format!(
+            "phase26-folded-intervalized-decoding-state-relation-invalid-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        fs::write(
+            &path,
+            serde_json::to_vec_pretty(&manifest).expect("serialize invalid manifest"),
+        )
+        .expect("write invalid manifest");
+        let err = load_phase26_folded_intervalized_decoding_state_relation(&path)
+            .expect_err("tampered load should fail");
+        assert!(err
+            .to_string()
+            .contains("global_start_state_commitment does not match the first member boundary"));
         let _ = fs::remove_file(path);
     }
 
@@ -12250,6 +14276,34 @@ mod tests {
         let _ = fs::remove_file(&path);
         let err = save_phase25_intervalized_decoding_state_relation(&manifest, &path)
             .expect_err("oversized phase25 intervalized manifest should be rejected on save");
+        assert!(err.to_string().contains("exceeding the limit"));
+        assert!(
+            !path.exists(),
+            "save should not write an unreadable manifest"
+        );
+    }
+
+    #[test]
+    fn save_phase26_folded_intervalized_decoding_state_relation_rejects_manifest_exceeding_json_budget(
+    ) {
+        let mut manifest = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
+        manifest.members[0].members[0].members[0]
+            .accumulator
+            .matrices[0]
+            .rollups[0]
+            .rollups[0]
+            .segments[0]
+            .chain
+            .steps[0]
+            .proof
+            .proof = vec![0; MAX_PHASE26_FOLDED_INTERVALIZED_STATE_RELATION_JSON_BYTES];
+        let path = std::env::temp_dir().join(format!(
+            "phase26-folded-intervalized-decoding-state-relation-save-oversized-{}.json",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&path);
+        let err = save_phase26_folded_intervalized_decoding_state_relation(&manifest, &path)
+            .expect_err("oversized phase26 folded manifest should be rejected on save");
         assert!(err.to_string().contains("exceeding the limit"));
         assert!(
             !path.exists(),
@@ -12443,6 +14497,18 @@ mod tests {
             MAX_PHASE25_INTERVALIZED_STATE_RELATION_JSON_BYTES,
             &manifest,
             save_phase25_intervalized_decoding_state_relation,
+        );
+    }
+
+    #[test]
+    fn phase26_demo_manifest_fits_json_budget() {
+        let manifest = prove_phase26_folded_intervalized_decoding_state_relation_demo()
+            .expect("phase26 folded intervalized state relation demo");
+        assert_saved_json_budget(
+            "phase26-demo",
+            MAX_PHASE26_FOLDED_INTERVALIZED_STATE_RELATION_JSON_BYTES,
+            &manifest,
+            save_phase26_folded_intervalized_decoding_state_relation,
         );
     }
 
@@ -14798,6 +16864,174 @@ mod tests {
         let oracle_accumulator = oracle_commit_phase25_intervalized_state_relation(&manifest)
             .expect("oracle interval accumulator");
         assert_ne!(manifest.interval_accumulator_commitment, oracle_accumulator);
+    }
+
+    #[test]
+    fn phase26_folded_intervalized_state_relation_accepts_contiguous_members() {
+        let manifest = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
+        assert_eq!(manifest.member_count, 2);
+        assert_eq!(manifest.bounded_fold_arity, 2);
+        assert_eq!(manifest.member_summaries.len(), 2);
+        assert!(manifest.total_steps >= 2);
+        assert_eq!(manifest.member_summaries[0].start_step, 0);
+        assert_eq!(
+            manifest.member_summaries[1].start_state_commitment,
+            manifest.member_summaries[0].end_state_commitment
+        );
+        verify_phase26_folded_intervalized_decoding_state_relation(&manifest)
+            .expect("phase26 folded intervalized verification");
+    }
+
+    #[test]
+    fn phase26_folded_intervalized_state_relation_rejects_tampered_folded_interval_accumulator_commitment(
+    ) {
+        let mut manifest = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
+        manifest.folded_interval_accumulator_commitment = "tampered".to_string();
+        let err =
+            verify_phase26_folded_intervalized_decoding_state_relation(&manifest).unwrap_err();
+        assert!(err.to_string().contains(
+            "folded_interval_accumulator_commitment does not match the computed folded interval accumulator commitment"
+        ));
+    }
+
+    #[test]
+    fn phase26_folded_intervalized_state_relation_rejects_tampered_fold_template_commitment() {
+        let mut manifest = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
+        manifest.fold_template_commitment = "tampered".to_string();
+        let err =
+            verify_phase26_folded_intervalized_decoding_state_relation(&manifest).unwrap_err();
+        assert!(err.to_string().contains(
+            "fold_template_commitment does not match the computed fold template commitment"
+        ));
+    }
+
+    #[test]
+    fn phase26_folded_intervalized_state_relation_rejects_tampered_lookup_delta_entries() {
+        let mut manifest = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
+        manifest.lookup_delta_entries = manifest.lookup_delta_entries.saturating_add(1);
+        let err =
+            verify_phase26_folded_intervalized_decoding_state_relation(&manifest).unwrap_err();
+        assert!(err.to_string().contains("lookup_delta_entries="));
+        assert!(err
+            .to_string()
+            .contains("does not match derived lookup_delta_entries"));
+    }
+
+    #[test]
+    fn phase26_folded_intervalized_state_relation_rejects_tampered_member_summaries() {
+        let mut manifest = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
+        manifest.member_summaries[1].start_step = 99;
+        let err =
+            verify_phase26_folded_intervalized_decoding_state_relation(&manifest).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("member_summaries do not match the derived fold summaries"));
+    }
+
+    #[test]
+    fn phase26_folded_intervalized_state_relation_rejects_oversized_manifest_before_nested_checks()
+    {
+        let seed = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
+        let mut manifest = seed.clone();
+        manifest.members =
+            vec![seed.members[0].clone(); MAX_PHASE26_FOLDED_INTERVALIZED_MEMBERS + 1];
+        manifest.member_summaries = vec![seed.member_summaries[0].clone(); manifest.members.len()];
+        manifest.member_count = manifest.members.len();
+        manifest.members[0].members.clear();
+
+        let err =
+            verify_phase26_folded_intervalized_decoding_state_relation(&manifest).unwrap_err();
+        assert!(err.to_string().contains("members.len()="));
+        assert!(err.to_string().contains("exceeds the supported maximum"));
+    }
+
+    #[test]
+    fn phase26_folded_intervalized_state_relation_rejects_empty_commitments_before_nested_checks() {
+        let seed = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
+
+        let mut empty_source = seed.clone();
+        empty_source.source_template_commitment.clear();
+        empty_source.members[0].members.clear();
+        let err =
+            verify_phase26_folded_intervalized_decoding_state_relation(&empty_source).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("source_template_commitment must not be empty"));
+
+        let mut empty_global_boundary = seed.clone();
+        empty_global_boundary.global_start_state_commitment.clear();
+        empty_global_boundary.members[0].members.clear();
+        let err =
+            verify_phase26_folded_intervalized_decoding_state_relation(&empty_global_boundary)
+                .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("global state-boundary commitments must not be empty"));
+
+        let mut empty_fold_template = seed.clone();
+        empty_fold_template.fold_template_commitment.clear();
+        empty_fold_template.members[0].members.clear();
+        let err = verify_phase26_folded_intervalized_decoding_state_relation(&empty_fold_template)
+            .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("fold_template_commitment must not be empty"));
+
+        let mut empty_folded_accumulator = seed;
+        empty_folded_accumulator
+            .folded_interval_accumulator_commitment
+            .clear();
+        empty_folded_accumulator.members[0].members.clear();
+        let err =
+            verify_phase26_folded_intervalized_decoding_state_relation(&empty_folded_accumulator)
+                .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("folded_interval_accumulator_commitment must not be empty"));
+    }
+
+    #[test]
+    fn phase26_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks() {
+        let mut manifest = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
+        manifest.statement_version = "statement-v2".to_string();
+        manifest.members[0].members.clear();
+
+        let err =
+            verify_phase26_folded_intervalized_decoding_state_relation(&manifest).unwrap_err();
+        assert!(err.to_string().contains(
+            "unsupported folded intervalized decoding state relation statement version `statement-v2`"
+        ));
+    }
+
+    #[test]
+    fn phase26_oracle_matches_production_commitments() {
+        let manifest = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
+        verify_phase26_folded_intervalized_decoding_state_relation(&manifest)
+            .expect("production verifier");
+        let oracle_fold_template =
+            oracle_commit_phase26_fold_template(&manifest).expect("oracle fold template");
+        let oracle_folded_accumulator =
+            oracle_commit_phase26_folded_intervalized_state_relation(&manifest)
+                .expect("oracle folded interval accumulator");
+        assert_eq!(manifest.fold_template_commitment, oracle_fold_template);
+        assert_eq!(
+            manifest.folded_interval_accumulator_commitment,
+            oracle_folded_accumulator
+        );
+    }
+
+    #[test]
+    fn phase26_oracle_and_production_reject_same_accumulator_tamper() {
+        let mut manifest = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
+        manifest.folded_interval_accumulator_commitment = "tampered".to_string();
+        assert!(verify_phase26_folded_intervalized_decoding_state_relation(&manifest).is_err());
+        let oracle_folded_accumulator =
+            oracle_commit_phase26_folded_intervalized_state_relation(&manifest)
+                .expect("oracle folded interval accumulator");
+        assert_ne!(
+            manifest.folded_interval_accumulator_commitment,
+            oracle_folded_accumulator
+        );
     }
 
     #[test]

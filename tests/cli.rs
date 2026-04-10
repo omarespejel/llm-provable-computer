@@ -6,9 +6,13 @@ use assert_cmd::Command;
 use blake2::digest::{Update, VariableOutput};
 #[cfg(any(feature = "onnx-export", feature = "stwo-backend"))]
 use blake2::Blake2bVar;
+#[cfg(feature = "stwo-backend")]
+use flate2::GzBuilder;
 #[cfg(feature = "onnx-export")]
 use jsonschema::{Draft, JSONSchema};
 use predicates::prelude::*;
+#[cfg(feature = "stwo-backend")]
+use std::io::Write;
 
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::stwo_backend::{
@@ -22,6 +26,7 @@ use llm_provable_computer::stwo_backend::{
     STWO_DECODING_MATRIX_ACCUMULATOR_VERSION_PHASE21, STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17,
     STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15, STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16,
     STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24,
+    STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26,
     STWO_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE25,
     STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12,
 };
@@ -32,6 +37,17 @@ fn unique_temp_dir(name: &str) -> PathBuf {
         .expect("clock")
         .as_nanos();
     std::env::temp_dir().join(format!("llm-provable-computer-{name}-{suffix}"))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn write_test_gzip_copy(source: &std::path::Path, target: &std::path::Path) {
+    let bytes = std::fs::read(source).expect("read source json");
+    let file = std::fs::File::create(target).expect("create gzip target");
+    let mut encoder = GzBuilder::new()
+        .mtime(0)
+        .write(file, flate2::Compression::best());
+    encoder.write_all(&bytes).expect("write gzip bytes");
+    encoder.finish().expect("finish gzip copy");
 }
 
 #[cfg(feature = "onnx-export")]
@@ -2637,6 +2653,249 @@ fn cli_verify_stwo_intervalized_decoding_state_relation_demo_rejects_tampered_lo
         .stderr(predicate::str::contains("lookup_delta_entries="))
         .stderr(predicate::str::contains(
             "does not match derived lookup_delta_entries",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_can_prove_and_verify_stwo_folded_intervalized_decoding_state_relation_demo() {
+    let proof_path = unique_temp_dir("cli-stwo-folded-intervalized-decoding-state-relation-proof")
+        .with_extension("json");
+    let gzip_path = proof_path.with_extension("json.gz");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-folded-intervalized-decoding-state-relation-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("proof_backend: stwo"))
+        .stdout(predicate::str::contains(format!(
+            "artifact_version: {STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26}",
+        )))
+        .stdout(predicate::str::contains("bounded_fold_arity:"))
+        .stdout(predicate::str::contains("lookup_delta_entries:"));
+
+    let proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    assert_eq!(
+        proof_json
+            .get("artifact_version")
+            .and_then(serde_json::Value::as_str),
+        Some(STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26)
+    );
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-folded-intervalized-decoding-state-relation-demo")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(format!(
+            "expected_artifact_version: {STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26}",
+        )))
+        .stdout(predicate::str::contains(format!(
+            "expected_proof_backend_version: {STWO_BACKEND_VERSION_PHASE12}",
+        )));
+
+    write_test_gzip_copy(&proof_path, &gzip_path);
+
+    let mut verify_gzip = Command::cargo_bin("tvm").expect("binary");
+    verify_gzip
+        .arg("verify-stwo-folded-intervalized-decoding-state-relation-demo")
+        .arg(&gzip_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(format!(
+            "expected_artifact_version: {STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26}",
+        )));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(gzip_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_corrupt_gzip() {
+    let proof_path = unique_temp_dir("cli-stwo-folded-intervalized-decoding-state-relation-gzip")
+        .with_extension("json");
+    let gzip_path = proof_path.with_extension("json.gz");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-folded-intervalized-decoding-state-relation-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    write_test_gzip_copy(&proof_path, &gzip_path);
+    let mut bytes = std::fs::read(&gzip_path).expect("read gzip");
+    bytes.truncate(bytes.len().saturating_sub(8));
+    std::fs::write(&gzip_path, bytes).expect("write corrupt gzip");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-folded-intervalized-decoding-state-relation-demo")
+        .arg(&gzip_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("could not be decompressed as gzip"))
+        .stderr(predicate::str::contains("panicked at").not());
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(gzip_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_tampered_fold_template()
+{
+    let proof_path =
+        unique_temp_dir("cli-stwo-folded-intervalized-decoding-state-relation-template")
+            .with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-folded-intervalized-decoding-state-relation-template-tampered")
+            .with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-folded-intervalized-decoding-state-relation-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    let original = proof_json["fold_template_commitment"]
+        .as_str()
+        .expect("fold_template_commitment")
+        .to_string();
+    let mut tampered = original.clone();
+    let replacement = if original.starts_with("00") {
+        "ff"
+    } else {
+        "00"
+    };
+    tampered.replace_range(0..2, replacement);
+    proof_json["fold_template_commitment"] = serde_json::Value::String(tampered);
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "fold_template_commitment does not match the computed fold template commitment",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_tampered_lookup_delta_entries(
+) {
+    let proof_path = unique_temp_dir("cli-stwo-folded-intervalized-decoding-state-relation-delta")
+        .with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-folded-intervalized-decoding-state-relation-delta-tampered")
+            .with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-folded-intervalized-decoding-state-relation-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    let value = proof_json["lookup_delta_entries"]
+        .as_u64()
+        .expect("lookup_delta_entries");
+    proof_json["lookup_delta_entries"] = serde_json::Value::from(value.saturating_add(1));
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("lookup_delta_entries="))
+        .stderr(predicate::str::contains(
+            "does not match derived lookup_delta_entries",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_tampered_member_continuity(
+) {
+    let proof_path = unique_temp_dir("cli-stwo-folded-intervalized-decoding-state-relation-order")
+        .with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-folded-intervalized-decoding-state-relation-order-tampered")
+            .with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-folded-intervalized-decoding-state-relation-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    let members = proof_json["members"].as_array_mut().expect("members array");
+    assert!(members.len() >= 2, "phase26 demo must emit at least two members");
+    members.swap(0, 1);
+    let summaries = proof_json["member_summaries"]
+        .as_array_mut()
+        .expect("member_summaries array");
+    summaries.swap(0, 1);
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "does not preserve the carried-state commitment",
         ));
 
     let _ = std::fs::remove_file(proof_path);
