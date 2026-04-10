@@ -8857,19 +8857,19 @@ mod kani_phase25_proofs {
                 == Some(interval_lookup_delta_entries)
     }
 
-    fn phase25_interval_reconstruction_is_valid(
+    fn phase25_interval_reconstruction_shape_is_valid(
         first_interval_steps: usize,
         second_interval_steps: usize,
         reconstructed_total_steps: usize,
-        first_end_state_commitment: &str,
-        second_start_state_commitment: &str,
+        first_end_state_tag: u8,
+        second_start_state_tag: u8,
     ) -> bool {
         first_interval_steps > 0
             && second_interval_steps > 0
             && first_interval_steps.checked_add(second_interval_steps)
                 == Some(reconstructed_total_steps)
-            && !first_end_state_commitment.is_empty()
-            && first_end_state_commitment == second_start_state_commitment
+            && first_end_state_tag != 0
+            && first_end_state_tag == second_start_state_tag
     }
 
     #[kani::proof]
@@ -8928,14 +8928,14 @@ mod kani_phase25_proofs {
 
     #[kani::proof]
     fn kani_phase25_interval_reconstruction_rejects_boundary_mismatch() {
-        let first_end = if kani::any::<bool>() { "s1" } else { "not-s1" };
-        let second_start = if first_end == "s1" { "not-s1" } else { "s1" };
-        assert!(!phase25_interval_reconstruction_is_valid(
+        let first_end_tag = 1u8 + (kani::any::<u8>() % 2);
+        let second_start_tag = if first_end_tag == 1 { 2 } else { 1 };
+        assert!(!phase25_interval_reconstruction_shape_is_valid(
             1,
             2,
             3,
-            first_end,
-            second_start,
+            first_end_tag,
+            second_start_tag,
         ));
     }
 
@@ -8944,14 +8944,14 @@ mod kani_phase25_proofs {
         let first_interval_steps = (kani::any::<u8>() % 4) as usize + 1;
         let second_interval_steps = (kani::any::<u8>() % 4) as usize + 1;
         let reconstructed_total_steps = first_interval_steps + second_interval_steps;
-        let shared_boundary = if kani::any::<bool>() { "s1" } else { "s2" };
+        let shared_boundary_tag = 1u8 + (kani::any::<u8>() % 2);
 
-        kani::cover!(phase25_interval_reconstruction_is_valid(
+        kani::cover!(phase25_interval_reconstruction_shape_is_valid(
             first_interval_steps,
             second_interval_steps,
             reconstructed_total_steps,
-            shared_boundary,
-            shared_boundary,
+            shared_boundary_tag,
+            shared_boundary_tag,
         ));
     }
 }
