@@ -35,6 +35,18 @@ KANI_ARGS=(
   kani_phase24_relation_sequence_rejects_non_contiguous_steps
   --harness
   kani_phase24_relation_sequence_rejects_boundary_mismatch
+  --harness
+  kani_phase25_interval_counts_accept_checked_differences
+  --harness
+  kani_phase25_interval_counts_cover_positive_nonzero_lookup_delta_case
+  --harness
+  kani_phase25_interval_counts_reject_underflow
+  --harness
+  kani_phase25_interval_counts_reject_zero_width_interval
+  --harness
+  kani_phase25_interval_reconstruction_rejects_boundary_mismatch
+  --harness
+  kani_phase25_interval_reconstruction_covers_contiguous_pair
 )
 
 "${KANI_ARGS[@]}"
