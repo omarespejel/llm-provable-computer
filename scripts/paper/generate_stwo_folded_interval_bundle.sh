@@ -41,6 +41,14 @@ SUMMARY_TSV="$BUNDLE_DIR/artifact_summary.tsv"
 SHA256S="$BUNDLE_DIR/sha256sums.txt"
 INDEX_MD="$BUNDLE_DIR/APPENDIX_ARTIFACT_INDEX.md"
 README_MD="$BUNDLE_DIR/README.md"
+CANONICAL_CHECKSUM_FILES=(
+  artifact_summary.tsv
+  APPENDIX_ARTIFACT_INDEX.md
+  README.md
+  decoding-phase24.state-relation-accumulator.json.gz
+  decoding-phase25.intervalized-state-relation.json.gz
+  decoding-phase26.folded-intervalized-state-relation.json.gz
+)
 
 : > "$COMMANDS_LOG"
 printf 'label\tseconds\n' > "$BENCHMARKS"
@@ -107,7 +115,7 @@ for artifact in \
   "$BUNDLE_DIR/decoding-phase25.intervalized-state-relation.json" \
   "$BUNDLE_DIR/decoding-phase26.folded-intervalized-state-relation.json"
 do
-  gzip -9 -c "$artifact" > "$artifact.gz"
+  gzip -n -9 -c "$artifact" > "$artifact.gz"
   rm -f "$artifact"
 done
 
@@ -277,16 +285,6 @@ readme_md.write_text(
 )
 PY
 
-(cd "$BUNDLE_DIR" && shasum -a 256 \
-  manifest.txt \
-  benchmarks.tsv \
-  commands.log \
-  artifact_summary.tsv \
-  APPENDIX_ARTIFACT_INDEX.md \
-  README.md \
-  decoding-phase24.state-relation-accumulator.json.gz \
-  decoding-phase25.intervalized-state-relation.json.gz \
-  decoding-phase26.folded-intervalized-state-relation.json.gz \
-  > "$SHA256S")
+(cd "$BUNDLE_DIR" && shasum -a 256 "${CANONICAL_CHECKSUM_FILES[@]}" > "$SHA256S")
 
 echo "Generated folded interval artifact bundle at $BUNDLE_DIR"

@@ -4,9 +4,9 @@ This bundle freezes the carried-state relation progression from cumulative Phase
 
 | Phase | Artifact | Purpose | Prove (s) | Verify (s) | Size (bytes) | Total steps | Members | Fold arity |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Phase 24 | `decoding-phase24.state-relation-accumulator.json.gz` | Carried-state relation accumulator over cumulative Phase 23 prefixes | 37 | 9 | 431561 | 3 | 2 |  |
-| Phase 25 | `decoding-phase25.intervalized-state-relation.json.gz` | Intervalized carried-state relation artifact over rebased cumulative prefixes | 49 | 21 | 431625 | 3 | 2 |  |
-| Phase 26 | `decoding-phase26.folded-intervalized-state-relation.json.gz` | Folded accumulator over Phase 25 interval artifacts | 258 | 122 | 1712975 | 4 | 2 | 2 |
+| Phase 24 | `decoding-phase24.state-relation-accumulator.json.gz` | Carried-state relation accumulator over cumulative Phase 23 prefixes | 7 | 3 | 431512 | 3 | 2 |  |
+| Phase 25 | `decoding-phase25.intervalized-state-relation.json.gz` | Intervalized carried-state relation artifact over rebased cumulative prefixes | 10 | 7 | 431575 | 3 | 2 |  |
+| Phase 26 | `decoding-phase26.folded-intervalized-state-relation.json.gz` | Folded accumulator over Phase 25 interval artifacts | 33 | 23 | 1712918 | 4 | 2 | 2 |
 
 The Phase 25 artifact is the first honest intervalized carried-state artifact in this sequence.
 The Phase 26 artifact folds real Phase 25 intervals rather than reusing the obsolete cumulative-prefix interpretation.

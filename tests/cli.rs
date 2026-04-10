@@ -2793,6 +2793,53 @@ fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_tamp
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_reordered_members() {
+    let proof_path = unique_temp_dir("cli-stwo-folded-intervalized-decoding-state-relation-order")
+        .with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-folded-intervalized-decoding-state-relation-order-tampered")
+            .with_extension("json");
+
+    let mut prove = Command::cargo_bin("tvm").expect("binary");
+    prove
+        .arg("prove-stwo-folded-intervalized-decoding-state-relation-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    let members = proof_json["members"].as_array_mut().expect("members array");
+    assert!(members.len() >= 2, "phase26 demo must emit at least two members");
+    members.swap(0, 1);
+    let summaries = proof_json["member_summaries"]
+        .as_array_mut()
+        .expect("member_summaries array");
+    summaries.swap(0, 1);
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec_pretty(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = Command::cargo_bin("tvm").expect("binary");
+    verify
+        .arg("verify-stwo-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "does not preserve the carried-state commitment",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_can_prepare_stwo_recursion_batch_manifest() {
     let proof_a = unique_temp_dir("cli-stwo-recursion-proof-a").with_extension("json");
     let proof_b = unique_temp_dir("cli-stwo-recursion-proof-b").with_extension("json");
