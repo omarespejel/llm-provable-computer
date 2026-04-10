@@ -68,6 +68,10 @@ BUNDLE_DIR="$CANON_BUNDLE_DIR"
 REL_BUNDLE_DIR="$(relpath_from "$BUNDLE_DIR" "$REPO_ROOT")"
 REL_TVM_BIN="$(relpath_from "$TVM_BIN" "$REPO_ROOT")"
 rm -rf -- "$BUNDLE_DIR"
+if [ -n "$(git status --porcelain --untracked-files=normal)" ]; then
+  echo "Refusing to generate frozen bundle from a dirty worktree; commit or stash local changes first" >&2
+  exit 1
+fi
 mkdir -p "$BUNDLE_DIR"
 
 MANIFEST="$BUNDLE_DIR/manifest.txt"
@@ -233,6 +237,9 @@ artifacts = [
         "pre-recursive carried-state relation boundary accumulator",
         "prove_decoding_state_relation_accumulator_phase24_stwo",
         "verify_decoding_state_relation_accumulator_phase24_stwo",
+        "accumulator_version",
+        "stwo-phase24-decoding-state-relation-accumulator-v1",
+        "stwo_execution_parameterized_proof_carrying_decoding_state_relation_accumulator",
     ),
     (
         "decoding-phase25.intervalized-state-relation.json.gz",
@@ -241,6 +248,9 @@ artifacts = [
         "honest intervalization over real carried-state intervals",
         "prove_intervalized_decoding_state_relation_phase25_stwo",
         "verify_intervalized_decoding_state_relation_phase25_stwo",
+        "artifact_version",
+        "stwo-phase25-intervalized-decoding-state-relation-v1",
+        "stwo_execution_parameterized_intervalized_proof_carrying_decoding_state_relation",
     ),
     (
         "decoding-phase26.folded-intervalized-state-relation.json.gz",
@@ -249,6 +259,9 @@ artifacts = [
         "bounded pre-recursive folding over carried-state intervals",
         "prove_folded_intervalized_decoding_state_relation_phase26_stwo",
         "verify_folded_intervalized_decoding_state_relation_phase26_stwo",
+        "artifact_version",
+        "stwo-phase26-folded-intervalized-decoding-state-relation-v1",
+        "stwo_execution_parameterized_folded_intervalized_proof_carrying_decoding_state_relation",
     ),
     (
         "decoding-phase27.chained-folded-intervalized-state-relation.json.gz",
@@ -257,6 +270,9 @@ artifacts = [
         "bounded pre-recursive chained folding over real carried-state intervals",
         "prove_chained_folded_intervalized_decoding_state_relation_phase27_stwo",
         "verify_chained_folded_intervalized_decoding_state_relation_phase27_stwo",
+        "artifact_version",
+        "stwo-phase27-chained-folded-intervalized-decoding-state-relation-v1",
+        "stwo_execution_parameterized_chained_folded_intervalized_proof_carrying_decoding_state_relation",
     ),
 ]
 
@@ -270,6 +286,24 @@ def sha256(path: Path) -> str:
 def load_json(path: Path):
     with gzip.open(path, "rt") as f:
         return json.load(f)
+
+def validate_contract(name, data, version_field, expected_version, expected_scope):
+    if data.get("proof_backend") != "stwo":
+        raise SystemExit(
+            f"{name}: expected proof_backend=stwo, got {data.get('proof_backend')!r}"
+        )
+    if data.get(version_field) != expected_version:
+        raise SystemExit(
+            f"{name}: expected {version_field}={expected_version!r}, got {data.get(version_field)!r}"
+        )
+    if data.get("semantic_scope") != expected_scope:
+        raise SystemExit(
+            f"{name}: expected semantic_scope={expected_scope!r}, got {data.get('semantic_scope')!r}"
+        )
+    if data.get("statement_version") != "statement-v1":
+        raise SystemExit(
+            f"{name}: expected statement_version='statement-v1', got {data.get('statement_version')!r}"
+        )
 
 def extract_stats(data):
     return {
@@ -295,9 +329,20 @@ with (bundle / "benchmarks.tsv").open() as f:
         benchmarks[label] = seconds
 
 summary_rows = []
-for name, phase, purpose, scope, prove_label, verify_label in artifacts:
+for (
+    name,
+    phase,
+    purpose,
+    scope,
+    prove_label,
+    verify_label,
+    version_field,
+    expected_version,
+    expected_scope,
+) in artifacts:
     path = bundle / name
     data = load_json(path)
+    validate_contract(name, data, version_field, expected_version, expected_scope)
     stats = extract_stats(data)
     summary_rows.append({
         "artifact": name,
