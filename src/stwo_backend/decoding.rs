@@ -5,6 +5,7 @@ use std::path::Path;
 
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
+use flate2::read::GzDecoder;
 use serde::{Deserialize, Serialize};
 
 use crate::assembly::parse_program;
@@ -872,6 +873,26 @@ fn read_json_bytes_with_limit(path: &Path, max_bytes: usize, label: &str) -> Res
         )));
     }
     let file = fs::File::open(path)?;
+    let is_gzip = matches!(path.extension().and_then(|ext| ext.to_str()), Some("gz"));
+    if is_gzip {
+        let mut limited = GzDecoder::new(file).take((max_bytes as u64).saturating_add(1));
+        let mut bytes = Vec::new();
+        limited.read_to_end(&mut bytes).map_err(|error| {
+            VmError::InvalidConfig(format!(
+                "{label} `{}` could not be decompressed as gzip: {error}",
+                path.display()
+            ))
+        })?;
+        if bytes.len() > max_bytes {
+            return Err(VmError::InvalidConfig(format!(
+                "{label} `{}` decompresses to {} bytes, exceeding the limit of {} bytes",
+                path.display(),
+                bytes.len(),
+                max_bytes
+            )));
+        }
+        return Ok(bytes);
+    }
     if metadata.len() > max_bytes as u64 {
         return Err(VmError::InvalidConfig(format!(
             "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
@@ -13951,6 +13972,33 @@ mod tests {
         let _ = fs::remove_file(path);
     }
 
+    fn write_test_gzip_copy(source: &Path, target: &Path) {
+        let bytes = fs::read(source).expect("read source json");
+        let file = fs::File::create(target).expect("create gzip target");
+        let mut encoder = flate2::GzBuilder::new()
+            .mtime(0)
+            .write(file, flate2::Compression::best());
+        encoder.write_all(&bytes).expect("write gzip bytes");
+        encoder.finish().expect("finish gzip copy");
+    }
+
+    #[test]
+    fn phase24_load_accepts_gzip_round_trip() {
+        let manifest = sample_phase24_decoding_state_relation_accumulator_manifest();
+        let path = std::env::temp_dir().join(format!(
+            "phase24-decoding-state-relation-accumulator-roundtrip-{}.json",
+            std::process::id()
+        ));
+        let gzip_path = path.with_extension("json.gz");
+        save_phase24_decoding_state_relation_accumulator(&manifest, &path).expect("save");
+        write_test_gzip_copy(&path, &gzip_path);
+        let loaded = load_phase24_decoding_state_relation_accumulator(&gzip_path).expect("load");
+        verify_phase24_decoding_state_relation_accumulator(&loaded).expect("verify");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+        let _ = fs::remove_file(gzip_path);
+    }
+
     #[test]
     fn phase25_save_and_load_round_trip() {
         let manifest = sample_phase25_intervalized_decoding_state_relation_manifest();
@@ -13966,6 +14014,23 @@ mod tests {
     }
 
     #[test]
+    fn phase25_load_accepts_gzip_round_trip() {
+        let manifest = sample_phase25_intervalized_decoding_state_relation_manifest();
+        let path = std::env::temp_dir().join(format!(
+            "phase25-intervalized-decoding-state-relation-roundtrip-{}.json",
+            std::process::id()
+        ));
+        let gzip_path = path.with_extension("json.gz");
+        save_phase25_intervalized_decoding_state_relation(&manifest, &path).expect("save");
+        write_test_gzip_copy(&path, &gzip_path);
+        let loaded = load_phase25_intervalized_decoding_state_relation(&gzip_path).expect("load");
+        verify_phase25_intervalized_decoding_state_relation(&loaded).expect("verify");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+        let _ = fs::remove_file(gzip_path);
+    }
+
+    #[test]
     fn phase26_save_and_load_round_trip() {
         let manifest = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
         let path = std::env::temp_dir().join(format!(
@@ -13977,6 +14042,24 @@ mod tests {
         verify_phase26_folded_intervalized_decoding_state_relation(&loaded).expect("verify");
         assert_eq!(loaded, manifest);
         let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn phase26_load_accepts_gzip_round_trip() {
+        let manifest = sample_phase26_folded_intervalized_decoding_state_relation_manifest();
+        let path = std::env::temp_dir().join(format!(
+            "phase26-folded-intervalized-decoding-state-relation-roundtrip-{}.json",
+            std::process::id()
+        ));
+        let gzip_path = path.with_extension("json.gz");
+        save_phase26_folded_intervalized_decoding_state_relation(&manifest, &path).expect("save");
+        write_test_gzip_copy(&path, &gzip_path);
+        let loaded =
+            load_phase26_folded_intervalized_decoding_state_relation(&gzip_path).expect("load");
+        verify_phase26_folded_intervalized_decoding_state_relation(&loaded).expect("verify");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+        let _ = fs::remove_file(gzip_path);
     }
 
     #[test]

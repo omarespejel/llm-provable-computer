@@ -6,9 +6,13 @@ use assert_cmd::Command;
 use blake2::digest::{Update, VariableOutput};
 #[cfg(any(feature = "onnx-export", feature = "stwo-backend"))]
 use blake2::Blake2bVar;
+#[cfg(feature = "stwo-backend")]
+use flate2::GzBuilder;
 #[cfg(feature = "onnx-export")]
 use jsonschema::{Draft, JSONSchema};
 use predicates::prelude::*;
+#[cfg(feature = "stwo-backend")]
+use std::io::Write;
 
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::stwo_backend::{
@@ -33,6 +37,17 @@ fn unique_temp_dir(name: &str) -> PathBuf {
         .expect("clock")
         .as_nanos();
     std::env::temp_dir().join(format!("llm-provable-computer-{name}-{suffix}"))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn write_test_gzip_copy(source: &std::path::Path, target: &std::path::Path) {
+    let bytes = std::fs::read(source).expect("read source json");
+    let file = std::fs::File::create(target).expect("create gzip target");
+    let mut encoder = GzBuilder::new()
+        .mtime(0)
+        .write(file, flate2::Compression::best());
+    encoder.write_all(&bytes).expect("write gzip bytes");
+    encoder.finish().expect("finish gzip copy");
 }
 
 #[cfg(feature = "onnx-export")]
@@ -2649,6 +2664,7 @@ fn cli_verify_stwo_intervalized_decoding_state_relation_demo_rejects_tampered_lo
 fn cli_can_prove_and_verify_stwo_folded_intervalized_decoding_state_relation_demo() {
     let proof_path = unique_temp_dir("cli-stwo-folded-intervalized-decoding-state-relation-proof")
         .with_extension("json");
+    let gzip_path = proof_path.with_extension("json.gz");
 
     let mut prove = Command::cargo_bin("tvm").expect("binary");
     prove
@@ -2688,7 +2704,21 @@ fn cli_can_prove_and_verify_stwo_folded_intervalized_decoding_state_relation_dem
             "expected_proof_backend_version: {STWO_BACKEND_VERSION_PHASE12}",
         )));
 
+    write_test_gzip_copy(&proof_path, &gzip_path);
+
+    let mut verify_gzip = Command::cargo_bin("tvm").expect("binary");
+    verify_gzip
+        .arg("verify-stwo-folded-intervalized-decoding-state-relation-demo")
+        .arg(&gzip_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(format!(
+            "expected_artifact_version: {STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26}",
+        )));
+
     let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(gzip_path);
 }
 
 #[test]
