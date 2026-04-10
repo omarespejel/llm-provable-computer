@@ -63,6 +63,14 @@ KANI_ARGS=(
   kani_phase27_chain_shape_rejects_boundary_mismatch
   --harness
   kani_phase27_chain_shape_rejects_insufficient_bounded_arity
+  --harness
+  kani_phase28_aggregation_shape_accepts_contiguous_pair
+  --harness
+  kani_phase28_aggregation_shape_covers_nonzero_lookup_delta_aggregate
+  --harness
+  kani_phase28_aggregation_shape_rejects_boundary_mismatch
+  --harness
+  kani_phase28_aggregation_shape_rejects_insufficient_bounded_arity
 )
 
 "${KANI_ARGS[@]}"

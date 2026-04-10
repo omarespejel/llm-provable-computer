@@ -21,6 +21,7 @@ use llm_provable_computer::stwo_backend::{
     commit_phase12_shared_lookup_rows, prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, Phase10SharedLookupProofEnvelope,
     Phase10SharedNormalizationLookupProofEnvelope, Phase3LookupTableRow,
+    STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
     STWO_BACKEND_VERSION_PHASE12,
     STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
     STWO_DECODING_CHAIN_VERSION_PHASE12, STWO_DECODING_CHAIN_VERSION_PHASE14,
@@ -111,6 +112,27 @@ fn phase27_cli_demo_fixture_path() -> PathBuf {
             let mut prove = tvm_command();
             prove
                 .arg("prove-stwo-chained-folded-intervalized-decoding-state-relation-demo")
+                .arg("-o")
+                .arg(&path)
+                .assert()
+                .success();
+            path
+        })
+        .clone()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase28_cli_demo_fixture_path() -> PathBuf {
+    static FIXTURE: OnceLock<PathBuf> = OnceLock::new();
+    FIXTURE
+        .get_or_init(|| {
+            let path = unique_temp_dir(
+                "cli-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-fixture",
+            )
+            .with_extension("json");
+            let mut prove = tvm_command();
+            prove
+                .arg("prove-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo")
                 .arg("-o")
                 .arg(&path)
                 .assert()
@@ -3863,4 +3885,282 @@ fn cli_supports_verify_all_flag() {
             "verified_all_engines: transformer,native,burn,onnx",
         ))
         .stdout(predicate::str::contains("acc: 21"));
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+#[ignore = "expensive Phase 28 16-proof end-to-end CLI gate"]
+fn cli_can_prove_and_verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_demo(
+) {
+    let _guard = phase27_cli_test_guard();
+    let proof_path = unique_temp_dir(
+        "cli-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-proof",
+    )
+    .with_extension("json");
+    let gzip_path = proof_path.with_extension("json.gz");
+
+    let mut prove = tvm_command();
+    prove
+        .arg("prove-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("proof_backend: stwo"))
+        .stdout(predicate::str::contains(format!(
+            "artifact_version: {STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28}",
+        )))
+        .stdout(predicate::str::contains("bounded_aggregation_arity:"))
+        .stdout(predicate::str::contains("total_phase26_members:"))
+        .stdout(predicate::str::contains("total_phase25_members:"));
+
+    let proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    assert_eq!(
+        proof_json
+            .get("artifact_version")
+            .and_then(serde_json::Value::as_str),
+        Some(STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28)
+    );
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(format!(
+            "expected_artifact_version: {STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28}",
+        )))
+        .stdout(predicate::str::contains(format!(
+            "expected_proof_backend_version: {STWO_BACKEND_VERSION_PHASE12}",
+        )));
+
+    write_test_gzip_copy(&proof_path, &gzip_path);
+
+    let mut verify_gzip = tvm_command();
+    verify_gzip
+        .arg("verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&gzip_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(gzip_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+#[ignore = "expensive Phase 28 16-proof end-to-end CLI gate"]
+fn cli_verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_demo_rejects_corrupt_gzip(
+) {
+    let _guard = phase27_cli_test_guard();
+    let proof_path = unique_temp_dir(
+        "cli-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-gzip",
+    )
+    .with_extension("json");
+    let gzip_path = proof_path.with_extension("json.gz");
+
+    std::fs::copy(phase28_cli_demo_fixture_path(), &proof_path).expect("copy proof");
+
+    write_test_gzip_copy(&proof_path, &gzip_path);
+    let mut bytes = std::fs::read(&gzip_path).expect("read gzip");
+    bytes.truncate(bytes.len().saturating_sub(8));
+    std::fs::write(&gzip_path, bytes).expect("write corrupt gzip");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&gzip_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "could not be decompressed as gzip",
+        ))
+        .stderr(predicate::str::contains("panicked at").not());
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(gzip_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+#[ignore = "expensive Phase 28 16-proof end-to-end CLI gate"]
+fn cli_verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_demo_rejects_tampered_accumulator_commitment(
+) {
+    let _guard = phase27_cli_test_guard();
+    let proof_path = unique_temp_dir(
+        "cli-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-accumulator",
+    )
+    .with_extension("json");
+    let tampered_path = unique_temp_dir(
+        "cli-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-accumulator-tampered",
+    )
+    .with_extension("json");
+
+    std::fs::copy(phase28_cli_demo_fixture_path(), &proof_path).expect("copy proof");
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    proof_json["aggregated_chained_folded_interval_accumulator_commitment"] =
+        serde_json::Value::String("tampered".to_string());
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "aggregated_chained_folded_interval_accumulator_commitment does not match the computed aggregated accumulator commitment",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+#[ignore = "expensive Phase 28 16-proof end-to-end CLI gate"]
+fn cli_verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_demo_rejects_tampered_total_phase26_members(
+) {
+    let _guard = phase27_cli_test_guard();
+    let proof_path = unique_temp_dir(
+        "cli-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-total-phase26",
+    )
+    .with_extension("json");
+    let tampered_path = unique_temp_dir(
+        "cli-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-total-phase26-tampered",
+    )
+    .with_extension("json");
+
+    std::fs::copy(phase28_cli_demo_fixture_path(), &proof_path).expect("copy proof");
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    let value = proof_json["total_phase26_members"]
+        .as_u64()
+        .expect("total_phase26_members");
+    proof_json["total_phase26_members"] = serde_json::Value::from(value.saturating_add(1));
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("total_phase26_members="))
+        .stderr(predicate::str::contains(
+            "does not match derived total_phase26_members",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+#[ignore = "expensive Phase 28 16-proof end-to-end CLI gate"]
+fn cli_verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_demo_rejects_semantic_scope_drift(
+) {
+    let _guard = phase27_cli_test_guard();
+    let proof_path = unique_temp_dir(
+        "cli-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-scope",
+    )
+    .with_extension("json");
+    let tampered_path = unique_temp_dir(
+        "cli-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-scope-tampered",
+    )
+    .with_extension("json");
+
+    std::fs::copy(phase28_cli_demo_fixture_path(), &proof_path).expect("copy proof");
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    proof_json["semantic_scope"] =
+        serde_json::Value::String("forged-phase28-semantic-scope".to_string());
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "unsupported aggregated chained folded intervalized decoding state relation semantic scope",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+#[ignore = "expensive Phase 28 16-proof end-to-end CLI gate"]
+fn cli_verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_demo_rejects_tampered_member_continuity(
+) {
+    let _guard = phase27_cli_test_guard();
+    let proof_path = unique_temp_dir(
+        "cli-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-order",
+    )
+    .with_extension("json");
+    let tampered_path = unique_temp_dir(
+        "cli-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-order-tampered",
+    )
+    .with_extension("json");
+
+    std::fs::copy(phase28_cli_demo_fixture_path(), &proof_path).expect("copy proof");
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    let members = proof_json["members"].as_array_mut().expect("members array");
+    assert!(
+        members.len() >= 2,
+        "phase28 demo must emit at least two members"
+    );
+    members.swap(0, 1);
+    let summaries = proof_json["member_summaries"]
+        .as_array_mut()
+        .expect("member_summaries array");
+    summaries.swap(0, 1);
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "does not preserve the carried-state commitment from the previous chained folded interval member",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
 }
