@@ -39,9 +39,19 @@ BENCHMARKS="$BUNDLE_DIR/benchmarks.tsv"
 COMMANDS_LOG="$BUNDLE_DIR/commands.log"
 SUMMARY_TSV="$BUNDLE_DIR/artifact_summary.tsv"
 SHA256S="$BUNDLE_DIR/sha256sums.txt"
+PROVENANCE_SHA256S="$BUNDLE_DIR/provenance_sha256sums.txt"
 INDEX_MD="$BUNDLE_DIR/APPENDIX_ARTIFACT_INDEX.md"
 README_MD="$BUNDLE_DIR/README.md"
 CANONICAL_CHECKSUM_FILES=(
+  README.md
+  decoding-phase24.state-relation-accumulator.json.gz
+  decoding-phase25.intervalized-state-relation.json.gz
+  decoding-phase26.folded-intervalized-state-relation.json.gz
+)
+PROVENANCE_CHECKSUM_FILES=(
+  manifest.txt
+  benchmarks.tsv
+  commands.log
   artifact_summary.tsv
   APPENDIX_ARTIFACT_INDEX.md
   README.md
@@ -258,7 +268,7 @@ lines.extend(
         "The Phase 25 artifact is the first honest intervalized carried-state artifact in this sequence.",
         "The Phase 26 artifact folds real Phase 25 intervals rather than reusing the obsolete cumulative-prefix interpretation.",
         "",
-        "See `artifact_summary.tsv` for the full machine-readable summary and `sha256sums.txt` for checksums.",
+        "See `artifact_summary.tsv` for the full machine-readable summary, `sha256sums.txt` for deterministic canonical artifact checksums, and `provenance_sha256sums.txt` for the full emitted bundle checksum set.",
         "",
     ]
 )
@@ -278,7 +288,8 @@ readme_md.write_text(
             "- `decoding-phase24.state-relation-accumulator.json.gz`: compressed Phase 24 artifact",
             "- `decoding-phase25.intervalized-state-relation.json.gz`: compressed Phase 25 artifact",
             "- `decoding-phase26.folded-intervalized-state-relation.json.gz`: compressed Phase 26 artifact",
-            "- `sha256sums.txt`: file checksums",
+            "- `sha256sums.txt`: deterministic canonical artifact checksums",
+            "- `provenance_sha256sums.txt`: checksums for the full emitted bundle, including volatile provenance and timing files",
             "",
         ]
     )
@@ -286,5 +297,6 @@ readme_md.write_text(
 PY
 
 (cd "$BUNDLE_DIR" && shasum -a 256 "${CANONICAL_CHECKSUM_FILES[@]}" > "$SHA256S")
+(cd "$BUNDLE_DIR" && shasum -a 256 "${PROVENANCE_CHECKSUM_FILES[@]}" > "$PROVENANCE_SHA256S")
 
 echo "Generated folded interval artifact bundle at $BUNDLE_DIR"

@@ -2823,7 +2823,8 @@ fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_tamp
 
 #[test]
 #[cfg(feature = "stwo-backend")]
-fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_reordered_members() {
+fn cli_verify_stwo_folded_intervalized_decoding_state_relation_demo_rejects_tampered_member_continuity(
+) {
     let proof_path = unique_temp_dir("cli-stwo-folded-intervalized-decoding-state-relation-order")
         .with_extension("json");
     let tampered_path =
