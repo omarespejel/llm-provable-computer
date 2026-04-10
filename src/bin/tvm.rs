@@ -39,7 +39,7 @@ use llm_provable_computer::{
     load_phase24_decoding_state_relation_accumulator,
     load_phase25_intervalized_decoding_state_relation,
     load_phase26_folded_intervalized_decoding_state_relation,
-    load_phase27_chained_folded_intervalized_decoding_state_relation,
+    load_phase27_chained_folded_intervalized_decoding_state_relation_unchecked,
     load_phase3_binary_step_lookup_proof, load_phase5_normalization_lookup_proof,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
@@ -3032,7 +3032,7 @@ fn verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_command(
     #[cfg(feature = "stwo-backend")]
     {
         let manifest =
-            load_phase27_chained_folded_intervalized_decoding_state_relation(proof_path)?;
+            load_phase27_chained_folded_intervalized_decoding_state_relation_unchecked(proof_path)?;
         verify_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks(
             &manifest,
         )?;

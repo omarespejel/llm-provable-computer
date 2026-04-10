@@ -7953,7 +7953,7 @@ pub fn save_phase27_chained_folded_intervalized_decoding_state_relation(
     )
 }
 
-pub fn load_phase27_chained_folded_intervalized_decoding_state_relation(
+pub fn load_phase27_chained_folded_intervalized_decoding_state_relation_unchecked(
     path: &Path,
 ) -> Result<Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest> {
     let bytes = read_json_bytes_with_limit(
@@ -7961,8 +7961,14 @@ pub fn load_phase27_chained_folded_intervalized_decoding_state_relation(
         MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_STATE_RELATION_JSON_BYTES,
         "Phase 27 chained folded intervalized decoding state relation",
     )?;
-    let manifest: Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest =
-        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+}
+
+pub fn load_phase27_chained_folded_intervalized_decoding_state_relation(
+    path: &Path,
+) -> Result<Phase27ChainedFoldedIntervalizedDecodingStateRelationManifest> {
+    let manifest =
+        load_phase27_chained_folded_intervalized_decoding_state_relation_unchecked(path)?;
     verify_phase27_chained_folded_intervalized_decoding_state_relation(&manifest)?;
     Ok(manifest)
 }
