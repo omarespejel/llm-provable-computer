@@ -32,6 +32,15 @@ jobs:
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
 
+      - name: Restore pinned nightly toolchain cache
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809
+        with:
+          path: |
+            ~/.rustup/toolchains/nightly-2025-07-14-*
+            ~/.rustup/downloads
+            ~/.rustup/update-hashes
+          key: rustup-nightly-2025-07-14-${{ runner.os }}-${{ runner.arch }}
+
       - name: Run lightweight regression smoke
         run: |
           cargo test -q --lib statement_spec_contract_is_synced_with_constants
