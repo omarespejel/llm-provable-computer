@@ -543,7 +543,7 @@ jq --argjson now "$now_epoch" '
         ($pull.comments.nodes[]? | select(.author.login as $login | $ai_reviewers | index($login)) | {author:.author.login, createdAt}),
         ($pull.reviews.nodes[]? | select(.author.login as $login | $ai_reviewers | index($login)) | {author:.author.login, createdAt}),
         ($pull.reviewThreads.nodes[].comments.nodes[]? | select(.author.login as $login | $ai_reviewers | index($login)) | {author:.author.login, createdAt})
-      ] | sort_by(.createdAt) | last) as $latest
+      ] | map(select(.createdAt | type == "string" and length > 0)) | sort_by(.createdAt) | last) as $latest
     | {
         active_threads: ($active | length),
         latest_ai_event: ($latest // null),
