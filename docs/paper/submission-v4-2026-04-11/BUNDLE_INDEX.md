@@ -8,7 +8,11 @@ Canonical repository snapshot:
   containing this v4 paper metadata.
 
 Phase 28 systems-evidence checkpoint:
-- `520240822c48dc3111bc5b91d5896ab97a2bb4c8` (proof-carrying aggregation checkpoint)
+- `6ff972ddda4051d73dc65c92a88c0d00683ec8c7` (proof-carrying aggregation checkpoint)
+
+Draft author line:
+- Abdelhamid Bakhta - StarkWare
+- Omar Espejel - Starknet Foundation
 
 ## Core Paper Files
 
@@ -27,6 +31,12 @@ Phase 28 systems-evidence checkpoint:
   - `docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md`
 - Experimental `stwo` frozen bundle index:
   - `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md`
+- Phase 28 proof-carrying aggregation bundle index:
+  - `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/APPENDIX_ARTIFACT_INDEX.md`
+
+The older Phase 24-27 artifact directories remain archival provenance, but the
+Phase 28 bundle above is the publication-facing checkpoint for the carried-state
+aggregation line.
 
 ## Evidence Pointer
 

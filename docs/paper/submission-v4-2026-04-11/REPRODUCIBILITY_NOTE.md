@@ -4,7 +4,7 @@ This note describes how to reproduce the publication-facing paper artifacts for
 the rolling base tag `paper-publication-v4-2026-04-11` once cut. The tag should
 resolve to a commit that contains this v4 paper metadata. The systems evidence
 cited by the paper remains pinned to the Phase 28 proof-carrying aggregation checkpoint commit
-`520240822c48dc3111bc5b91d5896ab97a2bb4c8`.
+`6ff972ddda4051d73dc65c92a88c0d00683ec8c7`.
 
 ## 1) Scope and Intended Reproduction Target
 
@@ -13,7 +13,7 @@ The target is reproducibility of:
 - paper text and references,
 - appendix artifacts and evidence pointers,
 - figure-generating scripts and TSV outputs,
-- frozen artifact index manifests for the two evidence tiers.
+- frozen artifact index manifests for the evidence tiers, including the Phase 28 proof-carrying aggregation bundle.
 
 This package is intentionally a **research artifact snapshot**, not a claim of
 production-scale zkML deployment.
@@ -88,6 +88,10 @@ Frozen experimental `stwo` bundle index:
 
 - `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md`
 
+Phase 28 proof-carrying aggregation bundle index:
+
+- `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/APPENDIX_ARTIFACT_INDEX.md`
+
 These indexes contain commit anchors, command logs, hashes, and artifact paths.
 
 ## 6) External Evidence Snapshot
@@ -104,11 +108,13 @@ time of packaging.
 
 Before sharing a draft externally, verify:
 
-1. title and claim posture are aligned between:
+1. author names and affiliations are confirmed,
+2. title and claim posture are aligned between:
    - `docs/paper/stark-transformer-alignment-2026.md`
    - `docs/paper/PUBLICATION_RELEASE.md`
-2. paper preflight passes,
-3. release tag and commit references are consistent with the single main paper.
+3. paper preflight passes,
+4. the Phase 28 bundle checksum files validate locally or in a clean reproduction environment,
+5. release tag and commit references are consistent with the single main paper.
 
 If additional reviewer feedback lands, patch on top and cut a follow-up
 publication tag rather than mutating existing evidence claims.
