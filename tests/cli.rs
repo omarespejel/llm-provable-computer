@@ -3912,6 +3912,112 @@ fn cli_verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relatio
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_demo_smoke() {
+    let _guard = phase27_cli_test_guard();
+    let proof_path = phase28_cli_demo_fixture_path();
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(format!(
+            "expected_artifact_version: {STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28}",
+        )))
+        .stdout(predicate::str::contains(format!(
+            "expected_proof_backend_version: {STWO_BACKEND_VERSION_PHASE12}",
+        )));
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_demo_rejects_tampered_outer_template_commitment(
+) {
+    let _guard = phase27_cli_test_guard();
+    let proof_path = unique_temp_dir(
+        "cli-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-template",
+    )
+    .with_extension("json");
+    let tampered_path = unique_temp_dir(
+        "cli-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-template-tampered",
+    )
+    .with_extension("json");
+
+    std::fs::copy(phase28_cli_demo_fixture_path(), &proof_path).expect("copy proof");
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    proof_json["aggregation_template_commitment"] =
+        serde_json::Value::String("tampered".to_string());
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "aggregation_template_commitment does not match the computed aggregation template commitment",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_demo_rejects_tampered_total_phase25_members(
+) {
+    let _guard = phase27_cli_test_guard();
+    let proof_path = unique_temp_dir(
+        "cli-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-total-phase25",
+    )
+    .with_extension("json");
+    let tampered_path = unique_temp_dir(
+        "cli-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-total-phase25-tampered",
+    )
+    .with_extension("json");
+
+    std::fs::copy(phase28_cli_demo_fixture_path(), &proof_path).expect("copy proof");
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    let value = proof_json["total_phase25_members"]
+        .as_u64()
+        .expect("total_phase25_members");
+    proof_json["total_phase25_members"] = serde_json::Value::from(value.saturating_add(1));
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("total_phase25_members="))
+        .stderr(predicate::str::contains(
+            "does not match derived total_phase25_members",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 #[ignore = "expensive Phase 28 16-proof end-to-end CLI gate"]
 fn cli_can_prove_and_verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_demo(
 ) {

@@ -67,11 +67,11 @@ PY
 BUNDLE_DIR="$CANON_BUNDLE_DIR"
 REL_BUNDLE_DIR="$(relpath_from "$BUNDLE_DIR" "$REPO_ROOT")"
 REL_TVM_BIN="$(relpath_from "$TVM_BIN" "$REPO_ROOT")"
-rm -rf -- "$BUNDLE_DIR"
-if [ -n "$(git status --porcelain --untracked-files=normal)" ]; then
+if [ -n "$(git status --porcelain --untracked-files=normal -- . ":(exclude)$REL_BUNDLE_DIR")" ]; then
   echo "Refusing to generate frozen bundle from a dirty worktree; commit or stash local changes first" >&2
   exit 1
 fi
+rm -rf -- "$BUNDLE_DIR"
 mkdir -p "$BUNDLE_DIR"
 
 MANIFEST="$BUNDLE_DIR/manifest.txt"
@@ -274,7 +274,7 @@ artifacts = [
         "Carried-state relation accumulator over cumulative Phase 23 prefixes",
         "pre-recursive carried-state relation boundary accumulator",
         "prove_decoding_state_relation_accumulator_phase24_stwo",
-        "verify_decoding_state_relation_accumulator_phase24_stwo",
+        "verify_decoding_state_relation_accumulator_phase24_stwo_gzip",
         "accumulator_version",
         "stwo-phase24-decoding-state-relation-accumulator-v1",
         "stwo_execution_parameterized_proof_carrying_decoding_state_relation_accumulator",
@@ -285,7 +285,7 @@ artifacts = [
         "Intervalized carried-state relation artifact over rebased cumulative prefixes",
         "honest intervalization over real carried-state intervals",
         "prove_intervalized_decoding_state_relation_phase25_stwo",
-        "verify_intervalized_decoding_state_relation_phase25_stwo",
+        "verify_intervalized_decoding_state_relation_phase25_stwo_gzip",
         "artifact_version",
         "stwo-phase25-intervalized-decoding-state-relation-v1",
         "stwo_execution_parameterized_intervalized_proof_carrying_decoding_state_relation",
@@ -296,7 +296,7 @@ artifacts = [
         "Folded accumulator over Phase 25 interval artifacts",
         "bounded pre-recursive folding over carried-state intervals",
         "prove_folded_intervalized_decoding_state_relation_phase26_stwo",
-        "verify_folded_intervalized_decoding_state_relation_phase26_stwo",
+        "verify_folded_intervalized_decoding_state_relation_phase26_stwo_gzip",
         "artifact_version",
         "stwo-phase26-folded-intervalized-decoding-state-relation-v1",
         "stwo_execution_parameterized_folded_intervalized_proof_carrying_decoding_state_relation",
@@ -307,7 +307,7 @@ artifacts = [
         "Chained fold-of-folds accumulator over Phase 26 artifacts",
         "bounded pre-recursive chained folding over real carried-state intervals",
         "prove_chained_folded_intervalized_decoding_state_relation_phase27_stwo",
-        "verify_chained_folded_intervalized_decoding_state_relation_phase27_stwo",
+        "verify_chained_folded_intervalized_decoding_state_relation_phase27_stwo_gzip",
         "artifact_version",
         "stwo-phase27-chained-folded-intervalized-decoding-state-relation-v1",
         "stwo_execution_parameterized_chained_folded_intervalized_proof_carrying_decoding_state_relation",
@@ -318,7 +318,7 @@ artifacts = [
         "Proof-carrying outer aggregation over Phase 27 chained artifacts",
         "bounded pre-recursive cross-bundle aggregation over real carried-state intervals",
         "prove_aggregated_chained_folded_intervalized_decoding_state_relation_phase28_stwo",
-        "verify_aggregated_chained_folded_intervalized_decoding_state_relation_phase28_stwo",
+        "verify_aggregated_chained_folded_intervalized_decoding_state_relation_phase28_stwo_gzip",
         "artifact_version",
         "stwo-phase28-aggregated-chained-folded-intervalized-decoding-state-relation-v1",
         "stwo_execution_parameterized_aggregated_chained_folded_intervalized_proof_carrying_decoding_state_relation",
