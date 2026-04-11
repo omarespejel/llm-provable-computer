@@ -30,7 +30,8 @@ The derived contract binds the following fields:
 - Matrix, layout, rollup, segment, step, and lookup-frontier totals.
 - Source-template, global-start-state, global-end-state, aggregation-template,
   and aggregate-accumulator commitments.
-- A BLAKE2b-256 input-contract commitment over the contract fields.
+- A BLAKE2b-256 input-contract commitment computed from the listed contract
+  fields except `input_contract_commitment`, then stored for recomputation.
 
 ## Rejected Input
 
@@ -42,10 +43,16 @@ Phase 29 rejects:
   `pre-recursive-proof-carrying-aggregation`.
 - Any contract whose Phase 28 backend version or statement version does not
   match the supported repository dialect.
-- Any contract with empty critical commitments.
-- Any contract whose member summaries or nested members do not match the
-  declared Phase 28 member count.
-- Any contract whose input-contract commitment does not recompute.
+- Any contract with an empty source-template, global-start-state,
+  global-end-state, aggregation-template, aggregate-accumulator, or
+  input-contract commitment.
+- Any contract whose `phase28_member_summaries != phase28_member_count` or
+  whose `phase28_nested_members != phase28_member_count`.
+- Any contract whose `phase28_bounded_aggregation_arity` is smaller than
+  `phase28_member_count`; the arity may be larger than the realized member
+  count, but not smaller.
+- Any contract whose stored `input_contract_commitment` does not recompute from
+  the other contract fields.
 
 Deserialization of `Phase29RecursiveCompressionInputContract` is a validating
 operation. The read helpers
@@ -55,7 +62,10 @@ the same Phase 29 verifier accepts the parsed fields. Validation failures are
 reported as invalid contract configuration, not as generic JSON serialization
 failures. The file loader uses the repository's bounded JSON read path: it only
 accepts regular files and rejects compressed or uncompressed inputs above the
-Phase 29 JSON byte budget before parsing.
+Phase 29 JSON byte budget before parsing. The string parser applies the same
+byte budget to in-memory JSON, and deserialization rejects unknown fields. The
+commitment encodes length and counter fields with fixed-width unsigned bytes
+rather than platform-width `usize` bytes.
 
 ## Non-Goals
 

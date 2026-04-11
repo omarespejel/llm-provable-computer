@@ -48,6 +48,8 @@ hardening_stwo_test_filters=(
   "stwo_backend::recursion::tests::phase29_recursive_compression_input_contract_rejects_wrong_statement_version"
   "stwo_backend::recursion::tests::phase29_recursive_compression_input_contract_deserialization_verifies_contract"
   "stwo_backend::recursion::tests::phase29_recursive_compression_input_contract_parse_reports_validation_error_as_invalid_config"
+  "stwo_backend::recursion::tests::phase29_recursive_compression_input_contract_parse_rejects_unknown_fields"
+  "stwo_backend::recursion::tests::phase29_parse_recursive_compression_input_contract_rejects_oversized_json"
   "stwo_backend::recursion::tests::phase29_load_recursive_compression_input_contract_rejects_oversized_file"
   "stwo_backend::recursion::tests::phase29_load_recursive_compression_input_contract_rejects_oversized_gzip_file"
   "stwo_backend::recursion::tests::phase29_load_recursive_compression_input_contract_rejects_non_regular_file"

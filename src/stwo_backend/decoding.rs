@@ -1161,6 +1161,38 @@ pub(super) fn read_json_bytes_with_limit(
             error.kind()
         ))
     })?;
+    let opened_metadata = file.metadata().map_err(|error| {
+        VmError::InvalidConfig(format!(
+            "{label} `{}` could not be inspected after opening: io_kind={:?}: {error}",
+            path.display(),
+            error.kind()
+        ))
+    })?;
+    if !opened_metadata.file_type().is_file() {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} `{}` is not a regular file after opening",
+            path.display()
+        )));
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+
+        if metadata.dev() != opened_metadata.dev() || metadata.ino() != opened_metadata.ino() {
+            return Err(VmError::InvalidConfig(format!(
+                "{label} `{}` changed between metadata inspection and open",
+                path.display()
+            )));
+        }
+    }
+    if opened_metadata.len() > max_bytes as u64 {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} `{}` is {} bytes after opening, exceeding the limit of {} bytes",
+            path.display(),
+            opened_metadata.len(),
+            max_bytes
+        )));
+    }
     let is_gzip = matches!(path.extension().and_then(|ext| ext.to_str()), Some("gz"));
     if is_gzip {
         let mut limited = GzDecoder::new(file).take((max_bytes as u64).saturating_add(1));

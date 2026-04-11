@@ -99,6 +99,7 @@ pub struct Phase29RecursiveCompressionInputContract {
 
 #[cfg(feature = "stwo-backend")]
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct Phase29RecursiveCompressionInputContractUnchecked {
     pub proof_backend: StarkProofBackend,
     pub contract_version: String,
@@ -326,6 +327,13 @@ pub fn phase29_prepare_recursive_compression_input_contract(
 pub fn parse_phase29_recursive_compression_input_contract_json(
     json: &str,
 ) -> Result<Phase29RecursiveCompressionInputContract> {
+    if json.len() > MAX_PHASE29_RECURSIVE_COMPRESSION_INPUT_CONTRACT_JSON_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 29 recursive-compression input contract JSON is {} bytes, exceeding the limit of {} bytes",
+            json.len(),
+            MAX_PHASE29_RECURSIVE_COMPRESSION_INPUT_CONTRACT_JSON_BYTES
+        )));
+    }
     serde_json::from_str(json).map_err(phase29_json_error)
 }
 
@@ -561,7 +569,7 @@ pub fn commit_phase29_recursive_compression_input_contract(
 
 #[cfg(feature = "stwo-backend")]
 fn phase29_update_len_prefixed(hasher: &mut Blake2bVar, bytes: &[u8]) {
-    hasher.update(&(bytes.len() as u64).to_le_bytes());
+    phase29_update_usize(hasher, bytes.len());
     hasher.update(bytes);
 }
 
@@ -572,7 +580,7 @@ fn phase29_update_bool(hasher: &mut Blake2bVar, value: bool) {
 
 #[cfg(feature = "stwo-backend")]
 fn phase29_update_usize(hasher: &mut Blake2bVar, value: usize) {
-    hasher.update(&(value as u64).to_le_bytes());
+    hasher.update(&(value as u128).to_le_bytes());
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -835,6 +843,36 @@ mod tests {
             "expected InvalidConfig, got {err:?}"
         );
         assert!(err.to_string().contains("commitment"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase29_recursive_compression_input_contract_parse_rejects_unknown_fields() {
+        let contract = sample_phase29_contract();
+        let mut value = serde_json::to_value(&contract).expect("serialize value");
+        value["unexpected_phase29_field"] = serde_json::json!(true);
+        let json = serde_json::to_string(&value).expect("json with unknown field");
+
+        let err = parse_phase29_recursive_compression_input_contract_json(&json)
+            .expect_err("unknown fields must be rejected");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+        assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase29_parse_recursive_compression_input_contract_rejects_oversized_json() {
+        let json = " ".repeat(MAX_PHASE29_RECURSIVE_COMPRESSION_INPUT_CONTRACT_JSON_BYTES + 1);
+        let err = parse_phase29_recursive_compression_input_contract_json(&json)
+            .expect_err("oversized JSON must fail before serde parsing");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+        assert!(err.to_string().contains("exceeding the limit"));
     }
 
     #[cfg(feature = "stwo-backend")]
