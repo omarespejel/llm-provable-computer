@@ -62,5 +62,12 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "phase28_aggregated_chained_folded_intervalized_decoding_state_relation"
+path = "fuzz_targets/phase28_aggregated_chained_folded_intervalized_decoding_state_relation.rs"
+test = false
+doc = false
+bench = false
+
 [workspace]
 members = ["."]
