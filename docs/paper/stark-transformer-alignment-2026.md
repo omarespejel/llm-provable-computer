@@ -252,7 +252,7 @@ The symbolic analysis above identifies the pressure points; the artifact below s
 
 The supporting implementation is `omarespejel/provable-transformer-vm` [30]. In this paper it is treated as a **semantics-and-proof artifact**: deterministic transformer-relevant execution is compiled into AIR-consumable traces and packaged into carried-state proof objects for later recursion/accumulation work.
 
-This section uses repository terminology such as `chain`, `segment`, `rollup`, `folded interval`, and `aggregation` in an **artifact-layer sense**. Unless explicitly stated otherwise, these terms refer to statement-preserving carried-state packaging objects inside the repository artifact. They do **not** denote recursive cryptographic accumulation schemes, compressed proof systems, or CCS-/IVC-style folding protocols in the sense of systems such as HyperNova, NeutronNova, or ProtoStar. The point of this section is narrower: to show that a stable proof-carrying decoding relation with carried KV and lookup state can already be materialized as reproducible proof artifacts over the current repository surfaces.
+This section uses repository terminology such as `chain`, `intervalized package`, `folded-interval package`, `segment`, `rollup`, `matrix`, and `aggregation package` in an **artifact-layer sense**. Unless explicitly stated otherwise, these terms refer to statement-preserving carried-state packaging objects inside the repository artifact. They do **not** denote recursive cryptographic accumulation schemes, compressed proof systems, or CCS-/IVC-style folding protocols in the sense of systems such as HyperNova, NeutronNova, or ProtoStar. The point of this section is narrower: to show that a stable proof-carrying decoding relation with carried KV and lookup state can already be materialized as reproducible proof artifacts over the current repository surfaces.
 
 ### 5.1 Positive evidence
 
@@ -262,8 +262,8 @@ The artifact provides:
 - semantic lockstep/multi-engine agreement checks with ONNX validation,
 - two reproducibility tiers: `production-v1` (vanilla) and `stwo-experimental-v1` (narrow experimental),
 - a parameterized proof-carrying decoding family (`decoding_step_v2`) over multiple public layouts,
-- carried-state packaging (chain, segment, rollup, multi-layout matrix) with KV/lookup cumulative and frontier commitments,
-- a pre-recursive carried-state packaging ladder over the same decode relation, including interval, segment, rollup, matrix, and aggregation objects,
+- carried-state packaging (chain, intervalized package, folded-interval package, segment, rollup, and multi-layout matrix) with KV/lookup cumulative and frontier commitments,
+- a pre-recursive carried-state packaging ladder over the same decode relation, including chain, intervalized, folded-interval, segment, rollup, matrix, and aggregation packages,
 - hardened verifier kernels backed by differential testing, fuzzing, mutation checks, and bounded model checking.
 
 The important systems property is stable statement structure: the same decode relation survives progressively more composable manifest layers without changing statement boundaries. The aggregation ladder remains pre-recursive and replay-verifies nested proof-bearing members.
@@ -280,7 +280,7 @@ Sigma_t = (ell_t, p_t, h_t^KV, f_t^KV, h_t^L, f_t^L, c_t^in, c_t^out)
 
 where `ell_t` identifies the layout/template, `p_t` records public step position metadata, `h_t^KV` and `f_t^KV` are the KV cumulative and frontier commitments, `h_t^L` and `f_t^L` are the lookup cumulative and frontier commitments, and `c_t^in` and `c_t^out` are execution boundary commitments.
 
-**Definition 2 (Package validity).** A chain, segment, rollup, matrix, or aggregation package is valid if its member order is declared, each nested proof artifact verifies under the stated backend and statement profile, and every adjacent pair of carried-state boundaries satisfies the continuity constraints required by the decode relation.
+**Definition 2 (Package validity).** A chain, intervalized package, folded-interval package, segment, rollup, matrix, or aggregation package is valid if its member order is declared, each nested proof artifact verifies under the stated backend and statement profile, and every adjacent pair of carried-state boundaries satisfies the continuity constraints required by the decode relation.
 
 Let `R_decode` denote the repository's parameterized proof-carrying decoding relation over carried-state boundaries:
 
@@ -292,7 +292,7 @@ where `w_t` contains the step witness and proof-bearing artifact material checke
 
 The following proposition records the invariant that the repository artifact is intended to preserve across pre-recursive packaging layers.
 
-**Proposition 2.** If each step proof in a chain verifies under `statement-v1`, and every adjacent pair satisfies `c_t^out = c_{t+1}^in` together with the corresponding KV and lookup frontier-continuity checks, then the resulting segment, rollup, matrix, folded-interval, chained, or pre-recursive aggregation object preserves the same start-state to end-state relation as the underlying verified chain.
+**Proposition 2.** If each step proof in a chain verifies under `statement-v1`, and every adjacent pair satisfies `c_t^out = c_{t+1}^in` together with the corresponding KV and lookup frontier-continuity checks, then the resulting chain, intervalized package, folded-interval package, segment, rollup, matrix, or aggregation package preserves the same start-state to end-state relation as the underlying verified chain.
 
 **Proof sketch.** Each packaging layer records the first public state, last public state, member commitments, and declared member order. Its verifier replay-checks the nested members and rejects non-contiguous or template-incompatible boundaries. Induction over the ordered members gives the same start-to-end relation for the packaged object. This is a statement-preservation invariant, not a recursive proof-compression theorem.
 
@@ -300,7 +300,7 @@ Figure 3 summarizes the object flow and the two carried commitment lanes.
 
 ![Figure 3. Carried-state packaging ladder over the parameterized decoding relation.](figures/section5-carried-state-ladder.svg)
 
-**Figure 3.** Carried-state packaging ladder over the parameterized decoding relation. A verified `decoding_step_v2` chain is packaged into segments, rollups, a multi-layout matrix, and a pre-recursive aggregation boundary. The two carried lanes represent the KV-side cumulative/frontier commitments and the lookup-side cumulative/frontier commitments. The figure is architectural: it describes how statement-preserving artifact layers are organized in the repository, not a recursive cryptographic compression pipeline.
+**Figure 3.** Carried-state packaging ladder over the parameterized decoding relation. A verified `decoding_step_v2` chain is packaged into intervalized packages, folded-interval packages, segments, rollups, a multi-layout matrix, and a pre-recursive aggregation boundary. The two carried lanes represent the KV-side cumulative/frontier commitments and the lookup-side cumulative/frontier commitments. The figure is architectural: it describes how statement-preserving artifact layers are organized in the repository, not a recursive cryptographic compression pipeline.
 
 ### 5.3 Negative evidence
 
@@ -339,7 +339,7 @@ This artifact narrows the gap between analytic and systems claims by showing:
 1. transformer-relevant traces can be proved directly,
 2. semantic equivalence can be checked across runtimes before proving,
 3. one parameterized decode relation preserves carried state across layouts and packaging layers,
-4. carried-state intervals can be folded, chained, and aggregated as pre-recursive statements without changing the underlying decode relation,
+4. intervalized packages, folded-interval packages, and aggregation packages preserve the carried-state boundary relation as pre-recursive statements without changing the underlying decode relation,
 5. reproducibility can be anchored in immutable bundles and commit-pinned artifacts.
 
 ---
@@ -436,7 +436,7 @@ Recent folding literature already covers generalized recursive arguments and CCS
 1. keep one fixed transformer-block relation and one decode transition relation,
 2. accumulate repeated block/step instances with shared lookup tables,
 3. preserve explicit KV/lookup boundary commitments under that accumulation,
-4. compare the existing carried/folded/chained/pre-recursive aggregation ladder against a recursive compressed mode on the same artifact family.
+4. compare the existing intervalized, folded-interval, and aggregation packages against a recursive compressed mode on the same artifact family.
 
 A second high-value track is trust-core assurance: maintain differential/oracle tests, fuzzing, and bounded model-checking around carried-state verifier kernels, then selectively formalize the smallest trust-critical binding layer [42].
 
@@ -448,7 +448,7 @@ This future-work split is deliberate. One track expands capability (accumulation
 
 This paper does not argue that SNARKs cannot prove transformers or that STARKs have already won. It argues a narrower point: transformer workloads emphasize lookup-heavy nonlinearities, recursion, and field/commitment design choices where STARK-native systems may compound advantages.
 
-The repository contributes evidence at two layers: trace semantics and pre-recursive carried state. It shows direct proving of transformer-relevant traces, semantic checks across runtimes, and a parameterized decode relation that preserves commitments across chains, segments, rollups, layout matrices, real intervals, folded intervals, chained folds, and outer aggregation.
+The repository contributes evidence at two layers: trace semantics and pre-recursive carried state. It shows direct proving of transformer-relevant traces, semantic checks across runtimes, and a parameterized decode relation that preserves commitments across chains, intervalized packages, folded-interval packages, segments, rollups, layout matrices, and aggregation packages.
 
 The frontier is no longer “can transformers be proved?” It is: **which architecture scales most cleanly to long-context, production verifiable inference while preserving transparency/post-quantum properties and compressing repeated transformer structure without losing semantic discipline?**
 
