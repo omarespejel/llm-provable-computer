@@ -563,6 +563,27 @@ enum Command {
         #[arg(long)]
         allow_mismatch: bool,
     },
+    /// Generate a research v3 multi-engine equivalence-kernel artifact.
+    ResearchV3Equivalence {
+        /// Path to the source `.tvm` program.
+        program: PathBuf,
+        /// File where the equivalence-kernel artifact JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+        /// Maximum number of execution steps to check.
+        #[arg(long, default_value_t = 32)]
+        max_steps: usize,
+        /// Number of transformer layers to distribute instructions across.
+        #[arg(long, default_value_t = 1)]
+        layers: usize,
+        /// Attention mode to use for memory reads.
+        #[arg(
+            long,
+            default_value = "average-hard",
+            value_parser = parse_attention_mode
+        )]
+        attention_mode: Attention2DMode,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -682,6 +703,9 @@ const STATEMENT_V2_TRACE_SPEC_PATH: &str = "spec/statement-v2-trace-research.jso
 #[cfg(feature = "onnx-export")]
 const STATEMENT_V2_MATRIX_SPEC_PATH: &str = "spec/statement-v2-matrix-research.json";
 #[cfg(feature = "onnx-export")]
+const STATEMENT_V3_EQUIVALENCE_SPEC_PATH: &str =
+    "spec/statement-v3-equivalence-kernel-research.json";
+#[cfg(feature = "onnx-export")]
 const FIXED_POINT_SPEC_PATH: &str = "spec/fixed-point-semantics-v2.json";
 #[cfg(feature = "onnx-export")]
 const ONNX_OP_SUBSET_SPEC_PATH: &str = "spec/onnx-op-subset-v2.json";
@@ -695,7 +719,12 @@ const STATEMENT_V2_TRACE_ARTIFACT_SCHEMA_PATH: &str =
 const STATEMENT_V2_MATRIX_ARTIFACT_SCHEMA_PATH: &str =
     "spec/statement-v2-matrix-certificate.schema.json";
 #[cfg(feature = "onnx-export")]
+const STATEMENT_V3_EQUIVALENCE_ARTIFACT_SCHEMA_PATH: &str =
+    "spec/statement-v3-equivalence-kernel.schema.json";
+#[cfg(feature = "onnx-export")]
 const RESEARCH_V2_HASH_FUNCTION: &str = "blake2b-256";
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+const RESEARCH_V3_RELATION_FORMAT: &str = "multi-engine-trace-relation-v1-no-egraph-no-smt";
 
 #[cfg(feature = "onnx-export")]
 #[derive(Debug, Deserialize)]
@@ -843,6 +872,86 @@ struct ResearchV2MatrixArtifact {
     mismatched_programs: usize,
     entries: Vec<ResearchV2MatrixEntry>,
     commitments: ResearchV2MatrixCommitments,
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+#[derive(Debug, Serialize)]
+struct ResearchV3CanonicalEvent {
+    step: usize,
+    layer_idx: Option<usize>,
+    instruction: String,
+    state_before_hash: String,
+    state_after_hash: String,
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+#[derive(Debug, Serialize)]
+struct ResearchV3EngineSummary {
+    name: String,
+    steps: usize,
+    halted: bool,
+    trace_len: usize,
+    events_len: usize,
+    final_state: MachineState,
+    trace_hash: String,
+    event_relation_hash: String,
+    final_state_hash: String,
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+#[derive(Debug, Serialize)]
+struct ResearchV3RuleValidation {
+    differential_lockstep: bool,
+    egraph_status: String,
+    smt_status: String,
+    randomized_testing_status: String,
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+#[derive(Debug, Serialize)]
+struct ResearchV3RuleWitness {
+    step: usize,
+    rule_id: String,
+    relation: String,
+    instruction: String,
+    participating_engines: Vec<String>,
+    state_before_hash: String,
+    state_after_hash: String,
+    validation: ResearchV3RuleValidation,
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+#[derive(Debug, Serialize)]
+struct ResearchV3EquivalenceCommitments {
+    hash_function: String,
+    statement_spec_hash: String,
+    fixed_point_spec_hash: String,
+    onnx_op_subset_hash: String,
+    artifact_schema_hash: String,
+    program_hash: String,
+    transformer_config_hash: String,
+    onnx_metadata_hash: String,
+    engine_summaries_hash: String,
+    rule_witnesses_hash: String,
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+#[derive(Debug, Serialize)]
+struct ResearchV3EquivalenceArtifact {
+    statement_version: String,
+    semantic_scope: String,
+    relation_format: String,
+    fixed_point_profile: String,
+    onnx_op_subset_version: String,
+    onnx_op_subset_size: usize,
+    program_path: String,
+    requested_max_steps: usize,
+    checked_steps: usize,
+    matched: bool,
+    engines: Vec<ResearchV3EngineSummary>,
+    rule_witnesses: Vec<ResearchV3RuleWitness>,
+    limitations: Vec<String>,
+    commitments: ResearchV3EquivalenceCommitments,
 }
 
 #[cfg(feature = "onnx-export")]
@@ -1132,6 +1241,13 @@ fn run() -> llm_provable_computer::Result<()> {
             attention_mode,
             allow_mismatch,
         )?,
+        Command::ResearchV3Equivalence {
+            program,
+            output,
+            max_steps,
+            layers,
+            attention_mode,
+        } => research_v3_equivalence_command(&program, &output, max_steps, layers, attention_mode)?,
     }
 
     Ok(())
@@ -3349,6 +3465,16 @@ fn research_v2_matrix_command(
     )
 }
 
+fn research_v3_equivalence_command(
+    program: &Path,
+    output: &Path,
+    max_steps: usize,
+    layers: usize,
+    attention_mode: Attention2DMode,
+) -> llm_provable_computer::Result<()> {
+    research_v3_equivalence_command_impl(program, output, max_steps, layers, attention_mode)
+}
+
 #[cfg(feature = "onnx-export")]
 fn research_v2_step_command_impl(
     program: &Path,
@@ -3692,6 +3818,223 @@ fn research_v2_matrix_command_impl(
     Ok(())
 }
 
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_equivalence_command_impl(
+    program: &Path,
+    output: &Path,
+    max_steps: usize,
+    layers: usize,
+    attention_mode: Attention2DMode,
+) -> llm_provable_computer::Result<()> {
+    if max_steps < 1 {
+        return Err(VmError::InvalidConfig(
+            "research-v3-equivalence requires max_steps >= 1".to_string(),
+        ));
+    }
+
+    let bundle = load_research_v2_spec_bundle(
+        STATEMENT_V3_EQUIVALENCE_SPEC_PATH,
+        STATEMENT_V3_EQUIVALENCE_ARTIFACT_SCHEMA_PATH,
+    )?;
+    let model = compile_model(program, layers, attention_mode)?;
+    let export_dir = ScopedTempDir::new("research-v3-equivalence")?;
+    let onnx_metadata = export_program_onnx(&model, export_dir.path())?;
+    let device = Default::default();
+    let burn_model = BurnTransformerVm::<CliBurnBackend>::from_compiled(&model, &device)?;
+
+    let mut transformer = ExecutionRuntime::new(model.clone(), max_steps);
+    let mut native = NativeInterpreter::new(
+        model.program().clone(),
+        model.config().attention_mode.clone(),
+        max_steps,
+    );
+    let mut burn = BurnExecutionRuntime::new(burn_model, device, max_steps);
+    let mut onnx = OnnxExecutionRuntime::from_export_dir(export_dir.path(), max_steps)?;
+
+    let verification = verify_engines(&mut [&mut transformer, &mut native, &mut burn, &mut onnx])?;
+
+    let engine_names = verification
+        .engines
+        .iter()
+        .map(|engine| engine.name.clone())
+        .collect::<Vec<_>>();
+    let verified_transformer = verification.engines.first().ok_or_else(|| {
+        VmError::InvalidConfig("research-v3-equivalence missing transformer result".to_string())
+    })?;
+    let verified_native = verification.engines.get(1).ok_or_else(|| {
+        VmError::InvalidConfig("research-v3-equivalence missing native result".to_string())
+    })?;
+    let verified_burn = verification.engines.get(2).ok_or_else(|| {
+        VmError::InvalidConfig("research-v3-equivalence missing burn result".to_string())
+    })?;
+    let verified_onnx = verification.engines.get(3).ok_or_else(|| {
+        VmError::InvalidConfig("research-v3-equivalence missing ONNX result".to_string())
+    })?;
+    let engines = vec![
+        research_v3_engine_summary(
+            &verified_transformer.name,
+            transformer.trace(),
+            transformer.events(),
+            &verified_transformer.result,
+        )?,
+        research_v3_engine_summary(
+            &verified_native.name,
+            native.trace(),
+            native.events(),
+            &verified_native.result,
+        )?,
+        research_v3_engine_summary(
+            &verified_burn.name,
+            burn.trace(),
+            burn.events(),
+            &verified_burn.result,
+        )?,
+        research_v3_engine_summary(
+            &verified_onnx.name,
+            onnx.trace(),
+            onnx.events(),
+            &verified_onnx.result,
+        )?,
+    ];
+    let rule_witnesses = research_v3_rule_witnesses(transformer.events(), &engine_names)?;
+    let engine_summaries_hash = hash_json_hex(&engines)?;
+    let rule_witnesses_hash = hash_json_hex(&rule_witnesses)?;
+
+    let artifact = ResearchV3EquivalenceArtifact {
+        statement_version: bundle.statement_version.clone(),
+        semantic_scope: bundle.semantic_scope.clone(),
+        relation_format: RESEARCH_V3_RELATION_FORMAT.to_string(),
+        fixed_point_profile: bundle.fixed_point_profile.clone(),
+        onnx_op_subset_version: bundle.onnx_op_subset_version.clone(),
+        onnx_op_subset_size: bundle.onnx_op_subset_size,
+        program_path: program.display().to_string(),
+        requested_max_steps: max_steps,
+        checked_steps: verification.checked_steps,
+        // Artifact construction is reached only after verify_engines accepts the full lockstep run.
+        matched: true,
+        engines,
+        rule_witnesses,
+        limitations: vec![
+            "e-graph saturation is not implemented in this artifact".to_string(),
+            "SMT-backed rewrite synthesis is not implemented in this artifact".to_string(),
+            "randomized opaque-kernel testing is not implemented in this artifact".to_string(),
+            "the current evidence is deterministic multi-engine lockstep over the shipped VM/ONNX/Burn/native surfaces".to_string(),
+        ],
+        commitments: ResearchV3EquivalenceCommitments {
+            hash_function: RESEARCH_V2_HASH_FUNCTION.to_string(),
+            statement_spec_hash: bundle.statement_spec_hash,
+            fixed_point_spec_hash: bundle.fixed_point_spec_hash,
+            onnx_op_subset_hash: bundle.onnx_op_subset_hash,
+            artifact_schema_hash: bundle.artifact_schema_hash,
+            program_hash: hash_json_hex(model.program())?,
+            transformer_config_hash: hash_json_hex(model.config())?,
+            onnx_metadata_hash: hash_json_hex(&onnx_metadata)?,
+            engine_summaries_hash,
+            rule_witnesses_hash,
+        },
+    };
+
+    let bytes = serde_json::to_vec_pretty(&artifact)
+        .map_err(|err| VmError::Serialization(format!("failed to serialize artifact: {err}")))?;
+    fs::write(output, bytes)?;
+
+    println!("research_v3_equivalence_artifact: {}", output.display());
+    println!("statement_version: {}", artifact.statement_version);
+    println!("semantic_scope: {}", artifact.semantic_scope);
+    println!("relation_format: {}", artifact.relation_format);
+    println!("checked_steps: {}", artifact.checked_steps);
+    println!("matched: {}", artifact.matched);
+    println!("engines: {}", engine_names.join(","));
+    println!("rule_witnesses: {}", artifact.rule_witnesses.len());
+    println!(
+        "commitment_engine_summaries_hash: {}",
+        artifact.commitments.engine_summaries_hash
+    );
+    println!(
+        "commitment_rule_witnesses_hash: {}",
+        artifact.commitments.rule_witnesses_hash
+    );
+
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_engine_summary(
+    name: &str,
+    trace: &[MachineState],
+    events: &[ExecutionTraceEntry],
+    result: &ExecutionResult,
+) -> llm_provable_computer::Result<ResearchV3EngineSummary> {
+    let canonical_events = research_v3_canonical_events(events)?;
+    Ok(ResearchV3EngineSummary {
+        name: name.to_string(),
+        steps: result.steps,
+        halted: result.halted,
+        trace_len: trace.len(),
+        events_len: events.len(),
+        final_state: result.final_state.clone(),
+        trace_hash: hash_json_hex(trace)?,
+        event_relation_hash: hash_json_hex(&canonical_events)?,
+        final_state_hash: hash_json_hex(&result.final_state)?,
+    })
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_canonical_events(
+    events: &[ExecutionTraceEntry],
+) -> llm_provable_computer::Result<Vec<ResearchV3CanonicalEvent>> {
+    events
+        .iter()
+        .map(|event| {
+            Ok(ResearchV3CanonicalEvent {
+                step: event.step,
+                layer_idx: event.layer_idx,
+                instruction: event.instruction.to_string(),
+                state_before_hash: hash_json_hex(&event.state_before)?,
+                state_after_hash: hash_json_hex(&event.state_after)?,
+            })
+        })
+        .collect()
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_rule_witnesses(
+    reference_events: &[ExecutionTraceEntry],
+    engine_names: &[String],
+) -> llm_provable_computer::Result<Vec<ResearchV3RuleWitness>> {
+    reference_events
+        .iter()
+        .map(|event| {
+            let instruction = event.instruction.to_string();
+            Ok(ResearchV3RuleWitness {
+                step: event.step,
+                rule_id: research_v3_rule_id(&instruction),
+                relation: "same-instruction-same-state-transition".to_string(),
+                instruction,
+                participating_engines: engine_names.to_vec(),
+                state_before_hash: hash_json_hex(&event.state_before)?,
+                state_after_hash: hash_json_hex(&event.state_after)?,
+                validation: ResearchV3RuleValidation {
+                    differential_lockstep: true,
+                    egraph_status: "not-attempted".to_string(),
+                    smt_status: "not-attempted".to_string(),
+                    randomized_testing_status: "not-attempted".to_string(),
+                },
+            })
+        })
+        .collect()
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_rule_id(instruction: &str) -> String {
+    let opcode = instruction
+        .split_whitespace()
+        .next()
+        .unwrap_or("unknown")
+        .to_ascii_lowercase();
+    format!("lockstep-{opcode}-v1")
+}
+
 #[cfg(feature = "onnx-export")]
 fn enforce_research_v2_trace_mismatch_policy(
     matched: bool,
@@ -3972,6 +4315,20 @@ fn research_v2_matrix_command_impl(
     Err(feature_required_error(
         "`research-v2-matrix`",
         &["onnx-export"],
+    ))
+}
+
+#[cfg(not(all(feature = "burn-model", feature = "onnx-export")))]
+fn research_v3_equivalence_command_impl(
+    _program: &Path,
+    _output: &Path,
+    _max_steps: usize,
+    _layers: usize,
+    _attention_mode: Attention2DMode,
+) -> llm_provable_computer::Result<()> {
+    Err(feature_required_error(
+        "`research-v3-equivalence`",
+        &["burn-model", "onnx-export"],
     ))
 }
 
@@ -4467,6 +4824,7 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "research-v2-step"
                 | "research-v2-trace"
                 | "research-v2-matrix"
+                | "research-v3-equivalence"
                 | "help"
         )
 }

@@ -363,6 +363,14 @@ run_stwo_smoke_targets() {
   done
 }
 
+run_research_v3_smoke_targets() {
+  run_logged research-v3-equivalence-cli cargo test -q \
+    --features full \
+    --test cli cli_supports_research_v3_equivalence_command \
+    -- \
+    --exact
+}
+
 if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
   run_logged cargo-fmt-check cargo fmt --check
@@ -380,6 +388,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
   run_stwo_smoke_targets
+  run_research_v3_smoke_targets
   completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
@@ -388,6 +397,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
   run_stwo_smoke_targets
+  run_research_v3_smoke_targets
   run_logged ub-checks env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
   run_logged asan env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_asan_suite.sh
   run_logged miri env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_miri_suite.sh
