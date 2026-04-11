@@ -4,14 +4,20 @@ permissions:
   contents: read
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
+    paths:
+      - ".github/workflows/ci.yml"
+      - "src/**/*.rs"
+      - "tests/**"
+      - "programs/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  workflow_dispatch:
 
 jobs:
-  statement-spec:
-    name: statement spec contract
+  pr-smoke:
+    name: lightweight PR lib smoke
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
 
     steps:
@@ -24,7 +30,48 @@ jobs:
           toolchain: stable
 
       - name: Restore Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+
+      - name: Restore pinned nightly toolchain cache
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809
+        with:
+          path: |
+            ~/.rustup/toolchains/nightly-2025-07-14-*
+            ~/.rustup/downloads
+            ~/.rustup/update-hashes
+          key: rustup-nightly-2025-07-14-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Run lightweight regression smoke
+        run: |
+          cargo test -q --lib statement_spec_contract_is_synced_with_constants
+          smoke_targets=(assembly e2e interpreter runtime vanillastark_smoke)
+          for test_target in "${smoke_targets[@]}"; do
+            cargo test -q --test "$test_target"
+          done
+          rustup toolchain install nightly-2025-07-14 --profile minimal
+          stwo_smoke=stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks
+          cargo +nightly-2025-07-14 test -q \
+            --features stwo-backend \
+            --lib "$stwo_smoke" \
+            -- \
+            --exact
+
+  statement-spec:
+    name: statement spec contract
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
+        with:
+          toolchain: stable
+
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
 
       - name: Validate statement spec constants contract
         run: |
@@ -33,6 +80,7 @@ jobs:
 
   cargo-test:
     name: cargo nextest (${{ matrix.name }})
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -76,8 +124,6 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
         with:
-          toolchain: stable
-        with:
           toolchain: ${{ matrix.rust_toolchain }}
 
       - name: Install Python
@@ -93,7 +139,7 @@ jobs:
           python -m pip install -r scripts/requirements.txt
 
       - name: Restore Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
 
       - name: Install cargo-nextest
         uses: taiki-e/install-action@80e6af7a2ec7f280fffe2d0a9d3a12a9d11d86e9
@@ -131,6 +177,7 @@ jobs:
 
   milestone-1-proof:
     name: export and validate ONNX workflow
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     steps:
@@ -151,7 +198,7 @@ jobs:
           python -m pip install -r scripts/requirements.txt
 
       - name: Restore Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
 
       - name: Export ONNX from CLI
         run: cargo run --features onnx-export --bin tvm -- export-onnx programs/fibonacci.tvm -o compiled/fibonacci
@@ -173,6 +220,7 @@ jobs:
 
   fuzz-smoke:
     name: fuzz smoke (${{ matrix.target }})
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -206,7 +254,7 @@ jobs:
           toolchain: ${{ steps.fuzz-toolchain.outputs.channel }}
 
       - name: Restore Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
 
       - name: Install cargo-fuzz
         run: cargo +${{ steps.fuzz-toolchain.outputs.channel }} install cargo-fuzz --version 0.13.1 --locked

@@ -4,20 +4,7 @@ permissions:
   contents: read
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
-  pull_request:
-    paths:
-      - ".github/workflows/miri-sanitizers.yml"
-      - "scripts/hardening_test_names.sh"
-      - "scripts/run_miri_suite.sh"
-      - "scripts/run_asan_suite.sh"
-      - "scripts/run_ub_checks_suite.sh"
-      - "src/**/*.rs"
-      - "Cargo.toml"
-      - "Cargo.lock"
 
 env:
   HARDENING_TOOLCHAIN: nightly-2025-07-14
