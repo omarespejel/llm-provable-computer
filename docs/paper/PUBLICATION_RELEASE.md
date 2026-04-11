@@ -79,4 +79,6 @@ Before cutting a release tag, verify:
 5. Reference `[30]` in the paper remains pinned to the Phase 28 engineering
    checkpoint, while the release tag resolves to the merge commit that contains
    this v4 paper metadata,
-6. `paper preflight` passes (citation integrity, immutable local repo links, figure/link paths, appendix source note).
+6. `paper preflight` passes (citation integrity, immutable local repo links,
+   figure/link paths, appendix source note, and unresolved publication snapshot
+   placeholder detection unless draft mode is explicitly allowed).

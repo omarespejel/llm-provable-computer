@@ -293,6 +293,55 @@ class PaperPreflightTests(unittest.TestCase):
             )
             self.assertEqual(findings.errors, [])
 
+    def test_publication_snapshot_pending_field_fails_by_default(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(
+                repo / "docs/paper/submission-v4-2026-04-11/BUNDLE_INDEX.md",
+                "Canonical repository snapshot:\nPending. Fill after merge.\n",
+            )
+            findings = MOD.Findings()
+            MOD.check_publication_snapshot_placeholders(
+                repo, findings, allow_pending_snapshot=False
+            )
+            self.assertTrue(
+                any("Pending." in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_publication_snapshot_allow_pending_still_rejects_tbd_sha(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(
+                repo / "docs/paper/PUBLICATION_RELEASE.md",
+                "Canonical publication snapshot commit:\nTBD_SNAPSHOT_SHA\n",
+            )
+            findings = MOD.Findings()
+            MOD.check_publication_snapshot_placeholders(
+                repo, findings, allow_pending_snapshot=True
+            )
+            self.assertTrue(
+                any("TBD_SNAPSHOT_SHA" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_publication_snapshot_pending_prose_is_not_a_placeholder(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(
+                repo / "docs/paper/PUBLICATION_RELEASE.md",
+                (
+                    "A later publication may be Pending. That prose is not the field.\n\n"
+                    "Canonical publication snapshot commit:\n"
+                    "`paper-publication-v4-2026-04-11` once cut.\n"
+                ),
+            )
+            findings = MOD.Findings()
+            MOD.check_publication_snapshot_placeholders(
+                repo, findings, allow_pending_snapshot=False
+            )
+            self.assertEqual(findings.errors, [])
+
 
 if __name__ == "__main__":
     unittest.main()

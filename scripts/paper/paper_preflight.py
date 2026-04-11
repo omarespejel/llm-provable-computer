@@ -20,24 +20,28 @@ from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
 
-PAPER_FILES = [
-    "docs/paper/stark-transformer-alignment-2026.md",
-    "docs/paper/appendix-system-comparison.md",
-    "docs/paper/appendix-scaling-companion.md",
-    "docs/paper/appendix-backend-artifact-comparison.md",
-    "docs/paper/PUBLICATION_RELEASE.md",
-    "docs/paper/submission-v4-2026-04-11/BUNDLE_INDEX.md",
-    "docs/paper/submission-v4-2026-04-11/REPRODUCIBILITY_NOTE.md",
-]
-
 PUBLICATION_METADATA_FILES = [
     "docs/paper/PUBLICATION_RELEASE.md",
     "docs/paper/submission-v4-2026-04-11/BUNDLE_INDEX.md",
     "docs/paper/submission-v4-2026-04-11/REPRODUCIBILITY_NOTE.md",
 ]
 
-SNAPSHOT_PLACEHOLDER_TOKENS = (
-    "TBD_SNAPSHOT_SHA",
+PAPER_FILES = [
+    "docs/paper/stark-transformer-alignment-2026.md",
+    "docs/paper/appendix-system-comparison.md",
+    "docs/paper/appendix-scaling-companion.md",
+    "docs/paper/appendix-backend-artifact-comparison.md",
+    *PUBLICATION_METADATA_FILES,
+]
+
+SNAPSHOT_FIELD_HEADINGS = (
+    "Canonical publication snapshot commit:",
+    "Canonical repository snapshot:",
+)
+
+HARD_SNAPSHOT_PLACEHOLDER_TOKENS = ("TBD_SNAPSHOT_SHA",)
+SOFT_SNAPSHOT_PLACEHOLDER_TOKENS = (
+    "PENDING_SNAPSHOT_SHA",
     "Pending.",
     "Pending:",
 )
@@ -224,19 +228,40 @@ def check_appendix_source_note(repo_root: pathlib.Path, findings: Findings) -> N
 def check_publication_snapshot_placeholders(
     repo_root: pathlib.Path, findings: Findings, allow_pending_snapshot: bool
 ) -> None:
-    if allow_pending_snapshot:
-        return
     for rel_path in PUBLICATION_METADATA_FILES:
         path = repo_root / rel_path
         if not path.exists():
             continue
         text = path.read_text(encoding="utf-8")
-        for token in SNAPSHOT_PLACEHOLDER_TOKENS:
+        for token in HARD_SNAPSHOT_PLACEHOLDER_TOKENS:
             if token in text:
+                findings.error(
+                    f"{path}: unresolved publication snapshot placeholder {token!r}; "
+                    "replace it before paper preflight."
+                )
+        if allow_pending_snapshot:
+            continue
+        snapshot_field_text = "\n".join(iter_snapshot_field_lines(text))
+        for token in SOFT_SNAPSHOT_PLACEHOLDER_TOKENS:
+            if token in snapshot_field_text:
                 findings.error(
                     f"{path}: unresolved publication snapshot placeholder {token!r}; "
                     "replace it before release preflight or rerun with --allow-pending-snapshot for draft-only checks."
                 )
+
+
+def iter_snapshot_field_lines(text: str):
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if not any(stripped.startswith(heading) for heading in SNAPSHOT_FIELD_HEADINGS):
+            continue
+        yield line
+        for continuation in lines[index + 1 :]:
+            continuation = continuation.strip()
+            if not continuation or continuation.startswith("#"):
+                break
+            yield continuation
 
 
 def parse_markdown_table_after_heading(text: str, heading: str) -> list[list[str]]:
