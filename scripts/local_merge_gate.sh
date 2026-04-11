@@ -543,13 +543,20 @@ jq --argjson now "$now_epoch" '
         ($pull.comments.nodes[]? | select(.author.login as $login | $ai_reviewers | index($login)) | {author:.author.login, createdAt}),
         ($pull.reviews.nodes[]? | select(.author.login as $login | $ai_reviewers | index($login)) | {author:.author.login, createdAt}),
         ($pull.reviewThreads.nodes[].comments.nodes[]? | select(.author.login as $login | $ai_reviewers | index($login)) | {author:.author.login, createdAt})
-      ] | map(select(.createdAt | type == "string" and length > 0)) | sort_by(.createdAt) | last) as $latest
+      ]
+      | map(
+          select(.createdAt | type == "string" and length > 0)
+          | . + {epoch: (try (.createdAt | fromdateiso8601) catch null)}
+          | select(.epoch != null)
+        )
+      | sort_by(.epoch)
+      | last) as $latest
     | {
         active_threads: ($active | length),
-        latest_ai_event: ($latest // null),
-        latest_ai_event_epoch: (if $latest then ($latest.createdAt | fromdateiso8601) else null end),
+        latest_ai_event: (if $latest then {author:$latest.author, createdAt:$latest.createdAt} else null end),
+        latest_ai_event_epoch: (if $latest then $latest.epoch else null end),
         quiet_window_source: (if $latest then "latest_ai_event" else "no_ai_event" end),
-        seconds_since_latest_ai_event: (if $latest then ($now - ($latest.createdAt | fromdateiso8601)) else null end)
+        seconds_since_latest_ai_event: (if $latest then ($now - $latest.epoch) else null end)
       }
   ' "$review_source_json" >"$threads_json"
 
