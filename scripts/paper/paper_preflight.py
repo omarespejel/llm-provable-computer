@@ -6,7 +6,8 @@ Checks:
 2) immutable-link policy for this repository's GitHub links (commit-pinned only),
 3) figure/link cross-reference existence for local file links,
 4) source-note presence in appendix-system-comparison,
-5) backend appendix timing/size consistency against frozen artifact indices.
+5) backend appendix timing/size consistency against frozen artifact indices,
+6) unresolved publication snapshot placeholder detection.
 """
 
 from __future__ import annotations
@@ -28,6 +29,18 @@ PAPER_FILES = [
     "docs/paper/submission-v4-2026-04-11/BUNDLE_INDEX.md",
     "docs/paper/submission-v4-2026-04-11/REPRODUCIBILITY_NOTE.md",
 ]
+
+PUBLICATION_METADATA_FILES = [
+    "docs/paper/PUBLICATION_RELEASE.md",
+    "docs/paper/submission-v4-2026-04-11/BUNDLE_INDEX.md",
+    "docs/paper/submission-v4-2026-04-11/REPRODUCIBILITY_NOTE.md",
+]
+
+SNAPSHOT_PLACEHOLDER_TOKENS = (
+    "TBD_SNAPSHOT_SHA",
+    "Pending.",
+    "Pending:",
+)
 
 LOCAL_REPOS = {
     ("omarespejel", "llm-provable-computer"),
@@ -206,6 +219,24 @@ def check_appendix_source_note(repo_root: pathlib.Path, findings: Findings) -> N
     text = path.read_text(encoding="utf-8")
     if "Sources:" not in text:
         findings.error(f"{path}: missing standalone source note (expected 'Sources: ...').")
+
+
+def check_publication_snapshot_placeholders(
+    repo_root: pathlib.Path, findings: Findings, allow_pending_snapshot: bool
+) -> None:
+    if allow_pending_snapshot:
+        return
+    for rel_path in PUBLICATION_METADATA_FILES:
+        path = repo_root / rel_path
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        for token in SNAPSHOT_PLACEHOLDER_TOKENS:
+            if token in text:
+                findings.error(
+                    f"{path}: unresolved publication snapshot placeholder {token!r}; "
+                    "replace it before release preflight or rerun with --allow-pending-snapshot for draft-only checks."
+                )
 
 
 def parse_markdown_table_after_heading(text: str, heading: str) -> list[list[str]]:
@@ -511,6 +542,14 @@ def main() -> int:
         default=".",
         help="Repository root path (default: current directory).",
     )
+    parser.add_argument(
+        "--allow-pending-snapshot",
+        action="store_true",
+        help=(
+            "Allow deliberate publication snapshot placeholders in metadata files. "
+            "Use only for in-progress draft checks, not release checks."
+        ),
+    )
     args = parser.parse_args()
 
     repo_root = pathlib.Path(args.repo_root).resolve()
@@ -525,6 +564,9 @@ def main() -> int:
 
     check_appendix_source_note(repo_root, findings)
     check_backend_appendix_consistency(repo_root, findings)
+    check_publication_snapshot_placeholders(
+        repo_root, findings, args.allow_pending_snapshot
+    )
 
     if findings.warnings:
         print("Warnings:")

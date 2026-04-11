@@ -1,10 +1,9 @@
 # Reproducibility Note (One Page)
 
 This note describes how to reproduce the publication-facing paper artifacts for
-the rolling base tag `paper-publication-v4-2026-04-11`. Before cutting that tag,
-set the canonical v4 repository snapshot to the merge commit that contains this
-paper metadata. The systems evidence cited by the paper remains pinned to the
-Phase 28 proof-carrying aggregation checkpoint commit
+the rolling base tag `paper-publication-v4-2026-04-11` once cut. The tag should
+resolve to a commit that contains this v4 paper metadata. The systems evidence
+cited by the paper remains pinned to the Phase 28 proof-carrying aggregation checkpoint commit
 `520240822c48dc3111bc5b91d5896ab97a2bb4c8`.
 
 ## 1) Scope and Intended Reproduction Target

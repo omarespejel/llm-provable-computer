@@ -6,8 +6,10 @@ Intended launch tag for the current paper-facing repository state:
 `paper-publication-v4-2026-04-11`
 
 Canonical publication snapshot commit:
-Pending. Set this to the merge commit that contains this v4 paper metadata before
-cutting `paper-publication-v4-2026-04-11`.
+The canonical v4 publication snapshot is the release tag
+`paper-publication-v4-2026-04-11` once cut. That tag must resolve to a commit
+containing this v4 paper metadata, and it intentionally need not match the
+Phase 28 engineering checkpoint cited by Reference `[30]`.
 
 Phase 28 engineering checkpoint for the systems evidence cited by Reference `[30]`:
 `520240822c48dc3111bc5b91d5896ab97a2bb4c8`

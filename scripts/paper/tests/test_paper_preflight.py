@@ -266,6 +266,33 @@ class PaperPreflightTests(unittest.TestCase):
                 findings.errors,
             )
 
+    def test_publication_snapshot_placeholders_fail_by_default(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(
+                repo / "docs/paper/PUBLICATION_RELEASE.md",
+                "Canonical publication snapshot commit:\nTBD_SNAPSHOT_SHA\n",
+            )
+            findings = MOD.Findings()
+            MOD.check_publication_snapshot_placeholders(
+                repo, findings, allow_pending_snapshot=False
+            )
+            self.assertTrue(findings.errors)
+            self.assertIn("TBD_SNAPSHOT_SHA", findings.errors[0])
+
+    def test_publication_snapshot_placeholders_can_be_allowed_for_drafts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(
+                repo / "docs/paper/submission-v4-2026-04-11/BUNDLE_INDEX.md",
+                "Canonical repository snapshot:\nPending. Fill after merge.\n",
+            )
+            findings = MOD.Findings()
+            MOD.check_publication_snapshot_placeholders(
+                repo, findings, allow_pending_snapshot=True
+            )
+            self.assertEqual(findings.errors, [])
+
 
 if __name__ == "__main__":
     unittest.main()
