@@ -24,6 +24,10 @@ The public verifier rejects any Phase 28 manifest where the effective
 `pre-recursive-proof-carrying-aggregation`, or where either claim bit is set to
 `true`. Older Phase 28 artifacts that omit these fields still deserialize to the
 same pre-recursive posture.
+When a `recursion_posture` field is present, deserialization also rejects values
+larger than `128` bytes before the verifier compares the posture value or claim
+bits; this keeps oversized untrusted posture strings out of verifier error
+paths.
 
 ## Inputs
 
