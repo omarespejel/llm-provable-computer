@@ -41,7 +41,8 @@ use llm_provable_computer::{
     load_phase26_folded_intervalized_decoding_state_relation,
     load_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     load_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
-    load_phase3_binary_step_lookup_proof, load_phase5_normalization_lookup_proof,
+    load_phase29_recursive_compression_input_contract, load_phase3_binary_step_lookup_proof,
+    load_phase5_normalization_lookup_proof, phase29_prepare_recursive_compression_input_contract,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
     prove_phase12_decoding_demo, prove_phase13_decoding_layout_matrix_demo,
@@ -82,6 +83,7 @@ use llm_provable_computer::{
     verify_phase24_decoding_state_relation_accumulator_with_proof_checks,
     verify_phase25_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase26_folded_intervalized_decoding_state_relation_with_proof_checks,
+    verify_phase29_recursive_compression_input_contract,
     verify_phase3_binary_step_lookup_demo_envelope,
     verify_phase5_normalization_lookup_demo_envelope,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
@@ -107,6 +109,8 @@ use llm_provable_computer::{
     STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
     STWO_NORMALIZATION_PROOF_VERSION_PHASE5, STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5,
     STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
+    STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29,
+    STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29,
 };
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
@@ -479,6 +483,23 @@ enum Command {
     VerifyStwoAggregatedChainedFoldedIntervalizedDecodingStateRelationDemo {
         /// Path to the serialized aggregated chained folded intervalized state relation JSON file.
         proof: PathBuf,
+    },
+    /// Derive a Phase 29 recursive-compression input contract from a verified Phase 28 aggregate.
+    #[cfg(feature = "stwo-backend")]
+    PrepareStwoRecursiveCompressionInputContract {
+        /// Path to the serialized Phase 28 aggregate JSON or JSON.gz file.
+        #[arg(long = "phase28")]
+        phase28: PathBuf,
+        /// File where the serialized Phase 29 input contract JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a serialized Phase 29 recursive-compression input contract.
+    #[cfg(feature = "stwo-backend")]
+    VerifyStwoRecursiveCompressionInputContract {
+        /// Path to the serialized Phase 29 input contract JSON or JSON.gz file.
+        #[arg(long = "input")]
+        input: PathBuf,
     },
     /// Prepare a canonical multi-proof batch manifest for future S-two recursion.
     PrepareStwoRecursionBatch {
@@ -1089,6 +1110,14 @@ fn run() -> llm_provable_computer::Result<()> {
             verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_demo_command(
                 &proof,
             )?
+        }
+        #[cfg(feature = "stwo-backend")]
+        Command::PrepareStwoRecursiveCompressionInputContract { phase28, output } => {
+            prepare_stwo_recursive_compression_input_contract_command(&phase28, &output)?
+        }
+        #[cfg(feature = "stwo-backend")]
+        Command::VerifyStwoRecursiveCompressionInputContract { input } => {
+            verify_stwo_recursive_compression_input_contract_command(&input)?
         }
         Command::PrepareStwoRecursionBatch { proofs, output } => {
             prepare_stwo_recursion_batch_command(&proofs, &output)?
@@ -3224,6 +3253,142 @@ fn verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_de
     }
 }
 
+#[cfg(feature = "stwo-backend")]
+fn prepare_stwo_recursive_compression_input_contract_command(
+    phase28_path: &Path,
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    require_stwo_backend("S-two Phase 29 recursive-compression input contract")?;
+
+    let phase28 =
+        load_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks(
+            phase28_path,
+        )?;
+    let contract = phase29_prepare_recursive_compression_input_contract(&phase28)?;
+    let json = serde_json::to_string_pretty(&contract)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    fs::write(output, json)?;
+
+    println!("output: {}", output.display());
+    println!("phase28: {}", phase28_path.display());
+    println!("verified_phase28: true");
+    println!("proof_backend: {}", contract.proof_backend);
+    println!("contract_version: {}", contract.contract_version);
+    println!("semantic_scope: {}", contract.semantic_scope);
+    println!(
+        "phase28_artifact_version: {}",
+        contract.phase28_artifact_version
+    );
+    println!(
+        "phase28_proof_backend_version: {}",
+        contract.phase28_proof_backend_version
+    );
+    println!("statement_version: {}", contract.statement_version);
+    println!(
+        "required_recursion_posture: {}",
+        contract.required_recursion_posture
+    );
+    println!(
+        "recursive_verification_claimed: {}",
+        contract.recursive_verification_claimed
+    );
+    println!(
+        "cryptographic_compression_claimed: {}",
+        contract.cryptographic_compression_claimed
+    );
+    println!("phase28_member_count: {}", contract.phase28_member_count);
+    println!("total_phase26_members: {}", contract.total_phase26_members);
+    println!("total_phase25_members: {}", contract.total_phase25_members);
+    println!("total_matrices: {}", contract.total_matrices);
+    println!("total_layouts: {}", contract.total_layouts);
+    println!("total_rollups: {}", contract.total_rollups);
+    println!("total_segments: {}", contract.total_segments);
+    println!("total_steps: {}", contract.total_steps);
+    println!("lookup_delta_entries: {}", contract.lookup_delta_entries);
+    println!(
+        "max_lookup_frontier_entries: {}",
+        contract.max_lookup_frontier_entries
+    );
+    println!(
+        "input_contract_commitment: {}",
+        contract.input_contract_commitment
+    );
+    println!(
+        "expected_contract_version: {}",
+        STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29
+    );
+    println!(
+        "expected_semantic_scope: {}",
+        STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29
+    );
+
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn verify_stwo_recursive_compression_input_contract_command(
+    input_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    require_stwo_backend("S-two Phase 29 recursive-compression input contract")?;
+
+    let contract = load_phase29_recursive_compression_input_contract(input_path)?;
+    verify_phase29_recursive_compression_input_contract(&contract)?;
+
+    println!("input: {}", input_path.display());
+    println!("verified_contract: true");
+    println!("proof_backend: {}", contract.proof_backend);
+    println!("contract_version: {}", contract.contract_version);
+    println!("semantic_scope: {}", contract.semantic_scope);
+    println!(
+        "phase28_artifact_version: {}",
+        contract.phase28_artifact_version
+    );
+    println!(
+        "phase28_proof_backend_version: {}",
+        contract.phase28_proof_backend_version
+    );
+    println!("statement_version: {}", contract.statement_version);
+    println!(
+        "required_recursion_posture: {}",
+        contract.required_recursion_posture
+    );
+    println!(
+        "recursive_verification_claimed: {}",
+        contract.recursive_verification_claimed
+    );
+    println!(
+        "cryptographic_compression_claimed: {}",
+        contract.cryptographic_compression_claimed
+    );
+    println!("phase28_member_count: {}", contract.phase28_member_count);
+    println!("total_phase26_members: {}", contract.total_phase26_members);
+    println!("total_phase25_members: {}", contract.total_phase25_members);
+    println!("total_matrices: {}", contract.total_matrices);
+    println!("total_layouts: {}", contract.total_layouts);
+    println!("total_rollups: {}", contract.total_rollups);
+    println!("total_segments: {}", contract.total_segments);
+    println!("total_steps: {}", contract.total_steps);
+    println!("lookup_delta_entries: {}", contract.lookup_delta_entries);
+    println!(
+        "max_lookup_frontier_entries: {}",
+        contract.max_lookup_frontier_entries
+    );
+    println!(
+        "input_contract_commitment: {}",
+        contract.input_contract_commitment
+    );
+    println!(
+        "expected_contract_version: {}",
+        STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29
+    );
+    println!(
+        "expected_semantic_scope: {}",
+        STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29
+    );
+
+    Ok(())
+}
+
 fn verify_stwo_normalization_demo_command(proof_path: &Path) -> llm_provable_computer::Result<()> {
     #[cfg(not(feature = "stwo-backend"))]
     {
@@ -4463,6 +4628,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-chained-folded-intervalized-decoding-state-relation-demo"
                 | "prove-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo"
                 | "verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo"
+                | "prepare-stwo-recursive-compression-input-contract"
+                | "verify-stwo-recursive-compression-input-contract"
                 | "prepare-stwo-recursion-batch"
                 | "research-v2-step"
                 | "research-v2-trace"

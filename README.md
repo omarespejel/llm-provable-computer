@@ -488,6 +488,15 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo \
   decoding-aggregated-chained-folded-intervalized-state-relation.stwo.json
 
+# Derive and verify the Phase 29 input contract that future recursion/compression must consume
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-recursive-compression-input-contract \
+  --phase28 decoding-aggregated-chained-folded-intervalized-state-relation.stwo.json \
+  -o recursive-compression-input-contract.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-recursive-compression-input-contract \
+  --input recursive-compression-input-contract.stwo.json
+
 # Freeze a canonical pre-aggregation batch manifest for future recursion work
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-recursion-batch \
