@@ -39,6 +39,13 @@ hardening_stwo_test_filters=(
   "stwo_backend::decoding::tests::phase28_public_verifier_rejects_synthetic_member_shells_without_nested_phase27_evidence"
   "stwo_backend::decoding::tests::phase28_member_proof_checks_reject_synthetic_member_shells_without_nested_phase27_evidence"
   "stwo_backend::decoding::tests::phase28_proof_checks_reject_synthetic_member_shells_without_nested_phase27_evidence"
+  "stwo_backend::recursion::tests::phase29_recursive_compression_input_contract_accepts_committed_shape"
+  "stwo_backend::recursion::tests::phase29_recursive_compression_input_contract_rejects_recursive_claim"
+  "stwo_backend::recursion::tests::phase29_recursive_compression_input_contract_rejects_compression_claim"
+  "stwo_backend::recursion::tests::phase29_recursive_compression_input_contract_rejects_empty_commitments"
+  "stwo_backend::recursion::tests::phase29_recursive_compression_input_contract_rejects_tampered_commitment"
+  "stwo_backend::recursion::tests::phase29_prepare_rejects_phase28_recursive_claim_before_contract_derivation"
+  "stwo_backend::recursion::tests::phase29_prepare_rejects_phase28_synthetic_shell_without_nested_members"
 )
 
 hardening_test_filters=(
