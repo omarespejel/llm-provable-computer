@@ -10,7 +10,7 @@ April 2026
 
 This paper gives a transformer-specific symbolic cost comparison between SNARK constraints and STARK trace rows for verifiable inference. Under the worked constants used throughout (`C_exp = 300`, `C_norm = 30`, `C_nonlin = 150`), GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields about `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK rows across 12 layers (`1.48x`). Over practical context ranges, the ratio rises and then approaches a finite architecture-dependent ceiling.
 
-We pair that analysis with a repository artifact, `provable-transformer-vm`, that now includes a frozen baseline tier, a frozen narrow experimental `stwo` tier, a commit-pinned parameterized proof-carrying decoding path (`decoding_step_v2`) with carried-state commitments, and a post-freeze Phase 24-28 pre-recursive carried-state aggregation ladder [30]. This paper does not claim full standard-softmax inference on S-two, cross-step shared-table accumulation, recursive proof compression, or production zkML deployment. The claim is narrower: transformer workloads emphasize dimensions where STARK-native systems may compound advantages while SNARK systems remain strong competitors.
+We pair that analysis with a repository artifact, `provable-transformer-vm`, that now includes a frozen baseline tier, a frozen narrow experimental `stwo` tier, a commit-pinned parameterized proof-carrying decoding path (`decoding_step_v2`) with carried-state commitments, and a post-freeze Phase 24-28 pre-recursive carried-state aggregation ladder [30]. This paper does not claim full standard-softmax inference on S-two, cross-step shared-table accumulation, recursive cryptographic compression/verification closure, or production-scale zkML deployment. The claim is narrower: transformer workloads emphasize dimensions where STARK-native systems may compound advantages while SNARK systems remain strong competitors.
 
 ---
 
@@ -268,7 +268,7 @@ The repository remains deliberately narrow:
 - default reproducibility and primary transformer relation still use the vanilla backend,
 - the experimental `stwo` path is bounded research scope, not broad production zkML scope,
 - attention is currently `average-hard`, not full standard softmax,
-- shared-table lookup state is carried and pre-recursive carried-state aggregation artifacts now exist experimentally, but cross-step shared-table accumulation and recursive cryptographic compression across decode steps are not yet public,
+- shared-table lookup state is carried and pre-recursive carried-state aggregation artifacts now exist experimentally, but cross-step shared-table accumulation and recursive cryptographic compression/verification closure across decode steps are not yet public,
 - learned-model end-to-end LLM proving, zero-knowledge hiding, and full-ISA AIR coverage remain out of scope.
 
 These limits are intentional scope discipline: the artifact supports structural systems, pre-recursive carried-state claims, and narrow experimental accumulation/aggregation artifacts, but not full softmax-plus-recursion closure.

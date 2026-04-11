@@ -46,7 +46,7 @@ patches and a subsequent publication tag.
 - Post-freeze commit-pinned evidence now includes the Phase 24-28 pre-recursive
   carried-state aggregation ladder.
 - The repo still does **not** claim full standard-softmax transformer inference on S-two,
-  cross-step shared-table accumulation, recursive proof compression, or production-scale zkML deployment.
+  cross-step shared-table accumulation, recursive cryptographic compression/verification closure, or production-scale zkML deployment.
 
 ## Regeneration
 
