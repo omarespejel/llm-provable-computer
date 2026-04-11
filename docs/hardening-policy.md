@@ -25,7 +25,7 @@ Run the relevant subset from the repository root:
 ```bash
 cargo test -q --lib
 TEST_FILTER=phase28_
-cargo +nightly-2025-07-14 test -q --features stwo-backend "$TEST_FILTER" --lib
+cargo +nightly-2025-07-14 test -q --features stwo-backend --lib "$TEST_FILTER"
 cargo fmt --check
 git diff --check
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_miri_suite.sh
