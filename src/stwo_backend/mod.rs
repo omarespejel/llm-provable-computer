@@ -155,6 +155,7 @@ pub use decoding::{
     STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26,
     STWO_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE25,
     STWO_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE25,
+    STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE,
 };
 pub use layout::{
     phase2_fixture_matrix, phase2_module_layout, phase2_supported_mnemonics,
@@ -196,6 +197,16 @@ pub use normalization_prover::{
     STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5, STWO_SHARED_NORMALIZATION_PROOF_VERSION_PHASE10,
     STWO_SHARED_NORMALIZATION_SEMANTIC_SCOPE_PHASE10,
     STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10,
+};
+#[cfg(feature = "stwo-backend")]
+pub use recursion::{
+    commit_phase29_recursive_compression_input_contract,
+    load_phase29_recursive_compression_input_contract,
+    parse_phase29_recursive_compression_input_contract_json,
+    phase29_prepare_recursive_compression_input_contract,
+    verify_phase29_recursive_compression_input_contract, Phase29RecursiveCompressionInputContract,
+    STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29,
+    STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29,
 };
 pub use recursion::{
     phase6_prepare_recursion_batch, Phase6RecursionBatchEntry, Phase6RecursionBatchManifest,

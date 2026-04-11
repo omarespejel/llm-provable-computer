@@ -90,7 +90,7 @@ pub const STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VE
     &str = "stwo-phase28-aggregated-chained-folded-intervalized-decoding-state-relation-v1";
 pub const STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE28:
     &str = "stwo_execution_parameterized_aggregated_chained_folded_intervalized_proof_carrying_decoding_state_relation";
-const STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE: &str =
+pub const STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE: &str =
     "pre-recursive-proof-carrying-aggregation";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
 const DECODING_OUTPUT_RANGE: std::ops::Range<usize> = 10..13;
@@ -1128,7 +1128,11 @@ fn validate_phase12_shared_lookup_artifact_resource_bounds(
     Ok(())
 }
 
-fn read_json_bytes_with_limit(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u8>> {
+pub(super) fn read_json_bytes_with_limit(
+    path: &Path,
+    max_bytes: usize,
+    label: &str,
+) -> Result<Vec<u8>> {
     let metadata = fs::symlink_metadata(path).map_err(|error| {
         VmError::InvalidConfig(format!(
             "{label} `{}` could not be inspected before reading: io_kind={:?}: {error}",
@@ -1142,13 +1146,47 @@ fn read_json_bytes_with_limit(path: &Path, max_bytes: usize, label: &str) -> Res
             path.display()
         )));
     }
-    let file = fs::File::open(path).map_err(|error| {
+    if metadata.len() > max_bytes as u64 {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
+            path.display(),
+            metadata.len(),
+            max_bytes
+        )));
+    }
+    let file = open_json_file_for_read(path, label)?;
+    let opened_metadata = file.metadata().map_err(|error| {
         VmError::InvalidConfig(format!(
-            "{label} `{}` could not be opened for reading: io_kind={:?}: {error}",
+            "{label} `{}` could not be inspected after opening: io_kind={:?}: {error}",
             path.display(),
             error.kind()
         ))
     })?;
+    if !opened_metadata.file_type().is_file() {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} `{}` is not a regular file after opening",
+            path.display()
+        )));
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+
+        if metadata.dev() != opened_metadata.dev() || metadata.ino() != opened_metadata.ino() {
+            return Err(VmError::InvalidConfig(format!(
+                "{label} `{}` changed between metadata inspection and open",
+                path.display()
+            )));
+        }
+    }
+    if opened_metadata.len() > max_bytes as u64 {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} `{}` is {} bytes after opening, exceeding the limit of {} bytes",
+            path.display(),
+            opened_metadata.len(),
+            max_bytes
+        )));
+    }
     let is_gzip = matches!(path.extension().and_then(|ext| ext.to_str()), Some("gz"));
     if is_gzip {
         let mut limited = GzDecoder::new(file).take((max_bytes as u64).saturating_add(1));
@@ -1169,14 +1207,6 @@ fn read_json_bytes_with_limit(path: &Path, max_bytes: usize, label: &str) -> Res
         }
         return Ok(bytes);
     }
-    if metadata.len() > max_bytes as u64 {
-        return Err(VmError::InvalidConfig(format!(
-            "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
-            path.display(),
-            metadata.len(),
-            max_bytes
-        )));
-    }
     let mut limited = file.take((max_bytes as u64).saturating_add(1));
     let mut bytes = Vec::with_capacity(metadata.len().min(max_bytes as u64) as usize);
     limited.read_to_end(&mut bytes).map_err(|error| {
@@ -1195,6 +1225,35 @@ fn read_json_bytes_with_limit(path: &Path, max_bytes: usize, label: &str) -> Res
         )));
     }
     Ok(bytes)
+}
+
+#[cfg(unix)]
+fn open_json_file_for_read(path: &Path, label: &str) -> Result<fs::File> {
+    use std::fs::OpenOptions;
+    use std::os::unix::fs::OpenOptionsExt;
+
+    OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+        .open(path)
+        .map_err(|error| {
+            VmError::InvalidConfig(format!(
+                "{label} `{}` could not be opened for reading without following symlinks or blocking: io_kind={:?}: {error}",
+                path.display(),
+                error.kind()
+            ))
+        })
+}
+
+#[cfg(not(unix))]
+fn open_json_file_for_read(path: &Path, label: &str) -> Result<fs::File> {
+    fs::File::open(path).map_err(|error| {
+        VmError::InvalidConfig(format!(
+            "{label} `{}` could not be opened for reading: io_kind={:?}: {error}",
+            path.display(),
+            error.kind()
+        ))
+    })
 }
 
 fn write_json_with_limit<T: Serialize>(

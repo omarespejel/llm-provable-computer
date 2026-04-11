@@ -346,6 +346,22 @@ cp "$tmp_pr_json" "$pr_json"
 diff_range="${base_sha}...${head_sha}"
 local_evidence_marker="$run_evidence_dir/local-evidence.json"
 completed_local_mode=""
+stwo_smoke_targets=(
+  "stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks"
+  "stwo_backend::recursion::tests::phase29_recursive_compression_input_contract_rejects_tampered_commitment"
+)
+
+run_stwo_smoke_targets() {
+  local stwo_smoke label
+  for stwo_smoke in "${stwo_smoke_targets[@]}"; do
+    label="${stwo_smoke##*::}"
+    run_logged "stwo-backend-smoke-${label}" cargo +nightly-2025-07-14 test -q \
+      --features stwo-backend \
+      --lib "$stwo_smoke" \
+      -- \
+      --exact
+  done
+}
 
 if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
@@ -355,12 +371,7 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   for test_target in "${smoke_targets[@]}"; do
     run_logged "integration-${test_target}" cargo test -q --test "$test_target"
   done
-  stwo_smoke=stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks
-  run_logged stwo-backend-smoke cargo +nightly-2025-07-14 test -q \
-    --features stwo-backend \
-    --lib "$stwo_smoke" \
-    -- \
-    --exact
+  run_stwo_smoke_targets
   completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
@@ -368,12 +379,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_logged cargo-lib-tests cargo test -q --lib
   run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
-  stwo_smoke=stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks
-  run_logged stwo-backend-smoke cargo +nightly-2025-07-14 test -q \
-    --features stwo-backend \
-    --lib "$stwo_smoke" \
-    -- \
-    --exact
+  run_stwo_smoke_targets
   completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
@@ -381,12 +387,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged cargo-lib-tests cargo test -q --lib
   run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
-  stwo_smoke=stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks
-  run_logged stwo-backend-smoke cargo +nightly-2025-07-14 test -q \
-    --features stwo-backend \
-    --lib "$stwo_smoke" \
-    -- \
-    --exact
+  run_stwo_smoke_targets
   run_logged ub-checks env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
   run_logged asan env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_asan_suite.sh
   run_logged miri env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_miri_suite.sh
