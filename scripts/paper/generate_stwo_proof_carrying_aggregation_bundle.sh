@@ -8,7 +8,7 @@ export CARGO_INCREMENTAL="${CARGO_INCREMENTAL:-0}"
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
 
-BUNDLE_DIR="${BUNDLE_DIR:-$REPO_ROOT/docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-10}"
+BUNDLE_DIR="${BUNDLE_DIR:-$REPO_ROOT/docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11}"
 NIGHTLY_TOOLCHAIN="${NIGHTLY_TOOLCHAIN:-+nightly-2025-07-14}"
 BUILD_PROFILE="${BUILD_PROFILE:-debug}"
 CARGO_BUILD_STWO=(cargo "$NIGHTLY_TOOLCHAIN" build --features stwo-backend --bin tvm)
