@@ -37,8 +37,8 @@ patches and a subsequent publication tag.
 
 - Main paper:
   - `docs/paper/stark-transformer-alignment-2026.md`
-  - Title: `Proof-Carrying Decoding for Transformer Computers over an Experimental S-two Backend`
-  - Subtitle: `From transformer-as-computer execution traces to recursive-ready carried-state proof artifacts.`
+  - Title: `On the Structural Fit of Transformer Workloads and STARK Proof Systems`
+  - Subtitle: `With proof-carrying decoding artifacts over an experimental S-two path.`
 - Supporting appendices:
   - `docs/paper/appendix-system-comparison.md`
   - `docs/paper/appendix-scaling-companion.md`
