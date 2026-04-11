@@ -19,9 +19,11 @@ The manifest makes that posture explicit:
 - `recursive_verification_claimed` defaults to `false`,
 - `cryptographic_compression_claimed` defaults to `false`.
 
-The public verifier rejects any Phase 28 manifest that changes the posture label
-or sets either claim bit. Older Phase 28 artifacts that omit these fields still
-deserialize to the same pre-recursive posture.
+The public verifier rejects any Phase 28 manifest where the effective
+`recursion_posture` after deserialization is not
+`pre-recursive-proof-carrying-aggregation`, or where either claim bit is set to
+`true`. Older Phase 28 artifacts that omit these fields still deserialize to the
+same pre-recursive posture.
 
 ## Inputs
 

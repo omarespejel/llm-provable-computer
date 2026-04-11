@@ -140,6 +140,7 @@ const MAX_PHASE28_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_MEMBERS: usize = 128;
 const MAX_PHASE28_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_ROLLUPS: usize = 8_388_608;
 const MAX_PHASE28_TOTAL_NESTED_PHASE26_MEMBERS: usize = 8_192;
 const MAX_PHASE28_TOTAL_NESTED_PHASE25_MEMBERS: usize = 16_384;
+const MAX_PHASE28_RECURSION_POSTURE_BYTES: usize = 128;
 
 fn default_phase28_recursion_posture() -> String {
     STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE.to_string()
@@ -7804,10 +7805,17 @@ fn validate_phase28_aggregated_chained_folded_intervalized_decoding_state_relati
             manifest.statement_version
         )));
     }
+    if manifest.recursion_posture.len() > MAX_PHASE28_RECURSION_POSTURE_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "aggregated chained folded intervalized decoding state relation recursion_posture_len={} exceeds the supported maximum {}",
+            manifest.recursion_posture.len(),
+            MAX_PHASE28_RECURSION_POSTURE_BYTES
+        )));
+    }
     if manifest.recursion_posture != STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE {
         return Err(VmError::InvalidConfig(format!(
-            "aggregated chained folded intervalized decoding state relation recursion_posture `{}` is not `{}`",
-            manifest.recursion_posture,
+            "aggregated chained folded intervalized decoding state relation recursion_posture_len={} is not the expected pre-recursive posture `{}`",
+            manifest.recursion_posture.len(),
             STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE
         )));
     }
@@ -20767,6 +20775,25 @@ mod tests {
         assert!(err
             .to_string()
             .contains(STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE));
+    }
+
+    #[test]
+    fn phase28_aggregated_chained_folded_intervalized_state_relation_rejects_long_recursive_posture_without_echoing_it(
+    ) {
+        let (mut manifest, summaries) =
+            sample_phase28_aggregated_chained_folded_intervalized_decoding_state_relation();
+        manifest.recursion_posture = "x".repeat(MAX_PHASE28_RECURSION_POSTURE_BYTES + 1);
+        let err =
+            verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_summaries(
+                &manifest,
+                &summaries,
+            )
+            .unwrap_err();
+        assert!(err.to_string().contains("recursion_posture_len="));
+        assert!(
+            err.to_string().len() < 256,
+            "error must not echo untrusted posture payload"
+        );
     }
 
     #[test]
