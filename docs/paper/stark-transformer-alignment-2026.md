@@ -263,7 +263,7 @@ The artifact provides:
 - two reproducibility tiers: `production-v1` (vanilla) and `stwo-experimental-v1` (narrow experimental),
 - a parameterized proof-carrying decoding family (`decoding_step_v2`) over multiple public layouts,
 - carried-state packaging (chain, intervalized package, folded-interval package, segment, rollup, and multi-layout matrix) with KV/lookup cumulative and frontier commitments,
-- a pre-recursive carried-state packaging ladder over the same decode relation, including chain, intervalized, folded-interval, segment, rollup, matrix, and aggregation packages,
+- a pre-recursive carried-state packaging ladder over the same decode relation, including chain, intervalized package, folded-interval package, segment, rollup, matrix, and aggregation package objects,
 - hardened verifier kernels backed by differential testing, fuzzing, mutation checks, and bounded model checking.
 
 The important systems property is stable statement structure: the same decode relation survives progressively more composable manifest layers without changing statement boundaries. The aggregation ladder remains pre-recursive and replay-verifies nested proof-bearing members.
@@ -436,7 +436,7 @@ Recent folding literature already covers generalized recursive arguments and CCS
 1. keep one fixed transformer-block relation and one decode transition relation,
 2. accumulate repeated block/step instances with shared lookup tables,
 3. preserve explicit KV/lookup boundary commitments under that accumulation,
-4. compare the existing intervalized, folded-interval, and aggregation packages against a recursive compressed mode on the same artifact family.
+4. compare the existing intervalized packages, folded-interval packages, and aggregation packages against a recursive compressed mode on the same artifact family.
 
 A second high-value track is trust-core assurance: maintain differential/oracle tests, fuzzing, and bounded model-checking around carried-state verifier kernels, then selectively formalize the smallest trust-critical binding layer [42].
 
