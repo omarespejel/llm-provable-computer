@@ -194,7 +194,7 @@ fi
 tmp_pr_json="$(mktemp)"
 trap 'rm -f "$tmp_pr_json"' EXIT
 gh pr view "$PR_NUMBER" --repo "$REPO" \
-  --json url,state,isDraft,mergeable,reviewDecision,headRefOid,baseRefOid,headRefName,baseRefName,statusCheckRollup \
+  --json url,state,isDraft,mergeable,reviewDecision,headRefOid,baseRefOid,headRefName,baseRefName,createdAt,statusCheckRollup \
   >"$tmp_pr_json"
 
 state="$(jq -r '.state' "$tmp_pr_json")"
@@ -203,6 +203,7 @@ mergeable="$(jq -r '.mergeable' "$tmp_pr_json")"
 head_sha="$(jq -r '.headRefOid' "$tmp_pr_json")"
 base_sha="$(jq -r '.baseRefOid' "$tmp_pr_json")"
 pr_url="$(jq -r '.url' "$tmp_pr_json")"
+pr_created_at="$(jq -r '.createdAt' "$tmp_pr_json")"
 
 [[ "$state" == "OPEN" ]] || fail "PR is not open: $state"
 [[ "$is_draft" == "false" ]] || fail "PR is draft"
@@ -269,13 +270,14 @@ fi
 
 # Refresh PR state after local commands in case review bots posted while tests ran.
 gh pr view "$PR_NUMBER" --repo "$REPO" \
-  --json url,state,isDraft,mergeable,reviewDecision,headRefOid,baseRefOid,headRefName,baseRefName,statusCheckRollup \
+  --json url,state,isDraft,mergeable,reviewDecision,headRefOid,baseRefOid,headRefName,baseRefName,createdAt,statusCheckRollup \
   >"$pr_json"
 head_sha_after="$(jq -r '.headRefOid' "$pr_json")"
 [[ "$head_sha_after" == "$head_sha" ]] || fail "PR head changed while gate was running: $head_sha -> $head_sha_after"
 
 checks_json="$run_evidence_dir/checks.json"
 jq '[.statusCheckRollup[]? | {name, status, conclusion}]' "$pr_json" >"$checks_json"
+ai_check_count="$(jq -r '[.[] | select((.name // "") | test("coderabbit|greptile|qodo"; "i"))] | length' "$checks_json")"
 
 blocking_checks="$(jq -r '
   [.[]
@@ -316,7 +318,7 @@ GRAPHQL
 now_epoch="$(date -u +%s)"
 threads_json="$run_evidence_dir/review-gate.json"
 gh api graphql -f query="$query" -F owner="$owner" -F name="$name" -F number="$PR_NUMBER" \
-  | jq --argjson now "$now_epoch" '
+  | jq --argjson now "$now_epoch" --arg pr_created_at "$pr_created_at" '
       .data.repository.pullRequest as $pull
       | [ $pull.reviewThreads.nodes[]? | select(.isResolved == false) ] as $active
       | ([
@@ -324,16 +326,23 @@ gh api graphql -f query="$query" -F owner="$owner" -F name="$name" -F number="$P
           ($pull.reviews.nodes[]? | select(.author.login | test("coderabbit|greptile|qodo"; "i")) | {author:.author.login, createdAt}),
           ($pull.reviewThreads.nodes[].comments.nodes[]? | select(.author.login | test("coderabbit|greptile|qodo"; "i")) | {author:.author.login, createdAt})
         ] | sort_by(.createdAt) | last) as $latest
+      | ($pr_created_at | fromdateiso8601) as $pr_created_epoch
+      | (if $latest then ($latest.createdAt | fromdateiso8601) else $pr_created_epoch end) as $quiet_epoch
       | {
           active_threads: ($active | length),
           latest_ai_event: ($latest // null),
           latest_ai_event_epoch: (if $latest then ($latest.createdAt | fromdateiso8601) else null end),
-          seconds_since_latest_ai_event: (if $latest then ($now - ($latest.createdAt | fromdateiso8601)) else null end)
+          quiet_window_source: (if $latest then "latest_ai_event" else "pr_created_no_ai_event" end),
+          quiet_window_source_epoch: $quiet_epoch,
+          seconds_since_latest_ai_event: (if $latest then ($now - ($latest.createdAt | fromdateiso8601)) else null end),
+          seconds_since_quiet_window_source: ($now - $quiet_epoch)
         }
     ' >"$threads_json"
 
 active_threads="$(jq -r '.active_threads' "$threads_json")"
 seconds_since_ai="$(jq -r '.seconds_since_latest_ai_event // "none"' "$threads_json")"
+seconds_since_quiet_source="$(jq -r '.seconds_since_quiet_window_source' "$threads_json")"
+quiet_source="$(jq -r '.quiet_window_source' "$threads_json")"
 latest_ai="$(jq -r '.latest_ai_event.createdAt // "none"' "$threads_json")"
 latest_ai_author="$(jq -r '.latest_ai_event.author // "none"' "$threads_json")"
 
@@ -341,10 +350,14 @@ if (( active_threads > 0 )); then
   fail "active review threads remain: $active_threads"
 fi
 
-if [[ "$seconds_since_ai" != "none" ]] && (( seconds_since_ai < QUIET_SECONDS )); then
-  remaining=$((QUIET_SECONDS - seconds_since_ai))
+if (( ai_check_count == 0 )) && [[ "$seconds_since_ai" == "none" ]]; then
+  fail "no AI reviewer signal observed yet in checks, reviews, review threads, or PR comments"
+fi
+
+if (( seconds_since_quiet_source < QUIET_SECONDS )); then
+  remaining=$((QUIET_SECONDS - seconds_since_quiet_source))
   if (( WAIT )); then
-    log "AI quiet window not satisfied; latest ${latest_ai_author} event at ${latest_ai}; sleeping ${remaining}s"
+    log "AI quiet window not satisfied from ${quiet_source}; latest ${latest_ai_author} event at ${latest_ai}; sleeping ${remaining}s"
     sleep "$remaining"
     retry_args=("$0" --repo "$REPO" --pr "$PR_NUMBER" --mode none --quiet-seconds "$QUIET_SECONDS" --evidence-dir "$EVIDENCE_DIR" --wait --method "$MERGE_METHOD")
     if (( MERGE )); then
@@ -355,7 +368,7 @@ if [[ "$seconds_since_ai" != "none" ]] && (( seconds_since_ai < QUIET_SECONDS ))
     fi
     exec "${retry_args[@]}"
   fi
-  fail "AI quiet window not satisfied; latest ${latest_ai_author} event at ${latest_ai}, ${seconds_since_ai}s ago"
+  fail "AI quiet window not satisfied from ${quiet_source}; latest ${latest_ai_author} event at ${latest_ai}"
 fi
 
 commands_json="$run_evidence_dir/commands.json"

@@ -114,9 +114,12 @@ The GitHub side of the merge gate is intentionally narrow:
   `SUCCESS`, `SKIPPED`, or `NEUTRAL`.
 - All review threads must be resolved, regardless of reviewer.
 - No CodeRabbit, Greptile, or Qodo review/comment event may have occurred in the
-  previous 300 seconds. Passing `--wait` sleeps through the remaining quiet
-  window and then rechecks without rerunning local tests; any PR head change
-  causes the recheck to fail.
+  previous 300 seconds. If no AI review/comment event exists yet, the quiet
+  window falls back to PR creation time and the gate still requires at least one
+  CodeRabbit, Greptile, or Qodo signal from the check rollup or review stream
+  before merging. Passing `--wait` sleeps through the remaining quiet window and
+  then rechecks without rerunning local tests; any PR head change causes the
+  recheck to fail.
 - Passing `--merge` is required for the script to merge. Without `--merge`, it
   only writes evidence and reports the gate result.
 
