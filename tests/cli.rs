@@ -3902,10 +3902,12 @@ fn cli_verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relatio
         .arg(&proof_path)
         .assert()
         .failure()
+        .stderr(predicate::str::contains(
+            "Phase 28 aggregated chained folded intervalized decoding state relation",
+        ))
         .stderr(
-            predicate::str::contains("No such file")
-                .or(predicate::str::contains("not found"))
-                .or(predicate::str::contains("failed to read")),
+            predicate::str::contains("could not be inspected before reading")
+                .and(predicate::str::contains("io_kind=NotFound")),
         )
         .stderr(predicate::str::contains("panicked at").not());
 }

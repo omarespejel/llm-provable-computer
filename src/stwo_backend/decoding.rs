@@ -1054,14 +1054,26 @@ fn validate_phase12_shared_lookup_artifact_resource_bounds(
 }
 
 fn read_json_bytes_with_limit(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u8>> {
-    let metadata = fs::symlink_metadata(path)?;
+    let metadata = fs::symlink_metadata(path).map_err(|error| {
+        VmError::InvalidConfig(format!(
+            "{label} `{}` could not be inspected before reading: io_kind={:?}: {error}",
+            path.display(),
+            error.kind()
+        ))
+    })?;
     if !metadata.file_type().is_file() {
         return Err(VmError::InvalidConfig(format!(
             "{label} `{}` is not a regular file",
             path.display()
         )));
     }
-    let file = fs::File::open(path)?;
+    let file = fs::File::open(path).map_err(|error| {
+        VmError::InvalidConfig(format!(
+            "{label} `{}` could not be opened for reading: io_kind={:?}: {error}",
+            path.display(),
+            error.kind()
+        ))
+    })?;
     let is_gzip = matches!(path.extension().and_then(|ext| ext.to_str()), Some("gz"));
     if is_gzip {
         let mut limited = GzDecoder::new(file).take((max_bytes as u64).saturating_add(1));
@@ -1092,7 +1104,13 @@ fn read_json_bytes_with_limit(path: &Path, max_bytes: usize, label: &str) -> Res
     }
     let mut limited = file.take((max_bytes as u64).saturating_add(1));
     let mut bytes = Vec::with_capacity(metadata.len().min(max_bytes as u64) as usize);
-    limited.read_to_end(&mut bytes)?;
+    limited.read_to_end(&mut bytes).map_err(|error| {
+        VmError::InvalidConfig(format!(
+            "{label} `{}` could not be read: io_kind={:?}: {error}",
+            path.display(),
+            error.kind()
+        ))
+    })?;
     if bytes.len() > max_bytes {
         return Err(VmError::InvalidConfig(format!(
             "{label} `{}` is {} bytes after reading, exceeding the limit of {} bytes",
