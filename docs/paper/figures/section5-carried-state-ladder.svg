@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="980" height="360" viewBox="0 0 980 360" role="img" aria-labelledby="title desc">
-  <title id="title">Asterion carried-state artifact ladder</title>
+  <title id="title">Carried-state artifact ladder</title>
   <desc id="desc">Flow diagram from proof-carrying decode steps through pre-recursive carried-state packaging to the Phase 29 input contract, with KV and lookup commitment lanes carried across the same boundaries.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -21,7 +21,7 @@
     </style>
   </defs>
   <rect class="bg" x="0" y="0" width="980" height="360"/>
-  <text class="label" x="40" y="42">Asterion carried-state ladder</text>
+  <text class="label" x="40" y="42">Carried-state ladder</text>
   <text class="small" x="40" y="66">Statement-preserving artifact layers; not recursive proof compression until a later prover verifies the Phase 29 contract.</text>
 
   <rect class="box" x="40" y="112" width="120" height="74"/>

@@ -323,6 +323,33 @@ class PaperPreflightTests(unittest.TestCase):
             MOD.check_publication_snapshot_placeholders(repo, findings)
             self.assertEqual(findings.errors, [])
 
+    def test_publication_tag_tree_url_is_allowed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            path = repo / "docs/paper/paper.md"
+            write_text(
+                path,
+                "<https://github.com/omarespejel/provable-transformer-vm/tree/paper-publication-v4-2026-04-11>\n",
+            )
+            findings = MOD.Findings()
+            MOD.run_file_checks(path, repo, findings)
+            self.assertEqual(findings.errors, [])
+
+    def test_floating_tree_url_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            path = repo / "docs/paper/paper.md"
+            write_text(
+                path,
+                "<https://github.com/omarespejel/provable-transformer-vm/tree/main>\n",
+            )
+            findings = MOD.Findings()
+            MOD.run_file_checks(path, repo, findings)
+            self.assertTrue(
+                any("not commit- or publication-tag-pinned" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

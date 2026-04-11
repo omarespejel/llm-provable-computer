@@ -15,7 +15,7 @@ Draft author line:
 - Omar Espejel - Starknet Foundation
 
 Paper title:
-- `Asterion: Proof-Carrying STARKs for Transformer Computers`
+- `Proof-Carrying Decoding for Transformer Computers over an Experimental S-two Backend`
 
 Subtitle:
 - `From transformer-as-computer execution traces to recursive-ready carried-state proof artifacts.`

@@ -1,4 +1,4 @@
-# Asterion: Proof-Carrying STARKs for Transformer Computers
+# Proof-Carrying Decoding for Transformer Computers over an Experimental S-two Backend
 
 *From transformer-as-computer execution traces to recursive-ready carried-state proof artifacts.*
 
@@ -13,7 +13,7 @@ April 2026
 
 ## Abstract
 
-This paper introduces **Asterion**, a proof-carrying STARK architecture for transformer computers, and compares symbolic proving work for transformer inference under explicit constants. With `C_exp = 300`, `C_norm = 30`, and `C_nonlin = 150`, GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields about `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK rows across 12 layers (`1.48x`). Over practical context ranges, the ratio rises and then approaches a finite architecture-dependent ceiling. These are symbolic counts, not matched benchmarks.
+This paper studies proof-carrying decoding for transformer computers over an experimental S-two backend and compares symbolic proving work for transformer inference under explicit constants. With `C_exp = 300`, `C_norm = 30`, and `C_nonlin = 150`, GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields about `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK rows across 12 layers (`1.48x`). Over practical context ranges, the ratio rises and then approaches a finite architecture-dependent ceiling. These are symbolic counts, not matched benchmarks.
 
 We pair the model with `provable-transformer-vm` [30], a supporting repository artifact. It provides a vanilla reproducibility tier, a narrow experimental `stwo` tier, a parameterized proof-carrying decoding path (`decoding_step_v2`) with carried-state commitments, and a pre-recursive carried-state aggregation artifact. This paper does not claim full standard-softmax inference on S-two, recursive cross-step shared-table accumulation beyond the public lookup-accumulator artifact, recursive cryptographic compression/verification closure, or production-scale zkML deployment. The narrower claim is that transformer workloads emphasize dimensions where STARK-native systems may compound advantages while SNARK systems remain strong competitors.
 
@@ -290,9 +290,9 @@ where `w_t` contains the step witness and proof-bearing artifact material checke
 
 Figure 3 summarizes the object flow and the two carried commitment lanes.
 
-![Figure 3. Asterion carried-state artifact ladder from decode steps to the Phase 29 input contract.](figures/section5-carried-state-ladder.svg)
+![Figure 3. Carried-state artifact ladder from decode steps to the Phase 29 input contract.](figures/section5-carried-state-ladder.svg)
 
-**Figure 3.** Asterion carried-state artifact ladder. The top lane packages proof-carrying decode artifacts from steps into chains, segments, rollups, matrices, pre-recursive folded layers, Phase 28 aggregation, and the Phase 29 recursive-compression input contract. The lower lanes carry KV and lookup cumulative/frontier commitments across the same boundaries. Phase 29 is only a contract for future recursion/compression.
+**Figure 3.** Carried-state artifact ladder. The top lane packages proof-carrying decode artifacts from steps into chains, segments, rollups, matrices, pre-recursive folded layers, Phase 28 aggregation, and the Phase 29 recursive-compression input contract. The lower lanes carry KV and lookup cumulative/frontier commitments across the same boundaries. Phase 29 is only a contract for future recursion/compression.
 
 ### 5.3 Negative evidence
 
@@ -479,7 +479,7 @@ This paper uses the maintained repository `omarespejel/provable-transformer-vm`,
 27. BitSage Network. “elo-cairo-verifier/README.md.” GitHub documentation file in *obelyzk.rs*. Accessed April 9, 2026. <https://github.com/Bitsage-Network/obelyzk.rs/blob/main/elo-cairo-verifier/README.md>
 28. Giza. *LuminAIR*. GitHub repository. Accessed April 5, 2026. <https://github.com/gizatechxyz/LuminAIR>
 29. StarkWare. “Giza x S-two: Powering Verifiable ML with LuminAIR.” *StarkWare Blog*. Accessed April 5, 2026. <https://starkware.co/blog/giza-x-s-two-powering-verifiable-ml-with-luminair/>
-30. `omarespejel/provable-transformer-vm`. “Asterion publication release snapshot.” GitHub repository, publication tag `paper-publication-v4-2026-04-11` to be cut from the final paper-facing merge. <https://github.com/omarespejel/provable-transformer-vm>
+30. `omarespejel/provable-transformer-vm`. “Publication release snapshot.” GitHub repository, publication tag `paper-publication-v4-2026-04-11` to be cut from the final paper-facing merge. <https://github.com/omarespejel/provable-transformer-vm/tree/paper-publication-v4-2026-04-11>
 31. `omarespejel/provable-transformer-vm`. “Appendix Artifact Index (Production V1).” GitHub artifact snapshot, commit `8d435d540b8e3cf33ec4381bb820a00b6fe7aae6`, with command logs, hashes, and proof artifacts for the vanilla reproducibility tier. <https://github.com/omarespejel/provable-transformer-vm/blob/8d435d540b8e3cf33ec4381bb820a00b6fe7aae6/docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md>
 32. Starknet Docs. “Accounts.” *Starknet Documentation*. Accessed April 5, 2026. <https://docs.starknet.io/architecture/accounts>
 33. Zhizhi Peng, Chonghe Zhao, Taotao Wang, Guofu Liao, Zibin Lin, Yifeng Liu, Bin Cao, Long Shi, Qing Yang, and Shengli Zhang. “A Survey of Zero-Knowledge Proof-Based Verifiable Machine Learning.” *Artificial Intelligence Review* (accepted manuscript), arXiv:2502.18535v2, 2026. <https://arxiv.org/abs/2502.18535>

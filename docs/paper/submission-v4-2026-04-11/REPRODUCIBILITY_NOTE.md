@@ -1,12 +1,13 @@
 # Reproducibility Note (One Page)
 
 This note describes how to reproduce the publication-facing paper artifacts for
-**Asterion: Proof-Carrying STARKs for Transformer Computers** under the rolling
-base tag `paper-publication-v4-2026-04-11` once cut. The tag should resolve to a
-commit that contains this v4 paper metadata. The carried-state aggregation
-evidence remains pinned to the Phase 28 proof-carrying aggregation checkpoint
-commit `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`, with the dedicated bundle
-index cited at commit `be9c4e47a9b774e7fdbccf7cdc6977c11b39dcd6`.
+**Proof-Carrying Decoding for Transformer Computers over an Experimental S-two
+Backend** under the rolling base tag `paper-publication-v4-2026-04-11` once cut.
+The tag should resolve to a commit that contains this v4 paper metadata. The
+carried-state aggregation evidence remains pinned to the Phase 28 proof-carrying
+aggregation checkpoint commit `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`, with
+the dedicated bundle index cited at commit
+`be9c4e47a9b774e7fdbccf7cdc6977c11b39dcd6`.
 
 ## 1) Scope and Intended Reproduction Target
 
@@ -45,7 +46,7 @@ python3 scripts/paper/paper_preflight.py --repo-root .
 This verifies:
 
 - local citation integrity for files with local references sections,
-- immutable-link policy for this repository’s GitHub links (commit-pinned),
+- immutable-link policy for this repository's GitHub links (commit-pinned or publication-tag-pinned),
 - local figure/link path existence,
 - standalone source note presence for system-comparison appendix.
 

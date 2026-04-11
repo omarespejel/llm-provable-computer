@@ -37,7 +37,7 @@ patches and a subsequent publication tag.
 
 - Main paper:
   - `docs/paper/stark-transformer-alignment-2026.md`
-  - Title: `Asterion: Proof-Carrying STARKs for Transformer Computers`
+  - Title: `Proof-Carrying Decoding for Transformer Computers over an Experimental S-two Backend`
   - Subtitle: `From transformer-as-computer execution traces to recursive-ready carried-state proof artifacts.`
 - Supporting appendices:
   - `docs/paper/appendix-system-comparison.md`
@@ -75,6 +75,8 @@ patches and a subsequent publication tag.
   - `./scripts/generate_repro_bundle.sh`
 - Experimental `stwo` bundle:
   - `./scripts/paper/generate_stwo_publication_bundle.sh`
+- Phase 28 proof-carrying aggregation bundle:
+  - `./scripts/paper/generate_stwo_proof_carrying_aggregation_bundle.sh`
 - Archived web evidence:
   - `python3 scripts/paper/archive_supporting_web_evidence.py`
 - Gemma config extracts:
@@ -87,6 +89,7 @@ patches and a subsequent publication tag.
 Before cutting a release tag, verify:
 
 1. the frozen bundle directories exist and their `sha256sums.txt` files validate,
+   and the Phase 28 aggregation bundle's `provenance_sha256sums.txt` also validates,
 2. the main paper and appendices refer to the same repo state and evidence tiers,
 3. the design note matches the current experimental `stwo` status,
 4. no stale top-level README language still describes S-two as merely prospective,
