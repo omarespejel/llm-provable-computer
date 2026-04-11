@@ -1,12 +1,18 @@
 # Publication Release Package
 
-Snapshot date: **April 9, 2026**
+Snapshot date: **April 11, 2026**
 
 Intended launch tag for the current paper-facing repository state:
-`paper-publication-v3-2026-04-09`
+`paper-publication-v4-2026-04-11`
 
 Canonical publication snapshot commit:
-`900ad5da657fb3b8085755657eb50c5f53580c23`
+The canonical v4 publication snapshot is the release tag
+`paper-publication-v4-2026-04-11` once cut. That tag must resolve to a commit
+containing this v4 paper metadata, and it intentionally need not match the
+Phase 28 engineering checkpoint cited by Reference `[30]`.
+
+Phase 28 engineering checkpoint for the systems evidence cited by Reference `[30]`:
+`520240822c48dc3111bc5b91d5896ab97a2bb4c8`
 
 Canonical launch repository:
 `https://github.com/omarespejel/provable-transformer-vm`
@@ -43,8 +49,11 @@ patches and a subsequent publication tag.
 
 - `production-v1` is the primary frozen reproducibility bundle for the vanilla backend.
 - `stwo-experimental-v1` is the frozen narrow evidence tier for the experimental S-two path.
-- The repo still does **not** claim full standard-softmax transformer inference on S-two, recursive
-  aggregation, or production-scale zkML deployment.
+- Post-freeze commit-pinned evidence now includes the Phase 24-28 pre-recursive
+  carried-state aggregation ladder.
+- The repo still does **not** claim full standard-softmax transformer inference on S-two,
+  recursive cross-step shared-table accumulation beyond the public Phase 23 lookup accumulator,
+  recursive cryptographic compression/verification closure, or production-scale zkML deployment.
 
 ## Regeneration
 
@@ -67,6 +76,9 @@ Before cutting a release tag, verify:
 2. the main paper and appendices refer to the same repo state and evidence tiers,
 3. the design note matches the current experimental `stwo` status,
 4. no stale top-level README language still describes S-two as merely prospective,
-5. Reference `[30]` in the paper points at the intended submission snapshot
-   commit (and, when a release tag is circulated, that tag resolves to the same commit),
-6. `paper preflight` passes (citation integrity, immutable local repo links, figure/link paths, appendix source note).
+5. Reference `[30]` in the paper remains pinned to the Phase 28 engineering
+   checkpoint, while the release tag resolves to the merge commit that contains
+   this v4 paper metadata,
+6. `paper preflight` passes (citation integrity, immutable local repo links,
+   figure/link paths, appendix source note, and unresolved publication snapshot
+   placeholder detection).

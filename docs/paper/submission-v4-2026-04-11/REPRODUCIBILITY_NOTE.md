@@ -1,8 +1,10 @@
 # Reproducibility Note (One Page)
 
 This note describes how to reproduce the publication-facing paper artifacts for
-the rolling base tag `paper-publication-v3-2026-04-09` and the submission-prep
-snapshot commit `49004aea27a5e02c3732a798d32a32675f0a08b9`.
+the rolling base tag `paper-publication-v4-2026-04-11` once cut. The tag should
+resolve to a commit that contains this v4 paper metadata. The systems evidence
+cited by the paper remains pinned to the Phase 28 proof-carrying aggregation checkpoint commit
+`520240822c48dc3111bc5b91d5896ab97a2bb4c8`.
 
 ## 1) Scope and Intended Reproduction Target
 
@@ -104,10 +106,9 @@ Before sharing a draft externally, verify:
 
 1. title and claim posture are aligned between:
    - `docs/paper/stark-transformer-alignment-2026.md`
-   - `docs/paper/proof-carrying-decoding-2026.md`
    - `docs/paper/PUBLICATION_RELEASE.md`
 2. paper preflight passes,
-3. release tag and commit references are consistent across both papers.
+3. release tag and commit references are consistent with the single main paper.
 
 If additional reviewer feedback lands, patch on top and cut a follow-up
 publication tag rather than mutating existing evidence claims.

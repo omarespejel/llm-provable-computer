@@ -6,7 +6,8 @@ Checks:
 2) immutable-link policy for this repository's GitHub links (commit-pinned only),
 3) figure/link cross-reference existence for local file links,
 4) source-note presence in appendix-system-comparison,
-5) backend appendix timing/size consistency against frozen artifact indices.
+5) backend appendix timing/size consistency against frozen artifact indices,
+6) unresolved publication snapshot placeholder detection.
 """
 
 from __future__ import annotations
@@ -19,16 +20,31 @@ from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
 
+PUBLICATION_METADATA_FILES = [
+    "docs/paper/PUBLICATION_RELEASE.md",
+    "docs/paper/submission-v4-2026-04-11/BUNDLE_INDEX.md",
+    "docs/paper/submission-v4-2026-04-11/REPRODUCIBILITY_NOTE.md",
+]
+
 PAPER_FILES = [
     "docs/paper/stark-transformer-alignment-2026.md",
-    "docs/paper/proof-carrying-decoding-2026.md",
     "docs/paper/appendix-system-comparison.md",
     "docs/paper/appendix-scaling-companion.md",
     "docs/paper/appendix-backend-artifact-comparison.md",
-    "docs/paper/PUBLICATION_RELEASE.md",
-    "docs/paper/submission-v3-2026-04-09/BUNDLE_INDEX.md",
-    "docs/paper/submission-v3-2026-04-09/REPRODUCIBILITY_NOTE.md",
+    *PUBLICATION_METADATA_FILES,
 ]
+
+SNAPSHOT_FIELD_HEADINGS = (
+    "Canonical publication snapshot commit:",
+    "Canonical repository snapshot:",
+)
+
+HARD_SNAPSHOT_PLACEHOLDER_TOKENS = ("TBD_SNAPSHOT_SHA",)
+SOFT_SNAPSHOT_PLACEHOLDER_TOKENS = (
+    "PENDING_SNAPSHOT_SHA",
+    "Pending.",
+    "Pending:",
+)
 
 LOCAL_REPOS = {
     ("omarespejel", "llm-provable-computer"),
@@ -207,6 +223,49 @@ def check_appendix_source_note(repo_root: pathlib.Path, findings: Findings) -> N
     text = path.read_text(encoding="utf-8")
     if "Sources:" not in text:
         findings.error(f"{path}: missing standalone source note (expected 'Sources: ...').")
+
+
+def check_publication_snapshot_placeholders(
+    repo_root: pathlib.Path, findings: Findings
+) -> None:
+    for rel_path in PUBLICATION_METADATA_FILES:
+        path = repo_root / rel_path
+        if not path.exists():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            findings.error(
+                f"{path}: failed to read publication metadata for snapshot placeholder checks: {exc}"
+            )
+            continue
+        for token in HARD_SNAPSHOT_PLACEHOLDER_TOKENS:
+            if token in text:
+                findings.error(
+                    f"{path}: unresolved publication snapshot placeholder {token!r}; "
+                    "replace it before paper preflight."
+                )
+        snapshot_field_text = "\n".join(iter_snapshot_field_lines(text))
+        for token in SOFT_SNAPSHOT_PLACEHOLDER_TOKENS:
+            if token in snapshot_field_text:
+                findings.error(
+                    f"{path}: unresolved publication snapshot placeholder {token!r}; "
+                    "replace it before paper preflight."
+                )
+
+
+def iter_snapshot_field_lines(text: str):
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if not any(stripped.startswith(heading) for heading in SNAPSHOT_FIELD_HEADINGS):
+            continue
+        yield line
+        for continuation in lines[index + 1 :]:
+            continuation = continuation.strip()
+            if not continuation or continuation.startswith("#"):
+                break
+            yield continuation
 
 
 def parse_markdown_table_after_heading(text: str, heading: str) -> list[list[str]]:
@@ -526,6 +585,7 @@ def main() -> int:
 
     check_appendix_source_note(repo_root, findings)
     check_backend_appendix_consistency(repo_root, findings)
+    check_publication_snapshot_placeholders(repo_root, findings)
 
     if findings.warnings:
         print("Warnings:")

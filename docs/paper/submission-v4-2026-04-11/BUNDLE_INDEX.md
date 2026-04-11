@@ -1,17 +1,19 @@
-# Submission Bundle Index (v3, 2026-04-09)
+# Submission Bundle Index (v4, 2026-04-11)
 
 Publication base tag:
-- `paper-publication-v3-2026-04-09` (rolling checkpoint)
+- `paper-publication-v4-2026-04-11` (rolling checkpoint)
 
 Canonical repository snapshot:
-- `49004aea27a5e02c3732a798d32a32675f0a08b9` (submission-prep snapshot)
+- `paper-publication-v4-2026-04-11` once cut. The tag must resolve to a commit
+  containing this v4 paper metadata.
+
+Phase 28 systems-evidence checkpoint:
+- `520240822c48dc3111bc5b91d5896ab97a2bb4c8` (proof-carrying aggregation checkpoint)
 
 ## Core Paper Files
 
 - Main paper:
   - `docs/paper/stark-transformer-alignment-2026.md`
-- Bridge/systems paper:
-  - `docs/paper/proof-carrying-decoding-2026.md`
 
 ## Appendices
 
@@ -35,7 +37,7 @@ Canonical repository snapshot:
 ## Reproducibility Note
 
 - One-page note:
-  - `docs/paper/submission-v3-2026-04-09/REPRODUCIBILITY_NOTE.md`
+  - `docs/paper/submission-v4-2026-04-11/REPRODUCIBILITY_NOTE.md`
 
 ## Verification Commands
 
