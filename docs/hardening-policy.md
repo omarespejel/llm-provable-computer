@@ -111,7 +111,8 @@ Available local command tiers:
 The GitHub side of the merge gate is intentionally narrow:
 
 - Every non-null GitHub check in the PR rollup must be completed with
-  `SUCCESS`, `SKIPPED`, or `NEUTRAL`.
+  `SUCCESS`, `SKIPPED`, or `NEUTRAL`. Passing `--wait` polls pending checks and
+  fails immediately for completed failure conclusions.
 - All review threads must be resolved, regardless of reviewer.
 - No CodeRabbit, Greptile, or Qodo review/comment event may have occurred in the
   previous 300 seconds. If no AI review/comment event exists yet, the quiet

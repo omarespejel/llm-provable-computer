@@ -279,20 +279,44 @@ checks_json="$run_evidence_dir/checks.json"
 jq '[.statusCheckRollup[]? | {name, status, conclusion}]' "$pr_json" >"$checks_json"
 ai_check_count="$(jq -r '[.[] | select((.name // "") | test("coderabbit|greptile|qodo"; "i"))] | length' "$checks_json")"
 
-blocking_checks="$(jq -r '
+failed_checks="$(jq -r '
   [.[]
-   | select((.status != "COMPLETED") or (.conclusion | IN("SUCCESS", "SKIPPED", "NEUTRAL") | not))
+   | select(.status == "COMPLETED")
+   | select(.conclusion | IN("SUCCESS", "SKIPPED", "NEUTRAL") | not)
    | select(.name != null)]
   | length
 ' "$checks_json")"
-if (( blocking_checks > 0 )); then
+if (( failed_checks > 0 )); then
   jq -r '
     .[]
-    | select((.status != "COMPLETED") or (.conclusion | IN("SUCCESS", "SKIPPED", "NEUTRAL") | not))
+    | select(.status == "COMPLETED")
+    | select(.conclusion | IN("SUCCESS", "SKIPPED", "NEUTRAL") | not)
     | select(.name != null)
-    | "blocking check: \(.name) status=\(.status) conclusion=\(.conclusion)"
+    | "failed check: \(.name) status=\(.status) conclusion=\(.conclusion)"
   ' "$checks_json" >&2
   fail "GitHub check rollup is not clean"
+fi
+pending_checks="$(jq -r '[.[] | select(.name != null) | select(.status != "COMPLETED")] | length' "$checks_json")"
+if (( pending_checks > 0 )); then
+  jq -r '
+    .[]
+    | select(.name != null)
+    | select(.status != "COMPLETED")
+    | "pending check: \(.name) status=\(.status) conclusion=\(.conclusion)"
+  ' "$checks_json" >&2
+  if (( WAIT )); then
+    log "GitHub checks are still pending; sleeping 30s"
+    sleep 30
+    retry_args=("$0" --repo "$REPO" --pr "$PR_NUMBER" --mode none --quiet-seconds "$QUIET_SECONDS" --evidence-dir "$EVIDENCE_DIR" --wait --method "$MERGE_METHOD")
+    if (( MERGE )); then
+      retry_args+=(--merge)
+    fi
+    if (( DELETE_BRANCH == 0 )); then
+      retry_args+=(--keep-branch)
+    fi
+    exec "${retry_args[@]}"
+  fi
+  fail "GitHub checks are still pending"
 fi
 
 owner="${REPO%/*}"
