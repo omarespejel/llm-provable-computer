@@ -10,7 +10,8 @@ duplicate GitHub Actions run after merge.
 - Before opening or merging trusted-core PRs, run the matching hardening suite
   locally, preferably inside a Lima Ubuntu 22.04 environment for Linux parity.
 - Keep CodeRabbit, Greptile, and Qodo as GitHub PR review signals, and keep the
-  PR hardening contract as the enforced PR policy gate.
+  PR hardening contract workflow (`.github/workflows/pr-hardening-contract.yml`)
+  as the enforced PR-body checklist gate.
 - `main` does not get automatic post-merge runs for the expensive hardening
   workflows; dispatch those workflows manually when release or baseline
   validation needs a GitHub-hosted run on the merge commit.
@@ -23,7 +24,8 @@ Run the relevant subset from the repository root:
 
 ```bash
 cargo test -q --lib
-cargo +nightly-2025-07-14 test -q --features stwo-backend <relevant_filter> --lib
+TEST_FILTER=phase28_
+cargo +nightly-2025-07-14 test -q --features stwo-backend "$TEST_FILTER" --lib
 cargo fmt --check
 git diff --check
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_miri_suite.sh
