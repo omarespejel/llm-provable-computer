@@ -13,6 +13,12 @@ artifact facts drawn from the committed bundle indices under
 `docs/paper/artifacts/production-v1-2026-04-04/` and
 `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/`.
 
+Post-freeze note (April 11, 2026): the repository now also contains
+`docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/`, a merged
+Phase 24-28 proof-carrying aggregation bundle. It is systems evidence for
+pre-recursive carried-state aggregation, not a normalized backend-performance row
+in Table C1.
+
 ## Table C1. Frozen artifact comparison by backend and scope
 
 | Artifact | Backend | Bundle | Prove | Verify | Proof size | Semantic scope |

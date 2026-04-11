@@ -1,7 +1,10 @@
 # On the Structural Fit of Transformer Workloads and STARK Proof Systems
 
-**Omar Espejel**  
-Starknet Foundation  
+**AbdelStark**<br>
+Original creator, `llm-provable-computer`
+
+**Omar Espejel**<br>
+Starknet Foundation<br>
 April 2026
 
 ---
@@ -10,7 +13,7 @@ April 2026
 
 This paper gives a transformer-specific symbolic cost comparison between SNARK constraints and STARK trace rows for verifiable inference. Under the worked constants used throughout (`C_exp = 300`, `C_norm = 30`, `C_nonlin = 150`), GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields about `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK rows across 12 layers (`1.48x`). Over practical context ranges, the ratio rises and then approaches a finite architecture-dependent ceiling.
 
-We pair that analysis with a repository artifact, `provable-transformer-vm`, that now includes a frozen baseline tier, a frozen narrow experimental `stwo` tier, a commit-pinned parameterized proof-carrying decoding path (`decoding_step_v2`) with carried-state commitments, and a post-freeze Phase 24-28 pre-recursive carried-state aggregation ladder [30]. This paper does not claim full standard-softmax inference on S-two, recursive cross-step shared-table accumulation beyond the public Phase 23 lookup accumulator, recursive cryptographic compression/verification closure, or production-scale zkML deployment. The claim is narrower: transformer workloads emphasize dimensions where STARK-native systems may compound advantages while SNARK systems remain strong competitors.
+We pair that analysis with a repository artifact, `provable-transformer-vm`, derived from the original `llm-provable-computer` project, that now includes a frozen baseline tier, a frozen narrow experimental `stwo` tier, a commit-pinned parameterized proof-carrying decoding path (`decoding_step_v2`) with carried-state commitments, and a merged Phase 24-28 pre-recursive carried-state aggregation ladder [30]. This paper does not claim full standard-softmax inference on S-two, recursive cross-step shared-table accumulation beyond the public Phase 23 lookup accumulator, recursive cryptographic compression/verification closure, or production-scale zkML deployment. The claim is narrower: transformer workloads emphasize dimensions where STARK-native systems may compound advantages while SNARK systems remain strong competitors.
 
 ---
 
@@ -245,7 +248,7 @@ With the analytic behavior established, we now turn to what the repository curre
 
 ## 5. Repository Artifact: From Trace-as-Witness to Parameterized Proof-Carrying Decoding
 
-The implementation artifact is `omarespejel/provable-transformer-vm` [30]. In this paper it is treated as a **semantics-and-proof artifact**: deterministic transformer-relevant execution is compiled into AIR-consumable traces and packaged into carried-state proof objects for later recursion/accumulation work. Earlier phases of this line were developed under the `llm-provable-computer` project name.
+The implementation artifact is `omarespejel/provable-transformer-vm` [30], a fork-derived consolidation of the original `llm-provable-computer` project. In this paper it is treated as a **semantics-and-proof artifact**: deterministic transformer-relevant execution is compiled into AIR-consumable traces and packaged into carried-state proof objects for later recursion/accumulation work. Earlier phases of this line were developed under the `llm-provable-computer` project name.
 
 ### 5.1 What the repository demonstrates today
 
@@ -256,7 +259,7 @@ The snapshot provides:
 - two frozen evidence tiers: `production-v1` (vanilla) and `stwo-experimental-v1` (narrow experimental),
 - a parameterized proof-carrying decoding family (`decoding_step_v2`) over multiple public layouts,
 - carried-state packaging (chain, segment, rollup, multi-layout matrix) with KV/lookup cumulative and frontier commitments,
-- a post-freeze Phase 24-28 carried-state ladder: full relation accumulation, honest intervalization, folded interval accumulation, chained fold-of-folds accumulation, and proof-carrying outer aggregation over Phase 27 chained artifacts,
+- a merged Phase 24-28 carried-state ladder: full relation accumulation, honest intervalization, folded interval accumulation, chained fold-of-folds accumulation, and proof-carrying outer aggregation over Phase 27 chained artifacts,
 - a verification-hardening stack: oracle/differential checks, fuzz smoke targets, mutation tests, Miri/ASAN/UB-checks, and bounded Kani contracts.
 
 This supports a stronger systems statement than earlier drafts: the same decode relation survives progressively more composable manifest layers without changing statement boundaries, while the aggregation ladder remains explicit that it is pre-recursive and replay-verifies nested proof-bearing members.
@@ -283,7 +286,7 @@ On April 6, 2026, we generated `stwo-experimental-v1` (artifact-index commit `39
 
 The `stwo-experimental-v1` bundle is dated April 6, 2026, and its frozen artifact index was generated on April 7, 2026 (UTC) in immutable repository snapshot commit `3970277`, with exact command logs, wall-clock timings, SHA-256 hashes, and proof artifacts for four representative outputs: an arithmetic `statement-v1` execution proof (`addition`), a shared-table normalization lookup proof envelope, a Gemma-inspired fixed-shape execution proof (`gemma_block_v4`) with embedded shared lookup bindings, and a three-step proof-carrying decoding chain over explicit carried-state commitments. This frozen `stwo-experimental-v1` bundle intentionally complements the vanilla `production-v1` bundle rather than replacing it [40]. Appendix C1 summarizes the two frozen backend-facing tiers in one compact comparison table.
 
-Beyond that frozen tier, the same line carries the broader bridge artifact: parameterized `decoding_step_v2` proofs over multiple layouts, then carried-state packaging through chains, segments, rollups, multi-layout matrices, and lookup/KV frontier commitments. The current commit-pinned systems evidence also includes the Phase 24-28 ladder: relation accumulation over Phase 23 members, honest intervalization, folding over real carried-state intervals, chained folding over Phase 26 members, and proof-carrying outer aggregation over Phase 27 chained artifacts. These are post-freeze systems artifacts and regeneration paths, not Table C1 frozen benchmark rows; they are evidence for pre-recursive merge boundaries, including the public Phase 23 lookup accumulator, not recursive compression evidence, and they do not yet implement recursive cross-step shared-table accumulation beyond that same-template lookup artifact [30, 40].
+Beyond that frozen tier, the same line carries the broader bridge artifact: parameterized `decoding_step_v2` proofs over multiple layouts, then carried-state packaging through chains, segments, rollups, multi-layout matrices, and lookup/KV frontier commitments. The current commit-pinned systems evidence also includes the merged Phase 24-28 bundle: relation accumulation over Phase 23 members, honest intervalization, folding over real carried-state intervals, chained folding over Phase 26 members, and proof-carrying outer aggregation over Phase 27 chained artifacts. These are post-freeze systems artifacts and regeneration paths, not Table C1 frozen benchmark rows; they are evidence for pre-recursive merge boundaries, including the public Phase 23 lookup accumulator, not recursive compression evidence, and they do not yet implement recursive cross-step shared-table accumulation beyond that same-template lookup artifact [30, 40].
 
 ### 5.5 Why this artifact matters
 
@@ -409,7 +412,7 @@ The frontier is no longer “can transformers be proved?” It is: **which archi
 
 ## Acknowledgments
 
-This paper uses the maintained repository `omarespejel/provable-transformer-vm`, which consolidates the current artifact bundles and earlier project phases developed under the `llm-provable-computer` name.
+This paper uses the maintained repository `omarespejel/provable-transformer-vm`, which consolidates the current artifact bundles and earlier project phases developed under the original `llm-provable-computer` name.
 
 ---
 
@@ -444,7 +447,7 @@ This paper uses the maintained repository `omarespejel/provable-transformer-vm`,
 27. BitSage Network. “elo-cairo-verifier/README.md.” GitHub documentation file in *obelyzk.rs*. Accessed April 9, 2026. <https://github.com/Bitsage-Network/obelyzk.rs/blob/main/elo-cairo-verifier/README.md>
 28. Giza. *LuminAIR*. GitHub repository. Accessed April 5, 2026. <https://github.com/gizatechxyz/LuminAIR>
 29. StarkWare. “Giza x S-two: Powering Verifiable ML with LuminAIR.” *StarkWare Blog*. Accessed April 5, 2026. <https://starkware.co/blog/giza-x-s-two-powering-verifiable-ml-with-luminair/>
-30. `omarespejel/provable-transformer-vm`. “Repository Snapshot Discussed in Sections 5 and 8.” GitHub repository snapshot, Phase 28 proof-carrying aggregation checkpoint merge commit `520240822c48dc3111bc5b91d5896ab97a2bb4c8`. <https://github.com/omarespejel/provable-transformer-vm/tree/520240822c48dc3111bc5b91d5896ab97a2bb4c8>
+30. `omarespejel/provable-transformer-vm`. “Repository Snapshot Discussed in Sections 5 and 8.” GitHub repository snapshot, merged Phase 28 proof-carrying aggregation bundle checkpoint, PR #100 merge commit `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`. <https://github.com/omarespejel/provable-transformer-vm/tree/6ff972ddda4051d73dc65c92a88c0d00683ec8c7>
 31. `omarespejel/provable-transformer-vm`. “Appendix Artifact Index (Production V1).” GitHub artifact snapshot, commit `8d435d540b8e3cf33ec4381bb820a00b6fe7aae6`, documenting a bundle generated from execution/proof commit `58bb05fdd57ee9816e5935eb004396fea6a9fac3`. <https://github.com/omarespejel/provable-transformer-vm/blob/8d435d540b8e3cf33ec4381bb820a00b6fe7aae6/docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md>
 32. Starknet Docs. “Accounts.” *Starknet Documentation*. Accessed April 5, 2026. <https://docs.starknet.io/architecture/accounts>
 33. Zhizhi Peng, Chonghe Zhao, Taotao Wang, Guofu Liao, Zibin Lin, Yifeng Liu, Bin Cao, Long Shi, Qing Yang, and Shengli Zhang. “A Survey of Zero-Knowledge Proof-Based Verifiable Machine Learning.” *Artificial Intelligence Review* (accepted manuscript), arXiv:2502.18535v2, 2026. <https://arxiv.org/abs/2502.18535>
