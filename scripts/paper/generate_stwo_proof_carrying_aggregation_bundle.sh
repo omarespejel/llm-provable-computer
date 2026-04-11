@@ -111,8 +111,8 @@ run_logged() {
   local started_iso
   started_iso="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
   {
-    printf '[%s] ' "$started_iso"
-    printf '%q ' "$@"
+    printf '[%s]' "$started_iso"
+    printf ' %q' "$@"
     printf '\n'
   } | tee -a "$COMMANDS_LOG"
 }
@@ -439,7 +439,7 @@ for (
 
 with summary_tsv.open("w", newline="") as f:
     fieldnames = list(summary_rows[0].keys())
-    writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
+    writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t", lineterminator="\n")
     writer.writeheader()
     writer.writerows(summary_rows)
 
