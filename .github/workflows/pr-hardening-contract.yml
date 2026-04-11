@@ -65,6 +65,8 @@ jobs:
               "src/verification.rs",
               "tests/",
               ".github/workflows/",
+              "scripts/local_merge_gate.sh",
+              "docs/hardening-policy.md",
           )
 
           touches_trusted_core = any(

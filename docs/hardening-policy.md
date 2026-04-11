@@ -26,6 +26,10 @@ expensive GitHub Actions compute.
   validation needs a GitHub-hosted run on the merge commit.
 - If a PR cannot run a local hardening command, document the blocker in the PR
   validation notes and use `workflow_dispatch` intentionally.
+- Merge trusted-core PRs through `scripts/local_merge_gate.sh` so the final
+  merge decision is tied to the exact PR head SHA, local evidence logs, a clean
+  GitHub check rollup, zero unresolved review threads, and a five-minute quiet
+  window after the last CodeRabbit, Greptile, or Qodo event.
 
 ## Local Commands
 
@@ -68,11 +72,71 @@ Inside the VM:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y build-essential pkg-config libssl-dev git curl
+sudo apt-get install -y build-essential pkg-config libssl-dev git curl jq shellcheck
 curl https://sh.rustup.rs -sSf | sh -s -- -y
 source "$HOME/.cargo/env"
 rustup toolchain install nightly-2025-07-14 --component miri,rust-src
 ```
 
 Then run the local commands above from the repository checkout mounted or cloned
-inside the VM.
+inside the VM. The merge gate also requires GitHub CLI (`gh`) authenticated
+against the target repository; install it from GitHub CLI's package repository
+or your host package manager before running `scripts/local_merge_gate.sh`.
+
+## Local Merge Gate
+
+Use the merge gate from a clean checkout of the PR head after the PR has been
+opened and the review bots have reported:
+
+```bash
+scripts/local_merge_gate.sh --repo omarespejel/provable-transformer-vm --pr <PR> --mode smoke --wait --merge
+```
+
+The script refuses to continue if the local `HEAD` differs from the PR head SHA
+or if the worktree is dirty. It writes per-PR evidence under
+`target/local-hardening/pr-<PR>-<HEAD>/evidence.json`, including command exit
+codes, UTC timestamps, log paths, and log SHA-256 digests.
+
+Available local command tiers:
+
+- `--mode smoke`: default minimum gate for ordinary PRs. Runs PR-range
+  whitespace hygiene as `git diff --check "$base_sha...$head_sha"`, `cargo fmt
+  --check`, the statement-spec contract, allowlisted integration smoke targets,
+  and one exact pinned-nightly `stwo-backend` smoke.
+- `--mode full`: runs the same PR-range whitespace and formatting hygiene, full
+  library tests, integration tests, doctests, and the exact pinned-nightly
+  `stwo-backend` smoke.
+- `--mode hardening`: runs the `full` tier plus UB checks, ASAN, Miri, and the
+  formal contract suite. The inherited whitespace gate is still scoped to the
+  committed PR delta, not the whole worktree. Prefer running this tier inside
+  Lima for Linux parity.
+- `--mode none`: only checks GitHub status, review-thread state, and the
+  five-minute AI-review quiet window. Use this only after a prior evidence run
+  for the same PR head SHA.
+
+The GitHub side of the merge gate is intentionally narrow:
+
+- Every non-null GitHub check in the PR rollup must be completed with
+  `SUCCESS`, `SKIPPED`, or `NEUTRAL`. The gate reads check runs and commit
+  statuses through paginated GitHub API calls instead of relying on the capped
+  `statusCheckRollup` view. Legacy commit statuses are append-only, so the gate
+  evaluates only the newest status per context while still enforcing every
+  check-run row. Passing `--wait` polls pending checks and fails immediately for
+  completed failure conclusions.
+- All review threads must be resolved, regardless of reviewer.
+- The review gate paginates PR comments, PR reviews, and review threads. It
+  fails closed if any individual review thread has more than 100 comments,
+  because the gate cannot safely inspect that nested comment stream.
+- No CodeRabbit, Greptile, or Qodo review/comment event may have occurred in the
+  previous 300 seconds. If no AI review/comment event exists yet, the gate
+  refuses to merge. Passing `--wait` sleeps through the remaining quiet window
+  and then rechecks without rerunning local tests; any PR head change causes the
+  recheck to fail.
+- Passing `--merge` is required for the script to merge. Without `--merge`, it
+  only writes evidence and reports the gate result.
+- `--wait` is bounded by `--max-wait-seconds` (default 1800 seconds) so stuck
+  third-party checks do not spin indefinitely.
+
+Do not treat AI reviewer approval as proof. Treat the AI tools as review input;
+the proof for trusted-core work is the local evidence artifact plus the frozen
+phase artifacts produced by the relevant implementation work.

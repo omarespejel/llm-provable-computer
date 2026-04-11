@@ -1,0 +1,638 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+SCRIPT_PATH="$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")"
+cd "$ROOT_DIR"
+
+REPO="${MERGE_GATE_REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)}"
+PR_NUMBER="${MERGE_GATE_PR:-}"
+QUIET_SECONDS="${MERGE_GATE_QUIET_SECONDS:-300}"
+MAX_WAIT_SECONDS="${MERGE_GATE_MAX_WAIT_SECONDS:-1800}"
+WAIT_STARTED_AT="${MERGE_GATE_WAIT_STARTED_AT:-}"
+EVIDENCE_DIR="${MERGE_GATE_EVIDENCE_DIR:-target/local-hardening}"
+LOG_DIR=""
+MERGE=0
+WAIT=0
+RUN_LOCAL=1
+RUN_MODE="${MERGE_GATE_RUN_MODE:-smoke}"
+MERGE_METHOD="${MERGE_GATE_METHOD:-merge}"
+DELETE_BRANCH=1
+
+usage() {
+  cat <<'EOF'
+Usage: scripts/local_merge_gate.sh [options] [PR_NUMBER]
+
+Local-first merge gate for trusted-core PRs.
+
+Options:
+  --repo OWNER/REPO       GitHub repository. Defaults to gh repo view.
+  --pr NUMBER            Pull request number. Can also be positional.
+  --mode smoke|full|hardening|none
+                          Local command tier. Default: smoke.
+  --quiet-seconds N      AI-review quiet window. Default: 300.
+  --max-wait-seconds N   Maximum total --wait wall time. Default: 1800; 0 disables.
+  --evidence-dir DIR     Evidence output directory. Default: target/local-hardening.
+  --wait                 Wait until the quiet window is satisfied.
+  --merge                Merge after all gates pass.
+  --method merge|squash|rebase
+                          Merge method to pass to gh pr merge. Default: merge.
+  --keep-branch          Do not delete the remote PR branch after merge.
+  --skip-local           Do not run local commands; only verify existing gate state.
+  -h, --help             Show this help.
+
+Environment:
+  MERGE_GATE_REPO, MERGE_GATE_PR, MERGE_GATE_QUIET_SECONDS,
+  MERGE_GATE_MAX_WAIT_SECONDS, MERGE_GATE_WAIT_STARTED_AT,
+  MERGE_GATE_EVIDENCE_DIR, MERGE_GATE_RUN_MODE, MERGE_GATE_METHOD.
+EOF
+}
+
+log() {
+  printf '[merge-gate] %s\n' "$*" >&2
+}
+
+fail() {
+  printf '[merge-gate] ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+sleep_with_wait_budget() {
+  local duration="$1"
+  local reason="$2"
+  local now elapsed budget
+
+  [[ -n "$WAIT_STARTED_AT" ]] || fail "WAIT_STARTED_AT is not initialized"
+  now="$(date -u +%s)"
+  elapsed=$((now - WAIT_STARTED_AT))
+  budget="$MAX_WAIT_SECONDS"
+
+  if (( budget > 0 && elapsed + duration > budget )); then
+    fail "${reason}; wait budget would be exceeded (${elapsed}s elapsed, ${budget}s max)"
+  fi
+
+  if (( budget > 0 )); then
+    log "${reason}; sleeping ${duration}s (${elapsed}/${budget}s wait budget elapsed)"
+  else
+    log "${reason}; sleeping ${duration}s (unbounded wait budget)"
+  fi
+  sleep "$duration"
+}
+
+retry_gate_mode_none() {
+  retry_args=("$SCRIPT_PATH" --repo "$REPO" --pr "$PR_NUMBER" --mode none --quiet-seconds "$QUIET_SECONDS" --max-wait-seconds "$MAX_WAIT_SECONDS" --evidence-dir "$EVIDENCE_DIR" --wait --method "$MERGE_METHOD")
+  if (( MERGE )); then
+    retry_args+=(--merge)
+  fi
+  if (( DELETE_BRANCH == 0 )); then
+    retry_args+=(--keep-branch)
+  fi
+  export MERGE_GATE_WAIT_STARTED_AT="$WAIT_STARTED_AT"
+  rm -f "${tmp_pr_json:-}"
+  exec "${retry_args[@]}"
+}
+
+check_graphql_response() {
+  local response_file="$1"
+  if ! jq -e . "$response_file" >/dev/null 2>&1; then
+    cat "$response_file" >&2 || true
+    fail "GitHub GraphQL returned invalid JSON"
+  fi
+  if jq -e '(.errors // []) | length > 0' "$response_file" >/dev/null; then
+    jq -r '.errors[]?.message' "$response_file" >&2
+    fail "GitHub GraphQL query failed"
+  fi
+  if ! jq -e '.data.repository.pullRequest' "$response_file" >/dev/null; then
+    cat "$response_file" >&2 || true
+    fail "GitHub GraphQL response did not include pullRequest data"
+  fi
+}
+
+fetch_paginated_connection() {
+  local connection="$1"
+  local query_text="$2"
+  local jq_nodes_filter="$3"
+  local output_file="$4"
+  local cursor=""
+  local page response_file nodes_file merged_file
+
+  printf '[]\n' >"$output_file"
+  page=0
+  while :; do
+    page=$((page + 1))
+    response_file="$run_evidence_dir/${connection}-page-${page}.json"
+    nodes_file="$run_evidence_dir/${connection}-nodes-${page}.json"
+    merged_file="$run_evidence_dir/${connection}-merged-${page}.json"
+
+    graph_args=(gh api graphql -f query="$query_text" -F owner="$owner" -F name="$name" -F number="$PR_NUMBER")
+    if [[ -n "$cursor" ]]; then
+      graph_args+=(-F cursor="$cursor")
+    fi
+    "${graph_args[@]}" >"$response_file"
+    check_graphql_response "$response_file"
+
+    jq "$jq_nodes_filter" "$response_file" >"$nodes_file"
+    jq -s '.[0] + .[1]' "$output_file" "$nodes_file" >"$merged_file"
+    mv "$merged_file" "$output_file"
+
+    if [[ "$(jq -r ".data.repository.pullRequest.${connection}.pageInfo.hasNextPage" "$response_file")" != "true" ]]; then
+      break
+    fi
+    cursor="$(jq -r ".data.repository.pullRequest.${connection}.pageInfo.endCursor // empty" "$response_file")"
+    [[ -n "$cursor" ]] || fail "GitHub GraphQL ${connection} pageInfo omitted endCursor"
+  done
+}
+
+run_logged() {
+  local name="$1"
+  shift
+  [[ -n "$LOG_DIR" ]] || fail "LOG_DIR is not initialized"
+  local log_file="$LOG_DIR/${name}.log"
+  local start end status
+  start="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  log "running ${name}: $*"
+  set +e
+  "$@" >"$log_file" 2>&1
+  status=$?
+  set -e
+  end="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  local hash
+  if command -v shasum >/dev/null 2>&1; then
+    hash="$(shasum -a 256 "$log_file" | awk '{print $1}')"
+  elif command -v sha256sum >/dev/null 2>&1; then
+    hash="$(sha256sum "$log_file" | awk '{print $1}')"
+  else
+    fail "shasum or sha256sum is required"
+  fi
+  jq -n \
+    --arg name "$name" \
+    --arg start "$start" \
+    --arg end "$end" \
+    --arg command "$*" \
+    --arg log_file "$log_file" \
+    --arg log_sha256 "$hash" \
+    --argjson exit_code "$status" \
+    '{name:$name,start:$start,end:$end,command:$command,exit_code:$exit_code,log_file:$log_file,log_sha256:$log_sha256}' \
+    >"$LOG_DIR/${name}.json"
+  if (( status != 0 )); then
+    tail -n 80 "$log_file" >&2 || true
+    fail "local command failed: ${name} (exit ${status}); see ${log_file}"
+  fi
+}
+
+while (($#)); do
+  case "$1" in
+    --repo)
+      REPO="${2:-}"
+      shift 2
+      ;;
+    --repo=*)
+      REPO="${1#*=}"
+      shift
+      ;;
+    --pr)
+      PR_NUMBER="${2:-}"
+      shift 2
+      ;;
+    --pr=*)
+      PR_NUMBER="${1#*=}"
+      shift
+      ;;
+    --mode)
+      RUN_MODE="${2:-}"
+      shift 2
+      ;;
+    --mode=*)
+      RUN_MODE="${1#*=}"
+      shift
+      ;;
+    --quiet-seconds)
+      QUIET_SECONDS="${2:-}"
+      shift 2
+      ;;
+    --quiet-seconds=*)
+      QUIET_SECONDS="${1#*=}"
+      shift
+      ;;
+    --max-wait-seconds)
+      MAX_WAIT_SECONDS="${2:-}"
+      shift 2
+      ;;
+    --max-wait-seconds=*)
+      MAX_WAIT_SECONDS="${1#*=}"
+      shift
+      ;;
+    --evidence-dir)
+      EVIDENCE_DIR="${2:-}"
+      shift 2
+      ;;
+    --evidence-dir=*)
+      EVIDENCE_DIR="${1#*=}"
+      shift
+      ;;
+    --wait)
+      WAIT=1
+      shift
+      ;;
+    --merge)
+      MERGE=1
+      shift
+      ;;
+    --method)
+      MERGE_METHOD="${2:-}"
+      shift 2
+      ;;
+    --method=*)
+      MERGE_METHOD="${1#*=}"
+      shift
+      ;;
+    --keep-branch)
+      DELETE_BRANCH=0
+      shift
+      ;;
+    --skip-local)
+      RUN_LOCAL=0
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --*)
+      fail "unknown option: $1"
+      ;;
+    *)
+      if [[ -n "$PR_NUMBER" ]]; then
+        fail "unexpected positional argument: $1"
+      fi
+      PR_NUMBER="$1"
+      shift
+      ;;
+  esac
+done
+
+[[ -n "$REPO" ]] || fail "repository is required; pass --repo OWNER/REPO or run inside a gh-known checkout"
+[[ "$PR_NUMBER" =~ ^[0-9]+$ ]] || fail "PR number is required"
+[[ "$QUIET_SECONDS" =~ ^[0-9]+$ ]] || fail "quiet seconds must be a non-negative integer"
+[[ "$MAX_WAIT_SECONDS" =~ ^[0-9]+$ ]] || fail "max wait seconds must be a non-negative integer"
+if (( WAIT )); then
+  if [[ -z "$WAIT_STARTED_AT" ]]; then
+    WAIT_STARTED_AT="$(date -u +%s)"
+  fi
+  [[ "$WAIT_STARTED_AT" =~ ^[0-9]+$ ]] || fail "wait started timestamp must be a Unix epoch"
+  export MERGE_GATE_WAIT_STARTED_AT
+fi
+case "$RUN_MODE" in
+  smoke|full|hardening|none) ;;
+  *) fail "unsupported --mode: $RUN_MODE" ;;
+esac
+case "$MERGE_METHOD" in
+  merge|squash|rebase) ;;
+  *) fail "unsupported --method: $MERGE_METHOD" ;;
+esac
+
+if ! command -v gh >/dev/null 2>&1; then
+  fail "gh is required"
+fi
+if ! command -v jq >/dev/null 2>&1; then
+  fail "jq is required"
+fi
+
+tmp_pr_json="$(mktemp)"
+trap 'rm -f "$tmp_pr_json"' EXIT
+gh pr view "$PR_NUMBER" --repo "$REPO" \
+  --json url,state,isDraft,mergeable,reviewDecision,headRefOid,baseRefOid,headRefName,baseRefName,createdAt \
+  >"$tmp_pr_json"
+
+state="$(jq -r '.state' "$tmp_pr_json")"
+is_draft="$(jq -r '.isDraft' "$tmp_pr_json")"
+mergeable="$(jq -r '.mergeable' "$tmp_pr_json")"
+head_sha="$(jq -r '.headRefOid' "$tmp_pr_json")"
+base_sha="$(jq -r '.baseRefOid' "$tmp_pr_json")"
+base_ref_name="$(jq -r '.baseRefName' "$tmp_pr_json")"
+pr_url="$(jq -r '.url' "$tmp_pr_json")"
+
+[[ "$state" == "OPEN" ]] || fail "PR is not open: $state"
+[[ "$is_draft" == "false" ]] || fail "PR is draft"
+[[ "$mergeable" == "MERGEABLE" ]] || fail "PR is not mergeable: $mergeable"
+
+current_head="$(git rev-parse HEAD)"
+if [[ "$current_head" != "$head_sha" ]]; then
+  fail "local HEAD $current_head does not match PR head $head_sha; checkout the PR head before running local evidence"
+fi
+
+dirty_status="$(git status --porcelain)"
+if [[ -n "$dirty_status" ]]; then
+  printf '%s\n' "$dirty_status" >&2
+  fail "worktree has uncommitted changes; local evidence must be tied to the exact PR head"
+fi
+
+if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
+  log "base commit ${base_sha} is missing locally; fetching origin/${base_ref_name}"
+  if [[ "$(git rev-parse --is-shallow-repository)" == "true" ]]; then
+    git fetch --unshallow origin "$base_ref_name" || git fetch origin "$base_ref_name"
+  else
+    git fetch origin "$base_ref_name"
+  fi
+fi
+git cat-file -e "${base_sha}^{commit}" 2>/dev/null || fail "base commit ${base_sha} is unavailable locally"
+
+run_evidence_dir="$EVIDENCE_DIR/pr-${PR_NUMBER}-${head_sha}"
+LOG_DIR="$run_evidence_dir/logs"
+mkdir -p "$LOG_DIR"
+pr_json="$run_evidence_dir/pr.json"
+cp "$tmp_pr_json" "$pr_json"
+diff_range="${base_sha}...${head_sha}"
+local_evidence_marker="$run_evidence_dir/local-evidence.json"
+completed_local_mode=""
+
+if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
+  run_logged git-diff-check git diff --check "$diff_range"
+  run_logged cargo-fmt-check cargo fmt --check
+  run_logged lib-contract cargo test -q --lib statement_spec_contract_is_synced_with_constants
+  smoke_targets=(assembly e2e interpreter runtime vanillastark_smoke)
+  for test_target in "${smoke_targets[@]}"; do
+    run_logged "integration-${test_target}" cargo test -q --test "$test_target"
+  done
+  stwo_smoke=stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks
+  run_logged stwo-backend-smoke cargo +nightly-2025-07-14 test -q \
+    --features stwo-backend \
+    --lib "$stwo_smoke" \
+    -- \
+    --exact
+  completed_local_mode="$RUN_MODE"
+elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
+  run_logged git-diff-check git diff --check "$diff_range"
+  run_logged cargo-fmt-check cargo fmt --check
+  run_logged cargo-lib-tests cargo test -q --lib
+  run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
+  run_logged cargo-doc-tests cargo test -q --workspace --doc
+  stwo_smoke=stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks
+  run_logged stwo-backend-smoke cargo +nightly-2025-07-14 test -q \
+    --features stwo-backend \
+    --lib "$stwo_smoke" \
+    -- \
+    --exact
+  completed_local_mode="$RUN_MODE"
+elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
+  run_logged git-diff-check git diff --check "$diff_range"
+  run_logged cargo-fmt-check cargo fmt --check
+  run_logged cargo-lib-tests cargo test -q --lib
+  run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
+  run_logged cargo-doc-tests cargo test -q --workspace --doc
+  stwo_smoke=stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks
+  run_logged stwo-backend-smoke cargo +nightly-2025-07-14 test -q \
+    --features stwo-backend \
+    --lib "$stwo_smoke" \
+    -- \
+    --exact
+  run_logged ub-checks env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
+  run_logged asan env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_asan_suite.sh
+  run_logged miri env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_miri_suite.sh
+  run_logged formal-contracts scripts/run_formal_contract_suite.sh
+  completed_local_mode="$RUN_MODE"
+elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "none" ]]; then
+  log "local commands disabled by --mode none"
+elif (( ! RUN_LOCAL )); then
+  log "local commands skipped by --skip-local"
+fi
+
+if [[ -n "$completed_local_mode" ]]; then
+  jq -n \
+    --arg mode "$completed_local_mode" \
+    --arg head_sha "$head_sha" \
+    --arg completed_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    '{mode:$mode,head_sha:$head_sha,completed_at:$completed_at}' \
+    >"$local_evidence_marker"
+fi
+
+if (( MERGE )) && [[ ! -f "$local_evidence_marker" ]]; then
+  fail "merge requires completed local evidence for this PR head; rerun with --mode smoke, --mode full, or --mode hardening first"
+fi
+
+# Refresh PR state after local commands in case review bots posted while tests ran.
+gh pr view "$PR_NUMBER" --repo "$REPO" \
+  --json url,state,isDraft,mergeable,reviewDecision,headRefOid,baseRefOid,headRefName,baseRefName,createdAt \
+  >"$pr_json"
+head_sha_after="$(jq -r '.headRefOid' "$pr_json")"
+[[ "$head_sha_after" == "$head_sha" ]] || fail "PR head changed while gate was running: $head_sha -> $head_sha_after"
+
+checks_json="$run_evidence_dir/checks.json"
+check_runs_json="$run_evidence_dir/check-runs.json"
+statuses_json="$run_evidence_dir/statuses.json"
+gh api --paginate "repos/${REPO}/commits/${head_sha}/check-runs?per_page=100" \
+  --jq '.check_runs[] | {name, status: (.status | ascii_upcase), conclusion: ((.conclusion // "") | ascii_upcase)}' \
+  | jq -s '.' >"$check_runs_json"
+gh api --paginate "repos/${REPO}/commits/${head_sha}/statuses?per_page=100" \
+  --jq '.[] | {name: .context, created_at: .created_at, status: (if .state == "pending" then "IN_PROGRESS" else "COMPLETED" end), conclusion: (if .state == "success" then "SUCCESS" elif .state == "pending" then "" elif .state == "error" then "FAILURE" else (.state | ascii_upcase) end)}' \
+  | jq -s '
+      sort_by(.created_at)
+      | reduce .[] as $status ({}; .[$status.name] = $status)
+      | [.[]]
+    ' >"$statuses_json"
+jq -s '.[0] + .[1]' "$check_runs_json" "$statuses_json" >"$checks_json"
+
+failed_checks="$(jq -r '
+  [.[]
+   | select(.status == "COMPLETED")
+   | select(.conclusion | IN("SUCCESS", "SKIPPED", "NEUTRAL") | not)
+   | select(.name != null)]
+  | length
+' "$checks_json")"
+if (( failed_checks > 0 )); then
+  jq -r '
+    .[]
+    | select(.status == "COMPLETED")
+    | select(.conclusion | IN("SUCCESS", "SKIPPED", "NEUTRAL") | not)
+    | select(.name != null)
+    | "failed check: \(.name) status=\(.status) conclusion=\(.conclusion)"
+  ' "$checks_json" >&2
+  fail "GitHub check rollup is not clean"
+fi
+pending_checks="$(jq -r '[.[] | select(.name != null) | select(.status != "COMPLETED")] | length' "$checks_json")"
+if (( pending_checks > 0 )); then
+  jq -r '
+    .[]
+    | select(.name != null)
+    | select(.status != "COMPLETED")
+    | "pending check: \(.name) status=\(.status) conclusion=\(.conclusion)"
+  ' "$checks_json" >&2
+  if (( WAIT )); then
+    sleep_with_wait_budget 30 "GitHub checks are still pending"
+    retry_gate_mode_none
+  fi
+  fail "GitHub checks are still pending"
+fi
+
+owner="${REPO%/*}"
+name="${REPO#*/}"
+comments_query=$(cat <<'GRAPHQL'
+query($owner:String!,$name:String!,$number:Int!,$cursor:String){
+  repository(owner:$owner,name:$name){
+    pullRequest(number:$number){
+      comments(first:100, after:$cursor){
+        pageInfo{ hasNextPage endCursor }
+        nodes{ author{login} createdAt }
+      }
+    }
+  }
+}
+GRAPHQL
+)
+reviews_query=$(cat <<'GRAPHQL'
+query($owner:String!,$name:String!,$number:Int!,$cursor:String){
+  repository(owner:$owner,name:$name){
+    pullRequest(number:$number){
+      reviews(first:100, after:$cursor){
+        pageInfo{ hasNextPage endCursor }
+        nodes{ author{login} submittedAt }
+      }
+    }
+  }
+}
+GRAPHQL
+)
+threads_query=$(cat <<'GRAPHQL'
+query($owner:String!,$name:String!,$number:Int!,$cursor:String){
+  repository(owner:$owner,name:$name){
+    pullRequest(number:$number){
+      reviewThreads(first:100, after:$cursor){
+        pageInfo{ hasNextPage endCursor }
+        nodes{
+          isResolved
+          comments(first:100){
+            pageInfo{ hasNextPage endCursor }
+            nodes{ author{login} createdAt }
+          }
+        }
+      }
+    }
+  }
+}
+GRAPHQL
+)
+
+now_epoch="$(date -u +%s)"
+threads_json="$run_evidence_dir/review-gate.json"
+comments_json="$run_evidence_dir/review-comments.json"
+reviews_json="$run_evidence_dir/reviews.json"
+review_threads_json="$run_evidence_dir/review-threads.json"
+review_source_json="$run_evidence_dir/review-source.json"
+
+fetch_paginated_connection comments "$comments_query" '.data.repository.pullRequest.comments.nodes' "$comments_json"
+fetch_paginated_connection reviews "$reviews_query" '[.data.repository.pullRequest.reviews.nodes[] | {author, createdAt:.submittedAt}]' "$reviews_json"
+fetch_paginated_connection reviewThreads "$threads_query" '.data.repository.pullRequest.reviewThreads.nodes' "$review_threads_json"
+
+if jq -e '[.[].comments.pageInfo.hasNextPage // false] | any' "$review_threads_json" >/dev/null; then
+  fail "a review thread has more than 100 comments; refusing to merge without complete review data"
+fi
+
+jq -n \
+  --slurpfile comments "$comments_json" \
+  --slurpfile reviews "$reviews_json" \
+  --slurpfile reviewThreads "$review_threads_json" \
+  '{data:{repository:{pullRequest:{comments:{nodes:$comments[0]},reviews:{nodes:$reviews[0]},reviewThreads:{nodes:$reviewThreads[0]}}}}}' \
+  >"$review_source_json"
+
+jq --argjson now "$now_epoch" '
+    .data.repository.pullRequest as $pull
+    | ["coderabbitai", "greptile-apps", "qodo-code-review"] as $ai_reviewers
+    | [ $pull.reviewThreads.nodes[]? | select(.isResolved == false) ] as $active
+    | ([
+        ($pull.comments.nodes[]? | select(.author.login as $login | $ai_reviewers | index($login)) | {author:.author.login, createdAt}),
+        ($pull.reviews.nodes[]? | select(.author.login as $login | $ai_reviewers | index($login)) | {author:.author.login, createdAt}),
+        ($pull.reviewThreads.nodes[].comments.nodes[]? | select(.author.login as $login | $ai_reviewers | index($login)) | {author:.author.login, createdAt})
+      ]
+      | map(
+          select(.createdAt | type == "string" and length > 0)
+          | . + {epoch: (try (.createdAt | fromdateiso8601) catch null)}
+          | select(.epoch != null)
+        )
+      | sort_by(.epoch)
+      | last) as $latest
+    | {
+        active_threads: ($active | length),
+        latest_ai_event: (if $latest then {author:$latest.author, createdAt:$latest.createdAt} else null end),
+        latest_ai_event_epoch: (if $latest then $latest.epoch else null end),
+        quiet_window_source: (if $latest then "latest_ai_event" else "no_ai_event" end),
+        seconds_since_latest_ai_event: (if $latest then ($now - $latest.epoch) else null end)
+      }
+  ' "$review_source_json" >"$threads_json"
+
+active_threads="$(jq -r '.active_threads' "$threads_json")"
+seconds_since_ai="$(jq -r '.seconds_since_latest_ai_event // "none"' "$threads_json")"
+latest_ai="$(jq -r '.latest_ai_event.createdAt // "none"' "$threads_json")"
+latest_ai_author="$(jq -r '.latest_ai_event.author // "none"' "$threads_json")"
+
+if (( active_threads > 0 )); then
+  fail "active review threads remain: $active_threads"
+fi
+
+if [[ "$seconds_since_ai" == "none" ]]; then
+  fail "no AI reviewer review/comment event observed yet"
+fi
+
+if (( seconds_since_ai < QUIET_SECONDS )); then
+  remaining=$((QUIET_SECONDS - seconds_since_ai))
+  if (( WAIT )); then
+    sleep_with_wait_budget "$remaining" "AI quiet window not satisfied; latest ${latest_ai_author} event at ${latest_ai}"
+    retry_gate_mode_none
+  fi
+  fail "AI quiet window not satisfied; latest ${latest_ai_author} event at ${latest_ai}"
+fi
+
+commands_json="$run_evidence_dir/commands.json"
+if compgen -G "$LOG_DIR/*.json" >/dev/null; then
+  jq -s '.' "$LOG_DIR"/*.json >"$commands_json"
+else
+  printf '[]\n' >"$commands_json"
+fi
+
+evidence_file="$run_evidence_dir/evidence.json"
+jq -n \
+  --arg repo "$REPO" \
+  --arg pr_number "$PR_NUMBER" \
+  --arg pr_url "$pr_url" \
+  --arg head_sha "$head_sha" \
+  --arg base_sha "$base_sha" \
+  --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --arg run_mode "$RUN_MODE" \
+  --argjson quiet_seconds "$QUIET_SECONDS" \
+  --slurpfile pr "$pr_json" \
+  --slurpfile checks "$checks_json" \
+  --slurpfile threads "$threads_json" \
+  --slurpfile commands "$commands_json" \
+  '{
+    repo:$repo,
+    pr_number:($pr_number|tonumber),
+    pr_url:$pr_url,
+    base_sha:$base_sha,
+    head_sha:$head_sha,
+    generated_at:$generated_at,
+    run_mode:$run_mode,
+    quiet_seconds:$quiet_seconds,
+    pr:$pr[0],
+    checks:$checks[0],
+    review_gate:$threads[0],
+    local_commands:$commands[0]
+  }' >"$evidence_file"
+
+log "gate passed for ${pr_url}"
+log "evidence: ${evidence_file}"
+
+if (( MERGE )); then
+  merge_args=(gh pr merge "$PR_NUMBER" --repo "$REPO" --match-head-commit "$head_sha")
+  case "$MERGE_METHOD" in
+    merge) merge_args+=(--merge) ;;
+    squash) merge_args+=(--squash) ;;
+    rebase) merge_args+=(--rebase) ;;
+  esac
+  if (( DELETE_BRANCH )); then
+    merge_args+=(--delete-branch)
+  fi
+  "${merge_args[@]}"
+  log "merged PR ${PR_NUMBER}"
+else
+  log "not merging; pass --merge to merge after the gate"
+fi
