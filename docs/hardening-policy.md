@@ -72,14 +72,16 @@ Inside the VM:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y build-essential pkg-config libssl-dev git curl
+sudo apt-get install -y build-essential pkg-config libssl-dev git curl jq shellcheck
 curl https://sh.rustup.rs -sSf | sh -s -- -y
 source "$HOME/.cargo/env"
 rustup toolchain install nightly-2025-07-14 --component miri,rust-src
 ```
 
 Then run the local commands above from the repository checkout mounted or cloned
-inside the VM.
+inside the VM. The merge gate also requires GitHub CLI (`gh`) authenticated
+against the target repository; install it from GitHub CLI's package repository
+or your host package manager before running `scripts/local_merge_gate.sh`.
 
 ## Local Merge Gate
 
@@ -114,15 +116,18 @@ The GitHub side of the merge gate is intentionally narrow:
   `SUCCESS`, `SKIPPED`, or `NEUTRAL`. Passing `--wait` polls pending checks and
   fails immediately for completed failure conclusions.
 - All review threads must be resolved, regardless of reviewer.
+- The review-thread query fails closed if the PR has more review data than the
+  gate can inspect in one GraphQL page; do not merge until the gate can inspect
+  complete review data.
 - No CodeRabbit, Greptile, or Qodo review/comment event may have occurred in the
-  previous 300 seconds. If no AI review/comment event exists yet, the quiet
-  window falls back to PR creation time and the gate still requires at least one
-  CodeRabbit, Greptile, or Qodo signal from the check rollup or review stream
-  before merging. Passing `--wait` sleeps through the remaining quiet window and
-  then rechecks without rerunning local tests; any PR head change causes the
+  previous 300 seconds. If no AI review/comment event exists yet, the gate
+  refuses to merge. Passing `--wait` sleeps through the remaining quiet window
+  and then rechecks without rerunning local tests; any PR head change causes the
   recheck to fail.
 - Passing `--merge` is required for the script to merge. Without `--merge`, it
   only writes evidence and reports the gate result.
+- `--wait` is bounded by `--max-wait-seconds` (default 1800 seconds) so stuck
+  third-party checks do not spin indefinitely.
 
 Do not treat AI reviewer approval as proof. Treat the AI tools as review input;
 the proof for trusted-core work is the local evidence artifact plus the frozen

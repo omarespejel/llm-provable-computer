@@ -43,6 +43,13 @@ jobs:
             ~/.rustup/update-hashes
           key: rustup-nightly-2025-07-14-${{ runner.os }}-${{ runner.arch }}
 
+      - name: Validate local merge gate script
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          bash -n scripts/local_merge_gate.sh
+          shellcheck scripts/local_merge_gate.sh
+
       - name: Run lightweight regression smoke
         run: |
           cargo test -q --lib statement_spec_contract_is_synced_with_constants

@@ -7,6 +7,8 @@ cd "$ROOT_DIR"
 REPO="${MERGE_GATE_REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)}"
 PR_NUMBER="${MERGE_GATE_PR:-}"
 QUIET_SECONDS="${MERGE_GATE_QUIET_SECONDS:-300}"
+MAX_WAIT_SECONDS="${MERGE_GATE_MAX_WAIT_SECONDS:-1800}"
+WAIT_STARTED_AT="${MERGE_GATE_WAIT_STARTED_AT:-}"
 EVIDENCE_DIR="${MERGE_GATE_EVIDENCE_DIR:-target/local-hardening}"
 LOG_DIR=""
 MERGE=0
@@ -28,6 +30,7 @@ Options:
   --mode smoke|full|hardening|none
                           Local command tier. Default: smoke.
   --quiet-seconds N      AI-review quiet window. Default: 300.
+  --max-wait-seconds N   Maximum total --wait wall time. Default: 1800; 0 disables.
   --evidence-dir DIR     Evidence output directory. Default: target/local-hardening.
   --wait                 Wait until the quiet window is satisfied.
   --merge                Merge after all gates pass.
@@ -39,6 +42,7 @@ Options:
 
 Environment:
   MERGE_GATE_REPO, MERGE_GATE_PR, MERGE_GATE_QUIET_SECONDS,
+  MERGE_GATE_MAX_WAIT_SECONDS, MERGE_GATE_WAIT_STARTED_AT,
   MERGE_GATE_EVIDENCE_DIR, MERGE_GATE_RUN_MODE, MERGE_GATE_METHOD.
 EOF
 }
@@ -50,6 +54,40 @@ log() {
 fail() {
   printf '[merge-gate] ERROR: %s\n' "$*" >&2
   exit 1
+}
+
+sleep_with_wait_budget() {
+  local duration="$1"
+  local reason="$2"
+  local now elapsed budget
+
+  [[ -n "$WAIT_STARTED_AT" ]] || fail "WAIT_STARTED_AT is not initialized"
+  now="$(date -u +%s)"
+  elapsed=$((now - WAIT_STARTED_AT))
+  budget="$MAX_WAIT_SECONDS"
+
+  if (( budget > 0 && elapsed + duration > budget )); then
+    fail "${reason}; wait budget would be exceeded (${elapsed}s elapsed, ${budget}s max)"
+  fi
+
+  if (( budget > 0 )); then
+    log "${reason}; sleeping ${duration}s (${elapsed}/${budget}s wait budget elapsed)"
+  else
+    log "${reason}; sleeping ${duration}s (unbounded wait budget)"
+  fi
+  sleep "$duration"
+}
+
+retry_gate_mode_none() {
+  retry_args=("$0" --repo "$REPO" --pr "$PR_NUMBER" --mode none --quiet-seconds "$QUIET_SECONDS" --max-wait-seconds "$MAX_WAIT_SECONDS" --evidence-dir "$EVIDENCE_DIR" --wait --method "$MERGE_METHOD")
+  if (( MERGE )); then
+    retry_args+=(--merge)
+  fi
+  if (( DELETE_BRANCH == 0 )); then
+    retry_args+=(--keep-branch)
+  fi
+  export MERGE_GATE_WAIT_STARTED_AT="$WAIT_STARTED_AT"
+  exec "${retry_args[@]}"
 }
 
 run_logged() {
@@ -123,6 +161,14 @@ while (($#)); do
       QUIET_SECONDS="${1#*=}"
       shift
       ;;
+    --max-wait-seconds)
+      MAX_WAIT_SECONDS="${2:-}"
+      shift 2
+      ;;
+    --max-wait-seconds=*)
+      MAX_WAIT_SECONDS="${1#*=}"
+      shift
+      ;;
     --evidence-dir)
       EVIDENCE_DIR="${2:-}"
       shift 2
@@ -175,6 +221,14 @@ done
 [[ -n "$REPO" ]] || fail "repository is required; pass --repo OWNER/REPO or run inside a gh-known checkout"
 [[ "$PR_NUMBER" =~ ^[0-9]+$ ]] || fail "PR number is required"
 [[ "$QUIET_SECONDS" =~ ^[0-9]+$ ]] || fail "quiet seconds must be a non-negative integer"
+[[ "$MAX_WAIT_SECONDS" =~ ^[0-9]+$ ]] || fail "max wait seconds must be a non-negative integer"
+if (( WAIT )); then
+  if [[ -z "$WAIT_STARTED_AT" ]]; then
+    WAIT_STARTED_AT="$(date -u +%s)"
+  fi
+  [[ "$WAIT_STARTED_AT" =~ ^[0-9]+$ ]] || fail "wait started timestamp must be a Unix epoch"
+  export MERGE_GATE_WAIT_STARTED_AT
+fi
 case "$RUN_MODE" in
   smoke|full|hardening|none) ;;
   *) fail "unsupported --mode: $RUN_MODE" ;;
@@ -202,8 +256,8 @@ is_draft="$(jq -r '.isDraft' "$tmp_pr_json")"
 mergeable="$(jq -r '.mergeable' "$tmp_pr_json")"
 head_sha="$(jq -r '.headRefOid' "$tmp_pr_json")"
 base_sha="$(jq -r '.baseRefOid' "$tmp_pr_json")"
+base_ref_name="$(jq -r '.baseRefName' "$tmp_pr_json")"
 pr_url="$(jq -r '.url' "$tmp_pr_json")"
-pr_created_at="$(jq -r '.createdAt' "$tmp_pr_json")"
 
 [[ "$state" == "OPEN" ]] || fail "PR is not open: $state"
 [[ "$is_draft" == "false" ]] || fail "PR is draft"
@@ -220,14 +274,23 @@ if [[ -n "$dirty_status" ]]; then
   fail "worktree has uncommitted changes; local evidence must be tied to the exact PR head"
 fi
 
+if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
+  log "base commit ${base_sha} is missing locally; fetching origin/${base_ref_name}"
+  git fetch origin "$base_ref_name" --depth=1
+fi
+git cat-file -e "${base_sha}^{commit}" 2>/dev/null || fail "base commit ${base_sha} is unavailable locally"
+
 run_evidence_dir="$EVIDENCE_DIR/pr-${PR_NUMBER}-${head_sha}"
 LOG_DIR="$run_evidence_dir/logs"
 mkdir -p "$LOG_DIR"
 pr_json="$run_evidence_dir/pr.json"
 cp "$tmp_pr_json" "$pr_json"
+diff_range="${base_sha}...${head_sha}"
+local_evidence_marker="$run_evidence_dir/local-evidence.json"
+completed_local_mode=""
 
 if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
-  run_logged git-diff-check git diff --check
+  run_logged git-diff-check git diff --check "$diff_range"
   run_logged cargo-fmt-check cargo fmt --check
   run_logged lib-contract cargo test -q --lib statement_spec_contract_is_synced_with_constants
   smoke_targets=(assembly e2e interpreter runtime vanillastark_smoke)
@@ -240,8 +303,9 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
     --lib "$stwo_smoke" \
     -- \
     --exact
+  completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
-  run_logged git-diff-check git diff --check
+  run_logged git-diff-check git diff --check "$diff_range"
   run_logged cargo-fmt-check cargo fmt --check
   run_logged cargo-lib-tests cargo test -q --lib
   run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
@@ -252,20 +316,41 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
     --lib "$stwo_smoke" \
     -- \
     --exact
+  completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
-  run_logged git-diff-check git diff --check
+  run_logged git-diff-check git diff --check "$diff_range"
   run_logged cargo-fmt-check cargo fmt --check
   run_logged cargo-lib-tests cargo test -q --lib
   run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
+  stwo_smoke=stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks
+  run_logged stwo-backend-smoke cargo +nightly-2025-07-14 test -q \
+    --features stwo-backend \
+    --lib "$stwo_smoke" \
+    -- \
+    --exact
   run_logged ub-checks env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
   run_logged asan env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_asan_suite.sh
   run_logged miri env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_miri_suite.sh
   run_logged formal-contracts scripts/run_formal_contract_suite.sh
+  completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "none" ]]; then
   log "local commands disabled by --mode none"
 elif (( ! RUN_LOCAL )); then
   log "local commands skipped by --skip-local"
+fi
+
+if [[ -n "$completed_local_mode" ]]; then
+  jq -n \
+    --arg mode "$completed_local_mode" \
+    --arg head_sha "$head_sha" \
+    --arg completed_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    '{mode:$mode,head_sha:$head_sha,completed_at:$completed_at}' \
+    >"$local_evidence_marker"
+fi
+
+if (( MERGE )) && [[ ! -f "$local_evidence_marker" ]]; then
+  fail "merge requires completed local evidence for this PR head; rerun with --mode smoke, --mode full, or --mode hardening first"
 fi
 
 # Refresh PR state after local commands in case review bots posted while tests ran.
@@ -277,7 +362,6 @@ head_sha_after="$(jq -r '.headRefOid' "$pr_json")"
 
 checks_json="$run_evidence_dir/checks.json"
 jq '[.statusCheckRollup[]? | {name, status, conclusion}]' "$pr_json" >"$checks_json"
-ai_check_count="$(jq -r '[.[] | select((.name // "") | test("coderabbit|greptile|qodo"; "i"))] | length' "$checks_json")"
 
 failed_checks="$(jq -r '
   [.[]
@@ -305,16 +389,8 @@ if (( pending_checks > 0 )); then
     | "pending check: \(.name) status=\(.status) conclusion=\(.conclusion)"
   ' "$checks_json" >&2
   if (( WAIT )); then
-    log "GitHub checks are still pending; sleeping 30s"
-    sleep 30
-    retry_args=("$0" --repo "$REPO" --pr "$PR_NUMBER" --mode none --quiet-seconds "$QUIET_SECONDS" --evidence-dir "$EVIDENCE_DIR" --wait --method "$MERGE_METHOD")
-    if (( MERGE )); then
-      retry_args+=(--merge)
-    fi
-    if (( DELETE_BRANCH == 0 )); then
-      retry_args+=(--keep-branch)
-    fi
-    exec "${retry_args[@]}"
+    sleep_with_wait_budget 30 "GitHub checks are still pending"
+    retry_gate_mode_none
   fi
   fail "GitHub checks are still pending"
 fi
@@ -326,13 +402,23 @@ query($owner:String!,$name:String!,$number:Int!){
   repository(owner:$owner,name:$name){
     pullRequest(number:$number){
       reviewThreads(first:100){
+        pageInfo{ hasNextPage endCursor }
         nodes{
           isResolved
-          comments(first:50){ nodes{ author{login} createdAt body } }
+          comments(first:100){
+            pageInfo{ hasNextPage endCursor }
+            nodes{ author{login} createdAt body }
+          }
         }
       }
-      comments(first:100){ nodes{ author{login} createdAt body } }
-      reviews(first:100){ nodes{ author{login} createdAt body } }
+      comments(first:100){
+        pageInfo{ hasNextPage endCursor }
+        nodes{ author{login} createdAt body }
+      }
+      reviews(first:100){
+        pageInfo{ hasNextPage endCursor }
+        nodes{ author{login} createdAt body }
+      }
     }
   }
 }
@@ -342,31 +428,34 @@ GRAPHQL
 now_epoch="$(date -u +%s)"
 threads_json="$run_evidence_dir/review-gate.json"
 gh api graphql -f query="$query" -F owner="$owner" -F name="$name" -F number="$PR_NUMBER" \
-  | jq --argjson now "$now_epoch" --arg pr_created_at "$pr_created_at" '
+  | jq --argjson now "$now_epoch" '
       .data.repository.pullRequest as $pull
+      | ([
+          ($pull.reviewThreads.pageInfo.hasNextPage // false),
+          ($pull.comments.pageInfo.hasNextPage // false),
+          ($pull.reviews.pageInfo.hasNextPage // false),
+          ($pull.reviewThreads.nodes[].comments.pageInfo.hasNextPage // false)
+        ] | any) as $pagination_overflow
+      | if $pagination_overflow then
+          error("review gate query exceeded one GraphQL page; refusing to merge without complete review data")
+        else . end
       | [ $pull.reviewThreads.nodes[]? | select(.isResolved == false) ] as $active
       | ([
           ($pull.comments.nodes[]? | select(.author.login | test("coderabbit|greptile|qodo"; "i")) | {author:.author.login, createdAt}),
           ($pull.reviews.nodes[]? | select(.author.login | test("coderabbit|greptile|qodo"; "i")) | {author:.author.login, createdAt}),
           ($pull.reviewThreads.nodes[].comments.nodes[]? | select(.author.login | test("coderabbit|greptile|qodo"; "i")) | {author:.author.login, createdAt})
         ] | sort_by(.createdAt) | last) as $latest
-      | ($pr_created_at | fromdateiso8601) as $pr_created_epoch
-      | (if $latest then ($latest.createdAt | fromdateiso8601) else $pr_created_epoch end) as $quiet_epoch
       | {
           active_threads: ($active | length),
           latest_ai_event: ($latest // null),
           latest_ai_event_epoch: (if $latest then ($latest.createdAt | fromdateiso8601) else null end),
-          quiet_window_source: (if $latest then "latest_ai_event" else "pr_created_no_ai_event" end),
-          quiet_window_source_epoch: $quiet_epoch,
-          seconds_since_latest_ai_event: (if $latest then ($now - ($latest.createdAt | fromdateiso8601)) else null end),
-          seconds_since_quiet_window_source: ($now - $quiet_epoch)
+          quiet_window_source: (if $latest then "latest_ai_event" else "no_ai_event" end),
+          seconds_since_latest_ai_event: (if $latest then ($now - ($latest.createdAt | fromdateiso8601)) else null end)
         }
     ' >"$threads_json"
 
 active_threads="$(jq -r '.active_threads' "$threads_json")"
 seconds_since_ai="$(jq -r '.seconds_since_latest_ai_event // "none"' "$threads_json")"
-seconds_since_quiet_source="$(jq -r '.seconds_since_quiet_window_source' "$threads_json")"
-quiet_source="$(jq -r '.quiet_window_source' "$threads_json")"
 latest_ai="$(jq -r '.latest_ai_event.createdAt // "none"' "$threads_json")"
 latest_ai_author="$(jq -r '.latest_ai_event.author // "none"' "$threads_json")"
 
@@ -374,25 +463,17 @@ if (( active_threads > 0 )); then
   fail "active review threads remain: $active_threads"
 fi
 
-if (( ai_check_count == 0 )) && [[ "$seconds_since_ai" == "none" ]]; then
-  fail "no AI reviewer signal observed yet in checks, reviews, review threads, or PR comments"
+if [[ "$seconds_since_ai" == "none" ]]; then
+  fail "no AI reviewer review/comment event observed yet"
 fi
 
-if (( seconds_since_quiet_source < QUIET_SECONDS )); then
-  remaining=$((QUIET_SECONDS - seconds_since_quiet_source))
+if (( seconds_since_ai < QUIET_SECONDS )); then
+  remaining=$((QUIET_SECONDS - seconds_since_ai))
   if (( WAIT )); then
-    log "AI quiet window not satisfied from ${quiet_source}; latest ${latest_ai_author} event at ${latest_ai}; sleeping ${remaining}s"
-    sleep "$remaining"
-    retry_args=("$0" --repo "$REPO" --pr "$PR_NUMBER" --mode none --quiet-seconds "$QUIET_SECONDS" --evidence-dir "$EVIDENCE_DIR" --wait --method "$MERGE_METHOD")
-    if (( MERGE )); then
-      retry_args+=(--merge)
-    fi
-    if (( DELETE_BRANCH == 0 )); then
-      retry_args+=(--keep-branch)
-    fi
-    exec "${retry_args[@]}"
+    sleep_with_wait_budget "$remaining" "AI quiet window not satisfied; latest ${latest_ai_author} event at ${latest_ai}"
+    retry_gate_mode_none
   fi
-  fail "AI quiet window not satisfied from ${quiet_source}; latest ${latest_ai_author} event at ${latest_ai}"
+  fail "AI quiet window not satisfied; latest ${latest_ai_author} event at ${latest_ai}"
 fi
 
 commands_json="$run_evidence_dir/commands.json"
@@ -435,7 +516,7 @@ log "gate passed for ${pr_url}"
 log "evidence: ${evidence_file}"
 
 if (( MERGE )); then
-  merge_args=(gh pr merge "$PR_NUMBER" --repo "$REPO")
+  merge_args=(gh pr merge "$PR_NUMBER" --repo "$REPO" --match-head-commit "$head_sha")
   case "$MERGE_METHOD" in
     merge) merge_args+=(--merge) ;;
     squash) merge_args+=(--squash) ;;
