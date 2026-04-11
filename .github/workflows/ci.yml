@@ -4,11 +4,38 @@ permissions:
   contents: read
 
 on:
+  pull_request:
+    paths:
+      - "src/**/*.rs"
+      - "tests/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
   workflow_dispatch:
 
 jobs:
+  pr-smoke:
+    name: lightweight PR lib smoke
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
+        with:
+          toolchain: stable
+
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run lightweight library smoke
+        run: cargo test -q --lib
+
   statement-spec:
     name: statement spec contract
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     steps:
@@ -30,6 +57,7 @@ jobs:
 
   cargo-test:
     name: cargo nextest (${{ matrix.name }})
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -126,6 +154,7 @@ jobs:
 
   milestone-1-proof:
     name: export and validate ONNX workflow
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     steps:

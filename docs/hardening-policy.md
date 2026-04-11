@@ -6,8 +6,10 @@ expensive GitHub Actions compute.
 ## Rule
 
 - Do not use automatic `push`, `pull_request`, or `schedule` triggers for
-  heavyweight GitHub Actions compute such as CI matrix, mutation testing, Miri,
-  sanitizers, or formal contracts.
+  heavyweight GitHub Actions compute such as full CI matrix, mutation testing,
+  Miri, sanitizers, or formal contracts.
+- Keep any automatic PR GitHub Actions compute lightweight and path-scoped; the
+  CI workflow only runs a library smoke test for Rust or Cargo changes.
 - Keep heavyweight GitHub Actions workflows available through
   `workflow_dispatch` for intentional release, baseline, or emergency
   GitHub-hosted validation.
@@ -32,8 +34,6 @@ cargo test -q --lib
 cargo nextest run \
   --workspace --all-targets --profile ci --no-fail-fast
 cargo test --workspace --doc
-TEST_FILTER=phase28_
-cargo +nightly-2025-07-14 test -q --features stwo-backend --lib "$TEST_FILTER"
 RUSTUP_TOOLCHAIN=nightly-2025-07-14 cargo nextest run \
   --workspace --all-targets --features stwo-backend \
   --profile ci-stwo --no-fail-fast
@@ -45,7 +45,9 @@ HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_asan_suite.sh
 scripts/run_formal_contract_suite.sh
 ```
 
-For Phase 28 work, the current targeted `stwo-backend` filter is `phase28_`.
+The sanitizer and UB hardening scripts use the curated exact test lists in
+`scripts/hardening_test_names.sh`; update that file when adding new trusted-core
+phase gates.
 Install the `cargo-nextest` version pinned in `.config/nextest.toml` if it is
 missing. Run the relevant feature rows from `.github/workflows/ci.yml` when the
 change touches broader runtime, export, or backend behavior.
