@@ -39,6 +39,13 @@ jobs:
           for test_target in "${smoke_targets[@]}"; do
             cargo test -q --test "$test_target"
           done
+          rustup toolchain install nightly-2025-07-14 --profile minimal
+          stwo_smoke=stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks
+          cargo +nightly-2025-07-14 test -q \
+            --features stwo-backend \
+            --lib "$stwo_smoke" \
+            -- \
+            --exact
 
   statement-spec:
     name: statement spec contract

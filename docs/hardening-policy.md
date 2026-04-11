@@ -10,7 +10,8 @@ expensive GitHub Actions compute.
   Miri, sanitizers, or formal contracts.
 - Keep any automatic PR GitHub Actions compute lightweight and path-scoped; the
   CI workflow only runs a core library contract plus integration-test smoke for
-  Rust, Cargo, program fixture, or CI workflow changes.
+  Rust, Cargo, program fixture, or CI workflow changes, plus one exact
+  pinned-nightly `stwo-backend` smoke.
 - Keep heavyweight GitHub Actions workflows available through
   `workflow_dispatch` for intentional release, baseline, or emergency
   GitHub-hosted validation.
