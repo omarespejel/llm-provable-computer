@@ -63,10 +63,11 @@ It aggregates only:
 
 So the carried-state boundary exposed at the Phase 28 level is still anchored in real contiguous interval evidence, just across multiple chained bundles instead of one bundle.
 
-The anti-overclaiming guard is intentionally shallow: it runs before nested
-Phase 27 proof walks and before the expensive proof-checking mode. This keeps a
-bad artifact from spending verifier resources after it has already claimed a
-recursive or compressed proof posture that Phase 28 does not implement.
+The guard implementing these anti-overclaiming rejection criteria is
+intentionally shallow: it runs before nested Phase 27 proof walks and before the
+expensive proof-checking mode. This keeps a bad artifact from spending verifier
+resources after it has already claimed a recursive or compressed proof posture
+that Phase 28 does not implement.
 
 ## Demo Construction
 

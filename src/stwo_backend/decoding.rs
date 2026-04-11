@@ -146,6 +146,63 @@ fn default_phase28_recursion_posture() -> String {
     STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE.to_string()
 }
 
+fn validate_phase28_recursion_posture_string<E>(value: &str) -> std::result::Result<(), E>
+where
+    E: serde::de::Error,
+{
+    if value.len() > MAX_PHASE28_RECURSION_POSTURE_BYTES {
+        return Err(E::custom(format!(
+            "aggregated chained folded intervalized decoding state relation recursion_posture_len={} exceeds the supported maximum {}",
+            value.len(),
+            MAX_PHASE28_RECURSION_POSTURE_BYTES
+        )));
+    }
+    Ok(())
+}
+
+fn deserialize_phase28_recursion_posture<'de, D>(
+    deserializer: D,
+) -> std::result::Result<String, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    struct Phase28RecursionPostureVisitor;
+
+    impl<'de> serde::de::Visitor<'de> for Phase28RecursionPostureVisitor {
+        type Value = String;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str("a bounded Phase 28 recursion posture string")
+        }
+
+        fn visit_borrowed_str<E>(self, value: &'de str) -> std::result::Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            validate_phase28_recursion_posture_string::<E>(value)?;
+            Ok(value.to_string())
+        }
+
+        fn visit_str<E>(self, value: &str) -> std::result::Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            validate_phase28_recursion_posture_string::<E>(value)?;
+            Ok(value.to_string())
+        }
+
+        fn visit_string<E>(self, value: String) -> std::result::Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            validate_phase28_recursion_posture_string::<E>(&value)?;
+            Ok(value)
+        }
+    }
+
+    deserializer.deserialize_str(Phase28RecursionPostureVisitor)
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase11DecodingState {
     pub state_version: String,
@@ -739,7 +796,10 @@ pub struct Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManife
     pub statement_version: String,
     // Defaulted posture metadata preserves legacy Phase 28 v1 commitments while
     // making any new recursive/compressed claim fail at verifier entry.
-    #[serde(default = "default_phase28_recursion_posture")]
+    #[serde(
+        default = "default_phase28_recursion_posture",
+        deserialize_with = "deserialize_phase28_recursion_posture"
+    )]
     pub recursion_posture: String,
     #[serde(default)]
     pub recursive_verification_claimed: bool,
@@ -7814,7 +7874,7 @@ fn validate_phase28_aggregated_chained_folded_intervalized_decoding_state_relati
     }
     if manifest.recursion_posture != STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE {
         return Err(VmError::InvalidConfig(format!(
-            "aggregated chained folded intervalized decoding state relation recursion_posture_len={} is not the expected pre-recursive posture `{}`",
+            "aggregated chained folded intervalized decoding state relation recursion_posture mismatch (provided_len={}, expected `{}`)",
             manifest.recursion_posture.len(),
             STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE
         )));
@@ -20782,7 +20842,12 @@ mod tests {
     ) {
         let (mut manifest, summaries) =
             sample_phase28_aggregated_chained_folded_intervalized_decoding_state_relation();
-        manifest.recursion_posture = "x".repeat(MAX_PHASE28_RECURSION_POSTURE_BYTES + 1);
+        let untrusted_prefix = "untrusted-posture-prefix";
+        manifest.recursion_posture = format!(
+            "{}{}",
+            untrusted_prefix,
+            "x".repeat(MAX_PHASE28_RECURSION_POSTURE_BYTES)
+        );
         let err =
             verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_summaries(
                 &manifest,
@@ -20790,6 +20855,7 @@ mod tests {
             )
             .unwrap_err();
         assert!(err.to_string().contains("recursion_posture_len="));
+        assert!(!err.to_string().contains(untrusted_prefix));
         assert!(
             err.to_string().len() < 256,
             "error must not echo untrusted posture payload"
@@ -20855,6 +20921,36 @@ mod tests {
             &summaries,
         )
         .expect("legacy defaulted phase28 manifest stays verifiable");
+    }
+
+    #[test]
+    fn phase28_deserialization_rejects_long_recursive_posture_without_echoing_it() {
+        let (manifest, _) =
+            sample_phase28_aggregated_chained_folded_intervalized_decoding_state_relation();
+        let untrusted_prefix = "serde-untrusted-posture";
+        let mut value = serde_json::to_value(&manifest).expect("serialize manifest");
+        value
+            .as_object_mut()
+            .expect("manifest serializes to object")
+            .insert(
+                "recursion_posture".to_string(),
+                serde_json::Value::String(format!(
+                    "{}{}",
+                    untrusted_prefix,
+                    "x".repeat(MAX_PHASE28_RECURSION_POSTURE_BYTES)
+                )),
+            );
+
+        let err = serde_json::from_value::<
+            Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+        >(value)
+        .unwrap_err();
+        assert!(err.to_string().contains("recursion_posture_len="));
+        assert!(!err.to_string().contains(untrusted_prefix));
+        assert!(
+            err.to_string().len() < 256,
+            "serde error must not echo untrusted posture payload"
+        );
     }
 
     #[test]
