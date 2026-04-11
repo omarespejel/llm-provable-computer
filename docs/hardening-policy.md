@@ -9,8 +9,8 @@ expensive GitHub Actions compute.
   heavyweight GitHub Actions compute such as full CI matrix, mutation testing,
   Miri, sanitizers, or formal contracts.
 - Keep any automatic PR GitHub Actions compute lightweight and path-scoped; the
-  CI workflow only runs a library-and-tests smoke for Rust, Cargo, or CI
-  workflow changes.
+  CI workflow only runs a core library contract plus integration-test smoke for
+  Rust, Cargo, or CI workflow changes.
 - Keep heavyweight GitHub Actions workflows available through
   `workflow_dispatch` for intentional release, baseline, or emergency
   GitHub-hosted validation.

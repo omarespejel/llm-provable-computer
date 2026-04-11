@@ -31,8 +31,12 @@ jobs:
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
 
-      - name: Run lightweight library smoke
-        run: cargo test -q --lib --tests
+      - name: Run lightweight regression smoke
+        run: |
+          cargo test -q --lib statement_spec_contract_is_synced_with_constants
+          for test_target in tests/*.rs; do
+            cargo test -q --test "$(basename "$test_target" .rs)"
+          done
 
   statement-spec:
     name: statement spec contract
