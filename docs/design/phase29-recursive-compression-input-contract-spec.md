@@ -51,7 +51,11 @@ Deserialization of `Phase29RecursiveCompressionInputContract` is a validating
 operation. The read helpers
 `parse_phase29_recursive_compression_input_contract_json` and
 `load_phase29_recursive_compression_input_contract` return a contract only after
-the same Phase 29 verifier accepts the parsed fields.
+the same Phase 29 verifier accepts the parsed fields. Validation failures are
+reported as invalid contract configuration, not as generic JSON serialization
+failures. The file loader uses the repository's bounded JSON read path: it only
+accepts regular files and rejects inputs above the Phase 29 JSON byte budget
+before parsing.
 
 ## Non-Goals
 

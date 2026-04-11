@@ -1128,7 +1128,11 @@ fn validate_phase12_shared_lookup_artifact_resource_bounds(
     Ok(())
 }
 
-fn read_json_bytes_with_limit(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u8>> {
+pub(super) fn read_json_bytes_with_limit(
+    path: &Path,
+    max_bytes: usize,
+    label: &str,
+) -> Result<Vec<u8>> {
     let metadata = fs::symlink_metadata(path).map_err(|error| {
         VmError::InvalidConfig(format!(
             "{label} `{}` could not be inspected before reading: io_kind={:?}: {error}",

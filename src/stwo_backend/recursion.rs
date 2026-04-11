@@ -1,10 +1,13 @@
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "stwo-backend")]
+use std::path::Path;
 
 use crate::error::{Result, VmError};
 use crate::proof::{ExecutionClaimCommitments, StarkProofBackend, VanillaStarkExecutionProof};
 
 #[cfg(feature = "stwo-backend")]
 use super::decoding::{
+    read_json_bytes_with_limit,
     verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE28,
@@ -30,6 +33,8 @@ pub const STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29: &str =
 #[cfg(feature = "stwo-backend")]
 pub const STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29: &str =
     "stwo_phase28_recursive_compression_input_contract";
+#[cfg(feature = "stwo-backend")]
+const MAX_PHASE29_RECURSIVE_COMPRESSION_INPUT_CONTRACT_JSON_BYTES: usize = 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase6RecursionBatchEntry {
@@ -321,15 +326,27 @@ pub fn phase29_prepare_recursive_compression_input_contract(
 pub fn parse_phase29_recursive_compression_input_contract_json(
     json: &str,
 ) -> Result<Phase29RecursiveCompressionInputContract> {
-    serde_json::from_str(json).map_err(|err| VmError::Serialization(err.to_string()))
+    serde_json::from_str(json).map_err(phase29_json_error)
 }
 
 #[cfg(feature = "stwo-backend")]
 pub fn load_phase29_recursive_compression_input_contract(
-    path: &std::path::Path,
+    path: &Path,
 ) -> Result<Phase29RecursiveCompressionInputContract> {
-    let bytes = std::fs::read(path)?;
-    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE29_RECURSIVE_COMPRESSION_INPUT_CONTRACT_JSON_BYTES,
+        "Phase 29 recursive-compression input contract",
+    )?;
+    serde_json::from_slice(&bytes).map_err(phase29_json_error)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase29_json_error(error: serde_json::Error) -> VmError {
+    match error.classify() {
+        serde_json::error::Category::Data => VmError::InvalidConfig(error.to_string()),
+        _ => VmError::Serialization(error.to_string()),
+    }
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -800,6 +817,66 @@ mod tests {
         let err = serde_json::from_value::<Phase29RecursiveCompressionInputContract>(tampered)
             .expect_err("tampered deserialized contract must be rejected");
         assert!(err.to_string().contains("commitment"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase29_recursive_compression_input_contract_parse_reports_validation_error_as_invalid_config(
+    ) {
+        let contract = sample_phase29_contract();
+        let mut tampered = serde_json::to_value(&contract).expect("serialize value");
+        tampered["total_steps"] = serde_json::json!(contract.total_steps + 1);
+        let json = serde_json::to_string(&tampered).expect("tampered json");
+
+        let err = parse_phase29_recursive_compression_input_contract_json(&json)
+            .expect_err("validation failure must surface as invalid config");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+        assert!(err.to_string().contains("commitment"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase29_load_recursive_compression_input_contract_rejects_oversized_file() {
+        let path = std::env::temp_dir().join(format!(
+            "phase29-recursive-compression-input-contract-oversized-{}.json",
+            std::process::id()
+        ));
+        std::fs::write(
+            &path,
+            vec![b'x'; MAX_PHASE29_RECURSIVE_COMPRESSION_INPUT_CONTRACT_JSON_BYTES + 1],
+        )
+        .expect("write");
+
+        let err = load_phase29_recursive_compression_input_contract(&path)
+            .expect_err("oversized Phase 29 contract should fail");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+        assert!(err.to_string().contains("exceeding the limit"));
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase29_load_recursive_compression_input_contract_rejects_non_regular_file() {
+        let path = std::env::temp_dir().join(format!(
+            "phase29-recursive-compression-input-contract-dir-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&path).expect("create dir");
+
+        let err = load_phase29_recursive_compression_input_contract(&path)
+            .expect_err("directory path should fail");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+        assert!(err.to_string().contains("is not a regular file"));
+        let _ = std::fs::remove_dir_all(path);
     }
 
     #[cfg(feature = "stwo-backend")]
