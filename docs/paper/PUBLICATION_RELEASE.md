@@ -1,12 +1,12 @@
 # Publication Release Package
 
-Snapshot date: **April 9, 2026**
+Snapshot date: **April 11, 2026**
 
 Intended launch tag for the current paper-facing repository state:
-`paper-publication-v3-2026-04-09`
+`paper-publication-v4-2026-04-11`
 
 Canonical publication snapshot commit:
-`900ad5da657fb3b8085755657eb50c5f53580c23`
+`520240822c48dc3111bc5b91d5896ab97a2bb4c8`
 
 Canonical launch repository:
 `https://github.com/omarespejel/provable-transformer-vm`
@@ -43,8 +43,10 @@ patches and a subsequent publication tag.
 
 - `production-v1` is the primary frozen reproducibility bundle for the vanilla backend.
 - `stwo-experimental-v1` is the frozen narrow evidence tier for the experimental S-two path.
-- The repo still does **not** claim full standard-softmax transformer inference on S-two, recursive
-  aggregation, or production-scale zkML deployment.
+- Post-freeze commit-pinned evidence now includes the Phase 24-28 pre-recursive
+  carried-state aggregation ladder.
+- The repo still does **not** claim full standard-softmax transformer inference on S-two,
+  cross-step shared-table accumulation, recursive proof compression, or production-scale zkML deployment.
 
 ## Regeneration
 

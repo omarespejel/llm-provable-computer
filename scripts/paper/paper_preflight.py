@@ -21,13 +21,12 @@ from urllib.parse import urlparse
 
 PAPER_FILES = [
     "docs/paper/stark-transformer-alignment-2026.md",
-    "docs/paper/proof-carrying-decoding-2026.md",
     "docs/paper/appendix-system-comparison.md",
     "docs/paper/appendix-scaling-companion.md",
     "docs/paper/appendix-backend-artifact-comparison.md",
     "docs/paper/PUBLICATION_RELEASE.md",
-    "docs/paper/submission-v3-2026-04-09/BUNDLE_INDEX.md",
-    "docs/paper/submission-v3-2026-04-09/REPRODUCIBILITY_NOTE.md",
+    "docs/paper/submission-v4-2026-04-11/BUNDLE_INDEX.md",
+    "docs/paper/submission-v4-2026-04-11/REPRODUCIBILITY_NOTE.md",
 ]
 
 LOCAL_REPOS = {
