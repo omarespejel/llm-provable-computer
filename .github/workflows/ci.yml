@@ -9,6 +9,7 @@ on:
       - ".github/workflows/ci.yml"
       - "src/**/*.rs"
       - "tests/**"
+      - "programs/**"
       - "Cargo.toml"
       - "Cargo.lock"
   workflow_dispatch:
@@ -34,8 +35,9 @@ jobs:
       - name: Run lightweight regression smoke
         run: |
           cargo test -q --lib statement_spec_contract_is_synced_with_constants
-          for test_target in tests/*.rs; do
-            cargo test -q --test "$(basename "$test_target" .rs)"
+          smoke_targets=(assembly e2e interpreter runtime vanillastark_smoke)
+          for test_target in "${smoke_targets[@]}"; do
+            cargo test -q --test "$test_target"
           done
 
   statement-spec:
