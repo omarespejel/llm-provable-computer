@@ -71,6 +71,9 @@ if [ -n "$(git status --porcelain --untracked-files=normal -- . ":(exclude)$REL_
   echo "Refusing to generate frozen bundle from a dirty worktree; commit or stash local changes first" >&2
   exit 1
 fi
+START_HEAD="$(git rev-parse HEAD)"
+START_HEAD_SHORT="$(git rev-parse --short HEAD)"
+START_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 rm -rf -- "$BUNDLE_DIR"
 mkdir -p "$BUNDLE_DIR"
 
@@ -117,8 +120,27 @@ run_logged() {
   } | tee -a "$COMMANDS_LOG"
 }
 
+assert_generation_checkout_unchanged() {
+  local current_head current_branch dirty_status
+  current_head="$(git rev-parse HEAD)"
+  current_branch="$(git rev-parse --abbrev-ref HEAD)"
+  if [ "$current_head" != "$START_HEAD" ] || [ "$current_branch" != "$START_BRANCH" ]; then
+    echo "Refusing to continue; checkout changed after manifest provenance was recorded" >&2
+    echo "start:   $START_BRANCH $START_HEAD" >&2
+    echo "current: $current_branch $current_head" >&2
+    exit 1
+  fi
+  dirty_status="$(git status --porcelain --untracked-files=normal -- . ":(exclude)$REL_BUNDLE_DIR")"
+  if [ -n "$dirty_status" ]; then
+    echo "Refusing to continue from a dirty worktree; provenance may drift" >&2
+    printf '%s\n' "$dirty_status" >&2
+    exit 1
+  fi
+}
+
 ensure_tvm_binary() {
   if [ ! -x "$TVM_BIN" ]; then
+    assert_generation_checkout_unchanged
     echo "Expected tvm binary at $TVM_BIN was missing; rebuilding" >&2
     run_logged "${CARGO_BUILD_STWO[@]}"
     "${CARGO_BUILD_STWO[@]}"
@@ -161,6 +183,7 @@ run_timed() {
   local label="$1"
   shift
   local started_ns ended_ns elapsed
+  assert_generation_checkout_unchanged
   if [ "${1:-}" = "$TVM_BIN" ]; then
     ensure_tvm_binary
   fi
@@ -175,9 +198,9 @@ run_timed() {
 cat > "$MANIFEST" <<MANIFEST
 generated_at_utc: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 repo_root: .
-git_commit: $(git rev-parse HEAD)
-git_commit_short: $(git rev-parse --short HEAD)
-git_branch: $(git rev-parse --abbrev-ref HEAD)
+git_commit: $START_HEAD
+git_commit_short: $START_HEAD_SHORT
+git_branch: $START_BRANCH
 rustc: $(rustup run "${NIGHTLY_TOOLCHAIN#+}" rustc --version)
 cargo: $(cargo "$NIGHTLY_TOOLCHAIN" --version)
 host_platform: $(uname -srm)
@@ -187,6 +210,7 @@ fixtures: decoding_state_relation_accumulator_phase24, intervalized_decoding_sta
 benchmark_binary: $REL_TVM_BIN
 MANIFEST
 
+assert_generation_checkout_unchanged
 run_logged "${CARGO_BUILD_STWO[@]}"
 "${CARGO_BUILD_STWO[@]}"
 ensure_tvm_binary
