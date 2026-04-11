@@ -6,6 +6,7 @@ permissions:
 on:
   pull_request:
     paths:
+      - ".github/workflows/ci.yml"
       - "src/**/*.rs"
       - "tests/**"
       - "Cargo.toml"
@@ -28,10 +29,10 @@ jobs:
           toolchain: stable
 
       - name: Restore Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
 
       - name: Run lightweight library smoke
-        run: cargo test -q --lib
+        run: cargo test -q --lib --tests
 
   statement-spec:
     name: statement spec contract
@@ -48,7 +49,7 @@ jobs:
           toolchain: stable
 
       - name: Restore Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
 
       - name: Validate statement spec constants contract
         run: |
@@ -116,7 +117,7 @@ jobs:
           python -m pip install -r scripts/requirements.txt
 
       - name: Restore Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
 
       - name: Install cargo-nextest
         uses: taiki-e/install-action@80e6af7a2ec7f280fffe2d0a9d3a12a9d11d86e9
@@ -175,7 +176,7 @@ jobs:
           python -m pip install -r scripts/requirements.txt
 
       - name: Restore Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
 
       - name: Export ONNX from CLI
         run: cargo run --features onnx-export --bin tvm -- export-onnx programs/fibonacci.tvm -o compiled/fibonacci
@@ -230,7 +231,7 @@ jobs:
           toolchain: ${{ steps.fuzz-toolchain.outputs.channel }}
 
       - name: Restore Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
 
       - name: Install cargo-fuzz
         run: cargo +${{ steps.fuzz-toolchain.outputs.channel }} install cargo-fuzz --version 0.13.1 --locked
