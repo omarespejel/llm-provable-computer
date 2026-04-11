@@ -84,9 +84,9 @@ If you want the shortest successful path, start on stable Rust with the default
 runtime and vanilla STARK commands. Move to `stwo` only when you need the
 experimental backend surface.
 
-Hardening policy: trusted-core work must run the matching Miri, sanitizer, and
-formal suites locally, preferably in Lima Ubuntu 22.04 for Linux parity. See
-`docs/hardening-policy.md`.
+Local CI and hardening policy: trusted-core work must run matching tests, Miri,
+sanitizer, and formal suites locally, preferably in Lima Ubuntu 22.04 for Linux
+parity. See `docs/hardening-policy.md`.
 
 ---
 

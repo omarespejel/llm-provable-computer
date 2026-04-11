@@ -4,10 +4,7 @@ permissions:
   contents: read
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   statement-spec:
@@ -75,8 +72,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
-        with:
-          toolchain: stable
         with:
           toolchain: ${{ matrix.rust_toolchain }}
 
