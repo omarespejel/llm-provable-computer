@@ -274,24 +274,25 @@ class PaperPreflightTests(unittest.TestCase):
                 "Canonical publication snapshot commit:\nTBD_SNAPSHOT_SHA\n",
             )
             findings = MOD.Findings()
-            MOD.check_publication_snapshot_placeholders(
-                repo, findings, allow_pending_snapshot=False
-            )
+            MOD.check_publication_snapshot_placeholders(repo, findings)
             self.assertTrue(findings.errors)
             self.assertIn("TBD_SNAPSHOT_SHA", findings.errors[0])
 
-    def test_publication_snapshot_placeholders_can_be_allowed_for_drafts(self):
+    def test_publication_snapshot_placeholder_read_errors_are_findings(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp)
-            write_text(
-                repo / "docs/paper/submission-v4-2026-04-11/BUNDLE_INDEX.md",
-                "Canonical repository snapshot:\nPending. Fill after merge.\n",
-            )
+            path = repo / "docs/paper/PUBLICATION_RELEASE.md"
+            write_text(path, "Canonical publication snapshot commit:\nvalid\n")
             findings = MOD.Findings()
-            MOD.check_publication_snapshot_placeholders(
-                repo, findings, allow_pending_snapshot=True
+            with mock.patch.object(pathlib.Path, "read_text", side_effect=OSError("boom")):
+                MOD.check_publication_snapshot_placeholders(repo, findings)
+            self.assertTrue(
+                any(
+                    "failed to read publication metadata for snapshot placeholder checks" in msg
+                    for msg in findings.errors
+                ),
+                findings.errors,
             )
-            self.assertEqual(findings.errors, [])
 
     def test_publication_snapshot_pending_field_fails_by_default(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -301,27 +302,9 @@ class PaperPreflightTests(unittest.TestCase):
                 "Canonical repository snapshot:\nPending. Fill after merge.\n",
             )
             findings = MOD.Findings()
-            MOD.check_publication_snapshot_placeholders(
-                repo, findings, allow_pending_snapshot=False
-            )
+            MOD.check_publication_snapshot_placeholders(repo, findings)
             self.assertTrue(
                 any("Pending." in msg for msg in findings.errors),
-                findings.errors,
-            )
-
-    def test_publication_snapshot_allow_pending_still_rejects_tbd_sha(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            repo = pathlib.Path(tmp)
-            write_text(
-                repo / "docs/paper/PUBLICATION_RELEASE.md",
-                "Canonical publication snapshot commit:\nTBD_SNAPSHOT_SHA\n",
-            )
-            findings = MOD.Findings()
-            MOD.check_publication_snapshot_placeholders(
-                repo, findings, allow_pending_snapshot=True
-            )
-            self.assertTrue(
-                any("TBD_SNAPSHOT_SHA" in msg for msg in findings.errors),
                 findings.errors,
             )
 
@@ -337,9 +320,7 @@ class PaperPreflightTests(unittest.TestCase):
                 ),
             )
             findings = MOD.Findings()
-            MOD.check_publication_snapshot_placeholders(
-                repo, findings, allow_pending_snapshot=False
-            )
+            MOD.check_publication_snapshot_placeholders(repo, findings)
             self.assertEqual(findings.errors, [])
 
 

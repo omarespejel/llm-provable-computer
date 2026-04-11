@@ -81,4 +81,4 @@ Before cutting a release tag, verify:
    this v4 paper metadata,
 6. `paper preflight` passes (citation integrity, immutable local repo links,
    figure/link paths, appendix source note, and unresolved publication snapshot
-   placeholder detection unless draft mode is explicitly allowed).
+   placeholder detection).
