@@ -99,13 +99,17 @@ codes, UTC timestamps, log paths, and log SHA-256 digests.
 
 Available local command tiers:
 
-- `--mode smoke`: default minimum gate for ordinary PRs. Runs `git diff
-  --check`, `cargo fmt --check`, the statement-spec contract, allowlisted
-  integration smoke targets, and one exact pinned-nightly `stwo-backend` smoke.
-- `--mode full`: runs formatting, diff hygiene, full library tests, integration
-  tests, doctests, and the exact pinned-nightly `stwo-backend` smoke.
+- `--mode smoke`: default minimum gate for ordinary PRs. Runs PR-range
+  whitespace hygiene as `git diff --check "$base_sha...$head_sha"`, `cargo fmt
+  --check`, the statement-spec contract, allowlisted integration smoke targets,
+  and one exact pinned-nightly `stwo-backend` smoke.
+- `--mode full`: runs the same PR-range whitespace and formatting hygiene, full
+  library tests, integration tests, doctests, and the exact pinned-nightly
+  `stwo-backend` smoke.
 - `--mode hardening`: runs the `full` tier plus UB checks, ASAN, Miri, and the
-  formal contract suite. Prefer running this tier inside Lima for Linux parity.
+  formal contract suite. The inherited whitespace gate is still scoped to the
+  committed PR delta, not the whole worktree. Prefer running this tier inside
+  Lima for Linux parity.
 - `--mode none`: only checks GitHub status, review-thread state, and the
   five-minute AI-review quiet window. Use this only after a prior evidence run
   for the same PR head SHA.

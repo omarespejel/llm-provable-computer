@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+SCRIPT_PATH="$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")"
 cd "$ROOT_DIR"
 
 REPO="${MERGE_GATE_REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)}"
@@ -79,7 +81,7 @@ sleep_with_wait_budget() {
 }
 
 retry_gate_mode_none() {
-  retry_args=("$0" --repo "$REPO" --pr "$PR_NUMBER" --mode none --quiet-seconds "$QUIET_SECONDS" --max-wait-seconds "$MAX_WAIT_SECONDS" --evidence-dir "$EVIDENCE_DIR" --wait --method "$MERGE_METHOD")
+  retry_args=("$SCRIPT_PATH" --repo "$REPO" --pr "$PR_NUMBER" --mode none --quiet-seconds "$QUIET_SECONDS" --max-wait-seconds "$MAX_WAIT_SECONDS" --evidence-dir "$EVIDENCE_DIR" --wait --method "$MERGE_METHOD")
   if (( MERGE )); then
     retry_args+=(--merge)
   fi
@@ -328,7 +330,11 @@ fi
 
 if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
   log "base commit ${base_sha} is missing locally; fetching origin/${base_ref_name}"
-  git fetch origin "$base_ref_name" --depth=1
+  if [[ "$(git rev-parse --is-shallow-repository)" == "true" ]]; then
+    git fetch --unshallow origin "$base_ref_name" || git fetch origin "$base_ref_name"
+  else
+    git fetch origin "$base_ref_name"
+  fi
 fi
 git cat-file -e "${base_sha}^{commit}" 2>/dev/null || fail "base commit ${base_sha} is unavailable locally"
 
@@ -424,7 +430,6 @@ gh api --paginate "repos/${REPO}/commits/${head_sha}/statuses?per_page=100" \
       sort_by(.created_at)
       | reduce .[] as $status ({}; .[$status.name] = $status)
       | [.[]]
-      | map(del(.created_at))
     ' >"$statuses_json"
 jq -s '.[0] + .[1]' "$check_runs_json" "$statuses_json" >"$checks_json"
 
@@ -532,11 +537,12 @@ jq -n \
 
 jq --argjson now "$now_epoch" '
     .data.repository.pullRequest as $pull
+    | ["coderabbitai", "greptile-apps", "qodo-code-review"] as $ai_reviewers
     | [ $pull.reviewThreads.nodes[]? | select(.isResolved == false) ] as $active
     | ([
-        ($pull.comments.nodes[]? | select(.author.login | test("coderabbit|greptile|qodo"; "i")) | {author:.author.login, createdAt}),
-        ($pull.reviews.nodes[]? | select(.author.login | test("coderabbit|greptile|qodo"; "i")) | {author:.author.login, createdAt}),
-        ($pull.reviewThreads.nodes[].comments.nodes[]? | select(.author.login | test("coderabbit|greptile|qodo"; "i")) | {author:.author.login, createdAt})
+        ($pull.comments.nodes[]? | select(.author.login as $login | $ai_reviewers | index($login)) | {author:.author.login, createdAt}),
+        ($pull.reviews.nodes[]? | select(.author.login as $login | $ai_reviewers | index($login)) | {author:.author.login, createdAt}),
+        ($pull.reviewThreads.nodes[].comments.nodes[]? | select(.author.login as $login | $ai_reviewers | index($login)) | {author:.author.login, createdAt})
       ] | sort_by(.createdAt) | last) as $latest
     | {
         active_threads: ($active | length),
