@@ -1154,13 +1154,7 @@ pub(super) fn read_json_bytes_with_limit(
             max_bytes
         )));
     }
-    let file = fs::File::open(path).map_err(|error| {
-        VmError::InvalidConfig(format!(
-            "{label} `{}` could not be opened for reading: io_kind={:?}: {error}",
-            path.display(),
-            error.kind()
-        ))
-    })?;
+    let file = open_json_file_for_read(path, label)?;
     let opened_metadata = file.metadata().map_err(|error| {
         VmError::InvalidConfig(format!(
             "{label} `{}` could not be inspected after opening: io_kind={:?}: {error}",
@@ -1231,6 +1225,35 @@ pub(super) fn read_json_bytes_with_limit(
         )));
     }
     Ok(bytes)
+}
+
+#[cfg(unix)]
+fn open_json_file_for_read(path: &Path, label: &str) -> Result<fs::File> {
+    use std::fs::OpenOptions;
+    use std::os::unix::fs::OpenOptionsExt;
+
+    OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+        .open(path)
+        .map_err(|error| {
+            VmError::InvalidConfig(format!(
+                "{label} `{}` could not be opened for reading without following symlinks or blocking: io_kind={:?}: {error}",
+                path.display(),
+                error.kind()
+            ))
+        })
+}
+
+#[cfg(not(unix))]
+fn open_json_file_for_read(path: &Path, label: &str) -> Result<fs::File> {
+    fs::File::open(path).map_err(|error| {
+        VmError::InvalidConfig(format!(
+            "{label} `{}` could not be opened for reading: io_kind={:?}: {error}",
+            path.display(),
+            error.kind()
+        ))
+    })
 }
 
 fn write_json_with_limit<T: Serialize>(

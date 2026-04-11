@@ -30,8 +30,52 @@ The derived contract binds the following fields:
 - Matrix, layout, rollup, segment, step, and lookup-frontier totals.
 - Source-template, global-start-state, global-end-state, aggregation-template,
   and aggregate-accumulator commitments.
-- A BLAKE2b-256 input-contract commitment computed from the listed contract
-  fields except `input_contract_commitment`, then stored for recomputation.
+- A BLAKE2b-256 input-contract commitment computed by the algorithm below,
+  then stored in `input_contract_commitment` for recomputation.
+
+## Commitment Recompute
+
+`input_contract_commitment` is the lowercase hexadecimal BLAKE2b-256 digest of
+the following byte stream. It does not hash `input_contract_commitment` itself.
+
+Strings are UTF-8 bytes with no BOM and are encoded as a 16-byte little-endian
+unsigned byte length followed by the string bytes. The domain tag is encoded the
+same way as a string. Counters and length prefixes are 16-byte little-endian
+unsigned integers. Booleans are one byte: `0` for false and `1` for true.
+
+The exact hash input order is:
+
+- Domain tag: `phase29-contract`.
+- `proof_backend` as its string value.
+- `contract_version`.
+- `semantic_scope`.
+- `phase28_artifact_version`.
+- `phase28_semantic_scope`.
+- `phase28_proof_backend_version`.
+- `statement_version`.
+- `required_recursion_posture`.
+- `recursive_verification_claimed`.
+- `cryptographic_compression_claimed`.
+- `phase28_bounded_aggregation_arity`.
+- `phase28_member_count`.
+- `phase28_member_summaries`.
+- `phase28_nested_members`.
+- `total_phase26_members`.
+- `total_phase25_members`.
+- `max_nested_chain_arity`.
+- `max_nested_fold_arity`.
+- `total_matrices`.
+- `total_layouts`.
+- `total_rollups`.
+- `total_segments`.
+- `total_steps`.
+- `lookup_delta_entries`.
+- `max_lookup_frontier_entries`.
+- `source_template_commitment`.
+- `global_start_state_commitment`.
+- `global_end_state_commitment`.
+- `aggregation_template_commitment`.
+- `aggregated_chained_folded_interval_accumulator_commitment`.
 
 ## Rejected Input
 
@@ -46,6 +90,7 @@ Phase 29 rejects:
 - Any contract with an empty source-template, global-start-state,
   global-end-state, aggregation-template, aggregate-accumulator, or
   input-contract commitment.
+- Any contract whose `phase28_member_count < 2`.
 - Any contract whose `phase28_member_summaries != phase28_member_count` or
   whose `phase28_nested_members != phase28_member_count`.
 - Any contract whose `phase28_bounded_aggregation_arity` is smaller than

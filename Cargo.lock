@@ -4122,6 +4122,7 @@ dependencies = [
  "crossterm",
  "flate2",
  "jsonschema",
+ "libc",
  "onnx-protobuf",
  "predicates",
  "proptest",
