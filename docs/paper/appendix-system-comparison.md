@@ -13,7 +13,7 @@ It should be read with one rule in mind: these are **not** matched end-to-end be
 | Dimension | Lagrange DeepProve | BitSage obelyzk.rs (formerly stwo-ml) | `provable-transformer-vm` |
 |---|---|---|---|
 | Primary role | Production-oriented zkML system | Public STARK-native zkML stack | Semantics-and-proof research artifact |
-| Proof family | SNARK / SNARK-hybrid | STARK-native on S-two / STWO | Vanilla STARK by default; frozen narrow `stwo` artifact tier plus a broader experimental S-two backend with shared-table lookup demos and a fixed-shape proof-carrying decoding path |
+| Proof family | SNARK / SNARK-hybrid | STARK-native on S-two / STWO | Vanilla STARK by default; frozen narrow `stwo` artifact tier plus a Phase 24-28 pre-recursive carried-state aggregation line |
 | Public transformer scope | Public claims of full GPT-2 inference and later Gemma-class progress | Public repo/verifier claims transformer-block support, recursive verifier milestones, and aggressive single-block benchmarks | Deterministic transformer-shaped VM, not full learned transformer inference |
 | Strongest public evidence | Official Lagrange product/blog materials | Public repo, verifier docs, audit notes, Starknet verification path | Two frozen artifact bundles plus the merged Phase 24-28 proof-carrying aggregation bundle and statement-versioned repo outputs |
 | Non-arithmetic handling | Custom circuits and lookup-oriented techniques | LogUp-style lookup machinery on STWO | `average-hard` proof path only; `softmax` not yet in proved relation |
@@ -30,4 +30,4 @@ Use this appendix when the main paper needs one concise comparison object, but k
 
 - DeepProve is the strongest counterexample to categorical anti-SNARK claims.
 - BitSage is the strongest public STARK-native comparator, but public evidence should be separated into benchmark claims, onchain demos, and broader roadmap scope.
-- `provable-transformer-vm` is not a frontier zkML prover; it is a trace-semantics and proof-architecture artifact with reproducible evidence.
+- `provable-transformer-vm` is not a frontier zkML prover; it is a trace-semantics and proof-architecture artifact with reproducible evidence and an explicit pre-recursive aggregation boundary.

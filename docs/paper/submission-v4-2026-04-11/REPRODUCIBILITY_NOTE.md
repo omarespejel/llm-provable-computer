@@ -108,12 +108,13 @@ time of packaging.
 
 Before sharing a draft externally, verify:
 
-1. title and claim posture are aligned between:
+1. author names and affiliations are confirmed,
+2. title and claim posture are aligned between:
    - `docs/paper/stark-transformer-alignment-2026.md`
    - `docs/paper/PUBLICATION_RELEASE.md`
-2. paper preflight passes,
-3. the Phase 28 bundle checksum files validate locally or in a clean reproduction environment,
-4. release tag and commit references are consistent with the single main paper.
+3. paper preflight passes,
+4. the Phase 28 bundle checksum files validate locally or in a clean reproduction environment,
+5. release tag and commit references are consistent with the single main paper.
 
 If additional reviewer feedback lands, patch on top and cut a follow-up
 publication tag rather than mutating existing evidence claims.

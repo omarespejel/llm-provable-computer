@@ -18,6 +18,11 @@ Canonical launch repository:
 `https://github.com/omarespejel/provable-transformer-vm`
 (earlier phases of this research line used the `llm-provable-computer` project name).
 
+Formal paper author line in the draft:
+
+- Abdelhamid Bakhta - StarkWare
+- Omar Espejel - Starknet Foundation
+
 This repository state is the publication-facing package for the paper and its supporting
 artifacts. The package is intentionally split into evidence tiers rather than treated as one
 monolithic benchmark claim.
@@ -52,6 +57,8 @@ patches and a subsequent publication tag.
 - `stwo-experimental-v1` is the frozen narrow evidence tier for the experimental S-two path.
 - Post-freeze commit-pinned evidence now includes the merged Phase 24-28 pre-recursive
   carried-state aggregation bundle, including proof-carrying outer aggregation over Phase 27 chained artifacts.
+- Intermediate Phase 24-27 artifact directories are retained as archival provenance. The
+  Phase 28 proof-carrying aggregation bundle is the publication-facing checkpoint for that line.
 - The repo still does **not** claim full standard-softmax transformer inference on S-two,
   recursive cross-step shared-table accumulation beyond the public Phase 23 lookup accumulator,
   recursive cryptographic compression/verification closure, or production-scale zkML deployment.
@@ -80,6 +87,7 @@ Before cutting a release tag, verify:
 5. Reference `[30]` in the paper remains pinned to the Phase 28 engineering
    checkpoint, while the release tag resolves to the merge commit that contains
    this v4 paper metadata,
-6. `paper preflight` passes (citation integrity, immutable local repo links,
+6. the formal author line and affiliation text are confirmed before public release,
+7. `paper preflight` passes (citation integrity, immutable local repo links,
    figure/link paths, appendix source note, and unresolved publication snapshot
    placeholder detection).
