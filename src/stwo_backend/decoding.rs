@@ -90,7 +90,7 @@ pub const STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VE
     &str = "stwo-phase28-aggregated-chained-folded-intervalized-decoding-state-relation-v1";
 pub const STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE28:
     &str = "stwo_execution_parameterized_aggregated_chained_folded_intervalized_proof_carrying_decoding_state_relation";
-const STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE: &str =
+pub const STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE: &str =
     "pre-recursive-proof-carrying-aggregation";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
 const DECODING_OUTPUT_RANGE: std::ops::Range<usize> = 10..13;
