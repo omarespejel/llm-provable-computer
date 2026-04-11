@@ -113,12 +113,14 @@ Available local command tiers:
 The GitHub side of the merge gate is intentionally narrow:
 
 - Every non-null GitHub check in the PR rollup must be completed with
-  `SUCCESS`, `SKIPPED`, or `NEUTRAL`. Passing `--wait` polls pending checks and
-  fails immediately for completed failure conclusions.
+  `SUCCESS`, `SKIPPED`, or `NEUTRAL`. The gate reads check runs and commit
+  statuses through paginated GitHub API calls instead of relying on the capped
+  `statusCheckRollup` view. Passing `--wait` polls pending checks and fails
+  immediately for completed failure conclusions.
 - All review threads must be resolved, regardless of reviewer.
-- The review-thread query fails closed if the PR has more review data than the
-  gate can inspect in one GraphQL page; do not merge until the gate can inspect
-  complete review data.
+- The review gate paginates PR comments, PR reviews, and review threads. It
+  fails closed if any individual review thread has more than 100 comments,
+  because the gate cannot safely inspect that nested comment stream.
 - No CodeRabbit, Greptile, or Qodo review/comment event may have occurred in the
   previous 300 seconds. If no AI review/comment event exists yet, the gate
   refuses to merge. Passing `--wait` sleeps through the remaining quiet window

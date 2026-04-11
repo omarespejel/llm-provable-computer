@@ -87,7 +87,59 @@ retry_gate_mode_none() {
     retry_args+=(--keep-branch)
   fi
   export MERGE_GATE_WAIT_STARTED_AT="$WAIT_STARTED_AT"
+  rm -f "${tmp_pr_json:-}"
   exec "${retry_args[@]}"
+}
+
+check_graphql_response() {
+  local response_file="$1"
+  if ! jq -e . "$response_file" >/dev/null 2>&1; then
+    cat "$response_file" >&2 || true
+    fail "GitHub GraphQL returned invalid JSON"
+  fi
+  if jq -e '(.errors // []) | length > 0' "$response_file" >/dev/null; then
+    jq -r '.errors[]?.message' "$response_file" >&2
+    fail "GitHub GraphQL query failed"
+  fi
+  if ! jq -e '.data.repository.pullRequest' "$response_file" >/dev/null; then
+    cat "$response_file" >&2 || true
+    fail "GitHub GraphQL response did not include pullRequest data"
+  fi
+}
+
+fetch_paginated_connection() {
+  local connection="$1"
+  local query_text="$2"
+  local jq_nodes_filter="$3"
+  local output_file="$4"
+  local cursor=""
+  local page response_file nodes_file merged_file
+
+  printf '[]\n' >"$output_file"
+  page=0
+  while :; do
+    page=$((page + 1))
+    response_file="$run_evidence_dir/${connection}-page-${page}.json"
+    nodes_file="$run_evidence_dir/${connection}-nodes-${page}.json"
+    merged_file="$run_evidence_dir/${connection}-merged-${page}.json"
+
+    graph_args=(gh api graphql -f query="$query_text" -F owner="$owner" -F name="$name" -F number="$PR_NUMBER")
+    if [[ -n "$cursor" ]]; then
+      graph_args+=(-F cursor="$cursor")
+    fi
+    "${graph_args[@]}" >"$response_file"
+    check_graphql_response "$response_file"
+
+    jq "$jq_nodes_filter" "$response_file" >"$nodes_file"
+    jq -s '.[0] + .[1]' "$output_file" "$nodes_file" >"$merged_file"
+    mv "$merged_file" "$output_file"
+
+    if [[ "$(jq -r ".data.repository.pullRequest.${connection}.pageInfo.hasNextPage" "$response_file")" != "true" ]]; then
+      break
+    fi
+    cursor="$(jq -r ".data.repository.pullRequest.${connection}.pageInfo.endCursor // empty" "$response_file")"
+    [[ -n "$cursor" ]] || fail "GitHub GraphQL ${connection} pageInfo omitted endCursor"
+  done
 }
 
 run_logged() {
@@ -248,7 +300,7 @@ fi
 tmp_pr_json="$(mktemp)"
 trap 'rm -f "$tmp_pr_json"' EXIT
 gh pr view "$PR_NUMBER" --repo "$REPO" \
-  --json url,state,isDraft,mergeable,reviewDecision,headRefOid,baseRefOid,headRefName,baseRefName,createdAt,statusCheckRollup \
+  --json url,state,isDraft,mergeable,reviewDecision,headRefOid,baseRefOid,headRefName,baseRefName,createdAt \
   >"$tmp_pr_json"
 
 state="$(jq -r '.state' "$tmp_pr_json")"
@@ -355,13 +407,21 @@ fi
 
 # Refresh PR state after local commands in case review bots posted while tests ran.
 gh pr view "$PR_NUMBER" --repo "$REPO" \
-  --json url,state,isDraft,mergeable,reviewDecision,headRefOid,baseRefOid,headRefName,baseRefName,createdAt,statusCheckRollup \
+  --json url,state,isDraft,mergeable,reviewDecision,headRefOid,baseRefOid,headRefName,baseRefName,createdAt \
   >"$pr_json"
 head_sha_after="$(jq -r '.headRefOid' "$pr_json")"
 [[ "$head_sha_after" == "$head_sha" ]] || fail "PR head changed while gate was running: $head_sha -> $head_sha_after"
 
 checks_json="$run_evidence_dir/checks.json"
-jq '[.statusCheckRollup[]? | {name, status, conclusion}]' "$pr_json" >"$checks_json"
+check_runs_json="$run_evidence_dir/check-runs.json"
+statuses_json="$run_evidence_dir/statuses.json"
+gh api --paginate "repos/${REPO}/commits/${head_sha}/check-runs?per_page=100" \
+  --jq '.check_runs[] | {name, status: (.status | ascii_upcase), conclusion: ((.conclusion // "") | ascii_upcase)}' \
+  | jq -s '.' >"$check_runs_json"
+gh api --paginate "repos/${REPO}/commits/${head_sha}/statuses?per_page=100" \
+  --jq '.[] | {name: .context, status: (if .state == "pending" then "IN_PROGRESS" else "COMPLETED" end), conclusion: (if .state == "success" then "SUCCESS" elif .state == "pending" then "" elif .state == "error" then "FAILURE" else (.state | ascii_upcase) end)}' \
+  | jq -s '.' >"$statuses_json"
+jq -s '.[0] + .[1]' "$check_runs_json" "$statuses_json" >"$checks_json"
 
 failed_checks="$(jq -r '
   [.[]
@@ -397,27 +457,45 @@ fi
 
 owner="${REPO%/*}"
 name="${REPO#*/}"
-query=$(cat <<'GRAPHQL'
-query($owner:String!,$name:String!,$number:Int!){
+comments_query=$(cat <<'GRAPHQL'
+query($owner:String!,$name:String!,$number:Int!,$cursor:String){
   repository(owner:$owner,name:$name){
     pullRequest(number:$number){
-      reviewThreads(first:100){
+      comments(first:100, after:$cursor){
+        pageInfo{ hasNextPage endCursor }
+        nodes{ author{login} createdAt }
+      }
+    }
+  }
+}
+GRAPHQL
+)
+reviews_query=$(cat <<'GRAPHQL'
+query($owner:String!,$name:String!,$number:Int!,$cursor:String){
+  repository(owner:$owner,name:$name){
+    pullRequest(number:$number){
+      reviews(first:100, after:$cursor){
+        pageInfo{ hasNextPage endCursor }
+        nodes{ author{login} submittedAt }
+      }
+    }
+  }
+}
+GRAPHQL
+)
+threads_query=$(cat <<'GRAPHQL'
+query($owner:String!,$name:String!,$number:Int!,$cursor:String){
+  repository(owner:$owner,name:$name){
+    pullRequest(number:$number){
+      reviewThreads(first:100, after:$cursor){
         pageInfo{ hasNextPage endCursor }
         nodes{
           isResolved
           comments(first:100){
             pageInfo{ hasNextPage endCursor }
-            nodes{ author{login} createdAt body }
+            nodes{ author{login} createdAt }
           }
         }
-      }
-      comments(first:100){
-        pageInfo{ hasNextPage endCursor }
-        nodes{ author{login} createdAt body }
-      }
-      reviews(first:100){
-        pageInfo{ hasNextPage endCursor }
-        nodes{ author{login} createdAt body }
       }
     }
   }
@@ -427,32 +505,42 @@ GRAPHQL
 
 now_epoch="$(date -u +%s)"
 threads_json="$run_evidence_dir/review-gate.json"
-gh api graphql -f query="$query" -F owner="$owner" -F name="$name" -F number="$PR_NUMBER" \
-  | jq --argjson now "$now_epoch" '
-      .data.repository.pullRequest as $pull
-      | ([
-          ($pull.reviewThreads.pageInfo.hasNextPage // false),
-          ($pull.comments.pageInfo.hasNextPage // false),
-          ($pull.reviews.pageInfo.hasNextPage // false),
-          ($pull.reviewThreads.nodes[].comments.pageInfo.hasNextPage // false)
-        ] | any) as $pagination_overflow
-      | if $pagination_overflow then
-          error("review gate query exceeded one GraphQL page; refusing to merge without complete review data")
-        else . end
-      | [ $pull.reviewThreads.nodes[]? | select(.isResolved == false) ] as $active
-      | ([
-          ($pull.comments.nodes[]? | select(.author.login | test("coderabbit|greptile|qodo"; "i")) | {author:.author.login, createdAt}),
-          ($pull.reviews.nodes[]? | select(.author.login | test("coderabbit|greptile|qodo"; "i")) | {author:.author.login, createdAt}),
-          ($pull.reviewThreads.nodes[].comments.nodes[]? | select(.author.login | test("coderabbit|greptile|qodo"; "i")) | {author:.author.login, createdAt})
-        ] | sort_by(.createdAt) | last) as $latest
-      | {
-          active_threads: ($active | length),
-          latest_ai_event: ($latest // null),
-          latest_ai_event_epoch: (if $latest then ($latest.createdAt | fromdateiso8601) else null end),
-          quiet_window_source: (if $latest then "latest_ai_event" else "no_ai_event" end),
-          seconds_since_latest_ai_event: (if $latest then ($now - ($latest.createdAt | fromdateiso8601)) else null end)
-        }
-    ' >"$threads_json"
+comments_json="$run_evidence_dir/review-comments.json"
+reviews_json="$run_evidence_dir/reviews.json"
+review_threads_json="$run_evidence_dir/review-threads.json"
+review_source_json="$run_evidence_dir/review-source.json"
+
+fetch_paginated_connection comments "$comments_query" '.data.repository.pullRequest.comments.nodes' "$comments_json"
+fetch_paginated_connection reviews "$reviews_query" '[.data.repository.pullRequest.reviews.nodes[] | {author, createdAt:.submittedAt}]' "$reviews_json"
+fetch_paginated_connection reviewThreads "$threads_query" '.data.repository.pullRequest.reviewThreads.nodes' "$review_threads_json"
+
+if jq -e '[.[].comments.pageInfo.hasNextPage // false] | any' "$review_threads_json" >/dev/null; then
+  fail "a review thread has more than 100 comments; refusing to merge without complete review data"
+fi
+
+jq -n \
+  --slurpfile comments "$comments_json" \
+  --slurpfile reviews "$reviews_json" \
+  --slurpfile reviewThreads "$review_threads_json" \
+  '{data:{repository:{pullRequest:{comments:{nodes:$comments[0]},reviews:{nodes:$reviews[0]},reviewThreads:{nodes:$reviewThreads[0]}}}}}' \
+  >"$review_source_json"
+
+jq --argjson now "$now_epoch" '
+    .data.repository.pullRequest as $pull
+    | [ $pull.reviewThreads.nodes[]? | select(.isResolved == false) ] as $active
+    | ([
+        ($pull.comments.nodes[]? | select(.author.login | test("coderabbit|greptile|qodo"; "i")) | {author:.author.login, createdAt}),
+        ($pull.reviews.nodes[]? | select(.author.login | test("coderabbit|greptile|qodo"; "i")) | {author:.author.login, createdAt}),
+        ($pull.reviewThreads.nodes[].comments.nodes[]? | select(.author.login | test("coderabbit|greptile|qodo"; "i")) | {author:.author.login, createdAt})
+      ] | sort_by(.createdAt) | last) as $latest
+    | {
+        active_threads: ($active | length),
+        latest_ai_event: ($latest // null),
+        latest_ai_event_epoch: (if $latest then ($latest.createdAt | fromdateiso8601) else null end),
+        quiet_window_source: (if $latest then "latest_ai_event" else "no_ai_event" end),
+        seconds_since_latest_ai_event: (if $latest then ($now - ($latest.createdAt | fromdateiso8601)) else null end)
+      }
+  ' "$review_source_json" >"$threads_json"
 
 active_threads="$(jq -r '.active_threads' "$threads_json")"
 seconds_since_ai="$(jq -r '.seconds_since_latest_ai_event // "none"' "$threads_json")"
