@@ -12,6 +12,10 @@ use super::decoding::{
     STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE,
 };
 #[cfg(feature = "stwo-backend")]
+use super::STWO_BACKEND_VERSION_PHASE12;
+#[cfg(feature = "stwo-backend")]
+use crate::proof::CLAIM_STATEMENT_VERSION_V1;
+#[cfg(feature = "stwo-backend")]
 use blake2::{
     digest::{Update, VariableOutput},
     Blake2bVar,
@@ -53,6 +57,7 @@ pub struct Phase6RecursionBatchManifest {
 
 #[cfg(feature = "stwo-backend")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "Phase29RecursiveCompressionInputContractUnchecked")]
 pub struct Phase29RecursiveCompressionInputContract {
     pub proof_backend: StarkProofBackend,
     pub contract_version: String,
@@ -85,6 +90,90 @@ pub struct Phase29RecursiveCompressionInputContract {
     pub aggregation_template_commitment: String,
     pub aggregated_chained_folded_interval_accumulator_commitment: String,
     pub input_contract_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, Deserialize)]
+struct Phase29RecursiveCompressionInputContractUnchecked {
+    pub proof_backend: StarkProofBackend,
+    pub contract_version: String,
+    pub semantic_scope: String,
+    pub phase28_artifact_version: String,
+    pub phase28_semantic_scope: String,
+    pub phase28_proof_backend_version: String,
+    pub statement_version: String,
+    pub required_recursion_posture: String,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub phase28_bounded_aggregation_arity: usize,
+    pub phase28_member_count: usize,
+    pub phase28_member_summaries: usize,
+    pub phase28_nested_members: usize,
+    pub total_phase26_members: usize,
+    pub total_phase25_members: usize,
+    pub max_nested_chain_arity: usize,
+    pub max_nested_fold_arity: usize,
+    pub total_matrices: usize,
+    pub total_layouts: usize,
+    pub total_rollups: usize,
+    pub total_segments: usize,
+    pub total_steps: usize,
+    pub lookup_delta_entries: usize,
+    pub max_lookup_frontier_entries: usize,
+    pub source_template_commitment: String,
+    pub global_start_state_commitment: String,
+    pub global_end_state_commitment: String,
+    pub aggregation_template_commitment: String,
+    pub aggregated_chained_folded_interval_accumulator_commitment: String,
+    pub input_contract_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+impl TryFrom<Phase29RecursiveCompressionInputContractUnchecked>
+    for Phase29RecursiveCompressionInputContract
+{
+    type Error = VmError;
+
+    fn try_from(
+        unchecked: Phase29RecursiveCompressionInputContractUnchecked,
+    ) -> std::result::Result<Self, Self::Error> {
+        let contract = Self {
+            proof_backend: unchecked.proof_backend,
+            contract_version: unchecked.contract_version,
+            semantic_scope: unchecked.semantic_scope,
+            phase28_artifact_version: unchecked.phase28_artifact_version,
+            phase28_semantic_scope: unchecked.phase28_semantic_scope,
+            phase28_proof_backend_version: unchecked.phase28_proof_backend_version,
+            statement_version: unchecked.statement_version,
+            required_recursion_posture: unchecked.required_recursion_posture,
+            recursive_verification_claimed: unchecked.recursive_verification_claimed,
+            cryptographic_compression_claimed: unchecked.cryptographic_compression_claimed,
+            phase28_bounded_aggregation_arity: unchecked.phase28_bounded_aggregation_arity,
+            phase28_member_count: unchecked.phase28_member_count,
+            phase28_member_summaries: unchecked.phase28_member_summaries,
+            phase28_nested_members: unchecked.phase28_nested_members,
+            total_phase26_members: unchecked.total_phase26_members,
+            total_phase25_members: unchecked.total_phase25_members,
+            max_nested_chain_arity: unchecked.max_nested_chain_arity,
+            max_nested_fold_arity: unchecked.max_nested_fold_arity,
+            total_matrices: unchecked.total_matrices,
+            total_layouts: unchecked.total_layouts,
+            total_rollups: unchecked.total_rollups,
+            total_segments: unchecked.total_segments,
+            total_steps: unchecked.total_steps,
+            lookup_delta_entries: unchecked.lookup_delta_entries,
+            max_lookup_frontier_entries: unchecked.max_lookup_frontier_entries,
+            source_template_commitment: unchecked.source_template_commitment,
+            global_start_state_commitment: unchecked.global_start_state_commitment,
+            global_end_state_commitment: unchecked.global_end_state_commitment,
+            aggregation_template_commitment: unchecked.aggregation_template_commitment,
+            aggregated_chained_folded_interval_accumulator_commitment: unchecked
+                .aggregated_chained_folded_interval_accumulator_commitment,
+            input_contract_commitment: unchecked.input_contract_commitment,
+        };
+        verify_phase29_recursive_compression_input_contract(&contract)?;
+        Ok(contract)
+    }
 }
 
 pub fn phase6_prepare_recursion_batch(
@@ -229,6 +318,21 @@ pub fn phase29_prepare_recursive_compression_input_contract(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn parse_phase29_recursive_compression_input_contract_json(
+    json: &str,
+) -> Result<Phase29RecursiveCompressionInputContract> {
+    serde_json::from_str(json).map_err(|err| VmError::Serialization(err.to_string()))
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn load_phase29_recursive_compression_input_contract(
+    path: &std::path::Path,
+) -> Result<Phase29RecursiveCompressionInputContract> {
+    let bytes = std::fs::read(path)?;
+    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn verify_phase29_recursive_compression_input_contract(
     contract: &Phase29RecursiveCompressionInputContract,
 ) -> Result<()> {
@@ -349,6 +453,19 @@ pub fn verify_phase29_recursive_compression_input_contract(
                 "Phase 29 recursive-compression input contract `{label}` must be non-empty"
             )));
         }
+    }
+
+    if contract.phase28_proof_backend_version != STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 29 recursive-compression input contract requires Phase 28 proof backend version `{}`, got `{}`",
+            STWO_BACKEND_VERSION_PHASE12, contract.phase28_proof_backend_version
+        )));
+    }
+    if contract.statement_version != CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 29 recursive-compression input contract requires statement version `{}`, got `{}`",
+            CLAIM_STATEMENT_VERSION_V1, contract.statement_version
+        )));
     }
 
     let expected = commit_phase29_recursive_compression_input_contract(contract)?;
@@ -644,6 +761,44 @@ mod tests {
         contract.total_steps += 1;
         let err = verify_phase29_recursive_compression_input_contract(&contract)
             .expect_err("tampered contract must be rejected");
+        assert!(err.to_string().contains("commitment"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase29_recursive_compression_input_contract_rejects_wrong_phase28_dialect() {
+        let mut contract = sample_phase29_contract();
+        contract.phase28_proof_backend_version = "unsupported-stwo-dialect".to_string();
+        let err = verify_phase29_recursive_compression_input_contract(&contract)
+            .expect_err("wrong Phase 28 dialect must be rejected");
+        assert!(err
+            .to_string()
+            .contains("requires Phase 28 proof backend version"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase29_recursive_compression_input_contract_rejects_wrong_statement_version() {
+        let mut contract = sample_phase29_contract();
+        contract.statement_version = "unsupported-statement".to_string();
+        let err = verify_phase29_recursive_compression_input_contract(&contract)
+            .expect_err("wrong statement version must be rejected");
+        assert!(err.to_string().contains("requires statement version"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase29_recursive_compression_input_contract_deserialization_verifies_contract() {
+        let contract = sample_phase29_contract();
+        let json = serde_json::to_string(&contract).expect("serialize contract");
+        let parsed =
+            parse_phase29_recursive_compression_input_contract_json(&json).expect("parse contract");
+        assert_eq!(parsed, contract);
+
+        let mut tampered = serde_json::to_value(&contract).expect("serialize value");
+        tampered["total_steps"] = serde_json::json!(contract.total_steps + 1);
+        let err = serde_json::from_value::<Phase29RecursiveCompressionInputContract>(tampered)
+            .expect_err("tampered deserialized contract must be rejected");
         assert!(err.to_string().contains("commitment"));
     }
 

@@ -21,8 +21,8 @@ proof-bearing evidence.
 The derived contract binds the following fields:
 
 - Phase 28 artifact version and semantic scope.
-- S-two proof backend and backend version.
-- Statement version.
+- S-two proof backend and the supported Phase 28 backend version.
+- The supported statement version.
 - Recursion posture.
 - Explicit recursive-verification and cryptographic-compression claim bits.
 - Aggregation arity, member count, member-summary count, and nested-member count.
@@ -40,10 +40,18 @@ Phase 29 rejects:
 - Any Phase 28 artifact that claims cryptographic compression.
 - Any Phase 28 artifact whose recursion posture is not
   `pre-recursive-proof-carrying-aggregation`.
+- Any contract whose Phase 28 backend version or statement version does not
+  match the supported repository dialect.
 - Any contract with empty critical commitments.
 - Any contract whose member summaries or nested members do not match the
   declared Phase 28 member count.
 - Any contract whose input-contract commitment does not recompute.
+
+Deserialization of `Phase29RecursiveCompressionInputContract` is a validating
+operation. The read helpers
+`parse_phase29_recursive_compression_input_contract_json` and
+`load_phase29_recursive_compression_input_contract` return a contract only after
+the same Phase 29 verifier accepts the parsed fields.
 
 ## Non-Goals
 
