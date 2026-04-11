@@ -70,6 +70,7 @@ pub use stwo_backend::{
     load_phase29_recursive_compression_input_contract,
     parse_phase29_recursive_compression_input_contract_json,
     phase29_prepare_recursive_compression_input_contract,
+    phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28,
     verify_phase29_recursive_compression_input_contract, Phase29RecursiveCompressionInputContract,
     STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29,
     STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29,

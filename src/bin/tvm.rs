@@ -40,10 +40,10 @@ use llm_provable_computer::{
     load_phase25_intervalized_decoding_state_relation,
     load_phase26_folded_intervalized_decoding_state_relation,
     load_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
-    load_phase28_aggregated_chained_folded_intervalized_decoding_state_relation,
     load_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     load_phase29_recursive_compression_input_contract, load_phase3_binary_step_lookup_proof,
-    load_phase5_normalization_lookup_proof, phase29_prepare_recursive_compression_input_contract,
+    load_phase5_normalization_lookup_proof,
+    phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
     prove_phase12_decoding_demo, prove_phase13_decoding_layout_matrix_demo,
@@ -3262,8 +3262,11 @@ fn prepare_stwo_recursive_compression_input_contract_command(
 
     reject_phase29_contract_plain_json_gzip_output(output)?;
     let phase28 =
-        load_phase28_aggregated_chained_folded_intervalized_decoding_state_relation(phase28_path)?;
-    let contract = phase29_prepare_recursive_compression_input_contract(&phase28)?;
+        load_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks(
+            phase28_path,
+        )?;
+    let contract =
+        phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28(&phase28)?;
     let json = serde_json::to_vec_pretty(&contract)
         .map_err(|error| VmError::Serialization(error.to_string()))?;
     fs::write(output, json)?;

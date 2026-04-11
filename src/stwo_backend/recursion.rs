@@ -282,6 +282,13 @@ pub fn phase29_prepare_recursive_compression_input_contract(
         phase28,
     )?;
 
+    phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28(phase28)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28(
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+) -> Result<Phase29RecursiveCompressionInputContract> {
     let mut contract = Phase29RecursiveCompressionInputContract {
         proof_backend: StarkProofBackend::Stwo,
         contract_version: STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29.to_string(),

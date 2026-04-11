@@ -353,6 +353,7 @@ stwo_smoke_targets=(
 stwo_cli_smoke_targets=(
   "cli_can_verify_stwo_recursive_compression_input_contract"
   "cli_verify_stwo_recursive_compression_input_contract_rejects_tampered_commitment"
+  "cli_verify_stwo_recursive_compression_input_contract_rejects_recomputed_header_drift"
   "cli_prepare_stwo_recursive_compression_input_contract_rejects_synthetic_phase28_shell"
   "cli_prepare_stwo_recursive_compression_input_contract_rejects_gzip_output_path"
 )

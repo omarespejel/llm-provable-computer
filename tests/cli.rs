@@ -3567,6 +3567,35 @@ fn cli_verify_stwo_recursive_compression_input_contract_rejects_tampered_commitm
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_recursive_compression_input_contract_rejects_recomputed_header_drift() {
+    let contract_path =
+        unique_temp_dir("cli-stwo-recursive-compression-input-contract-header-drift")
+            .with_extension("json");
+    let mut contract = sample_phase29_recursive_compression_input_contract();
+    contract.semantic_scope = "forged-phase29-semantic-scope".to_string();
+    contract.input_contract_commitment =
+        commit_phase29_recursive_compression_input_contract(&contract).expect("recommit contract");
+    std::fs::write(
+        &contract_path,
+        serde_json::to_vec_pretty(&contract).expect("serialize contract"),
+    )
+    .expect("write contract");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-recursive-compression-input-contract")
+        .arg("--input")
+        .arg(&contract_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("scope"))
+        .stderr(predicate::str::contains("panicked at").not());
+
+    let _ = std::fs::remove_file(contract_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_prepare_stwo_recursive_compression_input_contract_rejects_synthetic_phase28_shell() {
     let phase28_path = unique_temp_dir("cli-stwo-recursive-compression-input-phase28-shell")
         .with_extension("json");
@@ -3632,6 +3661,7 @@ fn cli_prepare_stwo_recursive_compression_input_contract_rejects_synthetic_phase
 fn cli_prepare_stwo_recursive_compression_input_contract_rejects_gzip_output_path() {
     let phase28_path = unique_temp_dir("cli-stwo-recursive-compression-input-missing-phase28")
         .with_extension("json");
+    std::fs::write(&phase28_path, b"{}").expect("write placeholder phase28");
     let contract_path =
         unique_temp_dir("cli-stwo-recursive-compression-input-contract").with_extension("json.gz");
 
@@ -3647,6 +3677,7 @@ fn cli_prepare_stwo_recursive_compression_input_contract_rejects_gzip_output_pat
         .stderr(predicate::str::contains("writes plain JSON"))
         .stderr(predicate::str::contains("panicked at").not());
 
+    let _ = std::fs::remove_file(phase28_path);
     let _ = std::fs::remove_file(contract_path);
 }
 
