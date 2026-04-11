@@ -4,7 +4,11 @@ Publication base tag:
 - `paper-publication-v4-2026-04-11` (rolling checkpoint)
 
 Canonical repository snapshot:
-- `520240822c48dc3111bc5b91d5896ab97a2bb4c8` (Phase 28 proof-carrying aggregation checkpoint)
+- Pending. Set to the merge commit that contains this v4 paper metadata before
+  cutting `paper-publication-v4-2026-04-11`.
+
+Phase 28 systems-evidence checkpoint:
+- `520240822c48dc3111bc5b91d5896ab97a2bb4c8` (proof-carrying aggregation checkpoint)
 
 ## Core Paper Files
 
