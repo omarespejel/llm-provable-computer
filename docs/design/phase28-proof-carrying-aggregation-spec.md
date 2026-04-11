@@ -13,6 +13,16 @@ The object proved here is:
 This is still **not recursive verification** and **not cryptographic compression**.
 It is a proof-carrying outer aggregation layer that is honest about replaying verification of nested members.
 
+The manifest makes that posture explicit:
+
+- `recursion_posture` defaults to `pre-recursive-proof-carrying-aggregation`,
+- `recursive_verification_claimed` defaults to `false`,
+- `cryptographic_compression_claimed` defaults to `false`.
+
+The public verifier rejects any Phase 28 manifest that changes the posture label
+or sets either claim bit. Older Phase 28 artifacts that omit these fields still
+deserialize to the same pre-recursive posture.
+
 ## Inputs
 
 Each Phase 28 member is a fully materialized:
@@ -50,6 +60,11 @@ It aggregates only:
 4. one Phase 28 outer aggregation built from those already-verified Phase 27 chains.
 
 So the carried-state boundary exposed at the Phase 28 level is still anchored in real contiguous interval evidence, just across multiple chained bundles instead of one bundle.
+
+The anti-overclaiming guard is intentionally shallow: it runs before nested
+Phase 27 proof walks and before the expensive proof-checking mode. This keeps a
+bad artifact from spending verifier resources after it has already claimed a
+recursive or compressed proof posture that Phase 28 does not implement.
 
 ## Demo Construction
 

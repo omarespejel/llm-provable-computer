@@ -90,6 +90,8 @@ pub const STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VE
     &str = "stwo-phase28-aggregated-chained-folded-intervalized-decoding-state-relation-v1";
 pub const STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE28:
     &str = "stwo_execution_parameterized_aggregated_chained_folded_intervalized_proof_carrying_decoding_state_relation";
+const STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE: &str =
+    "pre-recursive-proof-carrying-aggregation";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
 const DECODING_OUTPUT_RANGE: std::ops::Range<usize> = 10..13;
 const DECODING_POSITION_INDEX: usize = 21;
@@ -138,6 +140,10 @@ const MAX_PHASE28_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_MEMBERS: usize = 128;
 const MAX_PHASE28_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_ROLLUPS: usize = 8_388_608;
 const MAX_PHASE28_TOTAL_NESTED_PHASE26_MEMBERS: usize = 8_192;
 const MAX_PHASE28_TOTAL_NESTED_PHASE25_MEMBERS: usize = 16_384;
+
+fn default_phase28_recursion_posture() -> String {
+    STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE.to_string()
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase11DecodingState {
@@ -730,6 +736,14 @@ pub struct Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManife
     pub semantic_scope: String,
     pub proof_backend_version: String,
     pub statement_version: String,
+    // Defaulted posture metadata preserves legacy Phase 28 v1 commitments while
+    // making any new recursive/compressed claim fail at verifier entry.
+    #[serde(default = "default_phase28_recursion_posture")]
+    pub recursion_posture: String,
+    #[serde(default)]
+    pub recursive_verification_claimed: bool,
+    #[serde(default)]
+    pub cryptographic_compression_claimed: bool,
     pub bounded_aggregation_arity: usize,
     pub member_count: usize,
     pub total_phase26_members: usize,
@@ -7790,6 +7804,23 @@ fn validate_phase28_aggregated_chained_folded_intervalized_decoding_state_relati
             manifest.statement_version
         )));
     }
+    if manifest.recursion_posture != STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE {
+        return Err(VmError::InvalidConfig(format!(
+            "aggregated chained folded intervalized decoding state relation recursion_posture `{}` is not `{}`",
+            manifest.recursion_posture,
+            STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE
+        )));
+    }
+    if manifest.recursive_verification_claimed {
+        return Err(VmError::InvalidConfig(
+            "aggregated chained folded intervalized decoding state relation must not claim recursive verification".to_string(),
+        ));
+    }
+    if manifest.cryptographic_compression_claimed {
+        return Err(VmError::InvalidConfig(
+            "aggregated chained folded intervalized decoding state relation must not claim cryptographic compression".to_string(),
+        ));
+    }
     if manifest.members.len() < 2 {
         return Err(VmError::InvalidConfig(
             "aggregated chained folded intervalized decoding state relation must contain at least two members"
@@ -8132,6 +8163,9 @@ pub fn phase28_prepare_aggregated_chained_folded_intervalized_decoding_state_rel
                 .to_string(),
         proof_backend_version: members[0].proof_backend_version.clone(),
         statement_version: members[0].statement_version.clone(),
+        recursion_posture: STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE.to_string(),
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
         bounded_aggregation_arity,
         member_count: members.len(),
         total_phase26_members: totals.total_phase26_members,
@@ -16237,6 +16271,9 @@ mod tests {
                     .to_string(),
             proof_backend_version: crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12.to_string(),
             statement_version: crate::proof::CLAIM_STATEMENT_VERSION_V1.to_string(),
+            recursion_posture: STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE.to_string(),
+            recursive_verification_claimed: false,
+            cryptographic_compression_claimed: false,
             bounded_aggregation_arity: summaries.len(),
             member_count: summaries.len(),
             total_phase26_members: totals.total_phase26_members,
@@ -20712,6 +20749,85 @@ mod tests {
         assert!(err.to_string().contains(
             "unsupported aggregated chained folded intervalized decoding state relation statement version `statement-v2`"
         ));
+    }
+
+    #[test]
+    fn phase28_aggregated_chained_folded_intervalized_state_relation_rejects_recursive_posture_label(
+    ) {
+        let (mut manifest, summaries) =
+            sample_phase28_aggregated_chained_folded_intervalized_decoding_state_relation();
+        manifest.recursion_posture = "recursive-compressed".to_string();
+        let err =
+            verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_summaries(
+                &manifest,
+                &summaries,
+            )
+            .unwrap_err();
+        assert!(err.to_string().contains("recursion_posture"));
+        assert!(err
+            .to_string()
+            .contains(STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE));
+    }
+
+    #[test]
+    fn phase28_aggregated_chained_folded_intervalized_state_relation_rejects_recursive_verification_claim(
+    ) {
+        let (mut manifest, summaries) =
+            sample_phase28_aggregated_chained_folded_intervalized_decoding_state_relation();
+        manifest.recursive_verification_claimed = true;
+        let err =
+            verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_summaries(
+                &manifest,
+                &summaries,
+            )
+            .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("must not claim recursive verification"));
+    }
+
+    #[test]
+    fn phase28_aggregated_chained_folded_intervalized_state_relation_rejects_cryptographic_compression_claim(
+    ) {
+        let (mut manifest, summaries) =
+            sample_phase28_aggregated_chained_folded_intervalized_decoding_state_relation();
+        manifest.cryptographic_compression_claimed = true;
+        let err =
+            verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_summaries(
+                &manifest,
+                &summaries,
+            )
+            .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("must not claim cryptographic compression"));
+    }
+
+    #[test]
+    fn phase28_deserialization_defaults_to_pre_recursive_posture() {
+        let (manifest, summaries) =
+            sample_phase28_aggregated_chained_folded_intervalized_decoding_state_relation();
+        let mut value = serde_json::to_value(&manifest).expect("serialize manifest");
+        let object = value
+            .as_object_mut()
+            .expect("manifest serializes to object");
+        object.remove("recursion_posture");
+        object.remove("recursive_verification_claimed");
+        object.remove("cryptographic_compression_claimed");
+
+        let decoded: Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest =
+            serde_json::from_value(value).expect("deserialize legacy phase28 manifest");
+        assert_eq!(
+            decoded.recursion_posture,
+            STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE
+        );
+        assert!(!decoded.recursive_verification_claimed);
+        assert!(!decoded.cryptographic_compression_claimed);
+        verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_summaries(
+            &decoded,
+            &summaries,
+        )
+        .expect("legacy defaulted phase28 manifest stays verifiable");
     }
 
     #[test]
