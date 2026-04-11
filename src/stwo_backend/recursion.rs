@@ -32,7 +32,7 @@ pub const STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29: &str =
     "stwo-phase29-recursive-compression-input-contract-v1";
 #[cfg(feature = "stwo-backend")]
 pub const STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29: &str =
-    "stwo_phase28_recursive_compression_input_contract";
+    "stwo_phase29_recursive_compression_input_contract";
 #[cfg(feature = "stwo-backend")]
 const MAX_PHASE29_RECURSIVE_COMPRESSION_INPUT_CONTRACT_JSON_BYTES: usize = 1024 * 1024;
 
@@ -852,6 +852,36 @@ mod tests {
 
         let err = load_phase29_recursive_compression_input_contract(&path)
             .expect_err("oversized Phase 29 contract should fail");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+        assert!(err.to_string().contains("exceeding the limit"));
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase29_load_recursive_compression_input_contract_rejects_oversized_gzip_file() {
+        use flate2::{write::GzEncoder, Compression};
+        use std::io::Write;
+
+        let path = std::env::temp_dir().join(format!(
+            "phase29-recursive-compression-input-contract-oversized-{}.json.gz",
+            std::process::id()
+        ));
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::none());
+        let payload = vec![b'x'; MAX_PHASE29_RECURSIVE_COMPRESSION_INPUT_CONTRACT_JSON_BYTES];
+        encoder.write_all(&payload).expect("write gzip payload");
+        let bytes = encoder.finish().expect("finish gzip payload");
+        assert!(
+            bytes.len() > MAX_PHASE29_RECURSIVE_COMPRESSION_INPUT_CONTRACT_JSON_BYTES,
+            "gzip fixture must exceed the compressed-byte budget"
+        );
+        std::fs::write(&path, bytes).expect("write");
+
+        let err = load_phase29_recursive_compression_input_contract(&path)
+            .expect_err("oversized compressed Phase 29 contract should fail");
         assert!(
             matches!(err, VmError::InvalidConfig(_)),
             "expected InvalidConfig, got {err:?}"

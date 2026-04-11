@@ -1146,6 +1146,14 @@ pub(super) fn read_json_bytes_with_limit(
             path.display()
         )));
     }
+    if metadata.len() > max_bytes as u64 {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
+            path.display(),
+            metadata.len(),
+            max_bytes
+        )));
+    }
     let file = fs::File::open(path).map_err(|error| {
         VmError::InvalidConfig(format!(
             "{label} `{}` could not be opened for reading: io_kind={:?}: {error}",
@@ -1172,14 +1180,6 @@ pub(super) fn read_json_bytes_with_limit(
             )));
         }
         return Ok(bytes);
-    }
-    if metadata.len() > max_bytes as u64 {
-        return Err(VmError::InvalidConfig(format!(
-            "{label} `{}` is {} bytes, exceeding the limit of {} bytes",
-            path.display(),
-            metadata.len(),
-            max_bytes
-        )));
     }
     let mut limited = file.take((max_bytes as u64).saturating_add(1));
     let mut bytes = Vec::with_capacity(metadata.len().min(max_bytes as u64) as usize);

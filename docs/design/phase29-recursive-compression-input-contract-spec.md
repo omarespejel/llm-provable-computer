@@ -54,8 +54,8 @@ operation. The read helpers
 the same Phase 29 verifier accepts the parsed fields. Validation failures are
 reported as invalid contract configuration, not as generic JSON serialization
 failures. The file loader uses the repository's bounded JSON read path: it only
-accepts regular files and rejects inputs above the Phase 29 JSON byte budget
-before parsing.
+accepts regular files and rejects compressed or uncompressed inputs above the
+Phase 29 JSON byte budget before parsing.
 
 ## Non-Goals
 
