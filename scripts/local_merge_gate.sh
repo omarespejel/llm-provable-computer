@@ -419,8 +419,13 @@ gh api --paginate "repos/${REPO}/commits/${head_sha}/check-runs?per_page=100" \
   --jq '.check_runs[] | {name, status: (.status | ascii_upcase), conclusion: ((.conclusion // "") | ascii_upcase)}' \
   | jq -s '.' >"$check_runs_json"
 gh api --paginate "repos/${REPO}/commits/${head_sha}/statuses?per_page=100" \
-  --jq '.[] | {name: .context, status: (if .state == "pending" then "IN_PROGRESS" else "COMPLETED" end), conclusion: (if .state == "success" then "SUCCESS" elif .state == "pending" then "" elif .state == "error" then "FAILURE" else (.state | ascii_upcase) end)}' \
-  | jq -s '.' >"$statuses_json"
+  --jq '.[] | {name: .context, created_at: .created_at, status: (if .state == "pending" then "IN_PROGRESS" else "COMPLETED" end), conclusion: (if .state == "success" then "SUCCESS" elif .state == "pending" then "" elif .state == "error" then "FAILURE" else (.state | ascii_upcase) end)}' \
+  | jq -s '
+      sort_by(.created_at)
+      | reduce .[] as $status ({}; .[$status.name] = $status)
+      | [.[]]
+      | map(del(.created_at))
+    ' >"$statuses_json"
 jq -s '.[0] + .[1]' "$check_runs_json" "$statuses_json" >"$checks_json"
 
 failed_checks="$(jq -r '

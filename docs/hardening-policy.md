@@ -115,8 +115,10 @@ The GitHub side of the merge gate is intentionally narrow:
 - Every non-null GitHub check in the PR rollup must be completed with
   `SUCCESS`, `SKIPPED`, or `NEUTRAL`. The gate reads check runs and commit
   statuses through paginated GitHub API calls instead of relying on the capped
-  `statusCheckRollup` view. Passing `--wait` polls pending checks and fails
-  immediately for completed failure conclusions.
+  `statusCheckRollup` view. Legacy commit statuses are append-only, so the gate
+  evaluates only the newest status per context while still enforcing every
+  check-run row. Passing `--wait` polls pending checks and fails immediately for
+  completed failure conclusions.
 - All review threads must be resolved, regardless of reviewer.
 - The review gate paginates PR comments, PR reviews, and review threads. It
   fails closed if any individual review thread has more than 100 comments,
