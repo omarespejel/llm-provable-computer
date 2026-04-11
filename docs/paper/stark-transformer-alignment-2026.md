@@ -1,4 +1,6 @@
-# On the Structural Fit of Transformer Workloads and STARK Proof Systems
+# Asterion: Proof-Carrying STARKs for Transformer Computers
+
+*From transformer-as-computer execution traces to recursive-ready carried-state proof artifacts.*
 
 **Abdelhamid Bakhta**<br>
 StarkWare
@@ -11,9 +13,9 @@ April 2026
 
 ## Abstract
 
-This paper compares symbolic proving work for transformer inference under explicit constants, not matched benchmarks. With `C_exp = 300`, `C_norm = 30`, and `C_nonlin = 150`, GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields about `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK rows across 12 layers (`1.48x`). Over practical context ranges, the ratio rises and then approaches a finite architecture-dependent ceiling.
+This paper introduces **Asterion**, a proof-carrying STARK architecture for transformer computers, and compares symbolic proving work for transformer inference under explicit constants. With `C_exp = 300`, `C_norm = 30`, and `C_nonlin = 150`, GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields about `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK rows across 12 layers (`1.48x`). Over practical context ranges, the ratio rises and then approaches a finite architecture-dependent ceiling. These are symbolic counts, not matched benchmarks.
 
-We pair the model with `provable-transformer-vm` [30], a supporting repository artifact. It provides a vanilla reproducibility tier, a narrow experimental `stwo` tier, a parameterized proof-carrying decoding path (`decoding_step_v2`) with carried-state commitments, and a pre-recursive carried-state aggregation artifact. This paper does not claim full standard-softmax inference on S-two, recursive cross-step shared-table accumulation beyond the same-template lookup accumulator, recursive cryptographic compression/verification closure, or production-scale zkML deployment. The narrower claim is that transformer workloads emphasize dimensions where STARK-native systems may compound advantages while SNARK systems remain strong competitors.
+We pair the model with `provable-transformer-vm` [30], a supporting repository artifact. It provides a vanilla reproducibility tier, a narrow experimental `stwo` tier, a parameterized proof-carrying decoding path (`decoding_step_v2`) with carried-state commitments, and a pre-recursive carried-state aggregation artifact. This paper does not claim full standard-softmax inference on S-two, recursive cross-step shared-table accumulation beyond the public lookup-accumulator artifact, recursive cryptographic compression/verification closure, or production-scale zkML deployment. The narrower claim is that transformer workloads emphasize dimensions where STARK-native systems may compound advantages while SNARK systems remain strong competitors.
 
 ---
 
@@ -28,7 +30,7 @@ The question addressed here is therefore narrower and more useful than “can tr
 This paper makes three claims:
 
 1. **Analytic claim.** Under a stated transformer cost model, non-arithmetic operations such as softmax, LayerNorm, and GELU can shift prover economics in favor of STARK-native systems.
-2. **Systems claim.** Deterministic execution of transformer-relevant programs can be compiled into traces that are directly consumable as AIR witnesses, and can be organized as a parameterized proof-carrying decoding relation with carried-state boundaries that survive packaging, intervalization, folding, chained folding, and pre-recursive proof-carrying aggregation.
+2. **Systems claim.** Deterministic execution of transformer-relevant programs can be compiled into traces that are directly consumable as AIR witnesses, and can be organized as a parameterized proof-carrying decoding relation with carried-state boundaries that survive packaging, intervalization, pre-recursive folded artifact layers, and pre-recursive proof-carrying aggregation.
 3. **Infrastructure claim.** The S-two / Starknet stack makes this direction increasingly practical, even though the reference repository used here still relies on the vanilla backend for its default artifact bundle and primary transformer proof relation while exposing `stwo` through a narrow experimental evidence tier.
 
 The systems claim is directly artifact-backed. The analytic claim is model-based, not a matched benchmark on identical hardware. The infrastructure claim is supported by current public releases but extends beyond current repository breadth. This is an architecture-and-systems thesis, not a final empirical verdict.
@@ -250,6 +252,8 @@ With the analytic behavior established, we now state the repository evidence bou
 
 The supporting implementation is `omarespejel/provable-transformer-vm` [30]. In this paper it is treated as a **semantics-and-proof artifact**: deterministic transformer-relevant execution is compiled into AIR-consumable traces and packaged into carried-state proof objects for later recursion/accumulation work.
 
+Throughout this section, terms such as `rollup`, `folded interval`, and `accumulation` refer to **pre-recursive carried-state artifact layers** and statement-preserving packaging objects inside the repository artifact. Unless explicitly stated, they do not denote recursive cryptographic accumulation schemes or compressed proof systems in the sense of the folding/IVC literature.
+
 ### 5.1 Positive evidence
 
 The artifact provides:
@@ -264,31 +268,59 @@ The artifact provides:
 
 The important systems property is stable statement structure: the same decode relation survives progressively more composable manifest layers without changing statement boundaries. The aggregation ladder remains pre-recursive and replay-verifies nested proof-bearing members.
 
-### 5.2 Negative evidence
+### 5.2 Carried-state relation
+
+The carried-state claim can be stated as a compact relation. Let the public carried-state boundary at decoding step `t` be
+
+```text
+Sigma_t = (ell_t, p_t, hKV_t, fKV_t, hL_t, fL_t, cin_t, cout_t)
+```
+
+where `ell_t` identifies the layout/template, `p_t` records public step position metadata, `hKV_t` and `fKV_t` are the KV cumulative and frontier commitments, `hL_t` and `fL_t` are the lookup cumulative and frontier commitments, and `cin_t` and `cout_t` are execution boundary commitments. A proof-carrying decode step is represented as
+
+```text
+R_decode(Sigma_t, w_t, Sigma_{t+1})
+```
+
+where `w_t` contains the step witness and proof-bearing artifact material checked by the repository verifier.
+
+**Proposition 2.** If each step proof in a chain verifies under `statement-v1`, and every adjacent pair satisfies `cout_t = cin_{t+1}` together with the corresponding KV and lookup frontier-continuity checks, then the resulting segment, rollup, matrix, folded-interval, chained, or pre-recursive aggregation object preserves the same start-state to end-state relation as the underlying verified chain.
+
+**Proof sketch.** Each packaging layer records the first public state, last public state, member commitments, and declared member order. Its verifier replay-checks the nested members and rejects non-contiguous or template-incompatible boundaries. Induction over the ordered members gives the same start-to-end relation for the packaged object. This is a statement-preservation invariant, not a recursive proof-compression theorem.
+
+Figure 3 summarizes the object flow and the two carried commitment lanes.
+
+![Figure 3. Asterion carried-state artifact ladder from decode steps to the Phase 29 input contract.](figures/section5-carried-state-ladder.svg)
+
+**Figure 3.** Asterion carried-state artifact ladder. The top lane packages proof-carrying decode artifacts from steps into chains, segments, rollups, matrices, pre-recursive folded layers, Phase 28 aggregation, and the Phase 29 recursive-compression input contract. The lower lanes carry KV and lookup cumulative/frontier commitments across the same boundaries. Phase 29 is only a contract for future recursion/compression.
+
+### 5.3 Negative evidence
 
 The repository remains deliberately narrow:
 
 - default reproducibility and primary transformer relation still use the vanilla backend,
 - the experimental `stwo` path is bounded research scope, not broad production zkML scope,
 - attention is currently `average-hard`, not full standard softmax,
-- shared-table lookup state is carried, and the artifact includes a same-template cross-step lookup accumulator,
-- recursive cross-step shared-table accumulation beyond that same-template lookup artifact is not yet public,
+- shared-table lookup state is carried, and the artifact includes a Phase 23 cross-step lookup accumulator,
+- recursive cross-step shared-table accumulation beyond that lookup-accumulator artifact is not yet public,
 - recursive cryptographic compression/verification closure across decode steps is not yet public,
 - learned-model end-to-end LLM proving, zero-knowledge hiding, and full-ISA AIR coverage remain out of scope.
 
 These limits are intentional scope discipline: the artifact supports structural systems, pre-recursive carried-state claims, and narrow experimental accumulation/aggregation artifacts, but not full softmax-plus-recursion closure.
 
-### 5.3 Reproducibility tiers
+### 5.4 Reproducibility tiers
 
 The vanilla `production-v1` tier is the primary reproducibility baseline. It is documented in an immutable artifact snapshot with command logs, hashes, and proof artifacts [31]. Timings and sizes are treated as reproducibility evidence, not performance evidence.
 
 The `stwo-experimental-v1` tier is the narrow S-two evidence tier. It contains command logs, wall-clock timings, SHA-256 hashes, and proof artifacts for four representative outputs: an arithmetic `statement-v1` proof (`addition`), a shared-table normalization lookup proof envelope, a Gemma-inspired fixed-shape proof (`gemma_block_v4`) with shared lookup bindings, and a three-step proof-carrying decoding chain [40]. Appendix C1 compares the two backend-facing tiers.
 
-### 5.4 Pre-recursive aggregation boundary
+### 5.5 Pre-recursive aggregation boundary
 
-The carried-state aggregation artifact extends the same statement boundary through relation accumulation, honest intervalization, folded intervals, chained folded intervals, and proof-carrying outer aggregation. This is a bridge artifact, not a backend benchmark row. It supports a pre-recursive carried-state claim. It does not support a recursive compression claim or recursive cross-step shared-table accumulation beyond the same-template lookup accumulator [30, 40].
+The carried-state aggregation artifact extends the same statement boundary through relation accumulation, honest intervalization, folded intervals, chained folded intervals, and proof-carrying outer aggregation. This is a bridge artifact, not a backend benchmark row. The dedicated aggregation-bundle index is cited directly as systems evidence for this layer [46]. It supports a pre-recursive carried-state claim. It does not support a recursive compression claim or recursive cross-step shared-table accumulation beyond the public lookup-accumulator artifact [30, 40, 46].
 
-### 5.5 Why this artifact matters
+The broader carried-state ladder is documented in the repository's phase-indexed design and README materials and is cited here as commit-pinned systems evidence, not as a recursive compression claim.
+
+### 5.6 Why this artifact matters
 
 This artifact narrows the gap between analytic and systems claims by showing:
 
@@ -337,7 +369,7 @@ NANOZK and zkLLM reinforce the same trend: layerwise decomposition and attention
 
 ### 7.4 BitSage obelyzk.rs (formerly stwo-ml) as the closest public STARK-native comparator
 
-BitSage obelyzk.rs (formerly stwo-ml) is the closest public STARK-native comparator. Current public materials show GKR/sumcheck/LogUp-style machinery on an S-two/STWO path with Starknet verification paths, including a single-transaction recursive STARK verification claim for a 30-layer SmolLM2-135M proof and a six-step streaming verification path for a Qwen2-0.5B one-layer model [26, 27]. These remain project-reported evidence, not normalized benchmarks, and the same public materials still show uneven component maturity (`Attention` remains listed as `Prover only`).
+BitSage obelyzk.rs (formerly stwo-ml) is the closest public STARK-native comparator. According to current project-reported public materials, it combines GKR/sumcheck/LogUp-style machinery on an S-two/STWO path with Starknet verification paths, including a single-transaction recursive STARK verification claim for a 30-layer SmolLM2-135M proof and a six-step streaming verification path for a Qwen2-0.5B one-layer model [26, 27]. These remain project-reported evidence, not normalized benchmarks, and the same public materials still show uneven component maturity (`Attention` remains listed as `Prover only`).
 
 ### 7.5 LuminAIR and the custom-AIR path
 
@@ -447,7 +479,7 @@ This paper uses the maintained repository `omarespejel/provable-transformer-vm`,
 27. BitSage Network. “elo-cairo-verifier/README.md.” GitHub documentation file in *obelyzk.rs*. Accessed April 9, 2026. <https://github.com/Bitsage-Network/obelyzk.rs/blob/main/elo-cairo-verifier/README.md>
 28. Giza. *LuminAIR*. GitHub repository. Accessed April 5, 2026. <https://github.com/gizatechxyz/LuminAIR>
 29. StarkWare. “Giza x S-two: Powering Verifiable ML with LuminAIR.” *StarkWare Blog*. Accessed April 5, 2026. <https://starkware.co/blog/giza-x-s-two-powering-verifiable-ml-with-luminair/>
-30. `omarespejel/provable-transformer-vm`. “Repository Snapshot Discussed in Sections 5 and 8.” GitHub repository snapshot, pre-recursive proof-carrying aggregation checkpoint, PR #100 merge commit `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`. <https://github.com/omarespejel/provable-transformer-vm/tree/6ff972ddda4051d73dc65c92a88c0d00683ec8c7>
+30. `omarespejel/provable-transformer-vm`. “Asterion publication release snapshot.” GitHub repository, publication tag `paper-publication-v4-2026-04-11` to be cut from the final paper-facing merge. <https://github.com/omarespejel/provable-transformer-vm>
 31. `omarespejel/provable-transformer-vm`. “Appendix Artifact Index (Production V1).” GitHub artifact snapshot, commit `8d435d540b8e3cf33ec4381bb820a00b6fe7aae6`, with command logs, hashes, and proof artifacts for the vanilla reproducibility tier. <https://github.com/omarespejel/provable-transformer-vm/blob/8d435d540b8e3cf33ec4381bb820a00b6fe7aae6/docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md>
 32. Starknet Docs. “Accounts.” *Starknet Documentation*. Accessed April 5, 2026. <https://docs.starknet.io/architecture/accounts>
 33. Zhizhi Peng, Chonghe Zhao, Taotao Wang, Guofu Liao, Zibin Lin, Yifeng Liu, Bin Cao, Long Shi, Qing Yang, and Shengli Zhang. “A Survey of Zero-Knowledge Proof-Based Verifiable Machine Learning.” *Artificial Intelligence Review* (accepted manuscript), arXiv:2502.18535v2, 2026. <https://arxiv.org/abs/2502.18535>
@@ -463,3 +495,4 @@ This paper uses the maintained repository `omarespejel/provable-transformer-vm`,
 43. Abhiram Kothapalli and Srinath Setty. “HyperNova: Recursive Arguments for Customizable Constraint Systems.” *IACR Cryptology ePrint Archive*, Paper 2023/573, 2023. <https://eprint.iacr.org/2023/573>
 44. Abhiram Kothapalli and Srinath Setty. “NeutronNova: Folding Everything that Reduces to Zero-Check.” *IACR Cryptology ePrint Archive*, Paper 2024/1606, 2024. <https://eprint.iacr.org/2024/1606>
 45. Abhiram Kothapalli and Srinath Setty. “ProtoStar: Generic Efficient Accumulation/Folding for Special Sound Protocols.” *IACR Cryptology ePrint Archive*, Paper 2023/620, 2023. <https://eprint.iacr.org/2023/620>
+46. `omarespejel/provable-transformer-vm`. “Appendix Artifact Index (S-two Proof-Carrying Aggregation V1).” GitHub artifact snapshot, commit `be9c4e47a9b774e7fdbccf7cdc6977c11b39dcd6`, at `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/APPENDIX_ARTIFACT_INDEX.md`. <https://github.com/omarespejel/provable-transformer-vm/blob/be9c4e47a9b774e7fdbccf7cdc6977c11b39dcd6/docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/APPENDIX_ARTIFACT_INDEX.md>

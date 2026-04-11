@@ -14,6 +14,12 @@ Draft author line:
 - Abdelhamid Bakhta - StarkWare
 - Omar Espejel - Starknet Foundation
 
+Paper title:
+- `Asterion: Proof-Carrying STARKs for Transformer Computers`
+
+Subtitle:
+- `From transformer-as-computer execution traces to recursive-ready carried-state proof artifacts.`
+
 ## Core Paper Files
 
 - Main paper:
@@ -33,6 +39,7 @@ Draft author line:
   - `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md`
 - Phase 28 proof-carrying aggregation bundle index:
   - `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/APPENDIX_ARTIFACT_INDEX.md`
+  - Citation commit: `be9c4e47a9b774e7fdbccf7cdc6977c11b39dcd6`
 
 The older Phase 24-27 artifact directories remain archival provenance, but the
 Phase 28 bundle above is the publication-facing checkpoint for the carried-state
@@ -56,3 +63,5 @@ aggregation line.
 - Regenerate Section 4 figures and TSVs:
   - `python3 scripts/paper/generate_section4_ratio_figure.py`
   - `python3 scripts/paper/generate_section4_decomposition_figure.py`
+- Static Section 5 systems figure:
+  - `docs/paper/figures/section5-carried-state-ladder.svg`

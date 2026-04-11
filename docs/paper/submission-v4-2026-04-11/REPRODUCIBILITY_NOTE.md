@@ -1,10 +1,12 @@
 # Reproducibility Note (One Page)
 
 This note describes how to reproduce the publication-facing paper artifacts for
-the rolling base tag `paper-publication-v4-2026-04-11` once cut. The tag should
-resolve to a commit that contains this v4 paper metadata. The systems evidence
-cited by the paper remains pinned to the Phase 28 proof-carrying aggregation checkpoint commit
-`6ff972ddda4051d73dc65c92a88c0d00683ec8c7`.
+**Asterion: Proof-Carrying STARKs for Transformer Computers** under the rolling
+base tag `paper-publication-v4-2026-04-11` once cut. The tag should resolve to a
+commit that contains this v4 paper metadata. The carried-state aggregation
+evidence remains pinned to the Phase 28 proof-carrying aggregation checkpoint
+commit `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`, with the dedicated bundle
+index cited at commit `be9c4e47a9b774e7fdbccf7cdc6977c11b39dcd6`.
 
 ## 1) Scope and Intended Reproduction Target
 
@@ -109,7 +111,7 @@ time of packaging.
 Before sharing a draft externally, verify:
 
 1. author names and affiliations are confirmed,
-2. title and claim posture are aligned between:
+2. title, subtitle, and claim posture are aligned between:
    - `docs/paper/stark-transformer-alignment-2026.md`
    - `docs/paper/PUBLICATION_RELEASE.md`
 3. paper preflight passes,

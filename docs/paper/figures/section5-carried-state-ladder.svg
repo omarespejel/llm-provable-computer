@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="360" viewBox="0 0 980 360" role="img" aria-labelledby="title desc">
+  <title id="title">Asterion carried-state artifact ladder</title>
+  <desc id="desc">Flow diagram from proof-carrying decode steps through pre-recursive carried-state packaging to the Phase 29 input contract, with KV and lookup commitment lanes carried across the same boundaries.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#293241"/>
+    </marker>
+    <style>
+      .bg { fill: #f8f3e8; }
+      .box { fill: #ffffff; stroke: #293241; stroke-width: 2; rx: 12; }
+      .contract { fill: #e0fbfc; stroke: #293241; stroke-width: 2; rx: 12; }
+      .lane { fill: none; stroke-width: 4; marker-end: url(#arrow); }
+      .main { stroke: #293241; }
+      .kv { stroke: #ee6c4d; }
+      .lookup { stroke: #3d5a80; }
+      .label { fill: #293241; font-family: Georgia, 'Times New Roman', serif; font-size: 18px; font-weight: 700; }
+      .small { fill: #293241; font-family: Georgia, 'Times New Roman', serif; font-size: 13px; }
+      .lane-label { font-family: Georgia, 'Times New Roman', serif; font-size: 14px; font-weight: 700; }
+      .kv-label { fill: #ee6c4d; }
+      .lookup-label { fill: #3d5a80; }
+    </style>
+  </defs>
+  <rect class="bg" x="0" y="0" width="980" height="360"/>
+  <text class="label" x="40" y="42">Asterion carried-state ladder</text>
+  <text class="small" x="40" y="66">Statement-preserving artifact layers; not recursive proof compression until a later prover verifies the Phase 29 contract.</text>
+
+  <rect class="box" x="40" y="112" width="120" height="74"/>
+  <text class="small" x="64" y="142">decode</text>
+  <text class="small" x="67" y="160">steps</text>
+
+  <rect class="box" x="200" y="112" width="120" height="74"/>
+  <text class="small" x="234" y="142">chain</text>
+  <text class="small" x="223" y="160">segments</text>
+
+  <rect class="box" x="360" y="112" width="120" height="74"/>
+  <text class="small" x="389" y="142">rollup</text>
+  <text class="small" x="388" y="160">matrix</text>
+
+  <rect class="box" x="520" y="112" width="120" height="74"/>
+  <text class="small" x="544" y="142">folded</text>
+  <text class="small" x="544" y="160">intervals</text>
+
+  <rect class="box" x="680" y="112" width="120" height="74"/>
+  <text class="small" x="706" y="142">Phase 28</text>
+  <text class="small" x="700" y="160">aggregate</text>
+
+  <rect class="contract" x="840" y="112" width="100" height="74"/>
+  <text class="small" x="866" y="142">Phase 29</text>
+  <text class="small" x="862" y="160">contract</text>
+
+  <path class="lane main" d="M 160 149 H 198"/>
+  <path class="lane main" d="M 320 149 H 358"/>
+  <path class="lane main" d="M 480 149 H 518"/>
+  <path class="lane main" d="M 640 149 H 678"/>
+  <path class="lane main" d="M 800 149 H 838"/>
+
+  <path class="lane kv" d="M 100 228 H 888"/>
+  <path class="lane lookup" d="M 100 282 H 888"/>
+  <circle cx="100" cy="228" r="6" fill="#ee6c4d"/>
+  <circle cx="100" cy="282" r="6" fill="#3d5a80"/>
+  <text class="lane-label kv-label" x="40" y="233">KV lane</text>
+  <text class="small kv-label" x="200" y="218">cumulative commitment</text>
+  <text class="small kv-label" x="520" y="218">frontier continuity</text>
+  <text class="lane-label lookup-label" x="40" y="287">Lookup lane</text>
+  <text class="small lookup-label" x="200" y="272">cumulative commitment</text>
+  <text class="small lookup-label" x="520" y="272">frontier continuity</text>
+
+  <path d="M 100 186 V 222" stroke="#ee6c4d" stroke-width="2" stroke-dasharray="5 5"/>
+  <path d="M 260 186 V 222" stroke="#ee6c4d" stroke-width="2" stroke-dasharray="5 5"/>
+  <path d="M 420 186 V 222" stroke="#ee6c4d" stroke-width="2" stroke-dasharray="5 5"/>
+  <path d="M 580 186 V 222" stroke="#ee6c4d" stroke-width="2" stroke-dasharray="5 5"/>
+  <path d="M 740 186 V 222" stroke="#ee6c4d" stroke-width="2" stroke-dasharray="5 5"/>
+  <path d="M 890 186 V 222" stroke="#ee6c4d" stroke-width="2" stroke-dasharray="5 5"/>
+
+  <path d="M 100 186 V 276" stroke="#3d5a80" stroke-width="2" stroke-dasharray="5 5"/>
+  <path d="M 260 186 V 276" stroke="#3d5a80" stroke-width="2" stroke-dasharray="5 5"/>
+  <path d="M 420 186 V 276" stroke="#3d5a80" stroke-width="2" stroke-dasharray="5 5"/>
+  <path d="M 580 186 V 276" stroke="#3d5a80" stroke-width="2" stroke-dasharray="5 5"/>
+  <path d="M 740 186 V 276" stroke="#3d5a80" stroke-width="2" stroke-dasharray="5 5"/>
+  <path d="M 890 186 V 276" stroke="#3d5a80" stroke-width="2" stroke-dasharray="5 5"/>
+</svg>
