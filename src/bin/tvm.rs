@@ -4244,6 +4244,12 @@ mod cli_dispatch_tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo"
         ));
+        assert!(!needs_run_subcommand(
+            "prepare-stwo-recursive-compression-input-contract"
+        ));
+        assert!(!needs_run_subcommand(
+            "verify-stwo-recursive-compression-input-contract"
+        ));
     }
 }
 
