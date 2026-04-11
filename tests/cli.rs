@@ -4119,7 +4119,6 @@ fn cli_verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relatio
 
 #[test]
 #[cfg(feature = "stwo-backend")]
-#[ignore = "expensive Phase 28 16-proof end-to-end CLI gate"]
 fn cli_verify_stwo_aggregated_chained_folded_intervalized_decoding_state_relation_demo_rejects_tampered_accumulator_commitment(
 ) {
     let _guard = phase27_cli_test_guard();

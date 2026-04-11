@@ -117,6 +117,17 @@ run_logged() {
   } | tee -a "$COMMANDS_LOG"
 }
 
+sha256_file() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  else
+    echo "sha256sum or shasum is required" >&2
+    exit 1
+  fi
+}
+
 monotonic_ns() {
   python3 - <<'PY'
 import time
@@ -380,6 +391,12 @@ with (bundle / "benchmarks.tsv").open() as f:
         label, seconds = line.rstrip("\n").split("\t")
         benchmarks[label] = seconds
 
+def require_benchmark(label: str) -> str:
+    try:
+        return benchmarks[label]
+    except KeyError as exc:
+        raise SystemExit(f"missing benchmark label `{label}` in benchmarks.tsv") from exc
+
 summary_rows = []
 for (
     name,
@@ -402,8 +419,8 @@ for (
         "purpose": purpose,
         "scope": scope,
         "size_bytes": path.stat().st_size,
-        "prove_seconds": benchmarks.get(prove_label, ""),
-        "verify_seconds": benchmarks.get(verify_label, ""),
+        "prove_seconds": require_benchmark(prove_label),
+        "verify_seconds": require_benchmark(verify_label),
         **stats,
         "sha256": sha256(path),
     })
@@ -444,8 +461,12 @@ PY
 
 (
   cd "$BUNDLE_DIR"
-  sha256sum "${CANONICAL_CHECKSUM_FILES[@]}" > "$SHA256S"
-  sha256sum "${PROVENANCE_CHECKSUM_FILES[@]}" > "$PROVENANCE_SHA256S"
+  for checksum_file in "${CANONICAL_CHECKSUM_FILES[@]}"; do
+    printf '%s  %s\n' "$(sha256_file "$checksum_file")" "$checksum_file"
+  done > "$SHA256S"
+  for checksum_file in "${PROVENANCE_CHECKSUM_FILES[@]}"; do
+    printf '%s  %s\n' "$(sha256_file "$checksum_file")" "$checksum_file"
+  done > "$PROVENANCE_SHA256S"
 )
 
 echo "Bundle written to $BUNDLE_DIR"
