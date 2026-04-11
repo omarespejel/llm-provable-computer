@@ -10,6 +10,8 @@ on:
       - "src/**/*.rs"
       - "tests/**"
       - "programs/**"
+      - "scripts/local_merge_gate.sh"
+      - "docs/hardening-policy.md"
       - "Cargo.toml"
       - "Cargo.lock"
   workflow_dispatch:
