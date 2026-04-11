@@ -3,8 +3,7 @@
 
 Checks:
 1) citation integrity (numeric in-text citations must exist in local references section),
-2) immutable-link policy for this repository's GitHub links (commit-pinned or
-   publication-tag-pinned only),
+2) immutable-link policy for this repository's GitHub links (commit-pinned only),
 3) figure/link cross-reference existence for local file links,
 4) source-note presence in appendix-system-comparison,
 5) backend appendix timing/size consistency against frozen artifact indices,
@@ -68,13 +67,6 @@ class Findings:
 def is_commitish(ref: str) -> bool:
     # GitHub short/long SHA references.
     return bool(re.fullmatch(r"[0-9a-f]{7,40}", ref))
-
-
-def is_allowed_local_repo_ref(ref: str) -> bool:
-    # Publication release tags are treated as stable paper snapshot refs.
-    return is_commitish(ref) or bool(
-        re.fullmatch(r"paper-publication-v[0-9]+-[0-9]{4}-[0-9]{2}-[0-9]{2}", ref)
-    )
 
 
 def split_body_refs(text: str) -> tuple[str, str]:
@@ -189,10 +181,14 @@ def check_immutable_local_repo_links(
         parsed = local_repo_url_path(link)
         if not parsed:
             continue
-        _kind, ref, rel_path = parsed
-        if not is_allowed_local_repo_ref(ref):
+        kind, ref, rel_path = parsed
+        if not is_commitish(ref):
             findings.error(
-                f"{source_file}: local repository link is not commit- or publication-tag-pinned: {link}"
+                f"{source_file}: local repository link is not commit-pinned: {link}"
+            )
+        if kind == "blob" and not rel_path:
+            findings.error(
+                f"{source_file}: local repository blob link has no file path: {link}"
             )
         if rel_path:
             local_target = repo_root / rel_path

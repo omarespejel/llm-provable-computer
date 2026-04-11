@@ -323,13 +323,13 @@ class PaperPreflightTests(unittest.TestCase):
             MOD.check_publication_snapshot_placeholders(repo, findings)
             self.assertEqual(findings.errors, [])
 
-    def test_publication_tag_tree_url_is_allowed(self):
+    def test_commit_tree_root_url_is_allowed(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp)
             path = repo / "docs/paper/paper.md"
             write_text(
                 path,
-                "<https://github.com/omarespejel/provable-transformer-vm/tree/paper-publication-v4-2026-04-11>\n",
+                "<https://github.com/omarespejel/provable-transformer-vm/tree/6ff972ddda4051d73dc65c92a88c0d00683ec8c7>\n",
             )
             findings = MOD.Findings()
             MOD.run_file_checks(path, repo, findings)
@@ -346,7 +346,22 @@ class PaperPreflightTests(unittest.TestCase):
             findings = MOD.Findings()
             MOD.run_file_checks(path, repo, findings)
             self.assertTrue(
-                any("not commit- or publication-tag-pinned" in msg for msg in findings.errors),
+                any("not commit-pinned" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_root_blob_url_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            path = repo / "docs/paper/paper.md"
+            write_text(
+                path,
+                "<https://github.com/omarespejel/provable-transformer-vm/blob/6ff972ddda4051d73dc65c92a88c0d00683ec8c7>\n",
+            )
+            findings = MOD.Findings()
+            MOD.run_file_checks(path, repo, findings)
+            self.assertTrue(
+                any("blob link has no file path" in msg for msg in findings.errors),
                 findings.errors,
             )
 

@@ -46,7 +46,7 @@ python3 scripts/paper/paper_preflight.py --repo-root .
 This verifies:
 
 - local citation integrity for files with local references sections,
-- immutable-link policy for this repository's GitHub links (commit-pinned or publication-tag-pinned),
+- immutable-link policy for this repository's GitHub links (commit-pinned),
 - local figure/link path existence,
 - standalone source note presence for system-comparison appendix.
 
