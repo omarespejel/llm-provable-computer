@@ -9,14 +9,22 @@ Canonical publication snapshot commit:
 The canonical v4 publication snapshot is the release tag
 `paper-publication-v4-2026-04-11` once cut. That tag must resolve to a commit
 containing this v4 paper metadata, and it intentionally need not match the
-Phase 28 engineering checkpoint cited by Reference `[30]`.
+Phase 28 engineering checkpoint used by the carried-state aggregation evidence.
 
-Phase 28 engineering checkpoint for the systems evidence cited by Reference `[30]`:
-`520240822c48dc3111bc5b91d5896ab97a2bb4c8`
+Phase 28 engineering checkpoint for the carried-state aggregation line:
+`6ff972ddda4051d73dc65c92a88c0d00683ec8c7`
+
+Dedicated Phase 28 aggregation bundle index cited by Reference `[46]`:
+`be9c4e47a9b774e7fdbccf7cdc6977c11b39dcd6`
 
 Canonical launch repository:
 `https://github.com/omarespejel/provable-transformer-vm`
 (earlier phases of this research line used the `llm-provable-computer` project name).
+
+Formal paper author line in the draft:
+
+- Abdelhamid Bakhta - StarkWare
+- Omar Espejel - Starknet Foundation
 
 This repository state is the publication-facing package for the paper and its supporting
 artifacts. The package is intentionally split into evidence tiers rather than treated as one
@@ -29,6 +37,8 @@ patches and a subsequent publication tag.
 
 - Main paper:
   - `docs/paper/stark-transformer-alignment-2026.md`
+  - Title: `Proof-Carrying Decoding for Transformer Computers over an Experimental S-two Backend`
+  - Subtitle: `From transformer-as-computer execution traces to recursive-ready carried-state proof artifacts.`
 - Supporting appendices:
   - `docs/paper/appendix-system-comparison.md`
   - `docs/paper/appendix-scaling-companion.md`
@@ -36,9 +46,11 @@ patches and a subsequent publication tag.
 - Frozen artifact bundles:
   - `docs/paper/artifacts/production-v1-2026-04-04/`
   - `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/`
+  - `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/`
 - Figure sources:
   - `docs/paper/figures/section4-ratio-vs-context.tsv`
   - `docs/paper/figures/section4-decomposition-vs-context.tsv`
+  - `docs/paper/figures/section5-carried-state-ladder.svg`
   - `scripts/paper/generate_section4_ratio_figure.py`
   - `scripts/paper/generate_section4_decomposition_figure.py`
 - External evidence snapshots:
@@ -49,8 +61,10 @@ patches and a subsequent publication tag.
 
 - `production-v1` is the primary frozen reproducibility bundle for the vanilla backend.
 - `stwo-experimental-v1` is the frozen narrow evidence tier for the experimental S-two path.
-- Post-freeze commit-pinned evidence now includes the Phase 24-28 pre-recursive
-  carried-state aggregation ladder.
+- Post-freeze commit-pinned evidence now includes the merged Phase 24-28 pre-recursive
+  carried-state aggregation bundle, including proof-carrying outer aggregation over Phase 27 chained artifacts.
+- Intermediate Phase 24-27 artifact directories are retained as archival provenance. The
+  Phase 28 proof-carrying aggregation bundle is the publication-facing checkpoint for that line.
 - The repo still does **not** claim full standard-softmax transformer inference on S-two,
   recursive cross-step shared-table accumulation beyond the public Phase 23 lookup accumulator,
   recursive cryptographic compression/verification closure, or production-scale zkML deployment.
@@ -61,6 +75,8 @@ patches and a subsequent publication tag.
   - `./scripts/generate_repro_bundle.sh`
 - Experimental `stwo` bundle:
   - `./scripts/paper/generate_stwo_publication_bundle.sh`
+- Phase 28 proof-carrying aggregation bundle:
+  - `./scripts/paper/generate_stwo_proof_carrying_aggregation_bundle.sh`
 - Archived web evidence:
   - `python3 scripts/paper/archive_supporting_web_evidence.py`
 - Gemma config extracts:
@@ -72,13 +88,14 @@ patches and a subsequent publication tag.
 
 Before cutting a release tag, verify:
 
-1. the two frozen bundle directories exist and their `sha256sums.txt` files validate,
+1. the frozen bundle directories exist and their `sha256sums.txt` files validate,
+   and the Phase 28 aggregation bundle's `provenance_sha256sums.txt` also validates,
 2. the main paper and appendices refer to the same repo state and evidence tiers,
 3. the design note matches the current experimental `stwo` status,
 4. no stale top-level README language still describes S-two as merely prospective,
-5. Reference `[30]` in the paper remains pinned to the Phase 28 engineering
-   checkpoint, while the release tag resolves to the merge commit that contains
-   this v4 paper metadata,
-6. `paper preflight` passes (citation integrity, immutable local repo links,
+5. Reference `[30]` remains commit-pinned to the Phase 28 systems checkpoint,
+   while the Phase 28 aggregation bundle remains directly pinned by Reference `[46]`,
+6. the formal author line and affiliation text are confirmed before public release,
+7. `paper preflight` passes (citation integrity, immutable local repo links,
    figure/link paths, appendix source note, and unresolved publication snapshot
    placeholder detection).

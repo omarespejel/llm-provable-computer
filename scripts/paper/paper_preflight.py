@@ -152,12 +152,12 @@ def local_repo_url_path(url: str) -> tuple[str, str, str] | None:
     path_parts = [p for p in parsed.path.split("/") if p]
 
     if host == "github.com":
-        if len(path_parts) < 5:
+        if len(path_parts) < 4:
             return None
         owner, repo, kind, ref = path_parts[:4]
         if (owner, repo) not in LOCAL_REPOS or kind not in {"blob", "tree"}:
             return None
-        rel_path = "/".join(path_parts[4:])
+        rel_path = "/".join(path_parts[4:]) if len(path_parts) > 4 else ""
         return kind, ref, rel_path
 
     if host == "raw.githubusercontent.com":
@@ -181,10 +181,14 @@ def check_immutable_local_repo_links(
         parsed = local_repo_url_path(link)
         if not parsed:
             continue
-        _kind, ref, rel_path = parsed
+        kind, ref, rel_path = parsed
         if not is_commitish(ref):
             findings.error(
                 f"{source_file}: local repository link is not commit-pinned: {link}"
+            )
+        if kind == "blob" and not rel_path:
+            findings.error(
+                f"{source_file}: local repository blob link has no file path: {link}"
             )
         if rel_path:
             local_target = repo_root / rel_path

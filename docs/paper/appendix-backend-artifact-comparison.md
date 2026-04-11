@@ -1,6 +1,6 @@
 # Appendix: Frozen Backend Artifact Comparison
 
-Snapshot date: **April 6, 2026** (bundle date; index generated April 7, 2026 UTC)
+Evidence snapshot: **April 6, 2026** bundle, with index material finalized April 7, 2026 UTC.
 
 This appendix complements Appendix A and the main paper’s Section 5 by placing the two frozen
 artifact tiers side by side:
@@ -12,6 +12,11 @@ These rows are **not** matched end-to-end benchmarks on identical workloads. The
 artifact facts drawn from the committed bundle indices under
 `docs/paper/artifacts/production-v1-2026-04-04/` and
 `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/`.
+
+The repository also contains
+`docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/`, a
+proof-carrying aggregation bundle. It is systems evidence for pre-recursive
+carried-state aggregation, not a normalized backend-performance row in Table C1.
 
 ## Table C1. Frozen artifact comparison by backend and scope
 
@@ -29,7 +34,7 @@ artifact facts drawn from the committed bundle indices under
 
 - `production-v1` remains the stronger vanilla reproducibility tier and the basis of the main
   artifact discussion.
-- `stwo-experimental-v1` is intentionally narrower, but it now freezes one arithmetic proof, one
+- `stwo-experimental-v1` is intentionally narrower, but it freezes one arithmetic proof, one
   lookup-backed proof envelope, one transformer-shaped fixed-shape proof, and one proof-carrying
   decoding chain on the experimental S-two path.
 - The table is useful as artifact evidence, not as a normalized backend-performance study. In
