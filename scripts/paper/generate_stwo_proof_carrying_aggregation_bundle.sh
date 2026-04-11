@@ -117,6 +117,18 @@ run_logged() {
   } | tee -a "$COMMANDS_LOG"
 }
 
+ensure_tvm_binary() {
+  if [ ! -x "$TVM_BIN" ]; then
+    echo "Expected tvm binary at $TVM_BIN was missing; rebuilding" >&2
+    run_logged "${CARGO_BUILD_STWO[@]}"
+    "${CARGO_BUILD_STWO[@]}"
+  fi
+  [ -x "$TVM_BIN" ] || {
+    echo "Expected tvm binary at $TVM_BIN after build, but it was not found or is not executable" >&2
+    exit 1
+  }
+}
+
 sha256_file() {
   if command -v sha256sum >/dev/null 2>&1; then
     sha256sum "$1" | awk '{print $1}'
@@ -149,6 +161,9 @@ run_timed() {
   local label="$1"
   shift
   local started_ns ended_ns elapsed
+  if [ "${1:-}" = "$TVM_BIN" ]; then
+    ensure_tvm_binary
+  fi
   started_ns="$(monotonic_ns)"
   run_logged "$@"
   "$@"
@@ -174,10 +189,7 @@ MANIFEST
 
 run_logged "${CARGO_BUILD_STWO[@]}"
 "${CARGO_BUILD_STWO[@]}"
-[ -x "$TVM_BIN" ] || {
-  echo "Expected tvm binary at $TVM_BIN after build, but it was not found or is not executable" >&2
-  exit 1
-}
+ensure_tvm_binary
 
 run_timed prove_decoding_state_relation_accumulator_phase24_stwo \
   "$TVM_BIN" \
