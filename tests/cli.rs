@@ -12,7 +12,7 @@ use flate2::GzBuilder;
 use jsonschema::{Draft, JSONSchema};
 use predicates::prelude::*;
 #[cfg(feature = "stwo-backend")]
-use std::io::{Read, Write};
+use std::io::Write;
 #[cfg(feature = "stwo-backend")]
 use std::sync::{Mutex, OnceLock};
 
@@ -3568,22 +3568,41 @@ fn cli_verify_stwo_recursive_compression_input_contract_rejects_tampered_commitm
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_prepare_stwo_recursive_compression_input_contract_rejects_synthetic_phase28_shell() {
-    let _guard = phase27_cli_test_guard();
     let phase28_path = unique_temp_dir("cli-stwo-recursive-compression-input-phase28-shell")
         .with_extension("json");
     let contract_path = unique_temp_dir("cli-stwo-recursive-compression-input-contract-shell")
         .with_extension("json");
 
-    let phase28_bytes = std::fs::read(phase28_publication_artifact_path()).expect("phase28 gzip");
-    let mut decoder = flate2::read::GzDecoder::new(&phase28_bytes[..]);
-    let mut phase28_json_string = String::new();
-    decoder
-        .read_to_string(&mut phase28_json_string)
-        .expect("decompress phase28");
-    let mut phase28_json: serde_json::Value =
-        serde_json::from_str(&phase28_json_string).expect("json");
-    phase28_json["members"] = serde_json::Value::Array(Vec::new());
-    phase28_json["member_summaries"] = serde_json::Value::Array(Vec::new());
+    let phase28_json = serde_json::json!({
+        "proof_backend": "stwo",
+        "artifact_version": STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
+        "semantic_scope": STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE28,
+        "proof_backend_version": STWO_BACKEND_VERSION_PHASE12,
+        "statement_version": CLAIM_STATEMENT_VERSION_V1,
+        "recursion_posture": STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE,
+        "recursive_verification_claimed": false,
+        "cryptographic_compression_claimed": false,
+        "bounded_aggregation_arity": 2,
+        "member_count": 0,
+        "total_phase26_members": 0,
+        "total_phase25_members": 0,
+        "max_nested_chain_arity": 0,
+        "max_nested_fold_arity": 0,
+        "total_matrices": 0,
+        "total_layouts": 0,
+        "total_rollups": 0,
+        "total_segments": 0,
+        "total_steps": 0,
+        "lookup_delta_entries": 0,
+        "max_lookup_frontier_entries": 0,
+        "source_template_commitment": "source-template",
+        "global_start_state_commitment": "start-state",
+        "global_end_state_commitment": "end-state",
+        "aggregation_template_commitment": "aggregation-template",
+        "aggregated_chained_folded_interval_accumulator_commitment": "accumulator",
+        "member_summaries": [],
+        "members": []
+    });
     std::fs::write(
         &phase28_path,
         serde_json::to_vec(&phase28_json).expect("serialize"),
@@ -3605,6 +3624,29 @@ fn cli_prepare_stwo_recursive_compression_input_contract_rejects_synthetic_phase
         .stderr(predicate::str::contains("panicked at").not());
 
     let _ = std::fs::remove_file(phase28_path);
+    let _ = std::fs::remove_file(contract_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_prepare_stwo_recursive_compression_input_contract_rejects_gzip_output_path() {
+    let phase28_path = unique_temp_dir("cli-stwo-recursive-compression-input-missing-phase28")
+        .with_extension("json");
+    let contract_path =
+        unique_temp_dir("cli-stwo-recursive-compression-input-contract").with_extension("json.gz");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-stwo-recursive-compression-input-contract")
+        .arg("--phase28")
+        .arg(&phase28_path)
+        .arg("-o")
+        .arg(&contract_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("writes plain JSON"))
+        .stderr(predicate::str::contains("panicked at").not());
+
     let _ = std::fs::remove_file(contract_path);
 }
 
