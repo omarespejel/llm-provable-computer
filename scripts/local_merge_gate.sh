@@ -553,7 +553,7 @@ jq -n \
 jq --argjson now "$now_epoch" '
     .data.repository.pullRequest as $pull
     | ["coderabbitai", "greptile-apps", "qodo-code-review"] as $ai_reviewers
-    | [ $pull.reviewThreads.nodes[]? | select(.isResolved == false) ] as $active
+    | [ $pull.reviewThreads.nodes[]? | select((.isResolved // false) == false and (.isOutdated // false) == false) ] as $active
     | ([
         ($pull.comments.nodes[]? | select(.author.login as $login | $ai_reviewers | index($login)) | {author:.author.login, createdAt}),
         ($pull.reviews.nodes[]? | select(.author.login as $login | $ai_reviewers | index($login)) | {author:.author.login, createdAt}),
