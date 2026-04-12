@@ -1,89 +1,71 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="700" height="255" viewBox="0 0 700 255" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="235" viewBox="0 0 700 235" role="img" aria-labelledby="title desc">
   <title id="title">Carried-state packaging ladder</title>
-  <desc id="desc">Statement-preserving carried-state packaging ladder from decode steps through a verified chain, segments, interval packages, rollups, a layout matrix, and a pre-recursive aggregation boundary. KV and lookup commitments are carried as continuity lanes.</desc>
+  <desc id="desc">Statement-preserving carried-state packaging ladder from decode steps through a verified chain, segments, interval bundles, rollups, a layout matrix, and a pre-recursive aggregation boundary. KV and lookup commitments are carried as continuity lanes.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#222222"/>
-    </marker>
-    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#006BA4"/>
-    </marker>
-    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FF800E"/>
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4d4d4d"/>
     </marker>
     <style>
       .bg { fill: #ffffff; }
-      .guide { stroke: #BBBBBB; stroke-width: 0.6; opacity: 0.25; }
-      .box { fill: #ffffff; stroke: #222222; stroke-width: 0.9; }
-      .box-mid { fill: #f7f7f7; stroke: #222222; stroke-width: 0.9; }
-      .arrow { stroke: #222222; stroke-width: 1.1; marker-end: url(#arrow); fill: none; }
-      .kv { stroke: #006BA4; stroke-width: 1.8; marker-end: url(#arrow-blue); fill: none; }
-      .lookup { stroke: #FF800E; stroke-width: 1.8; marker-end: url(#arrow-orange); fill: none; }
-      .kv-dash { stroke: #006BA4; stroke-width: 0.7; stroke-dasharray: 2 2; opacity: 0.65; }
-      .lookup-dash { stroke: #FF800E; stroke-width: 0.7; stroke-dasharray: 2 2; opacity: 0.65; }
       .title { fill: #222222; font-family: 'STIX Two Text', 'Times New Roman', 'DejaVu Serif', serif; font-size: 12px; font-weight: 700; }
       .note { fill: #595959; font-family: 'STIX Two Text', 'Times New Roman', 'DejaVu Serif', serif; font-size: 9px; }
+      .box { fill: #ffffff; stroke: #4d4d4d; stroke-width: 0.9; }
+      .box-shaded { fill: #f7f7f7; stroke: #4d4d4d; stroke-width: 0.9; }
+      .arrow { stroke: #4d4d4d; stroke-width: 1.0; marker-end: url(#arrow); fill: none; }
+      .lane { stroke-width: 2.0; stroke-linecap: round; fill: none; }
+      .kv { stroke: #006BA4; }
+      .lookup { stroke: #FF800E; }
       .label { fill: #222222; font-family: 'STIX Two Text', 'Times New Roman', 'DejaVu Serif', serif; font-size: 10px; text-anchor: middle; dominant-baseline: middle; }
-      .lane-label { font-family: 'STIX Two Text', 'Times New Roman', 'DejaVu Serif', serif; font-size: 10px; font-weight: 700; dominant-baseline: middle; }
+      .small { fill: #595959; font-family: 'STIX Two Text', 'Times New Roman', 'DejaVu Serif', serif; font-size: 9px; text-anchor: middle; dominant-baseline: middle; }
+      .lane-label { font-family: 'STIX Two Text', 'Times New Roman', 'DejaVu Serif', serif; font-size: 9px; font-weight: 700; text-anchor: end; dominant-baseline: middle; }
       .kv-label { fill: #006BA4; }
       .lookup-label { fill: #FF800E; }
-      .small { font-family: 'STIX Two Text', 'Times New Roman', 'DejaVu Serif', serif; font-size: 9px; text-anchor: middle; dominant-baseline: middle; }
     </style>
   </defs>
-  <rect class="bg" x="0" y="0" width="700" height="255"/>
+
+  <rect class="bg" x="0" y="0" width="700" height="235"/>
 
   <text class="title" x="44" y="30">Carried-state packaging ladder</text>
   <text class="note" x="44" y="48">Statement-preserving artifact layers; not recursive proof compression.</text>
 
-  <line class="guide" x1="44" y1="94" x2="640" y2="94"/>
-  <line class="guide" x1="44" y1="151" x2="640" y2="151"/>
-  <line class="guide" x1="44" y1="197" x2="640" y2="197"/>
+  <rect class="box" x="44" y="75" width="92" height="44" rx="4"/>
+  <text class="label" x="90" y="91">decode</text>
+  <text class="label" x="90" y="106">steps</text>
 
-  <rect class="box" x="42" y="71" width="90" height="46" rx="5"/>
-  <text class="label" x="87" y="88">decode</text>
-  <text class="label" x="87" y="103">steps</text>
+  <rect class="box" x="158" y="75" width="92" height="44" rx="4"/>
+  <text class="label" x="204" y="91">verified</text>
+  <text class="label" x="204" y="106">chain</text>
 
-  <rect class="box" x="154" y="71" width="90" height="46" rx="5"/>
-  <text class="label" x="199" y="88">verified</text>
-  <text class="label" x="199" y="103">chain</text>
+  <rect class="box-shaded" x="272" y="75" width="118" height="44" rx="4"/>
+  <text class="label" x="331" y="91">segments +</text>
+  <text class="label" x="331" y="106">interval bundles</text>
 
-  <rect class="box-mid" x="266" y="71" width="100" height="46" rx="5"/>
-  <text class="label" x="316" y="88">segments /</text>
-  <text class="label" x="316" y="103">interval packages</text>
+  <rect class="box-shaded" x="412" y="75" width="106" height="44" rx="4"/>
+  <text class="label" x="465" y="91">rollups +</text>
+  <text class="label" x="465" y="106">layout matrix</text>
 
-  <rect class="box-mid" x="388" y="71" width="100" height="46" rx="5"/>
-  <text class="label" x="438" y="88">rollups /</text>
-  <text class="label" x="438" y="103">layout matrix</text>
+  <rect class="box" x="540" y="75" width="116" height="44" rx="4"/>
+  <text class="label" x="598" y="91">aggregation</text>
+  <text class="label" x="598" y="106">boundary</text>
 
-  <rect class="box" x="510" y="71" width="104" height="46" rx="5"/>
-  <text class="label" x="562" y="88">aggregation</text>
-  <text class="label" x="562" y="103">boundary</text>
+  <path class="arrow" d="M 136 97 H 156"/>
+  <path class="arrow" d="M 250 97 H 270"/>
+  <path class="arrow" d="M 390 97 H 410"/>
+  <path class="arrow" d="M 518 97 H 538"/>
 
-  <path class="arrow" d="M 132 94 H 152"/>
-  <path class="arrow" d="M 244 94 H 264"/>
-  <path class="arrow" d="M 366 94 H 386"/>
-  <path class="arrow" d="M 488 94 H 508"/>
+  <text class="lane-label kv-label" x="132" y="154">KV lane</text>
+  <path class="lane kv" d="M 158 154 H 656"/>
+  <circle cx="158" cy="154" r="3.2" fill="#006BA4"/>
+  <circle cx="331" cy="154" r="3.2" fill="#006BA4"/>
+  <circle cx="465" cy="154" r="3.2" fill="#006BA4"/>
+  <circle cx="598" cy="154" r="3.2" fill="#006BA4"/>
+  <text class="small" x="407" y="140">cumulative + frontier continuity</text>
 
-  <path class="kv" d="M 87 151 H 562"/>
-  <path class="lookup" d="M 87 197 H 562"/>
-  <circle cx="87" cy="151" r="3.2" fill="#006BA4"/>
-  <circle cx="562" cy="151" r="3.2" fill="#006BA4"/>
-  <circle cx="87" cy="197" r="3.2" fill="#FF800E"/>
-  <circle cx="562" cy="197" r="3.2" fill="#FF800E"/>
-
-  <text class="lane-label kv-label" x="44" y="151">KV commitments</text>
-  <text class="small kv-label" x="316" y="136">cumulative + frontier continuity</text>
-  <text class="lane-label lookup-label" x="44" y="197">lookup commitments</text>
-  <text class="small lookup-label" x="316" y="182">cumulative + frontier continuity</text>
-
-  <line class="kv-dash" x1="87" y1="117" x2="87" y2="139"/>
-  <line class="lookup-dash" x1="87" y1="117" x2="87" y2="185"/>
-  <line class="kv-dash" x1="199" y1="117" x2="199" y2="139"/>
-  <line class="lookup-dash" x1="199" y1="117" x2="199" y2="185"/>
-  <line class="kv-dash" x1="316" y1="117" x2="316" y2="139"/>
-  <line class="lookup-dash" x1="316" y1="117" x2="316" y2="185"/>
-  <line class="kv-dash" x1="438" y1="117" x2="438" y2="139"/>
-  <line class="lookup-dash" x1="438" y1="117" x2="438" y2="185"/>
-  <line class="kv-dash" x1="562" y1="117" x2="562" y2="139"/>
-  <line class="lookup-dash" x1="562" y1="117" x2="562" y2="185"/>
+  <text class="lane-label lookup-label" x="132" y="190">lookup lane</text>
+  <path class="lane lookup" d="M 158 190 H 656"/>
+  <circle cx="158" cy="190" r="3.2" fill="#FF800E"/>
+  <circle cx="331" cy="190" r="3.2" fill="#FF800E"/>
+  <circle cx="465" cy="190" r="3.2" fill="#FF800E"/>
+  <circle cx="598" cy="190" r="3.2" fill="#FF800E"/>
+  <text class="small" x="407" y="176">cumulative + frontier continuity</text>
 </svg>
