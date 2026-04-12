@@ -29,19 +29,21 @@ use llm_provable_computer::{export_program_onnx, OnnxExecutionRuntime};
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::{
     load_phase10_shared_binary_step_lookup_proof, load_phase10_shared_normalization_lookup_proof,
-    load_phase11_decoding_chain, load_phase12_decoding_chain, load_phase13_decoding_layout_matrix,
-    load_phase14_decoding_chain, load_phase15_decoding_segment_bundle,
-    load_phase16_decoding_segment_rollup, load_phase17_decoding_rollup_matrix,
-    load_phase21_decoding_matrix_accumulator, load_phase22_decoding_lookup_accumulator,
-    load_phase23_decoding_cross_step_lookup_accumulator,
+    load_phase11_decoding_chain, load_phase12_decoding_chain, load_phase12_shared_lookup_artifact,
+    load_phase13_decoding_layout_matrix, load_phase14_decoding_chain,
+    load_phase15_decoding_segment_bundle, load_phase16_decoding_segment_rollup,
+    load_phase17_decoding_rollup_matrix, load_phase21_decoding_matrix_accumulator,
+    load_phase22_decoding_lookup_accumulator, load_phase23_decoding_cross_step_lookup_accumulator,
     load_phase24_decoding_state_relation_accumulator,
     load_phase25_intervalized_decoding_state_relation,
     load_phase26_folded_intervalized_decoding_state_relation,
     load_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     load_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
-    load_phase29_recursive_compression_input_contract, load_phase3_binary_step_lookup_proof,
+    load_phase29_recursive_compression_input_contract,
+    load_phase30_decoding_step_proof_envelope_manifest, load_phase3_binary_step_lookup_proof,
     load_phase5_normalization_lookup_proof,
     phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28,
+    phase30_prepare_decoding_step_proof_envelope_manifest,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
     prove_phase12_decoding_demo, prove_phase13_decoding_layout_matrix_demo,
@@ -56,18 +58,19 @@ use llm_provable_computer::{
     prove_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_demo,
     prove_phase3_binary_step_lookup_demo_envelope, prove_phase5_normalization_lookup_demo_envelope,
     save_phase10_shared_binary_step_lookup_proof, save_phase10_shared_normalization_lookup_proof,
-    save_phase11_decoding_chain, save_phase12_decoding_chain, save_phase13_decoding_layout_matrix,
-    save_phase14_decoding_chain, save_phase15_decoding_segment_bundle,
-    save_phase16_decoding_segment_rollup, save_phase17_decoding_rollup_matrix,
-    save_phase21_decoding_matrix_accumulator, save_phase22_decoding_lookup_accumulator,
-    save_phase23_decoding_cross_step_lookup_accumulator,
+    save_phase11_decoding_chain, save_phase12_decoding_chain, save_phase12_shared_lookup_artifact,
+    save_phase13_decoding_layout_matrix, save_phase14_decoding_chain,
+    save_phase15_decoding_segment_bundle, save_phase16_decoding_segment_rollup,
+    save_phase17_decoding_rollup_matrix, save_phase21_decoding_matrix_accumulator,
+    save_phase22_decoding_lookup_accumulator, save_phase23_decoding_cross_step_lookup_accumulator,
     save_phase24_decoding_state_relation_accumulator,
     save_phase25_intervalized_decoding_state_relation,
     save_phase26_folded_intervalized_decoding_state_relation,
     save_phase27_chained_folded_intervalized_decoding_state_relation,
     save_phase28_aggregated_chained_folded_intervalized_decoding_state_relation,
-    save_phase3_binary_step_lookup_proof, save_phase5_normalization_lookup_proof,
-    stwo_backend_enabled, verify_phase10_shared_binary_step_lookup_envelope,
+    save_phase30_decoding_step_proof_envelope_manifest, save_phase3_binary_step_lookup_proof,
+    save_phase5_normalization_lookup_proof, stwo_backend_enabled,
+    verify_phase10_shared_binary_step_lookup_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
     verify_phase11_decoding_chain_with_proof_checks,
     verify_phase12_decoding_chain_with_proof_checks,
@@ -82,8 +85,10 @@ use llm_provable_computer::{
     verify_phase24_decoding_state_relation_accumulator_with_proof_checks,
     verify_phase25_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase26_folded_intervalized_decoding_state_relation_with_proof_checks,
+    verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
     verify_phase3_binary_step_lookup_demo_envelope,
     verify_phase5_normalization_lookup_demo_envelope, Phase29RecursiveCompressionInputContract,
+    Phase30DecodingStepProofEnvelopeManifest,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
     STWO_BACKEND_VERSION_PHASE12,
     STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
@@ -335,6 +340,49 @@ enum Command {
     VerifyStwoDecodingFamilyDemo {
         /// Path to the serialized chain JSON file.
         proof: PathBuf,
+    },
+    #[cfg(feature = "stwo-backend")]
+    /// Extract a standalone Phase 12 shared lookup artifact from a verified parameterized decoding chain.
+    PrepareStwoSharedLookupArtifact {
+        /// Path to the serialized Phase 12 chain JSON or JSON.gz file.
+        #[arg(long = "proof")]
+        proof: PathBuf,
+        /// Optional shared lookup artifact commitment to extract when the chain contains more than one artifact.
+        #[arg(long = "artifact-commitment")]
+        artifact_commitment: Option<String>,
+        /// File where the serialized Phase 12 shared lookup artifact JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    #[cfg(feature = "stwo-backend")]
+    /// Verify a standalone Phase 12 shared lookup artifact against a verified parameterized decoding chain.
+    VerifyStwoSharedLookupArtifact {
+        /// Path to the serialized Phase 12 shared lookup artifact JSON or JSON.gz file.
+        #[arg(long = "artifact")]
+        artifact: PathBuf,
+        /// Path to the serialized Phase 12 chain JSON or JSON.gz file.
+        #[arg(long = "proof")]
+        proof: PathBuf,
+    },
+    #[cfg(feature = "stwo-backend")]
+    /// Derive a Phase 30 proof-envelope manifest from a verified parameterized proof-carrying decoding chain.
+    PrepareStwoDecodingStepEnvelopeManifest {
+        /// Path to the serialized Phase 12 chain JSON or JSON.gz file.
+        #[arg(long = "proof")]
+        proof: PathBuf,
+        /// File where the serialized Phase 30 manifest JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    #[cfg(feature = "stwo-backend")]
+    /// Verify a serialized Phase 30 decoding-step proof-envelope manifest.
+    VerifyStwoDecodingStepEnvelopeManifest {
+        /// Path to the serialized Phase 30 manifest JSON or JSON.gz file.
+        #[arg(long = "manifest")]
+        manifest: PathBuf,
+        /// Optional Phase 12 source chain JSON or JSON.gz file for exact chain binding.
+        #[arg(long = "proof")]
+        proof: Option<PathBuf>,
     },
     /// Produce a serialized layout matrix over several parameterized proof-carrying decoding chains.
     ProveStwoDecodingLayoutMatrixDemo {
@@ -1299,6 +1347,28 @@ fn run() -> llm_provable_computer::Result<()> {
         }
         Command::VerifyStwoDecodingFamilyDemo { proof } => {
             verify_stwo_decoding_family_demo_command(&proof)?
+        }
+        #[cfg(feature = "stwo-backend")]
+        Command::PrepareStwoSharedLookupArtifact {
+            proof,
+            artifact_commitment,
+            output,
+        } => prepare_stwo_shared_lookup_artifact_command(
+            &proof,
+            artifact_commitment.as_deref(),
+            &output,
+        )?,
+        #[cfg(feature = "stwo-backend")]
+        Command::VerifyStwoSharedLookupArtifact { artifact, proof } => {
+            verify_stwo_shared_lookup_artifact_command(&artifact, &proof)?
+        }
+        #[cfg(feature = "stwo-backend")]
+        Command::PrepareStwoDecodingStepEnvelopeManifest { proof, output } => {
+            prepare_stwo_decoding_step_envelope_manifest_command(&proof, &output)?
+        }
+        #[cfg(feature = "stwo-backend")]
+        Command::VerifyStwoDecodingStepEnvelopeManifest { manifest, proof } => {
+            verify_stwo_decoding_step_envelope_manifest_command(&manifest, proof.as_deref())?
         }
         Command::ProveStwoDecodingLayoutMatrixDemo { output } => {
             prove_stwo_decoding_layout_matrix_demo_command(&output)?
@@ -2273,6 +2343,256 @@ fn verify_stwo_decoding_family_demo_command(
 
         Ok(())
     }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn selected_phase12_shared_lookup_artifact<'a>(
+    chain: &'a llm_provable_computer::Phase12DecodingChainManifest,
+    requested_commitment: Option<&str>,
+) -> llm_provable_computer::Result<&'a llm_provable_computer::Phase12SharedLookupArtifact> {
+    if let Some(requested_commitment) = requested_commitment {
+        return chain
+            .shared_lookup_artifacts
+            .iter()
+            .find(|artifact| artifact.artifact_commitment == requested_commitment)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "shared lookup artifact `{requested_commitment}` is not present in the verified Phase 12 chain"
+                ))
+            });
+    }
+
+    match chain.shared_lookup_artifacts.as_slice() {
+        [artifact] => Ok(artifact),
+        [] => Err(VmError::InvalidConfig(
+            "verified Phase 12 chain does not contain any shared lookup artifacts".to_string(),
+        )),
+        artifacts => Err(VmError::InvalidConfig(format!(
+            "verified Phase 12 chain contains {} shared lookup artifacts; pass --artifact-commitment to select one",
+            artifacts.len()
+        ))),
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn print_phase12_shared_lookup_artifact_report(
+    artifact: &llm_provable_computer::Phase12SharedLookupArtifact,
+) {
+    println!("artifact_version: {}", artifact.artifact_version);
+    println!("semantic_scope: {}", artifact.semantic_scope);
+    println!("artifact_commitment: {}", artifact.artifact_commitment);
+    println!("layout_commitment: {}", artifact.layout_commitment);
+    println!(
+        "static_table_registry_version: {}",
+        artifact.static_table_registry_version
+    );
+    println!(
+        "static_table_registry_scope: {}",
+        artifact.static_table_registry_scope
+    );
+    println!(
+        "static_table_registry_commitment: {}",
+        artifact.static_table_registry_commitment
+    );
+    println!(
+        "static_table_commitments: {}",
+        artifact.static_table_commitments.len()
+    );
+}
+
+fn prepare_stwo_shared_lookup_artifact_command(
+    proof_path: &Path,
+    artifact_commitment: Option<&str>,
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = (proof_path, artifact_commitment, output);
+        return Err(VmError::UnsupportedProof(
+            "S-two shared lookup artifacts require building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two shared lookup artifact")?;
+        reject_phase12_shared_lookup_artifact_plain_json_gzip_output(output)?;
+
+        let chain = load_phase12_decoding_chain(proof_path)?;
+        verify_phase12_decoding_chain_with_proof_checks(&chain)?;
+        let artifact = selected_phase12_shared_lookup_artifact(&chain, artifact_commitment)?;
+        save_phase12_shared_lookup_artifact(artifact, output)?;
+
+        println!("output: {}", output.display());
+        println!("proof: {}", proof_path.display());
+        println!("verified_stark: true");
+        print_phase12_shared_lookup_artifact_report(artifact);
+
+        Ok(())
+    }
+}
+
+fn verify_stwo_shared_lookup_artifact_command(
+    artifact_path: &Path,
+    proof_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = (artifact_path, proof_path);
+        return Err(VmError::UnsupportedProof(
+            "S-two shared lookup artifacts require building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two shared lookup artifact")?;
+
+        let chain = load_phase12_decoding_chain(proof_path)?;
+        verify_phase12_decoding_chain_with_proof_checks(&chain)?;
+        let artifact = load_phase12_shared_lookup_artifact(artifact_path, &chain.layout)?;
+        let expected =
+            selected_phase12_shared_lookup_artifact(&chain, Some(&artifact.artifact_commitment))?;
+        if &artifact != expected {
+            return Err(VmError::InvalidConfig(format!(
+                "shared lookup artifact `{}` does not match the verified Phase 12 chain payload",
+                artifact.artifact_commitment
+            )));
+        }
+
+        println!("artifact: {}", artifact_path.display());
+        println!("proof: {}", proof_path.display());
+        println!("verified_artifact: true");
+        println!("verified_stark: true");
+        println!("verified_against_chain: true");
+        print_phase12_shared_lookup_artifact_report(&artifact);
+
+        Ok(())
+    }
+}
+
+fn prepare_stwo_decoding_step_envelope_manifest_command(
+    proof_path: &Path,
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = (proof_path, output);
+        return Err(VmError::UnsupportedProof(
+            "S-two decoding step proof envelope manifests require building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two decoding step proof envelope manifest")?;
+        reject_phase30_step_envelope_manifest_plain_json_gzip_output(output)?;
+
+        let chain = load_phase12_decoding_chain(proof_path)?;
+        verify_phase12_decoding_chain_with_proof_checks(&chain)?;
+        let manifest = phase30_prepare_decoding_step_proof_envelope_manifest(&chain)?;
+        save_phase30_decoding_step_proof_envelope_manifest(&manifest, output)?;
+
+        println!("output: {}", output.display());
+        println!("proof: {}", proof_path.display());
+        println!("verified_stark: true");
+        print_phase30_decoding_step_envelope_manifest_report(&manifest);
+
+        Ok(())
+    }
+}
+
+fn verify_stwo_decoding_step_envelope_manifest_command(
+    manifest_path: &Path,
+    proof_path: Option<&Path>,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = (manifest_path, proof_path);
+        return Err(VmError::UnsupportedProof(
+            "S-two decoding step proof envelope manifests require building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two decoding step proof envelope manifest")?;
+
+        let manifest = load_phase30_decoding_step_proof_envelope_manifest(manifest_path)?;
+
+        println!("manifest: {}", manifest_path.display());
+        if let Some(proof_path) = proof_path {
+            let chain = load_phase12_decoding_chain(proof_path)?;
+            verify_phase12_decoding_chain_with_proof_checks(&chain)?;
+            verify_phase30_decoding_step_proof_envelope_manifest_against_chain(&manifest, &chain)?;
+            println!("proof: {}", proof_path.display());
+            println!("verified_stark: true");
+            println!("verified_against_chain: true");
+        }
+        println!("verified_manifest: true");
+        print_phase30_decoding_step_envelope_manifest_report(&manifest);
+
+        Ok(())
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn reject_phase12_shared_lookup_artifact_plain_json_gzip_output(
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    if output.extension().and_then(|extension| extension.to_str()) == Some("gz") {
+        return Err(VmError::InvalidConfig(
+            "prepare-stwo-shared-lookup-artifact writes plain JSON; use a `.json` output path"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn reject_phase30_step_envelope_manifest_plain_json_gzip_output(
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    if output.extension().and_then(|extension| extension.to_str()) == Some("gz") {
+        return Err(VmError::InvalidConfig(
+            "prepare-stwo-decoding-step-envelope-manifest writes plain JSON; use a `.json` output path"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn print_phase30_decoding_step_envelope_manifest_report(
+    manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) {
+    println!("proof_backend: {}", manifest.proof_backend);
+    println!("manifest_version: {}", manifest.manifest_version);
+    println!("semantic_scope: {}", manifest.semantic_scope);
+    println!("proof_backend_version: {}", manifest.proof_backend_version);
+    println!("statement_version: {}", manifest.statement_version);
+    println!("source_chain_version: {}", manifest.source_chain_version);
+    println!(
+        "source_chain_semantic_scope: {}",
+        manifest.source_chain_semantic_scope
+    );
+    println!("total_steps: {}", manifest.total_steps);
+    println!(
+        "chain_start_boundary_commitment: {}",
+        manifest.chain_start_boundary_commitment
+    );
+    println!(
+        "chain_end_boundary_commitment: {}",
+        manifest.chain_end_boundary_commitment
+    );
+    println!(
+        "step_envelopes_commitment: {}",
+        manifest.step_envelopes_commitment
+    );
 }
 
 fn prove_stwo_decoding_layout_matrix_demo_command(
@@ -6719,6 +7039,10 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-decoding-demo"
                 | "prove-stwo-decoding-family-demo"
                 | "verify-stwo-decoding-family-demo"
+                | "prepare-stwo-shared-lookup-artifact"
+                | "verify-stwo-shared-lookup-artifact"
+                | "prepare-stwo-decoding-step-envelope-manifest"
+                | "verify-stwo-decoding-step-envelope-manifest"
                 | "prove-stwo-decoding-layout-matrix-demo"
                 | "verify-stwo-decoding-layout-matrix-demo"
                 | "prove-stwo-decoding-chunked-history-demo"
