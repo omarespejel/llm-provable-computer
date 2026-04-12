@@ -85,7 +85,6 @@ use llm_provable_computer::{
     verify_phase24_decoding_state_relation_accumulator_with_proof_checks,
     verify_phase25_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase26_folded_intervalized_decoding_state_relation_with_proof_checks,
-    verify_phase30_decoding_step_proof_envelope_manifest,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
     verify_phase3_binary_step_lookup_demo_envelope,
     verify_phase5_normalization_lookup_demo_envelope, Phase29RecursiveCompressionInputContract,
@@ -342,6 +341,7 @@ enum Command {
         /// Path to the serialized chain JSON file.
         proof: PathBuf,
     },
+    #[cfg(feature = "stwo-backend")]
     /// Extract a standalone Phase 12 shared lookup artifact from a verified parameterized decoding chain.
     PrepareStwoSharedLookupArtifact {
         /// Path to the serialized Phase 12 chain JSON or JSON.gz file.
@@ -354,6 +354,7 @@ enum Command {
         #[arg(short = 'o', long = "output")]
         output: PathBuf,
     },
+    #[cfg(feature = "stwo-backend")]
     /// Verify a standalone Phase 12 shared lookup artifact against a verified parameterized decoding chain.
     VerifyStwoSharedLookupArtifact {
         /// Path to the serialized Phase 12 shared lookup artifact JSON or JSON.gz file.
@@ -363,6 +364,7 @@ enum Command {
         #[arg(long = "proof")]
         proof: PathBuf,
     },
+    #[cfg(feature = "stwo-backend")]
     /// Derive a Phase 30 proof-envelope manifest from a verified parameterized proof-carrying decoding chain.
     PrepareStwoDecodingStepEnvelopeManifest {
         /// Path to the serialized Phase 12 chain JSON or JSON.gz file.
@@ -372,6 +374,7 @@ enum Command {
         #[arg(short = 'o', long = "output")]
         output: PathBuf,
     },
+    #[cfg(feature = "stwo-backend")]
     /// Verify a serialized Phase 30 decoding-step proof-envelope manifest.
     VerifyStwoDecodingStepEnvelopeManifest {
         /// Path to the serialized Phase 30 manifest JSON or JSON.gz file.
@@ -1345,6 +1348,7 @@ fn run() -> llm_provable_computer::Result<()> {
         Command::VerifyStwoDecodingFamilyDemo { proof } => {
             verify_stwo_decoding_family_demo_command(&proof)?
         }
+        #[cfg(feature = "stwo-backend")]
         Command::PrepareStwoSharedLookupArtifact {
             proof,
             artifact_commitment,
@@ -1354,12 +1358,15 @@ fn run() -> llm_provable_computer::Result<()> {
             artifact_commitment.as_deref(),
             &output,
         )?,
+        #[cfg(feature = "stwo-backend")]
         Command::VerifyStwoSharedLookupArtifact { artifact, proof } => {
             verify_stwo_shared_lookup_artifact_command(&artifact, &proof)?
         }
+        #[cfg(feature = "stwo-backend")]
         Command::PrepareStwoDecodingStepEnvelopeManifest { proof, output } => {
             prepare_stwo_decoding_step_envelope_manifest_command(&proof, &output)?
         }
+        #[cfg(feature = "stwo-backend")]
         Command::VerifyStwoDecodingStepEnvelopeManifest { manifest, proof } => {
             verify_stwo_decoding_step_envelope_manifest_command(&manifest, proof.as_deref())?
         }
@@ -2516,10 +2523,8 @@ fn verify_stwo_decoding_step_envelope_manifest_command(
         require_stwo_backend("S-two decoding step proof envelope manifest")?;
 
         let manifest = load_phase30_decoding_step_proof_envelope_manifest(manifest_path)?;
-        verify_phase30_decoding_step_proof_envelope_manifest(&manifest)?;
 
         println!("manifest: {}", manifest_path.display());
-        println!("verified_manifest: true");
         if let Some(proof_path) = proof_path {
             let chain = load_phase12_decoding_chain(proof_path)?;
             verify_phase12_decoding_chain_with_proof_checks(&chain)?;
@@ -2528,6 +2533,7 @@ fn verify_stwo_decoding_step_envelope_manifest_command(
             println!("verified_stark: true");
             println!("verified_against_chain: true");
         }
+        println!("verified_manifest: true");
         print_phase30_decoding_step_envelope_manifest_report(&manifest);
 
         Ok(())

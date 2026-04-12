@@ -399,6 +399,22 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-decoding-family-demo decoding-family.stwo.chain.json
 
+# Extract and verify a standalone shared lookup artifact from a verified Phase 12 chain
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-shared-lookup-artifact --proof decoding-family.stwo.chain.json \
+  --artifact-commitment <artifact_commitment> -o shared-lookup-artifact.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-shared-lookup-artifact --artifact shared-lookup-artifact.stwo.json \
+  --proof decoding-family.stwo.chain.json
+
+# Derive and verify a standalone Phase 30 decoding-step proof-envelope manifest
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-decoding-step-envelope-manifest --proof decoding-family.stwo.chain.json \
+  -o decoding-step-envelope-manifest.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-decoding-step-envelope-manifest --manifest decoding-step-envelope-manifest.stwo.json \
+  --proof decoding-family.stwo.chain.json
+
 # Produce and verify the parameterized decoding layout-matrix demo
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prove-stwo-decoding-layout-matrix-demo -o decoding-layout-matrix.stwo.json

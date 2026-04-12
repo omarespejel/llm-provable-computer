@@ -19076,8 +19076,8 @@ mod tests {
     fn phase30_save_and_load_round_trip() {
         let manifest = sample_phase30_decoding_step_proof_envelope_manifest();
         let path = std::env::temp_dir().join(format!(
-            "phase30-decoding-step-proof-envelope-manifest-roundtrip-{}.json",
-            std::process::id()
+            "phase30-decoding-step-proof-envelope-manifest-roundtrip-{}-save.json",
+            std::process::id(),
         ));
         save_phase30_decoding_step_proof_envelope_manifest(&manifest, &path).expect("save");
         let loaded = load_phase30_decoding_step_proof_envelope_manifest(&path).expect("load");
@@ -19089,8 +19089,8 @@ mod tests {
     fn phase30_load_accepts_gzip_round_trip() {
         let manifest = sample_phase30_decoding_step_proof_envelope_manifest();
         let path = std::env::temp_dir().join(format!(
-            "phase30-decoding-step-proof-envelope-manifest-roundtrip-{}.json",
-            std::process::id()
+            "phase30-decoding-step-proof-envelope-manifest-roundtrip-{}-gzip.json",
+            std::process::id(),
         ));
         let gzip_path = path.with_extension("json.gz");
         save_phase30_decoding_step_proof_envelope_manifest(&manifest, &path).expect("save");
