@@ -4452,14 +4452,28 @@ fn write_bytes_atomically(path: &Path, bytes: &[u8]) -> llm_provable_computer::R
                 )
             {
                 // POSIX rename replaces atomically. Some platforms reject existing destinations.
-                if let Err(remove_err) = fs::remove_file(path) {
+                // Use a same-directory backup so a failed fallback publish can restore the old artifact.
+                let backup_path =
+                    dir.join(format!(".{file_name}.bak-{}-{attempt}", std::process::id()));
+                if let Err(backup_err) = fs::rename(path, &backup_path) {
                     let _ = fs::remove_file(&temp_path);
-                    return Err(remove_err.into());
+                    if backup_err.kind() == std::io::ErrorKind::AlreadyExists {
+                        continue;
+                    }
+                    return Err(backup_err.into());
                 }
                 if let Err(rename_err) = fs::rename(&temp_path, path) {
+                    let restore_result = fs::rename(&backup_path, path);
                     let _ = fs::remove_file(&temp_path);
+                    if let Err(restore_err) = restore_result {
+                        return Err(VmError::InvalidConfig(format!(
+                            "failed to publish {}; restore failed after publish error: {restore_err}; publish error: {rename_err}",
+                            path.display()
+                        )));
+                    }
                     return Err(rename_err.into());
                 }
+                let _ = fs::remove_file(&backup_path);
             } else {
                 let _ = fs::remove_file(&temp_path);
                 return Err(err.into());
