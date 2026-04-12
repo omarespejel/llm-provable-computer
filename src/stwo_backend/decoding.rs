@@ -1305,7 +1305,7 @@ fn open_json_file_for_read(path: &Path, label: &str) -> Result<fs::File> {
     })
 }
 
-fn write_json_with_limit<T: Serialize>(
+pub(super) fn write_json_with_limit<T: Serialize>(
     value: &T,
     path: &Path,
     max_bytes: usize,

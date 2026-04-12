@@ -1,8 +1,12 @@
+use std::path::Path;
+
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
 use serde::{Deserialize, Serialize};
 
-use super::decoding::{commit_phase12_layout, Phase12DecodingLayout};
+use super::decoding::{
+    commit_phase12_layout, read_json_bytes_with_limit, write_json_with_limit, Phase12DecodingLayout,
+};
 use super::lookup_prover::{
     verify_phase10_shared_binary_step_lookup_envelope, Phase10SharedLookupProofEnvelope,
     STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10,
@@ -29,6 +33,7 @@ pub(crate) const DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE: &str =
     "stwo_decoding_step_v2_execution_with_shared_normalization_lookup";
 pub(crate) const DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE: &str =
     "stwo_decoding_step_v2_execution_with_shared_binary_step_lookup";
+const MAX_PHASE12_SHARED_LOOKUP_ARTIFACT_JSON_BYTES: usize = 8 * 1024 * 1024;
 
 fn checked_lookup_index(index: usize, label: &str) -> Result<u8> {
     u8::try_from(index).map_err(|_| {
@@ -478,6 +483,34 @@ pub fn verify_phase12_shared_lookup_artifact(
     Ok(())
 }
 
+pub fn save_phase12_shared_lookup_artifact(
+    artifact: &Phase12SharedLookupArtifact,
+    path: &Path,
+) -> Result<()> {
+    write_json_with_limit(
+        artifact,
+        path,
+        MAX_PHASE12_SHARED_LOOKUP_ARTIFACT_JSON_BYTES,
+        "Phase 12 shared lookup artifact",
+    )
+}
+
+pub fn load_phase12_shared_lookup_artifact(
+    path: &Path,
+    layout: &Phase12DecodingLayout,
+) -> Result<Phase12SharedLookupArtifact> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE12_SHARED_LOOKUP_ARTIFACT_JSON_BYTES,
+        "Phase 12 shared lookup artifact",
+    )?;
+    let artifact: Phase12SharedLookupArtifact =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    let expected_layout_commitment = commit_phase12_layout(layout);
+    verify_phase12_shared_lookup_artifact(&artifact, layout, &expected_layout_commitment)?;
+    Ok(artifact)
+}
+
 fn phase12_static_lookup_table_registry_from_envelopes(
     normalization_envelope: &Phase10SharedNormalizationLookupProofEnvelope,
     activation_envelope: &Phase10SharedLookupProofEnvelope,
@@ -614,6 +647,9 @@ fn lower_hex(bytes: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
     use super::*;
     use crate::stwo_backend::decoding::{commit_phase12_layout, phase12_default_decoding_layout};
     use crate::stwo_backend::lookup_component::Phase3LookupTableRow;
@@ -661,6 +697,14 @@ mod tests {
             .finalize_variable(&mut out)
             .expect("blake2b finalize");
         oracle_lower_hex(&out)
+    }
+
+    fn unique_temp_path(name: &str) -> std::path::PathBuf {
+        let suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos();
+        std::env::temp_dir().join(format!("llm-provable-computer-{name}-{suffix}.json"))
     }
 
     #[test]
@@ -1439,6 +1483,42 @@ mod tests {
             error.to_string().contains("registry version"),
             "unexpected error: {error}"
         );
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_save_and_load_round_trip() {
+        let (layout, _, artifact) = sample_valid_artifact();
+        let path = unique_temp_path("phase12-shared-lookup-artifact-round-trip");
+        save_phase12_shared_lookup_artifact(&artifact, &path).expect("save artifact");
+
+        let loaded = load_phase12_shared_lookup_artifact(&path, &layout).expect("load artifact");
+        assert_eq!(loaded, artifact);
+
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn load_phase12_shared_lookup_artifact_rejects_tampered_commitment() {
+        let (layout, _, artifact) = sample_valid_artifact();
+        let path = unique_temp_path("phase12-shared-lookup-artifact-tampered");
+        let mut json = serde_json::to_value(&artifact).expect("artifact json");
+        json["artifact_commitment"] = serde_json::Value::String("0".repeat(64));
+        fs::write(
+            &path,
+            serde_json::to_vec_pretty(&json).expect("tampered artifact json"),
+        )
+        .expect("write tampered artifact");
+
+        let error = load_phase12_shared_lookup_artifact(&path, &layout)
+            .expect_err("tampered artifact must fail checked load");
+        assert!(
+            error
+                .to_string()
+                .contains("artifact commitment does not match its serialized contents"),
+            "unexpected error: {error}"
+        );
+
+        let _ = fs::remove_file(path);
     }
 
     #[test]

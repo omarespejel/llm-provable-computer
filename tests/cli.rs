@@ -40,7 +40,8 @@ use llm_provable_computer::stwo_backend::{
     STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE,
     STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29,
     STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29,
-    STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12, STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12,
+    STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12, STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12,
+    STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12,
     STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12,
     STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12,
     STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12,
@@ -1668,6 +1669,162 @@ fn cli_can_prove_and_verify_stwo_decoding_family_demo() {
         .stdout(predicate::str::contains("final_history_length: 7"));
 
     let _ = std::fs::remove_file(proof_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_can_prepare_and_verify_stwo_shared_lookup_artifact() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-shared-lookup-artifact-proof").with_extension("json");
+    let artifact_path = unique_temp_dir("cli-stwo-shared-lookup-artifact").with_extension("json");
+
+    let mut prove = tvm_command();
+    prove
+        .arg("prove-stwo-decoding-family-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("proof json value");
+    let artifact_commitment = proof_json["shared_lookup_artifacts"][0]["artifact_commitment"]
+        .as_str()
+        .expect("shared lookup artifact commitment")
+        .to_string();
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-stwo-shared-lookup-artifact")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("--artifact-commitment")
+        .arg(&artifact_commitment)
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(format!(
+            "artifact_version: {STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12}",
+        )))
+        .stdout(predicate::str::contains(format!(
+            "semantic_scope: {STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12}",
+        )))
+        .stdout(predicate::str::contains(format!(
+            "artifact_commitment: {artifact_commitment}",
+        )));
+
+    let artifact_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&artifact_path).expect("artifact json"))
+            .expect("artifact json value");
+    validate_json_against_schema(
+        &artifact_json,
+        "spec/stwo-phase12-shared-lookup-artifact.schema.json",
+    );
+    assert_eq!(
+        artifact_json
+            .get("artifact_version")
+            .and_then(serde_json::Value::as_str),
+        Some(STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12)
+    );
+    assert_eq!(
+        artifact_json
+            .get("semantic_scope")
+            .and_then(serde_json::Value::as_str),
+        Some(STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12)
+    );
+    assert_eq!(
+        artifact_json
+            .get("artifact_commitment")
+            .and_then(serde_json::Value::as_str),
+        Some(artifact_commitment.as_str())
+    );
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-shared-lookup-artifact")
+        .arg("--artifact")
+        .arg(&artifact_path)
+        .arg("--proof")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_artifact: true"))
+        .stdout(predicate::str::contains("verified_against_chain: true"))
+        .stdout(predicate::str::contains(format!(
+            "static_table_registry_scope: {STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12}",
+        )));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(artifact_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_shared_lookup_artifact_rejects_tampered_registry_commitment() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-shared-lookup-artifact-proof-tamper").with_extension("json");
+    let artifact_path =
+        unique_temp_dir("cli-stwo-shared-lookup-artifact-tamper").with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-shared-lookup-artifact-registry-drift").with_extension("json");
+
+    let mut prove = tvm_command();
+    prove
+        .arg("prove-stwo-decoding-family-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("proof json value");
+    let artifact_commitment = proof_json["shared_lookup_artifacts"][0]["artifact_commitment"]
+        .as_str()
+        .expect("shared lookup artifact commitment")
+        .to_string();
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-stwo-shared-lookup-artifact")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("--artifact-commitment")
+        .arg(&artifact_commitment)
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .success();
+
+    let mut artifact_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&artifact_path).expect("artifact json"))
+            .expect("artifact json value");
+    artifact_json["static_table_registry_commitment"] = serde_json::Value::String("0".repeat(64));
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec_pretty(&artifact_json).expect("tampered artifact json"),
+    )
+    .expect("write tampered artifact");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-shared-lookup-artifact")
+        .arg("--artifact")
+        .arg(&tampered_path)
+        .arg("--proof")
+        .arg(&proof_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "static table registry commitment does not match its table descriptors",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(artifact_path);
+    let _ = std::fs::remove_file(tampered_path);
 }
 
 #[test]
