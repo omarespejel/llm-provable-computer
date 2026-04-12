@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsString;
 use std::fs;
-use std::io::{BufWriter, Read, Write};
+use std::io::{self, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -2407,6 +2407,20 @@ pub fn verify_phase30_decoding_step_proof_envelope_manifest(
         return Err(VmError::InvalidConfig(format!(
             "unsupported decoding step envelope manifest source chain scope `{}`",
             manifest.source_chain_semantic_scope
+        )));
+    }
+    if manifest.proof_backend_version != crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding step envelope manifest backend version `{}` is not `{}`",
+            manifest.proof_backend_version,
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12
+        )));
+    }
+    if manifest.statement_version != crate::proof::CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding step envelope manifest statement version `{}` is not `{}`",
+            manifest.statement_version,
+            crate::proof::CLAIM_STATEMENT_VERSION_V1
         )));
     }
     if manifest.source_chain_commitment.is_empty() {
@@ -11278,13 +11292,10 @@ fn build_phase30_decoding_step_proof_envelope(
 fn commit_phase12_decoding_chain_for_step_envelopes(
     chain: &Phase12DecodingChainManifest,
 ) -> Result<String> {
-    let chain_json =
-        serde_json::to_vec(chain).map_err(|error| VmError::Serialization(error.to_string()))?;
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30.as_bytes());
     hasher.update(b"source-phase12-chain");
-    hasher.update(&(chain_json.len() as u64).to_le_bytes());
-    hasher.update(&chain_json);
+    phase30_update_hasher_with_json(&mut hasher, chain)?;
     let mut out = [0u8; 32];
     hasher
         .finalize_variable(&mut out)
@@ -11293,18 +11304,71 @@ fn commit_phase12_decoding_chain_for_step_envelopes(
 }
 
 fn commit_phase30_step_proof(proof: &VanillaStarkExecutionProof) -> Result<String> {
-    let proof_json =
-        serde_json::to_vec(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30.as_bytes());
     hasher.update(b"step-proof");
-    hasher.update(&(proof_json.len() as u64).to_le_bytes());
-    hasher.update(&proof_json);
+    phase30_update_hasher_with_json(&mut hasher, proof)?;
     let mut out = [0u8; 32];
     hasher
         .finalize_variable(&mut out)
         .expect("blake2b finalize");
     Ok(lower_hex(&out))
+}
+
+fn phase30_update_hasher_with_json<T: Serialize>(hasher: &mut Blake2bVar, value: &T) -> Result<()> {
+    let byte_len = phase30_json_len(value)?;
+    hasher.update(&byte_len.to_le_bytes());
+    let mut writer = Phase30JsonHasher { hasher };
+    serde_json::to_writer(&mut writer, value)
+        .map_err(|error| VmError::Serialization(error.to_string()))
+}
+
+fn phase30_json_len<T: Serialize>(value: &T) -> Result<u64> {
+    let mut writer = Phase30JsonCounter { byte_len: 0 };
+    serde_json::to_writer(&mut writer, value)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    Ok(writer.byte_len)
+}
+
+struct Phase30JsonCounter {
+    byte_len: u64,
+}
+
+impl Write for Phase30JsonCounter {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let written = u64::try_from(buf.len()).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "phase30 json chunk length exceeded u64",
+            )
+        })?;
+        self.byte_len = self.byte_len.checked_add(written).ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "phase30 json length overflowed u64",
+            )
+        })?;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+struct Phase30JsonHasher<'a> {
+    hasher: &'a mut Blake2bVar,
+}
+
+impl Write for Phase30JsonHasher<'_> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.hasher.update(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
 }
 
 fn commit_phase30_step_envelope(envelope: &Phase30DecodingStepProofEnvelope) -> String {
@@ -13654,6 +13718,20 @@ mod tests {
             .finalize_variable(&mut out)
             .expect("blake2b finalize");
         oracle_lower_hex(&out)
+    }
+
+    fn oracle_phase30_len_prefixed_json_commit<T: serde::Serialize>(
+        version: &str,
+        domain: &[u8],
+        value: &T,
+    ) -> String {
+        let json = serde_json::to_vec(value).expect("json");
+        oracle_blake2b_256(&[
+            version.as_bytes().to_vec(),
+            domain.to_vec(),
+            (json.len() as u64).to_le_bytes().to_vec(),
+            json,
+        ])
     }
 
     fn oracle_push_len_prefixed_part(parts: &mut Vec<Vec<u8>>, bytes: &[u8]) {
@@ -18896,6 +18974,81 @@ mod tests {
         verify_phase30_decoding_step_proof_envelope_manifest(&manifest).expect("verify");
         verify_phase30_decoding_step_proof_envelope_manifest_against_chain(&manifest, &chain)
             .expect("verify against chain");
+    }
+
+    #[test]
+    fn phase30_step_json_commitments_match_len_prefixed_streaming_oracle() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+
+        assert_eq!(
+            commit_phase12_decoding_chain_for_step_envelopes(&chain).expect("chain commitment"),
+            oracle_phase30_len_prefixed_json_commit(
+                STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30,
+                b"source-phase12-chain",
+                &chain
+            )
+        );
+        assert_eq!(
+            commit_phase30_step_proof(&chain.steps[0].proof).expect("proof commitment"),
+            oracle_phase30_len_prefixed_json_commit(
+                STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30,
+                b"step-proof",
+                &chain.steps[0].proof
+            )
+        );
+    }
+
+    #[test]
+    fn phase30_step_envelope_manifest_rejects_empty_or_unsupported_versions() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest =
+            phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
+
+        manifest.proof_backend_version.clear();
+        let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
+            .expect_err("empty backend version should fail");
+        assert!(
+            err.to_string().contains("backend version"),
+            "unexpected error: {err}"
+        );
+
+        manifest.proof_backend_version = "unsupported-stwo-backend".to_string();
+        let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
+            .expect_err("unsupported backend version should fail");
+        assert!(
+            err.to_string().contains("backend version"),
+            "unexpected error: {err}"
+        );
+
+        manifest.proof_backend_version =
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE12.to_string();
+        manifest.statement_version.clear();
+        let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
+            .expect_err("empty statement version should fail");
+        assert!(
+            err.to_string().contains("statement version"),
+            "unexpected error: {err}"
+        );
+
+        manifest.statement_version = "statement-v2".to_string();
+        let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
+            .expect_err("unsupported statement version should fail");
+        assert!(
+            err.to_string().contains("statement version"),
+            "unexpected error: {err}"
+        );
     }
 
     #[test]
