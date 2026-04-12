@@ -408,17 +408,7 @@ Given the parameterized decoding bridge and the pre-recursive carried-state aggr
 
 The methodological reason is simple: the statement boundary is already explicit. The cleanest next paper is therefore one that keeps the same decode relation and carried-state commitments while improving proof-size and verifier-cost behavior through accumulation/compression, rather than changing the execution relation and the aggregation mechanism at the same time.
 
-More generic folding and recursive-argument frameworks already cover much of the broad abstraction space [41, 43, 44, 45]. The sharper contribution available here is transformer-specific carried-state accumulation over a fixed decode relation.
-
-A narrow supporting sequence is:
-
-- stable shared lookup-table identity and reuse across decode artifacts, motivated by public reusable-table and lookup-centric proving lines [38, 48],
-- explicit block and step proof envelopes with machine-readable carried-state and lookup boundaries, in the spirit of layerwise proof objects [39],
-- bounded multi-runtime semantic-agreement kernels over fixed operator surfaces, motivated by implementation-equivalence work without claiming a general equivalence prover [47],
-- shared-table accumulation across decode steps for lookup-side state,
-- recursive aggregation/compression over segment, interval bundle, rollup, and matrix boundaries,
-- one more faithful non-arithmetic attention path on the experimental `stwo` route,
-- continued machine-readable artifact generation and verifier hardening around the carried-state kernels [42].
+More generic folding and recursive-argument frameworks already cover much of the broad abstraction space [41, 43, 44, 45]. The sharper contribution available here is transformer-specific carried-state accumulation over a fixed decode relation. Within that boundary, the most credible near-term strengthening is to keep the public decode relation unchanged while making the carried-state kernels more reusable: stable shared lookup-table identity and reuse across decode artifacts, explicit block and step proof envelopes with machine-readable carried-state and lookup boundaries, bounded multi-runtime semantic-agreement kernels over fixed operator surfaces, and continued verifier hardening on the experimental `stwo` route all sharpen the same fixed relation rather than replacing it [38, 39, 42, 47, 48].
 
 That direction keeps the next contribution transformer-specific and technically attributable: gains can be read as accumulation/compression gains over a fixed public boundary, not as a consequence of moving the underlying claim.
 
