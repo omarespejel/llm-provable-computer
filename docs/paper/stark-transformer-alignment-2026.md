@@ -28,7 +28,7 @@ The question addressed here is therefore narrower and more useful than “can tr
 This paper makes three claims:
 
 1. **Analytic claim.** Under a stated transformer cost model, non-arithmetic operations such as softmax, LayerNorm, and GELU can shift prover economics in favor of STARK-native systems.
-2. **Systems claim.** Deterministic execution of transformer-relevant programs can be compiled into traces that are directly consumable as AIR witnesses, and can be organized as a parameterized proof-carrying decoding relation with carried-state boundaries that survive statement-preserving chain, segment, interval package, rollup, matrix, and aggregation packages.
+2. **Systems claim.** Deterministic execution of transformer-relevant programs can be compiled into traces that are directly consumable as AIR witnesses, and can be organized as a parameterized proof-carrying decoding relation with carried-state boundaries that survive statement-preserving chain, segment, interval package, rollup, matrix, and pre-recursive aggregation packages.
 3. **Infrastructure claim.** The S-two / Starknet stack makes this direction increasingly practical, even though the reference repository used here still relies on the vanilla backend for its default artifact bundle and primary transformer proof relation while exposing `stwo` through a narrow experimental evidence tier.
 
 Section 5 is the paper's systems hinge: it is where the repository-backed artifact turns the symbolic pressure points of Section 4 into explicit carried-state proof objects with frozen evidence tiers and pre-recursive aggregation boundaries.
@@ -453,7 +453,7 @@ This future-work split is deliberate. One track expands capability (accumulation
 
 This paper does not argue that SNARKs cannot prove transformers or that STARKs have already won. It argues a narrower point: transformer workloads emphasize lookup-heavy nonlinearities, recursion, and field/commitment design choices where STARK-native systems may compound advantages.
 
-The repository contributes evidence at two layers: trace semantics and pre-recursive carried state. It shows direct proving of transformer-relevant traces, semantic checks across runtimes, and a parameterized decode relation that preserves commitments across chains, segments, interval packages, rollups, layout matrices, and aggregation packages.
+The repository contributes evidence at two layers: trace semantics and pre-recursive carried state. It shows direct proving of transformer-relevant traces, semantic checks across runtimes, and a parameterized decode relation that preserves commitments across chains, segments, interval packages, rollups, layout matrices, and pre-recursive aggregation packages.
 
 The frontier is no longer “can transformers be proved?” It is: **which architecture scales most cleanly to long-context, production verifiable inference while preserving transparency/post-quantum properties and compressing repeated transformer structure without losing semantic discipline?**
 

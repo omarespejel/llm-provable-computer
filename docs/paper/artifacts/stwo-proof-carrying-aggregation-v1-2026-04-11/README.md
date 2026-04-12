@@ -7,7 +7,7 @@ The artifact filenames retain legacy phase-numbered names for checksum stability
 Included artifacts:
 - `decoding-phase24.state-relation-accumulator.json.gz`: carried-state relation accumulator over cumulative prefix boundaries.
 - `decoding-phase25.intervalized-state-relation.json.gz`: interval package over rebased carried-state prefixes.
-- `decoding-phase26.folded-intervalized-state-relation.json.gz`: rollup package over interval-package members.
+- `decoding-phase26.folded-intervalized-state-relation.json.gz`: rollup package over interval package members.
 - `decoding-phase27.chained-folded-intervalized-state-relation.json.gz`: matrix-compatible chained rollup package.
 - `decoding-phase28.aggregated-chained-folded-intervalized-state-relation.json.gz`: proof-carrying aggregation package over chained rollup members.
 
