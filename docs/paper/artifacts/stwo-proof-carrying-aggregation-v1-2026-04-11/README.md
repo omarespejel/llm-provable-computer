@@ -1,15 +1,15 @@
 # S-two Proof-Carrying Aggregation Bundle
 
-This bundle freezes the carried-state packaging ladder from state-relation accumulation through a pre-recursive aggregation package.
+This bundle freezes the carried-state packaging ladder from state-relation accumulation through a pre-recursive aggregation boundary.
 
-The artifact filenames retain legacy phase-numbered names for checksum stability and provenance. In publication-facing prose, the corresponding ladder is described as chain, segment, interval package, rollup, matrix, and pre-recursive aggregation package.
+The artifact filenames retain legacy phase-numbered names for checksum stability and provenance. In publication-facing prose, the corresponding ladder is described as chain, segment, interval bundle, rollup, matrix, and pre-recursive aggregation boundary.
 
 Included artifacts:
 - `decoding-phase24.state-relation-accumulator.json.gz`: carried-state relation accumulator over cumulative prefix boundaries.
-- `decoding-phase25.intervalized-state-relation.json.gz`: interval package over rebased carried-state prefixes.
-- `decoding-phase26.folded-intervalized-state-relation.json.gz`: rollup package over interval package members.
+- `decoding-phase25.intervalized-state-relation.json.gz`: interval bundle over rebased carried-state prefixes.
+- `decoding-phase26.folded-intervalized-state-relation.json.gz`: rollup package over interval bundle members.
 - `decoding-phase27.chained-folded-intervalized-state-relation.json.gz`: matrix-compatible chained rollup package.
-- `decoding-phase28.aggregated-chained-folded-intervalized-state-relation.json.gz`: proof-carrying pre-recursive aggregation package over chained rollup members.
+- `decoding-phase28.aggregated-chained-folded-intervalized-state-relation.json.gz`: proof-carrying pre-recursive aggregation boundary over chained rollup members.
 
 See `APPENDIX_ARTIFACT_INDEX.md` and `artifact_summary.tsv` for details.
 

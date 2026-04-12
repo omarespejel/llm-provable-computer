@@ -289,7 +289,7 @@ R_decode(Σ_t, w_t, Σ_{t+1})
 
 where `w_t` contains the step witness and proof-bearing artifact material checked by the repository verifier.
 
-In this terminology, an interval bundle is the intervalized state-relation object that packages rebased carried-state prefixes between segment-level accumulation and rollup-level packaging. The pinned aggregation-bundle index records the concrete artifact mapping [46].
+In this terminology, an interval bundle is the intervalized state-relation object that packages rebased carried-state prefixes between segment-level packaging and rollup-level packaging. The pinned aggregation-bundle index records the concrete artifact mapping [46].
 
 **Definition 2 (Package validity).** A chain, segment, rollup, interval bundle, matrix, or pre-recursive aggregation bundle is valid if its member order is declared, each nested proof artifact verifies under the stated backend and statement profile, and every adjacent pair of carried-state boundaries satisfies the continuity constraints required by the decode relation.
 
