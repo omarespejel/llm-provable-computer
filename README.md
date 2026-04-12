@@ -55,7 +55,7 @@ No sampling. No stochastic output. Same input, same output, every time.
 | `statement-v1` | Stable | Vanilla STARK proof of native ISA execution, plus enforced transformer/native semantic agreement checks |
 | `stwo-backend` | Experimental | Narrow `statement-v1` proving surface for shipped fixtures, lookup demos, transformer-shaped fixtures, and decoding artifacts |
 | `research-v2` | Artifact-only | Semantic agreement artifacts for transformer vs ONNX, not yet a full STARK claim |
-| `research-v3` | Artifact-only | Multi-engine transformer/native/Burn/ONNX equivalence-kernel artifacts with transition relation hashes and explicit non-e-graph/non-SMT limits |
+| `research-v3` | Artifact-only | Bounded multi-engine transformer/native/Burn/ONNX equivalence-kernel artifacts with transition relation hashes |
 
 The important boundary is explicit: this repo does **not** yet prove full
 standard-softmax transformer inference on `stwo`.
@@ -84,10 +84,6 @@ checks layered around the transformer runtime.
 If you want the shortest successful path, start on stable Rust with the default
 runtime and vanilla STARK commands. Move to `stwo` only when you need the
 experimental backend surface.
-
-Local CI and hardening policy: trusted-core work must run matching tests, Miri,
-sanitizer, and formal suites locally, preferably in Lima Ubuntu 22.04 for Linux
-parity. See `docs/hardening-policy.md`.
 
 ---
 

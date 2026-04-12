@@ -30,15 +30,11 @@ This repository state is the publication-facing package for the paper and its su
 artifacts. The package is intentionally split into evidence tiers rather than treated as one
 monolithic benchmark claim.
 
-This is a rolling publication checkpoint: additional paper feedback may lead to small follow-up
-patches and a subsequent publication tag.
-
 ## Included materials
 
 - Main paper:
   - `docs/paper/stark-transformer-alignment-2026.md`
   - Title: `On the Structural Fit of Transformer Workloads and STARK Proof Systems`
-  - Subtitle: `With proof-carrying decoding artifacts over an experimental S-two path.`
 - Supporting appendices:
   - `docs/paper/appendix-system-comparison.md`
   - `docs/paper/appendix-scaling-companion.md`

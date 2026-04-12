@@ -400,7 +400,7 @@ Against that external landscape, the remaining question is practical sequencing:
 
 ---
 
-## 8. Discussion and Engineering Next Steps
+## 8. Discussion
 
 ### 8.1 What the paper supports, and what it does not
 
@@ -408,42 +408,22 @@ Taken together, the paper supports: a transformer-specific symbolic argument, a 
 
 It does **not** support stronger claims such as “STARKs have conclusively beaten SNARKs,” full standard-softmax end-to-end inference in this repository, or production-scale LLM proving evidence.
 
-### 8.2 Highest-leverage repository milestones
+### 8.2 Highest-leverage next step
 
-Given the parameterized decoding bridge and the pre-recursive carried-state aggregation ladder, the highest-leverage milestone is **recursive cryptographic carry-state compression and accumulation**.
+Given the parameterized decoding bridge and the pre-recursive carried-state aggregation ladder, the highest-leverage next result is **recursive cryptographic carried-state compression and accumulation** over the existing decode relation.
 
-Concretely, the strongest next move is to keep the same decode relation and statement discipline while adding:
+The methodological reason is simple: the statement boundary is already explicit. The cleanest next paper is therefore one that keeps the same decode relation and carried-state commitments while improving proof-size and verifier-cost behavior through accumulation/compression, rather than changing the execution relation and the aggregation mechanism at the same time.
+
+More generic folding and recursive-argument frameworks already cover much of the broad abstraction space [41, 43, 44, 45]. The sharper contribution available here is transformer-specific carried-state accumulation over a fixed decode relation.
+
+A narrow supporting sequence is:
 
 - shared-table accumulation across decode steps for lookup-side state,
 - recursive aggregation/compression over segment, interval bundle, rollup, and matrix boundaries,
-- one more faithful non-arithmetic attention path on the experimental `stwo` route.
+- one more faithful non-arithmetic attention path on the experimental `stwo` route,
+- continued machine-readable artifact generation and verifier hardening around the carried-state kernels [42].
 
-This connects the current analytic bottleneck (lookup-heavy non-arithmetic pressure) to the next systems bottleneck (proof-size/verifier-cost compression).
-
-Methodologically, this sequencing matters: it keeps the statement boundary fixed while changing only how repeated steps are carried and compressed. That makes each empirical gain attributable to accumulation/recursion decisions rather than to a moving execution relation.
-
-The next supporting engineering moves remain:
-
-- complete full-ISA AIR coverage,
-- extend the explicit proof-envelope pattern from decode steps to the fixed-shape `gemma_block_v*` artifacts,
-- mature the multi-runtime semantic-agreement artifact from deterministic transition-relation hashes toward e-graph/SMT-backed rewrite validation only after the bounded relation format is stable,
-- keep artifact generation and benchmark metadata machine-readable in CI,
-- add a minimal learned-model fragment or quantized transformer block only once the accumulation path is stable.
-
-### 8.3 Future work that would materially strengthen the next paper
-
-The future-work opportunity is narrower and more technical: transformer-specific accumulation, not another broad STARK-vs-SNARK framing.
-
-Recent folding literature already covers generalized recursive arguments and CCS/AIR-compatible folding abstractions [41, 43, 44, 45]. Newer small-field and post-quantum folding directions further reduce the novelty space for generic claims [41]. Therefore, the strongest defensible future contribution is:
-
-1. keep one fixed transformer-block relation and one decode transition relation,
-2. accumulate repeated block/step instances with shared lookup tables,
-3. preserve explicit KV/lookup boundary commitments under that accumulation,
-4. compare the existing carried-state packaging ladder against a recursive compressed mode on the same artifact family.
-
-A second high-value track is trust-core assurance: maintain differential/oracle tests, fuzzing, and bounded model-checking around carried-state verifier kernels, then selectively formalize the smallest trust-critical binding layer [42].
-
-This future-work split is deliberate. One track expands capability (accumulation/compression); the other reduces trust risk (verification-kernel assurance). Keeping them explicit helps avoid the common failure mode of adding feature breadth without maintaining explicit proof-binding guarantees.
+That direction keeps the next contribution transformer-specific and technically attributable: gains can be read as accumulation/compression gains over a fixed public boundary, not as a consequence of moving the underlying claim.
 
 ---
 

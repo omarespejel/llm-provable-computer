@@ -1,7 +1,7 @@
 # Submission Bundle Index (v4, 2026-04-11)
 
-Publication base tag:
-- `paper-publication-v4-2026-04-11` (rolling checkpoint)
+Intended publication tag:
+- `paper-publication-v4-2026-04-11`
 
 Canonical repository snapshot:
 - `paper-publication-v4-2026-04-11` once cut. The tag must resolve to a commit
@@ -16,9 +16,6 @@ Draft author line:
 
 Paper title:
 - `On the Structural Fit of Transformer Workloads and STARK Proof Systems`
-
-Subtitle:
-- `With proof-carrying decoding artifacts over an experimental S-two path.`
 
 ## Core Paper Files
 
