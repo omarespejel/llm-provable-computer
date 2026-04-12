@@ -18,9 +18,12 @@ use std::sync::{Mutex, OnceLock};
 
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::stwo_backend::{
-    commit_phase12_shared_lookup_rows, prove_phase10_shared_binary_step_lookup_envelope,
+    commit_phase12_shared_lookup_rows, commit_phase29_recursive_compression_input_contract,
+    prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, Phase10SharedLookupProofEnvelope,
-    Phase10SharedNormalizationLookupProofEnvelope, Phase3LookupTableRow,
+    Phase10SharedNormalizationLookupProofEnvelope, Phase29RecursiveCompressionInputContract,
+    Phase3LookupTableRow,
+    STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE28,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
     STWO_BACKEND_VERSION_PHASE12,
     STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
@@ -32,11 +35,16 @@ use llm_provable_computer::stwo_backend::{
     STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24,
     STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26,
     STWO_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE25,
+    STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE,
+    STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29,
+    STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29,
     STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12, STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12,
     STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12,
     STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12,
     STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12,
 };
+#[cfg(feature = "stwo-backend")]
+use llm_provable_computer::{StarkProofBackend, CLAIM_STATEMENT_VERSION_V1};
 
 fn unique_temp_dir(name: &str) -> PathBuf {
     let suffix = SystemTime::now()
@@ -143,6 +151,58 @@ fn phase28_cli_demo_fixture_path() -> PathBuf {
             path
         })
         .clone()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase28_publication_artifact_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(
+        "docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/decoding-phase28.aggregated-chained-folded-intervalized-state-relation.json.gz",
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+fn sample_phase29_recursive_compression_input_contract() -> Phase29RecursiveCompressionInputContract
+{
+    let mut contract = Phase29RecursiveCompressionInputContract {
+        proof_backend: StarkProofBackend::Stwo,
+        contract_version: STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29.to_string(),
+        semantic_scope: STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29.to_string(),
+        phase28_artifact_version:
+            STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28
+                .to_string(),
+        phase28_semantic_scope:
+            STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE28
+                .to_string(),
+        phase28_proof_backend_version: STWO_BACKEND_VERSION_PHASE12.to_string(),
+        statement_version: CLAIM_STATEMENT_VERSION_V1.to_string(),
+        required_recursion_posture: STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE.to_string(),
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        phase28_bounded_aggregation_arity: 2,
+        phase28_member_count: 2,
+        phase28_member_summaries: 2,
+        phase28_nested_members: 2,
+        total_phase26_members: 4,
+        total_phase25_members: 8,
+        max_nested_chain_arity: 2,
+        max_nested_fold_arity: 2,
+        total_matrices: 2,
+        total_layouts: 4,
+        total_rollups: 4,
+        total_segments: 8,
+        total_steps: 16,
+        lookup_delta_entries: 8,
+        max_lookup_frontier_entries: 2,
+        source_template_commitment: "source-template".to_string(),
+        global_start_state_commitment: "start-state".to_string(),
+        global_end_state_commitment: "end-state".to_string(),
+        aggregation_template_commitment: "aggregation-template".to_string(),
+        aggregated_chained_folded_interval_accumulator_commitment: "accumulator".to_string(),
+        input_contract_commitment: String::new(),
+    };
+    contract.input_contract_commitment =
+        commit_phase29_recursive_compression_input_contract(&contract).expect("commit contract");
+    contract
 }
 
 #[cfg(feature = "onnx-export")]
@@ -3688,6 +3748,273 @@ fn cli_verify_stwo_chained_folded_intervalized_decoding_state_relation_demo_reje
 
     let _ = std::fs::remove_file(proof_path);
     let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_can_verify_stwo_recursive_compression_input_contract() {
+    let contract_path = unique_temp_dir("cli-stwo-recursive-compression-input-contract-fast")
+        .with_extension("json");
+    let contract = sample_phase29_recursive_compression_input_contract();
+    std::fs::write(
+        &contract_path,
+        serde_json::to_vec_pretty(&contract).expect("serialize contract"),
+    )
+    .expect("write contract");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-recursive-compression-input-contract")
+        .arg("--input")
+        .arg(&contract_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_contract: true"))
+        .stdout(predicate::str::contains(format!(
+            "expected_contract_version: {STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29}",
+        )))
+        .stdout(predicate::str::contains(
+            "recursive_verification_claimed: false",
+        ))
+        .stdout(predicate::str::contains(
+            "cryptographic_compression_claimed: false",
+        ));
+
+    let _ = std::fs::remove_file(contract_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+#[ignore = "expensive Phase 28 proof-checking CLI gate"]
+fn cli_can_prepare_and_verify_stwo_recursive_compression_input_contract() {
+    let _guard = phase27_cli_test_guard();
+    let phase28_path = phase28_publication_artifact_path();
+    let contract_path =
+        unique_temp_dir("cli-stwo-recursive-compression-input-contract").with_extension("json");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-stwo-recursive-compression-input-contract")
+        .arg("--phase28")
+        .arg(&phase28_path)
+        .arg("-o")
+        .arg(&contract_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_phase28: true"))
+        .stdout(predicate::str::contains(format!(
+            "contract_version: {STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29}",
+        )))
+        .stdout(predicate::str::contains(
+            "recursive_verification_claimed: false",
+        ))
+        .stdout(predicate::str::contains(
+            "cryptographic_compression_claimed: false",
+        ));
+
+    let contract_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&contract_path).expect("contract json"))
+            .expect("json");
+    assert_eq!(
+        contract_json
+            .get("contract_version")
+            .and_then(serde_json::Value::as_str),
+        Some(STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29)
+    );
+    assert_eq!(
+        contract_json
+            .get("semantic_scope")
+            .and_then(serde_json::Value::as_str),
+        Some(STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29)
+    );
+    assert_eq!(
+        contract_json
+            .get("recursive_verification_claimed")
+            .and_then(serde_json::Value::as_bool),
+        Some(false)
+    );
+    assert_eq!(
+        contract_json
+            .get("cryptographic_compression_claimed")
+            .and_then(serde_json::Value::as_bool),
+        Some(false)
+    );
+    assert_eq!(
+        contract_json
+            .get("input_contract_commitment")
+            .and_then(serde_json::Value::as_str)
+            .map(str::len),
+        Some(64)
+    );
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-recursive-compression-input-contract")
+        .arg("--input")
+        .arg(&contract_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_contract: true"))
+        .stdout(predicate::str::contains(format!(
+            "expected_contract_version: {STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29}",
+        )));
+
+    let _ = std::fs::remove_file(contract_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_recursive_compression_input_contract_rejects_tampered_commitment() {
+    let contract_path = unique_temp_dir("cli-stwo-recursive-compression-input-contract-tamper")
+        .with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-recursive-compression-input-contract-commitment-tampered")
+            .with_extension("json");
+    let contract = sample_phase29_recursive_compression_input_contract();
+    std::fs::write(
+        &contract_path,
+        serde_json::to_vec_pretty(&contract).expect("serialize contract"),
+    )
+    .expect("write contract");
+
+    let mut contract_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&contract_path).expect("contract json"))
+            .expect("json");
+    contract_json["input_contract_commitment"] = serde_json::Value::String("tampered".to_string());
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&contract_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-recursive-compression-input-contract")
+        .arg("--input")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("does not match recomputed"))
+        .stderr(predicate::str::contains("panicked at").not());
+
+    let _ = std::fs::remove_file(contract_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_recursive_compression_input_contract_rejects_recomputed_header_drift() {
+    let contract_path =
+        unique_temp_dir("cli-stwo-recursive-compression-input-contract-header-drift")
+            .with_extension("json");
+    let mut contract = sample_phase29_recursive_compression_input_contract();
+    contract.semantic_scope = "forged-phase29-semantic-scope".to_string();
+    contract.input_contract_commitment =
+        commit_phase29_recursive_compression_input_contract(&contract).expect("recommit contract");
+    std::fs::write(
+        &contract_path,
+        serde_json::to_vec_pretty(&contract).expect("serialize contract"),
+    )
+    .expect("write contract");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-recursive-compression-input-contract")
+        .arg("--input")
+        .arg(&contract_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("scope"))
+        .stderr(predicate::str::contains("panicked at").not());
+
+    let _ = std::fs::remove_file(contract_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_prepare_stwo_recursive_compression_input_contract_rejects_synthetic_phase28_shell() {
+    let phase28_path = unique_temp_dir("cli-stwo-recursive-compression-input-phase28-shell")
+        .with_extension("json");
+    let contract_path = unique_temp_dir("cli-stwo-recursive-compression-input-contract-shell")
+        .with_extension("json");
+
+    let phase28_json = serde_json::json!({
+        "proof_backend": "stwo",
+        "artifact_version": STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
+        "semantic_scope": STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE28,
+        "proof_backend_version": STWO_BACKEND_VERSION_PHASE12,
+        "statement_version": CLAIM_STATEMENT_VERSION_V1,
+        "recursion_posture": STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE,
+        "recursive_verification_claimed": false,
+        "cryptographic_compression_claimed": false,
+        "bounded_aggregation_arity": 2,
+        "member_count": 0,
+        "total_phase26_members": 0,
+        "total_phase25_members": 0,
+        "max_nested_chain_arity": 0,
+        "max_nested_fold_arity": 0,
+        "total_matrices": 0,
+        "total_layouts": 0,
+        "total_rollups": 0,
+        "total_segments": 0,
+        "total_steps": 0,
+        "lookup_delta_entries": 0,
+        "max_lookup_frontier_entries": 0,
+        "source_template_commitment": "source-template",
+        "global_start_state_commitment": "start-state",
+        "global_end_state_commitment": "end-state",
+        "aggregation_template_commitment": "aggregation-template",
+        "aggregated_chained_folded_interval_accumulator_commitment": "accumulator",
+        "member_summaries": [],
+        "members": []
+    });
+    std::fs::write(
+        &phase28_path,
+        serde_json::to_vec(&phase28_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-stwo-recursive-compression-input-contract")
+        .arg("--phase28")
+        .arg(&phase28_path)
+        .arg("-o")
+        .arg(&contract_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "must contain at least two members",
+        ))
+        .stderr(predicate::str::contains("panicked at").not());
+
+    let _ = std::fs::remove_file(phase28_path);
+    let _ = std::fs::remove_file(contract_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_prepare_stwo_recursive_compression_input_contract_rejects_gzip_output_path() {
+    let phase28_path = unique_temp_dir("cli-stwo-recursive-compression-input-missing-phase28")
+        .with_extension("json");
+    std::fs::write(&phase28_path, b"{}").expect("write placeholder phase28");
+    let contract_path =
+        unique_temp_dir("cli-stwo-recursive-compression-input-contract").with_extension("json.gz");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-stwo-recursive-compression-input-contract")
+        .arg("--phase28")
+        .arg(&phase28_path)
+        .arg("-o")
+        .arg(&contract_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("writes plain JSON"))
+        .stderr(predicate::str::contains("panicked at").not());
+
+    let _ = std::fs::remove_file(phase28_path);
+    let _ = std::fs::remove_file(contract_path);
 }
 
 #[test]

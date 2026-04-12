@@ -112,6 +112,28 @@ byte budget to in-memory JSON, and deserialization rejects unknown fields. The
 commitment encodes length and counter fields with fixed-width unsigned bytes
 rather than platform-width `usize` bytes.
 
+## CLI Surface
+
+The `tvm` CLI exposes Phase 29 as an artifact boundary:
+
+```bash
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-recursive-compression-input-contract \
+  --phase28 phase28-aggregate.json.gz \
+  -o phase29-recursive-compression-input-contract.json
+
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-recursive-compression-input-contract \
+  --input phase29-recursive-compression-input-contract.json
+```
+
+`prepare-stwo-recursive-compression-input-contract` first loads the Phase 28
+artifact with nested proof checks enabled, then derives and writes the Phase 29
+contract. `verify-stwo-recursive-compression-input-contract` validates a stored
+contract by recomputing the input-contract commitment. Both commands preserve
+the same non-goal: they do not claim recursive verification or cryptographic
+compression.
+
 ## Non-Goals
 
 Phase 29 does not verify a Phase 28 aggregate inside another proof. It also does

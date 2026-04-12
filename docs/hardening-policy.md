@@ -103,7 +103,8 @@ Available local command tiers:
   whitespace hygiene as `git diff --check "$base_sha...$head_sha"`, `cargo fmt
   --check`, the statement-spec contract, allowlisted integration smoke targets,
   and exact pinned-nightly `stwo-backend` smokes for the Phase 28 aggregation
-  verifier and Phase 29 recursive-compression input contract.
+  verifier, Phase 29 recursive-compression input contract, and non-heavy Phase
+  29 CLI artifact verification paths.
 - `--mode full`: runs the same PR-range whitespace and formatting hygiene, full
   library tests, integration tests, doctests, and the exact pinned-nightly
   `stwo-backend` smokes.

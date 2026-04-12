@@ -350,6 +350,13 @@ stwo_smoke_targets=(
   "stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks"
   "stwo_backend::recursion::tests::phase29_recursive_compression_input_contract_rejects_tampered_commitment"
 )
+stwo_cli_smoke_targets=(
+  "cli_can_verify_stwo_recursive_compression_input_contract"
+  "cli_verify_stwo_recursive_compression_input_contract_rejects_tampered_commitment"
+  "cli_verify_stwo_recursive_compression_input_contract_rejects_recomputed_header_drift"
+  "cli_prepare_stwo_recursive_compression_input_contract_rejects_synthetic_phase28_shell"
+  "cli_prepare_stwo_recursive_compression_input_contract_rejects_gzip_output_path"
+)
 
 run_stwo_smoke_targets() {
   local stwo_smoke label
@@ -358,6 +365,17 @@ run_stwo_smoke_targets() {
     run_logged "stwo-backend-smoke-${label}" cargo +nightly-2025-07-14 test -q \
       --features stwo-backend \
       --lib "$stwo_smoke" \
+      -- \
+      --exact
+  done
+}
+
+run_stwo_cli_smoke_targets() {
+  local stwo_cli_smoke
+  for stwo_cli_smoke in "${stwo_cli_smoke_targets[@]}"; do
+    run_logged "stwo-backend-cli-smoke-${stwo_cli_smoke}" cargo +nightly-2025-07-14 test -q \
+      --features stwo-backend \
+      --test cli "$stwo_cli_smoke" \
       -- \
       --exact
   done
@@ -380,6 +398,7 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
     run_logged "integration-${test_target}" cargo test -q --test "$test_target"
   done
   run_stwo_smoke_targets
+  run_stwo_cli_smoke_targets
   completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
@@ -388,6 +407,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
   run_stwo_smoke_targets
+  run_stwo_cli_smoke_targets
   run_research_v3_smoke_targets
   completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
@@ -397,6 +417,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
   run_stwo_smoke_targets
+  run_stwo_cli_smoke_targets
   run_research_v3_smoke_targets
   run_logged ub-checks env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
   run_logged asan env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_asan_suite.sh
