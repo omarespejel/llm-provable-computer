@@ -329,6 +329,11 @@ fn assert_research_v3_runtime_commitments(artifact: &serde_json::Value) {
         hash_json_value(artifact.get("relation_format").expect("relation_format"));
     let expected_limitations_hash =
         hash_json_value(artifact.get("limitations").expect("limitations"));
+    let expected_frontend_runtime_semantics_registry_hash = hash_json_value(
+        artifact
+            .get("frontend_runtime_semantics_registry")
+            .expect("frontend runtime semantics registry"),
+    );
     let expected_engine_summaries_hash = hash_json_value(artifact.get("engines").expect("engines"));
     let expected_rule_witnesses_hash =
         hash_json_value(artifact.get("rule_witnesses").expect("rule_witnesses"));
@@ -342,6 +347,13 @@ fn assert_research_v3_runtime_commitments(artifact: &serde_json::Value) {
         Some(expected_limitations_hash.as_str())
     );
     assert_eq!(
+        json_string_at(
+            artifact,
+            &["commitments", "frontend_runtime_semantics_registry_hash"]
+        ),
+        Some(expected_frontend_runtime_semantics_registry_hash.as_str())
+    );
+    assert_eq!(
         json_string_at(artifact, &["commitments", "engine_summaries_hash"]),
         Some(expected_engine_summaries_hash.as_str())
     );
@@ -349,6 +361,37 @@ fn assert_research_v3_runtime_commitments(artifact: &serde_json::Value) {
         json_string_at(artifact, &["commitments", "rule_witnesses_hash"]),
         Some(expected_rule_witnesses_hash.as_str())
     );
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_registry_lane_statuses(
+    registry: &serde_json::Value,
+) -> std::collections::BTreeMap<&str, &str> {
+    let lanes = registry
+        .get("lanes")
+        .and_then(serde_json::Value::as_array)
+        .expect("registry lanes");
+    let mut lane_statuses = std::collections::BTreeMap::new();
+    for lane in lanes {
+        let lane_id = lane
+            .get("lane_id")
+            .and_then(serde_json::Value::as_str)
+            .expect("registry lane_id");
+        let status = lane
+            .get("status")
+            .and_then(serde_json::Value::as_str)
+            .expect("registry lane status");
+        assert!(
+            lane_statuses.insert(lane_id, status).is_none(),
+            "registry contains duplicate lane_id {lane_id}"
+        );
+    }
+    assert_eq!(
+        lane_statuses.len(),
+        lanes.len(),
+        "registry contains duplicate lane_id entries"
+    );
+    lane_statuses
 }
 
 #[test]
@@ -3961,6 +4004,35 @@ fn cli_supports_research_v3_equivalence_command() {
     );
     assert_research_v3_runtime_commitments(&artifact_json);
     assert!(artifact_json.get("matched").is_none());
+    let frontend_runtime_registry = artifact_json
+        .get("frontend_runtime_semantics_registry")
+        .expect("frontend runtime semantics registry");
+    assert_eq!(
+        frontend_runtime_registry
+            .get("registry_version")
+            .and_then(serde_json::Value::as_str),
+        Some("frontend-runtime-semantics-registry-v1")
+    );
+    let expected_registry_lanes = std::collections::BTreeMap::from([
+        ("transformer-vm", "implemented"),
+        ("native-isa", "implemented"),
+        ("burn", "implemented"),
+        ("onnx-tract", "implemented"),
+        ("torch-export", "research_watch"),
+        ("executorch", "research_watch"),
+        ("stablehlo", "research_watch"),
+        ("iree", "research_watch"),
+        ("onnx-mlir", "research_watch"),
+        ("tvm-unity", "research_watch"),
+        ("vllm", "research_watch"),
+        ("sglang", "research_watch"),
+        ("egg-emerge", "research_watch"),
+    ]);
+    assert_eq!(
+        research_v3_registry_lane_statuses(frontend_runtime_registry),
+        expected_registry_lanes,
+        "frontend/runtime semantics registry lane boundary drifted"
+    );
     assert_eq!(
         artifact_json
             .get("statement_version")
@@ -4053,6 +4125,13 @@ fn cli_supports_research_v3_equivalence_command() {
     assert!(
         std::panic::catch_unwind(|| assert_research_v3_runtime_commitments(&tampered)).is_err()
     );
+    let mut tampered_registry_hash = artifact_json.clone();
+    tampered_registry_hash["commitments"]["frontend_runtime_semantics_registry_hash"] =
+        serde_json::Value::String("0".repeat(64));
+    assert!(std::panic::catch_unwind(|| {
+        assert_research_v3_runtime_commitments(&tampered_registry_hash)
+    })
+    .is_err());
 
     let mut malformed_hash = artifact_json.clone();
     malformed_hash["commitments"]["relation_format_hash"] =

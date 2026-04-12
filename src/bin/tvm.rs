@@ -706,6 +706,14 @@ const STATEMENT_V2_MATRIX_SPEC_PATH: &str = "spec/statement-v2-matrix-research.j
 const STATEMENT_V3_EQUIVALENCE_SPEC_PATH: &str =
     "spec/statement-v3-equivalence-kernel-research.json";
 #[cfg(feature = "onnx-export")]
+const FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH: &str =
+    "spec/frontend-runtime-semantics-registry-v1.json";
+#[cfg(feature = "onnx-export")]
+const FRONTEND_RUNTIME_SEMANTICS_REGISTRY_VERSION: &str = "frontend-runtime-semantics-registry-v1";
+#[cfg(feature = "onnx-export")]
+const FRONTEND_RUNTIME_SEMANTICS_REGISTRY_SCOPE: &str =
+    "research_v3_frontend_runtime_claim_boundary";
+#[cfg(feature = "onnx-export")]
 const FIXED_POINT_SPEC_PATH: &str = "spec/fixed-point-semantics-v2.json";
 #[cfg(feature = "onnx-export")]
 const ONNX_OP_SUBSET_SPEC_PATH: &str = "spec/onnx-op-subset-v2.json";
@@ -928,6 +936,7 @@ struct ResearchV3EquivalenceCommitments {
     fixed_point_spec_hash: String,
     onnx_op_subset_hash: String,
     artifact_schema_hash: String,
+    frontend_runtime_semantics_registry_hash: String,
     relation_format_hash: String,
     limitations_hash: String,
     program_hash: String,
@@ -951,6 +960,7 @@ struct ResearchV3EquivalenceArtifact {
     checked_steps: usize,
     engines: Vec<ResearchV3EngineSummary>,
     rule_witnesses: Vec<ResearchV3RuleWitness>,
+    frontend_runtime_semantics_registry: serde_json::Value,
     limitations: Vec<String>,
     commitments: ResearchV3EquivalenceCommitments,
 }
@@ -3837,6 +3847,11 @@ fn research_v3_equivalence_command_impl(
         STATEMENT_V3_EQUIVALENCE_SPEC_PATH,
         STATEMENT_V3_EQUIVALENCE_ARTIFACT_SCHEMA_PATH,
     )?;
+    let frontend_runtime_semantics_registry =
+        read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH)?;
+    validate_frontend_runtime_semantics_registry(&frontend_runtime_semantics_registry)?;
+    let frontend_runtime_semantics_registry_hash =
+        hash_json_hex(&frontend_runtime_semantics_registry)?;
     let model = compile_model(program, layers, attention_mode)?;
     let export_dir = ScopedTempDir::new("research-v3-equivalence")?;
     let onnx_metadata = export_program_onnx(&model, export_dir.path())?;
@@ -3930,6 +3945,7 @@ fn research_v3_equivalence_command_impl(
         checked_steps: verification.checked_steps,
         engines,
         rule_witnesses,
+        frontend_runtime_semantics_registry,
         limitations,
         commitments: ResearchV3EquivalenceCommitments {
             hash_function: RESEARCH_V2_HASH_FUNCTION.to_string(),
@@ -3937,6 +3953,7 @@ fn research_v3_equivalence_command_impl(
             fixed_point_spec_hash: bundle.fixed_point_spec_hash,
             onnx_op_subset_hash: bundle.onnx_op_subset_hash,
             artifact_schema_hash: bundle.artifact_schema_hash,
+            frontend_runtime_semantics_registry_hash,
             relation_format_hash,
             limitations_hash,
             program_hash: hash_json_hex(model.program())?,
@@ -3961,6 +3978,12 @@ fn research_v3_equivalence_command_impl(
     println!(
         "commitment_engine_summaries_hash: {}",
         artifact.commitments.engine_summaries_hash
+    );
+    println!(
+        "commitment_frontend_runtime_semantics_registry_hash: {}",
+        artifact
+            .commitments
+            .frontend_runtime_semantics_registry_hash
     );
     println!(
         "commitment_rule_witnesses_hash: {}",
@@ -4388,6 +4411,122 @@ fn read_repo_file(relative_path: &str) -> llm_provable_computer::Result<Vec<u8>>
 }
 
 #[cfg(feature = "onnx-export")]
+fn read_repo_json_value(relative_path: &str) -> llm_provable_computer::Result<serde_json::Value> {
+    let bytes = read_repo_file(relative_path)?;
+    serde_json::from_slice(&bytes)
+        .map_err(|err| VmError::Serialization(format!("failed to parse {relative_path}: {err}")))
+}
+
+#[cfg(feature = "onnx-export")]
+fn validate_frontend_runtime_semantics_registry(
+    registry: &serde_json::Value,
+) -> llm_provable_computer::Result<()> {
+    let version = registry
+        .get("registry_version")
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "frontend runtime semantics registry missing registry_version".to_string(),
+            )
+        })?;
+    if version != FRONTEND_RUNTIME_SEMANTICS_REGISTRY_VERSION {
+        return Err(VmError::InvalidConfig(format!(
+            "frontend runtime semantics registry version mismatch: expected {}, got {}",
+            FRONTEND_RUNTIME_SEMANTICS_REGISTRY_VERSION, version
+        )));
+    }
+
+    let scope = registry
+        .get("semantic_scope")
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "frontend runtime semantics registry missing semantic_scope".to_string(),
+            )
+        })?;
+    if scope != FRONTEND_RUNTIME_SEMANTICS_REGISTRY_SCOPE {
+        return Err(VmError::InvalidConfig(format!(
+            "frontend runtime semantics registry scope mismatch: expected {}, got {}",
+            FRONTEND_RUNTIME_SEMANTICS_REGISTRY_SCOPE, scope
+        )));
+    }
+
+    let lanes = registry
+        .get("lanes")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "frontend runtime semantics registry missing lanes array".to_string(),
+            )
+        })?;
+
+    let implemented_allowlist = ["transformer-vm", "native-isa", "burn", "onnx-tract"];
+    let mut lane_statuses = std::collections::BTreeMap::new();
+    for lane in lanes {
+        let lane_id = lane
+            .get("lane_id")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "frontend runtime semantics registry lane missing lane_id".to_string(),
+                )
+            })?;
+        let status = lane
+            .get("status")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "frontend runtime semantics registry lane {lane_id} missing status"
+                ))
+            })?;
+        if !matches!(status, "implemented" | "research_watch" | "not_implemented") {
+            return Err(VmError::InvalidConfig(format!(
+                "frontend runtime semantics registry lane {lane_id} has invalid status {status}"
+            )));
+        }
+        if status == "implemented" && !implemented_allowlist.contains(&lane_id) {
+            return Err(VmError::InvalidConfig(format!(
+                "frontend runtime semantics registry unexpected implemented lane {lane_id}"
+            )));
+        }
+        if lane_statuses.insert(lane_id, status).is_some() {
+            return Err(VmError::InvalidConfig(format!(
+                "frontend runtime semantics registry duplicate lane_id {lane_id}"
+            )));
+        }
+    }
+
+    for (lane_id, expected_status) in [
+        ("transformer-vm", "implemented"),
+        ("native-isa", "implemented"),
+        ("burn", "implemented"),
+        ("onnx-tract", "implemented"),
+        ("torch-export", "research_watch"),
+        ("executorch", "research_watch"),
+        ("stablehlo", "research_watch"),
+        ("iree", "research_watch"),
+        ("onnx-mlir", "research_watch"),
+        ("tvm-unity", "research_watch"),
+        ("vllm", "research_watch"),
+        ("sglang", "research_watch"),
+        ("egg-emerge", "research_watch"),
+    ] {
+        let status = lane_statuses.get(lane_id).copied().ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "frontend runtime semantics registry missing lane {lane_id}"
+            ))
+        })?;
+        if status != expected_status {
+            return Err(VmError::InvalidConfig(format!(
+                "frontend runtime semantics registry lane {lane_id} status mismatch: expected {expected_status}, got {status}"
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "onnx-export")]
 fn hash_json_hex<T: Serialize + ?Sized>(value: &T) -> llm_provable_computer::Result<String> {
     let bytes = serde_json::to_vec(value).map_err(|err| {
         VmError::Serialization(format!("failed to serialize hash payload: {err}"))
@@ -4534,6 +4673,121 @@ mod tests {
         assert!(suite.contains(&PathBuf::from("programs/dot_product.tvm")));
         assert!(suite.contains(&PathBuf::from("programs/matmul_2x2.tvm")));
         assert!(suite.contains(&PathBuf::from("programs/single_neuron.tvm")));
+    }
+
+    #[test]
+    fn frontend_runtime_registry_validation_rejects_missing_version() {
+        let mut registry =
+            read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH).expect("registry json");
+        registry
+            .as_object_mut()
+            .expect("registry object")
+            .remove("registry_version");
+        let err = validate_frontend_runtime_semantics_registry(&registry).unwrap_err();
+        assert!(err.to_string().contains("missing registry_version"));
+    }
+
+    #[test]
+    fn frontend_runtime_registry_validation_rejects_lane_status_drift() {
+        let mut registry =
+            read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH).expect("registry json");
+        let lanes = registry
+            .get_mut("lanes")
+            .and_then(serde_json::Value::as_array_mut)
+            .expect("registry lanes");
+        let torch_export = lanes
+            .iter_mut()
+            .find(|lane| {
+                lane.get("lane_id").and_then(serde_json::Value::as_str) == Some("torch-export")
+            })
+            .expect("torch-export lane");
+        torch_export["status"] = serde_json::Value::String("not_implemented".to_string());
+        let err = validate_frontend_runtime_semantics_registry(&registry).unwrap_err();
+        assert!(err.to_string().contains("torch-export status mismatch"));
+    }
+
+    #[test]
+    fn frontend_runtime_registry_validation_rejects_watch_lane_promoted_to_implemented() {
+        let mut registry =
+            read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH).expect("registry json");
+        let lanes = registry
+            .get_mut("lanes")
+            .and_then(serde_json::Value::as_array_mut)
+            .expect("registry lanes");
+        let torch_export = lanes
+            .iter_mut()
+            .find(|lane| {
+                lane.get("lane_id").and_then(serde_json::Value::as_str) == Some("torch-export")
+            })
+            .expect("torch-export lane");
+        torch_export["status"] = serde_json::Value::String("implemented".to_string());
+        let err = validate_frontend_runtime_semantics_registry(&registry).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("unexpected implemented lane torch-export"));
+    }
+
+    #[test]
+    fn frontend_runtime_registry_validation_rejects_missing_required_lane() {
+        let mut registry =
+            read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH).expect("registry json");
+        let lanes = registry
+            .get_mut("lanes")
+            .and_then(serde_json::Value::as_array_mut)
+            .expect("registry lanes");
+        let before_len = lanes.len();
+        lanes
+            .retain(|lane| lane.get("lane_id").and_then(serde_json::Value::as_str) != Some("vllm"));
+        assert_eq!(lanes.len(), before_len - 1, "expected to remove vllm lane");
+        let err = validate_frontend_runtime_semantics_registry(&registry).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("frontend runtime semantics registry missing lane vllm"));
+    }
+
+    #[test]
+    fn frontend_runtime_registry_validation_rejects_unknown_implemented_lane() {
+        let mut registry =
+            read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH).expect("registry json");
+        registry
+            .get_mut("lanes")
+            .and_then(serde_json::Value::as_array_mut)
+            .expect("registry lanes")
+            .push(serde_json::json!({
+                "lane_id": "surprise-runtime",
+                "ecosystem": "surprise",
+                "role": "unexpected implementation claim",
+                "status": "implemented",
+                "artifact_binding": "No artifact binding in research-v3-equivalence.",
+                "claim_boundary": "This lane must not be claimed without an allowlist update."
+            }));
+        let err = validate_frontend_runtime_semantics_registry(&registry).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("unexpected implemented lane surprise-runtime"));
+    }
+
+    #[test]
+    fn frontend_runtime_registry_validation_rejects_duplicate_lane_id() {
+        let mut registry =
+            read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH).expect("registry json");
+        let lanes = registry
+            .get_mut("lanes")
+            .and_then(serde_json::Value::as_array_mut)
+            .expect("registry lanes");
+        let duplicate_lane_id = "transformer-vm";
+        let duplicate = lanes
+            .iter()
+            .find(|lane| {
+                lane.get("lane_id").and_then(serde_json::Value::as_str) == Some(duplicate_lane_id)
+            })
+            .unwrap_or_else(|| panic!("missing {duplicate_lane_id} lane"))
+            .clone();
+        lanes.push(duplicate);
+        let err = validate_frontend_runtime_semantics_registry(&registry).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains(&format!("duplicate lane_id {duplicate_lane_id}")));
     }
 
     #[test]
