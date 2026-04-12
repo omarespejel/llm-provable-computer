@@ -4459,6 +4459,43 @@ fn validate_frontend_runtime_semantics_registry(
                 "frontend runtime semantics registry missing lanes array".to_string(),
             )
         })?;
+
+    let implemented_allowlist = ["transformer-vm", "native-isa", "burn", "onnx-tract"];
+    let mut lane_statuses = std::collections::BTreeMap::new();
+    for lane in lanes {
+        let lane_id = lane
+            .get("lane_id")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "frontend runtime semantics registry lane missing lane_id".to_string(),
+                )
+            })?;
+        let status = lane
+            .get("status")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "frontend runtime semantics registry lane {lane_id} missing status"
+                ))
+            })?;
+        if !matches!(status, "implemented" | "research_watch" | "not_implemented") {
+            return Err(VmError::InvalidConfig(format!(
+                "frontend runtime semantics registry lane {lane_id} has invalid status {status}"
+            )));
+        }
+        if status == "implemented" && !implemented_allowlist.contains(&lane_id) {
+            return Err(VmError::InvalidConfig(format!(
+                "frontend runtime semantics registry unexpected implemented lane {lane_id}"
+            )));
+        }
+        if lane_statuses.insert(lane_id, status).is_some() {
+            return Err(VmError::InvalidConfig(format!(
+                "frontend runtime semantics registry duplicate lane_id {lane_id}"
+            )));
+        }
+    }
+
     for (lane_id, expected_status) in [
         ("transformer-vm", "implemented"),
         ("native-isa", "implemented"),
@@ -4474,15 +4511,11 @@ fn validate_frontend_runtime_semantics_registry(
         ("sglang", "research_watch"),
         ("egg-emerge", "research_watch"),
     ] {
-        let status = lanes
-            .iter()
-            .find(|lane| lane.get("lane_id").and_then(serde_json::Value::as_str) == Some(lane_id))
-            .and_then(|lane| lane.get("status").and_then(serde_json::Value::as_str))
-            .ok_or_else(|| {
-                VmError::InvalidConfig(format!(
-                    "frontend runtime semantics registry missing lane {lane_id}"
-                ))
-            })?;
+        let status = lane_statuses.get(lane_id).copied().ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "frontend runtime semantics registry missing lane {lane_id}"
+            ))
+        })?;
         if status != expected_status {
             return Err(VmError::InvalidConfig(format!(
                 "frontend runtime semantics registry lane {lane_id} status mismatch: expected {expected_status}, got {status}"
@@ -4671,6 +4704,42 @@ mod tests {
         torch_export["status"] = serde_json::Value::String("not_implemented".to_string());
         let err = validate_frontend_runtime_semantics_registry(&registry).unwrap_err();
         assert!(err.to_string().contains("torch-export status mismatch"));
+    }
+
+    #[test]
+    fn frontend_runtime_registry_validation_rejects_unknown_implemented_lane() {
+        let mut registry =
+            read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH).expect("registry json");
+        registry
+            .get_mut("lanes")
+            .and_then(serde_json::Value::as_array_mut)
+            .expect("registry lanes")
+            .push(serde_json::json!({
+                "lane_id": "surprise-runtime",
+                "ecosystem": "surprise",
+                "role": "unexpected implementation claim",
+                "status": "implemented",
+                "artifact_binding": "No artifact binding in research-v3-equivalence.",
+                "claim_boundary": "This lane must not be claimed without an allowlist update."
+            }));
+        let err = validate_frontend_runtime_semantics_registry(&registry).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("unexpected implemented lane surprise-runtime"));
+    }
+
+    #[test]
+    fn frontend_runtime_registry_validation_rejects_duplicate_lane_id() {
+        let mut registry =
+            read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH).expect("registry json");
+        let lanes = registry
+            .get_mut("lanes")
+            .and_then(serde_json::Value::as_array_mut)
+            .expect("registry lanes");
+        let duplicate = lanes.first().expect("first lane").clone();
+        lanes.push(duplicate);
+        let err = validate_frontend_runtime_semantics_registry(&registry).unwrap_err();
+        assert!(err.to_string().contains("duplicate lane_id transformer-vm"));
     }
 
     #[test]
