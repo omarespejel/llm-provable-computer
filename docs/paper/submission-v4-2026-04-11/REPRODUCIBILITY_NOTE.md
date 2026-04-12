@@ -4,10 +4,10 @@ This note describes how to reproduce the publication-facing paper artifacts for
 **On the Structural Fit of Transformer Workloads and STARK Proof Systems**
 under the rolling base tag `paper-publication-v4-2026-04-11` once cut.
 The tag should resolve to a commit that contains this v4 paper metadata. The
-carried-state aggregation evidence remains pinned to the Phase 28 proof-carrying
+carried-state aggregation evidence remains pinned to the proof-carrying
 aggregation checkpoint commit `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`, with
 the dedicated bundle index cited at commit
-`be9c4e47a9b774e7fdbccf7cdc6977c11b39dcd6`.
+`6bb8cab99092203217d64951c3af61488aa2c58e`.
 
 ## 1) Scope and Intended Reproduction Target
 
@@ -16,7 +16,7 @@ The target is reproducibility of:
 - paper text and references,
 - appendix artifacts and evidence pointers,
 - figure-generating scripts and TSV outputs,
-- frozen artifact index manifests for the evidence tiers, including the Phase 28 proof-carrying aggregation bundle.
+- frozen artifact index manifests for the evidence tiers, including the proof-carrying aggregation bundle.
 
 This package is intentionally a **research artifact snapshot**, not a claim of
 production-scale zkML deployment.
@@ -91,7 +91,7 @@ Frozen experimental `stwo` bundle index:
 
 - `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md`
 
-Phase 28 proof-carrying aggregation bundle index:
+Proof-carrying aggregation bundle index:
 
 - `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/APPENDIX_ARTIFACT_INDEX.md`
 
@@ -116,7 +116,7 @@ Before sharing a draft externally, verify:
    - `docs/paper/stark-transformer-alignment-2026.md`
    - `docs/paper/PUBLICATION_RELEASE.md`
 3. paper preflight passes,
-4. the Phase 28 bundle checksum files validate locally or in a clean reproduction environment,
+4. the aggregation bundle checksum files validate locally or in a clean reproduction environment,
 5. release tag and commit references are consistent with the single main paper.
 
 If additional reviewer feedback lands, patch on top and cut a follow-up
