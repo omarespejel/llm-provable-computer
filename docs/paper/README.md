@@ -10,6 +10,7 @@ Primary files:
 - `appendix-system-comparison.md`
 - `appendix-scaling-companion.md`
 - `appendix-backend-artifact-comparison.md`
+- `appendix-influence-realization.md`
 - `PUBLICATION_RELEASE.md`
 
 Supporting publication assets:

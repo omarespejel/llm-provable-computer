@@ -1,10 +1,12 @@
 # On the Structural Fit of Transformer Workloads and STARK Proof Systems
 
-**Abdelhamid Bakhta**\
-StarkWare\
+**Abdelhamid Bakhta**
 
-**Omar Espejel**\
-Starknet Foundation\
+StarkWare
+
+**Omar Espejel**
+
+Starknet Foundation
 
 *April 2026*
 
@@ -14,7 +16,7 @@ Starknet Foundation\
 
 This paper studies the structural fit between transformer workloads and STARK proof systems using a symbolic cost model together with a repository-backed proof artifact. Under a worked example with `C_exp = 300`, `C_norm = 30`, and `C_nonlin = 150`, GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields about `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK rows across 12 layers (`1.48x`); over practical context ranges, the ratio rises and then approaches a finite architecture-dependent ceiling. These counts are symbolic proxies for prover-side work, not matched runtime measurements.
 
-We pair that analysis with `provable-transformer-vm` [30], a supporting artifact that provides a frozen vanilla reproducibility tier, a frozen narrow experimental `stwo` tier, experimental `stwo` tooling for reusable block-shaped execution proofs and step-level proof envelopes, and a broader proof-carrying decoding path with explicit carried-state boundaries, shared lookup-table identity, and a pre-recursive aggregation boundary. The repository does not yet provide full standard-softmax inference on S-two, recursive cryptographic compression/verification closure, recursive shared-table accumulation across decode steps as a compressed proof object, or production-scale zkML deployment. The narrower claim is that transformer workloads expose the design pressures under which STARK-native systems may compound advantages, while current artifacts already support a concrete bridge from execution traces to pre-recursive proof objects.
+We pair that analysis with `provable-transformer-vm` [30], a supporting artifact that provides a frozen vanilla reproducibility tier, a frozen narrow experimental `stwo` tier, and a broader proof-carrying decoding path with explicit carried-state boundaries, shared lookup-table identity, reusable block/step proof surfaces, and a pre-recursive aggregation boundary. The repository does not yet provide full standard-softmax inference on S-two, recursive cryptographic compression/verification closure, recursive shared-table accumulation across decode steps as a compressed proof object, or production-scale zkML deployment. The narrower claim is that transformer workloads expose the design pressures under which STARK-native systems may compound advantages, while current artifacts already support a concrete bridge from execution traces to pre-recursive proof objects.
 
 ---
 
@@ -264,7 +266,7 @@ The artifact provides:
 - a bounded multi-runtime semantic-agreement artifact together with hardened verifier kernels.
 
 The central systems property is stable statement structure: the same decode relation survives progressively richer manifest and packaging layers without changing the underlying public boundary semantics.
-In concrete terms, the repository now exposes reusable block-shaped execution proofs and, on its experimental `stwo` tooling surface, step-level proof envelopes whose public boundary schema and statement semantics remain stable across those richer artifact layers.
+In concrete terms, the repository now exposes reusable block-shaped execution proofs and, on its experimental `stwo` tooling surface, step-level proof envelopes whose public boundary shape and statement semantics remain stable across those richer artifact layers.
 
 For shared lookup evidence, the artifact binds normalization and activation table identity into a static lookup-table registry commitment inside the shared lookup artifact; this is table-identity and provenance binding, not recursive cross-step shared-table accumulation.
 
@@ -409,7 +411,7 @@ Given the parameterized decoding bridge and the pre-recursive carried-state aggr
 
 The methodological reason is simple: the statement boundary is already explicit. The cleanest next paper is therefore one that keeps the same decode relation and carried-state commitments while improving proof-size and verifier-cost behavior through accumulation/compression, rather than changing the execution relation and the aggregation mechanism at the same time.
 
-More generic folding and recursive-argument frameworks already cover much of the broad abstraction space [41, 43, 44, 45]. The sharper contribution available here is transformer-specific carried-state accumulation over a fixed decode relation. Within that boundary, the most credible near-term strengthening is to keep the public decode relation unchanged while making the carried-state kernels more reusable: stable shared lookup-table identity and reuse across decode artifacts, explicit block and step proof envelopes with machine-readable carried-state and lookup boundaries, bounded multi-runtime semantic-agreement kernels over fixed operator surfaces, and continued verifier hardening on the experimental `stwo` route all sharpen the same fixed relation rather than replacing it [38, 39, 42, 47, 48].
+More generic folding and recursive-argument frameworks already cover much of the broad abstraction space [41, 43, 44, 45]. The sharper contribution available here is transformer-specific carried-state accumulation over a fixed decode relation. Within that boundary, the most credible near-term strengthening is to keep the public decode relation unchanged while making the carried-state kernels more reusable: stable shared lookup-table identity and reuse across decode artifacts, explicit block and step proof envelopes with machine-readable carried-state and lookup boundaries, bounded multi-runtime semantic-agreement kernels over fixed operator surfaces, and continued verifier hardening on the experimental `stwo` route all sharpen the same fixed relation rather than replacing it [38, 39, 42, 47, 48]. A supplementary appendix maps those external influences to the current repository realization and the explicit future-work boundary they motivate.
 
 That direction keeps the next contribution transformer-specific and technically attributable: gains can be read as accumulation/compression gains over a fixed public boundary, not as a consequence of moving the underlying claim.
 
