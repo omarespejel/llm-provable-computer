@@ -291,11 +291,11 @@ where `w_t` contains the step witness and proof-bearing artifact material checke
 
 In this terminology, an interval bundle is the intervalized state-relation object that packages rebased carried-state prefixes between segment-level packaging and rollup-level packaging. The pinned aggregation-bundle index records the concrete artifact mapping [46].
 
-**Definition 2 (Package validity).** A chain, segment, rollup, interval bundle, matrix, or pre-recursive aggregation bundle is valid if its member order is declared, each nested proof artifact verifies under the stated backend and statement profile, and every adjacent pair of carried-state boundaries satisfies the continuity constraints required by the decode relation.
+**Definition 2 (Packaging-layer validity).** A chain, segment, interval bundle, rollup, matrix, or pre-recursive aggregation bundle is valid if its member order is declared, each nested proof artifact verifies under the stated backend and statement profile, and every adjacent pair of carried-state boundaries satisfies the continuity constraints required by the decode relation.
 
 The following proposition records the invariant that the repository artifact is intended to preserve across its pre-recursive packaging layers.
 
-**Proposition 2.** If each step proof in a chain verifies under `statement-v1`, and every adjacent pair satisfies `c_t^out = c_{t+1}^in` together with the corresponding KV and lookup frontier-continuity checks, then the resulting segment, rollup, interval bundle, matrix, or pre-recursive aggregation bundle preserves the same start-state to end-state relation as the underlying verified chain.
+**Proposition 2.** If each step proof in a chain verifies under `statement-v1`, and every adjacent pair satisfies `c_t^out = c_{t+1}^in` together with the corresponding KV and lookup frontier-continuity checks, then the resulting segment, interval bundle, rollup, matrix, or pre-recursive aggregation bundle preserves the same start-state to end-state relation as the underlying verified chain.
 
 **Proof sketch.** Each packaging layer records the first public state, last public state, member commitments, and declared member order. Its verifier replay-checks the nested members and rejects non-contiguous or template-incompatible boundaries. Induction over the ordered members gives the same start-to-end relation for the packaged object. This is a statement-preservation invariant, not a recursive proof-compression theorem.
 
