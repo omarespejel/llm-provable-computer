@@ -766,8 +766,8 @@ cargo run --features full --bin tvm -- research-v3-equivalence programs/addition
 This checks transformer, native, Burn, and ONNX/Tract runtimes in lockstep,
 then emits a JSON artifact with engine summaries, deterministic rule witnesses,
 and commitment hashes. The artifact also carries a frontend/runtime semantics
-registry that separates currently checked lanes from research-watch lanes such
-as `torch.export`, ExecuTorch, StableHLO, IREE, ONNX-MLIR, TVM Unity
+registry that separates currently checked lanes from these research-watch lanes:
+`torch.export`, ExecuTorch, StableHLO, IREE, ONNX-MLIR, TVM Unity
 (`tvm-unity`), vLLM, SGLang, and egg/Emerge-style equivalence. It intentionally
 does not claim support for those watch lanes, e-graph saturation, SMT-backed
 rewrite synthesis, randomized

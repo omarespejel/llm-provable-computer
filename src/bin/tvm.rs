@@ -4707,6 +4707,45 @@ mod tests {
     }
 
     #[test]
+    fn frontend_runtime_registry_validation_rejects_watch_lane_promoted_to_implemented() {
+        let mut registry =
+            read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH).expect("registry json");
+        let lanes = registry
+            .get_mut("lanes")
+            .and_then(serde_json::Value::as_array_mut)
+            .expect("registry lanes");
+        let torch_export = lanes
+            .iter_mut()
+            .find(|lane| {
+                lane.get("lane_id").and_then(serde_json::Value::as_str) == Some("torch-export")
+            })
+            .expect("torch-export lane");
+        torch_export["status"] = serde_json::Value::String("implemented".to_string());
+        let err = validate_frontend_runtime_semantics_registry(&registry).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("unexpected implemented lane torch-export"));
+    }
+
+    #[test]
+    fn frontend_runtime_registry_validation_rejects_missing_required_lane() {
+        let mut registry =
+            read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH).expect("registry json");
+        let lanes = registry
+            .get_mut("lanes")
+            .and_then(serde_json::Value::as_array_mut)
+            .expect("registry lanes");
+        let before_len = lanes.len();
+        lanes
+            .retain(|lane| lane.get("lane_id").and_then(serde_json::Value::as_str) != Some("vllm"));
+        assert_eq!(lanes.len(), before_len - 1, "expected to remove vllm lane");
+        let err = validate_frontend_runtime_semantics_registry(&registry).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("frontend runtime semantics registry missing lane vllm"));
+    }
+
+    #[test]
     fn frontend_runtime_registry_validation_rejects_unknown_implemented_lane() {
         let mut registry =
             read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH).expect("registry json");
