@@ -364,15 +364,34 @@ fn assert_research_v3_runtime_commitments(artifact: &serde_json::Value) {
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-fn research_v3_registry_lane_status<'a>(registry: &'a serde_json::Value, lane_id: &str) -> &'a str {
-    registry
+fn research_v3_registry_lane_statuses(
+    registry: &serde_json::Value,
+) -> std::collections::BTreeMap<&str, &str> {
+    let lanes = registry
         .get("lanes")
         .and_then(serde_json::Value::as_array)
-        .expect("registry lanes")
-        .iter()
-        .find(|lane| lane.get("lane_id").and_then(serde_json::Value::as_str) == Some(lane_id))
-        .and_then(|lane| lane.get("status").and_then(serde_json::Value::as_str))
-        .unwrap_or_else(|| panic!("missing registry lane {lane_id}"))
+        .expect("registry lanes");
+    let mut lane_statuses = std::collections::BTreeMap::new();
+    for lane in lanes {
+        let lane_id = lane
+            .get("lane_id")
+            .and_then(serde_json::Value::as_str)
+            .expect("registry lane_id");
+        let status = lane
+            .get("status")
+            .and_then(serde_json::Value::as_str)
+            .expect("registry lane status");
+        assert!(
+            lane_statuses.insert(lane_id, status).is_none(),
+            "registry contains duplicate lane_id {lane_id}"
+        );
+    }
+    assert_eq!(
+        lane_statuses.len(),
+        lanes.len(),
+        "registry contains duplicate lane_id entries"
+    );
+    lane_statuses
 }
 
 #[test]
@@ -3994,30 +4013,26 @@ fn cli_supports_research_v3_equivalence_command() {
             .and_then(serde_json::Value::as_str),
         Some("frontend-runtime-semantics-registry-v1")
     );
-    for lane_id in ["transformer-vm", "native-isa", "burn", "onnx-tract"] {
-        assert_eq!(
-            research_v3_registry_lane_status(frontend_runtime_registry, lane_id),
-            "implemented",
-            "expected current lane {lane_id} to be implemented"
-        );
-    }
-    for lane_id in [
-        "torch-export",
-        "executorch",
-        "stablehlo",
-        "iree",
-        "onnx-mlir",
-        "tvm-unity",
-        "vllm",
-        "sglang",
-        "egg-emerge",
-    ] {
-        assert_eq!(
-            research_v3_registry_lane_status(frontend_runtime_registry, lane_id),
-            "research_watch",
-            "expected research-watch lane {lane_id} to remain research_watch"
-        );
-    }
+    let expected_registry_lanes = std::collections::BTreeMap::from([
+        ("transformer-vm", "implemented"),
+        ("native-isa", "implemented"),
+        ("burn", "implemented"),
+        ("onnx-tract", "implemented"),
+        ("torch-export", "research_watch"),
+        ("executorch", "research_watch"),
+        ("stablehlo", "research_watch"),
+        ("iree", "research_watch"),
+        ("onnx-mlir", "research_watch"),
+        ("tvm-unity", "research_watch"),
+        ("vllm", "research_watch"),
+        ("sglang", "research_watch"),
+        ("egg-emerge", "research_watch"),
+    ]);
+    assert_eq!(
+        research_v3_registry_lane_statuses(frontend_runtime_registry),
+        expected_registry_lanes,
+        "frontend/runtime semantics registry lane boundary drifted"
+    );
     assert_eq!(
         artifact_json
             .get("statement_version")

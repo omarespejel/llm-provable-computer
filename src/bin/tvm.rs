@@ -3847,6 +3847,11 @@ fn research_v3_equivalence_command_impl(
         STATEMENT_V3_EQUIVALENCE_SPEC_PATH,
         STATEMENT_V3_EQUIVALENCE_ARTIFACT_SCHEMA_PATH,
     )?;
+    let frontend_runtime_semantics_registry =
+        read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH)?;
+    validate_frontend_runtime_semantics_registry(&frontend_runtime_semantics_registry)?;
+    let frontend_runtime_semantics_registry_hash =
+        hash_json_hex(&frontend_runtime_semantics_registry)?;
     let model = compile_model(program, layers, attention_mode)?;
     let export_dir = ScopedTempDir::new("research-v3-equivalence")?;
     let onnx_metadata = export_program_onnx(&model, export_dir.path())?;
@@ -3915,11 +3920,6 @@ fn research_v3_equivalence_command_impl(
     ])?;
     let engine_summaries_hash = hash_json_projection_hex(&engines)?;
     let rule_witnesses_hash = hash_json_projection_hex(&rule_witnesses)?;
-    let frontend_runtime_semantics_registry =
-        read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH)?;
-    validate_frontend_runtime_semantics_registry(&frontend_runtime_semantics_registry)?;
-    let frontend_runtime_semantics_registry_hash =
-        hash_json_hex(&frontend_runtime_semantics_registry)?;
     let relation_format = RESEARCH_V3_RELATION_FORMAT.to_string();
     let limitations = vec![
         "Emerge reproduction is not implemented in this artifact".to_string(),
@@ -4736,10 +4736,19 @@ mod tests {
             .get_mut("lanes")
             .and_then(serde_json::Value::as_array_mut)
             .expect("registry lanes");
-        let duplicate = lanes.first().expect("first lane").clone();
+        let duplicate_lane_id = "transformer-vm";
+        let duplicate = lanes
+            .iter()
+            .find(|lane| {
+                lane.get("lane_id").and_then(serde_json::Value::as_str) == Some(duplicate_lane_id)
+            })
+            .unwrap_or_else(|| panic!("missing {duplicate_lane_id} lane"))
+            .clone();
         lanes.push(duplicate);
         let err = validate_frontend_runtime_semantics_registry(&registry).unwrap_err();
-        assert!(err.to_string().contains("duplicate lane_id transformer-vm"));
+        assert!(err
+            .to_string()
+            .contains(&format!("duplicate lane_id {duplicate_lane_id}")));
     }
 
     #[test]
