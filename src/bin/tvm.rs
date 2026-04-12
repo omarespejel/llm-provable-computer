@@ -4467,8 +4467,9 @@ fn write_bytes_atomically(path: &Path, bytes: &[u8]) -> llm_provable_computer::R
                     let _ = fs::remove_file(&temp_path);
                     if let Err(restore_err) = restore_result {
                         return Err(VmError::InvalidConfig(format!(
-                            "failed to publish {}; restore failed after publish error: {restore_err}; publish error: {rename_err}",
-                            path.display()
+                            "failed to publish {}; restore from {} failed after publish error: {restore_err}; publish error: {rename_err}",
+                            path.display(),
+                            backup_path.display()
                         )));
                     }
                     return Err(rename_err.into());
