@@ -60,22 +60,28 @@
       ],
       "properties": {
         "hash_function": { "type": "string" },
-        "statement_spec_hash": { "type": "string" },
-        "fixed_point_spec_hash": { "type": "string" },
-        "onnx_op_subset_hash": { "type": "string" },
-        "artifact_schema_hash": { "type": "string" },
-        "relation_format_hash": { "type": "string" },
-        "limitations_hash": { "type": "string" },
-        "program_hash": { "type": "string" },
-        "transformer_config_hash": { "type": "string" },
-        "onnx_metadata_hash": { "type": "string" },
-        "engine_summaries_hash": { "type": "string" },
-        "rule_witnesses_hash": { "type": "string" }
+        "statement_spec_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "fixed_point_spec_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "onnx_op_subset_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "artifact_schema_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "relation_format_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "limitations_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "program_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "transformer_config_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "onnx_metadata_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "engine_summaries_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "rule_witnesses_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" }
       },
       "additionalProperties": false
     }
   },
   "$defs": {
+    "hash_blake2b_256_hex": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
     "engine_summary": {
       "type": "object",
       "required": [
@@ -96,9 +102,9 @@
         "trace_len": { "type": "integer", "minimum": 1 },
         "events_len": { "type": "integer", "minimum": 0 },
         "final_state": { "$ref": "#/$defs/machine_state" },
-        "trace_hash": { "type": "string" },
-        "event_relation_hash": { "type": "string" },
-        "final_state_hash": { "type": "string" }
+        "trace_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "event_relation_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "final_state_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" }
       },
       "additionalProperties": false
     },
@@ -127,12 +133,12 @@
         "state_before_hashes": {
           "type": "object",
           "minProperties": 4,
-          "additionalProperties": { "type": "string" }
+          "additionalProperties": { "$ref": "#/$defs/hash_blake2b_256_hex" }
         },
         "state_after_hashes": {
           "type": "object",
           "minProperties": 4,
-          "additionalProperties": { "type": "string" }
+          "additionalProperties": { "$ref": "#/$defs/hash_blake2b_256_hex" }
         },
         "validation": {
           "type": "object",

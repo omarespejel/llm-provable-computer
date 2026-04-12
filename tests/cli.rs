@@ -3706,6 +3706,8 @@ fn cli_reports_missing_features_for_research_v3_equivalence() {
         .stderr(predicate::str::contains(
             "`research-v3-equivalence` requires the `burn-model` and `onnx-export` features",
         ));
+
+    assert!(!output_path.exists());
 }
 
 #[cfg(feature = "onnx-export")]
@@ -4027,19 +4029,43 @@ fn cli_supports_research_v3_equivalence_command() {
             assert_eq!(hash.len(), 64);
         }
     }
-    assert!(artifact_json
+    let limitations = artifact_json
         .get("limitations")
         .and_then(serde_json::Value::as_array)
-        .expect("limitations")
-        .iter()
-        .any(|entry| entry
-            .as_str()
-            .is_some_and(|text| text.contains("SMT-backed rewrite synthesis is not implemented"))));
+        .expect("limitations");
+    for expected in [
+        "Emerge reproduction",
+        "e-graph saturation",
+        "SMT-backed rewrite synthesis",
+        "randomized opaque-kernel testing",
+        "recursive accumulation",
+        "cryptographic implementation-equivalence proof",
+    ] {
+        assert!(
+            limitations
+                .iter()
+                .any(|entry| entry.as_str().is_some_and(|text| text.contains(expected))),
+            "missing limitation covering {expected}",
+        );
+    }
     let mut tampered = artifact_json.clone();
     tampered["commitments"]["engine_summaries_hash"] = serde_json::Value::String("0".repeat(64));
     assert!(
         std::panic::catch_unwind(|| assert_research_v3_runtime_commitments(&tampered)).is_err()
     );
+
+    let mut malformed_hash = artifact_json.clone();
+    malformed_hash["commitments"]["relation_format_hash"] =
+        serde_json::Value::String("not-a-blake2b-hash".to_string());
+    malformed_hash["rule_witnesses"][0]["state_before_hashes"]["transformer"] =
+        serde_json::Value::String("also-not-a-blake2b-hash".to_string());
+    assert!(std::panic::catch_unwind(|| {
+        validate_json_against_schema(
+            &malformed_hash,
+            "spec/statement-v3-equivalence-kernel.schema.json",
+        );
+    })
+    .is_err());
 
     let mut missing_relation = artifact_json.clone();
     missing_relation

@@ -3907,9 +3907,12 @@ fn research_v3_equivalence_command_impl(
     let rule_witnesses_hash = hash_json_projection_hex(&rule_witnesses)?;
     let relation_format = RESEARCH_V3_RELATION_FORMAT.to_string();
     let limitations = vec![
+        "Emerge reproduction is not implemented in this artifact".to_string(),
         "e-graph saturation is not implemented in this artifact".to_string(),
         "SMT-backed rewrite synthesis is not implemented in this artifact".to_string(),
         "randomized opaque-kernel testing is not implemented in this artifact".to_string(),
+        "recursive accumulation is not implemented in this artifact".to_string(),
+        "this artifact is not a cryptographic implementation-equivalence proof".to_string(),
         "the current evidence is deterministic multi-engine lockstep over the shipped VM/ONNX/Burn/native surfaces".to_string(),
     ];
     let relation_format_hash = hash_json_hex(&relation_format)?;
@@ -4423,28 +4426,35 @@ fn write_bytes_atomically(path: &Path, bytes: &[u8]) -> llm_provable_computer::R
         .file_name()
         .map(|name| name.to_string_lossy())
         .unwrap_or_else(|| "artifact".into());
-    let suffix = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|err| VmError::InvalidConfig(format!("system clock error: {err}")))?
-        .as_nanos();
-    let temp_path = dir.join(format!(".{file_name}.tmp-{}-{suffix}", std::process::id()));
+    for attempt in 0..1024u16 {
+        let temp_path = dir.join(format!(".{file_name}.tmp-{}-{attempt}", std::process::id()));
+        let mut file = match fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temp_path)
+        {
+            Ok(file) => file,
+            Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(err) => return Err(err.into()),
+        };
+        if let Err(err) = file.write_all(bytes).and_then(|()| file.sync_all()) {
+            let _ = fs::remove_file(&temp_path);
+            return Err(err.into());
+        }
+        drop(file);
 
-    let mut file = fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&temp_path)?;
-    if let Err(err) = file.write_all(bytes).and_then(|()| file.sync_all()) {
-        let _ = fs::remove_file(&temp_path);
-        return Err(err.into());
+        if let Err(err) = fs::rename(&temp_path, path) {
+            let _ = fs::remove_file(&temp_path);
+            return Err(err.into());
+        }
+
+        return Ok(());
     }
-    drop(file);
 
-    if let Err(err) = fs::rename(&temp_path, path) {
-        let _ = fs::remove_file(&temp_path);
-        return Err(err.into());
-    }
-
-    Ok(())
+    Err(VmError::InvalidConfig(format!(
+        "failed to allocate atomic temp path for {}",
+        path.display()
+    )))
 }
 
 #[cfg(all(test, feature = "onnx-export"))]
