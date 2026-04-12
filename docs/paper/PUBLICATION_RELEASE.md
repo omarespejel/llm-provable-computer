@@ -9,17 +9,17 @@ Canonical publication snapshot commit:
 The canonical v4 publication snapshot is the release tag
 `paper-publication-v4-2026-04-11` once cut. That tag must resolve to a commit
 containing this v4 paper metadata, and it intentionally need not match the
-Phase 28 engineering checkpoint used by the carried-state aggregation evidence.
+aggregation-line engineering checkpoint used by the carried-state evidence.
 
-Phase 28 engineering checkpoint for the carried-state aggregation line:
+Aggregation-line engineering checkpoint for the carried-state evidence:
 `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`
 
-Dedicated Phase 28 aggregation bundle index cited by Reference `[46]`:
+Dedicated proof-carrying aggregation bundle index cited by Reference `[46]`:
 `be9c4e47a9b774e7fdbccf7cdc6977c11b39dcd6`
 
 Canonical launch repository:
 `https://github.com/omarespejel/provable-transformer-vm`
-(earlier phases of this research line used the `llm-provable-computer` project name).
+(earlier iterations of this research line used the `llm-provable-computer` project name).
 
 Formal paper author line in the draft:
 
@@ -61,12 +61,12 @@ patches and a subsequent publication tag.
 
 - `production-v1` is the primary frozen reproducibility bundle for the vanilla backend.
 - `stwo-experimental-v1` is the frozen narrow evidence tier for the experimental S-two path.
-- Post-freeze commit-pinned evidence now includes the merged Phase 24-28 pre-recursive
-  carried-state aggregation bundle, including proof-carrying outer aggregation over Phase 27 chained artifacts.
-- Intermediate Phase 24-27 artifact directories are retained as archival provenance. The
-  Phase 28 proof-carrying aggregation bundle is the publication-facing checkpoint for that line.
+- Post-freeze commit-pinned evidence now includes the merged pre-recursive
+  carried-state aggregation bundle, including proof-carrying outer aggregation over chained artifacts.
+- Intermediate aggregation-line artifact directories are retained as archival provenance. The
+  proof-carrying aggregation bundle is the publication-facing checkpoint for that line.
 - The repo still does **not** claim full standard-softmax transformer inference on S-two,
-  recursive cross-step shared-table accumulation beyond the public Phase 23 lookup accumulator,
+  recursive cross-step shared-table accumulation beyond the public lookup-accumulator artifact,
   recursive cryptographic compression/verification closure, or production-scale zkML deployment.
 
 ## Regeneration
@@ -75,7 +75,7 @@ patches and a subsequent publication tag.
   - `./scripts/generate_repro_bundle.sh`
 - Experimental `stwo` bundle:
   - `./scripts/paper/generate_stwo_publication_bundle.sh`
-- Phase 28 proof-carrying aggregation bundle:
+- Proof-carrying aggregation bundle:
   - `./scripts/paper/generate_stwo_proof_carrying_aggregation_bundle.sh`
 - Archived web evidence:
   - `python3 scripts/paper/archive_supporting_web_evidence.py`
@@ -89,13 +89,13 @@ patches and a subsequent publication tag.
 Before cutting a release tag, verify:
 
 1. the frozen bundle directories exist and their `sha256sums.txt` files validate,
-   and the Phase 28 aggregation bundle's `provenance_sha256sums.txt` also validates,
+   and the aggregation bundle's `provenance_sha256sums.txt` also validates,
 2. the main paper and appendices refer to the same repo state and evidence tiers,
 3. the design note matches the current experimental `stwo` status,
 4. no stale top-level README language still describes S-two as merely prospective,
 5. Reference `[30]` remains commit-pinned until the v4 publication tag exists;
    after that tag is cut, update `[30]` to the v4 publication tag while keeping
-   the Phase 28 aggregation bundle directly pinned by Reference `[46]`,
+   the aggregation bundle directly pinned by Reference `[46]`,
 6. the formal author line and affiliation text are confirmed before public release,
 7. `paper preflight` passes (citation integrity, immutable local repo links,
    figure/link paths, appendix source note, and unresolved publication snapshot
