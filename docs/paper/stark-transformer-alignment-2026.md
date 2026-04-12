@@ -15,7 +15,7 @@ April 2026
 
 This paper studies the structural fit between transformer workloads and STARK proof systems using a symbolic cost model together with a repository-backed proof artifact. Under a worked example with `C_exp = 300`, `C_norm = 30`, and `C_nonlin = 150`, GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields about `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK rows across 12 layers (`1.48x`). Over practical context ranges, the ratio rises and then approaches a finite architecture-dependent ceiling. These are symbolic counts, not matched performance benchmarks.
 
-We pair the model with `provable-transformer-vm` [30], a supporting repository artifact that provides a vanilla reproducibility tier, a narrow experimental `stwo` tier, and a broader proof-carrying decoding path with carried-state commitments, static lookup-table registry commitments, explicit step-proof-envelope manifests, and pre-recursive packaging and aggregation artifacts. The repository does not yet provide full standard-softmax inference on S-two, recursive cryptographic compression/verification closure, recursive cross-step shared-table accumulation as a compressed proof object, or production-scale zkML deployment. The narrower claim is that transformer workloads expose the design pressures under which STARK-native systems may compound advantages, while current artifacts already support a concrete carried-state bridge from execution traces to pre-recursive proof objects.
+We pair the model with `provable-transformer-vm` [30], a supporting repository artifact that provides a vanilla reproducibility tier, a narrow experimental `stwo` tier, a broader proof-carrying decoding path with carried-state commitments, static lookup-table registry commitments, step-proof-envelope manifests, and bounded multi-runtime semantic-agreement checks. The repository does not yet provide full standard-softmax inference on S-two, recursive cryptographic compression/verification closure, recursive cross-step shared-table accumulation as a compressed proof object, a full Emerge-style e-graph/SMT implementation-equivalence proof, or production-scale zkML deployment. The narrower claim is that transformer workloads expose the design pressures under which STARK-native systems may compound advantages, while current artifacts already support a concrete carried-state bridge from execution traces to pre-recursive proof objects.
 
 ---
 
@@ -35,7 +35,7 @@ This paper makes three claims:
 
 The systems claim is directly artifact-backed. The analytic claim is model-based, not a matched benchmark on identical hardware. The infrastructure claim is supported by current public releases but extends beyond current repository breadth. This is an architecture-and-systems thesis, not a final empirical verdict.
 
-The contributions are threefold: an exact symbolic model separating arithmetic from non-arithmetic work; a semantics-hardened artifact with proof-carrying decoding, explicit static lookup-table identity binding, explicit step-envelope boundary metadata, and a reproducible pre-recursive aggregation boundary; and an infrastructure read of S-two/Starknet without overstating implementation maturity.
+The contributions are threefold: an exact symbolic model separating arithmetic from non-arithmetic work; a semantics-hardened artifact with proof-carrying decoding, explicit static lookup-table identity binding, explicit step-envelope boundary metadata, a reproducible pre-recursive aggregation boundary, and bounded multi-engine transition-relation hashes for semantic-agreement hardening; and an infrastructure read of S-two/Starknet without overstating implementation maturity.
 
 The paper is organized accordingly. Section 4 develops the symbolic cost model and its worked examples. Section 5 then anchors the systems claim in a repository artifact that exposes two evidence tiers together with a broader proof-carrying decoding path and pre-recursive carried-state packaging ladder. Sections 6-8 place those results in the current S-two/Starknet landscape and identify the next cryptographic milestones beyond the present artifact boundary.
 
@@ -264,6 +264,7 @@ The artifact provides:
 - a parameterized proof-carrying decoding family (`decoding_step_v2`) over multiple public layouts,
 - a static lookup-table registry commitment that binds the shared normalization and activation table descriptors into the shared lookup artifact,
 - a source-chain-bound step-proof-envelope manifest that binds each parameterized decode step to its input/output carried-state boundary commitments, lookup-row commitments, shared lookup artifact commitment, static lookup registry commitment, and proof commitment,
+- a research-stage multi-engine equivalence-kernel artifact that records transformer/native/Burn/ONNX lockstep evidence, rule witnesses, per-engine transition-relation hashes, and a canonical transition hash for each bounded transition,
 - carried-state packaging (chain, segment, rollup, multi-layout matrix) with KV/lookup cumulative and frontier commitments,
 - a pre-recursive carried-state packaging ladder over the same decode relation, including interval, segment, rollup, matrix, and aggregation objects,
 - hardened verifier kernels backed by differential testing, fuzzing, mutation checks, and bounded model checking.
@@ -315,6 +316,7 @@ The repository remains deliberately narrow:
 - attention is currently `average-hard`, not full standard softmax,
 - shared-table lookup state is carried, static lookup-table descriptors are bound inside shared lookup artifacts, and the artifact includes a public cross-step lookup-accumulator artifact,
 - the new step-envelope overlay is derived metadata over already verified parameterized decoding chains, not a new cryptographic proof layer,
+- the multi-runtime semantic-agreement artifact is deterministic lockstep relation evidence, not an e-graph saturation engine, SMT-backed rewrite-synthesis verifier, randomized opaque-kernel test suite, or cryptographic implementation-equivalence proof in the style targeted by Emerge [47],
 - recursive cross-step shared-table accumulation beyond these table-identity and lookup-accumulator artifacts is not yet public,
 - recursive cryptographic compression/verification closure across decode steps is not yet public,
 - learned-model end-to-end LLM proving, zero-knowledge hiding, and full-ISA AIR coverage remain out of scope.
@@ -335,12 +337,20 @@ The present aggregation layer is statement-preserving and pre-recursive: it pack
 
 The broader carried-state ladder is documented in the repository's supplementary design and README materials and is cited here as commit-pinned systems evidence, not as a recursive compression claim.
 
-### 5.6 Why this artifact matters
+### 5.6 Semantic-agreement and provenance boundaries
+
+The repository also contains a bounded multi-runtime semantic-agreement artifact motivated by implementation-equivalence work on large-model graphs [47]. The artifact is intentionally narrower than Emerge: it lockstep-executes a fixed program across transformer/native/Burn/ONNX surfaces, records relation witnesses, and binds each observed transition by per-runtime transition-relation hashes plus a canonical transition hash. A verifier command recomputes the artifact's internal commitments, bounded trace hashes, semantic canonical event-relation hashes, cross-runtime state-boundary consistency, final-state links, and transition-relation hashes. This converts implementation-agreement evidence into a machine-readable relation row that later rewrite or e-graph machinery can consume.
+
+This artifact addresses a methodological risk in systems papers about proof-carrying ML: a proof artifact should not silently rely on informal claims that two frontend/runtime paths mean the same thing. The present implementation still stops at deterministic bounded relation evidence plus artifact-integrity verification. It does not synthesize rewrite rules, validate opaque kernels with randomized constraints, discharge symbolic cases with SMT, or prove implementation equivalence cryptographically.
+
+For reproducibility rather than proof semantics, the artifact set also includes a release-provenance manifest that can bind model and tokenizer identifiers, local tokenizer/transcript files, safetensors file and metadata-header hashes, optional ONNX export hashes, and model-card/DOI/dataset metadata when supplied. This is a packaging guardrail, not part of the proof relation: it does not prove tokenizer algorithm correctness, model-weight semantics, exporter equivalence, live artifact availability, or DOI validity.
+
+### 5.7 Why this artifact matters
 
 This artifact narrows the gap between analytic and systems claims by showing:
 
 1. transformer-relevant traces can be proved directly,
-2. semantic equivalence can be checked across runtimes before proving,
+2. semantic equivalence can be checked across runtimes before proving and exposed as transition-relation hashes rather than prose-only assertions,
 3. one parameterized decode relation preserves carried state across layouts and packaging layers,
 4. carried-state packages can be aggregated as pre-recursive statements without changing the underlying decode relation,
 5. reproducibility can be anchored in immutable bundles and commit-pinned artifacts.
@@ -428,6 +438,7 @@ The next supporting engineering moves remain:
 
 - complete full-ISA AIR coverage,
 - extend the explicit proof-envelope pattern from decode steps to the fixed-shape `gemma_block_v*` artifacts,
+- mature the multi-runtime semantic-agreement artifact from deterministic transition-relation hashes toward e-graph/SMT-backed rewrite validation only after the bounded relation format is stable,
 - keep artifact generation and benchmark metadata machine-readable in CI,
 - add a minimal learned-model fragment or quantized transformer block only once the accumulation path is stable.
 
@@ -512,3 +523,4 @@ This paper uses the maintained repository `omarespejel/provable-transformer-vm`,
 44. Abhiram Kothapalli and Srinath Setty. “NeutronNova: Folding Everything that Reduces to Zero-Check.” *IACR Cryptology ePrint Archive*, Paper 2024/1606, 2024. <https://eprint.iacr.org/2024/1606>
 45. Abhiram Kothapalli and Srinath Setty. “ProtoStar: Generic Efficient Accumulation/Folding for Special Sound Protocols.” *IACR Cryptology ePrint Archive*, Paper 2023/620, 2023. <https://eprint.iacr.org/2023/620>
 46. `omarespejel/provable-transformer-vm`. “Appendix Artifact Index (S-two Proof-Carrying Aggregation V1).” GitHub artifact snapshot, commit `be9c4e47a9b774e7fdbccf7cdc6977c11b39dcd6`, at `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/APPENDIX_ARTIFACT_INDEX.md`. <https://github.com/omarespejel/provable-transformer-vm/blob/be9c4e47a9b774e7fdbccf7cdc6977c11b39dcd6/docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/APPENDIX_ARTIFACT_INDEX.md>
+47. Qi Zhan, Xing Hu, Xin Xia, and Shanping Li. “Verify Implementation Equivalence of Large Models.” *arXiv preprint* arXiv:2603.21851, 2026. <https://arxiv.org/abs/2603.21851>

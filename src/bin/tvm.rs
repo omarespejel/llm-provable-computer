@@ -6,9 +6,7 @@ use std::time::Duration;
 #[cfg(feature = "onnx-export")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[cfg(feature = "onnx-export")]
 use blake2::digest::{Update, VariableOutput};
-#[cfg(feature = "onnx-export")]
 use blake2::Blake2bVar;
 #[cfg(feature = "burn-model")]
 use burn::backend::NdArray;
@@ -110,7 +108,6 @@ use llm_provable_computer::{
 };
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
-#[cfg(feature = "onnx-export")]
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "burn-model")]
@@ -584,6 +581,67 @@ enum Command {
         )]
         attention_mode: Attention2DMode,
     },
+    /// Verify a research v3 multi-engine equivalence-kernel artifact.
+    VerifyResearchV3Equivalence {
+        /// Path to the equivalence-kernel artifact JSON file.
+        artifact: PathBuf,
+    },
+    /// Prepare a Hugging Face release/provenance manifest.
+    PrepareHfProvenanceManifest {
+        /// File where the HF provenance manifest JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+        /// Hugging Face Hub model or artifact repository, for example `org/model`.
+        #[arg(long)]
+        hub_repo: String,
+        /// Pinned Hugging Face Hub revision, preferably a commit hash or immutable release tag.
+        #[arg(long)]
+        hub_revision: String,
+        /// Tokenizer identifier used for prompt-to-token semantics.
+        #[arg(long)]
+        tokenizer_id: String,
+        /// Tokenizer revision. Defaults to `--hub-revision`.
+        #[arg(long)]
+        tokenizer_revision: Option<String>,
+        /// Optional local `tokenizer.json` file to hash into the manifest.
+        #[arg(long)]
+        tokenizer_json: Option<PathBuf>,
+        /// Optional local tokenizer config file to hash into the manifest.
+        #[arg(long)]
+        tokenizer_config: Option<PathBuf>,
+        /// Optional local prompt/token transcript file to hash into the manifest.
+        #[arg(long)]
+        tokenization_transcript: Option<PathBuf>,
+        /// Local `.safetensors` files to hash and metadata-bind.
+        #[arg(long = "safetensors")]
+        safetensors_files: Vec<PathBuf>,
+        /// Optional local ONNX graph exported from the HF/Optimum path.
+        #[arg(long)]
+        onnx_model: Option<PathBuf>,
+        /// Name of the ONNX exporter used when `--onnx-model` is supplied.
+        #[arg(long, default_value = "optimum-onnx")]
+        onnx_exporter: String,
+        /// Optional exporter version string.
+        #[arg(long)]
+        onnx_exporter_version: Option<String>,
+        /// Optional local model/artifact card file to hash into the release metadata.
+        #[arg(long)]
+        model_card: Option<PathBuf>,
+        /// Optional DOI or stable release identifier.
+        #[arg(long)]
+        doi: Option<String>,
+        /// Dataset or benchmark corpus identifier used by the release (repeatable).
+        #[arg(long = "dataset")]
+        datasets: Vec<String>,
+        /// Extra manifest note (repeatable).
+        #[arg(long = "note")]
+        notes: Vec<String>,
+    },
+    /// Verify a Hugging Face release/provenance manifest and local file bindings.
+    VerifyHfProvenanceManifest {
+        /// Path to the HF provenance manifest JSON file.
+        manifest: PathBuf,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -733,6 +791,92 @@ const STATEMENT_V3_EQUIVALENCE_ARTIFACT_SCHEMA_PATH: &str =
 const RESEARCH_V2_HASH_FUNCTION: &str = "blake2b-256";
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 const RESEARCH_V3_RELATION_FORMAT: &str = "multi-engine-trace-relation-v1-no-egraph-no-smt";
+const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v1";
+const HF_PROVENANCE_SEMANTIC_SCOPE: &str = "hf-release-provenance-boundary-v1";
+const HF_PROVENANCE_HASH_FUNCTION: &str = "blake2b-256";
+
+struct HfProvenanceManifestCommand {
+    output: PathBuf,
+    hub_repo: String,
+    hub_revision: String,
+    tokenizer_id: String,
+    tokenizer_revision: Option<String>,
+    tokenizer_json: Option<PathBuf>,
+    tokenizer_config: Option<PathBuf>,
+    tokenization_transcript: Option<PathBuf>,
+    safetensors_files: Vec<PathBuf>,
+    onnx_model: Option<PathBuf>,
+    onnx_exporter: String,
+    onnx_exporter_version: Option<String>,
+    model_card: Option<PathBuf>,
+    doi: Option<String>,
+    datasets: Vec<String>,
+    notes: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct HfFileCommitment {
+    path: String,
+    size_bytes: u64,
+    blake2b_256: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct HfSafetensorsFileCommitment {
+    path: String,
+    size_bytes: u64,
+    blake2b_256: String,
+    metadata_hash: String,
+    tensor_count: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct HfTokenizerProvenance {
+    tokenizer_id: String,
+    tokenizer_revision: String,
+    tokenizer_json: Option<HfFileCommitment>,
+    tokenizer_config: Option<HfFileCommitment>,
+    tokenization_transcript: Option<HfFileCommitment>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct HfOnnxExportProvenance {
+    exporter: String,
+    exporter_version: Option<String>,
+    graph: HfFileCommitment,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct HfReleaseMetadata {
+    model_card: Option<HfFileCommitment>,
+    doi: Option<String>,
+    datasets: Vec<String>,
+    notes: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct HfProvenanceCommitments {
+    tokenizer_hash: String,
+    safetensors_manifest_hash: String,
+    onnx_export_hash: String,
+    release_metadata_hash: String,
+    limitations_hash: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct HfProvenanceManifest {
+    manifest_version: String,
+    semantic_scope: String,
+    hash_function: String,
+    hub_repo: String,
+    hub_revision: String,
+    tokenizer: HfTokenizerProvenance,
+    safetensors: Vec<HfSafetensorsFileCommitment>,
+    onnx_export: Option<HfOnnxExportProvenance>,
+    release: HfReleaseMetadata,
+    limitations: Vec<String>,
+    commitments: HfProvenanceCommitments,
+}
 
 #[cfg(feature = "onnx-export")]
 #[derive(Debug, Deserialize)]
@@ -883,23 +1027,34 @@ struct ResearchV2MatrixArtifact {
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct ResearchV3CanonicalEvent {
     step: usize,
-    layer_idx: Option<usize>,
     instruction: String,
     state_before_hash: String,
     state_after_hash: String,
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
+struct ResearchV3TransitionRelationRow {
+    relation_format: String,
+    step: usize,
+    instruction: String,
+    state_before_hash: String,
+    state_after_hash: String,
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+#[derive(Debug, Serialize, Deserialize)]
 struct ResearchV3EngineSummary {
     name: String,
     steps: usize,
     halted: bool,
     trace_len: usize,
     events_len: usize,
+    trace: Vec<MachineState>,
+    canonical_events: Vec<ResearchV3CanonicalEvent>,
     final_state: MachineState,
     trace_hash: String,
     event_relation_hash: String,
@@ -907,7 +1062,7 @@ struct ResearchV3EngineSummary {
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct ResearchV3RuleValidation {
     differential_lockstep: bool,
     egraph_status: String,
@@ -916,7 +1071,7 @@ struct ResearchV3RuleValidation {
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct ResearchV3RuleWitness {
     step: usize,
     rule_id: String,
@@ -925,11 +1080,13 @@ struct ResearchV3RuleWitness {
     participating_engines: Vec<String>,
     state_before_hashes: std::collections::BTreeMap<String, String>,
     state_after_hashes: std::collections::BTreeMap<String, String>,
+    engine_transition_hashes: std::collections::BTreeMap<String, String>,
+    canonical_transition_hash: String,
     validation: ResearchV3RuleValidation,
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct ResearchV3EquivalenceCommitments {
     hash_function: String,
     statement_spec_hash: String,
@@ -947,7 +1104,7 @@ struct ResearchV3EquivalenceCommitments {
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct ResearchV3EquivalenceArtifact {
     statement_version: String,
     semantic_scope: String,
@@ -1259,6 +1416,47 @@ fn run() -> llm_provable_computer::Result<()> {
             layers,
             attention_mode,
         } => research_v3_equivalence_command(&program, &output, max_steps, layers, attention_mode)?,
+        Command::VerifyResearchV3Equivalence { artifact } => {
+            verify_research_v3_equivalence_command(&artifact)?
+        }
+        Command::PrepareHfProvenanceManifest {
+            output,
+            hub_repo,
+            hub_revision,
+            tokenizer_id,
+            tokenizer_revision,
+            tokenizer_json,
+            tokenizer_config,
+            tokenization_transcript,
+            safetensors_files,
+            onnx_model,
+            onnx_exporter,
+            onnx_exporter_version,
+            model_card,
+            doi,
+            datasets,
+            notes,
+        } => prepare_hf_provenance_manifest_command(HfProvenanceManifestCommand {
+            output,
+            hub_repo,
+            hub_revision,
+            tokenizer_id,
+            tokenizer_revision,
+            tokenizer_json,
+            tokenizer_config,
+            tokenization_transcript,
+            safetensors_files,
+            onnx_model,
+            onnx_exporter,
+            onnx_exporter_version,
+            model_card,
+            doi,
+            datasets,
+            notes,
+        })?,
+        Command::VerifyHfProvenanceManifest { manifest } => {
+            verify_hf_provenance_manifest_command(&manifest)?
+        }
     }
 
     Ok(())
@@ -3486,6 +3684,466 @@ fn research_v3_equivalence_command(
     research_v3_equivalence_command_impl(program, output, max_steps, layers, attention_mode)
 }
 
+fn verify_research_v3_equivalence_command(artifact: &Path) -> llm_provable_computer::Result<()> {
+    verify_research_v3_equivalence_command_impl(artifact)
+}
+
+fn prepare_hf_provenance_manifest_command(
+    command: HfProvenanceManifestCommand,
+) -> llm_provable_computer::Result<()> {
+    validate_hf_identifier("hub_repo", &command.hub_repo)?;
+    validate_hf_identifier("tokenizer_id", &command.tokenizer_id)?;
+    validate_hf_pinned_revision("hub_revision", &command.hub_revision)?;
+    let tokenizer_revision = command
+        .tokenizer_revision
+        .unwrap_or_else(|| command.hub_revision.clone());
+    validate_hf_pinned_revision("tokenizer_revision", &tokenizer_revision)?;
+
+    let tokenizer = HfTokenizerProvenance {
+        tokenizer_id: command.tokenizer_id,
+        tokenizer_revision,
+        tokenizer_json: hf_optional_file_commitment(command.tokenizer_json.as_deref())?,
+        tokenizer_config: hf_optional_file_commitment(command.tokenizer_config.as_deref())?,
+        tokenization_transcript: hf_optional_file_commitment(
+            command.tokenization_transcript.as_deref(),
+        )?,
+    };
+    let safetensors = command
+        .safetensors_files
+        .iter()
+        .map(|path| hf_safetensors_file_commitment(path))
+        .collect::<llm_provable_computer::Result<Vec<_>>>()?;
+    let onnx_export = command
+        .onnx_model
+        .as_deref()
+        .map(|path| {
+            Ok::<HfOnnxExportProvenance, VmError>(HfOnnxExportProvenance {
+                exporter: command.onnx_exporter.clone(),
+                exporter_version: command.onnx_exporter_version.clone(),
+                graph: hf_file_commitment(path)?,
+            })
+        })
+        .transpose()?;
+    let release = HfReleaseMetadata {
+        model_card: hf_optional_file_commitment(command.model_card.as_deref())?,
+        doi: command.doi,
+        datasets: command.datasets,
+        notes: command.notes,
+    };
+    let limitations = hf_provenance_limitations();
+    let manifest = HfProvenanceManifest {
+        manifest_version: HF_PROVENANCE_MANIFEST_VERSION.to_string(),
+        semantic_scope: HF_PROVENANCE_SEMANTIC_SCOPE.to_string(),
+        hash_function: HF_PROVENANCE_HASH_FUNCTION.to_string(),
+        hub_repo: command.hub_repo,
+        hub_revision: command.hub_revision,
+        commitments: HfProvenanceCommitments {
+            tokenizer_hash: hash_json_projection_hex(&tokenizer)?,
+            safetensors_manifest_hash: hash_json_projection_hex(&safetensors)?,
+            onnx_export_hash: hash_json_projection_hex(&onnx_export)?,
+            release_metadata_hash: hash_json_projection_hex(&release)?,
+            limitations_hash: hash_json_projection_hex(&limitations)?,
+        },
+        tokenizer,
+        safetensors,
+        onnx_export,
+        release,
+        limitations,
+    };
+    verify_hf_provenance_manifest(&manifest)?;
+    let bytes = serde_json::to_vec_pretty(&manifest).map_err(|err| {
+        VmError::Serialization(format!("failed to serialize HF provenance manifest: {err}"))
+    })?;
+    write_bytes_atomically(&command.output, &bytes)?;
+
+    println!("hf_provenance_manifest: {}", command.output.display());
+    println!("manifest_version: {}", manifest.manifest_version);
+    println!("semantic_scope: {}", manifest.semantic_scope);
+    println!("hub_repo: {}", manifest.hub_repo);
+    println!("hub_revision: {}", manifest.hub_revision);
+    println!("tokenizer_id: {}", manifest.tokenizer.tokenizer_id);
+    println!("safetensors_files: {}", manifest.safetensors.len());
+    println!(
+        "commitment_safetensors_manifest_hash: {}",
+        manifest.commitments.safetensors_manifest_hash
+    );
+
+    Ok(())
+}
+
+fn verify_hf_provenance_manifest_command(
+    manifest_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    let manifest_bytes = fs::read(manifest_path).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to read HF provenance manifest {}: {err}",
+            manifest_path.display()
+        ))
+    })?;
+    let manifest: HfProvenanceManifest =
+        serde_json::from_slice(&manifest_bytes).map_err(|err| {
+            VmError::Serialization(format!(
+                "failed to parse HF provenance manifest {}: {err}",
+                manifest_path.display()
+            ))
+        })?;
+    verify_hf_provenance_manifest(&manifest)?;
+
+    println!("verified_hf_provenance_manifest: true");
+    println!("manifest_version: {}", manifest.manifest_version);
+    println!("semantic_scope: {}", manifest.semantic_scope);
+    println!("hub_repo: {}", manifest.hub_repo);
+    println!("hub_revision: {}", manifest.hub_revision);
+    println!("tokenizer_id: {}", manifest.tokenizer.tokenizer_id);
+    println!("safetensors_files: {}", manifest.safetensors.len());
+
+    Ok(())
+}
+
+fn verify_hf_provenance_manifest(
+    manifest: &HfProvenanceManifest,
+) -> llm_provable_computer::Result<()> {
+    expect_eq(
+        "hf manifest_version",
+        &manifest.manifest_version,
+        HF_PROVENANCE_MANIFEST_VERSION,
+    )?;
+    expect_eq(
+        "hf semantic_scope",
+        &manifest.semantic_scope,
+        HF_PROVENANCE_SEMANTIC_SCOPE,
+    )?;
+    expect_eq(
+        "hf hash_function",
+        &manifest.hash_function,
+        HF_PROVENANCE_HASH_FUNCTION,
+    )?;
+    validate_hf_identifier("hub_repo", &manifest.hub_repo)?;
+    validate_hf_pinned_revision("hub_revision", &manifest.hub_revision)?;
+    validate_hf_identifier("tokenizer_id", &manifest.tokenizer.tokenizer_id)?;
+    validate_hf_pinned_revision("tokenizer_revision", &manifest.tokenizer.tokenizer_revision)?;
+    if manifest.tokenizer.tokenizer_json.is_none()
+        && manifest.tokenizer.tokenizer_config.is_none()
+        && manifest.tokenizer.tokenization_transcript.is_none()
+        && manifest.safetensors.is_empty()
+        && manifest.onnx_export.is_none()
+        && manifest.release.model_card.is_none()
+    {
+        return Err(VmError::InvalidConfig(
+            "HF provenance manifest must bind at least one local tokenizer, safetensors, ONNX, transcript, or model-card file".to_string(),
+        ));
+    }
+    let expected_limitations = hf_provenance_limitations();
+    if manifest.limitations != expected_limitations {
+        return Err(VmError::InvalidConfig(
+            "HF provenance limitations do not match the pinned claim boundary".to_string(),
+        ));
+    }
+    verify_hash_commitment(
+        "hf tokenizer_hash",
+        &manifest.commitments.tokenizer_hash,
+        &hash_json_projection_hex(&manifest.tokenizer)?,
+    )?;
+    verify_hash_commitment(
+        "hf safetensors_manifest_hash",
+        &manifest.commitments.safetensors_manifest_hash,
+        &hash_json_projection_hex(&manifest.safetensors)?,
+    )?;
+    verify_hash_commitment(
+        "hf onnx_export_hash",
+        &manifest.commitments.onnx_export_hash,
+        &hash_json_projection_hex(&manifest.onnx_export)?,
+    )?;
+    verify_hash_commitment(
+        "hf release_metadata_hash",
+        &manifest.commitments.release_metadata_hash,
+        &hash_json_projection_hex(&manifest.release)?,
+    )?;
+    verify_hash_commitment(
+        "hf limitations_hash",
+        &manifest.commitments.limitations_hash,
+        &hash_json_projection_hex(&manifest.limitations)?,
+    )?;
+    verify_hf_optional_file_commitment("tokenizer_json", &manifest.tokenizer.tokenizer_json)?;
+    verify_hf_optional_file_commitment("tokenizer_config", &manifest.tokenizer.tokenizer_config)?;
+    verify_hf_optional_file_commitment(
+        "tokenization_transcript",
+        &manifest.tokenizer.tokenization_transcript,
+    )?;
+    for safetensors in &manifest.safetensors {
+        verify_hf_safetensors_file_commitment(safetensors)?;
+    }
+    if let Some(onnx_export) = &manifest.onnx_export {
+        if onnx_export.exporter.trim().is_empty() {
+            return Err(VmError::InvalidConfig(
+                "HF provenance ONNX exporter must be non-empty".to_string(),
+            ));
+        }
+        verify_hf_file_commitment("onnx_export.graph", &onnx_export.graph)?;
+    }
+    verify_hf_optional_file_commitment("model_card", &manifest.release.model_card)?;
+    validate_hf_optional_identifier("release.doi", manifest.release.doi.as_deref())?;
+    for (idx, dataset) in manifest.release.datasets.iter().enumerate() {
+        validate_hf_identifier(&format!("release.datasets[{idx}]"), dataset)?;
+    }
+    for (idx, note) in manifest.release.notes.iter().enumerate() {
+        if note.trim().is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "HF provenance release.notes[{idx}] must be non-empty"
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+fn hf_provenance_limitations() -> Vec<String> {
+    [
+        "HF provenance manifests pin artifact identity and local file hashes only",
+        "the manifest does not prove tokenizer algorithm correctness",
+        "the manifest does not prove safetensors weights implement a model architecture",
+        "the manifest does not prove Optimum or ONNX exporter semantic equivalence",
+        "the manifest does not perform live Hugging Face Hub downloads or DOI verification",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+fn validate_hf_identifier(label: &str, value: &str) -> llm_provable_computer::Result<()> {
+    if value.trim().is_empty() {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance {label} must be non-empty"
+        )));
+    }
+    if value.contains(char::is_whitespace) {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance {label} must not contain whitespace"
+        )));
+    }
+    Ok(())
+}
+
+fn validate_hf_optional_identifier(
+    label: &str,
+    value: Option<&str>,
+) -> llm_provable_computer::Result<()> {
+    if let Some(value) = value {
+        validate_hf_identifier(label, value)?;
+    }
+    Ok(())
+}
+
+fn validate_hf_pinned_revision(label: &str, value: &str) -> llm_provable_computer::Result<()> {
+    validate_hf_identifier(label, value)?;
+    let lower = value.to_ascii_lowercase();
+    if matches!(lower.as_str(), "main" | "master" | "head") || lower.starts_with("refs/heads/") {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance {label} must be pinned to an immutable commit or release tag, not `{value}`"
+        )));
+    }
+    Ok(())
+}
+
+fn hf_optional_file_commitment(
+    path: Option<&Path>,
+) -> llm_provable_computer::Result<Option<HfFileCommitment>> {
+    path.map(hf_file_commitment).transpose()
+}
+
+fn hf_file_commitment(path: &Path) -> llm_provable_computer::Result<HfFileCommitment> {
+    let (bytes, size_bytes) = read_file_for_hf_commitment(path)?;
+    Ok(HfFileCommitment {
+        path: path.display().to_string(),
+        size_bytes,
+        blake2b_256: hash_bytes_hex(&bytes),
+    })
+}
+
+fn hf_safetensors_file_commitment(
+    path: &Path,
+) -> llm_provable_computer::Result<HfSafetensorsFileCommitment> {
+    let (bytes, size_bytes) = read_file_for_hf_commitment(path)?;
+    let (metadata_hash, tensor_count) = hf_safetensors_metadata_commitment(path, &bytes)?;
+    Ok(HfSafetensorsFileCommitment {
+        path: path.display().to_string(),
+        size_bytes,
+        blake2b_256: hash_bytes_hex(&bytes),
+        metadata_hash,
+        tensor_count,
+    })
+}
+
+fn verify_hf_optional_file_commitment(
+    label: &str,
+    commitment: &Option<HfFileCommitment>,
+) -> llm_provable_computer::Result<()> {
+    if let Some(commitment) = commitment {
+        verify_hf_file_commitment(label, commitment)?;
+    }
+    Ok(())
+}
+
+fn verify_hf_file_commitment(
+    label: &str,
+    commitment: &HfFileCommitment,
+) -> llm_provable_computer::Result<()> {
+    let (bytes, size_bytes) = read_file_for_hf_commitment(Path::new(&commitment.path))?;
+    if commitment.size_bytes != size_bytes {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance {label} size_bytes mismatch: expected {}, got {}",
+            commitment.size_bytes, size_bytes
+        )));
+    }
+    verify_hash_commitment(
+        &format!("HF provenance {label} blake2b_256"),
+        &commitment.blake2b_256,
+        &hash_bytes_hex(&bytes),
+    )
+}
+
+fn verify_hf_safetensors_file_commitment(
+    commitment: &HfSafetensorsFileCommitment,
+) -> llm_provable_computer::Result<()> {
+    let (bytes, size_bytes) = read_file_for_hf_commitment(Path::new(&commitment.path))?;
+    if commitment.size_bytes != size_bytes {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} size_bytes mismatch: expected {}, got {}",
+            commitment.path, commitment.size_bytes, size_bytes
+        )));
+    }
+    verify_hash_commitment(
+        &format!("HF provenance safetensors {} blake2b_256", commitment.path),
+        &commitment.blake2b_256,
+        &hash_bytes_hex(&bytes),
+    )?;
+    let (metadata_hash, tensor_count) =
+        hf_safetensors_metadata_commitment(Path::new(&commitment.path), &bytes)?;
+    verify_hash_commitment(
+        &format!(
+            "HF provenance safetensors {} metadata_hash",
+            commitment.path
+        ),
+        &commitment.metadata_hash,
+        &metadata_hash,
+    )?;
+    if commitment.tensor_count != tensor_count {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} tensor_count mismatch: expected {}, got {}",
+            commitment.path, commitment.tensor_count, tensor_count
+        )));
+    }
+    Ok(())
+}
+
+fn read_file_for_hf_commitment(path: &Path) -> llm_provable_computer::Result<(Vec<u8>, u64)> {
+    let bytes = fs::read(path).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to read HF provenance file {}: {err}",
+            path.display()
+        ))
+    })?;
+    let size_bytes = u64::try_from(bytes.len()).map_err(|_| {
+        VmError::InvalidConfig(format!(
+            "HF provenance file {} is too large to commit",
+            path.display()
+        ))
+    })?;
+    Ok((bytes, size_bytes))
+}
+
+fn hf_safetensors_metadata_commitment(
+    path: &Path,
+    bytes: &[u8],
+) -> llm_provable_computer::Result<(String, usize)> {
+    const MAX_SAFETENSORS_HEADER_BYTES: u64 = 16 * 1024 * 1024;
+    if bytes.len() < 8 {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} is shorter than the 8-byte metadata length header",
+            path.display()
+        )));
+    }
+    let mut header_len_bytes = [0u8; 8];
+    header_len_bytes.copy_from_slice(&bytes[..8]);
+    let header_len = u64::from_le_bytes(header_len_bytes);
+    if header_len > MAX_SAFETENSORS_HEADER_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} metadata header is too large: {} bytes",
+            path.display(),
+            header_len
+        )));
+    }
+    let header_len = usize::try_from(header_len).map_err(|_| {
+        VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} metadata header length overflows usize",
+            path.display()
+        ))
+    })?;
+    let header_end = 8usize.checked_add(header_len).ok_or_else(|| {
+        VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} metadata header end overflows usize",
+            path.display()
+        ))
+    })?;
+    if bytes.len() < header_end {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} metadata header length exceeds file size",
+            path.display()
+        )));
+    }
+    let header_bytes = &bytes[8..header_end];
+    let header_json: serde_json::Value = serde_json::from_slice(header_bytes).map_err(|err| {
+        VmError::Serialization(format!(
+            "failed to parse HF provenance safetensors metadata {}: {err}",
+            path.display()
+        ))
+    })?;
+    let header_object = header_json.as_object().ok_or_else(|| {
+        VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} metadata header must be a JSON object",
+            path.display()
+        ))
+    })?;
+    let tensor_count = header_object
+        .keys()
+        .filter(|key| key.as_str() != "__metadata__")
+        .count();
+    Ok((hash_bytes_hex(header_bytes), tensor_count))
+}
+
+fn verify_hash_commitment(
+    label: &str,
+    actual: &str,
+    expected: &str,
+) -> llm_provable_computer::Result<()> {
+    expect_hash_hex(label, actual)?;
+    expect_hash_hex(label, expected)?;
+    if actual != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} commitment mismatch: expected {expected}, got {actual}"
+        )));
+    }
+    Ok(())
+}
+
+fn expect_eq(label: &str, actual: &str, expected: &str) -> llm_provable_computer::Result<()> {
+    if actual != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} mismatch: expected `{expected}`, got `{actual}`"
+        )));
+    }
+    Ok(())
+}
+
+fn expect_hash_hex(label: &str, value: &str) -> llm_provable_computer::Result<()> {
+    if value.len() != 64 || !value.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} must be a 64-character hex Blake2b-256 hash"
+        )));
+    }
+    Ok(())
+}
+
 #[cfg(feature = "onnx-export")]
 fn research_v2_step_command_impl(
     program: &Path,
@@ -3921,15 +4579,7 @@ fn research_v3_equivalence_command_impl(
     let engine_summaries_hash = hash_json_projection_hex(&engines)?;
     let rule_witnesses_hash = hash_json_projection_hex(&rule_witnesses)?;
     let relation_format = RESEARCH_V3_RELATION_FORMAT.to_string();
-    let limitations = vec![
-        "Emerge reproduction is not implemented in this artifact".to_string(),
-        "e-graph saturation is not implemented in this artifact".to_string(),
-        "SMT-backed rewrite synthesis is not implemented in this artifact".to_string(),
-        "randomized opaque-kernel testing is not implemented in this artifact".to_string(),
-        "recursive accumulation is not implemented in this artifact".to_string(),
-        "this artifact is not a cryptographic implementation-equivalence proof".to_string(),
-        "the current evidence is deterministic multi-engine lockstep over the shipped VM/ONNX/Burn/native surfaces".to_string(),
-    ];
+    let limitations = research_v3_limitations();
     let relation_format_hash = hash_json_hex(&relation_format)?;
     let limitations_hash = hash_json_hex(&limitations)?;
 
@@ -4007,6 +4657,8 @@ fn research_v3_engine_summary(
         halted: result.halted,
         trace_len: trace.len(),
         events_len: events.len(),
+        trace: trace.to_vec(),
+        canonical_events: canonical_events.clone(),
         final_state: result.final_state.clone(),
         trace_hash: hash_json_hex(trace)?,
         event_relation_hash: hash_json_hex(&canonical_events)?,
@@ -4023,7 +4675,6 @@ fn research_v3_canonical_events(
         .map(|event| {
             Ok(ResearchV3CanonicalEvent {
                 step: event.step,
-                layer_idx: event.layer_idx,
                 instruction: event.instruction.to_string(),
                 state_before_hash: hash_json_hex(&event.state_before)?,
                 state_after_hash: hash_json_hex(&event.state_after)?,
@@ -4043,6 +4694,18 @@ fn research_v3_rule_witnesses(
         .iter()
         .map(|(engine_name, _)| (*engine_name).to_string())
         .collect::<Vec<_>>();
+    let reference_event_len = reference_events.len();
+    for (engine_name, events) in engine_events.iter().skip(1) {
+        if events.len() != reference_event_len {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3-equivalence event length mismatch: {} has {}, {} has {}",
+                reference_name,
+                reference_event_len,
+                engine_name,
+                events.len()
+            )));
+        }
+    }
 
     reference_events
         .iter()
@@ -4051,6 +4714,7 @@ fn research_v3_rule_witnesses(
             let instruction = reference_event.instruction.to_string();
             let mut state_before_hashes = std::collections::BTreeMap::new();
             let mut state_after_hashes = std::collections::BTreeMap::new();
+            let mut engine_transition_hashes = std::collections::BTreeMap::new();
             for (engine_name, events) in engine_events {
                 let event = events.get(event_idx).ok_or_else(|| {
                     VmError::InvalidConfig(format!(
@@ -4071,11 +4735,28 @@ fn research_v3_rule_witnesses(
                         event.instruction
                     )));
                 }
-                state_before_hashes
-                    .insert((*engine_name).to_string(), hash_json_hex(&event.state_before)?);
-                state_after_hashes
-                    .insert((*engine_name).to_string(), hash_json_hex(&event.state_after)?);
+                let state_before_hash = hash_json_hex(&event.state_before)?;
+                let state_after_hash = hash_json_hex(&event.state_after)?;
+                let transition_hash = research_v3_transition_relation_hash(
+                    event.step,
+                    &instruction,
+                    &state_before_hash,
+                    &state_after_hash,
+                )?;
+                state_before_hashes.insert((*engine_name).to_string(), state_before_hash);
+                state_after_hashes.insert((*engine_name).to_string(), state_after_hash);
+                engine_transition_hashes.insert((*engine_name).to_string(), transition_hash);
             }
+            let canonical_transition_hash =
+                engine_transition_hashes
+                    .get(*reference_name)
+                    .cloned()
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "research-v3-equivalence missing reference transition hash for {}",
+                            reference_name
+                        ))
+                    })?;
             Ok(ResearchV3RuleWitness {
                 step: reference_event.step,
                 rule_id: research_v3_rule_id(&instruction),
@@ -4084,6 +4765,8 @@ fn research_v3_rule_witnesses(
                 participating_engines: participating_engines.clone(),
                 state_before_hashes,
                 state_after_hashes,
+                engine_transition_hashes,
+                canonical_transition_hash,
                 validation: ResearchV3RuleValidation {
                     differential_lockstep: true,
                     egraph_status: "not-attempted".to_string(),
@@ -4093,6 +4776,675 @@ fn research_v3_rule_witnesses(
             })
         })
         .collect()
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_transition_relation_hash(
+    step: usize,
+    instruction: &str,
+    state_before_hash: &str,
+    state_after_hash: &str,
+) -> llm_provable_computer::Result<String> {
+    let row = ResearchV3TransitionRelationRow {
+        relation_format: RESEARCH_V3_RELATION_FORMAT.to_string(),
+        step,
+        instruction: instruction.to_string(),
+        state_before_hash: state_before_hash.to_string(),
+        state_after_hash: state_after_hash.to_string(),
+    };
+    hash_json_projection_hex(&row)
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_limitations() -> Vec<String> {
+    [
+        "Emerge reproduction is not implemented in this artifact",
+        "e-graph saturation is not implemented in this artifact",
+        "SMT-backed rewrite synthesis is not implemented in this artifact",
+        "randomized opaque-kernel testing is not implemented in this artifact",
+        "recursive accumulation is not implemented in this artifact",
+        "this artifact is not a cryptographic implementation-equivalence proof",
+        "the current evidence is deterministic multi-engine lockstep over the shipped VM/ONNX/Burn/native surfaces",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn verify_research_v3_equivalence_command_impl(
+    artifact_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    let artifact_bytes = fs::read(artifact_path).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to read research-v3 artifact {}: {err}",
+            artifact_path.display()
+        ))
+    })?;
+    let artifact: ResearchV3EquivalenceArtifact =
+        serde_json::from_slice(&artifact_bytes).map_err(|err| {
+            VmError::Serialization(format!(
+                "failed to parse research-v3 artifact {}: {err}",
+                artifact_path.display()
+            ))
+        })?;
+
+    verify_research_v3_equivalence_artifact(&artifact)?;
+
+    println!("verified_research_v3_equivalence: true");
+    println!("statement_version: {}", artifact.statement_version);
+    println!("semantic_scope: {}", artifact.semantic_scope);
+    println!("relation_format: {}", artifact.relation_format);
+    println!("checked_steps: {}", artifact.checked_steps);
+    println!(
+        "engines: {}",
+        artifact
+            .engines
+            .iter()
+            .map(|engine| engine.name.as_str())
+            .collect::<Vec<_>>()
+            .join(",")
+    );
+    println!("rule_witnesses: {}", artifact.rule_witnesses.len());
+
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn verify_research_v3_equivalence_artifact(
+    artifact: &ResearchV3EquivalenceArtifact,
+) -> llm_provable_computer::Result<()> {
+    let bundle = load_research_v2_spec_bundle(
+        STATEMENT_V3_EQUIVALENCE_SPEC_PATH,
+        STATEMENT_V3_EQUIVALENCE_ARTIFACT_SCHEMA_PATH,
+    )?;
+    research_v3_expect_eq(
+        "statement_version",
+        &artifact.statement_version,
+        &bundle.statement_version,
+    )?;
+    research_v3_expect_eq(
+        "semantic_scope",
+        &artifact.semantic_scope,
+        &bundle.semantic_scope,
+    )?;
+    research_v3_expect_eq(
+        "relation_format",
+        &artifact.relation_format,
+        RESEARCH_V3_RELATION_FORMAT,
+    )?;
+    research_v3_expect_eq(
+        "fixed_point_profile",
+        &artifact.fixed_point_profile,
+        &bundle.fixed_point_profile,
+    )?;
+    research_v3_expect_eq(
+        "onnx_op_subset_version",
+        &artifact.onnx_op_subset_version,
+        &bundle.onnx_op_subset_version,
+    )?;
+    if artifact.onnx_op_subset_size != bundle.onnx_op_subset_size {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 onnx_op_subset_size mismatch: expected {}, got {}",
+            bundle.onnx_op_subset_size, artifact.onnx_op_subset_size
+        )));
+    }
+    if artifact.requested_max_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "research-v3 requested_max_steps must be nonzero".to_string(),
+        ));
+    }
+    if artifact.checked_steps > artifact.requested_max_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 checked_steps {} exceeds requested_max_steps {}",
+            artifact.checked_steps, artifact.requested_max_steps
+        )));
+    }
+    if artifact.checked_steps != artifact.rule_witnesses.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 checked_steps {} does not match rule_witnesses length {}",
+            artifact.checked_steps,
+            artifact.rule_witnesses.len()
+        )));
+    }
+    let expected_limitations = research_v3_limitations();
+    if artifact.limitations != expected_limitations {
+        return Err(VmError::InvalidConfig(
+            "research-v3 limitations do not match the pinned research-v3 claim boundary"
+                .to_string(),
+        ));
+    }
+
+    validate_frontend_runtime_semantics_registry(&artifact.frontend_runtime_semantics_registry)?;
+    research_v3_verify_commitment(
+        "statement_spec_hash",
+        &artifact.commitments.statement_spec_hash,
+        &bundle.statement_spec_hash,
+    )?;
+    research_v3_verify_commitment(
+        "fixed_point_spec_hash",
+        &artifact.commitments.fixed_point_spec_hash,
+        &bundle.fixed_point_spec_hash,
+    )?;
+    research_v3_verify_commitment(
+        "onnx_op_subset_hash",
+        &artifact.commitments.onnx_op_subset_hash,
+        &bundle.onnx_op_subset_hash,
+    )?;
+    research_v3_verify_commitment(
+        "artifact_schema_hash",
+        &artifact.commitments.artifact_schema_hash,
+        &bundle.artifact_schema_hash,
+    )?;
+    research_v3_expect_eq(
+        "commitments.hash_function",
+        &artifact.commitments.hash_function,
+        RESEARCH_V2_HASH_FUNCTION,
+    )?;
+    research_v3_verify_commitment(
+        "frontend_runtime_semantics_registry_hash",
+        &artifact
+            .commitments
+            .frontend_runtime_semantics_registry_hash,
+        &hash_json_hex(&artifact.frontend_runtime_semantics_registry)?,
+    )?;
+    research_v3_verify_commitment(
+        "relation_format_hash",
+        &artifact.commitments.relation_format_hash,
+        &hash_json_hex(&artifact.relation_format)?,
+    )?;
+    research_v3_verify_commitment(
+        "limitations_hash",
+        &artifact.commitments.limitations_hash,
+        &hash_json_hex(&artifact.limitations)?,
+    )?;
+    research_v3_verify_commitment(
+        "engine_summaries_hash",
+        &artifact.commitments.engine_summaries_hash,
+        &hash_json_projection_hex(&artifact.engines)?,
+    )?;
+    research_v3_verify_commitment(
+        "rule_witnesses_hash",
+        &artifact.commitments.rule_witnesses_hash,
+        &hash_json_projection_hex(&artifact.rule_witnesses)?,
+    )?;
+    for (label, hash) in [
+        ("program_hash", artifact.commitments.program_hash.as_str()),
+        (
+            "transformer_config_hash",
+            artifact.commitments.transformer_config_hash.as_str(),
+        ),
+        (
+            "onnx_metadata_hash",
+            artifact.commitments.onnx_metadata_hash.as_str(),
+        ),
+    ] {
+        research_v3_expect_hash_hex(label, hash)?;
+    }
+
+    verify_research_v3_engine_summaries(artifact)?;
+    verify_research_v3_rule_witnesses(artifact)?;
+
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn verify_research_v3_engine_summaries(
+    artifact: &ResearchV3EquivalenceArtifact,
+) -> llm_provable_computer::Result<()> {
+    let mut seen = std::collections::BTreeSet::new();
+    for engine in &artifact.engines {
+        if !seen.insert(engine.name.as_str()) {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 duplicate engine summary `{}`",
+                engine.name
+            )));
+        }
+        if engine.halted != engine.final_state.halted {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} halted={} does not match final_state.halted={}",
+                engine.name, engine.halted, engine.final_state.halted
+            )));
+        }
+        if engine.steps != artifact.checked_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} steps {} does not match checked_steps {}",
+                engine.name, engine.steps, artifact.checked_steps
+            )));
+        }
+        if engine.events_len != artifact.checked_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} events_len {} does not match checked_steps {}",
+                engine.name, engine.events_len, artifact.checked_steps
+            )));
+        }
+        let expected_trace_len = engine.events_len.checked_add(1).ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "research-v3 engine {} events_len overflow while checking trace_len",
+                engine.name
+            ))
+        })?;
+        if engine.trace_len != expected_trace_len {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} trace_len {} does not match events_len + 1 ({})",
+                engine.name, engine.trace_len, expected_trace_len
+            )));
+        }
+        if engine.trace.len() != engine.trace_len {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} trace array length {} does not match trace_len {}",
+                engine.name,
+                engine.trace.len(),
+                engine.trace_len
+            )));
+        }
+        if engine.canonical_events.len() != engine.events_len {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} canonical_events length {} does not match events_len {}",
+                engine.name,
+                engine.canonical_events.len(),
+                engine.events_len
+            )));
+        }
+        if engine.trace.last() != Some(&engine.final_state) {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} final_state does not match final trace state",
+                engine.name
+            )));
+        }
+        verify_research_v3_engine_trace_events(engine)?;
+        research_v3_verify_commitment(
+            &format!("{}.final_state_hash", engine.name),
+            &engine.final_state_hash,
+            &hash_json_hex(&engine.final_state)?,
+        )?;
+        research_v3_verify_commitment(
+            &format!("{}.trace_hash", engine.name),
+            &engine.trace_hash,
+            &hash_json_hex(&engine.trace)?,
+        )?;
+        research_v3_verify_commitment(
+            &format!("{}.event_relation_hash", engine.name),
+            &engine.event_relation_hash,
+            &hash_json_hex(&engine.canonical_events)?,
+        )?;
+    }
+    if let Some(reference) = artifact.engines.first() {
+        for engine in &artifact.engines {
+            research_v3_verify_commitment(
+                &format!("engine {} cross-engine trace_hash", engine.name),
+                &engine.trace_hash,
+                &reference.trace_hash,
+            )?;
+            research_v3_verify_commitment(
+                &format!("engine {} cross-engine event_relation_hash", engine.name),
+                &engine.event_relation_hash,
+                &reference.event_relation_hash,
+            )?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn verify_research_v3_engine_trace_events(
+    engine: &ResearchV3EngineSummary,
+) -> llm_provable_computer::Result<()> {
+    for (index, event) in engine.canonical_events.iter().enumerate() {
+        let expected_step = index + 1;
+        if event.step != expected_step {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} canonical event step mismatch at index {}: expected {}, got {}",
+                engine.name, index, expected_step, event.step
+            )));
+        }
+        let state_before = engine.trace.get(index).ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "research-v3 engine {} missing trace state before canonical event {}",
+                engine.name, event.step
+            ))
+        })?;
+        let state_after = engine.trace.get(index + 1).ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "research-v3 engine {} missing trace state after canonical event {}",
+                engine.name, event.step
+            ))
+        })?;
+        research_v3_verify_commitment(
+            &format!(
+                "engine {} canonical event {} state_before_hash",
+                engine.name, event.step
+            ),
+            &event.state_before_hash,
+            &hash_json_hex(state_before)?,
+        )?;
+        research_v3_verify_commitment(
+            &format!(
+                "engine {} canonical event {} state_after_hash",
+                engine.name, event.step
+            ),
+            &event.state_after_hash,
+            &hash_json_hex(state_after)?,
+        )?;
+    }
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn verify_research_v3_rule_witnesses(
+    artifact: &ResearchV3EquivalenceArtifact,
+) -> llm_provable_computer::Result<()> {
+    let engine_names = artifact
+        .engines
+        .iter()
+        .map(|engine| engine.name.clone())
+        .collect::<Vec<_>>();
+    if engine_names.len() < 2 {
+        return Err(VmError::InvalidConfig(
+            "research-v3 artifact must include at least two engines".to_string(),
+        ));
+    }
+    let reference_engine = engine_names.first().ok_or_else(|| {
+        VmError::InvalidConfig("research-v3 artifact must include at least one engine".to_string())
+    })?;
+
+    for (index, witness) in artifact.rule_witnesses.iter().enumerate() {
+        if witness.step != index + 1 {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 witness step mismatch at index {}: expected {}, got {}",
+                index,
+                index + 1,
+                witness.step
+            )));
+        }
+        if witness.participating_engines != engine_names {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 witness step {} participating_engines mismatch",
+                witness.step
+            )));
+        }
+        research_v3_expect_eq(
+            &format!("witness {} relation", witness.step),
+            &witness.relation,
+            "same-instruction-same-state-transition",
+        )?;
+        research_v3_expect_eq(
+            &format!("witness {} rule_id", witness.step),
+            &witness.rule_id,
+            &research_v3_rule_id(&witness.instruction),
+        )?;
+        if !witness.validation.differential_lockstep {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 witness {} differential_lockstep must be true",
+                witness.step
+            )));
+        }
+        for (label, status) in [
+            ("egraph_status", witness.validation.egraph_status.as_str()),
+            ("smt_status", witness.validation.smt_status.as_str()),
+            (
+                "randomized_testing_status",
+                witness.validation.randomized_testing_status.as_str(),
+            ),
+        ] {
+            research_v3_expect_eq(
+                &format!("witness {} {}", witness.step, label),
+                status,
+                "not-attempted",
+            )?;
+        }
+
+        research_v3_expect_hash_map_keys(
+            &witness.state_before_hashes,
+            "state_before_hashes",
+            witness.step,
+            &engine_names,
+        )?;
+        research_v3_expect_hash_map_keys(
+            &witness.state_after_hashes,
+            "state_after_hashes",
+            witness.step,
+            &engine_names,
+        )?;
+        research_v3_expect_hash_map_keys(
+            &witness.engine_transition_hashes,
+            "engine_transition_hashes",
+            witness.step,
+            &engine_names,
+        )?;
+        let reference_state_before_hash = research_v3_map_hash(
+            &witness.state_before_hashes,
+            "state_before_hashes",
+            witness.step,
+            reference_engine,
+        )?;
+        let reference_state_after_hash = research_v3_map_hash(
+            &witness.state_after_hashes,
+            "state_after_hashes",
+            witness.step,
+            reference_engine,
+        )?;
+        let reference_transition_hash = research_v3_map_hash(
+            &witness.engine_transition_hashes,
+            "engine_transition_hashes",
+            witness.step,
+            reference_engine,
+        )?;
+        for engine_name in &engine_names {
+            let engine = artifact
+                .engines
+                .iter()
+                .find(|engine| &engine.name == engine_name)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "research-v3 missing engine summary for {engine_name}"
+                    ))
+                })?;
+            let canonical_event = engine.canonical_events.get(index).ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "research-v3 engine {} missing canonical event for witness {}",
+                    engine.name, witness.step
+                ))
+            })?;
+            research_v3_expect_eq(
+                &format!(
+                    "witness {} {} canonical_event.instruction",
+                    witness.step, engine_name
+                ),
+                &canonical_event.instruction,
+                &witness.instruction,
+            )?;
+            let state_before_hash = research_v3_map_hash(
+                &witness.state_before_hashes,
+                "state_before_hashes",
+                witness.step,
+                engine_name,
+            )?;
+            let state_after_hash = research_v3_map_hash(
+                &witness.state_after_hashes,
+                "state_after_hashes",
+                witness.step,
+                engine_name,
+            )?;
+            let transition_hash = research_v3_map_hash(
+                &witness.engine_transition_hashes,
+                "engine_transition_hashes",
+                witness.step,
+                engine_name,
+            )?;
+            research_v3_verify_commitment(
+                &format!("witness {} {} state_before_hash", witness.step, engine_name),
+                state_before_hash,
+                reference_state_before_hash,
+            )?;
+            research_v3_verify_commitment(
+                &format!("witness {} {} state_after_hash", witness.step, engine_name),
+                state_after_hash,
+                reference_state_after_hash,
+            )?;
+            research_v3_verify_commitment(
+                &format!(
+                    "witness {} {} canonical_event.state_before_hash",
+                    witness.step, engine_name
+                ),
+                &canonical_event.state_before_hash,
+                state_before_hash,
+            )?;
+            research_v3_verify_commitment(
+                &format!(
+                    "witness {} {} canonical_event.state_after_hash",
+                    witness.step, engine_name
+                ),
+                &canonical_event.state_after_hash,
+                state_after_hash,
+            )?;
+            let expected_transition_hash = research_v3_transition_relation_hash(
+                witness.step,
+                &witness.instruction,
+                state_before_hash,
+                state_after_hash,
+            )?;
+            research_v3_verify_commitment(
+                &format!("witness {} {} transition_hash", witness.step, engine_name),
+                transition_hash,
+                &expected_transition_hash,
+            )?;
+            research_v3_verify_commitment(
+                &format!(
+                    "witness {} {} cross-engine transition_hash",
+                    witness.step, engine_name
+                ),
+                transition_hash,
+                reference_transition_hash,
+            )?;
+        }
+
+        research_v3_verify_commitment(
+            &format!("witness {} canonical_transition_hash", witness.step),
+            &witness.canonical_transition_hash,
+            reference_transition_hash,
+        )?;
+    }
+
+    if let Some(final_witness) = artifact.rule_witnesses.last() {
+        for engine in &artifact.engines {
+            let final_witness_state_hash = research_v3_map_hash(
+                &final_witness.state_after_hashes,
+                "state_after_hashes",
+                final_witness.step,
+                &engine.name,
+            )?;
+            research_v3_verify_commitment(
+                &format!(
+                    "engine {} final_state_hash matches final witness boundary",
+                    engine.name
+                ),
+                &engine.final_state_hash,
+                final_witness_state_hash,
+            )?;
+        }
+    }
+    let reference_final_state_hash = &artifact
+        .engines
+        .first()
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "research-v3 artifact must include at least one engine".to_string(),
+            )
+        })?
+        .final_state_hash;
+    for engine in &artifact.engines {
+        research_v3_verify_commitment(
+            &format!("engine {} cross-engine final_state_hash", engine.name),
+            &engine.final_state_hash,
+            reference_final_state_hash,
+        )?;
+    }
+
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_expect_hash_map_keys(
+    map: &std::collections::BTreeMap<String, String>,
+    map_name: &str,
+    step: usize,
+    engine_names: &[String],
+) -> llm_provable_computer::Result<()> {
+    let actual = map
+        .keys()
+        .map(String::as_str)
+        .collect::<std::collections::BTreeSet<_>>();
+    let expected = engine_names
+        .iter()
+        .map(String::as_str)
+        .collect::<std::collections::BTreeSet<_>>();
+    if actual != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 witness {step} {map_name} engine-key set mismatch"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_map_hash<'a>(
+    map: &'a std::collections::BTreeMap<String, String>,
+    map_name: &str,
+    step: usize,
+    engine_name: &str,
+) -> llm_provable_computer::Result<&'a str> {
+    let hash = map.get(engine_name).ok_or_else(|| {
+        VmError::InvalidConfig(format!(
+            "research-v3 witness {} missing {} entry for {}",
+            step, map_name, engine_name
+        ))
+    })?;
+    research_v3_expect_hash_hex(
+        &format!("witness {} {} {}", step, map_name, engine_name),
+        hash,
+    )?;
+    Ok(hash)
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_verify_commitment(
+    label: &str,
+    actual: &str,
+    expected: &str,
+) -> llm_provable_computer::Result<()> {
+    research_v3_expect_hash_hex(label, actual)?;
+    research_v3_expect_hash_hex(label, expected)?;
+    if actual != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 {label} commitment mismatch: expected {expected}, got {actual}"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_expect_eq(
+    label: &str,
+    actual: &str,
+    expected: &str,
+) -> llm_provable_computer::Result<()> {
+    if actual != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 {label} mismatch: expected `{expected}`, got `{actual}`"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_expect_hash_hex(label: &str, value: &str) -> llm_provable_computer::Result<()> {
+    if value.len() != 64 || !value.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 {label} must be a 64-character hex Blake2b-256 hash"
+        )));
+    }
+    Ok(())
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
@@ -4402,6 +5754,16 @@ fn research_v3_equivalence_command_impl(
     ))
 }
 
+#[cfg(not(all(feature = "burn-model", feature = "onnx-export")))]
+fn verify_research_v3_equivalence_command_impl(
+    _artifact: &Path,
+) -> llm_provable_computer::Result<()> {
+    Err(feature_required_error(
+        "`verify-research-v3-equivalence`",
+        &["burn-model", "onnx-export"],
+    ))
+}
+
 #[cfg(feature = "onnx-export")]
 fn read_repo_file(relative_path: &str) -> llm_provable_computer::Result<Vec<u8>> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(relative_path);
@@ -4526,7 +5888,6 @@ fn validate_frontend_runtime_semantics_registry(
     Ok(())
 }
 
-#[cfg(feature = "onnx-export")]
 fn hash_json_hex<T: Serialize + ?Sized>(value: &T) -> llm_provable_computer::Result<String> {
     let bytes = serde_json::to_vec(value).map_err(|err| {
         VmError::Serialization(format!("failed to serialize hash payload: {err}"))
@@ -4534,7 +5895,6 @@ fn hash_json_hex<T: Serialize + ?Sized>(value: &T) -> llm_provable_computer::Res
     Ok(hash_bytes_hex(&bytes))
 }
 
-#[cfg(feature = "onnx-export")]
 fn hash_json_projection_hex<T: Serialize + ?Sized>(
     value: &T,
 ) -> llm_provable_computer::Result<String> {
@@ -4544,7 +5904,6 @@ fn hash_json_projection_hex<T: Serialize + ?Sized>(
     hash_json_hex(&projection)
 }
 
-#[cfg(feature = "onnx-export")]
 fn hash_bytes_hex(bytes: &[u8]) -> String {
     let mut output = [0u8; 32];
     let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
@@ -4555,7 +5914,6 @@ fn hash_bytes_hex(bytes: &[u8]) -> String {
     output.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-#[cfg(feature = "onnx-export")]
 fn write_bytes_atomically(path: &Path, bytes: &[u8]) -> llm_provable_computer::Result<()> {
     use std::io::Write;
 
@@ -4788,6 +6146,32 @@ mod tests {
         assert!(err
             .to_string()
             .contains(&format!("duplicate lane_id {duplicate_lane_id}")));
+    }
+
+    #[test]
+    #[cfg(feature = "burn-model")]
+    fn research_v3_rule_witnesses_rejects_event_length_mismatch() {
+        let state_before = MachineState::new(4);
+        let mut state_after = state_before.clone();
+        state_after.pc = 1;
+        let reference_event = ExecutionTraceEntry {
+            step: 1,
+            layer_idx: None,
+            instruction: llm_provable_computer::Instruction::Nop,
+            state_before,
+            state_after,
+        };
+        let peer_events = Vec::new();
+
+        let err = research_v3_rule_witnesses(&[
+            ("transformer", std::slice::from_ref(&reference_event)),
+            ("native", peer_events.as_slice()),
+        ])
+        .unwrap_err();
+
+        assert!(err
+            .to_string()
+            .contains("research-v3-equivalence event length mismatch"));
     }
 
     #[test]
@@ -5222,6 +6606,9 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "research-v2-trace"
                 | "research-v2-matrix"
                 | "research-v3-equivalence"
+                | "verify-research-v3-equivalence"
+                | "prepare-hf-provenance-manifest"
+                | "verify-hf-provenance-manifest"
                 | "help"
         )
 }

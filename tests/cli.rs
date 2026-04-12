@@ -4011,6 +4011,178 @@ fn cli_reports_missing_features_for_research_v3_equivalence() {
         ));
 
     assert!(!output_path.exists());
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-research-v3-equivalence")
+        .arg(&output_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "`verify-research-v3-equivalence` requires the `burn-model` and `onnx-export` features",
+        ));
+}
+
+#[test]
+fn cli_can_prepare_and_verify_hf_provenance_manifest() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-manifest");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let tokenizer_json = fixture_dir.join("tokenizer.json");
+    let tokenizer_config = fixture_dir.join("tokenizer_config.json");
+    let transcript = fixture_dir.join("tokenization-transcript.json");
+    let safetensors = fixture_dir.join("model.safetensors");
+    let onnx_model = fixture_dir.join("model.onnx");
+    let model_card = fixture_dir.join("README.md");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(
+        &tokenizer_json,
+        br#"{"version":"1.0","model":{"type":"WordPiece","unk_token":"[UNK]"}}"#,
+    )
+    .expect("write tokenizer json");
+    std::fs::write(&tokenizer_config, br#"{"model_max_length":16}"#)
+        .expect("write tokenizer config");
+    std::fs::write(
+        &transcript,
+        br#"{"prompt":"hello","token_ids":[1,2],"tokens":["hello","world"]}"#,
+    )
+    .expect("write tokenization transcript");
+    let safetensors_header = br#"{"weight":{"dtype":"F32","shape":[1],"data_offsets":[0,4]},"__metadata__":{"format":"pt"}}"#;
+    let mut safetensors_bytes = Vec::new();
+    safetensors_bytes.extend_from_slice(&(safetensors_header.len() as u64).to_le_bytes());
+    safetensors_bytes.extend_from_slice(safetensors_header);
+    safetensors_bytes.extend_from_slice(&[0, 0, 0, 0]);
+    std::fs::write(&safetensors, safetensors_bytes).expect("write safetensors fixture");
+    std::fs::write(&onnx_model, b"fake-onnx-graph").expect("write ONNX fixture");
+    std::fs::write(
+        &model_card,
+        "# HF provenance fixture\n\nPinned for CLI manifest tests.\n",
+    )
+    .expect("write model card");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&tokenizer_json)
+        .arg("--tokenizer-config")
+        .arg(&tokenizer_config)
+        .arg("--tokenization-transcript")
+        .arg(&transcript)
+        .arg("--safetensors")
+        .arg(&safetensors)
+        .arg("--onnx-model")
+        .arg(&onnx_model)
+        .arg("--onnx-exporter-version")
+        .arg("optimum-test")
+        .arg("--model-card")
+        .arg(&model_card)
+        .arg("--doi")
+        .arg("10.57967/hf/example")
+        .arg("--dataset")
+        .arg("example/prompts")
+        .arg("--note")
+        .arg("fixture only")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("hf_provenance_manifest:"))
+        .stdout(predicate::str::contains("safetensors_files: 1"));
+
+    let manifest_json: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).expect("manifest bytes"))
+            .expect("manifest json");
+    #[cfg(feature = "onnx-export")]
+    validate_json_against_schema(&manifest_json, "spec/hf-provenance-manifest.schema.json");
+    assert_eq!(
+        manifest_json
+            .get("manifest_version")
+            .and_then(serde_json::Value::as_str),
+        Some("hf-provenance-manifest-v1")
+    );
+    assert_eq!(
+        manifest_json
+            .get("safetensors")
+            .and_then(serde_json::Value::as_array)
+            .and_then(|files| files.first())
+            .and_then(|file| file.get("tensor_count"))
+            .and_then(serde_json::Value::as_u64),
+        Some(1)
+    );
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "verified_hf_provenance_manifest: true",
+        ));
+
+    std::fs::write(
+        &tokenizer_json,
+        br#"{"version":"1.0","model":{"type":"WordPiece","unk_token":"[BAD]"}}"#,
+    )
+    .expect("tamper tokenizer json");
+    let mut verify_tampered = tvm_command();
+    verify_tampered
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "tokenizer_json blake2b_256 commitment mismatch",
+        ));
+
+    let floating_manifest = fixture_dir.join("floating.json");
+    let mut floating = tvm_command();
+    floating
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&floating_manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("main")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&tokenizer_json)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "hub_revision must be pinned to an immutable commit or release tag",
+        ));
+
+    let branch_manifest = fixture_dir.join("branch-ref.json");
+    let mut branch_ref = tvm_command();
+    branch_ref
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&branch_manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("refs/heads/main")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&tokenizer_json)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "hub_revision must be pinned to an immutable commit or release tag",
+        ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
 }
 
 #[cfg(feature = "onnx-export")]
@@ -4229,6 +4401,14 @@ fn cli_supports_research_v2_matrix_command() {
 #[test]
 fn cli_supports_research_v3_equivalence_command() {
     let output_path = unique_temp_dir("cli-research-v3-equivalence").with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-research-v3-equivalence-tampered").with_extension("json");
+    let state_mismatch_path =
+        unique_temp_dir("cli-research-v3-equivalence-state-mismatch").with_extension("json");
+    let trace_hash_path =
+        unique_temp_dir("cli-research-v3-equivalence-trace-hash").with_extension("json");
+    let canonical_event_path =
+        unique_temp_dir("cli-research-v3-equivalence-canonical-event").with_extension("json");
     let mut command = tvm_command();
     command
         .arg("research-v3-equivalence")
@@ -4322,6 +4502,46 @@ fn cli_supports_research_v3_equivalence_command() {
         engine_names,
         ["transformer", "native", "burn", "onnx/tract"]
     );
+    for engine in artifact_json
+        .get("engines")
+        .and_then(serde_json::Value::as_array)
+        .expect("engines")
+    {
+        let trace_len = engine
+            .get("trace_len")
+            .and_then(serde_json::Value::as_u64)
+            .expect("trace_len") as usize;
+        let events_len = engine
+            .get("events_len")
+            .and_then(serde_json::Value::as_u64)
+            .expect("events_len") as usize;
+        assert_eq!(
+            engine
+                .get("trace")
+                .and_then(serde_json::Value::as_array)
+                .map(Vec::len),
+            Some(trace_len)
+        );
+        assert_eq!(
+            engine
+                .get("canonical_events")
+                .and_then(serde_json::Value::as_array)
+                .map(Vec::len),
+            Some(events_len)
+        );
+        assert_eq!(trace_len, events_len + 1);
+    }
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-research-v3-equivalence")
+        .arg(&output_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "verified_research_v3_equivalence: true",
+        ))
+        .stdout(predicate::str::contains("rule_witnesses: 3"));
+
     let checked_steps = artifact_json
         .get("checked_steps")
         .and_then(serde_json::Value::as_u64)
@@ -4361,6 +4581,25 @@ fn cli_supports_research_v3_equivalence_command() {
             assert_eq!(hash.len(), 64);
         }
     }
+    let canonical_transition_hash = first_witness
+        .get("canonical_transition_hash")
+        .and_then(serde_json::Value::as_str)
+        .expect("canonical transition hash");
+    assert_eq!(canonical_transition_hash.len(), 64);
+    let engine_transition_hashes = first_witness
+        .get("engine_transition_hashes")
+        .and_then(serde_json::Value::as_object)
+        .expect("engine transition hashes");
+    for engine_name in ["transformer", "native", "burn", "onnx/tract"] {
+        let transition_hash = engine_transition_hashes
+            .get(engine_name)
+            .and_then(serde_json::Value::as_str)
+            .expect("per-engine transition hash");
+        assert_eq!(
+            transition_hash, canonical_transition_hash,
+            "transition relation hash drift for {engine_name}"
+        );
+    }
     let limitations = artifact_json
         .get("limitations")
         .and_then(serde_json::Value::as_array)
@@ -4392,12 +4631,118 @@ fn cli_supports_research_v3_equivalence_command() {
         assert_research_v3_runtime_commitments(&tampered_registry_hash)
     })
     .is_err());
+    let mut tampered_transition_hash = artifact_json.clone();
+    tampered_transition_hash["rule_witnesses"][0]["engine_transition_hashes"]["native"] =
+        serde_json::Value::String("0".repeat(64));
+    assert!(std::panic::catch_unwind(|| {
+        assert_research_v3_runtime_commitments(&tampered_transition_hash)
+    })
+    .is_err());
+    tampered_transition_hash["commitments"]["rule_witnesses_hash"] =
+        serde_json::Value::String(hash_json_value(
+            tampered_transition_hash
+                .get("rule_witnesses")
+                .expect("tampered rule witnesses"),
+        ));
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&tampered_transition_hash).expect("tampered artifact json"),
+    )
+    .expect("write tampered artifact");
+    let mut verify_tampered = tvm_command();
+    verify_tampered
+        .arg("verify-research-v3-equivalence")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "transition_hash commitment mismatch",
+        ));
+
+    let mut tampered_state_mismatch = artifact_json.clone();
+    tampered_state_mismatch["rule_witnesses"][0]["state_after_hashes"]["native"] =
+        serde_json::Value::String("1".repeat(64));
+    tampered_state_mismatch["commitments"]["rule_witnesses_hash"] =
+        serde_json::Value::String(hash_json_value(
+            tampered_state_mismatch
+                .get("rule_witnesses")
+                .expect("tampered state mismatch rule witnesses"),
+        ));
+    std::fs::write(
+        &state_mismatch_path,
+        serde_json::to_vec(&tampered_state_mismatch)
+            .expect("tampered state mismatch artifact json"),
+    )
+    .expect("write state mismatch artifact");
+    let mut verify_state_mismatch = tvm_command();
+    verify_state_mismatch
+        .arg("verify-research-v3-equivalence")
+        .arg(&state_mismatch_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "state_after_hash commitment mismatch",
+        ));
+
+    let mut tampered_trace_hash = artifact_json.clone();
+    tampered_trace_hash["engines"][0]["trace_hash"] = serde_json::Value::String("2".repeat(64));
+    tampered_trace_hash["commitments"]["engine_summaries_hash"] =
+        serde_json::Value::String(hash_json_value(
+            tampered_trace_hash
+                .get("engines")
+                .expect("tampered engines"),
+        ));
+    std::fs::write(
+        &trace_hash_path,
+        serde_json::to_vec(&tampered_trace_hash).expect("tampered trace hash artifact json"),
+    )
+    .expect("write trace hash artifact");
+    let mut verify_trace_hash = tvm_command();
+    verify_trace_hash
+        .arg("verify-research-v3-equivalence")
+        .arg(&trace_hash_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("trace_hash commitment mismatch"));
+
+    let mut tampered_canonical_event = artifact_json.clone();
+    tampered_canonical_event["engines"][0]["canonical_events"][0]["state_after_hash"] =
+        serde_json::Value::String("3".repeat(64));
+    tampered_canonical_event["engines"][0]["event_relation_hash"] =
+        serde_json::Value::String(hash_json_value(
+            tampered_canonical_event["engines"][0]
+                .get("canonical_events")
+                .expect("tampered canonical events"),
+        ));
+    tampered_canonical_event["commitments"]["engine_summaries_hash"] =
+        serde_json::Value::String(hash_json_value(
+            tampered_canonical_event
+                .get("engines")
+                .expect("tampered canonical event engines"),
+        ));
+    std::fs::write(
+        &canonical_event_path,
+        serde_json::to_vec(&tampered_canonical_event)
+            .expect("tampered canonical event artifact json"),
+    )
+    .expect("write canonical event artifact");
+    let mut verify_canonical_event = tvm_command();
+    verify_canonical_event
+        .arg("verify-research-v3-equivalence")
+        .arg(&canonical_event_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "canonical event 1 state_after_hash commitment mismatch",
+        ));
 
     let mut malformed_hash = artifact_json.clone();
     malformed_hash["commitments"]["relation_format_hash"] =
         serde_json::Value::String("not-a-blake2b-hash".to_string());
     malformed_hash["rule_witnesses"][0]["state_before_hashes"]["transformer"] =
         serde_json::Value::String("also-not-a-blake2b-hash".to_string());
+    malformed_hash["rule_witnesses"][0]["engine_transition_hashes"]["native"] =
+        serde_json::Value::String("not-a-transition-hash".to_string());
     assert!(std::panic::catch_unwind(|| {
         validate_json_against_schema(
             &malformed_hash,
@@ -4420,6 +4765,10 @@ fn cli_supports_research_v3_equivalence_command() {
     .is_err());
 
     let _ = std::fs::remove_file(output_path);
+    let _ = std::fs::remove_file(tampered_path);
+    let _ = std::fs::remove_file(state_mismatch_path);
+    let _ = std::fs::remove_file(trace_hash_path);
+    let _ = std::fs::remove_file(canonical_event_path);
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
