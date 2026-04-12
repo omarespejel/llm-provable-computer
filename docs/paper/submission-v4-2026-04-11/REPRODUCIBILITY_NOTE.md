@@ -1,8 +1,8 @@
 # Reproducibility Note (One Page)
 
 This note describes how to reproduce the publication-facing paper artifacts for
-**Proof-Carrying Decoding for Transformer Computers over an Experimental S-two
-Backend** under the rolling base tag `paper-publication-v4-2026-04-11` once cut.
+**On the Structural Fit of Transformer Workloads and STARK Proof Systems**
+under the rolling base tag `paper-publication-v4-2026-04-11` once cut.
 The tag should resolve to a commit that contains this v4 paper metadata. The
 carried-state aggregation evidence remains pinned to the Phase 28 proof-carrying
 aggregation checkpoint commit `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`, with

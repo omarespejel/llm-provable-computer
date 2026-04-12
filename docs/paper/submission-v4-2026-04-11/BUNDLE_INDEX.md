@@ -15,10 +15,10 @@ Draft author line:
 - Omar Espejel - Starknet Foundation
 
 Paper title:
-- `Proof-Carrying Decoding for Transformer Computers over an Experimental S-two Backend`
+- `On the Structural Fit of Transformer Workloads and STARK Proof Systems`
 
 Subtitle:
-- `From transformer-as-computer execution traces to recursive-ready carried-state proof artifacts.`
+- `With proof-carrying decoding artifacts over an experimental S-two path.`
 
 ## Core Paper Files
 
