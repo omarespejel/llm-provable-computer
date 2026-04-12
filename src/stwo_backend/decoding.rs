@@ -2435,6 +2435,13 @@ pub fn verify_phase30_decoding_step_proof_envelope_manifest(
             "decoding step envelope manifest must contain at least one envelope".to_string(),
         ));
     }
+    if manifest.envelopes.len() > MAX_DECODING_CHAIN_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding step envelope manifest contains {} envelopes, exceeding the limit of {}",
+            manifest.envelopes.len(),
+            MAX_DECODING_CHAIN_STEPS
+        )));
+    }
     if manifest.total_steps != manifest.envelopes.len() {
         return Err(VmError::InvalidConfig(format!(
             "decoding step envelope manifest total_steps={} does not match envelopes.len()={}",
@@ -11326,25 +11333,35 @@ fn commit_phase30_step_proof(proof: &VanillaStarkExecutionProof) -> Result<Strin
 }
 
 fn phase30_update_hasher_with_json<T: Serialize>(hasher: &mut Blake2bVar, value: &T) -> Result<()> {
-    let byte_len = phase30_json_len(value)?;
-    hasher.update(&byte_len.to_le_bytes());
-    let mut writer = Phase30JsonHasher { hasher };
-    serde_json::to_writer(&mut writer, value)
-        .map_err(|error| VmError::Serialization(error.to_string()))
-}
-
-fn phase30_json_len<T: Serialize>(value: &T) -> Result<u64> {
-    let mut writer = Phase30JsonCounter { byte_len: 0 };
+    // Frame large JSON values without buffering full proof JSON or traversing it twice.
+    let mut writer = Phase30JsonDigestWriter {
+        byte_len: 0,
+        hasher: Blake2bVar::new(32).expect("blake2b-256"),
+    };
     serde_json::to_writer(&mut writer, value)
         .map_err(|error| VmError::Serialization(error.to_string()))?;
-    Ok(writer.byte_len)
+    let (byte_len, json_digest) = writer.finalize();
+    hasher.update(&byte_len.to_le_bytes());
+    hasher.update(&json_digest);
+    Ok(())
 }
 
-struct Phase30JsonCounter {
+struct Phase30JsonDigestWriter {
     byte_len: u64,
+    hasher: Blake2bVar,
 }
 
-impl Write for Phase30JsonCounter {
+impl Phase30JsonDigestWriter {
+    fn finalize(self) -> (u64, [u8; 32]) {
+        let mut out = [0u8; 32];
+        self.hasher
+            .finalize_variable(&mut out)
+            .expect("blake2b finalize");
+        (self.byte_len, out)
+    }
+}
+
+impl Write for Phase30JsonDigestWriter {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let written = u64::try_from(buf.len()).map_err(|_| {
             io::Error::new(
@@ -11358,20 +11375,6 @@ impl Write for Phase30JsonCounter {
                 "phase30 json length overflowed u64",
             )
         })?;
-        Ok(buf.len())
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
-}
-
-struct Phase30JsonHasher<'a> {
-    hasher: &'a mut Blake2bVar,
-}
-
-impl Write for Phase30JsonHasher<'_> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.hasher.update(buf);
         Ok(buf.len())
     }
@@ -13735,6 +13738,10 @@ mod tests {
     }
 
     fn oracle_blake2b_256(parts: &[Vec<u8>]) -> String {
+        oracle_lower_hex(&oracle_blake2b_256_bytes(parts))
+    }
+
+    fn oracle_blake2b_256_bytes(parts: &[Vec<u8>]) -> [u8; 32] {
         let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
         for part in parts {
             hasher.update(part);
@@ -13743,21 +13750,42 @@ mod tests {
         hasher
             .finalize_variable(&mut out)
             .expect("blake2b finalize");
-        oracle_lower_hex(&out)
+        out
     }
 
-    fn oracle_phase30_len_prefixed_json_commit<T: serde::Serialize>(
+    fn oracle_phase30_len_prefixed_json_digest_commit<T: serde::Serialize>(
         version: &str,
         domain: &[u8],
         value: &T,
     ) -> String {
         let json = serde_json::to_vec(value).expect("json");
+        let json_len = json.len();
+        let json_digest = oracle_blake2b_256_bytes(&[json]);
         oracle_blake2b_256(&[
             version.as_bytes().to_vec(),
             domain.to_vec(),
-            (json.len() as u64).to_le_bytes().to_vec(),
-            json,
+            (json_len as u64).to_le_bytes().to_vec(),
+            json_digest.to_vec(),
         ])
+    }
+
+    struct Phase30LargeStreamingPayload {
+        entries: usize,
+        row_width: usize,
+    }
+
+    impl serde::Serialize for Phase30LargeStreamingPayload {
+        fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            let mut seq = serializer.serialize_seq(Some(self.entries))?;
+            let row = vec![7u8; self.row_width];
+            for index in 0..self.entries {
+                serde::ser::SerializeSeq::serialize_element(&mut seq, &(index, &row))?;
+            }
+            serde::ser::SerializeSeq::end(seq)
+        }
     }
 
     fn oracle_push_len_prefixed_part(parts: &mut Vec<Vec<u8>>, bytes: &[u8]) {
@@ -19007,7 +19035,7 @@ mod tests {
     }
 
     #[test]
-    fn phase30_step_json_commitments_match_len_prefixed_streaming_oracle() {
+    fn phase30_step_json_commitments_match_len_prefixed_digest_oracle() {
         let layout = phase12_default_decoding_layout();
         let memories = phase12_demo_initial_memories(&layout).expect("memories");
         let proofs = memories
@@ -19018,7 +19046,7 @@ mod tests {
 
         assert_eq!(
             commit_phase12_decoding_chain_for_step_envelopes(&chain).expect("chain commitment"),
-            oracle_phase30_len_prefixed_json_commit(
+            oracle_phase30_len_prefixed_json_digest_commit(
                 STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30,
                 b"source-phase12-chain",
                 &chain
@@ -19026,10 +19054,35 @@ mod tests {
         );
         assert_eq!(
             commit_phase30_step_proof(&chain.steps[0].proof).expect("proof commitment"),
-            oracle_phase30_len_prefixed_json_commit(
+            oracle_phase30_len_prefixed_json_digest_commit(
                 STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30,
                 b"step-proof",
                 &chain.steps[0].proof
+            )
+        );
+    }
+
+    #[test]
+    fn phase30_step_json_digest_hashing_streams_large_payload() {
+        let payload = Phase30LargeStreamingPayload {
+            entries: 1024,
+            row_width: 256,
+        };
+        let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+        hasher.update(STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30.as_bytes());
+        hasher.update(b"large-json-dos-regression");
+        phase30_update_hasher_with_json(&mut hasher, &payload).expect("hash large payload");
+        let mut out = [0u8; 32];
+        hasher
+            .finalize_variable(&mut out)
+            .expect("blake2b finalize");
+
+        assert_eq!(
+            oracle_lower_hex(&out),
+            oracle_phase30_len_prefixed_json_digest_commit(
+                STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30,
+                b"large-json-dos-regression",
+                &payload
             )
         );
     }
@@ -19077,6 +19130,64 @@ mod tests {
             .expect_err("unsupported statement version should fail");
         assert!(
             err.to_string().contains("statement version"),
+            "unexpected error: {err}"
+        );
+
+        manifest.statement_version = crate::proof::CLAIM_STATEMENT_VERSION_V1.to_string();
+        manifest.source_chain_version.clear();
+        let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
+            .expect_err("empty source chain version should fail");
+        assert!(
+            err.to_string().contains("source chain version"),
+            "unexpected error: {err}"
+        );
+
+        manifest.source_chain_version = "unsupported-phase12-chain".to_string();
+        let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
+            .expect_err("unsupported source chain version should fail");
+        assert!(
+            err.to_string().contains("source chain version"),
+            "unexpected error: {err}"
+        );
+
+        manifest.source_chain_version = STWO_DECODING_CHAIN_VERSION_PHASE12.to_string();
+        manifest.source_chain_semantic_scope.clear();
+        let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
+            .expect_err("empty source chain scope should fail");
+        assert!(
+            err.to_string().contains("source chain scope"),
+            "unexpected error: {err}"
+        );
+
+        manifest.source_chain_semantic_scope = "unsupported-phase12-scope".to_string();
+        let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
+            .expect_err("unsupported source chain scope should fail");
+        assert!(
+            err.to_string().contains("source chain scope"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn phase30_step_envelope_manifest_rejects_excessive_envelope_count() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest =
+            phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
+
+        let template = manifest.envelopes[0].clone();
+        manifest.envelopes = vec![template; MAX_DECODING_CHAIN_STEPS + 1];
+        manifest.total_steps = manifest.envelopes.len();
+
+        let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
+            .expect_err("excessive envelope count should fail before list hashing");
+        assert!(
+            err.to_string().contains("exceeding the limit"),
             "unexpected error: {err}"
         );
     }

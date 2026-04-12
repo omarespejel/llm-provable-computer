@@ -263,7 +263,7 @@ The artifact provides:
 - two reproducibility tiers: `production-v1` (vanilla) and `stwo-experimental-v1` (narrow experimental),
 - a parameterized proof-carrying decoding family (`decoding_step_v2`) over multiple public layouts,
 - a static lookup-table registry commitment that binds the shared normalization and activation table descriptors into the shared lookup artifact,
-- a derived step-proof-envelope manifest that binds each parameterized decode step to its input/output carried-state boundary commitments, lookup-row commitments, shared lookup artifact commitment, static lookup registry commitment, and serialized proof commitment,
+- a source-chain-bound step-proof-envelope manifest that binds each parameterized decode step to its input/output carried-state boundary commitments, lookup-row commitments, shared lookup artifact commitment, static lookup registry commitment, and proof commitment,
 - carried-state packaging (chain, segment, rollup, multi-layout matrix) with KV/lookup cumulative and frontier commitments,
 - a pre-recursive carried-state packaging ladder over the same decode relation, including interval, segment, rollup, matrix, and aggregation objects,
 - hardened verifier kernels backed by differential testing, fuzzing, mutation checks, and bounded model checking.

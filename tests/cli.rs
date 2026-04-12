@@ -32,9 +32,10 @@ use llm_provable_computer::stwo_backend::{
     STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24,
     STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26,
     STWO_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE25,
-    STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12,
+    STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12, STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12,
     STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12,
     STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12,
+    STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12,
 };
 
 fn unique_temp_dir(name: &str) -> PathBuf {
@@ -231,7 +232,7 @@ struct TestEmbeddedSharedActivationLookupProof {
 }
 
 #[cfg(feature = "stwo-backend")]
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 struct TestPhase12StaticLookupTableCommitment {
     table_id: String,
     statement_version: String,
@@ -255,30 +256,11 @@ fn phase12_artifact_commitment_from_json(artifact: &serde_json::Value) -> String
     let activation: TestEmbeddedSharedActivationLookupProof =
         serde_json::from_value(artifact["activation_proof_envelope"].clone())
             .expect("activation proof envelope");
-    let static_table_registry_commitment = artifact["static_table_registry_commitment"]
-        .as_str()
-        .expect("static table registry commitment");
-    let mut static_table_commitments: Vec<TestPhase12StaticLookupTableCommitment> =
-        serde_json::from_value(artifact["static_table_commitments"].clone())
-            .expect("static table commitments");
-    static_table_commitments.sort_by(|left, right| {
-        (
-            &left.table_id,
-            &left.statement_version,
-            &left.semantic_scope,
-            &left.table_commitment,
-            left.row_count,
-            left.row_width,
-        )
-            .cmp(&(
-                &right.table_id,
-                &right.statement_version,
-                &right.semantic_scope,
-                &right.table_commitment,
-                right.row_count,
-                right.row_width,
-            ))
-    });
+    let (static_table_commitments, static_table_registry_commitment) =
+        phase12_static_lookup_table_registry_from_envelopes(
+            &normalization.proof_envelope,
+            &activation.proof_envelope,
+        );
 
     let flattened_json = serde_json::to_vec(&flattened_lookup_rows).expect("flattened rows json");
     let static_table_commitments_json =
@@ -301,6 +283,138 @@ fn phase12_artifact_commitment_from_json(artifact: &serde_json::Value) -> String
     hasher.update(&normalization_json);
     hasher.update(&(activation_json.len() as u64).to_le_bytes());
     hasher.update(&activation_json);
+    hasher
+        .finalize_variable(&mut output)
+        .expect("blake2b-256 finalization");
+    output.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase12_static_lookup_table_registry_from_envelopes(
+    normalization_envelope: &Phase10SharedNormalizationLookupProofEnvelope,
+    activation_envelope: &Phase10SharedLookupProofEnvelope,
+) -> (Vec<TestPhase12StaticLookupTableCommitment>, String) {
+    let normalization_rows: Vec<[i64; 2]> = normalization_envelope
+        .canonical_table_rows
+        .iter()
+        .map(|(norm_sq, inv_sqrt_q8)| [i64::from(*norm_sq), i64::from(*inv_sqrt_q8)])
+        .collect();
+    let activation_rows: Vec<[i64; 2]> = activation_envelope
+        .canonical_table_rows
+        .iter()
+        .map(|row| [i64::from(row.input), i64::from(row.output)])
+        .collect();
+    let table_commitments = vec![
+        TestPhase12StaticLookupTableCommitment {
+            table_id: STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12.to_string(),
+            statement_version: normalization_envelope.statement_version.clone(),
+            semantic_scope: normalization_envelope.semantic_scope.clone(),
+            table_commitment: phase12_static_lookup_table_commitment(
+                STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12,
+                &normalization_envelope.statement_version,
+                &normalization_envelope.semantic_scope,
+                &normalization_rows,
+            ),
+            row_count: u64::try_from(normalization_rows.len()).expect("row count fits in u64"),
+            row_width: 2,
+        },
+        TestPhase12StaticLookupTableCommitment {
+            table_id: STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12.to_string(),
+            statement_version: activation_envelope.statement_version.clone(),
+            semantic_scope: activation_envelope.semantic_scope.clone(),
+            table_commitment: phase12_static_lookup_table_commitment(
+                STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12,
+                &activation_envelope.statement_version,
+                &activation_envelope.semantic_scope,
+                &activation_rows,
+            ),
+            row_count: u64::try_from(activation_rows.len()).expect("row count fits in u64"),
+            row_width: 2,
+        },
+    ];
+    let table_commitments =
+        canonical_test_phase12_static_lookup_table_commitments(table_commitments);
+    let registry_commitment = phase12_static_lookup_table_registry_commitment(&table_commitments);
+    (table_commitments, registry_commitment)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase12_static_lookup_table_commitment(
+    table_id: &str,
+    statement_version: &str,
+    semantic_scope: &str,
+    rows: &[[i64; 2]],
+) -> String {
+    let rows_json = serde_json::to_vec(rows).expect("static lookup table rows json");
+    let row_count = u64::try_from(rows.len()).expect("row count fits in u64");
+    let row_count_bytes = row_count.to_le_bytes();
+    let row_width_bytes = 2u64.to_le_bytes();
+    let rows_json_len_bytes = u64::try_from(rows_json.len())
+        .expect("rows json length fits in u64")
+        .to_le_bytes();
+    phase12_blake2b_256_hex(&[
+        STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12.as_bytes(),
+        table_id.as_bytes(),
+        statement_version.as_bytes(),
+        semantic_scope.as_bytes(),
+        &row_count_bytes,
+        &row_width_bytes,
+        &rows_json_len_bytes,
+        &rows_json,
+    ])
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase12_static_lookup_table_registry_commitment(
+    table_commitments: &[TestPhase12StaticLookupTableCommitment],
+) -> String {
+    let table_commitments =
+        canonical_test_phase12_static_lookup_table_commitments(table_commitments.to_vec());
+    let descriptors_json =
+        serde_json::to_vec(&table_commitments).expect("static table commitments json");
+    let descriptors_json_len_bytes = u64::try_from(descriptors_json.len())
+        .expect("static table commitments json length fits in u64")
+        .to_le_bytes();
+    phase12_blake2b_256_hex(&[
+        STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12.as_bytes(),
+        STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12.as_bytes(),
+        &descriptors_json_len_bytes,
+        &descriptors_json,
+    ])
+}
+
+#[cfg(feature = "stwo-backend")]
+fn canonical_test_phase12_static_lookup_table_commitments(
+    mut table_commitments: Vec<TestPhase12StaticLookupTableCommitment>,
+) -> Vec<TestPhase12StaticLookupTableCommitment> {
+    table_commitments.sort_by(|left, right| {
+        (
+            &left.table_id,
+            &left.statement_version,
+            &left.semantic_scope,
+            &left.table_commitment,
+            left.row_count,
+            left.row_width,
+        )
+            .cmp(&(
+                &right.table_id,
+                &right.statement_version,
+                &right.semantic_scope,
+                &right.table_commitment,
+                right.row_count,
+                right.row_width,
+            ))
+    });
+    table_commitments
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase12_blake2b_256_hex(parts: &[&[u8]]) -> String {
+    let mut output = [0u8; 32];
+    let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
+    for part in parts {
+        hasher.update(part);
+    }
     hasher
         .finalize_variable(&mut output)
         .expect("blake2b-256 finalization");
@@ -1696,8 +1810,12 @@ fn cli_verify_stwo_decoding_family_demo_rejects_missing_shared_lookup_artifact()
 fn cli_verify_stwo_decoding_family_demo_rejects_tampered_static_table_descriptor() {
     let proof_path =
         unique_temp_dir("cli-stwo-decoding-family-demo-static-table-proof").with_extension("json");
-    let tampered_path = unique_temp_dir("cli-stwo-decoding-family-demo-static-table-tampered")
-        .with_extension("json");
+    let scope_tampered_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-static-table-scope-tampered")
+            .with_extension("json");
+    let shape_tampered_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-static-table-shape-tampered")
+            .with_extension("json");
 
     let mut prove = tvm_command();
     prove
@@ -1707,22 +1825,30 @@ fn cli_verify_stwo_decoding_family_demo_rejects_tampered_static_table_descriptor
         .assert()
         .success();
 
-    let mut proof_json: serde_json::Value =
+    let proof_json: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
             .expect("json");
-    let artifact = &mut proof_json["shared_lookup_artifacts"]
-        .as_array_mut()
+    let mut scope_tampered_json = proof_json.clone();
+    let artifact = &proof_json["shared_lookup_artifacts"]
+        .as_array()
         .expect("artifact array")[0];
     let original_commitment = artifact["artifact_commitment"]
         .as_str()
         .expect("artifact commitment")
         .to_string();
+
+    let artifact = &mut scope_tampered_json["shared_lookup_artifacts"]
+        .as_array_mut()
+        .expect("artifact array")[0];
     artifact["static_table_commitments"][0]["semantic_scope"] =
         serde_json::Value::String("tampered-static-table-scope".to_string());
     let tampered_commitment = phase12_artifact_commitment_from_json(artifact);
     artifact["artifact_commitment"] = serde_json::Value::String(tampered_commitment.clone());
 
-    for step in proof_json["steps"].as_array_mut().expect("steps array") {
+    for step in scope_tampered_json["steps"]
+        .as_array_mut()
+        .expect("steps array")
+    {
         if step["shared_lookup_artifact_commitment"] == original_commitment {
             step["shared_lookup_artifact_commitment"] =
                 serde_json::Value::String(tampered_commitment.clone());
@@ -1730,21 +1856,55 @@ fn cli_verify_stwo_decoding_family_demo_rejects_tampered_static_table_descriptor
     }
 
     std::fs::write(
-        &tampered_path,
-        serde_json::to_vec(&proof_json).expect("serialize"),
+        &scope_tampered_path,
+        serde_json::to_vec(&scope_tampered_json).expect("serialize"),
     )
     .expect("write");
 
-    let mut verify = tvm_command();
-    verify
+    let mut verify_scope = tvm_command();
+    verify_scope
         .arg("verify-stwo-decoding-family-demo")
-        .arg(&tampered_path)
+        .arg(&scope_tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("static table commitments"));
+
+    let mut shape_tampered_json = proof_json;
+    let artifact = &mut shape_tampered_json["shared_lookup_artifacts"]
+        .as_array_mut()
+        .expect("artifact array")[0];
+    artifact["static_table_commitments"][0]["row_count"] = serde_json::Value::from(123_456u64);
+    artifact["static_table_commitments"][0]["row_width"] = serde_json::Value::from(3u64);
+    let tampered_commitment = phase12_artifact_commitment_from_json(artifact);
+    artifact["artifact_commitment"] = serde_json::Value::String(tampered_commitment.clone());
+
+    for step in shape_tampered_json["steps"]
+        .as_array_mut()
+        .expect("steps array")
+    {
+        if step["shared_lookup_artifact_commitment"] == original_commitment {
+            step["shared_lookup_artifact_commitment"] =
+                serde_json::Value::String(tampered_commitment.clone());
+        }
+    }
+
+    std::fs::write(
+        &shape_tampered_path,
+        serde_json::to_vec(&shape_tampered_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify_shape = tvm_command();
+    verify_shape
+        .arg("verify-stwo-decoding-family-demo")
+        .arg(&shape_tampered_path)
         .assert()
         .failure()
         .stderr(predicate::str::contains("static table commitments"));
 
     let _ = std::fs::remove_file(proof_path);
-    let _ = std::fs::remove_file(tampered_path);
+    let _ = std::fs::remove_file(scope_tampered_path);
+    let _ = std::fs::remove_file(shape_tampered_path);
 }
 
 #[test]
