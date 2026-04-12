@@ -15,7 +15,7 @@ April 2026
 
 This paper studies the structural fit between transformer workloads and STARK proof systems using a symbolic cost model together with a repository-backed proof artifact. Under a worked example with `C_exp = 300`, `C_norm = 30`, and `C_nonlin = 150`, GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields about `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK rows across 12 layers (`1.48x`). Over practical context ranges, the ratio rises and then approaches a finite architecture-dependent ceiling. These are symbolic counts, not matched performance benchmarks.
 
-We pair the model with `provable-transformer-vm` [30], a supporting repository artifact that provides a vanilla reproducibility tier, a narrow experimental `stwo` tier, a broader proof-carrying decoding path with carried-state commitments, static lookup-table registry commitments, explicit step-proof-envelope manifests, and a research-stage multi-engine equivalence-kernel lane with transition-relation hashes. The repository does not yet provide full standard-softmax inference on S-two, recursive cryptographic compression/verification closure, recursive cross-step shared-table accumulation as a compressed proof object, a full Emerge-style e-graph/SMT implementation-equivalence proof, or production-scale zkML deployment. The narrower claim is that transformer workloads expose the design pressures under which STARK-native systems may compound advantages, while current artifacts already support a concrete carried-state bridge from execution traces to pre-recursive proof objects.
+We pair the model with `provable-transformer-vm` [30], a supporting repository artifact that provides a vanilla reproducibility tier, a narrow experimental `stwo` tier, a broader proof-carrying decoding path with carried-state commitments, static lookup-table registry commitments, step-proof-envelope manifests, and bounded multi-runtime semantic-agreement checks. The repository does not yet provide full standard-softmax inference on S-two, recursive cryptographic compression/verification closure, recursive cross-step shared-table accumulation as a compressed proof object, a full Emerge-style e-graph/SMT implementation-equivalence proof, or production-scale zkML deployment. The narrower claim is that transformer workloads expose the design pressures under which STARK-native systems may compound advantages, while current artifacts already support a concrete carried-state bridge from execution traces to pre-recursive proof objects.
 
 ---
 
@@ -316,7 +316,7 @@ The repository remains deliberately narrow:
 - attention is currently `average-hard`, not full standard softmax,
 - shared-table lookup state is carried, static lookup-table descriptors are bound inside shared lookup artifacts, and the artifact includes a public cross-step lookup-accumulator artifact,
 - the new step-envelope overlay is derived metadata over already verified parameterized decoding chains, not a new cryptographic proof layer,
-- the `research-v3` equivalence-kernel artifact is deterministic lockstep relation evidence, not an e-graph saturation engine, SMT-backed rewrite-synthesis verifier, randomized opaque-kernel test suite, or cryptographic implementation-equivalence proof in the style targeted by Emerge [47],
+- the multi-runtime semantic-agreement artifact is deterministic lockstep relation evidence, not an e-graph saturation engine, SMT-backed rewrite-synthesis verifier, randomized opaque-kernel test suite, or cryptographic implementation-equivalence proof in the style targeted by Emerge [47],
 - recursive cross-step shared-table accumulation beyond these table-identity and lookup-accumulator artifacts is not yet public,
 - recursive cryptographic compression/verification closure across decode steps is not yet public,
 - learned-model end-to-end LLM proving, zero-knowledge hiding, and full-ISA AIR coverage remain out of scope.
@@ -337,13 +337,13 @@ The present aggregation layer is statement-preserving and pre-recursive: it pack
 
 The broader carried-state ladder is documented in the repository's supplementary design and README materials and is cited here as commit-pinned systems evidence, not as a recursive compression claim.
 
-### 5.6 Equivalence-kernel boundary
+### 5.6 Semantic-agreement and provenance boundaries
 
-The repository also contains a bounded `research-v3` equivalence-kernel lane motivated by implementation-equivalence work on large-model graphs [47]. Its current artifact is intentionally narrower than Emerge: it lockstep-executes a fixed program across transformer/native/Burn/ONNX surfaces, records rule witnesses, and binds each observed transition by per-engine transition-relation hashes plus a canonical transition hash. A verifier command recomputes the artifact's internal commitments, bounded trace hashes, semantic canonical event-relation hashes, cross-engine state-boundary consistency, final-state links, and transition-relation hashes. This converts semantic-agreement evidence into a machine-readable relation row that later rewrite or e-graph machinery can consume.
+The repository also contains a bounded multi-runtime semantic-agreement artifact motivated by implementation-equivalence work on large-model graphs [47]. The artifact is intentionally narrower than Emerge: it lockstep-executes a fixed program across transformer/native/Burn/ONNX surfaces, records relation witnesses, and binds each observed transition by per-runtime transition-relation hashes plus a canonical transition hash. A verifier command recomputes the artifact's internal commitments, bounded trace hashes, semantic canonical event-relation hashes, cross-runtime state-boundary consistency, final-state links, and transition-relation hashes. This converts implementation-agreement evidence into a machine-readable relation row that later rewrite or e-graph machinery can consume.
 
-This lane is included because it directly addresses the "do not fool ourselves" failure mode: a proof artifact should not silently rely on informal claims that two frontend/runtime paths mean the same thing. The present implementation still stops at deterministic bounded relation evidence plus artifact-integrity verification. It does not synthesize rewrite rules, validate opaque kernels with randomized constraints, discharge symbolic cases with SMT, or prove implementation equivalence cryptographically.
+This artifact addresses a methodological risk in systems papers about proof-carrying ML: a proof artifact should not silently rely on informal claims that two frontend/runtime paths mean the same thing. The present implementation still stops at deterministic bounded relation evidence plus artifact-integrity verification. It does not synthesize rewrite rules, validate opaque kernels with randomized constraints, discharge symbolic cases with SMT, or prove implementation equivalence cryptographically.
 
-The same principle motivates a separate Hugging Face provenance manifest surface for release bundles. That manifest pins Hub and tokenizer identifiers, local tokenizer/transcript files, safetensors file and metadata-header hashes, optional ONNX export hashes, and model-card/DOI/dataset metadata when supplied. It is a release-provenance guardrail, not part of the proof relation: it does not prove tokenizer algorithm correctness, model-weight semantics, Optimum export equivalence, live Hub availability, or DOI validity.
+For reproducibility rather than proof semantics, the artifact set also includes a release-provenance manifest that can bind model and tokenizer identifiers, local tokenizer/transcript files, safetensors file and metadata-header hashes, optional ONNX export hashes, and model-card/DOI/dataset metadata when supplied. This is a packaging guardrail, not part of the proof relation: it does not prove tokenizer algorithm correctness, model-weight semantics, exporter equivalence, live artifact availability, or DOI validity.
 
 ### 5.7 Why this artifact matters
 
@@ -438,7 +438,7 @@ The next supporting engineering moves remain:
 
 - complete full-ISA AIR coverage,
 - extend the explicit proof-envelope pattern from decode steps to the fixed-shape `gemma_block_v*` artifacts,
-- mature the `research-v3` equivalence-kernel lane from deterministic transition-relation hashes toward e-graph/SMT-backed rewrite validation only after the bounded relation format is stable,
+- mature the multi-runtime semantic-agreement artifact from deterministic transition-relation hashes toward e-graph/SMT-backed rewrite validation only after the bounded relation format is stable,
 - keep artifact generation and benchmark metadata machine-readable in CI,
 - add a minimal learned-model fragment or quantized transformer block only once the accumulation path is stable.
 
