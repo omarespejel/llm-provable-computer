@@ -32,7 +32,10 @@ use llm_provable_computer::stwo_backend::{
     STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24,
     STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26,
     STWO_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE25,
-    STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12,
+    STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12, STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12,
+    STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12,
+    STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12,
+    STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12,
 };
 
 fn unique_temp_dir(name: &str) -> PathBuf {
@@ -229,6 +232,17 @@ struct TestEmbeddedSharedActivationLookupProof {
 }
 
 #[cfg(feature = "stwo-backend")]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+struct TestPhase12StaticLookupTableCommitment {
+    table_id: String,
+    statement_version: String,
+    semantic_scope: String,
+    table_commitment: String,
+    row_count: u64,
+    row_width: u64,
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase12_artifact_commitment_from_json(artifact: &serde_json::Value) -> String {
     let layout_commitment = artifact["layout_commitment"]
         .as_str()
@@ -242,8 +256,15 @@ fn phase12_artifact_commitment_from_json(artifact: &serde_json::Value) -> String
     let activation: TestEmbeddedSharedActivationLookupProof =
         serde_json::from_value(artifact["activation_proof_envelope"].clone())
             .expect("activation proof envelope");
+    let (static_table_commitments, static_table_registry_commitment) =
+        phase12_static_lookup_table_registry_from_envelopes(
+            &normalization.proof_envelope,
+            &activation.proof_envelope,
+        );
 
     let flattened_json = serde_json::to_vec(&flattened_lookup_rows).expect("flattened rows json");
+    let static_table_commitments_json =
+        serde_json::to_vec(&static_table_commitments).expect("static table commitments json");
     let normalization_json = serde_json::to_vec(&normalization).expect("normalization json");
     let activation_json = serde_json::to_vec(&activation).expect("activation json");
 
@@ -253,10 +274,147 @@ fn phase12_artifact_commitment_from_json(artifact: &serde_json::Value) -> String
     hasher.update(layout_commitment.as_bytes());
     hasher.update(&(flattened_json.len() as u64).to_le_bytes());
     hasher.update(&flattened_json);
+    hasher.update(STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12.as_bytes());
+    hasher.update(STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12.as_bytes());
+    hasher.update(static_table_registry_commitment.as_bytes());
+    hasher.update(&(static_table_commitments_json.len() as u64).to_le_bytes());
+    hasher.update(&static_table_commitments_json);
     hasher.update(&(normalization_json.len() as u64).to_le_bytes());
     hasher.update(&normalization_json);
     hasher.update(&(activation_json.len() as u64).to_le_bytes());
     hasher.update(&activation_json);
+    hasher
+        .finalize_variable(&mut output)
+        .expect("blake2b-256 finalization");
+    output.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase12_static_lookup_table_registry_from_envelopes(
+    normalization_envelope: &Phase10SharedNormalizationLookupProofEnvelope,
+    activation_envelope: &Phase10SharedLookupProofEnvelope,
+) -> (Vec<TestPhase12StaticLookupTableCommitment>, String) {
+    let normalization_rows: Vec<[i64; 2]> = normalization_envelope
+        .canonical_table_rows
+        .iter()
+        .map(|(norm_sq, inv_sqrt_q8)| [i64::from(*norm_sq), i64::from(*inv_sqrt_q8)])
+        .collect();
+    let activation_rows: Vec<[i64; 2]> = activation_envelope
+        .canonical_table_rows
+        .iter()
+        .map(|row| [i64::from(row.input), i64::from(row.output)])
+        .collect();
+    let table_commitments = vec![
+        TestPhase12StaticLookupTableCommitment {
+            table_id: STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12.to_string(),
+            statement_version: normalization_envelope.statement_version.clone(),
+            semantic_scope: normalization_envelope.semantic_scope.clone(),
+            table_commitment: phase12_static_lookup_table_commitment(
+                STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12,
+                &normalization_envelope.statement_version,
+                &normalization_envelope.semantic_scope,
+                &normalization_rows,
+            ),
+            row_count: u64::try_from(normalization_rows.len()).expect("row count fits in u64"),
+            row_width: 2,
+        },
+        TestPhase12StaticLookupTableCommitment {
+            table_id: STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12.to_string(),
+            statement_version: activation_envelope.statement_version.clone(),
+            semantic_scope: activation_envelope.semantic_scope.clone(),
+            table_commitment: phase12_static_lookup_table_commitment(
+                STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12,
+                &activation_envelope.statement_version,
+                &activation_envelope.semantic_scope,
+                &activation_rows,
+            ),
+            row_count: u64::try_from(activation_rows.len()).expect("row count fits in u64"),
+            row_width: 2,
+        },
+    ];
+    let table_commitments =
+        canonical_test_phase12_static_lookup_table_commitments(table_commitments);
+    let registry_commitment = phase12_static_lookup_table_registry_commitment(&table_commitments);
+    (table_commitments, registry_commitment)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase12_static_lookup_table_commitment(
+    table_id: &str,
+    statement_version: &str,
+    semantic_scope: &str,
+    rows: &[[i64; 2]],
+) -> String {
+    let rows_json = serde_json::to_vec(rows).expect("static lookup table rows json");
+    let row_count = u64::try_from(rows.len()).expect("row count fits in u64");
+    let row_count_bytes = row_count.to_le_bytes();
+    let row_width_bytes = 2u64.to_le_bytes();
+    let rows_json_len_bytes = u64::try_from(rows_json.len())
+        .expect("rows json length fits in u64")
+        .to_le_bytes();
+    phase12_blake2b_256_hex(&[
+        STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12.as_bytes(),
+        table_id.as_bytes(),
+        statement_version.as_bytes(),
+        semantic_scope.as_bytes(),
+        &row_count_bytes,
+        &row_width_bytes,
+        &rows_json_len_bytes,
+        &rows_json,
+    ])
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase12_static_lookup_table_registry_commitment(
+    table_commitments: &[TestPhase12StaticLookupTableCommitment],
+) -> String {
+    let table_commitments =
+        canonical_test_phase12_static_lookup_table_commitments(table_commitments.to_vec());
+    let descriptors_json =
+        serde_json::to_vec(&table_commitments).expect("static table commitments json");
+    let descriptors_json_len_bytes = u64::try_from(descriptors_json.len())
+        .expect("static table commitments json length fits in u64")
+        .to_le_bytes();
+    phase12_blake2b_256_hex(&[
+        STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12.as_bytes(),
+        STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12.as_bytes(),
+        &descriptors_json_len_bytes,
+        &descriptors_json,
+    ])
+}
+
+#[cfg(feature = "stwo-backend")]
+fn canonical_test_phase12_static_lookup_table_commitments(
+    mut table_commitments: Vec<TestPhase12StaticLookupTableCommitment>,
+) -> Vec<TestPhase12StaticLookupTableCommitment> {
+    table_commitments.sort_by(|left, right| {
+        (
+            &left.table_id,
+            &left.statement_version,
+            &left.semantic_scope,
+            &left.table_commitment,
+            left.row_count,
+            left.row_width,
+        )
+            .cmp(&(
+                &right.table_id,
+                &right.statement_version,
+                &right.semantic_scope,
+                &right.table_commitment,
+                right.row_count,
+                right.row_width,
+            ))
+    });
+    table_commitments
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase12_blake2b_256_hex(parts: &[&[u8]]) -> String {
+    let mut output = [0u8; 32];
+    let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
+    for part in parts {
+        hasher.update(part);
+    }
     hasher
         .finalize_variable(&mut output)
         .expect("blake2b-256 finalization");
@@ -316,6 +474,82 @@ fn assert_research_v2_spec_commitments(
         json_string_at(artifact, &["commitments", "artifact_schema_hash"]),
         Some(expected_artifact_schema_hash.as_str())
     );
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn hash_json_value(value: &serde_json::Value) -> String {
+    blake2b_256_hex(&serde_json::to_vec(value).expect("json hash payload"))
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn assert_research_v3_runtime_commitments(artifact: &serde_json::Value) {
+    let expected_relation_format_hash =
+        hash_json_value(artifact.get("relation_format").expect("relation_format"));
+    let expected_limitations_hash =
+        hash_json_value(artifact.get("limitations").expect("limitations"));
+    let expected_frontend_runtime_semantics_registry_hash = hash_json_value(
+        artifact
+            .get("frontend_runtime_semantics_registry")
+            .expect("frontend runtime semantics registry"),
+    );
+    let expected_engine_summaries_hash = hash_json_value(artifact.get("engines").expect("engines"));
+    let expected_rule_witnesses_hash =
+        hash_json_value(artifact.get("rule_witnesses").expect("rule_witnesses"));
+
+    assert_eq!(
+        json_string_at(artifact, &["commitments", "relation_format_hash"]),
+        Some(expected_relation_format_hash.as_str())
+    );
+    assert_eq!(
+        json_string_at(artifact, &["commitments", "limitations_hash"]),
+        Some(expected_limitations_hash.as_str())
+    );
+    assert_eq!(
+        json_string_at(
+            artifact,
+            &["commitments", "frontend_runtime_semantics_registry_hash"]
+        ),
+        Some(expected_frontend_runtime_semantics_registry_hash.as_str())
+    );
+    assert_eq!(
+        json_string_at(artifact, &["commitments", "engine_summaries_hash"]),
+        Some(expected_engine_summaries_hash.as_str())
+    );
+    assert_eq!(
+        json_string_at(artifact, &["commitments", "rule_witnesses_hash"]),
+        Some(expected_rule_witnesses_hash.as_str())
+    );
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_registry_lane_statuses(
+    registry: &serde_json::Value,
+) -> std::collections::BTreeMap<&str, &str> {
+    let lanes = registry
+        .get("lanes")
+        .and_then(serde_json::Value::as_array)
+        .expect("registry lanes");
+    let mut lane_statuses = std::collections::BTreeMap::new();
+    for lane in lanes {
+        let lane_id = lane
+            .get("lane_id")
+            .and_then(serde_json::Value::as_str)
+            .expect("registry lane_id");
+        let status = lane
+            .get("status")
+            .and_then(serde_json::Value::as_str)
+            .expect("registry lane status");
+        assert!(
+            lane_statuses.insert(lane_id, status).is_none(),
+            "registry contains duplicate lane_id {lane_id}"
+        );
+    }
+    assert_eq!(
+        lane_statuses.len(),
+        lanes.len(),
+        "registry contains duplicate lane_id entries"
+    );
+    lane_statuses
 }
 
 #[test]
@@ -1569,6 +1803,108 @@ fn cli_verify_stwo_decoding_family_demo_rejects_missing_shared_lookup_artifact()
     let _ = std::fs::remove_file(proof_path);
     let _ = std::fs::remove_file(tampered_path);
     let _ = std::fs::remove_file(wrong_ref_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_decoding_family_demo_rejects_tampered_static_table_descriptor() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-static-table-proof").with_extension("json");
+    let scope_tampered_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-static-table-scope-tampered")
+            .with_extension("json");
+    let shape_tampered_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-static-table-shape-tampered")
+            .with_extension("json");
+
+    let mut prove = tvm_command();
+    prove
+        .arg("prove-stwo-decoding-family-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    let mut scope_tampered_json = proof_json.clone();
+    let artifact = &proof_json["shared_lookup_artifacts"]
+        .as_array()
+        .expect("artifact array")[0];
+    let original_commitment = artifact["artifact_commitment"]
+        .as_str()
+        .expect("artifact commitment")
+        .to_string();
+
+    let artifact = &mut scope_tampered_json["shared_lookup_artifacts"]
+        .as_array_mut()
+        .expect("artifact array")[0];
+    artifact["static_table_commitments"][0]["semantic_scope"] =
+        serde_json::Value::String("tampered-static-table-scope".to_string());
+    let tampered_commitment = phase12_artifact_commitment_from_json(artifact);
+    artifact["artifact_commitment"] = serde_json::Value::String(tampered_commitment.clone());
+
+    for step in scope_tampered_json["steps"]
+        .as_array_mut()
+        .expect("steps array")
+    {
+        if step["shared_lookup_artifact_commitment"] == original_commitment {
+            step["shared_lookup_artifact_commitment"] =
+                serde_json::Value::String(tampered_commitment.clone());
+        }
+    }
+
+    std::fs::write(
+        &scope_tampered_path,
+        serde_json::to_vec(&scope_tampered_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify_scope = tvm_command();
+    verify_scope
+        .arg("verify-stwo-decoding-family-demo")
+        .arg(&scope_tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("static table commitments"));
+
+    let mut shape_tampered_json = proof_json;
+    let artifact = &mut shape_tampered_json["shared_lookup_artifacts"]
+        .as_array_mut()
+        .expect("artifact array")[0];
+    artifact["static_table_commitments"][0]["row_count"] = serde_json::Value::from(123_456u64);
+    artifact["static_table_commitments"][0]["row_width"] = serde_json::Value::from(3u64);
+    let tampered_commitment = phase12_artifact_commitment_from_json(artifact);
+    artifact["artifact_commitment"] = serde_json::Value::String(tampered_commitment.clone());
+
+    for step in shape_tampered_json["steps"]
+        .as_array_mut()
+        .expect("steps array")
+    {
+        if step["shared_lookup_artifact_commitment"] == original_commitment {
+            step["shared_lookup_artifact_commitment"] =
+                serde_json::Value::String(tampered_commitment.clone());
+        }
+    }
+
+    std::fs::write(
+        &shape_tampered_path,
+        serde_json::to_vec(&shape_tampered_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify_shape = tvm_command();
+    verify_shape
+        .arg("verify-stwo-decoding-family-demo")
+        .arg(&shape_tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("static table commitments"));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(scope_tampered_path);
+    let _ = std::fs::remove_file(shape_tampered_path);
 }
 
 #[test]
@@ -3658,6 +3994,197 @@ fn cli_reports_missing_onnx_feature_for_research_v2_matrix() {
         ));
 }
 
+#[cfg(not(all(feature = "burn-model", feature = "onnx-export")))]
+#[test]
+fn cli_reports_missing_features_for_research_v3_equivalence() {
+    let output_path = unique_temp_dir("cli-research-v3-equivalence-missing").with_extension("json");
+    let mut command = tvm_command();
+    command
+        .arg("research-v3-equivalence")
+        .arg("programs/addition.tvm")
+        .arg("-o")
+        .arg(&output_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "`research-v3-equivalence` requires the `burn-model` and `onnx-export` features",
+        ));
+
+    assert!(!output_path.exists());
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-research-v3-equivalence")
+        .arg(&output_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "`verify-research-v3-equivalence` requires the `burn-model` and `onnx-export` features",
+        ));
+}
+
+#[test]
+fn cli_can_prepare_and_verify_hf_provenance_manifest() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-manifest");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let tokenizer_json = fixture_dir.join("tokenizer.json");
+    let tokenizer_config = fixture_dir.join("tokenizer_config.json");
+    let transcript = fixture_dir.join("tokenization-transcript.json");
+    let safetensors = fixture_dir.join("model.safetensors");
+    let onnx_model = fixture_dir.join("model.onnx");
+    let model_card = fixture_dir.join("README.md");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(
+        &tokenizer_json,
+        br#"{"version":"1.0","model":{"type":"WordPiece","unk_token":"[UNK]"}}"#,
+    )
+    .expect("write tokenizer json");
+    std::fs::write(&tokenizer_config, br#"{"model_max_length":16}"#)
+        .expect("write tokenizer config");
+    std::fs::write(
+        &transcript,
+        br#"{"prompt":"hello","token_ids":[1,2],"tokens":["hello","world"]}"#,
+    )
+    .expect("write tokenization transcript");
+    let safetensors_header = br#"{"weight":{"dtype":"F32","shape":[1],"data_offsets":[0,4]},"__metadata__":{"format":"pt"}}"#;
+    let mut safetensors_bytes = Vec::new();
+    safetensors_bytes.extend_from_slice(&(safetensors_header.len() as u64).to_le_bytes());
+    safetensors_bytes.extend_from_slice(safetensors_header);
+    safetensors_bytes.extend_from_slice(&[0, 0, 0, 0]);
+    std::fs::write(&safetensors, safetensors_bytes).expect("write safetensors fixture");
+    std::fs::write(&onnx_model, b"fake-onnx-graph").expect("write ONNX fixture");
+    std::fs::write(
+        &model_card,
+        "# HF provenance fixture\n\nPinned for CLI manifest tests.\n",
+    )
+    .expect("write model card");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&tokenizer_json)
+        .arg("--tokenizer-config")
+        .arg(&tokenizer_config)
+        .arg("--tokenization-transcript")
+        .arg(&transcript)
+        .arg("--safetensors")
+        .arg(&safetensors)
+        .arg("--onnx-model")
+        .arg(&onnx_model)
+        .arg("--onnx-exporter-version")
+        .arg("optimum-test")
+        .arg("--model-card")
+        .arg(&model_card)
+        .arg("--doi")
+        .arg("10.57967/hf/example")
+        .arg("--dataset")
+        .arg("example/prompts")
+        .arg("--note")
+        .arg("fixture only")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("hf_provenance_manifest:"))
+        .stdout(predicate::str::contains("safetensors_files: 1"));
+
+    let manifest_json: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).expect("manifest bytes"))
+            .expect("manifest json");
+    #[cfg(feature = "onnx-export")]
+    validate_json_against_schema(&manifest_json, "spec/hf-provenance-manifest.schema.json");
+    assert_eq!(
+        manifest_json
+            .get("manifest_version")
+            .and_then(serde_json::Value::as_str),
+        Some("hf-provenance-manifest-v1")
+    );
+    assert_eq!(
+        manifest_json
+            .get("safetensors")
+            .and_then(serde_json::Value::as_array)
+            .and_then(|files| files.first())
+            .and_then(|file| file.get("tensor_count"))
+            .and_then(serde_json::Value::as_u64),
+        Some(1)
+    );
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "verified_hf_provenance_manifest: true",
+        ));
+
+    std::fs::write(
+        &tokenizer_json,
+        br#"{"version":"1.0","model":{"type":"WordPiece","unk_token":"[BAD]"}}"#,
+    )
+    .expect("tamper tokenizer json");
+    let mut verify_tampered = tvm_command();
+    verify_tampered
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "tokenizer_json blake2b_256 commitment mismatch",
+        ));
+
+    let floating_manifest = fixture_dir.join("floating.json");
+    let mut floating = tvm_command();
+    floating
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&floating_manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("main")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&tokenizer_json)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "hub_revision must be pinned to an immutable commit or release tag",
+        ));
+
+    let branch_manifest = fixture_dir.join("branch-ref.json");
+    let mut branch_ref = tvm_command();
+    branch_ref
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&branch_manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("refs/heads/main")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&tokenizer_json)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "hub_revision must be pinned to an immutable commit or release tag",
+        ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
 #[cfg(feature = "onnx-export")]
 #[test]
 fn cli_supports_export_onnx_command() {
@@ -3868,6 +4395,402 @@ fn cli_supports_research_v2_matrix_command() {
         Some(0)
     );
     let _ = std::fs::remove_file(output_path);
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+#[test]
+fn cli_supports_research_v3_equivalence_command() {
+    let output_path = unique_temp_dir("cli-research-v3-equivalence").with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-research-v3-equivalence-tampered").with_extension("json");
+    let state_mismatch_path =
+        unique_temp_dir("cli-research-v3-equivalence-state-mismatch").with_extension("json");
+    let trace_hash_path =
+        unique_temp_dir("cli-research-v3-equivalence-trace-hash").with_extension("json");
+    let canonical_event_path =
+        unique_temp_dir("cli-research-v3-equivalence-canonical-event").with_extension("json");
+    let mut command = tvm_command();
+    command
+        .arg("research-v3-equivalence")
+        .arg("programs/addition.tvm")
+        .arg("-o")
+        .arg(&output_path)
+        .arg("--max-steps")
+        .arg("8")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "semantic_scope: multi_engine_trace_equivalence_kernel_with_rule_witnesses",
+        ))
+        .stdout(predicate::str::contains(
+            "relation_format: multi-engine-trace-relation-v1-no-egraph-no-smt",
+        ))
+        .stdout(predicate::str::contains(
+            "engines: transformer,native,burn,onnx/tract",
+        ));
+
+    assert!(output_path.exists());
+    let artifact_bytes = std::fs::read(&output_path).expect("artifact");
+    let artifact_json: serde_json::Value =
+        serde_json::from_slice(&artifact_bytes).expect("artifact json");
+    validate_json_against_schema(
+        &artifact_json,
+        "spec/statement-v3-equivalence-kernel.schema.json",
+    );
+    assert_research_v2_spec_commitments(
+        &artifact_json,
+        "spec/statement-v3-equivalence-kernel-research.json",
+        "spec/statement-v3-equivalence-kernel.schema.json",
+    );
+    assert_research_v3_runtime_commitments(&artifact_json);
+    assert!(artifact_json.get("matched").is_none());
+    let frontend_runtime_registry = artifact_json
+        .get("frontend_runtime_semantics_registry")
+        .expect("frontend runtime semantics registry");
+    assert_eq!(
+        frontend_runtime_registry
+            .get("registry_version")
+            .and_then(serde_json::Value::as_str),
+        Some("frontend-runtime-semantics-registry-v1")
+    );
+    let expected_registry_lanes = std::collections::BTreeMap::from([
+        ("transformer-vm", "implemented"),
+        ("native-isa", "implemented"),
+        ("burn", "implemented"),
+        ("onnx-tract", "implemented"),
+        ("torch-export", "research_watch"),
+        ("executorch", "research_watch"),
+        ("stablehlo", "research_watch"),
+        ("iree", "research_watch"),
+        ("onnx-mlir", "research_watch"),
+        ("tvm-unity", "research_watch"),
+        ("vllm", "research_watch"),
+        ("sglang", "research_watch"),
+        ("egg-emerge", "research_watch"),
+    ]);
+    assert_eq!(
+        research_v3_registry_lane_statuses(frontend_runtime_registry),
+        expected_registry_lanes,
+        "frontend/runtime semantics registry lane boundary drifted"
+    );
+    assert_eq!(
+        artifact_json
+            .get("statement_version")
+            .and_then(serde_json::Value::as_str),
+        Some("statement-v3-research-draft")
+    );
+    assert_eq!(
+        artifact_json
+            .get("engines")
+            .and_then(serde_json::Value::as_array)
+            .map(Vec::len),
+        Some(4)
+    );
+    let engine_names = artifact_json
+        .get("engines")
+        .and_then(serde_json::Value::as_array)
+        .expect("engines")
+        .iter()
+        .map(|entry| {
+            entry
+                .get("name")
+                .and_then(serde_json::Value::as_str)
+                .expect("engine name")
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        engine_names,
+        ["transformer", "native", "burn", "onnx/tract"]
+    );
+    for engine in artifact_json
+        .get("engines")
+        .and_then(serde_json::Value::as_array)
+        .expect("engines")
+    {
+        let trace_len = engine
+            .get("trace_len")
+            .and_then(serde_json::Value::as_u64)
+            .expect("trace_len") as usize;
+        let events_len = engine
+            .get("events_len")
+            .and_then(serde_json::Value::as_u64)
+            .expect("events_len") as usize;
+        assert_eq!(
+            engine
+                .get("trace")
+                .and_then(serde_json::Value::as_array)
+                .map(Vec::len),
+            Some(trace_len)
+        );
+        assert_eq!(
+            engine
+                .get("canonical_events")
+                .and_then(serde_json::Value::as_array)
+                .map(Vec::len),
+            Some(events_len)
+        );
+        assert_eq!(trace_len, events_len + 1);
+    }
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-research-v3-equivalence")
+        .arg(&output_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "verified_research_v3_equivalence: true",
+        ))
+        .stdout(predicate::str::contains("rule_witnesses: 3"));
+
+    let checked_steps = artifact_json
+        .get("checked_steps")
+        .and_then(serde_json::Value::as_u64)
+        .expect("checked_steps") as usize;
+    assert_eq!(
+        artifact_json
+            .get("rule_witnesses")
+            .and_then(serde_json::Value::as_array)
+            .map(Vec::len),
+        Some(checked_steps)
+    );
+    let rule_witnesses = artifact_json
+        .get("rule_witnesses")
+        .and_then(serde_json::Value::as_array)
+        .expect("rule_witnesses");
+    let first_witness = rule_witnesses.first().expect("first rule witness");
+    assert_eq!(
+        first_witness
+            .get("participating_engines")
+            .and_then(serde_json::Value::as_array)
+            .expect("participating engines")
+            .iter()
+            .map(|entry| entry.as_str().expect("engine name"))
+            .collect::<Vec<_>>(),
+        ["transformer", "native", "burn", "onnx/tract"]
+    );
+    for hashes_key in ["state_before_hashes", "state_after_hashes"] {
+        let hashes = first_witness
+            .get(hashes_key)
+            .and_then(serde_json::Value::as_object)
+            .expect("per-engine witness hashes");
+        for engine_name in ["transformer", "native", "burn", "onnx/tract"] {
+            let hash = hashes
+                .get(engine_name)
+                .and_then(serde_json::Value::as_str)
+                .expect("per-engine state hash");
+            assert_eq!(hash.len(), 64);
+        }
+    }
+    let canonical_transition_hash = first_witness
+        .get("canonical_transition_hash")
+        .and_then(serde_json::Value::as_str)
+        .expect("canonical transition hash");
+    assert_eq!(canonical_transition_hash.len(), 64);
+    let engine_transition_hashes = first_witness
+        .get("engine_transition_hashes")
+        .and_then(serde_json::Value::as_object)
+        .expect("engine transition hashes");
+    for engine_name in ["transformer", "native", "burn", "onnx/tract"] {
+        let transition_hash = engine_transition_hashes
+            .get(engine_name)
+            .and_then(serde_json::Value::as_str)
+            .expect("per-engine transition hash");
+        assert_eq!(
+            transition_hash, canonical_transition_hash,
+            "transition relation hash drift for {engine_name}"
+        );
+    }
+    let limitations = artifact_json
+        .get("limitations")
+        .and_then(serde_json::Value::as_array)
+        .expect("limitations");
+    for expected in [
+        "Emerge reproduction",
+        "e-graph saturation",
+        "SMT-backed rewrite synthesis",
+        "randomized opaque-kernel testing",
+        "recursive accumulation",
+        "cryptographic implementation-equivalence proof",
+    ] {
+        assert!(
+            limitations
+                .iter()
+                .any(|entry| entry.as_str().is_some_and(|text| text.contains(expected))),
+            "missing limitation covering {expected}",
+        );
+    }
+    let mut tampered = artifact_json.clone();
+    tampered["commitments"]["engine_summaries_hash"] = serde_json::Value::String("0".repeat(64));
+    assert!(
+        std::panic::catch_unwind(|| assert_research_v3_runtime_commitments(&tampered)).is_err()
+    );
+    let mut tampered_registry_hash = artifact_json.clone();
+    tampered_registry_hash["commitments"]["frontend_runtime_semantics_registry_hash"] =
+        serde_json::Value::String("0".repeat(64));
+    assert!(std::panic::catch_unwind(|| {
+        assert_research_v3_runtime_commitments(&tampered_registry_hash)
+    })
+    .is_err());
+    let mut tampered_transition_hash = artifact_json.clone();
+    tampered_transition_hash["rule_witnesses"][0]["engine_transition_hashes"]["native"] =
+        serde_json::Value::String("0".repeat(64));
+    assert!(std::panic::catch_unwind(|| {
+        assert_research_v3_runtime_commitments(&tampered_transition_hash)
+    })
+    .is_err());
+    tampered_transition_hash["commitments"]["rule_witnesses_hash"] =
+        serde_json::Value::String(hash_json_value(
+            tampered_transition_hash
+                .get("rule_witnesses")
+                .expect("tampered rule witnesses"),
+        ));
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&tampered_transition_hash).expect("tampered artifact json"),
+    )
+    .expect("write tampered artifact");
+    let mut verify_tampered = tvm_command();
+    verify_tampered
+        .arg("verify-research-v3-equivalence")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "transition_hash commitment mismatch",
+        ));
+
+    let mut tampered_state_mismatch = artifact_json.clone();
+    tampered_state_mismatch["rule_witnesses"][0]["state_after_hashes"]["native"] =
+        serde_json::Value::String("1".repeat(64));
+    tampered_state_mismatch["commitments"]["rule_witnesses_hash"] =
+        serde_json::Value::String(hash_json_value(
+            tampered_state_mismatch
+                .get("rule_witnesses")
+                .expect("tampered state mismatch rule witnesses"),
+        ));
+    std::fs::write(
+        &state_mismatch_path,
+        serde_json::to_vec(&tampered_state_mismatch)
+            .expect("tampered state mismatch artifact json"),
+    )
+    .expect("write state mismatch artifact");
+    let mut verify_state_mismatch = tvm_command();
+    verify_state_mismatch
+        .arg("verify-research-v3-equivalence")
+        .arg(&state_mismatch_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "state_after_hash commitment mismatch",
+        ));
+
+    let mut tampered_trace_hash = artifact_json.clone();
+    tampered_trace_hash["engines"][0]["trace_hash"] = serde_json::Value::String("2".repeat(64));
+    tampered_trace_hash["commitments"]["engine_summaries_hash"] =
+        serde_json::Value::String(hash_json_value(
+            tampered_trace_hash
+                .get("engines")
+                .expect("tampered engines"),
+        ));
+    std::fs::write(
+        &trace_hash_path,
+        serde_json::to_vec(&tampered_trace_hash).expect("tampered trace hash artifact json"),
+    )
+    .expect("write trace hash artifact");
+    let mut verify_trace_hash = tvm_command();
+    verify_trace_hash
+        .arg("verify-research-v3-equivalence")
+        .arg(&trace_hash_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("trace_hash commitment mismatch"));
+
+    let mut tampered_canonical_event = artifact_json.clone();
+    tampered_canonical_event["engines"][0]["canonical_events"][0]["state_after_hash"] =
+        serde_json::Value::String("3".repeat(64));
+    tampered_canonical_event["engines"][0]["event_relation_hash"] =
+        serde_json::Value::String(hash_json_value(
+            tampered_canonical_event["engines"][0]
+                .get("canonical_events")
+                .expect("tampered canonical events"),
+        ));
+    tampered_canonical_event["commitments"]["engine_summaries_hash"] =
+        serde_json::Value::String(hash_json_value(
+            tampered_canonical_event
+                .get("engines")
+                .expect("tampered canonical event engines"),
+        ));
+    std::fs::write(
+        &canonical_event_path,
+        serde_json::to_vec(&tampered_canonical_event)
+            .expect("tampered canonical event artifact json"),
+    )
+    .expect("write canonical event artifact");
+    let mut verify_canonical_event = tvm_command();
+    verify_canonical_event
+        .arg("verify-research-v3-equivalence")
+        .arg(&canonical_event_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "canonical event 1 state_after_hash commitment mismatch",
+        ));
+
+    let mut malformed_hash = artifact_json.clone();
+    malformed_hash["commitments"]["relation_format_hash"] =
+        serde_json::Value::String("not-a-blake2b-hash".to_string());
+    malformed_hash["rule_witnesses"][0]["state_before_hashes"]["transformer"] =
+        serde_json::Value::String("also-not-a-blake2b-hash".to_string());
+    malformed_hash["rule_witnesses"][0]["engine_transition_hashes"]["native"] =
+        serde_json::Value::String("not-a-transition-hash".to_string());
+    assert!(std::panic::catch_unwind(|| {
+        validate_json_against_schema(
+            &malformed_hash,
+            "spec/statement-v3-equivalence-kernel.schema.json",
+        );
+    })
+    .is_err());
+
+    let mut missing_relation = artifact_json.clone();
+    missing_relation
+        .as_object_mut()
+        .expect("artifact object")
+        .remove("relation_format");
+    assert!(std::panic::catch_unwind(|| {
+        validate_json_against_schema(
+            &missing_relation,
+            "spec/statement-v3-equivalence-kernel.schema.json",
+        );
+    })
+    .is_err());
+
+    let _ = std::fs::remove_file(output_path);
+    let _ = std::fs::remove_file(tampered_path);
+    let _ = std::fs::remove_file(state_mismatch_path);
+    let _ = std::fs::remove_file(trace_hash_path);
+    let _ = std::fs::remove_file(canonical_event_path);
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+#[test]
+fn cli_research_v3_equivalence_rejects_zero_max_steps() {
+    let output_path =
+        unique_temp_dir("cli-research-v3-equivalence-zero-steps").with_extension("json");
+    let mut command = tvm_command();
+    command
+        .arg("research-v3-equivalence")
+        .arg("programs/addition.tvm")
+        .arg("-o")
+        .arg(&output_path)
+        .arg("--max-steps")
+        .arg("0")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "research-v3-equivalence requires max_steps >= 1",
+        ));
+
+    assert!(!output_path.exists());
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]

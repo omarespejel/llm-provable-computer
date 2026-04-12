@@ -60,6 +60,9 @@ The script writes to `compiled/repro-bundle/` by default and produces:
 - `sha256sums.txt`: hashes for artifacts and command outputs
 - `*.proof.json`: STARK proofs for representative programs
 - `research-v2-*.json`: semantic equivalence certificates (step/trace/matrix)
+- `research-v3-*.json`: multi-engine equivalence-kernel artifacts with transition
+  relation hashes, explicit non-e-graph/non-SMT limits, and a frontend/runtime
+  semantics registry for implemented versus research-watch lanes
 - `*.out` / `*.err`: full stdout/stderr capture for each command
 
 The accumulation bundle script writes under
@@ -78,11 +81,14 @@ produces:
 
 - Attach `manifest.txt`, `benchmarks.tsv`, and `sha256sums.txt` in paper/blog
   appendices.
-- Link generated `research-v2` artifacts as evidence for semantic-equivalence
+- Link generated `research-v2` / `research-v3` artifacts as evidence for semantic-equivalence
   claims.
 - Link generated `*.proof.json` files for statement-v1 proof demonstrations.
 - Use `artifact_summary.tsv` from the accumulation bundle when comparing base,
   carried, and accumulated decode paths inside the same artifact family.
+- Use `prepare-hf-provenance-manifest` for HF-backed release bundles that need
+  pinned Hub revisions, tokenizer identity, safetensors metadata/file hashes,
+  optional ONNX export hashes, and model-card/DOI/dataset release metadata.
 
 ## Claim Scope Reminder
 
@@ -90,6 +96,21 @@ produces:
 - `research-v2` artifacts are structured semantic certificates with commitments,
   used as evidence and regression checks, but are not yet part of the STARK
   claim relation.
+- `research-v3` artifacts extend that evidence to transformer/native/Burn/ONNX
+  lockstep plus rule witnesses and per-engine transition relation hashes. Their
+  verifier recomputes artifact commitments, bounded trace hashes, semantic
+  canonical event-relation hashes, cross-engine state-boundary consistency,
+  final-state links, and transition relation hashes as an integrity check. Their
+  frontend/runtime semantics registry keeps PyTorch
+  `torch.export`, ExecuTorch, StableHLO, IREE, ONNX-MLIR, TVM, vLLM, SGLang,
+  and egg/Emerge-style paths as explicit research-watch lanes; these artifacts
+  are not e-graph saturation results, SMT rewrite proofs, randomized
+  opaque-kernel tests, or cryptographic implementation-equivalence proofs.
+- HF provenance manifests are release/provenance artifacts only. They bind
+  pinned Hub and tokenizer identifiers plus local tokenizer, safetensors, ONNX,
+  model-card, DOI, and dataset metadata where supplied, but they do not prove
+  tokenizer algorithm correctness, model-weight semantics, Optimum export
+  equivalence, live Hub availability, or DOI validity.
 
 ## Paper figure regeneration
 
