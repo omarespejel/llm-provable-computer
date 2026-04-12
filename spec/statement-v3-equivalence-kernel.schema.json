@@ -13,7 +13,6 @@
     "program_path",
     "requested_max_steps",
     "checked_steps",
-    "matched",
     "engines",
     "rule_witnesses",
     "limitations",
@@ -29,7 +28,6 @@
     "program_path": { "type": "string" },
     "requested_max_steps": { "type": "integer", "minimum": 1 },
     "checked_steps": { "type": "integer", "minimum": 0 },
-    "matched": { "type": "boolean" },
     "engines": {
       "type": "array",
       "minItems": 4,
@@ -52,6 +50,8 @@
         "fixed_point_spec_hash",
         "onnx_op_subset_hash",
         "artifact_schema_hash",
+        "relation_format_hash",
+        "limitations_hash",
         "program_hash",
         "transformer_config_hash",
         "onnx_metadata_hash",
@@ -64,6 +64,8 @@
         "fixed_point_spec_hash": { "type": "string" },
         "onnx_op_subset_hash": { "type": "string" },
         "artifact_schema_hash": { "type": "string" },
+        "relation_format_hash": { "type": "string" },
+        "limitations_hash": { "type": "string" },
         "program_hash": { "type": "string" },
         "transformer_config_hash": { "type": "string" },
         "onnx_metadata_hash": { "type": "string" },
@@ -108,8 +110,8 @@
         "relation",
         "instruction",
         "participating_engines",
-        "state_before_hash",
-        "state_after_hash",
+        "state_before_hashes",
+        "state_after_hashes",
         "validation"
       ],
       "properties": {
@@ -122,8 +124,16 @@
           "minItems": 4,
           "items": { "type": "string" }
         },
-        "state_before_hash": { "type": "string" },
-        "state_after_hash": { "type": "string" },
+        "state_before_hashes": {
+          "type": "object",
+          "minProperties": 4,
+          "additionalProperties": { "type": "string" }
+        },
+        "state_after_hashes": {
+          "type": "object",
+          "minProperties": 4,
+          "additionalProperties": { "type": "string" }
+        },
         "validation": {
           "type": "object",
           "required": [
