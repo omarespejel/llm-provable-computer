@@ -13244,10 +13244,6 @@ mod tests {
 
     const ORACLE_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v11";
     const ORACLE_DECODING_STATE_VERSION_PHASE14: &str = "stwo-decoding-state-v6";
-    const ORACLE_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12: &str =
-        "stwo-phase12-shared-lookup-artifact-v1";
-    const ORACLE_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12: &str =
-        "stwo_parameterized_decoding_shared_lookup_artifact";
 
     fn oracle_lower_hex(bytes: &[u8]) -> String {
         const HEX: &[u8; 16] = b"0123456789abcdef";
@@ -13492,36 +13488,12 @@ mod tests {
             flattened_lookup_rows.push(activation_row.expected_input);
             flattened_lookup_rows.push(activation_row.expected_output);
         }
-        let lookup_rows_commitment =
-            oracle_commit_phase12_shared_lookup_rows(layout_commitment, &flattened_lookup_rows);
-        let rows_json = serde_json::to_vec(&flattened_lookup_rows)
-            .map_err(|error| VmError::Serialization(error.to_string()))?;
-        let normalization_json = serde_json::to_vec(&normalization)
-            .map_err(|error| VmError::Serialization(error.to_string()))?;
-        let activation_json = serde_json::to_vec(&activation)
-            .map_err(|error| VmError::Serialization(error.to_string()))?;
-        let artifact_commitment = oracle_blake2b_256(&[
-            ORACLE_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12
-                .as_bytes()
-                .to_vec(),
-            layout_commitment.as_bytes().to_vec(),
-            (rows_json.len() as u64).to_le_bytes().to_vec(),
-            rows_json,
-            (normalization_json.len() as u64).to_le_bytes().to_vec(),
-            normalization_json,
-            (activation_json.len() as u64).to_le_bytes().to_vec(),
-            activation_json,
-        ]);
-        let artifact = Phase12SharedLookupArtifact {
-            artifact_version: ORACLE_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12.to_string(),
-            semantic_scope: ORACLE_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12.to_string(),
-            artifact_commitment,
-            layout_commitment: layout_commitment.to_string(),
-            lookup_rows_commitment,
+        let artifact = build_phase12_shared_lookup_artifact(
+            layout_commitment,
             flattened_lookup_rows,
-            normalization_proof_envelope: normalization,
-            activation_proof_envelope: activation,
-        };
+            normalization,
+            activation,
+        )?;
         verify_phase12_shared_lookup_artifact(&artifact, layout, layout_commitment)?;
         Ok(Some(artifact))
     }
@@ -17174,9 +17146,13 @@ mod tests {
         .expect("write invalid manifest");
         let err = load_phase25_intervalized_decoding_state_relation(&path)
             .expect_err("tampered load should fail");
-        assert!(err
-            .to_string()
-            .contains("start_state_commitment does not match the first member boundary"));
+        let message = err.to_string();
+        assert!(
+            message.contains(
+                "global_start_state_commitment does not match the derived rebased Phase 24 source"
+            ),
+            "unexpected error: {message}"
+        );
         let _ = fs::remove_file(path);
     }
 
@@ -19772,9 +19748,13 @@ mod tests {
         let mut manifest = sample_phase25_intervalized_decoding_state_relation_manifest();
         manifest.source_relation_accumulator_commitment = "tampered".to_string();
         let err = verify_phase25_intervalized_decoding_state_relation(&manifest).unwrap_err();
-        assert!(err.to_string().contains(
-            "relation_accumulator_commitment does not match the computed accumulator commitment"
-        ));
+        let message = err.to_string();
+        assert!(
+            message.contains(
+                "source_relation_accumulator_commitment does not match the derived rebased Phase 24 source"
+            ),
+            "unexpected error: {message}"
+        );
     }
 
     #[test]
@@ -19782,10 +19762,15 @@ mod tests {
         let mut manifest = sample_phase25_intervalized_decoding_state_relation_manifest();
         manifest.lookup_delta_entries = manifest.lookup_delta_entries.saturating_add(1);
         let err = verify_phase25_intervalized_decoding_state_relation(&manifest).unwrap_err();
-        assert!(err.to_string().contains("lookup_delta_entries="));
-        assert!(err
-            .to_string()
-            .contains("does not match derived lookup_delta_entries"));
+        let message = err.to_string();
+        assert!(
+            message.contains("lookup_delta_entries="),
+            "unexpected error: {message}"
+        );
+        assert!(
+            message.contains("exceed the final nested cumulative total"),
+            "unexpected error: {message}"
+        );
     }
 
     #[test]

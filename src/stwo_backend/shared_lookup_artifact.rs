@@ -19,6 +19,12 @@ pub const STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12: &str =
     "stwo-phase12-shared-lookup-artifact-v1";
 pub const STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12: &str =
     "stwo_parameterized_decoding_shared_lookup_artifact";
+pub const STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12: &str =
+    "stwo-phase12-shared-static-lookup-table-registry-v1";
+pub const STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12: &str =
+    "stwo_parameterized_decoding_shared_static_lookup_table_registry";
+pub const STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12: &str = "phase5-normalization-q8-v1";
+pub const STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12: &str = "phase3-binary-step-activation-v1";
 pub(crate) const DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE: &str =
     "stwo_decoding_step_v2_execution_with_shared_normalization_lookup";
 pub(crate) const DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE: &str =
@@ -65,11 +71,29 @@ pub(crate) struct EmbeddedSharedActivationLookupProof {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase12StaticLookupTableCommitment {
+    pub table_id: String,
+    pub statement_version: String,
+    pub semantic_scope: String,
+    pub table_commitment: String,
+    pub row_count: usize,
+    pub row_width: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase12SharedLookupArtifact {
     pub artifact_version: String,
     pub semantic_scope: String,
     pub artifact_commitment: String,
     pub layout_commitment: String,
+    #[serde(default)]
+    pub static_table_registry_version: String,
+    #[serde(default)]
+    pub static_table_registry_scope: String,
+    #[serde(default)]
+    pub static_table_registry_commitment: String,
+    #[serde(default)]
+    pub static_table_commitments: Vec<Phase12StaticLookupTableCommitment>,
     pub lookup_rows_commitment: String,
     pub flattened_lookup_rows: Vec<i16>,
     pub(crate) normalization_proof_envelope: EmbeddedSharedNormalizationProof,
@@ -100,6 +124,11 @@ pub(crate) fn commit_phase12_shared_lookup_artifact(
     normalization_proof_envelope: &EmbeddedSharedNormalizationProof,
     activation_proof_envelope: &EmbeddedSharedActivationLookupProof,
 ) -> Result<String> {
+    let (static_table_commitments, static_table_registry_commitment) =
+        phase12_static_lookup_table_registry_from_envelopes(
+            &normalization_proof_envelope.proof_envelope,
+            &activation_proof_envelope.proof_envelope,
+        )?;
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12.as_bytes());
     hasher.update(layout_commitment.as_bytes());
@@ -107,6 +136,13 @@ pub(crate) fn commit_phase12_shared_lookup_artifact(
         .map_err(|error| VmError::Serialization(error.to_string()))?;
     hasher.update(&(rows_json.len() as u64).to_le_bytes());
     hasher.update(&rows_json);
+    hasher.update(STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12.as_bytes());
+    hasher.update(STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12.as_bytes());
+    hasher.update(static_table_registry_commitment.as_bytes());
+    let static_table_commitments_json = serde_json::to_vec(&static_table_commitments)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    hasher.update(&(static_table_commitments_json.len() as u64).to_le_bytes());
+    hasher.update(&static_table_commitments_json);
     let normalization_json = serde_json::to_vec(normalization_proof_envelope)
         .map_err(|error| VmError::Serialization(error.to_string()))?;
     hasher.update(&(normalization_json.len() as u64).to_le_bytes());
@@ -130,6 +166,11 @@ pub(crate) fn build_phase12_shared_lookup_artifact(
 ) -> Result<Phase12SharedLookupArtifact> {
     let lookup_rows_commitment =
         commit_phase12_shared_lookup_rows(layout_commitment, &flattened_lookup_rows);
+    let (static_table_commitments, static_table_registry_commitment) =
+        phase12_static_lookup_table_registry_from_envelopes(
+            &normalization_proof_envelope.proof_envelope,
+            &activation_proof_envelope.proof_envelope,
+        )?;
     let artifact_commitment = commit_phase12_shared_lookup_artifact(
         layout_commitment,
         &flattened_lookup_rows,
@@ -141,6 +182,12 @@ pub(crate) fn build_phase12_shared_lookup_artifact(
         semantic_scope: STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12.to_string(),
         artifact_commitment,
         layout_commitment: layout_commitment.to_string(),
+        static_table_registry_version: STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12
+            .to_string(),
+        static_table_registry_scope: STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12
+            .to_string(),
+        static_table_registry_commitment,
+        static_table_commitments,
         lookup_rows_commitment,
         flattened_lookup_rows,
         normalization_proof_envelope,
@@ -191,6 +238,42 @@ pub fn verify_phase12_shared_lookup_artifact(
         ));
     }
 
+    let normalization_wrapper = &artifact.normalization_proof_envelope;
+    let activation_wrapper = &artifact.activation_proof_envelope;
+    if artifact.static_table_registry_version
+        != STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 12 shared static lookup table registry version `{}`",
+            artifact.static_table_registry_version
+        )));
+    }
+    if artifact.static_table_registry_scope
+        != STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 12 shared static lookup table registry scope `{}`",
+            artifact.static_table_registry_scope
+        )));
+    }
+    let (expected_static_table_commitments, expected_static_table_registry_commitment) =
+        phase12_static_lookup_table_registry_from_envelopes(
+            &normalization_wrapper.proof_envelope,
+            &activation_wrapper.proof_envelope,
+        )?;
+    if artifact.static_table_commitments != expected_static_table_commitments {
+        return Err(VmError::InvalidConfig(
+            "Phase 12 shared lookup artifact static table commitments do not match the nested proof envelopes"
+                .to_string(),
+        ));
+    }
+    if artifact.static_table_registry_commitment != expected_static_table_registry_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 12 shared lookup artifact static table registry commitment does not match its table descriptors"
+                .to_string(),
+        ));
+    }
+
     let expected_artifact_commitment = commit_phase12_shared_lookup_artifact(
         &computed_layout_commitment,
         &artifact.flattened_lookup_rows,
@@ -203,7 +286,6 @@ pub fn verify_phase12_shared_lookup_artifact(
                 .to_string(),
         ));
     }
-    let normalization_wrapper = &artifact.normalization_proof_envelope;
     if normalization_wrapper.statement_version
         != STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10
     {
@@ -259,7 +341,6 @@ pub fn verify_phase12_shared_lookup_artifact(
         }
     }
 
-    let activation_wrapper = &artifact.activation_proof_envelope;
     if activation_wrapper.statement_version != STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10 {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 12 shared lookup artifact activation statement version `{}`",
@@ -395,6 +476,93 @@ pub fn verify_phase12_shared_lookup_artifact(
     Ok(())
 }
 
+fn phase12_static_lookup_table_registry_from_envelopes(
+    normalization_envelope: &Phase10SharedNormalizationLookupProofEnvelope,
+    activation_envelope: &Phase10SharedLookupProofEnvelope,
+) -> Result<(Vec<Phase12StaticLookupTableCommitment>, String)> {
+    let normalization_rows: Vec<[i64; 2]> = normalization_envelope
+        .canonical_table_rows
+        .iter()
+        .map(|(norm_sq, inv_sqrt_q8)| [i64::from(*norm_sq), i64::from(*inv_sqrt_q8)])
+        .collect();
+    let activation_rows: Vec<[i64; 2]> = activation_envelope
+        .canonical_table_rows
+        .iter()
+        .map(|row| [i64::from(row.input), i64::from(row.output)])
+        .collect();
+    let table_commitments = vec![
+        Phase12StaticLookupTableCommitment {
+            table_id: STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12.to_string(),
+            statement_version: normalization_envelope.statement_version.clone(),
+            semantic_scope: normalization_envelope.semantic_scope.clone(),
+            table_commitment: commit_phase12_static_lookup_table(
+                STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12,
+                &normalization_envelope.statement_version,
+                &normalization_envelope.semantic_scope,
+                &normalization_rows,
+            )?,
+            row_count: normalization_rows.len(),
+            row_width: 2,
+        },
+        Phase12StaticLookupTableCommitment {
+            table_id: STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12.to_string(),
+            statement_version: activation_envelope.statement_version.clone(),
+            semantic_scope: activation_envelope.semantic_scope.clone(),
+            table_commitment: commit_phase12_static_lookup_table(
+                STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12,
+                &activation_envelope.statement_version,
+                &activation_envelope.semantic_scope,
+                &activation_rows,
+            )?,
+            row_count: activation_rows.len(),
+            row_width: 2,
+        },
+    ];
+    let registry_commitment = commit_phase12_static_lookup_table_registry(&table_commitments)?;
+    Ok((table_commitments, registry_commitment))
+}
+
+fn commit_phase12_static_lookup_table(
+    table_id: &str,
+    statement_version: &str,
+    semantic_scope: &str,
+    rows: &[[i64; 2]],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12.as_bytes());
+    hasher.update(table_id.as_bytes());
+    hasher.update(statement_version.as_bytes());
+    hasher.update(semantic_scope.as_bytes());
+    hasher.update(&(rows.len() as u64).to_le_bytes());
+    hasher.update(&2u64.to_le_bytes());
+    let rows_json =
+        serde_json::to_vec(rows).map_err(|error| VmError::Serialization(error.to_string()))?;
+    hasher.update(&(rows_json.len() as u64).to_le_bytes());
+    hasher.update(&rows_json);
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase12_static_lookup_table_registry(
+    table_commitments: &[Phase12StaticLookupTableCommitment],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12.as_bytes());
+    hasher.update(STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12.as_bytes());
+    let descriptors_json = serde_json::to_vec(table_commitments)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    hasher.update(&(descriptors_json.len() as u64).to_le_bytes());
+    hasher.update(&descriptors_json);
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
 fn lower_hex(bytes: &[u8]) -> String {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let mut out = String::with_capacity(bytes.len() * 2);
@@ -417,6 +585,13 @@ mod tests {
         "stwo-phase12-shared-lookup-artifact-v1";
     const ORACLE_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12: &str =
         "stwo_parameterized_decoding_shared_lookup_artifact";
+    const ORACLE_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12: &str =
+        "stwo-phase12-shared-static-lookup-table-registry-v1";
+    const ORACLE_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12: &str =
+        "stwo_parameterized_decoding_shared_static_lookup_table_registry";
+    const ORACLE_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12: &str = "phase5-normalization-q8-v1";
+    const ORACLE_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12: &str =
+        "phase3-binary-step-activation-v1";
     const ORACLE_DECODING_STATE_VERSION_PHASE12: &str = "stwo-decoding-state-v11";
     const ORACLE_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10: &str =
         "stwo-shared-normalization-lookup-v1";
@@ -460,6 +635,22 @@ mod tests {
             super::STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12
         );
         assert_eq!(
+            ORACLE_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12,
+            super::STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12
+        );
+        assert_eq!(
+            ORACLE_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12,
+            super::STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12
+        );
+        assert_eq!(
+            ORACLE_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12,
+            super::STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12
+        );
+        assert_eq!(
+            ORACLE_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12,
+            super::STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12
+        );
+        assert_eq!(
             ORACLE_DECODING_STATE_VERSION_PHASE12,
             crate::stwo_backend::decoding::STWO_DECODING_STATE_VERSION_PHASE12
         );
@@ -496,13 +687,105 @@ mod tests {
         oracle_blake2b_256(&parts)
     }
 
+    fn oracle_commit_phase12_static_lookup_table(
+        table_id: &str,
+        statement_version: &str,
+        semantic_scope: &str,
+        rows: &[[i64; 2]],
+    ) -> String {
+        let rows_json = serde_json::to_vec(rows).expect("static table rows json");
+        oracle_blake2b_256(&[
+            ORACLE_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12
+                .as_bytes()
+                .to_vec(),
+            table_id.as_bytes().to_vec(),
+            statement_version.as_bytes().to_vec(),
+            semantic_scope.as_bytes().to_vec(),
+            (rows.len() as u64).to_le_bytes().to_vec(),
+            2u64.to_le_bytes().to_vec(),
+            (rows_json.len() as u64).to_le_bytes().to_vec(),
+            rows_json,
+        ])
+    }
+
+    fn oracle_commit_phase12_static_lookup_table_registry(
+        table_commitments: &[Phase12StaticLookupTableCommitment],
+    ) -> String {
+        let descriptors_json =
+            serde_json::to_vec(table_commitments).expect("static table descriptors json");
+        oracle_blake2b_256(&[
+            ORACLE_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12
+                .as_bytes()
+                .to_vec(),
+            ORACLE_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12
+                .as_bytes()
+                .to_vec(),
+            (descriptors_json.len() as u64).to_le_bytes().to_vec(),
+            descriptors_json,
+        ])
+    }
+
+    fn oracle_phase12_static_lookup_table_registry_from_envelopes(
+        normalization_envelope: &Phase10SharedNormalizationLookupProofEnvelope,
+        activation_envelope: &Phase10SharedLookupProofEnvelope,
+    ) -> (Vec<Phase12StaticLookupTableCommitment>, String) {
+        let normalization_rows: Vec<[i64; 2]> = normalization_envelope
+            .canonical_table_rows
+            .iter()
+            .map(|(norm_sq, inv_sqrt_q8)| [i64::from(*norm_sq), i64::from(*inv_sqrt_q8)])
+            .collect();
+        let activation_rows: Vec<[i64; 2]> = activation_envelope
+            .canonical_table_rows
+            .iter()
+            .map(|row| [i64::from(row.input), i64::from(row.output)])
+            .collect();
+        let table_commitments = vec![
+            Phase12StaticLookupTableCommitment {
+                table_id: ORACLE_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12.to_string(),
+                statement_version: normalization_envelope.statement_version.clone(),
+                semantic_scope: normalization_envelope.semantic_scope.clone(),
+                table_commitment: oracle_commit_phase12_static_lookup_table(
+                    ORACLE_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12,
+                    &normalization_envelope.statement_version,
+                    &normalization_envelope.semantic_scope,
+                    &normalization_rows,
+                ),
+                row_count: normalization_rows.len(),
+                row_width: 2,
+            },
+            Phase12StaticLookupTableCommitment {
+                table_id: ORACLE_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12.to_string(),
+                statement_version: activation_envelope.statement_version.clone(),
+                semantic_scope: activation_envelope.semantic_scope.clone(),
+                table_commitment: oracle_commit_phase12_static_lookup_table(
+                    ORACLE_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12,
+                    &activation_envelope.statement_version,
+                    &activation_envelope.semantic_scope,
+                    &activation_rows,
+                ),
+                row_count: activation_rows.len(),
+                row_width: 2,
+            },
+        ];
+        let registry_commitment =
+            oracle_commit_phase12_static_lookup_table_registry(&table_commitments);
+        (table_commitments, registry_commitment)
+    }
+
     fn oracle_commit_phase12_shared_lookup_artifact(
         layout_commitment: &str,
         flattened_lookup_rows: &[i16],
         normalization_proof_envelope: &EmbeddedSharedNormalizationProof,
         activation_proof_envelope: &EmbeddedSharedActivationLookupProof,
     ) -> String {
+        let (static_table_commitments, static_table_registry_commitment) =
+            oracle_phase12_static_lookup_table_registry_from_envelopes(
+                &normalization_proof_envelope.proof_envelope,
+                &activation_proof_envelope.proof_envelope,
+            );
         let rows_json = serde_json::to_vec(flattened_lookup_rows).expect("rows json");
+        let static_table_commitments_json =
+            serde_json::to_vec(&static_table_commitments).expect("static table descriptors json");
         let normalization_json =
             serde_json::to_vec(normalization_proof_envelope).expect("normalization json");
         let activation_json =
@@ -514,6 +797,17 @@ mod tests {
             layout_commitment.as_bytes().to_vec(),
             (rows_json.len() as u64).to_le_bytes().to_vec(),
             rows_json,
+            ORACLE_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12
+                .as_bytes()
+                .to_vec(),
+            ORACLE_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12
+                .as_bytes()
+                .to_vec(),
+            static_table_registry_commitment.as_bytes().to_vec(),
+            (static_table_commitments_json.len() as u64)
+                .to_le_bytes()
+                .to_vec(),
+            static_table_commitments_json,
             (normalization_json.len() as u64).to_le_bytes().to_vec(),
             normalization_json,
             (activation_json.len() as u64).to_le_bytes().to_vec(),
@@ -560,6 +854,40 @@ mod tests {
         if artifact.lookup_rows_commitment != expected_lookup_rows_commitment {
             return Err(VmError::InvalidConfig(
                 "Phase 12 shared lookup artifact lookup_rows_commitment does not match its flattened rows"
+                    .to_string(),
+            ));
+        }
+
+        if artifact.static_table_registry_version
+            != ORACLE_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported Phase 12 shared static lookup table registry version `{}`",
+                artifact.static_table_registry_version
+            )));
+        }
+        if artifact.static_table_registry_scope
+            != ORACLE_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "unsupported Phase 12 shared static lookup table registry scope `{}`",
+                artifact.static_table_registry_scope
+            )));
+        }
+        let (expected_static_table_commitments, expected_static_table_registry_commitment) =
+            oracle_phase12_static_lookup_table_registry_from_envelopes(
+                &artifact.normalization_proof_envelope.proof_envelope,
+                &artifact.activation_proof_envelope.proof_envelope,
+            );
+        if artifact.static_table_commitments != expected_static_table_commitments {
+            return Err(VmError::InvalidConfig(
+                "Phase 12 shared lookup artifact static table commitments do not match the nested proof envelopes"
+                    .to_string(),
+            ));
+        }
+        if artifact.static_table_registry_commitment != expected_static_table_registry_commitment {
+            return Err(VmError::InvalidConfig(
+                "Phase 12 shared lookup artifact static table registry commitment does not match its table descriptors"
                     .to_string(),
             ));
         }
@@ -855,8 +1183,7 @@ mod tests {
         }
     }
 
-    #[test]
-    fn phase12_shared_lookup_artifact_verifies_nested_envelopes() {
+    fn sample_valid_artifact() -> (Phase12DecodingLayout, String, Phase12SharedLookupArtifact) {
         let (layout, layout_commitment) = sample_layout_and_commitment();
         let normalization_rows = vec![(16u16, 64u16), (4u16, 128u16)];
         let activation_rows = vec![
@@ -869,22 +1196,108 @@ mod tests {
                 output: 1,
             },
         ];
-        let normalization_envelope =
-            prove_phase10_shared_normalization_lookup_envelope(&normalization_rows)
-                .expect("normalization envelope");
-        let activation_envelope =
-            prove_phase10_shared_binary_step_lookup_envelope(&activation_rows)
-                .expect("activation envelope");
         let artifact = build_phase12_shared_lookup_artifact(
             &layout_commitment,
             vec![16, 64, 1, 1, 4, 128, 0, 1],
-            normalization_wrapper(normalization_envelope),
-            activation_wrapper(activation_envelope),
+            normalization_wrapper(
+                prove_phase10_shared_normalization_lookup_envelope(&normalization_rows)
+                    .expect("normalization envelope"),
+            ),
+            activation_wrapper(
+                prove_phase10_shared_binary_step_lookup_envelope(&activation_rows)
+                    .expect("activation envelope"),
+            ),
         )
         .expect("artifact");
+        (layout, layout_commitment, artifact)
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_verifies_nested_envelopes() {
+        let (layout, layout_commitment, artifact) = sample_valid_artifact();
 
         verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment)
             .expect("artifact verifies");
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_records_static_table_registry() {
+        let (layout, layout_commitment, artifact) = sample_valid_artifact();
+
+        assert_eq!(
+            artifact.static_table_registry_version,
+            STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12
+        );
+        assert_eq!(
+            artifact.static_table_registry_scope,
+            STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12
+        );
+        assert_eq!(artifact.static_table_commitments.len(), 2);
+        assert_eq!(
+            artifact.static_table_commitments[0].table_id,
+            STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12
+        );
+        assert_eq!(artifact.static_table_commitments[0].row_count, 5);
+        assert_eq!(artifact.static_table_commitments[0].row_width, 2);
+        assert_eq!(
+            artifact.static_table_commitments[1].table_id,
+            STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12
+        );
+        assert_eq!(artifact.static_table_commitments[1].row_count, 3);
+        assert_eq!(artifact.static_table_commitments[1].row_width, 2);
+
+        verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment)
+            .expect("artifact verifies");
+        oracle_verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment)
+            .expect("oracle verifies");
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_rejects_static_table_commitment_drift() {
+        let (layout, layout_commitment, mut artifact) = sample_valid_artifact();
+        artifact.static_table_commitments[0].table_commitment = "00".repeat(32);
+
+        let error = verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment)
+            .expect_err("static table descriptor drift should fail");
+        assert!(
+            error.to_string().contains("static table commitments"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_rejects_static_table_registry_commitment_drift() {
+        let (layout, layout_commitment, mut artifact) = sample_valid_artifact();
+        artifact.static_table_registry_commitment = "00".repeat(32);
+
+        let error = verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment)
+            .expect_err("static table registry commitment drift should fail");
+        assert!(
+            error
+                .to_string()
+                .contains("static table registry commitment"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_rejects_missing_static_table_registry_fields() {
+        let (layout, layout_commitment, artifact) = sample_valid_artifact();
+        let mut artifact_json = serde_json::to_value(&artifact).expect("artifact json");
+        let artifact_object = artifact_json.as_object_mut().expect("artifact json object");
+        artifact_object.remove("static_table_registry_version");
+        artifact_object.remove("static_table_registry_scope");
+        artifact_object.remove("static_table_registry_commitment");
+        artifact_object.remove("static_table_commitments");
+
+        let decoded: Phase12SharedLookupArtifact =
+            serde_json::from_value(artifact_json).expect("legacy artifact shape deserializes");
+        let error = verify_phase12_shared_lookup_artifact(&decoded, &layout, &layout_commitment)
+            .expect_err("missing static table registry fields should fail verification");
+        assert!(
+            error.to_string().contains("registry version"),
+            "unexpected error: {error}"
+        );
     }
 
     #[test]

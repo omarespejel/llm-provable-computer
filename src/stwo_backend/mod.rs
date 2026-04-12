@@ -215,8 +215,12 @@ pub use recursion::{
 #[cfg(feature = "stwo-backend")]
 pub use shared_lookup_artifact::{
     commit_phase12_shared_lookup_rows, verify_phase12_shared_lookup_artifact,
-    Phase12SharedLookupArtifact, STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12,
-    STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12,
+    Phase12SharedLookupArtifact, Phase12StaticLookupTableCommitment,
+    STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12, STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12,
+    STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12,
+    STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12,
+    STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12,
+    STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12,
 };
 
 /// Backend version label used by the experimental Phase 2 S-two seam.

@@ -1,6 +1,6 @@
 # Proof-Carrying Decoding for Transformer Computers over an Experimental S-two Backend
 
-*From transformer-as-computer execution traces to recursive-ready carried-state proof artifacts.*
+*From transformer-as-computer execution traces to pre-recursive carried-state proof artifacts.*
 
 **Abdelhamid Bakhta**<br>
 StarkWare
@@ -15,7 +15,7 @@ April 2026
 
 This paper studies proof-carrying decoding for transformer computers over an experimental S-two backend and compares symbolic proving work for transformer inference under explicit constants. With `C_exp = 300`, `C_norm = 30`, and `C_nonlin = 150`, GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields about `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK rows across 12 layers (`1.48x`). Over practical context ranges, the ratio rises and then approaches a finite architecture-dependent ceiling. These are symbolic counts, not matched benchmarks.
 
-We pair the model with `provable-transformer-vm` [30], a supporting repository artifact. It provides a vanilla reproducibility tier, a narrow experimental `stwo` tier, a parameterized proof-carrying decoding path (`decoding_step_v2`) with carried-state commitments, and a pre-recursive carried-state aggregation artifact. This paper does not claim full standard-softmax inference on S-two, recursive cross-step shared-table accumulation beyond the public lookup-accumulator artifact, recursive cryptographic compression/verification closure, or production-scale zkML deployment. The narrower claim is that transformer workloads emphasize dimensions where STARK-native systems may compound advantages while SNARK systems remain strong competitors.
+We pair the model with `provable-transformer-vm` [30], a supporting repository artifact. It provides a vanilla reproducibility tier, a narrow experimental `stwo` tier, a parameterized proof-carrying decoding path (`decoding_step_v2`) with carried-state commitments, static lookup-table registry commitments for shared normalization and activation tables, and a pre-recursive carried-state aggregation artifact. This paper does not claim full standard-softmax inference on S-two, recursive cross-step shared-table accumulation beyond the public lookup-accumulator artifact, recursive cryptographic compression/verification closure, or production-scale zkML deployment. The narrower claim is that transformer workloads emphasize dimensions where STARK-native systems may compound advantages while SNARK systems remain strong competitors.
 
 ---
 
@@ -35,7 +35,7 @@ This paper makes three claims:
 
 The systems claim is directly artifact-backed. The analytic claim is model-based, not a matched benchmark on identical hardware. The infrastructure claim is supported by current public releases but extends beyond current repository breadth. This is an architecture-and-systems thesis, not a final empirical verdict.
 
-The contributions are threefold: an exact symbolic model separating arithmetic from non-arithmetic work, a semantics-hardened artifact with proof-carrying decoding and a reproducible pre-recursive aggregation boundary, and an infrastructure read of S-two/Starknet without overstating implementation maturity.
+The contributions are threefold: an exact symbolic model separating arithmetic from non-arithmetic work, a semantics-hardened artifact with proof-carrying decoding, explicit static lookup-table identity binding, and a reproducible pre-recursive aggregation boundary, and an infrastructure read of S-two/Starknet without overstating implementation maturity.
 
 The rest of the paper follows that structure: Section 4 develops the analytic model, Section 5 anchors the systems claim in artifacts, and Sections 6-8 place those results in current infrastructure and future-work context.
 
@@ -262,11 +262,14 @@ The artifact provides:
 - semantic lockstep/multi-engine agreement checks with ONNX validation,
 - two reproducibility tiers: `production-v1` (vanilla) and `stwo-experimental-v1` (narrow experimental),
 - a parameterized proof-carrying decoding family (`decoding_step_v2`) over multiple public layouts,
+- a static lookup-table registry commitment that binds the shared normalization and activation table descriptors into the shared lookup artifact,
 - carried-state packaging (chain, segment, rollup, multi-layout matrix) with KV/lookup cumulative and frontier commitments,
-- a pre-recursive carried-state aggregation ladder: relation accumulation, honest intervalization, folded interval accumulation, chained fold-of-folds accumulation, and proof-carrying outer aggregation,
-- a verification-hardening stack: oracle/differential checks, fuzz smoke targets, mutation tests, Miri/ASAN/UB-checks, and bounded Kani contracts.
+- a pre-recursive carried-state packaging ladder over the same decode relation, including interval, segment, rollup, matrix, folded, chained, and aggregation objects,
+- hardened verifier kernels backed by oracle/differential checks, fuzz smoke targets, mutation tests, Miri/ASAN/UB-checks, and bounded Kani contracts.
 
 The important systems property is stable statement structure: the same decode relation survives progressively more composable manifest layers without changing statement boundaries. The aggregation ladder remains pre-recursive and replay-verifies nested proof-bearing members.
+
+For shared lookup evidence, the artifact binds the normalization and activation canonical table descriptors into a static lookup-table registry commitment inside the shared lookup artifact. This is a table-identity and provenance binding, not recursive cross-step shared-table accumulation.
 
 ### 5.2 Carried-state relation
 
@@ -301,8 +304,8 @@ The repository remains deliberately narrow:
 - default reproducibility and primary transformer relation still use the vanilla backend,
 - the experimental `stwo` path is bounded research scope, not broad production zkML scope,
 - attention is currently `average-hard`, not full standard softmax,
-- shared-table lookup state is carried, and the artifact includes a Phase 23 cross-step lookup accumulator,
-- recursive cross-step shared-table accumulation beyond that lookup-accumulator artifact is not yet public,
+- shared-table lookup state is carried, static lookup-table descriptors are bound inside shared lookup artifacts, and the artifact includes a Phase 23 cross-step lookup accumulator,
+- recursive cross-step shared-table accumulation beyond these table-identity and lookup-accumulator artifacts is not yet public,
 - recursive cryptographic compression/verification closure across decode steps is not yet public,
 - learned-model end-to-end LLM proving, zero-knowledge hiding, and full-ISA AIR coverage remain out of scope.
 
@@ -318,7 +321,7 @@ The `stwo-experimental-v1` tier is the narrow S-two evidence tier. It contains c
 
 The carried-state aggregation artifact extends the same statement boundary through relation accumulation, honest intervalization, folded intervals, chained folded intervals, and proof-carrying outer aggregation. This is a bridge artifact, not a backend benchmark row. The dedicated aggregation-bundle index is cited directly as systems evidence for this layer [46]. It supports a pre-recursive carried-state claim. It does not support a recursive compression claim or recursive cross-step shared-table accumulation beyond the public lookup-accumulator artifact [30, 40, 46].
 
-The broader carried-state ladder is documented in the repository's phase-indexed design and README materials and is cited here as commit-pinned systems evidence, not as a recursive compression claim.
+The broader carried-state ladder is documented in the repository's supplementary design and README materials and is cited here as commit-pinned systems evidence, not as a recursive compression claim.
 
 ### 5.6 Why this artifact matters
 

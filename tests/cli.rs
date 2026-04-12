@@ -33,6 +33,8 @@ use llm_provable_computer::stwo_backend::{
     STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26,
     STWO_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE25,
     STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12,
+    STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12,
+    STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12,
 };
 
 fn unique_temp_dir(name: &str) -> PathBuf {
@@ -229,6 +231,17 @@ struct TestEmbeddedSharedActivationLookupProof {
 }
 
 #[cfg(feature = "stwo-backend")]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+struct TestPhase12StaticLookupTableCommitment {
+    table_id: String,
+    statement_version: String,
+    semantic_scope: String,
+    table_commitment: String,
+    row_count: usize,
+    row_width: usize,
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase12_artifact_commitment_from_json(artifact: &serde_json::Value) -> String {
     let layout_commitment = artifact["layout_commitment"]
         .as_str()
@@ -242,8 +255,16 @@ fn phase12_artifact_commitment_from_json(artifact: &serde_json::Value) -> String
     let activation: TestEmbeddedSharedActivationLookupProof =
         serde_json::from_value(artifact["activation_proof_envelope"].clone())
             .expect("activation proof envelope");
+    let static_table_registry_commitment = artifact["static_table_registry_commitment"]
+        .as_str()
+        .expect("static table registry commitment");
+    let static_table_commitments: Vec<TestPhase12StaticLookupTableCommitment> =
+        serde_json::from_value(artifact["static_table_commitments"].clone())
+            .expect("static table commitments");
 
     let flattened_json = serde_json::to_vec(&flattened_lookup_rows).expect("flattened rows json");
+    let static_table_commitments_json =
+        serde_json::to_vec(&static_table_commitments).expect("static table commitments json");
     let normalization_json = serde_json::to_vec(&normalization).expect("normalization json");
     let activation_json = serde_json::to_vec(&activation).expect("activation json");
 
@@ -253,6 +274,11 @@ fn phase12_artifact_commitment_from_json(artifact: &serde_json::Value) -> String
     hasher.update(layout_commitment.as_bytes());
     hasher.update(&(flattened_json.len() as u64).to_le_bytes());
     hasher.update(&flattened_json);
+    hasher.update(STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12.as_bytes());
+    hasher.update(STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12.as_bytes());
+    hasher.update(static_table_registry_commitment.as_bytes());
+    hasher.update(&(static_table_commitments_json.len() as u64).to_le_bytes());
+    hasher.update(&static_table_commitments_json);
     hasher.update(&(normalization_json.len() as u64).to_le_bytes());
     hasher.update(&normalization_json);
     hasher.update(&(activation_json.len() as u64).to_le_bytes());
