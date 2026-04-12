@@ -709,6 +709,11 @@ const STATEMENT_V3_EQUIVALENCE_SPEC_PATH: &str =
 const FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH: &str =
     "spec/frontend-runtime-semantics-registry-v1.json";
 #[cfg(feature = "onnx-export")]
+const FRONTEND_RUNTIME_SEMANTICS_REGISTRY_VERSION: &str = "frontend-runtime-semantics-registry-v1";
+#[cfg(feature = "onnx-export")]
+const FRONTEND_RUNTIME_SEMANTICS_REGISTRY_SCOPE: &str =
+    "research_v3_frontend_runtime_claim_boundary";
+#[cfg(feature = "onnx-export")]
 const FIXED_POINT_SPEC_PATH: &str = "spec/fixed-point-semantics-v2.json";
 #[cfg(feature = "onnx-export")]
 const ONNX_OP_SUBSET_SPEC_PATH: &str = "spec/onnx-op-subset-v2.json";
@@ -3912,6 +3917,7 @@ fn research_v3_equivalence_command_impl(
     let rule_witnesses_hash = hash_json_projection_hex(&rule_witnesses)?;
     let frontend_runtime_semantics_registry =
         read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH)?;
+    validate_frontend_runtime_semantics_registry(&frontend_runtime_semantics_registry)?;
     let frontend_runtime_semantics_registry_hash =
         hash_json_hex(&frontend_runtime_semantics_registry)?;
     let relation_format = RESEARCH_V3_RELATION_FORMAT.to_string();
@@ -4412,6 +4418,82 @@ fn read_repo_json_value(relative_path: &str) -> llm_provable_computer::Result<se
 }
 
 #[cfg(feature = "onnx-export")]
+fn validate_frontend_runtime_semantics_registry(
+    registry: &serde_json::Value,
+) -> llm_provable_computer::Result<()> {
+    let version = registry
+        .get("registry_version")
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "frontend runtime semantics registry missing registry_version".to_string(),
+            )
+        })?;
+    if version != FRONTEND_RUNTIME_SEMANTICS_REGISTRY_VERSION {
+        return Err(VmError::InvalidConfig(format!(
+            "frontend runtime semantics registry version mismatch: expected {}, got {}",
+            FRONTEND_RUNTIME_SEMANTICS_REGISTRY_VERSION, version
+        )));
+    }
+
+    let scope = registry
+        .get("semantic_scope")
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "frontend runtime semantics registry missing semantic_scope".to_string(),
+            )
+        })?;
+    if scope != FRONTEND_RUNTIME_SEMANTICS_REGISTRY_SCOPE {
+        return Err(VmError::InvalidConfig(format!(
+            "frontend runtime semantics registry scope mismatch: expected {}, got {}",
+            FRONTEND_RUNTIME_SEMANTICS_REGISTRY_SCOPE, scope
+        )));
+    }
+
+    let lanes = registry
+        .get("lanes")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "frontend runtime semantics registry missing lanes array".to_string(),
+            )
+        })?;
+    for (lane_id, expected_status) in [
+        ("transformer-vm", "implemented"),
+        ("native-isa", "implemented"),
+        ("burn", "implemented"),
+        ("onnx-tract", "implemented"),
+        ("torch-export", "research_watch"),
+        ("executorch", "research_watch"),
+        ("stablehlo", "research_watch"),
+        ("iree", "research_watch"),
+        ("onnx-mlir", "research_watch"),
+        ("tvm-unity", "research_watch"),
+        ("vllm", "research_watch"),
+        ("sglang", "research_watch"),
+        ("egg-emerge", "research_watch"),
+    ] {
+        let status = lanes
+            .iter()
+            .find(|lane| lane.get("lane_id").and_then(serde_json::Value::as_str) == Some(lane_id))
+            .and_then(|lane| lane.get("status").and_then(serde_json::Value::as_str))
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "frontend runtime semantics registry missing lane {lane_id}"
+                ))
+            })?;
+        if status != expected_status {
+            return Err(VmError::InvalidConfig(format!(
+                "frontend runtime semantics registry lane {lane_id} status mismatch: expected {expected_status}, got {status}"
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "onnx-export")]
 fn hash_json_hex<T: Serialize + ?Sized>(value: &T) -> llm_provable_computer::Result<String> {
     let bytes = serde_json::to_vec(value).map_err(|err| {
         VmError::Serialization(format!("failed to serialize hash payload: {err}"))
@@ -4558,6 +4640,37 @@ mod tests {
         assert!(suite.contains(&PathBuf::from("programs/dot_product.tvm")));
         assert!(suite.contains(&PathBuf::from("programs/matmul_2x2.tvm")));
         assert!(suite.contains(&PathBuf::from("programs/single_neuron.tvm")));
+    }
+
+    #[test]
+    fn frontend_runtime_registry_validation_rejects_missing_version() {
+        let mut registry =
+            read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH).expect("registry json");
+        registry
+            .as_object_mut()
+            .expect("registry object")
+            .remove("registry_version");
+        let err = validate_frontend_runtime_semantics_registry(&registry).unwrap_err();
+        assert!(err.to_string().contains("missing registry_version"));
+    }
+
+    #[test]
+    fn frontend_runtime_registry_validation_rejects_lane_status_drift() {
+        let mut registry =
+            read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH).expect("registry json");
+        let lanes = registry
+            .get_mut("lanes")
+            .and_then(serde_json::Value::as_array_mut)
+            .expect("registry lanes");
+        let torch_export = lanes
+            .iter_mut()
+            .find(|lane| {
+                lane.get("lane_id").and_then(serde_json::Value::as_str) == Some("torch-export")
+            })
+            .expect("torch-export lane");
+        torch_export["status"] = serde_json::Value::String("not_implemented".to_string());
+        let err = validate_frontend_runtime_semantics_registry(&registry).unwrap_err();
+        assert!(err.to_string().contains("torch-export status mismatch"));
     }
 
     #[test]

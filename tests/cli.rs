@@ -4012,10 +4012,10 @@ fn cli_supports_research_v3_equivalence_command() {
         "sglang",
         "egg-emerge",
     ] {
-        assert_ne!(
+        assert_eq!(
             research_v3_registry_lane_status(frontend_runtime_registry, lane_id),
-            "implemented",
-            "research-watch lane {lane_id} must not be claimed as implemented"
+            "research_watch",
+            "expected research-watch lane {lane_id} to remain research_watch"
         );
     }
     assert_eq!(
@@ -4110,6 +4110,13 @@ fn cli_supports_research_v3_equivalence_command() {
     assert!(
         std::panic::catch_unwind(|| assert_research_v3_runtime_commitments(&tampered)).is_err()
     );
+    let mut tampered_registry_hash = artifact_json.clone();
+    tampered_registry_hash["commitments"]["frontend_runtime_semantics_registry_hash"] =
+        serde_json::Value::String("0".repeat(64));
+    assert!(std::panic::catch_unwind(|| {
+        assert_research_v3_runtime_commitments(&tampered_registry_hash)
+    })
+    .is_err());
 
     let mut malformed_hash = artifact_json.clone();
     malformed_hash["commitments"]["relation_format_hash"] =
