@@ -130,6 +130,7 @@ const MAX_PHASE26_FOLDED_INTERVALIZED_STATE_RELATION_JSON_BYTES: usize = 224 * 1
 const MAX_PHASE27_CHAINED_FOLDED_INTERVALIZED_STATE_RELATION_JSON_BYTES: usize = 256 * 1024 * 1024;
 const MAX_PHASE28_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_STATE_RELATION_JSON_BYTES: usize =
     512 * 1024 * 1024;
+const MAX_PHASE30_DECODING_STEP_ENVELOPE_MANIFEST_JSON_BYTES: usize = 8 * 1024 * 1024;
 const MAX_PHASE13_LAYOUT_MATRIX_JSON_BYTES: usize = 24 * 1024 * 1024;
 const MAX_PHASE21_ACCUMULATOR_MATRICES: usize = 512;
 const MAX_PHASE22_ACCUMULATOR_ROLLUPS: usize = 262_144;
@@ -9236,6 +9237,32 @@ pub fn load_phase12_decoding_chain(path: &Path) -> Result<Phase12DecodingChainMa
         serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
     backfill_phase12_chain_manifest_public_commitments(&mut value)?;
     serde_json::from_value(value).map_err(|err| VmError::Serialization(err.to_string()))
+}
+
+pub fn save_phase30_decoding_step_proof_envelope_manifest(
+    manifest: &Phase30DecodingStepProofEnvelopeManifest,
+    path: &Path,
+) -> Result<()> {
+    write_json_with_limit(
+        manifest,
+        path,
+        MAX_PHASE30_DECODING_STEP_ENVELOPE_MANIFEST_JSON_BYTES,
+        "Phase 30 decoding step proof envelope manifest",
+    )
+}
+
+pub fn load_phase30_decoding_step_proof_envelope_manifest(
+    path: &Path,
+) -> Result<Phase30DecodingStepProofEnvelopeManifest> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE30_DECODING_STEP_ENVELOPE_MANIFEST_JSON_BYTES,
+        "Phase 30 decoding step proof envelope manifest",
+    )?;
+    let manifest: Phase30DecodingStepProofEnvelopeManifest =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    verify_phase30_decoding_step_proof_envelope_manifest(&manifest)?;
+    Ok(manifest)
 }
 
 pub fn save_phase14_decoding_chain(
@@ -18969,6 +18996,18 @@ mod tests {
         );
     }
 
+    fn sample_phase30_decoding_step_proof_envelope_manifest(
+    ) -> Phase30DecodingStepProofEnvelopeManifest {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes")
+    }
+
     #[test]
     fn phase30_step_envelope_manifest_binds_phase12_chain_boundaries() {
         let layout = phase12_default_decoding_layout();
@@ -18978,8 +19017,7 @@ mod tests {
             .map(|memory| sample_phase12_step_proof(&layout, memory))
             .collect::<Vec<_>>();
         let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
-        let manifest =
-            phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
+        let manifest = sample_phase30_decoding_step_proof_envelope_manifest();
 
         assert_eq!(
             manifest.manifest_version,
@@ -19032,6 +19070,67 @@ mod tests {
         verify_phase30_decoding_step_proof_envelope_manifest(&manifest).expect("verify");
         verify_phase30_decoding_step_proof_envelope_manifest_against_chain(&manifest, &chain)
             .expect("verify against chain");
+    }
+
+    #[test]
+    fn phase30_save_and_load_round_trip() {
+        let manifest = sample_phase30_decoding_step_proof_envelope_manifest();
+        let path = std::env::temp_dir().join(format!(
+            "phase30-decoding-step-proof-envelope-manifest-roundtrip-{}.json",
+            std::process::id()
+        ));
+        save_phase30_decoding_step_proof_envelope_manifest(&manifest, &path).expect("save");
+        let loaded = load_phase30_decoding_step_proof_envelope_manifest(&path).expect("load");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn phase30_load_accepts_gzip_round_trip() {
+        let manifest = sample_phase30_decoding_step_proof_envelope_manifest();
+        let path = std::env::temp_dir().join(format!(
+            "phase30-decoding-step-proof-envelope-manifest-roundtrip-{}.json",
+            std::process::id()
+        ));
+        let gzip_path = path.with_extension("json.gz");
+        save_phase30_decoding_step_proof_envelope_manifest(&manifest, &path).expect("save");
+        write_test_gzip_copy(&path, &gzip_path);
+        let loaded = load_phase30_decoding_step_proof_envelope_manifest(&gzip_path).expect("load");
+        assert_eq!(loaded, manifest);
+        let _ = fs::remove_file(path);
+        let _ = fs::remove_file(gzip_path);
+    }
+
+    #[test]
+    fn load_phase30_decoding_step_proof_envelope_manifest_rejects_oversized_manifest_file() {
+        let path = std::env::temp_dir().join(format!(
+            "phase30-decoding-step-proof-envelope-manifest-oversized-{}.json",
+            std::process::id()
+        ));
+        fs::write(
+            &path,
+            vec![b'x'; MAX_PHASE30_DECODING_STEP_ENVELOPE_MANIFEST_JSON_BYTES + 1],
+        )
+        .expect("write");
+        let err = load_phase30_decoding_step_proof_envelope_manifest(&path)
+            .expect_err("oversized manifest should fail");
+        assert!(err.to_string().contains("exceeding the limit"));
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn save_phase30_decoding_step_proof_envelope_manifest_rejects_manifest_exceeding_json_budget() {
+        let mut manifest = sample_phase30_decoding_step_proof_envelope_manifest();
+        manifest.envelopes[0].proof_commitment =
+            "a".repeat(MAX_PHASE30_DECODING_STEP_ENVELOPE_MANIFEST_JSON_BYTES);
+        let path = std::env::temp_dir().join(format!(
+            "phase30-decoding-step-proof-envelope-manifest-too-large-{}.json",
+            std::process::id()
+        ));
+        let err = save_phase30_decoding_step_proof_envelope_manifest(&manifest, &path)
+            .expect_err("oversized phase30 manifest should fail");
+        assert!(err.to_string().contains("limit"), "unexpected error: {err}");
+        let _ = fs::remove_file(path);
     }
 
     #[test]

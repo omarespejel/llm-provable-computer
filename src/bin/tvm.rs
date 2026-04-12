@@ -39,9 +39,11 @@ use llm_provable_computer::{
     load_phase26_folded_intervalized_decoding_state_relation,
     load_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     load_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
-    load_phase29_recursive_compression_input_contract, load_phase3_binary_step_lookup_proof,
+    load_phase29_recursive_compression_input_contract,
+    load_phase30_decoding_step_proof_envelope_manifest, load_phase3_binary_step_lookup_proof,
     load_phase5_normalization_lookup_proof,
     phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28,
+    phase30_prepare_decoding_step_proof_envelope_manifest,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
     prove_phase12_decoding_demo, prove_phase13_decoding_layout_matrix_demo,
@@ -66,8 +68,9 @@ use llm_provable_computer::{
     save_phase26_folded_intervalized_decoding_state_relation,
     save_phase27_chained_folded_intervalized_decoding_state_relation,
     save_phase28_aggregated_chained_folded_intervalized_decoding_state_relation,
-    save_phase3_binary_step_lookup_proof, save_phase5_normalization_lookup_proof,
-    stwo_backend_enabled, verify_phase10_shared_binary_step_lookup_envelope,
+    save_phase30_decoding_step_proof_envelope_manifest, save_phase3_binary_step_lookup_proof,
+    save_phase5_normalization_lookup_proof, stwo_backend_enabled,
+    verify_phase10_shared_binary_step_lookup_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
     verify_phase11_decoding_chain_with_proof_checks,
     verify_phase12_decoding_chain_with_proof_checks,
@@ -82,8 +85,11 @@ use llm_provable_computer::{
     verify_phase24_decoding_state_relation_accumulator_with_proof_checks,
     verify_phase25_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase26_folded_intervalized_decoding_state_relation_with_proof_checks,
+    verify_phase30_decoding_step_proof_envelope_manifest,
+    verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
     verify_phase3_binary_step_lookup_demo_envelope,
     verify_phase5_normalization_lookup_demo_envelope, Phase29RecursiveCompressionInputContract,
+    Phase30DecodingStepProofEnvelopeManifest,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
     STWO_BACKEND_VERSION_PHASE12,
     STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
@@ -335,6 +341,24 @@ enum Command {
     VerifyStwoDecodingFamilyDemo {
         /// Path to the serialized chain JSON file.
         proof: PathBuf,
+    },
+    /// Derive a Phase 30 proof-envelope manifest from a verified parameterized proof-carrying decoding chain.
+    PrepareStwoDecodingStepEnvelopeManifest {
+        /// Path to the serialized Phase 12 chain JSON or JSON.gz file.
+        #[arg(long = "proof")]
+        proof: PathBuf,
+        /// File where the serialized Phase 30 manifest JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a serialized Phase 30 decoding-step proof-envelope manifest.
+    VerifyStwoDecodingStepEnvelopeManifest {
+        /// Path to the serialized Phase 30 manifest JSON or JSON.gz file.
+        #[arg(long = "manifest")]
+        manifest: PathBuf,
+        /// Optional Phase 12 source chain JSON or JSON.gz file for exact chain binding.
+        #[arg(long = "proof")]
+        proof: Option<PathBuf>,
     },
     /// Produce a serialized layout matrix over several parameterized proof-carrying decoding chains.
     ProveStwoDecodingLayoutMatrixDemo {
@@ -1299,6 +1323,12 @@ fn run() -> llm_provable_computer::Result<()> {
         }
         Command::VerifyStwoDecodingFamilyDemo { proof } => {
             verify_stwo_decoding_family_demo_command(&proof)?
+        }
+        Command::PrepareStwoDecodingStepEnvelopeManifest { proof, output } => {
+            prepare_stwo_decoding_step_envelope_manifest_command(&proof, &output)?
+        }
+        Command::VerifyStwoDecodingStepEnvelopeManifest { manifest, proof } => {
+            verify_stwo_decoding_step_envelope_manifest_command(&manifest, proof.as_deref())?
         }
         Command::ProveStwoDecodingLayoutMatrixDemo { output } => {
             prove_stwo_decoding_layout_matrix_demo_command(&output)?
@@ -2273,6 +2303,116 @@ fn verify_stwo_decoding_family_demo_command(
 
         Ok(())
     }
+}
+
+fn prepare_stwo_decoding_step_envelope_manifest_command(
+    proof_path: &Path,
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = (proof_path, output);
+        return Err(VmError::UnsupportedProof(
+            "S-two decoding step proof envelope manifests require building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two decoding step proof envelope manifest")?;
+        reject_phase30_step_envelope_manifest_plain_json_gzip_output(output)?;
+
+        let chain = load_phase12_decoding_chain(proof_path)?;
+        verify_phase12_decoding_chain_with_proof_checks(&chain)?;
+        let manifest = phase30_prepare_decoding_step_proof_envelope_manifest(&chain)?;
+        save_phase30_decoding_step_proof_envelope_manifest(&manifest, output)?;
+
+        println!("output: {}", output.display());
+        println!("proof: {}", proof_path.display());
+        println!("verified_stark: true");
+        print_phase30_decoding_step_envelope_manifest_report(&manifest);
+
+        Ok(())
+    }
+}
+
+fn verify_stwo_decoding_step_envelope_manifest_command(
+    manifest_path: &Path,
+    proof_path: Option<&Path>,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = (manifest_path, proof_path);
+        return Err(VmError::UnsupportedProof(
+            "S-two decoding step proof envelope manifests require building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two decoding step proof envelope manifest")?;
+
+        let manifest = load_phase30_decoding_step_proof_envelope_manifest(manifest_path)?;
+        verify_phase30_decoding_step_proof_envelope_manifest(&manifest)?;
+
+        println!("manifest: {}", manifest_path.display());
+        println!("verified_manifest: true");
+        if let Some(proof_path) = proof_path {
+            let chain = load_phase12_decoding_chain(proof_path)?;
+            verify_phase12_decoding_chain_with_proof_checks(&chain)?;
+            verify_phase30_decoding_step_proof_envelope_manifest_against_chain(&manifest, &chain)?;
+            println!("proof: {}", proof_path.display());
+            println!("verified_stark: true");
+            println!("verified_against_chain: true");
+        }
+        print_phase30_decoding_step_envelope_manifest_report(&manifest);
+
+        Ok(())
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn reject_phase30_step_envelope_manifest_plain_json_gzip_output(
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    if output.extension().and_then(|extension| extension.to_str()) == Some("gz") {
+        return Err(VmError::InvalidConfig(
+            "prepare-stwo-decoding-step-envelope-manifest writes plain JSON; use a `.json` output path"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn print_phase30_decoding_step_envelope_manifest_report(
+    manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) {
+    println!("proof_backend: {}", manifest.proof_backend);
+    println!("manifest_version: {}", manifest.manifest_version);
+    println!("semantic_scope: {}", manifest.semantic_scope);
+    println!("proof_backend_version: {}", manifest.proof_backend_version);
+    println!("statement_version: {}", manifest.statement_version);
+    println!("source_chain_version: {}", manifest.source_chain_version);
+    println!(
+        "source_chain_semantic_scope: {}",
+        manifest.source_chain_semantic_scope
+    );
+    println!("total_steps: {}", manifest.total_steps);
+    println!(
+        "chain_start_boundary_commitment: {}",
+        manifest.chain_start_boundary_commitment
+    );
+    println!(
+        "chain_end_boundary_commitment: {}",
+        manifest.chain_end_boundary_commitment
+    );
+    println!(
+        "step_envelopes_commitment: {}",
+        manifest.step_envelopes_commitment
+    );
 }
 
 fn prove_stwo_decoding_layout_matrix_demo_command(
@@ -6719,6 +6859,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-decoding-demo"
                 | "prove-stwo-decoding-family-demo"
                 | "verify-stwo-decoding-family-demo"
+                | "prepare-stwo-decoding-step-envelope-manifest"
+                | "verify-stwo-decoding-step-envelope-manifest"
                 | "prove-stwo-decoding-layout-matrix-demo"
                 | "verify-stwo-decoding-layout-matrix-demo"
                 | "prove-stwo-decoding-chunked-history-demo"

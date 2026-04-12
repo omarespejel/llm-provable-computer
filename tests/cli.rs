@@ -8,7 +8,7 @@ use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
 #[cfg(feature = "stwo-backend")]
 use flate2::GzBuilder;
-#[cfg(feature = "onnx-export")]
+#[cfg(any(feature = "onnx-export", feature = "stwo-backend"))]
 use jsonschema::{Draft, JSONSchema};
 use predicates::prelude::*;
 #[cfg(feature = "stwo-backend")]
@@ -33,6 +33,8 @@ use llm_provable_computer::stwo_backend::{
     STWO_DECODING_MATRIX_ACCUMULATOR_VERSION_PHASE21, STWO_DECODING_ROLLUP_MATRIX_VERSION_PHASE17,
     STWO_DECODING_SEGMENT_BUNDLE_VERSION_PHASE15, STWO_DECODING_SEGMENT_ROLLUP_VERSION_PHASE16,
     STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24,
+    STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30,
+    STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30,
     STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26,
     STWO_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE25,
     STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE,
@@ -205,7 +207,7 @@ fn sample_phase29_recursive_compression_input_contract() -> Phase29RecursiveComp
     contract
 }
 
-#[cfg(feature = "onnx-export")]
+#[cfg(any(feature = "onnx-export", feature = "stwo-backend"))]
 fn validate_json_against_schema(artifact: &serde_json::Value, schema_relative_path: &str) {
     let schema_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(schema_relative_path);
     let schema_bytes = std::fs::read(&schema_path).expect("schema bytes");
@@ -1636,6 +1638,16 @@ fn cli_can_prove_and_verify_stwo_decoding_family_demo() {
             .and_then(serde_json::Value::as_str),
         Some(STWO_BACKEND_VERSION_PHASE12)
     );
+    let shared_lookup_artifacts = proof_json["shared_lookup_artifacts"]
+        .as_array()
+        .expect("shared lookup artifacts array");
+    assert!(!shared_lookup_artifacts.is_empty());
+    for artifact in shared_lookup_artifacts {
+        validate_json_against_schema(
+            artifact,
+            "spec/stwo-phase12-shared-lookup-artifact.schema.json",
+        );
+    }
 
     let mut verify = tvm_command();
     verify
@@ -1656,6 +1668,146 @@ fn cli_can_prove_and_verify_stwo_decoding_family_demo() {
         .stdout(predicate::str::contains("final_history_length: 7"));
 
     let _ = std::fs::remove_file(proof_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_can_prepare_and_verify_stwo_decoding_step_envelope_manifest() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-step-envelope-proof").with_extension("json");
+    let manifest_path =
+        unique_temp_dir("cli-stwo-decoding-step-envelope-manifest").with_extension("json");
+
+    let mut prove = tvm_command();
+    prove
+        .arg("prove-stwo-decoding-family-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-stwo-decoding-step-envelope-manifest")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("-o")
+        .arg(&manifest_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(format!(
+            "manifest_version: {STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30}",
+        )))
+        .stdout(predicate::str::contains(format!(
+            "semantic_scope: {STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30}",
+        )))
+        .stdout(predicate::str::contains("total_steps: 3"));
+
+    let manifest_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&manifest_path).expect("manifest json"))
+            .expect("json");
+    validate_json_against_schema(
+        &manifest_json,
+        "spec/stwo-phase30-decoding-step-envelope-manifest.schema.json",
+    );
+    assert_eq!(
+        manifest_json
+            .get("manifest_version")
+            .and_then(serde_json::Value::as_str),
+        Some(STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30)
+    );
+    assert_eq!(
+        manifest_json
+            .get("semantic_scope")
+            .and_then(serde_json::Value::as_str),
+        Some(STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30)
+    );
+    assert_eq!(
+        manifest_json
+            .get("total_steps")
+            .and_then(serde_json::Value::as_u64),
+        Some(3)
+    );
+    assert_eq!(
+        manifest_json["envelopes"][0]["step_index"]
+            .as_u64()
+            .expect("step index"),
+        0
+    );
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-decoding-step-envelope-manifest")
+        .arg("--manifest")
+        .arg(&manifest_path)
+        .arg("--proof")
+        .arg(&proof_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_manifest: true"))
+        .stdout(predicate::str::contains("verified_against_chain: true"))
+        .stdout(predicate::str::contains(format!(
+            "manifest_version: {STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30}",
+        )));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(manifest_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_decoding_step_envelope_manifest_rejects_tampered_end_boundary() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-step-envelope-proof-tamper").with_extension("json");
+    let manifest_path =
+        unique_temp_dir("cli-stwo-decoding-step-envelope-manifest-tamper").with_extension("json");
+    let tampered_path = unique_temp_dir("cli-stwo-decoding-step-envelope-manifest-end-drift")
+        .with_extension("json");
+
+    let mut prove = tvm_command();
+    prove
+        .arg("prove-stwo-decoding-family-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-stwo-decoding-step-envelope-manifest")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("-o")
+        .arg(&manifest_path)
+        .assert()
+        .success();
+
+    let mut manifest_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&manifest_path).expect("manifest json"))
+            .expect("json");
+    manifest_json["chain_end_boundary_commitment"] = serde_json::Value::String("0".repeat(64));
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&manifest_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-decoding-step-envelope-manifest")
+        .arg("--manifest")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "end boundary does not match the final envelope",
+        ))
+        .stderr(predicate::str::contains("panicked at").not());
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(manifest_path);
+    let _ = std::fs::remove_file(tampered_path);
 }
 
 #[test]
