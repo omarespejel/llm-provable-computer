@@ -7,8 +7,8 @@ Canonical repository snapshot:
 - `paper-publication-v4-2026-04-11` once cut. The tag must resolve to a commit
   containing this v4 paper metadata.
 
-Aggregation-line systems-evidence checkpoint:
-- `6ff972ddda4051d73dc65c92a88c0d00683ec8c7` (proof-carrying aggregation checkpoint)
+Carried-state aggregation provenance checkpoint:
+- `6ff972ddda4051d73dc65c92a88c0d00683ec8c7` (publication-facing proof-carrying aggregation provenance)
 
 Draft author line:
 - Abdelhamid Bakhta - StarkWare
@@ -40,7 +40,7 @@ Paper title:
 
 Older carried-state artifact directories remain archival provenance; see
 `docs/paper/artifacts/README.md`. The bundle above is the publication-facing
-checkpoint for the carried-state aggregation line.
+artifact bundle for the carried-state aggregation line.
 
 ## Evidence Pointer
 

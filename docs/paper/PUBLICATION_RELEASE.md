@@ -61,7 +61,7 @@ monolithic benchmark claim.
   carried-state aggregation bundle, including proof-carrying outer aggregation over chained artifacts.
 - Older carried-state artifact bundles are retained as archival provenance; see
   `docs/paper/artifacts/README.md`. The proof-carrying aggregation bundle is the
-  publication-facing checkpoint for that line.
+  publication-facing artifact bundle for that line.
 - The repo still does **not** claim full standard-softmax transformer inference on S-two,
   recursive cross-step shared-table accumulation beyond the public lookup-accumulator artifact,
   recursive cryptographic compression/verification closure, or production-scale zkML deployment.
