@@ -55,7 +55,7 @@ No sampling. No stochastic output. Same input, same output, every time.
 | `statement-v1` | Stable | Vanilla STARK proof of native ISA execution, plus enforced transformer/native semantic agreement checks |
 | `stwo-backend` | Experimental | Narrow `statement-v1` proving surface for shipped fixtures, lookup demos, transformer-shaped fixtures, and decoding artifacts |
 | `research-v2` | Artifact-only | Semantic agreement artifacts for transformer vs ONNX, not yet a full STARK claim |
-| `research-v3` | Artifact-only | Multi-engine transformer/native/Burn/ONNX equivalence-kernel artifacts with explicit non-e-graph/non-SMT limits |
+| `research-v3` | Artifact-only | Multi-engine transformer/native/Burn/ONNX equivalence-kernel artifacts with transition relation hashes and explicit non-e-graph/non-SMT limits |
 
 The important boundary is explicit: this repo does **not** yet prove full
 standard-softmax transformer inference on `stwo`.
@@ -652,7 +652,7 @@ cargo test --quiet statement_spec_contract_is_synced_with_constants
 
 - `research-v3-equivalence` checks transformer, native, Burn, and ONNX/Tract
   runtimes in lockstep and emits an equivalence-kernel artifact with rule
-  witnesses and commitment hashes.
+  witnesses, per-engine transition relation hashes, and commitment hashes.
 - The artifact is deliberately bounded: it is not an e-graph saturation result,
   SMT-backed rewrite proof, randomized opaque-kernel test suite, or
   cryptographic proof of implementation equivalence.
@@ -765,8 +765,12 @@ cargo run --features full --bin tvm -- research-v3-equivalence programs/addition
 
 This checks transformer, native, Burn, and ONNX/Tract runtimes in lockstep,
 then emits a JSON artifact with engine summaries, deterministic rule witnesses,
-and commitment hashes. The artifact also carries a frontend/runtime semantics
-registry that separates currently checked lanes from these research-watch lanes:
+per-engine transition relation hashes, and commitment hashes. The transition
+hashes are the first narrow Emerge-style relation-kernel hardening step: they
+make each same-instruction state transition explicit without claiming
+equality saturation or synthesized rewrite validation. The artifact also carries
+a frontend/runtime semantics registry that separates currently checked lanes
+from these research-watch lanes:
 `torch-export`, `executorch`, `stablehlo`, `iree`, `onnx-mlir`, `tvm-unity`,
 `vllm`, `sglang`, and `egg-emerge`. It intentionally does not claim support for
 those watch lanes, e-graph saturation, SMT-backed rewrite synthesis, randomized

@@ -184,6 +184,8 @@
         "participating_engines",
         "state_before_hashes",
         "state_after_hashes",
+        "engine_transition_hashes",
+        "canonical_transition_hash",
         "validation"
       ],
       "properties": {
@@ -206,6 +208,12 @@
           "minProperties": 4,
           "additionalProperties": { "$ref": "#/$defs/hash_blake2b_256_hex" }
         },
+        "engine_transition_hashes": {
+          "type": "object",
+          "minProperties": 4,
+          "additionalProperties": { "$ref": "#/$defs/hash_blake2b_256_hex" }
+        },
+        "canonical_transition_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "validation": {
           "type": "object",
           "required": [

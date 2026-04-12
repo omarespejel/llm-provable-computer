@@ -4,5 +4,5 @@
   "fixed_point_profile_ref": "spec/fixed-point-semantics-v2.json",
   "onnx_op_subset_ref": "spec/onnx-op-subset-v2.json",
   "artifact_schema_ref": "spec/statement-v3-equivalence-kernel.schema.json",
-  "notes": "Research-stage multi-engine equivalence-kernel artifact over transformer/native/Burn/ONNX lockstep evidence. This is not an e-graph saturation result, SMT-backed rewrite proof, randomized opaque-kernel test suite, or cryptographic proof of implementation equivalence."
+  "notes": "Research-stage multi-engine equivalence-kernel artifact over transformer/native/Burn/ONNX lockstep evidence, deterministic rule witnesses, and per-engine transition relation hashes. This is not an e-graph saturation result, SMT-backed rewrite proof, randomized opaque-kernel test suite, or cryptographic proof of implementation equivalence."
 }

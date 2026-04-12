@@ -60,9 +60,9 @@ The script writes to `compiled/repro-bundle/` by default and produces:
 - `sha256sums.txt`: hashes for artifacts and command outputs
 - `*.proof.json`: STARK proofs for representative programs
 - `research-v2-*.json`: semantic equivalence certificates (step/trace/matrix)
-- `research-v3-*.json`: multi-engine equivalence-kernel artifacts with explicit
-  non-e-graph/non-SMT limits and a frontend/runtime semantics registry for
-  implemented versus research-watch lanes
+- `research-v3-*.json`: multi-engine equivalence-kernel artifacts with transition
+  relation hashes, explicit non-e-graph/non-SMT limits, and a frontend/runtime
+  semantics registry for implemented versus research-watch lanes
 - `*.out` / `*.err`: full stdout/stderr capture for each command
 
 The accumulation bundle script writes under
@@ -94,11 +94,12 @@ produces:
   used as evidence and regression checks, but are not yet part of the STARK
   claim relation.
 - `research-v3` artifacts extend that evidence to transformer/native/Burn/ONNX
-  lockstep plus rule witnesses. Their frontend/runtime semantics registry keeps
-  PyTorch `torch.export`, ExecuTorch, StableHLO, IREE, ONNX-MLIR, TVM, vLLM,
-  SGLang, and egg/Emerge-style paths as explicit research-watch lanes; these
-  artifacts are not e-graph saturation results, SMT rewrite proofs, randomized
-  opaque-kernel tests, or cryptographic implementation-equivalence proofs.
+  lockstep plus rule witnesses and per-engine transition relation hashes. Their
+  frontend/runtime semantics registry keeps PyTorch `torch.export`, ExecuTorch,
+  StableHLO, IREE, ONNX-MLIR, TVM, vLLM, SGLang, and egg/Emerge-style paths as
+  explicit research-watch lanes; these artifacts are not e-graph saturation
+  results, SMT rewrite proofs, randomized opaque-kernel tests, or cryptographic
+  implementation-equivalence proofs.
 
 ## Paper figure regeneration
 

@@ -4361,6 +4361,25 @@ fn cli_supports_research_v3_equivalence_command() {
             assert_eq!(hash.len(), 64);
         }
     }
+    let canonical_transition_hash = first_witness
+        .get("canonical_transition_hash")
+        .and_then(serde_json::Value::as_str)
+        .expect("canonical transition hash");
+    assert_eq!(canonical_transition_hash.len(), 64);
+    let engine_transition_hashes = first_witness
+        .get("engine_transition_hashes")
+        .and_then(serde_json::Value::as_object)
+        .expect("engine transition hashes");
+    for engine_name in ["transformer", "native", "burn", "onnx/tract"] {
+        let transition_hash = engine_transition_hashes
+            .get(engine_name)
+            .and_then(serde_json::Value::as_str)
+            .expect("per-engine transition hash");
+        assert_eq!(
+            transition_hash, canonical_transition_hash,
+            "transition relation hash drift for {engine_name}"
+        );
+    }
     let limitations = artifact_json
         .get("limitations")
         .and_then(serde_json::Value::as_array)
@@ -4398,6 +4417,8 @@ fn cli_supports_research_v3_equivalence_command() {
         serde_json::Value::String("not-a-blake2b-hash".to_string());
     malformed_hash["rule_witnesses"][0]["state_before_hashes"]["transformer"] =
         serde_json::Value::String("also-not-a-blake2b-hash".to_string());
+    malformed_hash["rule_witnesses"][0]["engine_transition_hashes"]["native"] =
+        serde_json::Value::String("not-a-transition-hash".to_string());
     assert!(std::panic::catch_unwind(|| {
         validate_json_against_schema(
             &malformed_hash,

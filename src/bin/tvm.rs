@@ -894,6 +894,16 @@ struct ResearchV3CanonicalEvent {
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 #[derive(Debug, Serialize)]
+struct ResearchV3TransitionRelationRow {
+    relation_format: String,
+    step: usize,
+    instruction: String,
+    state_before_hash: String,
+    state_after_hash: String,
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+#[derive(Debug, Serialize)]
 struct ResearchV3EngineSummary {
     name: String,
     steps: usize,
@@ -925,6 +935,8 @@ struct ResearchV3RuleWitness {
     participating_engines: Vec<String>,
     state_before_hashes: std::collections::BTreeMap<String, String>,
     state_after_hashes: std::collections::BTreeMap<String, String>,
+    engine_transition_hashes: std::collections::BTreeMap<String, String>,
+    canonical_transition_hash: String,
     validation: ResearchV3RuleValidation,
 }
 
@@ -4051,6 +4063,7 @@ fn research_v3_rule_witnesses(
             let instruction = reference_event.instruction.to_string();
             let mut state_before_hashes = std::collections::BTreeMap::new();
             let mut state_after_hashes = std::collections::BTreeMap::new();
+            let mut engine_transition_hashes = std::collections::BTreeMap::new();
             for (engine_name, events) in engine_events {
                 let event = events.get(event_idx).ok_or_else(|| {
                     VmError::InvalidConfig(format!(
@@ -4071,11 +4084,28 @@ fn research_v3_rule_witnesses(
                         event.instruction
                     )));
                 }
-                state_before_hashes
-                    .insert((*engine_name).to_string(), hash_json_hex(&event.state_before)?);
-                state_after_hashes
-                    .insert((*engine_name).to_string(), hash_json_hex(&event.state_after)?);
+                let state_before_hash = hash_json_hex(&event.state_before)?;
+                let state_after_hash = hash_json_hex(&event.state_after)?;
+                let transition_hash = research_v3_transition_relation_hash(
+                    event.step,
+                    &instruction,
+                    &state_before_hash,
+                    &state_after_hash,
+                )?;
+                state_before_hashes.insert((*engine_name).to_string(), state_before_hash);
+                state_after_hashes.insert((*engine_name).to_string(), state_after_hash);
+                engine_transition_hashes.insert((*engine_name).to_string(), transition_hash);
             }
+            let canonical_transition_hash =
+                engine_transition_hashes
+                    .get(*reference_name)
+                    .cloned()
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig(format!(
+                            "research-v3-equivalence missing reference transition hash for {}",
+                            reference_name
+                        ))
+                    })?;
             Ok(ResearchV3RuleWitness {
                 step: reference_event.step,
                 rule_id: research_v3_rule_id(&instruction),
@@ -4084,6 +4114,8 @@ fn research_v3_rule_witnesses(
                 participating_engines: participating_engines.clone(),
                 state_before_hashes,
                 state_after_hashes,
+                engine_transition_hashes,
+                canonical_transition_hash,
                 validation: ResearchV3RuleValidation {
                     differential_lockstep: true,
                     egraph_status: "not-attempted".to_string(),
@@ -4093,6 +4125,23 @@ fn research_v3_rule_witnesses(
             })
         })
         .collect()
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_transition_relation_hash(
+    step: usize,
+    instruction: &str,
+    state_before_hash: &str,
+    state_after_hash: &str,
+) -> llm_provable_computer::Result<String> {
+    let row = ResearchV3TransitionRelationRow {
+        relation_format: RESEARCH_V3_RELATION_FORMAT.to_string(),
+        step,
+        instruction: instruction.to_string(),
+        state_before_hash: state_before_hash.to_string(),
+        state_after_hash: state_after_hash.to_string(),
+    };
+    hash_json_projection_hex(&row)
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
