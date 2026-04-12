@@ -767,10 +767,9 @@ This checks transformer, native, Burn, and ONNX/Tract runtimes in lockstep,
 then emits a JSON artifact with engine summaries, deterministic rule witnesses,
 and commitment hashes. The artifact also carries a frontend/runtime semantics
 registry that separates currently checked lanes from these research-watch lanes:
-`torch.export`, ExecuTorch, StableHLO, IREE, ONNX-MLIR, TVM Unity
-(`tvm-unity`), vLLM, SGLang, and egg/Emerge-style equivalence. It intentionally
-does not claim support for those watch lanes, e-graph saturation, SMT-backed
-rewrite synthesis, randomized
+`torch-export`, `executorch`, `stablehlo`, `iree`, `onnx-mlir`, `tvm-unity`,
+`vllm`, `sglang`, and `egg-emerge`. It intentionally does not claim support for
+those watch lanes, e-graph saturation, SMT-backed rewrite synthesis, randomized
 opaque-kernel testing, or a cryptographic implementation-equivalence proof.
 
 Canonical research-v3 spec files:
