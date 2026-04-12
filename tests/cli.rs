@@ -237,8 +237,8 @@ struct TestPhase12StaticLookupTableCommitment {
     statement_version: String,
     semantic_scope: String,
     table_commitment: String,
-    row_count: usize,
-    row_width: usize,
+    row_count: u64,
+    row_width: u64,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -258,9 +258,27 @@ fn phase12_artifact_commitment_from_json(artifact: &serde_json::Value) -> String
     let static_table_registry_commitment = artifact["static_table_registry_commitment"]
         .as_str()
         .expect("static table registry commitment");
-    let static_table_commitments: Vec<TestPhase12StaticLookupTableCommitment> =
+    let mut static_table_commitments: Vec<TestPhase12StaticLookupTableCommitment> =
         serde_json::from_value(artifact["static_table_commitments"].clone())
             .expect("static table commitments");
+    static_table_commitments.sort_by(|left, right| {
+        (
+            &left.table_id,
+            &left.statement_version,
+            &left.semantic_scope,
+            &left.table_commitment,
+            left.row_count,
+            left.row_width,
+        )
+            .cmp(&(
+                &right.table_id,
+                &right.statement_version,
+                &right.semantic_scope,
+                &right.table_commitment,
+                right.row_count,
+                right.row_width,
+            ))
+    });
 
     let flattened_json = serde_json::to_vec(&flattened_lookup_rows).expect("flattened rows json");
     let static_table_commitments_json =
