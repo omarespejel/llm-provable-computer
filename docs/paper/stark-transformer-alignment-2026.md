@@ -259,21 +259,16 @@ The supporting implementation is `omarespejel/provable-transformer-vm` [30]. In 
 The artifact provides:
 
 - a deterministic transformer-shaped VM and statement-versioned claim (`statement-v1`),
-- semantic lockstep/multi-engine agreement checks with ONNX validation,
-- two reproducibility tiers: `production-v1` (vanilla) and `stwo-experimental-v1` (narrow experimental),
+- two frozen reproducibility tiers: `production-v1` (vanilla) and `stwo-experimental-v1` (narrow experimental),
 - a parameterized proof-carrying decoding family (`decoding_step_v2`) over multiple public layouts,
-- a static lookup-table registry commitment that binds the shared normalization and activation table descriptors into the shared lookup artifact,
-- a source-chain-bound step-proof-envelope manifest that binds each parameterized decode step to its input/output carried-state boundary commitments, lookup-row commitments, shared lookup artifact commitment, static lookup registry commitment, and proof commitment,
-- a bounded multi-runtime semantic-agreement artifact that records transformer/native/Burn/ONNX lockstep evidence, rule witnesses, per-engine transition-relation hashes, and a canonical transition hash for each bounded transition,
-- carried-state packaging (chain, segment, interval package, rollup, matrix, and pre-recursive aggregation package) with KV/lookup cumulative and frontier commitments,
-- a pre-recursive carried-state packaging ladder over the same decode relation: chain, segment, interval package, rollup, matrix, and pre-recursive aggregation package,
-- hardened verifier kernels backed by differential testing, fuzzing, mutation checks, and bounded model checking.
+- an explicit carried-state packaging ladder: chain, segment, interval package, rollup, matrix, and pre-recursive aggregation package,
+- a bounded multi-runtime semantic-agreement artifact across transformer/native/Burn/ONNX paths.
 
-The important systems property is stable statement structure: the same decode relation survives progressively more composable manifest layers without changing statement boundaries. The aggregation ladder remains pre-recursive and replay-verifies nested proof-bearing members.
+The central systems property is stable statement structure: one decode relation survives progressively richer artifact layers without changing the public boundary semantics that later recursive or accumulation layers would need to preserve.
 
-For shared lookup evidence, the artifact binds the normalization and activation canonical table descriptors into a static lookup-table registry commitment inside the shared lookup artifact. This is a table-identity and provenance binding, not recursive cross-step shared-table accumulation.
+The repository already binds shared lookup-table identity inside public artifacts, but does not yet expose recursive cross-step shared-table accumulation as a compressed proof object.
 
-For step-envelope evidence, the artifact now exposes an overlay derived from a verified parameterized decoding chain. The overlay is machine-readable boundary metadata: it records source-chain commitment, per-step proof commitment, input/output carried boundaries, input/output lookup-row commitments, shared lookup artifact commitment, and static lookup registry commitment. Its verifier checks internal envelope continuity and can replay the overlay against the source decoding chain; it is not a recursive wrapper or compressed verifier.
+For step-envelope evidence, the artifact exposes machine-readable boundary metadata derived from a verified parameterized decoding chain. Its verifier checks internal envelope continuity and can replay the overlay against the source decoding chain; it is not a recursive wrapper or compressed verifier.
 
 ### 5.2 Carried-state relation
 
@@ -331,7 +326,7 @@ The broader carried-state ladder is documented in the repository's supplementary
 
 ### 5.6 Semantic-agreement and provenance boundaries
 
-The repository also contains a bounded multi-runtime semantic-agreement artifact motivated by implementation-equivalence work on large-model graphs [47]. It lockstep-executes a fixed program across transformer/native/Burn/ONNX paths, records relation witnesses, and binds observed transitions by per-runtime hashes plus a canonical transition hash. This is deterministic bounded relation evidence, not an e-graph saturation engine, SMT-backed rewrite synthesizer, randomized opaque-kernel validator, or cryptographic implementation-equivalence proof.
+The repository also contains a bounded multi-runtime semantic-agreement artifact motivated by implementation-equivalence work on large-model graphs [47]. It records transformer/native/Burn/ONNX transition witnesses and binds them by per-runtime hashes plus a canonical transition hash. This is deterministic bounded relation evidence, not a general e-graph/SMT equivalence prover.
 
 This artifact addresses a methodological risk in systems papers about proof-carrying ML: a proof artifact should not silently rely on informal claims that two frontend/runtime paths mean the same thing. The present implementation still stops at deterministic bounded relation evidence plus artifact-integrity verification.
 
