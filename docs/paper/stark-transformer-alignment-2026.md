@@ -305,7 +305,7 @@ Figure 3 summarizes the object flow and the two carried commitment lanes.
 
 ![Figure 3. Carried-state packaging ladder over the parameterized decoding relation.](figures/section5-carried-state-ladder.svg)
 
-**Figure 3.** Carried-state packaging ladder over the parameterized decoding relation. A verified `decoding_step_v2` chain is packaged into segments, rollups, a multi-layout matrix, and a pre-recursive aggregation boundary. The two carried lanes represent the KV-side cumulative/frontier commitments and the lookup-side cumulative/frontier commitments. The figure is architectural: it describes statement-preserving artifact layers in the repository, not a recursive cryptographic compression pipeline.
+**Figure 3.** Carried-state packaging ladder over the parameterized decoding relation. A verified `decoding_step_v2` chain is packaged into segments, interval packages, rollups, a multi-layout matrix, and a pre-recursive aggregation boundary. The two carried lanes represent the KV-side cumulative/frontier commitments and the lookup-side cumulative/frontier commitments. The figure is architectural: it describes statement-preserving artifact layers in the repository, not a recursive cryptographic compression pipeline.
 
 ### 5.3 Negative evidence
 
