@@ -36,3 +36,8 @@ In particular, avoid editing:
 Those files are provenance objects. Their recorded paths, command lines, and hashes are part of the evidence trail.
 
 Host-specific absolute paths inside frozen command logs and manifests are expected historical provenance, not documentation drift.
+
+When regenerating related engineering bundles, prefer a fresh scratch output
+directory under `docs/paper/artifacts/`. The accumulation-bundle generator
+refuses to overwrite frozen-looking bundle directories unless
+`ALLOW_OVERWRITE_FROZEN=1` is set explicitly.

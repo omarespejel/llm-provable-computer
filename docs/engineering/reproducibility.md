@@ -36,7 +36,7 @@ pip install -r scripts/requirements.txt
 For the carried/accumulated experimental `stwo` decode path:
 
 ```bash
-./scripts/paper/generate_stwo_accumulation_bundle.sh
+BUNDLE_DIR=docs/paper/artifacts/stwo-accumulation-scratch ./scripts/paper/generate_stwo_accumulation_bundle.sh
 ```
 
 Optional output directory:
@@ -70,9 +70,13 @@ The script writes to `compiled/repro-bundle/` by default and produces:
   semantics registry for implemented versus research-watch lanes
 - `*.out` / `*.err`: full stdout/stderr capture for each command
 
-The accumulation bundle script writes under the archival provenance bundle path
-`docs/paper/artifacts/stwo-accumulation-v1-2026-04-09/` by default and
-produces:
+The accumulation bundle script defaults to the archival provenance bundle path
+`docs/paper/artifacts/stwo-accumulation-v1-2026-04-09/`, but frozen bundle
+paths should be treated as read-only evidence. Use `BUNDLE_DIR` to point at a
+fresh scratch directory under `docs/paper/artifacts/` unless you are
+intentionally regenerating a frozen bundle with
+`ALLOW_OVERWRITE_FROZEN=1`. The script now refuses to overwrite a
+frozen-looking bundle unless that override is set. Its outputs are:
 
 - `manifest.txt`: commit/toolchain/environment metadata
 - `commands.log`: exact executed commands with UTC timestamps
