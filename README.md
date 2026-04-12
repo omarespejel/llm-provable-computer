@@ -55,6 +55,7 @@ No sampling. No stochastic output. Same input, same output, every time.
 | `statement-v1` | Stable | Vanilla STARK proof of native ISA execution, plus enforced transformer/native semantic agreement checks |
 | `stwo-backend` | Experimental | Narrow `statement-v1` proving surface for shipped fixtures, lookup demos, transformer-shaped fixtures, and decoding artifacts |
 | `research-v2` | Artifact-only | Semantic agreement artifacts for transformer vs ONNX, not yet a full STARK claim |
+| `research-v3` | Artifact-only | Multi-engine transformer/native/Burn/ONNX equivalence-kernel artifacts with explicit non-e-graph/non-SMT limits |
 
 The important boundary is explicit: this repo does **not** yet prove full
 standard-softmax transformer inference on `stwo`.
@@ -647,6 +648,15 @@ cargo test --quiet statement_spec_contract_is_synced_with_constants
 - These artifacts are publication evidence and regression guards, but they are not
   currently embedded into the `statement-v1` STARK proof relation.
 
+`research-v3` (research artifacts, not yet a full implementation-equivalence proof):
+
+- `research-v3-equivalence` checks transformer, native, Burn, and ONNX/Tract
+  runtimes in lockstep and emits an equivalence-kernel artifact with rule
+  witnesses and commitment hashes.
+- The artifact is deliberately bounded: it is not an e-graph saturation result,
+  SMT-backed rewrite proof, randomized opaque-kernel test suite, or
+  cryptographic proof of implementation equivalence.
+
 ### Production Profile (v1)
 
 `production-v1` is a practical local proving profile intended for routine CI/integration checks:
@@ -743,6 +753,27 @@ Additional matrix spec files:
 - `spec/statement-v2-matrix-research.json`
 - `spec/statement-v2-matrix-certificate.schema.json`
 
+### Research V3 Multi-Engine Equivalence Kernel
+
+For the first Emerge-style hardening step, generate a bounded multi-engine
+equivalence-kernel artifact:
+
+```bash
+cargo run --features full --bin tvm -- research-v3-equivalence programs/addition.tvm \
+  -o compiled/research-v3-addition-equivalence.json --max-steps 8
+```
+
+This checks transformer, native, Burn, and ONNX/Tract runtimes in lockstep,
+then emits a JSON artifact with engine summaries, deterministic rule witnesses,
+and commitment hashes. It intentionally does not claim e-graph saturation,
+SMT-backed rewrite synthesis, randomized opaque-kernel testing, or a
+cryptographic implementation-equivalence proof.
+
+Canonical research-v3 spec files:
+
+- `spec/statement-v3-equivalence-kernel-research.json`
+- `spec/statement-v3-equivalence-kernel.schema.json`
+
 ### Reproducibility Bundle
 
 For publication-ready artifacts (benchmarks, proofs, semantic agreement artifacts, hashes),
@@ -757,7 +788,7 @@ Outputs are written to `compiled/repro-bundle/`:
 - `manifest.txt` (commit + toolchain + environment)
 - `benchmarks.tsv` (timings by command)
 - `sha256sums.txt` (hashes for generated artifacts)
-- STARK proof files and `research-v2` certificates used for evidence sections
+- STARK proof files and `research-v2` / `research-v3` certificates used for evidence sections
 
 Additional committed transformer-shaped semantic artifacts live under:
 

@@ -97,6 +97,10 @@ run_and_capture "research_v2_matrix_default_suite" \
   cargo run --features onnx-export --bin tvm -- research-v2-matrix \
     -o "$OUT/research-v2-matrix-default-suite.json" --include-default-suite --max-steps 64
 
+run_and_capture "research_v3_equivalence_addition" \
+  cargo run --features full --bin tvm -- research-v3-equivalence \
+    programs/addition.tvm -o "$OUT/research-v3-addition-equivalence.json" --max-steps 8
+
 (
   cd "$OUT"
   LC_ALL=C LANG=C shasum -a 256 \

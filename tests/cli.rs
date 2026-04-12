@@ -318,6 +318,39 @@ fn assert_research_v2_spec_commitments(
     );
 }
 
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn hash_json_value(value: &serde_json::Value) -> String {
+    blake2b_256_hex(&serde_json::to_vec(value).expect("json hash payload"))
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn assert_research_v3_runtime_commitments(artifact: &serde_json::Value) {
+    let expected_relation_format_hash =
+        hash_json_value(artifact.get("relation_format").expect("relation_format"));
+    let expected_limitations_hash =
+        hash_json_value(artifact.get("limitations").expect("limitations"));
+    let expected_engine_summaries_hash = hash_json_value(artifact.get("engines").expect("engines"));
+    let expected_rule_witnesses_hash =
+        hash_json_value(artifact.get("rule_witnesses").expect("rule_witnesses"));
+
+    assert_eq!(
+        json_string_at(artifact, &["commitments", "relation_format_hash"]),
+        Some(expected_relation_format_hash.as_str())
+    );
+    assert_eq!(
+        json_string_at(artifact, &["commitments", "limitations_hash"]),
+        Some(expected_limitations_hash.as_str())
+    );
+    assert_eq!(
+        json_string_at(artifact, &["commitments", "engine_summaries_hash"]),
+        Some(expected_engine_summaries_hash.as_str())
+    );
+    assert_eq!(
+        json_string_at(artifact, &["commitments", "rule_witnesses_hash"]),
+        Some(expected_rule_witnesses_hash.as_str())
+    );
+}
+
 #[test]
 fn cli_runs_addition_program() {
     let mut command = tvm_command();
@@ -3658,6 +3691,25 @@ fn cli_reports_missing_onnx_feature_for_research_v2_matrix() {
         ));
 }
 
+#[cfg(not(all(feature = "burn-model", feature = "onnx-export")))]
+#[test]
+fn cli_reports_missing_features_for_research_v3_equivalence() {
+    let output_path = unique_temp_dir("cli-research-v3-equivalence-missing").with_extension("json");
+    let mut command = tvm_command();
+    command
+        .arg("research-v3-equivalence")
+        .arg("programs/addition.tvm")
+        .arg("-o")
+        .arg(&output_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "`research-v3-equivalence` requires the `burn-model` and `onnx-export` features",
+        ));
+
+    assert!(!output_path.exists());
+}
+
 #[cfg(feature = "onnx-export")]
 #[test]
 fn cli_supports_export_onnx_command() {
@@ -3868,6 +3920,189 @@ fn cli_supports_research_v2_matrix_command() {
         Some(0)
     );
     let _ = std::fs::remove_file(output_path);
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+#[test]
+fn cli_supports_research_v3_equivalence_command() {
+    let output_path = unique_temp_dir("cli-research-v3-equivalence").with_extension("json");
+    let mut command = tvm_command();
+    command
+        .arg("research-v3-equivalence")
+        .arg("programs/addition.tvm")
+        .arg("-o")
+        .arg(&output_path)
+        .arg("--max-steps")
+        .arg("8")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "semantic_scope: multi_engine_trace_equivalence_kernel_with_rule_witnesses",
+        ))
+        .stdout(predicate::str::contains(
+            "relation_format: multi-engine-trace-relation-v1-no-egraph-no-smt",
+        ))
+        .stdout(predicate::str::contains(
+            "engines: transformer,native,burn,onnx/tract",
+        ));
+
+    assert!(output_path.exists());
+    let artifact_bytes = std::fs::read(&output_path).expect("artifact");
+    let artifact_json: serde_json::Value =
+        serde_json::from_slice(&artifact_bytes).expect("artifact json");
+    validate_json_against_schema(
+        &artifact_json,
+        "spec/statement-v3-equivalence-kernel.schema.json",
+    );
+    assert_research_v2_spec_commitments(
+        &artifact_json,
+        "spec/statement-v3-equivalence-kernel-research.json",
+        "spec/statement-v3-equivalence-kernel.schema.json",
+    );
+    assert_research_v3_runtime_commitments(&artifact_json);
+    assert!(artifact_json.get("matched").is_none());
+    assert_eq!(
+        artifact_json
+            .get("statement_version")
+            .and_then(serde_json::Value::as_str),
+        Some("statement-v3-research-draft")
+    );
+    assert_eq!(
+        artifact_json
+            .get("engines")
+            .and_then(serde_json::Value::as_array)
+            .map(Vec::len),
+        Some(4)
+    );
+    let engine_names = artifact_json
+        .get("engines")
+        .and_then(serde_json::Value::as_array)
+        .expect("engines")
+        .iter()
+        .map(|entry| {
+            entry
+                .get("name")
+                .and_then(serde_json::Value::as_str)
+                .expect("engine name")
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        engine_names,
+        ["transformer", "native", "burn", "onnx/tract"]
+    );
+    let checked_steps = artifact_json
+        .get("checked_steps")
+        .and_then(serde_json::Value::as_u64)
+        .expect("checked_steps") as usize;
+    assert_eq!(
+        artifact_json
+            .get("rule_witnesses")
+            .and_then(serde_json::Value::as_array)
+            .map(Vec::len),
+        Some(checked_steps)
+    );
+    let rule_witnesses = artifact_json
+        .get("rule_witnesses")
+        .and_then(serde_json::Value::as_array)
+        .expect("rule_witnesses");
+    let first_witness = rule_witnesses.first().expect("first rule witness");
+    assert_eq!(
+        first_witness
+            .get("participating_engines")
+            .and_then(serde_json::Value::as_array)
+            .expect("participating engines")
+            .iter()
+            .map(|entry| entry.as_str().expect("engine name"))
+            .collect::<Vec<_>>(),
+        ["transformer", "native", "burn", "onnx/tract"]
+    );
+    for hashes_key in ["state_before_hashes", "state_after_hashes"] {
+        let hashes = first_witness
+            .get(hashes_key)
+            .and_then(serde_json::Value::as_object)
+            .expect("per-engine witness hashes");
+        for engine_name in ["transformer", "native", "burn", "onnx/tract"] {
+            let hash = hashes
+                .get(engine_name)
+                .and_then(serde_json::Value::as_str)
+                .expect("per-engine state hash");
+            assert_eq!(hash.len(), 64);
+        }
+    }
+    let limitations = artifact_json
+        .get("limitations")
+        .and_then(serde_json::Value::as_array)
+        .expect("limitations");
+    for expected in [
+        "Emerge reproduction",
+        "e-graph saturation",
+        "SMT-backed rewrite synthesis",
+        "randomized opaque-kernel testing",
+        "recursive accumulation",
+        "cryptographic implementation-equivalence proof",
+    ] {
+        assert!(
+            limitations
+                .iter()
+                .any(|entry| entry.as_str().is_some_and(|text| text.contains(expected))),
+            "missing limitation covering {expected}",
+        );
+    }
+    let mut tampered = artifact_json.clone();
+    tampered["commitments"]["engine_summaries_hash"] = serde_json::Value::String("0".repeat(64));
+    assert!(
+        std::panic::catch_unwind(|| assert_research_v3_runtime_commitments(&tampered)).is_err()
+    );
+
+    let mut malformed_hash = artifact_json.clone();
+    malformed_hash["commitments"]["relation_format_hash"] =
+        serde_json::Value::String("not-a-blake2b-hash".to_string());
+    malformed_hash["rule_witnesses"][0]["state_before_hashes"]["transformer"] =
+        serde_json::Value::String("also-not-a-blake2b-hash".to_string());
+    assert!(std::panic::catch_unwind(|| {
+        validate_json_against_schema(
+            &malformed_hash,
+            "spec/statement-v3-equivalence-kernel.schema.json",
+        );
+    })
+    .is_err());
+
+    let mut missing_relation = artifact_json.clone();
+    missing_relation
+        .as_object_mut()
+        .expect("artifact object")
+        .remove("relation_format");
+    assert!(std::panic::catch_unwind(|| {
+        validate_json_against_schema(
+            &missing_relation,
+            "spec/statement-v3-equivalence-kernel.schema.json",
+        );
+    })
+    .is_err());
+
+    let _ = std::fs::remove_file(output_path);
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+#[test]
+fn cli_research_v3_equivalence_rejects_zero_max_steps() {
+    let output_path =
+        unique_temp_dir("cli-research-v3-equivalence-zero-steps").with_extension("json");
+    let mut command = tvm_command();
+    command
+        .arg("research-v3-equivalence")
+        .arg("programs/addition.tvm")
+        .arg("-o")
+        .arg(&output_path)
+        .arg("--max-steps")
+        .arg("0")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "research-v3-equivalence requires max_steps >= 1",
+        ));
+
+    assert!(!output_path.exists());
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]

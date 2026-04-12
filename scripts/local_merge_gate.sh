@@ -363,6 +363,14 @@ run_stwo_smoke_targets() {
   done
 }
 
+run_research_v3_smoke_targets() {
+  run_logged research-v3-equivalence-cli cargo test -q \
+    --features full \
+    --test cli cli_supports_research_v3_equivalence_command \
+    -- \
+    --exact
+}
+
 if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
   run_logged cargo-fmt-check cargo fmt --check
@@ -380,6 +388,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
   run_stwo_smoke_targets
+  run_research_v3_smoke_targets
   completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
@@ -388,6 +397,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
   run_stwo_smoke_targets
+  run_research_v3_smoke_targets
   run_logged ub-checks env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
   run_logged asan env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_asan_suite.sh
   run_logged miri env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_miri_suite.sh
@@ -423,14 +433,22 @@ checks_json="$run_evidence_dir/checks.json"
 check_runs_json="$run_evidence_dir/check-runs.json"
 statuses_json="$run_evidence_dir/statuses.json"
 gh api --paginate "repos/${REPO}/commits/${head_sha}/check-runs?per_page=100" \
-  --jq '.check_runs[] | {name, status: (.status | ascii_upcase), conclusion: ((.conclusion // "") | ascii_upcase)}' \
-  | jq -s '.' >"$check_runs_json"
+  --jq '.check_runs[] | {name, id, created_at, started_at, completed_at, status: (.status | ascii_upcase), conclusion: ((.conclusion // "") | ascii_upcase)}' \
+  | jq -s '
+      sort_by((.created_at // .started_at // .completed_at // ""), (.id // 0))
+      | reduce .[] as $check ({}; .[$check.name] = $check)
+      | to_entries
+      | sort_by(.key)
+      | map(.value)
+    ' >"$check_runs_json"
 gh api --paginate "repos/${REPO}/commits/${head_sha}/statuses?per_page=100" \
   --jq '.[] | {name: .context, created_at: .created_at, status: (if .state == "pending" then "IN_PROGRESS" else "COMPLETED" end), conclusion: (if .state == "success" then "SUCCESS" elif .state == "pending" then "" elif .state == "error" then "FAILURE" else (.state | ascii_upcase) end)}' \
   | jq -s '
       sort_by(.created_at)
       | reduce .[] as $status ({}; .[$status.name] = $status)
-      | [.[]]
+      | to_entries
+      | sort_by(.key)
+      | map(.value)
     ' >"$statuses_json"
 jq -s '.[0] + .[1]' "$check_runs_json" "$statuses_json" >"$checks_json"
 
@@ -502,6 +520,7 @@ query($owner:String!,$name:String!,$number:Int!,$cursor:String){
         pageInfo{ hasNextPage endCursor }
         nodes{
           isResolved
+          isOutdated
           comments(first:100){
             pageInfo{ hasNextPage endCursor }
             nodes{ author{login} createdAt }
@@ -539,7 +558,7 @@ jq -n \
 jq --argjson now "$now_epoch" '
     .data.repository.pullRequest as $pull
     | ["coderabbitai", "greptile-apps", "qodo-code-review"] as $ai_reviewers
-    | [ $pull.reviewThreads.nodes[]? | select(.isResolved == false) ] as $active
+    | [ $pull.reviewThreads.nodes[]? | select((.isResolved // false) == false and (.isOutdated // false) == false) ] as $active
     | ([
         ($pull.comments.nodes[]? | select(.author.login as $login | $ai_reviewers | index($login)) | {author:.author.login, createdAt}),
         ($pull.reviews.nodes[]? | select(.author.login as $login | $ai_reviewers | index($login)) | {author:.author.login, createdAt}),
