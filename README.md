@@ -62,6 +62,14 @@ standard-softmax transformer inference on `stwo`.
 The current proving boundary is native ISA execution with semantic agreement
 checks layered around the transformer runtime.
 
+Current public proof surfaces:
+
+- shared-table lookup proofs
+- transformer-shaped fixed-shape block proofs
+- proof-carrying decoding steps and chains
+- bounded multi-runtime semantic-agreement artifacts
+- pre-recursive aggregation bundles
+
 ## Start Here
 
 | Goal | Command | Notes |
