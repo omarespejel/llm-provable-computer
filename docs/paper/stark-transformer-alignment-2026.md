@@ -14,7 +14,7 @@ Starknet Foundation\
 
 This paper studies the structural fit between transformer workloads and STARK proof systems using a symbolic cost model together with a repository-backed proof artifact. Under a worked example with `C_exp = 300`, `C_norm = 30`, and `C_nonlin = 150`, GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields about `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK rows across 12 layers (`1.48x`); over practical context ranges, the ratio rises and then approaches a finite architecture-dependent ceiling. These counts are symbolic proxies for prover-side work, not matched runtime measurements.
 
-We pair that analysis with `provable-transformer-vm` [30], a supporting artifact that provides a frozen vanilla reproducibility tier, a frozen narrow experimental `stwo` tier, and a broader proof-carrying decoding path with explicit carried-state boundaries, shared lookup-table identity, and a pre-recursive aggregation boundary. The repository does not yet provide full standard-softmax inference on S-two, recursive cryptographic compression/verification closure, recursive shared-table accumulation across decode steps as a compressed proof object, or production-scale zkML deployment. The narrower claim is that transformer workloads expose the design pressures under which STARK-native systems may compound advantages, while current artifacts already support a concrete bridge from execution traces to pre-recursive proof objects.
+We pair that analysis with `provable-transformer-vm` [30], a supporting artifact that provides a frozen vanilla reproducibility tier, a frozen narrow experimental `stwo` tier, experimental `stwo` tooling for reusable block-shaped execution proofs and step-level proof envelopes, and a broader proof-carrying decoding path with explicit carried-state boundaries, shared lookup-table identity, and a pre-recursive aggregation boundary. The repository does not yet provide full standard-softmax inference on S-two, recursive cryptographic compression/verification closure, recursive shared-table accumulation across decode steps as a compressed proof object, or production-scale zkML deployment. The narrower claim is that transformer workloads expose the design pressures under which STARK-native systems may compound advantages, while current artifacts already support a concrete bridge from execution traces to pre-recursive proof objects.
 
 ---
 
@@ -264,6 +264,7 @@ The artifact provides:
 - a bounded multi-runtime semantic-agreement artifact together with hardened verifier kernels.
 
 The central systems property is stable statement structure: the same decode relation survives progressively richer manifest and packaging layers without changing the underlying public boundary semantics.
+In concrete terms, the repository now exposes reusable block-shaped execution proofs and, on its experimental `stwo` tooling surface, step-level proof envelopes whose public boundary schema and statement semantics remain stable across those richer artifact layers.
 
 For shared lookup evidence, the artifact binds normalization and activation table identity into a static lookup-table registry commitment inside the shared lookup artifact; this is table-identity and provenance binding, not recursive cross-step shared-table accumulation.
 
@@ -313,7 +314,7 @@ These limits are intentional scope discipline: the artifact supports structural 
 
 The vanilla `production-v1` tier is the primary reproducibility baseline. It is documented in an immutable artifact snapshot with command logs, hashes, and proof artifacts [31]. Timings and sizes are treated as reproducibility evidence, not performance evidence.
 
-The `stwo-experimental-v1` tier is the narrow S-two evidence tier. It contains command logs, wall-clock timings, SHA-256 hashes, and proof artifacts for four representative outputs: an arithmetic `statement-v1` proof (`addition`), a shared-table normalization lookup proof envelope, a Gemma-inspired fixed-shape proof (`gemma_block_v4`) with shared lookup bindings, and a three-step proof-carrying decoding chain [40]. Appendix C1 compares the two backend-facing tiers.
+The `stwo-experimental-v1` tier is the narrow S-two evidence tier. It contains command logs, wall-clock timings, SHA-256 hashes, and proof artifacts for four representative outputs: an arithmetic `statement-v1` proof (`addition`), a shared-table normalization lookup proof envelope, a Gemma-inspired fixed-shape proof (`gemma_block_v4`) with shared lookup bindings, and a three-step proof-carrying decoding chain [40]. Taken together, these four artifacts illustrate representative proof outputs across the repository's current public artifact inventory: a `statement-v1` arithmetic proof, a shared-table lookup proof envelope, a block-shaped execution proof, and a carried-state decode chain. The broader repository artifact inventory also includes bounded multi-runtime semantic-agreement artifacts and pre-recursive aggregation bundles. Appendix C1 compares the two backend-facing tiers.
 
 ### 5.5 Pre-recursive aggregation boundary
 
