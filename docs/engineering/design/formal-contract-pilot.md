@@ -20,10 +20,10 @@ Scope:
   - position must advance by exactly one
 
 Mechanization:
-- Kani harnesses live in `/Users/espejelomar/StarkNet/zk-ai/llm-provable-computer-codex/src/stwo_backend/decoding.rs`
+- Kani harnesses live in `src/stwo_backend/decoding.rs`
 - the Kani model deliberately reduces string/commitment equality into scalar match predicates so the solver checks the binding logic rather than spending proof budget on `memcmp`
-- the dedicated runner is `/Users/espejelomar/StarkNet/zk-ai/llm-provable-computer-codex/scripts/run_formal_contract_suite.sh`
-- CI entrypoint is `/Users/espejelomar/StarkNet/zk-ai/llm-provable-computer-codex/.github/workflows/formal-contracts.yml`
+- the dedicated runner is `scripts/run_formal_contract_suite.sh`
+- CI entrypoint is `.github/workflows/formal-contracts.yml`
 
 Non-goals:
 - this does not prove the full decoding verifier

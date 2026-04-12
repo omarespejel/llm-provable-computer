@@ -30,6 +30,13 @@ esac
 [ "$CANON_BUNDLE_DIR" != "$REPO_ROOT" ] || { echo "Refusing to delete repo root" >&2; exit 1; }
 
 BUNDLE_DIR="$CANON_BUNDLE_DIR"
+if [ -d "$BUNDLE_DIR" ] && [ "${ALLOW_OVERWRITE_FROZEN:-0}" != "1" ]; then
+  if [ -f "$BUNDLE_DIR/sha256sums.txt" ] || [ -f "$BUNDLE_DIR/manifest.txt" ] || [ -f "$BUNDLE_DIR/APPENDIX_ARTIFACT_INDEX.md" ]; then
+    echo "Refusing to overwrite existing frozen-looking bundle: $BUNDLE_DIR" >&2
+    echo "Set BUNDLE_DIR to a fresh scratch directory under $EXPECTED_PREFIX or set ALLOW_OVERWRITE_FROZEN=1 to override." >&2
+    exit 1
+  fi
+fi
 rm -rf -- "$BUNDLE_DIR"
 mkdir -p "$BUNDLE_DIR"
 

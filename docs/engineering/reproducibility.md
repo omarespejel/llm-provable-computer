@@ -1,7 +1,12 @@
-# Reproducibility Guide
+# Engineering Reproducibility Guide
 
-This repository includes a one-command reproducibility bundle generator intended
-for publication and external review.
+This guide covers the broader engineering reproducibility flows in the repository.
+
+For the publication-facing paper package, start with:
+
+- `docs/paper/README.md`
+- `docs/paper/PUBLICATION_RELEASE.md`
+- `docs/paper/submission-v4-2026-04-11/REPRODUCIBILITY_NOTE.md`
 
 ## Tooling notes
 
@@ -28,16 +33,17 @@ pip install -r scripts/requirements.txt
 ./scripts/generate_repro_bundle.sh
 ```
 
-For the carried/accumulated experimental `stwo` decode path:
+For the carried/accumulated experimental `stwo` decode path, write each run to a
+fresh scratch directory:
 
 ```bash
-./scripts/paper/generate_stwo_accumulation_bundle.sh
+BUNDLE_DIR="docs/paper/artifacts/stwo-accumulation-scratch-$(date -u +%Y%m%dT%H%M%SZ)" ./scripts/paper/generate_stwo_accumulation_bundle.sh
 ```
 
 Optional output directory:
 
 ```bash
-./scripts/generate_repro_bundle.sh /tmp/llm-provable-computer-repro
+./scripts/generate_repro_bundle.sh /tmp/provable-transformer-vm-repro
 ```
 
 Optional knobs:
@@ -65,9 +71,13 @@ The script writes to `compiled/repro-bundle/` by default and produces:
   semantics registry for implemented versus research-watch lanes
 - `*.out` / `*.err`: full stdout/stderr capture for each command
 
-The accumulation bundle script writes under
-`docs/paper/artifacts/stwo-accumulation-v1-2026-04-09/` by default and
-produces:
+The accumulation bundle script defaults to the archival provenance bundle path
+`docs/paper/artifacts/stwo-accumulation-v1-2026-04-09/`, but frozen bundle
+paths should be treated as read-only evidence. Use `BUNDLE_DIR` to point at a
+fresh scratch directory under `docs/paper/artifacts/` for each run. If you
+intend to rerun against an existing scratch directory, delete it first or set
+`ALLOW_OVERWRITE_FROZEN=1`. The script refuses to overwrite an existing
+bundle-looking directory unless that override is set. Its outputs are:
 
 - `manifest.txt`: commit/toolchain/environment metadata
 - `commands.log`: exact executed commands with UTC timestamps
@@ -79,8 +89,9 @@ produces:
 
 ## Intended Use
 
-- Attach `manifest.txt`, `benchmarks.tsv`, and `sha256sums.txt` in paper/blog
-  appendices.
+- Use the generated manifests, benchmarks, and hashes as engineering evidence
+  inputs; the publication-facing paper package cites the frozen bundles under
+  `docs/paper/artifacts/`.
 - Link generated `research-v2` / `research-v3` artifacts as evidence for semantic-equivalence
   claims.
 - Link generated `*.proof.json` files for statement-v1 proof demonstrations.

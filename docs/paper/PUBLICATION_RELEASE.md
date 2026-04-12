@@ -5,13 +5,13 @@ Snapshot date: **April 11, 2026**
 Intended launch tag for the current paper-facing repository state:
 `paper-publication-v4-2026-04-11`
 
-Canonical publication snapshot commit:
+Canonical publication snapshot:
 The canonical v4 publication snapshot is the release tag
 `paper-publication-v4-2026-04-11` once cut. That tag must resolve to a commit
 containing this v4 paper metadata, and it intentionally need not match the
-aggregation-line engineering checkpoint used by the carried-state evidence.
+pinned carried-state evidence commit used by the aggregation bundle.
 
-Aggregation-line engineering checkpoint for the carried-state evidence:
+Pinned carried-state aggregation provenance checkpoint:
 `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`
 
 Dedicated proof-carrying aggregation bundle index cited by Reference `[46]`:
@@ -30,15 +30,11 @@ This repository state is the publication-facing package for the paper and its su
 artifacts. The package is intentionally split into evidence tiers rather than treated as one
 monolithic benchmark claim.
 
-This is a rolling publication checkpoint: additional paper feedback may lead to small follow-up
-patches and a subsequent publication tag.
-
 ## Included materials
 
 - Main paper:
   - `docs/paper/stark-transformer-alignment-2026.md`
   - Title: `On the Structural Fit of Transformer Workloads and STARK Proof Systems`
-  - Subtitle: `With proof-carrying decoding artifacts over an experimental S-two path.`
 - Supporting appendices:
   - `docs/paper/appendix-system-comparison.md`
   - `docs/paper/appendix-scaling-companion.md`
@@ -63,8 +59,9 @@ patches and a subsequent publication tag.
 - `stwo-experimental-v1` is the frozen narrow evidence tier for the experimental S-two path.
 - Post-freeze commit-pinned evidence now includes the merged pre-recursive
   carried-state aggregation bundle, including proof-carrying outer aggregation over chained artifacts.
-- Intermediate aggregation-line artifact directories are retained as archival provenance. The
-  proof-carrying aggregation bundle is the publication-facing checkpoint for that line.
+- Older carried-state artifact bundles are retained as archival provenance; see
+  `docs/paper/artifacts/README.md`. The proof-carrying aggregation bundle is the
+  publication-facing artifact bundle for the carried-state aggregation line.
 - The repo still does **not** claim full standard-softmax transformer inference on S-two,
   recursive cross-step shared-table accumulation beyond the public lookup-accumulator artifact,
   recursive cryptographic compression/verification closure, or production-scale zkML deployment.

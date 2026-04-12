@@ -1,6 +1,6 @@
 # S-two Phase 0 Checklist
 
-This checklist breaks `docs/design/stwo-backend-design.md` into issue-sized implementation steps for the backend-abstraction phase.
+This checklist breaks `docs/engineering/design/stwo-backend-design.md` into issue-sized implementation steps for the backend-abstraction phase.
 
 ## Phase 0 objective
 

@@ -112,7 +112,7 @@ time of packaging.
 Before sharing a draft externally, verify:
 
 1. author names and affiliations are confirmed,
-2. title, subtitle, and claim posture are aligned between:
+2. title and claim posture are aligned between:
    - `docs/paper/stark-transformer-alignment-2026.md`
    - `docs/paper/PUBLICATION_RELEASE.md`
 3. paper preflight passes,
