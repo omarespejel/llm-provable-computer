@@ -4444,8 +4444,26 @@ fn write_bytes_atomically(path: &Path, bytes: &[u8]) -> llm_provable_computer::R
         drop(file);
 
         if let Err(err) = fs::rename(&temp_path, path) {
-            let _ = fs::remove_file(&temp_path);
-            return Err(err.into());
+            let destination_exists = path.try_exists().unwrap_or(false);
+            if destination_exists
+                && matches!(
+                    err.kind(),
+                    std::io::ErrorKind::AlreadyExists | std::io::ErrorKind::PermissionDenied
+                )
+            {
+                // POSIX rename replaces atomically. Some platforms reject existing destinations.
+                if let Err(remove_err) = fs::remove_file(path) {
+                    let _ = fs::remove_file(&temp_path);
+                    return Err(remove_err.into());
+                }
+                if let Err(rename_err) = fs::rename(&temp_path, path) {
+                    let _ = fs::remove_file(&temp_path);
+                    return Err(rename_err.into());
+                }
+            } else {
+                let _ = fs::remove_file(&temp_path);
+                return Err(err.into());
+            }
         }
 
         return Ok(());
@@ -4501,6 +4519,18 @@ mod tests {
         assert!(suite.contains(&PathBuf::from("programs/dot_product.tvm")));
         assert!(suite.contains(&PathBuf::from("programs/matmul_2x2.tvm")));
         assert!(suite.contains(&PathBuf::from("programs/single_neuron.tvm")));
+    }
+
+    #[test]
+    fn atomic_write_replaces_existing_output() {
+        let path = std::env::temp_dir().join(format!(
+            "llm-provable-computer-atomic-write-replace-{}.json",
+            std::process::id()
+        ));
+        fs::write(&path, b"old").expect("seed output");
+        write_bytes_atomically(&path, b"new").expect("replace output");
+        assert_eq!(fs::read(&path).expect("read replaced output"), b"new");
+        let _ = fs::remove_file(path);
     }
 }
 
