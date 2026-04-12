@@ -43,6 +43,7 @@ monolithic benchmark claim.
   - `docs/paper/appendix-system-comparison.md`
   - `docs/paper/appendix-scaling-companion.md`
   - `docs/paper/appendix-backend-artifact-comparison.md`
+  - `docs/paper/appendix-influence-realization.md`
 - Frozen artifact bundles:
   - `docs/paper/artifacts/production-v1-2026-04-04/`
   - `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/`

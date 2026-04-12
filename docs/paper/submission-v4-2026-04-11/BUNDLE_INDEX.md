@@ -28,6 +28,7 @@ Paper title:
 - `docs/paper/appendix-system-comparison.md`
 - `docs/paper/appendix-scaling-companion.md`
 - `docs/paper/appendix-backend-artifact-comparison.md`
+- `docs/paper/appendix-influence-realization.md`
 
 ## Artifact Index Pointers
 
