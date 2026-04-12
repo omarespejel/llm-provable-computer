@@ -516,6 +516,7 @@ query($owner:String!,$name:String!,$number:Int!,$cursor:String){
         pageInfo{ hasNextPage endCursor }
         nodes{
           isResolved
+          isOutdated
           comments(first:100){
             pageInfo{ hasNextPage endCursor }
             nodes{ author{login} createdAt }
