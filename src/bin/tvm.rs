@@ -706,6 +706,9 @@ const STATEMENT_V2_MATRIX_SPEC_PATH: &str = "spec/statement-v2-matrix-research.j
 const STATEMENT_V3_EQUIVALENCE_SPEC_PATH: &str =
     "spec/statement-v3-equivalence-kernel-research.json";
 #[cfg(feature = "onnx-export")]
+const FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH: &str =
+    "spec/frontend-runtime-semantics-registry-v1.json";
+#[cfg(feature = "onnx-export")]
 const FIXED_POINT_SPEC_PATH: &str = "spec/fixed-point-semantics-v2.json";
 #[cfg(feature = "onnx-export")]
 const ONNX_OP_SUBSET_SPEC_PATH: &str = "spec/onnx-op-subset-v2.json";
@@ -928,6 +931,7 @@ struct ResearchV3EquivalenceCommitments {
     fixed_point_spec_hash: String,
     onnx_op_subset_hash: String,
     artifact_schema_hash: String,
+    frontend_runtime_semantics_registry_hash: String,
     relation_format_hash: String,
     limitations_hash: String,
     program_hash: String,
@@ -951,6 +955,7 @@ struct ResearchV3EquivalenceArtifact {
     checked_steps: usize,
     engines: Vec<ResearchV3EngineSummary>,
     rule_witnesses: Vec<ResearchV3RuleWitness>,
+    frontend_runtime_semantics_registry: serde_json::Value,
     limitations: Vec<String>,
     commitments: ResearchV3EquivalenceCommitments,
 }
@@ -3905,6 +3910,10 @@ fn research_v3_equivalence_command_impl(
     ])?;
     let engine_summaries_hash = hash_json_projection_hex(&engines)?;
     let rule_witnesses_hash = hash_json_projection_hex(&rule_witnesses)?;
+    let frontend_runtime_semantics_registry =
+        read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH)?;
+    let frontend_runtime_semantics_registry_hash =
+        hash_json_hex(&frontend_runtime_semantics_registry)?;
     let relation_format = RESEARCH_V3_RELATION_FORMAT.to_string();
     let limitations = vec![
         "Emerge reproduction is not implemented in this artifact".to_string(),
@@ -3930,6 +3939,7 @@ fn research_v3_equivalence_command_impl(
         checked_steps: verification.checked_steps,
         engines,
         rule_witnesses,
+        frontend_runtime_semantics_registry,
         limitations,
         commitments: ResearchV3EquivalenceCommitments {
             hash_function: RESEARCH_V2_HASH_FUNCTION.to_string(),
@@ -3937,6 +3947,7 @@ fn research_v3_equivalence_command_impl(
             fixed_point_spec_hash: bundle.fixed_point_spec_hash,
             onnx_op_subset_hash: bundle.onnx_op_subset_hash,
             artifact_schema_hash: bundle.artifact_schema_hash,
+            frontend_runtime_semantics_registry_hash,
             relation_format_hash,
             limitations_hash,
             program_hash: hash_json_hex(model.program())?,
@@ -3961,6 +3972,12 @@ fn research_v3_equivalence_command_impl(
     println!(
         "commitment_engine_summaries_hash: {}",
         artifact.commitments.engine_summaries_hash
+    );
+    println!(
+        "commitment_frontend_runtime_semantics_registry_hash: {}",
+        artifact
+            .commitments
+            .frontend_runtime_semantics_registry_hash
     );
     println!(
         "commitment_rule_witnesses_hash: {}",
@@ -4385,6 +4402,13 @@ fn read_repo_file(relative_path: &str) -> llm_provable_computer::Result<Vec<u8>>
     fs::read(&path).map_err(|io_error| {
         VmError::InvalidConfig(format!("failed to read {}: {io_error}", path.display()))
     })
+}
+
+#[cfg(feature = "onnx-export")]
+fn read_repo_json_value(relative_path: &str) -> llm_provable_computer::Result<serde_json::Value> {
+    let bytes = read_repo_file(relative_path)?;
+    serde_json::from_slice(&bytes)
+        .map_err(|err| VmError::Serialization(format!("failed to parse {relative_path}: {err}")))
 }
 
 #[cfg(feature = "onnx-export")]

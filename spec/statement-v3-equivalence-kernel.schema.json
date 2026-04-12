@@ -15,6 +15,7 @@
     "checked_steps",
     "engines",
     "rule_witnesses",
+    "frontend_runtime_semantics_registry",
     "limitations",
     "commitments"
   ],
@@ -37,6 +38,9 @@
       "type": "array",
       "items": { "$ref": "#/$defs/rule_witness" }
     },
+    "frontend_runtime_semantics_registry": {
+      "$ref": "#/$defs/frontend_runtime_semantics_registry"
+    },
     "limitations": {
       "type": "array",
       "minItems": 1,
@@ -50,6 +54,7 @@
         "fixed_point_spec_hash",
         "onnx_op_subset_hash",
         "artifact_schema_hash",
+        "frontend_runtime_semantics_registry_hash",
         "relation_format_hash",
         "limitations_hash",
         "program_hash",
@@ -64,6 +69,9 @@
         "fixed_point_spec_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "onnx_op_subset_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "artifact_schema_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "frontend_runtime_semantics_registry_hash": {
+          "$ref": "#/$defs/hash_blake2b_256_hex"
+        },
         "relation_format_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "limitations_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "program_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
@@ -81,6 +89,64 @@
       "minLength": 64,
       "maxLength": 64,
       "pattern": "^[0-9a-f]{64}$"
+    },
+    "frontend_runtime_semantics_registry": {
+      "type": "object",
+      "required": [
+        "registry_version",
+        "semantic_scope",
+        "purpose",
+        "implemented_statuses",
+        "non_claim_statuses",
+        "lanes",
+        "global_non_claims"
+      ],
+      "properties": {
+        "registry_version": { "const": "frontend-runtime-semantics-registry-v1" },
+        "semantic_scope": { "const": "research_v3_frontend_runtime_claim_boundary" },
+        "purpose": { "type": "string" },
+        "implemented_statuses": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "const": "implemented" }
+        },
+        "non_claim_statuses": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "enum": ["research_watch", "not_implemented"] }
+        },
+        "lanes": {
+          "type": "array",
+          "minItems": 8,
+          "items": { "$ref": "#/$defs/frontend_runtime_lane" }
+        },
+        "global_non_claims": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "frontend_runtime_lane": {
+      "type": "object",
+      "required": [
+        "lane_id",
+        "ecosystem",
+        "role",
+        "status",
+        "artifact_binding",
+        "claim_boundary"
+      ],
+      "properties": {
+        "lane_id": { "type": "string", "minLength": 1 },
+        "ecosystem": { "type": "string", "minLength": 1 },
+        "role": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["implemented", "research_watch", "not_implemented"] },
+        "artifact_binding": { "type": "string", "minLength": 1 },
+        "claim_boundary": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
     },
     "engine_summary": {
       "type": "object",

@@ -329,6 +329,11 @@ fn assert_research_v3_runtime_commitments(artifact: &serde_json::Value) {
         hash_json_value(artifact.get("relation_format").expect("relation_format"));
     let expected_limitations_hash =
         hash_json_value(artifact.get("limitations").expect("limitations"));
+    let expected_frontend_runtime_semantics_registry_hash = hash_json_value(
+        artifact
+            .get("frontend_runtime_semantics_registry")
+            .expect("frontend runtime semantics registry"),
+    );
     let expected_engine_summaries_hash = hash_json_value(artifact.get("engines").expect("engines"));
     let expected_rule_witnesses_hash =
         hash_json_value(artifact.get("rule_witnesses").expect("rule_witnesses"));
@@ -342,6 +347,13 @@ fn assert_research_v3_runtime_commitments(artifact: &serde_json::Value) {
         Some(expected_limitations_hash.as_str())
     );
     assert_eq!(
+        json_string_at(
+            artifact,
+            &["commitments", "frontend_runtime_semantics_registry_hash"]
+        ),
+        Some(expected_frontend_runtime_semantics_registry_hash.as_str())
+    );
+    assert_eq!(
         json_string_at(artifact, &["commitments", "engine_summaries_hash"]),
         Some(expected_engine_summaries_hash.as_str())
     );
@@ -349,6 +361,18 @@ fn assert_research_v3_runtime_commitments(artifact: &serde_json::Value) {
         json_string_at(artifact, &["commitments", "rule_witnesses_hash"]),
         Some(expected_rule_witnesses_hash.as_str())
     );
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_registry_lane_status<'a>(registry: &'a serde_json::Value, lane_id: &str) -> &'a str {
+    registry
+        .get("lanes")
+        .and_then(serde_json::Value::as_array)
+        .expect("registry lanes")
+        .iter()
+        .find(|lane| lane.get("lane_id").and_then(serde_json::Value::as_str) == Some(lane_id))
+        .and_then(|lane| lane.get("status").and_then(serde_json::Value::as_str))
+        .unwrap_or_else(|| panic!("missing registry lane {lane_id}"))
 }
 
 #[test]
@@ -3961,6 +3985,39 @@ fn cli_supports_research_v3_equivalence_command() {
     );
     assert_research_v3_runtime_commitments(&artifact_json);
     assert!(artifact_json.get("matched").is_none());
+    let frontend_runtime_registry = artifact_json
+        .get("frontend_runtime_semantics_registry")
+        .expect("frontend runtime semantics registry");
+    assert_eq!(
+        frontend_runtime_registry
+            .get("registry_version")
+            .and_then(serde_json::Value::as_str),
+        Some("frontend-runtime-semantics-registry-v1")
+    );
+    for lane_id in ["transformer-vm", "native-isa", "burn", "onnx-tract"] {
+        assert_eq!(
+            research_v3_registry_lane_status(frontend_runtime_registry, lane_id),
+            "implemented",
+            "expected current lane {lane_id} to be implemented"
+        );
+    }
+    for lane_id in [
+        "torch-export",
+        "executorch",
+        "stablehlo",
+        "iree",
+        "onnx-mlir",
+        "tvm-unity",
+        "vllm",
+        "sglang",
+        "egg-emerge",
+    ] {
+        assert_ne!(
+            research_v3_registry_lane_status(frontend_runtime_registry, lane_id),
+            "implemented",
+            "research-watch lane {lane_id} must not be claimed as implemented"
+        );
+    }
     assert_eq!(
         artifact_json
             .get("statement_version")
