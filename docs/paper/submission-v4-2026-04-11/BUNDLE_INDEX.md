@@ -1,11 +1,12 @@
 # Submission Bundle Index (v4, 2026-04-11)
 
-Intended publication tag:
+Planned publication tag after repository transfer:
 - `paper-publication-v4-2026-04-11`
 
-Canonical repository snapshot:
-- `paper-publication-v4-2026-04-11` once cut. The tag must resolve to a commit
-  containing this v4 paper metadata.
+Canonical repository snapshot after transfer:
+- `paper-publication-v4-2026-04-11` once cut in the final publication
+  repository. Until that happens, the paper cites the staging commit-pinned
+  snapshot for Reference `[30]`.
 
 Carried-state aggregation provenance checkpoint:
 - `6ff972ddda4051d73dc65c92a88c0d00683ec8c7` (publication-facing proof-carrying aggregation provenance)

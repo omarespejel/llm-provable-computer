@@ -1,10 +1,10 @@
 # On the Structural Fit of Transformer Workloads and STARK Proof Systems
 
-**Abdelhamid Bakhta**<br>
-StarkWare<br>
+**Abdelhamid Bakhta**\
+StarkWare\
 
-**Omar Espejel**<br>
-Starknet Foundation<br>
+**Omar Espejel**\
+Starknet Foundation\
 
 *April 2026*
 
@@ -14,7 +14,7 @@ Starknet Foundation<br>
 
 This paper studies the structural fit between transformer workloads and STARK proof systems using a symbolic cost model together with a repository-backed proof artifact. Under a worked example with `C_exp = 300`, `C_norm = 30`, and `C_nonlin = 150`, GPT-2 small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields about `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK rows across 12 layers (`1.48x`); over practical context ranges, the ratio rises and then approaches a finite architecture-dependent ceiling. These counts are symbolic proxies for prover-side work, not matched runtime measurements.
 
-We pair that analysis with `provable-transformer-vm` [30], a supporting artifact that provides a frozen vanilla reproducibility tier, a frozen narrow experimental `stwo` tier, and a broader proof-carrying decoding path with explicit carried-state boundaries, shared lookup-table identity binding, and a pre-recursive aggregation boundary. The repository does not yet provide full standard-softmax inference on S-two, recursive cryptographic compression/verification closure, recursive shared-table accumulation across decode steps as a compressed proof object, or production-scale zkML deployment. The narrower claim is that transformer workloads expose the design pressures under which STARK-native systems may compound advantages, while current artifacts already support a concrete bridge from execution traces to pre-recursive proof objects.
+We pair that analysis with `provable-transformer-vm` [30], a supporting artifact that provides a frozen vanilla reproducibility tier, a frozen narrow experimental `stwo` tier, and a broader proof-carrying decoding path with explicit carried-state boundaries, shared lookup-table identity, and a pre-recursive aggregation boundary. The repository does not yet provide full standard-softmax inference on S-two, recursive cryptographic compression/verification closure, recursive shared-table accumulation across decode steps as a compressed proof object, or production-scale zkML deployment. The narrower claim is that transformer workloads expose the design pressures under which STARK-native systems may compound advantages, while current artifacts already support a concrete bridge from execution traces to pre-recursive proof objects.
 
 ---
 
@@ -29,7 +29,7 @@ The question addressed here is therefore narrower and more useful than “can tr
 This paper makes three claims:
 
 1. **Analytic claim.** Under a stated transformer cost model, non-arithmetic operations such as softmax, LayerNorm, and GELU can shift prover economics in favor of STARK-native systems.
-2. **Systems claim.** Deterministic execution of transformer-relevant programs can be compiled into traces that are directly consumable as AIR witnesses, and can be organized as a parameterized proof-carrying decoding relation with carried-state boundaries that survive statement-preserving chain, segment, interval bundle, rollup, matrix, and pre-recursive aggregation boundaries.
+2. **Systems claim.** Deterministic execution of transformer-relevant programs can be compiled into traces that are directly consumable as AIR witnesses, and can be organized as a parameterized proof-carrying decoding relation with carried-state boundaries that survive statement-preserving chain, segment, interval, rollup, matrix, and pre-recursive aggregation layers.
 3. **Infrastructure claim.** The S-two / Starknet stack makes this direction increasingly practical, even though the reference repository used here still relies on the vanilla backend for its default artifact bundle and primary transformer proof relation while exposing `stwo` through a narrow experimental evidence tier.
 
 Here a frozen tier means an immutable artifact snapshot with command logs, content hashes, and proof artifacts. The `production-v1` tier is the vanilla-backend reproducibility baseline, while `stwo-experimental-v1` is a narrow S-two evidence tier for representative fixtures; Section 5.4 gives the detailed artifact boundary.
@@ -287,7 +287,7 @@ R_decode(Σ_t, w_t, Σ_{t+1})
 
 where `w_t` contains the step witness and proof-bearing artifact material checked by the repository verifier.
 
-In this terminology, an interval bundle is an intermediate carried-state object that packages contiguous decode prefixes between the segment and rollup layers. The pinned aggregation-bundle index records the concrete artifact mapping [46].
+In this terminology, an interval bundle packages contiguous decode prefixes between the segment and rollup layers. The pinned aggregation-bundle index records the concrete artifact mapping [46].
 
 **Definition 2 (Packaging-layer validity).** A chain, segment, interval bundle, rollup, matrix, or pre-recursive aggregation boundary is valid if its member order is declared, each nested proof artifact verifies under the stated backend and statement profile, and every adjacent pair of carried-state boundaries satisfies the continuity constraints required by the decode relation.
 
@@ -461,7 +461,7 @@ This paper uses the maintained repository `omarespejel/provable-transformer-vm`,
 27. BitSage Network. “elo-cairo-verifier/README.md.” GitHub documentation file in *obelyzk.rs*. Accessed April 9, 2026. <https://github.com/Bitsage-Network/obelyzk.rs/blob/main/elo-cairo-verifier/README.md>
 28. Giza. *LuminAIR*. GitHub repository. Accessed April 5, 2026. <https://github.com/gizatechxyz/LuminAIR>
 29. StarkWare. “Giza x S-two: Powering Verifiable ML with LuminAIR.” *StarkWare Blog*. Accessed April 5, 2026. <https://starkware.co/blog/giza-x-s-two-powering-verifiable-ml-with-luminair/>
-30. `omarespejel/provable-transformer-vm`. “Repository Snapshot Discussed in Sections 5 and 8.” GitHub repository snapshot (pinned carried-state evidence commit), commit `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`. <https://github.com/omarespejel/provable-transformer-vm/tree/6ff972ddda4051d73dc65c92a88c0d00683ec8c7>
+30. `omarespejel/provable-transformer-vm`. “Staging Repository Snapshot Discussed in Sections 5 and 8.” GitHub repository snapshot (pinned carried-state evidence commit), commit `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`. This commit remains the citation target until the final publication repository and release tag are cut. <https://github.com/omarespejel/provable-transformer-vm/tree/6ff972ddda4051d73dc65c92a88c0d00683ec8c7>
 31. `omarespejel/provable-transformer-vm`. “Appendix Artifact Index (Production V1).” GitHub artifact snapshot, commit `8d435d540b8e3cf33ec4381bb820a00b6fe7aae6`, with command logs, hashes, and proof artifacts for the vanilla reproducibility tier. <https://github.com/omarespejel/provable-transformer-vm/blob/8d435d540b8e3cf33ec4381bb820a00b6fe7aae6/docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md>
 32. Starknet Docs. “Accounts.” *Starknet Documentation*. Accessed April 5, 2026. <https://docs.starknet.io/architecture/accounts>
 33. Zhizhi Peng, Chonghe Zhao, Taotao Wang, Guofu Liao, Zibin Lin, Yifeng Liu, Bin Cao, Long Shi, Qing Yang, and Shengli Zhang. “A Survey of Zero-Knowledge Proof-Based Verifiable Machine Learning.” *Artificial Intelligence Review* (accepted manuscript), arXiv:2502.18535v2, 2026. <https://arxiv.org/abs/2502.18535>

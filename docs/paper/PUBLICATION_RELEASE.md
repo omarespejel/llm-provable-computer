@@ -2,14 +2,16 @@
 
 Snapshot date: **April 11, 2026**
 
-Intended launch tag for the current paper-facing repository state:
+Planned publication tag after repository transfer:
 `paper-publication-v4-2026-04-11`
 
-Canonical publication snapshot:
+Canonical publication snapshot after transfer:
 The canonical v4 publication snapshot is the release tag
-`paper-publication-v4-2026-04-11` once cut. That tag must resolve to a commit
-containing this v4 paper metadata, and it intentionally need not match the
-pinned carried-state evidence commit used by the aggregation bundle.
+`paper-publication-v4-2026-04-11` once cut in the final publication
+repository. Until that transfer and tag cut happen, the paper keeps Reference
+`[30]` pointed at the staging commit-pinned snapshot below. The final
+publication tag intentionally need not match the pinned carried-state evidence
+commit used by the aggregation bundle.
 
 Pinned carried-state aggregation provenance checkpoint:
 `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`
@@ -17,9 +19,11 @@ Pinned carried-state aggregation provenance checkpoint:
 Dedicated proof-carrying aggregation bundle index cited by Reference `[46]`:
 `6bb8cab99092203217d64951c3af61488aa2c58e`
 
-Canonical launch repository:
+Current staging repository:
 `https://github.com/omarespejel/provable-transformer-vm`
-(earlier iterations of this research line used the `llm-provable-computer` project name).
+(earlier iterations of this research line used the `llm-provable-computer`
+project name). The final publication repository may move before the canonical
+tag is cut.
 
 Formal paper author line in the draft:
 
@@ -90,9 +94,10 @@ Before cutting a release tag, verify:
 2. the main paper and appendices refer to the same repo state and evidence tiers,
 3. the design note matches the current experimental `stwo` status,
 4. no stale top-level README language still describes S-two as merely prospective,
-5. Reference `[30]` remains commit-pinned until the v4 publication tag exists;
-   after that tag is cut, update `[30]` to the v4 publication tag while keeping
-   the aggregation bundle directly pinned by Reference `[46]`,
+5. Reference `[30]` remains commit-pinned until the repository transfer and v4
+   publication tag exist; after that tag is cut in the final publication
+   repository, update `[30]` to the v4 publication tag while keeping the
+   aggregation bundle directly pinned by Reference `[46]`,
 6. the formal author line and affiliation text are confirmed before public release,
 7. `paper preflight` passes (citation integrity, immutable local repo links,
    figure/link paths, appendix source note, and unresolved publication snapshot

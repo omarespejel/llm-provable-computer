@@ -34,9 +34,9 @@ PAPER_FILES = [
     *PUBLICATION_METADATA_FILES,
 ]
 
-SNAPSHOT_FIELD_HEADINGS = (
-    "Canonical publication snapshot commit:",
-    "Canonical repository snapshot:",
+SNAPSHOT_FIELD_PREFIXES = (
+    "Canonical publication snapshot",
+    "Canonical repository snapshot",
 )
 
 HARD_SNAPSHOT_PLACEHOLDER_TOKENS = ("TBD_SNAPSHOT_SHA",)
@@ -262,7 +262,7 @@ def iter_snapshot_field_lines(text: str):
     lines = text.splitlines()
     for index, line in enumerate(lines):
         stripped = line.strip()
-        if not any(stripped.startswith(heading) for heading in SNAPSHOT_FIELD_HEADINGS):
+        if not any(stripped.startswith(prefix) for prefix in SNAPSHOT_FIELD_PREFIXES):
             continue
         yield line
         for continuation in lines[index + 1 :]:
