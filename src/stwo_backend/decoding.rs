@@ -415,6 +415,7 @@ pub struct Phase30DecodingStepProofEnvelope {
     pub statement_version: String,
     pub relation: String,
     pub layout_commitment: String,
+    pub source_chain_commitment: String,
     pub step_index: usize,
     pub input_boundary_commitment: String,
     pub output_boundary_commitment: String,
@@ -2346,6 +2347,7 @@ pub fn phase30_prepare_decoding_step_proof_envelope_manifest(
                 step_index,
                 step,
                 &layout_commitment,
+                &source_chain_commitment,
                 artifact,
             )
         })
@@ -2503,6 +2505,11 @@ pub fn verify_phase30_decoding_step_proof_envelope_manifest(
                 "decoding step envelope {index} layout commitment does not match the manifest layout"
             )));
         }
+        if envelope.source_chain_commitment != manifest.source_chain_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step envelope {index} source_chain_commitment does not match the manifest"
+            )));
+        }
         if envelope.step_index != index {
             return Err(VmError::InvalidConfig(format!(
                 "decoding step envelope {index} records step_index={}",
@@ -2513,6 +2520,7 @@ pub fn verify_phase30_decoding_step_proof_envelope_manifest(
             || envelope.output_boundary_commitment.is_empty()
             || envelope.input_lookup_rows_commitment.is_empty()
             || envelope.output_lookup_rows_commitment.is_empty()
+            || envelope.source_chain_commitment.is_empty()
             || envelope.shared_lookup_artifact_commitment.is_empty()
             || envelope.static_lookup_registry_commitment.is_empty()
             || envelope.proof_commitment.is_empty()
@@ -11262,6 +11270,7 @@ fn build_phase30_decoding_step_proof_envelope(
     step_index: usize,
     step: &Phase12DecodingStep,
     layout_commitment: &str,
+    source_chain_commitment: &str,
     shared_lookup_artifact: &Phase12SharedLookupArtifact,
 ) -> Result<Phase30DecodingStepProofEnvelope> {
     let proof_commitment = commit_phase30_step_proof(&step.proof)?;
@@ -11273,6 +11282,7 @@ fn build_phase30_decoding_step_proof_envelope(
         statement_version: step.proof.claim.statement_version.clone(),
         relation: STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30.to_string(),
         layout_commitment: layout_commitment.to_string(),
+        source_chain_commitment: source_chain_commitment.to_string(),
         step_index,
         input_boundary_commitment: step.from_state.public_state_commitment.clone(),
         output_boundary_commitment: step.to_state.public_state_commitment.clone(),
@@ -11375,26 +11385,42 @@ fn commit_phase30_step_envelope(envelope: &Phase30DecodingStepProofEnvelope) -> 
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30.as_bytes());
     hasher.update(b"step-envelope");
-    hasher.update(envelope.envelope_version.as_bytes());
-    hasher.update(envelope.semantic_scope.as_bytes());
-    hasher.update(envelope.proof_backend.to_string().as_bytes());
-    hasher.update(envelope.proof_backend_version.as_bytes());
-    hasher.update(envelope.statement_version.as_bytes());
-    hasher.update(envelope.relation.as_bytes());
-    hasher.update(envelope.layout_commitment.as_bytes());
+    let proof_backend = envelope.proof_backend.to_string();
+    for part in [
+        envelope.envelope_version.as_bytes(),
+        envelope.semantic_scope.as_bytes(),
+        proof_backend.as_bytes(),
+        envelope.proof_backend_version.as_bytes(),
+        envelope.statement_version.as_bytes(),
+        envelope.relation.as_bytes(),
+        envelope.layout_commitment.as_bytes(),
+        envelope.source_chain_commitment.as_bytes(),
+    ] {
+        phase30_hash_part(&mut hasher, part);
+    }
     hasher.update(&(envelope.step_index as u64).to_le_bytes());
-    hasher.update(envelope.input_boundary_commitment.as_bytes());
-    hasher.update(envelope.output_boundary_commitment.as_bytes());
-    hasher.update(envelope.input_lookup_rows_commitment.as_bytes());
-    hasher.update(envelope.output_lookup_rows_commitment.as_bytes());
-    hasher.update(envelope.shared_lookup_artifact_commitment.as_bytes());
-    hasher.update(envelope.static_lookup_registry_commitment.as_bytes());
-    hasher.update(envelope.proof_commitment.as_bytes());
+    for part in [
+        envelope.input_boundary_commitment.as_bytes(),
+        envelope.output_boundary_commitment.as_bytes(),
+        envelope.input_lookup_rows_commitment.as_bytes(),
+        envelope.output_lookup_rows_commitment.as_bytes(),
+        envelope.shared_lookup_artifact_commitment.as_bytes(),
+        envelope.static_lookup_registry_commitment.as_bytes(),
+        envelope.proof_commitment.as_bytes(),
+    ] {
+        phase30_hash_part(&mut hasher, part);
+    }
     let mut out = [0u8; 32];
     hasher
         .finalize_variable(&mut out)
         .expect("blake2b finalize");
     lower_hex(&out)
+}
+
+fn phase30_hash_part(hasher: &mut Blake2bVar, bytes: &[u8]) {
+    let byte_len = u64::try_from(bytes.len()).expect("phase30 hash part length fits in u64");
+    hasher.update(&byte_len.to_le_bytes());
+    hasher.update(bytes);
 }
 
 fn commit_phase30_step_envelope_list(envelopes: &[Phase30DecodingStepProofEnvelope]) -> String {
@@ -18964,6 +18990,10 @@ mod tests {
                 step.to_state.public_state_commitment
             );
             assert_eq!(
+                envelope.source_chain_commitment,
+                manifest.source_chain_commitment
+            );
+            assert_eq!(
                 envelope.static_lookup_registry_commitment,
                 artifact.static_table_registry_commitment
             );
@@ -19048,6 +19078,56 @@ mod tests {
         assert!(
             err.to_string().contains("statement version"),
             "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn phase30_step_envelope_manifest_rejects_source_chain_commitment_drift() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest =
+            phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
+        manifest.envelopes[0].source_chain_commitment = "tampered-source-chain".to_string();
+        manifest.envelopes[0].envelope_commitment =
+            commit_phase30_step_envelope(&manifest.envelopes[0]);
+        manifest.step_envelopes_commitment = commit_phase30_step_envelope_list(&manifest.envelopes);
+
+        let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
+            .expect_err("source-chain drift should fail");
+        assert!(
+            err.to_string().contains("source_chain_commitment"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn phase30_step_envelope_commitment_length_prefixes_variable_fields() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let manifest =
+            phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
+        let mut left = manifest.envelopes[0].clone();
+        let mut right = left.clone();
+
+        left.input_boundary_commitment = "ab".to_string();
+        left.output_boundary_commitment = "c".to_string();
+        right.input_boundary_commitment = "a".to_string();
+        right.output_boundary_commitment = "bc".to_string();
+
+        assert_ne!(
+            commit_phase30_step_envelope(&left),
+            commit_phase30_step_envelope(&right),
+            "length framing must distinguish adjacent variable-field splits"
         );
     }
 
