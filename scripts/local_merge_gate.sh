@@ -433,8 +433,12 @@ checks_json="$run_evidence_dir/checks.json"
 check_runs_json="$run_evidence_dir/check-runs.json"
 statuses_json="$run_evidence_dir/statuses.json"
 gh api --paginate "repos/${REPO}/commits/${head_sha}/check-runs?per_page=100" \
-  --jq '.check_runs[] | {name, status: (.status | ascii_upcase), conclusion: ((.conclusion // "") | ascii_upcase)}' \
-  | jq -s '.' >"$check_runs_json"
+  --jq '.check_runs[] | {name, started_at, completed_at, status: (.status | ascii_upcase), conclusion: ((.conclusion // "") | ascii_upcase)}' \
+  | jq -s '
+      sort_by(.started_at // .completed_at // "")
+      | reduce .[] as $check ({}; .[$check.name] = $check)
+      | [.[]]
+    ' >"$check_runs_json"
 gh api --paginate "repos/${REPO}/commits/${head_sha}/statuses?per_page=100" \
   --jq '.[] | {name: .context, created_at: .created_at, status: (if .state == "pending" then "IN_PROGRESS" else "COMPLETED" end), conclusion: (if .state == "success" then "SUCCESS" elif .state == "pending" then "" elif .state == "error" then "FAILURE" else (.state | ascii_upcase) end)}' \
   | jq -s '
