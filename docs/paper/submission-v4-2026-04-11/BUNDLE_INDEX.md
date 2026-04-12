@@ -38,9 +38,9 @@ Paper title:
   - `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/APPENDIX_ARTIFACT_INDEX.md`
   - Citation commit: `6bb8cab99092203217d64951c3af61488aa2c58e`
 
-The older aggregation-line artifact directories remain archival provenance, but the
-bundle above is the publication-facing checkpoint for the carried-state
-aggregation line.
+Older carried-state artifact directories remain archival provenance; see
+`docs/paper/artifacts/README.md`. The bundle above is the publication-facing
+checkpoint for the carried-state aggregation line.
 
 ## Evidence Pointer
 

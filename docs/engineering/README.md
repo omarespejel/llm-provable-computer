@@ -1,0 +1,11 @@
+# Engineering Docs
+
+This directory contains engineering-facing material that supports implementation work but is not part of the paper package.
+
+Contents:
+
+- `design/`: implementation and artifact-line design notes
+- `hardening-policy.md`: local CI, hardening, and merge-gate policy
+- `reproducibility.md`: broader engineering reproducibility guidance, including non-paper artifact flows
+
+These files may use repository-internal terminology and phase labels because they document implementation sequencing rather than publication claims.
