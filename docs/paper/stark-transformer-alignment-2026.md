@@ -31,6 +31,8 @@ This paper makes three claims:
 2. **Systems claim.** Deterministic execution of transformer-relevant programs can be compiled into traces that are directly consumable as AIR witnesses, and can be organized as a parameterized proof-carrying decoding relation with carried-state boundaries that survive statement-preserving chain, segment, interval package, rollup, matrix, and pre-recursive aggregation packages.
 3. **Infrastructure claim.** The S-two / Starknet stack makes this direction increasingly practical, even though the reference repository used here still relies on the vanilla backend for its default artifact bundle and primary transformer proof relation while exposing `stwo` through a narrow experimental evidence tier.
 
+Here a frozen tier means an immutable artifact snapshot with command logs, content hashes, and proof artifacts. The `production-v1` tier is the vanilla-backend reproducibility baseline, while `stwo-experimental-v1` is a narrow S-two evidence tier for representative fixtures; Section 5.4 gives the detailed artifact boundary.
+
 Section 5 is the paper's systems hinge: it is where the repository-backed artifact turns the symbolic pressure points of Section 4 into explicit carried-state proof objects with frozen evidence tiers and pre-recursive aggregation boundaries.
 
 The systems claim is directly artifact-backed. The analytic claim is model-based, not a matched benchmark on identical hardware. The infrastructure claim is supported by current public releases but extends beyond current repository breadth. This is an architecture-and-systems thesis, not a final empirical verdict.
@@ -250,7 +252,7 @@ The symbolic analysis above identifies the architectural pressure points. The ar
 
 ## 5. Repository Artifact: Evidence Boundary
 
-The supporting implementation is `omarespejel/provable-transformer-vm` [30]. In this paper it is treated as a **semantics-and-proof artifact**: deterministic transformer-relevant execution is compiled into AIR-consumable traces and then organized into proof-carrying decoding artifacts with explicit carried-state boundaries. Here, "proof-carrying" means that each artifact carries enough public boundary data and proof references for a verifier to replay continuity checks across the declared relation; it is **not** a claim of recursive proof-carrying data or compressed recursive verification. Likewise, terms such as `chain`, `segment`, `interval package`, `rollup`, `matrix`, and `aggregation package` are used in an **artifact-layer sense**. Unless explicitly stated otherwise, they do not denote recursive cryptographic accumulation schemes, compressed proof systems, or CCS-/IVC-style folding protocols in the sense of systems such as HyperNova, NeutronNova, or ProtoStar. The point of this section is narrower: to show that a stable proof-carrying decoding relation with carried KV and lookup state can already be materialized as reproducible proof artifacts over the current repository surfaces.
+The supporting implementation is `omarespejel/provable-transformer-vm` [30]. In this paper it is treated as a **semantics-and-proof artifact**: deterministic transformer-relevant execution is compiled into AIR-consumable traces and then organized into proof-carrying decoding artifacts with explicit carried-state boundaries. Here, "proof-carrying" means that each artifact carries enough public boundary data and proof references for a verifier to replay continuity checks across the declared relation; it is **not** a claim of recursive proof-carrying data or compressed recursive verification. Likewise, terms such as `chain`, `segment`, `interval package`, `rollup`, `matrix`, and `pre-recursive aggregation package` are used in an **artifact-layer sense**. Unless explicitly stated otherwise, they do not denote recursive cryptographic accumulation schemes, compressed proof systems, or CCS-/IVC-style folding protocols in the sense of systems such as HyperNova, NeutronNova, or ProtoStar. The point of this section is narrower: to show that a stable proof-carrying decoding relation with carried KV and lookup state can already be materialized as reproducible proof artifacts over the current repository surfaces.
 
 ### 5.1 Positive evidence
 
@@ -263,8 +265,8 @@ The artifact provides:
 - a static lookup-table registry commitment that binds the shared normalization and activation table descriptors into the shared lookup artifact,
 - a source-chain-bound step-proof-envelope manifest that binds each parameterized decode step to its input/output carried-state boundary commitments, lookup-row commitments, shared lookup artifact commitment, static lookup registry commitment, and proof commitment,
 - a bounded multi-runtime semantic-agreement artifact that records transformer/native/Burn/ONNX lockstep evidence, rule witnesses, per-engine transition-relation hashes, and a canonical transition hash for each bounded transition,
-- carried-state packaging (chain, segment, interval package, rollup, matrix, and aggregation package) with KV/lookup cumulative and frontier commitments,
-- a pre-recursive carried-state packaging ladder over the same decode relation: chain, segment, interval package, rollup, matrix, and aggregation package,
+- carried-state packaging (chain, segment, interval package, rollup, matrix, and pre-recursive aggregation package) with KV/lookup cumulative and frontier commitments,
+- a pre-recursive carried-state packaging ladder over the same decode relation: chain, segment, interval package, rollup, matrix, and pre-recursive aggregation package,
 - hardened verifier kernels backed by differential testing, fuzzing, mutation checks, and bounded model checking.
 
 The important systems property is stable statement structure: the same decode relation survives progressively more composable manifest layers without changing statement boundaries. The aggregation ladder remains pre-recursive and replay-verifies nested proof-bearing members.
@@ -293,7 +295,9 @@ R_decode(Sigma_t, w_t, Sigma_{t+1})
 
 where `w_t` contains the step witness and proof-bearing artifact material checked by the repository verifier.
 
-**Definition 2 (Package validity).** A chain, segment, interval package, rollup, matrix, or aggregation package is valid if its member order is declared, each nested proof artifact verifies under the stated backend and statement profile, and every adjacent pair of carried-state boundaries satisfies the continuity constraints required by the decode relation.
+In this terminology, an interval package is the intervalized state-relation object that packages rebased carried-state prefixes between segment-level accumulation and rollup-level packaging. The pinned aggregation-bundle index records the concrete artifact mapping [46].
+
+**Definition 2 (Package validity).** A chain, segment, interval package, rollup, matrix, or pre-recursive aggregation package is valid if its member order is declared, each nested proof artifact verifies under the stated backend and statement profile, and every adjacent pair of carried-state boundaries satisfies the continuity constraints required by the decode relation.
 
 The following proposition records the invariant that the repository artifact is intended to preserve across its pre-recursive packaging layers.
 
@@ -305,7 +309,7 @@ Figure 3 summarizes the object flow and the two carried commitment lanes.
 
 ![Figure 3. Carried-state packaging ladder over the parameterized decoding relation.](figures/section5-carried-state-ladder.svg)
 
-**Figure 3.** Carried-state packaging ladder over the parameterized decoding relation. A verified `decoding_step_v2` chain is packaged into segments, interval packages, rollups, a multi-layout matrix, and a pre-recursive aggregation package. The two carried lanes represent the KV-side cumulative/frontier commitments and the lookup-side cumulative/frontier commitments. The figure is architectural: it describes statement-preserving artifact layers in the repository, not a recursive cryptographic compression pipeline.
+**Figure 3.** Carried-state packaging ladder over the parameterized decoding relation. A verified `decoding_step_v2` chain is packaged into segment, interval package, rollup, multi-layout matrix, and pre-recursive aggregation package layers. The two carried lanes represent the KV-side cumulative/frontier commitments and the lookup-side cumulative/frontier commitments. The figure is architectural: it describes statement-preserving artifact layers in the repository, not a recursive cryptographic compression pipeline.
 
 ### 5.3 Negative evidence
 
@@ -327,7 +331,7 @@ The broader carried-state ladder is documented in the repository's supplementary
 
 ### 5.6 Semantic-agreement and provenance boundaries
 
-The repository also contains a bounded multi-runtime semantic-agreement artifact motivated by implementation-equivalence work on large-model graphs [47]. It lockstep-executes a fixed program across transformer/native/Burn/ONNX paths, records relation witnesses, and binds observed transitions by per-runtime hashes plus a canonical transition hash. This is deterministic bounded relation evidence, not an e-graph saturation engine, SMT-backed rewrite synthesizer, randomized opaque-kernel validator, or cryptographic implementation-equivalence proof in the sense targeted by Emerge.
+The repository also contains a bounded multi-runtime semantic-agreement artifact motivated by implementation-equivalence work on large-model graphs [47]. It lockstep-executes a fixed program across transformer/native/Burn/ONNX paths, records relation witnesses, and binds observed transitions by per-runtime hashes plus a canonical transition hash. This is deterministic bounded relation evidence, not an e-graph saturation engine, SMT-backed rewrite synthesizer, randomized opaque-kernel validator, or cryptographic implementation-equivalence proof.
 
 This artifact addresses a methodological risk in systems papers about proof-carrying ML: a proof artifact should not silently rely on informal claims that two frontend/runtime paths mean the same thing. The present implementation still stops at deterministic bounded relation evidence plus artifact-integrity verification.
 
