@@ -1693,6 +1693,62 @@ fn cli_verify_stwo_decoding_family_demo_rejects_missing_shared_lookup_artifact()
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_decoding_family_demo_rejects_tampered_static_table_descriptor() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-decoding-family-demo-static-table-proof").with_extension("json");
+    let tampered_path = unique_temp_dir("cli-stwo-decoding-family-demo-static-table-tampered")
+        .with_extension("json");
+
+    let mut prove = tvm_command();
+    prove
+        .arg("prove-stwo-decoding-family-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut proof_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&proof_path).expect("proof json"))
+            .expect("json");
+    let artifact = &mut proof_json["shared_lookup_artifacts"]
+        .as_array_mut()
+        .expect("artifact array")[0];
+    let original_commitment = artifact["artifact_commitment"]
+        .as_str()
+        .expect("artifact commitment")
+        .to_string();
+    artifact["static_table_commitments"][0]["semantic_scope"] =
+        serde_json::Value::String("tampered-static-table-scope".to_string());
+    let tampered_commitment = phase12_artifact_commitment_from_json(artifact);
+    artifact["artifact_commitment"] = serde_json::Value::String(tampered_commitment.clone());
+
+    for step in proof_json["steps"].as_array_mut().expect("steps array") {
+        if step["shared_lookup_artifact_commitment"] == original_commitment {
+            step["shared_lookup_artifact_commitment"] =
+                serde_json::Value::String(tampered_commitment.clone());
+        }
+    }
+
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&proof_json).expect("serialize"),
+    )
+    .expect("write");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-decoding-family-demo")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("static table commitments"));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_verify_stwo_decoding_family_demo_rejects_tampered_layout() {
     let proof_path =
         unique_temp_dir("cli-stwo-decoding-family-demo-layout-proof").with_extension("json");

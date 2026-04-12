@@ -1359,6 +1359,54 @@ mod tests {
     }
 
     #[test]
+    fn phase12_shared_lookup_artifact_rejects_static_table_descriptor_scope_drift() {
+        let (layout, layout_commitment, mut artifact) = sample_valid_artifact();
+        artifact.static_table_commitments[0]
+            .semantic_scope
+            .push_str("-tampered");
+
+        let error = verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment)
+            .expect_err("static table descriptor scope drift should fail");
+        assert!(
+            error.to_string().contains("static table commitments"),
+            "unexpected error: {error}"
+        );
+        let oracle_error =
+            oracle_verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment)
+                .expect_err("oracle should reject static table descriptor scope drift");
+        assert!(
+            oracle_error
+                .to_string()
+                .contains("static table commitments"),
+            "unexpected oracle error: {oracle_error}"
+        );
+    }
+
+    #[test]
+    fn phase12_shared_lookup_artifact_rejects_static_table_descriptor_statement_version_drift() {
+        let (layout, layout_commitment, mut artifact) = sample_valid_artifact();
+        artifact.static_table_commitments[0]
+            .statement_version
+            .push_str("-tampered");
+
+        let error = verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment)
+            .expect_err("static table descriptor statement-version drift should fail");
+        assert!(
+            error.to_string().contains("static table commitments"),
+            "unexpected error: {error}"
+        );
+        let oracle_error =
+            oracle_verify_phase12_shared_lookup_artifact(&artifact, &layout, &layout_commitment)
+                .expect_err("oracle should reject static table descriptor statement-version drift");
+        assert!(
+            oracle_error
+                .to_string()
+                .contains("static table commitments"),
+            "unexpected oracle error: {oracle_error}"
+        );
+    }
+
+    #[test]
     fn phase12_shared_lookup_artifact_rejects_static_table_registry_commitment_drift() {
         let (layout, layout_commitment, mut artifact) = sample_valid_artifact();
         artifact.static_table_registry_commitment = "00".repeat(32);
