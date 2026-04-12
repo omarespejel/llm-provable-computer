@@ -1,6 +1,6 @@
 # Transformer VM
 
-**A deterministic transformer runtime with a real proof stack.**
+**A deterministic transformer runtime with a repository-backed proof stack.**
 
 This repository compiles a compact assembly language into a transformer-shaped
 runtime, executes it deterministically, records the execution trace, and proves
