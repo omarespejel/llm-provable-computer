@@ -4023,6 +4023,168 @@ fn cli_reports_missing_features_for_research_v3_equivalence() {
         ));
 }
 
+#[test]
+fn cli_can_prepare_and_verify_hf_provenance_manifest() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-manifest");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let tokenizer_json = fixture_dir.join("tokenizer.json");
+    let tokenizer_config = fixture_dir.join("tokenizer_config.json");
+    let transcript = fixture_dir.join("tokenization-transcript.json");
+    let safetensors = fixture_dir.join("model.safetensors");
+    let onnx_model = fixture_dir.join("model.onnx");
+    let model_card = fixture_dir.join("README.md");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(
+        &tokenizer_json,
+        br#"{"version":"1.0","model":{"type":"WordPiece","unk_token":"[UNK]"}}"#,
+    )
+    .expect("write tokenizer json");
+    std::fs::write(&tokenizer_config, br#"{"model_max_length":16}"#)
+        .expect("write tokenizer config");
+    std::fs::write(
+        &transcript,
+        br#"{"prompt":"hello","token_ids":[1,2],"tokens":["hello","world"]}"#,
+    )
+    .expect("write tokenization transcript");
+    let safetensors_header = br#"{"weight":{"dtype":"F32","shape":[1],"data_offsets":[0,4]},"__metadata__":{"format":"pt"}}"#;
+    let mut safetensors_bytes = Vec::new();
+    safetensors_bytes.extend_from_slice(&(safetensors_header.len() as u64).to_le_bytes());
+    safetensors_bytes.extend_from_slice(safetensors_header);
+    safetensors_bytes.extend_from_slice(&[0, 0, 0, 0]);
+    std::fs::write(&safetensors, safetensors_bytes).expect("write safetensors fixture");
+    std::fs::write(&onnx_model, b"fake-onnx-graph").expect("write ONNX fixture");
+    std::fs::write(
+        &model_card,
+        "# HF provenance fixture\n\nPinned for CLI manifest tests.\n",
+    )
+    .expect("write model card");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&tokenizer_json)
+        .arg("--tokenizer-config")
+        .arg(&tokenizer_config)
+        .arg("--tokenization-transcript")
+        .arg(&transcript)
+        .arg("--safetensors")
+        .arg(&safetensors)
+        .arg("--onnx-model")
+        .arg(&onnx_model)
+        .arg("--onnx-exporter-version")
+        .arg("optimum-test")
+        .arg("--model-card")
+        .arg(&model_card)
+        .arg("--doi")
+        .arg("10.57967/hf/example")
+        .arg("--dataset")
+        .arg("example/prompts")
+        .arg("--note")
+        .arg("fixture only")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("hf_provenance_manifest:"))
+        .stdout(predicate::str::contains("safetensors_files: 1"));
+
+    let manifest_json: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).expect("manifest bytes"))
+            .expect("manifest json");
+    #[cfg(feature = "onnx-export")]
+    validate_json_against_schema(&manifest_json, "spec/hf-provenance-manifest.schema.json");
+    assert_eq!(
+        manifest_json
+            .get("manifest_version")
+            .and_then(serde_json::Value::as_str),
+        Some("hf-provenance-manifest-v1")
+    );
+    assert_eq!(
+        manifest_json
+            .get("safetensors")
+            .and_then(serde_json::Value::as_array)
+            .and_then(|files| files.first())
+            .and_then(|file| file.get("tensor_count"))
+            .and_then(serde_json::Value::as_u64),
+        Some(1)
+    );
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "verified_hf_provenance_manifest: true",
+        ));
+
+    std::fs::write(
+        &tokenizer_json,
+        br#"{"version":"1.0","model":{"type":"WordPiece","unk_token":"[BAD]"}}"#,
+    )
+    .expect("tamper tokenizer json");
+    let mut verify_tampered = tvm_command();
+    verify_tampered
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "tokenizer_json blake2b_256 commitment mismatch",
+        ));
+
+    let floating_manifest = fixture_dir.join("floating.json");
+    let mut floating = tvm_command();
+    floating
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&floating_manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("main")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&tokenizer_json)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "hub_revision must be pinned to an immutable commit or release tag",
+        ));
+
+    let branch_manifest = fixture_dir.join("branch-ref.json");
+    let mut branch_ref = tvm_command();
+    branch_ref
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&branch_manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("refs/heads/main")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&tokenizer_json)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "hub_revision must be pinned to an immutable commit or release tag",
+        ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
 #[cfg(feature = "onnx-export")]
 #[test]
 fn cli_supports_export_onnx_command() {

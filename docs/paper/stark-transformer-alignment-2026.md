@@ -343,6 +343,8 @@ The repository also contains a bounded `research-v3` equivalence-kernel lane mot
 
 This lane is included because it directly addresses the "do not fool ourselves" failure mode: a proof artifact should not silently rely on informal claims that two frontend/runtime paths mean the same thing. The present implementation still stops at deterministic bounded relation evidence plus artifact-integrity verification. It does not synthesize rewrite rules, validate opaque kernels with randomized constraints, discharge symbolic cases with SMT, or prove implementation equivalence cryptographically.
 
+The same principle motivates a separate Hugging Face provenance manifest surface for release bundles. That manifest pins Hub and tokenizer identifiers, local tokenizer/transcript files, safetensors file and metadata-header hashes, optional ONNX export hashes, and model-card/DOI/dataset metadata when supplied. It is a release-provenance guardrail, not part of the proof relation: it does not prove tokenizer algorithm correctness, model-weight semantics, Optimum export equivalence, live Hub availability, or DOI validity.
+
 ### 5.7 Why this artifact matters
 
 This artifact narrows the gap between analytic and systems claims by showing:

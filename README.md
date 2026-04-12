@@ -794,6 +794,37 @@ Canonical research-v3 spec files:
 - `spec/statement-v3-equivalence-kernel.schema.json`
 - `spec/frontend-runtime-semantics-registry-v1.json`
 
+### Hugging Face Provenance Manifest
+
+For HF-backed model or artifact releases, prepare a bounded provenance manifest:
+
+```bash
+cargo run --bin tvm -- prepare-hf-provenance-manifest \
+  -o compiled/hf-provenance.json \
+  --hub-repo org/model \
+  --hub-revision <pinned-commit-or-release-tag> \
+  --tokenizer-id org/model \
+  --tokenizer-json path/to/tokenizer.json \
+  --safetensors path/to/model.safetensors \
+  --onnx-model path/to/model.onnx \
+  --model-card path/to/README.md
+cargo run --bin tvm -- verify-hf-provenance-manifest compiled/hf-provenance.json
+```
+
+This manifest is deliberately a provenance artifact, not a proving claim. It
+pins the Hub repo/revision, tokenizer identity/revision, optional tokenizer
+files and tokenization transcripts, local `safetensors` file hashes plus parsed
+metadata-header hashes/tensor counts, optional ONNX export file hashes, and
+optional model-card/DOI/dataset release metadata. The verifier rejects floating
+Hub revisions such as `main`, recomputes local file hashes, recomputes the
+manifest commitments, and rejects safetensors metadata drift. It does not prove
+tokenizer algorithm correctness, safetensors architectural semantics, Optimum
+export semantic equivalence, live Hub availability, or DOI validity.
+
+Canonical HF provenance spec file:
+
+- `spec/hf-provenance-manifest.schema.json`
+
 ### Reproducibility Bundle
 
 For publication-ready artifacts (benchmarks, proofs, semantic agreement artifacts, hashes),

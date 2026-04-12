@@ -86,6 +86,9 @@ produces:
 - Link generated `*.proof.json` files for statement-v1 proof demonstrations.
 - Use `artifact_summary.tsv` from the accumulation bundle when comparing base,
   carried, and accumulated decode paths inside the same artifact family.
+- Use `prepare-hf-provenance-manifest` for HF-backed release bundles that need
+  pinned Hub revisions, tokenizer identity, safetensors metadata/file hashes,
+  optional ONNX export hashes, and model-card/DOI/dataset release metadata.
 
 ## Claim Scope Reminder
 
@@ -103,6 +106,11 @@ produces:
   and egg/Emerge-style paths as explicit research-watch lanes; these artifacts
   are not e-graph saturation results, SMT rewrite proofs, randomized
   opaque-kernel tests, or cryptographic implementation-equivalence proofs.
+- HF provenance manifests are release/provenance artifacts only. They bind
+  pinned Hub and tokenizer identifiers plus local tokenizer, safetensors, ONNX,
+  model-card, DOI, and dataset metadata where supplied, but they do not prove
+  tokenizer algorithm correctness, model-weight semantics, Optimum export
+  equivalence, live Hub availability, or DOI validity.
 
 ## Paper figure regeneration
 

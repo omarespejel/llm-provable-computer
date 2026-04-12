@@ -6,9 +6,7 @@ use std::time::Duration;
 #[cfg(feature = "onnx-export")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[cfg(feature = "onnx-export")]
 use blake2::digest::{Update, VariableOutput};
-#[cfg(feature = "onnx-export")]
 use blake2::Blake2bVar;
 #[cfg(feature = "burn-model")]
 use burn::backend::NdArray;
@@ -110,7 +108,6 @@ use llm_provable_computer::{
 };
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
-#[cfg(feature = "onnx-export")]
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "burn-model")]
@@ -589,6 +586,62 @@ enum Command {
         /// Path to the equivalence-kernel artifact JSON file.
         artifact: PathBuf,
     },
+    /// Prepare a Hugging Face release/provenance manifest.
+    PrepareHfProvenanceManifest {
+        /// File where the HF provenance manifest JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+        /// Hugging Face Hub model or artifact repository, for example `org/model`.
+        #[arg(long)]
+        hub_repo: String,
+        /// Pinned Hugging Face Hub revision, preferably a commit hash or immutable release tag.
+        #[arg(long)]
+        hub_revision: String,
+        /// Tokenizer identifier used for prompt-to-token semantics.
+        #[arg(long)]
+        tokenizer_id: String,
+        /// Tokenizer revision. Defaults to `--hub-revision`.
+        #[arg(long)]
+        tokenizer_revision: Option<String>,
+        /// Optional local `tokenizer.json` file to hash into the manifest.
+        #[arg(long)]
+        tokenizer_json: Option<PathBuf>,
+        /// Optional local tokenizer config file to hash into the manifest.
+        #[arg(long)]
+        tokenizer_config: Option<PathBuf>,
+        /// Optional local prompt/token transcript file to hash into the manifest.
+        #[arg(long)]
+        tokenization_transcript: Option<PathBuf>,
+        /// Local `.safetensors` files to hash and metadata-bind.
+        #[arg(long = "safetensors")]
+        safetensors_files: Vec<PathBuf>,
+        /// Optional local ONNX graph exported from the HF/Optimum path.
+        #[arg(long)]
+        onnx_model: Option<PathBuf>,
+        /// Name of the ONNX exporter used when `--onnx-model` is supplied.
+        #[arg(long, default_value = "optimum-onnx")]
+        onnx_exporter: String,
+        /// Optional exporter version string.
+        #[arg(long)]
+        onnx_exporter_version: Option<String>,
+        /// Optional local model/artifact card file to hash into the release metadata.
+        #[arg(long)]
+        model_card: Option<PathBuf>,
+        /// Optional DOI or stable release identifier.
+        #[arg(long)]
+        doi: Option<String>,
+        /// Dataset or benchmark corpus identifier used by the release (repeatable).
+        #[arg(long = "dataset")]
+        datasets: Vec<String>,
+        /// Extra manifest note (repeatable).
+        #[arg(long = "note")]
+        notes: Vec<String>,
+    },
+    /// Verify a Hugging Face release/provenance manifest and local file bindings.
+    VerifyHfProvenanceManifest {
+        /// Path to the HF provenance manifest JSON file.
+        manifest: PathBuf,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -738,6 +791,92 @@ const STATEMENT_V3_EQUIVALENCE_ARTIFACT_SCHEMA_PATH: &str =
 const RESEARCH_V2_HASH_FUNCTION: &str = "blake2b-256";
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 const RESEARCH_V3_RELATION_FORMAT: &str = "multi-engine-trace-relation-v1-no-egraph-no-smt";
+const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v1";
+const HF_PROVENANCE_SEMANTIC_SCOPE: &str = "hf-release-provenance-boundary-v1";
+const HF_PROVENANCE_HASH_FUNCTION: &str = "blake2b-256";
+
+struct HfProvenanceManifestCommand {
+    output: PathBuf,
+    hub_repo: String,
+    hub_revision: String,
+    tokenizer_id: String,
+    tokenizer_revision: Option<String>,
+    tokenizer_json: Option<PathBuf>,
+    tokenizer_config: Option<PathBuf>,
+    tokenization_transcript: Option<PathBuf>,
+    safetensors_files: Vec<PathBuf>,
+    onnx_model: Option<PathBuf>,
+    onnx_exporter: String,
+    onnx_exporter_version: Option<String>,
+    model_card: Option<PathBuf>,
+    doi: Option<String>,
+    datasets: Vec<String>,
+    notes: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct HfFileCommitment {
+    path: String,
+    size_bytes: u64,
+    blake2b_256: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct HfSafetensorsFileCommitment {
+    path: String,
+    size_bytes: u64,
+    blake2b_256: String,
+    metadata_hash: String,
+    tensor_count: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct HfTokenizerProvenance {
+    tokenizer_id: String,
+    tokenizer_revision: String,
+    tokenizer_json: Option<HfFileCommitment>,
+    tokenizer_config: Option<HfFileCommitment>,
+    tokenization_transcript: Option<HfFileCommitment>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct HfOnnxExportProvenance {
+    exporter: String,
+    exporter_version: Option<String>,
+    graph: HfFileCommitment,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct HfReleaseMetadata {
+    model_card: Option<HfFileCommitment>,
+    doi: Option<String>,
+    datasets: Vec<String>,
+    notes: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct HfProvenanceCommitments {
+    tokenizer_hash: String,
+    safetensors_manifest_hash: String,
+    onnx_export_hash: String,
+    release_metadata_hash: String,
+    limitations_hash: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct HfProvenanceManifest {
+    manifest_version: String,
+    semantic_scope: String,
+    hash_function: String,
+    hub_repo: String,
+    hub_revision: String,
+    tokenizer: HfTokenizerProvenance,
+    safetensors: Vec<HfSafetensorsFileCommitment>,
+    onnx_export: Option<HfOnnxExportProvenance>,
+    release: HfReleaseMetadata,
+    limitations: Vec<String>,
+    commitments: HfProvenanceCommitments,
+}
 
 #[cfg(feature = "onnx-export")]
 #[derive(Debug, Deserialize)]
@@ -1279,6 +1418,44 @@ fn run() -> llm_provable_computer::Result<()> {
         } => research_v3_equivalence_command(&program, &output, max_steps, layers, attention_mode)?,
         Command::VerifyResearchV3Equivalence { artifact } => {
             verify_research_v3_equivalence_command(&artifact)?
+        }
+        Command::PrepareHfProvenanceManifest {
+            output,
+            hub_repo,
+            hub_revision,
+            tokenizer_id,
+            tokenizer_revision,
+            tokenizer_json,
+            tokenizer_config,
+            tokenization_transcript,
+            safetensors_files,
+            onnx_model,
+            onnx_exporter,
+            onnx_exporter_version,
+            model_card,
+            doi,
+            datasets,
+            notes,
+        } => prepare_hf_provenance_manifest_command(HfProvenanceManifestCommand {
+            output,
+            hub_repo,
+            hub_revision,
+            tokenizer_id,
+            tokenizer_revision,
+            tokenizer_json,
+            tokenizer_config,
+            tokenization_transcript,
+            safetensors_files,
+            onnx_model,
+            onnx_exporter,
+            onnx_exporter_version,
+            model_card,
+            doi,
+            datasets,
+            notes,
+        })?,
+        Command::VerifyHfProvenanceManifest { manifest } => {
+            verify_hf_provenance_manifest_command(&manifest)?
         }
     }
 
@@ -3511,6 +3688,462 @@ fn verify_research_v3_equivalence_command(artifact: &Path) -> llm_provable_compu
     verify_research_v3_equivalence_command_impl(artifact)
 }
 
+fn prepare_hf_provenance_manifest_command(
+    command: HfProvenanceManifestCommand,
+) -> llm_provable_computer::Result<()> {
+    validate_hf_identifier("hub_repo", &command.hub_repo)?;
+    validate_hf_identifier("tokenizer_id", &command.tokenizer_id)?;
+    validate_hf_pinned_revision("hub_revision", &command.hub_revision)?;
+    let tokenizer_revision = command
+        .tokenizer_revision
+        .unwrap_or_else(|| command.hub_revision.clone());
+    validate_hf_pinned_revision("tokenizer_revision", &tokenizer_revision)?;
+
+    let tokenizer = HfTokenizerProvenance {
+        tokenizer_id: command.tokenizer_id,
+        tokenizer_revision,
+        tokenizer_json: hf_optional_file_commitment(command.tokenizer_json.as_deref())?,
+        tokenizer_config: hf_optional_file_commitment(command.tokenizer_config.as_deref())?,
+        tokenization_transcript: hf_optional_file_commitment(
+            command.tokenization_transcript.as_deref(),
+        )?,
+    };
+    let safetensors = command
+        .safetensors_files
+        .iter()
+        .map(|path| hf_safetensors_file_commitment(path))
+        .collect::<llm_provable_computer::Result<Vec<_>>>()?;
+    let onnx_export = command
+        .onnx_model
+        .as_deref()
+        .map(|path| {
+            Ok::<HfOnnxExportProvenance, VmError>(HfOnnxExportProvenance {
+                exporter: command.onnx_exporter.clone(),
+                exporter_version: command.onnx_exporter_version.clone(),
+                graph: hf_file_commitment(path)?,
+            })
+        })
+        .transpose()?;
+    let release = HfReleaseMetadata {
+        model_card: hf_optional_file_commitment(command.model_card.as_deref())?,
+        doi: command.doi,
+        datasets: command.datasets,
+        notes: command.notes,
+    };
+    let limitations = hf_provenance_limitations();
+    let manifest = HfProvenanceManifest {
+        manifest_version: HF_PROVENANCE_MANIFEST_VERSION.to_string(),
+        semantic_scope: HF_PROVENANCE_SEMANTIC_SCOPE.to_string(),
+        hash_function: HF_PROVENANCE_HASH_FUNCTION.to_string(),
+        hub_repo: command.hub_repo,
+        hub_revision: command.hub_revision,
+        commitments: HfProvenanceCommitments {
+            tokenizer_hash: hash_json_projection_hex(&tokenizer)?,
+            safetensors_manifest_hash: hash_json_projection_hex(&safetensors)?,
+            onnx_export_hash: hash_json_projection_hex(&onnx_export)?,
+            release_metadata_hash: hash_json_projection_hex(&release)?,
+            limitations_hash: hash_json_projection_hex(&limitations)?,
+        },
+        tokenizer,
+        safetensors,
+        onnx_export,
+        release,
+        limitations,
+    };
+    verify_hf_provenance_manifest(&manifest)?;
+    let bytes = serde_json::to_vec_pretty(&manifest).map_err(|err| {
+        VmError::Serialization(format!("failed to serialize HF provenance manifest: {err}"))
+    })?;
+    write_bytes_atomically(&command.output, &bytes)?;
+
+    println!("hf_provenance_manifest: {}", command.output.display());
+    println!("manifest_version: {}", manifest.manifest_version);
+    println!("semantic_scope: {}", manifest.semantic_scope);
+    println!("hub_repo: {}", manifest.hub_repo);
+    println!("hub_revision: {}", manifest.hub_revision);
+    println!("tokenizer_id: {}", manifest.tokenizer.tokenizer_id);
+    println!("safetensors_files: {}", manifest.safetensors.len());
+    println!(
+        "commitment_safetensors_manifest_hash: {}",
+        manifest.commitments.safetensors_manifest_hash
+    );
+
+    Ok(())
+}
+
+fn verify_hf_provenance_manifest_command(
+    manifest_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    let manifest_bytes = fs::read(manifest_path).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to read HF provenance manifest {}: {err}",
+            manifest_path.display()
+        ))
+    })?;
+    let manifest: HfProvenanceManifest =
+        serde_json::from_slice(&manifest_bytes).map_err(|err| {
+            VmError::Serialization(format!(
+                "failed to parse HF provenance manifest {}: {err}",
+                manifest_path.display()
+            ))
+        })?;
+    verify_hf_provenance_manifest(&manifest)?;
+
+    println!("verified_hf_provenance_manifest: true");
+    println!("manifest_version: {}", manifest.manifest_version);
+    println!("semantic_scope: {}", manifest.semantic_scope);
+    println!("hub_repo: {}", manifest.hub_repo);
+    println!("hub_revision: {}", manifest.hub_revision);
+    println!("tokenizer_id: {}", manifest.tokenizer.tokenizer_id);
+    println!("safetensors_files: {}", manifest.safetensors.len());
+
+    Ok(())
+}
+
+fn verify_hf_provenance_manifest(
+    manifest: &HfProvenanceManifest,
+) -> llm_provable_computer::Result<()> {
+    expect_eq(
+        "hf manifest_version",
+        &manifest.manifest_version,
+        HF_PROVENANCE_MANIFEST_VERSION,
+    )?;
+    expect_eq(
+        "hf semantic_scope",
+        &manifest.semantic_scope,
+        HF_PROVENANCE_SEMANTIC_SCOPE,
+    )?;
+    expect_eq(
+        "hf hash_function",
+        &manifest.hash_function,
+        HF_PROVENANCE_HASH_FUNCTION,
+    )?;
+    validate_hf_identifier("hub_repo", &manifest.hub_repo)?;
+    validate_hf_pinned_revision("hub_revision", &manifest.hub_revision)?;
+    validate_hf_identifier("tokenizer_id", &manifest.tokenizer.tokenizer_id)?;
+    validate_hf_pinned_revision("tokenizer_revision", &manifest.tokenizer.tokenizer_revision)?;
+    if manifest.tokenizer.tokenizer_json.is_none()
+        && manifest.tokenizer.tokenizer_config.is_none()
+        && manifest.tokenizer.tokenization_transcript.is_none()
+        && manifest.safetensors.is_empty()
+        && manifest.onnx_export.is_none()
+        && manifest.release.model_card.is_none()
+    {
+        return Err(VmError::InvalidConfig(
+            "HF provenance manifest must bind at least one local tokenizer, safetensors, ONNX, transcript, or model-card file".to_string(),
+        ));
+    }
+    let expected_limitations = hf_provenance_limitations();
+    if manifest.limitations != expected_limitations {
+        return Err(VmError::InvalidConfig(
+            "HF provenance limitations do not match the pinned claim boundary".to_string(),
+        ));
+    }
+    verify_hash_commitment(
+        "hf tokenizer_hash",
+        &manifest.commitments.tokenizer_hash,
+        &hash_json_projection_hex(&manifest.tokenizer)?,
+    )?;
+    verify_hash_commitment(
+        "hf safetensors_manifest_hash",
+        &manifest.commitments.safetensors_manifest_hash,
+        &hash_json_projection_hex(&manifest.safetensors)?,
+    )?;
+    verify_hash_commitment(
+        "hf onnx_export_hash",
+        &manifest.commitments.onnx_export_hash,
+        &hash_json_projection_hex(&manifest.onnx_export)?,
+    )?;
+    verify_hash_commitment(
+        "hf release_metadata_hash",
+        &manifest.commitments.release_metadata_hash,
+        &hash_json_projection_hex(&manifest.release)?,
+    )?;
+    verify_hash_commitment(
+        "hf limitations_hash",
+        &manifest.commitments.limitations_hash,
+        &hash_json_projection_hex(&manifest.limitations)?,
+    )?;
+    verify_hf_optional_file_commitment("tokenizer_json", &manifest.tokenizer.tokenizer_json)?;
+    verify_hf_optional_file_commitment("tokenizer_config", &manifest.tokenizer.tokenizer_config)?;
+    verify_hf_optional_file_commitment(
+        "tokenization_transcript",
+        &manifest.tokenizer.tokenization_transcript,
+    )?;
+    for safetensors in &manifest.safetensors {
+        verify_hf_safetensors_file_commitment(safetensors)?;
+    }
+    if let Some(onnx_export) = &manifest.onnx_export {
+        if onnx_export.exporter.trim().is_empty() {
+            return Err(VmError::InvalidConfig(
+                "HF provenance ONNX exporter must be non-empty".to_string(),
+            ));
+        }
+        verify_hf_file_commitment("onnx_export.graph", &onnx_export.graph)?;
+    }
+    verify_hf_optional_file_commitment("model_card", &manifest.release.model_card)?;
+    validate_hf_optional_identifier("release.doi", manifest.release.doi.as_deref())?;
+    for (idx, dataset) in manifest.release.datasets.iter().enumerate() {
+        validate_hf_identifier(&format!("release.datasets[{idx}]"), dataset)?;
+    }
+    for (idx, note) in manifest.release.notes.iter().enumerate() {
+        if note.trim().is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "HF provenance release.notes[{idx}] must be non-empty"
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+fn hf_provenance_limitations() -> Vec<String> {
+    [
+        "HF provenance manifests pin artifact identity and local file hashes only",
+        "the manifest does not prove tokenizer algorithm correctness",
+        "the manifest does not prove safetensors weights implement a model architecture",
+        "the manifest does not prove Optimum or ONNX exporter semantic equivalence",
+        "the manifest does not perform live Hugging Face Hub downloads or DOI verification",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+fn validate_hf_identifier(label: &str, value: &str) -> llm_provable_computer::Result<()> {
+    if value.trim().is_empty() {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance {label} must be non-empty"
+        )));
+    }
+    if value.contains(char::is_whitespace) {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance {label} must not contain whitespace"
+        )));
+    }
+    Ok(())
+}
+
+fn validate_hf_optional_identifier(
+    label: &str,
+    value: Option<&str>,
+) -> llm_provable_computer::Result<()> {
+    if let Some(value) = value {
+        validate_hf_identifier(label, value)?;
+    }
+    Ok(())
+}
+
+fn validate_hf_pinned_revision(label: &str, value: &str) -> llm_provable_computer::Result<()> {
+    validate_hf_identifier(label, value)?;
+    let lower = value.to_ascii_lowercase();
+    if matches!(lower.as_str(), "main" | "master" | "head") || lower.starts_with("refs/heads/") {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance {label} must be pinned to an immutable commit or release tag, not `{value}`"
+        )));
+    }
+    Ok(())
+}
+
+fn hf_optional_file_commitment(
+    path: Option<&Path>,
+) -> llm_provable_computer::Result<Option<HfFileCommitment>> {
+    path.map(hf_file_commitment).transpose()
+}
+
+fn hf_file_commitment(path: &Path) -> llm_provable_computer::Result<HfFileCommitment> {
+    let (bytes, size_bytes) = read_file_for_hf_commitment(path)?;
+    Ok(HfFileCommitment {
+        path: path.display().to_string(),
+        size_bytes,
+        blake2b_256: hash_bytes_hex(&bytes),
+    })
+}
+
+fn hf_safetensors_file_commitment(
+    path: &Path,
+) -> llm_provable_computer::Result<HfSafetensorsFileCommitment> {
+    let (bytes, size_bytes) = read_file_for_hf_commitment(path)?;
+    let (metadata_hash, tensor_count) = hf_safetensors_metadata_commitment(path, &bytes)?;
+    Ok(HfSafetensorsFileCommitment {
+        path: path.display().to_string(),
+        size_bytes,
+        blake2b_256: hash_bytes_hex(&bytes),
+        metadata_hash,
+        tensor_count,
+    })
+}
+
+fn verify_hf_optional_file_commitment(
+    label: &str,
+    commitment: &Option<HfFileCommitment>,
+) -> llm_provable_computer::Result<()> {
+    if let Some(commitment) = commitment {
+        verify_hf_file_commitment(label, commitment)?;
+    }
+    Ok(())
+}
+
+fn verify_hf_file_commitment(
+    label: &str,
+    commitment: &HfFileCommitment,
+) -> llm_provable_computer::Result<()> {
+    let (bytes, size_bytes) = read_file_for_hf_commitment(Path::new(&commitment.path))?;
+    if commitment.size_bytes != size_bytes {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance {label} size_bytes mismatch: expected {}, got {}",
+            commitment.size_bytes, size_bytes
+        )));
+    }
+    verify_hash_commitment(
+        &format!("HF provenance {label} blake2b_256"),
+        &commitment.blake2b_256,
+        &hash_bytes_hex(&bytes),
+    )
+}
+
+fn verify_hf_safetensors_file_commitment(
+    commitment: &HfSafetensorsFileCommitment,
+) -> llm_provable_computer::Result<()> {
+    let (bytes, size_bytes) = read_file_for_hf_commitment(Path::new(&commitment.path))?;
+    if commitment.size_bytes != size_bytes {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} size_bytes mismatch: expected {}, got {}",
+            commitment.path, commitment.size_bytes, size_bytes
+        )));
+    }
+    verify_hash_commitment(
+        &format!("HF provenance safetensors {} blake2b_256", commitment.path),
+        &commitment.blake2b_256,
+        &hash_bytes_hex(&bytes),
+    )?;
+    let (metadata_hash, tensor_count) =
+        hf_safetensors_metadata_commitment(Path::new(&commitment.path), &bytes)?;
+    verify_hash_commitment(
+        &format!(
+            "HF provenance safetensors {} metadata_hash",
+            commitment.path
+        ),
+        &commitment.metadata_hash,
+        &metadata_hash,
+    )?;
+    if commitment.tensor_count != tensor_count {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} tensor_count mismatch: expected {}, got {}",
+            commitment.path, commitment.tensor_count, tensor_count
+        )));
+    }
+    Ok(())
+}
+
+fn read_file_for_hf_commitment(path: &Path) -> llm_provable_computer::Result<(Vec<u8>, u64)> {
+    let bytes = fs::read(path).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to read HF provenance file {}: {err}",
+            path.display()
+        ))
+    })?;
+    let size_bytes = u64::try_from(bytes.len()).map_err(|_| {
+        VmError::InvalidConfig(format!(
+            "HF provenance file {} is too large to commit",
+            path.display()
+        ))
+    })?;
+    Ok((bytes, size_bytes))
+}
+
+fn hf_safetensors_metadata_commitment(
+    path: &Path,
+    bytes: &[u8],
+) -> llm_provable_computer::Result<(String, usize)> {
+    const MAX_SAFETENSORS_HEADER_BYTES: u64 = 16 * 1024 * 1024;
+    if bytes.len() < 8 {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} is shorter than the 8-byte metadata length header",
+            path.display()
+        )));
+    }
+    let mut header_len_bytes = [0u8; 8];
+    header_len_bytes.copy_from_slice(&bytes[..8]);
+    let header_len = u64::from_le_bytes(header_len_bytes);
+    if header_len > MAX_SAFETENSORS_HEADER_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} metadata header is too large: {} bytes",
+            path.display(),
+            header_len
+        )));
+    }
+    let header_len = usize::try_from(header_len).map_err(|_| {
+        VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} metadata header length overflows usize",
+            path.display()
+        ))
+    })?;
+    let header_end = 8usize.checked_add(header_len).ok_or_else(|| {
+        VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} metadata header end overflows usize",
+            path.display()
+        ))
+    })?;
+    if bytes.len() < header_end {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} metadata header length exceeds file size",
+            path.display()
+        )));
+    }
+    let header_bytes = &bytes[8..header_end];
+    let header_json: serde_json::Value = serde_json::from_slice(header_bytes).map_err(|err| {
+        VmError::Serialization(format!(
+            "failed to parse HF provenance safetensors metadata {}: {err}",
+            path.display()
+        ))
+    })?;
+    let header_object = header_json.as_object().ok_or_else(|| {
+        VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} metadata header must be a JSON object",
+            path.display()
+        ))
+    })?;
+    let tensor_count = header_object
+        .keys()
+        .filter(|key| key.as_str() != "__metadata__")
+        .count();
+    Ok((hash_bytes_hex(header_bytes), tensor_count))
+}
+
+fn verify_hash_commitment(
+    label: &str,
+    actual: &str,
+    expected: &str,
+) -> llm_provable_computer::Result<()> {
+    expect_hash_hex(label, actual)?;
+    expect_hash_hex(label, expected)?;
+    if actual != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} commitment mismatch: expected {expected}, got {actual}"
+        )));
+    }
+    Ok(())
+}
+
+fn expect_eq(label: &str, actual: &str, expected: &str) -> llm_provable_computer::Result<()> {
+    if actual != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} mismatch: expected `{expected}`, got `{actual}`"
+        )));
+    }
+    Ok(())
+}
+
+fn expect_hash_hex(label: &str, value: &str) -> llm_provable_computer::Result<()> {
+    if value.len() != 64 || !value.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} must be a 64-character hex Blake2b-256 hash"
+        )));
+    }
+    Ok(())
+}
+
 #[cfg(feature = "onnx-export")]
 fn research_v2_step_command_impl(
     program: &Path,
@@ -5255,7 +5888,6 @@ fn validate_frontend_runtime_semantics_registry(
     Ok(())
 }
 
-#[cfg(feature = "onnx-export")]
 fn hash_json_hex<T: Serialize + ?Sized>(value: &T) -> llm_provable_computer::Result<String> {
     let bytes = serde_json::to_vec(value).map_err(|err| {
         VmError::Serialization(format!("failed to serialize hash payload: {err}"))
@@ -5263,7 +5895,6 @@ fn hash_json_hex<T: Serialize + ?Sized>(value: &T) -> llm_provable_computer::Res
     Ok(hash_bytes_hex(&bytes))
 }
 
-#[cfg(feature = "onnx-export")]
 fn hash_json_projection_hex<T: Serialize + ?Sized>(
     value: &T,
 ) -> llm_provable_computer::Result<String> {
@@ -5273,7 +5904,6 @@ fn hash_json_projection_hex<T: Serialize + ?Sized>(
     hash_json_hex(&projection)
 }
 
-#[cfg(feature = "onnx-export")]
 fn hash_bytes_hex(bytes: &[u8]) -> String {
     let mut output = [0u8; 32];
     let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
@@ -5284,7 +5914,6 @@ fn hash_bytes_hex(bytes: &[u8]) -> String {
     output.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-#[cfg(feature = "onnx-export")]
 fn write_bytes_atomically(path: &Path, bytes: &[u8]) -> llm_provable_computer::Result<()> {
     use std::io::Write;
 
@@ -5978,6 +6607,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "research-v2-matrix"
                 | "research-v3-equivalence"
                 | "verify-research-v3-equivalence"
+                | "prepare-hf-provenance-manifest"
+                | "verify-hf-provenance-manifest"
                 | "help"
         )
 }
