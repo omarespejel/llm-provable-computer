@@ -92,6 +92,15 @@ pub const STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SC
     &str = "stwo_execution_parameterized_aggregated_chained_folded_intervalized_proof_carrying_decoding_state_relation";
 pub const STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE: &str =
     "pre-recursive-proof-carrying-aggregation";
+pub const STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30: &str =
+    "stwo-phase30-decoding-step-proof-envelope-v1";
+pub const STWO_DECODING_STEP_ENVELOPE_SCOPE_PHASE30: &str =
+    "stwo_execution_parameterized_decoding_step_proof_envelope";
+pub const STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30: &str =
+    "stwo-phase30-decoding-step-proof-envelope-manifest-v1";
+pub const STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30: &str =
+    "stwo_execution_parameterized_decoding_step_proof_envelope_manifest";
+pub const STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30: &str = "decoding_step_v2";
 const DECODING_KV_CACHE_RANGE: std::ops::Range<usize> = 0..6;
 const DECODING_OUTPUT_RANGE: std::ops::Range<usize> = 10..13;
 const DECODING_POSITION_INDEX: usize = 21;
@@ -395,6 +404,44 @@ pub struct Phase12DecodingChainManifest {
     pub total_steps: usize,
     pub shared_lookup_artifacts: Vec<Phase12SharedLookupArtifact>,
     pub steps: Vec<Phase12DecodingStep>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase30DecodingStepProofEnvelope {
+    pub envelope_version: String,
+    pub semantic_scope: String,
+    pub proof_backend: StarkProofBackend,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub relation: String,
+    pub layout_commitment: String,
+    pub step_index: usize,
+    pub input_boundary_commitment: String,
+    pub output_boundary_commitment: String,
+    pub input_lookup_rows_commitment: String,
+    pub output_lookup_rows_commitment: String,
+    pub shared_lookup_artifact_commitment: String,
+    pub static_lookup_registry_commitment: String,
+    pub proof_commitment: String,
+    pub envelope_commitment: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase30DecodingStepProofEnvelopeManifest {
+    pub proof_backend: StarkProofBackend,
+    pub manifest_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub source_chain_version: String,
+    pub source_chain_semantic_scope: String,
+    pub source_chain_commitment: String,
+    pub layout: Phase12DecodingLayout,
+    pub total_steps: usize,
+    pub chain_start_boundary_commitment: String,
+    pub chain_end_boundary_commitment: String,
+    pub step_envelopes_commitment: String,
+    pub envelopes: Vec<Phase30DecodingStepProofEnvelope>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -2266,6 +2313,229 @@ pub fn verify_phase12_decoding_chain_with_proof_checks(
                 "decoding step {step_index} execution proof did not verify"
             )));
         }
+    }
+    Ok(())
+}
+
+pub fn phase30_prepare_decoding_step_proof_envelope_manifest(
+    chain: &Phase12DecodingChainManifest,
+) -> Result<Phase30DecodingStepProofEnvelopeManifest> {
+    verify_phase12_decoding_chain(chain)?;
+    let layout_commitment = commit_phase12_layout(&chain.layout);
+    let source_chain_commitment = commit_phase12_decoding_chain_for_step_envelopes(chain)?;
+    let artifact_index = chain
+        .shared_lookup_artifacts
+        .iter()
+        .map(|artifact| (artifact.artifact_commitment.as_str(), artifact))
+        .collect::<HashMap<_, _>>();
+    let envelopes = chain
+        .steps
+        .iter()
+        .enumerate()
+        .map(|(step_index, step)| {
+            let artifact = artifact_index
+                .get(step.shared_lookup_artifact_commitment.as_str())
+                .copied()
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "decoding step {step_index} shared lookup artifact `{}` is not present in the Phase 12 registry",
+                        step.shared_lookup_artifact_commitment
+                    ))
+                })?;
+            build_phase30_decoding_step_proof_envelope(
+                step_index,
+                step,
+                &layout_commitment,
+                artifact,
+            )
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let step_envelopes_commitment = commit_phase30_step_envelope_list(&envelopes);
+    let (chain_start_boundary_commitment, chain_end_boundary_commitment) =
+        phase30_chain_boundary_pair(&envelopes)?;
+
+    let manifest = Phase30DecodingStepProofEnvelopeManifest {
+        proof_backend: StarkProofBackend::Stwo,
+        manifest_version: STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30.to_string(),
+        semantic_scope: STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30.to_string(),
+        proof_backend_version: chain.proof_backend_version.clone(),
+        statement_version: chain.statement_version.clone(),
+        source_chain_version: chain.chain_version.clone(),
+        source_chain_semantic_scope: chain.semantic_scope.clone(),
+        source_chain_commitment,
+        layout: chain.layout.clone(),
+        total_steps: envelopes.len(),
+        chain_start_boundary_commitment,
+        chain_end_boundary_commitment,
+        step_envelopes_commitment,
+        envelopes,
+    };
+    verify_phase30_decoding_step_proof_envelope_manifest(&manifest)?;
+    Ok(manifest)
+}
+
+pub fn verify_phase30_decoding_step_proof_envelope_manifest(
+    manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<()> {
+    manifest.layout.validate()?;
+    let expected_layout_commitment = commit_phase12_layout(&manifest.layout);
+    if manifest.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding step envelope manifest backend `{}` is not `stwo`",
+            manifest.proof_backend
+        )));
+    }
+    if manifest.manifest_version != STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding step envelope manifest version `{}`",
+            manifest.manifest_version
+        )));
+    }
+    if manifest.semantic_scope != STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding step envelope manifest scope `{}`",
+            manifest.semantic_scope
+        )));
+    }
+    if manifest.source_chain_version != STWO_DECODING_CHAIN_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding step envelope manifest source chain version `{}` is not Phase 12",
+            manifest.source_chain_version
+        )));
+    }
+    if manifest.source_chain_semantic_scope != STWO_DECODING_CHAIN_SCOPE_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported decoding step envelope manifest source chain scope `{}`",
+            manifest.source_chain_semantic_scope
+        )));
+    }
+    if manifest.source_chain_commitment.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding step envelope manifest source_chain_commitment must not be empty".to_string(),
+        ));
+    }
+    if manifest.envelopes.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "decoding step envelope manifest must contain at least one envelope".to_string(),
+        ));
+    }
+    if manifest.total_steps != manifest.envelopes.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding step envelope manifest total_steps={} does not match envelopes.len()={}",
+            manifest.total_steps,
+            manifest.envelopes.len()
+        )));
+    }
+    let expected_list_commitment = commit_phase30_step_envelope_list(&manifest.envelopes);
+    if manifest.step_envelopes_commitment != expected_list_commitment {
+        return Err(VmError::InvalidConfig(
+            "decoding step envelope manifest step_envelopes_commitment does not match its envelopes"
+                .to_string(),
+        ));
+    }
+    let (expected_start, expected_end) = phase30_chain_boundary_pair(&manifest.envelopes)?;
+    if manifest.chain_start_boundary_commitment != expected_start {
+        return Err(VmError::InvalidConfig(
+            "decoding step envelope manifest start boundary does not match the first envelope"
+                .to_string(),
+        ));
+    }
+    if manifest.chain_end_boundary_commitment != expected_end {
+        return Err(VmError::InvalidConfig(
+            "decoding step envelope manifest end boundary does not match the final envelope"
+                .to_string(),
+        ));
+    }
+
+    for (index, envelope) in manifest.envelopes.iter().enumerate() {
+        if envelope.envelope_version != STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30 {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step envelope {index} has unsupported version `{}`",
+                envelope.envelope_version
+            )));
+        }
+        if envelope.semantic_scope != STWO_DECODING_STEP_ENVELOPE_SCOPE_PHASE30 {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step envelope {index} has unsupported scope `{}`",
+                envelope.semantic_scope
+            )));
+        }
+        if envelope.relation != STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30 {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step envelope {index} has unsupported relation `{}`",
+                envelope.relation
+            )));
+        }
+        if envelope.proof_backend != StarkProofBackend::Stwo {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step envelope {index} backend `{}` is not `stwo`",
+                envelope.proof_backend
+            )));
+        }
+        if envelope.proof_backend_version != manifest.proof_backend_version {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step envelope {index} backend version `{}` does not match manifest `{}`",
+                envelope.proof_backend_version, manifest.proof_backend_version
+            )));
+        }
+        if envelope.statement_version != manifest.statement_version {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step envelope {index} statement version `{}` does not match manifest `{}`",
+                envelope.statement_version, manifest.statement_version
+            )));
+        }
+        if envelope.layout_commitment != expected_layout_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step envelope {index} layout commitment does not match the manifest layout"
+            )));
+        }
+        if envelope.step_index != index {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step envelope {index} records step_index={}",
+                envelope.step_index
+            )));
+        }
+        if envelope.input_boundary_commitment.is_empty()
+            || envelope.output_boundary_commitment.is_empty()
+            || envelope.input_lookup_rows_commitment.is_empty()
+            || envelope.output_lookup_rows_commitment.is_empty()
+            || envelope.shared_lookup_artifact_commitment.is_empty()
+            || envelope.static_lookup_registry_commitment.is_empty()
+            || envelope.proof_commitment.is_empty()
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step envelope {index} contains an empty boundary or proof commitment"
+            )));
+        }
+        let expected_envelope_commitment = commit_phase30_step_envelope(envelope);
+        if envelope.envelope_commitment != expected_envelope_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "decoding step envelope {index} commitment does not match its serialized boundary metadata"
+            )));
+        }
+        if index > 0 {
+            let previous = &manifest.envelopes[index - 1];
+            if previous.output_boundary_commitment != envelope.input_boundary_commitment {
+                return Err(VmError::InvalidConfig(format!(
+                    "decoding step envelope link {} -> {} does not preserve the carried output/input boundary",
+                    index - 1,
+                    index
+                )));
+            }
+        }
+    }
+    Ok(())
+}
+
+pub fn verify_phase30_decoding_step_proof_envelope_manifest_against_chain(
+    manifest: &Phase30DecodingStepProofEnvelopeManifest,
+    chain: &Phase12DecodingChainManifest,
+) -> Result<()> {
+    let expected = phase30_prepare_decoding_step_proof_envelope_manifest(chain)?;
+    if manifest != &expected {
+        return Err(VmError::InvalidConfig(
+            "decoding step envelope manifest does not match the derived Phase 12 chain".to_string(),
+        ));
     }
     Ok(())
 }
@@ -10974,6 +11244,125 @@ fn commit_phase12_public_state(state: &Phase12DecodingState) -> String {
     lower_hex(&out)
 }
 
+fn build_phase30_decoding_step_proof_envelope(
+    step_index: usize,
+    step: &Phase12DecodingStep,
+    layout_commitment: &str,
+    shared_lookup_artifact: &Phase12SharedLookupArtifact,
+) -> Result<Phase30DecodingStepProofEnvelope> {
+    let proof_commitment = commit_phase30_step_proof(&step.proof)?;
+    let mut envelope = Phase30DecodingStepProofEnvelope {
+        envelope_version: STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30.to_string(),
+        semantic_scope: STWO_DECODING_STEP_ENVELOPE_SCOPE_PHASE30.to_string(),
+        proof_backend: step.proof.proof_backend,
+        proof_backend_version: step.proof.proof_backend_version.clone(),
+        statement_version: step.proof.claim.statement_version.clone(),
+        relation: STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30.to_string(),
+        layout_commitment: layout_commitment.to_string(),
+        step_index,
+        input_boundary_commitment: step.from_state.public_state_commitment.clone(),
+        output_boundary_commitment: step.to_state.public_state_commitment.clone(),
+        input_lookup_rows_commitment: step.from_state.lookup_rows_commitment.clone(),
+        output_lookup_rows_commitment: step.to_state.lookup_rows_commitment.clone(),
+        shared_lookup_artifact_commitment: step.shared_lookup_artifact_commitment.clone(),
+        static_lookup_registry_commitment: shared_lookup_artifact
+            .static_table_registry_commitment
+            .clone(),
+        proof_commitment,
+        envelope_commitment: String::new(),
+    };
+    envelope.envelope_commitment = commit_phase30_step_envelope(&envelope);
+    Ok(envelope)
+}
+
+fn commit_phase12_decoding_chain_for_step_envelopes(
+    chain: &Phase12DecodingChainManifest,
+) -> Result<String> {
+    let chain_json =
+        serde_json::to_vec(chain).map_err(|error| VmError::Serialization(error.to_string()))?;
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30.as_bytes());
+    hasher.update(b"source-phase12-chain");
+    hasher.update(&(chain_json.len() as u64).to_le_bytes());
+    hasher.update(&chain_json);
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase30_step_proof(proof: &VanillaStarkExecutionProof) -> Result<String> {
+    let proof_json =
+        serde_json::to_vec(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30.as_bytes());
+    hasher.update(b"step-proof");
+    hasher.update(&(proof_json.len() as u64).to_le_bytes());
+    hasher.update(&proof_json);
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase30_step_envelope(envelope: &Phase30DecodingStepProofEnvelope) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30.as_bytes());
+    hasher.update(b"step-envelope");
+    hasher.update(envelope.envelope_version.as_bytes());
+    hasher.update(envelope.semantic_scope.as_bytes());
+    hasher.update(envelope.proof_backend.to_string().as_bytes());
+    hasher.update(envelope.proof_backend_version.as_bytes());
+    hasher.update(envelope.statement_version.as_bytes());
+    hasher.update(envelope.relation.as_bytes());
+    hasher.update(envelope.layout_commitment.as_bytes());
+    hasher.update(&(envelope.step_index as u64).to_le_bytes());
+    hasher.update(envelope.input_boundary_commitment.as_bytes());
+    hasher.update(envelope.output_boundary_commitment.as_bytes());
+    hasher.update(envelope.input_lookup_rows_commitment.as_bytes());
+    hasher.update(envelope.output_lookup_rows_commitment.as_bytes());
+    hasher.update(envelope.shared_lookup_artifact_commitment.as_bytes());
+    hasher.update(envelope.static_lookup_registry_commitment.as_bytes());
+    hasher.update(envelope.proof_commitment.as_bytes());
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+fn commit_phase30_step_envelope_list(envelopes: &[Phase30DecodingStepProofEnvelope]) -> String {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30.as_bytes());
+    hasher.update(b"step-envelope-list");
+    hasher.update(&(envelopes.len() as u64).to_le_bytes());
+    for envelope in envelopes {
+        hasher.update(envelope.envelope_commitment.as_bytes());
+    }
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    lower_hex(&out)
+}
+
+fn phase30_chain_boundary_pair(
+    envelopes: &[Phase30DecodingStepProofEnvelope],
+) -> Result<(String, String)> {
+    let first = envelopes.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "decoding step envelope manifest must contain at least one envelope".to_string(),
+        )
+    })?;
+    let last = envelopes.last().expect("non-empty envelopes");
+    Ok((
+        first.input_boundary_commitment.clone(),
+        last.output_boundary_commitment.clone(),
+    ))
+}
+
 /// Commits only the carried Phase 14 state that must remain stable across links.
 /// Step-local I/O commitments are excluded because the execution proof already binds them.
 fn commit_phase14_public_state(state: &Phase14DecodingState) -> String {
@@ -18445,6 +18834,120 @@ mod tests {
             message.contains("from_state public_state_commitment does not match")
                 || message.contains("recorded from_state does not match the proof's initial state"),
             "unexpected error: {message}"
+        );
+    }
+
+    #[test]
+    fn phase30_step_envelope_manifest_binds_phase12_chain_boundaries() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let manifest =
+            phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
+
+        assert_eq!(
+            manifest.manifest_version,
+            STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30
+        );
+        assert_eq!(manifest.total_steps, chain.steps.len());
+        assert_eq!(
+            manifest.chain_start_boundary_commitment,
+            chain.steps[0].from_state.public_state_commitment
+        );
+        assert_eq!(
+            manifest.chain_end_boundary_commitment,
+            chain
+                .steps
+                .last()
+                .expect("last step")
+                .to_state
+                .public_state_commitment
+        );
+        for (index, envelope) in manifest.envelopes.iter().enumerate() {
+            let step = &chain.steps[index];
+            let artifact = chain
+                .shared_lookup_artifacts
+                .iter()
+                .find(|candidate| {
+                    candidate.artifact_commitment == step.shared_lookup_artifact_commitment
+                })
+                .expect("artifact");
+            assert_eq!(envelope.step_index, index);
+            assert_eq!(
+                envelope.input_boundary_commitment,
+                step.from_state.public_state_commitment
+            );
+            assert_eq!(
+                envelope.output_boundary_commitment,
+                step.to_state.public_state_commitment
+            );
+            assert_eq!(
+                envelope.static_lookup_registry_commitment,
+                artifact.static_table_registry_commitment
+            );
+            assert!(!envelope.proof_commitment.is_empty());
+            assert!(!envelope.envelope_commitment.is_empty());
+        }
+
+        verify_phase30_decoding_step_proof_envelope_manifest(&manifest).expect("verify");
+        verify_phase30_decoding_step_proof_envelope_manifest_against_chain(&manifest, &chain)
+            .expect("verify against chain");
+    }
+
+    #[test]
+    fn phase30_step_envelope_manifest_rejects_tampered_chain_link() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest =
+            phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
+        manifest.envelopes[0].output_boundary_commitment = "tampered".to_string();
+        manifest.envelopes[0].envelope_commitment =
+            commit_phase30_step_envelope(&manifest.envelopes[0]);
+        manifest.step_envelopes_commitment = commit_phase30_step_envelope_list(&manifest.envelopes);
+
+        let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
+            .expect_err("tampered envelope link should fail");
+        assert!(
+            err.to_string()
+                .contains("does not preserve the carried output/input boundary"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn phase30_step_envelope_manifest_against_chain_rejects_proof_commitment_drift() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        let mut manifest =
+            phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
+        manifest.envelopes[0].proof_commitment = "tampered".to_string();
+        manifest.envelopes[0].envelope_commitment =
+            commit_phase30_step_envelope(&manifest.envelopes[0]);
+        manifest.step_envelopes_commitment = commit_phase30_step_envelope_list(&manifest.envelopes);
+
+        verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
+            .expect("standalone envelope remains internally well-formed");
+        let err =
+            verify_phase30_decoding_step_proof_envelope_manifest_against_chain(&manifest, &chain)
+                .expect_err("chain binding should reject proof commitment drift");
+        assert!(
+            err.to_string()
+                .contains("does not match the derived Phase 12 chain"),
+            "unexpected error: {err}"
         );
     }
 
