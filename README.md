@@ -652,10 +652,12 @@ cargo test --quiet statement_spec_contract_is_synced_with_constants
 
 - `research-v3-equivalence` checks transformer, native, Burn, and ONNX/Tract
   runtimes in lockstep and emits an equivalence-kernel artifact with rule
-  witnesses, per-engine transition relation hashes, and commitment hashes.
+  witnesses, bounded trace rows, semantic canonical event rows, per-engine
+  transition relation hashes, and commitment hashes.
 - `verify-research-v3-equivalence` verifies the artifact boundary by recomputing
-  internal commitments, cross-engine state-boundary consistency, final-state
-  links, and per-engine transition relation hashes.
+  internal commitments, bounded trace hashes, semantic canonical event-relation
+  hashes, cross-engine state-boundary consistency, final-state links, and
+  per-engine transition relation hashes.
 - The artifact is deliberately bounded: it is not an e-graph saturation result,
   SMT-backed rewrite proof, randomized opaque-kernel test suite, or
   cryptographic proof of implementation equivalence.
@@ -770,14 +772,16 @@ cargo run --features full --bin tvm -- verify-research-v3-equivalence \
 
 This checks transformer, native, Burn, and ONNX/Tract runtimes in lockstep,
 then emits a JSON artifact with engine summaries, deterministic rule witnesses,
-per-engine transition relation hashes, and commitment hashes. The transition
-hashes are the first narrow Emerge-style relation-kernel hardening step: they
-make each same-instruction state transition explicit without claiming
-equality saturation or synthesized rewrite validation. The verifier command
-recomputes the artifact's internal commitments, engine final-state hashes,
-cross-engine state-boundary consistency, and transition relation hashes; it is an
-artifact-integrity check, not a proof that independent model implementations are
-equivalent in general. The artifact also carries a frontend/runtime semantics
+bounded trace rows, semantic canonical event rows, per-engine transition
+relation hashes, and commitment hashes. The transition hashes are the first
+narrow Emerge-style relation-kernel hardening step: they make each
+same-instruction state transition explicit without claiming equality saturation
+or synthesized rewrite validation. The verifier command recomputes the
+artifact's internal commitments, bounded trace hashes, semantic canonical
+event-relation hashes, engine final-state hashes, cross-engine state-boundary
+consistency, and transition relation hashes; it is an artifact-integrity check,
+not a proof that independent model implementations are equivalent in general.
+The artifact also carries a frontend/runtime semantics
 registry that separates currently checked lanes from these research-watch lanes:
 `torch-export`, `executorch`, `stablehlo`, `iree`, `onnx-mlir`, `tvm-unity`,
 `vllm`, `sglang`, and `egg-emerge`. It intentionally does not claim support for

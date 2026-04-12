@@ -4243,6 +4243,10 @@ fn cli_supports_research_v3_equivalence_command() {
         unique_temp_dir("cli-research-v3-equivalence-tampered").with_extension("json");
     let state_mismatch_path =
         unique_temp_dir("cli-research-v3-equivalence-state-mismatch").with_extension("json");
+    let trace_hash_path =
+        unique_temp_dir("cli-research-v3-equivalence-trace-hash").with_extension("json");
+    let canonical_event_path =
+        unique_temp_dir("cli-research-v3-equivalence-canonical-event").with_extension("json");
     let mut command = tvm_command();
     command
         .arg("research-v3-equivalence")
@@ -4336,6 +4340,35 @@ fn cli_supports_research_v3_equivalence_command() {
         engine_names,
         ["transformer", "native", "burn", "onnx/tract"]
     );
+    for engine in artifact_json
+        .get("engines")
+        .and_then(serde_json::Value::as_array)
+        .expect("engines")
+    {
+        let trace_len = engine
+            .get("trace_len")
+            .and_then(serde_json::Value::as_u64)
+            .expect("trace_len") as usize;
+        let events_len = engine
+            .get("events_len")
+            .and_then(serde_json::Value::as_u64)
+            .expect("events_len") as usize;
+        assert_eq!(
+            engine
+                .get("trace")
+                .and_then(serde_json::Value::as_array)
+                .map(Vec::len),
+            Some(trace_len)
+        );
+        assert_eq!(
+            engine
+                .get("canonical_events")
+                .and_then(serde_json::Value::as_array)
+                .map(Vec::len),
+            Some(events_len)
+        );
+        assert_eq!(trace_len, events_len + 1);
+    }
     let mut verify = tvm_command();
     verify
         .arg("verify-research-v3-equivalence")
@@ -4489,6 +4522,58 @@ fn cli_supports_research_v3_equivalence_command() {
             "state_after_hash commitment mismatch",
         ));
 
+    let mut tampered_trace_hash = artifact_json.clone();
+    tampered_trace_hash["engines"][0]["trace_hash"] = serde_json::Value::String("2".repeat(64));
+    tampered_trace_hash["commitments"]["engine_summaries_hash"] =
+        serde_json::Value::String(hash_json_value(
+            tampered_trace_hash
+                .get("engines")
+                .expect("tampered engines"),
+        ));
+    std::fs::write(
+        &trace_hash_path,
+        serde_json::to_vec(&tampered_trace_hash).expect("tampered trace hash artifact json"),
+    )
+    .expect("write trace hash artifact");
+    let mut verify_trace_hash = tvm_command();
+    verify_trace_hash
+        .arg("verify-research-v3-equivalence")
+        .arg(&trace_hash_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("trace_hash commitment mismatch"));
+
+    let mut tampered_canonical_event = artifact_json.clone();
+    tampered_canonical_event["engines"][0]["canonical_events"][0]["state_after_hash"] =
+        serde_json::Value::String("3".repeat(64));
+    tampered_canonical_event["engines"][0]["event_relation_hash"] =
+        serde_json::Value::String(hash_json_value(
+            tampered_canonical_event["engines"][0]
+                .get("canonical_events")
+                .expect("tampered canonical events"),
+        ));
+    tampered_canonical_event["commitments"]["engine_summaries_hash"] =
+        serde_json::Value::String(hash_json_value(
+            tampered_canonical_event
+                .get("engines")
+                .expect("tampered canonical event engines"),
+        ));
+    std::fs::write(
+        &canonical_event_path,
+        serde_json::to_vec(&tampered_canonical_event)
+            .expect("tampered canonical event artifact json"),
+    )
+    .expect("write canonical event artifact");
+    let mut verify_canonical_event = tvm_command();
+    verify_canonical_event
+        .arg("verify-research-v3-equivalence")
+        .arg(&canonical_event_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "canonical event 1 state_after_hash commitment mismatch",
+        ));
+
     let mut malformed_hash = artifact_json.clone();
     malformed_hash["commitments"]["relation_format_hash"] =
         serde_json::Value::String("not-a-blake2b-hash".to_string());
@@ -4520,6 +4605,8 @@ fn cli_supports_research_v3_equivalence_command() {
     let _ = std::fs::remove_file(output_path);
     let _ = std::fs::remove_file(tampered_path);
     let _ = std::fs::remove_file(state_mismatch_path);
+    let _ = std::fs::remove_file(trace_hash_path);
+    let _ = std::fs::remove_file(canonical_event_path);
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]

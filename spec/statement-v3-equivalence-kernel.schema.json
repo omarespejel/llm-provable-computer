@@ -156,6 +156,8 @@
         "halted",
         "trace_len",
         "events_len",
+        "trace",
+        "canonical_events",
         "final_state",
         "trace_hash",
         "event_relation_hash",
@@ -167,10 +169,35 @@
         "halted": { "type": "boolean" },
         "trace_len": { "type": "integer", "minimum": 1 },
         "events_len": { "type": "integer", "minimum": 0 },
+        "trace": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/machine_state" }
+        },
+        "canonical_events": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/canonical_event" }
+        },
         "final_state": { "$ref": "#/$defs/machine_state" },
         "trace_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "event_relation_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "final_state_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" }
+      },
+      "additionalProperties": false
+    },
+    "canonical_event": {
+      "type": "object",
+      "required": [
+        "step",
+        "instruction",
+        "state_before_hash",
+        "state_after_hash"
+      ],
+      "properties": {
+        "step": { "type": "integer", "minimum": 1 },
+        "instruction": { "type": "string" },
+        "state_before_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "state_after_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" }
       },
       "additionalProperties": false
     },

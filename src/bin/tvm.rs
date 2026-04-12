@@ -888,10 +888,9 @@ struct ResearchV2MatrixArtifact {
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct ResearchV3CanonicalEvent {
     step: usize,
-    layer_idx: Option<usize>,
     instruction: String,
     state_before_hash: String,
     state_after_hash: String,
@@ -915,6 +914,8 @@ struct ResearchV3EngineSummary {
     halted: bool,
     trace_len: usize,
     events_len: usize,
+    trace: Vec<MachineState>,
+    canonical_events: Vec<ResearchV3CanonicalEvent>,
     final_state: MachineState,
     trace_hash: String,
     event_relation_hash: String,
@@ -4023,6 +4024,8 @@ fn research_v3_engine_summary(
         halted: result.halted,
         trace_len: trace.len(),
         events_len: events.len(),
+        trace: trace.to_vec(),
+        canonical_events: canonical_events.clone(),
         final_state: result.final_state.clone(),
         trace_hash: hash_json_hex(trace)?,
         event_relation_hash: hash_json_hex(&canonical_events)?,
@@ -4039,7 +4042,6 @@ fn research_v3_canonical_events(
         .map(|event| {
             Ok(ResearchV3CanonicalEvent {
                 step: event.step,
-                layer_idx: event.layer_idx,
                 instruction: event.instruction.to_string(),
                 state_before_hash: hash_json_hex(&event.state_before)?,
                 state_after_hash: hash_json_hex(&event.state_after)?,
@@ -4395,15 +4397,101 @@ fn verify_research_v3_engine_summaries(
                 engine.name, engine.trace_len, expected_trace_len
             )));
         }
+        if engine.trace.len() != engine.trace_len {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} trace array length {} does not match trace_len {}",
+                engine.name,
+                engine.trace.len(),
+                engine.trace_len
+            )));
+        }
+        if engine.canonical_events.len() != engine.events_len {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} canonical_events length {} does not match events_len {}",
+                engine.name,
+                engine.canonical_events.len(),
+                engine.events_len
+            )));
+        }
+        if engine.trace.last() != Some(&engine.final_state) {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} final_state does not match final trace state",
+                engine.name
+            )));
+        }
+        verify_research_v3_engine_trace_events(engine)?;
         research_v3_verify_commitment(
             &format!("{}.final_state_hash", engine.name),
             &engine.final_state_hash,
             &hash_json_hex(&engine.final_state)?,
         )?;
-        research_v3_expect_hash_hex(&format!("{}.trace_hash", engine.name), &engine.trace_hash)?;
-        research_v3_expect_hash_hex(
+        research_v3_verify_commitment(
+            &format!("{}.trace_hash", engine.name),
+            &engine.trace_hash,
+            &hash_json_hex(&engine.trace)?,
+        )?;
+        research_v3_verify_commitment(
             &format!("{}.event_relation_hash", engine.name),
             &engine.event_relation_hash,
+            &hash_json_hex(&engine.canonical_events)?,
+        )?;
+    }
+    if let Some(reference) = artifact.engines.first() {
+        for engine in &artifact.engines {
+            research_v3_verify_commitment(
+                &format!("engine {} cross-engine trace_hash", engine.name),
+                &engine.trace_hash,
+                &reference.trace_hash,
+            )?;
+            research_v3_verify_commitment(
+                &format!("engine {} cross-engine event_relation_hash", engine.name),
+                &engine.event_relation_hash,
+                &reference.event_relation_hash,
+            )?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn verify_research_v3_engine_trace_events(
+    engine: &ResearchV3EngineSummary,
+) -> llm_provable_computer::Result<()> {
+    for (index, event) in engine.canonical_events.iter().enumerate() {
+        let expected_step = index + 1;
+        if event.step != expected_step {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} canonical event step mismatch at index {}: expected {}, got {}",
+                engine.name, index, expected_step, event.step
+            )));
+        }
+        let state_before = engine.trace.get(index).ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "research-v3 engine {} missing trace state before canonical event {}",
+                engine.name, event.step
+            ))
+        })?;
+        let state_after = engine.trace.get(index + 1).ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "research-v3 engine {} missing trace state after canonical event {}",
+                engine.name, event.step
+            ))
+        })?;
+        research_v3_verify_commitment(
+            &format!(
+                "engine {} canonical event {} state_before_hash",
+                engine.name, event.step
+            ),
+            &event.state_before_hash,
+            &hash_json_hex(state_before)?,
+        )?;
+        research_v3_verify_commitment(
+            &format!(
+                "engine {} canonical event {} state_after_hash",
+                engine.name, event.step
+            ),
+            &event.state_after_hash,
+            &hash_json_hex(state_after)?,
         )?;
     }
     Ok(())
@@ -4510,6 +4598,29 @@ fn verify_research_v3_rule_witnesses(
             reference_engine,
         )?;
         for engine_name in &engine_names {
+            let engine = artifact
+                .engines
+                .iter()
+                .find(|engine| &engine.name == engine_name)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!(
+                        "research-v3 missing engine summary for {engine_name}"
+                    ))
+                })?;
+            let canonical_event = engine.canonical_events.get(index).ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "research-v3 engine {} missing canonical event for witness {}",
+                    engine.name, witness.step
+                ))
+            })?;
+            research_v3_expect_eq(
+                &format!(
+                    "witness {} {} canonical_event.instruction",
+                    witness.step, engine_name
+                ),
+                &canonical_event.instruction,
+                &witness.instruction,
+            )?;
             let state_before_hash = research_v3_map_hash(
                 &witness.state_before_hashes,
                 "state_before_hashes",
@@ -4537,6 +4648,22 @@ fn verify_research_v3_rule_witnesses(
                 &format!("witness {} {} state_after_hash", witness.step, engine_name),
                 state_after_hash,
                 reference_state_after_hash,
+            )?;
+            research_v3_verify_commitment(
+                &format!(
+                    "witness {} {} canonical_event.state_before_hash",
+                    witness.step, engine_name
+                ),
+                &canonical_event.state_before_hash,
+                state_before_hash,
+            )?;
+            research_v3_verify_commitment(
+                &format!(
+                    "witness {} {} canonical_event.state_after_hash",
+                    witness.step, engine_name
+                ),
+                &canonical_event.state_after_hash,
+                state_after_hash,
             )?;
             let expected_transition_hash = research_v3_transition_relation_hash(
                 witness.step,
