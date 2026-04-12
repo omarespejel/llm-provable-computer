@@ -15,7 +15,7 @@ Aggregation-line engineering checkpoint for the carried-state evidence:
 `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`
 
 Dedicated proof-carrying aggregation bundle index cited by Reference `[46]`:
-`be9c4e47a9b774e7fdbccf7cdc6977c11b39dcd6`
+`6bb8cab99092203217d64951c3af61488aa2c58e`
 
 Canonical launch repository:
 `https://github.com/omarespejel/provable-transformer-vm`

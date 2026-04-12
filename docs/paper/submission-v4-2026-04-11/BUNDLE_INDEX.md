@@ -39,7 +39,7 @@ Subtitle:
   - `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md`
 - Proof-carrying aggregation bundle index:
   - `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/APPENDIX_ARTIFACT_INDEX.md`
-  - Citation commit: `be9c4e47a9b774e7fdbccf7cdc6977c11b39dcd6`
+  - Citation commit: `6bb8cab99092203217d64951c3af61488aa2c58e`
 
 The older aggregation-line artifact directories remain archival provenance, but the
 bundle above is the publication-facing checkpoint for the carried-state
