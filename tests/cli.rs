@@ -4011,6 +4011,16 @@ fn cli_reports_missing_features_for_research_v3_equivalence() {
         ));
 
     assert!(!output_path.exists());
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-research-v3-equivalence")
+        .arg(&output_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "`verify-research-v3-equivalence` requires the `burn-model` and `onnx-export` features",
+        ));
 }
 
 #[cfg(feature = "onnx-export")]
@@ -4229,6 +4239,10 @@ fn cli_supports_research_v2_matrix_command() {
 #[test]
 fn cli_supports_research_v3_equivalence_command() {
     let output_path = unique_temp_dir("cli-research-v3-equivalence").with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-research-v3-equivalence-tampered").with_extension("json");
+    let state_mismatch_path =
+        unique_temp_dir("cli-research-v3-equivalence-state-mismatch").with_extension("json");
     let mut command = tvm_command();
     command
         .arg("research-v3-equivalence")
@@ -4322,6 +4336,17 @@ fn cli_supports_research_v3_equivalence_command() {
         engine_names,
         ["transformer", "native", "burn", "onnx/tract"]
     );
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-research-v3-equivalence")
+        .arg(&output_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "verified_research_v3_equivalence: true",
+        ))
+        .stdout(predicate::str::contains("rule_witnesses: 3"));
+
     let checked_steps = artifact_json
         .get("checked_steps")
         .and_then(serde_json::Value::as_u64)
@@ -4418,6 +4443,51 @@ fn cli_supports_research_v3_equivalence_command() {
         assert_research_v3_runtime_commitments(&tampered_transition_hash)
     })
     .is_err());
+    tampered_transition_hash["commitments"]["rule_witnesses_hash"] =
+        serde_json::Value::String(hash_json_value(
+            tampered_transition_hash
+                .get("rule_witnesses")
+                .expect("tampered rule witnesses"),
+        ));
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&tampered_transition_hash).expect("tampered artifact json"),
+    )
+    .expect("write tampered artifact");
+    let mut verify_tampered = tvm_command();
+    verify_tampered
+        .arg("verify-research-v3-equivalence")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "transition_hash commitment mismatch",
+        ));
+
+    let mut tampered_state_mismatch = artifact_json.clone();
+    tampered_state_mismatch["rule_witnesses"][0]["state_after_hashes"]["native"] =
+        serde_json::Value::String("1".repeat(64));
+    tampered_state_mismatch["commitments"]["rule_witnesses_hash"] =
+        serde_json::Value::String(hash_json_value(
+            tampered_state_mismatch
+                .get("rule_witnesses")
+                .expect("tampered state mismatch rule witnesses"),
+        ));
+    std::fs::write(
+        &state_mismatch_path,
+        serde_json::to_vec(&tampered_state_mismatch)
+            .expect("tampered state mismatch artifact json"),
+    )
+    .expect("write state mismatch artifact");
+    let mut verify_state_mismatch = tvm_command();
+    verify_state_mismatch
+        .arg("verify-research-v3-equivalence")
+        .arg(&state_mismatch_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "state_after_hash commitment mismatch",
+        ));
 
     let mut malformed_hash = artifact_json.clone();
     malformed_hash["commitments"]["relation_format_hash"] =
@@ -4448,6 +4518,8 @@ fn cli_supports_research_v3_equivalence_command() {
     .is_err());
 
     let _ = std::fs::remove_file(output_path);
+    let _ = std::fs::remove_file(tampered_path);
+    let _ = std::fs::remove_file(state_mismatch_path);
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]

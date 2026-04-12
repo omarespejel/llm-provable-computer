@@ -584,6 +584,11 @@ enum Command {
         )]
         attention_mode: Attention2DMode,
     },
+    /// Verify a research v3 multi-engine equivalence-kernel artifact.
+    VerifyResearchV3Equivalence {
+        /// Path to the equivalence-kernel artifact JSON file.
+        artifact: PathBuf,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -883,7 +888,7 @@ struct ResearchV2MatrixArtifact {
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct ResearchV3CanonicalEvent {
     step: usize,
     layer_idx: Option<usize>,
@@ -893,7 +898,7 @@ struct ResearchV3CanonicalEvent {
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct ResearchV3TransitionRelationRow {
     relation_format: String,
     step: usize,
@@ -903,7 +908,7 @@ struct ResearchV3TransitionRelationRow {
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct ResearchV3EngineSummary {
     name: String,
     steps: usize,
@@ -917,7 +922,7 @@ struct ResearchV3EngineSummary {
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct ResearchV3RuleValidation {
     differential_lockstep: bool,
     egraph_status: String,
@@ -926,7 +931,7 @@ struct ResearchV3RuleValidation {
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct ResearchV3RuleWitness {
     step: usize,
     rule_id: String,
@@ -941,7 +946,7 @@ struct ResearchV3RuleWitness {
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct ResearchV3EquivalenceCommitments {
     hash_function: String,
     statement_spec_hash: String,
@@ -959,7 +964,7 @@ struct ResearchV3EquivalenceCommitments {
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct ResearchV3EquivalenceArtifact {
     statement_version: String,
     semantic_scope: String,
@@ -1271,6 +1276,9 @@ fn run() -> llm_provable_computer::Result<()> {
             layers,
             attention_mode,
         } => research_v3_equivalence_command(&program, &output, max_steps, layers, attention_mode)?,
+        Command::VerifyResearchV3Equivalence { artifact } => {
+            verify_research_v3_equivalence_command(&artifact)?
+        }
     }
 
     Ok(())
@@ -3498,6 +3506,10 @@ fn research_v3_equivalence_command(
     research_v3_equivalence_command_impl(program, output, max_steps, layers, attention_mode)
 }
 
+fn verify_research_v3_equivalence_command(artifact: &Path) -> llm_provable_computer::Result<()> {
+    verify_research_v3_equivalence_command_impl(artifact)
+}
+
 #[cfg(feature = "onnx-export")]
 fn research_v2_step_command_impl(
     program: &Path,
@@ -3933,15 +3945,7 @@ fn research_v3_equivalence_command_impl(
     let engine_summaries_hash = hash_json_projection_hex(&engines)?;
     let rule_witnesses_hash = hash_json_projection_hex(&rule_witnesses)?;
     let relation_format = RESEARCH_V3_RELATION_FORMAT.to_string();
-    let limitations = vec![
-        "Emerge reproduction is not implemented in this artifact".to_string(),
-        "e-graph saturation is not implemented in this artifact".to_string(),
-        "SMT-backed rewrite synthesis is not implemented in this artifact".to_string(),
-        "randomized opaque-kernel testing is not implemented in this artifact".to_string(),
-        "recursive accumulation is not implemented in this artifact".to_string(),
-        "this artifact is not a cryptographic implementation-equivalence proof".to_string(),
-        "the current evidence is deterministic multi-engine lockstep over the shipped VM/ONNX/Burn/native surfaces".to_string(),
-    ];
+    let limitations = research_v3_limitations();
     let relation_format_hash = hash_json_hex(&relation_format)?;
     let limitations_hash = hash_json_hex(&limitations)?;
 
@@ -4154,6 +4158,533 @@ fn research_v3_transition_relation_hash(
         state_after_hash: state_after_hash.to_string(),
     };
     hash_json_projection_hex(&row)
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_limitations() -> Vec<String> {
+    [
+        "Emerge reproduction is not implemented in this artifact",
+        "e-graph saturation is not implemented in this artifact",
+        "SMT-backed rewrite synthesis is not implemented in this artifact",
+        "randomized opaque-kernel testing is not implemented in this artifact",
+        "recursive accumulation is not implemented in this artifact",
+        "this artifact is not a cryptographic implementation-equivalence proof",
+        "the current evidence is deterministic multi-engine lockstep over the shipped VM/ONNX/Burn/native surfaces",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn verify_research_v3_equivalence_command_impl(
+    artifact_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    let artifact_bytes = fs::read(artifact_path).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to read research-v3 artifact {}: {err}",
+            artifact_path.display()
+        ))
+    })?;
+    let artifact: ResearchV3EquivalenceArtifact =
+        serde_json::from_slice(&artifact_bytes).map_err(|err| {
+            VmError::Serialization(format!(
+                "failed to parse research-v3 artifact {}: {err}",
+                artifact_path.display()
+            ))
+        })?;
+
+    verify_research_v3_equivalence_artifact(&artifact)?;
+
+    println!("verified_research_v3_equivalence: true");
+    println!("statement_version: {}", artifact.statement_version);
+    println!("semantic_scope: {}", artifact.semantic_scope);
+    println!("relation_format: {}", artifact.relation_format);
+    println!("checked_steps: {}", artifact.checked_steps);
+    println!(
+        "engines: {}",
+        artifact
+            .engines
+            .iter()
+            .map(|engine| engine.name.as_str())
+            .collect::<Vec<_>>()
+            .join(",")
+    );
+    println!("rule_witnesses: {}", artifact.rule_witnesses.len());
+
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn verify_research_v3_equivalence_artifact(
+    artifact: &ResearchV3EquivalenceArtifact,
+) -> llm_provable_computer::Result<()> {
+    let bundle = load_research_v2_spec_bundle(
+        STATEMENT_V3_EQUIVALENCE_SPEC_PATH,
+        STATEMENT_V3_EQUIVALENCE_ARTIFACT_SCHEMA_PATH,
+    )?;
+    research_v3_expect_eq(
+        "statement_version",
+        &artifact.statement_version,
+        &bundle.statement_version,
+    )?;
+    research_v3_expect_eq(
+        "semantic_scope",
+        &artifact.semantic_scope,
+        &bundle.semantic_scope,
+    )?;
+    research_v3_expect_eq(
+        "relation_format",
+        &artifact.relation_format,
+        RESEARCH_V3_RELATION_FORMAT,
+    )?;
+    research_v3_expect_eq(
+        "fixed_point_profile",
+        &artifact.fixed_point_profile,
+        &bundle.fixed_point_profile,
+    )?;
+    research_v3_expect_eq(
+        "onnx_op_subset_version",
+        &artifact.onnx_op_subset_version,
+        &bundle.onnx_op_subset_version,
+    )?;
+    if artifact.onnx_op_subset_size != bundle.onnx_op_subset_size {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 onnx_op_subset_size mismatch: expected {}, got {}",
+            bundle.onnx_op_subset_size, artifact.onnx_op_subset_size
+        )));
+    }
+    if artifact.requested_max_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "research-v3 requested_max_steps must be nonzero".to_string(),
+        ));
+    }
+    if artifact.checked_steps > artifact.requested_max_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 checked_steps {} exceeds requested_max_steps {}",
+            artifact.checked_steps, artifact.requested_max_steps
+        )));
+    }
+    if artifact.checked_steps != artifact.rule_witnesses.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 checked_steps {} does not match rule_witnesses length {}",
+            artifact.checked_steps,
+            artifact.rule_witnesses.len()
+        )));
+    }
+    let expected_limitations = research_v3_limitations();
+    if artifact.limitations != expected_limitations {
+        return Err(VmError::InvalidConfig(
+            "research-v3 limitations do not match the pinned research-v3 claim boundary"
+                .to_string(),
+        ));
+    }
+
+    validate_frontend_runtime_semantics_registry(&artifact.frontend_runtime_semantics_registry)?;
+    research_v3_verify_commitment(
+        "statement_spec_hash",
+        &artifact.commitments.statement_spec_hash,
+        &bundle.statement_spec_hash,
+    )?;
+    research_v3_verify_commitment(
+        "fixed_point_spec_hash",
+        &artifact.commitments.fixed_point_spec_hash,
+        &bundle.fixed_point_spec_hash,
+    )?;
+    research_v3_verify_commitment(
+        "onnx_op_subset_hash",
+        &artifact.commitments.onnx_op_subset_hash,
+        &bundle.onnx_op_subset_hash,
+    )?;
+    research_v3_verify_commitment(
+        "artifact_schema_hash",
+        &artifact.commitments.artifact_schema_hash,
+        &bundle.artifact_schema_hash,
+    )?;
+    research_v3_expect_eq(
+        "commitments.hash_function",
+        &artifact.commitments.hash_function,
+        RESEARCH_V2_HASH_FUNCTION,
+    )?;
+    research_v3_verify_commitment(
+        "frontend_runtime_semantics_registry_hash",
+        &artifact
+            .commitments
+            .frontend_runtime_semantics_registry_hash,
+        &hash_json_hex(&artifact.frontend_runtime_semantics_registry)?,
+    )?;
+    research_v3_verify_commitment(
+        "relation_format_hash",
+        &artifact.commitments.relation_format_hash,
+        &hash_json_hex(&artifact.relation_format)?,
+    )?;
+    research_v3_verify_commitment(
+        "limitations_hash",
+        &artifact.commitments.limitations_hash,
+        &hash_json_hex(&artifact.limitations)?,
+    )?;
+    research_v3_verify_commitment(
+        "engine_summaries_hash",
+        &artifact.commitments.engine_summaries_hash,
+        &hash_json_projection_hex(&artifact.engines)?,
+    )?;
+    research_v3_verify_commitment(
+        "rule_witnesses_hash",
+        &artifact.commitments.rule_witnesses_hash,
+        &hash_json_projection_hex(&artifact.rule_witnesses)?,
+    )?;
+    for (label, hash) in [
+        ("program_hash", artifact.commitments.program_hash.as_str()),
+        (
+            "transformer_config_hash",
+            artifact.commitments.transformer_config_hash.as_str(),
+        ),
+        (
+            "onnx_metadata_hash",
+            artifact.commitments.onnx_metadata_hash.as_str(),
+        ),
+    ] {
+        research_v3_expect_hash_hex(label, hash)?;
+    }
+
+    verify_research_v3_engine_summaries(artifact)?;
+    verify_research_v3_rule_witnesses(artifact)?;
+
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn verify_research_v3_engine_summaries(
+    artifact: &ResearchV3EquivalenceArtifact,
+) -> llm_provable_computer::Result<()> {
+    let mut seen = std::collections::BTreeSet::new();
+    for engine in &artifact.engines {
+        if !seen.insert(engine.name.as_str()) {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 duplicate engine summary `{}`",
+                engine.name
+            )));
+        }
+        if engine.halted != engine.final_state.halted {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} halted={} does not match final_state.halted={}",
+                engine.name, engine.halted, engine.final_state.halted
+            )));
+        }
+        if engine.steps != artifact.checked_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} steps {} does not match checked_steps {}",
+                engine.name, engine.steps, artifact.checked_steps
+            )));
+        }
+        if engine.events_len != artifact.checked_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} events_len {} does not match checked_steps {}",
+                engine.name, engine.events_len, artifact.checked_steps
+            )));
+        }
+        let expected_trace_len = engine.events_len.checked_add(1).ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "research-v3 engine {} events_len overflow while checking trace_len",
+                engine.name
+            ))
+        })?;
+        if engine.trace_len != expected_trace_len {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} trace_len {} does not match events_len + 1 ({})",
+                engine.name, engine.trace_len, expected_trace_len
+            )));
+        }
+        research_v3_verify_commitment(
+            &format!("{}.final_state_hash", engine.name),
+            &engine.final_state_hash,
+            &hash_json_hex(&engine.final_state)?,
+        )?;
+        research_v3_expect_hash_hex(&format!("{}.trace_hash", engine.name), &engine.trace_hash)?;
+        research_v3_expect_hash_hex(
+            &format!("{}.event_relation_hash", engine.name),
+            &engine.event_relation_hash,
+        )?;
+    }
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn verify_research_v3_rule_witnesses(
+    artifact: &ResearchV3EquivalenceArtifact,
+) -> llm_provable_computer::Result<()> {
+    let engine_names = artifact
+        .engines
+        .iter()
+        .map(|engine| engine.name.clone())
+        .collect::<Vec<_>>();
+    if engine_names.len() < 2 {
+        return Err(VmError::InvalidConfig(
+            "research-v3 artifact must include at least two engines".to_string(),
+        ));
+    }
+    let reference_engine = engine_names.first().ok_or_else(|| {
+        VmError::InvalidConfig("research-v3 artifact must include at least one engine".to_string())
+    })?;
+
+    for (index, witness) in artifact.rule_witnesses.iter().enumerate() {
+        if witness.step != index + 1 {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 witness step mismatch at index {}: expected {}, got {}",
+                index,
+                index + 1,
+                witness.step
+            )));
+        }
+        if witness.participating_engines != engine_names {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 witness step {} participating_engines mismatch",
+                witness.step
+            )));
+        }
+        research_v3_expect_eq(
+            &format!("witness {} relation", witness.step),
+            &witness.relation,
+            "same-instruction-same-state-transition",
+        )?;
+        research_v3_expect_eq(
+            &format!("witness {} rule_id", witness.step),
+            &witness.rule_id,
+            &research_v3_rule_id(&witness.instruction),
+        )?;
+        if !witness.validation.differential_lockstep {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 witness {} differential_lockstep must be true",
+                witness.step
+            )));
+        }
+        for (label, status) in [
+            ("egraph_status", witness.validation.egraph_status.as_str()),
+            ("smt_status", witness.validation.smt_status.as_str()),
+            (
+                "randomized_testing_status",
+                witness.validation.randomized_testing_status.as_str(),
+            ),
+        ] {
+            research_v3_expect_eq(
+                &format!("witness {} {}", witness.step, label),
+                status,
+                "not-attempted",
+            )?;
+        }
+
+        research_v3_expect_hash_map_keys(
+            &witness.state_before_hashes,
+            "state_before_hashes",
+            witness.step,
+            &engine_names,
+        )?;
+        research_v3_expect_hash_map_keys(
+            &witness.state_after_hashes,
+            "state_after_hashes",
+            witness.step,
+            &engine_names,
+        )?;
+        research_v3_expect_hash_map_keys(
+            &witness.engine_transition_hashes,
+            "engine_transition_hashes",
+            witness.step,
+            &engine_names,
+        )?;
+        let reference_state_before_hash = research_v3_map_hash(
+            &witness.state_before_hashes,
+            "state_before_hashes",
+            witness.step,
+            reference_engine,
+        )?;
+        let reference_state_after_hash = research_v3_map_hash(
+            &witness.state_after_hashes,
+            "state_after_hashes",
+            witness.step,
+            reference_engine,
+        )?;
+        let reference_transition_hash = research_v3_map_hash(
+            &witness.engine_transition_hashes,
+            "engine_transition_hashes",
+            witness.step,
+            reference_engine,
+        )?;
+        for engine_name in &engine_names {
+            let state_before_hash = research_v3_map_hash(
+                &witness.state_before_hashes,
+                "state_before_hashes",
+                witness.step,
+                engine_name,
+            )?;
+            let state_after_hash = research_v3_map_hash(
+                &witness.state_after_hashes,
+                "state_after_hashes",
+                witness.step,
+                engine_name,
+            )?;
+            let transition_hash = research_v3_map_hash(
+                &witness.engine_transition_hashes,
+                "engine_transition_hashes",
+                witness.step,
+                engine_name,
+            )?;
+            research_v3_verify_commitment(
+                &format!("witness {} {} state_before_hash", witness.step, engine_name),
+                state_before_hash,
+                reference_state_before_hash,
+            )?;
+            research_v3_verify_commitment(
+                &format!("witness {} {} state_after_hash", witness.step, engine_name),
+                state_after_hash,
+                reference_state_after_hash,
+            )?;
+            let expected_transition_hash = research_v3_transition_relation_hash(
+                witness.step,
+                &witness.instruction,
+                state_before_hash,
+                state_after_hash,
+            )?;
+            research_v3_verify_commitment(
+                &format!("witness {} {} transition_hash", witness.step, engine_name),
+                transition_hash,
+                &expected_transition_hash,
+            )?;
+            research_v3_verify_commitment(
+                &format!(
+                    "witness {} {} cross-engine transition_hash",
+                    witness.step, engine_name
+                ),
+                transition_hash,
+                reference_transition_hash,
+            )?;
+        }
+
+        research_v3_verify_commitment(
+            &format!("witness {} canonical_transition_hash", witness.step),
+            &witness.canonical_transition_hash,
+            reference_transition_hash,
+        )?;
+    }
+
+    if let Some(final_witness) = artifact.rule_witnesses.last() {
+        for engine in &artifact.engines {
+            let final_witness_state_hash = research_v3_map_hash(
+                &final_witness.state_after_hashes,
+                "state_after_hashes",
+                final_witness.step,
+                &engine.name,
+            )?;
+            research_v3_verify_commitment(
+                &format!(
+                    "engine {} final_state_hash matches final witness boundary",
+                    engine.name
+                ),
+                &engine.final_state_hash,
+                final_witness_state_hash,
+            )?;
+        }
+    }
+    let reference_final_state_hash = &artifact
+        .engines
+        .first()
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "research-v3 artifact must include at least one engine".to_string(),
+            )
+        })?
+        .final_state_hash;
+    for engine in &artifact.engines {
+        research_v3_verify_commitment(
+            &format!("engine {} cross-engine final_state_hash", engine.name),
+            &engine.final_state_hash,
+            reference_final_state_hash,
+        )?;
+    }
+
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_expect_hash_map_keys(
+    map: &std::collections::BTreeMap<String, String>,
+    map_name: &str,
+    step: usize,
+    engine_names: &[String],
+) -> llm_provable_computer::Result<()> {
+    let actual = map
+        .keys()
+        .map(String::as_str)
+        .collect::<std::collections::BTreeSet<_>>();
+    let expected = engine_names
+        .iter()
+        .map(String::as_str)
+        .collect::<std::collections::BTreeSet<_>>();
+    if actual != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 witness {step} {map_name} engine-key set mismatch"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_map_hash<'a>(
+    map: &'a std::collections::BTreeMap<String, String>,
+    map_name: &str,
+    step: usize,
+    engine_name: &str,
+) -> llm_provable_computer::Result<&'a str> {
+    let hash = map.get(engine_name).ok_or_else(|| {
+        VmError::InvalidConfig(format!(
+            "research-v3 witness {} missing {} entry for {}",
+            step, map_name, engine_name
+        ))
+    })?;
+    research_v3_expect_hash_hex(
+        &format!("witness {} {} {}", step, map_name, engine_name),
+        hash,
+    )?;
+    Ok(hash)
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_verify_commitment(
+    label: &str,
+    actual: &str,
+    expected: &str,
+) -> llm_provable_computer::Result<()> {
+    research_v3_expect_hash_hex(label, actual)?;
+    research_v3_expect_hash_hex(label, expected)?;
+    if actual != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 {label} commitment mismatch: expected {expected}, got {actual}"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_expect_eq(
+    label: &str,
+    actual: &str,
+    expected: &str,
+) -> llm_provable_computer::Result<()> {
+    if actual != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 {label} mismatch: expected `{expected}`, got `{actual}`"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_expect_hash_hex(label: &str, value: &str) -> llm_provable_computer::Result<()> {
+    if value.len() != 64 || !value.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 {label} must be a 64-character hex Blake2b-256 hash"
+        )));
+    }
+    Ok(())
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
@@ -4459,6 +4990,16 @@ fn research_v3_equivalence_command_impl(
 ) -> llm_provable_computer::Result<()> {
     Err(feature_required_error(
         "`research-v3-equivalence`",
+        &["burn-model", "onnx-export"],
+    ))
+}
+
+#[cfg(not(all(feature = "burn-model", feature = "onnx-export")))]
+fn verify_research_v3_equivalence_command_impl(
+    _artifact: &Path,
+) -> llm_provable_computer::Result<()> {
+    Err(feature_required_error(
+        "`verify-research-v3-equivalence`",
         &["burn-model", "onnx-export"],
     ))
 }
@@ -5309,6 +5850,7 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "research-v2-trace"
                 | "research-v2-matrix"
                 | "research-v3-equivalence"
+                | "verify-research-v3-equivalence"
                 | "help"
         )
 }

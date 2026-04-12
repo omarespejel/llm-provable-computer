@@ -95,11 +95,13 @@ produces:
   claim relation.
 - `research-v3` artifacts extend that evidence to transformer/native/Burn/ONNX
   lockstep plus rule witnesses and per-engine transition relation hashes. Their
-  frontend/runtime semantics registry keeps PyTorch `torch.export`, ExecuTorch,
-  StableHLO, IREE, ONNX-MLIR, TVM, vLLM, SGLang, and egg/Emerge-style paths as
-  explicit research-watch lanes; these artifacts are not e-graph saturation
-  results, SMT rewrite proofs, randomized opaque-kernel tests, or cryptographic
-  implementation-equivalence proofs.
+  verifier recomputes artifact commitments, cross-engine state-boundary
+  consistency, final-state links, and transition relation hashes as an integrity
+  check. Their frontend/runtime semantics registry keeps PyTorch
+  `torch.export`, ExecuTorch, StableHLO, IREE, ONNX-MLIR, TVM, vLLM, SGLang,
+  and egg/Emerge-style paths as explicit research-watch lanes; these artifacts
+  are not e-graph saturation results, SMT rewrite proofs, randomized
+  opaque-kernel tests, or cryptographic implementation-equivalence proofs.
 
 ## Paper figure regeneration
 
