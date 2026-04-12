@@ -4055,6 +4055,18 @@ fn research_v3_rule_witnesses(
         .iter()
         .map(|(engine_name, _)| (*engine_name).to_string())
         .collect::<Vec<_>>();
+    let reference_event_len = reference_events.len();
+    for (engine_name, events) in engine_events.iter().skip(1) {
+        if events.len() != reference_event_len {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3-equivalence event length mismatch: {} has {}, {} has {}",
+                reference_name,
+                reference_event_len,
+                engine_name,
+                events.len()
+            )));
+        }
+    }
 
     reference_events
         .iter()
@@ -4837,6 +4849,32 @@ mod tests {
         assert!(err
             .to_string()
             .contains(&format!("duplicate lane_id {duplicate_lane_id}")));
+    }
+
+    #[test]
+    #[cfg(feature = "burn-model")]
+    fn research_v3_rule_witnesses_rejects_event_length_mismatch() {
+        let state_before = MachineState::new(4);
+        let mut state_after = state_before.clone();
+        state_after.pc = 1;
+        let reference_event = ExecutionTraceEntry {
+            step: 1,
+            layer_idx: None,
+            instruction: llm_provable_computer::Instruction::Nop,
+            state_before,
+            state_after,
+        };
+        let peer_events = Vec::new();
+
+        let err = research_v3_rule_witnesses(&[
+            ("transformer", std::slice::from_ref(&reference_event)),
+            ("native", peer_events.as_slice()),
+        ])
+        .unwrap_err();
+
+        assert!(err
+            .to_string()
+            .contains("research-v3-equivalence event length mismatch"));
     }
 
     #[test]

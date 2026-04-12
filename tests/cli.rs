@@ -4411,6 +4411,13 @@ fn cli_supports_research_v3_equivalence_command() {
         assert_research_v3_runtime_commitments(&tampered_registry_hash)
     })
     .is_err());
+    let mut tampered_transition_hash = artifact_json.clone();
+    tampered_transition_hash["rule_witnesses"][0]["engine_transition_hashes"]["native"] =
+        serde_json::Value::String("0".repeat(64));
+    assert!(std::panic::catch_unwind(|| {
+        assert_research_v3_runtime_commitments(&tampered_transition_hash)
+    })
+    .is_err());
 
     let mut malformed_hash = artifact_json.clone();
     malformed_hash["commitments"]["relation_format_hash"] =
