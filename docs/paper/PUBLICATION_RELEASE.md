@@ -37,8 +37,8 @@ patches and a subsequent publication tag.
 
 - Main paper:
   - `docs/paper/stark-transformer-alignment-2026.md`
-  - Title: `Proof-Carrying Decoding for Transformer Computers over an Experimental S-two Backend`
-  - Subtitle: `From transformer-as-computer execution traces to recursive-ready carried-state proof artifacts.`
+  - Title: `On the Structural Fit of Transformer Workloads and STARK Proof Systems`
+  - Subtitle: `With proof-carrying decoding artifacts over an experimental S-two path.`
 - Supporting appendices:
   - `docs/paper/appendix-system-comparison.md`
   - `docs/paper/appendix-scaling-companion.md`
@@ -93,8 +93,9 @@ Before cutting a release tag, verify:
 2. the main paper and appendices refer to the same repo state and evidence tiers,
 3. the design note matches the current experimental `stwo` status,
 4. no stale top-level README language still describes S-two as merely prospective,
-5. Reference `[30]` remains commit-pinned to the Phase 28 systems checkpoint,
-   while the Phase 28 aggregation bundle remains directly pinned by Reference `[46]`,
+5. Reference `[30]` remains commit-pinned until the v4 publication tag exists;
+   after that tag is cut, update `[30]` to the v4 publication tag while keeping
+   the Phase 28 aggregation bundle directly pinned by Reference `[46]`,
 6. the formal author line and affiliation text are confirmed before public release,
 7. `paper preflight` passes (citation integrity, immutable local repo links,
    figure/link paths, appendix source note, and unresolved publication snapshot

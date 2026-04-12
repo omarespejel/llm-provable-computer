@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="980" height="360" viewBox="0 0 980 360" role="img" aria-labelledby="title desc">
-  <title id="title">Carried-state artifact ladder</title>
-  <desc id="desc">Flow diagram from proof-carrying decode steps through pre-recursive carried-state packaging to the Phase 29 input contract, with KV and lookup commitment lanes carried across the same boundaries.</desc>
+  <title id="title">Carried-state packaging ladder</title>
+  <desc id="desc">Flow diagram from proof-carrying decode steps through pre-recursive carried-state packaging to a future input contract, with KV and lookup commitment lanes carried across the same boundaries.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#293241"/>
@@ -22,7 +22,7 @@
   </defs>
   <rect class="bg" x="0" y="0" width="980" height="360"/>
   <text class="label" x="40" y="42">Carried-state ladder</text>
-  <text class="small" x="40" y="66">Statement-preserving artifact layers; not recursive proof compression until a later prover verifies the Phase 29 contract.</text>
+  <text class="small" x="40" y="66">Statement-preserving artifact layers; not recursive proof compression until a later prover closes the contract.</text>
 
   <rect class="box" x="40" y="112" width="120" height="74"/>
   <text class="small" x="64" y="142">decode</text>
@@ -41,11 +41,11 @@
   <text class="small" x="544" y="160">intervals</text>
 
   <rect class="box" x="680" y="112" width="120" height="74"/>
-  <text class="small" x="706" y="142">Phase 28</text>
-  <text class="small" x="700" y="160">aggregate</text>
+  <text class="small" x="706" y="142">aggregation</text>
+  <text class="small" x="708" y="160">boundary</text>
 
   <rect class="contract" x="840" y="112" width="100" height="74"/>
-  <text class="small" x="866" y="142">Phase 29</text>
+  <text class="small" x="866" y="142">future</text>
   <text class="small" x="862" y="160">contract</text>
 
   <path class="lane main" d="M 160 149 H 198"/>

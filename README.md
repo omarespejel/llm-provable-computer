@@ -55,6 +55,7 @@ No sampling. No stochastic output. Same input, same output, every time.
 | `statement-v1` | Stable | Vanilla STARK proof of native ISA execution, plus enforced transformer/native semantic agreement checks |
 | `stwo-backend` | Experimental | Narrow `statement-v1` proving surface for shipped fixtures, lookup demos, transformer-shaped fixtures, and decoding artifacts |
 | `research-v2` | Artifact-only | Semantic agreement artifacts for transformer vs ONNX, not yet a full STARK claim |
+| `research-v3` | Artifact-only | Multi-engine transformer/native/Burn/ONNX equivalence-kernel artifacts with transition relation hashes and explicit non-e-graph/non-SMT limits |
 
 The important boundary is explicit: this repo does **not** yet prove full
 standard-softmax transformer inference on `stwo`.
@@ -656,6 +657,20 @@ cargo test --quiet statement_spec_contract_is_synced_with_constants
 - These artifacts are publication evidence and regression guards, but they are not
   currently embedded into the `statement-v1` STARK proof relation.
 
+`research-v3` (research artifacts, not yet a full implementation-equivalence proof):
+
+- `research-v3-equivalence` checks transformer, native, Burn, and ONNX/Tract
+  runtimes in lockstep and emits an equivalence-kernel artifact with rule
+  witnesses, bounded trace rows, semantic canonical event rows, per-engine
+  transition relation hashes, and commitment hashes.
+- `verify-research-v3-equivalence` verifies the artifact boundary by recomputing
+  internal commitments, bounded trace hashes, semantic canonical event-relation
+  hashes, cross-engine state-boundary consistency, final-state links, and
+  per-engine transition relation hashes.
+- The artifact is deliberately bounded: it is not an e-graph saturation result,
+  SMT-backed rewrite proof, randomized opaque-kernel test suite, or
+  cryptographic proof of implementation equivalence.
+
 ### Production Profile (v1)
 
 `production-v1` is a practical local proving profile intended for routine CI/integration checks:
@@ -752,6 +767,73 @@ Additional matrix spec files:
 - `spec/statement-v2-matrix-research.json`
 - `spec/statement-v2-matrix-certificate.schema.json`
 
+### Research V3 Multi-Engine Equivalence Kernel
+
+For the first Emerge-style hardening step, generate a bounded multi-engine
+equivalence-kernel artifact:
+
+```bash
+cargo run --features full --bin tvm -- research-v3-equivalence programs/addition.tvm \
+  -o compiled/research-v3-addition-equivalence.json --max-steps 8
+cargo run --features full --bin tvm -- verify-research-v3-equivalence \
+  compiled/research-v3-addition-equivalence.json
+```
+
+This checks transformer, native, Burn, and ONNX/Tract runtimes in lockstep,
+then emits a JSON artifact with engine summaries, deterministic rule witnesses,
+bounded trace rows, semantic canonical event rows, per-engine transition
+relation hashes, and commitment hashes. The transition hashes are the first
+narrow Emerge-style relation-kernel hardening step: they make each
+same-instruction state transition explicit without claiming equality saturation
+or synthesized rewrite validation. The verifier command recomputes the
+artifact's internal commitments, bounded trace hashes, semantic canonical
+event-relation hashes, engine final-state hashes, cross-engine state-boundary
+consistency, and transition relation hashes; it is an artifact-integrity check,
+not a proof that independent model implementations are equivalent in general.
+The artifact also carries a frontend/runtime semantics
+registry that separates currently checked lanes from these research-watch lanes:
+`torch-export`, `executorch`, `stablehlo`, `iree`, `onnx-mlir`, `tvm-unity`,
+`vllm`, `sglang`, and `egg-emerge`. It intentionally does not claim support for
+those watch lanes, e-graph saturation, SMT-backed rewrite synthesis, randomized
+opaque-kernel testing, or a cryptographic implementation-equivalence proof.
+
+Canonical research-v3 spec files:
+
+- `spec/statement-v3-equivalence-kernel-research.json`
+- `spec/statement-v3-equivalence-kernel.schema.json`
+- `spec/frontend-runtime-semantics-registry-v1.json`
+
+### Hugging Face Provenance Manifest
+
+For HF-backed model or artifact releases, prepare a bounded provenance manifest:
+
+```bash
+cargo run --bin tvm -- prepare-hf-provenance-manifest \
+  -o compiled/hf-provenance.json \
+  --hub-repo org/model \
+  --hub-revision <pinned-commit-or-release-tag> \
+  --tokenizer-id org/model \
+  --tokenizer-json path/to/tokenizer.json \
+  --safetensors path/to/model.safetensors \
+  --onnx-model path/to/model.onnx \
+  --model-card path/to/README.md
+cargo run --bin tvm -- verify-hf-provenance-manifest compiled/hf-provenance.json
+```
+
+This manifest is deliberately a provenance artifact, not a proving claim. It
+pins the Hub repo/revision, tokenizer identity/revision, optional tokenizer
+files and tokenization transcripts, local `safetensors` file hashes plus parsed
+metadata-header hashes/tensor counts, optional ONNX export file hashes, and
+optional model-card/DOI/dataset release metadata. The verifier rejects floating
+Hub revisions such as `main`, recomputes local file hashes, recomputes the
+manifest commitments, and rejects safetensors metadata drift. It does not prove
+tokenizer algorithm correctness, safetensors architectural semantics, Optimum
+export semantic equivalence, live Hub availability, or DOI validity.
+
+Canonical HF provenance spec file:
+
+- `spec/hf-provenance-manifest.schema.json`
+
 ### Reproducibility Bundle
 
 For publication-ready artifacts (benchmarks, proofs, semantic agreement artifacts, hashes),
@@ -766,7 +848,7 @@ Outputs are written to `compiled/repro-bundle/`:
 - `manifest.txt` (commit + toolchain + environment)
 - `benchmarks.tsv` (timings by command)
 - `sha256sums.txt` (hashes for generated artifacts)
-- STARK proof files and `research-v2` certificates used for evidence sections
+- STARK proof files and `research-v2` / `research-v3` certificates used for evidence sections
 
 Additional committed transformer-shaped semantic artifacts live under:
 
