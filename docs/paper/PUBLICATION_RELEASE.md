@@ -11,7 +11,7 @@ The canonical v4 publication snapshot is the release tag
 containing this v4 paper metadata, and it intentionally need not match the
 pinned carried-state evidence commit used by the aggregation bundle.
 
-Pinned carried-state evidence commit:
+Pinned carried-state aggregation provenance checkpoint:
 `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`
 
 Dedicated proof-carrying aggregation bundle index cited by Reference `[46]`:
@@ -61,7 +61,7 @@ monolithic benchmark claim.
   carried-state aggregation bundle, including proof-carrying outer aggregation over chained artifacts.
 - Older carried-state artifact bundles are retained as archival provenance; see
   `docs/paper/artifacts/README.md`. The proof-carrying aggregation bundle is the
-  publication-facing artifact bundle for that line.
+  publication-facing artifact bundle for the carried-state aggregation line.
 - The repo still does **not** claim full standard-softmax transformer inference on S-two,
   recursive cross-step shared-table accumulation beyond the public lookup-accumulator artifact,
   recursive cryptographic compression/verification closure, or production-scale zkML deployment.

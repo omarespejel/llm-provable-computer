@@ -1,10 +1,10 @@
 # On the Structural Fit of Transformer Workloads and STARK Proof Systems
 
-**Abdelhamid Bakhta**
-StarkWare
+**Abdelhamid Bakhta**<br>
+StarkWare<br>
 
-**Omar Espejel**
-Starknet Foundation
+**Omar Espejel**<br>
+Starknet Foundation<br>
 
 *April 2026*
 
