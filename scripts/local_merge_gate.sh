@@ -419,6 +419,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_stwo_smoke_targets
   run_stwo_cli_smoke_targets
   run_research_v3_smoke_targets
+  run_logged fuzz-smoke env FUZZ_TIME_PER_TARGET=20 scripts/run_fuzz_smoke_suite.sh
   run_logged ub-checks env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
   run_logged asan env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_asan_suite.sh
   run_logged miri env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_miri_suite.sh

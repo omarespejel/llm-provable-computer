@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import json
 import os
 import pathlib
@@ -87,14 +88,34 @@ def write_json(path: pathlib.Path, value: object) -> None:
     json.loads(path.read_text())
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Generate curated fuzz corpus inputs for decoding-related targets."
+    )
+    parser.add_argument(
+        "--output-root",
+        type=pathlib.Path,
+        default=CORPUS,
+        help="Corpus root directory to populate. Defaults to fuzz/corpus.",
+    )
+    return parser.parse_args()
+
+
 def main() -> int:
-    phase12_path = CORPUS / "phase12_decoding_manifest" / "valid_phase12.json"
-    phase14_path = CORPUS / "phase14_decoding_manifest" / "valid_phase14.json"
-    artifact_path = CORPUS / "phase12_shared_lookup_artifact" / "valid_artifact.json"
+    args = parse_args()
+    corpus_root = args.output_root.resolve()
+
+    phase12_path = corpus_root / "phase12_decoding_manifest" / "valid_phase12.json"
+    phase14_path = corpus_root / "phase14_decoding_manifest" / "valid_phase14.json"
+    artifact_path = corpus_root / "phase12_shared_lookup_artifact" / "valid_artifact.json"
+    phase30_path = (
+        corpus_root / "phase30_decoding_step_proof_envelope_manifest" / "valid_phase30.json"
+    )
 
     phase12_path.parent.mkdir(parents=True, exist_ok=True)
     phase14_path.parent.mkdir(parents=True, exist_ok=True)
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    phase30_path.parent.mkdir(parents=True, exist_ok=True)
 
     run(
         "cargo",
@@ -170,6 +191,29 @@ def main() -> int:
         "artifact": first_artifact,
     }
     write_json(artifact_path, artifact_input)
+
+    run(
+        "cargo",
+        f"+{RUST_TOOLCHAIN}",
+        "run",
+        "--quiet",
+        "--features",
+        "stwo-backend",
+        "--bin",
+        "tvm",
+        "--",
+        "prepare-stwo-decoding-step-envelope-manifest",
+        "--proof",
+        str(phase12_path),
+        "-o",
+        str(phase30_path),
+    )
+    phase30 = json.loads(phase30_path.read_text())
+    phase30_input = {
+        "manifest": phase30,
+        "chain": phase12,
+    }
+    write_json(phase30_path, phase30_input)
     return 0
 
 

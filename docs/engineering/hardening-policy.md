@@ -45,11 +45,18 @@ RUSTUP_TOOLCHAIN=nightly-2025-07-14 cargo nextest run \
   --profile ci-stwo --no-fail-fast
 cargo fmt --check
 git diff --check
+python3 scripts/fuzz/generate_decoding_fuzz_corpus.py
+FUZZ_TIME_PER_TARGET=20 scripts/run_fuzz_smoke_suite.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_miri_suite.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_asan_suite.sh
 scripts/run_formal_contract_suite.sh
 ```
+
+`scripts/fuzz/generate_decoding_fuzz_corpus.py` refreshes the tracked curated
+corpus. `scripts/run_fuzz_smoke_suite.sh` generates its own temporary corpus
+under `target/fuzz-smoke/generated-corpus` so the hardening gate does not
+rewrite tracked fuzz seeds as a side effect.
 
 The sanitizer and UB hardening scripts use the curated exact test lists in
 `scripts/hardening_test_names.sh`; update that file when adding new trusted-core
@@ -108,10 +115,10 @@ Available local command tiers:
 - `--mode full`: runs the same PR-range whitespace and formatting hygiene, full
   library tests, integration tests, doctests, and the exact pinned-nightly
   `stwo-backend` smokes.
-- `--mode hardening`: runs the `full` tier plus UB checks, ASAN, Miri, and the
-  formal contract suite. The inherited whitespace gate is still scoped to the
-  committed PR delta, not the whole worktree. Prefer running this tier inside
-  Lima for Linux parity.
+- `--mode hardening`: runs the `full` tier plus curated fuzz smoke, UB checks,
+  ASAN, Miri, and the formal contract suite. The inherited whitespace gate is
+  still scoped to the committed PR delta, not the whole worktree. Prefer
+  running this tier inside Lima for Linux parity.
 - `--mode none`: only checks GitHub status, review-thread state, and the
   five-minute AI-review quiet window. Use this only after a prior evidence run
   for the same PR head SHA.

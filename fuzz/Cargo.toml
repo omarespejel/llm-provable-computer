@@ -69,5 +69,12 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "phase30_decoding_step_proof_envelope_manifest"
+path = "fuzz_targets/phase30_decoding_step_proof_envelope_manifest.rs"
+test = false
+doc = false
+bench = false
+
 [workspace]
 members = ["."]

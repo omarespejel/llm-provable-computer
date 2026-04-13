@@ -13505,6 +13505,115 @@ mod kani_phase28_proofs {
     }
 }
 
+#[cfg(kani)]
+mod kani_phase30_proofs {
+    use super::MAX_DECODING_CHAIN_STEPS;
+
+    fn phase30_manifest_shape_is_valid(
+        first_step_index: usize,
+        second_step_index: usize,
+        total_steps: usize,
+        chain_start_tag: u8,
+        first_input_tag: u8,
+        first_output_tag: u8,
+        second_input_tag: u8,
+        second_output_tag: u8,
+        chain_end_tag: u8,
+    ) -> bool {
+        total_steps == 2
+            && first_step_index == 0
+            && second_step_index == 1
+            && chain_start_tag != 0
+            && first_input_tag == chain_start_tag
+            && first_output_tag != 0
+            && first_output_tag == second_input_tag
+            && second_output_tag != 0
+            && second_output_tag == chain_end_tag
+    }
+
+    fn phase30_manifest_counts_are_valid(envelope_count: usize, total_steps: usize) -> bool {
+        envelope_count > 0
+            && envelope_count <= MAX_DECODING_CHAIN_STEPS
+            && total_steps == envelope_count
+    }
+
+    #[kani::proof]
+    fn kani_phase30_manifest_shape_accepts_contiguous_pair() {
+        assert!(phase30_manifest_shape_is_valid(0, 1, 2, 1, 1, 2, 2, 3, 3));
+    }
+
+    #[kani::proof]
+    fn kani_phase30_manifest_shape_covers_nonzero_boundary_progress() {
+        let chain_start_tag = 1u8 + (kani::any::<u8>() % 2);
+        let shared_mid_tag = if chain_start_tag == 1 { 2 } else { 1 };
+        let chain_end_tag = 3u8;
+
+        kani::cover!(phase30_manifest_shape_is_valid(
+            0,
+            1,
+            2,
+            chain_start_tag,
+            chain_start_tag,
+            shared_mid_tag,
+            shared_mid_tag,
+            chain_end_tag,
+            chain_end_tag,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase30_manifest_shape_rejects_chain_boundary_mismatch() {
+        let chain_start_tag = 1u8 + (kani::any::<u8>() % 2);
+        let shared_mid_tag = if chain_start_tag == 1 { 2 } else { 1 };
+        let chain_end_tag = 3u8;
+        let wrong_end_tag = shared_mid_tag;
+        assert!(!phase30_manifest_shape_is_valid(
+            0,
+            1,
+            2,
+            chain_start_tag,
+            chain_start_tag,
+            shared_mid_tag,
+            shared_mid_tag,
+            chain_end_tag,
+            wrong_end_tag,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase30_manifest_shape_rejects_step_index_drift() {
+        let bad_second_index = 2usize + (kani::any::<u8>() % 2) as usize;
+        assert!(!phase30_manifest_shape_is_valid(
+            0,
+            bad_second_index,
+            2,
+            1,
+            1,
+            2,
+            2,
+            3,
+            3,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase30_manifest_counts_reject_zero_or_mismatched_totals() {
+        if kani::any::<bool>() {
+            assert!(!phase30_manifest_counts_are_valid(0, 0));
+        } else {
+            assert!(!phase30_manifest_counts_are_valid(2, 1));
+        }
+    }
+
+    #[kani::proof]
+    fn kani_phase30_manifest_counts_reject_excessive_envelope_count() {
+        assert!(!phase30_manifest_counts_are_valid(
+            MAX_DECODING_CHAIN_STEPS + 1,
+            MAX_DECODING_CHAIN_STEPS + 1,
+        ));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
