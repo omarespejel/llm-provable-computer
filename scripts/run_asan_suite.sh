@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 HARDENING_TOOLCHAIN="${HARDENING_TOOLCHAIN:-nightly-2025-07-14}"
-SANITIZER_TARGET="${SANITIZER_TARGET:-$(rustc +${HARDENING_TOOLCHAIN} -vV | awk '/^host: / { print $2 }')}"
+SANITIZER_TARGET="${SANITIZER_TARGET:-$(rustc +"${HARDENING_TOOLCHAIN}" -vV | awk '/^host: / { print $2 }')}"
 
 source "$ROOT_DIR/scripts/hardening_test_names.sh"
 

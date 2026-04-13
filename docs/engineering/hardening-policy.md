@@ -45,6 +45,8 @@ RUSTUP_TOOLCHAIN=nightly-2025-07-14 cargo nextest run \
   --profile ci-stwo --no-fail-fast
 cargo fmt --check
 git diff --check
+scripts/run_shellcheck_suite.sh
+scripts/run_workflow_audit_suite.sh
 python3 scripts/fuzz/generate_decoding_fuzz_corpus.py
 FUZZ_TIME_PER_TARGET=20 scripts/run_fuzz_smoke_suite.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_miri_suite.sh
@@ -79,10 +81,11 @@ Inside the VM:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y build-essential pkg-config libssl-dev git curl jq shellcheck
+sudo apt-get install -y build-essential pkg-config libssl-dev git curl jq shellcheck python3-pip
 curl https://sh.rustup.rs -sSf | sh -s -- -y
 source "$HOME/.cargo/env"
 rustup toolchain install nightly-2025-07-14 --component miri,rust-src
+python3 -m pip install --user uv
 ```
 
 Then run the local commands above from the repository checkout mounted or cloned
@@ -108,17 +111,19 @@ Available local command tiers:
 
 - `--mode smoke`: default minimum gate for ordinary PRs. Runs PR-range
   whitespace hygiene as `git diff --check "$base_sha...$head_sha"`, `cargo fmt
-  --check`, the statement-spec contract, allowlisted integration smoke targets,
-  and exact pinned-nightly `stwo-backend` smokes for the Phase 28 aggregation
-  verifier, Phase 29 recursive-compression input contract, and non-heavy Phase
-  29 CLI artifact verification paths.
+  --check`, conditional workflow auditing and shellcheck when the PR touches
+  those surfaces, the statement-spec contract, allowlisted integration smoke
+  targets, and exact pinned-nightly `stwo-backend` smokes for the Phase 28
+  aggregation verifier, Phase 29 recursive-compression input contract, and
+  non-heavy Phase 29 CLI artifact verification paths.
 - `--mode full`: runs the same PR-range whitespace and formatting hygiene, full
-  library tests, integration tests, doctests, and the exact pinned-nightly
-  `stwo-backend` smokes.
-- `--mode hardening`: runs the `full` tier plus curated fuzz smoke, UB checks,
-  ASAN, Miri, and the formal contract suite. The inherited whitespace gate is
-  still scoped to the committed PR delta, not the whole worktree. Prefer
-  running this tier inside Lima for Linux parity.
+  library tests, integration tests, doctests, the same conditional workflow
+  auditing and shellcheck, and the exact pinned-nightly `stwo-backend` smokes.
+- `--mode hardening`: runs the `full` tier plus workflow auditing, shellcheck,
+  diff-scoped mutation testing when the trusted-core prover files change,
+  curated fuzz smoke, UB checks, ASAN, Miri, and the formal contract suite.
+  The inherited whitespace gate is still scoped to the committed PR delta, not
+  the whole worktree. Prefer running this tier inside Lima for Linux parity.
 - `--mode none`: only checks GitHub status, review-thread state, and the
   five-minute AI-review quiet window. Use this only after a prior evidence run
   for the same PR head SHA.

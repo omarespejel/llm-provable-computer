@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
@@ -44,6 +46,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
@@ -53,12 +57,17 @@ jobs:
 
       - name: Read host target
         id: host-target
+        env:
+          HARDENING_TOOLCHAIN: ${{ env.HARDENING_TOOLCHAIN }}
         run: |
-          echo "target=$(rustc +${{ env.HARDENING_TOOLCHAIN }} -vV | awk '/^host: / { print $2 }')" >> "$GITHUB_OUTPUT"
+          echo "target=$(rustc +\"$HARDENING_TOOLCHAIN\" -vV | awk '/^host: / { print $2 }')" >> "$GITHUB_OUTPUT"
 
       - name: Install host target
+        env:
+          HARDENING_TOOLCHAIN: ${{ env.HARDENING_TOOLCHAIN }}
+          HOST_TARGET: ${{ steps.host-target.outputs.target }}
         run: |
-          rustup +${{ env.HARDENING_TOOLCHAIN }} target add ${{ steps.host-target.outputs.target }}
+          rustup +"$HARDENING_TOOLCHAIN" target add "$HOST_TARGET"
 
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
@@ -81,6 +90,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9

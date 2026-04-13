@@ -35,6 +35,7 @@ jobs:
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
@@ -51,38 +52,13 @@ jobs:
           rm -f "$CARGO_HOME/bin/cargo-mutants"
           cargo install cargo-mutants --version 27.0.0 --locked --force
 
-      - name: Build diff-scoped mutation input on pull requests
-        if: github.event_name == 'pull_request'
-        run: |
-          chmod +x scripts/run_mutation_suite.sh
-          git diff --no-ext-diff --unified=0 "origin/${{ github.base_ref }}...HEAD" -- \
-            src/stwo_backend/decoding.rs \
-            src/stwo_backend/shared_lookup_artifact.rs \
-            src/stwo_backend/arithmetic_subset_prover.rs > mutation.diff || true
-          if [[ -s mutation.diff ]]; then
-            echo "MUTATION_DIFF_FILE=$PWD/mutation.diff" >> "$GITHUB_ENV"
-          fi
-
-      - name: Run diff-scoped mutation slice on pull requests
-        if: github.event_name == 'pull_request' && env.MUTATION_DIFF_FILE != ''
-        run: |
-          chmod +x scripts/run_mutation_suite.sh
-          scripts/run_mutation_suite.sh
-
-      - name: Run mutation compile smoke when no target diff exists
-        if: github.event_name == 'pull_request' && env.MUTATION_DIFF_FILE == ''
-        run: |
-          chmod +x scripts/run_mutation_suite.sh
-          scripts/run_mutation_suite.sh --check
-
       - name: Run full targeted mutation suite
-        if: github.event_name != 'pull_request'
         run: |
           chmod +x scripts/run_mutation_suite.sh
           scripts/run_mutation_suite.sh
 
       - name: Upload mutation artifacts
-        if: always() && github.event_name != 'pull_request'
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: cargo-mutants-${{ matrix.label }}
