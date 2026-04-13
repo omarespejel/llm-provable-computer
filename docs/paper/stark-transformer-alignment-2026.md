@@ -1,10 +1,10 @@
 # On the Structural Fit of Transformer Workloads and STARK Proof Systems
 
-**Abdelhamid Bakhta**<br>
-StarkWare
+<p><strong>Abdelhamid Bakhta</strong><br>
+StarkWare</p>
 
-**Omar Espejel**<br>
-Starknet Foundation
+<p><strong>Omar Espejel</strong><br>
+Starknet Foundation</p>
 
 *April 2026*
 
@@ -22,7 +22,7 @@ not matched runtime measurements.
 We pair that analysis with `provable-transformer-vm` [30], a supporting artifact that
 provides a frozen vanilla reproducibility tier, a frozen narrow experimental `stwo`
 tier, and a broader proof-carrying decoding path with explicit carried-state boundaries,
-shared lookup-table identity, reusable block- and step-level proof surfaces, and a
+shared lookup-table identity, reusable block- and step-level proof artifacts, and a
 pre-recursive aggregation boundary. The repository does not yet provide full
 standard-softmax inference on S-two, recursive cryptographic compression/verification
 closure, recursive shared-table accumulation across decode steps as a compressed proof
@@ -55,7 +55,7 @@ This paper makes three claims:
    STARK-native systems.
 2. **Systems claim.** Deterministic execution of transformer-relevant programs can be
    compiled into traces that are directly consumable as AIR witnesses, and can be
-   organized as a parameterized proof-carrying decoding relation with carried-state
+   organized as a parameterized proof-carrying decode relation with carried-state
    boundaries that survive statement-preserving chain, segment, interval, rollup,
    matrix, and pre-recursive aggregation layers.
 3. **Infrastructure claim.** The S-two / Starknet stack makes this direction
@@ -391,7 +391,7 @@ and `pre-recursive aggregation boundary` are used in an **artifact-layer sense**
 explicitly stated otherwise, they do **not** denote recursive cryptographic accumulation
 schemes, compressed proof systems, or CCS-/IVC-style folding protocols in the sense of
 systems such as HyperNova, NeutronNova, or ProtoStar [43-45]. The point of this section
-is narrower: to show that a stable proof-carrying decoding relation with carried KV and
+is narrower: to show that a stable proof-carrying decode relation with carried KV and
 lookup state can already be materialized as reproducible proof artifacts over the
 current repository surfaces.
 
@@ -402,8 +402,7 @@ The artifact provides:
 - a deterministic transformer-shaped VM with a statement-versioned proof claim,
 - two frozen evidence tiers: a vanilla reproducibility tier and a narrow experimental
   `stwo` tier,
-- a parameterized proof-carrying decoding relation over explicit carried-state
-  boundaries,
+- a parameterized proof-carrying decode relation,
 - statement-preserving pre-recursive packaging objects over that same decode relation,
 - a bounded multi-runtime semantic-agreement artifact together with hardened verifier
   kernels.
@@ -412,7 +411,7 @@ The central systems property is stable statement structure: the same decode rela
 survives progressively richer manifest and packaging layers without changing the
 underlying public boundary semantics. In concrete terms, the repository already exposes
 reusable block-shaped execution proofs and, on its experimental `stwo` tooling surface,
-step-level proof surfaces whose public boundary schema and statement semantics remain
+step-level proof artifacts whose public boundary schema and statement semantics remain
 stable across those richer artifact layers.
 
 For shared lookup evidence, the artifact binds normalization and activation table
@@ -436,7 +435,7 @@ where `ℓ_t` identifies the layout/template, `p_t` records public step-position
 `f_t^L` are the lookup cumulative and frontier commitments, and `c_t^in`, `c_t^out` are
 execution-boundary commitments.
 
-Let `R_decode` denote the repository's parameterized proof-carrying decoding relation
+Let `R_decode` denote the repository's parameterized proof-carrying decode relation
 over carried-state boundaries:
 
 ```text
@@ -473,9 +472,9 @@ This is a statement-preservation invariant, not a recursive proof-compression th
 
 Figure 3 summarizes the object flow and the two carried commitment lanes.
 
-![Figure 3. Carried-state packaging ladder over the parameterized decoding relation.](figures/section5-carried-state-ladder.svg)
+![Figure 3. Carried-state packaging ladder over the parameterized decode relation.](figures/section5-carried-state-ladder.svg)
 
-**Figure 3.** Carried-state packaging ladder over the parameterized decoding relation. A
+**Figure 3.** Carried-state packaging ladder over the parameterized decode relation. A
 verified `decoding_step_v2` chain is packaged into segments, interval bundles, rollups,
 a multi-layout matrix, and a pre-recursive aggregation boundary. The two carried lanes
 represent the KV-side cumulative/frontier commitments and the lookup-side
