@@ -11,6 +11,11 @@ MUTATION_TARGETS=(
   src/stwo_backend/arithmetic_subset_prover.rs
 )
 
+if (($# > 0)) && [[ "$1" == "--print-targets" ]]; then
+  printf '%s\n' "${MUTATION_TARGETS[@]}"
+  exit 0
+fi
+
 missing_targets=()
 for target in "${MUTATION_TARGETS[@]}"; do
   if [[ ! -f "$target" ]]; then

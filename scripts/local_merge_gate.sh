@@ -358,11 +358,7 @@ stwo_cli_smoke_targets=(
   "cli_prepare_stwo_recursive_compression_input_contract_rejects_synthetic_phase28_shell"
   "cli_prepare_stwo_recursive_compression_input_contract_rejects_gzip_output_path"
 )
-mutation_targets=(
-  "src/stwo_backend/decoding.rs"
-  "src/stwo_backend/shared_lookup_artifact.rs"
-  "src/stwo_backend/arithmetic_subset_prover.rs"
-)
+mapfile -t mutation_targets < <(scripts/run_mutation_suite.sh --print-targets)
 
 changed_path_has_prefix() {
   local prefix="$1"
@@ -375,14 +371,12 @@ changed_path_has_prefix() {
   return 1
 }
 
-changed_path_matches_glob() {
-  local pattern="$1"
+changed_path_is_shell_script() {
   local path
   for path in "${changed_paths[@]}"; do
-    # shellcheck disable=SC2254
-    case "$path" in
-      $pattern) return 0 ;;
-    esac
+    if [[ "$path" == scripts/* && "$path" == *.sh ]]; then
+      return 0
+    fi
   done
   return 1
 }
@@ -431,29 +425,37 @@ run_research_v3_smoke_targets() {
 }
 
 run_conditional_quick_audits() {
-  if changed_path_has_prefix ".github/workflows/" || changed_path_matches_glob "zizmor.yml"; then
+  if changed_path_has_prefix ".github/workflows/" || changed_path_has_prefix "zizmor.yml"; then
     run_logged workflow-audit scripts/run_workflow_audit_suite.sh
   fi
 
-  if changed_path_matches_glob "scripts/*.sh"; then
+  if changed_path_is_shell_script; then
     run_logged shellcheck scripts/run_shellcheck_suite.sh
   fi
 }
 
 run_conditional_mutation_check() {
   local mutation_diff_file
+  local git_diff_status
 
   if ! changed_path_is_mutation_target; then
     return 0
   fi
 
   mutation_diff_file="$run_evidence_dir/mutation.diff"
-  git diff --no-ext-diff --unified=0 "$diff_range" -- "${mutation_targets[@]}" >"$mutation_diff_file" || true
+  set +e
+  git diff --no-ext-diff --unified=0 "$diff_range" -- "${mutation_targets[@]}" >"$mutation_diff_file"
+  git_diff_status=$?
+  set -e
+
+  if (( git_diff_status > 1 )); then
+    fail "git diff failed while building ${mutation_diff_file}"
+  fi
 
   if [[ -s "$mutation_diff_file" ]]; then
     run_logged mutation env MUTATION_DIFF_FILE="$mutation_diff_file" scripts/run_mutation_suite.sh
   else
-    run_logged mutation-check scripts/run_mutation_suite.sh --check
+    fail "mutation target changed but ${mutation_diff_file} is empty"
   fi
 }
 

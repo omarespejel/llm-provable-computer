@@ -86,6 +86,7 @@ curl https://sh.rustup.rs -sSf | sh -s -- -y
 source "$HOME/.cargo/env"
 rustup toolchain install nightly-2025-07-14 --component miri,rust-src
 python3 -m pip install --user uv
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
 Then run the local commands above from the repository checkout mounted or cloned

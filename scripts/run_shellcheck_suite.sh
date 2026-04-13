@@ -4,14 +4,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-shellcheck -x \
-  scripts/local_merge_gate.sh \
-  scripts/run_shellcheck_suite.sh \
-  scripts/run_workflow_audit_suite.sh \
-  scripts/run_fuzz_smoke_suite.sh \
-  scripts/run_formal_contract_suite.sh \
-  scripts/run_miri_suite.sh \
-  scripts/run_mutation_suite.sh \
-  scripts/run_asan_suite.sh \
-  scripts/run_ub_checks_suite.sh \
-  scripts/hardening_test_names.sh
+mapfile -t shell_scripts < <(git ls-files 'scripts/*.sh' 'scripts/**/*.sh' | LC_ALL=C sort -u)
+if ((${#shell_scripts[@]} == 0)); then
+  echo "No tracked shell scripts found under scripts/; refusing to run empty shellcheck suite." >&2
+  exit 1
+fi
+
+shellcheck -x "${shell_scripts[@]}"

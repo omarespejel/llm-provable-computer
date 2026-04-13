@@ -95,7 +95,11 @@ echo ""
 
 echo "=== All artifacts generated ==="
 echo ""
-ls -lh "$OUT"/*.txt "$OUT"/*.json 2>/dev/null | awk '{print $5, $9}'
+for f in "$OUT"/*.txt "$OUT"/*.json; do
+  [[ -e "$f" ]] || continue
+  bytes=$(wc -c < "$f" | tr -d ' ')
+  echo "$bytes $f"
+done
 echo ""
 echo "Proof file sizes:"
 for f in "$OUT"/*.proof.json; do

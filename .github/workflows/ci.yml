@@ -11,6 +11,7 @@ on:
       - "tests/**"
       - "programs/**"
       - "scripts/*.sh"
+      - "scripts/**/*.sh"
       - "docs/engineering/hardening-policy.md"
       - "zizmor.yml"
       - "Cargo.toml"
