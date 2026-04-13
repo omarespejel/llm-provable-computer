@@ -241,7 +241,6 @@ pub struct Phase11DecodingChainManifest {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct Phase12DecodingLayout {
     pub layout_version: String,
     pub rolling_kv_pairs: usize,
@@ -370,6 +369,28 @@ impl Phase12DecodingLayout {
     }
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Phase30DecodingLayoutUnchecked {
+    pub layout_version: String,
+    pub rolling_kv_pairs: usize,
+    pub pair_width: usize,
+}
+
+impl TryFrom<Phase30DecodingLayoutUnchecked> for Phase12DecodingLayout {
+    type Error = VmError;
+
+    fn try_from(unchecked: Phase30DecodingLayoutUnchecked) -> Result<Self> {
+        let layout = Self {
+            layout_version: unchecked.layout_version,
+            rolling_kv_pairs: unchecked.rolling_kv_pairs,
+            pair_width: unchecked.pair_width,
+        };
+        layout.validate()?;
+        Ok(layout)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase12DecodingState {
     pub state_version: String,
@@ -460,7 +481,7 @@ struct Phase30DecodingStepProofEnvelopeManifestUnchecked {
     pub source_chain_version: String,
     pub source_chain_semantic_scope: String,
     pub source_chain_commitment: String,
-    pub layout: Phase12DecodingLayout,
+    pub layout: Phase30DecodingLayoutUnchecked,
     pub total_steps: usize,
     pub chain_start_boundary_commitment: String,
     pub chain_end_boundary_commitment: String,
@@ -483,7 +504,7 @@ impl TryFrom<Phase30DecodingStepProofEnvelopeManifestUnchecked>
             source_chain_version: unchecked.source_chain_version,
             source_chain_semantic_scope: unchecked.source_chain_semantic_scope,
             source_chain_commitment: unchecked.source_chain_commitment,
-            layout: unchecked.layout,
+            layout: unchecked.layout.try_into()?,
             total_steps: unchecked.total_steps,
             chain_start_boundary_commitment: unchecked.chain_start_boundary_commitment,
             chain_end_boundary_commitment: unchecked.chain_end_boundary_commitment,
