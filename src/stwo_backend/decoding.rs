@@ -241,6 +241,7 @@ pub struct Phase11DecodingChainManifest {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Phase12DecodingLayout {
     pub layout_version: String,
     pub rolling_kv_pairs: usize,
@@ -9372,8 +9373,10 @@ pub fn load_phase30_decoding_step_proof_envelope_manifest(
 
 fn phase30_json_error(error: serde_json::Error) -> VmError {
     match error.classify() {
-        serde_json::error::Category::Data => VmError::InvalidConfig(error.to_string()),
-        _ => VmError::Serialization(error.to_string()),
+        serde_json::error::Category::Data
+        | serde_json::error::Category::Syntax
+        | serde_json::error::Category::Eof => VmError::InvalidConfig(error.to_string()),
+        serde_json::error::Category::Io => VmError::Serialization(error.to_string()),
     }
 }
 
@@ -19332,6 +19335,32 @@ mod tests {
             "expected InvalidConfig, got {err:?}"
         );
         assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn phase30_parse_manifest_rejects_unknown_layout_fields() {
+        let manifest = sample_phase30_decoding_step_proof_envelope_manifest();
+        let mut value = serde_json::to_value(&manifest).expect("serialize manifest");
+        value["layout"]["unexpected_layout_field"] = serde_json::json!(true);
+        let json = serde_json::to_string(&value).expect("json with unknown layout field");
+
+        let err = parse_phase30_decoding_step_proof_envelope_manifest_json(&json)
+            .expect_err("unknown layout field must be rejected");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+        assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn phase30_parse_manifest_reports_malformed_json_as_invalid_config() {
+        let err = parse_phase30_decoding_step_proof_envelope_manifest_json("{")
+            .expect_err("malformed json must be rejected");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
     }
 
     #[test]
