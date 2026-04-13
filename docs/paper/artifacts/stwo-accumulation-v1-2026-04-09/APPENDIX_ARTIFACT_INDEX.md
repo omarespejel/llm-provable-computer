@@ -40,7 +40,7 @@
 
 ## Notes
 - This bundle is a controlled carried/accumulated decode-artifact snapshot for the next-paper track, not a normalized backend benchmark study.
-- The artifact family keeps the same underlying decoding relation while moving from a base chain to matrix packaging and then to progressively stronger pre-recursive accumulation layers.
+- The artifact family keeps the same underlying decode relation while moving from a base chain to matrix packaging and then to progressively stronger pre-recursive accumulation layers.
 - Timing rows are local wall-clock runs under an existing cargo build cache and should be read as artifact facts, not cross-system benchmark claims.
 - `artifact_summary.tsv` provides the machine-readable comparison surface for later paper tables and plots.
 - Recompute integrity with `shasum -a 256 *.json benchmarks.tsv artifact_summary.tsv manifest.txt commands.log APPENDIX_ARTIFACT_INDEX.md README.md` inside the bundle directory.
