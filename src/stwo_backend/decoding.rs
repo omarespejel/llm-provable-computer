@@ -2431,25 +2431,7 @@ pub fn verify_phase30_decoding_step_proof_envelope_manifest(
             "decoding step envelope manifest source_chain_commitment must not be empty".to_string(),
         ));
     }
-    if manifest.envelopes.is_empty() {
-        return Err(VmError::InvalidConfig(
-            "decoding step envelope manifest must contain at least one envelope".to_string(),
-        ));
-    }
-    if manifest.envelopes.len() > MAX_DECODING_CHAIN_STEPS {
-        return Err(VmError::InvalidConfig(format!(
-            "decoding step envelope manifest contains {} envelopes, exceeding the limit of {}",
-            manifest.envelopes.len(),
-            MAX_DECODING_CHAIN_STEPS
-        )));
-    }
-    if manifest.total_steps != manifest.envelopes.len() {
-        return Err(VmError::InvalidConfig(format!(
-            "decoding step envelope manifest total_steps={} does not match envelopes.len()={}",
-            manifest.total_steps,
-            manifest.envelopes.len()
-        )));
-    }
+    ensure_phase30_manifest_cardinality_counts(manifest.envelopes.len(), manifest.total_steps)?;
     let expected_list_commitment = commit_phase30_step_envelope_list(&manifest.envelopes);
     if manifest.step_envelopes_commitment != expected_list_commitment {
         return Err(VmError::InvalidConfig(
@@ -2458,13 +2440,18 @@ pub fn verify_phase30_decoding_step_proof_envelope_manifest(
         ));
     }
     let (expected_start, expected_end) = phase30_chain_boundary_pair(&manifest.envelopes)?;
-    if manifest.chain_start_boundary_commitment != expected_start {
-        return Err(VmError::InvalidConfig(
-            "decoding step envelope manifest start boundary does not match the first envelope"
-                .to_string(),
-        ));
-    }
-    if manifest.chain_end_boundary_commitment != expected_end {
+    if !phase30_manifest_boundary_pair_matches(
+        &manifest.chain_start_boundary_commitment,
+        &expected_start,
+        &manifest.chain_end_boundary_commitment,
+        &expected_end,
+    ) {
+        if manifest.chain_start_boundary_commitment != expected_start {
+            return Err(VmError::InvalidConfig(
+                "decoding step envelope manifest start boundary does not match the first envelope"
+                    .to_string(),
+            ));
+        }
         return Err(VmError::InvalidConfig(
             "decoding step envelope manifest end boundary does not match the final envelope"
                 .to_string(),
@@ -2518,7 +2505,7 @@ pub fn verify_phase30_decoding_step_proof_envelope_manifest(
                 "decoding step envelope {index} source_chain_commitment does not match the manifest"
             )));
         }
-        if envelope.step_index != index {
+        if !phase30_step_envelope_index_matches(index, envelope.step_index) {
             return Err(VmError::InvalidConfig(format!(
                 "decoding step envelope {index} records step_index={}",
                 envelope.step_index
@@ -2545,7 +2532,10 @@ pub fn verify_phase30_decoding_step_proof_envelope_manifest(
         }
         if index > 0 {
             let previous = &manifest.envelopes[index - 1];
-            if previous.output_boundary_commitment != envelope.input_boundary_commitment {
+            if !phase30_step_envelope_link_matches(
+                &previous.output_boundary_commitment,
+                &envelope.input_boundary_commitment,
+            ) {
                 return Err(VmError::InvalidConfig(format!(
                     "decoding step envelope link {} -> {} does not preserve the carried output/input boundary",
                     index - 1,
@@ -2555,6 +2545,63 @@ pub fn verify_phase30_decoding_step_proof_envelope_manifest(
         }
     }
     Ok(())
+}
+
+fn phase30_manifest_cardinality_counts_are_valid(
+    envelope_count: usize,
+    total_steps: usize,
+) -> bool {
+    envelope_count > 0
+        && envelope_count <= MAX_DECODING_CHAIN_STEPS
+        && total_steps == envelope_count
+}
+
+fn phase30_manifest_boundary_pair_matches(
+    chain_start_boundary_commitment: &str,
+    first_input_boundary_commitment: &str,
+    chain_end_boundary_commitment: &str,
+    last_output_boundary_commitment: &str,
+) -> bool {
+    chain_start_boundary_commitment == first_input_boundary_commitment
+        && chain_end_boundary_commitment == last_output_boundary_commitment
+}
+
+fn phase30_step_envelope_index_matches(index: usize, recorded_step_index: usize) -> bool {
+    index == recorded_step_index
+}
+
+fn phase30_step_envelope_link_matches(
+    previous_output_boundary_commitment: &str,
+    current_input_boundary_commitment: &str,
+) -> bool {
+    previous_output_boundary_commitment == current_input_boundary_commitment
+}
+
+fn ensure_phase30_manifest_cardinality_counts(
+    envelope_count: usize,
+    total_steps: usize,
+) -> Result<()> {
+    if phase30_manifest_cardinality_counts_are_valid(envelope_count, total_steps) {
+        return Ok(());
+    }
+    if envelope_count == 0 {
+        return Err(VmError::InvalidConfig(
+            "decoding step envelope manifest must contain at least one envelope".to_string(),
+        ));
+    }
+    if envelope_count > MAX_DECODING_CHAIN_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding step envelope manifest contains {} envelopes, exceeding the limit of {}",
+            envelope_count, MAX_DECODING_CHAIN_STEPS
+        )));
+    }
+    if total_steps != envelope_count {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding step envelope manifest total_steps={} does not match envelopes.len()={}",
+            total_steps, envelope_count
+        )));
+    }
+    unreachable!("invalid Phase 30 cardinality must match one of the explicit error branches")
 }
 
 pub fn verify_phase30_decoding_step_proof_envelope_manifest_against_chain(
@@ -13502,6 +13549,63 @@ mod kani_phase28_proofs {
         assert!(!phase28_aggregation_shape_is_valid(
             2, 3, 5, 1, 1, 2, 2, 4, 4, 1, 2,
         ));
+    }
+}
+
+#[cfg(kani)]
+mod kani_phase30_proofs {
+    use super::{
+        phase30_manifest_boundary_pair_matches, phase30_manifest_cardinality_counts_are_valid,
+        phase30_step_envelope_index_matches, phase30_step_envelope_link_matches,
+    };
+
+    #[kani::proof]
+    fn kani_phase30_manifest_accepts_valid_single_step_surface() {
+        assert!(phase30_manifest_cardinality_counts_are_valid(1, 1));
+        assert!(phase30_manifest_boundary_pair_matches(
+            "state-a", "state-a", "state-b", "state-b"
+        ));
+        assert!(phase30_step_envelope_index_matches(0, 0));
+    }
+
+    #[kani::proof]
+    fn kani_phase30_manifest_accepts_contiguous_pair() {
+        assert!(phase30_manifest_boundary_pair_matches(
+            "state-a", "state-a", "state-c", "state-c"
+        ));
+        assert!(phase30_step_envelope_link_matches("state-b", "state-b"));
+        assert!(phase30_step_envelope_index_matches(0, 0));
+        assert!(phase30_step_envelope_index_matches(1, 1));
+    }
+
+    #[kani::proof]
+    fn kani_phase30_manifest_shape_rejects_chain_boundary_mismatch() {
+        assert!(!phase30_manifest_boundary_pair_matches(
+            "state-a",
+            "state-a",
+            "wrong-end",
+            "state-c"
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase30_manifest_shape_rejects_step_index_drift() {
+        assert!(!phase30_step_envelope_index_matches(1, 2));
+    }
+
+    #[kani::proof]
+    fn kani_phase30_manifest_counts_accept_valid_bounded_counts() {
+        assert!(phase30_manifest_cardinality_counts_are_valid(1, 1));
+    }
+
+    #[kani::proof]
+    fn kani_phase30_manifest_counts_reject_zero_envelopes() {
+        assert!(!phase30_manifest_cardinality_counts_are_valid(0, 0));
+    }
+
+    #[kani::proof]
+    fn kani_phase30_manifest_counts_reject_mismatched_totals() {
+        assert!(!phase30_manifest_cardinality_counts_are_valid(2, 1));
     }
 }
 

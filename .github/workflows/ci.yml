@@ -242,6 +242,8 @@ jobs:
             corpus: fuzz/corpus/phase14_decoding_manifest
           - target: phase12_shared_lookup_artifact
             corpus: fuzz/corpus/phase12_shared_lookup_artifact
+          - target: phase30_decoding_step_proof_envelope_manifest
+            corpus: fuzz/corpus/phase30_decoding_step_proof_envelope_manifest
 
     steps:
       - name: Checkout

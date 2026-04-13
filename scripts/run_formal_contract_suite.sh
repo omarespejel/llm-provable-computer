@@ -71,6 +71,20 @@ KANI_ARGS=(
   kani_phase28_aggregation_shape_rejects_boundary_mismatch
   --harness
   kani_phase28_aggregation_shape_rejects_insufficient_bounded_arity
+  --harness
+  kani_phase30_manifest_accepts_valid_single_step_surface
+  --harness
+  kani_phase30_manifest_accepts_contiguous_pair
+  --harness
+  kani_phase30_manifest_shape_rejects_chain_boundary_mismatch
+  --harness
+  kani_phase30_manifest_shape_rejects_step_index_drift
+  --harness
+  kani_phase30_manifest_counts_accept_valid_bounded_counts
+  --harness
+  kani_phase30_manifest_counts_reject_zero_envelopes
+  --harness
+  kani_phase30_manifest_counts_reject_mismatched_totals
 )
 
 "${KANI_ARGS[@]}"
