@@ -70,6 +70,7 @@ jobs:
               "scripts/run_",
               "scripts/hardening_test_names.sh",
               "docs/engineering/hardening-policy.md",
+              "docs/engineering/hardening-strategy.md",
               "zizmor.yml",
           )
 

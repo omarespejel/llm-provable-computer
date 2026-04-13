@@ -64,8 +64,8 @@ checks layered around the transformer runtime.
 
 Hardening and merge discipline for trusted-core work is formalized in:
 
-- `docs/engineering/hardening-policy.md`
-- `docs/engineering/hardening-strategy.md`
+- [`docs/engineering/hardening-policy.md`](docs/engineering/hardening-policy.md)
+- [`docs/engineering/hardening-strategy.md`](docs/engineering/hardening-strategy.md)
 
 Current public proof artifacts:
 
