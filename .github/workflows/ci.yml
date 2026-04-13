@@ -14,8 +14,10 @@ on:
       - "scripts/**/*.sh"
       - "docs/engineering/hardening-policy.md"
       - "zizmor.yml"
+      - "deny.toml"
       - "Cargo.toml"
       - "Cargo.lock"
+      - "vendor/onnx-protobuf/**"
   workflow_dispatch:
 
 jobs:
@@ -70,6 +72,25 @@ jobs:
           python3 -m pip install --user uv
           export PATH="$HOME/.local/bin:$PATH"
           bash scripts/run_workflow_audit_suite.sh
+
+      - name: Run dependency audit when dependency surfaces change
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          changed_dependency_inputs="$(git diff --name-only "$BASE_SHA...$HEAD_SHA" -- Cargo.toml Cargo.lock deny.toml scripts/run_dependency_audit_suite.sh vendor/onnx-protobuf/)" || {
+            echo "dependency audit diff computation failed" >&2
+            exit 1
+          }
+          if [[ -z "$changed_dependency_inputs" ]]; then
+            echo "dependency audit not required for this PR"
+            exit 0
+          fi
+          audit_root="$RUNNER_TEMP/dependency-audit-tools"
+          cargo install --locked cargo-audit --version 0.22.1 --root "$audit_root"
+          cargo install --locked cargo-deny --version 0.19.0 --root "$audit_root"
+          export PATH="$audit_root/bin:$PATH"
+          bash scripts/run_dependency_audit_suite.sh
 
       - name: Run lightweight regression smoke
         run: |

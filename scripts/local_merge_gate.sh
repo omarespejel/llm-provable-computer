@@ -381,6 +381,24 @@ changed_path_is_shell_script() {
   return 1
 }
 
+changed_path_is_dependency_audit_input() {
+  local path
+
+  if changed_path_has_prefix "vendor/onnx-protobuf/"; then
+    return 0
+  fi
+
+  for path in "${changed_paths[@]}"; do
+    case "$path" in
+      Cargo.toml|Cargo.lock|deny.toml|scripts/run_dependency_audit_suite.sh)
+        return 0
+        ;;
+    esac
+  done
+
+  return 1
+}
+
 changed_path_is_mutation_target() {
   local path target
   for path in "${changed_paths[@]}"; do
@@ -431,6 +449,10 @@ run_conditional_quick_audits() {
 
   if changed_path_is_shell_script; then
     run_logged shellcheck bash scripts/run_shellcheck_suite.sh
+  fi
+
+  if changed_path_is_dependency_audit_input; then
+    run_logged dependency-audit bash scripts/run_dependency_audit_suite.sh
   fi
 }
 
