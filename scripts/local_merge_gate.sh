@@ -344,6 +344,7 @@ mkdir -p "$LOG_DIR"
 pr_json="$run_evidence_dir/pr.json"
 cp "$tmp_pr_json" "$pr_json"
 diff_range="${base_sha}...${head_sha}"
+mapfile -t changed_paths < <(git diff --name-only "$diff_range")
 local_evidence_marker="$run_evidence_dir/local-evidence.json"
 completed_local_mode=""
 stwo_smoke_targets=(
@@ -357,6 +358,40 @@ stwo_cli_smoke_targets=(
   "cli_prepare_stwo_recursive_compression_input_contract_rejects_synthetic_phase28_shell"
   "cli_prepare_stwo_recursive_compression_input_contract_rejects_gzip_output_path"
 )
+mapfile -t mutation_targets < <(bash scripts/run_mutation_suite.sh --print-targets)
+
+changed_path_has_prefix() {
+  local prefix="$1"
+  local path
+  for path in "${changed_paths[@]}"; do
+    if [[ "$path" == "$prefix"* ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+changed_path_is_shell_script() {
+  local path
+  for path in "${changed_paths[@]}"; do
+    if [[ "$path" =~ ^scripts/.+\.sh$ ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+changed_path_is_mutation_target() {
+  local path target
+  for path in "${changed_paths[@]}"; do
+    for target in "${mutation_targets[@]}"; do
+      if [[ "$path" == "$target" ]]; then
+        return 0
+      fi
+    done
+  done
+  return 1
+}
 
 run_stwo_smoke_targets() {
   local stwo_smoke label
@@ -389,9 +424,45 @@ run_research_v3_smoke_targets() {
     --exact
 }
 
+run_conditional_quick_audits() {
+  if changed_path_has_prefix ".github/workflows/" || changed_path_has_prefix "zizmor.yml"; then
+    run_logged workflow-audit bash scripts/run_workflow_audit_suite.sh
+  fi
+
+  if changed_path_is_shell_script; then
+    run_logged shellcheck bash scripts/run_shellcheck_suite.sh
+  fi
+}
+
+run_conditional_mutation_check() {
+  local mutation_diff_file
+  local git_diff_status
+
+  if ! changed_path_is_mutation_target; then
+    return 0
+  fi
+
+  mutation_diff_file="$run_evidence_dir/mutation.diff"
+  set +e
+  git diff --no-ext-diff --unified=0 "$diff_range" -- "${mutation_targets[@]}" >"$mutation_diff_file"
+  git_diff_status=$?
+  set -e
+
+  if (( git_diff_status > 1 )); then
+    fail "git diff failed while building ${mutation_diff_file}"
+  fi
+
+  if [[ -s "$mutation_diff_file" ]]; then
+    run_logged mutation env MUTATION_DIFF_FILE="$mutation_diff_file" scripts/run_mutation_suite.sh
+  else
+    fail "mutation target changed but ${mutation_diff_file} is empty"
+  fi
+}
+
 if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
   run_logged cargo-fmt-check cargo fmt --check
+  run_conditional_quick_audits
   run_logged lib-contract cargo test -q --lib statement_spec_contract_is_synced_with_constants
   smoke_targets=(assembly e2e interpreter runtime vanillastark_smoke)
   for test_target in "${smoke_targets[@]}"; do
@@ -403,6 +474,7 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
   run_logged cargo-fmt-check cargo fmt --check
+  run_conditional_quick_audits
   run_logged cargo-lib-tests cargo test -q --lib
   run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
@@ -413,12 +485,14 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
   run_logged cargo-fmt-check cargo fmt --check
+  run_conditional_quick_audits
   run_logged cargo-lib-tests cargo test -q --lib
   run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
   run_stwo_smoke_targets
   run_stwo_cli_smoke_targets
   run_research_v3_smoke_targets
+  run_conditional_mutation_check
   run_logged fuzz-smoke env FUZZ_TIME_PER_TARGET=20 scripts/run_fuzz_smoke_suite.sh
   run_logged ub-checks env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
   run_logged asan env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_asan_suite.sh

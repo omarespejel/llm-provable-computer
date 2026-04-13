@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034
 
 hardening_base_test_filters=(
   "proof::tests::production_profile_v1_is_self_consistent"
@@ -57,9 +58,4 @@ hardening_stwo_test_filters=(
   "stwo_backend::recursion::tests::phase29_load_recursive_compression_input_contract_rejects_non_regular_file"
   "stwo_backend::recursion::tests::phase29_prepare_rejects_phase28_recursive_claim_before_contract_derivation"
   "stwo_backend::recursion::tests::phase29_prepare_rejects_phase28_synthetic_shell_without_nested_members"
-)
-
-hardening_test_filters=(
-  "${hardening_base_test_filters[@]}"
-  "${hardening_stwo_test_filters[@]}"
 )

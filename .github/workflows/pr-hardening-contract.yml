@@ -18,6 +18,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Validate PR hardening contract
         env:
@@ -66,7 +67,10 @@ jobs:
               "tests/",
               ".github/workflows/",
               "scripts/local_merge_gate.sh",
-              "docs/hardening-policy.md",
+              "scripts/run_",
+              "scripts/hardening_test_names.sh",
+              "docs/engineering/hardening-policy.md",
+              "zizmor.yml",
           )
 
           touches_trusted_core = any(
