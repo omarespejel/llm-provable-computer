@@ -12,6 +12,9 @@ expensive GitHub Actions compute.
   CI workflow only runs a core library contract plus integration-test smoke for
   Rust, Cargo, program fixture, or CI workflow changes, plus one exact
   pinned-nightly `stwo-backend` smoke with the pinned nightly toolchain cached.
+- Keep dependency-advisory drift under continuous watch with a lightweight
+  scheduled and `main`-branch dependency-audit job instead of widening the full
+  PR matrix.
 - Keep heavyweight GitHub Actions workflows available through
   `workflow_dispatch` for intentional release, baseline, or emergency
   GitHub-hosted validation.
@@ -47,6 +50,7 @@ cargo fmt --check
 git diff --check
 scripts/run_shellcheck_suite.sh
 scripts/run_workflow_audit_suite.sh
+scripts/run_dependency_audit_suite.sh
 python3 scripts/fuzz/generate_decoding_fuzz_corpus.py
 FUZZ_TIME_PER_TARGET=20 scripts/run_fuzz_smoke_suite.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_miri_suite.sh
@@ -87,7 +91,15 @@ source "$HOME/.cargo/env"
 rustup toolchain install nightly-2025-07-14 --component miri,rust-src
 python3 -m pip install --user uv
 export PATH="$HOME/.local/bin:$PATH"
+cargo install --locked cargo-audit --version 0.22.1
+cargo install --locked cargo-deny --version 0.19.0
 ```
+
+The dependency audit suite carries the current upstream exception policy in
+`deny.toml` and `docs/engineering/dependency-audit-exceptions.md`, and it audits
+both the repository root graph and the separate `fuzz/` workspace lockfile.
+Review those files before adding new ignores or widening the vendored
+`onnx-protobuf` patch surface.
 
 Then run the local commands above from the repository checkout mounted or cloned
 inside the VM. The merge gate also requires GitHub CLI (`gh`) authenticated
@@ -119,14 +131,18 @@ Available local command tiers:
   non-heavy Phase 29 CLI artifact verification paths.
 - `--mode full`: runs the same PR-range whitespace and formatting hygiene, full
   library tests, integration tests, doctests, the same conditional workflow
-  auditing and shellcheck, and the exact pinned-nightly `stwo-backend` smokes.
+  auditing, dependency auditing, and shellcheck, and the exact pinned-nightly
+  `stwo-backend` smokes.
 - `--mode hardening`: runs the `full` tier, including the same conditional
-  workflow auditing and shellcheck for `.github/workflows/**`, `zizmor.yml`,
-  `scripts/*.sh`, and `scripts/**/*.sh`, plus diff-scoped mutation testing when
-  the trusted-core prover files change, curated fuzz smoke, UB checks, ASAN,
-  Miri, and the formal contract suite. The inherited whitespace gate is still
-  scoped to the committed PR delta, not the whole worktree. Prefer running this
-  tier inside Lima for Linux parity.
+  workflow auditing for `.github/workflows/**` and `zizmor.yml`, the same
+  conditional dependency auditing for `Cargo.toml`, `Cargo.lock`,
+  `fuzz/Cargo.toml`, `fuzz/Cargo.lock`, `deny.toml`,
+  `scripts/run_dependency_audit_suite.sh`, and `vendor/onnx-protobuf/**`, and
+  the same conditional shellcheck for `scripts/*.sh` and `scripts/**/*.sh`,
+  plus diff-scoped mutation testing when the trusted-core prover files change,
+  curated fuzz smoke, UB checks, ASAN, Miri, and the formal contract suite. The
+  inherited whitespace gate is still scoped to the committed PR delta, not the
+  whole worktree. Prefer running this tier inside Lima for Linux parity.
 - `--mode none`: only checks GitHub status, review-thread state, and the
   five-minute AI-review quiet window. Use this only after a prior evidence run
   for the same PR head SHA.
