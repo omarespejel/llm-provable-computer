@@ -21420,6 +21420,19 @@ mod tests {
     }
 
     #[test]
+    fn phase27_chained_folded_intervalized_state_relation_rejects_tampered_max_nested_fold_arity() {
+        let mut manifest =
+            sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
+        manifest.max_nested_fold_arity = manifest.max_nested_fold_arity.saturating_add(1);
+        let err = verify_phase27_chained_folded_intervalized_decoding_state_relation(&manifest)
+            .unwrap_err();
+        assert!(err.to_string().contains("max_nested_fold_arity="));
+        assert!(err
+            .to_string()
+            .contains("does not match derived max_nested_fold_arity"));
+    }
+
+    #[test]
     fn phase27_chained_folded_intervalized_state_relation_rejects_tampered_member_summaries() {
         let mut manifest =
             sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
@@ -21770,6 +21783,60 @@ mod tests {
         assert!(err
             .to_string()
             .contains("does not match derived total_phase26_members"));
+    }
+
+    #[test]
+    fn phase28_aggregated_chained_folded_intervalized_state_relation_rejects_tampered_total_phase25_members(
+    ) {
+        let (mut manifest, summaries) =
+            sample_phase28_aggregated_chained_folded_intervalized_decoding_state_relation();
+        manifest.total_phase25_members = manifest.total_phase25_members.saturating_add(1);
+        let err =
+            verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_summaries(
+                &manifest,
+                &summaries,
+            )
+            .unwrap_err();
+        assert!(err.to_string().contains("total_phase25_members="));
+        assert!(err
+            .to_string()
+            .contains("does not match derived total_phase25_members"));
+    }
+
+    #[test]
+    fn phase28_aggregated_chained_folded_intervalized_state_relation_rejects_tampered_max_nested_chain_arity(
+    ) {
+        let (mut manifest, summaries) =
+            sample_phase28_aggregated_chained_folded_intervalized_decoding_state_relation();
+        manifest.max_nested_chain_arity = manifest.max_nested_chain_arity.saturating_add(1);
+        let err =
+            verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_summaries(
+                &manifest,
+                &summaries,
+            )
+            .unwrap_err();
+        assert!(err.to_string().contains("max_nested_chain_arity="));
+        assert!(err
+            .to_string()
+            .contains("does not match derived max_nested_chain_arity"));
+    }
+
+    #[test]
+    fn phase28_aggregated_chained_folded_intervalized_state_relation_rejects_tampered_max_nested_fold_arity(
+    ) {
+        let (mut manifest, summaries) =
+            sample_phase28_aggregated_chained_folded_intervalized_decoding_state_relation();
+        manifest.max_nested_fold_arity = manifest.max_nested_fold_arity.saturating_add(1);
+        let err =
+            verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_summaries(
+                &manifest,
+                &summaries,
+            )
+            .unwrap_err();
+        assert!(err.to_string().contains("max_nested_fold_arity="));
+        assert!(err
+            .to_string()
+            .contains("does not match derived max_nested_fold_arity"));
     }
 
     #[test]
