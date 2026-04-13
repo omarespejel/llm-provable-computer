@@ -1,10 +1,10 @@
 # On the Structural Fit of Transformer Workloads and STARK Proof Systems
 
-**Abdelhamid Bakhta**<br>
-StarkWare
+<p><strong>Abdelhamid Bakhta</strong><br>
+StarkWare</p>
 
-**Omar Espejel**<br>
-Starknet Foundation
+<p><strong>Omar Espejel</strong><br>
+Starknet Foundation</p>
 
 *April 2026*
 
@@ -22,7 +22,7 @@ not matched runtime measurements.
 We pair that analysis with `provable-transformer-vm` [30], a supporting artifact that
 provides a frozen vanilla reproducibility tier, a frozen narrow experimental `stwo`
 tier, and a broader proof-carrying decoding path with explicit carried-state boundaries,
-shared lookup-table identity, reusable block- and step-level proof surfaces, and a
+shared lookup-table identity, reusable block- and step-level proof artifacts, and a
 pre-recursive aggregation boundary. The repository does not yet provide full
 standard-softmax inference on S-two, recursive cryptographic compression/verification
 closure, recursive shared-table accumulation across decode steps as a compressed proof
@@ -402,8 +402,7 @@ The artifact provides:
 - a deterministic transformer-shaped VM with a statement-versioned proof claim,
 - two frozen evidence tiers: a vanilla reproducibility tier and a narrow experimental
   `stwo` tier,
-- a parameterized proof-carrying decoding relation over explicit carried-state
-  boundaries,
+- a parameterized proof-carrying decode relation,
 - statement-preserving pre-recursive packaging objects over that same decode relation,
 - a bounded multi-runtime semantic-agreement artifact together with hardened verifier
   kernels.
