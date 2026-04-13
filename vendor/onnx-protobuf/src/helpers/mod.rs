@@ -1,8 +1,12 @@
+use std::borrow::Cow;
+
 use protobuf::Enum;
-use crate::{attribute_proto::AttributeType, AttributeProto, GraphProto, SparseTensorProto, TensorProto, TypeProto};
+
 use crate::tensor_proto::DataType;
+use crate::{attribute_proto::AttributeType, AttributeProto, GraphProto, SparseTensorProto, TensorProto, TypeProto};
 
 /// Typed onnx attribute value
+#[derive(Debug, PartialEq)]
 pub enum AttributeValue<'a> {
     Unknown(i32),
     Float32(f32),
@@ -35,22 +39,22 @@ impl AttributeProto {
                 AttributeType::STRINGS => AttributeValue::Strings(&self.strings),
                 AttributeType::TENSOR => match &self.t.0 {
                     Some(s) => AttributeValue::Tensor(s),
-                    None => unreachable!(),
+                    None => AttributeValue::Unknown(self.type_.value()),
                 },
                 AttributeType::TENSORS => AttributeValue::Tensors(&self.tensors),
                 AttributeType::GRAPH => match &self.g.0 {
                     Some(s) => AttributeValue::Graph(s),
-                    None => unreachable!(),
+                    None => AttributeValue::Unknown(self.type_.value()),
                 },
                 AttributeType::GRAPHS => AttributeValue::Graphs(&self.graphs),
                 AttributeType::SPARSE_TENSOR => match &self.sparse_tensor.0 {
                     Some(s) => AttributeValue::SparseTensor(s),
-                    None => unreachable!(),
+                    None => AttributeValue::Unknown(self.type_.value()),
                 },
                 AttributeType::SPARSE_TENSORS => AttributeValue::SparseTensors(&self.sparse_tensors),
                 AttributeType::TYPE_PROTO => match &self.tp.0 {
                     Some(s) => AttributeValue::Type(s),
-                    None => unreachable!(),
+                    None => AttributeValue::Unknown(self.type_.value()),
                 },
                 AttributeType::TYPE_PROTOS => AttributeValue::Types(&self.type_protos),
             },
@@ -60,111 +64,138 @@ impl AttributeProto {
 }
 
 /// Typed onnx tensor value
+#[derive(Debug, PartialEq)]
 pub enum TensorValue<'p> {
     Unknown(i32),
-    Float32(&'p [f32]),
-    Float64(&'p [f64]),
-    Unsigned32(&'p [u32]),
-    Unsigned64(&'p [u64]),
-    Integer8(&'p [i8]),
-    Integer16(&'p [i16]),
-    Integer32(&'p [i32]),
-    Integer64(&'p [i64]),
+    Float32(Cow<'p, [f32]>),
+    Float64(Cow<'p, [f64]>),
+    Unsigned32(Cow<'p, [u32]>),
+    Unsigned64(Cow<'p, [u64]>),
+    Integer8(Cow<'p, [i8]>),
+    Integer16(Cow<'p, [i16]>),
+    Integer32(Cow<'p, [i32]>),
+    Integer64(Cow<'p, [i64]>),
+}
+
+fn try_convert_slice<Src, Dst>(values: &[Src]) -> Option<Vec<Dst>>
+where
+    Src: Copy,
+    Dst: TryFrom<Src>,
+{
+    values
+        .iter()
+        .copied()
+        .map(|value| Dst::try_from(value).ok())
+        .collect()
 }
 
 impl TensorProto {
     /// Convert to typed value
     pub fn as_value(&self) -> TensorValue<'_> {
         match DataType::from_i32(self.data_type) {
-            Some(o) => {
-                match o {
-                    DataType::UNDEFINED => { TensorValue::Unknown(0) }
-                    DataType::FLOAT8E4M3FN => {
-                        let _ = &self.int32_data;
-                        todo!()
-                    }
-                    DataType::FLOAT8E4M3FNUZ => {
-                        let _ = &self.int32_data;
-                        todo!()
-                    }
-                    DataType::FLOAT8E5M2 => {
-                        let _ = &self.int32_data;
-                        todo!()
-                    }
-                    DataType::FLOAT8E5M2FNUZ => {
-                        let _ = &self.int32_data;
-                        todo!()
-                    }
-                    DataType::FLOAT16 => {
-                        let _ = &self.int32_data;
-                        todo!()
-                    }
-                    DataType::BFLOAT16 => {
-                        let _ = &self.int32_data;
-                        todo!()
-                    }
-                    DataType::FLOAT => {
-                        TensorValue::Float32(&self.float_data)
-                    }
-                    DataType::DOUBLE => {
-                        TensorValue::Float64(&self.double_data)
-                    }
-                    DataType::UINT4 => {
-                        let _ = &self.int32_data;
-                        todo!()
-                    }
-                    DataType::UINT8 => {
-                        let _ = &self.int32_data;
-                        todo!()
-                    }
-                    DataType::UINT16 => {
-                        let _ = &self.int32_data;
-                        todo!()
-                    }
-                    DataType::UINT32 => {
-                        let u64_slice: &[u64] = &self.uint64_data;
-                        let u32_slice: &[u32] = unsafe { core::slice::from_raw_parts(u64_slice.as_ptr() as *const u32, u64_slice.len() * 2) };
-                        TensorValue::Unsigned32(u32_slice)
-                    }
-                    DataType::UINT64 => {
-                        TensorValue::Unsigned64(&self.uint64_data)
-                    }
-                    DataType::BOOL => {
-                        let _ = &self.int32_data;
-                        todo!()
-                    }
-                    DataType::INT4 => {
-                        let _ = &self.int32_data;
-                        todo!()
-                    }
-                    DataType::INT8 => {
-                        let i32_slice: &[i32] = &self.int32_data;
-                        let i8_slice: &[i8] = unsafe { core::slice::from_raw_parts(i32_slice.as_ptr() as *const i8, i32_slice.len() * 4) };
-                        TensorValue::Integer8(i8_slice)
-                    }
-                    DataType::INT16 => {
-                        let i32_slice: &[i32] = &self.int32_data;
-                        let i16_slice: &[i16] = unsafe { core::slice::from_raw_parts(i32_slice.as_ptr() as *const i16, i32_slice.len() * 2) };
-                        TensorValue::Integer16(i16_slice)
-                    }
-                    DataType::INT32 => {
-                        TensorValue::Integer32(&self.int32_data)
-                    }
-                    DataType::INT64 => {
-                        TensorValue::Integer64(&self.int64_data)
-                    }
-                    DataType::COMPLEX64 => {
-                        let _ = &self.float_data;
-                        todo!()
-                    }
-                    DataType::COMPLEX128 => {
-                        let _ = &self.double_data;
-                        todo!()
-                    }
-                    DataType::STRING => { todo!() }
-                }
-            }
+            Some(o) => match o {
+                DataType::UNDEFINED => TensorValue::Unknown(0),
+                DataType::FLOAT => TensorValue::Float32(Cow::Borrowed(&self.float_data)),
+                DataType::DOUBLE => TensorValue::Float64(Cow::Borrowed(&self.double_data)),
+                DataType::UINT32 => try_convert_slice::<u64, u32>(&self.uint64_data)
+                    .map(|values| TensorValue::Unsigned32(Cow::Owned(values)))
+                    .unwrap_or(TensorValue::Unknown(self.data_type)),
+                DataType::UINT64 => TensorValue::Unsigned64(Cow::Borrowed(&self.uint64_data)),
+                DataType::INT8 => try_convert_slice::<i32, i8>(&self.int32_data)
+                    .map(|values| TensorValue::Integer8(Cow::Owned(values)))
+                    .unwrap_or(TensorValue::Unknown(self.data_type)),
+                DataType::INT16 => try_convert_slice::<i32, i16>(&self.int32_data)
+                    .map(|values| TensorValue::Integer16(Cow::Owned(values)))
+                    .unwrap_or(TensorValue::Unknown(self.data_type)),
+                DataType::INT32 => TensorValue::Integer32(Cow::Borrowed(&self.int32_data)),
+                DataType::INT64 => TensorValue::Integer64(Cow::Borrowed(&self.int64_data)),
+                _ => TensorValue::Unknown(self.data_type),
+            },
             None => TensorValue::Unknown(self.data_type),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use protobuf::EnumOrUnknown;
+
+    use super::*;
+
+    fn tensor_with_i32(data_type: DataType, int32_data: Vec<i32>) -> TensorProto {
+        TensorProto {
+            data_type: data_type.value(),
+            int32_data,
+            ..Default::default()
+        }
+    }
+
+    fn tensor_with_u64(data_type: DataType, uint64_data: Vec<u64>) -> TensorProto {
+        TensorProto {
+            data_type: data_type.value(),
+            uint64_data,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn attribute_proto_as_value_returns_unknown_when_typed_payload_is_missing() {
+        let attribute = AttributeProto {
+            type_: EnumOrUnknown::new(AttributeType::TENSOR),
+            ..Default::default()
+        };
+
+        assert_eq!(attribute.as_value(), AttributeValue::Unknown(AttributeType::TENSOR.value()));
+    }
+
+    #[test]
+    fn tensor_proto_as_value_preserves_logical_element_boundaries() {
+        let int8_tensor = tensor_with_i32(DataType::INT8, vec![-2, 0, 127]);
+        let int16_tensor = tensor_with_i32(DataType::INT16, vec![-32_768, 17, 32_767]);
+        let uint32_tensor = tensor_with_u64(DataType::UINT32, vec![1, u32::MAX as u64]);
+
+        assert_eq!(
+            int8_tensor.as_value(),
+            TensorValue::Integer8(Cow::Owned(vec![-2, 0, 127]))
+        );
+        assert_eq!(
+            int16_tensor.as_value(),
+            TensorValue::Integer16(Cow::Owned(vec![-32_768, 17, 32_767]))
+        );
+        assert_eq!(
+            uint32_tensor.as_value(),
+            TensorValue::Unsigned32(Cow::Owned(vec![1, u32::MAX]))
+        );
+    }
+
+    #[test]
+    fn tensor_proto_as_value_rejects_out_of_range_compactions() {
+        let int8_tensor = tensor_with_i32(DataType::INT8, vec![128]);
+        let int16_tensor = tensor_with_i32(DataType::INT16, vec![i16::MAX as i32 + 1]);
+        let uint32_tensor = tensor_with_u64(DataType::UINT32, vec![u32::MAX as u64 + 1]);
+
+        assert_eq!(int8_tensor.as_value(), TensorValue::Unknown(DataType::INT8.value()));
+        assert_eq!(
+            int16_tensor.as_value(),
+            TensorValue::Unknown(DataType::INT16.value())
+        );
+        assert_eq!(
+            uint32_tensor.as_value(),
+            TensorValue::Unknown(DataType::UINT32.value())
+        );
+    }
+
+    #[test]
+    fn tensor_proto_as_value_returns_unknown_for_unsupported_tensor_types() {
+        let tensor = TensorProto {
+            data_type: DataType::FLOAT16.value(),
+            int32_data: vec![1],
+            ..Default::default()
+        };
+
+        assert_eq!(
+            tensor.as_value(),
+            TensorValue::Unknown(DataType::FLOAT16.value())
+        );
     }
 }

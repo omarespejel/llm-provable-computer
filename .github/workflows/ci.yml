@@ -17,7 +17,14 @@ on:
       - "deny.toml"
       - "Cargo.toml"
       - "Cargo.lock"
+      - "fuzz/Cargo.toml"
+      - "fuzz/Cargo.lock"
       - "vendor/onnx-protobuf/**"
+  push:
+    branches:
+      - "main"
+  schedule:
+    - cron: "17 4 * * *"
   workflow_dispatch:
 
 jobs:
@@ -78,7 +85,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          changed_dependency_inputs="$(git diff --name-only "$BASE_SHA...$HEAD_SHA" -- Cargo.toml Cargo.lock deny.toml scripts/run_dependency_audit_suite.sh vendor/onnx-protobuf/)" || {
+          changed_dependency_inputs="$(git diff --name-only "$BASE_SHA...$HEAD_SHA" -- Cargo.toml Cargo.lock fuzz/Cargo.toml fuzz/Cargo.lock deny.toml scripts/run_dependency_audit_suite.sh vendor/onnx-protobuf/)" || {
             echo "dependency audit diff computation failed" >&2
             exit 1
           }
@@ -86,6 +93,34 @@ jobs:
             echo "dependency audit not required for this PR"
             exit 0
           fi
+          audit_root="$RUNNER_TEMP/dependency-audit-tools"
+          cargo install --locked cargo-audit --version 0.22.1 --root "$audit_root"
+          cargo install --locked cargo-deny --version 0.19.0 --root "$audit_root"
+          export PATH="$audit_root/bin:$PATH"
+          bash scripts/run_dependency_audit_suite.sh
+
+  dependency-audit:
+    name: dependency audit
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
+        with:
+          toolchain: stable
+
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+
+      - name: Run dependency audit suite
+        run: |
           audit_root="$RUNNER_TEMP/dependency-audit-tools"
           cargo install --locked cargo-audit --version 0.22.1 --root "$audit_root"
           cargo install --locked cargo-deny --version 0.19.0 --root "$audit_root"

@@ -12,6 +12,9 @@ expensive GitHub Actions compute.
   CI workflow only runs a core library contract plus integration-test smoke for
   Rust, Cargo, program fixture, or CI workflow changes, plus one exact
   pinned-nightly `stwo-backend` smoke with the pinned nightly toolchain cached.
+- Keep dependency-advisory drift under continuous watch with a lightweight
+  scheduled and `main`-branch dependency-audit job instead of widening the full
+  PR matrix.
 - Keep heavyweight GitHub Actions workflows available through
   `workflow_dispatch` for intentional release, baseline, or emergency
   GitHub-hosted validation.
@@ -93,8 +96,9 @@ cargo install --locked cargo-deny --version 0.19.0
 ```
 
 The dependency audit suite carries the current upstream exception policy in
-`deny.toml` and `docs/engineering/dependency-audit-exceptions.md`. Review both
-before adding new ignores or widening the vendored
+`deny.toml` and `docs/engineering/dependency-audit-exceptions.md`, and it audits
+both the repository root graph and the separate `fuzz/` workspace lockfile.
+Review those files before adding new ignores or widening the vendored
 `onnx-protobuf` patch surface.
 
 Then run the local commands above from the repository checkout mounted or cloned
@@ -131,7 +135,8 @@ Available local command tiers:
   `stwo-backend` smokes.
 - `--mode hardening`: runs the `full` tier, including the same conditional
   workflow auditing for `.github/workflows/**` and `zizmor.yml`, the same
-  conditional dependency auditing for `Cargo.toml`, `Cargo.lock`, `deny.toml`,
+  conditional dependency auditing for `Cargo.toml`, `Cargo.lock`,
+  `fuzz/Cargo.toml`, `fuzz/Cargo.lock`, `deny.toml`,
   `scripts/run_dependency_audit_suite.sh`, and `vendor/onnx-protobuf/**`, and
   the same conditional shellcheck for `scripts/*.sh` and `scripts/**/*.sh`,
   plus diff-scoped mutation testing when the trusted-core prover files change,

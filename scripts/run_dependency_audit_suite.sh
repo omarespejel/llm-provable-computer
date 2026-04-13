@@ -50,5 +50,21 @@ for advisory_id in "${IGNORED_AUDIT_ADVISORIES[@]}"; do
   cargo_audit_args+=("--ignore" "$advisory_id")
 done
 
-cargo audit "${cargo_audit_args[@]}"
-cargo deny check advisories bans licenses sources
+run_cargo_audit() {
+  local label="$1"
+  local lockfile="$2"
+  echo "[dependency-audit] cargo audit: ${label} (${lockfile})"
+  cargo audit "${cargo_audit_args[@]}" --file "$lockfile"
+}
+
+run_cargo_deny() {
+  local label="$1"
+  local manifest_path="$2"
+  echo "[dependency-audit] cargo deny: ${label} (${manifest_path})"
+  cargo deny --manifest-path "$manifest_path" check -c "$ROOT_DIR/deny.toml" advisories bans licenses sources
+}
+
+run_cargo_audit root Cargo.lock
+run_cargo_deny root Cargo.toml
+run_cargo_audit fuzz fuzz/Cargo.lock
+run_cargo_deny fuzz fuzz/Cargo.toml

@@ -390,7 +390,7 @@ changed_path_is_dependency_audit_input() {
 
   for path in "${changed_paths[@]}"; do
     case "$path" in
-      Cargo.toml|Cargo.lock|deny.toml|scripts/run_dependency_audit_suite.sh)
+      Cargo.toml|Cargo.lock|deny.toml|fuzz/Cargo.toml|fuzz/Cargo.lock|scripts/run_dependency_audit_suite.sh)
         return 0
         ;;
     esac

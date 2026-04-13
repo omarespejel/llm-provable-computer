@@ -3,9 +3,10 @@
 The dependency audit gate is intentionally strict:
 
 - `scripts/run_dependency_audit_suite.sh` runs `cargo audit --deny warnings`
-  with an explicit allowlist for accepted upstream advisories.
+  with an explicit allowlist for accepted upstream advisories against both the
+  repository root `Cargo.lock` and `fuzz/Cargo.lock`.
 - `cargo deny check advisories bans licenses sources` enforces the graph,
-  licensing, and source policy from `deny.toml`.
+  licensing, and source policy from `deny.toml` against both manifests.
 
 Any new advisory must fail the gate unless it is added here with a specific
 reason, an owning surface, and an exit condition.
