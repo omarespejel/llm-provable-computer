@@ -1,13 +1,12 @@
 # Reproducibility Note (One Page)
 
-This note describes how to reproduce the publication-facing paper artifacts for
-**On the Structural Fit of Transformer Workloads and STARK Proof Systems**
-under the rolling base tag `paper-publication-v4-2026-04-11` once cut.
-The tag should resolve to a commit that contains this v4 paper metadata. The
-carried-state aggregation evidence remains pinned to the proof-carrying
-aggregation checkpoint commit `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`, with
-the dedicated bundle index cited at commit
-`6bb8cab99092203217d64951c3af61488aa2c58e`.
+This note describes how to reproduce the publication-facing paper artifacts for **On the
+Structural Fit of Transformer Workloads and STARK Proof Systems** under the rolling base
+tag `paper-publication-v4-2026-04-11` once cut. The tag should resolve to a commit that
+contains this v4 paper metadata. The carried-state aggregation evidence remains pinned
+to the proof-carrying aggregation checkpoint commit
+`6ff972ddda4051d73dc65c92a88c0d00683ec8c7`, with the dedicated bundle index cited at
+commit `6bb8cab99092203217d64951c3af61488aa2c58e`.
 
 ## 1) Scope and Intended Reproduction Target
 
@@ -16,7 +15,8 @@ The target is reproducibility of:
 - paper text and references,
 - appendix artifacts and evidence pointers,
 - figure-generating scripts and TSV outputs,
-- frozen artifact index manifests for the evidence tiers, including the proof-carrying aggregation bundle.
+- frozen artifact index manifests for the evidence tiers, including the proof-carrying
+  aggregation bundle.
 
 This package is intentionally a **research artifact snapshot**, not a claim of
 production-scale zkML deployment.
@@ -104,8 +104,8 @@ Primary evidence manifest:
 - `docs/paper/evidence/web-2026-04-06/manifest.tsv`
 - `docs/paper/evidence/web-2026-04-06/manifest.json`
 
-This records the source set used for infrastructure/system-state claims at the
-time of packaging.
+This records the source set used for infrastructure/system-state claims at the time of
+packaging.
 
 ## 7) Consistency Sweep Before Sharing
 
@@ -116,8 +116,9 @@ Before sharing a draft externally, verify:
    - `docs/paper/stark-transformer-alignment-2026.md`
    - `docs/paper/PUBLICATION_RELEASE.md`
 3. paper preflight passes,
-4. the aggregation bundle checksum files validate locally or in a clean reproduction environment,
+4. the aggregation bundle checksum files validate locally or in a clean reproduction
+   environment,
 5. release tag and commit references are consistent with the single main paper.
 
-If additional reviewer feedback lands, patch on top and cut a follow-up
-publication tag rather than mutating existing evidence claims.
+If additional reviewer feedback lands, patch on top and cut a follow-up publication tag
+rather than mutating existing evidence claims.
