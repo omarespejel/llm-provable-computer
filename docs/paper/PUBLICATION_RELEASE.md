@@ -9,7 +9,8 @@ the release tag `paper-publication-v4-2026-04-11` once cut in the final publicat
 repository. Until that transfer and tag cut happen, the paper keeps Reference `[30]`
 pointed at the staging commit-pinned snapshot below. The final publication tag
 intentionally need not match the pinned carried-state evidence commit used by the
-aggregation bundle.
+aggregation bundle. Before upload, that tag still needs to be cut in the final
+publication repository and Reference `[30]` needs to be retargeted to it.
 
 Pinned carried-state aggregation provenance checkpoint:
 `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`
