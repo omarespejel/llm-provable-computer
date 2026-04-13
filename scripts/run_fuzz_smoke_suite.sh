@@ -52,8 +52,26 @@ require_safe_path_under() {
   esac
 }
 
+require_strict_subpath_under() {
+  local candidate="$1"
+  local safe_root="$2"
+  local description="$3"
+
+  require_safe_path_under "$candidate" "$safe_root" "$description"
+
+  local resolved_candidate
+  resolved_candidate="$(canonicalize_path "$candidate")"
+  local resolved_safe_root
+  resolved_safe_root="$(canonicalize_path "$safe_root")"
+
+  if [[ "$resolved_candidate" == "$resolved_safe_root" ]]; then
+    echo "refusing unsafe ${description} path: \`${resolved_candidate}\` must be a strict child of \`${resolved_safe_root}\`" >&2
+    exit 1
+  fi
+}
+
 require_safe_path_under "$FUZZ_WORK_DIR" "$SAFE_TARGET_ROOT" "fuzz work"
-require_safe_path_under "$FUZZ_GENERATED_CORPUS_DIR" "$SAFE_TARGET_ROOT" "generated corpus"
+require_strict_subpath_under "$FUZZ_GENERATED_CORPUS_DIR" "$FUZZ_WORK_DIR" "generated corpus"
 
 rm -rf -- "${FUZZ_GENERATED_CORPUS_DIR}"
 mkdir -p "${FUZZ_GENERATED_CORPUS_DIR}"
@@ -68,7 +86,7 @@ for target in "${FUZZ_TARGETS[@]}"; do
   run_dir="${FUZZ_WORK_DIR}/${target}"
   run_corpus_dir="${run_dir}/corpus"
   artifact_dir="${run_dir}/artifacts"
-  require_safe_path_under "$run_dir" "$FUZZ_WORK_DIR" "target run"
+  require_strict_subpath_under "$run_dir" "$FUZZ_WORK_DIR" "target run"
   rm -rf -- "$run_dir"
   mkdir -p "$run_corpus_dir" "$artifact_dir"
   cp -R "${corpus_dir}/." "$run_corpus_dir/"
