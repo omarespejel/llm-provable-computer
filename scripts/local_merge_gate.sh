@@ -374,7 +374,7 @@ changed_path_has_prefix() {
 changed_path_is_shell_script() {
   local path
   for path in "${changed_paths[@]}"; do
-    if [[ "$path" == scripts/* && "$path" == *.sh ]]; then
+    if [[ "$path" =~ ^scripts/.+\.sh$ ]]; then
       return 0
     fi
   done

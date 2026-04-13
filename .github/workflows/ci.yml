@@ -29,6 +29,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9
@@ -58,7 +59,11 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          if ! git diff --name-only "$BASE_SHA...$HEAD_SHA" -- .github/workflows/ zizmor.yml | grep -q .; then
+          changed_workflow_inputs="$(git diff --name-only "$BASE_SHA...$HEAD_SHA" -- .github/workflows/ zizmor.yml)" || {
+            echo "workflow audit diff computation failed" >&2
+            exit 1
+          }
+          if [[ -z "$changed_workflow_inputs" ]]; then
             echo "workflow audit not required for this PR"
             exit 0
           fi
