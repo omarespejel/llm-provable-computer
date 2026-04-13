@@ -1,9 +1,9 @@
 # On the Structural Fit of Transformer Workloads and STARK Proof Systems
 
-**Abdelhamid Bakhta**\
+**Abdelhamid Bakhta**<br>
 StarkWare
 
-**Omar Espejel**\
+**Omar Espejel**<br>
 Starknet Foundation
 
 *April 2026*
@@ -22,7 +22,7 @@ not matched runtime measurements.
 We pair that analysis with `provable-transformer-vm` [30], a supporting artifact that
 provides a frozen vanilla reproducibility tier, a frozen narrow experimental `stwo`
 tier, and a broader proof-carrying decoding path with explicit carried-state boundaries,
-shared lookup-table identity, reusable block- and step-level proof objects, and a
+shared lookup-table identity, reusable block- and step-level proof surfaces, and a
 pre-recursive aggregation boundary. The repository does not yet provide full
 standard-softmax inference on S-two, recursive cryptographic compression/verification
 closure, recursive shared-table accumulation across decode steps as a compressed proof
@@ -405,13 +405,14 @@ The artifact provides:
 - a parameterized proof-carrying decoding relation over explicit carried-state
   boundaries,
 - statement-preserving pre-recursive packaging objects over that same decode relation,
-- a bounded multi-runtime semantic-agreement artifact.
+- a bounded multi-runtime semantic-agreement artifact together with hardened verifier
+  kernels.
 
 The central systems property is stable statement structure: the same decode relation
 survives progressively richer manifest and packaging layers without changing the
 underlying public boundary semantics. In concrete terms, the repository already exposes
 reusable block-shaped execution proofs and, on its experimental `stwo` tooling surface,
-step-level proof objects whose public boundary schema and statement semantics remain
+step-level proof surfaces whose public boundary schema and statement semantics remain
 stable across those richer artifact layers.
 
 For shared lookup evidence, the artifact binds normalization and activation table
@@ -539,10 +540,10 @@ relation witnesses, and binds observed transitions by per-runtime hashes plus a
 canonical transition hash. This is deterministic bounded relation evidence, not a
 general e-graph/SMT equivalence prover. It addresses a practical systems risk: proof
 artifacts should not silently rely on informal claims that distinct frontend/runtime
-paths are semantically identical. Separately, a release-provenance manifest can bind
-model and tokenizer identifiers, local tokenizer/transcript files, safetensors hashes,
-optional ONNX export hashes, and model-card/DOI/dataset metadata. That manifest is a
-reproducibility guardrail, not part of the proof relation.
+paths are semantically identical. For reproducibility rather than proof semantics, the
+artifact set also includes a release-provenance manifest for model, tokenizer, ONNX,
+and safetensors identity data. This is a packaging guardrail, not part of the proof
+relation.
 
 ### 5.7 Why this artifact matters
 
