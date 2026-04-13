@@ -369,6 +369,28 @@ impl Phase12DecodingLayout {
     }
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Phase30DecodingLayoutUnchecked {
+    pub layout_version: String,
+    pub rolling_kv_pairs: usize,
+    pub pair_width: usize,
+}
+
+impl TryFrom<Phase30DecodingLayoutUnchecked> for Phase12DecodingLayout {
+    type Error = VmError;
+
+    fn try_from(unchecked: Phase30DecodingLayoutUnchecked) -> Result<Self> {
+        let layout = Self {
+            layout_version: unchecked.layout_version,
+            rolling_kv_pairs: unchecked.rolling_kv_pairs,
+            pair_width: unchecked.pair_width,
+        };
+        layout.validate()?;
+        Ok(layout)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase12DecodingState {
     pub state_version: String,
@@ -408,6 +430,7 @@ pub struct Phase12DecodingChainManifest {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Phase30DecodingStepProofEnvelope {
     pub envelope_version: String,
     pub semantic_scope: String,
@@ -429,6 +452,7 @@ pub struct Phase30DecodingStepProofEnvelope {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "Phase30DecodingStepProofEnvelopeManifestUnchecked")]
 pub struct Phase30DecodingStepProofEnvelopeManifest {
     pub proof_backend: StarkProofBackend,
     pub manifest_version: String,
@@ -444,6 +468,52 @@ pub struct Phase30DecodingStepProofEnvelopeManifest {
     pub chain_end_boundary_commitment: String,
     pub step_envelopes_commitment: String,
     pub envelopes: Vec<Phase30DecodingStepProofEnvelope>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Phase30DecodingStepProofEnvelopeManifestUnchecked {
+    pub proof_backend: StarkProofBackend,
+    pub manifest_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub source_chain_version: String,
+    pub source_chain_semantic_scope: String,
+    pub source_chain_commitment: String,
+    pub layout: Phase30DecodingLayoutUnchecked,
+    pub total_steps: usize,
+    pub chain_start_boundary_commitment: String,
+    pub chain_end_boundary_commitment: String,
+    pub step_envelopes_commitment: String,
+    pub envelopes: Vec<Phase30DecodingStepProofEnvelope>,
+}
+
+impl TryFrom<Phase30DecodingStepProofEnvelopeManifestUnchecked>
+    for Phase30DecodingStepProofEnvelopeManifest
+{
+    type Error = VmError;
+
+    fn try_from(unchecked: Phase30DecodingStepProofEnvelopeManifestUnchecked) -> Result<Self> {
+        let manifest = Self {
+            proof_backend: unchecked.proof_backend,
+            manifest_version: unchecked.manifest_version,
+            semantic_scope: unchecked.semantic_scope,
+            proof_backend_version: unchecked.proof_backend_version,
+            statement_version: unchecked.statement_version,
+            source_chain_version: unchecked.source_chain_version,
+            source_chain_semantic_scope: unchecked.source_chain_semantic_scope,
+            source_chain_commitment: unchecked.source_chain_commitment,
+            layout: unchecked.layout.try_into()?,
+            total_steps: unchecked.total_steps,
+            chain_start_boundary_commitment: unchecked.chain_start_boundary_commitment,
+            chain_end_boundary_commitment: unchecked.chain_end_boundary_commitment,
+            step_envelopes_commitment: unchecked.step_envelopes_commitment,
+            envelopes: unchecked.envelopes,
+        };
+        verify_phase30_decoding_step_proof_envelope_manifest(&manifest)?;
+        Ok(manifest)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -9298,6 +9368,19 @@ pub fn save_phase30_decoding_step_proof_envelope_manifest(
     )
 }
 
+pub fn parse_phase30_decoding_step_proof_envelope_manifest_json(
+    json: &str,
+) -> Result<Phase30DecodingStepProofEnvelopeManifest> {
+    if json.len() > MAX_PHASE30_DECODING_STEP_ENVELOPE_MANIFEST_JSON_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 30 decoding step proof envelope manifest JSON is {} bytes, exceeding the limit of {} bytes",
+            json.len(),
+            MAX_PHASE30_DECODING_STEP_ENVELOPE_MANIFEST_JSON_BYTES
+        )));
+    }
+    serde_json::from_str(json).map_err(phase30_json_error)
+}
+
 pub fn load_phase30_decoding_step_proof_envelope_manifest(
     path: &Path,
 ) -> Result<Phase30DecodingStepProofEnvelopeManifest> {
@@ -9306,10 +9389,16 @@ pub fn load_phase30_decoding_step_proof_envelope_manifest(
         MAX_PHASE30_DECODING_STEP_ENVELOPE_MANIFEST_JSON_BYTES,
         "Phase 30 decoding step proof envelope manifest",
     )?;
-    let manifest: Phase30DecodingStepProofEnvelopeManifest =
-        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
-    verify_phase30_decoding_step_proof_envelope_manifest(&manifest)?;
-    Ok(manifest)
+    serde_json::from_slice(&bytes).map_err(phase30_json_error)
+}
+
+fn phase30_json_error(error: serde_json::Error) -> VmError {
+    match error.classify() {
+        serde_json::error::Category::Data
+        | serde_json::error::Category::Syntax
+        | serde_json::error::Category::Eof => VmError::InvalidConfig(error.to_string()),
+        serde_json::error::Category::Io => VmError::Serialization(error.to_string()),
+    }
 }
 
 pub fn save_phase14_decoding_chain(
@@ -19206,6 +19295,96 @@ mod tests {
     }
 
     #[test]
+    fn phase30_step_envelope_manifest_deserialization_verifies_manifest() {
+        let manifest = sample_phase30_decoding_step_proof_envelope_manifest();
+        let parsed = serde_json::from_value::<Phase30DecodingStepProofEnvelopeManifest>(
+            serde_json::to_value(&manifest).expect("serialize manifest"),
+        )
+        .expect("deserialize manifest");
+        assert_eq!(parsed, manifest);
+
+        let mut tampered = serde_json::to_value(&manifest).expect("serialize manifest");
+        tampered["total_steps"] = serde_json::json!(manifest.total_steps + 1);
+        let err = serde_json::from_value::<Phase30DecodingStepProofEnvelopeManifest>(tampered)
+            .expect_err("tampered deserialized manifest must be rejected");
+        assert!(err.to_string().contains("total_steps"));
+    }
+
+    #[test]
+    fn phase30_parse_manifest_reports_validation_error_as_invalid_config() {
+        let manifest = sample_phase30_decoding_step_proof_envelope_manifest();
+        let mut tampered = serde_json::to_value(&manifest).expect("serialize manifest");
+        tampered["total_steps"] = serde_json::json!(manifest.total_steps + 1);
+        let json = serde_json::to_string(&tampered).expect("tampered json");
+
+        let err = parse_phase30_decoding_step_proof_envelope_manifest_json(&json)
+            .expect_err("validation failure must surface as invalid config");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+        assert!(err.to_string().contains("total_steps"));
+    }
+
+    #[test]
+    fn phase30_parse_manifest_rejects_unknown_top_level_fields() {
+        let manifest = sample_phase30_decoding_step_proof_envelope_manifest();
+        let mut value = serde_json::to_value(&manifest).expect("serialize manifest");
+        value["unexpected_phase30_field"] = serde_json::json!(true);
+        let json = serde_json::to_string(&value).expect("json with unknown field");
+
+        let err = parse_phase30_decoding_step_proof_envelope_manifest_json(&json)
+            .expect_err("unknown top-level field must be rejected");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+        assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn phase30_parse_manifest_rejects_unknown_nested_envelope_fields() {
+        let manifest = sample_phase30_decoding_step_proof_envelope_manifest();
+        let mut value = serde_json::to_value(&manifest).expect("serialize manifest");
+        value["envelopes"][0]["unexpected_phase30_envelope_field"] = serde_json::json!(true);
+        let json = serde_json::to_string(&value).expect("json with unknown nested field");
+
+        let err = parse_phase30_decoding_step_proof_envelope_manifest_json(&json)
+            .expect_err("unknown nested field must be rejected");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+        assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn phase30_parse_manifest_rejects_unknown_layout_fields() {
+        let manifest = sample_phase30_decoding_step_proof_envelope_manifest();
+        let mut value = serde_json::to_value(&manifest).expect("serialize manifest");
+        value["layout"]["unexpected_layout_field"] = serde_json::json!(true);
+        let json = serde_json::to_string(&value).expect("json with unknown layout field");
+
+        let err = parse_phase30_decoding_step_proof_envelope_manifest_json(&json)
+            .expect_err("unknown layout field must be rejected");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+        assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn phase30_parse_manifest_reports_malformed_json_as_invalid_config() {
+        let err = parse_phase30_decoding_step_proof_envelope_manifest_json("{")
+            .expect_err("malformed json must be rejected");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+    }
+
+    #[test]
     fn load_phase30_decoding_step_proof_envelope_manifest_rejects_oversized_manifest_file() {
         let path = std::env::temp_dir().join(format!(
             "phase30-decoding-step-proof-envelope-manifest-oversized-{}.json",
@@ -21420,6 +21599,19 @@ mod tests {
     }
 
     #[test]
+    fn phase27_chained_folded_intervalized_state_relation_rejects_tampered_max_nested_fold_arity() {
+        let mut manifest =
+            sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
+        manifest.max_nested_fold_arity = manifest.max_nested_fold_arity.saturating_add(1);
+        let err = verify_phase27_chained_folded_intervalized_decoding_state_relation(&manifest)
+            .unwrap_err();
+        assert!(err.to_string().contains("max_nested_fold_arity="));
+        assert!(err
+            .to_string()
+            .contains("does not match derived max_nested_fold_arity"));
+    }
+
+    #[test]
     fn phase27_chained_folded_intervalized_state_relation_rejects_tampered_member_summaries() {
         let mut manifest =
             sample_phase27_chained_folded_intervalized_decoding_state_relation_manifest();
@@ -21770,6 +21962,60 @@ mod tests {
         assert!(err
             .to_string()
             .contains("does not match derived total_phase26_members"));
+    }
+
+    #[test]
+    fn phase28_aggregated_chained_folded_intervalized_state_relation_rejects_tampered_total_phase25_members(
+    ) {
+        let (mut manifest, summaries) =
+            sample_phase28_aggregated_chained_folded_intervalized_decoding_state_relation();
+        manifest.total_phase25_members = manifest.total_phase25_members.saturating_add(1);
+        let err =
+            verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_summaries(
+                &manifest,
+                &summaries,
+            )
+            .unwrap_err();
+        assert!(err.to_string().contains("total_phase25_members="));
+        assert!(err
+            .to_string()
+            .contains("does not match derived total_phase25_members"));
+    }
+
+    #[test]
+    fn phase28_aggregated_chained_folded_intervalized_state_relation_rejects_tampered_max_nested_chain_arity(
+    ) {
+        let (mut manifest, summaries) =
+            sample_phase28_aggregated_chained_folded_intervalized_decoding_state_relation();
+        manifest.max_nested_chain_arity = manifest.max_nested_chain_arity.saturating_add(1);
+        let err =
+            verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_summaries(
+                &manifest,
+                &summaries,
+            )
+            .unwrap_err();
+        assert!(err.to_string().contains("max_nested_chain_arity="));
+        assert!(err
+            .to_string()
+            .contains("does not match derived max_nested_chain_arity"));
+    }
+
+    #[test]
+    fn phase28_aggregated_chained_folded_intervalized_state_relation_rejects_tampered_max_nested_fold_arity(
+    ) {
+        let (mut manifest, summaries) =
+            sample_phase28_aggregated_chained_folded_intervalized_decoding_state_relation();
+        manifest.max_nested_fold_arity = manifest.max_nested_fold_arity.saturating_add(1);
+        let err =
+            verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_summaries(
+                &manifest,
+                &summaries,
+            )
+            .unwrap_err();
+        assert!(err.to_string().contains("max_nested_fold_arity="));
+        assert!(err
+            .to_string()
+            .contains("does not match derived max_nested_fold_arity"));
     }
 
     #[test]
