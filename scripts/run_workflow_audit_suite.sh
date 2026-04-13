@@ -9,16 +9,15 @@ ZIZMOR_SPEC="${ZIZMOR_SPEC:-zizmor==${ZIZMOR_VERSION}}"
 
 if command -v zizmor >/dev/null 2>&1; then
   installed_version="$(zizmor --version | awk '{print $2}')"
-  if [[ "$installed_version" != "$ZIZMOR_VERSION" ]]; then
-    echo "zizmor version mismatch: expected ${ZIZMOR_VERSION}, found ${installed_version}" >&2
-    exit 1
+  if [[ "$installed_version" == "$ZIZMOR_VERSION" ]]; then
+    exec zizmor .github/workflows --format plain
   fi
-  exec zizmor .github/workflows --format plain
+  echo "zizmor version mismatch: expected ${ZIZMOR_VERSION}, found ${installed_version}; falling back to uvx" >&2
 fi
 
 if command -v uvx >/dev/null 2>&1; then
   exec uvx --from "$ZIZMOR_SPEC" zizmor .github/workflows --format plain
 fi
 
-echo "workflow audit requires zizmor or uvx (for 'uvx --from zizmor zizmor')." >&2
+echo "workflow audit requires zizmor ${ZIZMOR_VERSION} or uvx (for 'uvx --from ${ZIZMOR_SPEC} zizmor')." >&2
 exit 1

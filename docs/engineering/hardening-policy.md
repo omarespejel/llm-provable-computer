@@ -120,11 +120,13 @@ Available local command tiers:
 - `--mode full`: runs the same PR-range whitespace and formatting hygiene, full
   library tests, integration tests, doctests, the same conditional workflow
   auditing and shellcheck, and the exact pinned-nightly `stwo-backend` smokes.
-- `--mode hardening`: runs the `full` tier plus workflow auditing, shellcheck,
-  diff-scoped mutation testing when the trusted-core prover files change,
-  curated fuzz smoke, UB checks, ASAN, Miri, and the formal contract suite.
-  The inherited whitespace gate is still scoped to the committed PR delta, not
-  the whole worktree. Prefer running this tier inside Lima for Linux parity.
+- `--mode hardening`: runs the `full` tier, including the same conditional
+  workflow auditing and shellcheck for `.github/workflows/**`, `zizmor.yml`,
+  and `scripts/**/*.sh`, plus diff-scoped mutation testing when the trusted-core
+  prover files change, curated fuzz smoke, UB checks, ASAN, Miri, and the
+  formal contract suite. The inherited whitespace gate is still scoped to the
+  committed PR delta, not the whole worktree. Prefer running this tier inside
+  Lima for Linux parity.
 - `--mode none`: only checks GitHub status, review-thread state, and the
   five-minute AI-review quiet window. Use this only after a prior evidence run
   for the same PR head SHA.
