@@ -3,6 +3,11 @@
 Trusted-core work must preserve the hardening discipline without defaulting to
 expensive GitHub Actions compute.
 
+The operational strategy behind this policy is formalized in
+[`docs/engineering/hardening-strategy.md`](hardening-strategy.md).
+Use that document to decide which tier, attack style, and evidence bundle a
+change requires.
+
 ## Rule
 
 - Do not use automatic `push`, `pull_request`, or `schedule` triggers for
