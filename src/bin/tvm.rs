@@ -4249,6 +4249,14 @@ fn prepare_hf_provenance_manifest_command(
     let bytes = serde_json::to_vec_pretty(&manifest).map_err(|err| {
         VmError::Serialization(format!("failed to serialize HF provenance manifest: {err}"))
     })?;
+    if bytes.len() > MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance manifest {} would be {} bytes, exceeding the limit of {} bytes",
+            command.output.display(),
+            bytes.len(),
+            MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES
+        )));
+    }
     write_bytes_atomically(&command.output, &bytes)?;
 
     println!("hf_provenance_manifest: {}", command.output.display());
@@ -6675,6 +6683,160 @@ fn write_bytes_atomically(path: &Path, bytes: &[u8]) -> llm_provable_computer::R
     )))
 }
 
+#[cfg(test)]
+mod hf_provenance_manifest_tests {
+    use super::*;
+
+    fn hf_provenance_test_manifest_file(label: &str) -> tempfile::NamedTempFile {
+        tempfile::Builder::new()
+            .prefix(&format!("hf-provenance-{label}-"))
+            .suffix(".json")
+            .tempfile()
+            .expect("create HF provenance manifest fixture")
+    }
+
+    fn sample_hf_provenance_manifest_value() -> serde_json::Value {
+        serde_json::json!({
+            "manifest_version": HF_PROVENANCE_MANIFEST_VERSION,
+            "semantic_scope": HF_PROVENANCE_SEMANTIC_SCOPE,
+            "hash_function": HF_PROVENANCE_HASH_FUNCTION,
+            "hub_repo": "example/test-model",
+            "hub_revision": "0123456789abcdef",
+            "tokenizer": {
+                "tokenizer_id": "example/test-model",
+                "tokenizer_revision": "0123456789abcdef",
+                "tokenizer_json": null,
+                "tokenizer_config": null,
+                "tokenization_transcript": null
+            },
+            "safetensors": [],
+            "onnx_export": null,
+            "release": {
+                "model_card": null,
+                "doi": null,
+                "datasets": [],
+                "notes": []
+            },
+            "limitations": hf_provenance_limitations(),
+            "commitments": {
+                "tokenizer_hash": "0".repeat(64),
+                "safetensors_manifest_hash": "1".repeat(64),
+                "onnx_export_hash": "2".repeat(64),
+                "release_metadata_hash": "3".repeat(64),
+                "limitations_hash": "4".repeat(64)
+            }
+        })
+    }
+
+    fn write_hf_provenance_test_manifest(path: &Path, value: &serde_json::Value) {
+        let bytes = serde_json::to_vec_pretty(value).expect("serialize HF provenance manifest");
+        fs::write(path, bytes).expect("write HF provenance manifest");
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_unknown_top_level_field() {
+        let file = hf_provenance_test_manifest_file("extra-top");
+        let mut value = sample_hf_provenance_manifest_value();
+        value
+            .as_object_mut()
+            .expect("manifest object")
+            .insert("unexpected_field".to_string(), serde_json::json!(true));
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("unknown top-level field should fail");
+        assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_unknown_nested_onnx_export_field() {
+        let file = hf_provenance_test_manifest_file("extra-onnx");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["onnx_export"] = serde_json::json!({
+            "exporter": "optimum",
+            "exporter_version": "1.0.0",
+            "graph": {
+                "path": "model.onnx",
+                "size_bytes": 16,
+                "blake2b_256": "5".repeat(64)
+            },
+            "unexpected_field": 7
+        });
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("unknown nested ONNX field should fail");
+        assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_reports_malformed_json_as_serialization() {
+        let file = hf_provenance_test_manifest_file("malformed");
+        fs::write(file.path(), b"{").expect("write malformed manifest");
+
+        let err =
+            load_hf_provenance_manifest(file.path()).expect_err("malformed manifest should fail");
+        assert!(matches!(err, VmError::Serialization(_)));
+        assert!(err
+            .to_string()
+            .contains("failed to parse HF provenance manifest"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_oversized_file() {
+        let file = hf_provenance_test_manifest_file("oversized");
+        fs::write(
+            file.path(),
+            vec![b'x'; MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES + 1],
+        )
+        .expect("write oversized HF provenance manifest");
+
+        let err =
+            load_hf_provenance_manifest(file.path()).expect_err("oversized manifest should fail");
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_non_regular_file() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+
+        let err = load_hf_provenance_manifest(dir.path())
+            .expect_err("directory manifest path should fail");
+        assert!(err.to_string().contains("not a regular file"));
+    }
+
+    #[test]
+    fn prepare_hf_provenance_manifest_rejects_oversized_output() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let output = dir.path().join("manifest.json");
+        let model_card = dir.path().join("README.md");
+        fs::write(&model_card, b"model card").expect("write model card");
+
+        let err = prepare_hf_provenance_manifest_command(HfProvenanceManifestCommand {
+            output: output.clone(),
+            hub_repo: "example/test-model".to_string(),
+            hub_revision: "0123456789abcdef".to_string(),
+            tokenizer_id: "example/test-model".to_string(),
+            tokenizer_revision: None,
+            tokenizer_json: None,
+            tokenizer_config: None,
+            tokenization_transcript: None,
+            safetensors_files: Vec::new(),
+            onnx_model: None,
+            onnx_exporter: "optimum-onnx".to_string(),
+            onnx_exporter_version: None,
+            model_card: Some(model_card),
+            doi: None,
+            datasets: Vec::new(),
+            notes: vec!["x".repeat(MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES)],
+        })
+        .expect_err("oversized manifest output should fail");
+
+        assert!(err.to_string().contains("exceeding the limit"));
+        assert!(!output.exists());
+    }
+}
+
 #[cfg(all(test, feature = "onnx-export"))]
 mod tests {
     use super::*;
@@ -7091,124 +7253,6 @@ mod tests {
     fn write_research_v3_test_artifact(path: &Path, value: &serde_json::Value) {
         let bytes = serde_json::to_vec_pretty(value).expect("serialize artifact");
         fs::write(path, bytes).expect("write artifact");
-    }
-
-    fn hf_provenance_test_manifest_file(label: &str) -> tempfile::NamedTempFile {
-        tempfile::Builder::new()
-            .prefix(&format!("hf-provenance-{label}-"))
-            .suffix(".json")
-            .tempfile()
-            .expect("create HF provenance manifest fixture")
-    }
-
-    fn sample_hf_provenance_manifest_value() -> serde_json::Value {
-        serde_json::json!({
-            "manifest_version": HF_PROVENANCE_MANIFEST_VERSION,
-            "semantic_scope": HF_PROVENANCE_SEMANTIC_SCOPE,
-            "hash_function": HF_PROVENANCE_HASH_FUNCTION,
-            "hub_repo": "example/test-model",
-            "hub_revision": "0123456789abcdef",
-            "tokenizer": {
-                "tokenizer_id": "example/test-model",
-                "tokenizer_revision": "0123456789abcdef",
-                "tokenizer_json": null,
-                "tokenizer_config": null,
-                "tokenization_transcript": null
-            },
-            "safetensors": [],
-            "onnx_export": null,
-            "release": {
-                "model_card": null,
-                "doi": null,
-                "datasets": [],
-                "notes": []
-            },
-            "limitations": hf_provenance_limitations(),
-            "commitments": {
-                "tokenizer_hash": "0".repeat(64),
-                "safetensors_manifest_hash": "1".repeat(64),
-                "onnx_export_hash": "2".repeat(64),
-                "release_metadata_hash": "3".repeat(64),
-                "limitations_hash": "4".repeat(64)
-            }
-        })
-    }
-
-    fn write_hf_provenance_test_manifest(path: &Path, value: &serde_json::Value) {
-        let bytes = serde_json::to_vec_pretty(value).expect("serialize HF provenance manifest");
-        fs::write(path, bytes).expect("write HF provenance manifest");
-    }
-
-    #[test]
-    fn load_hf_provenance_manifest_rejects_unknown_top_level_field() {
-        let file = hf_provenance_test_manifest_file("extra-top");
-        let mut value = sample_hf_provenance_manifest_value();
-        value
-            .as_object_mut()
-            .expect("manifest object")
-            .insert("unexpected_field".to_string(), serde_json::json!(true));
-        write_hf_provenance_test_manifest(file.path(), &value);
-
-        let err = load_hf_provenance_manifest(file.path())
-            .expect_err("unknown top-level field should fail");
-        assert!(err.to_string().contains("unknown field"));
-    }
-
-    #[test]
-    fn load_hf_provenance_manifest_rejects_unknown_nested_onnx_export_field() {
-        let file = hf_provenance_test_manifest_file("extra-onnx");
-        let mut value = sample_hf_provenance_manifest_value();
-        value["onnx_export"] = serde_json::json!({
-            "exporter": "optimum",
-            "exporter_version": "1.0.0",
-            "graph": {
-                "path": "model.onnx",
-                "size_bytes": 16,
-                "blake2b_256": "5".repeat(64)
-            },
-            "unexpected_field": 7
-        });
-        write_hf_provenance_test_manifest(file.path(), &value);
-
-        let err = load_hf_provenance_manifest(file.path())
-            .expect_err("unknown nested ONNX field should fail");
-        assert!(err.to_string().contains("unknown field"));
-    }
-
-    #[test]
-    fn load_hf_provenance_manifest_reports_malformed_json_as_serialization() {
-        let file = hf_provenance_test_manifest_file("malformed");
-        fs::write(file.path(), b"{").expect("write malformed manifest");
-
-        let err =
-            load_hf_provenance_manifest(file.path()).expect_err("malformed manifest should fail");
-        assert!(matches!(err, VmError::Serialization(_)));
-        assert!(err
-            .to_string()
-            .contains("failed to parse HF provenance manifest"));
-    }
-
-    #[test]
-    fn load_hf_provenance_manifest_rejects_oversized_file() {
-        let file = hf_provenance_test_manifest_file("oversized");
-        fs::write(
-            file.path(),
-            vec![b'x'; MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES + 1],
-        )
-        .expect("write oversized HF provenance manifest");
-
-        let err =
-            load_hf_provenance_manifest(file.path()).expect_err("oversized manifest should fail");
-        assert!(err.to_string().contains("exceeding the limit"));
-    }
-
-    #[test]
-    fn load_hf_provenance_manifest_rejects_non_regular_file() {
-        let dir = tempfile::tempdir().expect("create temp dir");
-
-        let err = load_hf_provenance_manifest(dir.path())
-            .expect_err("directory manifest path should fail");
-        assert!(err.to_string().contains("not a regular file"));
     }
 
     #[test]

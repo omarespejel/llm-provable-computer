@@ -32,11 +32,12 @@ hardening_onnx_test_filters=(
 
 # Keep the other CLI-facing artifact loaders in the `tvm` binary smoke/UB path.
 hardening_tvm_bin_test_filters=(
-  "tests::load_hf_provenance_manifest_rejects_unknown_top_level_field"
-  "tests::load_hf_provenance_manifest_rejects_unknown_nested_onnx_export_field"
-  "tests::load_hf_provenance_manifest_reports_malformed_json_as_serialization"
-  "tests::load_hf_provenance_manifest_rejects_oversized_file"
-  "tests::load_hf_provenance_manifest_rejects_non_regular_file"
+  "hf_provenance_manifest_tests::load_hf_provenance_manifest_rejects_unknown_top_level_field"
+  "hf_provenance_manifest_tests::load_hf_provenance_manifest_rejects_unknown_nested_onnx_export_field"
+  "hf_provenance_manifest_tests::load_hf_provenance_manifest_reports_malformed_json_as_serialization"
+  "hf_provenance_manifest_tests::load_hf_provenance_manifest_rejects_oversized_file"
+  "hf_provenance_manifest_tests::load_hf_provenance_manifest_rejects_non_regular_file"
+  "hf_provenance_manifest_tests::prepare_hf_provenance_manifest_rejects_oversized_output"
 )
 
 # Keep the `research-v3` equivalence artifact loader and witness checks on the

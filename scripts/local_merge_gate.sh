@@ -58,6 +58,11 @@ fail() {
   exit 1
 }
 
+# shellcheck source=scripts/hardening_test_names.sh
+source "$ROOT_DIR/scripts/hardening_test_names.sh"
+declare -p hardening_tvm_bin_test_filters >/dev/null 2>&1 ||
+  fail "scripts/hardening_test_names.sh must define hardening_tvm_bin_test_filters"
+
 sleep_with_wait_budget() {
   local duration="$1"
   local reason="$2"
@@ -370,13 +375,7 @@ onnx_smoke_targets=(
   "onnx_export::tests::load_onnx_program_metadata_rejects_missing_direct_memory_read_address"
   "onnx_export::tests::load_onnx_program_metadata_maps_runtime_conversion_failures_to_serialization"
 )
-tvm_bin_smoke_targets=(
-  "tests::load_hf_provenance_manifest_rejects_unknown_top_level_field"
-  "tests::load_hf_provenance_manifest_rejects_unknown_nested_onnx_export_field"
-  "tests::load_hf_provenance_manifest_reports_malformed_json_as_serialization"
-  "tests::load_hf_provenance_manifest_rejects_oversized_file"
-  "tests::load_hf_provenance_manifest_rejects_non_regular_file"
-)
+tvm_bin_smoke_targets=("${hardening_tvm_bin_test_filters[@]}")
 research_v3_smoke_targets=(
   "tests::research_v3_rule_witnesses_rejects_event_length_mismatch"
   "tests::load_research_v3_equivalence_artifact_rejects_unknown_top_level_field"
@@ -498,7 +497,6 @@ run_tvm_bin_smoke_targets() {
   for tvm_bin_smoke in "${tvm_bin_smoke_targets[@]}"; do
     label="${tvm_bin_smoke##*::}"
     run_logged "tvm-bin-smoke-${label}" cargo test -q \
-      --features onnx-export \
       --bin tvm "$tvm_bin_smoke" \
       -- \
       --exact
