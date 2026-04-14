@@ -4824,13 +4824,19 @@ fn cli_can_prepare_and_verify_hf_provenance_manifest() {
         manifest_json
             .get("manifest_version")
             .and_then(serde_json::Value::as_str),
-        Some("hf-provenance-manifest-v3")
+        Some("hf-provenance-manifest-v4")
     );
     assert_eq!(
         manifest_json
             .get("commitment_hash_function")
             .and_then(serde_json::Value::as_str),
         Some("blake2b-256")
+    );
+    assert!(
+        manifest_json["commitments"]["hub_binding_hash"]
+            .as_str()
+            .is_some_and(|digest| digest.chars().all(|c| c.is_ascii_hexdigit())),
+        "commitments.hub_binding_hash must be hex",
     );
     assert_eq!(
         manifest_json
@@ -4926,6 +4932,58 @@ fn cli_can_prepare_and_verify_hf_provenance_manifest() {
 }
 
 #[test]
+fn cli_verifier_rejects_hf_manifest_hub_binding_tamper() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-hub-binding-tamper");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let tokenizer_json = fixture_dir.join("tokenizer.json");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(
+        &tokenizer_json,
+        br#"{"version":"1.0","model":{"type":"WordPiece","unk_token":"[UNK]"}}"#,
+    )
+    .expect("write tokenizer json");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&tokenizer_json)
+        .assert()
+        .success();
+
+    let mut manifest_json: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).expect("manifest bytes"))
+            .expect("manifest json");
+    manifest_json["hub_revision"] = serde_json::json!("fedcba9876543210");
+    std::fs::write(
+        &manifest,
+        serde_json::to_vec_pretty(&manifest_json).expect("serialize tampered manifest"),
+    )
+    .expect("write tampered manifest");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "hf hub_binding_hash commitment mismatch",
+        ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
 fn cli_verifier_rejects_hf_manifest_sha256_tamper() {
     let fixture_dir = unique_temp_dir("cli-hf-provenance-sha256-tamper");
     std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
@@ -4977,6 +5035,68 @@ fn cli_verifier_rejects_hf_manifest_sha256_tamper() {
         .failure()
         .stderr(predicate::str::contains(
             "tokenizer_json sha256 commitment mismatch",
+        ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
+fn cli_verifier_rejects_hf_manifest_model_card_sha256_tamper() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-model-card-sha256-tamper");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let tokenizer_json = fixture_dir.join("tokenizer.json");
+    let model_card = fixture_dir.join("README.md");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(
+        &tokenizer_json,
+        br#"{"version":"1.0","model":{"type":"WordPiece","unk_token":"[UNK]"}}"#,
+    )
+    .expect("write tokenizer json");
+    std::fs::write(&model_card, b"# Card\n").expect("write model card");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&tokenizer_json)
+        .arg("--model-card")
+        .arg(&model_card)
+        .assert()
+        .success();
+
+    let mut manifest_json: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).expect("manifest bytes"))
+            .expect("manifest json");
+    manifest_json["release"]["model_card"]["sha256"] = serde_json::json!("0".repeat(64));
+    manifest_json["commitments"]["release_metadata_hash"] =
+        serde_json::Value::String(hash_json_value(
+            manifest_json
+                .get("release")
+                .expect("release section after sha256 tamper"),
+        ));
+    std::fs::write(
+        &manifest,
+        serde_json::to_vec_pretty(&manifest_json).expect("serialize tampered manifest"),
+    )
+    .expect("write tampered manifest");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "model_card sha256 commitment mismatch",
         ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
@@ -5072,7 +5192,11 @@ fn cli_verifier_rejects_legacy_hf_manifest_versions() {
     let mut manifest_json: serde_json::Value =
         serde_json::from_slice(&std::fs::read(&manifest).expect("manifest bytes"))
             .expect("manifest json");
-    for legacy_version in ["hf-provenance-manifest-v1", "hf-provenance-manifest-v2"] {
+    for legacy_version in [
+        "hf-provenance-manifest-v1",
+        "hf-provenance-manifest-v2",
+        "hf-provenance-manifest-v3",
+    ] {
         manifest_json["manifest_version"] = serde_json::json!(legacy_version);
         std::fs::write(
             &manifest,
@@ -5133,7 +5257,7 @@ fn cli_rejects_hf_provenance_manifest_when_onnx_metadata_reuses_graph_path() {
 
     let mut prepare = hf_provenance_prepare_command(&manifest, &onnx_model, Some(&onnx_model), &[]);
     prepare.assert().failure().stderr(predicate::str::contains(
-        "onnx_export.metadata reuses ONNX artifact path",
+        "onnx_export.metadata reuses HF artifact path",
     ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
@@ -5150,7 +5274,7 @@ fn cli_rejects_hf_provenance_manifest_when_onnx_external_data_reuses_graph_path(
 
     let mut prepare = hf_provenance_prepare_command(&manifest, &onnx_model, None, &[&onnx_model]);
     prepare.assert().failure().stderr(predicate::str::contains(
-        "onnx_export.external_data_files[] reuses ONNX artifact path",
+        "onnx_export.external_data_files[] reuses HF artifact path",
     ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
@@ -5197,8 +5321,45 @@ fn cli_rejects_hf_provenance_manifest_when_onnx_metadata_aliases_graph_path() {
     let mut prepare =
         hf_provenance_prepare_command(&manifest, &onnx_model, Some(&aliased_onnx_model), &[]);
     prepare.assert().failure().stderr(predicate::str::contains(
-        "onnx_export.metadata reuses ONNX artifact path",
+        "onnx_export.metadata reuses HF artifact path",
     ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
+fn cli_rejects_hf_provenance_manifest_when_model_card_reuses_tokenizer_json_path() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-duplicate-model-card");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let shared = fixture_dir.join("shared.json");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(
+        &shared,
+        br#"{"version":"1.0","model":{"type":"WordPiece","unk_token":"[UNK]"}}"#,
+    )
+    .expect("write shared fixture");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&shared)
+        .arg("--model-card")
+        .arg(&shared)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "model_card reuses HF artifact path",
+        ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
 }

@@ -893,7 +893,8 @@ const FRONTEND_RUNTIME_RESEARCH_WATCH_LANES: [&str; 9] = [
 ];
 const HF_PROVENANCE_MANIFEST_VERSION_V1_LEGACY: &str = "hf-provenance-manifest-v1";
 const HF_PROVENANCE_MANIFEST_VERSION_V2_LEGACY: &str = "hf-provenance-manifest-v2";
-const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v3";
+const HF_PROVENANCE_MANIFEST_VERSION_V3_LEGACY: &str = "hf-provenance-manifest-v3";
+const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v4";
 const HF_PROVENANCE_SEMANTIC_SCOPE: &str = "hf-release-provenance-boundary-v1";
 const HF_PROVENANCE_HASH_FUNCTION: &str = "blake2b-256";
 
@@ -967,9 +968,16 @@ struct HfReleaseMetadata {
     notes: Vec<String>,
 }
 
+#[derive(Debug, Serialize)]
+struct HfHubBinding<'a> {
+    hub_repo: &'a str,
+    hub_revision: &'a str,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct HfProvenanceCommitments {
+    hub_binding_hash: String,
     tokenizer_hash: String,
     safetensors_manifest_hash: String,
     onnx_export_hash: String,
@@ -4263,6 +4271,10 @@ fn prepare_hf_provenance_manifest_command(
         notes: command.notes,
     };
     let limitations = hf_provenance_limitations();
+    let hub_binding_hash = hash_json_projection_hex(&HfHubBinding {
+        hub_repo: &command.hub_repo,
+        hub_revision: &command.hub_revision,
+    })?;
     let manifest = HfProvenanceManifest {
         manifest_version: HF_PROVENANCE_MANIFEST_VERSION.to_string(),
         semantic_scope: HF_PROVENANCE_SEMANTIC_SCOPE.to_string(),
@@ -4270,6 +4282,7 @@ fn prepare_hf_provenance_manifest_command(
         hub_repo: command.hub_repo,
         hub_revision: command.hub_revision,
         commitments: HfProvenanceCommitments {
+            hub_binding_hash,
             tokenizer_hash: hash_json_projection_hex(&tokenizer)?,
             safetensors_manifest_hash: hash_json_projection_hex(&safetensors)?,
             onnx_export_hash: hash_json_projection_hex(&onnx_export)?,
@@ -4552,8 +4565,14 @@ fn load_hf_provenance_manifest(
             HF_PROVENANCE_MANIFEST_VERSION_V2_LEGACY,
             HF_PROVENANCE_MANIFEST_VERSION
         ))),
+        HF_PROVENANCE_MANIFEST_VERSION_V3_LEGACY => Err(VmError::Serialization(format!(
+            "failed to parse HF provenance manifest {}: legacy manifest_version `{}` is no longer accepted after the hub-binding hardening update; regenerate the manifest as {}",
+            manifest_path.display(),
+            HF_PROVENANCE_MANIFEST_VERSION_V3_LEGACY,
+            HF_PROVENANCE_MANIFEST_VERSION
+        ))),
         HF_PROVENANCE_MANIFEST_VERSION => {
-            ensure_hf_provenance_manifest_v3_required_fields(manifest_path, &manifest_value)?;
+            ensure_hf_provenance_manifest_v4_required_fields(manifest_path, &manifest_value)?;
             serde_json::from_value(manifest_value).map_err(|err| {
                 VmError::Serialization(format!(
                     "failed to parse HF provenance manifest {}: {err}",
@@ -4568,7 +4587,7 @@ fn load_hf_provenance_manifest(
     }
 }
 
-fn ensure_hf_provenance_manifest_v3_required_fields(
+fn ensure_hf_provenance_manifest_v4_required_fields(
     manifest_path: &Path,
     manifest_value: &serde_json::Value,
 ) -> llm_provable_computer::Result<()> {
@@ -4607,6 +4626,14 @@ fn verify_hf_provenance_manifest(
         "hf commitment_hash_function",
         &manifest.commitment_hash_function,
         HF_PROVENANCE_HASH_FUNCTION,
+    )?;
+    verify_hash_commitment(
+        "hf hub_binding_hash",
+        &manifest.commitments.hub_binding_hash,
+        &hash_json_projection_hex(&HfHubBinding {
+            hub_repo: &manifest.hub_repo,
+            hub_revision: &manifest.hub_revision,
+        })?,
     )?;
     validate_hf_identifier("hub_repo", &manifest.hub_repo)?;
     validate_hf_pinned_revision("hub_revision", &manifest.hub_revision)?;
@@ -4654,13 +4681,28 @@ fn verify_hf_provenance_manifest(
         &manifest.commitments.limitations_hash,
         &hash_json_projection_hex(&manifest.limitations)?,
     )?;
-    verify_hf_optional_file_commitment("tokenizer_json", &manifest.tokenizer.tokenizer_json)?;
-    verify_hf_optional_file_commitment("tokenizer_config", &manifest.tokenizer.tokenizer_config)?;
+    let mut bound_paths = std::collections::BTreeSet::new();
+    verify_hf_optional_file_commitment(
+        "tokenizer_json",
+        &manifest.tokenizer.tokenizer_json,
+        &mut bound_paths,
+    )?;
+    verify_hf_optional_file_commitment(
+        "tokenizer_config",
+        &manifest.tokenizer.tokenizer_config,
+        &mut bound_paths,
+    )?;
     verify_hf_optional_file_commitment(
         "tokenization_transcript",
         &manifest.tokenizer.tokenization_transcript,
+        &mut bound_paths,
     )?;
     for safetensors in &manifest.safetensors {
+        ensure_unique_hf_bound_path(
+            "HF provenance safetensors",
+            &safetensors.path,
+            &mut bound_paths,
+        )?;
         verify_hf_safetensors_file_commitment(safetensors)?;
     }
     if let Some(onnx_export) = &manifest.onnx_export {
@@ -4673,31 +4715,31 @@ fn verify_hf_provenance_manifest(
             "onnx_export.exporter_version",
             onnx_export.exporter_version.as_deref(),
         )?;
-        let mut onnx_paths = std::collections::BTreeSet::new();
         ensure_unique_hf_file_commitment_path(
             "HF provenance onnx_export.graph",
             &onnx_export.graph,
-            &mut onnx_paths,
+            &mut bound_paths,
         )?;
         verify_hf_file_commitment("onnx_export.graph", &onnx_export.graph)?;
-        if let Some(metadata) = &onnx_export.metadata {
-            ensure_unique_hf_file_commitment_path(
-                "HF provenance onnx_export.metadata",
-                metadata,
-                &mut onnx_paths,
-            )?;
-        }
-        verify_hf_optional_file_commitment("onnx_export.metadata", &onnx_export.metadata)?;
+        verify_hf_optional_file_commitment(
+            "onnx_export.metadata",
+            &onnx_export.metadata,
+            &mut bound_paths,
+        )?;
         for commitment in &onnx_export.external_data_files {
             ensure_unique_hf_file_commitment_path(
                 "HF provenance onnx_export.external_data_files[]",
                 commitment,
-                &mut onnx_paths,
+                &mut bound_paths,
             )?;
             verify_hf_file_commitment("onnx_export.external_data_files[]", commitment)?;
         }
     }
-    verify_hf_optional_file_commitment("model_card", &manifest.release.model_card)?;
+    verify_hf_optional_file_commitment(
+        "model_card",
+        &manifest.release.model_card,
+        &mut bound_paths,
+    )?;
     validate_hf_optional_identifier("release.doi", manifest.release.doi.as_deref())?;
     for (idx, dataset) in manifest.release.datasets.iter().enumerate() {
         validate_hf_identifier(&format!("release.datasets[{idx}]"), dataset)?;
@@ -4797,8 +4839,14 @@ fn hf_safetensors_file_commitment(
 fn verify_hf_optional_file_commitment(
     label: &str,
     commitment: &Option<HfFileCommitment>,
+    seen_paths: &mut std::collections::BTreeSet<HfFileIdentity>,
 ) -> llm_provable_computer::Result<()> {
     if let Some(commitment) = commitment {
+        ensure_unique_hf_file_commitment_path(
+            &format!("HF provenance {label}"),
+            commitment,
+            seen_paths,
+        )?;
         verify_hf_file_commitment(label, commitment)?;
     }
     Ok(())
@@ -4890,11 +4938,18 @@ fn ensure_unique_hf_file_commitment_path(
     commitment: &HfFileCommitment,
     seen_paths: &mut std::collections::BTreeSet<HfFileIdentity>,
 ) -> llm_provable_computer::Result<()> {
-    let identity = hf_file_identity(Path::new(&commitment.path), label)?;
+    ensure_unique_hf_bound_path(label, &commitment.path, seen_paths)
+}
+
+fn ensure_unique_hf_bound_path(
+    label: &str,
+    path: &str,
+    seen_paths: &mut std::collections::BTreeSet<HfFileIdentity>,
+) -> llm_provable_computer::Result<()> {
+    let identity = hf_file_identity(Path::new(path), label)?;
     if !seen_paths.insert(identity) {
         return Err(VmError::InvalidConfig(format!(
-            "{label} reuses ONNX artifact path `{}`",
-            commitment.path
+            "{label} reuses HF artifact path `{path}`",
         )));
     }
     Ok(())
@@ -7174,6 +7229,7 @@ mod hf_provenance_manifest_tests {
             },
             "limitations": hf_provenance_limitations(),
             "commitments": {
+                "hub_binding_hash": "f".repeat(64),
                 "tokenizer_hash": "0".repeat(64),
                 "safetensors_manifest_hash": "1".repeat(64),
                 "onnx_export_hash": "2".repeat(64),
@@ -7206,18 +7262,25 @@ mod hf_provenance_manifest_tests {
             notes: vec!["release note".to_string()],
         };
         let limitations = hf_provenance_limitations();
+        let hub_repo = "example/test-model".to_string();
+        let hub_revision = "0123456789abcdef".to_string();
         HfProvenanceManifest {
             manifest_version: HF_PROVENANCE_MANIFEST_VERSION.to_string(),
             semantic_scope: HF_PROVENANCE_SEMANTIC_SCOPE.to_string(),
             commitment_hash_function: HF_PROVENANCE_HASH_FUNCTION.to_string(),
-            hub_repo: "example/test-model".to_string(),
-            hub_revision: "0123456789abcdef".to_string(),
+            hub_repo: hub_repo.clone(),
+            hub_revision: hub_revision.clone(),
             tokenizer: tokenizer.clone(),
             safetensors,
             onnx_export: onnx_export.clone(),
             release: release.clone(),
             limitations: limitations.clone(),
             commitments: HfProvenanceCommitments {
+                hub_binding_hash: hash_json_projection_hex(&HfHubBinding {
+                    hub_repo: &hub_repo,
+                    hub_revision: &hub_revision,
+                })
+                .expect("hub binding hash"),
                 tokenizer_hash: hash_json_projection_hex(&tokenizer).expect("tokenizer hash"),
                 safetensors_manifest_hash: hash_json_projection_hex(&Vec::<
                     HfSafetensorsFileCommitment,
@@ -7326,6 +7389,20 @@ mod hf_provenance_manifest_tests {
         assert!(err
             .to_string()
             .contains("legacy manifest_version `hf-provenance-manifest-v2` is no longer accepted"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_legacy_v3_with_upgrade_message() {
+        let file = hf_provenance_test_manifest_file("legacy-v3");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["manifest_version"] = serde_json::json!(HF_PROVENANCE_MANIFEST_VERSION_V3_LEGACY);
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("legacy v3 manifest should require regeneration");
+        assert!(err
+            .to_string()
+            .contains("legacy manifest_version `hf-provenance-manifest-v3` is no longer accepted"));
     }
 
     #[test]
@@ -7468,6 +7545,11 @@ mod hf_provenance_manifest_tests {
             release,
             limitations,
             commitments: HfProvenanceCommitments {
+                hub_binding_hash: hash_json_projection_hex(&HfHubBinding {
+                    hub_repo: "example/test-model",
+                    hub_revision: "0123456789abcdef",
+                })
+                .expect("hub binding hash"),
                 tokenizer_hash: hash_json_projection_hex(&HfTokenizerProvenance {
                     tokenizer_id: "example/test-model".to_string(),
                     tokenizer_revision: "0123456789abcdef".to_string(),
@@ -7562,7 +7644,7 @@ mod hf_provenance_manifest_tests {
             .expect_err("duplicate ONNX sidecar paths should fail");
         assert!(err
             .to_string()
-            .contains("onnx_export.external_data_files[] reuses ONNX artifact path"));
+            .contains("onnx_export.external_data_files[] reuses HF artifact path"));
     }
 
     #[test]
@@ -7585,7 +7667,7 @@ mod hf_provenance_manifest_tests {
             .expect_err("duplicate ONNX graph/metadata path should fail");
         assert!(err
             .to_string()
-            .contains("onnx_export.metadata reuses ONNX artifact path"));
+            .contains("onnx_export.metadata reuses HF artifact path"));
     }
 
     #[test]
@@ -7608,7 +7690,50 @@ mod hf_provenance_manifest_tests {
             .expect_err("duplicate ONNX graph/external-data path should fail");
         assert!(err
             .to_string()
-            .contains("onnx_export.external_data_files[] reuses ONNX artifact path"));
+            .contains("onnx_export.external_data_files[] reuses HF artifact path"));
+    }
+
+    #[test]
+    fn verify_hf_provenance_manifest_rejects_cross_role_duplicate_bound_paths() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let shared = dir.path().join("shared.json");
+        fs::write(&shared, b"{\"shared\":true}").expect("write shared file");
+
+        let tokenizer_json = hf_file_commitment(&shared).expect("tokenizer commitment");
+        let mut manifest = sample_hf_provenance_manifest_with_onnx_export(None);
+        manifest.tokenizer = HfTokenizerProvenance {
+            tokenizer_id: "example/test-model".to_string(),
+            tokenizer_revision: "0123456789abcdef".to_string(),
+            tokenizer_json: Some(tokenizer_json.clone()),
+            tokenizer_config: None,
+            tokenization_transcript: None,
+        };
+        manifest.release = HfReleaseMetadata {
+            model_card: Some(tokenizer_json),
+            doi: None,
+            datasets: Vec::new(),
+            notes: vec!["release note".to_string()],
+        };
+        manifest.commitments.tokenizer_hash =
+            hash_json_projection_hex(&manifest.tokenizer).expect("tokenizer hash");
+        manifest.commitments.release_metadata_hash =
+            hash_json_projection_hex(&manifest.release).expect("release hash");
+
+        let err = verify_hf_provenance_manifest(&manifest)
+            .expect_err("reused bound file across roles should fail");
+        assert!(err.to_string().contains("reuses HF artifact path"));
+    }
+
+    #[test]
+    fn verify_hf_provenance_manifest_rejects_hub_binding_hash_drift() {
+        let mut manifest = sample_hf_provenance_manifest_with_onnx_export(None);
+        manifest.hub_revision = "fedcba9876543210".to_string();
+
+        let err =
+            verify_hf_provenance_manifest(&manifest).expect_err("hub binding drift should fail");
+        assert!(err
+            .to_string()
+            .contains("hf hub_binding_hash commitment mismatch"));
     }
 
     #[test]
