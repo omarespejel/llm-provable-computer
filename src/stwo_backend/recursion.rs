@@ -900,19 +900,17 @@ mod tests {
     #[test]
     fn phase29_load_recursive_compression_input_contract_reports_malformed_json_as_invalid_config()
     {
-        let path = std::env::temp_dir().join(format!(
-            "phase29-recursive-compression-input-contract-malformed-{}.json",
-            std::process::id()
-        ));
-        std::fs::write(&path, "{").expect("write malformed JSON");
+        use std::io::Write;
 
-        let err = load_phase29_recursive_compression_input_contract(&path)
+        let mut temp = tempfile::NamedTempFile::new().expect("create temp file");
+        temp.write_all(b"{").expect("write malformed JSON");
+
+        let err = load_phase29_recursive_compression_input_contract(temp.path())
             .expect_err("malformed Phase 29 contract should fail");
         assert!(
             matches!(err, VmError::InvalidConfig(_)),
             "expected InvalidConfig, got {err:?}"
         );
-        let _ = std::fs::remove_file(&path);
     }
 
     #[cfg(feature = "stwo-backend")]

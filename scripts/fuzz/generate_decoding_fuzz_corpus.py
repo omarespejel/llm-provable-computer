@@ -225,6 +225,21 @@ def main() -> int:
     if not PHASE29_CURATED_CORPUS.is_file():
         raise SystemExit(f"missing checked-in Phase 29 corpus seed: {PHASE29_CURATED_CORPUS}")
 
+    run(
+        "cargo",
+        f"+{RUST_TOOLCHAIN}",
+        "run",
+        "--quiet",
+        "--features",
+        "stwo-backend",
+        "--bin",
+        "tvm",
+        "--",
+        "verify-stwo-recursive-compression-input-contract",
+        "--input",
+        str(PHASE29_CURATED_CORPUS),
+    )
+
     phase29 = json.loads(PHASE29_CURATED_CORPUS.read_text())
     write_json(phase29_path, phase29)
     return 0

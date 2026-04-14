@@ -7,7 +7,8 @@ use llm_provable_computer::{
 };
 
 fuzz_target!(|data: &[u8]| {
-    if data.len() > 2 * 1024 * 1024 {
+    // Match the production parser budget so accepted inputs can reach verification.
+    if data.len() > 1024 * 1024 {
         return;
     }
     let Ok(json) = std::str::from_utf8(data) else {
