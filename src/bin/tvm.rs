@@ -4331,6 +4331,27 @@ fn serialize_hf_provenance_manifest_bytes(
     }
 }
 
+fn require_windows_manifest_file_identity(
+    manifest_path: &Path,
+    volume_serial_number: Option<u32>,
+    file_index: Option<u64>,
+    phase: &str,
+) -> llm_provable_computer::Result<(u32, u64)> {
+    let volume_serial_number = volume_serial_number.ok_or_else(|| {
+        VmError::InvalidConfig(format!(
+            "HF provenance manifest {}: cannot read volume serial number {phase}",
+            manifest_path.display()
+        ))
+    })?;
+    let file_index = file_index.ok_or_else(|| {
+        VmError::InvalidConfig(format!(
+            "HF provenance manifest {}: cannot read file index {phase}",
+            manifest_path.display()
+        ))
+    })?;
+    Ok((volume_serial_number, file_index))
+}
+
 fn verify_hf_provenance_manifest_command(
     manifest_path: &Path,
 ) -> llm_provable_computer::Result<()> {
@@ -4404,8 +4425,21 @@ fn load_hf_provenance_manifest(
     {
         use std::os::windows::fs::MetadataExt;
 
-        if metadata.volume_serial_number() != opened_metadata.volume_serial_number()
-            || metadata.file_index() != opened_metadata.file_index()
+        let (pre_volume_serial_number, pre_file_index) = require_windows_manifest_file_identity(
+            manifest_path,
+            metadata.volume_serial_number(),
+            metadata.file_index(),
+            "before open",
+        )?;
+        let (post_volume_serial_number, post_file_index) = require_windows_manifest_file_identity(
+            manifest_path,
+            opened_metadata.volume_serial_number(),
+            opened_metadata.file_index(),
+            "after open",
+        )?;
+
+        if pre_volume_serial_number != post_volume_serial_number
+            || pre_file_index != post_file_index
         {
             return Err(VmError::InvalidConfig(format!(
                 "HF provenance manifest {} changed between metadata inspection and open",
@@ -6891,6 +6925,36 @@ mod hf_provenance_manifest_tests {
 
         assert!(err.to_string().contains("exceeding the limit"));
         assert!(!output.exists());
+    }
+
+    #[test]
+    fn windows_manifest_identity_requires_volume_serial_number() {
+        let err = require_windows_manifest_file_identity(
+            Path::new("manifest.json"),
+            None,
+            Some(7),
+            "before open",
+        )
+        .expect_err("missing volume serial number should fail");
+
+        assert!(err
+            .to_string()
+            .contains("cannot read volume serial number before open"));
+    }
+
+    #[test]
+    fn windows_manifest_identity_requires_file_index() {
+        let err = require_windows_manifest_file_identity(
+            Path::new("manifest.json"),
+            Some(11),
+            None,
+            "after open",
+        )
+        .expect_err("missing file index should fail");
+
+        assert!(err
+            .to_string()
+            .contains("cannot read file index after open"));
     }
 }
 
