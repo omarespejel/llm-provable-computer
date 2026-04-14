@@ -1,5 +1,6 @@
 use std::ffi::OsString;
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Duration;
@@ -5282,7 +5283,13 @@ fn research_v3_limitations() -> Vec<String> {
 fn load_research_v3_equivalence_artifact(
     artifact_path: &Path,
 ) -> llm_provable_computer::Result<ResearchV3EquivalenceArtifact> {
-    let metadata = fs::metadata(artifact_path).map_err(|err| {
+    let file = fs::File::open(artifact_path).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to read research-v3 artifact {}: {err}",
+            artifact_path.display()
+        ))
+    })?;
+    let metadata = file.metadata().map_err(|err| {
         VmError::InvalidConfig(format!(
             "failed to read research-v3 artifact {}: {err}",
             artifact_path.display()
@@ -5294,21 +5301,16 @@ fn load_research_v3_equivalence_artifact(
             artifact_path.display()
         )));
     }
-    if metadata.len() > MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES as u64 {
-        return Err(VmError::InvalidConfig(format!(
-            "research-v3 artifact {} is {} bytes, exceeding the limit of {} bytes",
-            artifact_path.display(),
-            metadata.len(),
-            MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES
-        )));
-    }
-
-    let artifact_bytes = fs::read(artifact_path).map_err(|err| {
-        VmError::InvalidConfig(format!(
-            "failed to read research-v3 artifact {}: {err}",
-            artifact_path.display()
-        ))
-    })?;
+    let mut artifact_bytes = Vec::new();
+    let mut limited_reader = file.take(MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES as u64 + 1);
+    limited_reader
+        .read_to_end(&mut artifact_bytes)
+        .map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to read research-v3 artifact {}: {err}",
+                artifact_path.display()
+            ))
+        })?;
     if artifact_bytes.len() > MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES {
         return Err(VmError::InvalidConfig(format!(
             "research-v3 artifact {} is {} bytes after read, exceeding the limit of {} bytes",
@@ -6678,12 +6680,12 @@ mod tests {
     }
 
     #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-    fn research_v3_test_artifact_path(label: &str) -> PathBuf {
-        let suffix = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("clock")
-            .as_nanos();
-        std::env::temp_dir().join(format!("llm-provable-computer-{label}-{suffix}.json"))
+    fn research_v3_test_artifact_file(label: &str) -> tempfile::NamedTempFile {
+        tempfile::Builder::new()
+            .prefix(&format!("llm-provable-computer-{label}-"))
+            .suffix(".json")
+            .tempfile()
+            .expect("create temp file")
     }
 
     #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
@@ -6786,69 +6788,61 @@ mod tests {
     #[test]
     #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
     fn load_research_v3_equivalence_artifact_rejects_unknown_top_level_field() {
-        let path = research_v3_test_artifact_path("research-v3-extra-top");
+        let file = research_v3_test_artifact_file("research-v3-extra-top");
         let mut value =
             serde_json::to_value(sample_research_v3_equivalence_artifact()).expect("artifact json");
         value
             .as_object_mut()
             .expect("artifact object")
             .insert("unexpected_field".to_string(), serde_json::json!(true));
-        write_research_v3_test_artifact(&path, &value);
+        write_research_v3_test_artifact(file.path(), &value);
 
-        let err =
-            load_research_v3_equivalence_artifact(&path).expect_err("unknown field should fail");
+        let err = load_research_v3_equivalence_artifact(file.path())
+            .expect_err("unknown field should fail");
         assert!(err.to_string().contains("unknown field"));
-
-        let _ = fs::remove_file(path);
     }
 
     #[test]
     #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
     fn load_research_v3_equivalence_artifact_rejects_unknown_nested_rule_witness_field() {
-        let path = research_v3_test_artifact_path("research-v3-extra-witness");
+        let file = research_v3_test_artifact_file("research-v3-extra-witness");
         let mut value =
             serde_json::to_value(sample_research_v3_equivalence_artifact()).expect("artifact json");
         value["rule_witnesses"][0]["unexpected_field"] = serde_json::json!(7);
-        write_research_v3_test_artifact(&path, &value);
+        write_research_v3_test_artifact(file.path(), &value);
 
-        let err = load_research_v3_equivalence_artifact(&path)
+        let err = load_research_v3_equivalence_artifact(file.path())
             .expect_err("unknown nested rule witness field should fail");
         assert!(err.to_string().contains("unknown field"));
-
-        let _ = fs::remove_file(path);
     }
 
     #[test]
     #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
     fn load_research_v3_equivalence_artifact_rejects_oversized_file() {
-        let path = research_v3_test_artifact_path("research-v3-oversized");
+        let file = research_v3_test_artifact_file("research-v3-oversized");
         fs::write(
-            &path,
+            file.path(),
             vec![b'x'; MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES + 1],
         )
         .expect("write oversized artifact");
 
-        let err = load_research_v3_equivalence_artifact(&path)
+        let err = load_research_v3_equivalence_artifact(file.path())
             .expect_err("oversized artifact should fail");
         assert!(err.to_string().contains("exceeding the limit"));
-
-        let _ = fs::remove_file(path);
     }
 
     #[test]
     #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
     fn load_research_v3_equivalence_artifact_reports_malformed_json_as_serialization() {
-        let path = research_v3_test_artifact_path("research-v3-malformed");
-        fs::write(&path, b"{").expect("write malformed artifact");
+        let file = research_v3_test_artifact_file("research-v3-malformed");
+        fs::write(file.path(), b"{").expect("write malformed artifact");
 
-        let err = load_research_v3_equivalence_artifact(&path)
+        let err = load_research_v3_equivalence_artifact(file.path())
             .expect_err("malformed artifact should fail");
         assert!(matches!(err, VmError::Serialization(_)));
         assert!(err
             .to_string()
             .contains("failed to parse research-v3 artifact"));
-
-        let _ = fs::remove_file(path);
     }
 
     #[test]
