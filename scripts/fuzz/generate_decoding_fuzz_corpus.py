@@ -10,6 +10,9 @@ import tomllib
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "fuzz" / "corpus"
 FUZZ_TOOLCHAIN_TOML = ROOT / "fuzz" / "rust-toolchain.toml"
+PHASE29_CURATED_CORPUS = (
+    CORPUS / "phase29_recursive_compression_input_contract" / "valid_phase29.json"
+)
 RUN_TIMEOUT_SECONDS = 300
 DEFAULT_RUST_TOOLCHAIN = "nightly-2025-07-14"
 
@@ -108,6 +111,9 @@ def main() -> int:
     phase12_path = corpus_root / "phase12_decoding_manifest" / "valid_phase12.json"
     phase14_path = corpus_root / "phase14_decoding_manifest" / "valid_phase14.json"
     artifact_path = corpus_root / "phase12_shared_lookup_artifact" / "valid_artifact.json"
+    phase29_path = (
+        corpus_root / "phase29_recursive_compression_input_contract" / "valid_phase29.json"
+    )
     phase30_path = (
         corpus_root / "phase30_decoding_step_proof_envelope_manifest" / "valid_phase30.json"
     )
@@ -115,6 +121,7 @@ def main() -> int:
     phase12_path.parent.mkdir(parents=True, exist_ok=True)
     phase14_path.parent.mkdir(parents=True, exist_ok=True)
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    phase29_path.parent.mkdir(parents=True, exist_ok=True)
     phase30_path.parent.mkdir(parents=True, exist_ok=True)
 
     run(
@@ -214,6 +221,27 @@ def main() -> int:
         "chain": phase12,
     }
     write_json(phase30_path, phase30_input)
+
+    if not PHASE29_CURATED_CORPUS.is_file():
+        raise SystemExit(f"missing checked-in Phase 29 corpus seed: {PHASE29_CURATED_CORPUS}")
+
+    run(
+        "cargo",
+        f"+{RUST_TOOLCHAIN}",
+        "run",
+        "--quiet",
+        "--features",
+        "stwo-backend",
+        "--bin",
+        "tvm",
+        "--",
+        "verify-stwo-recursive-compression-input-contract",
+        "--input",
+        str(PHASE29_CURATED_CORPUS),
+    )
+
+    phase29 = json.loads(PHASE29_CURATED_CORPUS.read_text())
+    write_json(phase29_path, phase29)
     return 0
 
 

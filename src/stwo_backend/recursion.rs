@@ -359,8 +359,10 @@ pub fn load_phase29_recursive_compression_input_contract(
 #[cfg(feature = "stwo-backend")]
 fn phase29_json_error(error: serde_json::Error) -> VmError {
     match error.classify() {
-        serde_json::error::Category::Data => VmError::InvalidConfig(error.to_string()),
-        _ => VmError::Serialization(error.to_string()),
+        serde_json::error::Category::Data
+        | serde_json::error::Category::Syntax
+        | serde_json::error::Category::Eof => VmError::InvalidConfig(error.to_string()),
+        serde_json::error::Category::Io => VmError::Serialization(error.to_string()),
     }
 }
 
@@ -871,6 +873,18 @@ mod tests {
 
     #[cfg(feature = "stwo-backend")]
     #[test]
+    fn phase29_parse_recursive_compression_input_contract_reports_malformed_json_as_invalid_config()
+    {
+        let err = parse_phase29_recursive_compression_input_contract_json("{")
+            .expect_err("malformed JSON must fail");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
     fn phase29_parse_recursive_compression_input_contract_rejects_oversized_json() {
         let json = " ".repeat(MAX_PHASE29_RECURSIVE_COMPRESSION_INPUT_CONTRACT_JSON_BYTES + 1);
         let err = parse_phase29_recursive_compression_input_contract_json(&json)
@@ -880,6 +894,23 @@ mod tests {
             "expected InvalidConfig, got {err:?}"
         );
         assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase29_load_recursive_compression_input_contract_reports_malformed_json_as_invalid_config()
+    {
+        use std::io::Write;
+
+        let mut temp = tempfile::NamedTempFile::new().expect("create temp file");
+        temp.write_all(b"{").expect("write malformed JSON");
+
+        let err = load_phase29_recursive_compression_input_contract(temp.path())
+            .expect_err("malformed Phase 29 contract should fail");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
     }
 
     #[cfg(feature = "stwo-backend")]

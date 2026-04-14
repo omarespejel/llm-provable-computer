@@ -48,6 +48,7 @@ rand = "0.8.5"
 criterion = { version = "0.5", features = ["html_reports"] }
 proptest = "1.6"
 jsonschema = { version = "0.17.1", default-features = false, features = ["draft202012"] }
+tempfile = "3.13"
 
 [patch.crates-io]
 onnx-protobuf = { path = "vendor/onnx-protobuf" }

@@ -11,6 +11,7 @@ FUZZ_GENERATED_CORPUS_DIR="${FUZZ_GENERATED_CORPUS_DIR:-${FUZZ_WORK_DIR}/generat
 SAFE_TARGET_ROOT="${ROOT_DIR}/target"
 FUZZ_TARGETS=(
   phase12_shared_lookup_artifact
+  phase29_recursive_compression_input_contract
   phase30_decoding_step_proof_envelope_manifest
 )
 

@@ -4134,6 +4134,7 @@ dependencies = [
  "sha3",
  "stwo",
  "stwo-constraint-framework",
+ "tempfile",
  "thiserror 2.0.18",
  "tract-onnx",
 ]
