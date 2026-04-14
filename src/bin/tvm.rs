@@ -1,6 +1,6 @@
 use std::ffi::OsString;
 use std::fs;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Duration;
@@ -4246,17 +4246,7 @@ fn prepare_hf_provenance_manifest_command(
         limitations,
     };
     verify_hf_provenance_manifest(&manifest)?;
-    let bytes = serde_json::to_vec_pretty(&manifest).map_err(|err| {
-        VmError::Serialization(format!("failed to serialize HF provenance manifest: {err}"))
-    })?;
-    if bytes.len() > MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES {
-        return Err(VmError::InvalidConfig(format!(
-            "HF provenance manifest {} would be {} bytes, exceeding the limit of {} bytes",
-            command.output.display(),
-            bytes.len(),
-            MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES
-        )));
-    }
+    let bytes = serialize_hf_provenance_manifest_bytes(&manifest, &command.output)?;
     write_bytes_atomically(&command.output, &bytes)?;
 
     println!("hf_provenance_manifest: {}", command.output.display());
@@ -4272,6 +4262,73 @@ fn prepare_hf_provenance_manifest_command(
     );
 
     Ok(())
+}
+
+struct BoundedManifestWriter {
+    bytes: Vec<u8>,
+    max_len: usize,
+    attempted_len: usize,
+}
+
+impl BoundedManifestWriter {
+    fn new(max_len: usize) -> Self {
+        Self {
+            bytes: Vec::new(),
+            max_len,
+            attempted_len: 0,
+        }
+    }
+
+    fn into_bytes(self) -> Vec<u8> {
+        self.bytes
+    }
+}
+
+impl Write for BoundedManifestWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let attempted_len = self
+            .bytes
+            .len()
+            .checked_add(buf.len())
+            .ok_or_else(|| std::io::Error::other("HF provenance manifest size overflow"))?;
+        if attempted_len > self.max_len {
+            self.attempted_len = attempted_len;
+            return Err(std::io::Error::other(
+                "HF provenance manifest exceeds byte limit",
+            ));
+        }
+        self.attempted_len = attempted_len;
+        self.bytes.extend_from_slice(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+fn serialize_hf_provenance_manifest_bytes(
+    manifest: &HfProvenanceManifest,
+    output_path: &Path,
+) -> llm_provable_computer::Result<Vec<u8>> {
+    let mut writer = BoundedManifestWriter::new(MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES);
+    match serde_json::to_writer_pretty(&mut writer, manifest) {
+        Ok(()) => Ok(writer.into_bytes()),
+        Err(err) if writer.attempted_len > MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES || err.is_io() => {
+            let observed_len = writer
+                .attempted_len
+                .max(MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES + 1);
+            Err(VmError::InvalidConfig(format!(
+                "HF provenance manifest {} would be at least {} bytes, exceeding the limit of {} bytes",
+                output_path.display(),
+                observed_len,
+                MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES
+            )))
+        }
+        Err(err) => Err(VmError::Serialization(format!(
+            "failed to serialize HF provenance manifest: {err}"
+        ))),
+    }
 }
 
 fn verify_hf_provenance_manifest_command(
