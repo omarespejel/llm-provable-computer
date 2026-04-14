@@ -4734,16 +4734,22 @@ fn hash_hf_commitment_file(path: &Path) -> llm_provable_computer::Result<(u64, S
     let mut output = [0u8; 32];
     let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
     let mut observed_size = 0u64;
+    let mut remaining = size_bytes;
     let mut buffer = vec![0u8; HF_PROVENANCE_FILE_READ_CHUNK_BYTES];
-    loop {
-        let read_bytes = file.read(&mut buffer).map_err(|err| {
+    while remaining > 0 {
+        let chunk_len = remaining.min(buffer.len() as u64) as usize;
+        let read_bytes = file.read(&mut buffer[..chunk_len]).map_err(|err| {
             VmError::InvalidConfig(format!(
                 "failed to read HF provenance file {}: {err}",
                 path.display()
             ))
         })?;
         if read_bytes == 0 {
-            break;
+            return Err(VmError::InvalidConfig(format!(
+                "HF provenance file {} ended before the expected {} bytes were read",
+                path.display(),
+                size_bytes
+            )));
         }
         observed_size = observed_size
             .checked_add(read_bytes as u64)
@@ -4753,14 +4759,21 @@ fn hash_hf_commitment_file(path: &Path) -> llm_provable_computer::Result<(u64, S
                     path.display()
                 ))
             })?;
+        remaining -= read_bytes as u64;
         hasher.update(&buffer[..read_bytes]);
     }
-    if observed_size != size_bytes {
+    let mut extra_byte = [0u8; 1];
+    if file.read(&mut extra_byte).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to read HF provenance file {}: {err}",
+            path.display()
+        ))
+    })? != 0
+    {
         return Err(VmError::InvalidConfig(format!(
-            "HF provenance file {} changed during read: expected {} bytes, got {}",
+            "HF provenance file {} grew while being hashed after {} bytes were expected",
             path.display(),
-            size_bytes,
-            observed_size
+            size_bytes
         )));
     }
     hasher
@@ -4836,16 +4849,22 @@ fn inspect_hf_safetensors_file(
         hf_safetensors_metadata_commitment_from_header(path, &header_bytes)?;
 
     let mut observed_size = header_end;
+    let mut remaining = size_bytes - header_end;
     let mut buffer = vec![0u8; HF_PROVENANCE_FILE_READ_CHUNK_BYTES];
-    loop {
-        let read_bytes = file.read(&mut buffer).map_err(|err| {
+    while remaining > 0 {
+        let chunk_len = remaining.min(buffer.len() as u64) as usize;
+        let read_bytes = file.read(&mut buffer[..chunk_len]).map_err(|err| {
             VmError::InvalidConfig(format!(
                 "failed to read HF provenance file {}: {err}",
                 path.display()
             ))
         })?;
         if read_bytes == 0 {
-            break;
+            return Err(VmError::InvalidConfig(format!(
+                "HF provenance file {} ended before the expected {} bytes were read",
+                path.display(),
+                size_bytes
+            )));
         }
         observed_size = observed_size
             .checked_add(read_bytes as u64)
@@ -4855,14 +4874,21 @@ fn inspect_hf_safetensors_file(
                     path.display()
                 ))
             })?;
+        remaining -= read_bytes as u64;
         hasher.update(&buffer[..read_bytes]);
     }
-    if observed_size != size_bytes {
+    let mut extra_byte = [0u8; 1];
+    if file.read(&mut extra_byte).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to read HF provenance file {}: {err}",
+            path.display()
+        ))
+    })? != 0
+    {
         return Err(VmError::InvalidConfig(format!(
-            "HF provenance file {} changed during read: expected {} bytes, got {}",
+            "HF provenance file {} grew while being hashed after {} bytes were expected",
             path.display(),
-            size_bytes,
-            observed_size
+            size_bytes
         )));
     }
 
