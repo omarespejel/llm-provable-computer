@@ -70,6 +70,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "phase29_recursive_compression_input_contract"
+path = "fuzz_targets/phase29_recursive_compression_input_contract.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "phase30_decoding_step_proof_envelope_manifest"
 path = "fuzz_targets/phase30_decoding_step_proof_envelope_manifest.rs"
 test = false
