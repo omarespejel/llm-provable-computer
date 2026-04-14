@@ -370,6 +370,13 @@ onnx_smoke_targets=(
   "onnx_export::tests::load_onnx_program_metadata_rejects_missing_direct_memory_read_address"
   "onnx_export::tests::load_onnx_program_metadata_maps_runtime_conversion_failures_to_serialization"
 )
+tvm_bin_smoke_targets=(
+  "tests::load_hf_provenance_manifest_rejects_unknown_top_level_field"
+  "tests::load_hf_provenance_manifest_rejects_unknown_nested_onnx_export_field"
+  "tests::load_hf_provenance_manifest_reports_malformed_json_as_serialization"
+  "tests::load_hf_provenance_manifest_rejects_oversized_file"
+  "tests::load_hf_provenance_manifest_rejects_non_regular_file"
+)
 research_v3_smoke_targets=(
   "tests::research_v3_rule_witnesses_rejects_event_length_mismatch"
   "tests::load_research_v3_equivalence_artifact_rejects_unknown_top_level_field"
@@ -486,6 +493,18 @@ run_onnx_smoke_targets() {
   done
 }
 
+run_tvm_bin_smoke_targets() {
+  local tvm_bin_smoke label
+  for tvm_bin_smoke in "${tvm_bin_smoke_targets[@]}"; do
+    label="${tvm_bin_smoke##*::}"
+    run_logged "tvm-bin-smoke-${label}" cargo test -q \
+      --features onnx-export \
+      --bin tvm "$tvm_bin_smoke" \
+      -- \
+      --exact
+  done
+}
+
 run_stwo_cli_smoke_targets() {
   local stwo_cli_smoke
   for stwo_cli_smoke in "${stwo_cli_smoke_targets[@]}"; do
@@ -570,6 +589,7 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
     run_onnx_smoke_targets
   fi
   if changed_path_is_research_v3_surface; then
+    run_tvm_bin_smoke_targets
     run_research_v3_smoke_targets
     run_research_v3_cli_smoke_target
   fi
@@ -587,6 +607,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
     run_onnx_smoke_targets
   fi
   if changed_path_is_research_v3_surface; then
+    run_tvm_bin_smoke_targets
     run_research_v3_smoke_targets
     run_research_v3_cli_smoke_target
   fi
@@ -604,6 +625,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
     run_onnx_smoke_targets
   fi
   if changed_path_is_research_v3_surface; then
+    run_tvm_bin_smoke_targets
     run_research_v3_smoke_targets
     run_research_v3_cli_smoke_target
   fi
