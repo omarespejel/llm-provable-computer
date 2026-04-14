@@ -5068,6 +5068,13 @@ fn cli_verifier_rejects_tampered_onnx_metadata() {
     );
     prepare.assert().success();
 
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .success();
+
     std::fs::write(&onnx_metadata, br#"{"producer":"tamperd"}"#).expect("tamper ONNX metadata");
 
     let mut verify = tvm_command();
@@ -5103,6 +5110,13 @@ fn cli_verifier_rejects_tampered_onnx_external_data() {
         &[&onnx_external],
     );
     prepare.assert().success();
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .success();
 
     std::fs::write(&onnx_external, b"tampered-external!").expect("tamper ONNX external data");
 
