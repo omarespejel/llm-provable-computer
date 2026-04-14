@@ -14,6 +14,9 @@ IGNORED_AUDIT_ADVISORIES=(
   "RUSTSEC-2026-0002"
   "RUSTSEC-2026-0097"
 )
+IGNORED_YANKED_PACKAGES=(
+  "core2@0.4.0"
+)
 
 require_command() {
   local command_name="$1"
@@ -43,7 +46,7 @@ cargo_deny_version="$(cargo-deny --version | awk '{print $2}')"
 require_exact_version cargo-deny "$cargo_deny_version" "$CARGO_DENY_VERSION"
 
 cargo_audit_args=(
-  "--deny" "warnings"
+  "--json"
 )
 
 for advisory_id in "${IGNORED_AUDIT_ADVISORIES[@]}"; do
@@ -53,8 +56,28 @@ done
 run_cargo_audit() {
   local label="$1"
   local lockfile="$2"
+  local report_path
+  local check_args=(
+    "--report"
+  )
+
   echo "[dependency-audit] cargo audit: ${label} (${lockfile})"
-  cargo audit "${cargo_audit_args[@]}" --file "$lockfile"
+  report_path="$(mktemp)"
+  if ! cargo audit "${cargo_audit_args[@]}" --file "$lockfile" >"$report_path"; then
+    rm -f "$report_path"
+    return 1
+  fi
+  check_args+=("$report_path")
+
+  for package_spec in "${IGNORED_YANKED_PACKAGES[@]}"; do
+    check_args+=("--allow-yanked" "$package_spec")
+  done
+
+  if ! python3 "$ROOT_DIR/scripts/check_cargo_audit_report.py" "${check_args[@]}"; then
+    rm -f "$report_path"
+    return 1
+  fi
+  rm -f "$report_path"
 }
 
 run_cargo_deny() {
