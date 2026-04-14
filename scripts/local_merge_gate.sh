@@ -527,8 +527,13 @@ run_tvm_bin_smoke_targets() {
 
 run_stwo_cli_smoke_targets() {
   local stwo_cli_smoke
+  local tvm_test_binary
+  run_logged stwo-backend-cli-build cargo +nightly-2025-07-14 build -q \
+    --features stwo-backend \
+    --bin tvm
+  tvm_test_binary="$(resolve_tvm_test_binary_path)"
   for stwo_cli_smoke in "${stwo_cli_smoke_targets[@]}"; do
-    run_logged "stwo-backend-cli-smoke-${stwo_cli_smoke}" cargo +nightly-2025-07-14 test -q \
+    run_logged "stwo-backend-cli-smoke-${stwo_cli_smoke}" env TVM_TEST_BINARY="$tvm_test_binary" cargo +nightly-2025-07-14 test -q \
       --features stwo-backend \
       --test cli "$stwo_cli_smoke" \
       -- \
@@ -550,7 +555,12 @@ run_research_v3_smoke_targets() {
 }
 
 run_research_v3_cli_smoke_target() {
-  run_logged research-v3-equivalence-cli cargo test -q \
+  local tvm_test_binary
+  run_logged research-v3-equivalence-cli-build cargo build -q \
+    --features full \
+    --bin tvm
+  tvm_test_binary="$(resolve_tvm_test_binary_path)"
+  run_logged research-v3-equivalence-cli env TVM_TEST_BINARY="$tvm_test_binary" cargo test -q \
     --features full \
     --test cli cli_supports_research_v3_equivalence_command \
     -- \
