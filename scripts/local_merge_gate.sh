@@ -189,23 +189,24 @@ run_logged() {
 }
 
 resolve_tvm_test_binary_path() {
-  local manifest_dir target_dir profile binary_name target_triple
+  local manifest_dir target_dir binary_name target_triple resolved_path
   manifest_dir="$ROOT_DIR"
   target_dir="${CARGO_TARGET_DIR:-$manifest_dir/target}"
   if [[ "$target_dir" != /* ]]; then
     target_dir="$manifest_dir/$target_dir"
   fi
-  profile="${PROFILE:-debug}"
   binary_name="tvm"
   if [[ "${OS:-}" == "Windows_NT" ]]; then
     binary_name="${binary_name}.exe"
   fi
-  target_triple="${CARGO_BUILD_TARGET:-${TARGET:-}}"
+  target_triple="${CARGO_BUILD_TARGET:-}"
   if [[ -n "$target_triple" ]]; then
-    printf '%s\n' "$target_dir/$target_triple/$profile/$binary_name"
+    resolved_path="$target_dir/$target_triple/debug/$binary_name"
   else
-    printf '%s\n' "$target_dir/$profile/$binary_name"
+    resolved_path="$target_dir/debug/$binary_name"
   fi
+  [[ -f "$resolved_path" ]] || fail "expected built tvm binary at $resolved_path after cargo build (CARGO_TARGET_DIR=${CARGO_TARGET_DIR:-}, CARGO_BUILD_TARGET=${CARGO_BUILD_TARGET:-})"
+  printf '%s\n' "$resolved_path"
 }
 
 while (($#)); do
