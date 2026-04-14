@@ -5283,23 +5283,54 @@ fn research_v3_limitations() -> Vec<String> {
 fn load_research_v3_equivalence_artifact(
     artifact_path: &Path,
 ) -> llm_provable_computer::Result<ResearchV3EquivalenceArtifact> {
+    let metadata = fs::symlink_metadata(artifact_path).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to read research-v3 artifact {}: {err}",
+            artifact_path.display()
+        ))
+    })?;
+    if !metadata.file_type().is_file() {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 artifact {} is not a regular file",
+            artifact_path.display()
+        )));
+    }
+    if metadata.len() > MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES as u64 {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 artifact {} is {} bytes, exceeding the limit of {} bytes",
+            artifact_path.display(),
+            metadata.len(),
+            MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES
+        )));
+    }
     let file = fs::File::open(artifact_path).map_err(|err| {
         VmError::InvalidConfig(format!(
             "failed to read research-v3 artifact {}: {err}",
             artifact_path.display()
         ))
     })?;
-    let metadata = file.metadata().map_err(|err| {
+    let opened_metadata = file.metadata().map_err(|err| {
         VmError::InvalidConfig(format!(
             "failed to read research-v3 artifact {}: {err}",
             artifact_path.display()
         ))
     })?;
-    if !metadata.is_file() {
+    if !opened_metadata.is_file() {
         return Err(VmError::InvalidConfig(format!(
-            "research-v3 artifact {} is not a regular file",
+            "research-v3 artifact {} is not a regular file after opening",
             artifact_path.display()
         )));
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+
+        if metadata.dev() != opened_metadata.dev() || metadata.ino() != opened_metadata.ino() {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 artifact {} changed between metadata inspection and open",
+                artifact_path.display()
+            )));
+        }
     }
     let mut artifact_bytes = Vec::new();
     let mut limited_reader = file.take(MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES as u64 + 1);

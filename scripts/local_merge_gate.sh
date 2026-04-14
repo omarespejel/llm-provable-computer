@@ -417,6 +417,18 @@ changed_path_is_onnx_surface() {
     changed_path_has_prefix "spec/onnx"
 }
 
+changed_path_is_research_v3_surface() {
+  changed_path_has_prefix "src/bin/tvm.rs" ||
+    changed_path_has_prefix "tests/cli.rs" ||
+    changed_path_has_prefix "spec/statement-v3-equivalence-kernel" ||
+    changed_path_has_prefix "spec/frontend-runtime-semantics-registry-v1.json" ||
+    changed_path_has_prefix "spec/fixed-point-semantics-v2.json" ||
+    changed_path_has_prefix "spec/onnx-op-subset-v2.json" ||
+    changed_path_has_prefix "scripts/local_merge_gate.sh" ||
+    changed_path_has_prefix "scripts/hardening_test_names.sh" ||
+    changed_path_has_prefix "scripts/run_ub_checks_suite.sh"
+}
+
 changed_path_is_dependency_audit_input() {
   local path
 
@@ -493,6 +505,9 @@ run_research_v3_smoke_targets() {
       --exact
   done
 
+}
+
+run_research_v3_cli_smoke_target() {
   run_logged research-v3-equivalence-cli cargo test -q \
     --features full \
     --test cli cli_supports_research_v3_equivalence_command \
@@ -551,7 +566,9 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   if changed_path_is_onnx_surface; then
     run_onnx_smoke_targets
   fi
-  run_research_v3_smoke_targets
+  if changed_path_is_research_v3_surface; then
+    run_research_v3_smoke_targets
+  fi
   run_stwo_smoke_targets
   run_stwo_cli_smoke_targets
   completed_local_mode="$RUN_MODE"
@@ -565,7 +582,10 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   if changed_path_is_onnx_surface; then
     run_onnx_smoke_targets
   fi
-  run_research_v3_smoke_targets
+  if changed_path_is_research_v3_surface; then
+    run_research_v3_smoke_targets
+    run_research_v3_cli_smoke_target
+  fi
   run_stwo_smoke_targets
   run_stwo_cli_smoke_targets
   completed_local_mode="$RUN_MODE"
@@ -579,7 +599,10 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   if changed_path_is_onnx_surface; then
     run_onnx_smoke_targets
   fi
-  run_research_v3_smoke_targets
+  if changed_path_is_research_v3_surface; then
+    run_research_v3_smoke_targets
+    run_research_v3_cli_smoke_target
+  fi
   run_stwo_smoke_targets
   run_stwo_cli_smoke_targets
   run_conditional_mutation_check
