@@ -4835,6 +4835,12 @@ fn cli_can_prepare_and_verify_hf_provenance_manifest() {
             .map(str::len),
         Some(64)
     );
+    assert!(
+        manifest_json["tokenizer"]["tokenizer_json"]["sha256"]
+            .as_str()
+            .is_some_and(|digest| digest.chars().all(|c| c.is_ascii_hexdigit())),
+        "tokenizer.tokenizer_json.sha256 must be hex",
+    );
     assert_eq!(
         manifest_json
             .get("safetensors")
@@ -5024,6 +5030,58 @@ fn cli_verifier_rejects_hf_manifest_safetensors_sha256_tamper() {
         .failure()
         .stderr(predicate::str::contains("HF provenance safetensors"))
         .stderr(predicate::str::contains("sha256 commitment mismatch"));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
+fn cli_verifier_rejects_legacy_hf_manifest_v2() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-legacy-v2");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let tokenizer_json = fixture_dir.join("tokenizer.json");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(
+        &tokenizer_json,
+        br#"{"version":"1.0","model":{"type":"WordPiece","unk_token":"[UNK]"}}"#,
+    )
+    .expect("write tokenizer json");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&tokenizer_json)
+        .assert()
+        .success();
+
+    let mut manifest_json: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).expect("manifest bytes"))
+            .expect("manifest json");
+    manifest_json["manifest_version"] = serde_json::json!("hf-provenance-manifest-v2");
+    std::fs::write(
+        &manifest,
+        serde_json::to_vec_pretty(&manifest_json).expect("serialize legacy v2 manifest"),
+    )
+    .expect("write legacy v2 manifest");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "legacy manifest_version `hf-provenance-manifest-v2` is no longer accepted",
+        ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
 }
