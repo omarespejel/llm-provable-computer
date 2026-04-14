@@ -379,6 +379,7 @@ research_v3_smoke_targets=(
   "tests::load_research_v3_equivalence_artifact_rejects_non_regular_file"
   "tests::verify_research_v3_equivalence_artifact_rejects_unknown_engine_binding"
   "tests::verify_research_v3_equivalence_artifact_rejects_missing_pinned_engine"
+  "tests::verify_research_v3_equivalence_artifact_rejects_extra_engine_events_beyond_checked_steps"
 )
 stwo_cli_smoke_targets=(
   "cli_can_verify_stwo_recursive_compression_input_contract"
