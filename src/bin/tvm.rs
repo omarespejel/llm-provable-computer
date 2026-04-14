@@ -890,7 +890,8 @@ const FRONTEND_RUNTIME_RESEARCH_WATCH_LANES: [&str; 9] = [
     "sglang",
     "egg-emerge",
 ];
-const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v1";
+const HF_PROVENANCE_MANIFEST_VERSION_V1_LEGACY: &str = "hf-provenance-manifest-v1";
+const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v2";
 const HF_PROVENANCE_SEMANTIC_SCOPE: &str = "hf-release-provenance-boundary-v1";
 const HF_PROVENANCE_HASH_FUNCTION: &str = "blake2b-256";
 
@@ -4516,12 +4517,65 @@ fn load_hf_provenance_manifest(
         )));
     }
 
-    serde_json::from_slice(&manifest_bytes).map_err(|err| {
-        VmError::Serialization(format!(
-            "failed to parse HF provenance manifest {}: {err}",
+    let manifest_value: serde_json::Value =
+        serde_json::from_slice(&manifest_bytes).map_err(|err| {
+            VmError::Serialization(format!(
+                "failed to parse HF provenance manifest {}: {err}",
+                manifest_path.display()
+            ))
+        })?;
+    let manifest_version = manifest_value
+        .get("manifest_version")
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| {
+            VmError::Serialization(format!(
+                "failed to parse HF provenance manifest {}: missing or non-string field `manifest_version`",
+                manifest_path.display()
+            ))
+        })?;
+    match manifest_version {
+        HF_PROVENANCE_MANIFEST_VERSION_V1_LEGACY => Err(VmError::Serialization(format!(
+            "failed to parse HF provenance manifest {}: legacy manifest_version `{}` is no longer accepted after the ONNX sidecar format bump; regenerate the manifest as {}",
+            manifest_path.display(),
+            HF_PROVENANCE_MANIFEST_VERSION_V1_LEGACY,
+            HF_PROVENANCE_MANIFEST_VERSION
+        ))),
+        HF_PROVENANCE_MANIFEST_VERSION => {
+            ensure_hf_provenance_manifest_v2_required_fields(manifest_path, &manifest_value)?;
+            serde_json::from_value(manifest_value).map_err(|err| {
+                VmError::Serialization(format!(
+                    "failed to parse HF provenance manifest {}: {err}",
+                    manifest_path.display()
+                ))
+            })
+        }
+        other => Err(VmError::Serialization(format!(
+            "failed to parse HF provenance manifest {}: unsupported manifest_version `{other}`",
             manifest_path.display()
-        ))
-    })
+        ))),
+    }
+}
+
+fn ensure_hf_provenance_manifest_v2_required_fields(
+    manifest_path: &Path,
+    manifest_value: &serde_json::Value,
+) -> llm_provable_computer::Result<()> {
+    let Some(onnx_export) = manifest_value.get("onnx_export") else {
+        return Ok(());
+    };
+    let Some(onnx_export_obj) = onnx_export.as_object() else {
+        return Ok(());
+    };
+    for field in ["exporter_version", "metadata", "external_data_files"] {
+        if !onnx_export_obj.contains_key(field) {
+            return Err(VmError::Serialization(format!(
+                "failed to parse HF provenance manifest {}: missing field `{field}` in `onnx_export` for {}",
+                manifest_path.display(),
+                HF_PROVENANCE_MANIFEST_VERSION
+            )));
+        }
+    }
+    Ok(())
 }
 
 fn verify_hf_provenance_manifest(
@@ -4603,6 +4657,10 @@ fn verify_hf_provenance_manifest(
                 "HF provenance ONNX exporter must be non-empty".to_string(),
             ));
         }
+        validate_hf_optional_identifier(
+            "onnx_export.exporter_version",
+            onnx_export.exporter_version.as_deref(),
+        )?;
         let mut onnx_paths = std::collections::BTreeSet::new();
         ensure_unique_hf_file_commitment_path(
             "HF provenance onnx_export.graph",
@@ -7112,6 +7170,52 @@ mod hf_provenance_manifest_tests {
     }
 
     #[test]
+    fn load_hf_provenance_manifest_rejects_v2_missing_onnx_metadata_field() {
+        let file = hf_provenance_test_manifest_file("missing-onnx-metadata");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["onnx_export"] = serde_json::json!({
+            "exporter": "optimum",
+            "exporter_version": null,
+            "graph": {
+                "path": "model.onnx",
+                "size_bytes": 16,
+                "blake2b_256": "5".repeat(64)
+            },
+            "external_data_files": []
+        });
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("v2 manifest missing onnx metadata field should fail");
+        assert!(err
+            .to_string()
+            .contains("missing field `metadata` in `onnx_export`"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_legacy_v1_onnx_export_with_upgrade_message() {
+        let file = hf_provenance_test_manifest_file("legacy-v1-onnx");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["manifest_version"] = serde_json::json!(HF_PROVENANCE_MANIFEST_VERSION_V1_LEGACY);
+        value["onnx_export"] = serde_json::json!({
+            "exporter": "optimum",
+            "exporter_version": null,
+            "graph": {
+                "path": "model.onnx",
+                "size_bytes": 16,
+                "blake2b_256": "5".repeat(64)
+            }
+        });
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("legacy v1 manifest should require regeneration");
+        assert!(err
+            .to_string()
+            .contains("legacy manifest_version `hf-provenance-manifest-v1` is no longer accepted"));
+    }
+
+    #[test]
     fn load_hf_provenance_manifest_reports_malformed_json_as_serialization() {
         let file = hf_provenance_test_manifest_file("malformed");
         fs::write(file.path(), b"{").expect("write malformed manifest");
@@ -7390,6 +7494,28 @@ mod hf_provenance_manifest_tests {
         assert!(err
             .to_string()
             .contains("onnx_export.external_data_files[] reuses ONNX artifact path"));
+    }
+
+    #[test]
+    fn verify_hf_provenance_manifest_rejects_empty_onnx_exporter_version() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let graph = dir.path().join("model.onnx");
+        fs::write(&graph, b"onnx").expect("write graph");
+
+        let manifest =
+            sample_hf_provenance_manifest_with_onnx_export(Some(HfOnnxExportProvenance {
+                exporter: "optimum-onnx".to_string(),
+                exporter_version: Some(String::new()),
+                graph: hf_file_commitment(&graph).expect("graph commitment"),
+                metadata: None,
+                external_data_files: Vec::new(),
+            }));
+
+        let err = verify_hf_provenance_manifest(&manifest)
+            .expect_err("empty ONNX exporter version should fail");
+        assert!(err
+            .to_string()
+            .contains("HF provenance onnx_export.exporter_version must be non-empty"));
     }
 }
 

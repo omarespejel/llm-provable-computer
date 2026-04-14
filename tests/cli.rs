@@ -4858,7 +4858,7 @@ fn cli_can_prepare_and_verify_hf_provenance_manifest() {
         manifest_json
             .get("manifest_version")
             .and_then(serde_json::Value::as_str),
-        Some("hf-provenance-manifest-v1")
+        Some("hf-provenance-manifest-v2")
     );
     assert_eq!(
         manifest_json

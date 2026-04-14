@@ -845,6 +845,10 @@ algorithm correctness, safetensors architectural semantics, ONNX exporter semant
 equivalence, ONNX metadata semantic correctness, live Hub availability, or DOI
 validity.
 
+The current manifest wire format is `hf-provenance-manifest-v2`. Older
+`hf-provenance-manifest-v1` files must be regenerated before verification
+because the ONNX sidecar surface now has an explicit versioned format boundary.
+
 Canonical HF provenance spec file:
 
 - `spec/hf-provenance-manifest.schema.json`
