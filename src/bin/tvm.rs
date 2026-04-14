@@ -4871,7 +4871,7 @@ fn ensure_unique_hf_file_commitment_path(
     commitment: &HfFileCommitment,
     seen_paths: &mut std::collections::BTreeSet<HfFileIdentity>,
 ) -> llm_provable_computer::Result<()> {
-    let identity = hf_file_identity(Path::new(&commitment.path), "HF provenance ONNX artifact")?;
+    let identity = hf_file_identity(Path::new(&commitment.path), label)?;
     if !seen_paths.insert(identity) {
         return Err(VmError::InvalidConfig(format!(
             "{label} reuses ONNX artifact path `{}`",
