@@ -5166,6 +5166,8 @@ fn cli_supports_research_v3_equivalence_command() {
         unique_temp_dir("cli-research-v3-equivalence-unexpected-engine").with_extension("json");
     let missing_engine_path =
         unique_temp_dir("cli-research-v3-equivalence-missing-engine").with_extension("json");
+    let extra_event_path =
+        unique_temp_dir("cli-research-v3-equivalence-extra-event").with_extension("json");
     let mut command = tvm_command();
     command
         .arg("research-v3-equivalence")
@@ -5600,6 +5602,79 @@ fn cli_supports_research_v3_equivalence_command() {
             "engine set does not match the pinned artifact boundary",
         ));
 
+    let mut extra_event = artifact_json.clone();
+    let extra_event_expected_steps = extra_event
+        .get("checked_steps")
+        .and_then(serde_json::Value::as_u64)
+        .expect("checked_steps");
+    for engine in extra_event["engines"].as_array_mut().expect("engines") {
+        let final_state = engine
+            .get("final_state")
+            .cloned()
+            .expect("engine final state");
+        let final_state_hash = hash_json_value(&final_state);
+        let next_step = engine["canonical_events"]
+            .as_array()
+            .map(|events| events.len() as u64 + 1)
+            .expect("canonical events");
+        let last_instruction = engine["canonical_events"]
+            .as_array()
+            .and_then(|events| events.last())
+            .and_then(|event| event.get("instruction"))
+            .cloned()
+            .expect("last instruction");
+        engine["trace"]
+            .as_array_mut()
+            .expect("engine trace")
+            .push(final_state);
+        engine["canonical_events"]
+            .as_array_mut()
+            .expect("canonical events")
+            .push(serde_json::json!({
+                "step": next_step,
+                "instruction": last_instruction,
+                "state_before_hash": final_state_hash.clone(),
+                "state_after_hash": final_state_hash,
+            }));
+        let trace_len = engine["trace"]
+            .as_array()
+            .map(|trace| trace.len() as u64)
+            .expect("trace");
+        let events_len = engine["canonical_events"]
+            .as_array()
+            .map(|events| events.len() as u64)
+            .expect("canonical events");
+        engine["trace_len"] = serde_json::Value::from(trace_len);
+        engine["events_len"] = serde_json::Value::from(events_len);
+        engine["trace_hash"] =
+            serde_json::Value::String(hash_json_value(engine.get("trace").expect("engine trace")));
+        engine["event_relation_hash"] = serde_json::Value::String(hash_json_value(
+            engine.get("canonical_events").expect("canonical events"),
+        ));
+        engine["final_state_hash"] = serde_json::Value::String(hash_json_value(
+            engine.get("final_state").expect("final state"),
+        ));
+    }
+    extra_event["commitments"]["engine_summaries_hash"] = serde_json::Value::String(
+        hash_json_value(extra_event.get("engines").expect("extra-event engines")),
+    );
+    std::fs::write(
+        &extra_event_path,
+        serde_json::to_vec(&extra_event).expect("extra event artifact json"),
+    )
+    .expect("write extra event artifact");
+    let mut verify_extra_event = tvm_command();
+    verify_extra_event
+        .arg("verify-research-v3-equivalence")
+        .arg(&extra_event_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(format!(
+            "events_len {} does not match checked_steps {}",
+            extra_event_expected_steps + 1,
+            extra_event_expected_steps
+        )));
+
     let mut malformed_hash = artifact_json.clone();
     malformed_hash["commitments"]["relation_format_hash"] =
         serde_json::Value::String("not-a-blake2b-hash".to_string());
@@ -5635,6 +5710,7 @@ fn cli_supports_research_v3_equivalence_command() {
     let _ = std::fs::remove_file(canonical_event_path);
     let _ = std::fs::remove_file(unexpected_engine_path);
     let _ = std::fs::remove_file(missing_engine_path);
+    let _ = std::fs::remove_file(extra_event_path);
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]

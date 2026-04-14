@@ -5597,6 +5597,9 @@ fn verify_research_v3_engine_lane_binding(
 fn verify_research_v3_engine_summaries(
     artifact: &ResearchV3EquivalenceArtifact,
 ) -> llm_provable_computer::Result<()> {
+    let expected_trace_len = artifact.checked_steps.checked_add(1).ok_or_else(|| {
+        VmError::InvalidConfig("research-v3 checked_steps overflowed trace_len".to_string())
+    })?;
     let mut seen = std::collections::BTreeSet::new();
     for engine in &artifact.engines {
         if !seen.insert(engine.name.as_str()) {
@@ -5623,18 +5626,6 @@ fn verify_research_v3_engine_summaries(
                 engine.name, engine.events_len, artifact.checked_steps
             )));
         }
-        let expected_trace_len = engine.events_len.checked_add(1).ok_or_else(|| {
-            VmError::InvalidConfig(format!(
-                "research-v3 engine {} events_len overflow while checking trace_len",
-                engine.name
-            ))
-        })?;
-        if engine.trace_len != expected_trace_len {
-            return Err(VmError::InvalidConfig(format!(
-                "research-v3 engine {} trace_len {} does not match events_len + 1 ({})",
-                engine.name, engine.trace_len, expected_trace_len
-            )));
-        }
         if engine.trace.len() != engine.trace_len {
             return Err(VmError::InvalidConfig(format!(
                 "research-v3 engine {} trace array length {} does not match trace_len {}",
@@ -5649,6 +5640,12 @@ fn verify_research_v3_engine_summaries(
                 engine.name,
                 engine.canonical_events.len(),
                 engine.events_len
+            )));
+        }
+        if engine.trace_len != expected_trace_len {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engine {} trace_len {} does not match checked_steps+1 {}",
+                engine.name, engine.trace_len, expected_trace_len
             )));
         }
         if engine.trace.last() != Some(&engine.final_state) {
@@ -6908,12 +6905,30 @@ mod tests {
     }
 
     #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn refresh_research_v3_test_engine_summary(engine: &mut ResearchV3EngineSummary) {
+        engine.trace_len = engine.trace.len();
+        engine.events_len = engine.canonical_events.len();
+        engine.final_state = engine
+            .trace
+            .last()
+            .cloned()
+            .expect("research-v3 engine trace must be non-empty");
+        engine.trace_hash = hash_json_hex(&engine.trace).expect("trace hash");
+        engine.event_relation_hash =
+            hash_json_hex(&engine.canonical_events).expect("event relation hash");
+        engine.final_state_hash = hash_json_hex(&engine.final_state).expect("final state hash");
+    }
+
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
     fn refresh_research_v3_test_artifact_commitments(artifact: &mut ResearchV3EquivalenceArtifact) {
         let bundle = load_research_v2_spec_bundle(
             STATEMENT_V3_EQUIVALENCE_SPEC_PATH,
             STATEMENT_V3_EQUIVALENCE_ARTIFACT_SCHEMA_PATH,
         )
         .expect("statement-v3 bundle");
+        for engine in &mut artifact.engines {
+            refresh_research_v3_test_engine_summary(engine);
+        }
         artifact.statement_version = bundle.statement_version.clone();
         artifact.semantic_scope = bundle.semantic_scope.clone();
         artifact.fixed_point_profile = bundle.fixed_point_profile.clone();
@@ -6965,6 +6980,26 @@ mod tests {
                     hashes.insert(to.to_string(), value);
                 }
             }
+        }
+    }
+
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn append_research_v3_test_terminal_noop_event(artifact: &mut ResearchV3EquivalenceArtifact) {
+        for engine in &mut artifact.engines {
+            let next_step = engine.canonical_events.len() + 1;
+            let final_state_hash = hash_json_hex(&engine.final_state).expect("final state hash");
+            let instruction = engine
+                .canonical_events
+                .last()
+                .map(|event| event.instruction.clone())
+                .unwrap_or_else(|| "NOP".to_string());
+            engine.trace.push(engine.final_state.clone());
+            engine.canonical_events.push(ResearchV3CanonicalEvent {
+                step: next_step,
+                instruction,
+                state_before_hash: final_state_hash.clone(),
+                state_after_hash: final_state_hash,
+            });
         }
     }
 
@@ -7080,6 +7115,20 @@ mod tests {
         assert!(err
             .to_string()
             .contains("engine set does not match the pinned artifact boundary"));
+    }
+
+    #[test]
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn verify_research_v3_equivalence_artifact_rejects_extra_engine_events_beyond_checked_steps() {
+        let mut artifact = sample_research_v3_equivalence_artifact();
+        append_research_v3_test_terminal_noop_event(&mut artifact);
+        refresh_research_v3_test_artifact_commitments(&mut artifact);
+
+        let err = verify_research_v3_equivalence_artifact(&artifact)
+            .expect_err("extra engine events beyond checked_steps should fail");
+        assert!(err
+            .to_string()
+            .contains("events_len 2 does not match checked_steps 1"));
     }
 
     #[test]
