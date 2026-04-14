@@ -5001,6 +5001,34 @@ fn cli_rejects_hf_provenance_manifest_when_onnx_external_data_reuses_graph_path(
 }
 
 #[test]
+fn cli_rejects_hf_provenance_manifest_when_onnx_exporter_version_has_no_graph() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-exporter-version-without-graph");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--onnx-exporter-version")
+        .arg("1.17.0")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "ONNX metadata, exporter version, or external-data files require --onnx-model",
+        ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
 fn cli_rejects_hf_provenance_manifest_when_onnx_metadata_aliases_graph_path() {
     let fixture_dir = unique_temp_dir("cli-hf-provenance-alias-metadata");
     std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");

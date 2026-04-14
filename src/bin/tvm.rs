@@ -4225,10 +4225,12 @@ fn prepare_hf_provenance_manifest_command(
         .map(|path| hf_safetensors_file_commitment(path))
         .collect::<llm_provable_computer::Result<Vec<_>>>()?;
     if command.onnx_model.is_none()
-        && (command.onnx_metadata.is_some() || !command.onnx_external_data_files.is_empty())
+        && (command.onnx_metadata.is_some()
+            || !command.onnx_external_data_files.is_empty()
+            || command.onnx_exporter_version.is_some())
     {
         return Err(VmError::InvalidConfig(
-            "HF provenance ONNX metadata or external-data files require --onnx-model".to_string(),
+            "HF provenance ONNX metadata, exporter version, or external-data files require --onnx-model".to_string(),
         ));
     }
     let onnx_export = command
@@ -7469,7 +7471,7 @@ mod hf_provenance_manifest_tests {
             onnx_metadata: Some(metadata),
             onnx_external_data_files: Vec::new(),
             onnx_exporter: "optimum-onnx".to_string(),
-            onnx_exporter_version: None,
+            onnx_exporter_version: Some("1.17.0".to_string()),
             model_card: None,
             doi: None,
             datasets: Vec::new(),
@@ -7477,9 +7479,9 @@ mod hf_provenance_manifest_tests {
         })
         .expect_err("ONNX sidecars without graph should fail");
 
-        assert!(err
-            .to_string()
-            .contains("ONNX metadata or external-data files require --onnx-model"));
+        assert!(err.to_string().contains(
+            "ONNX metadata, exporter version, or external-data files require --onnx-model"
+        ));
     }
 
     #[test]
