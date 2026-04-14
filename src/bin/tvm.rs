@@ -5465,6 +5465,7 @@ fn verify_research_v3_equivalence_artifact(
     }
 
     validate_frontend_runtime_semantics_registry(&artifact.frontend_runtime_semantics_registry)?;
+    verify_research_v3_engine_lane_binding(artifact)?;
     research_v3_verify_commitment(
         "statement_spec_hash",
         &artifact.commitments.statement_spec_hash,
@@ -5533,6 +5534,85 @@ fn verify_research_v3_equivalence_artifact(
 
     verify_research_v3_engine_summaries(artifact)?;
     verify_research_v3_rule_witnesses(artifact)?;
+
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn verify_research_v3_engine_lane_binding(
+    artifact: &ResearchV3EquivalenceArtifact,
+) -> llm_provable_computer::Result<()> {
+    let expected_engine_bindings = std::collections::BTreeMap::from([
+        ("transformer", "transformer-vm"),
+        ("native", "native-isa"),
+        ("burn", "burn"),
+        ("onnx/tract", "onnx-tract"),
+    ]);
+    let expected_engine_names = expected_engine_bindings
+        .keys()
+        .copied()
+        .collect::<std::collections::BTreeSet<_>>();
+    let mut actual_engine_names = std::collections::BTreeSet::new();
+    let mut actual_lane_ids = std::collections::BTreeSet::new();
+    for engine in &artifact.engines {
+        let lane_id = expected_engine_bindings
+            .get(engine.name.as_str())
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "research-v3 engine {} is not bound to a pinned implemented lane",
+                    engine.name
+                ))
+            })?;
+        actual_engine_names.insert(engine.name.as_str());
+        actual_lane_ids.insert(*lane_id);
+    }
+    if actual_engine_names != expected_engine_names {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 engine set does not match the pinned artifact boundary: expected [{}], got [{}]",
+            expected_engine_names.iter().copied().collect::<Vec<_>>().join(", "),
+            actual_engine_names.iter().copied().collect::<Vec<_>>().join(", ")
+        )));
+    }
+
+    let expected_lane_ids = artifact
+        .frontend_runtime_semantics_registry
+        .get("lanes")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "frontend runtime semantics registry missing lanes array".to_string(),
+            )
+        })?
+        .iter()
+        .filter_map(|lane| {
+            let status = lane.get("status").and_then(serde_json::Value::as_str)?;
+            if status != "implemented" {
+                return None;
+            }
+            lane.get("lane_id")
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_string)
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    let actual_lane_ids = actual_lane_ids
+        .into_iter()
+        .map(str::to_string)
+        .collect::<std::collections::BTreeSet<_>>();
+    if actual_lane_ids != expected_lane_ids {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 engine lanes do not match implemented registry lanes: expected [{}], got [{}]",
+            expected_lane_ids
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<_>>()
+                .join(", "),
+            actual_lane_ids
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<_>>()
+                .join(", ")
+        )));
+    }
 
     Ok(())
 }
@@ -6743,83 +6823,174 @@ mod tests {
         let mut state_after = state_before.clone();
         state_after.pc = 1;
         state_after.acc = 7;
+        let state_before_hash = hash_json_hex(&state_before).expect("state before hash");
+        let state_after_hash = hash_json_hex(&state_after).expect("state after hash");
+        let instruction = "NOP".to_string();
+        let canonical_transition_hash = research_v3_transition_relation_hash(
+            1,
+            &instruction,
+            &state_before_hash,
+            &state_after_hash,
+        )
+        .expect("transition hash");
 
         let registry =
             read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH).expect("registry json");
-        let engine_name = "transformer-vm".to_string();
-
-        ResearchV3EquivalenceArtifact {
-            statement_version: "statement-v3-equivalence-kernel".to_string(),
-            semantic_scope: "native_isa_execution_with_transformer_native_equivalence_check"
-                .to_string(),
+        validate_frontend_runtime_semantics_registry(&registry).expect("valid registry");
+        let engine_names = ["transformer", "native", "burn", "onnx/tract"];
+        let engines = engine_names
+            .iter()
+            .map(|engine_name| ResearchV3EngineSummary {
+                name: (*engine_name).to_string(),
+                steps: 1,
+                halted: false,
+                trace_len: 2,
+                events_len: 1,
+                trace: vec![state_before.clone(), state_after.clone()],
+                canonical_events: vec![ResearchV3CanonicalEvent {
+                    step: 1,
+                    instruction: instruction.clone(),
+                    state_before_hash: state_before_hash.clone(),
+                    state_after_hash: state_after_hash.clone(),
+                }],
+                final_state: state_after.clone(),
+                trace_hash: hash_json_hex(&vec![state_before.clone(), state_after.clone()])
+                    .expect("trace hash"),
+                event_relation_hash: hash_json_hex(&vec![ResearchV3CanonicalEvent {
+                    step: 1,
+                    instruction: instruction.clone(),
+                    state_before_hash: state_before_hash.clone(),
+                    state_after_hash: state_after_hash.clone(),
+                }])
+                .expect("event relation hash"),
+                final_state_hash: hash_json_hex(&state_after).expect("final state hash"),
+            })
+            .collect::<Vec<_>>();
+        let mut artifact = ResearchV3EquivalenceArtifact {
+            statement_version: String::new(),
+            semantic_scope: String::new(),
             relation_format: RESEARCH_V3_RELATION_FORMAT.to_string(),
-            fixed_point_profile: "fixed-point-semantics-v2".to_string(),
-            onnx_op_subset_version: "onnx-op-subset-v2".to_string(),
-            onnx_op_subset_size: 1,
+            fixed_point_profile: String::new(),
+            onnx_op_subset_version: String::new(),
+            onnx_op_subset_size: 0,
             program_path: "programs/addition.tvm".to_string(),
             requested_max_steps: 1,
             checked_steps: 1,
-            engines: vec![ResearchV3EngineSummary {
-                name: engine_name.clone(),
-                steps: 1,
-                halted: false,
-                trace_len: 1,
-                events_len: 1,
-                trace: vec![state_before.clone()],
-                canonical_events: vec![ResearchV3CanonicalEvent {
-                    step: 1,
-                    instruction: "NOP".to_string(),
-                    state_before_hash: research_v3_test_hash(),
-                    state_after_hash: research_v3_test_hash(),
-                }],
-                final_state: state_after,
-                trace_hash: research_v3_test_hash(),
-                event_relation_hash: research_v3_test_hash(),
-                final_state_hash: research_v3_test_hash(),
-            }],
+            engines,
             rule_witnesses: vec![ResearchV3RuleWitness {
                 step: 1,
-                rule_id: "nop".to_string(),
-                relation: "identity".to_string(),
-                instruction: "NOP".to_string(),
-                participating_engines: vec![engine_name.clone()],
-                state_before_hashes: std::collections::BTreeMap::from([(
-                    engine_name.clone(),
-                    research_v3_test_hash(),
-                )]),
-                state_after_hashes: std::collections::BTreeMap::from([(
-                    engine_name.clone(),
-                    research_v3_test_hash(),
-                )]),
-                engine_transition_hashes: std::collections::BTreeMap::from([(
-                    engine_name,
-                    research_v3_test_hash(),
-                )]),
-                canonical_transition_hash: research_v3_test_hash(),
+                rule_id: research_v3_rule_id(&instruction),
+                relation: "same-instruction-same-state-transition".to_string(),
+                instruction,
+                participating_engines: engine_names
+                    .iter()
+                    .map(|name| (*name).to_string())
+                    .collect(),
+                state_before_hashes: engine_names
+                    .iter()
+                    .map(|engine_name| ((*engine_name).to_string(), state_before_hash.clone()))
+                    .collect(),
+                state_after_hashes: engine_names
+                    .iter()
+                    .map(|engine_name| ((*engine_name).to_string(), state_after_hash.clone()))
+                    .collect(),
+                engine_transition_hashes: engine_names
+                    .iter()
+                    .map(|engine_name| {
+                        (
+                            (*engine_name).to_string(),
+                            canonical_transition_hash.clone(),
+                        )
+                    })
+                    .collect(),
+                canonical_transition_hash,
                 validation: ResearchV3RuleValidation {
                     differential_lockstep: true,
-                    egraph_status: "not-run".to_string(),
-                    smt_status: "not-run".to_string(),
-                    randomized_testing_status: "not-run".to_string(),
+                    egraph_status: "not-attempted".to_string(),
+                    smt_status: "not-attempted".to_string(),
+                    randomized_testing_status: "not-attempted".to_string(),
                 },
             }],
             frontend_runtime_semantics_registry: registry,
             limitations: research_v3_limitations(),
             commitments: ResearchV3EquivalenceCommitments {
-                hash_function: RESEARCH_V2_HASH_FUNCTION.to_string(),
-                statement_spec_hash: research_v3_test_hash(),
-                fixed_point_spec_hash: research_v3_test_hash(),
-                onnx_op_subset_hash: research_v3_test_hash(),
-                artifact_schema_hash: research_v3_test_hash(),
-                frontend_runtime_semantics_registry_hash: research_v3_test_hash(),
-                relation_format_hash: research_v3_test_hash(),
-                limitations_hash: research_v3_test_hash(),
+                hash_function: String::new(),
+                statement_spec_hash: String::new(),
+                fixed_point_spec_hash: String::new(),
+                onnx_op_subset_hash: String::new(),
+                artifact_schema_hash: String::new(),
+                frontend_runtime_semantics_registry_hash: String::new(),
+                relation_format_hash: String::new(),
+                limitations_hash: String::new(),
                 program_hash: research_v3_test_hash(),
                 transformer_config_hash: research_v3_test_hash(),
                 onnx_metadata_hash: research_v3_test_hash(),
-                engine_summaries_hash: research_v3_test_hash(),
-                rule_witnesses_hash: research_v3_test_hash(),
+                engine_summaries_hash: String::new(),
+                rule_witnesses_hash: String::new(),
             },
+        };
+        refresh_research_v3_test_artifact_commitments(&mut artifact);
+        artifact
+    }
+
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn refresh_research_v3_test_artifact_commitments(artifact: &mut ResearchV3EquivalenceArtifact) {
+        let bundle = load_research_v2_spec_bundle(
+            STATEMENT_V3_EQUIVALENCE_SPEC_PATH,
+            STATEMENT_V3_EQUIVALENCE_ARTIFACT_SCHEMA_PATH,
+        )
+        .expect("statement-v3 bundle");
+        artifact.statement_version = bundle.statement_version.clone();
+        artifact.semantic_scope = bundle.semantic_scope.clone();
+        artifact.fixed_point_profile = bundle.fixed_point_profile.clone();
+        artifact.onnx_op_subset_version = bundle.onnx_op_subset_version.clone();
+        artifact.onnx_op_subset_size = bundle.onnx_op_subset_size;
+        artifact.commitments.hash_function = RESEARCH_V2_HASH_FUNCTION.to_string();
+        artifact.commitments.statement_spec_hash = bundle.statement_spec_hash;
+        artifact.commitments.fixed_point_spec_hash = bundle.fixed_point_spec_hash;
+        artifact.commitments.onnx_op_subset_hash = bundle.onnx_op_subset_hash;
+        artifact.commitments.artifact_schema_hash = bundle.artifact_schema_hash;
+        artifact
+            .commitments
+            .frontend_runtime_semantics_registry_hash =
+            hash_json_hex(&artifact.frontend_runtime_semantics_registry)
+                .expect("registry commitment");
+        artifact.commitments.relation_format_hash =
+            hash_json_hex(&artifact.relation_format).expect("relation format commitment");
+        artifact.commitments.limitations_hash =
+            hash_json_hex(&artifact.limitations).expect("limitations commitment");
+        artifact.commitments.engine_summaries_hash =
+            hash_json_projection_hex(&artifact.engines).expect("engine summaries commitment");
+        artifact.commitments.rule_witnesses_hash =
+            hash_json_projection_hex(&artifact.rule_witnesses).expect("rule witnesses commitment");
+    }
+
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn rename_research_v3_test_engine(
+        artifact: &mut ResearchV3EquivalenceArtifact,
+        from: &str,
+        to: &str,
+    ) {
+        for engine in &mut artifact.engines {
+            if engine.name == from {
+                engine.name = to.to_string();
+            }
+        }
+        for witness in &mut artifact.rule_witnesses {
+            for engine_name in &mut witness.participating_engines {
+                if engine_name == from {
+                    *engine_name = to.to_string();
+                }
+            }
+            for hashes in [
+                &mut witness.state_before_hashes,
+                &mut witness.state_after_hashes,
+                &mut witness.engine_transition_hashes,
+            ] {
+                if let Some(value) = hashes.remove(from) {
+                    hashes.insert(to.to_string(), value);
+                }
+            }
         }
     }
 
@@ -6897,6 +7068,44 @@ mod tests {
         let err = load_research_v3_equivalence_artifact(dir.path())
             .expect_err("directory artifact path should fail");
         assert!(err.to_string().contains("not a regular file"));
+    }
+
+    #[test]
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn verify_research_v3_equivalence_artifact_rejects_unknown_engine_binding() {
+        let mut artifact = sample_research_v3_equivalence_artifact();
+        rename_research_v3_test_engine(&mut artifact, "onnx/tract", "experimental-onnx");
+        refresh_research_v3_test_artifact_commitments(&mut artifact);
+
+        let err = verify_research_v3_equivalence_artifact(&artifact)
+            .expect_err("unknown engine binding should fail");
+        assert!(err
+            .to_string()
+            .contains("is not bound to a pinned implemented lane"));
+    }
+
+    #[test]
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn verify_research_v3_equivalence_artifact_rejects_missing_pinned_engine() {
+        let mut artifact = sample_research_v3_equivalence_artifact();
+        artifact
+            .engines
+            .retain(|engine| engine.name != "onnx/tract");
+        for witness in &mut artifact.rule_witnesses {
+            witness
+                .participating_engines
+                .retain(|engine_name| engine_name != "onnx/tract");
+            witness.state_before_hashes.remove("onnx/tract");
+            witness.state_after_hashes.remove("onnx/tract");
+            witness.engine_transition_hashes.remove("onnx/tract");
+        }
+        refresh_research_v3_test_artifact_commitments(&mut artifact);
+
+        let err = verify_research_v3_equivalence_artifact(&artifact)
+            .expect_err("missing pinned engine should fail");
+        assert!(err
+            .to_string()
+            .contains("engine set does not match the pinned artifact boundary"));
     }
 
     #[test]

@@ -377,6 +377,8 @@ research_v3_smoke_targets=(
   "tests::load_research_v3_equivalence_artifact_rejects_oversized_file"
   "tests::load_research_v3_equivalence_artifact_reports_malformed_json_as_serialization"
   "tests::load_research_v3_equivalence_artifact_rejects_non_regular_file"
+  "tests::verify_research_v3_equivalence_artifact_rejects_unknown_engine_binding"
+  "tests::verify_research_v3_equivalence_artifact_rejects_missing_pinned_engine"
 )
 stwo_cli_smoke_targets=(
   "cli_can_verify_stwo_recursive_compression_input_contract"
