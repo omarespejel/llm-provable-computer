@@ -1,10 +1,10 @@
 # Proof-Carrying Decode Surfaces with Carried-State Validity and Pre-Recursive Aggregation Boundaries
 
-**Abdelhamid Bakhta**  
-StarkWare  
+**Abdelhamid Bakhta**<br>
+StarkWare
 
-**Omar Espejel**  
-Starknet Foundation  
+**Omar Espejel**<br>
+Starknet Foundation
 
 *April 2026 draft*
 
