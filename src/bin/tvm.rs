@@ -5332,6 +5332,19 @@ fn load_research_v3_equivalence_artifact(
             )));
         }
     }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+
+        if metadata.volume_serial_number() != opened_metadata.volume_serial_number()
+            || metadata.file_index() != opened_metadata.file_index()
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 artifact {} changed between metadata inspection and open",
+                artifact_path.display()
+            )));
+        }
+    }
     let mut artifact_bytes = Vec::new();
     let mut limited_reader = file.take(MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES as u64 + 1);
     limited_reader
