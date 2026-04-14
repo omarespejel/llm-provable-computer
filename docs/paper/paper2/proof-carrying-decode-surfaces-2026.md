@@ -294,10 +294,13 @@ equivalence theorem over compilers, exporter graphs, or arbitrary model graphs.
 The Hugging Face provenance line binds model, tokenizer, ONNX, transcript, and
 safetensors identities to explicit local-file hashes and pinned release
 coordinates. In the ONNX-facing path, that boundary now includes the exported
-graph, its metadata companion, and declared external-data side files. This is
-operationally valuable, especially for frozen artifact bundles. It should not
-be confused with a proof relation. It is a release boundary, not a theorem that
-exporter or supply-chain semantics are preserved.
+graph, its metadata companion, declared external-data side files, and
+attestation-friendly SHA-256 subject digests alongside the repository's local
+BLAKE2b-256 commitments. This is operationally valuable, especially for frozen
+artifact bundles and release-verification workflows that already key on
+SHA-256. It should not be confused with a proof relation or a verified
+attestation pipeline. It is a release boundary, not a theorem that exporter or
+supply-chain semantics are preserved.
 
 ______________________________________________________________________
 
@@ -410,7 +413,7 @@ For a stronger follow-on paper, the missing milestones are clear:
 - recursive cryptographic compression over the same decode statement,
 - recursive shared-table accumulation as a compressed proof object,
 - stronger exporter/provenance binding for ONNX-facing release artifacts,
-- broader supply-chain attestations,
+- broader signed supply-chain attestations with verified builder identity,
 - broader `stwo` transformer coverage beyond the current narrow experimental
   boundary.
 
@@ -445,5 +448,7 @@ ______________________________________________________________________
 - SLSA provenance overview: [https://slsa.dev/provenance](https://slsa.dev/provenance)
 - SLSA build provenance: [https://slsa.dev/spec/v1.2-rc2/build-provenance](https://slsa.dev/spec/v1.2-rc2/build-provenance)
 - in-toto attestation framework: [https://github.com/in-toto/attestation](https://github.com/in-toto/attestation)
+- GitHub artifact attestations: [https://docs.github.com/en/actions/how-tos/security-for-github-actions/using-artifact-attestations](https://docs.github.com/en/actions/how-tos/security-for-github-actions/using-artifact-attestations)
+- GitHub build provenance workflow: [https://docs.github.com/en/actions/how-tos/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds](https://docs.github.com/en/actions/how-tos/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds)
 - ONNX external-data documentation: [https://onnx.ai/onnx/repo-docs/ExternalData.html](https://onnx.ai/onnx/repo-docs/ExternalData.html)
 - PyTorch export IR specification: [https://docs.pytorch.org/docs/main/user_guide/torch_compiler/export/ir_spec.html](https://docs.pytorch.org/docs/main/user_guide/torch_compiler/export/ir_spec.html)
