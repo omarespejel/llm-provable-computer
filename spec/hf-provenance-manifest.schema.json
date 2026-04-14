@@ -6,7 +6,7 @@
   "required": [
     "manifest_version",
     "semantic_scope",
-    "hash_function",
+    "commitment_hash_function",
     "hub_repo",
     "hub_revision",
     "tokenizer",
@@ -19,7 +19,7 @@
   "properties": {
     "manifest_version": { "const": "hf-provenance-manifest-v3" },
     "semantic_scope": { "const": "hf-release-provenance-boundary-v1" },
-    "hash_function": { "const": "blake2b-256" },
+    "commitment_hash_function": { "const": "blake2b-256" },
     "hub_repo": { "type": "string", "minLength": 1 },
     "hub_revision": { "type": "string", "minLength": 1 },
     "tokenizer": { "$ref": "#/$defs/tokenizer" },

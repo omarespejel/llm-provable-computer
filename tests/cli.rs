@@ -4828,6 +4828,12 @@ fn cli_can_prepare_and_verify_hf_provenance_manifest() {
     );
     assert_eq!(
         manifest_json
+            .get("commitment_hash_function")
+            .and_then(serde_json::Value::as_str),
+        Some("blake2b-256")
+    );
+    assert_eq!(
+        manifest_json
             .get("tokenizer")
             .and_then(|tokenizer| tokenizer.get("tokenizer_json"))
             .and_then(|value| value.get("sha256"))

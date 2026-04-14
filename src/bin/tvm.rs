@@ -982,7 +982,7 @@ struct HfProvenanceCommitments {
 struct HfProvenanceManifest {
     manifest_version: String,
     semantic_scope: String,
-    hash_function: String,
+    commitment_hash_function: String,
     hub_repo: String,
     hub_revision: String,
     tokenizer: HfTokenizerProvenance,
@@ -4266,7 +4266,7 @@ fn prepare_hf_provenance_manifest_command(
     let manifest = HfProvenanceManifest {
         manifest_version: HF_PROVENANCE_MANIFEST_VERSION.to_string(),
         semantic_scope: HF_PROVENANCE_SEMANTIC_SCOPE.to_string(),
-        hash_function: HF_PROVENANCE_HASH_FUNCTION.to_string(),
+        commitment_hash_function: HF_PROVENANCE_HASH_FUNCTION.to_string(),
         hub_repo: command.hub_repo,
         hub_revision: command.hub_revision,
         commitments: HfProvenanceCommitments {
@@ -4604,8 +4604,8 @@ fn verify_hf_provenance_manifest(
         HF_PROVENANCE_SEMANTIC_SCOPE,
     )?;
     expect_eq(
-        "hf hash_function",
-        &manifest.hash_function,
+        "hf commitment_hash_function",
+        &manifest.commitment_hash_function,
         HF_PROVENANCE_HASH_FUNCTION,
     )?;
     validate_hf_identifier("hub_repo", &manifest.hub_repo)?;
@@ -7154,7 +7154,7 @@ mod hf_provenance_manifest_tests {
         serde_json::json!({
             "manifest_version": HF_PROVENANCE_MANIFEST_VERSION,
             "semantic_scope": HF_PROVENANCE_SEMANTIC_SCOPE,
-            "hash_function": HF_PROVENANCE_HASH_FUNCTION,
+            "commitment_hash_function": HF_PROVENANCE_HASH_FUNCTION,
             "hub_repo": "example/test-model",
             "hub_revision": "0123456789abcdef",
             "tokenizer": {
@@ -7209,7 +7209,7 @@ mod hf_provenance_manifest_tests {
         HfProvenanceManifest {
             manifest_version: HF_PROVENANCE_MANIFEST_VERSION.to_string(),
             semantic_scope: HF_PROVENANCE_SEMANTIC_SCOPE.to_string(),
-            hash_function: HF_PROVENANCE_HASH_FUNCTION.to_string(),
+            commitment_hash_function: HF_PROVENANCE_HASH_FUNCTION.to_string(),
             hub_repo: "example/test-model".to_string(),
             hub_revision: "0123456789abcdef".to_string(),
             tokenizer: tokenizer.clone(),
@@ -7459,7 +7459,7 @@ mod hf_provenance_manifest_tests {
         let manifest = HfProvenanceManifest {
             manifest_version: HF_PROVENANCE_MANIFEST_VERSION.to_string(),
             semantic_scope: HF_PROVENANCE_SEMANTIC_SCOPE.to_string(),
-            hash_function: HF_PROVENANCE_HASH_FUNCTION.to_string(),
+            commitment_hash_function: HF_PROVENANCE_HASH_FUNCTION.to_string(),
             hub_repo: "example/test-model".to_string(),
             hub_revision: "0123456789abcdef".to_string(),
             tokenizer,

@@ -16,6 +16,13 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--report", required=True, type=Path)
     parser.add_argument(
+        "--allow-advisory",
+        action="append",
+        default=[],
+        metavar="RUSTSEC-...",
+        help="Allow a specific advisory ID while still failing on all others.",
+    )
+    parser.add_argument(
         "--allow-yanked",
         action="append",
         default=[],
@@ -41,8 +48,20 @@ def advisory_label(entry: dict) -> str:
 
 def main() -> int:
     args = parse_args()
-    report = json.loads(args.report.read_text())
+    try:
+        report = json.loads(args.report.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as err:
+        print(
+            "[dependency-audit] failed to read or parse cargo-audit JSON report "
+            f"{args.report}: {err}",
+            file=sys.stderr,
+        )
+        return 1
+
+    allowed_advisories = set(args.allow_advisory)
     allowed_yanked = set(args.allow_yanked)
+    seen_advisories: set[str] = set()
+    seen_yanked: set[str] = set()
 
     vulnerabilities = report.get("vulnerabilities", {}).get("list", [])
     warnings = report.get("warnings", {})
@@ -55,26 +74,44 @@ def main() -> int:
         package = format_package(entry)
         if package in allowed_yanked:
             allowed_yanked_hits.append(package)
+            seen_yanked.add(package)
         else:
             unexpected_yanked.append(package)
 
     failures: list[str] = []
     for entry in vulnerabilities:
+        advisory_id = (entry.get("advisory") or {}).get("id")
+        if advisory_id and advisory_id in allowed_advisories:
+            seen_advisories.add(advisory_id)
+            continue
         failures.append(f"vulnerability: {advisory_label(entry)}")
     for kind in ("unmaintained", "unsound"):
         for entry in warnings.get(kind, []):
+            advisory_id = (entry.get("advisory") or {}).get("id")
+            if advisory_id and advisory_id in allowed_advisories:
+                seen_advisories.add(advisory_id)
+                continue
             failures.append(f"{kind}: {advisory_label(entry)}")
     for package in unexpected_yanked:
         failures.append(f"yanked: {package}")
     for kind in unexpected_warning_kinds:
         failures.append(f"unexpected warning category: {kind}")
+    for advisory_id in sorted(allowed_advisories.difference(seen_advisories)):
+        failures.append(f"stale allowed advisory: {advisory_id}")
+    for package in sorted(allowed_yanked.difference(seen_yanked)):
+        failures.append(f"stale allowed yanked package: {package}")
 
     if failures:
-        print("[dependency-audit] unexpected cargo-audit findings:")
+        print("[dependency-audit] unexpected cargo-audit findings:", file=sys.stderr)
         for failure in failures:
-            print(f"  - {failure}")
+            print(f"  - {failure}", file=sys.stderr)
         return 1
 
+    if seen_advisories:
+        print(
+            "[dependency-audit] allowed advisories: "
+            + ", ".join(sorted(seen_advisories))
+        )
     if allowed_yanked_hits:
         unique_hits = sorted(set(allowed_yanked_hits))
         print(

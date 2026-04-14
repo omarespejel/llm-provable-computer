@@ -7,16 +7,23 @@ cd "$ROOT_DIR"
 CARGO_AUDIT_VERSION="${CARGO_AUDIT_VERSION:-0.22.1}"
 CARGO_DENY_VERSION="${CARGO_DENY_VERSION:-0.19.0}"
 # Keep this list aligned with docs/engineering/dependency-audit-exceptions.md.
-IGNORED_AUDIT_ADVISORIES=(
+ROOT_IGNORED_AUDIT_ADVISORIES=(
   "RUSTSEC-2025-0141"
   "RUSTSEC-2024-0388"
   "RUSTSEC-2024-0436"
   "RUSTSEC-2026-0002"
   "RUSTSEC-2026-0097"
 )
-IGNORED_YANKED_PACKAGES=(
+FUZZ_IGNORED_AUDIT_ADVISORIES=(
+  "RUSTSEC-2024-0388"
+  "RUSTSEC-2024-0436"
+  "RUSTSEC-2026-0002"
+  "RUSTSEC-2026-0097"
+)
+ROOT_IGNORED_YANKED_PACKAGES=(
   "core2@0.4.0"
 )
+FUZZ_IGNORED_YANKED_PACKAGES=()
 
 require_command() {
   local command_name="$1"
@@ -38,6 +45,7 @@ require_exact_version() {
 
 require_command cargo-audit
 require_command cargo-deny
+require_command python3
 
 cargo_audit_version="$(cargo-audit --version | awk '{print $2}')"
 require_exact_version cargo-audit "$cargo_audit_version" "$CARGO_AUDIT_VERSION"
@@ -49,27 +57,47 @@ cargo_audit_args=(
   "--json"
 )
 
-for advisory_id in "${IGNORED_AUDIT_ADVISORIES[@]}"; do
-  cargo_audit_args+=("--ignore" "$advisory_id")
-done
-
 run_cargo_audit() {
   local label="$1"
   local lockfile="$2"
   local report_path
+  local -a allowed_advisories=()
+  local -a allowed_yanked_packages=()
   local check_args=(
     "--report"
   )
 
+  case "$label" in
+    root)
+      allowed_advisories=("${ROOT_IGNORED_AUDIT_ADVISORIES[@]}")
+      allowed_yanked_packages=("${ROOT_IGNORED_YANKED_PACKAGES[@]}")
+      ;;
+    fuzz)
+      allowed_advisories=("${FUZZ_IGNORED_AUDIT_ADVISORIES[@]}")
+      allowed_yanked_packages=("${FUZZ_IGNORED_YANKED_PACKAGES[@]}")
+      ;;
+    *)
+      echo "unknown dependency-audit label: $label" >&2
+      return 1
+      ;;
+  esac
+
   echo "[dependency-audit] cargo audit: ${label} (${lockfile})"
-  report_path="$(mktemp)"
+  if ! report_path="$(mktemp "${TMPDIR:-/tmp}/cargo-audit-report.XXXXXX")"; then
+    echo "failed to allocate cargo-audit temp file for ${label} (${lockfile})" >&2
+    return 1
+  fi
   if ! cargo audit "${cargo_audit_args[@]}" --file "$lockfile" >"$report_path"; then
     rm -f "$report_path"
     return 1
   fi
   check_args+=("$report_path")
 
-  for package_spec in "${IGNORED_YANKED_PACKAGES[@]}"; do
+  for advisory_id in "${allowed_advisories[@]}"; do
+    check_args+=("--allow-advisory" "$advisory_id")
+  done
+
+  for package_spec in "${allowed_yanked_packages[@]}"; do
     check_args+=("--allow-yanked" "$package_spec")
   done
 
