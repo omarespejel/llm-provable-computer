@@ -7,6 +7,7 @@ Contents:
 - `design/`: implementation and artifact-line design notes
 - `design/engineering-timeline.md`: detailed internal phase chronology moved out of the public README
 - `hardening-policy.md`: local CI, hardening, and merge-gate policy
+- `paper2-roadmap.md`: engineering roadmap for the bounded proof-carrying decode paper
 - `reproducibility.md`: broader engineering reproducibility guidance, including non-paper artifact flows
 
 These files may use repository-internal terminology and phase labels because they document implementation sequencing rather than publication claims.

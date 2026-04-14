@@ -109,7 +109,7 @@
     },
     "onnx_export": {
       "type": "object",
-      "required": ["exporter", "exporter_version", "graph"],
+      "required": ["exporter", "exporter_version", "graph", "metadata", "external_data_files"],
       "properties": {
         "exporter": { "type": "string", "minLength": 1 },
         "exporter_version": {
@@ -118,7 +118,17 @@
             { "type": "null" }
           ]
         },
-        "graph": { "$ref": "#/$defs/file_commitment" }
+        "graph": { "$ref": "#/$defs/file_commitment" },
+        "metadata": {
+          "anyOf": [
+            { "$ref": "#/$defs/file_commitment" },
+            { "type": "null" }
+          ]
+        },
+        "external_data_files": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/file_commitment" }
+        }
       },
       "additionalProperties": false
     },
