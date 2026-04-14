@@ -570,6 +570,7 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   fi
   if changed_path_is_research_v3_surface; then
     run_research_v3_smoke_targets
+    run_research_v3_cli_smoke_target
   fi
   run_stwo_smoke_targets
   run_stwo_cli_smoke_targets

@@ -5081,6 +5081,7 @@ fn research_v3_equivalence_command_impl(
             rule_witnesses_hash,
         },
     };
+    verify_research_v3_engine_lane_binding(&artifact)?;
 
     let bytes = serde_json::to_vec_pretty(&artifact)
         .map_err(|err| VmError::Serialization(format!("failed to serialize artifact: {err}")))?;

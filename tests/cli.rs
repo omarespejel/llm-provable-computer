@@ -5496,26 +5496,31 @@ fn cli_supports_research_v3_equivalence_command() {
     let mut unexpected_engine = artifact_json.clone();
     unexpected_engine["engines"][3]["name"] =
         serde_json::Value::String("experimental-onnx".to_string());
-    let participating_engines = unexpected_engine["rule_witnesses"][0]["participating_engines"]
+    for witness in unexpected_engine["rule_witnesses"]
         .as_array_mut()
-        .expect("participating engines");
-    for engine_name in participating_engines {
-        if engine_name.as_str() == Some("onnx/tract") {
-            *engine_name = serde_json::Value::String("experimental-onnx".to_string());
+        .expect("rule_witnesses")
+    {
+        let participating_engines = witness["participating_engines"]
+            .as_array_mut()
+            .expect("participating engines");
+        for engine_name in participating_engines {
+            if engine_name.as_str() == Some("onnx/tract") {
+                *engine_name = serde_json::Value::String("experimental-onnx".to_string());
+            }
         }
-    }
-    for object_key in [
-        "state_before_hashes",
-        "state_after_hashes",
-        "engine_transition_hashes",
-    ] {
-        let hashes = unexpected_engine["rule_witnesses"][0][object_key]
-            .as_object_mut()
-            .expect("witness hash object");
-        let value = hashes
-            .remove("onnx/tract")
-            .expect("onnx/tract witness hash entry");
-        hashes.insert("experimental-onnx".to_string(), value);
+        for object_key in [
+            "state_before_hashes",
+            "state_after_hashes",
+            "engine_transition_hashes",
+        ] {
+            let hashes = witness[object_key]
+                .as_object_mut()
+                .expect("witness hash object");
+            let value = hashes
+                .remove("onnx/tract")
+                .expect("onnx/tract witness hash entry");
+            hashes.insert("experimental-onnx".to_string(), value);
+        }
     }
     unexpected_engine["commitments"]["engine_summaries_hash"] =
         serde_json::Value::String(hash_json_value(
@@ -5552,19 +5557,24 @@ fn cli_supports_research_v3_equivalence_command() {
         .retain(|engine| {
             engine.get("name").and_then(serde_json::Value::as_str) != Some("onnx/tract")
         });
-    let participating_engines = missing_engine["rule_witnesses"][0]["participating_engines"]
+    for witness in missing_engine["rule_witnesses"]
         .as_array_mut()
-        .expect("participating engines");
-    participating_engines.retain(|engine_name| engine_name.as_str() != Some("onnx/tract"));
-    for object_key in [
-        "state_before_hashes",
-        "state_after_hashes",
-        "engine_transition_hashes",
-    ] {
-        missing_engine["rule_witnesses"][0][object_key]
-            .as_object_mut()
-            .expect("witness hash object")
-            .remove("onnx/tract");
+        .expect("rule_witnesses")
+    {
+        witness["participating_engines"]
+            .as_array_mut()
+            .expect("participating engines")
+            .retain(|engine_name| engine_name.as_str() != Some("onnx/tract"));
+        for object_key in [
+            "state_before_hashes",
+            "state_after_hashes",
+            "engine_transition_hashes",
+        ] {
+            witness[object_key]
+                .as_object_mut()
+                .expect("witness hash object")
+                .remove("onnx/tract");
+        }
     }
     missing_engine["commitments"]["engine_summaries_hash"] = serde_json::Value::String(
         hash_json_value(missing_engine.get("engines").expect("missing engines")),
