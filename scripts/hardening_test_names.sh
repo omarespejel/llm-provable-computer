@@ -44,6 +44,7 @@ hardening_tvm_bin_test_filters=(
   "hf_provenance_manifest_tests::load_hf_provenance_manifest_rejects_oversized_file"
   "hf_provenance_manifest_tests::load_hf_provenance_manifest_rejects_non_regular_file"
   "hf_provenance_manifest_tests::prepare_hf_provenance_manifest_rejects_oversized_output"
+  "hf_provenance_manifest_tests::verify_hf_provenance_manifest_rejects_non_regular_bound_file"
 )
 
 # Keep the `research-v3` equivalence artifact loader and witness checks on the
