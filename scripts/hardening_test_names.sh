@@ -42,6 +42,7 @@ hardening_stwo_test_filters=(
   "stwo_backend::decoding::tests::phase28_proof_checks_reject_synthetic_member_shells_without_nested_phase27_evidence"
   "stwo_backend::decoding::tests::load_phase30_decoding_step_proof_envelope_manifest_reports_malformed_json_as_invalid_config"
   "stwo_backend::decoding::tests::load_phase30_decoding_step_proof_envelope_manifest_rejects_oversized_manifest_file"
+  "stwo_backend::decoding::tests::phase30_step_envelope_list_commitment_binds_ordering"
   "stwo_backend::decoding::tests::phase30_step_envelope_manifest_rejects_tampered_start_boundary"
   "stwo_backend::decoding::tests::phase30_step_envelope_manifest_rejects_tampered_end_boundary"
   "stwo_backend::decoding::tests::phase30_step_envelope_manifest_rejects_step_envelope_list_commitment_drift"
