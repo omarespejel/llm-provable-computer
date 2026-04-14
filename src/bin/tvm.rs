@@ -688,6 +688,12 @@ enum Command {
         /// Optional local ONNX graph exported from the HF/Optimum path.
         #[arg(long)]
         onnx_model: Option<PathBuf>,
+        /// Optional local ONNX metadata companion file to hash into the manifest.
+        #[arg(long)]
+        onnx_metadata: Option<PathBuf>,
+        /// Optional ONNX external-data side files to hash into the manifest.
+        #[arg(long = "onnx-external-data")]
+        onnx_external_data_files: Vec<PathBuf>,
         /// Name of the ONNX exporter used when `--onnx-model` is supplied.
         #[arg(long, default_value = "optimum-onnx")]
         onnx_exporter: String,
@@ -884,7 +890,8 @@ const FRONTEND_RUNTIME_RESEARCH_WATCH_LANES: [&str; 9] = [
     "sglang",
     "egg-emerge",
 ];
-const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v1";
+const HF_PROVENANCE_MANIFEST_VERSION_V1_LEGACY: &str = "hf-provenance-manifest-v1";
+const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v2";
 const HF_PROVENANCE_SEMANTIC_SCOPE: &str = "hf-release-provenance-boundary-v1";
 const HF_PROVENANCE_HASH_FUNCTION: &str = "blake2b-256";
 
@@ -899,6 +906,8 @@ struct HfProvenanceManifestCommand {
     tokenization_transcript: Option<PathBuf>,
     safetensors_files: Vec<PathBuf>,
     onnx_model: Option<PathBuf>,
+    onnx_metadata: Option<PathBuf>,
+    onnx_external_data_files: Vec<PathBuf>,
     onnx_exporter: String,
     onnx_exporter_version: Option<String>,
     model_card: Option<PathBuf>,
@@ -907,7 +916,7 @@ struct HfProvenanceManifestCommand {
     notes: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct HfFileCommitment {
     path: String,
@@ -915,7 +924,7 @@ struct HfFileCommitment {
     blake2b_256: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct HfSafetensorsFileCommitment {
     path: String,
@@ -925,7 +934,7 @@ struct HfSafetensorsFileCommitment {
     tensor_count: usize,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct HfTokenizerProvenance {
     tokenizer_id: String,
@@ -935,15 +944,17 @@ struct HfTokenizerProvenance {
     tokenization_transcript: Option<HfFileCommitment>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct HfOnnxExportProvenance {
     exporter: String,
     exporter_version: Option<String>,
     graph: HfFileCommitment,
+    metadata: Option<HfFileCommitment>,
+    external_data_files: Vec<HfFileCommitment>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct HfReleaseMetadata {
     model_card: Option<HfFileCommitment>,
@@ -1567,6 +1578,8 @@ fn run() -> llm_provable_computer::Result<()> {
             tokenization_transcript,
             safetensors_files,
             onnx_model,
+            onnx_metadata,
+            onnx_external_data_files,
             onnx_exporter,
             onnx_exporter_version,
             model_card,
@@ -1584,6 +1597,8 @@ fn run() -> llm_provable_computer::Result<()> {
             tokenization_transcript,
             safetensors_files,
             onnx_model,
+            onnx_metadata,
+            onnx_external_data_files,
             onnx_exporter,
             onnx_exporter_version,
             model_card,
@@ -4209,14 +4224,31 @@ fn prepare_hf_provenance_manifest_command(
         .iter()
         .map(|path| hf_safetensors_file_commitment(path))
         .collect::<llm_provable_computer::Result<Vec<_>>>()?;
+    if command.onnx_model.is_none()
+        && (command.onnx_metadata.is_some()
+            || !command.onnx_external_data_files.is_empty()
+            || command.onnx_exporter_version.is_some())
+    {
+        return Err(VmError::InvalidConfig(
+            "HF provenance ONNX metadata, exporter version, or external-data files require --onnx-model".to_string(),
+        ));
+    }
     let onnx_export = command
         .onnx_model
         .as_deref()
         .map(|path| {
+            let mut external_data_files = command
+                .onnx_external_data_files
+                .iter()
+                .map(|path| hf_file_commitment(path))
+                .collect::<llm_provable_computer::Result<Vec<_>>>()?;
+            external_data_files.sort_by(|a, b| a.path.cmp(&b.path));
             Ok::<HfOnnxExportProvenance, VmError>(HfOnnxExportProvenance {
                 exporter: command.onnx_exporter.clone(),
                 exporter_version: command.onnx_exporter_version.clone(),
                 graph: hf_file_commitment(path)?,
+                metadata: hf_optional_file_commitment(command.onnx_metadata.as_deref())?,
+                external_data_files,
             })
         })
         .transpose()?;
@@ -4487,12 +4519,65 @@ fn load_hf_provenance_manifest(
         )));
     }
 
-    serde_json::from_slice(&manifest_bytes).map_err(|err| {
-        VmError::Serialization(format!(
-            "failed to parse HF provenance manifest {}: {err}",
+    let manifest_value: serde_json::Value =
+        serde_json::from_slice(&manifest_bytes).map_err(|err| {
+            VmError::Serialization(format!(
+                "failed to parse HF provenance manifest {}: {err}",
+                manifest_path.display()
+            ))
+        })?;
+    let manifest_version = manifest_value
+        .get("manifest_version")
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| {
+            VmError::Serialization(format!(
+                "failed to parse HF provenance manifest {}: missing or non-string field `manifest_version`",
+                manifest_path.display()
+            ))
+        })?;
+    match manifest_version {
+        HF_PROVENANCE_MANIFEST_VERSION_V1_LEGACY => Err(VmError::Serialization(format!(
+            "failed to parse HF provenance manifest {}: legacy manifest_version `{}` is no longer accepted after the ONNX sidecar format bump; regenerate the manifest as {}",
+            manifest_path.display(),
+            HF_PROVENANCE_MANIFEST_VERSION_V1_LEGACY,
+            HF_PROVENANCE_MANIFEST_VERSION
+        ))),
+        HF_PROVENANCE_MANIFEST_VERSION => {
+            ensure_hf_provenance_manifest_v2_required_fields(manifest_path, &manifest_value)?;
+            serde_json::from_value(manifest_value).map_err(|err| {
+                VmError::Serialization(format!(
+                    "failed to parse HF provenance manifest {}: {err}",
+                    manifest_path.display()
+                ))
+            })
+        }
+        other => Err(VmError::Serialization(format!(
+            "failed to parse HF provenance manifest {}: unsupported manifest_version `{other}`",
             manifest_path.display()
-        ))
-    })
+        ))),
+    }
+}
+
+fn ensure_hf_provenance_manifest_v2_required_fields(
+    manifest_path: &Path,
+    manifest_value: &serde_json::Value,
+) -> llm_provable_computer::Result<()> {
+    let Some(onnx_export) = manifest_value.get("onnx_export") else {
+        return Ok(());
+    };
+    let Some(onnx_export_obj) = onnx_export.as_object() else {
+        return Ok(());
+    };
+    for field in ["exporter_version", "metadata", "external_data_files"] {
+        if !onnx_export_obj.contains_key(field) {
+            return Err(VmError::Serialization(format!(
+                "failed to parse HF provenance manifest {}: missing field `{field}` in `onnx_export` for {}",
+                manifest_path.display(),
+                HF_PROVENANCE_MANIFEST_VERSION
+            )));
+        }
+    }
+    Ok(())
 }
 
 fn verify_hf_provenance_manifest(
@@ -4574,7 +4659,33 @@ fn verify_hf_provenance_manifest(
                 "HF provenance ONNX exporter must be non-empty".to_string(),
             ));
         }
+        validate_hf_optional_identifier(
+            "onnx_export.exporter_version",
+            onnx_export.exporter_version.as_deref(),
+        )?;
+        let mut onnx_paths = std::collections::BTreeSet::new();
+        ensure_unique_hf_file_commitment_path(
+            "HF provenance onnx_export.graph",
+            &onnx_export.graph,
+            &mut onnx_paths,
+        )?;
         verify_hf_file_commitment("onnx_export.graph", &onnx_export.graph)?;
+        if let Some(metadata) = &onnx_export.metadata {
+            ensure_unique_hf_file_commitment_path(
+                "HF provenance onnx_export.metadata",
+                metadata,
+                &mut onnx_paths,
+            )?;
+        }
+        verify_hf_optional_file_commitment("onnx_export.metadata", &onnx_export.metadata)?;
+        for commitment in &onnx_export.external_data_files {
+            ensure_unique_hf_file_commitment_path(
+                "HF provenance onnx_export.external_data_files[]",
+                commitment,
+                &mut onnx_paths,
+            )?;
+            verify_hf_file_commitment("onnx_export.external_data_files[]", commitment)?;
+        }
     }
     verify_hf_optional_file_commitment("model_card", &manifest.release.model_card)?;
     validate_hf_optional_identifier("release.doi", manifest.release.doi.as_deref())?;
@@ -4598,6 +4709,7 @@ fn hf_provenance_limitations() -> Vec<String> {
         "the manifest does not prove tokenizer algorithm correctness",
         "the manifest does not prove safetensors weights implement a model architecture",
         "the manifest does not prove Optimum or ONNX exporter semantic equivalence",
+        "the manifest does not prove ONNX metadata or external-data semantic correctness",
         "the manifest does not perform live Hugging Face Hub downloads or DOI verification",
     ]
     .into_iter()
@@ -4694,6 +4806,79 @@ fn verify_hf_file_commitment(
         &commitment.blake2b_256,
         &blake2b_256,
     )
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+enum HfFileIdentity {
+    #[cfg(unix)]
+    Unix { dev: u64, ino: u64 },
+    #[cfg(windows)]
+    Windows {
+        volume_serial_number: u32,
+        file_index: u64,
+    },
+    #[cfg(not(any(unix, windows)))]
+    CanonicalPath(PathBuf),
+}
+
+fn hf_file_identity(path: &Path, label: &str) -> llm_provable_computer::Result<HfFileIdentity> {
+    let (file, _) = open_checked_regular_file(path, label, None)?;
+    let metadata = file.metadata().map_err(|err| {
+        VmError::InvalidConfig(format!("failed to read {label} {}: {err}", path.display()))
+    })?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+
+        return Ok(HfFileIdentity::Unix {
+            dev: metadata.dev(),
+            ino: metadata.ino(),
+        });
+    }
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+
+        let (volume_serial_number, file_index) = require_windows_regular_file_identity(
+            path,
+            label,
+            metadata.volume_serial_number(),
+            metadata.file_index(),
+            "after open",
+        )?;
+        return Ok(HfFileIdentity::Windows {
+            volume_serial_number,
+            file_index,
+        });
+    }
+
+    #[cfg(not(any(unix, windows)))]
+    {
+        let canonical = fs::canonicalize(path).map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to canonicalize {label} {}: {err}",
+                path.display()
+            ))
+        })?;
+        Ok(HfFileIdentity::CanonicalPath(canonical))
+    }
+}
+
+fn ensure_unique_hf_file_commitment_path(
+    label: &str,
+    commitment: &HfFileCommitment,
+    seen_paths: &mut std::collections::BTreeSet<HfFileIdentity>,
+) -> llm_provable_computer::Result<()> {
+    let identity = hf_file_identity(Path::new(&commitment.path), label)?;
+    if !seen_paths.insert(identity) {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} reuses ONNX artifact path `{}`",
+            commitment.path
+        )));
+    }
+    Ok(())
 }
 
 fn verify_hf_safetensors_file_commitment(
@@ -6965,6 +7150,48 @@ mod hf_provenance_manifest_tests {
         fs::write(path, bytes).expect("write HF provenance manifest");
     }
 
+    fn sample_hf_provenance_manifest_with_onnx_export(
+        onnx_export: Option<HfOnnxExportProvenance>,
+    ) -> HfProvenanceManifest {
+        let tokenizer = HfTokenizerProvenance {
+            tokenizer_id: "example/test-model".to_string(),
+            tokenizer_revision: "0123456789abcdef".to_string(),
+            tokenizer_json: None,
+            tokenizer_config: None,
+            tokenization_transcript: None,
+        };
+        let safetensors = Vec::new();
+        let release = HfReleaseMetadata {
+            model_card: None,
+            doi: None,
+            datasets: Vec::new(),
+            notes: vec!["release note".to_string()],
+        };
+        let limitations = hf_provenance_limitations();
+        HfProvenanceManifest {
+            manifest_version: HF_PROVENANCE_MANIFEST_VERSION.to_string(),
+            semantic_scope: HF_PROVENANCE_SEMANTIC_SCOPE.to_string(),
+            hash_function: HF_PROVENANCE_HASH_FUNCTION.to_string(),
+            hub_repo: "example/test-model".to_string(),
+            hub_revision: "0123456789abcdef".to_string(),
+            tokenizer: tokenizer.clone(),
+            safetensors,
+            onnx_export: onnx_export.clone(),
+            release: release.clone(),
+            limitations: limitations.clone(),
+            commitments: HfProvenanceCommitments {
+                tokenizer_hash: hash_json_projection_hex(&tokenizer).expect("tokenizer hash"),
+                safetensors_manifest_hash: hash_json_projection_hex(&Vec::<
+                    HfSafetensorsFileCommitment,
+                >::new())
+                .expect("safetensors hash"),
+                onnx_export_hash: hash_json_projection_hex(&onnx_export).expect("onnx hash"),
+                release_metadata_hash: hash_json_projection_hex(&release).expect("release hash"),
+                limitations_hash: hash_json_projection_hex(&limitations).expect("limitations hash"),
+            },
+        }
+    }
+
     #[test]
     fn load_hf_provenance_manifest_rejects_unknown_top_level_field() {
         let file = hf_provenance_test_manifest_file("extra-top");
@@ -6992,6 +7219,8 @@ mod hf_provenance_manifest_tests {
                 "size_bytes": 16,
                 "blake2b_256": "5".repeat(64)
             },
+            "metadata": null,
+            "external_data_files": [],
             "unexpected_field": 7
         });
         write_hf_provenance_test_manifest(file.path(), &value);
@@ -6999,6 +7228,52 @@ mod hf_provenance_manifest_tests {
         let err = load_hf_provenance_manifest(file.path())
             .expect_err("unknown nested ONNX field should fail");
         assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_v2_missing_onnx_metadata_field() {
+        let file = hf_provenance_test_manifest_file("missing-onnx-metadata");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["onnx_export"] = serde_json::json!({
+            "exporter": "optimum",
+            "exporter_version": null,
+            "graph": {
+                "path": "model.onnx",
+                "size_bytes": 16,
+                "blake2b_256": "5".repeat(64)
+            },
+            "external_data_files": []
+        });
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("v2 manifest missing onnx metadata field should fail");
+        assert!(err
+            .to_string()
+            .contains("missing field `metadata` in `onnx_export`"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_legacy_v1_onnx_export_with_upgrade_message() {
+        let file = hf_provenance_test_manifest_file("legacy-v1-onnx");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["manifest_version"] = serde_json::json!(HF_PROVENANCE_MANIFEST_VERSION_V1_LEGACY);
+        value["onnx_export"] = serde_json::json!({
+            "exporter": "optimum",
+            "exporter_version": null,
+            "graph": {
+                "path": "model.onnx",
+                "size_bytes": 16,
+                "blake2b_256": "5".repeat(64)
+            }
+        });
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("legacy v1 manifest should require regeneration");
+        assert!(err
+            .to_string()
+            .contains("legacy manifest_version `hf-provenance-manifest-v1` is no longer accepted"));
     }
 
     #[test]
@@ -7055,6 +7330,8 @@ mod hf_provenance_manifest_tests {
             tokenization_transcript: None,
             safetensors_files: Vec::new(),
             onnx_model: None,
+            onnx_metadata: None,
+            onnx_external_data_files: Vec::new(),
             onnx_exporter: "optimum-onnx".to_string(),
             onnx_exporter_version: None,
             model_card: Some(model_card),
@@ -7171,6 +7448,135 @@ mod hf_provenance_manifest_tests {
         let err = verify_hf_provenance_manifest(&manifest)
             .expect_err("non-regular bound file should fail verification");
         assert!(err.to_string().contains("not a regular file"));
+    }
+
+    #[test]
+    fn prepare_hf_provenance_manifest_rejects_onnx_sidecars_without_graph() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let output = dir.path().join("manifest.json");
+        let metadata = dir.path().join("metadata.json");
+        fs::write(&metadata, b"{}").expect("write metadata");
+
+        let err = prepare_hf_provenance_manifest_command(HfProvenanceManifestCommand {
+            output,
+            hub_repo: "example/test-model".to_string(),
+            hub_revision: "0123456789abcdef".to_string(),
+            tokenizer_id: "example/test-model".to_string(),
+            tokenizer_revision: None,
+            tokenizer_json: None,
+            tokenizer_config: None,
+            tokenization_transcript: None,
+            safetensors_files: Vec::new(),
+            onnx_model: None,
+            onnx_metadata: Some(metadata),
+            onnx_external_data_files: Vec::new(),
+            onnx_exporter: "optimum-onnx".to_string(),
+            onnx_exporter_version: Some("1.17.0".to_string()),
+            model_card: None,
+            doi: None,
+            datasets: Vec::new(),
+            notes: vec!["release note".to_string()],
+        })
+        .expect_err("ONNX sidecars without graph should fail");
+
+        assert!(err.to_string().contains(
+            "ONNX metadata, exporter version, or external-data files require --onnx-model"
+        ));
+    }
+
+    #[test]
+    fn verify_hf_provenance_manifest_rejects_duplicate_onnx_external_data_paths() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let graph = dir.path().join("model.onnx");
+        let sidecar = dir.path().join("weights.bin");
+        fs::write(&graph, b"onnx").expect("write graph");
+        fs::write(&sidecar, b"weights").expect("write sidecar");
+
+        let onnx_export = Some(HfOnnxExportProvenance {
+            exporter: "optimum-onnx".to_string(),
+            exporter_version: None,
+            graph: hf_file_commitment(&graph).expect("graph commitment"),
+            metadata: None,
+            external_data_files: vec![
+                hf_file_commitment(&sidecar).expect("sidecar commitment"),
+                hf_file_commitment(&sidecar).expect("sidecar commitment"),
+            ],
+        });
+        let manifest = sample_hf_provenance_manifest_with_onnx_export(onnx_export);
+
+        let err = verify_hf_provenance_manifest(&manifest)
+            .expect_err("duplicate ONNX sidecar paths should fail");
+        assert!(err
+            .to_string()
+            .contains("onnx_export.external_data_files[] reuses ONNX artifact path"));
+    }
+
+    #[test]
+    fn verify_hf_provenance_manifest_rejects_onnx_metadata_path_reusing_graph() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let graph = dir.path().join("model.onnx");
+        fs::write(&graph, b"onnx").expect("write graph");
+
+        let graph_commitment = hf_file_commitment(&graph).expect("graph commitment");
+        let manifest =
+            sample_hf_provenance_manifest_with_onnx_export(Some(HfOnnxExportProvenance {
+                exporter: "optimum-onnx".to_string(),
+                exporter_version: None,
+                graph: graph_commitment.clone(),
+                metadata: Some(graph_commitment),
+                external_data_files: Vec::new(),
+            }));
+
+        let err = verify_hf_provenance_manifest(&manifest)
+            .expect_err("duplicate ONNX graph/metadata path should fail");
+        assert!(err
+            .to_string()
+            .contains("onnx_export.metadata reuses ONNX artifact path"));
+    }
+
+    #[test]
+    fn verify_hf_provenance_manifest_rejects_onnx_external_data_path_reusing_graph() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let graph = dir.path().join("model.onnx");
+        fs::write(&graph, b"onnx").expect("write graph");
+
+        let graph_commitment = hf_file_commitment(&graph).expect("graph commitment");
+        let manifest =
+            sample_hf_provenance_manifest_with_onnx_export(Some(HfOnnxExportProvenance {
+                exporter: "optimum-onnx".to_string(),
+                exporter_version: None,
+                graph: graph_commitment.clone(),
+                metadata: None,
+                external_data_files: vec![graph_commitment],
+            }));
+
+        let err = verify_hf_provenance_manifest(&manifest)
+            .expect_err("duplicate ONNX graph/external-data path should fail");
+        assert!(err
+            .to_string()
+            .contains("onnx_export.external_data_files[] reuses ONNX artifact path"));
+    }
+
+    #[test]
+    fn verify_hf_provenance_manifest_rejects_empty_onnx_exporter_version() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let graph = dir.path().join("model.onnx");
+        fs::write(&graph, b"onnx").expect("write graph");
+
+        let manifest =
+            sample_hf_provenance_manifest_with_onnx_export(Some(HfOnnxExportProvenance {
+                exporter: "optimum-onnx".to_string(),
+                exporter_version: Some(String::new()),
+                graph: hf_file_commitment(&graph).expect("graph commitment"),
+                metadata: None,
+                external_data_files: Vec::new(),
+            }));
+
+        let err = verify_hf_provenance_manifest(&manifest)
+            .expect_err("empty ONNX exporter version should fail");
+        assert!(err
+            .to_string()
+            .contains("HF provenance onnx_export.exporter_version must be non-empty"));
     }
 }
 

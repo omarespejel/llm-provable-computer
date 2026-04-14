@@ -828,6 +828,8 @@ cargo run --bin tvm -- prepare-hf-provenance-manifest \
   --tokenizer-json path/to/tokenizer.json \
   --safetensors path/to/model.safetensors \
   --onnx-model path/to/model.onnx \
+  --onnx-metadata path/to/metadata.json \
+  --onnx-external-data path/to/model.onnx_data \
   --model-card path/to/README.md
 cargo run --bin tvm -- verify-hf-provenance-manifest compiled/hf-provenance.json
 ```
@@ -835,12 +837,17 @@ cargo run --bin tvm -- verify-hf-provenance-manifest compiled/hf-provenance.json
 This manifest is deliberately a provenance artifact, not a proving claim. It pins the
 Hub repo/revision, tokenizer identity/revision, optional tokenizer files and
 tokenization transcripts, local `safetensors` file hashes plus parsed metadata-header
-hashes/tensor counts, optional ONNX export file hashes, and optional
-model-card/DOI/dataset release metadata. The verifier rejects floating Hub revisions
-such as `main`, recomputes local file hashes, recomputes the manifest commitments, and
-rejects safetensors metadata drift. It does not prove tokenizer algorithm correctness,
-safetensors architectural semantics, Optimum export semantic equivalence, live Hub
-availability, or DOI validity.
+hashes/tensor counts, optional ONNX graph/metadata/external-data file hashes, and
+optional model-card/DOI/dataset release metadata. The verifier rejects floating Hub
+revisions such as `main`, recomputes local file hashes, recomputes the manifest
+commitments, and rejects safetensors metadata drift. It does not prove tokenizer
+algorithm correctness, safetensors architectural semantics, ONNX exporter semantic
+equivalence, ONNX metadata semantic correctness, live Hub availability, or DOI
+validity.
+
+The current manifest wire format is `hf-provenance-manifest-v2`. Older
+`hf-provenance-manifest-v1` files must be regenerated before verification
+because the ONNX sidecar surface now has an explicit versioned format boundary.
 
 Canonical HF provenance spec file:
 

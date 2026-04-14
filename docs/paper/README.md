@@ -20,6 +20,15 @@ Supporting publication assets:
 - `submission-v4-2026-04-11/`
 - `artifacts/`
 
+Draft next-paper package:
+
+- `paper2/README.md`
+- `paper2/proof-carrying-decode-surfaces-2026.md`
+- `paper2/appendix-claim-boundary.md`
+- `paper2/appendix-ivc-positioning.md`
+- `paper2/appendix-engineering-gaps.md`
+- `paper2/appendix-artifact-map.md`
+
 For artifact-bundle scope, cited bundles, and archival provenance bundles, see:
 
 - `artifacts/README.md`

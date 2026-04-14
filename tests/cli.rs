@@ -89,38 +89,12 @@ fn phase27_cli_test_guard() -> std::sync::MutexGuard<'static, ()> {
 
 fn tvm_command() -> Command {
     let binary = std::env::var_os("CARGO_BIN_EXE_tvm")
+        .or_else(|| std::env::var_os("TVM_TEST_BINARY"))
         .map(PathBuf::from)
         .unwrap_or_else(|| {
-            let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-            let target_dir = std::env::var_os("CARGO_TARGET_DIR")
-                .map(PathBuf::from)
-                .map(|path| {
-                    if path.is_absolute() {
-                        path
-                    } else {
-                        manifest_dir.join(path)
-                    }
-                })
-                .unwrap_or_else(|| manifest_dir.join("target"));
-            let profile = std::env::var("PROFILE").unwrap_or_else(|_| "debug".to_string());
-            let binary_name = format!("tvm{}", std::env::consts::EXE_SUFFIX);
-            let mut candidates = Vec::new();
-            if let Some(target_triple) = std::env::var_os("CARGO_BUILD_TARGET")
-                .or_else(|| std::env::var_os("TARGET"))
-            {
-                candidates.push(target_dir.join(target_triple).join(&profile).join(&binary_name));
-            }
-            candidates.push(target_dir.join(&profile).join(&binary_name));
-            candidates.push(manifest_dir.join("target").join(&profile).join(&binary_name));
-            candidates
-                .into_iter()
-                .find(|candidate| candidate.exists())
-                .unwrap_or_else(|| {
-                    panic!(
-                        "could not resolve `tvm` binary; checked CARGO_BIN_EXE_tvm and fallback candidates under `{}`",
-                        target_dir.display()
-                    )
-                })
+            panic!(
+                "could not resolve current-feature `tvm` binary; set `TVM_TEST_BINARY` when `CARGO_BIN_EXE_tvm` is unavailable"
+            )
         });
     Command::from_std(std::process::Command::new(binary))
 }
@@ -4858,7 +4832,7 @@ fn cli_can_prepare_and_verify_hf_provenance_manifest() {
         manifest_json
             .get("manifest_version")
             .and_then(serde_json::Value::as_str),
-        Some("hf-provenance-manifest-v1")
+        Some("hf-provenance-manifest-v2")
     );
     assert_eq!(
         manifest_json
@@ -4933,6 +4907,201 @@ fn cli_can_prepare_and_verify_hf_provenance_manifest() {
         .failure()
         .stderr(predicate::str::contains(
             "hub_revision must be pinned to an immutable commit or release tag",
+        ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+fn hf_provenance_prepare_command(
+    manifest: &std::path::Path,
+    onnx_model: &std::path::Path,
+    onnx_metadata: Option<&std::path::Path>,
+    onnx_external_data: &[&std::path::Path],
+) -> Command {
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--onnx-model")
+        .arg(onnx_model);
+    if let Some(onnx_metadata) = onnx_metadata {
+        prepare.arg("--onnx-metadata").arg(onnx_metadata);
+    }
+    for path in onnx_external_data {
+        prepare.arg("--onnx-external-data").arg(path);
+    }
+    prepare
+}
+
+#[test]
+fn cli_rejects_hf_provenance_manifest_when_onnx_metadata_reuses_graph_path() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-duplicate-metadata");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let onnx_model = fixture_dir.join("model.onnx");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(&onnx_model, b"fake-onnx-graph").expect("write ONNX fixture");
+
+    let mut prepare = hf_provenance_prepare_command(&manifest, &onnx_model, Some(&onnx_model), &[]);
+    prepare.assert().failure().stderr(predicate::str::contains(
+        "onnx_export.metadata reuses ONNX artifact path",
+    ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
+fn cli_rejects_hf_provenance_manifest_when_onnx_external_data_reuses_graph_path() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-duplicate-external-data");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let onnx_model = fixture_dir.join("model.onnx");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(&onnx_model, b"fake-onnx-graph").expect("write ONNX fixture");
+
+    let mut prepare = hf_provenance_prepare_command(&manifest, &onnx_model, None, &[&onnx_model]);
+    prepare.assert().failure().stderr(predicate::str::contains(
+        "onnx_export.external_data_files[] reuses ONNX artifact path",
+    ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
+fn cli_rejects_hf_provenance_manifest_when_onnx_exporter_version_has_no_graph() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-exporter-version-without-graph");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--onnx-exporter-version")
+        .arg("1.17.0")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "ONNX metadata, exporter version, or external-data files require --onnx-model",
+        ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
+fn cli_rejects_hf_provenance_manifest_when_onnx_metadata_aliases_graph_path() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-alias-metadata");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let onnx_model = fixture_dir.join("model.onnx");
+    let aliased_onnx_model = fixture_dir.join("./model.onnx");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(&onnx_model, b"fake-onnx-graph").expect("write ONNX fixture");
+
+    let mut prepare =
+        hf_provenance_prepare_command(&manifest, &onnx_model, Some(&aliased_onnx_model), &[]);
+    prepare.assert().failure().stderr(predicate::str::contains(
+        "onnx_export.metadata reuses ONNX artifact path",
+    ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
+fn cli_verifier_rejects_tampered_onnx_metadata() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-tampered-metadata");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let onnx_model = fixture_dir.join("model.onnx");
+    let onnx_metadata = fixture_dir.join("metadata.json");
+    let onnx_external = fixture_dir.join("model.onnx_data");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(&onnx_model, b"fake-onnx-graph").expect("write ONNX fixture");
+    std::fs::write(&onnx_metadata, br#"{"producer":"optimum"}"#).expect("write ONNX metadata");
+    std::fs::write(&onnx_external, b"onnx-external-data").expect("write ONNX external data");
+
+    let mut prepare = hf_provenance_prepare_command(
+        &manifest,
+        &onnx_model,
+        Some(&onnx_metadata),
+        &[&onnx_external],
+    );
+    prepare.assert().success();
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .success();
+
+    std::fs::write(&onnx_metadata, br#"{"producer":"tamperd"}"#).expect("tamper ONNX metadata");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "onnx_export.metadata blake2b_256 commitment mismatch",
+        ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
+fn cli_verifier_rejects_tampered_onnx_external_data() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-tampered-external");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let onnx_model = fixture_dir.join("model.onnx");
+    let onnx_metadata = fixture_dir.join("metadata.json");
+    let onnx_external = fixture_dir.join("model.onnx_data");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(&onnx_model, b"fake-onnx-graph").expect("write ONNX fixture");
+    std::fs::write(&onnx_metadata, br#"{"producer":"optimum"}"#).expect("write ONNX metadata");
+    std::fs::write(&onnx_external, b"onnx-external-data").expect("write ONNX external data");
+
+    let mut prepare = hf_provenance_prepare_command(
+        &manifest,
+        &onnx_model,
+        Some(&onnx_metadata),
+        &[&onnx_external],
+    );
+    prepare.assert().success();
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .success();
+
+    std::fs::write(&onnx_external, b"tampered-external!").expect("tamper ONNX external data");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "onnx_export.external_data_files[] blake2b_256 commitment mismatch",
         ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
