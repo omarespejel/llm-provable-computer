@@ -1,6 +1,6 @@
 use std::ffi::OsString;
 use std::fs;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Duration;
@@ -861,6 +861,8 @@ const STATEMENT_V3_EQUIVALENCE_ARTIFACT_SCHEMA_PATH: &str =
 const RESEARCH_V2_HASH_FUNCTION: &str = "blake2b-256";
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 const RESEARCH_V3_RELATION_FORMAT: &str = "multi-engine-trace-relation-v1-no-egraph-no-smt";
+const MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES: usize = 8 * 1024 * 1024;
+const HF_PROVENANCE_FILE_READ_CHUNK_BYTES: usize = 1024 * 1024;
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 const MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES: usize = 32 * 1024 * 1024;
 #[cfg(feature = "onnx-export")]
@@ -906,6 +908,7 @@ struct HfProvenanceManifestCommand {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct HfFileCommitment {
     path: String,
     size_bytes: u64,
@@ -913,6 +916,7 @@ struct HfFileCommitment {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct HfSafetensorsFileCommitment {
     path: String,
     size_bytes: u64,
@@ -922,6 +926,7 @@ struct HfSafetensorsFileCommitment {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct HfTokenizerProvenance {
     tokenizer_id: String,
     tokenizer_revision: String,
@@ -931,6 +936,7 @@ struct HfTokenizerProvenance {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct HfOnnxExportProvenance {
     exporter: String,
     exporter_version: Option<String>,
@@ -938,6 +944,7 @@ struct HfOnnxExportProvenance {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct HfReleaseMetadata {
     model_card: Option<HfFileCommitment>,
     doi: Option<String>,
@@ -946,6 +953,7 @@ struct HfReleaseMetadata {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct HfProvenanceCommitments {
     tokenizer_hash: String,
     safetensors_manifest_hash: String,
@@ -955,6 +963,7 @@ struct HfProvenanceCommitments {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct HfProvenanceManifest {
     manifest_version: String,
     semantic_scope: String,
@@ -4238,9 +4247,7 @@ fn prepare_hf_provenance_manifest_command(
         limitations,
     };
     verify_hf_provenance_manifest(&manifest)?;
-    let bytes = serde_json::to_vec_pretty(&manifest).map_err(|err| {
-        VmError::Serialization(format!("failed to serialize HF provenance manifest: {err}"))
-    })?;
+    let bytes = serialize_hf_provenance_manifest_bytes(&manifest, &command.output)?;
     write_bytes_atomically(&command.output, &bytes)?;
 
     println!("hf_provenance_manifest: {}", command.output.display());
@@ -4258,22 +4265,188 @@ fn prepare_hf_provenance_manifest_command(
     Ok(())
 }
 
+struct BoundedManifestWriter {
+    bytes: Vec<u8>,
+    max_len: usize,
+    attempted_len: usize,
+}
+
+impl BoundedManifestWriter {
+    fn new(max_len: usize) -> Self {
+        Self {
+            bytes: Vec::new(),
+            max_len,
+            attempted_len: 0,
+        }
+    }
+
+    fn into_bytes(self) -> Vec<u8> {
+        self.bytes
+    }
+}
+
+impl Write for BoundedManifestWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let attempted_len = self
+            .bytes
+            .len()
+            .checked_add(buf.len())
+            .ok_or_else(|| std::io::Error::other("HF provenance manifest size overflow"))?;
+        if attempted_len > self.max_len {
+            self.attempted_len = attempted_len;
+            return Err(std::io::Error::other(
+                "HF provenance manifest exceeds byte limit",
+            ));
+        }
+        self.attempted_len = attempted_len;
+        self.bytes.extend_from_slice(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+fn serialize_hf_provenance_manifest_bytes(
+    manifest: &HfProvenanceManifest,
+    output_path: &Path,
+) -> llm_provable_computer::Result<Vec<u8>> {
+    let mut writer = BoundedManifestWriter::new(MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES);
+    match serde_json::to_writer_pretty(&mut writer, manifest) {
+        Ok(()) => Ok(writer.into_bytes()),
+        Err(err) if writer.attempted_len > MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES || err.is_io() => {
+            let observed_len = writer
+                .attempted_len
+                .max(MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES + 1);
+            Err(VmError::InvalidConfig(format!(
+                "HF provenance manifest {} would be at least {} bytes, exceeding the limit of {} bytes",
+                output_path.display(),
+                observed_len,
+                MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES
+            )))
+        }
+        Err(err) => Err(VmError::Serialization(format!(
+            "failed to serialize HF provenance manifest: {err}"
+        ))),
+    }
+}
+
+#[cfg_attr(not(windows), allow(dead_code))]
+fn require_windows_regular_file_identity(
+    path: &Path,
+    label: &str,
+    volume_serial_number: Option<u32>,
+    file_index: Option<u64>,
+    phase: &str,
+) -> llm_provable_computer::Result<(u32, u64)> {
+    let volume_serial_number = volume_serial_number.ok_or_else(|| {
+        VmError::InvalidConfig(format!(
+            "{label} {}: cannot read volume serial number {phase}",
+            path.display()
+        ))
+    })?;
+    let file_index = file_index.ok_or_else(|| {
+        VmError::InvalidConfig(format!(
+            "{label} {}: cannot read file index {phase}",
+            path.display()
+        ))
+    })?;
+    Ok((volume_serial_number, file_index))
+}
+
+fn open_checked_regular_file(
+    path: &Path,
+    label: &str,
+    max_bytes: Option<u64>,
+) -> llm_provable_computer::Result<(fs::File, u64)> {
+    let metadata = fs::symlink_metadata(path).map_err(|err| {
+        VmError::InvalidConfig(format!("failed to read {label} {}: {err}", path.display()))
+    })?;
+    if !metadata.file_type().is_file() {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} {} is not a regular file",
+            path.display()
+        )));
+    }
+    if let Some(max_bytes) = max_bytes {
+        if metadata.len() > max_bytes {
+            return Err(VmError::InvalidConfig(format!(
+                "{label} {} is {} bytes, exceeding the limit of {} bytes",
+                path.display(),
+                metadata.len(),
+                max_bytes
+            )));
+        }
+    }
+    let file = fs::File::open(path).map_err(|err| {
+        VmError::InvalidConfig(format!("failed to read {label} {}: {err}", path.display()))
+    })?;
+    let opened_metadata = file.metadata().map_err(|err| {
+        VmError::InvalidConfig(format!("failed to read {label} {}: {err}", path.display()))
+    })?;
+    if !opened_metadata.is_file() {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} {} is not a regular file after opening",
+            path.display()
+        )));
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+
+        if metadata.dev() != opened_metadata.dev() || metadata.ino() != opened_metadata.ino() {
+            return Err(VmError::InvalidConfig(format!(
+                "{label} {} changed between metadata inspection and open",
+                path.display()
+            )));
+        }
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+
+        let (pre_volume_serial_number, pre_file_index) = require_windows_regular_file_identity(
+            path,
+            label,
+            metadata.volume_serial_number(),
+            metadata.file_index(),
+            "before open",
+        )?;
+        let (post_volume_serial_number, post_file_index) = require_windows_regular_file_identity(
+            path,
+            label,
+            opened_metadata.volume_serial_number(),
+            opened_metadata.file_index(),
+            "after open",
+        )?;
+
+        if pre_volume_serial_number != post_volume_serial_number
+            || pre_file_index != post_file_index
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "{label} {} changed between metadata inspection and open",
+                path.display()
+            )));
+        }
+    }
+    if let Some(max_bytes) = max_bytes {
+        if opened_metadata.len() > max_bytes {
+            return Err(VmError::InvalidConfig(format!(
+                "{label} {} is {} bytes after opening, exceeding the limit of {} bytes",
+                path.display(),
+                opened_metadata.len(),
+                max_bytes
+            )));
+        }
+    }
+    Ok((file, opened_metadata.len()))
+}
+
 fn verify_hf_provenance_manifest_command(
     manifest_path: &Path,
 ) -> llm_provable_computer::Result<()> {
-    let manifest_bytes = fs::read(manifest_path).map_err(|err| {
-        VmError::InvalidConfig(format!(
-            "failed to read HF provenance manifest {}: {err}",
-            manifest_path.display()
-        ))
-    })?;
-    let manifest: HfProvenanceManifest =
-        serde_json::from_slice(&manifest_bytes).map_err(|err| {
-            VmError::Serialization(format!(
-                "failed to parse HF provenance manifest {}: {err}",
-                manifest_path.display()
-            ))
-        })?;
+    let manifest = load_hf_provenance_manifest(manifest_path)?;
     verify_hf_provenance_manifest(&manifest)?;
 
     println!("verified_hf_provenance_manifest: true");
@@ -4285,6 +4458,41 @@ fn verify_hf_provenance_manifest_command(
     println!("safetensors_files: {}", manifest.safetensors.len());
 
     Ok(())
+}
+
+fn load_hf_provenance_manifest(
+    manifest_path: &Path,
+) -> llm_provable_computer::Result<HfProvenanceManifest> {
+    let (file, _) = open_checked_regular_file(
+        manifest_path,
+        "HF provenance manifest",
+        Some(MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES as u64),
+    )?;
+    let mut manifest_bytes = Vec::new();
+    let mut limited_reader = file.take(MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES as u64 + 1);
+    limited_reader
+        .read_to_end(&mut manifest_bytes)
+        .map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to read HF provenance manifest {}: {err}",
+                manifest_path.display()
+            ))
+        })?;
+    if manifest_bytes.len() > MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance manifest {} is {} bytes after read, exceeding the limit of {} bytes",
+            manifest_path.display(),
+            manifest_bytes.len(),
+            MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES
+        )));
+    }
+
+    serde_json::from_slice(&manifest_bytes).map_err(|err| {
+        VmError::Serialization(format!(
+            "failed to parse HF provenance manifest {}: {err}",
+            manifest_path.display()
+        ))
+    })
 }
 
 fn verify_hf_provenance_manifest(
@@ -4439,23 +4647,22 @@ fn hf_optional_file_commitment(
 }
 
 fn hf_file_commitment(path: &Path) -> llm_provable_computer::Result<HfFileCommitment> {
-    let (bytes, size_bytes) = read_file_for_hf_commitment(path)?;
+    let (size_bytes, blake2b_256) = hash_hf_commitment_file(path)?;
     Ok(HfFileCommitment {
         path: path.display().to_string(),
         size_bytes,
-        blake2b_256: hash_bytes_hex(&bytes),
+        blake2b_256,
     })
 }
 
 fn hf_safetensors_file_commitment(
     path: &Path,
 ) -> llm_provable_computer::Result<HfSafetensorsFileCommitment> {
-    let (bytes, size_bytes) = read_file_for_hf_commitment(path)?;
-    let (metadata_hash, tensor_count) = hf_safetensors_metadata_commitment(path, &bytes)?;
+    let (size_bytes, blake2b_256, metadata_hash, tensor_count) = inspect_hf_safetensors_file(path)?;
     Ok(HfSafetensorsFileCommitment {
         path: path.display().to_string(),
         size_bytes,
-        blake2b_256: hash_bytes_hex(&bytes),
+        blake2b_256,
         metadata_hash,
         tensor_count,
     })
@@ -4475,7 +4682,7 @@ fn verify_hf_file_commitment(
     label: &str,
     commitment: &HfFileCommitment,
 ) -> llm_provable_computer::Result<()> {
-    let (bytes, size_bytes) = read_file_for_hf_commitment(Path::new(&commitment.path))?;
+    let (size_bytes, blake2b_256) = hash_hf_commitment_file(Path::new(&commitment.path))?;
     if commitment.size_bytes != size_bytes {
         return Err(VmError::InvalidConfig(format!(
             "HF provenance {label} size_bytes mismatch: expected {}, got {}",
@@ -4485,14 +4692,15 @@ fn verify_hf_file_commitment(
     verify_hash_commitment(
         &format!("HF provenance {label} blake2b_256"),
         &commitment.blake2b_256,
-        &hash_bytes_hex(&bytes),
+        &blake2b_256,
     )
 }
 
 fn verify_hf_safetensors_file_commitment(
     commitment: &HfSafetensorsFileCommitment,
 ) -> llm_provable_computer::Result<()> {
-    let (bytes, size_bytes) = read_file_for_hf_commitment(Path::new(&commitment.path))?;
+    let (size_bytes, blake2b_256, metadata_hash, tensor_count) =
+        inspect_hf_safetensors_file(Path::new(&commitment.path))?;
     if commitment.size_bytes != size_bytes {
         return Err(VmError::InvalidConfig(format!(
             "HF provenance safetensors {} size_bytes mismatch: expected {}, got {}",
@@ -4502,10 +4710,8 @@ fn verify_hf_safetensors_file_commitment(
     verify_hash_commitment(
         &format!("HF provenance safetensors {} blake2b_256", commitment.path),
         &commitment.blake2b_256,
-        &hash_bytes_hex(&bytes),
+        &blake2b_256,
     )?;
-    let (metadata_hash, tensor_count) =
-        hf_safetensors_metadata_commitment(Path::new(&commitment.path), &bytes)?;
     verify_hash_commitment(
         &format!(
             "HF provenance safetensors {} metadata_hash",
@@ -4523,35 +4729,87 @@ fn verify_hf_safetensors_file_commitment(
     Ok(())
 }
 
-fn read_file_for_hf_commitment(path: &Path) -> llm_provable_computer::Result<(Vec<u8>, u64)> {
-    let bytes = fs::read(path).map_err(|err| {
+fn hash_hf_commitment_file(path: &Path) -> llm_provable_computer::Result<(u64, String)> {
+    let (mut file, size_bytes) = open_checked_regular_file(path, "HF provenance file", None)?;
+    let mut output = [0u8; 32];
+    let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
+    let mut observed_size = 0u64;
+    let mut remaining = size_bytes;
+    let mut buffer = vec![0u8; HF_PROVENANCE_FILE_READ_CHUNK_BYTES];
+    while remaining > 0 {
+        let chunk_len = remaining.min(buffer.len() as u64) as usize;
+        let read_bytes = file.read(&mut buffer[..chunk_len]).map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to read HF provenance file {}: {err}",
+                path.display()
+            ))
+        })?;
+        if read_bytes == 0 {
+            return Err(VmError::InvalidConfig(format!(
+                "HF provenance file {} ended before the expected {} bytes were read",
+                path.display(),
+                size_bytes
+            )));
+        }
+        observed_size = observed_size
+            .checked_add(read_bytes as u64)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "HF provenance file {} exceeded supported size accounting during read",
+                    path.display()
+                ))
+            })?;
+        remaining -= read_bytes as u64;
+        hasher.update(&buffer[..read_bytes]);
+    }
+    let mut extra_byte = [0u8; 1];
+    if file.read(&mut extra_byte).map_err(|err| {
         VmError::InvalidConfig(format!(
             "failed to read HF provenance file {}: {err}",
             path.display()
         ))
-    })?;
-    let size_bytes = u64::try_from(bytes.len()).map_err(|_| {
-        VmError::InvalidConfig(format!(
-            "HF provenance file {} is too large to commit",
-            path.display()
-        ))
-    })?;
-    Ok((bytes, size_bytes))
+    })? != 0
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance file {} grew while being hashed after {} bytes were expected",
+            path.display(),
+            size_bytes
+        )));
+    }
+    hasher
+        .finalize_variable(&mut output)
+        .expect("blake2b-256 finalization");
+    Ok((
+        size_bytes,
+        output.iter().map(|byte| format!("{byte:02x}")).collect(),
+    ))
 }
 
-fn hf_safetensors_metadata_commitment(
+fn inspect_hf_safetensors_file(
     path: &Path,
-    bytes: &[u8],
-) -> llm_provable_computer::Result<(String, usize)> {
+) -> llm_provable_computer::Result<(u64, String, String, usize)> {
     const MAX_SAFETENSORS_HEADER_BYTES: u64 = 16 * 1024 * 1024;
-    if bytes.len() < 8 {
+
+    let (mut file, size_bytes) = open_checked_regular_file(path, "HF provenance file", None)?;
+    if size_bytes < 8 {
         return Err(VmError::InvalidConfig(format!(
             "HF provenance safetensors {} is shorter than the 8-byte metadata length header",
             path.display()
         )));
     }
+
+    let mut output = [0u8; 32];
+    let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
+
     let mut header_len_bytes = [0u8; 8];
-    header_len_bytes.copy_from_slice(&bytes[..8]);
+    file.read_exact(&mut header_len_bytes).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to read HF provenance file {}: {err}",
+            path.display()
+        ))
+    })?;
+    hasher.update(&header_len_bytes);
+
     let header_len = u64::from_le_bytes(header_len_bytes);
     if header_len > MAX_SAFETENSORS_HEADER_BYTES {
         return Err(VmError::InvalidConfig(format!(
@@ -4560,25 +4818,95 @@ fn hf_safetensors_metadata_commitment(
             header_len
         )));
     }
+    let header_end = 8u64.checked_add(header_len).ok_or_else(|| {
+        VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} metadata header end overflows u64",
+            path.display()
+        ))
+    })?;
+    if size_bytes < header_end {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance safetensors {} metadata header length exceeds file size",
+            path.display()
+        )));
+    }
+
     let header_len = usize::try_from(header_len).map_err(|_| {
         VmError::InvalidConfig(format!(
             "HF provenance safetensors {} metadata header length overflows usize",
             path.display()
         ))
     })?;
-    let header_end = 8usize.checked_add(header_len).ok_or_else(|| {
+    let mut header_bytes = vec![0u8; header_len];
+    file.read_exact(&mut header_bytes).map_err(|err| {
         VmError::InvalidConfig(format!(
-            "HF provenance safetensors {} metadata header end overflows usize",
+            "failed to read HF provenance file {}: {err}",
             path.display()
         ))
     })?;
-    if bytes.len() < header_end {
-        return Err(VmError::InvalidConfig(format!(
-            "HF provenance safetensors {} metadata header length exceeds file size",
+    hasher.update(&header_bytes);
+    let (metadata_hash, tensor_count) =
+        hf_safetensors_metadata_commitment_from_header(path, &header_bytes)?;
+
+    let mut observed_size = header_end;
+    let mut remaining = size_bytes - header_end;
+    let mut buffer = vec![0u8; HF_PROVENANCE_FILE_READ_CHUNK_BYTES];
+    while remaining > 0 {
+        let chunk_len = remaining.min(buffer.len() as u64) as usize;
+        let read_bytes = file.read(&mut buffer[..chunk_len]).map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to read HF provenance file {}: {err}",
+                path.display()
+            ))
+        })?;
+        if read_bytes == 0 {
+            return Err(VmError::InvalidConfig(format!(
+                "HF provenance file {} ended before the expected {} bytes were read",
+                path.display(),
+                size_bytes
+            )));
+        }
+        observed_size = observed_size
+            .checked_add(read_bytes as u64)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "HF provenance file {} exceeded supported size accounting during read",
+                    path.display()
+                ))
+            })?;
+        remaining -= read_bytes as u64;
+        hasher.update(&buffer[..read_bytes]);
+    }
+    let mut extra_byte = [0u8; 1];
+    if file.read(&mut extra_byte).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to read HF provenance file {}: {err}",
             path.display()
+        ))
+    })? != 0
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance file {} grew while being hashed after {} bytes were expected",
+            path.display(),
+            size_bytes
         )));
     }
-    let header_bytes = &bytes[8..header_end];
+
+    hasher
+        .finalize_variable(&mut output)
+        .expect("blake2b-256 finalization");
+    Ok((
+        size_bytes,
+        output.iter().map(|byte| format!("{byte:02x}")).collect(),
+        metadata_hash,
+        tensor_count,
+    ))
+}
+
+fn hf_safetensors_metadata_commitment_from_header(
+    path: &Path,
+    header_bytes: &[u8],
+) -> llm_provable_computer::Result<(String, usize)> {
     let header_json: serde_json::Value = serde_json::from_slice(header_bytes).map_err(|err| {
         VmError::Serialization(format!(
             "failed to parse HF provenance safetensors metadata {}: {err}",
@@ -6585,6 +6913,265 @@ fn write_bytes_atomically(path: &Path, bytes: &[u8]) -> llm_provable_computer::R
         "failed to allocate atomic temp path for {}",
         path.display()
     )))
+}
+
+#[cfg(test)]
+mod hf_provenance_manifest_tests {
+    use super::*;
+
+    fn hf_provenance_test_manifest_file(label: &str) -> tempfile::NamedTempFile {
+        tempfile::Builder::new()
+            .prefix(&format!("hf-provenance-{label}-"))
+            .suffix(".json")
+            .tempfile()
+            .expect("create HF provenance manifest fixture")
+    }
+
+    fn sample_hf_provenance_manifest_value() -> serde_json::Value {
+        serde_json::json!({
+            "manifest_version": HF_PROVENANCE_MANIFEST_VERSION,
+            "semantic_scope": HF_PROVENANCE_SEMANTIC_SCOPE,
+            "hash_function": HF_PROVENANCE_HASH_FUNCTION,
+            "hub_repo": "example/test-model",
+            "hub_revision": "0123456789abcdef",
+            "tokenizer": {
+                "tokenizer_id": "example/test-model",
+                "tokenizer_revision": "0123456789abcdef",
+                "tokenizer_json": null,
+                "tokenizer_config": null,
+                "tokenization_transcript": null
+            },
+            "safetensors": [],
+            "onnx_export": null,
+            "release": {
+                "model_card": null,
+                "doi": null,
+                "datasets": [],
+                "notes": []
+            },
+            "limitations": hf_provenance_limitations(),
+            "commitments": {
+                "tokenizer_hash": "0".repeat(64),
+                "safetensors_manifest_hash": "1".repeat(64),
+                "onnx_export_hash": "2".repeat(64),
+                "release_metadata_hash": "3".repeat(64),
+                "limitations_hash": "4".repeat(64)
+            }
+        })
+    }
+
+    fn write_hf_provenance_test_manifest(path: &Path, value: &serde_json::Value) {
+        let bytes = serde_json::to_vec_pretty(value).expect("serialize HF provenance manifest");
+        fs::write(path, bytes).expect("write HF provenance manifest");
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_unknown_top_level_field() {
+        let file = hf_provenance_test_manifest_file("extra-top");
+        let mut value = sample_hf_provenance_manifest_value();
+        value
+            .as_object_mut()
+            .expect("manifest object")
+            .insert("unexpected_field".to_string(), serde_json::json!(true));
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("unknown top-level field should fail");
+        assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_unknown_nested_onnx_export_field() {
+        let file = hf_provenance_test_manifest_file("extra-onnx");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["onnx_export"] = serde_json::json!({
+            "exporter": "optimum",
+            "exporter_version": "1.0.0",
+            "graph": {
+                "path": "model.onnx",
+                "size_bytes": 16,
+                "blake2b_256": "5".repeat(64)
+            },
+            "unexpected_field": 7
+        });
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("unknown nested ONNX field should fail");
+        assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_reports_malformed_json_as_serialization() {
+        let file = hf_provenance_test_manifest_file("malformed");
+        fs::write(file.path(), b"{").expect("write malformed manifest");
+
+        let err =
+            load_hf_provenance_manifest(file.path()).expect_err("malformed manifest should fail");
+        assert!(matches!(err, VmError::Serialization(_)));
+        assert!(err
+            .to_string()
+            .contains("failed to parse HF provenance manifest"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_oversized_file() {
+        let file = hf_provenance_test_manifest_file("oversized");
+        fs::write(
+            file.path(),
+            vec![b'x'; MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES + 1],
+        )
+        .expect("write oversized HF provenance manifest");
+
+        let err =
+            load_hf_provenance_manifest(file.path()).expect_err("oversized manifest should fail");
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_non_regular_file() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+
+        let err = load_hf_provenance_manifest(dir.path())
+            .expect_err("directory manifest path should fail");
+        assert!(err.to_string().contains("not a regular file"));
+    }
+
+    #[test]
+    fn prepare_hf_provenance_manifest_rejects_oversized_output() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let output = dir.path().join("manifest.json");
+        let model_card = dir.path().join("README.md");
+        fs::write(&model_card, b"model card").expect("write model card");
+
+        let err = prepare_hf_provenance_manifest_command(HfProvenanceManifestCommand {
+            output: output.clone(),
+            hub_repo: "example/test-model".to_string(),
+            hub_revision: "0123456789abcdef".to_string(),
+            tokenizer_id: "example/test-model".to_string(),
+            tokenizer_revision: None,
+            tokenizer_json: None,
+            tokenizer_config: None,
+            tokenization_transcript: None,
+            safetensors_files: Vec::new(),
+            onnx_model: None,
+            onnx_exporter: "optimum-onnx".to_string(),
+            onnx_exporter_version: None,
+            model_card: Some(model_card),
+            doi: None,
+            datasets: Vec::new(),
+            notes: vec!["x".repeat(MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES)],
+        })
+        .expect_err("oversized manifest output should fail");
+
+        assert!(err.to_string().contains("exceeding the limit"));
+        assert!(!output.exists());
+    }
+
+    #[test]
+    fn windows_manifest_identity_requires_volume_serial_number() {
+        let err = require_windows_regular_file_identity(
+            Path::new("manifest.json"),
+            "HF provenance manifest",
+            None,
+            Some(7),
+            "before open",
+        )
+        .expect_err("missing volume serial number should fail");
+
+        assert!(err
+            .to_string()
+            .contains("cannot read volume serial number before open"));
+    }
+
+    #[test]
+    fn windows_manifest_identity_requires_file_index() {
+        let err = require_windows_regular_file_identity(
+            Path::new("manifest.json"),
+            "HF provenance manifest",
+            Some(11),
+            None,
+            "after open",
+        )
+        .expect_err("missing file index should fail");
+
+        assert!(err
+            .to_string()
+            .contains("cannot read file index after open"));
+    }
+
+    #[test]
+    fn verify_hf_provenance_manifest_rejects_non_regular_bound_file() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let bound_dir = dir.path().join("bound-dir");
+        fs::create_dir(&bound_dir).expect("create bound dir");
+
+        let tokenizer = HfTokenizerProvenance {
+            tokenizer_id: "example/test-model".to_string(),
+            tokenizer_revision: "0123456789abcdef".to_string(),
+            tokenizer_json: None,
+            tokenizer_config: None,
+            tokenization_transcript: None,
+        };
+        let safetensors = Vec::new();
+        let onnx_export = None;
+        let release = HfReleaseMetadata {
+            model_card: Some(HfFileCommitment {
+                path: bound_dir.display().to_string(),
+                size_bytes: 0,
+                blake2b_256: "0".repeat(64),
+            }),
+            doi: None,
+            datasets: Vec::new(),
+            notes: Vec::new(),
+        };
+        let limitations = hf_provenance_limitations();
+        let manifest = HfProvenanceManifest {
+            manifest_version: HF_PROVENANCE_MANIFEST_VERSION.to_string(),
+            semantic_scope: HF_PROVENANCE_SEMANTIC_SCOPE.to_string(),
+            hash_function: HF_PROVENANCE_HASH_FUNCTION.to_string(),
+            hub_repo: "example/test-model".to_string(),
+            hub_revision: "0123456789abcdef".to_string(),
+            tokenizer,
+            safetensors,
+            onnx_export,
+            release,
+            limitations,
+            commitments: HfProvenanceCommitments {
+                tokenizer_hash: hash_json_projection_hex(&HfTokenizerProvenance {
+                    tokenizer_id: "example/test-model".to_string(),
+                    tokenizer_revision: "0123456789abcdef".to_string(),
+                    tokenizer_json: None,
+                    tokenizer_config: None,
+                    tokenization_transcript: None,
+                })
+                .expect("tokenizer hash"),
+                safetensors_manifest_hash: hash_json_projection_hex(&Vec::<
+                    HfSafetensorsFileCommitment,
+                >::new())
+                .expect("safetensors hash"),
+                onnx_export_hash: hash_json_projection_hex(&Option::<HfOnnxExportProvenance>::None)
+                    .expect("onnx hash"),
+                release_metadata_hash: hash_json_projection_hex(&HfReleaseMetadata {
+                    model_card: Some(HfFileCommitment {
+                        path: bound_dir.display().to_string(),
+                        size_bytes: 0,
+                        blake2b_256: "0".repeat(64),
+                    }),
+                    doi: None,
+                    datasets: Vec::new(),
+                    notes: Vec::new(),
+                })
+                .expect("release hash"),
+                limitations_hash: hash_json_projection_hex(&hf_provenance_limitations())
+                    .expect("limitations hash"),
+            },
+        };
+
+        let err = verify_hf_provenance_manifest(&manifest)
+            .expect_err("non-regular bound file should fail verification");
+        assert!(err.to_string().contains("not a regular file"));
+    }
 }
 
 #[cfg(all(test, feature = "onnx-export"))]

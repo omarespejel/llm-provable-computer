@@ -58,6 +58,13 @@ fail() {
   exit 1
 }
 
+# shellcheck source=scripts/hardening_test_names.sh
+source "$ROOT_DIR/scripts/hardening_test_names.sh"
+declare -p hardening_tvm_bin_test_filters >/dev/null 2>&1 ||
+  fail "scripts/hardening_test_names.sh must define hardening_tvm_bin_test_filters"
+declare -p hardening_tvm_bin_cargo_args >/dev/null 2>&1 ||
+  fail "scripts/hardening_test_names.sh must define hardening_tvm_bin_cargo_args"
+
 sleep_with_wait_budget() {
   local duration="$1"
   local reason="$2"
@@ -370,6 +377,7 @@ onnx_smoke_targets=(
   "onnx_export::tests::load_onnx_program_metadata_rejects_missing_direct_memory_read_address"
   "onnx_export::tests::load_onnx_program_metadata_maps_runtime_conversion_failures_to_serialization"
 )
+tvm_bin_smoke_targets=("${hardening_tvm_bin_test_filters[@]}")
 research_v3_smoke_targets=(
   "tests::research_v3_rule_witnesses_rejects_event_length_mismatch"
   "tests::load_research_v3_equivalence_artifact_rejects_unknown_top_level_field"
@@ -486,6 +494,17 @@ run_onnx_smoke_targets() {
   done
 }
 
+run_tvm_bin_smoke_targets() {
+  local tvm_bin_smoke label
+  for tvm_bin_smoke in "${tvm_bin_smoke_targets[@]}"; do
+    label="${tvm_bin_smoke##*::}"
+    run_logged "tvm-bin-smoke-${label}" cargo test -q \
+      "${hardening_tvm_bin_cargo_args[@]}" "$tvm_bin_smoke" \
+      -- \
+      --exact
+  done
+}
+
 run_stwo_cli_smoke_targets() {
   local stwo_cli_smoke
   for stwo_cli_smoke in "${stwo_cli_smoke_targets[@]}"; do
@@ -570,6 +589,7 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
     run_onnx_smoke_targets
   fi
   if changed_path_is_research_v3_surface; then
+    run_tvm_bin_smoke_targets
     run_research_v3_smoke_targets
     run_research_v3_cli_smoke_target
   fi
@@ -587,6 +607,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
     run_onnx_smoke_targets
   fi
   if changed_path_is_research_v3_surface; then
+    run_tvm_bin_smoke_targets
     run_research_v3_smoke_targets
     run_research_v3_cli_smoke_target
   fi
@@ -604,6 +625,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
     run_onnx_smoke_targets
   fi
   if changed_path_is_research_v3_surface; then
+    run_tvm_bin_smoke_targets
     run_research_v3_smoke_targets
     run_research_v3_cli_smoke_target
   fi

@@ -30,6 +30,23 @@ hardening_onnx_test_filters=(
   "onnx_export::tests::load_onnx_program_metadata_maps_runtime_conversion_failures_to_serialization"
 )
 
+# Keep the other CLI-facing artifact loaders in the `tvm` binary smoke/UB path.
+# These tests are intentionally run on the default `tvm` surface so the
+# hardened HF provenance loader is exercised even when `onnx-export` is off.
+hardening_tvm_bin_cargo_args=(
+  --bin tvm
+)
+
+hardening_tvm_bin_test_filters=(
+  "hf_provenance_manifest_tests::load_hf_provenance_manifest_rejects_unknown_top_level_field"
+  "hf_provenance_manifest_tests::load_hf_provenance_manifest_rejects_unknown_nested_onnx_export_field"
+  "hf_provenance_manifest_tests::load_hf_provenance_manifest_reports_malformed_json_as_serialization"
+  "hf_provenance_manifest_tests::load_hf_provenance_manifest_rejects_oversized_file"
+  "hf_provenance_manifest_tests::load_hf_provenance_manifest_rejects_non_regular_file"
+  "hf_provenance_manifest_tests::prepare_hf_provenance_manifest_rejects_oversized_output"
+  "hf_provenance_manifest_tests::verify_hf_provenance_manifest_rejects_non_regular_bound_file"
+)
+
 # Keep the `research-v3` equivalence artifact loader and witness checks on the
 # smoke/UB path. These live in the `tvm` binary test harness rather than the
 # library test harness because the strict loader is part of the CLI-facing
