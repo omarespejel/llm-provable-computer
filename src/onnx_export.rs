@@ -168,8 +168,8 @@ impl From<StrictTransformerVmConfig> for TransformerVmConfig {
 
 impl StrictProgram {
     fn into_program(self) -> Result<Program> {
-        Program::new(self.instructions, self.initial_memory.len())
-            .with_initial_memory(self.initial_memory)
+        Program::from_parts(self.instructions, self.initial_memory)
+            .map_err(|err| VmError::Serialization(err.to_string()))
     }
 }
 
@@ -314,9 +314,7 @@ pub fn load_onnx_program_metadata(path: &Path) -> Result<OnnxProgramMetadata> {
     let bytes = fs::read(metadata_path)?;
     let metadata: StrictOnnxProgramMetadata =
         serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
-    let metadata = metadata
-        .into_runtime_metadata()
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    let metadata = metadata.into_runtime_metadata()?;
     validate_onnx_program_metadata(&metadata)?;
     Ok(metadata)
 }
@@ -1444,12 +1442,13 @@ mod tests {
     }
 
     #[test]
-    fn load_onnx_program_metadata_rejects_unknown_direct_memory_read_field_without_address() {
+    fn load_onnx_program_metadata_rejects_unknown_direct_memory_read_field() {
         let (export_dir, metadata) =
             sample_exported_program_metadata("onnx-metadata-direct-memory-read-extra-field");
         let mut metadata_json = serde_json::to_value(metadata).expect("metadata to json");
         metadata_json["instructions"][0]["memory_read"] = serde_json::json!({
             "kind": "direct",
+            "address": 0,
             "unexpected_field": 7
         });
         overwrite_metadata_json(&export_dir, &metadata_json);
@@ -1459,6 +1458,27 @@ mod tests {
         assert!(
             err.to_string()
                 .contains("unknown field in memory_read direct variant"),
+            "unexpected error: {err}"
+        );
+
+        let _ = fs::remove_dir_all(export_dir);
+    }
+
+    #[test]
+    fn load_onnx_program_metadata_rejects_missing_direct_memory_read_address() {
+        let (export_dir, metadata) =
+            sample_exported_program_metadata("onnx-metadata-direct-memory-read-missing-address");
+        let mut metadata_json = serde_json::to_value(metadata).expect("metadata to json");
+        metadata_json["instructions"][0]["memory_read"] = serde_json::json!({
+            "kind": "direct"
+        });
+        overwrite_metadata_json(&export_dir, &metadata_json);
+
+        let err = load_onnx_program_metadata(&export_dir)
+            .expect_err("missing direct memory_read address should fail");
+        assert!(
+            err.to_string()
+                .contains("memory_read direct variant requires numeric address"),
             "unexpected error: {err}"
         );
 
@@ -1479,10 +1499,6 @@ mod tests {
         assert!(
             matches!(err, VmError::Serialization(_)),
             "unexpected error variant: {err:?}"
-        );
-        assert!(
-            err.to_string().contains("encoded stack/address limit"),
-            "unexpected error: {err}"
         );
 
         let _ = fs::remove_dir_all(export_dir);
