@@ -5172,7 +5172,7 @@ fn expect_eq(label: &str, actual: &str, expected: &str) -> llm_provable_computer
 fn expect_hash_hex(label: &str, value: &str) -> llm_provable_computer::Result<()> {
     if value.len() != 64 || !value.bytes().all(|byte| byte.is_ascii_hexdigit()) {
         return Err(VmError::InvalidConfig(format!(
-            "{label} must be a 64-character hex Blake2b-256 hash"
+            "{label} must be a 64-character hex hash"
         )));
     }
     Ok(())

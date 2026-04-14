@@ -2,9 +2,7 @@ use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use assert_cmd::Command;
-#[cfg(any(feature = "onnx-export", feature = "stwo-backend"))]
 use blake2::digest::{Update, VariableOutput};
-#[cfg(any(feature = "onnx-export", feature = "stwo-backend"))]
 use blake2::Blake2bVar;
 #[cfg(feature = "stwo-backend")]
 use flate2::GzBuilder;
@@ -228,11 +226,6 @@ fn read_repo_file(relative_path: &str) -> Vec<u8> {
     std::fs::read(path).expect("repo file")
 }
 
-#[cfg(any(feature = "onnx-export", feature = "stwo-backend"))]
-#[cfg_attr(
-    all(feature = "stwo-backend", not(feature = "onnx-export")),
-    allow(dead_code)
-)]
 fn blake2b_256_hex(bytes: &[u8]) -> String {
     let mut output = [0u8; 32];
     let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
@@ -524,7 +517,6 @@ fn assert_research_v2_spec_commitments(
     );
 }
 
-#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 fn hash_json_value(value: &serde_json::Value) -> String {
     blake2b_256_hex(&serde_json::to_vec(value).expect("json hash payload"))
 }
@@ -4974,6 +4966,64 @@ fn cli_verifier_rejects_hf_manifest_sha256_tamper() {
         .stderr(predicate::str::contains(
             "tokenizer_json sha256 commitment mismatch",
         ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
+fn cli_verifier_rejects_hf_manifest_safetensors_sha256_tamper() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-safetensors-sha256-tamper");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let safetensors = fixture_dir.join("model.safetensors");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    let safetensors_header = br#"{"weight":{"dtype":"F32","shape":[1],"data_offsets":[0,4]},"__metadata__":{"format":"pt"}}"#;
+    let mut safetensors_bytes = Vec::new();
+    safetensors_bytes.extend_from_slice(&(safetensors_header.len() as u64).to_le_bytes());
+    safetensors_bytes.extend_from_slice(safetensors_header);
+    safetensors_bytes.extend_from_slice(&[0, 0, 0, 0]);
+    std::fs::write(&safetensors, safetensors_bytes).expect("write safetensors fixture");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--safetensors")
+        .arg(&safetensors)
+        .assert()
+        .success();
+
+    let mut manifest_json: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).expect("manifest bytes"))
+            .expect("manifest json");
+    manifest_json["safetensors"][0]["sha256"] = serde_json::json!("0".repeat(64));
+    manifest_json["commitments"]["safetensors_manifest_hash"] =
+        serde_json::Value::String(hash_json_value(
+            manifest_json
+                .get("safetensors")
+                .expect("safetensors section after sha256 tamper"),
+        ));
+    std::fs::write(
+        &manifest,
+        serde_json::to_vec_pretty(&manifest_json).expect("serialize tampered manifest"),
+    )
+    .expect("write tampered manifest");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("HF provenance safetensors"))
+        .stderr(predicate::str::contains("sha256 commitment mismatch"));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
 }
