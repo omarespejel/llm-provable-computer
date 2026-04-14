@@ -349,6 +349,8 @@ local_evidence_marker="$run_evidence_dir/local-evidence.json"
 completed_local_mode=""
 stwo_smoke_targets=(
   "stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks"
+  "stwo_backend::decoding::tests::phase30_step_envelope_manifest_rejects_tampered_start_boundary"
+  "stwo_backend::decoding::tests::phase30_step_envelope_manifest_rejects_step_index_drift"
   "stwo_backend::recursion::tests::phase29_recursive_compression_input_contract_rejects_tampered_commitment"
 )
 stwo_cli_smoke_targets=(
