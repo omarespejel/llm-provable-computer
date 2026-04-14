@@ -631,10 +631,10 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
   run_logged cargo-fmt-check cargo fmt --check
   run_conditional_quick_audits
-  run_logged cargo-lib-tests cargo test -q --lib
+  run_logged cargo-lib-tests env RUST_TEST_THREADS=1 cargo test -q --lib
   run_logged cargo-build-tvm cargo build -q --bin tvm
   tvm_test_binary="$(resolve_tvm_test_binary_path)"
-  run_logged cargo-lib-and-integration-tests env TVM_TEST_BINARY="$tvm_test_binary" cargo test -q --lib --tests
+  run_logged cargo-lib-and-integration-tests env RUST_TEST_THREADS=1 TVM_TEST_BINARY="$tvm_test_binary" cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
   if changed_path_is_onnx_surface; then
     run_onnx_smoke_targets
@@ -651,10 +651,10 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
   run_logged cargo-fmt-check cargo fmt --check
   run_conditional_quick_audits
-  run_logged cargo-lib-tests cargo test -q --lib
+  run_logged cargo-lib-tests env RUST_TEST_THREADS=1 cargo test -q --lib
   run_logged cargo-build-tvm cargo build -q --bin tvm
   tvm_test_binary="$(resolve_tvm_test_binary_path)"
-  run_logged cargo-lib-and-integration-tests env TVM_TEST_BINARY="$tvm_test_binary" cargo test -q --lib --tests
+  run_logged cargo-lib-and-integration-tests env RUST_TEST_THREADS=1 TVM_TEST_BINARY="$tvm_test_binary" cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
   if changed_path_is_onnx_surface; then
     run_onnx_smoke_targets
