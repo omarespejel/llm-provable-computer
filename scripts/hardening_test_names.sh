@@ -41,6 +41,8 @@ hardening_research_v3_test_filters=(
   "tests::load_research_v3_equivalence_artifact_rejects_oversized_file"
   "tests::load_research_v3_equivalence_artifact_reports_malformed_json_as_serialization"
   "tests::load_research_v3_equivalence_artifact_rejects_non_regular_file"
+  "tests::verify_research_v3_equivalence_artifact_rejects_unknown_engine_binding"
+  "tests::verify_research_v3_equivalence_artifact_rejects_missing_pinned_engine"
 )
 
 # Keep the heavier `stwo-backend` verifier gates on the sanitizer path. They are

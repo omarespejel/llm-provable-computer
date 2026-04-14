@@ -5162,6 +5162,10 @@ fn cli_supports_research_v3_equivalence_command() {
         unique_temp_dir("cli-research-v3-equivalence-trace-hash").with_extension("json");
     let canonical_event_path =
         unique_temp_dir("cli-research-v3-equivalence-canonical-event").with_extension("json");
+    let unexpected_engine_path =
+        unique_temp_dir("cli-research-v3-equivalence-unexpected-engine").with_extension("json");
+    let missing_engine_path =
+        unique_temp_dir("cli-research-v3-equivalence-missing-engine").with_extension("json");
     let mut command = tvm_command();
     command
         .arg("research-v3-equivalence")
@@ -5489,6 +5493,113 @@ fn cli_supports_research_v3_equivalence_command() {
             "canonical event 1 state_after_hash commitment mismatch",
         ));
 
+    let mut unexpected_engine = artifact_json.clone();
+    unexpected_engine["engines"][3]["name"] =
+        serde_json::Value::String("experimental-onnx".to_string());
+    for witness in unexpected_engine["rule_witnesses"]
+        .as_array_mut()
+        .expect("rule_witnesses")
+    {
+        let participating_engines = witness["participating_engines"]
+            .as_array_mut()
+            .expect("participating engines");
+        for engine_name in participating_engines {
+            if engine_name.as_str() == Some("onnx/tract") {
+                *engine_name = serde_json::Value::String("experimental-onnx".to_string());
+            }
+        }
+        for object_key in [
+            "state_before_hashes",
+            "state_after_hashes",
+            "engine_transition_hashes",
+        ] {
+            let hashes = witness[object_key]
+                .as_object_mut()
+                .expect("witness hash object");
+            let value = hashes
+                .remove("onnx/tract")
+                .expect("onnx/tract witness hash entry");
+            hashes.insert("experimental-onnx".to_string(), value);
+        }
+    }
+    unexpected_engine["commitments"]["engine_summaries_hash"] =
+        serde_json::Value::String(hash_json_value(
+            unexpected_engine
+                .get("engines")
+                .expect("unexpected engines"),
+        ));
+    unexpected_engine["commitments"]["rule_witnesses_hash"] =
+        serde_json::Value::String(hash_json_value(
+            unexpected_engine
+                .get("rule_witnesses")
+                .expect("unexpected rule witnesses"),
+        ));
+    std::fs::write(
+        &unexpected_engine_path,
+        serde_json::to_vec(&unexpected_engine).expect("unexpected engine artifact json"),
+    )
+    .expect("write unexpected engine artifact");
+    let mut verify_unexpected_engine = tvm_command();
+    verify_unexpected_engine
+        .arg("verify-research-v3-equivalence")
+        .arg(&unexpected_engine_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "is not bound to a pinned implemented lane",
+        ));
+
+    let mut missing_engine = artifact_json.clone();
+    missing_engine
+        .get_mut("engines")
+        .and_then(serde_json::Value::as_array_mut)
+        .expect("engines")
+        .retain(|engine| {
+            engine.get("name").and_then(serde_json::Value::as_str) != Some("onnx/tract")
+        });
+    for witness in missing_engine["rule_witnesses"]
+        .as_array_mut()
+        .expect("rule_witnesses")
+    {
+        witness["participating_engines"]
+            .as_array_mut()
+            .expect("participating engines")
+            .retain(|engine_name| engine_name.as_str() != Some("onnx/tract"));
+        for object_key in [
+            "state_before_hashes",
+            "state_after_hashes",
+            "engine_transition_hashes",
+        ] {
+            witness[object_key]
+                .as_object_mut()
+                .expect("witness hash object")
+                .remove("onnx/tract");
+        }
+    }
+    missing_engine["commitments"]["engine_summaries_hash"] = serde_json::Value::String(
+        hash_json_value(missing_engine.get("engines").expect("missing engines")),
+    );
+    missing_engine["commitments"]["rule_witnesses_hash"] =
+        serde_json::Value::String(hash_json_value(
+            missing_engine
+                .get("rule_witnesses")
+                .expect("missing rule witnesses"),
+        ));
+    std::fs::write(
+        &missing_engine_path,
+        serde_json::to_vec(&missing_engine).expect("missing engine artifact json"),
+    )
+    .expect("write missing engine artifact");
+    let mut verify_missing_engine = tvm_command();
+    verify_missing_engine
+        .arg("verify-research-v3-equivalence")
+        .arg(&missing_engine_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "engine set does not match the pinned artifact boundary",
+        ));
+
     let mut malformed_hash = artifact_json.clone();
     malformed_hash["commitments"]["relation_format_hash"] =
         serde_json::Value::String("not-a-blake2b-hash".to_string());
@@ -5522,6 +5633,8 @@ fn cli_supports_research_v3_equivalence_command() {
     let _ = std::fs::remove_file(state_mismatch_path);
     let _ = std::fs::remove_file(trace_hash_path);
     let _ = std::fs::remove_file(canonical_event_path);
+    let _ = std::fs::remove_file(unexpected_engine_path);
+    let _ = std::fs::remove_file(missing_engine_path);
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
