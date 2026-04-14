@@ -362,6 +362,9 @@ onnx_smoke_targets=(
   "onnx_export::tests::load_onnx_program_metadata_rejects_output_contract_drift"
   "onnx_export::tests::load_onnx_program_metadata_rejects_instruction_table_instruction_drift"
   "onnx_export::tests::load_onnx_program_metadata_rejects_model_path_escape"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_top_level_field"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_config_field"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_program_field"
 )
 stwo_cli_smoke_targets=(
   "cli_can_verify_stwo_recursive_compression_input_contract"
@@ -395,6 +398,9 @@ changed_path_is_shell_script() {
 
 changed_path_is_onnx_surface() {
   changed_path_has_prefix "src/onnx_" ||
+    changed_path_has_prefix "src/config.rs" ||
+    changed_path_has_prefix "src/instruction.rs" ||
+    changed_path_has_prefix "src/model.rs" ||
     changed_path_has_prefix "tests/onnx_export.rs" ||
     changed_path_has_prefix "spec/onnx"
 }

@@ -53,6 +53,7 @@ impl FromStr for Attention2DMode {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TransformerVmConfig {
     pub d_model: usize,
     pub num_heads: usize,

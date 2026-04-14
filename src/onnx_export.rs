@@ -43,12 +43,14 @@ pub enum OnnxInstructionRead {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct OnnxInputLayoutEntry {
     pub index: usize,
     pub name: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct OnnxInstructionMetadata {
     pub pc: u8,
     pub layer_idx: usize,
@@ -58,6 +60,7 @@ pub struct OnnxInstructionMetadata {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct OnnxProgramMetadata {
     pub format_version: u32,
     pub ir_version: i64,
@@ -969,6 +972,11 @@ mod tests {
         fs::write(metadata_path(export_dir), bytes).expect("write metadata");
     }
 
+    fn overwrite_metadata_json(export_dir: &Path, metadata: &serde_json::Value) {
+        let bytes = serde_json::to_vec_pretty(metadata).expect("serialize metadata json");
+        fs::write(metadata_path(export_dir), bytes).expect("write metadata");
+    }
+
     fn load_plan(path: &Path) -> Arc<TypedRunnableModel> {
         tract_onnx::onnx()
             .model_for_path(path)
@@ -1172,6 +1180,65 @@ mod tests {
             load_onnx_program_metadata(&export_dir).expect_err("path escape should fail to load");
         assert!(
             err.to_string().contains("model_file"),
+            "unexpected error: {err}"
+        );
+
+        let _ = fs::remove_dir_all(export_dir);
+    }
+
+    #[test]
+    fn load_onnx_program_metadata_rejects_unknown_top_level_field() {
+        let (export_dir, metadata) = sample_exported_program_metadata("onnx-metadata-extra-top");
+        let mut metadata_json = serde_json::to_value(metadata).expect("metadata to json");
+        metadata_json
+            .as_object_mut()
+            .expect("metadata object")
+            .insert(
+                "unexpected_field".to_string(),
+                serde_json::Value::Bool(true),
+            );
+        overwrite_metadata_json(&export_dir, &metadata_json);
+
+        let err = load_onnx_program_metadata(&export_dir)
+            .expect_err("unknown top-level metadata field should fail");
+        assert!(
+            err.to_string().contains("unknown field"),
+            "unexpected error: {err}"
+        );
+
+        let _ = fs::remove_dir_all(export_dir);
+    }
+
+    #[test]
+    fn load_onnx_program_metadata_rejects_unknown_nested_config_field() {
+        let (export_dir, metadata) =
+            sample_exported_program_metadata("onnx-metadata-extra-config-field");
+        let mut metadata_json = serde_json::to_value(metadata).expect("metadata to json");
+        metadata_json["config"]["unexpected_field"] = serde_json::json!(7);
+        overwrite_metadata_json(&export_dir, &metadata_json);
+
+        let err = load_onnx_program_metadata(&export_dir)
+            .expect_err("unknown nested config field should fail");
+        assert!(
+            err.to_string().contains("unknown field"),
+            "unexpected error: {err}"
+        );
+
+        let _ = fs::remove_dir_all(export_dir);
+    }
+
+    #[test]
+    fn load_onnx_program_metadata_rejects_unknown_nested_program_field() {
+        let (export_dir, metadata) =
+            sample_exported_program_metadata("onnx-metadata-extra-program-field");
+        let mut metadata_json = serde_json::to_value(metadata).expect("metadata to json");
+        metadata_json["program"]["unexpected_field"] = serde_json::json!(7);
+        overwrite_metadata_json(&export_dir, &metadata_json);
+
+        let err = load_onnx_program_metadata(&export_dir)
+            .expect_err("unknown nested program field should fail");
+        assert!(
+            err.to_string().contains("unknown field"),
             "unexpected error: {err}"
         );
 

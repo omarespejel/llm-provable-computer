@@ -21,6 +21,9 @@ hardening_onnx_test_filters=(
   "onnx_export::tests::load_onnx_program_metadata_rejects_output_contract_drift"
   "onnx_export::tests::load_onnx_program_metadata_rejects_instruction_table_instruction_drift"
   "onnx_export::tests::load_onnx_program_metadata_rejects_model_path_escape"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_top_level_field"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_config_field"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_program_field"
 )
 
 # Keep the heavier `stwo-backend` verifier gates on the sanitizer path. They are

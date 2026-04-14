@@ -103,6 +103,7 @@ impl fmt::Display for Instruction {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Program {
     instructions: Vec<Instruction>,
     initial_memory: Vec<i16>,
