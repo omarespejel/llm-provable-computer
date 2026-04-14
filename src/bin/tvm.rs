@@ -863,7 +863,7 @@ const RESEARCH_V2_HASH_FUNCTION: &str = "blake2b-256";
 const RESEARCH_V3_RELATION_FORMAT: &str = "multi-engine-trace-relation-v1-no-egraph-no-smt";
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 const MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES: usize = 32 * 1024 * 1024;
-#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+#[cfg(feature = "onnx-export")]
 const RESEARCH_V3_PINNED_ENGINE_LANE_BINDINGS: [(&str, &str); 4] = [
     ("transformer", "transformer-vm"),
     ("native", "native-isa"),
