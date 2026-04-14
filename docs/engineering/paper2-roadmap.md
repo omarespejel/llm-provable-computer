@@ -1,16 +1,18 @@
 # Paper 2 Engineering Roadmap
 
-This note turns the second-paper draft boundary into concrete implementation
-work.
+This note maps the current bounded paper-2 scope into concrete implementation
+sequencing and hardening work.
 
-The target paper claim is:
+## Roadmap scope
+
+Implementation goals this roadmap supports:
 
 - proof-carrying decode surfaces,
 - carried-state validity,
 - statement-preserving pre-recursive aggregation boundaries.
 
-The roadmap below is intentionally scoped to that claim. It does not assume that
-recursive compression is already available.
+The roadmap below is intentionally scoped to those verifier boundaries and does
+not assume that recursive compression is already available.
 
 ## Current status
 
@@ -39,7 +41,8 @@ Focus on:
 - HF provenance manifest verification.
 
 This work remains highest leverage because the paper’s main claim is about
-public statement stability at those boundaries.
+these verifier boundaries define the repository’s current reproducibility and
+statement-stability envelope.
 
 ### 2. Extend provenance binding toward attestation-friendly release metadata
 
@@ -79,6 +82,13 @@ That means the next recursive milestone should be phrased as:
 not:
 
 - a new statement surface invented by the recursive layer itself.
+
+## Claim boundary reminder
+
+The associated paper draft phrases the bounded publication claim as
+proof-carrying decode surfaces, carried-state validity, and
+statement-preserving pre-recursive aggregation boundaries. This engineering note
+exists to sequence the implementation work that keeps those boundaries honest.
 
 ## Practical next step
 

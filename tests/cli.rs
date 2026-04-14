@@ -4938,6 +4938,72 @@ fn cli_can_prepare_and_verify_hf_provenance_manifest() {
     let _ = std::fs::remove_dir_all(fixture_dir);
 }
 
+#[test]
+fn cli_rejects_hf_provenance_manifest_when_onnx_metadata_reuses_graph_path() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-duplicate-metadata");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let onnx_model = fixture_dir.join("model.onnx");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(&onnx_model, b"fake-onnx-graph").expect("write ONNX fixture");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--onnx-model")
+        .arg(&onnx_model)
+        .arg("--onnx-metadata")
+        .arg(&onnx_model)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "onnx_export.metadata reuses ONNX artifact path",
+        ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
+fn cli_rejects_hf_provenance_manifest_when_onnx_external_data_reuses_graph_path() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-duplicate-external-data");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let onnx_model = fixture_dir.join("model.onnx");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(&onnx_model, b"fake-onnx-graph").expect("write ONNX fixture");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--onnx-model")
+        .arg(&onnx_model)
+        .arg("--onnx-external-data")
+        .arg(&onnx_model)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "onnx_export.external_data_files[] reuses ONNX artifact path",
+        ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
 #[cfg(feature = "onnx-export")]
 #[test]
 fn cli_supports_export_onnx_command() {

@@ -45,7 +45,7 @@ ______________________________________________________________________
 There is a persistent failure mode in zkML systems writing: artifacts are often
 described in language that sounds stronger than the actual verified statement.
 This is especially easy once a repository accumulates chains, bundles, rollups,
-aggregation objects, semantic-equivalence artifacts, and provenance manifests.
+aggregation objects, semantic-agreement artifacts, and provenance manifests.
 Without a precise statement boundary, those objects can be mistaken for
 recursive proof-carrying data, compressed recursive verification, or even
 general implementation-equivalence proofs.
