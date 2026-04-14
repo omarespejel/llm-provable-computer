@@ -132,7 +132,106 @@ pub fn load_onnx_program_metadata(path: &Path) -> Result<OnnxProgramMetadata> {
         path.to_path_buf()
     };
     let bytes = fs::read(metadata_path)?;
-    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+    let metadata: OnnxProgramMetadata =
+        serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
+    validate_onnx_program_metadata(&metadata)?;
+    Ok(metadata)
+}
+
+fn validate_onnx_program_metadata(metadata: &OnnxProgramMetadata) -> Result<()> {
+    if metadata.format_version != FORMAT_VERSION {
+        return Err(VmError::InvalidConfig(format!(
+            "ONNX metadata format_version {} does not match expected {}",
+            metadata.format_version, FORMAT_VERSION
+        )));
+    }
+    if metadata.ir_version != ONNX_IR_VERSION {
+        return Err(VmError::InvalidConfig(format!(
+            "ONNX metadata ir_version {} does not match expected {}",
+            metadata.ir_version, ONNX_IR_VERSION
+        )));
+    }
+    if metadata.opset_version != ONNX_OPSET_VERSION {
+        return Err(VmError::InvalidConfig(format!(
+            "ONNX metadata opset_version {} does not match expected {}",
+            metadata.opset_version, ONNX_OPSET_VERSION
+        )));
+    }
+    if metadata.input_dim != INPUT_DIM {
+        return Err(VmError::InvalidConfig(format!(
+            "ONNX metadata input_dim {} does not match expected {}",
+            metadata.input_dim, INPUT_DIM
+        )));
+    }
+    if metadata.output_dim != ONNX_OUTPUT_DIM {
+        return Err(VmError::InvalidConfig(format!(
+            "ONNX metadata output_dim {} does not match expected {}",
+            metadata.output_dim, ONNX_OUTPUT_DIM
+        )));
+    }
+    if metadata.input_encoding != "machine_input_v1" {
+        return Err(VmError::InvalidConfig(format!(
+            "ONNX metadata input_encoding {} does not match machine_input_v1",
+            metadata.input_encoding
+        )));
+    }
+    if metadata.output_encoding != "transition_with_flags_v1" {
+        return Err(VmError::InvalidConfig(format!(
+            "ONNX metadata output_encoding {} does not match transition_with_flags_v1",
+            metadata.output_encoding
+        )));
+    }
+    if metadata.input_layout != input_layout() {
+        return Err(VmError::InvalidConfig(
+            "ONNX metadata input_layout does not match the machine_input_v1 contract".to_string(),
+        ));
+    }
+    if metadata.output_layout != output_layout() {
+        return Err(VmError::InvalidConfig(
+            "ONNX metadata output_layout does not match the transition_with_flags_v1 contract"
+                .to_string(),
+        ));
+    }
+    if metadata.instructions.len() != metadata.program.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "ONNX metadata instruction table length {} does not match program length {}",
+            metadata.instructions.len(),
+            metadata.program.len()
+        )));
+    }
+
+    for (index, instruction) in metadata.instructions.iter().enumerate() {
+        let expected_pc = u8::try_from(index).map_err(|_| {
+            VmError::InvalidConfig(format!(
+                "ONNX metadata instruction table exceeds u8 pc space at index {}",
+                index
+            ))
+        })?;
+        if instruction.pc != expected_pc {
+            return Err(VmError::InvalidConfig(format!(
+                "ONNX metadata instruction table is misaligned at index {}: found pc {}",
+                index, instruction.pc
+            )));
+        }
+
+        let expected_instruction = metadata.program.instruction_at(expected_pc)?;
+        if instruction.instruction != expected_instruction {
+            return Err(VmError::InvalidConfig(format!(
+                "ONNX metadata instruction table does not match embedded program at pc {}",
+                expected_pc
+            )));
+        }
+
+        let expected_model_file = instruction_model_file(index);
+        if instruction.model_file != expected_model_file {
+            return Err(VmError::InvalidConfig(format!(
+                "ONNX metadata model_file {} does not match expected {} for pc {}",
+                instruction.model_file, expected_model_file, expected_pc
+            )));
+        }
+    }
+
+    Ok(())
 }
 
 pub(crate) fn export_compiled_instruction_onnx(
@@ -806,6 +905,7 @@ mod tests {
     };
 
     use super::*;
+    use crate::compiler::ProgramCompiler;
     use crate::config::TransformerVmConfig;
     use crate::memory::AddressedMemory;
     use crate::model::{
@@ -852,6 +952,21 @@ mod tests {
             Instruction::JumpIfNotZero(6),
             Instruction::Halt,
         ]
+    }
+
+    fn sample_exported_program_metadata(name: &str) -> (PathBuf, OnnxProgramMetadata) {
+        let source = fs::read_to_string("programs/addition.tvm").expect("fixture");
+        let model = ProgramCompiler
+            .compile_source(&source, TransformerVmConfig::default())
+            .expect("compile model");
+        let export_dir = unique_temp_dir(name);
+        let metadata = export_program_onnx(&model, &export_dir).expect("export program");
+        (export_dir, metadata)
+    }
+
+    fn overwrite_metadata(export_dir: &Path, metadata: &OnnxProgramMetadata) {
+        let bytes = serde_json::to_vec_pretty(metadata).expect("serialize metadata");
+        fs::write(metadata_path(export_dir), bytes).expect("write metadata");
     }
 
     fn load_plan(path: &Path) -> Arc<TypedRunnableModel> {
@@ -971,5 +1086,78 @@ mod tests {
         }
 
         let _ = fs::remove_dir_all(temp_dir);
+    }
+
+    #[test]
+    fn load_onnx_program_metadata_rejects_wrong_format_version() {
+        let (export_dir, mut metadata) = sample_exported_program_metadata("onnx-metadata-format");
+        metadata.format_version = metadata.format_version.saturating_add(1);
+        overwrite_metadata(&export_dir, &metadata);
+
+        let err = load_onnx_program_metadata(&export_dir)
+            .expect_err("wrong metadata format version should fail");
+        assert!(
+            err.to_string().contains("format_version"),
+            "unexpected error: {err}"
+        );
+
+        let _ = fs::remove_dir_all(export_dir);
+    }
+
+    #[test]
+    fn load_onnx_program_metadata_rejects_input_contract_drift() {
+        let (export_dir, mut metadata) =
+            sample_exported_program_metadata("onnx-metadata-input-contract");
+        metadata.input_layout[0].name = "tampered-input".to_string();
+        overwrite_metadata(&export_dir, &metadata);
+
+        let err =
+            load_onnx_program_metadata(&export_dir).expect_err("input contract drift should fail");
+        assert!(
+            err.to_string().contains("input_layout"),
+            "unexpected error: {err}"
+        );
+
+        let _ = fs::remove_dir_all(export_dir);
+    }
+
+    #[test]
+    fn load_onnx_program_metadata_rejects_instruction_table_instruction_drift() {
+        let (export_dir, mut metadata) =
+            sample_exported_program_metadata("onnx-metadata-instruction-drift");
+        let original = metadata.instructions[0].instruction;
+        metadata.instructions[0].instruction = if original == Instruction::Halt {
+            Instruction::Nop
+        } else {
+            Instruction::Halt
+        };
+        overwrite_metadata(&export_dir, &metadata);
+
+        let err = load_onnx_program_metadata(&export_dir)
+            .expect_err("instruction-table drift should fail");
+        assert!(
+            err.to_string()
+                .contains("instruction table does not match embedded program"),
+            "unexpected error: {err}"
+        );
+
+        let _ = fs::remove_dir_all(export_dir);
+    }
+
+    #[test]
+    fn load_onnx_program_metadata_rejects_model_path_escape() {
+        let (export_dir, mut metadata) =
+            sample_exported_program_metadata("onnx-metadata-model-path");
+        metadata.instructions[0].model_file = "../escape.onnx".to_string();
+        overwrite_metadata(&export_dir, &metadata);
+
+        let err =
+            load_onnx_program_metadata(&export_dir).expect_err("path escape should fail to load");
+        assert!(
+            err.to_string().contains("model_file"),
+            "unexpected error: {err}"
+        );
+
+        let _ = fs::remove_dir_all(export_dir);
     }
 }

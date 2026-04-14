@@ -356,6 +356,11 @@ stwo_smoke_targets=(
   "stwo_backend::decoding::tests::phase30_step_envelope_manifest_rejects_step_index_drift"
   "stwo_backend::recursion::tests::phase29_recursive_compression_input_contract_rejects_tampered_commitment"
 )
+onnx_smoke_targets=(
+  "onnx_export::tests::load_onnx_program_metadata_rejects_wrong_format_version"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_instruction_table_instruction_drift"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_model_path_escape"
+)
 stwo_cli_smoke_targets=(
   "cli_can_verify_stwo_recursive_compression_input_contract"
   "cli_verify_stwo_recursive_compression_input_contract_rejects_tampered_commitment"
@@ -384,6 +389,12 @@ changed_path_is_shell_script() {
     fi
   done
   return 1
+}
+
+changed_path_is_onnx_surface() {
+  changed_path_has_prefix "src/onnx_" ||
+    changed_path_has_prefix "tests/onnx_export.rs" ||
+    changed_path_has_prefix "spec/onnx"
 }
 
 changed_path_is_dependency_audit_input() {
@@ -423,6 +434,18 @@ run_stwo_smoke_targets() {
     run_logged "stwo-backend-smoke-${label}" cargo +nightly-2025-07-14 test -q \
       --features stwo-backend \
       --lib "$stwo_smoke" \
+      -- \
+      --exact
+  done
+}
+
+run_onnx_smoke_targets() {
+  local onnx_smoke label
+  for onnx_smoke in "${onnx_smoke_targets[@]}"; do
+    label="${onnx_smoke##*::}"
+    run_logged "onnx-smoke-${label}" cargo test -q \
+      --features onnx-export \
+      --lib "$onnx_smoke" \
       -- \
       --exact
   done
@@ -495,6 +518,9 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   for test_target in "${smoke_targets[@]}"; do
     run_logged "integration-${test_target}" cargo test -q --test "$test_target"
   done
+  if changed_path_is_onnx_surface; then
+    run_onnx_smoke_targets
+  fi
   run_stwo_smoke_targets
   run_stwo_cli_smoke_targets
   completed_local_mode="$RUN_MODE"
@@ -505,6 +531,9 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_logged cargo-lib-tests cargo test -q --lib
   run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
+  if changed_path_is_onnx_surface; then
+    run_onnx_smoke_targets
+  fi
   run_stwo_smoke_targets
   run_stwo_cli_smoke_targets
   run_research_v3_smoke_targets
@@ -516,6 +545,9 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged cargo-lib-tests cargo test -q --lib
   run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
+  if changed_path_is_onnx_surface; then
+    run_onnx_smoke_targets
+  fi
   run_stwo_smoke_targets
   run_stwo_cli_smoke_targets
   run_research_v3_smoke_targets
