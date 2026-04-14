@@ -6988,11 +6988,7 @@ mod tests {
         for engine in &mut artifact.engines {
             let next_step = engine.canonical_events.len() + 1;
             let final_state_hash = hash_json_hex(&engine.final_state).expect("final state hash");
-            let instruction = engine
-                .canonical_events
-                .last()
-                .map(|event| event.instruction.clone())
-                .unwrap_or_else(|| "NOP".to_string());
+            let instruction = "NOP".to_string();
             engine.trace.push(engine.final_state.clone());
             engine.canonical_events.push(ResearchV3CanonicalEvent {
                 step: next_step,
@@ -7121,14 +7117,17 @@ mod tests {
     #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
     fn verify_research_v3_equivalence_artifact_rejects_extra_engine_events_beyond_checked_steps() {
         let mut artifact = sample_research_v3_equivalence_artifact();
+        let expected_steps = artifact.checked_steps;
         append_research_v3_test_terminal_noop_event(&mut artifact);
         refresh_research_v3_test_artifact_commitments(&mut artifact);
 
         let err = verify_research_v3_equivalence_artifact(&artifact)
             .expect_err("extra engine events beyond checked_steps should fail");
-        assert!(err
-            .to_string()
-            .contains("events_len 2 does not match checked_steps 1"));
+        assert!(err.to_string().contains(&format!(
+            "events_len {} does not match checked_steps {}",
+            expected_steps + 1,
+            expected_steps
+        )));
     }
 
     #[test]

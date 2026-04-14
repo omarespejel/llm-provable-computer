@@ -5168,6 +5168,8 @@ fn cli_supports_research_v3_equivalence_command() {
         unique_temp_dir("cli-research-v3-equivalence-missing-engine").with_extension("json");
     let extra_event_path =
         unique_temp_dir("cli-research-v3-equivalence-extra-event").with_extension("json");
+    let extra_trace_path =
+        unique_temp_dir("cli-research-v3-equivalence-extra-trace").with_extension("json");
     let mut command = tvm_command();
     command
         .arg("research-v3-equivalence")
@@ -5617,12 +5619,6 @@ fn cli_supports_research_v3_equivalence_command() {
             .as_array()
             .map(|events| events.len() as u64 + 1)
             .expect("canonical events");
-        let last_instruction = engine["canonical_events"]
-            .as_array()
-            .and_then(|events| events.last())
-            .and_then(|event| event.get("instruction"))
-            .cloned()
-            .expect("last instruction");
         engine["trace"]
             .as_array_mut()
             .expect("engine trace")
@@ -5632,7 +5628,7 @@ fn cli_supports_research_v3_equivalence_command() {
             .expect("canonical events")
             .push(serde_json::json!({
                 "step": next_step,
-                "instruction": last_instruction,
+                "instruction": "NOP",
                 "state_before_hash": final_state_hash.clone(),
                 "state_after_hash": final_state_hash,
             }));
@@ -5675,6 +5671,48 @@ fn cli_supports_research_v3_equivalence_command() {
             extra_event_expected_steps
         )));
 
+    let mut extra_trace = artifact_json.clone();
+    let extra_trace_expected_steps = extra_trace
+        .get("checked_steps")
+        .and_then(serde_json::Value::as_u64)
+        .expect("checked_steps");
+    for engine in extra_trace["engines"].as_array_mut().expect("engines") {
+        let final_state = engine
+            .get("final_state")
+            .cloned()
+            .expect("engine final state");
+        engine["trace"]
+            .as_array_mut()
+            .expect("engine trace")
+            .push(final_state);
+        let trace_len = engine["trace"]
+            .as_array()
+            .map(|trace| trace.len() as u64)
+            .expect("trace");
+        engine["trace_len"] = serde_json::Value::from(trace_len);
+        engine["trace_hash"] =
+            serde_json::Value::String(hash_json_value(engine.get("trace").expect("engine trace")));
+    }
+    extra_trace["commitments"]["engine_summaries_hash"] = serde_json::Value::String(
+        hash_json_value(extra_trace.get("engines").expect("extra-trace engines")),
+    );
+    std::fs::write(
+        &extra_trace_path,
+        serde_json::to_vec(&extra_trace).expect("extra trace artifact json"),
+    )
+    .expect("write extra trace artifact");
+    let mut verify_extra_trace = tvm_command();
+    verify_extra_trace
+        .arg("verify-research-v3-equivalence")
+        .arg(&extra_trace_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(format!(
+            "trace_len {} does not match checked_steps+1 {}",
+            extra_trace_expected_steps + 2,
+            extra_trace_expected_steps + 1
+        )));
+
     let mut malformed_hash = artifact_json.clone();
     malformed_hash["commitments"]["relation_format_hash"] =
         serde_json::Value::String("not-a-blake2b-hash".to_string());
@@ -5711,6 +5749,7 @@ fn cli_supports_research_v3_equivalence_command() {
     let _ = std::fs::remove_file(unexpected_engine_path);
     let _ = std::fs::remove_file(missing_engine_path);
     let _ = std::fs::remove_file(extra_event_path);
+    let _ = std::fs::remove_file(extra_trace_path);
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
