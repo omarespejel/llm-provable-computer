@@ -11,6 +11,25 @@ hardening_base_test_filters=(
   "vanillastark::proof_stream::tests::test_deserialize_rejects_truncated_stream"
 )
 
+# Keep the `onnx-export` metadata parser gates on the smoke/UB path. They are
+# intentionally excluded from the Miri loop, and from the ASAN suite on the
+# current Apple toolchain, because feature-enabled tract/ONNX sanitizer builds
+# are not reliable enough for the fast hardening cycle on this repo.
+hardening_onnx_test_filters=(
+  "onnx_export::tests::load_onnx_program_metadata_rejects_wrong_format_version"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_input_contract_drift"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_output_contract_drift"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_instruction_table_instruction_drift"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_model_path_escape"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_top_level_field"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_config_field"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_program_field"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_memory_read_field"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_direct_memory_read_field"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_missing_direct_memory_read_address"
+  "onnx_export::tests::load_onnx_program_metadata_maps_runtime_conversion_failures_to_serialization"
+)
+
 # Keep the heavier `stwo-backend` verifier gates on the sanitizer path. They are
 # intentionally excluded from the Miri loop because feature-enabled Miri builds
 # are too expensive for the fast hardening cycle on this repo.
