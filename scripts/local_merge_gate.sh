@@ -363,10 +363,11 @@ onnx_smoke_targets=(
   "onnx_export::tests::load_onnx_program_metadata_rejects_instruction_table_instruction_drift"
   "onnx_export::tests::load_onnx_program_metadata_rejects_model_path_escape"
   "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_top_level_field"
-  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_config_field"
-  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_program_field"
-  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_memory_read_field"
-)
+    "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_config_field"
+    "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_program_field"
+    "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_memory_read_field"
+    "onnx_export::tests::load_onnx_program_metadata_maps_runtime_conversion_failures_to_serialization"
+  )
 stwo_cli_smoke_targets=(
   "cli_can_verify_stwo_recursive_compression_input_contract"
   "cli_verify_stwo_recursive_compression_input_contract_rejects_tampered_commitment"

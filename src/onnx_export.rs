@@ -314,7 +314,9 @@ pub fn load_onnx_program_metadata(path: &Path) -> Result<OnnxProgramMetadata> {
     let bytes = fs::read(metadata_path)?;
     let metadata: StrictOnnxProgramMetadata =
         serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))?;
-    let metadata = metadata.into_runtime_metadata()?;
+    let metadata = metadata
+        .into_runtime_metadata()
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
     validate_onnx_program_metadata(&metadata)?;
     Ok(metadata)
 }
@@ -1435,6 +1437,29 @@ mod tests {
             .expect_err("unknown nested memory_read field should fail");
         assert!(
             err.to_string().contains("unknown field"),
+            "unexpected error: {err}"
+        );
+
+        let _ = fs::remove_dir_all(export_dir);
+    }
+
+    #[test]
+    fn load_onnx_program_metadata_maps_runtime_conversion_failures_to_serialization() {
+        let (export_dir, metadata) =
+            sample_exported_program_metadata("onnx-metadata-oversized-memory");
+        let mut metadata_json = serde_json::to_value(metadata).expect("metadata to json");
+        metadata_json["program"]["initial_memory"] =
+            serde_json::Value::Array((0..256).map(|_| serde_json::json!(0)).collect());
+        overwrite_metadata_json(&export_dir, &metadata_json);
+
+        let err = load_onnx_program_metadata(&export_dir)
+            .expect_err("oversized initial memory should fail");
+        assert!(
+            matches!(err, VmError::Serialization(_)),
+            "unexpected error variant: {err:?}"
+        );
+        assert!(
+            err.to_string().contains("encoded stack/address limit"),
             "unexpected error: {err}"
         );
 
