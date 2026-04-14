@@ -863,6 +863,25 @@ const RESEARCH_V2_HASH_FUNCTION: &str = "blake2b-256";
 const RESEARCH_V3_RELATION_FORMAT: &str = "multi-engine-trace-relation-v1-no-egraph-no-smt";
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 const MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES: usize = 32 * 1024 * 1024;
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+const RESEARCH_V3_PINNED_ENGINE_LANE_BINDINGS: [(&str, &str); 4] = [
+    ("transformer", "transformer-vm"),
+    ("native", "native-isa"),
+    ("burn", "burn"),
+    ("onnx/tract", "onnx-tract"),
+];
+#[cfg(feature = "onnx-export")]
+const FRONTEND_RUNTIME_RESEARCH_WATCH_LANES: [&str; 9] = [
+    "torch-export",
+    "executorch",
+    "stablehlo",
+    "iree",
+    "onnx-mlir",
+    "tvm-unity",
+    "vllm",
+    "sglang",
+    "egg-emerge",
+];
 const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v1";
 const HF_PROVENANCE_SEMANTIC_SCOPE: &str = "hf-release-provenance-boundary-v1";
 const HF_PROVENANCE_HASH_FUNCTION: &str = "blake2b-256";
@@ -5543,20 +5562,17 @@ fn verify_research_v3_equivalence_artifact(
 fn verify_research_v3_engine_lane_binding(
     artifact: &ResearchV3EquivalenceArtifact,
 ) -> llm_provable_computer::Result<()> {
-    let expected_engine_bindings = std::collections::BTreeMap::from([
-        ("transformer", "transformer-vm"),
-        ("native", "native-isa"),
-        ("burn", "burn"),
-        ("onnx/tract", "onnx-tract"),
-    ]);
+    let expected_engine_bindings = RESEARCH_V3_PINNED_ENGINE_LANE_BINDINGS
+        .iter()
+        .copied()
+        .collect::<std::collections::BTreeMap<_, _>>();
     let expected_engine_names = expected_engine_bindings
         .keys()
         .copied()
         .collect::<std::collections::BTreeSet<_>>();
     let mut actual_engine_names = std::collections::BTreeSet::new();
-    let mut actual_lane_ids = std::collections::BTreeSet::new();
     for engine in &artifact.engines {
-        let lane_id = expected_engine_bindings
+        expected_engine_bindings
             .get(engine.name.as_str())
             .ok_or_else(|| {
                 VmError::InvalidConfig(format!(
@@ -5565,53 +5581,12 @@ fn verify_research_v3_engine_lane_binding(
                 ))
             })?;
         actual_engine_names.insert(engine.name.as_str());
-        actual_lane_ids.insert(*lane_id);
     }
     if actual_engine_names != expected_engine_names {
         return Err(VmError::InvalidConfig(format!(
             "research-v3 engine set does not match the pinned artifact boundary: expected [{}], got [{}]",
             expected_engine_names.iter().copied().collect::<Vec<_>>().join(", "),
             actual_engine_names.iter().copied().collect::<Vec<_>>().join(", ")
-        )));
-    }
-
-    let expected_lane_ids = artifact
-        .frontend_runtime_semantics_registry
-        .get("lanes")
-        .and_then(serde_json::Value::as_array)
-        .ok_or_else(|| {
-            VmError::InvalidConfig(
-                "frontend runtime semantics registry missing lanes array".to_string(),
-            )
-        })?
-        .iter()
-        .filter_map(|lane| {
-            let status = lane.get("status").and_then(serde_json::Value::as_str)?;
-            if status != "implemented" {
-                return None;
-            }
-            lane.get("lane_id")
-                .and_then(serde_json::Value::as_str)
-                .map(str::to_string)
-        })
-        .collect::<std::collections::BTreeSet<_>>();
-    let actual_lane_ids = actual_lane_ids
-        .into_iter()
-        .map(str::to_string)
-        .collect::<std::collections::BTreeSet<_>>();
-    if actual_lane_ids != expected_lane_ids {
-        return Err(VmError::InvalidConfig(format!(
-            "research-v3 engine lanes do not match implemented registry lanes: expected [{}], got [{}]",
-            expected_lane_ids
-                .iter()
-                .map(String::as_str)
-                .collect::<Vec<_>>()
-                .join(", "),
-            actual_lane_ids
-                .iter()
-                .map(String::as_str)
-                .collect::<Vec<_>>()
-                .join(", ")
         )));
     }
 
@@ -6452,7 +6427,10 @@ fn validate_frontend_runtime_semantics_registry(
             )
         })?;
 
-    let implemented_allowlist = ["transformer-vm", "native-isa", "burn", "onnx-tract"];
+    let implemented_allowlist = RESEARCH_V3_PINNED_ENGINE_LANE_BINDINGS
+        .iter()
+        .map(|(_, lane_id)| *lane_id)
+        .collect::<std::collections::BTreeSet<_>>();
     let mut lane_statuses = std::collections::BTreeMap::new();
     for lane in lanes {
         let lane_id = lane
@@ -6476,7 +6454,7 @@ fn validate_frontend_runtime_semantics_registry(
                 "frontend runtime semantics registry lane {lane_id} has invalid status {status}"
             )));
         }
-        if status == "implemented" && !implemented_allowlist.contains(&lane_id) {
+        if status == "implemented" && !implemented_allowlist.contains(lane_id) {
             return Err(VmError::InvalidConfig(format!(
                 "frontend runtime semantics registry unexpected implemented lane {lane_id}"
             )));
@@ -6488,21 +6466,16 @@ fn validate_frontend_runtime_semantics_registry(
         }
     }
 
-    for (lane_id, expected_status) in [
-        ("transformer-vm", "implemented"),
-        ("native-isa", "implemented"),
-        ("burn", "implemented"),
-        ("onnx-tract", "implemented"),
-        ("torch-export", "research_watch"),
-        ("executorch", "research_watch"),
-        ("stablehlo", "research_watch"),
-        ("iree", "research_watch"),
-        ("onnx-mlir", "research_watch"),
-        ("tvm-unity", "research_watch"),
-        ("vllm", "research_watch"),
-        ("sglang", "research_watch"),
-        ("egg-emerge", "research_watch"),
-    ] {
+    for (lane_id, expected_status) in RESEARCH_V3_PINNED_ENGINE_LANE_BINDINGS
+        .iter()
+        .map(|(_, lane_id)| (*lane_id, "implemented"))
+        .chain(
+            FRONTEND_RUNTIME_RESEARCH_WATCH_LANES
+                .iter()
+                .copied()
+                .map(|lane_id| (lane_id, "research_watch")),
+        )
+    {
         let status = lane_statuses.get(lane_id).copied().ok_or_else(|| {
             VmError::InvalidConfig(format!(
                 "frontend runtime semantics registry missing lane {lane_id}"
