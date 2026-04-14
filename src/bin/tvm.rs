@@ -4806,12 +4806,71 @@ fn verify_hf_file_commitment(
     )
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+enum HfFileIdentity {
+    #[cfg(unix)]
+    Unix { dev: u64, ino: u64 },
+    #[cfg(windows)]
+    Windows {
+        volume_serial_number: u32,
+        file_index: u64,
+    },
+    #[cfg(not(any(unix, windows)))]
+    CanonicalPath(PathBuf),
+}
+
+fn hf_file_identity(path: &Path, label: &str) -> llm_provable_computer::Result<HfFileIdentity> {
+    let (file, _) = open_checked_regular_file(path, label, None)?;
+    let metadata = file.metadata().map_err(|err| {
+        VmError::InvalidConfig(format!("failed to read {label} {}: {err}", path.display()))
+    })?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+
+        return Ok(HfFileIdentity::Unix {
+            dev: metadata.dev(),
+            ino: metadata.ino(),
+        });
+    }
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+
+        let (volume_serial_number, file_index) = require_windows_regular_file_identity(
+            path,
+            label,
+            metadata.volume_serial_number(),
+            metadata.file_index(),
+            "after open",
+        )?;
+        return Ok(HfFileIdentity::Windows {
+            volume_serial_number,
+            file_index,
+        });
+    }
+
+    #[cfg(not(any(unix, windows)))]
+    {
+        let canonical = fs::canonicalize(path).map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to canonicalize {label} {}: {err}",
+                path.display()
+            ))
+        })?;
+        Ok(HfFileIdentity::CanonicalPath(canonical))
+    }
+}
+
 fn ensure_unique_hf_file_commitment_path(
     label: &str,
     commitment: &HfFileCommitment,
-    seen_paths: &mut std::collections::BTreeSet<String>,
+    seen_paths: &mut std::collections::BTreeSet<HfFileIdentity>,
 ) -> llm_provable_computer::Result<()> {
-    if !seen_paths.insert(commitment.path.clone()) {
+    let identity = hf_file_identity(Path::new(&commitment.path), "HF provenance ONNX artifact")?;
+    if !seen_paths.insert(identity) {
         return Err(VmError::InvalidConfig(format!(
             "{label} reuses ONNX artifact path `{}`",
             commitment.path
