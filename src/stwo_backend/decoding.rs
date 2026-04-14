@@ -19191,6 +19191,13 @@ mod tests {
 
     fn sample_phase30_decoding_step_proof_envelope_manifest(
     ) -> Phase30DecodingStepProofEnvelopeManifest {
+        sample_phase30_chain_and_manifest().1
+    }
+
+    fn sample_phase30_chain_and_manifest() -> (
+        Phase12DecodingChainManifest,
+        Phase30DecodingStepProofEnvelopeManifest,
+    ) {
         let layout = phase12_default_decoding_layout();
         let memories = phase12_demo_initial_memories(&layout).expect("memories");
         let proofs = memories
@@ -19198,7 +19205,9 @@ mod tests {
             .map(|memory| sample_phase12_step_proof(&layout, memory))
             .collect::<Vec<_>>();
         let chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
-        phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes")
+        let manifest =
+            phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
+        (chain, manifest)
     }
 
     #[test]
@@ -19378,6 +19387,22 @@ mod tests {
     fn phase30_parse_manifest_reports_malformed_json_as_invalid_config() {
         let err = parse_phase30_decoding_step_proof_envelope_manifest_json("{")
             .expect_err("malformed json must be rejected");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+    }
+
+    #[test]
+    fn load_phase30_decoding_step_proof_envelope_manifest_reports_malformed_json_as_invalid_config()
+    {
+        use std::io::Write;
+
+        let mut temp = tempfile::NamedTempFile::new().expect("create temp file");
+        temp.write_all(b"{").expect("write malformed JSON");
+
+        let err = load_phase30_decoding_step_proof_envelope_manifest(temp.path())
+            .expect_err("malformed phase30 manifest should fail");
         assert!(
             matches!(err, VmError::InvalidConfig(_)),
             "expected InvalidConfig, got {err:?}"
@@ -19599,6 +19624,23 @@ mod tests {
     }
 
     #[test]
+    fn phase30_step_envelope_list_commitment_binds_ordering() {
+        let (_, manifest) = sample_phase30_chain_and_manifest();
+        assert!(
+            manifest.envelopes.len() >= 2,
+            "fixture must provide at least two envelopes"
+        );
+        let mut swapped = manifest.envelopes.clone();
+        swapped.swap(0, 1);
+
+        assert_ne!(
+            commit_phase30_step_envelope_list(&manifest.envelopes),
+            commit_phase30_step_envelope_list(&swapped),
+            "manifest list commitment must bind envelope order"
+        );
+    }
+
+    #[test]
     fn phase30_step_envelope_commitment_length_prefixes_variable_fields() {
         let layout = phase12_default_decoding_layout();
         let memories = phase12_demo_initial_memories(&layout).expect("memories");
@@ -19621,6 +19663,69 @@ mod tests {
             commit_phase30_step_envelope(&left),
             commit_phase30_step_envelope(&right),
             "length framing must distinguish adjacent variable-field splits"
+        );
+    }
+
+    #[test]
+    fn phase30_step_envelope_manifest_rejects_tampered_start_boundary() {
+        let (_, mut manifest) = sample_phase30_chain_and_manifest();
+        manifest.chain_start_boundary_commitment = "tampered-start-boundary".to_string();
+
+        let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
+            .expect_err("start boundary drift should fail");
+        assert!(
+            err.to_string()
+                .contains("start boundary does not match the first envelope"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn phase30_step_envelope_manifest_rejects_tampered_end_boundary() {
+        let (_, mut manifest) = sample_phase30_chain_and_manifest();
+        manifest.chain_end_boundary_commitment = "tampered-end-boundary".to_string();
+
+        let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
+            .expect_err("end boundary drift should fail");
+        assert!(
+            err.to_string()
+                .contains("end boundary does not match the final envelope"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn phase30_step_envelope_manifest_rejects_step_envelope_list_commitment_drift() {
+        let (_, mut manifest) = sample_phase30_chain_and_manifest();
+        manifest.step_envelopes_commitment = "tampered-step-envelope-list".to_string();
+
+        let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
+            .expect_err("list commitment drift should fail");
+        assert!(
+            err.to_string()
+                .contains("step_envelopes_commitment does not match its envelopes"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn phase30_step_envelope_manifest_rejects_step_index_drift() {
+        let (_, mut manifest) = sample_phase30_chain_and_manifest();
+        assert!(
+            manifest.envelopes.len() >= 3,
+            "fixture must provide a non-boundary envelope"
+        );
+        let idx = manifest.envelopes.len() / 2;
+        manifest.envelopes[idx].step_index += 1;
+        manifest.envelopes[idx].envelope_commitment =
+            commit_phase30_step_envelope(&manifest.envelopes[idx]);
+        manifest.step_envelopes_commitment = commit_phase30_step_envelope_list(&manifest.envelopes);
+
+        let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
+            .expect_err("step index drift should fail");
+        assert!(
+            err.to_string().contains("records step_index"),
+            "unexpected error: {err}"
         );
     }
 
