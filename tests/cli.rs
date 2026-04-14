@@ -89,38 +89,12 @@ fn phase27_cli_test_guard() -> std::sync::MutexGuard<'static, ()> {
 
 fn tvm_command() -> Command {
     let binary = std::env::var_os("CARGO_BIN_EXE_tvm")
+        .or_else(|| std::env::var_os("TVM_TEST_BINARY"))
         .map(PathBuf::from)
         .unwrap_or_else(|| {
-            let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-            let target_dir = std::env::var_os("CARGO_TARGET_DIR")
-                .map(PathBuf::from)
-                .map(|path| {
-                    if path.is_absolute() {
-                        path
-                    } else {
-                        manifest_dir.join(path)
-                    }
-                })
-                .unwrap_or_else(|| manifest_dir.join("target"));
-            let profile = std::env::var("PROFILE").unwrap_or_else(|_| "debug".to_string());
-            let binary_name = format!("tvm{}", std::env::consts::EXE_SUFFIX);
-            let mut candidates = Vec::new();
-            if let Some(target_triple) = std::env::var_os("CARGO_BUILD_TARGET")
-                .or_else(|| std::env::var_os("TARGET"))
-            {
-                candidates.push(target_dir.join(target_triple).join(&profile).join(&binary_name));
-            }
-            candidates.push(target_dir.join(&profile).join(&binary_name));
-            candidates.push(manifest_dir.join("target").join(&profile).join(&binary_name));
-            candidates
-                .into_iter()
-                .find(|candidate| candidate.exists())
-                .unwrap_or_else(|| {
-                    panic!(
-                        "could not resolve `tvm` binary; checked CARGO_BIN_EXE_tvm and fallback candidates under `{}`",
-                        target_dir.display()
-                    )
-                })
+            panic!(
+                "could not resolve current-feature `tvm` binary; set `TVM_TEST_BINARY` when `CARGO_BIN_EXE_tvm` is unavailable"
+            )
         });
     Command::from_std(std::process::Command::new(binary))
 }

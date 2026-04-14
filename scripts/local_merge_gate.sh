@@ -188,6 +188,26 @@ run_logged() {
   fi
 }
 
+resolve_tvm_test_binary_path() {
+  local manifest_dir target_dir profile binary_name target_triple
+  manifest_dir="$ROOT_DIR"
+  target_dir="${CARGO_TARGET_DIR:-$manifest_dir/target}"
+  if [[ "$target_dir" != /* ]]; then
+    target_dir="$manifest_dir/$target_dir"
+  fi
+  profile="${PROFILE:-debug}"
+  binary_name="tvm"
+  if [[ "${OS:-}" == "Windows_NT" ]]; then
+    binary_name="${binary_name}.exe"
+  fi
+  target_triple="${CARGO_BUILD_TARGET:-${TARGET:-}}"
+  if [[ -n "$target_triple" ]]; then
+    printf '%s\n' "$target_dir/$target_triple/$profile/$binary_name"
+  else
+    printf '%s\n' "$target_dir/$profile/$binary_name"
+  fi
+}
+
 while (($#)); do
   case "$1" in
     --repo)
@@ -601,7 +621,9 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_logged cargo-fmt-check cargo fmt --check
   run_conditional_quick_audits
   run_logged cargo-lib-tests cargo test -q --lib
-  run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
+  run_logged cargo-build-tvm cargo build -q --bin tvm
+  tvm_test_binary="$(resolve_tvm_test_binary_path)"
+  run_logged cargo-lib-and-integration-tests env TVM_TEST_BINARY="$tvm_test_binary" cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
   if changed_path_is_onnx_surface; then
     run_onnx_smoke_targets
@@ -619,7 +641,9 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged cargo-fmt-check cargo fmt --check
   run_conditional_quick_audits
   run_logged cargo-lib-tests cargo test -q --lib
-  run_logged cargo-lib-and-integration-tests cargo test -q --lib --tests
+  run_logged cargo-build-tvm cargo build -q --bin tvm
+  tvm_test_binary="$(resolve_tvm_test_binary_path)"
+  run_logged cargo-lib-and-integration-tests env TVM_TEST_BINARY="$tvm_test_binary" cargo test -q --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
   if changed_path_is_onnx_surface; then
     run_onnx_smoke_targets
