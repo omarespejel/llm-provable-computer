@@ -4734,7 +4734,7 @@ fn hash_hf_commitment_file(path: &Path) -> llm_provable_computer::Result<(u64, S
     let mut output = [0u8; 32];
     let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
     let mut observed_size = 0u64;
-    let mut buffer = [0u8; HF_PROVENANCE_FILE_READ_CHUNK_BYTES];
+    let mut buffer = vec![0u8; HF_PROVENANCE_FILE_READ_CHUNK_BYTES];
     loop {
         let read_bytes = file.read(&mut buffer).map_err(|err| {
             VmError::InvalidConfig(format!(
@@ -4836,7 +4836,7 @@ fn inspect_hf_safetensors_file(
         hf_safetensors_metadata_commitment_from_header(path, &header_bytes)?;
 
     let mut observed_size = header_end;
-    let mut buffer = [0u8; HF_PROVENANCE_FILE_READ_CHUNK_BYTES];
+    let mut buffer = vec![0u8; HF_PROVENANCE_FILE_READ_CHUNK_BYTES];
     loop {
         let read_bytes = file.read(&mut buffer).map_err(|err| {
             VmError::InvalidConfig(format!(
