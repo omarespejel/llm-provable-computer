@@ -4832,7 +4832,16 @@ fn cli_can_prepare_and_verify_hf_provenance_manifest() {
         manifest_json
             .get("manifest_version")
             .and_then(serde_json::Value::as_str),
-        Some("hf-provenance-manifest-v2")
+        Some("hf-provenance-manifest-v3")
+    );
+    assert_eq!(
+        manifest_json
+            .get("tokenizer")
+            .and_then(|tokenizer| tokenizer.get("tokenizer_json"))
+            .and_then(|value| value.get("sha256"))
+            .and_then(serde_json::Value::as_str)
+            .map(str::len),
+        Some(64)
     );
     assert_eq!(
         manifest_json
@@ -4907,6 +4916,63 @@ fn cli_can_prepare_and_verify_hf_provenance_manifest() {
         .failure()
         .stderr(predicate::str::contains(
             "hub_revision must be pinned to an immutable commit or release tag",
+        ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
+fn cli_verifier_rejects_hf_manifest_sha256_tamper() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-sha256-tamper");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let tokenizer_json = fixture_dir.join("tokenizer.json");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(
+        &tokenizer_json,
+        br#"{"version":"1.0","model":{"type":"WordPiece","unk_token":"[UNK]"}}"#,
+    )
+    .expect("write tokenizer json");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&tokenizer_json)
+        .assert()
+        .success();
+
+    let mut manifest_json: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).expect("manifest bytes"))
+            .expect("manifest json");
+    manifest_json["tokenizer"]["tokenizer_json"]["sha256"] = serde_json::json!("0".repeat(64));
+    manifest_json["commitments"]["tokenizer_hash"] = serde_json::Value::String(hash_json_value(
+        manifest_json
+            .get("tokenizer")
+            .expect("tokenizer section after sha256 tamper"),
+    ));
+    std::fs::write(
+        &manifest,
+        serde_json::to_vec_pretty(&manifest_json).expect("serialize tampered manifest"),
+    )
+    .expect("write tampered manifest");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "tokenizer_json sha256 commitment mismatch",
         ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);

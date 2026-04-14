@@ -119,6 +119,7 @@ use llm_provable_computer::{
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 #[cfg(feature = "burn-model")]
 type CliBurnBackend = NdArray<f64>;
@@ -891,7 +892,8 @@ const FRONTEND_RUNTIME_RESEARCH_WATCH_LANES: [&str; 9] = [
     "egg-emerge",
 ];
 const HF_PROVENANCE_MANIFEST_VERSION_V1_LEGACY: &str = "hf-provenance-manifest-v1";
-const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v2";
+const HF_PROVENANCE_MANIFEST_VERSION_V2_LEGACY: &str = "hf-provenance-manifest-v2";
+const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v3";
 const HF_PROVENANCE_SEMANTIC_SCOPE: &str = "hf-release-provenance-boundary-v1";
 const HF_PROVENANCE_HASH_FUNCTION: &str = "blake2b-256";
 
@@ -922,6 +924,7 @@ struct HfFileCommitment {
     path: String,
     size_bytes: u64,
     blake2b_256: String,
+    sha256: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -930,6 +933,7 @@ struct HfSafetensorsFileCommitment {
     path: String,
     size_bytes: u64,
     blake2b_256: String,
+    sha256: String,
     metadata_hash: String,
     tensor_count: usize,
 }
@@ -4542,8 +4546,14 @@ fn load_hf_provenance_manifest(
             HF_PROVENANCE_MANIFEST_VERSION_V1_LEGACY,
             HF_PROVENANCE_MANIFEST_VERSION
         ))),
+        HF_PROVENANCE_MANIFEST_VERSION_V2_LEGACY => Err(VmError::Serialization(format!(
+            "failed to parse HF provenance manifest {}: legacy manifest_version `{}` is no longer accepted after the attestation-digest format bump; regenerate the manifest as {}",
+            manifest_path.display(),
+            HF_PROVENANCE_MANIFEST_VERSION_V2_LEGACY,
+            HF_PROVENANCE_MANIFEST_VERSION
+        ))),
         HF_PROVENANCE_MANIFEST_VERSION => {
-            ensure_hf_provenance_manifest_v2_required_fields(manifest_path, &manifest_value)?;
+            ensure_hf_provenance_manifest_v3_required_fields(manifest_path, &manifest_value)?;
             serde_json::from_value(manifest_value).map_err(|err| {
                 VmError::Serialization(format!(
                     "failed to parse HF provenance manifest {}: {err}",
@@ -4558,7 +4568,7 @@ fn load_hf_provenance_manifest(
     }
 }
 
-fn ensure_hf_provenance_manifest_v2_required_fields(
+fn ensure_hf_provenance_manifest_v3_required_fields(
     manifest_path: &Path,
     manifest_value: &serde_json::Value,
 ) -> llm_provable_computer::Result<()> {
@@ -4706,6 +4716,7 @@ fn verify_hf_provenance_manifest(
 fn hf_provenance_limitations() -> Vec<String> {
     [
         "HF provenance manifests pin artifact identity and local file hashes only",
+        "attestation-friendly SHA-256 digests do not by themselves verify GitHub, Sigstore, in-toto, or SLSA attestations",
         "the manifest does not prove tokenizer algorithm correctness",
         "the manifest does not prove safetensors weights implement a model architecture",
         "the manifest does not prove Optimum or ONNX exporter semantic equivalence",
@@ -4759,22 +4770,25 @@ fn hf_optional_file_commitment(
 }
 
 fn hf_file_commitment(path: &Path) -> llm_provable_computer::Result<HfFileCommitment> {
-    let (size_bytes, blake2b_256) = hash_hf_commitment_file(path)?;
+    let (size_bytes, blake2b_256, sha256) = hash_hf_commitment_file(path)?;
     Ok(HfFileCommitment {
         path: path.display().to_string(),
         size_bytes,
         blake2b_256,
+        sha256,
     })
 }
 
 fn hf_safetensors_file_commitment(
     path: &Path,
 ) -> llm_provable_computer::Result<HfSafetensorsFileCommitment> {
-    let (size_bytes, blake2b_256, metadata_hash, tensor_count) = inspect_hf_safetensors_file(path)?;
+    let (size_bytes, blake2b_256, sha256, metadata_hash, tensor_count) =
+        inspect_hf_safetensors_file(path)?;
     Ok(HfSafetensorsFileCommitment {
         path: path.display().to_string(),
         size_bytes,
         blake2b_256,
+        sha256,
         metadata_hash,
         tensor_count,
     })
@@ -4794,7 +4808,7 @@ fn verify_hf_file_commitment(
     label: &str,
     commitment: &HfFileCommitment,
 ) -> llm_provable_computer::Result<()> {
-    let (size_bytes, blake2b_256) = hash_hf_commitment_file(Path::new(&commitment.path))?;
+    let (size_bytes, blake2b_256, sha256) = hash_hf_commitment_file(Path::new(&commitment.path))?;
     if commitment.size_bytes != size_bytes {
         return Err(VmError::InvalidConfig(format!(
             "HF provenance {label} size_bytes mismatch: expected {}, got {}",
@@ -4805,6 +4819,11 @@ fn verify_hf_file_commitment(
         &format!("HF provenance {label} blake2b_256"),
         &commitment.blake2b_256,
         &blake2b_256,
+    )?;
+    verify_hash_commitment(
+        &format!("HF provenance {label} sha256"),
+        &commitment.sha256,
+        &sha256,
     )
 }
 
@@ -4884,7 +4903,7 @@ fn ensure_unique_hf_file_commitment_path(
 fn verify_hf_safetensors_file_commitment(
     commitment: &HfSafetensorsFileCommitment,
 ) -> llm_provable_computer::Result<()> {
-    let (size_bytes, blake2b_256, metadata_hash, tensor_count) =
+    let (size_bytes, blake2b_256, sha256, metadata_hash, tensor_count) =
         inspect_hf_safetensors_file(Path::new(&commitment.path))?;
     if commitment.size_bytes != size_bytes {
         return Err(VmError::InvalidConfig(format!(
@@ -4896,6 +4915,11 @@ fn verify_hf_safetensors_file_commitment(
         &format!("HF provenance safetensors {} blake2b_256", commitment.path),
         &commitment.blake2b_256,
         &blake2b_256,
+    )?;
+    verify_hash_commitment(
+        &format!("HF provenance safetensors {} sha256", commitment.path),
+        &commitment.sha256,
+        &sha256,
     )?;
     verify_hash_commitment(
         &format!(
@@ -4914,10 +4938,11 @@ fn verify_hf_safetensors_file_commitment(
     Ok(())
 }
 
-fn hash_hf_commitment_file(path: &Path) -> llm_provable_computer::Result<(u64, String)> {
+fn hash_hf_commitment_file(path: &Path) -> llm_provable_computer::Result<(u64, String, String)> {
     let (mut file, size_bytes) = open_checked_regular_file(path, "HF provenance file", None)?;
     let mut output = [0u8; 32];
     let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
+    let mut sha256_hasher = Sha256::new();
     let mut observed_size = 0u64;
     let mut remaining = size_bytes;
     let mut buffer = vec![0u8; HF_PROVENANCE_FILE_READ_CHUNK_BYTES];
@@ -4946,6 +4971,7 @@ fn hash_hf_commitment_file(path: &Path) -> llm_provable_computer::Result<(u64, S
             })?;
         remaining -= read_bytes as u64;
         hasher.update(&buffer[..read_bytes]);
+        Digest::update(&mut sha256_hasher, &buffer[..read_bytes]);
     }
     let mut extra_byte = [0u8; 1];
     if file.read(&mut extra_byte).map_err(|err| {
@@ -4964,15 +4990,17 @@ fn hash_hf_commitment_file(path: &Path) -> llm_provable_computer::Result<(u64, S
     hasher
         .finalize_variable(&mut output)
         .expect("blake2b-256 finalization");
+    let sha256_output = sha256_hasher.finalize();
     Ok((
         size_bytes,
-        output.iter().map(|byte| format!("{byte:02x}")).collect(),
+        encode_hex(&output),
+        encode_hex(sha256_output.as_slice()),
     ))
 }
 
 fn inspect_hf_safetensors_file(
     path: &Path,
-) -> llm_provable_computer::Result<(u64, String, String, usize)> {
+) -> llm_provable_computer::Result<(u64, String, String, String, usize)> {
     const MAX_SAFETENSORS_HEADER_BYTES: u64 = 16 * 1024 * 1024;
 
     let (mut file, size_bytes) = open_checked_regular_file(path, "HF provenance file", None)?;
@@ -4985,6 +5013,7 @@ fn inspect_hf_safetensors_file(
 
     let mut output = [0u8; 32];
     let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
+    let mut sha256_hasher = Sha256::new();
 
     let mut header_len_bytes = [0u8; 8];
     file.read_exact(&mut header_len_bytes).map_err(|err| {
@@ -4994,6 +5023,7 @@ fn inspect_hf_safetensors_file(
         ))
     })?;
     hasher.update(&header_len_bytes);
+    Digest::update(&mut sha256_hasher, &header_len_bytes);
 
     let header_len = u64::from_le_bytes(header_len_bytes);
     if header_len > MAX_SAFETENSORS_HEADER_BYTES {
@@ -5030,6 +5060,7 @@ fn inspect_hf_safetensors_file(
         ))
     })?;
     hasher.update(&header_bytes);
+    Digest::update(&mut sha256_hasher, &header_bytes);
     let (metadata_hash, tensor_count) =
         hf_safetensors_metadata_commitment_from_header(path, &header_bytes)?;
 
@@ -5061,6 +5092,7 @@ fn inspect_hf_safetensors_file(
             })?;
         remaining -= read_bytes as u64;
         hasher.update(&buffer[..read_bytes]);
+        Digest::update(&mut sha256_hasher, &buffer[..read_bytes]);
     }
     let mut extra_byte = [0u8; 1];
     if file.read(&mut extra_byte).map_err(|err| {
@@ -5080,9 +5112,11 @@ fn inspect_hf_safetensors_file(
     hasher
         .finalize_variable(&mut output)
         .expect("blake2b-256 finalization");
+    let sha256_output = sha256_hasher.finalize();
     Ok((
         size_bytes,
-        output.iter().map(|byte| format!("{byte:02x}")).collect(),
+        encode_hex(&output),
+        encode_hex(sha256_output.as_slice()),
         metadata_hash,
         tensor_count,
     ))
@@ -7024,7 +7058,11 @@ fn hash_bytes_hex(bytes: &[u8]) -> String {
     hasher
         .finalize_variable(&mut output)
         .expect("blake2b-256 finalization");
-    output.iter().map(|byte| format!("{byte:02x}")).collect()
+    encode_hex(&output)
+}
+
+fn encode_hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 fn write_bytes_atomically(path: &Path, bytes: &[u8]) -> llm_provable_computer::Result<()> {
@@ -7217,7 +7255,8 @@ mod hf_provenance_manifest_tests {
             "graph": {
                 "path": "model.onnx",
                 "size_bytes": 16,
-                "blake2b_256": "5".repeat(64)
+                "blake2b_256": "5".repeat(64),
+                "sha256": "6".repeat(64)
             },
             "metadata": null,
             "external_data_files": [],
@@ -7231,7 +7270,7 @@ mod hf_provenance_manifest_tests {
     }
 
     #[test]
-    fn load_hf_provenance_manifest_rejects_v2_missing_onnx_metadata_field() {
+    fn load_hf_provenance_manifest_rejects_v3_missing_onnx_metadata_field() {
         let file = hf_provenance_test_manifest_file("missing-onnx-metadata");
         let mut value = sample_hf_provenance_manifest_value();
         value["onnx_export"] = serde_json::json!({
@@ -7240,17 +7279,16 @@ mod hf_provenance_manifest_tests {
             "graph": {
                 "path": "model.onnx",
                 "size_bytes": 16,
-                "blake2b_256": "5".repeat(64)
+                "blake2b_256": "5".repeat(64),
+                "sha256": "6".repeat(64)
             },
             "external_data_files": []
         });
         write_hf_provenance_test_manifest(file.path(), &value);
 
         let err = load_hf_provenance_manifest(file.path())
-            .expect_err("v2 manifest missing onnx metadata field should fail");
-        assert!(err
-            .to_string()
-            .contains("missing field `metadata` in `onnx_export`"));
+            .expect_err("v3 manifest missing onnx metadata field should fail");
+        assert!(err.to_string().contains("missing field `metadata`"));
     }
 
     #[test]
@@ -7274,6 +7312,20 @@ mod hf_provenance_manifest_tests {
         assert!(err
             .to_string()
             .contains("legacy manifest_version `hf-provenance-manifest-v1` is no longer accepted"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_legacy_v2_with_upgrade_message() {
+        let file = hf_provenance_test_manifest_file("legacy-v2");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["manifest_version"] = serde_json::json!(HF_PROVENANCE_MANIFEST_VERSION_V2_LEGACY);
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("legacy v2 manifest should require regeneration");
+        assert!(err
+            .to_string()
+            .contains("legacy manifest_version `hf-provenance-manifest-v2` is no longer accepted"));
     }
 
     #[test]
@@ -7397,6 +7449,7 @@ mod hf_provenance_manifest_tests {
                 path: bound_dir.display().to_string(),
                 size_bytes: 0,
                 blake2b_256: "0".repeat(64),
+                sha256: "1".repeat(64),
             }),
             doi: None,
             datasets: Vec::new(),
@@ -7434,6 +7487,7 @@ mod hf_provenance_manifest_tests {
                         path: bound_dir.display().to_string(),
                         size_bytes: 0,
                         blake2b_256: "0".repeat(64),
+                        sha256: "1".repeat(64),
                     }),
                     doi: None,
                     datasets: Vec::new(),
@@ -7577,6 +7631,30 @@ mod hf_provenance_manifest_tests {
         assert!(err
             .to_string()
             .contains("HF provenance onnx_export.exporter_version must be non-empty"));
+    }
+
+    #[test]
+    fn verify_hf_provenance_manifest_rejects_sha256_drift() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let graph = dir.path().join("model.onnx");
+        fs::write(&graph, b"onnx").expect("write graph");
+
+        let mut commitment = hf_file_commitment(&graph).expect("graph commitment");
+        commitment.sha256 = "0".repeat(64);
+        let manifest =
+            sample_hf_provenance_manifest_with_onnx_export(Some(HfOnnxExportProvenance {
+                exporter: "optimum-onnx".to_string(),
+                exporter_version: None,
+                graph: commitment,
+                metadata: None,
+                external_data_files: Vec::new(),
+            }));
+
+        let err = verify_hf_provenance_manifest(&manifest)
+            .expect_err("sha256 drift should fail verification");
+        assert!(err
+            .to_string()
+            .contains("HF provenance onnx_export.graph sha256 commitment mismatch"));
     }
 }
 

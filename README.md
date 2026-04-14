@@ -842,12 +842,16 @@ optional model-card/DOI/dataset release metadata. The verifier rejects floating 
 revisions such as `main`, recomputes local file hashes, recomputes the manifest
 commitments, and rejects safetensors metadata drift. It does not prove tokenizer
 algorithm correctness, safetensors architectural semantics, ONNX exporter semantic
-equivalence, ONNX metadata semantic correctness, live Hub availability, or DOI
-validity.
+equivalence, ONNX metadata semantic correctness, live Hub availability, DOI
+validity, or GitHub/Sigstore/in-toto/SLSA attestation validity. The current wire
+format also carries `sha256` digests for bound files so release assets can be
+matched against attestation subject digests without turning the manifest into an
+attestation verifier.
 
-The current manifest wire format is `hf-provenance-manifest-v2`. Older
-`hf-provenance-manifest-v1` files must be regenerated before verification
-because the ONNX sidecar surface now has an explicit versioned format boundary.
+The current manifest wire format is `hf-provenance-manifest-v3`. Older
+`hf-provenance-manifest-v1` and `hf-provenance-manifest-v2` files must be
+regenerated before verification because the ONNX sidecar surface and
+attestation-digest inventory now have explicit versioned format boundaries.
 
 Canonical HF provenance spec file:
 

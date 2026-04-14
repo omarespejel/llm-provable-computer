@@ -17,7 +17,7 @@
     "commitments"
   ],
   "properties": {
-    "manifest_version": { "const": "hf-provenance-manifest-v2" },
+    "manifest_version": { "const": "hf-provenance-manifest-v3" },
     "semantic_scope": { "const": "hf-release-provenance-boundary-v1" },
     "hash_function": { "const": "blake2b-256" },
     "hub_repo": { "type": "string", "minLength": 1 },
@@ -46,13 +46,18 @@
       "type": "string",
       "pattern": "^[0-9a-fA-F]{64}$"
     },
+    "hash_sha256_hex": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    },
     "file_commitment": {
       "type": "object",
-      "required": ["path", "size_bytes", "blake2b_256"],
+      "required": ["path", "size_bytes", "blake2b_256", "sha256"],
       "properties": {
         "path": { "type": "string", "minLength": 1 },
         "size_bytes": { "type": "integer", "minimum": 0 },
-        "blake2b_256": { "$ref": "#/$defs/hash_blake2b_256_hex" }
+        "blake2b_256": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "sha256": { "$ref": "#/$defs/hash_sha256_hex" }
       },
       "additionalProperties": false
     },
@@ -62,6 +67,7 @@
         "path",
         "size_bytes",
         "blake2b_256",
+        "sha256",
         "metadata_hash",
         "tensor_count"
       ],
@@ -69,6 +75,7 @@
         "path": { "type": "string", "minLength": 1 },
         "size_bytes": { "type": "integer", "minimum": 0 },
         "blake2b_256": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "sha256": { "$ref": "#/$defs/hash_sha256_hex" },
         "metadata_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "tensor_count": { "type": "integer", "minimum": 0 }
       },
