@@ -227,7 +227,7 @@ fn parse_strict_memory_read(value: serde_json::Value) -> Result<OnnxInstructionR
             Ok(OnnxInstructionRead::StackTop)
         }
         "direct" => {
-            if object.len() != 2 {
+            if object.keys().any(|key| key != "kind" && key != "address") {
                 return Err(VmError::Serialization(
                     "unknown field in memory_read direct variant".to_string(),
                 ));
@@ -1437,6 +1437,28 @@ mod tests {
             .expect_err("unknown nested memory_read field should fail");
         assert!(
             err.to_string().contains("unknown field"),
+            "unexpected error: {err}"
+        );
+
+        let _ = fs::remove_dir_all(export_dir);
+    }
+
+    #[test]
+    fn load_onnx_program_metadata_rejects_unknown_direct_memory_read_field_without_address() {
+        let (export_dir, metadata) =
+            sample_exported_program_metadata("onnx-metadata-direct-memory-read-extra-field");
+        let mut metadata_json = serde_json::to_value(metadata).expect("metadata to json");
+        metadata_json["instructions"][0]["memory_read"] = serde_json::json!({
+            "kind": "direct",
+            "unexpected_field": 7
+        });
+        overwrite_metadata_json(&export_dir, &metadata_json);
+
+        let err = load_onnx_program_metadata(&export_dir)
+            .expect_err("unknown direct memory_read field should fail");
+        assert!(
+            err.to_string()
+                .contains("unknown field in memory_read direct variant"),
             "unexpected error: {err}"
         );
 

@@ -366,6 +366,7 @@ onnx_smoke_targets=(
     "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_config_field"
     "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_program_field"
     "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_memory_read_field"
+    "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_direct_memory_read_field_without_address"
     "onnx_export::tests::load_onnx_program_metadata_maps_runtime_conversion_failures_to_serialization"
   )
 stwo_cli_smoke_targets=(
