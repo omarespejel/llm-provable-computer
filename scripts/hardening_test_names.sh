@@ -31,6 +31,12 @@ hardening_onnx_test_filters=(
 )
 
 # Keep the other CLI-facing artifact loaders in the `tvm` binary smoke/UB path.
+# These tests are intentionally run on the default `tvm` surface so the
+# hardened HF provenance loader is exercised even when `onnx-export` is off.
+hardening_tvm_bin_cargo_args=(
+  --bin tvm
+)
+
 hardening_tvm_bin_test_filters=(
   "hf_provenance_manifest_tests::load_hf_provenance_manifest_rejects_unknown_top_level_field"
   "hf_provenance_manifest_tests::load_hf_provenance_manifest_rejects_unknown_nested_onnx_export_field"

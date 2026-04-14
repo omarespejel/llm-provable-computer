@@ -30,7 +30,7 @@ done
 
 for test_filter in "${hardening_tvm_bin_test_filters[@]}"; do
   cargo +"${HARDENING_TOOLCHAIN}" test \
-    --bin tvm "${test_filter}" \
+    "${hardening_tvm_bin_cargo_args[@]}" "${test_filter}" \
     -- \
     --exact
 done

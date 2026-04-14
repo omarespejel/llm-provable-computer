@@ -62,6 +62,8 @@ fail() {
 source "$ROOT_DIR/scripts/hardening_test_names.sh"
 declare -p hardening_tvm_bin_test_filters >/dev/null 2>&1 ||
   fail "scripts/hardening_test_names.sh must define hardening_tvm_bin_test_filters"
+declare -p hardening_tvm_bin_cargo_args >/dev/null 2>&1 ||
+  fail "scripts/hardening_test_names.sh must define hardening_tvm_bin_cargo_args"
 
 sleep_with_wait_budget() {
   local duration="$1"
@@ -497,7 +499,7 @@ run_tvm_bin_smoke_targets() {
   for tvm_bin_smoke in "${tvm_bin_smoke_targets[@]}"; do
     label="${tvm_bin_smoke##*::}"
     run_logged "tvm-bin-smoke-${label}" cargo test -q \
-      --bin tvm "$tvm_bin_smoke" \
+      "${hardening_tvm_bin_cargo_args[@]}" "$tvm_bin_smoke" \
       -- \
       --exact
   done
