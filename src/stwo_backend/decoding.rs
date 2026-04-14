@@ -19626,6 +19626,10 @@ mod tests {
     #[test]
     fn phase30_step_envelope_list_commitment_binds_ordering() {
         let (_, manifest) = sample_phase30_chain_and_manifest();
+        assert!(
+            manifest.envelopes.len() >= 2,
+            "fixture must provide at least two envelopes"
+        );
         let mut swapped = manifest.envelopes.clone();
         swapped.swap(0, 1);
 
@@ -19707,9 +19711,14 @@ mod tests {
     #[test]
     fn phase30_step_envelope_manifest_rejects_step_index_drift() {
         let (_, mut manifest) = sample_phase30_chain_and_manifest();
-        manifest.envelopes[1].step_index += 1;
-        manifest.envelopes[1].envelope_commitment =
-            commit_phase30_step_envelope(&manifest.envelopes[1]);
+        assert!(
+            manifest.envelopes.len() >= 3,
+            "fixture must provide a non-boundary envelope"
+        );
+        let idx = manifest.envelopes.len() / 2;
+        manifest.envelopes[idx].step_index += 1;
+        manifest.envelopes[idx].envelope_commitment =
+            commit_phase30_step_envelope(&manifest.envelopes[idx]);
         manifest.step_envelopes_commitment = commit_phase30_step_envelope_list(&manifest.envelopes);
 
         let err = verify_phase30_decoding_step_proof_envelope_manifest(&manifest)
