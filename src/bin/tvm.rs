@@ -860,6 +860,8 @@ const STATEMENT_V3_EQUIVALENCE_ARTIFACT_SCHEMA_PATH: &str =
 const RESEARCH_V2_HASH_FUNCTION: &str = "blake2b-256";
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 const RESEARCH_V3_RELATION_FORMAT: &str = "multi-engine-trace-relation-v1-no-egraph-no-smt";
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+const MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES: usize = 32 * 1024 * 1024;
 const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v1";
 const HF_PROVENANCE_SEMANTIC_SCOPE: &str = "hf-release-provenance-boundary-v1";
 const HF_PROVENANCE_HASH_FUNCTION: &str = "blake2b-256";
@@ -1097,6 +1099,7 @@ struct ResearchV2MatrixArtifact {
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ResearchV3CanonicalEvent {
     step: usize,
     instruction: String,
@@ -1106,6 +1109,7 @@ struct ResearchV3CanonicalEvent {
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ResearchV3TransitionRelationRow {
     relation_format: String,
     step: usize,
@@ -1116,6 +1120,7 @@ struct ResearchV3TransitionRelationRow {
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ResearchV3EngineSummary {
     name: String,
     steps: usize,
@@ -1132,6 +1137,7 @@ struct ResearchV3EngineSummary {
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ResearchV3RuleValidation {
     differential_lockstep: bool,
     egraph_status: String,
@@ -1141,6 +1147,7 @@ struct ResearchV3RuleValidation {
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ResearchV3RuleWitness {
     step: usize,
     rule_id: String,
@@ -1156,6 +1163,7 @@ struct ResearchV3RuleWitness {
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ResearchV3EquivalenceCommitments {
     hash_function: String,
     statement_spec_hash: String,
@@ -1174,6 +1182,7 @@ struct ResearchV3EquivalenceCommitments {
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ResearchV3EquivalenceArtifact {
     statement_version: String,
     semantic_scope: String,
@@ -5270,22 +5279,58 @@ fn research_v3_limitations() -> Vec<String> {
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-fn verify_research_v3_equivalence_command_impl(
+fn load_research_v3_equivalence_artifact(
     artifact_path: &Path,
-) -> llm_provable_computer::Result<()> {
+) -> llm_provable_computer::Result<ResearchV3EquivalenceArtifact> {
+    let metadata = fs::metadata(artifact_path).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to read research-v3 artifact {}: {err}",
+            artifact_path.display()
+        ))
+    })?;
+    if !metadata.is_file() {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 artifact {} is not a regular file",
+            artifact_path.display()
+        )));
+    }
+    if metadata.len() > MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES as u64 {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 artifact {} is {} bytes, exceeding the limit of {} bytes",
+            artifact_path.display(),
+            metadata.len(),
+            MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES
+        )));
+    }
+
     let artifact_bytes = fs::read(artifact_path).map_err(|err| {
         VmError::InvalidConfig(format!(
             "failed to read research-v3 artifact {}: {err}",
             artifact_path.display()
         ))
     })?;
-    let artifact: ResearchV3EquivalenceArtifact =
-        serde_json::from_slice(&artifact_bytes).map_err(|err| {
-            VmError::Serialization(format!(
-                "failed to parse research-v3 artifact {}: {err}",
-                artifact_path.display()
-            ))
-        })?;
+    if artifact_bytes.len() > MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3 artifact {} is {} bytes after read, exceeding the limit of {} bytes",
+            artifact_path.display(),
+            artifact_bytes.len(),
+            MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES
+        )));
+    }
+
+    serde_json::from_slice(&artifact_bytes).map_err(|err| {
+        VmError::Serialization(format!(
+            "failed to parse research-v3 artifact {}: {err}",
+            artifact_path.display()
+        ))
+    })
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn verify_research_v3_equivalence_command_impl(
+    artifact_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    let artifact = load_research_v3_equivalence_artifact(artifact_path)?;
 
     verify_research_v3_equivalence_artifact(&artifact)?;
 
@@ -6630,6 +6675,190 @@ mod tests {
         assert!(err
             .to_string()
             .contains("research-v3-equivalence event length mismatch"));
+    }
+
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn research_v3_test_artifact_path(label: &str) -> PathBuf {
+        let suffix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos();
+        std::env::temp_dir().join(format!("llm-provable-computer-{label}-{suffix}.json"))
+    }
+
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn research_v3_test_hash() -> String {
+        "0".repeat(64)
+    }
+
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn sample_research_v3_equivalence_artifact() -> ResearchV3EquivalenceArtifact {
+        let state_before = MachineState::with_memory(vec![0, 1, 2]);
+        let mut state_after = state_before.clone();
+        state_after.pc = 1;
+        state_after.acc = 7;
+
+        let registry =
+            read_repo_json_value(FRONTEND_RUNTIME_SEMANTICS_REGISTRY_PATH).expect("registry json");
+        let engine_name = "transformer-vm".to_string();
+
+        ResearchV3EquivalenceArtifact {
+            statement_version: "statement-v3-equivalence-kernel".to_string(),
+            semantic_scope: "native_isa_execution_with_transformer_native_equivalence_check"
+                .to_string(),
+            relation_format: RESEARCH_V3_RELATION_FORMAT.to_string(),
+            fixed_point_profile: "fixed-point-semantics-v2".to_string(),
+            onnx_op_subset_version: "onnx-op-subset-v2".to_string(),
+            onnx_op_subset_size: 1,
+            program_path: "programs/addition.tvm".to_string(),
+            requested_max_steps: 1,
+            checked_steps: 1,
+            engines: vec![ResearchV3EngineSummary {
+                name: engine_name.clone(),
+                steps: 1,
+                halted: false,
+                trace_len: 1,
+                events_len: 1,
+                trace: vec![state_before.clone()],
+                canonical_events: vec![ResearchV3CanonicalEvent {
+                    step: 1,
+                    instruction: "NOP".to_string(),
+                    state_before_hash: research_v3_test_hash(),
+                    state_after_hash: research_v3_test_hash(),
+                }],
+                final_state: state_after,
+                trace_hash: research_v3_test_hash(),
+                event_relation_hash: research_v3_test_hash(),
+                final_state_hash: research_v3_test_hash(),
+            }],
+            rule_witnesses: vec![ResearchV3RuleWitness {
+                step: 1,
+                rule_id: "nop".to_string(),
+                relation: "identity".to_string(),
+                instruction: "NOP".to_string(),
+                participating_engines: vec![engine_name.clone()],
+                state_before_hashes: std::collections::BTreeMap::from([(
+                    engine_name.clone(),
+                    research_v3_test_hash(),
+                )]),
+                state_after_hashes: std::collections::BTreeMap::from([(
+                    engine_name.clone(),
+                    research_v3_test_hash(),
+                )]),
+                engine_transition_hashes: std::collections::BTreeMap::from([(
+                    engine_name,
+                    research_v3_test_hash(),
+                )]),
+                canonical_transition_hash: research_v3_test_hash(),
+                validation: ResearchV3RuleValidation {
+                    differential_lockstep: true,
+                    egraph_status: "not-run".to_string(),
+                    smt_status: "not-run".to_string(),
+                    randomized_testing_status: "not-run".to_string(),
+                },
+            }],
+            frontend_runtime_semantics_registry: registry,
+            limitations: research_v3_limitations(),
+            commitments: ResearchV3EquivalenceCommitments {
+                hash_function: RESEARCH_V2_HASH_FUNCTION.to_string(),
+                statement_spec_hash: research_v3_test_hash(),
+                fixed_point_spec_hash: research_v3_test_hash(),
+                onnx_op_subset_hash: research_v3_test_hash(),
+                artifact_schema_hash: research_v3_test_hash(),
+                frontend_runtime_semantics_registry_hash: research_v3_test_hash(),
+                relation_format_hash: research_v3_test_hash(),
+                limitations_hash: research_v3_test_hash(),
+                program_hash: research_v3_test_hash(),
+                transformer_config_hash: research_v3_test_hash(),
+                onnx_metadata_hash: research_v3_test_hash(),
+                engine_summaries_hash: research_v3_test_hash(),
+                rule_witnesses_hash: research_v3_test_hash(),
+            },
+        }
+    }
+
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn write_research_v3_test_artifact(path: &Path, value: &serde_json::Value) {
+        let bytes = serde_json::to_vec_pretty(value).expect("serialize artifact");
+        fs::write(path, bytes).expect("write artifact");
+    }
+
+    #[test]
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn load_research_v3_equivalence_artifact_rejects_unknown_top_level_field() {
+        let path = research_v3_test_artifact_path("research-v3-extra-top");
+        let mut value =
+            serde_json::to_value(sample_research_v3_equivalence_artifact()).expect("artifact json");
+        value
+            .as_object_mut()
+            .expect("artifact object")
+            .insert("unexpected_field".to_string(), serde_json::json!(true));
+        write_research_v3_test_artifact(&path, &value);
+
+        let err =
+            load_research_v3_equivalence_artifact(&path).expect_err("unknown field should fail");
+        assert!(err.to_string().contains("unknown field"));
+
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn load_research_v3_equivalence_artifact_rejects_unknown_nested_rule_witness_field() {
+        let path = research_v3_test_artifact_path("research-v3-extra-witness");
+        let mut value =
+            serde_json::to_value(sample_research_v3_equivalence_artifact()).expect("artifact json");
+        value["rule_witnesses"][0]["unexpected_field"] = serde_json::json!(7);
+        write_research_v3_test_artifact(&path, &value);
+
+        let err = load_research_v3_equivalence_artifact(&path)
+            .expect_err("unknown nested rule witness field should fail");
+        assert!(err.to_string().contains("unknown field"));
+
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn load_research_v3_equivalence_artifact_rejects_oversized_file() {
+        let path = research_v3_test_artifact_path("research-v3-oversized");
+        fs::write(
+            &path,
+            vec![b'x'; MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES + 1],
+        )
+        .expect("write oversized artifact");
+
+        let err = load_research_v3_equivalence_artifact(&path)
+            .expect_err("oversized artifact should fail");
+        assert!(err.to_string().contains("exceeding the limit"));
+
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn load_research_v3_equivalence_artifact_reports_malformed_json_as_serialization() {
+        let path = research_v3_test_artifact_path("research-v3-malformed");
+        fs::write(&path, b"{").expect("write malformed artifact");
+
+        let err = load_research_v3_equivalence_artifact(&path)
+            .expect_err("malformed artifact should fail");
+        assert!(matches!(err, VmError::Serialization(_)));
+        assert!(err
+            .to_string()
+            .contains("failed to parse research-v3 artifact"));
+
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn load_research_v3_equivalence_artifact_rejects_non_regular_file() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+
+        let err = load_research_v3_equivalence_artifact(dir.path())
+            .expect_err("directory artifact path should fail");
+        assert!(err.to_string().contains("not a regular file"));
     }
 
     #[test]

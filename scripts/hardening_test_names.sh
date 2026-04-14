@@ -30,6 +30,19 @@ hardening_onnx_test_filters=(
   "onnx_export::tests::load_onnx_program_metadata_maps_runtime_conversion_failures_to_serialization"
 )
 
+# Keep the `research-v3` equivalence artifact loader and witness checks on the
+# smoke/UB path. These live in the `tvm` binary test harness rather than the
+# library test harness because the strict loader is part of the CLI-facing
+# verifier surface.
+hardening_research_v3_test_filters=(
+  "tests::research_v3_rule_witnesses_rejects_event_length_mismatch"
+  "tests::load_research_v3_equivalence_artifact_rejects_unknown_top_level_field"
+  "tests::load_research_v3_equivalence_artifact_rejects_unknown_nested_rule_witness_field"
+  "tests::load_research_v3_equivalence_artifact_rejects_oversized_file"
+  "tests::load_research_v3_equivalence_artifact_reports_malformed_json_as_serialization"
+  "tests::load_research_v3_equivalence_artifact_rejects_non_regular_file"
+)
+
 # Keep the heavier `stwo-backend` verifier gates on the sanitizer path. They are
 # intentionally excluded from the Miri loop because feature-enabled Miri builds
 # are too expensive for the fast hardening cycle on this repo.

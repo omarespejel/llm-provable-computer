@@ -363,13 +363,21 @@ onnx_smoke_targets=(
   "onnx_export::tests::load_onnx_program_metadata_rejects_instruction_table_instruction_drift"
   "onnx_export::tests::load_onnx_program_metadata_rejects_model_path_escape"
   "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_top_level_field"
-    "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_config_field"
-    "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_program_field"
-    "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_memory_read_field"
-    "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_direct_memory_read_field"
-    "onnx_export::tests::load_onnx_program_metadata_rejects_missing_direct_memory_read_address"
-    "onnx_export::tests::load_onnx_program_metadata_maps_runtime_conversion_failures_to_serialization"
-  )
+  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_config_field"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_program_field"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_nested_memory_read_field"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_unknown_direct_memory_read_field"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_missing_direct_memory_read_address"
+  "onnx_export::tests::load_onnx_program_metadata_maps_runtime_conversion_failures_to_serialization"
+)
+research_v3_smoke_targets=(
+  "tests::research_v3_rule_witnesses_rejects_event_length_mismatch"
+  "tests::load_research_v3_equivalence_artifact_rejects_unknown_top_level_field"
+  "tests::load_research_v3_equivalence_artifact_rejects_unknown_nested_rule_witness_field"
+  "tests::load_research_v3_equivalence_artifact_rejects_oversized_file"
+  "tests::load_research_v3_equivalence_artifact_reports_malformed_json_as_serialization"
+  "tests::load_research_v3_equivalence_artifact_rejects_non_regular_file"
+)
 stwo_cli_smoke_targets=(
   "cli_can_verify_stwo_recursive_compression_input_contract"
   "cli_verify_stwo_recursive_compression_input_contract_rejects_tampered_commitment"
@@ -407,6 +415,15 @@ changed_path_is_onnx_surface() {
     changed_path_has_prefix "src/model.rs" ||
     changed_path_has_prefix "tests/onnx_export.rs" ||
     changed_path_has_prefix "spec/onnx"
+}
+
+changed_path_is_research_v3_surface() {
+  changed_path_has_prefix "src/bin/tvm.rs" ||
+    changed_path_has_prefix "tests/cli.rs" ||
+    changed_path_has_prefix "spec/statement-v3-equivalence-kernel" ||
+    changed_path_has_prefix "spec/frontend-runtime-semantics-registry-v1.json" ||
+    changed_path_has_prefix "spec/fixed-point-semantics-v2.json" ||
+    changed_path_has_prefix "spec/onnx-op-subset-v2.json"
 }
 
 changed_path_is_dependency_audit_input() {
@@ -475,6 +492,16 @@ run_stwo_cli_smoke_targets() {
 }
 
 run_research_v3_smoke_targets() {
+  local research_v3_smoke label
+  for research_v3_smoke in "${research_v3_smoke_targets[@]}"; do
+    label="${research_v3_smoke##*::}"
+    run_logged "research-v3-smoke-${label}" cargo test -q \
+      --features burn-model,onnx-export \
+      --bin tvm "$research_v3_smoke" \
+      -- \
+      --exact
+  done
+
   run_logged research-v3-equivalence-cli cargo test -q \
     --features full \
     --test cli cli_supports_research_v3_equivalence_command \
@@ -533,6 +560,9 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   if changed_path_is_onnx_surface; then
     run_onnx_smoke_targets
   fi
+  if changed_path_is_research_v3_surface; then
+    run_research_v3_smoke_targets
+  fi
   run_stwo_smoke_targets
   run_stwo_cli_smoke_targets
   completed_local_mode="$RUN_MODE"
@@ -546,9 +576,11 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   if changed_path_is_onnx_surface; then
     run_onnx_smoke_targets
   fi
+  if changed_path_is_research_v3_surface; then
+    run_research_v3_smoke_targets
+  fi
   run_stwo_smoke_targets
   run_stwo_cli_smoke_targets
-  run_research_v3_smoke_targets
   completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
@@ -560,9 +592,11 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   if changed_path_is_onnx_surface; then
     run_onnx_smoke_targets
   fi
+  if changed_path_is_research_v3_surface; then
+    run_research_v3_smoke_targets
+  fi
   run_stwo_smoke_targets
   run_stwo_cli_smoke_targets
-  run_research_v3_smoke_targets
   run_conditional_mutation_check
   run_logged fuzz-smoke env FUZZ_TIME_PER_TARGET=20 scripts/run_fuzz_smoke_suite.sh
   run_logged ub-checks env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
