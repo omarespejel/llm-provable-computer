@@ -358,6 +358,8 @@ stwo_smoke_targets=(
 )
 onnx_smoke_targets=(
   "onnx_export::tests::load_onnx_program_metadata_rejects_wrong_format_version"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_input_contract_drift"
+  "onnx_export::tests::load_onnx_program_metadata_rejects_output_contract_drift"
   "onnx_export::tests::load_onnx_program_metadata_rejects_instruction_table_instruction_drift"
   "onnx_export::tests::load_onnx_program_metadata_rejects_model_path_escape"
 )

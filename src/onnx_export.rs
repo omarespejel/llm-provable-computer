@@ -1122,6 +1122,23 @@ mod tests {
     }
 
     #[test]
+    fn load_onnx_program_metadata_rejects_output_contract_drift() {
+        let (export_dir, mut metadata) =
+            sample_exported_program_metadata("onnx-metadata-output-contract");
+        metadata.output_layout[0] = "tampered-output".to_string();
+        overwrite_metadata(&export_dir, &metadata);
+
+        let err =
+            load_onnx_program_metadata(&export_dir).expect_err("output contract drift should fail");
+        assert!(
+            err.to_string().contains("output_layout"),
+            "unexpected error: {err}"
+        );
+
+        let _ = fs::remove_dir_all(export_dir);
+    }
+
+    #[test]
     fn load_onnx_program_metadata_rejects_instruction_table_instruction_drift() {
         let (export_dir, mut metadata) =
             sample_exported_program_metadata("onnx-metadata-instruction-drift");
