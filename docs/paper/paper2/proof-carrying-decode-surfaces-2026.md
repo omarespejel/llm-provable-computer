@@ -11,12 +11,11 @@ Starknet Foundation
 ## Abstract
 
 This paper studies a narrower systems question than end-to-end zkML deployment:
-what cryptographically meaningful public statement can already be supported by a
-repository-backed proof artifact before recursive compression closure exists. We
-answer that question for `provable-transformer-vm` by isolating a
-proof-carrying decode relation over explicit carried-state boundaries and by
-formalizing the statement-preserving packaging layers that the repository
-already realizes.
+what cryptographically meaningful public statement a repository-backed proof
+artifact can already support before recursive compression exists. We answer
+that question for `provable-transformer-vm` by isolating a proof-carrying
+decode relation over explicit carried-state boundaries and by formalizing the
+statement-preserving packaging layers that the repository already realizes.
 
 The artifact surface is bounded but nontrivial. Verified step artifacts compose
 into chains, segments, interval bundles, rollups, matrices, and a
@@ -25,8 +24,8 @@ end-state decode semantics. We formalize carried-state boundary tuples,
 packaging-layer validity, and a preservation proposition for these ordered
 artifacts. We also separate two adjacent but distinct engineering surfaces:
 bounded multi-runtime semantic-agreement artifacts and release-provenance
-manifests. Both matter operationally, but neither is part of the proof
-relation.
+manifests. Both matter operationally, but neither belongs inside the proof
+relation itself.
 
 The result is not recursive proof-carrying data, incrementally verifiable
 computation, or compressed recursive verification in the sense of HyperNova,
@@ -52,7 +51,7 @@ general implementation-equivalence proofs.
 
 This paper takes the opposite approach. It asks for the strongest honest claim
 that the current repository can defend to a cryptography audience. The answer
-is a bounded one:
+is bounded:
 
 - there is a stable proof-carrying decode relation over explicit carried-state
   boundaries,
@@ -64,8 +63,8 @@ is a bounded one:
 
 That claim is narrower than full recursive accumulation, but it is also more
 useful than a vague “artifact supports future recursion” sentence. It specifies
-what later recursive machinery would need to preserve, namely the same public
-decode boundary semantics already exposed by the current implementation.
+what later recursive machinery would need to preserve: the same public decode
+boundary semantics already exposed by the current implementation.
 
 The paper makes four contributions.
 
@@ -260,7 +259,7 @@ surfaces.
 
 ### 5.1 Proof-carrying decode and carried-state packaging
 
-The strongest paper-2 surface is the phase line that now reaches:
+The strongest paper-2 surface is the phase line that reaches:
 
 - step and chain artifacts,
 - state-relation accumulation,
