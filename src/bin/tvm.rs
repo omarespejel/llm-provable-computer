@@ -894,9 +894,11 @@ const FRONTEND_RUNTIME_RESEARCH_WATCH_LANES: [&str; 9] = [
 const HF_PROVENANCE_MANIFEST_VERSION_V1_LEGACY: &str = "hf-provenance-manifest-v1";
 const HF_PROVENANCE_MANIFEST_VERSION_V2_LEGACY: &str = "hf-provenance-manifest-v2";
 const HF_PROVENANCE_MANIFEST_VERSION_V3_LEGACY: &str = "hf-provenance-manifest-v3";
-const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v4";
+const HF_PROVENANCE_MANIFEST_VERSION_V4_LEGACY: &str = "hf-provenance-manifest-v4";
+const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v5";
 const HF_PROVENANCE_SEMANTIC_SCOPE: &str = "hf-release-provenance-boundary-v1";
 const HF_PROVENANCE_HASH_FUNCTION: &str = "blake2b-256";
+const HF_ONNX_METADATA_IDENTITY_VERSION: &str = "onnx-program-metadata-identity-v1";
 
 struct HfProvenanceManifestCommand {
     output: PathBuf,
@@ -956,7 +958,22 @@ struct HfOnnxExportProvenance {
     exporter_version: Option<String>,
     graph: HfFileCommitment,
     metadata: Option<HfFileCommitment>,
+    metadata_identity: Option<HfOnnxMetadataIdentity>,
     external_data_files: Vec<HfFileCommitment>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct HfOnnxMetadataIdentity {
+    identity_version: String,
+    format_version: u32,
+    ir_version: i64,
+    opset_version: i64,
+    input_dim: usize,
+    output_dim: usize,
+    input_encoding: String,
+    output_encoding: String,
+    instruction_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -981,6 +998,7 @@ struct HfProvenanceCommitments {
     tokenizer_hash: String,
     safetensors_manifest_hash: String,
     onnx_export_hash: String,
+    onnx_metadata_identity_hash: String,
     release_metadata_hash: String,
     limitations_hash: String,
 }
@@ -4249,17 +4267,43 @@ fn prepare_hf_provenance_manifest_command(
         .onnx_model
         .as_deref()
         .map(|path| {
+            let mut bound_paths = std::collections::BTreeSet::new();
+            ensure_unique_hf_bound_path(
+                "HF provenance onnx_export.graph",
+                &path.display().to_string(),
+                &mut bound_paths,
+            )?;
+            if let Some(metadata_path) = command.onnx_metadata.as_deref() {
+                ensure_unique_hf_bound_path(
+                    "HF provenance onnx_export.metadata",
+                    &metadata_path.display().to_string(),
+                    &mut bound_paths,
+                )?;
+            }
+            for external_data_path in &command.onnx_external_data_files {
+                ensure_unique_hf_bound_path(
+                    "HF provenance onnx_export.external_data_files[]",
+                    &external_data_path.display().to_string(),
+                    &mut bound_paths,
+                )?;
+            }
             let mut external_data_files = command
                 .onnx_external_data_files
                 .iter()
                 .map(|path| hf_file_commitment(path))
                 .collect::<llm_provable_computer::Result<Vec<_>>>()?;
             external_data_files.sort_by(|a, b| a.path.cmp(&b.path));
+            let metadata_identity = command
+                .onnx_metadata
+                .as_deref()
+                .map(derive_hf_onnx_metadata_identity)
+                .transpose()?;
             Ok::<HfOnnxExportProvenance, VmError>(HfOnnxExportProvenance {
                 exporter: command.onnx_exporter.clone(),
                 exporter_version: command.onnx_exporter_version.clone(),
                 graph: hf_file_commitment(path)?,
                 metadata: hf_optional_file_commitment(command.onnx_metadata.as_deref())?,
+                metadata_identity,
                 external_data_files,
             })
         })
@@ -4286,6 +4330,11 @@ fn prepare_hf_provenance_manifest_command(
             tokenizer_hash: hash_json_projection_hex(&tokenizer)?,
             safetensors_manifest_hash: hash_json_projection_hex(&safetensors)?,
             onnx_export_hash: hash_json_projection_hex(&onnx_export)?,
+            onnx_metadata_identity_hash: hash_json_projection_hex(
+                &onnx_export
+                    .as_ref()
+                    .and_then(|export| export.metadata_identity.as_ref()),
+            )?,
             release_metadata_hash: hash_json_projection_hex(&release)?,
             limitations_hash: hash_json_projection_hex(&limitations)?,
         },
@@ -4571,8 +4620,14 @@ fn load_hf_provenance_manifest(
             HF_PROVENANCE_MANIFEST_VERSION_V3_LEGACY,
             HF_PROVENANCE_MANIFEST_VERSION
         ))),
+        HF_PROVENANCE_MANIFEST_VERSION_V4_LEGACY => Err(VmError::Serialization(format!(
+            "failed to parse HF provenance manifest {}: legacy manifest_version `{}` is no longer accepted after the ONNX metadata-identity hardening update; regenerate the manifest as {}",
+            manifest_path.display(),
+            HF_PROVENANCE_MANIFEST_VERSION_V4_LEGACY,
+            HF_PROVENANCE_MANIFEST_VERSION
+        ))),
         HF_PROVENANCE_MANIFEST_VERSION => {
-            ensure_hf_provenance_manifest_v4_required_fields(manifest_path, &manifest_value)?;
+            ensure_hf_provenance_manifest_v5_required_fields(manifest_path, &manifest_value)?;
             serde_json::from_value(manifest_value).map_err(|err| {
                 VmError::Serialization(format!(
                     "failed to parse HF provenance manifest {}: {err}",
@@ -4587,7 +4642,7 @@ fn load_hf_provenance_manifest(
     }
 }
 
-fn ensure_hf_provenance_manifest_v4_required_fields(
+fn ensure_hf_provenance_manifest_v5_required_fields(
     manifest_path: &Path,
     manifest_value: &serde_json::Value,
 ) -> llm_provable_computer::Result<()> {
@@ -4609,7 +4664,12 @@ fn ensure_hf_provenance_manifest_v4_required_fields(
     let Some(onnx_export_obj) = onnx_export.as_object() else {
         return Ok(());
     };
-    for field in ["exporter_version", "metadata", "external_data_files"] {
+    for field in [
+        "exporter_version",
+        "metadata",
+        "metadata_identity",
+        "external_data_files",
+    ] {
         if !onnx_export_obj.contains_key(field) {
             return Err(VmError::Serialization(format!(
                 "failed to parse HF provenance manifest {}: missing field `{field}` in `onnx_export` for {}",
@@ -4684,6 +4744,16 @@ fn verify_hf_provenance_manifest(
         &hash_json_projection_hex(&manifest.onnx_export)?,
     )?;
     verify_hash_commitment(
+        "hf onnx_metadata_identity_hash",
+        &manifest.commitments.onnx_metadata_identity_hash,
+        &hash_json_projection_hex(
+            &manifest
+                .onnx_export
+                .as_ref()
+                .and_then(|export| export.metadata_identity.as_ref()),
+        )?,
+    )?;
+    verify_hash_commitment(
         "hf release_metadata_hash",
         &manifest.commitments.release_metadata_hash,
         &hash_json_projection_hex(&manifest.release)?,
@@ -4749,6 +4819,29 @@ fn verify_hf_provenance_manifest(
                 identity,
                 &mut bound_paths,
             )?;
+        }
+        match (&onnx_export.metadata, &onnx_export.metadata_identity) {
+            (Some(metadata), Some(metadata_identity)) => {
+                let derived_metadata_identity =
+                    derive_hf_onnx_metadata_identity(Path::new(&metadata.path))?;
+                if metadata_identity != &derived_metadata_identity {
+                    return Err(VmError::InvalidConfig(format!(
+                        "hf onnx_export.metadata_identity mismatch: expected {:?}, got {:?}",
+                        metadata_identity, derived_metadata_identity
+                    )));
+                }
+            }
+            (Some(_), None) => {
+                return Err(VmError::InvalidConfig(
+                    "HF provenance onnx_export.metadata_identity must be present when metadata is bound".to_string(),
+                ))
+            }
+            (None, Some(_)) => {
+                return Err(VmError::InvalidConfig(
+                    "HF provenance onnx_export.metadata_identity requires onnx_export.metadata".to_string(),
+                ))
+            }
+            (None, None) => {}
         }
     }
     verify_hf_optional_file_commitment(
@@ -4849,6 +4942,120 @@ fn hf_safetensors_file_commitment(
         sha256,
         metadata_hash,
         tensor_count,
+    })
+}
+
+fn derive_hf_onnx_metadata_identity(
+    path: &Path,
+) -> llm_provable_computer::Result<HfOnnxMetadataIdentity> {
+    let bytes = fs::read(path).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to read HF provenance ONNX metadata {}: {err}",
+            path.display()
+        ))
+    })?;
+    let metadata: serde_json::Value = serde_json::from_slice(&bytes).map_err(|err| {
+        VmError::Serialization(format!(
+            "failed to parse HF provenance ONNX metadata {}: {err}",
+            path.display()
+        ))
+    })?;
+    let instructions = metadata
+        .get("instructions")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "HF provenance ONNX metadata {} missing instructions array",
+                path.display()
+            ))
+        })?;
+    Ok(HfOnnxMetadataIdentity {
+        identity_version: HF_ONNX_METADATA_IDENTITY_VERSION.to_string(),
+        format_version: metadata_u32_field(&metadata, path, "format_version")?,
+        ir_version: metadata_i64_field(&metadata, path, "ir_version")?,
+        opset_version: metadata_i64_field(&metadata, path, "opset_version")?,
+        input_dim: metadata_usize_field(&metadata, path, "input_dim")?,
+        output_dim: metadata_usize_field(&metadata, path, "output_dim")?,
+        input_encoding: metadata_string_field(&metadata, path, "input_encoding")?,
+        output_encoding: metadata_string_field(&metadata, path, "output_encoding")?,
+        instruction_count: instructions.len(),
+    })
+}
+
+fn metadata_string_field(
+    metadata: &serde_json::Value,
+    path: &Path,
+    field: &str,
+) -> llm_provable_computer::Result<String> {
+    metadata
+        .get(field)
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_string)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "HF provenance ONNX metadata {} missing string field `{field}`",
+                path.display()
+            ))
+        })
+}
+
+fn metadata_u32_field(
+    metadata: &serde_json::Value,
+    path: &Path,
+    field: &str,
+) -> llm_provable_computer::Result<u32> {
+    let value = metadata
+        .get(field)
+        .and_then(serde_json::Value::as_u64)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "HF provenance ONNX metadata {} missing integer field `{field}`",
+                path.display()
+            ))
+        })?;
+    u32::try_from(value).map_err(|_| {
+        VmError::InvalidConfig(format!(
+            "HF provenance ONNX metadata {} field `{field}` exceeds u32",
+            path.display()
+        ))
+    })
+}
+
+fn metadata_i64_field(
+    metadata: &serde_json::Value,
+    path: &Path,
+    field: &str,
+) -> llm_provable_computer::Result<i64> {
+    metadata
+        .get(field)
+        .and_then(serde_json::Value::as_i64)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "HF provenance ONNX metadata {} missing integer field `{field}`",
+                path.display()
+            ))
+        })
+}
+
+fn metadata_usize_field(
+    metadata: &serde_json::Value,
+    path: &Path,
+    field: &str,
+) -> llm_provable_computer::Result<usize> {
+    let value = metadata
+        .get(field)
+        .and_then(serde_json::Value::as_u64)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "HF provenance ONNX metadata {} missing integer field `{field}`",
+                path.display()
+            ))
+        })?;
+    usize::try_from(value).map_err(|_| {
+        VmError::InvalidConfig(format!(
+            "HF provenance ONNX metadata {} field `{field}` exceeds usize",
+            path.display()
+        ))
     })
 }
 
@@ -7238,6 +7445,7 @@ mod hf_provenance_manifest_tests {
                 "tokenizer_hash": "0".repeat(64),
                 "safetensors_manifest_hash": "1".repeat(64),
                 "onnx_export_hash": "2".repeat(64),
+                "onnx_metadata_identity_hash": "3".repeat(64),
                 "release_metadata_hash": "3".repeat(64),
                 "limitations_hash": "4".repeat(64)
             }
@@ -7292,6 +7500,12 @@ mod hf_provenance_manifest_tests {
                 >::new())
                 .expect("safetensors hash"),
                 onnx_export_hash: hash_json_projection_hex(&onnx_export).expect("onnx hash"),
+                onnx_metadata_identity_hash: hash_json_projection_hex(
+                    &onnx_export
+                        .as_ref()
+                        .and_then(|export| export.metadata_identity.as_ref()),
+                )
+                .expect("onnx metadata identity hash"),
                 release_metadata_hash: hash_json_projection_hex(&release).expect("release hash"),
                 limitations_hash: hash_json_projection_hex(&limitations).expect("limitations hash"),
             },
@@ -7327,6 +7541,7 @@ mod hf_provenance_manifest_tests {
                 "sha256": "6".repeat(64)
             },
             "metadata": null,
+            "metadata_identity": null,
             "external_data_files": [],
             "unexpected_field": 7
         });
@@ -7338,7 +7553,7 @@ mod hf_provenance_manifest_tests {
     }
 
     #[test]
-    fn load_hf_provenance_manifest_rejects_v4_missing_onnx_metadata_field() {
+    fn load_hf_provenance_manifest_rejects_v5_missing_onnx_metadata_identity_field() {
         let file = hf_provenance_test_manifest_file("missing-onnx-metadata");
         let mut value = sample_hf_provenance_manifest_value();
         value["onnx_export"] = serde_json::json!({
@@ -7350,13 +7565,16 @@ mod hf_provenance_manifest_tests {
                 "blake2b_256": "5".repeat(64),
                 "sha256": "6".repeat(64)
             },
+            "metadata": null,
             "external_data_files": []
         });
         write_hf_provenance_test_manifest(file.path(), &value);
 
         let err = load_hf_provenance_manifest(file.path())
-            .expect_err("v3 manifest missing onnx metadata field should fail");
-        assert!(err.to_string().contains("missing field `metadata`"));
+            .expect_err("v5 manifest missing onnx metadata_identity field should fail");
+        assert!(err
+            .to_string()
+            .contains("missing field `metadata_identity`"));
     }
 
     #[test]
@@ -7425,6 +7643,20 @@ mod hf_provenance_manifest_tests {
         assert!(err
             .to_string()
             .contains("legacy manifest_version `hf-provenance-manifest-v3` is no longer accepted"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_legacy_v4_with_upgrade_message() {
+        let file = hf_provenance_test_manifest_file("legacy-v4");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["manifest_version"] = serde_json::json!(HF_PROVENANCE_MANIFEST_VERSION_V4_LEGACY);
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("legacy v4 manifest should require regeneration");
+        assert!(err
+            .to_string()
+            .contains("legacy manifest_version `hf-provenance-manifest-v4` is no longer accepted"));
     }
 
     #[test]
@@ -7586,6 +7818,10 @@ mod hf_provenance_manifest_tests {
                 .expect("safetensors hash"),
                 onnx_export_hash: hash_json_projection_hex(&Option::<HfOnnxExportProvenance>::None)
                     .expect("onnx hash"),
+                onnx_metadata_identity_hash: hash_json_projection_hex(
+                    &Option::<&HfOnnxMetadataIdentity>::None,
+                )
+                .expect("onnx metadata identity hash"),
                 release_metadata_hash: hash_json_projection_hex(&HfReleaseMetadata {
                     model_card: Some(HfFileCommitment {
                         path: bound_dir.display().to_string(),
@@ -7655,6 +7891,7 @@ mod hf_provenance_manifest_tests {
             exporter_version: None,
             graph: hf_file_commitment(&graph).expect("graph commitment"),
             metadata: None,
+            metadata_identity: None,
             external_data_files: vec![
                 hf_file_commitment(&sidecar).expect("sidecar commitment"),
                 hf_file_commitment(&sidecar).expect("sidecar commitment"),
@@ -7711,6 +7948,7 @@ mod hf_provenance_manifest_tests {
                 exporter_version: None,
                 graph: graph_commitment.clone(),
                 metadata: Some(graph_commitment),
+                metadata_identity: None,
                 external_data_files: Vec::new(),
             }));
 
@@ -7734,6 +7972,7 @@ mod hf_provenance_manifest_tests {
                 exporter_version: None,
                 graph: graph_commitment.clone(),
                 metadata: None,
+                metadata_identity: None,
                 external_data_files: vec![graph_commitment],
             }));
 
@@ -7801,6 +8040,7 @@ mod hf_provenance_manifest_tests {
                 exporter_version: Some(String::new()),
                 graph: hf_file_commitment(&graph).expect("graph commitment"),
                 metadata: None,
+                metadata_identity: None,
                 external_data_files: Vec::new(),
             }));
 
@@ -7825,6 +8065,7 @@ mod hf_provenance_manifest_tests {
                 exporter_version: None,
                 graph: commitment,
                 metadata: None,
+                metadata_identity: None,
                 external_data_files: Vec::new(),
             }));
 
