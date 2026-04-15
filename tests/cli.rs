@@ -5729,6 +5729,10 @@ fn cli_supports_research_v3_equivalence_command() {
         unique_temp_dir("cli-research-v3-equivalence-extra-event").with_extension("json");
     let extra_trace_path =
         unique_temp_dir("cli-research-v3-equivalence-extra-trace").with_extension("json");
+    let extra_lane_path =
+        unique_temp_dir("cli-research-v3-equivalence-extra-lane").with_extension("json");
+    let step_budget_path =
+        unique_temp_dir("cli-research-v3-equivalence-step-budget").with_extension("json");
     let mut command = tvm_command();
     command
         .arg("research-v3-equivalence")
@@ -6272,6 +6276,61 @@ fn cli_supports_research_v3_equivalence_command() {
             extra_trace_expected_steps + 1
         )));
 
+    let mut extra_lane = artifact_json.clone();
+    let lanes = extra_lane["frontend_runtime_semantics_registry"]["lanes"]
+        .as_array_mut()
+        .expect("registry lanes");
+    let replaced_lane = lanes
+        .iter_mut()
+        .find(|lane| lane.get("lane_id").and_then(serde_json::Value::as_str) == Some("egg-emerge"))
+        .expect("egg-emerge research watch lane");
+    *replaced_lane = serde_json::json!({
+        "lane_id": "surprise-watch",
+        "ecosystem": "surprise",
+        "role": "unexpected watch lane",
+        "status": "research_watch",
+        "artifact_binding": "No artifact binding in research-v3-equivalence.",
+        "claim_boundary": "This lane must not drift into the pinned registry without an explicit update."
+    });
+    extra_lane["commitments"]["frontend_runtime_semantics_registry_hash"] =
+        serde_json::Value::String(hash_json_value(
+            extra_lane
+                .get("frontend_runtime_semantics_registry")
+                .expect("extra lane registry"),
+        ));
+    std::fs::write(
+        &extra_lane_path,
+        serde_json::to_vec(&extra_lane).expect("extra lane artifact json"),
+    )
+    .expect("write extra lane artifact");
+    let mut verify_extra_lane = tvm_command();
+    verify_extra_lane
+        .arg("verify-research-v3-equivalence")
+        .arg(&extra_lane_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "frontend runtime semantics registry missing lane egg-emerge",
+        ));
+
+    let mut step_budget = artifact_json.clone();
+    step_budget["requested_max_steps"] = serde_json::Value::from(4097_u64);
+    step_budget["checked_steps"] = serde_json::Value::from(4097_u64);
+    std::fs::write(
+        &step_budget_path,
+        serde_json::to_vec(&step_budget).expect("step budget artifact json"),
+    )
+    .expect("write step budget artifact");
+    let mut verify_step_budget = tvm_command();
+    verify_step_budget
+        .arg("verify-research-v3-equivalence")
+        .arg(&step_budget_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "checked_steps 4097 exceeds ingest cap 4096",
+        ));
+
     let mut malformed_hash = artifact_json.clone();
     malformed_hash["commitments"]["relation_format_hash"] =
         serde_json::Value::String("not-a-blake2b-hash".to_string());
@@ -6309,6 +6368,8 @@ fn cli_supports_research_v3_equivalence_command() {
     let _ = std::fs::remove_file(missing_engine_path);
     let _ = std::fs::remove_file(extra_event_path);
     let _ = std::fs::remove_file(extra_trace_path);
+    let _ = std::fs::remove_file(extra_lane_path);
+    let _ = std::fs::remove_file(step_budget_path);
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
