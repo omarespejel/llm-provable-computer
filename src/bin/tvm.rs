@@ -6081,6 +6081,57 @@ fn prevalidate_research_v3_equivalence_artifact_budget_json(
             ));
         }
         for (index, witness) in rule_witnesses.iter().enumerate() {
+            if let Some(participating_engines) = witness
+                .get("participating_engines")
+                .and_then(serde_json::Value::as_array)
+            {
+                if participating_engines.len() > max_engines {
+                    return Err(research_v3_artifact_budget_error(
+                        artifact_path,
+                        format!(
+                            "research-v3 witness {} participating_engines length {} exceeds ingest cap {}",
+                            index + 1,
+                            participating_engines.len(),
+                            max_engines
+                        ),
+                    ));
+                }
+            }
+            for (label, entries) in [
+                (
+                    "state_before_hashes",
+                    witness
+                        .get("state_before_hashes")
+                        .and_then(serde_json::Value::as_object),
+                ),
+                (
+                    "state_after_hashes",
+                    witness
+                        .get("state_after_hashes")
+                        .and_then(serde_json::Value::as_object),
+                ),
+                (
+                    "engine_transition_hashes",
+                    witness
+                        .get("engine_transition_hashes")
+                        .and_then(serde_json::Value::as_object),
+                ),
+            ] {
+                if let Some(entries) = entries {
+                    if entries.len() > max_engines {
+                        return Err(research_v3_artifact_budget_error(
+                            artifact_path,
+                            format!(
+                                "research-v3 witness {} {} length {} exceeds ingest cap {}",
+                                index + 1,
+                                label,
+                                entries.len(),
+                                max_engines
+                            ),
+                        ));
+                    }
+                }
+            }
             if let Some(instruction) = witness
                 .get("instruction")
                 .and_then(serde_json::Value::as_str)
@@ -8812,13 +8863,27 @@ mod tests {
     #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
     fn verify_research_v3_equivalence_artifact_rejects_checked_steps_budget_overflow() {
         let mut artifact = sample_research_v3_equivalence_artifact();
-        artifact.requested_max_steps = MAX_RESEARCH_V3_EQUIVALENCE_STEPS + 1;
         artifact.checked_steps = MAX_RESEARCH_V3_EQUIVALENCE_STEPS + 1;
 
         let err = verify_research_v3_equivalence_artifact(&artifact)
             .expect_err("checked_steps ingest overflow should fail");
         assert!(err.to_string().contains(&format!(
             "checked_steps {} exceeds ingest cap {}",
+            MAX_RESEARCH_V3_EQUIVALENCE_STEPS + 1,
+            MAX_RESEARCH_V3_EQUIVALENCE_STEPS
+        )));
+    }
+
+    #[test]
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn verify_research_v3_equivalence_artifact_rejects_requested_max_steps_budget_overflow() {
+        let mut artifact = sample_research_v3_equivalence_artifact();
+        artifact.requested_max_steps = MAX_RESEARCH_V3_EQUIVALENCE_STEPS + 1;
+
+        let err = verify_research_v3_equivalence_artifact(&artifact)
+            .expect_err("requested_max_steps ingest overflow should fail");
+        assert!(err.to_string().contains(&format!(
+            "requested_max_steps {} exceeds ingest cap {}",
             MAX_RESEARCH_V3_EQUIVALENCE_STEPS + 1,
             MAX_RESEARCH_V3_EQUIVALENCE_STEPS
         )));

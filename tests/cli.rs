@@ -5757,6 +5757,8 @@ fn cli_supports_research_v3_equivalence_command() {
         unique_temp_dir("cli-research-v3-equivalence-swapped-lane").with_extension("json");
     let step_budget_path =
         unique_temp_dir("cli-research-v3-equivalence-step-budget").with_extension("json");
+    let requested_budget_path =
+        unique_temp_dir("cli-research-v3-equivalence-requested-budget").with_extension("json");
     let mut command = tvm_command();
     command
         .arg("research-v3-equivalence")
@@ -6387,6 +6389,23 @@ fn cli_supports_research_v3_equivalence_command() {
             "checked_steps 4097 exceeds ingest cap 4096",
         ));
 
+    let mut requested_budget = artifact_json.clone();
+    requested_budget["requested_max_steps"] = serde_json::Value::from(4097_u64);
+    std::fs::write(
+        &requested_budget_path,
+        serde_json::to_vec(&requested_budget).expect("requested budget artifact json"),
+    )
+    .expect("write requested budget artifact");
+    let mut verify_requested_budget = tvm_command();
+    verify_requested_budget
+        .arg("verify-research-v3-equivalence")
+        .arg(&requested_budget_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "requested_max_steps 4097 exceeds ingest cap 4096",
+        ));
+
     let mut malformed_hash = artifact_json.clone();
     malformed_hash["commitments"]["relation_format_hash"] =
         serde_json::Value::String("not-a-blake2b-hash".to_string());
@@ -6427,6 +6446,7 @@ fn cli_supports_research_v3_equivalence_command() {
     let _ = std::fs::remove_file(extra_lane_path);
     let _ = std::fs::remove_file(swapped_lane_path);
     let _ = std::fs::remove_file(step_budget_path);
+    let _ = std::fs::remove_file(requested_budget_path);
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
@@ -6445,7 +6465,7 @@ fn cli_research_v3_equivalence_rejects_zero_max_steps() {
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "research-v3-equivalence requires max_steps >= 1",
+            "--max-steps must be in 1..=4096 for research-v3-equivalence",
         ));
 
     assert!(!output_path.exists());
