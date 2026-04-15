@@ -5495,11 +5495,10 @@ fn cli_prepare_hf_manifest_emits_onnx_metadata_identity() {
         manifest_json["onnx_export"]["metadata_identity"]["output_encoding"].as_str(),
         Some("transition-v1")
     );
-    assert!(
-        manifest_json["onnx_export"]["metadata_identity"]["instruction_count"]
-            .as_u64()
-            .is_some_and(|count| count > 0),
-        "instruction_count must be positive",
+    assert_eq!(
+        manifest_json["onnx_export"]["metadata_identity"]["instruction_count"].as_u64(),
+        Some(3),
+        "instruction_count must match the deterministic ONNX metadata fixture",
     );
     assert!(
         manifest_json["commitments"]["onnx_metadata_identity_hash"]
@@ -5635,6 +5634,40 @@ fn cli_prepare_hf_manifest_rejects_negative_onnx_format_version() {
     prepare.assert().failure().stderr(predicate::str::contains(
         "field `format_version` must be non-negative",
     ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
+fn cli_prepare_hf_manifest_rejects_malformed_onnx_integer_metadata_fields() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-malformed-onnx-integer-fields");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    for field in ["format_version", "ir_version", "input_dim"] {
+        let case_dir = fixture_dir.join(field);
+        std::fs::create_dir_all(&case_dir).expect("create malformed integer case dir");
+        let (onnx_model, onnx_metadata) = hf_provenance_export_valid_onnx_fixture(&case_dir);
+
+        let mut metadata_json: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&onnx_metadata).expect("metadata bytes"))
+                .expect("metadata json");
+        metadata_json[field] = serde_json::json!("not-an-integer");
+        std::fs::write(
+            &onnx_metadata,
+            serde_json::to_vec_pretty(&metadata_json).expect("serialize tampered ONNX metadata"),
+        )
+        .expect("write tampered ONNX metadata");
+
+        let mut prepare =
+            hf_provenance_prepare_command(&manifest, &onnx_model, Some(&onnx_metadata), &[]);
+        prepare
+            .assert()
+            .failure()
+            .stderr(predicate::str::contains(format!(
+                "field `{field}` malformed: expected integer"
+            )));
+    }
 
     let _ = std::fs::remove_dir_all(fixture_dir);
 }

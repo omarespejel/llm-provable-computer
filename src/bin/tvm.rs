@@ -5169,7 +5169,7 @@ fn metadata_u32_field(
         }
     }
     Err(VmError::InvalidConfig(format!(
-        "HF provenance ONNX metadata {} missing integer field `{field}`",
+        "HF provenance ONNX metadata {} field `{field}` malformed: expected integer",
         path.display()
     )))
 }
@@ -5197,7 +5197,7 @@ fn metadata_u64_field(
         }
     }
     Err(VmError::InvalidConfig(format!(
-        "HF provenance ONNX metadata {} missing integer field `{field}`",
+        "HF provenance ONNX metadata {} field `{field}` malformed: expected integer",
         path.display()
     )))
 }
@@ -5230,7 +5230,7 @@ fn metadata_usize_field(
         }
     }
     Err(VmError::InvalidConfig(format!(
-        "HF provenance ONNX metadata {} missing integer field `{field}`",
+        "HF provenance ONNX metadata {} field `{field}` malformed: expected integer",
         path.display()
     )))
 }
