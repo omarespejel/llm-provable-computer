@@ -409,6 +409,10 @@ research_v3_smoke_targets=(
   "tests::verify_research_v3_equivalence_artifact_rejects_unknown_engine_binding"
   "tests::verify_research_v3_equivalence_artifact_rejects_missing_pinned_engine"
   "tests::verify_research_v3_equivalence_artifact_rejects_extra_engine_events_beyond_checked_steps"
+  "tests::frontend_runtime_registry_validation_rejects_extra_watch_lane"
+  "tests::verify_research_v3_equivalence_artifact_rejects_checked_steps_budget_overflow"
+  "tests::verify_research_v3_equivalence_artifact_rejects_oversized_machine_state_memory"
+  "tests::verify_research_v3_equivalence_artifact_rejects_oversized_witness_instruction"
 )
 stwo_cli_smoke_targets=(
   "cli_can_verify_stwo_recursive_compression_input_contract"

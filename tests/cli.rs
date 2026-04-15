@@ -4742,6 +4742,28 @@ fn cli_reports_missing_features_for_research_v3_equivalence() {
         ));
 }
 
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+#[test]
+fn cli_research_v3_equivalence_rejects_max_steps_above_artifact_cap() {
+    let output_path =
+        unique_temp_dir("cli-research-v3-equivalence-over-cap").with_extension("json");
+    let mut command = tvm_command();
+    command
+        .arg("research-v3-equivalence")
+        .arg("programs/addition.tvm")
+        .arg("-o")
+        .arg(&output_path)
+        .arg("--max-steps")
+        .arg("4097")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "--max-steps must be in 1..=4096 for research-v3-equivalence",
+        ));
+
+    assert!(!output_path.exists());
+}
+
 #[test]
 fn cli_can_prepare_and_verify_hf_provenance_manifest() {
     let fixture_dir = unique_temp_dir("cli-hf-provenance-manifest");
@@ -6157,6 +6179,23 @@ fn cli_supports_research_v3_equivalence_command() {
         unique_temp_dir("cli-research-v3-equivalence-extra-event").with_extension("json");
     let extra_trace_path =
         unique_temp_dir("cli-research-v3-equivalence-extra-trace").with_extension("json");
+    let extra_lane_path =
+        unique_temp_dir("cli-research-v3-equivalence-extra-lane").with_extension("json");
+    let swapped_lane_path =
+        unique_temp_dir("cli-research-v3-equivalence-swapped-lane").with_extension("json");
+    let participating_engines_budget_path =
+        unique_temp_dir("cli-research-v3-equivalence-participating-engines-budget")
+            .with_extension("json");
+    let witness_hash_budget_path =
+        unique_temp_dir("cli-research-v3-equivalence-witness-hash-budget").with_extension("json");
+    let step_budget_path =
+        unique_temp_dir("cli-research-v3-equivalence-step-budget").with_extension("json");
+    let requested_budget_path =
+        unique_temp_dir("cli-research-v3-equivalence-requested-budget").with_extension("json");
+    let trace_len_budget_path =
+        unique_temp_dir("cli-research-v3-equivalence-trace-len-budget").with_extension("json");
+    let events_len_budget_path =
+        unique_temp_dir("cli-research-v3-equivalence-events-len-budget").with_extension("json");
     let mut command = tvm_command();
     command
         .arg("research-v3-equivalence")
@@ -6700,6 +6739,218 @@ fn cli_supports_research_v3_equivalence_command() {
             extra_trace_expected_steps + 1
         )));
 
+    let mut extra_lane = artifact_json.clone();
+    let lanes = extra_lane["frontend_runtime_semantics_registry"]["lanes"]
+        .as_array_mut()
+        .expect("registry lanes");
+    lanes.push(serde_json::json!({
+        "lane_id": "surprise-watch",
+        "ecosystem": "surprise",
+        "role": "unexpected watch lane",
+        "status": "research_watch",
+        "artifact_binding": "No artifact binding in research-v3-equivalence.",
+        "claim_boundary": "This lane must not drift into the pinned registry without an explicit update."
+    }));
+    extra_lane["commitments"]["frontend_runtime_semantics_registry_hash"] =
+        serde_json::Value::String(hash_json_value(
+            extra_lane
+                .get("frontend_runtime_semantics_registry")
+                .expect("extra lane registry"),
+        ));
+    std::fs::write(
+        &extra_lane_path,
+        serde_json::to_vec(&extra_lane).expect("extra lane artifact json"),
+    )
+    .expect("write extra lane artifact");
+    let mut verify_extra_lane = tvm_command();
+    verify_extra_lane
+        .arg("verify-research-v3-equivalence")
+        .arg(&extra_lane_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "frontend runtime semantics registry lane count 14 exceeds ingest cap 13",
+        ));
+
+    let mut swapped_lane = artifact_json.clone();
+    let lanes = swapped_lane["frontend_runtime_semantics_registry"]["lanes"]
+        .as_array_mut()
+        .expect("registry lanes");
+    let replaced_lane = lanes
+        .iter_mut()
+        .find(|lane| lane.get("lane_id").and_then(serde_json::Value::as_str) == Some("egg-emerge"))
+        .expect("egg-emerge lane");
+    *replaced_lane = serde_json::json!({
+        "lane_id": "surprise-watch",
+        "ecosystem": "surprise",
+        "role": "unexpected watch lane",
+        "status": "research_watch",
+        "artifact_binding": "No artifact binding in research-v3-equivalence.",
+        "claim_boundary": "This lane must not drift into the pinned registry without an explicit update."
+    });
+    swapped_lane["commitments"]["frontend_runtime_semantics_registry_hash"] =
+        serde_json::Value::String(hash_json_value(
+            swapped_lane
+                .get("frontend_runtime_semantics_registry")
+                .expect("swapped lane registry"),
+        ));
+    std::fs::write(
+        &swapped_lane_path,
+        serde_json::to_vec(&swapped_lane).expect("swapped lane artifact json"),
+    )
+    .expect("write swapped lane artifact");
+    let mut verify_swapped_lane = tvm_command();
+    verify_swapped_lane
+        .arg("verify-research-v3-equivalence")
+        .arg(&swapped_lane_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "frontend runtime semantics registry missing lane egg-emerge",
+        ));
+
+    let mut participating_engines_budget = artifact_json.clone();
+    participating_engines_budget["rule_witnesses"][0]["participating_engines"]
+        .as_array_mut()
+        .expect("participating engines")
+        .push(serde_json::Value::String("surprise-engine".to_string()));
+    participating_engines_budget["commitments"]["rule_witnesses_hash"] =
+        serde_json::Value::String(hash_json_value(
+            participating_engines_budget
+                .get("rule_witnesses")
+                .expect("participating engines budget witnesses"),
+        ));
+    std::fs::write(
+        &participating_engines_budget_path,
+        serde_json::to_vec(&participating_engines_budget)
+            .expect("participating engines budget artifact json"),
+    )
+    .expect("write participating engines budget artifact");
+    let mut verify_participating_engines_budget = tvm_command();
+    verify_participating_engines_budget
+        .arg("verify-research-v3-equivalence")
+        .arg(&participating_engines_budget_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "research-v3 witness 1 participating_engines length 5 exceeds ingest cap 4",
+        ));
+
+    for object_key in [
+        "state_before_hashes",
+        "state_after_hashes",
+        "engine_transition_hashes",
+    ] {
+        let mut witness_hash_budget = artifact_json.clone();
+        witness_hash_budget["rule_witnesses"][0][object_key]
+            .as_object_mut()
+            .expect("witness hash object")
+            .insert(
+                "surprise-engine".to_string(),
+                serde_json::Value::String("0".repeat(64)),
+            );
+        witness_hash_budget["commitments"]["rule_witnesses_hash"] =
+            serde_json::Value::String(hash_json_value(
+                witness_hash_budget
+                    .get("rule_witnesses")
+                    .expect("witness hash budget witnesses"),
+            ));
+        std::fs::write(
+            &witness_hash_budget_path,
+            serde_json::to_vec(&witness_hash_budget).expect("witness hash budget artifact json"),
+        )
+        .expect("write witness hash budget artifact");
+        let mut verify_witness_hash_budget = tvm_command();
+        verify_witness_hash_budget
+            .arg("verify-research-v3-equivalence")
+            .arg(&witness_hash_budget_path)
+            .assert()
+            .failure()
+            .stderr(predicate::str::contains(format!(
+                "research-v3 witness 1 {object_key} length 5 exceeds ingest cap 4",
+            )));
+    }
+
+    let mut step_budget = artifact_json.clone();
+    step_budget["checked_steps"] = serde_json::Value::from(4097_u64);
+    std::fs::write(
+        &step_budget_path,
+        serde_json::to_vec(&step_budget).expect("step budget artifact json"),
+    )
+    .expect("write step budget artifact");
+    let mut verify_step_budget = tvm_command();
+    verify_step_budget
+        .arg("verify-research-v3-equivalence")
+        .arg(&step_budget_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "checked_steps 4097 exceeds ingest cap 4096",
+        ));
+
+    let mut requested_budget = artifact_json.clone();
+    requested_budget["requested_max_steps"] = serde_json::Value::from(4097_u64);
+    std::fs::write(
+        &requested_budget_path,
+        serde_json::to_vec(&requested_budget).expect("requested budget artifact json"),
+    )
+    .expect("write requested budget artifact");
+    let mut verify_requested_budget = tvm_command();
+    verify_requested_budget
+        .arg("verify-research-v3-equivalence")
+        .arg(&requested_budget_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "requested_max_steps 4097 exceeds ingest cap 4096",
+        ));
+
+    let mut trace_len_budget = artifact_json.clone();
+    trace_len_budget["engines"][0]["trace_len"] = serde_json::Value::from(4098_u64);
+    trace_len_budget["commitments"]["engine_summaries_hash"] =
+        serde_json::Value::String(hash_json_value(
+            trace_len_budget
+                .get("engines")
+                .expect("trace len budget engines"),
+        ));
+    std::fs::write(
+        &trace_len_budget_path,
+        serde_json::to_vec(&trace_len_budget).expect("trace len budget artifact json"),
+    )
+    .expect("write trace len budget artifact");
+    let mut verify_trace_len_budget = tvm_command();
+    verify_trace_len_budget
+        .arg("verify-research-v3-equivalence")
+        .arg(&trace_len_budget_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "research-v3 engine transformer trace_len 4098 exceeds ingest cap 4097",
+        ));
+
+    let mut events_len_budget = artifact_json.clone();
+    events_len_budget["engines"][0]["events_len"] = serde_json::Value::from(4097_u64);
+    events_len_budget["commitments"]["engine_summaries_hash"] =
+        serde_json::Value::String(hash_json_value(
+            events_len_budget
+                .get("engines")
+                .expect("events len budget engines"),
+        ));
+    std::fs::write(
+        &events_len_budget_path,
+        serde_json::to_vec(&events_len_budget).expect("events len budget artifact json"),
+    )
+    .expect("write events len budget artifact");
+    let mut verify_events_len_budget = tvm_command();
+    verify_events_len_budget
+        .arg("verify-research-v3-equivalence")
+        .arg(&events_len_budget_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "research-v3 engine transformer events_len 4097 exceeds ingest cap 4096",
+        ));
+
     let mut malformed_hash = artifact_json.clone();
     malformed_hash["commitments"]["relation_format_hash"] =
         serde_json::Value::String("not-a-blake2b-hash".to_string());
@@ -6737,6 +6988,14 @@ fn cli_supports_research_v3_equivalence_command() {
     let _ = std::fs::remove_file(missing_engine_path);
     let _ = std::fs::remove_file(extra_event_path);
     let _ = std::fs::remove_file(extra_trace_path);
+    let _ = std::fs::remove_file(extra_lane_path);
+    let _ = std::fs::remove_file(swapped_lane_path);
+    let _ = std::fs::remove_file(participating_engines_budget_path);
+    let _ = std::fs::remove_file(witness_hash_budget_path);
+    let _ = std::fs::remove_file(step_budget_path);
+    let _ = std::fs::remove_file(requested_budget_path);
+    let _ = std::fs::remove_file(trace_len_budget_path);
+    let _ = std::fs::remove_file(events_len_budget_path);
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
@@ -6755,7 +7014,7 @@ fn cli_research_v3_equivalence_rejects_zero_max_steps() {
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "research-v3-equivalence requires max_steps >= 1",
+            "--max-steps must be in 1..=4096 for research-v3-equivalence",
         ));
 
     assert!(!output_path.exists());
