@@ -848,9 +848,10 @@ format also carries `sha256` digests for bound files so release assets can be
 matched against attestation subject digests without turning the manifest into an
 attestation verifier.
 
-The current manifest wire format is `hf-provenance-manifest-v3`. Older
-`hf-provenance-manifest-v1` and `hf-provenance-manifest-v2` files must be
-regenerated before verification because the ONNX sidecar surface and
+The current manifest wire format is `hf-provenance-manifest-v4`. Older
+`hf-provenance-manifest-v1`, `hf-provenance-manifest-v2`, and
+`hf-provenance-manifest-v3` files must be regenerated before verification
+because the ONNX sidecar surface, hub-binding commitment, and
 attestation-digest inventory now have explicit versioned format boundaries.
 
 Canonical HF provenance spec file:
