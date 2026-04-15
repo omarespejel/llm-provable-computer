@@ -4843,7 +4843,9 @@ fn cli_can_prepare_and_verify_hf_provenance_manifest() {
     assert!(
         manifest_json["commitments"]["onnx_metadata_identity_hash"]
             .as_str()
-            .is_some_and(|digest| digest.chars().all(|c| c.is_ascii_hexdigit())),
+            .is_some_and(|digest| {
+                digest.len() == 64 && digest.chars().all(|c| c.is_ascii_hexdigit())
+            }),
         "commitments.onnx_metadata_identity_hash must be hex",
     );
     assert!(manifest_json["onnx_export"]["metadata_identity"].is_null());
