@@ -8275,6 +8275,39 @@ mod hf_provenance_manifest_tests {
     }
 
     #[test]
+    fn verify_hf_provenance_manifest_rejects_metadata_identity_without_metadata() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let graph = dir.path().join("model.onnx");
+        fs::write(&graph, b"onnx").expect("write graph");
+
+        let manifest =
+            sample_hf_provenance_manifest_with_onnx_export(Some(HfOnnxExportProvenance {
+                exporter: "optimum-onnx".to_string(),
+                exporter_version: None,
+                graph: hf_file_commitment(&graph).expect("graph commitment"),
+                metadata: None,
+                metadata_identity: Some(HfOnnxMetadataIdentity {
+                    identity_version: HF_ONNX_METADATA_IDENTITY_VERSION.to_string(),
+                    format_version: 1,
+                    ir_version: 8,
+                    opset_version: 17,
+                    input_dim: 4,
+                    output_dim: 7,
+                    input_encoding: "token_ids".to_string(),
+                    output_encoding: "logits".to_string(),
+                    instruction_count: 3,
+                }),
+                external_data_files: Vec::new(),
+            }));
+
+        let err = verify_hf_provenance_manifest(&manifest)
+            .expect_err("metadata identity without metadata should fail");
+        assert!(err
+            .to_string()
+            .contains("HF provenance onnx_export.metadata_identity requires onnx_export.metadata"));
+    }
+
+    #[test]
     fn verify_hf_provenance_manifest_rejects_empty_onnx_exporter_version() {
         let dir = tempfile::tempdir().expect("create temp dir");
         let graph = dir.path().join("model.onnx");
