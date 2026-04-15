@@ -4742,6 +4742,28 @@ fn cli_reports_missing_features_for_research_v3_equivalence() {
         ));
 }
 
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+#[test]
+fn cli_research_v3_equivalence_rejects_max_steps_above_artifact_cap() {
+    let output_path =
+        unique_temp_dir("cli-research-v3-equivalence-over-cap").with_extension("json");
+    let mut command = tvm_command();
+    command
+        .arg("research-v3-equivalence")
+        .arg("programs/addition.tvm")
+        .arg("-o")
+        .arg(&output_path)
+        .arg("--max-steps")
+        .arg("4097")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "research-v3-equivalence max_steps 4097 exceeds artifact cap 4096",
+        ));
+
+    assert!(!output_path.exists());
+}
+
 #[test]
 fn cli_can_prepare_and_verify_hf_provenance_manifest() {
     let fixture_dir = unique_temp_dir("cli-hf-provenance-manifest");
@@ -6280,18 +6302,14 @@ fn cli_supports_research_v3_equivalence_command() {
     let lanes = extra_lane["frontend_runtime_semantics_registry"]["lanes"]
         .as_array_mut()
         .expect("registry lanes");
-    let replaced_lane = lanes
-        .iter_mut()
-        .find(|lane| lane.get("lane_id").and_then(serde_json::Value::as_str) == Some("egg-emerge"))
-        .expect("egg-emerge research watch lane");
-    *replaced_lane = serde_json::json!({
+    lanes.push(serde_json::json!({
         "lane_id": "surprise-watch",
         "ecosystem": "surprise",
         "role": "unexpected watch lane",
         "status": "research_watch",
         "artifact_binding": "No artifact binding in research-v3-equivalence.",
         "claim_boundary": "This lane must not drift into the pinned registry without an explicit update."
-    });
+    }));
     extra_lane["commitments"]["frontend_runtime_semantics_registry_hash"] =
         serde_json::Value::String(hash_json_value(
             extra_lane
@@ -6310,7 +6328,7 @@ fn cli_supports_research_v3_equivalence_command() {
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "frontend runtime semantics registry missing lane egg-emerge",
+            "frontend runtime semantics registry lane count 14 exceeds ingest cap 13",
         ));
 
     let mut step_budget = artifact_json.clone();

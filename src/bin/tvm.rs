@@ -5603,6 +5603,12 @@ fn research_v3_equivalence_command_impl(
             "research-v3-equivalence requires max_steps >= 1".to_string(),
         ));
     }
+    if max_steps > MAX_RESEARCH_V3_EQUIVALENCE_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "research-v3-equivalence max_steps {} exceeds artifact cap {}",
+            max_steps, MAX_RESEARCH_V3_EQUIVALENCE_STEPS
+        )));
+    }
 
     let bundle = load_research_v2_spec_bundle(
         STATEMENT_V3_EQUIVALENCE_SPEC_PATH,
@@ -5716,6 +5722,7 @@ fn research_v3_equivalence_command_impl(
             rule_witnesses_hash,
         },
     };
+    validate_research_v3_ingest_budget(&artifact)?;
     verify_research_v3_engine_lane_binding(&artifact)?;
 
     let bytes = serde_json::to_vec_pretty(&artifact)
@@ -6030,10 +6037,13 @@ fn prevalidate_research_v3_equivalence_artifact_budget_json(
         .and_then(|value| usize::try_from(value).ok())
     {
         if requested_max_steps > MAX_RESEARCH_V3_EQUIVALENCE_STEPS {
-            return Err(VmError::InvalidConfig(format!(
-                "research-v3 requested_max_steps {} exceeds ingest cap {}",
-                requested_max_steps, MAX_RESEARCH_V3_EQUIVALENCE_STEPS
-            )));
+            return Err(research_v3_artifact_budget_error(
+                artifact_path,
+                format!(
+                    "research-v3 requested_max_steps {} exceeds ingest cap {}",
+                    requested_max_steps, MAX_RESEARCH_V3_EQUIVALENCE_STEPS
+                ),
+            ));
         }
     }
 
@@ -6043,10 +6053,13 @@ fn prevalidate_research_v3_equivalence_artifact_budget_json(
         .and_then(|value| usize::try_from(value).ok())
     {
         if checked_steps > MAX_RESEARCH_V3_EQUIVALENCE_STEPS {
-            return Err(VmError::InvalidConfig(format!(
-                "research-v3 checked_steps {} exceeds ingest cap {}",
-                checked_steps, MAX_RESEARCH_V3_EQUIVALENCE_STEPS
-            )));
+            return Err(research_v3_artifact_budget_error(
+                artifact_path,
+                format!(
+                    "research-v3 checked_steps {} exceeds ingest cap {}",
+                    checked_steps, MAX_RESEARCH_V3_EQUIVALENCE_STEPS
+                ),
+            ));
         }
     }
 
@@ -6055,11 +6068,14 @@ fn prevalidate_research_v3_equivalence_artifact_budget_json(
         .and_then(serde_json::Value::as_array)
     {
         if rule_witnesses.len() > MAX_RESEARCH_V3_EQUIVALENCE_STEPS {
-            return Err(VmError::InvalidConfig(format!(
-                "research-v3 rule_witnesses length {} exceeds ingest cap {}",
-                rule_witnesses.len(),
-                MAX_RESEARCH_V3_EQUIVALENCE_STEPS
-            )));
+            return Err(research_v3_artifact_budget_error(
+                artifact_path,
+                format!(
+                    "research-v3 rule_witnesses length {} exceeds ingest cap {}",
+                    rule_witnesses.len(),
+                    MAX_RESEARCH_V3_EQUIVALENCE_STEPS
+                ),
+            ));
         }
         for (index, witness) in rule_witnesses.iter().enumerate() {
             if let Some(instruction) = witness
@@ -6069,7 +6085,8 @@ fn prevalidate_research_v3_equivalence_artifact_budget_json(
                 validate_research_v3_instruction_budget(
                     instruction,
                     &format!("witness {} instruction", index + 1),
-                )?;
+                )
+                .map_err(|err| prefix_research_v3_artifact_budget_error(artifact_path, err))?;
             }
         }
     }
@@ -6079,11 +6096,14 @@ fn prevalidate_research_v3_equivalence_artifact_budget_json(
         .and_then(serde_json::Value::as_array)
     {
         if lanes.len() > MAX_FRONTEND_RUNTIME_SEMANTICS_LANES {
-            return Err(VmError::InvalidConfig(format!(
-                "frontend runtime semantics registry lane count {} exceeds ingest cap {}",
-                lanes.len(),
-                MAX_FRONTEND_RUNTIME_SEMANTICS_LANES
-            )));
+            return Err(research_v3_artifact_budget_error(
+                artifact_path,
+                format!(
+                    "frontend runtime semantics registry lane count {} exceeds ingest cap {}",
+                    lanes.len(),
+                    MAX_FRONTEND_RUNTIME_SEMANTICS_LANES
+                ),
+            ));
         }
     }
 
@@ -6092,11 +6112,14 @@ fn prevalidate_research_v3_equivalence_artifact_budget_json(
         .and_then(serde_json::Value::as_array)
     {
         if engines.len() > max_engines {
-            return Err(VmError::InvalidConfig(format!(
-                "research-v3 engines length {} exceeds ingest cap {}",
-                engines.len(),
-                max_engines
-            )));
+            return Err(research_v3_artifact_budget_error(
+                artifact_path,
+                format!(
+                    "research-v3 engines length {} exceeds ingest cap {}",
+                    engines.len(),
+                    max_engines
+                ),
+            ));
         }
         for engine in engines {
             let engine_name = engine
@@ -6106,17 +6129,21 @@ fn prevalidate_research_v3_equivalence_artifact_budget_json(
 
             if let Some(trace) = engine.get("trace").and_then(serde_json::Value::as_array) {
                 if trace.len() > max_trace_len {
-                    return Err(VmError::InvalidConfig(format!(
+                    return Err(research_v3_artifact_budget_error(
+                        artifact_path,
+                        format!(
                         "research-v3 engine {engine_name} trace length {} exceeds ingest cap {}",
                         trace.len(),
                         max_trace_len
-                    )));
+                    ),
+                    ));
                 }
                 for (index, state) in trace.iter().enumerate() {
                     prevalidate_research_v3_machine_state_budget_json(
                         state,
                         &format!("research-v3 engine {engine_name} trace[{index}]"),
-                    )?;
+                    )
+                    .map_err(|err| prefix_research_v3_artifact_budget_error(artifact_path, err))?;
                 }
             }
 
@@ -6124,7 +6151,8 @@ fn prevalidate_research_v3_equivalence_artifact_budget_json(
                 prevalidate_research_v3_machine_state_budget_json(
                     final_state,
                     &format!("research-v3 engine {engine_name} final_state"),
-                )?;
+                )
+                .map_err(|err| prefix_research_v3_artifact_budget_error(artifact_path, err))?;
             }
 
             if let Some(events) = engine
@@ -6132,7 +6160,7 @@ fn prevalidate_research_v3_equivalence_artifact_budget_json(
                 .and_then(serde_json::Value::as_array)
             {
                 if events.len() > MAX_RESEARCH_V3_EQUIVALENCE_STEPS {
-                    return Err(VmError::InvalidConfig(format!(
+                    return Err(research_v3_artifact_budget_error(artifact_path, format!(
                         "research-v3 engine {engine_name} canonical_events length {} exceeds ingest cap {}",
                         events.len(),
                         MAX_RESEARCH_V3_EQUIVALENCE_STEPS
@@ -6148,15 +6176,36 @@ fn prevalidate_research_v3_equivalence_artifact_budget_json(
                                 "research-v3 engine {engine_name} canonical event {} instruction",
                                 index + 1
                             ),
-                        )?;
+                        )
+                        .map_err(|err| {
+                            prefix_research_v3_artifact_budget_error(artifact_path, err)
+                        })?;
                     }
                 }
             }
         }
     }
 
-    let _ = artifact_path;
     Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn research_v3_artifact_budget_error(artifact_path: &Path, message: impl AsRef<str>) -> VmError {
+    VmError::InvalidConfig(format!(
+        "research-v3 artifact {}: {}",
+        artifact_path.display(),
+        message.as_ref()
+    ))
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn prefix_research_v3_artifact_budget_error(artifact_path: &Path, err: VmError) -> VmError {
+    match err {
+        VmError::InvalidConfig(message) => {
+            research_v3_artifact_budget_error(artifact_path, message)
+        }
+        other => other,
+    }
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
