@@ -6181,6 +6181,18 @@ fn prevalidate_research_v3_equivalence_artifact_budget_json(
                 .and_then(serde_json::Value::as_str)
                 .unwrap_or("<unknown>");
 
+            if let Some(trace_len) = engine.get("trace_len").and_then(serde_json::Value::as_u64) {
+                if trace_len > max_trace_len as u64 {
+                    return Err(research_v3_artifact_budget_error(
+                        artifact_path,
+                        format!(
+                            "research-v3 engine {engine_name} trace_len {} exceeds ingest cap {}",
+                            trace_len, max_trace_len
+                        ),
+                    ));
+                }
+            }
+
             if let Some(trace) = engine.get("trace").and_then(serde_json::Value::as_array) {
                 if trace.len() > max_trace_len {
                     return Err(research_v3_artifact_budget_error(
@@ -6207,6 +6219,18 @@ fn prevalidate_research_v3_equivalence_artifact_budget_json(
                     &format!("research-v3 engine {engine_name} final_state"),
                 )
                 .map_err(|err| prefix_research_v3_artifact_budget_error(artifact_path, err))?;
+            }
+
+            if let Some(events_len) = engine.get("events_len").and_then(serde_json::Value::as_u64) {
+                if events_len > MAX_RESEARCH_V3_EQUIVALENCE_STEPS as u64 {
+                    return Err(research_v3_artifact_budget_error(
+                        artifact_path,
+                        format!(
+                            "research-v3 engine {engine_name} events_len {} exceeds ingest cap {}",
+                            events_len, MAX_RESEARCH_V3_EQUIVALENCE_STEPS
+                        ),
+                    ));
+                }
             }
 
             if let Some(events) = engine
