@@ -5023,14 +5023,11 @@ fn hash_hf_commitment_file(
     while remaining > 0 {
         let chunk_len = remaining.min(buffer.len() as u64) as usize;
         let read_bytes = file.read(&mut buffer[..chunk_len]).map_err(|err| {
-            VmError::InvalidConfig(format!(
-                "failed to read HF provenance file {}: {err}",
-                path.display()
-            ))
+            VmError::InvalidConfig(format!("failed to read {label} {}: {err}", path.display()))
         })?;
         if read_bytes == 0 {
             return Err(VmError::InvalidConfig(format!(
-                "HF provenance file {} ended before the expected {} bytes were read",
+                "{label} {} ended before the expected {} bytes were read",
                 path.display(),
                 size_bytes
             )));
@@ -5039,7 +5036,7 @@ fn hash_hf_commitment_file(
             .checked_add(read_bytes as u64)
             .ok_or_else(|| {
                 VmError::InvalidConfig(format!(
-                    "HF provenance file {} exceeded supported size accounting during read",
+                    "{label} {} exceeded supported size accounting during read",
                     path.display()
                 ))
             })?;
@@ -5049,14 +5046,11 @@ fn hash_hf_commitment_file(
     }
     let mut extra_byte = [0u8; 1];
     if file.read(&mut extra_byte).map_err(|err| {
-        VmError::InvalidConfig(format!(
-            "failed to read HF provenance file {}: {err}",
-            path.display()
-        ))
+        VmError::InvalidConfig(format!("failed to read {label} {}: {err}", path.display()))
     })? != 0
     {
         return Err(VmError::InvalidConfig(format!(
-            "HF provenance file {} grew while being hashed after {} bytes were expected",
+            "{label} {} grew while being hashed after {} bytes were expected",
             path.display(),
             size_bytes
         )));
@@ -5094,10 +5088,7 @@ fn inspect_hf_safetensors_file(
 
     let mut header_len_bytes = [0u8; 8];
     file.read_exact(&mut header_len_bytes).map_err(|err| {
-        VmError::InvalidConfig(format!(
-            "failed to read HF provenance file {}: {err}",
-            path.display()
-        ))
+        VmError::InvalidConfig(format!("failed to read {label} {}: {err}", path.display()))
     })?;
     hasher.update(&header_len_bytes);
     Digest::update(&mut sha256_hasher, &header_len_bytes);
@@ -5131,10 +5122,7 @@ fn inspect_hf_safetensors_file(
     })?;
     let mut header_bytes = vec![0u8; header_len];
     file.read_exact(&mut header_bytes).map_err(|err| {
-        VmError::InvalidConfig(format!(
-            "failed to read HF provenance file {}: {err}",
-            path.display()
-        ))
+        VmError::InvalidConfig(format!("failed to read {label} {}: {err}", path.display()))
     })?;
     hasher.update(&header_bytes);
     Digest::update(&mut sha256_hasher, &header_bytes);
@@ -5147,14 +5135,11 @@ fn inspect_hf_safetensors_file(
     while remaining > 0 {
         let chunk_len = remaining.min(buffer.len() as u64) as usize;
         let read_bytes = file.read(&mut buffer[..chunk_len]).map_err(|err| {
-            VmError::InvalidConfig(format!(
-                "failed to read HF provenance file {}: {err}",
-                path.display()
-            ))
+            VmError::InvalidConfig(format!("failed to read {label} {}: {err}", path.display()))
         })?;
         if read_bytes == 0 {
             return Err(VmError::InvalidConfig(format!(
-                "HF provenance file {} ended before the expected {} bytes were read",
+                "{label} {} ended before the expected {} bytes were read",
                 path.display(),
                 size_bytes
             )));
@@ -5163,7 +5148,7 @@ fn inspect_hf_safetensors_file(
             .checked_add(read_bytes as u64)
             .ok_or_else(|| {
                 VmError::InvalidConfig(format!(
-                    "HF provenance file {} exceeded supported size accounting during read",
+                    "{label} {} exceeded supported size accounting during read",
                     path.display()
                 ))
             })?;
@@ -5173,14 +5158,11 @@ fn inspect_hf_safetensors_file(
     }
     let mut extra_byte = [0u8; 1];
     if file.read(&mut extra_byte).map_err(|err| {
-        VmError::InvalidConfig(format!(
-            "failed to read HF provenance file {}: {err}",
-            path.display()
-        ))
+        VmError::InvalidConfig(format!("failed to read {label} {}: {err}", path.display()))
     })? != 0
     {
         return Err(VmError::InvalidConfig(format!(
-            "HF provenance file {} grew while being hashed after {} bytes were expected",
+            "{label} {} grew while being hashed after {} bytes were expected",
             path.display(),
             size_bytes
         )));
@@ -7375,6 +7357,23 @@ mod hf_provenance_manifest_tests {
         let err = load_hf_provenance_manifest(file.path())
             .expect_err("v3 manifest missing onnx metadata field should fail");
         assert!(err.to_string().contains("missing field `metadata`"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_v4_missing_hub_binding_hash_field() {
+        let file = hf_provenance_test_manifest_file("missing-hub-binding-hash");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["commitments"]
+            .as_object_mut()
+            .expect("commitments object")
+            .remove("hub_binding_hash");
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("v4 manifest missing hub_binding_hash should fail");
+        let err_text = err.to_string();
+        assert!(err_text.contains(HF_PROVENANCE_MANIFEST_VERSION));
+        assert!(err_text.contains("hub_binding_hash"));
     }
 
     #[test]
