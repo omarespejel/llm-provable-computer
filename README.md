@@ -415,6 +415,9 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-shared-normalization-demo shared-normalization.stwo.proof.json
 
+# Run the minimal shared-lookup identity example
+cargo +nightly-2025-07-14 run --features stwo-backend --example shared_lookup_identity
+
 # Produce and verify the fixed-shape proof-carrying decoding demo chain
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prove-stwo-decoding-demo -o decoding.stwo.chain.json
