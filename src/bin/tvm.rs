@@ -4622,29 +4622,18 @@ fn verify_hf_provenance_manifest_command(
 fn load_hf_provenance_manifest(
     manifest_path: &Path,
 ) -> llm_provable_computer::Result<HfProvenanceManifest> {
-    let (file, _) = open_checked_regular_file(
+    let (file, size_bytes) = open_checked_regular_file(
         manifest_path,
         "HF provenance manifest",
         Some(MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES as u64),
     )?;
-    let mut manifest_bytes = Vec::new();
-    let mut limited_reader = file.take(MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES as u64 + 1);
-    limited_reader
-        .read_to_end(&mut manifest_bytes)
-        .map_err(|err| {
-            VmError::InvalidConfig(format!(
-                "failed to read HF provenance manifest {}: {err}",
-                manifest_path.display()
-            ))
-        })?;
-    if manifest_bytes.len() > MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES {
-        return Err(VmError::InvalidConfig(format!(
-            "HF provenance manifest {} is {} bytes after read, exceeding the limit of {} bytes",
-            manifest_path.display(),
-            manifest_bytes.len(),
-            MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES
-        )));
-    }
+    let manifest_bytes = read_checked_bounded_file_bytes(
+        file,
+        manifest_path,
+        "HF provenance manifest",
+        size_bytes,
+        MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES as u64,
+    )?;
 
     let manifest_value: serde_json::Value =
         serde_json::from_slice(&manifest_bytes).map_err(|err| {
@@ -5132,6 +5121,7 @@ fn metadata_string_field(
     metadata
         .get(field)
         .and_then(serde_json::Value::as_str)
+        .filter(|value| !value.is_empty())
         .map(str::to_string)
         .ok_or_else(|| {
             VmError::InvalidConfig(format!(

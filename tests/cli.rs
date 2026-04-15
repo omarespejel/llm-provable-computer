@@ -5587,6 +5587,41 @@ fn cli_verifier_rejects_missing_onnx_metadata_identity_hash_field() {
 }
 
 #[test]
+fn cli_verifier_rejects_stale_onnx_metadata_identity_hash() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-stale-metadata-identity-hash");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let (onnx_model, onnx_metadata) = hf_provenance_export_valid_onnx_fixture(&fixture_dir);
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    let mut prepare =
+        hf_provenance_prepare_command(&manifest, &onnx_model, Some(&onnx_metadata), &[]);
+    prepare.assert().success();
+
+    let mut manifest_json: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).expect("manifest bytes"))
+            .expect("manifest json");
+    manifest_json["commitments"]["onnx_metadata_identity_hash"] =
+        serde_json::Value::String("0".repeat(64));
+    std::fs::write(
+        &manifest,
+        serde_json::to_vec_pretty(&manifest_json).expect("serialize tampered manifest"),
+    )
+    .expect("write tampered manifest");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "hf onnx_metadata_identity_hash commitment mismatch",
+        ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
 fn cli_prepare_hf_manifest_rejects_negative_onnx_versions() {
     let fixture_dir = unique_temp_dir("cli-hf-provenance-negative-onnx-version");
     std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
@@ -5666,6 +5701,40 @@ fn cli_prepare_hf_manifest_rejects_malformed_onnx_integer_metadata_fields() {
             .failure()
             .stderr(predicate::str::contains(format!(
                 "field `{field}` malformed: expected integer"
+            )));
+    }
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
+fn cli_prepare_hf_manifest_rejects_empty_onnx_string_metadata_fields() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-empty-onnx-string-fields");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    for field in ["input_encoding", "output_encoding"] {
+        let case_dir = fixture_dir.join(field);
+        std::fs::create_dir_all(&case_dir).expect("create empty string case dir");
+        let (onnx_model, onnx_metadata) = hf_provenance_export_valid_onnx_fixture(&case_dir);
+
+        let mut metadata_json: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&onnx_metadata).expect("metadata bytes"))
+                .expect("metadata json");
+        metadata_json[field] = serde_json::json!("");
+        std::fs::write(
+            &onnx_metadata,
+            serde_json::to_vec_pretty(&metadata_json).expect("serialize tampered ONNX metadata"),
+        )
+        .expect("write tampered ONNX metadata");
+
+        let mut prepare =
+            hf_provenance_prepare_command(&manifest, &onnx_model, Some(&onnx_metadata), &[]);
+        prepare
+            .assert()
+            .failure()
+            .stderr(predicate::str::contains(format!(
+                "missing string field `{field}`"
             )));
     }
 
