@@ -5614,6 +5614,32 @@ fn cli_prepare_hf_manifest_rejects_negative_onnx_versions() {
 }
 
 #[test]
+fn cli_prepare_hf_manifest_rejects_negative_onnx_format_version() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-negative-onnx-format-version");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let (onnx_model, onnx_metadata) = hf_provenance_export_valid_onnx_fixture(&fixture_dir);
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    let mut metadata_json: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&onnx_metadata).expect("metadata bytes"))
+            .expect("metadata json");
+    metadata_json["format_version"] = serde_json::json!(-1);
+    std::fs::write(
+        &onnx_metadata,
+        serde_json::to_vec_pretty(&metadata_json).expect("serialize tampered ONNX metadata"),
+    )
+    .expect("write tampered ONNX metadata");
+
+    let mut prepare =
+        hf_provenance_prepare_command(&manifest, &onnx_model, Some(&onnx_metadata), &[]);
+    prepare.assert().failure().stderr(predicate::str::contains(
+        "field `format_version` must be non-negative",
+    ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
 fn cli_verifier_rejects_tampered_onnx_metadata() {
     let fixture_dir = unique_temp_dir("cli-hf-provenance-tampered-metadata");
     std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");

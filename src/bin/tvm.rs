@@ -5146,21 +5146,32 @@ fn metadata_u32_field(
     path: &Path,
     field: &str,
 ) -> llm_provable_computer::Result<u32> {
-    let value = metadata
-        .get(field)
-        .and_then(serde_json::Value::as_u64)
-        .ok_or_else(|| {
-            VmError::InvalidConfig(format!(
-                "HF provenance ONNX metadata {} missing integer field `{field}`",
-                path.display()
-            ))
-        })?;
-    u32::try_from(value).map_err(|_| {
+    let value = metadata.get(field).ok_or_else(|| {
         VmError::InvalidConfig(format!(
-            "HF provenance ONNX metadata {} field `{field}` exceeds u32",
+            "HF provenance ONNX metadata {} missing integer field `{field}`",
             path.display()
         ))
-    })
+    })?;
+    if let Some(unsigned) = value.as_u64() {
+        return u32::try_from(unsigned).map_err(|_| {
+            VmError::InvalidConfig(format!(
+                "HF provenance ONNX metadata {} field `{field}` exceeds u32",
+                path.display()
+            ))
+        });
+    }
+    if let Some(signed) = value.as_i64() {
+        if signed < 0 {
+            return Err(VmError::InvalidConfig(format!(
+                "HF provenance ONNX metadata {} field `{field}` must be non-negative",
+                path.display()
+            )));
+        }
+    }
+    Err(VmError::InvalidConfig(format!(
+        "HF provenance ONNX metadata {} missing integer field `{field}`",
+        path.display()
+    )))
 }
 
 fn metadata_u64_field(
@@ -5196,21 +5207,32 @@ fn metadata_usize_field(
     path: &Path,
     field: &str,
 ) -> llm_provable_computer::Result<usize> {
-    let value = metadata
-        .get(field)
-        .and_then(serde_json::Value::as_u64)
-        .ok_or_else(|| {
-            VmError::InvalidConfig(format!(
-                "HF provenance ONNX metadata {} missing integer field `{field}`",
-                path.display()
-            ))
-        })?;
-    usize::try_from(value).map_err(|_| {
+    let value = metadata.get(field).ok_or_else(|| {
         VmError::InvalidConfig(format!(
-            "HF provenance ONNX metadata {} field `{field}` exceeds usize",
+            "HF provenance ONNX metadata {} missing integer field `{field}`",
             path.display()
         ))
-    })
+    })?;
+    if let Some(unsigned) = value.as_u64() {
+        return usize::try_from(unsigned).map_err(|_| {
+            VmError::InvalidConfig(format!(
+                "HF provenance ONNX metadata {} field `{field}` exceeds usize",
+                path.display()
+            ))
+        });
+    }
+    if let Some(signed) = value.as_i64() {
+        if signed < 0 {
+            return Err(VmError::InvalidConfig(format!(
+                "HF provenance ONNX metadata {} field `{field}` must be non-negative",
+                path.display()
+            )));
+        }
+    }
+    Err(VmError::InvalidConfig(format!(
+        "HF provenance ONNX metadata {} missing integer field `{field}`",
+        path.display()
+    )))
 }
 
 fn verify_hf_optional_file_commitment(
