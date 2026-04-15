@@ -5197,7 +5197,7 @@ fn cli_verifier_rejects_legacy_hf_manifest_versions() {
         .assert()
         .success();
 
-    let mut manifest_json: serde_json::Value =
+    let base_manifest_json: serde_json::Value =
         serde_json::from_slice(&std::fs::read(&manifest).expect("manifest bytes"))
             .expect("manifest json");
     for (legacy_version, reason) in [
@@ -5214,7 +5214,14 @@ fn cli_verifier_rejects_legacy_hf_manifest_versions() {
             "after the hub-binding hardening update",
         ),
     ] {
+        let mut manifest_json = base_manifest_json.clone();
         manifest_json["manifest_version"] = serde_json::json!(legacy_version);
+        if legacy_version == "hf-provenance-manifest-v3" {
+            manifest_json["commitments"]
+                .as_object_mut()
+                .expect("commitments object")
+                .remove("hub_binding_hash");
+        }
         std::fs::write(
             &manifest,
             serde_json::to_vec_pretty(&manifest_json).expect("serialize legacy manifest"),
@@ -5350,6 +5357,7 @@ fn cli_rejects_hf_provenance_manifest_when_model_card_reuses_tokenizer_json_path
     let fixture_dir = unique_temp_dir("cli-hf-provenance-duplicate-model-card");
     std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
     let shared = fixture_dir.join("shared.json");
+    let aliased_shared = fixture_dir.join("./shared.json");
     let manifest = fixture_dir.join("hf-provenance.json");
 
     std::fs::write(
@@ -5373,6 +5381,27 @@ fn cli_rejects_hf_provenance_manifest_when_model_card_reuses_tokenizer_json_path
         .arg(&shared)
         .arg("--model-card")
         .arg(&shared)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "model_card reuses the same underlying HF artifact",
+        ));
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&shared)
+        .arg("--model-card")
+        .arg(&aliased_shared)
         .assert()
         .failure()
         .stderr(predicate::str::contains(

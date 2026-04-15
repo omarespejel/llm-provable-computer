@@ -7660,6 +7660,35 @@ mod hf_provenance_manifest_tests {
     }
 
     #[test]
+    fn verify_hf_provenance_manifest_rejects_duplicate_onnx_external_data_hard_links() {
+        let dir = tempfile::tempdir().expect("create temp dir");
+        let graph = dir.path().join("model.onnx");
+        let sidecar = dir.path().join("weights.bin");
+        let aliased_sidecar = dir.path().join("weights-alias.bin");
+        fs::write(&graph, b"onnx").expect("write graph");
+        fs::write(&sidecar, b"weights").expect("write sidecar");
+        fs::hard_link(&sidecar, &aliased_sidecar).expect("hard link sidecar alias");
+
+        let onnx_export = Some(HfOnnxExportProvenance {
+            exporter: "optimum-onnx".to_string(),
+            exporter_version: None,
+            graph: hf_file_commitment(&graph).expect("graph commitment"),
+            metadata: None,
+            external_data_files: vec![
+                hf_file_commitment(&sidecar).expect("sidecar commitment"),
+                hf_file_commitment(&aliased_sidecar).expect("aliased sidecar commitment"),
+            ],
+        });
+        let manifest = sample_hf_provenance_manifest_with_onnx_export(onnx_export);
+
+        let err = verify_hf_provenance_manifest(&manifest)
+            .expect_err("hard-linked ONNX sidecar paths should fail");
+        assert!(err
+            .to_string()
+            .contains("onnx_export.external_data_files[] reuses the same underlying HF artifact"));
+    }
+
+    #[test]
     fn verify_hf_provenance_manifest_rejects_onnx_metadata_path_reusing_graph() {
         let dir = tempfile::tempdir().expect("create temp dir");
         let graph = dir.path().join("model.onnx");
