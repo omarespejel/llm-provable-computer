@@ -5704,6 +5704,31 @@ fn cli_prepare_hf_manifest_rejects_malformed_onnx_integer_metadata_fields() {
             )));
     }
 
+    for field in ["format_version", "ir_version", "input_dim"] {
+        let case_dir = fixture_dir.join(format!("{field}-fractional"));
+        std::fs::create_dir_all(&case_dir).expect("create fractional integer case dir");
+        let (onnx_model, onnx_metadata) = hf_provenance_export_valid_onnx_fixture(&case_dir);
+
+        let mut metadata_json: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&onnx_metadata).expect("metadata bytes"))
+                .expect("metadata json");
+        metadata_json[field] = serde_json::json!(1.5);
+        std::fs::write(
+            &onnx_metadata,
+            serde_json::to_vec_pretty(&metadata_json).expect("serialize tampered ONNX metadata"),
+        )
+        .expect("write tampered ONNX metadata");
+
+        let mut prepare =
+            hf_provenance_prepare_command(&manifest, &onnx_model, Some(&onnx_metadata), &[]);
+        prepare
+            .assert()
+            .failure()
+            .stderr(predicate::str::contains(format!(
+                "field `{field}` malformed: expected non-negative integer"
+            )));
+    }
+
     let _ = std::fs::remove_dir_all(fixture_dir);
 }
 
@@ -5737,6 +5762,29 @@ fn cli_prepare_hf_manifest_rejects_empty_onnx_string_metadata_fields() {
                 "missing string field `{field}`"
             )));
     }
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
+fn cli_prepare_hf_manifest_rejects_oversized_onnx_metadata_json() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-oversized-onnx-metadata");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let (onnx_model, onnx_metadata) = hf_provenance_export_valid_onnx_fixture(&fixture_dir);
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(&onnx_metadata, vec![b'0'; 8 * 1024 * 1024 + 1])
+        .expect("write oversized ONNX metadata");
+
+    let mut prepare =
+        hf_provenance_prepare_command(&manifest, &onnx_model, Some(&onnx_metadata), &[]);
+    prepare
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("HF provenance ONNX metadata"))
+        .stderr(predicate::str::contains(
+            "exceeding the limit of 8388608 bytes",
+        ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
 }

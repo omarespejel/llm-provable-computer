@@ -5158,6 +5158,12 @@ fn metadata_u32_field(
             )));
         }
     }
+    if value.is_number() {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance ONNX metadata {} field `{field}` malformed: expected non-negative integer",
+            path.display()
+        )));
+    }
     Err(VmError::InvalidConfig(format!(
         "HF provenance ONNX metadata {} field `{field}` malformed: expected integer",
         path.display()
@@ -5185,6 +5191,12 @@ fn metadata_u64_field(
                 path.display()
             )));
         }
+    }
+    if value.is_number() {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance ONNX metadata {} field `{field}` malformed: expected non-negative integer",
+            path.display()
+        )));
     }
     Err(VmError::InvalidConfig(format!(
         "HF provenance ONNX metadata {} field `{field}` malformed: expected integer",
@@ -5218,6 +5230,12 @@ fn metadata_usize_field(
                 path.display()
             )));
         }
+    }
+    if value.is_number() {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance ONNX metadata {} field `{field}` malformed: expected non-negative integer",
+            path.display()
+        )));
     }
     Err(VmError::InvalidConfig(format!(
         "HF provenance ONNX metadata {} field `{field}` malformed: expected integer",
