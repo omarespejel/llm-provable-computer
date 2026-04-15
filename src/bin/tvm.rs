@@ -5163,6 +5163,17 @@ fn hf_file_identity_from_open_file(
     }
 }
 
+fn ensure_unique_hf_bound_path(
+    label: &str,
+    path: &str,
+    seen_paths: &mut std::collections::BTreeSet<HfFileIdentity>,
+) -> llm_provable_computer::Result<()> {
+    let path = Path::new(path);
+    let (file, _) = open_checked_regular_file(path, label, None)?;
+    let identity = hf_file_identity_from_open_file(path, label, &file)?;
+    ensure_unique_hf_identity(label, &path.display().to_string(), identity, seen_paths)
+}
+
 fn ensure_unique_hf_identity(
     label: &str,
     path: &str,
@@ -7921,6 +7932,7 @@ mod hf_provenance_manifest_tests {
             exporter_version: None,
             graph: hf_file_commitment(&graph).expect("graph commitment"),
             metadata: None,
+            metadata_identity: None,
             external_data_files: vec![
                 hf_file_commitment(&sidecar).expect("sidecar commitment"),
                 hf_file_commitment(&aliased_sidecar).expect("aliased sidecar commitment"),
