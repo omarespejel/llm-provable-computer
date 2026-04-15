@@ -846,13 +846,16 @@ equivalence, ONNX metadata semantic correctness, live Hub availability, DOI
 validity, or GitHub/Sigstore/in-toto/SLSA attestation validity. The current wire
 format also carries `sha256` digests for bound files so release assets can be
 matched against attestation subject digests without turning the manifest into an
-attestation verifier.
+attestation verifier. When an ONNX metadata sidecar is bound, the manifest now
+also carries a versioned metadata-identity projection over the exporter-facing
+format/opset/shape/encoding surface and instruction-table cardinality.
 
-The current manifest wire format is `hf-provenance-manifest-v4`. Older
-`hf-provenance-manifest-v1`, `hf-provenance-manifest-v2`, and
-`hf-provenance-manifest-v3` files must be regenerated before verification
-because the ONNX sidecar surface, hub-binding commitment, and
-attestation-digest inventory now have explicit versioned format boundaries.
+The current manifest wire format is `hf-provenance-manifest-v5`. Older
+`hf-provenance-manifest-v1`, `hf-provenance-manifest-v2`,
+`hf-provenance-manifest-v3`, and `hf-provenance-manifest-v4` files must be
+regenerated before verification because the ONNX sidecar surface, hub-binding
+commitment, metadata-identity projection, and attestation-digest inventory now
+have explicit versioned format boundaries.
 
 Canonical HF provenance spec file:
 
