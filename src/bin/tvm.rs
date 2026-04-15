@@ -4959,9 +4959,9 @@ fn ensure_unique_hf_bound_path(
     seen_paths: &mut std::collections::BTreeSet<HfFileIdentity>,
 ) -> llm_provable_computer::Result<()> {
     let identity = hf_file_identity(Path::new(path), label)?;
-    if !seen_paths.insert(identity.clone()) {
+    if !seen_paths.insert(identity) {
         return Err(VmError::InvalidConfig(format!(
-            "{label} reuses HF artifact identity {identity:?} at `{path}`",
+            "{label} reuses the same underlying HF artifact as an earlier bound path via `{path}`",
         )));
     }
     Ok(())
@@ -7656,7 +7656,7 @@ mod hf_provenance_manifest_tests {
             .expect_err("duplicate ONNX sidecar paths should fail");
         assert!(err
             .to_string()
-            .contains("onnx_export.external_data_files[] reuses HF artifact identity"));
+            .contains("onnx_export.external_data_files[] reuses the same underlying HF artifact"));
     }
 
     #[test]
@@ -7679,7 +7679,7 @@ mod hf_provenance_manifest_tests {
             .expect_err("duplicate ONNX graph/metadata path should fail");
         assert!(err
             .to_string()
-            .contains("onnx_export.metadata reuses HF artifact identity"));
+            .contains("onnx_export.metadata reuses the same underlying HF artifact"));
     }
 
     #[test]
@@ -7702,7 +7702,7 @@ mod hf_provenance_manifest_tests {
             .expect_err("duplicate ONNX graph/external-data path should fail");
         assert!(err
             .to_string()
-            .contains("onnx_export.external_data_files[] reuses HF artifact identity"));
+            .contains("onnx_export.external_data_files[] reuses the same underlying HF artifact"));
     }
 
     #[test]
@@ -7733,7 +7733,9 @@ mod hf_provenance_manifest_tests {
 
         let err = verify_hf_provenance_manifest(&manifest)
             .expect_err("reused bound file across roles should fail");
-        assert!(err.to_string().contains("reuses HF artifact identity"));
+        assert!(err
+            .to_string()
+            .contains("reuses the same underlying HF artifact"));
     }
 
     #[test]

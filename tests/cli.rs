@@ -5275,7 +5275,7 @@ fn cli_rejects_hf_provenance_manifest_when_onnx_metadata_reuses_graph_path() {
 
     let mut prepare = hf_provenance_prepare_command(&manifest, &onnx_model, Some(&onnx_model), &[]);
     prepare.assert().failure().stderr(predicate::str::contains(
-        "onnx_export.metadata reuses HF artifact identity",
+        "onnx_export.metadata reuses the same underlying HF artifact",
     ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
@@ -5292,7 +5292,7 @@ fn cli_rejects_hf_provenance_manifest_when_onnx_external_data_reuses_graph_path(
 
     let mut prepare = hf_provenance_prepare_command(&manifest, &onnx_model, None, &[&onnx_model]);
     prepare.assert().failure().stderr(predicate::str::contains(
-        "onnx_export.external_data_files[] reuses HF artifact identity",
+        "onnx_export.external_data_files[] reuses the same underlying HF artifact",
     ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
@@ -5339,7 +5339,7 @@ fn cli_rejects_hf_provenance_manifest_when_onnx_metadata_aliases_graph_path() {
     let mut prepare =
         hf_provenance_prepare_command(&manifest, &onnx_model, Some(&aliased_onnx_model), &[]);
     prepare.assert().failure().stderr(predicate::str::contains(
-        "onnx_export.metadata reuses HF artifact identity",
+        "onnx_export.metadata reuses the same underlying HF artifact",
     ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
@@ -5376,7 +5376,7 @@ fn cli_rejects_hf_provenance_manifest_when_model_card_reuses_tokenizer_json_path
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "model_card reuses HF artifact identity",
+            "model_card reuses the same underlying HF artifact",
         ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
