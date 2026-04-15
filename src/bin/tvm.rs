@@ -869,6 +869,7 @@ const RESEARCH_V2_HASH_FUNCTION: &str = "blake2b-256";
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 const RESEARCH_V3_RELATION_FORMAT: &str = "multi-engine-trace-relation-v1-no-egraph-no-smt";
 const MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES: usize = 8 * 1024 * 1024;
+const MAX_HF_ONNX_METADATA_JSON_BYTES: usize = 8 * 1024 * 1024;
 const HF_PROVENANCE_FILE_READ_CHUNK_BYTES: usize = 1024 * 1024;
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 const MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES: usize = 32 * 1024 * 1024;
@@ -4293,16 +4294,27 @@ fn prepare_hf_provenance_manifest_command(
                 .map(|path| hf_file_commitment(path))
                 .collect::<llm_provable_computer::Result<Vec<_>>>()?;
             external_data_files.sort_by(|a, b| a.path.cmp(&b.path));
-            let metadata_identity = command
-                .onnx_metadata
-                .as_deref()
-                .map(derive_hf_onnx_metadata_identity)
-                .transpose()?;
+            let (metadata, metadata_identity) = if let Some(metadata_path) =
+                command.onnx_metadata.as_deref()
+            {
+                let (_, metadata_commitment, metadata_bytes) =
+                    inspect_hf_onnx_metadata_file(metadata_path)?;
+                let metadata_json = parse_hf_onnx_metadata_json(metadata_path, &metadata_bytes)?;
+                (
+                    Some(metadata_commitment),
+                    Some(derive_hf_onnx_metadata_identity_from_value(
+                        metadata_path,
+                        &metadata_json,
+                    )?),
+                )
+            } else {
+                (None, None)
+            };
             Ok::<HfOnnxExportProvenance, VmError>(HfOnnxExportProvenance {
                 exporter: command.onnx_exporter.clone(),
                 exporter_version: command.onnx_exporter_version.clone(),
                 graph: hf_file_commitment(path)?,
-                metadata: hf_optional_file_commitment(command.onnx_metadata.as_deref())?,
+                metadata,
                 metadata_identity,
                 external_data_files,
             })
@@ -4539,6 +4551,49 @@ fn open_checked_regular_file(
         }
     }
     Ok((file, opened_metadata.len()))
+}
+
+fn read_checked_bounded_file_bytes(
+    file: fs::File,
+    path: &Path,
+    label: &str,
+    size_bytes: u64,
+    max_bytes: u64,
+) -> llm_provable_computer::Result<Vec<u8>> {
+    if size_bytes > max_bytes {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} {} is {} bytes, exceeding the limit of {} bytes",
+            path.display(),
+            size_bytes,
+            max_bytes
+        )));
+    }
+
+    let mut bytes = Vec::with_capacity(usize::try_from(size_bytes).map_err(|_| {
+        VmError::InvalidConfig(format!(
+            "{label} {} size {} does not fit in memory accounting",
+            path.display(),
+            size_bytes
+        ))
+    })?);
+    let mut limited_reader = file.take(size_bytes.saturating_add(1));
+    limited_reader.read_to_end(&mut bytes).map_err(|err| {
+        VmError::InvalidConfig(format!("failed to read {label} {}: {err}", path.display()))
+    })?;
+    if bytes.len() as u64 > size_bytes {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} {} changed after opening while it was being read",
+            path.display()
+        )));
+    }
+    if bytes.len() as u64 != size_bytes {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} {} ended before the expected {} bytes were read",
+            path.display(),
+            size_bytes
+        )));
+    }
+    Ok(bytes)
 }
 
 fn verify_hf_provenance_manifest_command(
@@ -4805,11 +4860,6 @@ fn verify_hf_provenance_manifest(
             graph_identity,
             &mut bound_paths,
         )?;
-        verify_hf_optional_file_commitment(
-            "onnx_export.metadata",
-            &onnx_export.metadata,
-            &mut bound_paths,
-        )?;
         for commitment in &onnx_export.external_data_files {
             let identity =
                 verify_hf_file_commitment("onnx_export.external_data_files[]", commitment)?;
@@ -4820,10 +4870,36 @@ fn verify_hf_provenance_manifest(
                 &mut bound_paths,
             )?;
         }
-        match (&onnx_export.metadata, &onnx_export.metadata_identity) {
-            (Some(metadata), Some(metadata_identity)) => {
-                let derived_metadata_identity =
-                    derive_hf_onnx_metadata_identity(Path::new(&metadata.path))?;
+        let verified_metadata_json = if let Some(metadata) = &onnx_export.metadata {
+            let (metadata_file_identity, computed_metadata_commitment, metadata_bytes) =
+                inspect_hf_onnx_metadata_file(Path::new(&metadata.path))?;
+            ensure_hf_file_commitment_matches(
+                "onnx_export.metadata",
+                metadata,
+                &computed_metadata_commitment,
+                metadata_file_identity,
+                &mut bound_paths,
+            )?;
+            Some(parse_hf_onnx_metadata_json(
+                Path::new(&metadata.path),
+                &metadata_bytes,
+            )?)
+        } else {
+            None
+        };
+        match (verified_metadata_json.as_ref(), &onnx_export.metadata_identity) {
+            (Some(metadata_json), Some(metadata_identity)) => {
+                let metadata_path = Path::new(
+                    &onnx_export
+                        .metadata
+                        .as_ref()
+                        .expect("verified metadata path")
+                        .path,
+                );
+                let derived_metadata_identity = derive_hf_onnx_metadata_identity_from_value(
+                    metadata_path,
+                    metadata_json,
+                )?;
                 if metadata_identity != &derived_metadata_identity {
                     return Err(VmError::InvalidConfig(format!(
                         "hf onnx_export.metadata_identity mismatch: expected {:?}, got {:?}",
@@ -4945,21 +5021,43 @@ fn hf_safetensors_file_commitment(
     })
 }
 
-fn derive_hf_onnx_metadata_identity(
+fn inspect_hf_onnx_metadata_file(
     path: &Path,
-) -> llm_provable_computer::Result<HfOnnxMetadataIdentity> {
-    let bytes = fs::read(path).map_err(|err| {
-        VmError::InvalidConfig(format!(
-            "failed to read HF provenance ONNX metadata {}: {err}",
-            path.display()
-        ))
-    })?;
-    let metadata: serde_json::Value = serde_json::from_slice(&bytes).map_err(|err| {
+) -> llm_provable_computer::Result<(HfFileIdentity, HfFileCommitment, Vec<u8>)> {
+    let label = "HF provenance ONNX metadata";
+    let max_bytes = MAX_HF_ONNX_METADATA_JSON_BYTES as u64;
+    let (file, size_bytes) = open_checked_regular_file(path, label, Some(max_bytes))?;
+    let identity = hf_file_identity_from_open_file(path, label, &file)?;
+    let bytes = read_checked_bounded_file_bytes(file, path, label, size_bytes, max_bytes)?;
+    let (blake2b_256, sha256) = hash_hf_commitment_bytes(&bytes)?;
+    Ok((
+        identity,
+        HfFileCommitment {
+            path: path.display().to_string(),
+            size_bytes,
+            blake2b_256,
+            sha256,
+        },
+        bytes,
+    ))
+}
+
+fn parse_hf_onnx_metadata_json(
+    path: &Path,
+    bytes: &[u8],
+) -> llm_provable_computer::Result<serde_json::Value> {
+    serde_json::from_slice(bytes).map_err(|err| {
         VmError::Serialization(format!(
             "failed to parse HF provenance ONNX metadata {}: {err}",
             path.display()
         ))
-    })?;
+    })
+}
+
+fn derive_hf_onnx_metadata_identity_from_value(
+    path: &Path,
+    metadata: &serde_json::Value,
+) -> llm_provable_computer::Result<HfOnnxMetadataIdentity> {
     let instructions = metadata
         .get("instructions")
         .and_then(serde_json::Value::as_array)
@@ -4980,6 +5078,21 @@ fn derive_hf_onnx_metadata_identity(
         output_encoding: metadata_string_field(&metadata, path, "output_encoding")?,
         instruction_count: instructions.len(),
     })
+}
+
+fn hash_hf_commitment_bytes(bytes: &[u8]) -> llm_provable_computer::Result<(String, String)> {
+    let mut output = [0u8; 32];
+    let mut blake2b = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
+    blake2b.update(bytes);
+    blake2b
+        .finalize_variable(&mut output)
+        .expect("blake2b finalize");
+    let blake2b_256 = encode_hex(&output);
+    let mut sha256 = Sha256::new();
+    Digest::update(&mut sha256, bytes);
+    let sha256_output = sha256.finalize();
+    let sha256 = encode_hex(sha256_output.as_slice());
+    Ok((blake2b_256, sha256))
 }
 
 fn metadata_string_field(
@@ -5074,6 +5187,37 @@ fn verify_hf_optional_file_commitment(
         )?;
     }
     Ok(())
+}
+
+fn ensure_hf_file_commitment_matches(
+    label: &str,
+    commitment: &HfFileCommitment,
+    computed_commitment: &HfFileCommitment,
+    identity: HfFileIdentity,
+    seen_paths: &mut std::collections::BTreeSet<HfFileIdentity>,
+) -> llm_provable_computer::Result<()> {
+    if commitment.size_bytes != computed_commitment.size_bytes {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance {label} size_bytes mismatch: expected {}, got {}",
+            commitment.size_bytes, computed_commitment.size_bytes
+        )));
+    }
+    verify_hash_commitment(
+        &format!("HF provenance {label} blake2b_256"),
+        &commitment.blake2b_256,
+        &computed_commitment.blake2b_256,
+    )?;
+    verify_hash_commitment(
+        &format!("HF provenance {label} sha256"),
+        &commitment.sha256,
+        &computed_commitment.sha256,
+    )?;
+    ensure_unique_hf_identity(
+        &format!("HF provenance {label}"),
+        &commitment.path,
+        identity,
+        seen_paths,
+    )
 }
 
 fn verify_hf_file_commitment(
