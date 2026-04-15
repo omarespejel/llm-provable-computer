@@ -18,12 +18,12 @@ artifact facts drawn from the committed bundle indices under
 | Artifact | Backend | Bundle | Prove | Verify | Proof size | Semantic scope |
 |---|---|---|---:|---:|---:|---|
 | `addition` | vanilla | `production-v1` | `71s` | `2s` | `7,644,769` bytes | arithmetic `statement-v1` execution proof |
-| `addition` | `stwo` | `stwo-experimental-v1` | `2s` | `1s` | `54,563` bytes | arithmetic `statement-v1` execution proof |
+| `addition` | `stwo` | `stwo-experimental-v1` | `2s` (`commands.log` entry 1, `prove_addition_stwo`; `APPENDIX_ARTIFACT_INDEX.md` row `addition.stwo.proof.json`) | `1s` (`commands.log` entry 2, `verify_addition_stwo`; `APPENDIX_ARTIFACT_INDEX.md` row `addition.stwo.proof.json`) | `54,563` bytes (`APPENDIX_ARTIFACT_INDEX.md` row `addition.stwo.proof.json`) | arithmetic `statement-v1` execution proof (`APPENDIX_ARTIFACT_INDEX.md` row `addition.stwo.proof.json`) |
 | `dot_product` | vanilla | `production-v1` | `430s` | `5s` | `12,835,175` bytes | neural-style arithmetic `statement-v1` execution proof |
 | `single_neuron` | vanilla | `production-v1` | `390s` | `4s` | `11,767,989` bytes | neural-style arithmetic `statement-v1` execution proof |
-| `shared-normalization-demo` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `74,074` bytes | shared-table normalization lookup proof envelope |
-| `gemma_block_v4` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `751,737` bytes | fixed-shape Gemma-inspired `statement-v1` proof with shared lookup bindings |
-| `decoding_demo` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `4,032,182` bytes | three-step proof-carrying decoding chain |
+| `shared-normalization-demo` | `stwo` | `stwo-experimental-v1` | `1s` (`commands.log` entry 3, `prove_shared_normalization_stwo`; `APPENDIX_ARTIFACT_INDEX.md` row `shared-normalization.stwo.proof.json`) | `1s` (`commands.log` entry 4, `verify_shared_normalization_stwo`; `APPENDIX_ARTIFACT_INDEX.md` row `shared-normalization.stwo.proof.json`) | `74,074` bytes (`APPENDIX_ARTIFACT_INDEX.md` row `shared-normalization.stwo.proof.json`) | shared-table normalization lookup proof envelope (`APPENDIX_ARTIFACT_INDEX.md` row `shared-normalization.stwo.proof.json`) |
+| `gemma_block_v4` | `stwo` | `stwo-experimental-v1` | `1s` (`commands.log` entry 5, `prove_gemma_block_v4_stwo`; `APPENDIX_ARTIFACT_INDEX.md` row `gemma_block_v4.stwo.proof.json`) | `1s` (`commands.log` entry 6, `verify_gemma_block_v4_stwo`; `APPENDIX_ARTIFACT_INDEX.md` row `gemma_block_v4.stwo.proof.json`) | `751,737` bytes (`APPENDIX_ARTIFACT_INDEX.md` row `gemma_block_v4.stwo.proof.json`) | fixed-shape Gemma-inspired `statement-v1` proof with shared lookup bindings (`APPENDIX_ARTIFACT_INDEX.md` row `gemma_block_v4.stwo.proof.json`) |
+| `decoding_demo` | `stwo` | `stwo-experimental-v1` | `1s` (`commands.log` entry 7, `prove_decoding_demo_stwo`; `APPENDIX_ARTIFACT_INDEX.md` row `decoding.stwo.chain.json`) | `1s` (`commands.log` entry 8, `verify_decoding_demo_stwo`; `APPENDIX_ARTIFACT_INDEX.md` row `decoding.stwo.chain.json`) | `4,032,182` bytes (`APPENDIX_ARTIFACT_INDEX.md` row `decoding.stwo.chain.json`) | three-step proof-carrying decoding chain (`APPENDIX_ARTIFACT_INDEX.md` row `decoding.stwo.chain.json`) |
 
 ## How to read this appendix
 
