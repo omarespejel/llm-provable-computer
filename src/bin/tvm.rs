@@ -4710,12 +4710,13 @@ fn verify_hf_provenance_manifest(
         &mut bound_paths,
     )?;
     for safetensors in &manifest.safetensors {
-        ensure_unique_hf_bound_path(
+        let identity = verify_hf_safetensors_file_commitment(safetensors)?;
+        ensure_unique_hf_identity(
             "HF provenance safetensors",
             &safetensors.path,
+            identity,
             &mut bound_paths,
         )?;
-        verify_hf_safetensors_file_commitment(safetensors)?;
     }
     if let Some(onnx_export) = &manifest.onnx_export {
         if onnx_export.exporter.trim().is_empty() {
@@ -4727,24 +4728,27 @@ fn verify_hf_provenance_manifest(
             "onnx_export.exporter_version",
             onnx_export.exporter_version.as_deref(),
         )?;
-        ensure_unique_hf_file_commitment_path(
+        let graph_identity = verify_hf_file_commitment("onnx_export.graph", &onnx_export.graph)?;
+        ensure_unique_hf_identity(
             "HF provenance onnx_export.graph",
-            &onnx_export.graph,
+            &onnx_export.graph.path,
+            graph_identity,
             &mut bound_paths,
         )?;
-        verify_hf_file_commitment("onnx_export.graph", &onnx_export.graph)?;
         verify_hf_optional_file_commitment(
             "onnx_export.metadata",
             &onnx_export.metadata,
             &mut bound_paths,
         )?;
         for commitment in &onnx_export.external_data_files {
-            ensure_unique_hf_file_commitment_path(
+            let identity =
+                verify_hf_file_commitment("onnx_export.external_data_files[]", commitment)?;
+            ensure_unique_hf_identity(
                 "HF provenance onnx_export.external_data_files[]",
-                commitment,
+                &commitment.path,
+                identity,
                 &mut bound_paths,
             )?;
-            verify_hf_file_commitment("onnx_export.external_data_files[]", commitment)?;
         }
     }
     verify_hf_optional_file_commitment(
@@ -4824,7 +4828,7 @@ fn hf_optional_file_commitment(
 }
 
 fn hf_file_commitment(path: &Path) -> llm_provable_computer::Result<HfFileCommitment> {
-    let (size_bytes, blake2b_256, sha256) = hash_hf_commitment_file(path)?;
+    let (_, size_bytes, blake2b_256, sha256) = hash_hf_commitment_file(path, "HF provenance file")?;
     Ok(HfFileCommitment {
         path: path.display().to_string(),
         size_bytes,
@@ -4836,8 +4840,8 @@ fn hf_file_commitment(path: &Path) -> llm_provable_computer::Result<HfFileCommit
 fn hf_safetensors_file_commitment(
     path: &Path,
 ) -> llm_provable_computer::Result<HfSafetensorsFileCommitment> {
-    let (size_bytes, blake2b_256, sha256, metadata_hash, tensor_count) =
-        inspect_hf_safetensors_file(path)?;
+    let (_, size_bytes, blake2b_256, sha256, metadata_hash, tensor_count) =
+        inspect_hf_safetensors_file(path, "HF provenance file")?;
     Ok(HfSafetensorsFileCommitment {
         path: path.display().to_string(),
         size_bytes,
@@ -4854,12 +4858,13 @@ fn verify_hf_optional_file_commitment(
     seen_paths: &mut std::collections::BTreeSet<HfFileIdentity>,
 ) -> llm_provable_computer::Result<()> {
     if let Some(commitment) = commitment {
-        ensure_unique_hf_file_commitment_path(
+        let identity = verify_hf_file_commitment(label, commitment)?;
+        ensure_unique_hf_identity(
             &format!("HF provenance {label}"),
-            commitment,
+            &commitment.path,
+            identity,
             seen_paths,
         )?;
-        verify_hf_file_commitment(label, commitment)?;
     }
     Ok(())
 }
@@ -4867,8 +4872,10 @@ fn verify_hf_optional_file_commitment(
 fn verify_hf_file_commitment(
     label: &str,
     commitment: &HfFileCommitment,
-) -> llm_provable_computer::Result<()> {
-    let (size_bytes, blake2b_256, sha256) = hash_hf_commitment_file(Path::new(&commitment.path))?;
+) -> llm_provable_computer::Result<HfFileIdentity> {
+    let identity_label = format!("HF provenance {label}");
+    let (identity, size_bytes, blake2b_256, sha256) =
+        hash_hf_commitment_file(Path::new(&commitment.path), &identity_label)?;
     if commitment.size_bytes != size_bytes {
         return Err(VmError::InvalidConfig(format!(
             "HF provenance {label} size_bytes mismatch: expected {}, got {}",
@@ -4884,7 +4891,8 @@ fn verify_hf_file_commitment(
         &format!("HF provenance {label} sha256"),
         &commitment.sha256,
         &sha256,
-    )
+    )?;
+    Ok(identity)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -4900,8 +4908,11 @@ enum HfFileIdentity {
     CanonicalPath(PathBuf),
 }
 
-fn hf_file_identity(path: &Path, label: &str) -> llm_provable_computer::Result<HfFileIdentity> {
-    let (file, _) = open_checked_regular_file(path, label, None)?;
+fn hf_file_identity_from_open_file(
+    path: &Path,
+    label: &str,
+    file: &fs::File,
+) -> llm_provable_computer::Result<HfFileIdentity> {
     let metadata = file.metadata().map_err(|err| {
         VmError::InvalidConfig(format!("failed to read {label} {}: {err}", path.display()))
     })?;
@@ -4945,20 +4956,12 @@ fn hf_file_identity(path: &Path, label: &str) -> llm_provable_computer::Result<H
     }
 }
 
-fn ensure_unique_hf_file_commitment_path(
-    label: &str,
-    commitment: &HfFileCommitment,
-    seen_paths: &mut std::collections::BTreeSet<HfFileIdentity>,
-) -> llm_provable_computer::Result<()> {
-    ensure_unique_hf_bound_path(label, &commitment.path, seen_paths)
-}
-
-fn ensure_unique_hf_bound_path(
+fn ensure_unique_hf_identity(
     label: &str,
     path: &str,
+    identity: HfFileIdentity,
     seen_paths: &mut std::collections::BTreeSet<HfFileIdentity>,
 ) -> llm_provable_computer::Result<()> {
-    let identity = hf_file_identity(Path::new(path), label)?;
     if !seen_paths.insert(identity) {
         return Err(VmError::InvalidConfig(format!(
             "{label} reuses the same underlying HF artifact as an earlier bound path via `{path}`",
@@ -4969,9 +4972,9 @@ fn ensure_unique_hf_bound_path(
 
 fn verify_hf_safetensors_file_commitment(
     commitment: &HfSafetensorsFileCommitment,
-) -> llm_provable_computer::Result<()> {
-    let (size_bytes, blake2b_256, sha256, metadata_hash, tensor_count) =
-        inspect_hf_safetensors_file(Path::new(&commitment.path))?;
+) -> llm_provable_computer::Result<HfFileIdentity> {
+    let (identity, size_bytes, blake2b_256, sha256, metadata_hash, tensor_count) =
+        inspect_hf_safetensors_file(Path::new(&commitment.path), "HF provenance safetensors")?;
     if commitment.size_bytes != size_bytes {
         return Err(VmError::InvalidConfig(format!(
             "HF provenance safetensors {} size_bytes mismatch: expected {}, got {}",
@@ -5002,11 +5005,15 @@ fn verify_hf_safetensors_file_commitment(
             commitment.path, commitment.tensor_count, tensor_count
         )));
     }
-    Ok(())
+    Ok(identity)
 }
 
-fn hash_hf_commitment_file(path: &Path) -> llm_provable_computer::Result<(u64, String, String)> {
-    let (mut file, size_bytes) = open_checked_regular_file(path, "HF provenance file", None)?;
+fn hash_hf_commitment_file(
+    path: &Path,
+    label: &str,
+) -> llm_provable_computer::Result<(HfFileIdentity, u64, String, String)> {
+    let (mut file, size_bytes) = open_checked_regular_file(path, label, None)?;
+    let identity = hf_file_identity_from_open_file(path, label, &file)?;
     let mut output = [0u8; 32];
     let mut hasher = Blake2bVar::new(output.len()).expect("blake2b-256 hasher");
     let mut sha256_hasher = Sha256::new();
@@ -5059,6 +5066,7 @@ fn hash_hf_commitment_file(path: &Path) -> llm_provable_computer::Result<(u64, S
         .expect("blake2b-256 finalization");
     let sha256_output = sha256_hasher.finalize();
     Ok((
+        identity,
         size_bytes,
         encode_hex(&output),
         encode_hex(sha256_output.as_slice()),
@@ -5067,10 +5075,12 @@ fn hash_hf_commitment_file(path: &Path) -> llm_provable_computer::Result<(u64, S
 
 fn inspect_hf_safetensors_file(
     path: &Path,
-) -> llm_provable_computer::Result<(u64, String, String, String, usize)> {
+    label: &str,
+) -> llm_provable_computer::Result<(HfFileIdentity, u64, String, String, String, usize)> {
     const MAX_SAFETENSORS_HEADER_BYTES: u64 = 16 * 1024 * 1024;
 
-    let (mut file, size_bytes) = open_checked_regular_file(path, "HF provenance file", None)?;
+    let (mut file, size_bytes) = open_checked_regular_file(path, label, None)?;
+    let identity = hf_file_identity_from_open_file(path, label, &file)?;
     if size_bytes < 8 {
         return Err(VmError::InvalidConfig(format!(
             "HF provenance safetensors {} is shorter than the 8-byte metadata length header",
@@ -5181,6 +5191,7 @@ fn inspect_hf_safetensors_file(
         .expect("blake2b-256 finalization");
     let sha256_output = sha256_hasher.finalize();
     Ok((
+        identity,
         size_bytes,
         encode_hex(&output),
         encode_hex(sha256_output.as_slice()),
