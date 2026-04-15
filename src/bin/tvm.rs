@@ -8900,6 +8900,63 @@ mod tests {
 
     #[test]
     #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn verify_research_v3_equivalence_artifact_rejects_participating_engines_budget_overflow() {
+        let mut artifact = sample_research_v3_equivalence_artifact();
+        artifact.rule_witnesses[0]
+            .participating_engines
+            .push("surprise-engine".to_string());
+        refresh_research_v3_test_artifact_commitments(&mut artifact);
+
+        let err = verify_research_v3_equivalence_artifact(&artifact)
+            .expect_err("participating_engines ingest overflow should fail");
+        assert!(err.to_string().contains(&format!(
+            "participating_engines length {} exceeds ingest cap {}",
+            RESEARCH_V3_PINNED_ENGINE_LANE_BINDINGS.len() + 1,
+            RESEARCH_V3_PINNED_ENGINE_LANE_BINDINGS.len()
+        )));
+    }
+
+    #[test]
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn verify_research_v3_equivalence_artifact_rejects_witness_hash_budget_overflow() {
+        for map_name in [
+            "state_before_hashes",
+            "state_after_hashes",
+            "engine_transition_hashes",
+        ] {
+            let mut artifact = sample_research_v3_equivalence_artifact();
+            match map_name {
+                "state_before_hashes" => {
+                    artifact.rule_witnesses[0]
+                        .state_before_hashes
+                        .insert("surprise-engine".to_string(), "0".repeat(64));
+                }
+                "state_after_hashes" => {
+                    artifact.rule_witnesses[0]
+                        .state_after_hashes
+                        .insert("surprise-engine".to_string(), "0".repeat(64));
+                }
+                "engine_transition_hashes" => {
+                    artifact.rule_witnesses[0]
+                        .engine_transition_hashes
+                        .insert("surprise-engine".to_string(), "0".repeat(64));
+                }
+                _ => unreachable!(),
+            }
+            refresh_research_v3_test_artifact_commitments(&mut artifact);
+
+            let err = verify_research_v3_equivalence_artifact(&artifact)
+                .expect_err("witness hash ingest overflow should fail");
+            assert!(err.to_string().contains(&format!(
+                "{map_name} length {} exceeds ingest cap {}",
+                RESEARCH_V3_PINNED_ENGINE_LANE_BINDINGS.len() + 1,
+                RESEARCH_V3_PINNED_ENGINE_LANE_BINDINGS.len()
+            )));
+        }
+    }
+
+    #[test]
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
     fn verify_research_v3_equivalence_artifact_rejects_requested_max_steps_budget_overflow() {
         let mut artifact = sample_research_v3_equivalence_artifact();
         artifact.requested_max_steps = MAX_RESEARCH_V3_EQUIVALENCE_STEPS + 1;
