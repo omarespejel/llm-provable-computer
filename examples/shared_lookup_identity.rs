@@ -4,10 +4,19 @@
 //! It demonstrates the public commitment helper, then shows that a registry keyed
 //! by the commitment can deduplicate identical row sets without ambiguity.
 
+#[cfg(not(feature = "stwo-backend"))]
+fn main() {
+    eprintln!("This example requires the `stwo-backend` feature.");
+    std::process::exit(1);
+}
+
+#[cfg(feature = "stwo-backend")]
 use std::collections::BTreeMap;
 
+#[cfg(feature = "stwo-backend")]
 use llm_provable_computer::stwo_backend::commit_phase12_shared_lookup_rows;
 
+#[cfg(feature = "stwo-backend")]
 fn main() {
     let layout_commitment = "example-layout-commitment-v1";
     let shared_lookup_rows = vec![1, 0, 1, 1, 0, 1, 0, 0];

@@ -15,10 +15,6 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
 name = "tvm"
 path = "src/bin/tvm.rs"
 
-[[example]]
-name = "shared_lookup_identity"
-required-features = ["stwo-backend"]
-
 [features]
 default = []
 burn-model = ["dep:burn"]
