@@ -968,8 +968,8 @@ struct HfOnnxExportProvenance {
 struct HfOnnxMetadataIdentity {
     identity_version: String,
     format_version: u32,
-    ir_version: i64,
-    opset_version: i64,
+    ir_version: u64,
+    opset_version: u64,
     input_dim: usize,
     output_dim: usize,
     input_encoding: String,
@@ -5070,8 +5070,8 @@ fn derive_hf_onnx_metadata_identity_from_value(
     Ok(HfOnnxMetadataIdentity {
         identity_version: HF_ONNX_METADATA_IDENTITY_VERSION.to_string(),
         format_version: metadata_u32_field(&metadata, path, "format_version")?,
-        ir_version: metadata_i64_field(&metadata, path, "ir_version")?,
-        opset_version: metadata_i64_field(&metadata, path, "opset_version")?,
+        ir_version: metadata_u64_field(&metadata, path, "ir_version")?,
+        opset_version: metadata_u64_field(&metadata, path, "opset_version")?,
         input_dim: metadata_usize_field(&metadata, path, "input_dim")?,
         output_dim: metadata_usize_field(&metadata, path, "output_dim")?,
         input_encoding: metadata_string_field(&metadata, path, "input_encoding")?,
@@ -5134,20 +5134,32 @@ fn metadata_u32_field(
     })
 }
 
-fn metadata_i64_field(
+fn metadata_u64_field(
     metadata: &serde_json::Value,
     path: &Path,
     field: &str,
-) -> llm_provable_computer::Result<i64> {
-    metadata
-        .get(field)
-        .and_then(serde_json::Value::as_i64)
-        .ok_or_else(|| {
-            VmError::InvalidConfig(format!(
-                "HF provenance ONNX metadata {} missing integer field `{field}`",
+) -> llm_provable_computer::Result<u64> {
+    let value = metadata.get(field).ok_or_else(|| {
+        VmError::InvalidConfig(format!(
+            "HF provenance ONNX metadata {} missing integer field `{field}`",
+            path.display()
+        ))
+    })?;
+    if let Some(unsigned) = value.as_u64() {
+        return Ok(unsigned);
+    }
+    if let Some(signed) = value.as_i64() {
+        if signed < 0 {
+            return Err(VmError::InvalidConfig(format!(
+                "HF provenance ONNX metadata {} field `{field}` must be non-negative",
                 path.display()
-            ))
-        })
+            )));
+        }
+    }
+    Err(VmError::InvalidConfig(format!(
+        "HF provenance ONNX metadata {} missing integer field `{field}`",
+        path.display()
+    )))
 }
 
 fn metadata_usize_field(
