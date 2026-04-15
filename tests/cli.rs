@@ -5758,6 +5758,8 @@ fn cli_supports_research_v3_equivalence_command() {
     let participating_engines_budget_path =
         unique_temp_dir("cli-research-v3-equivalence-participating-engines-budget")
             .with_extension("json");
+    let witness_hash_budget_path =
+        unique_temp_dir("cli-research-v3-equivalence-witness-hash-budget").with_extension("json");
     let step_budget_path =
         unique_temp_dir("cli-research-v3-equivalence-step-budget").with_extension("json");
     let requested_budget_path =
@@ -6406,6 +6408,41 @@ fn cli_supports_research_v3_equivalence_command() {
             "research-v3 witness 1 participating_engines length 5 exceeds ingest cap 4",
         ));
 
+    for object_key in [
+        "state_before_hashes",
+        "state_after_hashes",
+        "engine_transition_hashes",
+    ] {
+        let mut witness_hash_budget = artifact_json.clone();
+        witness_hash_budget["rule_witnesses"][0][object_key]
+            .as_object_mut()
+            .expect("witness hash object")
+            .insert(
+                "surprise-engine".to_string(),
+                serde_json::Value::String("0".repeat(64)),
+            );
+        witness_hash_budget["commitments"]["rule_witnesses_hash"] =
+            serde_json::Value::String(hash_json_value(
+                witness_hash_budget
+                    .get("rule_witnesses")
+                    .expect("witness hash budget witnesses"),
+            ));
+        std::fs::write(
+            &witness_hash_budget_path,
+            serde_json::to_vec(&witness_hash_budget).expect("witness hash budget artifact json"),
+        )
+        .expect("write witness hash budget artifact");
+        let mut verify_witness_hash_budget = tvm_command();
+        verify_witness_hash_budget
+            .arg("verify-research-v3-equivalence")
+            .arg(&witness_hash_budget_path)
+            .assert()
+            .failure()
+            .stderr(predicate::str::contains(format!(
+                "research-v3 witness 1 {object_key} length 5 exceeds ingest cap 4",
+            )));
+    }
+
     let mut step_budget = artifact_json.clone();
     step_budget["checked_steps"] = serde_json::Value::from(4097_u64);
     std::fs::write(
@@ -6526,6 +6563,7 @@ fn cli_supports_research_v3_equivalence_command() {
     let _ = std::fs::remove_file(extra_lane_path);
     let _ = std::fs::remove_file(swapped_lane_path);
     let _ = std::fs::remove_file(participating_engines_budget_path);
+    let _ = std::fs::remove_file(witness_hash_budget_path);
     let _ = std::fs::remove_file(step_budget_path);
     let _ = std::fs::remove_file(requested_budget_path);
     let _ = std::fs::remove_file(trace_len_budget_path);
