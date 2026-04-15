@@ -638,8 +638,12 @@ enum Command {
         /// File where the equivalence-kernel artifact JSON will be written.
         #[arg(short = 'o', long = "output")]
         output: PathBuf,
-        /// Maximum number of execution steps to check.
-        #[arg(long, default_value_t = 32)]
+        /// Maximum number of execution steps to check (1..=4096).
+        #[arg(
+            long,
+            default_value_t = 32,
+            value_parser = parse_research_v3_equivalence_max_steps
+        )]
         max_steps: usize,
         /// Number of transformer layers to distribute instructions across.
         #[arg(long, default_value_t = 1)]
@@ -872,7 +876,6 @@ const MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES: usize = 8 * 1024 * 1024;
 const HF_PROVENANCE_FILE_READ_CHUNK_BYTES: usize = 1024 * 1024;
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 const MAX_RESEARCH_V3_EQUIVALENCE_ARTIFACT_JSON_BYTES: usize = 32 * 1024 * 1024;
-#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 const MAX_RESEARCH_V3_EQUIVALENCE_STEPS: usize = 4096;
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 const MAX_RESEARCH_V3_STATE_MEMORY_WORDS: usize = 4096;
@@ -9346,6 +9349,19 @@ fn print_stwo_normalization_companion(proof: &VanillaStarkExecutionProof) {
 
 fn parse_attention_mode(input: &str) -> Result<Attention2DMode, String> {
     Attention2DMode::from_str(input)
+}
+
+fn parse_research_v3_equivalence_max_steps(input: &str) -> Result<usize, String> {
+    let max_steps = input
+        .parse::<usize>()
+        .map_err(|err| format!("invalid value `{input}` for --max-steps: {err}"))?;
+    if !(1..=MAX_RESEARCH_V3_EQUIVALENCE_STEPS).contains(&max_steps) {
+        return Err(format!(
+            "--max-steps must be in 1..={} for research-v3-equivalence",
+            MAX_RESEARCH_V3_EQUIVALENCE_STEPS
+        ));
+    }
+    Ok(max_steps)
 }
 
 fn parse_execution_engine(input: &str) -> Result<CliExecutionEngine, String> {

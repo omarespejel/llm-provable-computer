@@ -4758,7 +4758,7 @@ fn cli_research_v3_equivalence_rejects_max_steps_above_artifact_cap() {
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "research-v3-equivalence max_steps 4097 exceeds artifact cap 4096",
+            "--max-steps must be in 1..=4096 for research-v3-equivalence",
         ));
 
     assert!(!output_path.exists());
@@ -5753,6 +5753,8 @@ fn cli_supports_research_v3_equivalence_command() {
         unique_temp_dir("cli-research-v3-equivalence-extra-trace").with_extension("json");
     let extra_lane_path =
         unique_temp_dir("cli-research-v3-equivalence-extra-lane").with_extension("json");
+    let swapped_lane_path =
+        unique_temp_dir("cli-research-v3-equivalence-swapped-lane").with_extension("json");
     let step_budget_path =
         unique_temp_dir("cli-research-v3-equivalence-step-budget").with_extension("json");
     let mut command = tvm_command();
@@ -6331,6 +6333,43 @@ fn cli_supports_research_v3_equivalence_command() {
             "frontend runtime semantics registry lane count 14 exceeds ingest cap 13",
         ));
 
+    let mut swapped_lane = artifact_json.clone();
+    let lanes = swapped_lane["frontend_runtime_semantics_registry"]["lanes"]
+        .as_array_mut()
+        .expect("registry lanes");
+    let replaced_lane = lanes
+        .iter_mut()
+        .find(|lane| lane.get("lane_id").and_then(serde_json::Value::as_str) == Some("egg-emerge"))
+        .expect("egg-emerge lane");
+    *replaced_lane = serde_json::json!({
+        "lane_id": "surprise-watch",
+        "ecosystem": "surprise",
+        "role": "unexpected watch lane",
+        "status": "research_watch",
+        "artifact_binding": "No artifact binding in research-v3-equivalence.",
+        "claim_boundary": "This lane must not drift into the pinned registry without an explicit update."
+    });
+    swapped_lane["commitments"]["frontend_runtime_semantics_registry_hash"] =
+        serde_json::Value::String(hash_json_value(
+            swapped_lane
+                .get("frontend_runtime_semantics_registry")
+                .expect("swapped lane registry"),
+        ));
+    std::fs::write(
+        &swapped_lane_path,
+        serde_json::to_vec(&swapped_lane).expect("swapped lane artifact json"),
+    )
+    .expect("write swapped lane artifact");
+    let mut verify_swapped_lane = tvm_command();
+    verify_swapped_lane
+        .arg("verify-research-v3-equivalence")
+        .arg(&swapped_lane_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "frontend runtime semantics registry missing lane egg-emerge",
+        ));
+
     let mut step_budget = artifact_json.clone();
     step_budget["checked_steps"] = serde_json::Value::from(4097_u64);
     std::fs::write(
@@ -6386,6 +6425,7 @@ fn cli_supports_research_v3_equivalence_command() {
     let _ = std::fs::remove_file(extra_event_path);
     let _ = std::fs::remove_file(extra_trace_path);
     let _ = std::fs::remove_file(extra_lane_path);
+    let _ = std::fs::remove_file(swapped_lane_path);
     let _ = std::fs::remove_file(step_budget_path);
 }
 
