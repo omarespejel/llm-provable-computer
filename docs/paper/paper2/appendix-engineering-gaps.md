@@ -1,7 +1,7 @@
 # Appendix C. Remaining Engineering Gaps
 
-This appendix records what is still missing before the repository can honestly
-support a stronger follow-on claim than the current paper.
+This appendix records the concrete engineering gaps that still separate the
+current bounded claim from a stronger follow-on claim.
 
 ## C1. Gaps that matter most
 
@@ -9,7 +9,7 @@ support a stronger follow-on claim than the current paper.
 
 The repository still stops before recursive cryptographic accumulation. The
 current aggregation line preserves statements across ordered artifacts, but it
-does not produce a recursively verifiable compressed proof.
+does not yet produce a recursively verifiable compressed proof object.
 
 ### Shared-table recursive reuse
 

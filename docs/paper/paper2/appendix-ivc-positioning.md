@@ -12,7 +12,7 @@ The repository currently provides:
 - verifier-recomputed package commitments,
 - ordered packaging layers over verified members,
 - a pre-recursive aggregation boundary,
-- a recursive-compression input contract that remains an input-boundary artifact,
+- a recursive-compression input contract that remains a pre-recursive boundary,
   not a recursive proof system.
 
 ## B2. What recursive systems additionally provide

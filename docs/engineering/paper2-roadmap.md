@@ -11,8 +11,8 @@ Implementation goals this roadmap supports:
 - carried-state validity,
 - statement-preserving pre-recursive aggregation boundaries.
 
-The roadmap below is intentionally scoped to those verifier boundaries and does
-not assume that recursive compression is already available.
+The roadmap below stays inside those verifier boundaries and does not assume
+that recursive compression is already available.
 
 ## Current status
 
@@ -40,8 +40,8 @@ Focus on:
 - `research-v3` artifact verification,
 - HF provenance manifest verification.
 
-This work remains highest leverage because the paper’s main claim is about
-these verifier boundaries define the repository’s current reproducibility and
+This work remains highest leverage because the paper’s main claim is that these
+verifier boundaries define the repository’s current reproducibility and
 statement-stability envelope.
 
 ### 2. Extend provenance binding toward attestation-friendly release metadata
