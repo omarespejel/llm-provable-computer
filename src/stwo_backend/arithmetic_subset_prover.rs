@@ -21,8 +21,9 @@ use stwo_constraint_framework::{
 };
 
 use super::decoding::{
-    infer_phase12_decoding_layout, matches_decoding_step_v1_family, matches_decoding_step_v2_family,
-    MAX_DECODING_PROOF_PAYLOAD_BYTES, MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES,
+    infer_phase12_decoding_layout, matches_decoding_step_v1_family,
+    matches_decoding_step_v2_family, MAX_DECODING_PROOF_PAYLOAD_BYTES,
+    MAX_SHARED_LOOKUP_ENVELOPE_PROOF_BYTES,
 };
 use super::normalization_component::phase5_normalization_table_rows;
 use super::normalization_prover::{
