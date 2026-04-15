@@ -4269,36 +4269,42 @@ fn prepare_hf_provenance_manifest_command(
         .as_deref()
         .map(|path| {
             let mut bound_paths = std::collections::BTreeSet::new();
-            ensure_unique_hf_bound_path(
+            let (graph_identity, graph_commitment) =
+                inspect_hf_commitment_file(path, "HF provenance onnx_export.graph")?;
+            ensure_unique_hf_identity(
                 "HF provenance onnx_export.graph",
                 &path.display().to_string(),
+                graph_identity,
                 &mut bound_paths,
             )?;
-            if let Some(metadata_path) = command.onnx_metadata.as_deref() {
-                ensure_unique_hf_bound_path(
-                    "HF provenance onnx_export.metadata",
-                    &metadata_path.display().to_string(),
-                    &mut bound_paths,
-                )?;
-            }
+            let mut external_data_files =
+                Vec::with_capacity(command.onnx_external_data_files.len());
             for external_data_path in &command.onnx_external_data_files {
-                ensure_unique_hf_bound_path(
+                let (external_data_identity, external_data_commitment) =
+                    inspect_hf_commitment_file(
+                        external_data_path,
+                        "HF provenance onnx_export.external_data_files[]",
+                    )?;
+                ensure_unique_hf_identity(
                     "HF provenance onnx_export.external_data_files[]",
                     &external_data_path.display().to_string(),
+                    external_data_identity,
                     &mut bound_paths,
                 )?;
+                external_data_files.push(external_data_commitment);
             }
-            let mut external_data_files = command
-                .onnx_external_data_files
-                .iter()
-                .map(|path| hf_file_commitment(path))
-                .collect::<llm_provable_computer::Result<Vec<_>>>()?;
             external_data_files.sort_by(|a, b| a.path.cmp(&b.path));
             let (metadata, metadata_identity) = if let Some(metadata_path) =
                 command.onnx_metadata.as_deref()
             {
-                let (_, metadata_commitment, metadata_bytes) =
+                let (metadata_identity_binding, metadata_commitment, metadata_bytes) =
                     inspect_hf_onnx_metadata_file(metadata_path)?;
+                ensure_unique_hf_identity(
+                    "HF provenance onnx_export.metadata",
+                    &metadata_path.display().to_string(),
+                    metadata_identity_binding,
+                    &mut bound_paths,
+                )?;
                 let metadata_json = parse_hf_onnx_metadata_json(metadata_path, &metadata_bytes)?;
                 (
                     Some(metadata_commitment),
@@ -4313,7 +4319,7 @@ fn prepare_hf_provenance_manifest_command(
             Ok::<HfOnnxExportProvenance, VmError>(HfOnnxExportProvenance {
                 exporter: command.onnx_exporter.clone(),
                 exporter_version: command.onnx_exporter_version.clone(),
-                graph: hf_file_commitment(path)?,
+                graph: graph_commitment,
                 metadata,
                 metadata_identity,
                 external_data_files,
@@ -4712,6 +4718,13 @@ fn ensure_hf_provenance_manifest_v5_required_fields(
                 HF_PROVENANCE_MANIFEST_VERSION
             )));
         }
+        if !commitments_obj.contains_key("onnx_metadata_identity_hash") {
+            return Err(VmError::Serialization(format!(
+                "failed to parse HF provenance manifest {}: missing field `onnx_metadata_identity_hash` in `commitments` for {}",
+                manifest_path.display(),
+                HF_PROVENANCE_MANIFEST_VERSION
+            )));
+        }
     }
     let Some(onnx_export) = manifest_value.get("onnx_export") else {
         return Ok(());
@@ -5004,6 +5017,22 @@ fn hf_file_commitment(path: &Path) -> llm_provable_computer::Result<HfFileCommit
         blake2b_256,
         sha256,
     })
+}
+
+fn inspect_hf_commitment_file(
+    path: &Path,
+    label: &str,
+) -> llm_provable_computer::Result<(HfFileIdentity, HfFileCommitment)> {
+    let (identity, size_bytes, blake2b_256, sha256) = hash_hf_commitment_file(path, label)?;
+    Ok((
+        identity,
+        HfFileCommitment {
+            path: path.display().to_string(),
+            size_bytes,
+            blake2b_256,
+            sha256,
+        },
+    ))
 }
 
 fn hf_safetensors_file_commitment(
@@ -5317,17 +5346,6 @@ fn hf_file_identity_from_open_file(
         })?;
         Ok(HfFileIdentity::CanonicalPath(canonical))
     }
-}
-
-fn ensure_unique_hf_bound_path(
-    label: &str,
-    path: &str,
-    seen_paths: &mut std::collections::BTreeSet<HfFileIdentity>,
-) -> llm_provable_computer::Result<()> {
-    let path = Path::new(path);
-    let (file, _) = open_checked_regular_file(path, label, None)?;
-    let identity = hf_file_identity_from_open_file(path, label, &file)?;
-    ensure_unique_hf_identity(label, &path.display().to_string(), identity, seen_paths)
 }
 
 fn ensure_unique_hf_identity(
@@ -7613,7 +7631,7 @@ mod hf_provenance_manifest_tests {
                 "safetensors_manifest_hash": "1".repeat(64),
                 "onnx_export_hash": "2".repeat(64),
                 "onnx_metadata_identity_hash": "3".repeat(64),
-                "release_metadata_hash": "3".repeat(64),
+                "release_metadata_hash": "5".repeat(64),
                 "limitations_hash": "4".repeat(64)
             }
         })
@@ -7742,6 +7760,36 @@ mod hf_provenance_manifest_tests {
         assert!(err
             .to_string()
             .contains("missing field `metadata_identity`"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_v5_missing_onnx_metadata_identity_hash_field() {
+        let file = hf_provenance_test_manifest_file("missing-onnx-metadata-identity-hash");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["onnx_export"] = serde_json::json!({
+            "exporter": "optimum",
+            "exporter_version": null,
+            "graph": {
+                "path": "model.onnx",
+                "size_bytes": 16,
+                "blake2b_256": "5".repeat(64),
+                "sha256": "6".repeat(64)
+            },
+            "metadata": null,
+            "metadata_identity": null,
+            "external_data_files": []
+        });
+        value["commitments"]
+            .as_object_mut()
+            .expect("commitments object")
+            .remove("onnx_metadata_identity_hash");
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("v5 manifest missing onnx_metadata_identity_hash field should fail");
+        assert!(err
+            .to_string()
+            .contains("missing field `onnx_metadata_identity_hash`"));
     }
 
     #[test]
