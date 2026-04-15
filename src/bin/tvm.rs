@@ -877,7 +877,7 @@ const MAX_RESEARCH_V3_EQUIVALENCE_STEPS: usize = 4096;
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
 const MAX_RESEARCH_V3_STATE_MEMORY_WORDS: usize = 4096;
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
-const MAX_RESEARCH_V3_INSTRUCTION_BYTES: usize = 256;
+const MAX_RESEARCH_V3_INSTRUCTION_CHARS: usize = 256;
 #[cfg(feature = "onnx-export")]
 const RESEARCH_V3_PINNED_ENGINE_LANE_BINDINGS: [(&str, &str); 4] = [
     ("transformer", "transformer-vm"),
@@ -6000,12 +6000,180 @@ fn load_research_v3_equivalence_artifact(
         )));
     }
 
-    serde_json::from_slice(&artifact_bytes).map_err(|err| {
+    let artifact_value: serde_json::Value =
+        serde_json::from_slice(&artifact_bytes).map_err(|err| {
+            VmError::Serialization(format!(
+                "failed to parse research-v3 artifact {}: {err}",
+                artifact_path.display()
+            ))
+        })?;
+    prevalidate_research_v3_equivalence_artifact_budget_json(artifact_path, &artifact_value)?;
+    serde_json::from_value(artifact_value).map_err(|err| {
         VmError::Serialization(format!(
             "failed to parse research-v3 artifact {}: {err}",
             artifact_path.display()
         ))
     })
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn prevalidate_research_v3_equivalence_artifact_budget_json(
+    artifact_path: &Path,
+    artifact_value: &serde_json::Value,
+) -> llm_provable_computer::Result<()> {
+    let max_engines = RESEARCH_V3_PINNED_ENGINE_LANE_BINDINGS.len();
+    let max_trace_len = MAX_RESEARCH_V3_EQUIVALENCE_STEPS + 1;
+
+    if let Some(requested_max_steps) = artifact_value
+        .get("requested_max_steps")
+        .and_then(serde_json::Value::as_u64)
+        .and_then(|value| usize::try_from(value).ok())
+    {
+        if requested_max_steps > MAX_RESEARCH_V3_EQUIVALENCE_STEPS {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 requested_max_steps {} exceeds ingest cap {}",
+                requested_max_steps, MAX_RESEARCH_V3_EQUIVALENCE_STEPS
+            )));
+        }
+    }
+
+    if let Some(checked_steps) = artifact_value
+        .get("checked_steps")
+        .and_then(serde_json::Value::as_u64)
+        .and_then(|value| usize::try_from(value).ok())
+    {
+        if checked_steps > MAX_RESEARCH_V3_EQUIVALENCE_STEPS {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 checked_steps {} exceeds ingest cap {}",
+                checked_steps, MAX_RESEARCH_V3_EQUIVALENCE_STEPS
+            )));
+        }
+    }
+
+    if let Some(rule_witnesses) = artifact_value
+        .get("rule_witnesses")
+        .and_then(serde_json::Value::as_array)
+    {
+        if rule_witnesses.len() > MAX_RESEARCH_V3_EQUIVALENCE_STEPS {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 rule_witnesses length {} exceeds ingest cap {}",
+                rule_witnesses.len(),
+                MAX_RESEARCH_V3_EQUIVALENCE_STEPS
+            )));
+        }
+        for (index, witness) in rule_witnesses.iter().enumerate() {
+            if let Some(instruction) = witness
+                .get("instruction")
+                .and_then(serde_json::Value::as_str)
+            {
+                validate_research_v3_instruction_budget(
+                    instruction,
+                    &format!("witness {} instruction", index + 1),
+                )?;
+            }
+        }
+    }
+
+    if let Some(lanes) = artifact_value
+        .pointer("/frontend_runtime_semantics_registry/lanes")
+        .and_then(serde_json::Value::as_array)
+    {
+        if lanes.len() > MAX_FRONTEND_RUNTIME_SEMANTICS_LANES {
+            return Err(VmError::InvalidConfig(format!(
+                "frontend runtime semantics registry lane count {} exceeds ingest cap {}",
+                lanes.len(),
+                MAX_FRONTEND_RUNTIME_SEMANTICS_LANES
+            )));
+        }
+    }
+
+    if let Some(engines) = artifact_value
+        .get("engines")
+        .and_then(serde_json::Value::as_array)
+    {
+        if engines.len() > max_engines {
+            return Err(VmError::InvalidConfig(format!(
+                "research-v3 engines length {} exceeds ingest cap {}",
+                engines.len(),
+                max_engines
+            )));
+        }
+        for engine in engines {
+            let engine_name = engine
+                .get("name")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("<unknown>");
+
+            if let Some(trace) = engine.get("trace").and_then(serde_json::Value::as_array) {
+                if trace.len() > max_trace_len {
+                    return Err(VmError::InvalidConfig(format!(
+                        "research-v3 engine {engine_name} trace length {} exceeds ingest cap {}",
+                        trace.len(),
+                        max_trace_len
+                    )));
+                }
+                for (index, state) in trace.iter().enumerate() {
+                    prevalidate_research_v3_machine_state_budget_json(
+                        state,
+                        &format!("research-v3 engine {engine_name} trace[{index}]"),
+                    )?;
+                }
+            }
+
+            if let Some(final_state) = engine.get("final_state") {
+                prevalidate_research_v3_machine_state_budget_json(
+                    final_state,
+                    &format!("research-v3 engine {engine_name} final_state"),
+                )?;
+            }
+
+            if let Some(events) = engine
+                .get("canonical_events")
+                .and_then(serde_json::Value::as_array)
+            {
+                if events.len() > MAX_RESEARCH_V3_EQUIVALENCE_STEPS {
+                    return Err(VmError::InvalidConfig(format!(
+                        "research-v3 engine {engine_name} canonical_events length {} exceeds ingest cap {}",
+                        events.len(),
+                        MAX_RESEARCH_V3_EQUIVALENCE_STEPS
+                    )));
+                }
+                for (index, event) in events.iter().enumerate() {
+                    if let Some(instruction) =
+                        event.get("instruction").and_then(serde_json::Value::as_str)
+                    {
+                        validate_research_v3_instruction_budget(
+                            instruction,
+                            &format!(
+                                "research-v3 engine {engine_name} canonical event {} instruction",
+                                index + 1
+                            ),
+                        )?;
+                    }
+                }
+            }
+        }
+    }
+
+    let _ = artifact_path;
+    Ok(())
+}
+
+#[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+fn prevalidate_research_v3_machine_state_budget_json(
+    state: &serde_json::Value,
+    label: &str,
+) -> llm_provable_computer::Result<()> {
+    if let Some(memory) = state.get("memory").and_then(serde_json::Value::as_array) {
+        if memory.len() > MAX_RESEARCH_V3_STATE_MEMORY_WORDS {
+            return Err(VmError::InvalidConfig(format!(
+                "{label} memory length {} exceeds ingest cap {}",
+                memory.len(),
+                MAX_RESEARCH_V3_STATE_MEMORY_WORDS
+            )));
+        }
+    }
+    Ok(())
 }
 
 #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
@@ -6325,11 +6493,11 @@ fn validate_research_v3_instruction_budget(
     instruction: &str,
     label: &str,
 ) -> llm_provable_computer::Result<()> {
-    if instruction.len() > MAX_RESEARCH_V3_INSTRUCTION_BYTES {
+    let instruction_chars = instruction.chars().count();
+    if instruction_chars > MAX_RESEARCH_V3_INSTRUCTION_CHARS {
         return Err(VmError::InvalidConfig(format!(
             "{label} length {} exceeds ingest cap {}",
-            instruction.len(),
-            MAX_RESEARCH_V3_INSTRUCTION_BYTES
+            instruction_chars, MAX_RESEARCH_V3_INSTRUCTION_CHARS
         )));
     }
     Ok(())
@@ -8623,14 +8791,33 @@ mod tests {
     #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
     fn verify_research_v3_equivalence_artifact_rejects_oversized_witness_instruction() {
         let mut artifact = sample_research_v3_equivalence_artifact();
-        artifact.rule_witnesses[0].instruction = "N".repeat(MAX_RESEARCH_V3_INSTRUCTION_BYTES + 1);
+        artifact.rule_witnesses[0].instruction = "N".repeat(MAX_RESEARCH_V3_INSTRUCTION_CHARS + 1);
 
         let err = verify_research_v3_equivalence_artifact(&artifact)
             .expect_err("oversized witness instruction should fail");
         assert!(err.to_string().contains(&format!(
             "witness 1 instruction length {} exceeds ingest cap {}",
-            MAX_RESEARCH_V3_INSTRUCTION_BYTES + 1,
-            MAX_RESEARCH_V3_INSTRUCTION_BYTES
+            MAX_RESEARCH_V3_INSTRUCTION_CHARS + 1,
+            MAX_RESEARCH_V3_INSTRUCTION_CHARS
+        )));
+    }
+
+    #[test]
+    #[cfg(all(feature = "burn-model", feature = "onnx-export"))]
+    fn validate_research_v3_instruction_budget_counts_characters() {
+        let within_budget = "ß".repeat(MAX_RESEARCH_V3_INSTRUCTION_CHARS);
+        validate_research_v3_instruction_budget(&within_budget, "unicode instruction")
+            .expect("unicode instruction within char cap should pass");
+
+        let err = validate_research_v3_instruction_budget(
+            &"ß".repeat(MAX_RESEARCH_V3_INSTRUCTION_CHARS + 1),
+            "unicode instruction",
+        )
+        .expect_err("unicode instruction above char cap should fail");
+        assert!(err.to_string().contains(&format!(
+            "unicode instruction length {} exceeds ingest cap {}",
+            MAX_RESEARCH_V3_INSTRUCTION_CHARS + 1,
+            MAX_RESEARCH_V3_INSTRUCTION_CHARS
         )));
     }
 

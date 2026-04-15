@@ -6314,7 +6314,6 @@ fn cli_supports_research_v3_equivalence_command() {
         ));
 
     let mut step_budget = artifact_json.clone();
-    step_budget["requested_max_steps"] = serde_json::Value::from(4097_u64);
     step_budget["checked_steps"] = serde_json::Value::from(4097_u64);
     std::fs::write(
         &step_budget_path,
