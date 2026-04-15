@@ -4591,6 +4591,18 @@ fn ensure_hf_provenance_manifest_v4_required_fields(
     manifest_path: &Path,
     manifest_value: &serde_json::Value,
 ) -> llm_provable_computer::Result<()> {
+    if let Some(commitments_obj) = manifest_value
+        .get("commitments")
+        .and_then(|v| v.as_object())
+    {
+        if !commitments_obj.contains_key("hub_binding_hash") {
+            return Err(VmError::Serialization(format!(
+                "failed to parse HF provenance manifest {}: missing field `hub_binding_hash` in `commitments` for {}",
+                manifest_path.display(),
+                HF_PROVENANCE_MANIFEST_VERSION
+            )));
+        }
+    }
     let Some(onnx_export) = manifest_value.get("onnx_export") else {
         return Ok(());
     };
@@ -4947,9 +4959,9 @@ fn ensure_unique_hf_bound_path(
     seen_paths: &mut std::collections::BTreeSet<HfFileIdentity>,
 ) -> llm_provable_computer::Result<()> {
     let identity = hf_file_identity(Path::new(path), label)?;
-    if !seen_paths.insert(identity) {
+    if !seen_paths.insert(identity.clone()) {
         return Err(VmError::InvalidConfig(format!(
-            "{label} reuses HF artifact path `{path}`",
+            "{label} reuses HF artifact identity {identity:?} at `{path}`",
         )));
     }
     Ok(())
@@ -7333,7 +7345,7 @@ mod hf_provenance_manifest_tests {
     }
 
     #[test]
-    fn load_hf_provenance_manifest_rejects_v3_missing_onnx_metadata_field() {
+    fn load_hf_provenance_manifest_rejects_v4_missing_onnx_metadata_field() {
         let file = hf_provenance_test_manifest_file("missing-onnx-metadata");
         let mut value = sample_hf_provenance_manifest_value();
         value["onnx_export"] = serde_json::json!({
@@ -7644,7 +7656,7 @@ mod hf_provenance_manifest_tests {
             .expect_err("duplicate ONNX sidecar paths should fail");
         assert!(err
             .to_string()
-            .contains("onnx_export.external_data_files[] reuses HF artifact path"));
+            .contains("onnx_export.external_data_files[] reuses HF artifact identity"));
     }
 
     #[test]
@@ -7667,7 +7679,7 @@ mod hf_provenance_manifest_tests {
             .expect_err("duplicate ONNX graph/metadata path should fail");
         assert!(err
             .to_string()
-            .contains("onnx_export.metadata reuses HF artifact path"));
+            .contains("onnx_export.metadata reuses HF artifact identity"));
     }
 
     #[test]
@@ -7690,7 +7702,7 @@ mod hf_provenance_manifest_tests {
             .expect_err("duplicate ONNX graph/external-data path should fail");
         assert!(err
             .to_string()
-            .contains("onnx_export.external_data_files[] reuses HF artifact path"));
+            .contains("onnx_export.external_data_files[] reuses HF artifact identity"));
     }
 
     #[test]
@@ -7721,7 +7733,7 @@ mod hf_provenance_manifest_tests {
 
         let err = verify_hf_provenance_manifest(&manifest)
             .expect_err("reused bound file across roles should fail");
-        assert!(err.to_string().contains("reuses HF artifact path"));
+        assert!(err.to_string().contains("reuses HF artifact identity"));
     }
 
     #[test]

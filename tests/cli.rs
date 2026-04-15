@@ -4835,7 +4835,9 @@ fn cli_can_prepare_and_verify_hf_provenance_manifest() {
     assert!(
         manifest_json["commitments"]["hub_binding_hash"]
             .as_str()
-            .is_some_and(|digest| digest.chars().all(|c| c.is_ascii_hexdigit())),
+            .is_some_and(|digest| {
+                digest.len() == 64 && digest.chars().all(|c| c.is_ascii_hexdigit())
+            }),
         "commitments.hub_binding_hash must be hex",
     );
     assert_eq!(
@@ -4960,25 +4962,31 @@ fn cli_verifier_rejects_hf_manifest_hub_binding_tamper() {
         .assert()
         .success();
 
-    let mut manifest_json: serde_json::Value =
+    let base_manifest_json: serde_json::Value =
         serde_json::from_slice(&std::fs::read(&manifest).expect("manifest bytes"))
             .expect("manifest json");
-    manifest_json["hub_revision"] = serde_json::json!("fedcba9876543210");
-    std::fs::write(
-        &manifest,
-        serde_json::to_vec_pretty(&manifest_json).expect("serialize tampered manifest"),
-    )
-    .expect("write tampered manifest");
+    for (field, replacement) in [
+        ("hub_revision", serde_json::json!("fedcba9876543210")),
+        ("hub_repo", serde_json::json!("example/other-model")),
+    ] {
+        let mut manifest_json = base_manifest_json.clone();
+        manifest_json[field] = replacement;
+        std::fs::write(
+            &manifest,
+            serde_json::to_vec_pretty(&manifest_json).expect("serialize tampered manifest"),
+        )
+        .expect("write tampered manifest");
 
-    let mut verify = tvm_command();
-    verify
-        .arg("verify-hf-provenance-manifest")
-        .arg(&manifest)
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains(
-            "hf hub_binding_hash commitment mismatch",
-        ));
+        let mut verify = tvm_command();
+        verify
+            .arg("verify-hf-provenance-manifest")
+            .arg(&manifest)
+            .assert()
+            .failure()
+            .stderr(predicate::str::contains(
+                "hf hub_binding_hash commitment mismatch",
+            ));
+    }
 
     let _ = std::fs::remove_dir_all(fixture_dir);
 }
@@ -5192,10 +5200,19 @@ fn cli_verifier_rejects_legacy_hf_manifest_versions() {
     let mut manifest_json: serde_json::Value =
         serde_json::from_slice(&std::fs::read(&manifest).expect("manifest bytes"))
             .expect("manifest json");
-    for legacy_version in [
-        "hf-provenance-manifest-v1",
-        "hf-provenance-manifest-v2",
-        "hf-provenance-manifest-v3",
+    for (legacy_version, reason) in [
+        (
+            "hf-provenance-manifest-v1",
+            "after the ONNX sidecar format bump",
+        ),
+        (
+            "hf-provenance-manifest-v2",
+            "after the attestation-digest format bump",
+        ),
+        (
+            "hf-provenance-manifest-v3",
+            "after the hub-binding hardening update",
+        ),
     ] {
         manifest_json["manifest_version"] = serde_json::json!(legacy_version);
         std::fs::write(
@@ -5212,7 +5229,8 @@ fn cli_verifier_rejects_legacy_hf_manifest_versions() {
             .failure()
             .stderr(predicate::str::contains(format!(
                 "legacy manifest_version `{legacy_version}` is no longer accepted",
-            )));
+            )))
+            .stderr(predicate::str::contains(reason));
     }
 
     let _ = std::fs::remove_dir_all(fixture_dir);
@@ -5257,7 +5275,7 @@ fn cli_rejects_hf_provenance_manifest_when_onnx_metadata_reuses_graph_path() {
 
     let mut prepare = hf_provenance_prepare_command(&manifest, &onnx_model, Some(&onnx_model), &[]);
     prepare.assert().failure().stderr(predicate::str::contains(
-        "onnx_export.metadata reuses HF artifact path",
+        "onnx_export.metadata reuses HF artifact identity",
     ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
@@ -5274,7 +5292,7 @@ fn cli_rejects_hf_provenance_manifest_when_onnx_external_data_reuses_graph_path(
 
     let mut prepare = hf_provenance_prepare_command(&manifest, &onnx_model, None, &[&onnx_model]);
     prepare.assert().failure().stderr(predicate::str::contains(
-        "onnx_export.external_data_files[] reuses HF artifact path",
+        "onnx_export.external_data_files[] reuses HF artifact identity",
     ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
@@ -5321,7 +5339,7 @@ fn cli_rejects_hf_provenance_manifest_when_onnx_metadata_aliases_graph_path() {
     let mut prepare =
         hf_provenance_prepare_command(&manifest, &onnx_model, Some(&aliased_onnx_model), &[]);
     prepare.assert().failure().stderr(predicate::str::contains(
-        "onnx_export.metadata reuses HF artifact path",
+        "onnx_export.metadata reuses HF artifact identity",
     ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
@@ -5358,7 +5376,7 @@ fn cli_rejects_hf_provenance_manifest_when_model_card_reuses_tokenizer_json_path
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "model_card reuses HF artifact path",
+            "model_card reuses HF artifact identity",
         ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
