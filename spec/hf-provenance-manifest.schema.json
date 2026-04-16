@@ -17,7 +17,7 @@
     "commitments"
   ],
   "properties": {
-    "manifest_version": { "const": "hf-provenance-manifest-v5" },
+    "manifest_version": { "const": "hf-provenance-manifest-v6" },
     "semantic_scope": { "const": "hf-release-provenance-boundary-v1" },
     "commitment_hash_function": { "const": "blake2b-256" },
     "hub_repo": { "type": "string", "minLength": 1 },
@@ -122,7 +122,16 @@
     },
     "onnx_export": {
       "type": "object",
-      "required": ["exporter", "exporter_version", "graph", "metadata", "metadata_identity", "external_data_files"],
+      "required": [
+        "exporter",
+        "exporter_version",
+        "exporter_identity",
+        "graph",
+        "metadata",
+        "metadata_identity",
+        "graph_constraint_identity",
+        "external_data_files"
+      ],
       "properties": {
         "exporter": { "type": "string", "minLength": 1 },
         "exporter_version": {
@@ -131,6 +140,7 @@
             { "type": "null" }
           ]
         },
+        "exporter_identity": { "$ref": "#/$defs/onnx_exporter_identity" },
         "graph": { "$ref": "#/$defs/file_commitment" },
         "metadata": {
           "anyOf": [
@@ -144,9 +154,30 @@
             { "type": "null" }
           ]
         },
+        "graph_constraint_identity": {
+          "anyOf": [
+            { "$ref": "#/$defs/onnx_graph_constraint_identity" },
+            { "type": "null" }
+          ]
+        },
         "external_data_files": {
           "type": "array",
           "items": { "$ref": "#/$defs/file_commitment" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "onnx_exporter_identity": {
+      "type": "object",
+      "required": ["identity_version", "exporter", "exporter_version"],
+      "properties": {
+        "identity_version": { "const": "onnx-exporter-identity-v1" },
+        "exporter": { "type": "string", "minLength": 1 },
+        "exporter_version": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
         }
       },
       "additionalProperties": false
@@ -174,6 +205,42 @@
         "input_encoding": { "type": "string", "minLength": 1 },
         "output_encoding": { "type": "string", "minLength": 1 },
         "instruction_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "onnx_graph_constraint_identity": {
+      "type": "object",
+      "required": [
+        "identity_version",
+        "input_dim",
+        "output_dim",
+        "input_encoding",
+        "output_encoding",
+        "input_layout_hash",
+        "output_layout_hash",
+        "instruction_count",
+        "instruction_table_hash"
+      ],
+      "properties": {
+        "identity_version": { "const": "onnx-graph-constraint-identity-v1" },
+        "input_dim": { "type": "integer", "minimum": 0 },
+        "output_dim": { "type": "integer", "minimum": 0 },
+        "input_encoding": { "type": "string", "minLength": 1 },
+        "output_encoding": { "type": "string", "minLength": 1 },
+        "input_layout_hash": {
+          "anyOf": [
+            { "$ref": "#/$defs/hash_blake2b_256_hex" },
+            { "type": "null" }
+          ]
+        },
+        "output_layout_hash": {
+          "anyOf": [
+            { "$ref": "#/$defs/hash_blake2b_256_hex" },
+            { "type": "null" }
+          ]
+        },
+        "instruction_count": { "type": "integer", "minimum": 0 },
+        "instruction_table_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" }
       },
       "additionalProperties": false
     },
@@ -264,7 +331,9 @@
         "tokenizer_hash",
         "safetensors_manifest_hash",
         "onnx_export_hash",
+        "onnx_exporter_identity_hash",
         "onnx_metadata_identity_hash",
+        "onnx_graph_constraint_identity_hash",
         "release_metadata_hash",
         "limitations_hash"
       ],
@@ -273,7 +342,9 @@
         "tokenizer_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "safetensors_manifest_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "onnx_export_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "onnx_exporter_identity_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "onnx_metadata_identity_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "onnx_graph_constraint_identity_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "release_metadata_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "attestation_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "limitations_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" }

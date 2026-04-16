@@ -27,6 +27,8 @@ The repository is already strong enough for the bounded paper-2 claim:
   declared external-data side files,
 - attestation-friendly subject digests plus optional builder/source release
   metadata now exist on the HF provenance surface,
+- ONNX-facing provenance now also binds exporter identity and graph-constraint
+  identity where metadata exposes those constraints,
 - parser/verifier hardening has materially improved the trust boundary around
   those surfaces.
 
@@ -46,19 +48,19 @@ This work remains highest leverage because the paper’s main claim is that thes
 verifier boundaries define the repository’s current reproducibility and
 statement-stability envelope.
 
-### 2. Deepen provenance binding beyond the new attestation-friendly release layer
+### 2. Keep provenance binding honest beyond the current ONNX identity layer
 
-The next substantive gap is no longer basic ONNX sidecar binding or release-side
-subject digests. It is stronger exporter and externally signed provenance over
-the same release surface.
+The next substantive gap is no longer basic ONNX sidecar binding, exporter
+identity, or graph-constraint identity on the local manifest surface. It is
+stronger externally signed provenance over the same release boundary.
 
 Concrete targets:
 
-- bind exporter identity more explicitly,
-- bind graph-constraint identity where exporter metadata exposes it,
 - preserve external-file identity where ONNX layout requires it,
 - keep the new builder/source metadata aligned with signed attestation subjects
   rather than proof semantics,
+- add externally signed provenance only as a release-layer extension, not as a
+  proof-semantics claim,
 - keep the claim phrased as provenance/reproducibility, not proof semantics.
 
 ### 3. Keep semantic-agreement artifacts bounded
@@ -73,7 +75,7 @@ Concrete rule:
 - hardening should continue to focus on manifest, trace, event, and commitment
   mismatch rejection.
 
-### 4. Only then move to recursive compression
+### 4. Then move to recursive compression
 
 Recursive work should come after the public decode statement is stable enough
 that recursion preserves a claim the repository already exposes cleanly.
@@ -97,7 +99,8 @@ exists to sequence the implementation work that keeps those boundaries honest.
 
 The next concrete engineering slice should be:
 
-1. one more targeted verifier/tamper pass over the expanded HF provenance
-   attestation block and the exact paper-facing `research-v3` boundary,
-2. then explicit exporter-identity or graph-constraint binding over the same
-   bounded provenance claim.
+1. keep the expanded HF provenance verifier narrow and explicit about what is
+   local identity binding versus what would require external signed
+   attestations,
+2. then recurse over the existing decode boundary rather than inventing a new
+   statement surface.

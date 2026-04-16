@@ -920,10 +920,14 @@ const HF_PROVENANCE_MANIFEST_VERSION_V1_LEGACY: &str = "hf-provenance-manifest-v
 const HF_PROVENANCE_MANIFEST_VERSION_V2_LEGACY: &str = "hf-provenance-manifest-v2";
 const HF_PROVENANCE_MANIFEST_VERSION_V3_LEGACY: &str = "hf-provenance-manifest-v3";
 const HF_PROVENANCE_MANIFEST_VERSION_V4_LEGACY: &str = "hf-provenance-manifest-v4";
-const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v5";
+const HF_PROVENANCE_MANIFEST_VERSION_V5_LEGACY: &str = "hf-provenance-manifest-v5";
+const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v6";
 const HF_PROVENANCE_SEMANTIC_SCOPE: &str = "hf-release-provenance-boundary-v1";
 const HF_PROVENANCE_HASH_FUNCTION: &str = "blake2b-256";
 const HF_ONNX_METADATA_IDENTITY_VERSION: &str = "onnx-program-metadata-identity-v1";
+const HF_ONNX_EXPORTER_IDENTITY_VERSION: &str = "onnx-exporter-identity-v1";
+const HF_ONNX_GRAPH_CONSTRAINT_IDENTITY_VERSION: &str =
+    "onnx-graph-constraint-identity-v1";
 const HF_ATTESTATION_METADATA_VERSION: &str = "hf-attestation-metadata-v1";
 
 struct HfProvenanceManifestCommand {
@@ -986,10 +990,20 @@ struct HfTokenizerProvenance {
 struct HfOnnxExportProvenance {
     exporter: String,
     exporter_version: Option<String>,
+    exporter_identity: HfOnnxExporterIdentity,
     graph: HfFileCommitment,
     metadata: Option<HfFileCommitment>,
     metadata_identity: Option<HfOnnxMetadataIdentity>,
+    graph_constraint_identity: Option<HfOnnxGraphConstraintIdentity>,
     external_data_files: Vec<HfFileCommitment>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct HfOnnxExporterIdentity {
+    identity_version: String,
+    exporter: String,
+    exporter_version: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -1004,6 +1018,20 @@ struct HfOnnxMetadataIdentity {
     input_encoding: String,
     output_encoding: String,
     instruction_count: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct HfOnnxGraphConstraintIdentity {
+    identity_version: String,
+    input_dim: usize,
+    output_dim: usize,
+    input_encoding: String,
+    output_encoding: String,
+    input_layout_hash: Option<String>,
+    output_layout_hash: Option<String>,
+    instruction_count: usize,
+    instruction_table_hash: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1047,7 +1075,9 @@ struct HfProvenanceCommitments {
     tokenizer_hash: String,
     safetensors_manifest_hash: String,
     onnx_export_hash: String,
+    onnx_exporter_identity_hash: String,
     onnx_metadata_identity_hash: String,
+    onnx_graph_constraint_identity_hash: String,
     release_metadata_hash: String,
     #[serde(default = "default_hf_attestation_hash")]
     attestation_hash: String,
@@ -4359,7 +4389,7 @@ fn prepare_hf_provenance_manifest_command(
                 external_data_files.push(external_data_commitment);
             }
             external_data_files.sort_by(|a, b| a.path.cmp(&b.path));
-            let (metadata, metadata_identity) = if let Some(metadata_path) =
+            let (metadata, metadata_identity, graph_constraint_identity) = if let Some(metadata_path) =
                 command.onnx_metadata.as_deref()
             {
                 let (metadata_identity_binding, metadata_commitment, metadata_bytes) =
@@ -4377,16 +4407,25 @@ fn prepare_hf_provenance_manifest_command(
                         metadata_path,
                         &metadata_json,
                     )?),
+                    Some(derive_hf_onnx_graph_constraint_identity_from_value(
+                        metadata_path,
+                        &metadata_json,
+                    )?),
                 )
             } else {
-                (None, None)
+                (None, None, None)
             };
             Ok::<HfOnnxExportProvenance, VmError>(HfOnnxExportProvenance {
                 exporter: command.onnx_exporter.clone(),
                 exporter_version: command.onnx_exporter_version.clone(),
+                exporter_identity: derive_hf_onnx_exporter_identity(
+                    &command.onnx_exporter,
+                    command.onnx_exporter_version.as_deref(),
+                ),
                 graph: graph_commitment,
                 metadata,
                 metadata_identity,
+                graph_constraint_identity,
                 external_data_files,
             })
         })
@@ -4426,10 +4465,20 @@ fn prepare_hf_provenance_manifest_command(
             tokenizer_hash: hash_json_projection_hex(&tokenizer)?,
             safetensors_manifest_hash: hash_json_projection_hex(&safetensors)?,
             onnx_export_hash: hash_json_projection_hex(&onnx_export)?,
+            onnx_exporter_identity_hash: hash_json_projection_hex(
+                &onnx_export
+                    .as_ref()
+                    .map(|export| &export.exporter_identity),
+            )?,
             onnx_metadata_identity_hash: hash_json_projection_hex(
                 &onnx_export
                     .as_ref()
                     .and_then(|export| export.metadata_identity.as_ref()),
+            )?,
+            onnx_graph_constraint_identity_hash: hash_json_projection_hex(
+                &onnx_export
+                    .as_ref()
+                    .and_then(|export| export.graph_constraint_identity.as_ref()),
             )?,
             release_metadata_hash: hash_json_projection_hex(&release)?,
             attestation_hash: hash_json_projection_hex(&attestation)?,
@@ -4763,8 +4812,14 @@ fn load_hf_provenance_manifest(
             HF_PROVENANCE_MANIFEST_VERSION_V4_LEGACY,
             HF_PROVENANCE_MANIFEST_VERSION
         ))),
+        HF_PROVENANCE_MANIFEST_VERSION_V5_LEGACY => Err(VmError::Serialization(format!(
+            "failed to parse HF provenance manifest {}: legacy manifest_version `{}` is no longer accepted after the exporter-identity and graph-constraint provenance update; regenerate the manifest as {}",
+            manifest_path.display(),
+            HF_PROVENANCE_MANIFEST_VERSION_V5_LEGACY,
+            HF_PROVENANCE_MANIFEST_VERSION
+        ))),
         HF_PROVENANCE_MANIFEST_VERSION => {
-            ensure_hf_provenance_manifest_v5_required_fields(manifest_path, &manifest_value)?;
+            ensure_hf_provenance_manifest_v6_required_fields(manifest_path, &manifest_value)?;
             serde_json::from_value(manifest_value).map_err(|err| {
                 VmError::Serialization(format!(
                     "failed to parse HF provenance manifest {}: {err}",
@@ -4779,7 +4834,7 @@ fn load_hf_provenance_manifest(
     }
 }
 
-fn ensure_hf_provenance_manifest_v5_required_fields(
+fn ensure_hf_provenance_manifest_v6_required_fields(
     manifest_path: &Path,
     manifest_value: &serde_json::Value,
 ) -> llm_provable_computer::Result<()> {
@@ -4801,6 +4856,20 @@ fn ensure_hf_provenance_manifest_v5_required_fields(
                 HF_PROVENANCE_MANIFEST_VERSION
             )));
         }
+        if !commitments_obj.contains_key("onnx_exporter_identity_hash") {
+            return Err(VmError::Serialization(format!(
+                "failed to parse HF provenance manifest {}: missing field `onnx_exporter_identity_hash` in `commitments` for {}",
+                manifest_path.display(),
+                HF_PROVENANCE_MANIFEST_VERSION
+            )));
+        }
+        if !commitments_obj.contains_key("onnx_graph_constraint_identity_hash") {
+            return Err(VmError::Serialization(format!(
+                "failed to parse HF provenance manifest {}: missing field `onnx_graph_constraint_identity_hash` in `commitments` for {}",
+                manifest_path.display(),
+                HF_PROVENANCE_MANIFEST_VERSION
+            )));
+        }
     }
     let Some(onnx_export) = manifest_value.get("onnx_export") else {
         return Ok(());
@@ -4810,8 +4879,10 @@ fn ensure_hf_provenance_manifest_v5_required_fields(
     };
     for field in [
         "exporter_version",
+        "exporter_identity",
         "metadata",
         "metadata_identity",
+        "graph_constraint_identity",
         "external_data_files",
     ] {
         if !onnx_export_obj.contains_key(field) {
@@ -4888,6 +4959,16 @@ fn verify_hf_provenance_manifest(
         &hash_json_projection_hex(&manifest.onnx_export)?,
     )?;
     verify_hash_commitment(
+        "hf onnx_exporter_identity_hash",
+        &manifest.commitments.onnx_exporter_identity_hash,
+        &hash_json_projection_hex(
+            &manifest
+                .onnx_export
+                .as_ref()
+                .map(|export| &export.exporter_identity),
+        )?,
+    )?;
+    verify_hash_commitment(
         "hf onnx_metadata_identity_hash",
         &manifest.commitments.onnx_metadata_identity_hash,
         &hash_json_projection_hex(
@@ -4895,6 +4976,16 @@ fn verify_hf_provenance_manifest(
                 .onnx_export
                 .as_ref()
                 .and_then(|export| export.metadata_identity.as_ref()),
+        )?,
+    )?;
+    verify_hash_commitment(
+        "hf onnx_graph_constraint_identity_hash",
+        &manifest.commitments.onnx_graph_constraint_identity_hash,
+        &hash_json_projection_hex(
+            &manifest
+                .onnx_export
+                .as_ref()
+                .and_then(|export| export.graph_constraint_identity.as_ref()),
         )?,
     )?;
     verify_hash_commitment(
@@ -4947,6 +5038,16 @@ fn verify_hf_provenance_manifest(
             "onnx_export.exporter_version",
             onnx_export.exporter_version.as_deref(),
         )?;
+        let derived_exporter_identity = derive_hf_onnx_exporter_identity(
+            &onnx_export.exporter,
+            onnx_export.exporter_version.as_deref(),
+        );
+        if onnx_export.exporter_identity != derived_exporter_identity {
+            return Err(VmError::InvalidConfig(format!(
+                "hf onnx_export.exporter_identity mismatch: expected {:?}, got {:?}",
+                onnx_export.exporter_identity, derived_exporter_identity
+            )));
+        }
         let graph_identity = verify_hf_file_commitment("onnx_export.graph", &onnx_export.graph)?;
         ensure_unique_hf_identity(
             "HF provenance onnx_export.graph",
@@ -4981,8 +5082,12 @@ fn verify_hf_provenance_manifest(
         } else {
             None
         };
-        match (verified_metadata_json.as_ref(), &onnx_export.metadata_identity) {
-            (Some(metadata_json), Some(metadata_identity)) => {
+        match (
+            verified_metadata_json.as_ref(),
+            &onnx_export.metadata_identity,
+            &onnx_export.graph_constraint_identity,
+        ) {
+            (Some(metadata_json), Some(metadata_identity), Some(graph_constraint_identity)) => {
                 let metadata_path = Path::new(
                     &onnx_export
                         .metadata
@@ -5000,18 +5105,39 @@ fn verify_hf_provenance_manifest(
                         metadata_identity, derived_metadata_identity
                     )));
                 }
+                let derived_graph_constraint_identity =
+                    derive_hf_onnx_graph_constraint_identity_from_value(
+                        metadata_path,
+                        metadata_json,
+                    )?;
+                if graph_constraint_identity != &derived_graph_constraint_identity {
+                    return Err(VmError::InvalidConfig(format!(
+                        "hf onnx_export.graph_constraint_identity mismatch: expected {:?}, got {:?}",
+                        graph_constraint_identity, derived_graph_constraint_identity
+                    )));
+                }
             }
-            (Some(_), None) => {
+            (Some(_), None, _) => {
                 return Err(VmError::InvalidConfig(
                     "HF provenance onnx_export.metadata_identity must be present when metadata is bound".to_string(),
                 ))
             }
-            (None, Some(_)) => {
+            (Some(_), Some(_), None) => {
+                return Err(VmError::InvalidConfig(
+                    "HF provenance onnx_export.graph_constraint_identity must be present when metadata is bound".to_string(),
+                ))
+            }
+            (None, Some(_), _) => {
                 return Err(VmError::InvalidConfig(
                     "HF provenance onnx_export.metadata_identity requires onnx_export.metadata".to_string(),
                 ))
             }
-            (None, None) => {}
+            (None, _, Some(_)) => {
+                return Err(VmError::InvalidConfig(
+                    "HF provenance onnx_export.graph_constraint_identity requires onnx_export.metadata".to_string(),
+                ))
+            }
+            (None, None, None) => {}
         }
     }
     verify_hf_optional_file_commitment(
@@ -5090,13 +5216,24 @@ fn hf_provenance_limitations() -> Vec<String> {
         "attestation-friendly SHA-256 digests do not by themselves verify GitHub, Sigstore, in-toto, or SLSA attestations",
         "the manifest does not prove tokenizer algorithm correctness",
         "the manifest does not prove safetensors weights implement a model architecture",
-        "the manifest does not prove Optimum or ONNX exporter semantic equivalence",
-        "the manifest does not prove ONNX metadata or external-data semantic correctness",
+        "the manifest does not prove Optimum or ONNX exporter semantic equivalence even when exporter identity is pinned",
+        "the manifest does not prove ONNX metadata, graph-constraint identity, or external-data semantic correctness",
         "the manifest does not perform live Hugging Face Hub downloads or DOI verification",
     ]
     .into_iter()
     .map(str::to_string)
     .collect()
+}
+
+fn derive_hf_onnx_exporter_identity(
+    exporter: &str,
+    exporter_version: Option<&str>,
+) -> HfOnnxExporterIdentity {
+    HfOnnxExporterIdentity {
+        identity_version: HF_ONNX_EXPORTER_IDENTITY_VERSION.to_string(),
+        exporter: exporter.to_string(),
+        exporter_version: exporter_version.map(str::to_string),
+    }
 }
 
 fn derive_hf_attestation_subjects(
@@ -5305,6 +5442,54 @@ fn derive_hf_onnx_metadata_identity_from_value(
         output_encoding: metadata_string_field(&metadata, path, "output_encoding")?,
         instruction_count: instructions.len(),
     })
+}
+
+fn derive_hf_onnx_graph_constraint_identity_from_value(
+    path: &Path,
+    metadata: &serde_json::Value,
+) -> llm_provable_computer::Result<HfOnnxGraphConstraintIdentity> {
+    let instructions = metadata
+        .get("instructions")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "HF provenance ONNX metadata {} missing instructions array",
+                path.display()
+            ))
+        })?;
+    let input_layout_hash = metadata
+        .get("input_layout")
+        .map(|value| hash_array_field_projection_hex(value, path, "input_layout"))
+        .transpose()?;
+    let output_layout_hash = metadata
+        .get("output_layout")
+        .map(|value| hash_array_field_projection_hex(value, path, "output_layout"))
+        .transpose()?;
+    Ok(HfOnnxGraphConstraintIdentity {
+        identity_version: HF_ONNX_GRAPH_CONSTRAINT_IDENTITY_VERSION.to_string(),
+        input_dim: metadata_usize_field(metadata, path, "input_dim")?,
+        output_dim: metadata_usize_field(metadata, path, "output_dim")?,
+        input_encoding: metadata_string_field(metadata, path, "input_encoding")?,
+        output_encoding: metadata_string_field(metadata, path, "output_encoding")?,
+        input_layout_hash,
+        output_layout_hash,
+        instruction_count: instructions.len(),
+        instruction_table_hash: hash_json_projection_hex(instructions)?,
+    })
+}
+
+fn hash_array_field_projection_hex(
+    value: &serde_json::Value,
+    path: &Path,
+    field: &str,
+) -> llm_provable_computer::Result<String> {
+    if !value.is_array() {
+        return Err(VmError::InvalidConfig(format!(
+            "HF provenance ONNX metadata {} field `{field}` must be an array when present",
+            path.display()
+        )));
+    }
+    hash_json_projection_hex(value)
 }
 
 fn hash_hf_commitment_bytes(bytes: &[u8]) -> llm_provable_computer::Result<(String, String)> {
@@ -8340,7 +8525,9 @@ mod hf_provenance_manifest_tests {
                 "tokenizer_hash": "0".repeat(64),
                 "safetensors_manifest_hash": "1".repeat(64),
                 "onnx_export_hash": "2".repeat(64),
+                "onnx_exporter_identity_hash": "7".repeat(64),
                 "onnx_metadata_identity_hash": "3".repeat(64),
+                "onnx_graph_constraint_identity_hash": "8".repeat(64),
                 "release_metadata_hash": "5".repeat(64),
                 "attestation_hash": default_hf_attestation_hash(),
                 "limitations_hash": "4".repeat(64)
@@ -8409,12 +8596,24 @@ mod hf_provenance_manifest_tests {
                 >::new())
                 .expect("safetensors hash"),
                 onnx_export_hash: hash_json_projection_hex(&onnx_export).expect("onnx hash"),
+                onnx_exporter_identity_hash: hash_json_projection_hex(
+                    &onnx_export
+                        .as_ref()
+                        .map(|export| &export.exporter_identity),
+                )
+                .expect("onnx exporter identity hash"),
                 onnx_metadata_identity_hash: hash_json_projection_hex(
                     &onnx_export
                         .as_ref()
                         .and_then(|export| export.metadata_identity.as_ref()),
                 )
                 .expect("onnx metadata identity hash"),
+                onnx_graph_constraint_identity_hash: hash_json_projection_hex(
+                    &onnx_export
+                        .as_ref()
+                        .and_then(|export| export.graph_constraint_identity.as_ref()),
+                )
+                .expect("onnx graph constraint identity hash"),
                 release_metadata_hash: hash_json_projection_hex(&release).expect("release hash"),
                 attestation_hash: hash_json_projection_hex(&Some(HfAttestationMetadata {
                     attestation_version: HF_ATTESTATION_METADATA_VERSION.to_string(),
@@ -8457,6 +8656,11 @@ mod hf_provenance_manifest_tests {
         value["onnx_export"] = serde_json::json!({
             "exporter": "optimum",
             "exporter_version": "1.0.0",
+            "exporter_identity": {
+                "identity_version": HF_ONNX_EXPORTER_IDENTITY_VERSION,
+                "exporter": "optimum",
+                "exporter_version": "1.0.0"
+            },
             "graph": {
                 "path": "model.onnx",
                 "size_bytes": 16,
@@ -8465,6 +8669,7 @@ mod hf_provenance_manifest_tests {
             },
             "metadata": null,
             "metadata_identity": null,
+            "graph_constraint_identity": null,
             "external_data_files": [],
             "unexpected_field": 7
         });
@@ -8476,33 +8681,8 @@ mod hf_provenance_manifest_tests {
     }
 
     #[test]
-    fn load_hf_provenance_manifest_rejects_v5_missing_onnx_metadata_identity_field() {
-        let file = hf_provenance_test_manifest_file("missing-onnx-metadata");
-        let mut value = sample_hf_provenance_manifest_value();
-        value["onnx_export"] = serde_json::json!({
-            "exporter": "optimum",
-            "exporter_version": null,
-            "graph": {
-                "path": "model.onnx",
-                "size_bytes": 16,
-                "blake2b_256": "5".repeat(64),
-                "sha256": "6".repeat(64)
-            },
-            "metadata": null,
-            "external_data_files": []
-        });
-        write_hf_provenance_test_manifest(file.path(), &value);
-
-        let err = load_hf_provenance_manifest(file.path())
-            .expect_err("v5 manifest missing onnx metadata_identity field should fail");
-        assert!(err
-            .to_string()
-            .contains("missing field `metadata_identity`"));
-    }
-
-    #[test]
-    fn load_hf_provenance_manifest_rejects_v5_missing_onnx_metadata_identity_hash_field() {
-        let file = hf_provenance_test_manifest_file("missing-onnx-metadata-identity-hash");
+    fn load_hf_provenance_manifest_rejects_v6_missing_onnx_exporter_identity_field() {
+        let file = hf_provenance_test_manifest_file("missing-onnx-exporter-identity");
         let mut value = sample_hf_provenance_manifest_value();
         value["onnx_export"] = serde_json::json!({
             "exporter": "optimum",
@@ -8515,6 +8695,101 @@ mod hf_provenance_manifest_tests {
             },
             "metadata": null,
             "metadata_identity": null,
+            "graph_constraint_identity": null,
+            "external_data_files": []
+        });
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("v6 manifest missing onnx exporter_identity field should fail");
+        assert!(err
+            .to_string()
+            .contains("missing field `exporter_identity`"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_v6_missing_onnx_metadata_identity_field() {
+        let file = hf_provenance_test_manifest_file("missing-onnx-metadata");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["onnx_export"] = serde_json::json!({
+            "exporter": "optimum",
+            "exporter_version": null,
+            "exporter_identity": {
+                "identity_version": HF_ONNX_EXPORTER_IDENTITY_VERSION,
+                "exporter": "optimum",
+                "exporter_version": null
+            },
+            "graph": {
+                "path": "model.onnx",
+                "size_bytes": 16,
+                "blake2b_256": "5".repeat(64),
+                "sha256": "6".repeat(64)
+            },
+            "metadata": null,
+            "graph_constraint_identity": null,
+            "external_data_files": []
+        });
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("v6 manifest missing onnx metadata_identity field should fail");
+        assert!(err
+            .to_string()
+            .contains("missing field `metadata_identity`"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_v6_missing_onnx_graph_constraint_identity_field() {
+        let file = hf_provenance_test_manifest_file("missing-onnx-graph-constraint-identity");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["onnx_export"] = serde_json::json!({
+            "exporter": "optimum",
+            "exporter_version": null,
+            "exporter_identity": {
+                "identity_version": HF_ONNX_EXPORTER_IDENTITY_VERSION,
+                "exporter": "optimum",
+                "exporter_version": null
+            },
+            "graph": {
+                "path": "model.onnx",
+                "size_bytes": 16,
+                "blake2b_256": "5".repeat(64),
+                "sha256": "6".repeat(64)
+            },
+            "metadata": null,
+            "metadata_identity": null,
+            "external_data_files": []
+        });
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("v6 manifest missing onnx graph_constraint_identity field should fail");
+        assert!(err
+            .to_string()
+            .contains("missing field `graph_constraint_identity`"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_v6_missing_onnx_metadata_identity_hash_field() {
+        let file = hf_provenance_test_manifest_file("missing-onnx-metadata-identity-hash");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["onnx_export"] = serde_json::json!({
+            "exporter": "optimum",
+            "exporter_version": null,
+            "exporter_identity": {
+                "identity_version": HF_ONNX_EXPORTER_IDENTITY_VERSION,
+                "exporter": "optimum",
+                "exporter_version": null
+            },
+            "graph": {
+                "path": "model.onnx",
+                "size_bytes": 16,
+                "blake2b_256": "5".repeat(64),
+                "sha256": "6".repeat(64)
+            },
+            "metadata": null,
+            "metadata_identity": null,
+            "graph_constraint_identity": null,
             "external_data_files": []
         });
         value["commitments"]
@@ -8524,10 +8799,83 @@ mod hf_provenance_manifest_tests {
         write_hf_provenance_test_manifest(file.path(), &value);
 
         let err = load_hf_provenance_manifest(file.path())
-            .expect_err("v5 manifest missing onnx_metadata_identity_hash field should fail");
+            .expect_err("v6 manifest missing onnx_metadata_identity_hash field should fail");
         assert!(err
             .to_string()
             .contains("missing field `onnx_metadata_identity_hash`"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_v6_missing_onnx_exporter_identity_hash_field() {
+        let file = hf_provenance_test_manifest_file("missing-onnx-exporter-identity-hash");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["onnx_export"] = serde_json::json!({
+            "exporter": "optimum",
+            "exporter_version": null,
+            "exporter_identity": {
+                "identity_version": HF_ONNX_EXPORTER_IDENTITY_VERSION,
+                "exporter": "optimum",
+                "exporter_version": null
+            },
+            "graph": {
+                "path": "model.onnx",
+                "size_bytes": 16,
+                "blake2b_256": "5".repeat(64),
+                "sha256": "6".repeat(64)
+            },
+            "metadata": null,
+            "metadata_identity": null,
+            "graph_constraint_identity": null,
+            "external_data_files": []
+        });
+        value["commitments"]
+            .as_object_mut()
+            .expect("commitments object")
+            .remove("onnx_exporter_identity_hash");
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("v6 manifest missing onnx_exporter_identity_hash field should fail");
+        assert!(err
+            .to_string()
+            .contains("missing field `onnx_exporter_identity_hash`"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_v6_missing_onnx_graph_constraint_identity_hash_field() {
+        let file =
+            hf_provenance_test_manifest_file("missing-onnx-graph-constraint-identity-hash");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["onnx_export"] = serde_json::json!({
+            "exporter": "optimum",
+            "exporter_version": null,
+            "exporter_identity": {
+                "identity_version": HF_ONNX_EXPORTER_IDENTITY_VERSION,
+                "exporter": "optimum",
+                "exporter_version": null
+            },
+            "graph": {
+                "path": "model.onnx",
+                "size_bytes": 16,
+                "blake2b_256": "5".repeat(64),
+                "sha256": "6".repeat(64)
+            },
+            "metadata": null,
+            "metadata_identity": null,
+            "graph_constraint_identity": null,
+            "external_data_files": []
+        });
+        value["commitments"]
+            .as_object_mut()
+            .expect("commitments object")
+            .remove("onnx_graph_constraint_identity_hash");
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("v6 manifest missing onnx_graph_constraint_identity_hash field should fail");
+        assert!(err
+            .to_string()
+            .contains("missing field `onnx_graph_constraint_identity_hash`"));
     }
 
     #[test]
@@ -8610,6 +8958,20 @@ mod hf_provenance_manifest_tests {
         assert!(err
             .to_string()
             .contains("legacy manifest_version `hf-provenance-manifest-v4` is no longer accepted"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_legacy_v5_with_upgrade_message() {
+        let file = hf_provenance_test_manifest_file("legacy-v5");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["manifest_version"] = serde_json::json!(HF_PROVENANCE_MANIFEST_VERSION_V5_LEGACY);
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("legacy v5 manifest should require regeneration");
+        assert!(err
+            .to_string()
+            .contains("legacy manifest_version `hf-provenance-manifest-v5` is no longer accepted"));
     }
 
     #[test]
@@ -8787,10 +9149,18 @@ mod hf_provenance_manifest_tests {
                 .expect("safetensors hash"),
                 onnx_export_hash: hash_json_projection_hex(&Option::<HfOnnxExportProvenance>::None)
                     .expect("onnx hash"),
+                onnx_exporter_identity_hash: hash_json_projection_hex(
+                    &Option::<&HfOnnxExporterIdentity>::None,
+                )
+                .expect("onnx exporter identity hash"),
                 onnx_metadata_identity_hash: hash_json_projection_hex(
                     &Option::<&HfOnnxMetadataIdentity>::None,
                 )
                 .expect("onnx metadata identity hash"),
+                onnx_graph_constraint_identity_hash: hash_json_projection_hex(
+                    &Option::<&HfOnnxGraphConstraintIdentity>::None,
+                )
+                .expect("onnx graph constraint identity hash"),
                 release_metadata_hash: hash_json_projection_hex(&HfReleaseMetadata {
                     model_card: Some(HfFileCommitment {
                         path: bound_dir.display().to_string(),
@@ -8875,9 +9245,11 @@ mod hf_provenance_manifest_tests {
         let onnx_export = Some(HfOnnxExportProvenance {
             exporter: "optimum-onnx".to_string(),
             exporter_version: None,
+            exporter_identity: derive_hf_onnx_exporter_identity("optimum-onnx", None),
             graph: hf_file_commitment(&graph).expect("graph commitment"),
             metadata: None,
             metadata_identity: None,
+            graph_constraint_identity: None,
             external_data_files: vec![
                 hf_file_commitment(&sidecar).expect("sidecar commitment"),
                 hf_file_commitment(&sidecar).expect("sidecar commitment"),
@@ -8905,9 +9277,11 @@ mod hf_provenance_manifest_tests {
         let onnx_export = Some(HfOnnxExportProvenance {
             exporter: "optimum-onnx".to_string(),
             exporter_version: None,
+            exporter_identity: derive_hf_onnx_exporter_identity("optimum-onnx", None),
             graph: hf_file_commitment(&graph).expect("graph commitment"),
             metadata: None,
             metadata_identity: None,
+            graph_constraint_identity: None,
             external_data_files: vec![
                 hf_file_commitment(&sidecar).expect("sidecar commitment"),
                 hf_file_commitment(&aliased_sidecar).expect("aliased sidecar commitment"),
@@ -8933,9 +9307,11 @@ mod hf_provenance_manifest_tests {
             sample_hf_provenance_manifest_with_onnx_export(Some(HfOnnxExportProvenance {
                 exporter: "optimum-onnx".to_string(),
                 exporter_version: None,
+                exporter_identity: derive_hf_onnx_exporter_identity("optimum-onnx", None),
                 graph: graph_commitment.clone(),
                 metadata: Some(graph_commitment),
                 metadata_identity: None,
+                graph_constraint_identity: None,
                 external_data_files: Vec::new(),
             }));
 
@@ -8957,9 +9333,11 @@ mod hf_provenance_manifest_tests {
             sample_hf_provenance_manifest_with_onnx_export(Some(HfOnnxExportProvenance {
                 exporter: "optimum-onnx".to_string(),
                 exporter_version: None,
+                exporter_identity: derive_hf_onnx_exporter_identity("optimum-onnx", None),
                 graph: graph_commitment.clone(),
                 metadata: None,
                 metadata_identity: None,
+                graph_constraint_identity: None,
                 external_data_files: vec![graph_commitment],
             }));
 
@@ -9025,6 +9403,7 @@ mod hf_provenance_manifest_tests {
             sample_hf_provenance_manifest_with_onnx_export(Some(HfOnnxExportProvenance {
                 exporter: "optimum-onnx".to_string(),
                 exporter_version: None,
+                exporter_identity: derive_hf_onnx_exporter_identity("optimum-onnx", None),
                 graph: hf_file_commitment(&graph).expect("graph commitment"),
                 metadata: None,
                 metadata_identity: Some(HfOnnxMetadataIdentity {
@@ -9038,6 +9417,7 @@ mod hf_provenance_manifest_tests {
                     output_encoding: "logits".to_string(),
                     instruction_count: 3,
                 }),
+                graph_constraint_identity: None,
                 external_data_files: Vec::new(),
             }));
 
@@ -9058,9 +9438,11 @@ mod hf_provenance_manifest_tests {
             sample_hf_provenance_manifest_with_onnx_export(Some(HfOnnxExportProvenance {
                 exporter: "optimum-onnx".to_string(),
                 exporter_version: Some(String::new()),
+                exporter_identity: derive_hf_onnx_exporter_identity("optimum-onnx", Some("")),
                 graph: hf_file_commitment(&graph).expect("graph commitment"),
                 metadata: None,
                 metadata_identity: None,
+                graph_constraint_identity: None,
                 external_data_files: Vec::new(),
             }));
 
@@ -9083,9 +9465,11 @@ mod hf_provenance_manifest_tests {
             sample_hf_provenance_manifest_with_onnx_export(Some(HfOnnxExportProvenance {
                 exporter: "optimum-onnx".to_string(),
                 exporter_version: None,
+                exporter_identity: derive_hf_onnx_exporter_identity("optimum-onnx", None),
                 graph: commitment,
                 metadata: None,
                 metadata_identity: None,
+                graph_constraint_identity: None,
                 external_data_files: Vec::new(),
             }));
 
