@@ -628,6 +628,10 @@ now lives in
 so the public README can stay focused on current proof surfaces rather than internal
 implementation sequencing.
 
+These phases define pre-recursive merge boundaries and carried-state bindings;
+they do not yet implement recursive cryptographic accumulation or cross-step
+shared-table accumulation.
+
 #### Explicit Non-Goals
 
 - not a full `stwo` zkML backend for standard-softmax transformers
@@ -1036,6 +1040,10 @@ rollups, rollup matrices, and pre-recursive aggregation bundles. The detailed in
 phase chronology and transition notes now live in
 [`docs/engineering/design/engineering-timeline.md`](docs/engineering/design/engineering-timeline.md),
 so the public README stays publication-facing.
+
+These phases define pre-recursive merge boundaries and carried-state bindings;
+they do not yet implement recursive cryptographic accumulation or cross-step
+shared-table accumulation.
 
 #### Explicit Non-Goals
 
