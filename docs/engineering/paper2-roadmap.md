@@ -34,6 +34,9 @@ The repository is already strong enough for the bounded paper-2 claim:
 - a Phase 36 verifier harness receipt now records that the exact Phase 35
   target and its Phase 32, Phase 33, and Phase 34 sources were checked by the
   repository verifier path, without claiming recursive compression,
+- a Phase 37 artifact-chain harness receipt now reruns the full source-bound
+  chain from the Phase 29 input contract plus Phase 30 step envelopes through
+  the derived Phase 36 receipt, still without claiming recursive compression,
 - bounded multi-runtime semantic-agreement artifacts exist,
 - Hugging Face provenance manifests exist as reproducibility artifacts,
 - ONNX-facing provenance now binds exported graph, metadata companion, and
@@ -110,7 +113,11 @@ envelopes. The new Phase 35 target manifest binds those preserved surfaces into
 one canonical recursive target commitment. The Phase 36 verifier harness
 receipt then records that the target verifier was run against those exact source
 artifacts. It is useful operational evidence, but it is still not recursive
-proof closure.
+proof closure. The Phase 37 artifact-chain harness receipt is the heavier
+operational check: it starts from the Phase 29 input contract and Phase 30 step
+envelope manifest, recomputes Phase 31 through Phase 36, and records the
+resulting source-bound chain commitment. It is still a receipt over repository
+verification, not a recursively verifiable compressed proof.
 
 That means the next recursive work should preserve:
 
@@ -126,6 +133,8 @@ That means the next recursive work should preserve:
   Phase 33, and Phase 34.
 - the Phase 36 source-bound verifier receipt over that target, as an
   operational check rather than a compressed proof.
+- the Phase 37 source-chain harness receipt over Phase 29 + Phase 30 through
+  Phase 36, as a heavier operational check rather than a compressed proof.
 
 ### 5. Then move to recursive compression
 
@@ -159,5 +168,7 @@ The next concrete engineering slice should be:
    Phase 35 target manifest, and Phase 36 verifier harness receipt narrow and
    explicit about what is bound from earlier artifacts versus what would require
    actual recursive verification,
-3. then recurse over that existing decode boundary and public-input ordering
+3. use the Phase 37 artifact-chain harness receipt when the operational claim
+   needs the full Phase 29 + Phase 30 to Phase 36 source chain,
+4. then recurse over that existing decode boundary and public-input ordering
    rather than inventing a new statement surface.

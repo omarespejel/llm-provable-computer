@@ -132,4 +132,13 @@ hardening_stwo_test_filters=(
   "stwo_backend::recursion::tests::phase36_parse_recursive_verifier_harness_receipt_rejects_oversized_json"
   "stwo_backend::recursion::tests::phase36_load_recursive_verifier_harness_receipt_rejects_oversized_file"
   "stwo_backend::recursion::tests::phase36_load_recursive_verifier_harness_receipt_rejects_non_regular_file"
+  "stwo_backend::recursion::tests::phase37_recursive_artifact_chain_harness_receipt_accepts_matching_sources"
+  "stwo_backend::recursion::tests::phase37_recursive_artifact_chain_harness_receipt_rejects_recursive_claim"
+  "stwo_backend::recursion::tests::phase37_recursive_artifact_chain_harness_receipt_rejects_tampered_commitment"
+  "stwo_backend::recursion::tests::phase37_recursive_artifact_chain_harness_receipt_deserialization_verifies_receipt"
+  "stwo_backend::recursion::tests::phase37_recursive_artifact_chain_harness_receipt_parse_rejects_unknown_fields"
+  "stwo_backend::recursion::tests::phase37_parse_recursive_artifact_chain_harness_receipt_reports_malformed_json_as_invalid_config"
+  "stwo_backend::recursion::tests::phase37_parse_recursive_artifact_chain_harness_receipt_rejects_oversized_json"
+  "stwo_backend::recursion::tests::phase37_load_recursive_artifact_chain_harness_receipt_rejects_oversized_file"
+  "stwo_backend::recursion::tests::phase37_load_recursive_artifact_chain_harness_receipt_rejects_non_regular_file"
 )

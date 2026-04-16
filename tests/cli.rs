@@ -41,6 +41,8 @@ use llm_provable_computer::stwo_backend::{
     STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26,
     STWO_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE25,
     STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE,
+    STWO_RECURSIVE_ARTIFACT_CHAIN_HARNESS_RECEIPT_SCOPE_PHASE37,
+    STWO_RECURSIVE_ARTIFACT_CHAIN_HARNESS_RECEIPT_VERSION_PHASE37,
     STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_SCOPE_PHASE31,
     STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_VERSION_PHASE31,
     STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29,
@@ -6869,6 +6871,223 @@ fn cli_verify_stwo_recursive_verifier_harness_receipt_requires_all_source_args()
 
     fixture.cleanup();
     let _ = std::fs::remove_file(phase36_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_can_prepare_and_verify_stwo_recursive_artifact_chain_harness_receipt() {
+    let fixture =
+        prepare_phase35_recursive_compression_cli_fixture("cli-stwo-recursive-artifact-chain");
+    let phase37_path =
+        unique_temp_dir("cli-stwo-recursive-artifact-chain-phase37").with_extension("json");
+
+    let mut prepare_phase37 = tvm_command();
+    prepare_phase37
+        .arg("prepare-stwo-recursive-artifact-chain-harness-receipt")
+        .arg("--contract")
+        .arg(&fixture.phase29_path)
+        .arg("--manifest")
+        .arg(&fixture.phase30_path)
+        .arg("-o")
+        .arg(&phase37_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(format!(
+            "receipt_version: {STWO_RECURSIVE_ARTIFACT_CHAIN_HARNESS_RECEIPT_VERSION_PHASE37}",
+        )))
+        .stdout(predicate::str::contains(format!(
+            "semantic_scope: {STWO_RECURSIVE_ARTIFACT_CHAIN_HARNESS_RECEIPT_SCOPE_PHASE37}",
+        )))
+        .stdout(predicate::str::contains(
+            "verified_recursive_artifact_chain: true",
+        ))
+        .stdout(predicate::str::contains("source_binding_verified: true"));
+
+    let phase37_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&phase37_path).expect("phase37 json"))
+            .expect("phase37 value");
+    validate_json_against_schema(
+        &phase37_json,
+        "spec/stwo-phase37-recursive-artifact-chain-harness-receipt.schema.json",
+    );
+    assert_eq!(
+        phase37_json
+            .get("receipt_version")
+            .and_then(serde_json::Value::as_str),
+        Some(STWO_RECURSIVE_ARTIFACT_CHAIN_HARNESS_RECEIPT_VERSION_PHASE37)
+    );
+    assert_eq!(
+        phase37_json
+            .get("semantic_scope")
+            .and_then(serde_json::Value::as_str),
+        Some(STWO_RECURSIVE_ARTIFACT_CHAIN_HARNESS_RECEIPT_SCOPE_PHASE37)
+    );
+    assert_eq!(
+        phase37_json
+            .get("recursive_verification_claimed")
+            .and_then(serde_json::Value::as_bool),
+        Some(false)
+    );
+    assert_eq!(
+        phase37_json
+            .get("cryptographic_compression_claimed")
+            .and_then(serde_json::Value::as_bool),
+        Some(false)
+    );
+    assert_eq!(
+        phase37_json
+            .get("phase36_verifier_harness_receipt_verified")
+            .and_then(serde_json::Value::as_bool),
+        Some(true)
+    );
+
+    let mut verify_standalone = tvm_command();
+    verify_standalone
+        .arg("verify-stwo-recursive-artifact-chain-harness-receipt")
+        .arg("--input")
+        .arg(&phase37_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_receipt: true"));
+
+    let mut verify_source = tvm_command();
+    verify_source
+        .arg("verify-stwo-recursive-artifact-chain-harness-receipt")
+        .arg("--input")
+        .arg(&phase37_path)
+        .arg("--contract")
+        .arg(&fixture.phase29_path)
+        .arg("--manifest")
+        .arg(&fixture.phase30_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_against_sources: true"));
+
+    fixture.cleanup();
+    let _ = std::fs::remove_file(phase37_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_recursive_artifact_chain_harness_receipt_rejects_source_drift() {
+    let fixture = prepare_phase35_recursive_compression_cli_fixture(
+        "cli-stwo-recursive-artifact-chain-drift",
+    );
+    let phase37_path =
+        unique_temp_dir("cli-stwo-recursive-artifact-chain-phase37-drift").with_extension("json");
+    let tampered_phase29_path =
+        unique_temp_dir("cli-stwo-recursive-artifact-chain-contract-drift").with_extension("json");
+
+    let mut prepare_phase37 = tvm_command();
+    prepare_phase37
+        .arg("prepare-stwo-recursive-artifact-chain-harness-receipt")
+        .arg("--contract")
+        .arg(&fixture.phase29_path)
+        .arg("--manifest")
+        .arg(&fixture.phase30_path)
+        .arg("-o")
+        .arg(&phase37_path)
+        .assert()
+        .success();
+
+    let mut contract: Phase29RecursiveCompressionInputContract = serde_json::from_str(
+        &std::fs::read_to_string(&fixture.phase29_path).expect("phase29 json"),
+    )
+    .expect("parse phase29 contract");
+    contract.source_template_commitment = "9".repeat(64);
+    contract.input_contract_commitment =
+        commit_phase29_recursive_compression_input_contract(&contract)
+            .expect("recommit tampered phase29 contract");
+    std::fs::write(
+        &tampered_phase29_path,
+        serde_json::to_vec_pretty(&contract).expect("serialize tampered phase29"),
+    )
+    .expect("write tampered phase29");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-recursive-artifact-chain-harness-receipt")
+        .arg("--input")
+        .arg(&phase37_path)
+        .arg("--contract")
+        .arg(&tampered_phase29_path)
+        .arg("--manifest")
+        .arg(&fixture.phase30_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "Phase 31 decode-boundary manifest requires Phase 29 global_start_state_commitment to match the Phase 30 chain_start_boundary_commitment",
+        ).or(predicate::str::contains(
+            "Phase 37 recursive artifact-chain harness receipt does not match the recomputed Phase 29 + Phase 30 source artifacts",
+        )));
+
+    fixture.cleanup();
+    let _ = std::fs::remove_file(phase37_path);
+    let _ = std::fs::remove_file(tampered_phase29_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_prepare_stwo_recursive_artifact_chain_harness_receipt_rejects_gzip_output_path() {
+    let contract_path =
+        unique_temp_dir("cli-stwo-recursive-artifact-chain-gzip-contract").with_extension("json");
+    let manifest_path =
+        unique_temp_dir("cli-stwo-recursive-artifact-chain-gzip-manifest").with_extension("json");
+    let output_path =
+        unique_temp_dir("cli-stwo-recursive-artifact-chain-gzip-output").with_extension("json.gz");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-stwo-recursive-artifact-chain-harness-receipt")
+        .arg("--contract")
+        .arg(&contract_path)
+        .arg("--manifest")
+        .arg(&manifest_path)
+        .arg("-o")
+        .arg(&output_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "writes plain JSON; use a `.json` output path",
+        ));
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_recursive_artifact_chain_harness_receipt_requires_all_source_args() {
+    let fixture = prepare_phase35_recursive_compression_cli_fixture(
+        "cli-stwo-recursive-artifact-chain-partial-source",
+    );
+    let phase37_path =
+        unique_temp_dir("cli-stwo-recursive-artifact-chain-partial-phase37").with_extension("json");
+
+    let mut prepare_phase37 = tvm_command();
+    prepare_phase37
+        .arg("prepare-stwo-recursive-artifact-chain-harness-receipt")
+        .arg("--contract")
+        .arg(&fixture.phase29_path)
+        .arg("--manifest")
+        .arg(&fixture.phase30_path)
+        .arg("-o")
+        .arg(&phase37_path)
+        .assert()
+        .success();
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-recursive-artifact-chain-harness-receipt")
+        .arg("--input")
+        .arg(&phase37_path)
+        .arg("--contract")
+        .arg(&fixture.phase29_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "requires either both --contract and --manifest or neither",
+        ));
+
+    fixture.cleanup();
+    let _ = std::fs::remove_file(phase37_path);
 }
 
 #[test]

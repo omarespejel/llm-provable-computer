@@ -20,6 +20,7 @@ surfaces.
 | Phase 34 recursive-compression shared-lookup manifest | ordered lookup-facing public-input surface derived from the Phase 33 contract and the Phase 30 envelopes | recursive-adjacent manifest only; not recursive proof closure |
 | Phase 35 recursive-compression target manifest | canonical recursive target binding the preserved Phase 32 statement, Phase 33 public inputs, and Phase 34 shared-lookup commitments | recursive-adjacent manifest only; not recursive proof closure |
 | Phase 36 recursive verifier harness receipt | deterministic verifier-harness receipt over the Phase 35 target and its source-bound artifacts | operational verifier receipt only; not recursive proof closure |
+| Phase 37 recursive artifact-chain harness receipt | deterministic end-to-end harness receipt from the Phase 29 input contract and Phase 30 envelopes through the derived Phase 36 receipt | heavier operational verifier receipt only; not recursive proof closure |
 
 ## D2. Adjacent evidence surfaces
 
