@@ -8,15 +8,15 @@ use crate::proof::{ExecutionClaimCommitments, StarkProofBackend, VanillaStarkExe
 #[cfg(feature = "stwo-backend")]
 use super::decoding::{
     read_json_bytes_with_limit,
-    verify_phase30_decoding_step_proof_envelope_manifest,
     verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
+    verify_phase30_decoding_step_proof_envelope_manifest,
     Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
-    Phase30DecodingStepProofEnvelopeManifest, STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30,
-    STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30,
-    STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30,
+    Phase30DecodingStepProofEnvelopeManifest,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE28,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
-    STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE,
+    STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30,
+    STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30,
+    STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30, STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE,
 };
 #[cfg(feature = "stwo-backend")]
 use super::STWO_BACKEND_VERSION_PHASE12;
@@ -47,6 +47,14 @@ pub const STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_SCOPE_PHASE31: &st
     "stwo_execution_parameterized_recursive_compression_decode_boundary_manifest";
 #[cfg(feature = "stwo-backend")]
 const MAX_PHASE31_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_JSON_BYTES: usize = 1024 * 1024;
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32: &str =
+    "stwo-phase32-recursive-compression-statement-contract-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_SCOPE_PHASE32: &str =
+    "stwo_execution_parameterized_recursive_compression_statement_contract";
+#[cfg(feature = "stwo-backend")]
+const MAX_PHASE32_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_JSON_BYTES: usize = 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase6RecursionBatchEntry {
@@ -203,6 +211,58 @@ struct Phase31RecursiveCompressionDecodeBoundaryManifestUnchecked {
 }
 
 #[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "Phase32RecursiveCompressionStatementContractUnchecked")]
+pub struct Phase32RecursiveCompressionStatementContract {
+    pub proof_backend: StarkProofBackend,
+    pub contract_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub step_relation: String,
+    pub required_recursion_posture: String,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub phase31_manifest_version: String,
+    pub phase31_semantic_scope: String,
+    pub phase31_decode_boundary_bridge_commitment: String,
+    pub phase30_source_chain_commitment: String,
+    pub phase30_step_envelopes_commitment: String,
+    pub total_steps: usize,
+    pub chain_start_boundary_commitment: String,
+    pub chain_end_boundary_commitment: String,
+    pub source_template_commitment: String,
+    pub aggregation_template_commitment: String,
+    pub recursive_statement_contract_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Phase32RecursiveCompressionStatementContractUnchecked {
+    pub proof_backend: StarkProofBackend,
+    pub contract_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub step_relation: String,
+    pub required_recursion_posture: String,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub phase31_manifest_version: String,
+    pub phase31_semantic_scope: String,
+    pub phase31_decode_boundary_bridge_commitment: String,
+    pub phase30_source_chain_commitment: String,
+    pub phase30_step_envelopes_commitment: String,
+    pub total_steps: usize,
+    pub chain_start_boundary_commitment: String,
+    pub chain_end_boundary_commitment: String,
+    pub source_template_commitment: String,
+    pub aggregation_template_commitment: String,
+    pub recursive_statement_contract_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
 impl TryFrom<Phase29RecursiveCompressionInputContractUnchecked>
     for Phase29RecursiveCompressionInputContract
 {
@@ -285,6 +345,44 @@ impl TryFrom<Phase31RecursiveCompressionDecodeBoundaryManifestUnchecked>
         };
         verify_phase31_recursive_compression_decode_boundary_manifest(&manifest)?;
         Ok(manifest)
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+impl TryFrom<Phase32RecursiveCompressionStatementContractUnchecked>
+    for Phase32RecursiveCompressionStatementContract
+{
+    type Error = VmError;
+
+    fn try_from(
+        unchecked: Phase32RecursiveCompressionStatementContractUnchecked,
+    ) -> std::result::Result<Self, Self::Error> {
+        let contract = Self {
+            proof_backend: unchecked.proof_backend,
+            contract_version: unchecked.contract_version,
+            semantic_scope: unchecked.semantic_scope,
+            proof_backend_version: unchecked.proof_backend_version,
+            statement_version: unchecked.statement_version,
+            step_relation: unchecked.step_relation,
+            required_recursion_posture: unchecked.required_recursion_posture,
+            recursive_verification_claimed: unchecked.recursive_verification_claimed,
+            cryptographic_compression_claimed: unchecked.cryptographic_compression_claimed,
+            phase31_manifest_version: unchecked.phase31_manifest_version,
+            phase31_semantic_scope: unchecked.phase31_semantic_scope,
+            phase31_decode_boundary_bridge_commitment: unchecked
+                .phase31_decode_boundary_bridge_commitment,
+            phase30_source_chain_commitment: unchecked.phase30_source_chain_commitment,
+            phase30_step_envelopes_commitment: unchecked.phase30_step_envelopes_commitment,
+            total_steps: unchecked.total_steps,
+            chain_start_boundary_commitment: unchecked.chain_start_boundary_commitment,
+            chain_end_boundary_commitment: unchecked.chain_end_boundary_commitment,
+            source_template_commitment: unchecked.source_template_commitment,
+            aggregation_template_commitment: unchecked.aggregation_template_commitment,
+            recursive_statement_contract_commitment: unchecked
+                .recursive_statement_contract_commitment,
+        };
+        verify_phase32_recursive_compression_statement_contract(&contract)?;
+        Ok(contract)
     }
 }
 
@@ -778,6 +876,42 @@ pub fn phase31_prepare_recursive_compression_decode_boundary_manifest(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn phase32_prepare_recursive_compression_statement_contract(
+    manifest: &Phase31RecursiveCompressionDecodeBoundaryManifest,
+) -> Result<Phase32RecursiveCompressionStatementContract> {
+    verify_phase31_recursive_compression_decode_boundary_manifest(manifest)?;
+
+    let mut contract = Phase32RecursiveCompressionStatementContract {
+        proof_backend: StarkProofBackend::Stwo,
+        contract_version: STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32.to_string(),
+        semantic_scope: STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_SCOPE_PHASE32.to_string(),
+        proof_backend_version: manifest.proof_backend_version.clone(),
+        statement_version: manifest.statement_version.clone(),
+        step_relation: manifest.step_relation.clone(),
+        required_recursion_posture: manifest.required_recursion_posture.clone(),
+        recursive_verification_claimed: manifest.recursive_verification_claimed,
+        cryptographic_compression_claimed: manifest.cryptographic_compression_claimed,
+        phase31_manifest_version: manifest.manifest_version.clone(),
+        phase31_semantic_scope: manifest.semantic_scope.clone(),
+        phase31_decode_boundary_bridge_commitment: manifest
+            .decode_boundary_bridge_commitment
+            .clone(),
+        phase30_source_chain_commitment: manifest.phase30_source_chain_commitment.clone(),
+        phase30_step_envelopes_commitment: manifest.phase30_step_envelopes_commitment.clone(),
+        total_steps: manifest.total_steps,
+        chain_start_boundary_commitment: manifest.chain_start_boundary_commitment.clone(),
+        chain_end_boundary_commitment: manifest.chain_end_boundary_commitment.clone(),
+        source_template_commitment: manifest.source_template_commitment.clone(),
+        aggregation_template_commitment: manifest.aggregation_template_commitment.clone(),
+        recursive_statement_contract_commitment: String::new(),
+    };
+    contract.recursive_statement_contract_commitment =
+        commit_phase32_recursive_compression_statement_contract(&contract)?;
+    verify_phase32_recursive_compression_statement_contract(&contract)?;
+    Ok(contract)
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn verify_phase31_recursive_compression_decode_boundary_manifest(
     manifest: &Phase31RecursiveCompressionDecodeBoundaryManifest,
 ) -> Result<()> {
@@ -839,7 +973,8 @@ pub fn verify_phase31_recursive_compression_decode_boundary_manifest(
                 .to_string(),
         ));
     }
-    if manifest.phase29_contract_version != STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29
+    if manifest.phase29_contract_version
+        != STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29
     {
         return Err(VmError::InvalidConfig(format!(
             "Phase 31 decode-boundary manifest requires Phase 29 contract version `{}`, got `{}`",
@@ -857,15 +992,13 @@ pub fn verify_phase31_recursive_compression_decode_boundary_manifest(
     if manifest.phase30_manifest_version != STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30 {
         return Err(VmError::InvalidConfig(format!(
             "Phase 31 decode-boundary manifest requires Phase 30 manifest version `{}`, got `{}`",
-            STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30,
-            manifest.phase30_manifest_version
+            STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30, manifest.phase30_manifest_version
         )));
     }
     if manifest.phase30_semantic_scope != STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30 {
         return Err(VmError::InvalidConfig(format!(
             "Phase 31 decode-boundary manifest requires Phase 30 semantic scope `{}`, got `{}`",
-            STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30,
-            manifest.phase30_semantic_scope
+            STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30, manifest.phase30_semantic_scope
         )));
     }
     if manifest.total_steps == 0 {
@@ -932,10 +1065,162 @@ pub fn verify_phase31_recursive_compression_decode_boundary_manifest_against_sou
     phase30: &Phase30DecodingStepProofEnvelopeManifest,
 ) -> Result<()> {
     verify_phase31_recursive_compression_decode_boundary_manifest(manifest)?;
-    let expected = phase31_prepare_recursive_compression_decode_boundary_manifest(contract, phase30)?;
+    let expected =
+        phase31_prepare_recursive_compression_decode_boundary_manifest(contract, phase30)?;
     if manifest != &expected {
         return Err(VmError::InvalidConfig(
             "Phase 31 decode-boundary manifest does not match the recomputed Phase 29 + Phase 30 source artifacts".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase32_recursive_compression_statement_contract(
+    contract: &Phase32RecursiveCompressionStatementContract,
+) -> Result<()> {
+    if contract.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 32 recursive-compression statement contract requires `stwo` backend, got `{}`",
+            contract.proof_backend
+        )));
+    }
+    if contract.contract_version != STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 32 recursive-compression statement contract version `{}` does not match expected `{}`",
+            contract.contract_version,
+            STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32
+        )));
+    }
+    if contract.semantic_scope != STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_SCOPE_PHASE32 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 32 recursive-compression statement contract scope `{}` does not match expected `{}`",
+            contract.semantic_scope,
+            STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_SCOPE_PHASE32
+        )));
+    }
+    if contract.proof_backend_version != STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 32 recursive-compression statement contract requires proof backend version `{}`, got `{}`",
+            STWO_BACKEND_VERSION_PHASE12, contract.proof_backend_version
+        )));
+    }
+    if contract.statement_version != CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 32 recursive-compression statement contract requires statement version `{}`, got `{}`",
+            CLAIM_STATEMENT_VERSION_V1, contract.statement_version
+        )));
+    }
+    if contract.step_relation != STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 32 recursive-compression statement contract requires step relation `{}`, got `{}`",
+            STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30, contract.step_relation
+        )));
+    }
+    if contract.required_recursion_posture != STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 32 recursive-compression statement contract requires recursion posture `{}`, got `{}`",
+            STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE, contract.required_recursion_posture
+        )));
+    }
+    if contract.recursive_verification_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 32 recursive-compression statement contract must not claim recursive verification"
+                .to_string(),
+        ));
+    }
+    if contract.cryptographic_compression_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 32 recursive-compression statement contract must not claim cryptographic compression"
+                .to_string(),
+        ));
+    }
+    if contract.phase31_manifest_version
+        != STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_VERSION_PHASE31
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 32 recursive-compression statement contract requires Phase 31 manifest version `{}`, got `{}`",
+            STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_VERSION_PHASE31,
+            contract.phase31_manifest_version
+        )));
+    }
+    if contract.phase31_semantic_scope
+        != STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_SCOPE_PHASE31
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 32 recursive-compression statement contract requires Phase 31 semantic scope `{}`, got `{}`",
+            STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_SCOPE_PHASE31,
+            contract.phase31_semantic_scope
+        )));
+    }
+    if contract.total_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 32 recursive-compression statement contract requires at least one decode step"
+                .to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase31_decode_boundary_bridge_commitment",
+            contract.phase31_decode_boundary_bridge_commitment.as_str(),
+        ),
+        (
+            "phase30_source_chain_commitment",
+            contract.phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase30_step_envelopes_commitment",
+            contract.phase30_step_envelopes_commitment.as_str(),
+        ),
+        (
+            "chain_start_boundary_commitment",
+            contract.chain_start_boundary_commitment.as_str(),
+        ),
+        (
+            "chain_end_boundary_commitment",
+            contract.chain_end_boundary_commitment.as_str(),
+        ),
+        (
+            "source_template_commitment",
+            contract.source_template_commitment.as_str(),
+        ),
+        (
+            "aggregation_template_commitment",
+            contract.aggregation_template_commitment.as_str(),
+        ),
+        (
+            "recursive_statement_contract_commitment",
+            contract.recursive_statement_contract_commitment.as_str(),
+        ),
+    ] {
+        if value.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 32 recursive-compression statement contract `{label}` must be non-empty"
+            )));
+        }
+    }
+
+    let expected = commit_phase32_recursive_compression_statement_contract(contract)?;
+    if contract.recursive_statement_contract_commitment != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 32 recursive-compression statement contract commitment `{}` does not match recomputed `{}`",
+            contract.recursive_statement_contract_commitment, expected
+        )));
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase32_recursive_compression_statement_contract_against_phase31(
+    contract: &Phase32RecursiveCompressionStatementContract,
+    manifest: &Phase31RecursiveCompressionDecodeBoundaryManifest,
+) -> Result<()> {
+    verify_phase32_recursive_compression_statement_contract(contract)?;
+    let expected = phase32_prepare_recursive_compression_statement_contract(manifest)?;
+    if contract != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 32 recursive-compression statement contract does not match the recomputed Phase 31 source manifest".to_string(),
         ));
     }
     Ok(())
@@ -956,6 +1241,20 @@ pub fn parse_phase31_recursive_compression_decode_boundary_manifest_json(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn parse_phase32_recursive_compression_statement_contract_json(
+    json: &str,
+) -> Result<Phase32RecursiveCompressionStatementContract> {
+    if json.len() > MAX_PHASE32_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_JSON_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 32 recursive-compression statement contract JSON is {} bytes, exceeding the limit of {} bytes",
+            json.len(),
+            MAX_PHASE32_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_JSON_BYTES
+        )));
+    }
+    serde_json::from_str(json).map_err(phase32_json_error)
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn load_phase31_recursive_compression_decode_boundary_manifest(
     path: &Path,
 ) -> Result<Phase31RecursiveCompressionDecodeBoundaryManifest> {
@@ -968,7 +1267,29 @@ pub fn load_phase31_recursive_compression_decode_boundary_manifest(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn load_phase32_recursive_compression_statement_contract(
+    path: &Path,
+) -> Result<Phase32RecursiveCompressionStatementContract> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE32_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_JSON_BYTES,
+        "Phase 32 recursive-compression statement contract",
+    )?;
+    serde_json::from_slice(&bytes).map_err(phase32_json_error)
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase31_json_error(error: serde_json::Error) -> VmError {
+    match error.classify() {
+        serde_json::error::Category::Data
+        | serde_json::error::Category::Syntax
+        | serde_json::error::Category::Eof => VmError::InvalidConfig(error.to_string()),
+        serde_json::error::Category::Io => VmError::Serialization(error.to_string()),
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase32_json_error(error: serde_json::Error) -> VmError {
     match error.classify() {
         serde_json::error::Category::Data
         | serde_json::error::Category::Syntax
@@ -1001,7 +1322,10 @@ pub fn commit_phase31_recursive_compression_decode_boundary_manifest(
     phase29_update_len_prefixed(&mut hasher, manifest.phase29_contract_commitment.as_bytes());
     phase29_update_len_prefixed(&mut hasher, manifest.phase30_manifest_version.as_bytes());
     phase29_update_len_prefixed(&mut hasher, manifest.phase30_semantic_scope.as_bytes());
-    phase29_update_len_prefixed(&mut hasher, manifest.phase30_source_chain_commitment.as_bytes());
+    phase29_update_len_prefixed(
+        &mut hasher,
+        manifest.phase30_source_chain_commitment.as_bytes(),
+    );
     phase29_update_len_prefixed(
         &mut hasher,
         manifest.phase30_step_envelopes_commitment.as_bytes(),
@@ -1011,7 +1335,10 @@ pub fn commit_phase31_recursive_compression_decode_boundary_manifest(
         &mut hasher,
         manifest.chain_start_boundary_commitment.as_bytes(),
     );
-    phase29_update_len_prefixed(&mut hasher, manifest.chain_end_boundary_commitment.as_bytes());
+    phase29_update_len_prefixed(
+        &mut hasher,
+        manifest.chain_end_boundary_commitment.as_bytes(),
+    );
     phase29_update_len_prefixed(&mut hasher, manifest.source_template_commitment.as_bytes());
     phase29_update_len_prefixed(
         &mut hasher,
@@ -1021,6 +1348,64 @@ pub fn commit_phase31_recursive_compression_decode_boundary_manifest(
     hasher.finalize_variable(&mut out).map_err(|err| {
         VmError::InvalidConfig(format!(
             "failed to finalize Phase 31 decode-boundary commitment hash: {err}"
+        ))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase32_recursive_compression_statement_contract(
+    contract: &Phase32RecursiveCompressionStatementContract,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 32 recursive-compression statement contract commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase32-statement-contract");
+    phase29_update_len_prefixed(&mut hasher, contract.proof_backend.to_string().as_bytes());
+    phase29_update_len_prefixed(&mut hasher, contract.contract_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, contract.semantic_scope.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, contract.proof_backend_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, contract.statement_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, contract.step_relation.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, contract.required_recursion_posture.as_bytes());
+    phase29_update_bool(&mut hasher, contract.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, contract.cryptographic_compression_claimed);
+    phase29_update_len_prefixed(&mut hasher, contract.phase31_manifest_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, contract.phase31_semantic_scope.as_bytes());
+    phase29_update_len_prefixed(
+        &mut hasher,
+        contract
+            .phase31_decode_boundary_bridge_commitment
+            .as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        contract.phase30_source_chain_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        contract.phase30_step_envelopes_commitment.as_bytes(),
+    );
+    phase29_update_usize(&mut hasher, contract.total_steps);
+    phase29_update_len_prefixed(
+        &mut hasher,
+        contract.chain_start_boundary_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        contract.chain_end_boundary_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(&mut hasher, contract.source_template_commitment.as_bytes());
+    phase29_update_len_prefixed(
+        &mut hasher,
+        contract.aggregation_template_commitment.as_bytes(),
+    );
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 32 recursive-compression statement contract commitment hash: {err}"
         ))
     })?;
     Ok(phase29_lower_hex(&out))
@@ -1141,6 +1526,14 @@ mod tests {
         let layout = phase12_default_decoding_layout();
         let chain = prove_phase12_decoding_demo_for_layout(&layout).expect("phase12 demo");
         phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("phase30 manifest")
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn sample_phase31_manifest() -> Phase31RecursiveCompressionDecodeBoundaryManifest {
+        let phase30 = sample_phase30_manifest();
+        let contract = sample_phase29_contract_for_phase30(&phase30);
+        phase31_prepare_recursive_compression_decode_boundary_manifest(&contract, &phase30)
+            .expect("prepare phase31 manifest")
     }
 
     #[cfg(feature = "stwo-backend")]
@@ -1478,7 +1871,10 @@ mod tests {
             manifest.semantic_scope,
             STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_SCOPE_PHASE31
         );
-        assert_eq!(manifest.phase29_contract_commitment, contract.input_contract_commitment);
+        assert_eq!(
+            manifest.phase29_contract_commitment,
+            contract.input_contract_commitment
+        );
         assert_eq!(
             manifest.phase30_step_envelopes_commitment,
             phase30.step_envelopes_commitment
@@ -1508,8 +1904,9 @@ mod tests {
         contract.input_contract_commitment =
             commit_phase29_recursive_compression_input_contract(&contract)
                 .expect("recommit mismatched phase29 contract");
-        let err = phase31_prepare_recursive_compression_decode_boundary_manifest(&contract, &phase30)
-            .expect_err("step-count mismatch must fail");
+        let err =
+            phase31_prepare_recursive_compression_decode_boundary_manifest(&contract, &phase30)
+                .expect_err("step-count mismatch must fail");
         assert!(err.to_string().contains("matching total_steps"));
     }
 
@@ -1522,11 +1919,12 @@ mod tests {
         contract.input_contract_commitment =
             commit_phase29_recursive_compression_input_contract(&contract)
                 .expect("recommit mismatched boundary contract");
-        let err = phase31_prepare_recursive_compression_decode_boundary_manifest(&contract, &phase30)
-            .expect_err("boundary mismatch must fail");
-        assert!(err
-            .to_string()
-            .contains("global_start_state_commitment to match the Phase 30 chain_start_boundary_commitment"));
+        let err =
+            phase31_prepare_recursive_compression_decode_boundary_manifest(&contract, &phase30)
+                .expect_err("boundary mismatch must fail");
+        assert!(err.to_string().contains(
+            "global_start_state_commitment to match the Phase 30 chain_start_boundary_commitment"
+        ));
     }
 
     #[cfg(feature = "stwo-backend")]
@@ -1557,8 +1955,7 @@ mod tests {
         assert_eq!(parsed, manifest);
 
         let mut tampered = serde_json::to_value(&manifest).expect("serialize phase31 value");
-        tampered["decode_boundary_bridge_commitment"] =
-            serde_json::json!("0".repeat(64));
+        tampered["decode_boundary_bridge_commitment"] = serde_json::json!("0".repeat(64));
         let err =
             serde_json::from_value::<Phase31RecursiveCompressionDecodeBoundaryManifest>(tampered)
                 .expect_err("tampered phase31 manifest must be rejected");
@@ -1578,6 +1975,83 @@ mod tests {
         let json = serde_json::to_string(&value).expect("json with unknown field");
 
         let err = parse_phase31_recursive_compression_decode_boundary_manifest_json(&json)
+            .expect_err("unknown fields must be rejected");
+        assert!(matches!(err, VmError::InvalidConfig(_)));
+        assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase32_recursive_statement_contract_accepts_matching_phase31_source() {
+        let manifest = sample_phase31_manifest();
+        let contract = phase32_prepare_recursive_compression_statement_contract(&manifest)
+            .expect("prepare phase32 contract");
+        assert_eq!(contract.proof_backend, StarkProofBackend::Stwo);
+        assert_eq!(
+            contract.contract_version,
+            STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32
+        );
+        assert_eq!(
+            contract.semantic_scope,
+            STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_SCOPE_PHASE32
+        );
+        assert_eq!(
+            contract.phase31_decode_boundary_bridge_commitment,
+            manifest.decode_boundary_bridge_commitment
+        );
+        assert_eq!(
+            contract.phase30_step_envelopes_commitment,
+            manifest.phase30_step_envelopes_commitment
+        );
+        verify_phase32_recursive_compression_statement_contract(&contract)
+            .expect("verify phase32 contract");
+        verify_phase32_recursive_compression_statement_contract_against_phase31(
+            &contract, &manifest,
+        )
+        .expect("verify phase32 contract against phase31");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase32_recursive_statement_contract_rejects_tampered_commitment() {
+        let manifest = sample_phase31_manifest();
+        let mut contract = phase32_prepare_recursive_compression_statement_contract(&manifest)
+            .expect("prepare phase32 contract");
+        contract.total_steps += 1;
+        let err = verify_phase32_recursive_compression_statement_contract(&contract)
+            .expect_err("tampered phase32 contract must fail");
+        assert!(err.to_string().contains("commitment"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase32_recursive_statement_contract_deserialization_verifies_contract() {
+        let manifest = sample_phase31_manifest();
+        let contract = phase32_prepare_recursive_compression_statement_contract(&manifest)
+            .expect("prepare phase32 contract");
+        let json = serde_json::to_string(&contract).expect("serialize phase32 contract");
+        let parsed = parse_phase32_recursive_compression_statement_contract_json(&json)
+            .expect("parse phase32 contract");
+        assert_eq!(parsed, contract);
+
+        let mut tampered = serde_json::to_value(&contract).expect("serialize phase32 value");
+        tampered["recursive_statement_contract_commitment"] = serde_json::json!("0".repeat(64));
+        let err = serde_json::from_value::<Phase32RecursiveCompressionStatementContract>(tampered)
+            .expect_err("tampered phase32 contract must be rejected");
+        assert!(err.to_string().contains("commitment"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase32_recursive_statement_contract_parse_rejects_unknown_fields() {
+        let manifest = sample_phase31_manifest();
+        let contract = phase32_prepare_recursive_compression_statement_contract(&manifest)
+            .expect("prepare phase32 contract");
+        let mut value = serde_json::to_value(&contract).expect("serialize phase32 value");
+        value["unexpected_phase32_field"] = serde_json::json!(true);
+        let json = serde_json::to_string(&value).expect("json with unknown field");
+
+        let err = parse_phase32_recursive_compression_statement_contract_json(&json)
             .expect_err("unknown fields must be rejected");
         assert!(matches!(err, VmError::InvalidConfig(_)));
         assert!(err.to_string().contains("unknown field"));

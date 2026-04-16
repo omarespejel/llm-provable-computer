@@ -545,6 +545,25 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-recursive-compression-input-contract \
   --input recursive-compression-input-contract.stwo.json
 
+# Derive and verify the Phase 31 decode-boundary bridge over the published recursive-adjacent inputs
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-recursive-compression-decode-boundary-manifest \
+  --contract recursive-compression-input-contract.stwo.json \
+  --manifest decoding-step-envelope-manifest.stwo.json \
+  -o recursive-compression-decode-boundary.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-recursive-compression-decode-boundary-manifest \
+  --input recursive-compression-decode-boundary.stwo.json
+
+# Derive and verify the Phase 32 statement contract that future recursive compression must preserve
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-recursive-compression-statement-contract \
+  --manifest recursive-compression-decode-boundary.stwo.json \
+  -o recursive-compression-statement-contract.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-recursive-compression-statement-contract \
+  --input recursive-compression-statement-contract.stwo.json
+
 # Freeze a canonical pre-aggregation batch manifest for future recursion work
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-recursion-batch \
@@ -628,9 +647,9 @@ now lives in
 so the public README can stay focused on current proof surfaces rather than internal
 implementation sequencing.
 
-These phases define pre-recursive merge boundaries and carried-state bindings;
-they do not yet implement recursive cryptographic accumulation or cross-step
-shared-table accumulation.
+These phases define pre-recursive merge boundaries, recursive-adjacent boundary
+contracts, and carried-state bindings; they do not yet implement recursive
+cryptographic accumulation or cross-step shared-table accumulation.
 
 #### Explicit Non-Goals
 
@@ -1047,9 +1066,9 @@ phase chronology and transition notes now live in
 [`docs/engineering/design/engineering-timeline.md`](docs/engineering/design/engineering-timeline.md),
 so the public README stays publication-facing.
 
-These phases define pre-recursive merge boundaries and carried-state bindings;
-they do not yet implement recursive cryptographic accumulation or cross-step
-shared-table accumulation.
+These phases define pre-recursive merge boundaries, recursive-adjacent boundary
+contracts, and carried-state bindings; they do not yet implement recursive
+cryptographic accumulation or cross-step shared-table accumulation.
 
 #### Explicit Non-Goals
 
