@@ -13,11 +13,12 @@
     "safetensors",
     "onnx_export",
     "release",
+    "external_attestation",
     "limitations",
     "commitments"
   ],
   "properties": {
-    "manifest_version": { "const": "hf-provenance-manifest-v6" },
+    "manifest_version": { "const": "hf-provenance-manifest-v7" },
     "semantic_scope": { "const": "hf-release-provenance-boundary-v1" },
     "commitment_hash_function": { "const": "blake2b-256" },
     "hub_repo": { "type": "string", "minLength": 1 },
@@ -37,6 +38,12 @@
     "attestation": {
       "anyOf": [
         { "$ref": "#/$defs/attestation" },
+        { "type": "null" }
+      ]
+    },
+    "external_attestation": {
+      "anyOf": [
+        { "$ref": "#/$defs/external_attestation" },
         { "type": "null" }
       ]
     },
@@ -324,6 +331,45 @@
       },
       "additionalProperties": false
     },
+    "external_attestation_identity": {
+      "type": "object",
+      "required": [
+        "identity_version",
+        "statement_type",
+        "predicate_type",
+        "builder_id",
+        "build_invocation_id",
+        "subject_count"
+      ],
+      "properties": {
+        "identity_version": { "const": "hf-external-attestation-identity-v1" },
+        "statement_type": { "type": "string", "minLength": 1 },
+        "predicate_type": { "type": "string", "minLength": 1 },
+        "builder_id": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "build_invocation_id": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "subject_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "external_attestation": {
+      "type": "object",
+      "required": ["statement", "identity"],
+      "properties": {
+        "statement": { "$ref": "#/$defs/file_commitment" },
+        "identity": { "$ref": "#/$defs/external_attestation_identity" }
+      },
+      "additionalProperties": false
+    },
     "commitments": {
       "type": "object",
       "required": [
@@ -335,6 +381,8 @@
         "onnx_metadata_identity_hash",
         "onnx_graph_constraint_identity_hash",
         "release_metadata_hash",
+        "attestation_hash",
+        "external_attestation_hash",
         "limitations_hash"
       ],
       "properties": {
@@ -347,6 +395,7 @@
         "onnx_graph_constraint_identity_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "release_metadata_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "attestation_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "external_attestation_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "limitations_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" }
       },
       "additionalProperties": false

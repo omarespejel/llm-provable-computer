@@ -23,12 +23,13 @@ compressed proof object.
 
 The Hugging Face provenance line is strong as a bounded reproducibility surface,
 but it is not yet a complete supply-chain attestation story. In particular,
-externally signed attestations remain a live engineering gap. Today the
-repository binds the produced ONNX-facing graph, metadata, external-file
-identities, exporter identity, and metadata-derived graph-constraint identity
-together with local file hashes, attestation-friendly subject digests, and
-optional builder/source release metadata, but it does not yet expose a verified
-external attestation layer for builder trust or supply-chain signing.
+verified external signatures and trust chains remain a live engineering gap.
+Today the repository binds the produced ONNX-facing graph, metadata,
+external-file identities, exporter identity, metadata-derived graph-constraint
+identity, local file hashes, attestation-friendly subject digests, optional
+builder/source release metadata, and an optional external statement projection,
+but it does not yet expose a verified external attestation layer for builder
+trust or supply-chain signing.
 
 ### Runtime-consistency scope
 

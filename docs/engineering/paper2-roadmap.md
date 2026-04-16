@@ -28,6 +28,8 @@ The repository is already strong enough for the bounded paper-2 claim:
   declared external-data side files,
 - attestation-friendly subject digests plus optional builder/source release
   metadata now exist on the HF provenance surface,
+- the HF provenance surface can now also bind an external in-toto/SLSA-style
+  statement file as a narrow release-layer identity projection,
 - ONNX-facing provenance now also binds exporter identity and graph-constraint
   identity where metadata exposes those constraints,
 - parser/verifier hardening has materially improved the trust boundary around
@@ -61,8 +63,10 @@ Concrete targets:
 - preserve external-file identity where ONNX layout requires it,
 - keep the new builder/source metadata aligned with signed attestation subjects
   rather than proof semantics,
-- add externally signed provenance only as a release-layer extension, not as a
-  proof-semantics claim,
+- keep external statement binding narrow and machine-checkable at the release
+  layer,
+- add full external signature/trust-chain verification only as a release-layer
+  extension, not as a proof-semantics claim,
 - keep the claim phrased as provenance/reproducibility, not proof semantics.
 
 ### 3. Keep semantic-agreement artifacts bounded
@@ -115,8 +119,8 @@ exists to sequence the implementation work that keeps those boundaries honest.
 The next concrete engineering slice should be:
 
 1. keep the expanded HF provenance verifier narrow and explicit about what is
-   local identity binding versus what would require external signed
-   attestations,
+   local identity binding and external statement binding versus what would still
+   require external signed attestation verification,
 2. keep the Phase 31 decode-boundary bridge narrow and explicit about what is
    bound from Phase 29 and Phase 30 versus what would require actual recursive
    verification,

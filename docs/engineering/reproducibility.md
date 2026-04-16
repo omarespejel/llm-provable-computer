@@ -120,10 +120,11 @@ bundle-looking directory unless that override is set. Its outputs are:
 - HF provenance manifests are release/provenance artifacts only. They bind
   pinned Hub and tokenizer identifiers plus local tokenizer, safetensors, ONNX,
   model-card, DOI, dataset, attestation-subject, exporter-identity,
-  graph-constraint-identity, and optional builder/source metadata where
-  supplied, but they do not prove tokenizer algorithm correctness, model-weight
-  semantics, Optimum export equivalence, live Hub availability, or DOI
-  validity.
+  graph-constraint-identity, optional builder/source metadata, and an optional
+  external attestation statement projection where supplied, but they do not
+  prove tokenizer algorithm correctness, model-weight semantics, Optimum export
+  equivalence, live Hub availability, DOI validity, or external attestation
+  signature/trust-chain validity.
 
 ## Paper figure regeneration
 
