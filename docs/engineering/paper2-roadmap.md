@@ -20,7 +20,8 @@ The repository is already strong enough for the bounded paper-2 claim:
 
 - carried-state packaging layers are implemented through the current
   pre-recursive aggregation boundary,
-- recursive-adjacent Phase 29 and Phase 30 boundary artifacts exist,
+- recursive-adjacent Phase 29, Phase 30, and Phase 31 boundary artifacts
+  exist,
 - bounded multi-runtime semantic-agreement artifacts exist,
 - Hugging Face provenance manifests exist as reproducibility artifacts,
 - ONNX-facing provenance now binds exported graph, metadata companion, and
@@ -41,6 +42,7 @@ Focus on:
 - carried-state package verification,
 - recursive-compression input contract verification,
 - step-envelope manifest verification,
+- decode-boundary bridge manifest verification,
 - `research-v3` artifact verification,
 - HF provenance manifest verification.
 
@@ -75,7 +77,20 @@ Concrete rule:
 - hardening should continue to focus on manifest, trace, event, and commitment
   mismatch rejection.
 
-### 4. Then move to recursive compression
+### 4. Keep the recursive-adjacent decode boundary explicit
+
+The repository now has the exact bridge that later recursive work should
+consume: a Phase 31 manifest that binds the Phase 29 recursive-compression
+input contract to the Phase 30 ordered decode-envelope manifest without
+changing the public decode statement.
+
+That means the next recursive work should preserve:
+
+- the existing decode statement,
+- the existing start/end carried-state boundary semantics,
+- the existing package commitments already exposed by the repository.
+
+### 5. Then move to recursive compression
 
 Recursive work should come after the public decode statement is stable enough
 that recursion preserves a claim the repository already exposes cleanly.
@@ -102,5 +117,8 @@ The next concrete engineering slice should be:
 1. keep the expanded HF provenance verifier narrow and explicit about what is
    local identity binding versus what would require external signed
    attestations,
-2. then recurse over the existing decode boundary rather than inventing a new
+2. keep the Phase 31 decode-boundary bridge narrow and explicit about what is
+   bound from Phase 29 and Phase 30 versus what would require actual recursive
+   verification,
+3. then recurse over the existing decode boundary rather than inventing a new
    statement surface.

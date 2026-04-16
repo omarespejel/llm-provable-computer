@@ -268,7 +268,9 @@ The strongest paper-2 surface is the phase line that reaches:
 - chained fold-of-folds packaging,
 - proof-carrying outer aggregation,
 - a recursive-compression input contract,
-- a step-proof envelope manifest.
+- a step-proof envelope manifest,
+- a decode-boundary bridge manifest that binds those two recursive-adjacent
+  surfaces together without changing the underlying decode statement.
 
 In publication-facing prose, those layers are best described as chain, segment,
 interval bundle, rollup, matrix, and pre-recursive aggregation boundary. The
@@ -357,8 +359,9 @@ threat classes:
 
 For paper 2, the relevant point is that the hardening line is aligned with the
 paper’s statement surface. The step-envelope manifests, recursive-compression
-input contracts, semantic-agreement artifacts, and provenance manifests are all
-being tested at the exact boundaries the paper names.
+input contracts, decode-boundary bridge manifests, semantic-agreement
+artifacts, and provenance manifests are all being tested at the exact
+boundaries the paper names.
 
 That alignment matters. A crypto paper should not point to “engineering
 hardening” in the abstract. It should point to the same artifact boundaries that
@@ -376,6 +379,8 @@ Relative to folding and IVC systems, the repository contributes:
 - statement stabilization over a concrete decode relation,
 - explicit carried-state boundary semantics,
 - packaging-layer validity conditions,
+- a recursive-adjacent bridge that binds the published recursion input contract
+  to the ordered decode-envelope surface without redefining the statement,
 - proof-carrying pre-recursive aggregation objects,
 - bounded runtime-consistency and release-provenance guardrails.
 
@@ -404,6 +409,8 @@ provided the prose stays disciplined:
 - proof-carrying decode surfaces are real,
 - carried-state packaging validity is real,
 - the pre-recursive aggregation boundary is real,
+- the decode-boundary bridge between the recursive-adjacent inputs and the
+  ordered step-envelope surface is real,
 - semantic-agreement artifacts are real as bounded evidence,
 - provenance manifests are real as release guardrails.
 

@@ -41,9 +41,11 @@ use llm_provable_computer::{
     load_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     load_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     load_phase29_recursive_compression_input_contract,
+    load_phase31_recursive_compression_decode_boundary_manifest,
     load_phase30_decoding_step_proof_envelope_manifest, load_phase3_binary_step_lookup_proof,
     load_phase5_normalization_lookup_proof,
     phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28,
+    phase31_prepare_recursive_compression_decode_boundary_manifest,
     phase30_prepare_decoding_step_proof_envelope_manifest,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
@@ -86,10 +88,12 @@ use llm_provable_computer::{
     verify_phase24_decoding_state_relation_accumulator_with_proof_checks,
     verify_phase25_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase26_folded_intervalized_decoding_state_relation_with_proof_checks,
+    verify_phase31_recursive_compression_decode_boundary_manifest_against_sources,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
     verify_phase3_binary_step_lookup_demo_envelope,
     verify_phase5_normalization_lookup_demo_envelope, Phase29RecursiveCompressionInputContract,
     Phase30DecodingStepProofEnvelopeManifest,
+    Phase31RecursiveCompressionDecodeBoundaryManifest,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
     STWO_BACKEND_VERSION_PHASE12,
     STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
@@ -113,6 +117,8 @@ use llm_provable_computer::{
     STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
     STWO_NORMALIZATION_PROOF_VERSION_PHASE5, STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5,
     STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
+    STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_SCOPE_PHASE31,
+    STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_VERSION_PHASE31,
     STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29,
     STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29,
 };
@@ -547,6 +553,32 @@ enum Command {
         /// Path to the serialized Phase 29 input contract JSON or JSON.gz file.
         #[arg(long = "input")]
         input: PathBuf,
+    },
+    /// Derive a Phase 31 decode-boundary manifest from a verified Phase 29 contract and a verified Phase 30 manifest.
+    #[cfg(feature = "stwo-backend")]
+    PrepareStwoRecursiveCompressionDecodeBoundaryManifest {
+        /// Path to the serialized Phase 29 input contract JSON or JSON.gz file.
+        #[arg(long = "contract")]
+        contract: PathBuf,
+        /// Path to the serialized Phase 30 manifest JSON or JSON.gz file.
+        #[arg(long = "manifest")]
+        manifest: PathBuf,
+        /// File where the serialized Phase 31 manifest JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a serialized Phase 31 recursive-compression decode-boundary manifest.
+    #[cfg(feature = "stwo-backend")]
+    VerifyStwoRecursiveCompressionDecodeBoundaryManifest {
+        /// Path to the serialized Phase 31 manifest JSON or JSON.gz file.
+        #[arg(long = "input")]
+        input: PathBuf,
+        /// Optional Phase 29 input contract JSON or JSON.gz file for exact source binding.
+        #[arg(long = "contract")]
+        contract: Option<PathBuf>,
+        /// Optional Phase 30 manifest JSON or JSON.gz file for exact source binding.
+        #[arg(long = "manifest")]
+        manifest: Option<PathBuf>,
     },
     /// Prepare a canonical multi-proof batch manifest for future S-two recursion.
     PrepareStwoRecursionBatch {
@@ -1633,6 +1665,26 @@ fn run() -> llm_provable_computer::Result<()> {
         Command::VerifyStwoRecursiveCompressionInputContract { input } => {
             verify_stwo_recursive_compression_input_contract_command(&input)?
         }
+        #[cfg(feature = "stwo-backend")]
+        Command::PrepareStwoRecursiveCompressionDecodeBoundaryManifest {
+            contract,
+            manifest,
+            output,
+        } => prepare_stwo_recursive_compression_decode_boundary_manifest_command(
+            &contract,
+            &manifest,
+            &output,
+        )?,
+        #[cfg(feature = "stwo-backend")]
+        Command::VerifyStwoRecursiveCompressionDecodeBoundaryManifest {
+            input,
+            contract,
+            manifest,
+        } => verify_stwo_recursive_compression_decode_boundary_manifest_command(
+            &input,
+            contract.as_deref(),
+            manifest.as_deref(),
+        )?,
         Command::PrepareStwoRecursionBatch { proofs, output } => {
             prepare_stwo_recursion_batch_command(&proofs, &output)?
         }
@@ -4183,6 +4235,125 @@ fn print_phase29_recursive_compression_input_contract_report(
     println!(
         "expected_semantic_scope: {}",
         STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29
+    );
+}
+
+#[cfg(feature = "stwo-backend")]
+fn prepare_stwo_recursive_compression_decode_boundary_manifest_command(
+    contract_path: &Path,
+    manifest_path: &Path,
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    require_stwo_backend("S-two Phase 31 recursive-compression decode-boundary manifest")?;
+
+    reject_phase31_decode_boundary_manifest_plain_json_gzip_output(output)?;
+    let contract = load_phase29_recursive_compression_input_contract(contract_path)?;
+    let phase30 = load_phase30_decoding_step_proof_envelope_manifest(manifest_path)?;
+    let bridge = phase31_prepare_recursive_compression_decode_boundary_manifest(&contract, &phase30)?;
+    let json = serde_json::to_vec_pretty(&bridge)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    fs::write(output, json)?;
+
+    println!("output: {}", output.display());
+    println!("phase29_contract: {}", contract_path.display());
+    println!("phase30_manifest: {}", manifest_path.display());
+    println!("verified_phase29_contract: true");
+    println!("verified_phase30_manifest: true");
+    print_phase31_recursive_compression_decode_boundary_manifest_report(&bridge);
+
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn verify_stwo_recursive_compression_decode_boundary_manifest_command(
+    input_path: &Path,
+    contract_path: Option<&Path>,
+    manifest_path: Option<&Path>,
+) -> llm_provable_computer::Result<()> {
+    require_stwo_backend("S-two Phase 31 recursive-compression decode-boundary manifest")?;
+
+    let bridge = load_phase31_recursive_compression_decode_boundary_manifest(input_path)?;
+    match (contract_path, manifest_path) {
+        (Some(contract_path), Some(manifest_path)) => {
+            let contract = load_phase29_recursive_compression_input_contract(contract_path)?;
+            let phase30 = load_phase30_decoding_step_proof_envelope_manifest(manifest_path)?;
+            verify_phase31_recursive_compression_decode_boundary_manifest_against_sources(
+                &bridge, &contract, &phase30,
+            )?;
+            println!("source_bound_contract: {}", contract_path.display());
+            println!("source_bound_manifest: {}", manifest_path.display());
+            println!("verified_against_sources: true");
+        }
+        (None, None) => {}
+        _ => {
+            return Err(VmError::InvalidConfig(
+                "verify-stwo-recursive-compression-decode-boundary-manifest requires both `--contract` and `--manifest` when source binding is requested".to_string(),
+            ));
+        }
+    }
+
+    println!("input: {}", input_path.display());
+    println!("verified_manifest: true");
+    print_phase31_recursive_compression_decode_boundary_manifest_report(&bridge);
+
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn reject_phase31_decode_boundary_manifest_plain_json_gzip_output(
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    if output.extension().and_then(|extension| extension.to_str()) == Some("gz") {
+        return Err(VmError::InvalidConfig(
+            "prepare-stwo-recursive-compression-decode-boundary-manifest writes plain JSON; use a `.json` output path"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn print_phase31_recursive_compression_decode_boundary_manifest_report(
+    manifest: &Phase31RecursiveCompressionDecodeBoundaryManifest,
+) {
+    println!("proof_backend: {}", manifest.proof_backend);
+    println!("manifest_version: {}", manifest.manifest_version);
+    println!("semantic_scope: {}", manifest.semantic_scope);
+    println!("proof_backend_version: {}", manifest.proof_backend_version);
+    println!("statement_version: {}", manifest.statement_version);
+    println!("step_relation: {}", manifest.step_relation);
+    println!(
+        "required_recursion_posture: {}",
+        manifest.required_recursion_posture
+    );
+    println!(
+        "recursive_verification_claimed: {}",
+        manifest.recursive_verification_claimed
+    );
+    println!(
+        "cryptographic_compression_claimed: {}",
+        manifest.cryptographic_compression_claimed
+    );
+    println!("total_steps: {}", manifest.total_steps);
+    println!(
+        "phase29_contract_commitment: {}",
+        manifest.phase29_contract_commitment
+    );
+    println!(
+        "phase30_step_envelopes_commitment: {}",
+        manifest.phase30_step_envelopes_commitment
+    );
+    println!(
+        "decode_boundary_bridge_commitment: {}",
+        manifest.decode_boundary_bridge_commitment
+    );
+    println!(
+        "expected_manifest_version: {}",
+        STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_VERSION_PHASE31
+    );
+    println!(
+        "expected_semantic_scope: {}",
+        STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_SCOPE_PHASE31
     );
 }
 
@@ -10231,6 +10402,12 @@ mod cli_dispatch_tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-recursive-compression-input-contract"
         ));
+        assert!(!needs_run_subcommand(
+            "prepare-stwo-recursive-compression-decode-boundary-manifest"
+        ));
+        assert!(!needs_run_subcommand(
+            "verify-stwo-recursive-compression-decode-boundary-manifest"
+        ));
     }
 }
 
@@ -10621,6 +10798,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-aggregated-chained-folded-intervalized-decoding-state-relation-demo"
                 | "prepare-stwo-recursive-compression-input-contract"
                 | "verify-stwo-recursive-compression-input-contract"
+                | "prepare-stwo-recursive-compression-decode-boundary-manifest"
+                | "verify-stwo-recursive-compression-decode-boundary-manifest"
                 | "prepare-stwo-recursion-batch"
                 | "research-v2-step"
                 | "research-v2-trace"

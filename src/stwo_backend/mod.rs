@@ -209,11 +209,21 @@ pub use normalization_prover::{
 #[cfg(feature = "stwo-backend")]
 pub use recursion::{
     commit_phase29_recursive_compression_input_contract,
+    commit_phase31_recursive_compression_decode_boundary_manifest,
     load_phase29_recursive_compression_input_contract,
+    load_phase31_recursive_compression_decode_boundary_manifest,
     parse_phase29_recursive_compression_input_contract_json,
+    parse_phase31_recursive_compression_decode_boundary_manifest_json,
     phase29_prepare_recursive_compression_input_contract,
     phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28,
-    verify_phase29_recursive_compression_input_contract, Phase29RecursiveCompressionInputContract,
+    phase31_prepare_recursive_compression_decode_boundary_manifest,
+    verify_phase29_recursive_compression_input_contract,
+    verify_phase31_recursive_compression_decode_boundary_manifest,
+    verify_phase31_recursive_compression_decode_boundary_manifest_against_sources,
+    Phase29RecursiveCompressionInputContract,
+    Phase31RecursiveCompressionDecodeBoundaryManifest,
+    STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_SCOPE_PHASE31,
+    STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_VERSION_PHASE31,
     STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29,
     STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29,
 };
