@@ -573,6 +573,16 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-recursive-compression-public-input-manifest \
   --input recursive-compression-public-input-manifest.stwo.json
 
+# Derive and verify the Phase 34 shared-lookup manifest that preserves the ordered lookup-facing public inputs
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-recursive-compression-shared-lookup-manifest \
+  --public-inputs recursive-compression-public-input-manifest.stwo.json \
+  --envelopes decoding-step-envelope-manifest.stwo.json \
+  -o recursive-compression-shared-lookup-manifest.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-recursive-compression-shared-lookup-manifest \
+  --input recursive-compression-shared-lookup-manifest.stwo.json
+
 # Freeze a canonical pre-aggregation batch manifest for future recursion work
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-recursion-batch \

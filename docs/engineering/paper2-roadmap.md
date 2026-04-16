@@ -26,6 +26,9 @@ The repository is already strong enough for the bounded paper-2 claim:
   that future recursive compression must preserve,
 - a Phase 33 public-input manifest now freezes the exact ordered public inputs
   that a future recursive verifier must preserve over that same statement,
+- a Phase 34 shared-lookup manifest now freezes the ordered lookup-facing
+  public inputs a future recursive/shared-table verifier would need to preserve
+  over that same statement,
 - bounded multi-runtime semantic-agreement artifacts exist,
 - Hugging Face provenance manifests exist as reproducibility artifacts,
 - ONNX-facing provenance now binds exported graph, metadata companion, and
@@ -51,6 +54,7 @@ Focus on:
 - decode-boundary bridge manifest verification,
 - recursive statement-contract verification,
 - recursive public-input manifest verification,
+- recursive shared-lookup manifest verification,
 - `research-v3` artifact verification,
 - HF provenance manifest verification.
 
@@ -95,7 +99,9 @@ input contract to the Phase 30 ordered decode-envelope manifest without
 changing the public decode statement, a Phase 32 contract that restates that
 same boundary as the public recursive target, and a Phase 33 manifest that
 freezes the exact ordered public inputs a recursive verifier would need to
-preserve.
+preserve. The repository now also has a Phase 34 manifest that freezes the
+ordered lookup-facing public inputs already exposed by the Phase 30 step
+envelopes.
 
 That means the next recursive work should preserve:
 
@@ -105,6 +111,8 @@ That means the next recursive work should preserve:
 - the Phase 32 public statement contract derived from that bridge.
 - the Phase 33 public-input ordering and commitments derived from that
   contract.
+- the Phase 34 shared-lookup ordering and commitments derived from those public
+  inputs and the Phase 30 envelopes.
 
 ### 5. Then move to recursive compression
 
@@ -134,8 +142,8 @@ The next concrete engineering slice should be:
    local identity binding and external statement binding versus what would still
    require external signed attestation verification,
 2. keep the Phase 31 decode-boundary bridge, Phase 32 recursive statement
-   contract, and Phase 33 public-input manifest narrow and explicit about what
-   is bound from earlier artifacts versus what would require actual recursive
-   verification,
+   contract, Phase 33 public-input manifest, and Phase 34 shared-lookup
+   manifest narrow and explicit about what is bound from earlier artifacts
+   versus what would require actual recursive verification,
 3. then recurse over that existing decode boundary and public-input ordering
    rather than inventing a new statement surface.
