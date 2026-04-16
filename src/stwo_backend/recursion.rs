@@ -1454,6 +1454,20 @@ fn phase29_lower_hex(bytes: &[u8]) -> String {
 }
 
 #[cfg(feature = "stwo-backend")]
+fn phase37_require_hash32(label: &str, value: &str) -> Result<()> {
+    let is_hash32 = value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'));
+    if !is_hash32 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 37 recursive artifact-chain harness receipt `{label}` must be a 32-byte lowercase hex commitment"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn phase31_prepare_recursive_compression_decode_boundary_manifest(
     contract: &Phase29RecursiveCompressionInputContract,
     phase30: &Phase30DecodingStepProofEnvelopeManifest,
@@ -3304,11 +3318,7 @@ pub fn verify_phase37_recursive_artifact_chain_harness_receipt(
                 .as_str(),
         ),
     ] {
-        if value.is_empty() {
-            return Err(VmError::InvalidConfig(format!(
-                "Phase 37 recursive artifact-chain harness receipt `{label}` must be non-empty"
-            )));
-        }
+        phase37_require_hash32(label, value)?;
     }
 
     let expected = commit_phase37_recursive_artifact_chain_harness_receipt(receipt)?;
@@ -4275,10 +4285,10 @@ mod tests {
             total_steps: 32,
             lookup_delta_entries: 12,
             max_lookup_frontier_entries: 4,
-            source_template_commitment: "phase28-source-template".to_string(),
+            source_template_commitment: "a".repeat(64),
             global_start_state_commitment: "phase28-start".to_string(),
             global_end_state_commitment: "phase28-end".to_string(),
-            aggregation_template_commitment: "phase28-aggregation-template".to_string(),
+            aggregation_template_commitment: "b".repeat(64),
             aggregated_chained_folded_interval_accumulator_commitment:
                 "phase28-aggregate-accumulator".to_string(),
             input_contract_commitment: String::new(),
@@ -5340,6 +5350,23 @@ mod tests {
         let err = verify_phase37_recursive_artifact_chain_harness_receipt(&receipt)
             .expect_err("tampered phase37 receipt must fail");
         assert!(err.to_string().contains("does not match recomputed"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase37_recursive_artifact_chain_harness_receipt_rejects_malformed_commitment_field() {
+        let mut receipt = sample_phase37_receipt();
+        receipt.phase35_recursive_target_manifest_commitment = "not-a-hash".to_string();
+        receipt.recursive_artifact_chain_harness_receipt_commitment =
+            commit_phase37_recursive_artifact_chain_harness_receipt(&receipt)
+                .expect("recommit malformed phase37 receipt");
+
+        let err = verify_phase37_recursive_artifact_chain_harness_receipt(&receipt)
+            .expect_err("self-consistent malformed phase37 receipt must fail");
+        assert!(err
+            .to_string()
+            .contains("phase35_recursive_target_manifest_commitment"));
+        assert!(err.to_string().contains("32-byte lowercase hex"));
     }
 
     #[cfg(feature = "stwo-backend")]
