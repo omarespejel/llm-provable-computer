@@ -46,13 +46,15 @@ use llm_provable_computer::{
     load_phase32_recursive_compression_statement_contract,
     load_phase33_recursive_compression_public_input_manifest,
     load_phase34_recursive_compression_shared_lookup_manifest,
-    load_phase3_binary_step_lookup_proof, load_phase5_normalization_lookup_proof,
+    load_phase35_recursive_compression_target_manifest, load_phase3_binary_step_lookup_proof,
+    load_phase5_normalization_lookup_proof,
     phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28,
     phase30_prepare_decoding_step_proof_envelope_manifest,
     phase31_prepare_recursive_compression_decode_boundary_manifest,
     phase32_prepare_recursive_compression_statement_contract,
     phase33_prepare_recursive_compression_public_input_manifest,
     phase34_prepare_recursive_compression_shared_lookup_manifest,
+    phase35_prepare_recursive_compression_target_manifest,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
     prove_phase12_decoding_demo, prove_phase13_decoding_layout_matrix_demo,
@@ -95,15 +97,21 @@ use llm_provable_computer::{
     verify_phase25_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase26_folded_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
+    verify_phase31_recursive_compression_decode_boundary_manifest,
     verify_phase31_recursive_compression_decode_boundary_manifest_against_sources,
+    verify_phase32_recursive_compression_statement_contract,
     verify_phase32_recursive_compression_statement_contract_against_phase31,
+    verify_phase33_recursive_compression_public_input_manifest,
     verify_phase33_recursive_compression_public_input_manifest_against_phase32,
+    verify_phase34_recursive_compression_shared_lookup_manifest,
     verify_phase34_recursive_compression_shared_lookup_manifest_against_sources,
+    verify_phase35_recursive_compression_target_manifest,
+    verify_phase35_recursive_compression_target_manifest_against_sources,
     verify_phase3_binary_step_lookup_demo_envelope,
     verify_phase5_normalization_lookup_demo_envelope, Phase29RecursiveCompressionInputContract,
     Phase30DecodingStepProofEnvelopeManifest, Phase31RecursiveCompressionDecodeBoundaryManifest,
     Phase32RecursiveCompressionStatementContract, Phase33RecursiveCompressionPublicInputManifest,
-    Phase34RecursiveCompressionSharedLookupManifest,
+    Phase34RecursiveCompressionSharedLookupManifest, Phase35RecursiveCompressionTargetManifest,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
     STWO_BACKEND_VERSION_PHASE12,
     STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
@@ -137,6 +145,8 @@ use llm_provable_computer::{
     STWO_RECURSIVE_COMPRESSION_SHARED_LOOKUP_MANIFEST_VERSION_PHASE34,
     STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_SCOPE_PHASE32,
     STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32,
+    STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_SCOPE_PHASE35,
+    STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_VERSION_PHASE35,
 };
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
@@ -661,6 +671,38 @@ enum Command {
         /// Optional Phase 30 step-envelope manifest JSON or JSON.gz file for exact source binding.
         #[arg(long = "envelopes")]
         envelopes: Option<PathBuf>,
+    },
+    /// Derive a Phase 35 recursive-compression target manifest from verified Phase 32, Phase 33, and Phase 34 artifacts.
+    #[cfg(feature = "stwo-backend")]
+    PrepareStwoRecursiveCompressionTargetManifest {
+        /// Path to the serialized Phase 32 statement contract JSON or JSON.gz file.
+        #[arg(long = "statement-contract")]
+        statement_contract: PathBuf,
+        /// Path to the serialized Phase 33 public-input manifest JSON or JSON.gz file.
+        #[arg(long = "public-inputs")]
+        public_inputs: PathBuf,
+        /// Path to the serialized Phase 34 shared-lookup manifest JSON or JSON.gz file.
+        #[arg(long = "shared-lookup")]
+        shared_lookup: PathBuf,
+        /// File where the serialized Phase 35 target manifest JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a serialized Phase 35 recursive-compression target manifest.
+    #[cfg(feature = "stwo-backend")]
+    VerifyStwoRecursiveCompressionTargetManifest {
+        /// Path to the serialized Phase 35 target manifest JSON or JSON.gz file.
+        #[arg(long = "input")]
+        input: PathBuf,
+        /// Optional Phase 32 statement contract JSON or JSON.gz file for exact source binding.
+        #[arg(long = "statement-contract")]
+        statement_contract: Option<PathBuf>,
+        /// Optional Phase 33 public-input manifest JSON or JSON.gz file for exact source binding.
+        #[arg(long = "public-inputs")]
+        public_inputs: Option<PathBuf>,
+        /// Optional Phase 34 shared-lookup manifest JSON or JSON.gz file for exact source binding.
+        #[arg(long = "shared-lookup")]
+        shared_lookup: Option<PathBuf>,
     },
     /// Prepare a canonical multi-proof batch manifest for future S-two recursion.
     PrepareStwoRecursionBatch {
@@ -1838,6 +1880,30 @@ fn run() -> llm_provable_computer::Result<()> {
             &input,
             public_inputs.as_deref(),
             envelopes.as_deref(),
+        )?,
+        #[cfg(feature = "stwo-backend")]
+        Command::PrepareStwoRecursiveCompressionTargetManifest {
+            statement_contract,
+            public_inputs,
+            shared_lookup,
+            output,
+        } => prepare_stwo_recursive_compression_target_manifest_command(
+            &statement_contract,
+            &public_inputs,
+            &shared_lookup,
+            &output,
+        )?,
+        #[cfg(feature = "stwo-backend")]
+        Command::VerifyStwoRecursiveCompressionTargetManifest {
+            input,
+            statement_contract,
+            public_inputs,
+            shared_lookup,
+        } => verify_stwo_recursive_compression_target_manifest_command(
+            &input,
+            statement_contract.as_deref(),
+            public_inputs.as_deref(),
+            shared_lookup.as_deref(),
         )?,
         Command::PrepareStwoRecursionBatch { proofs, output } => {
             prepare_stwo_recursion_batch_command(&proofs, &output)?
@@ -4430,6 +4496,7 @@ fn verify_stwo_recursive_compression_decode_boundary_manifest_command(
     require_stwo_backend("S-two Phase 31 recursive-compression decode-boundary manifest")?;
 
     let bridge = load_phase31_recursive_compression_decode_boundary_manifest(input_path)?;
+    verify_phase31_recursive_compression_decode_boundary_manifest(&bridge)?;
     match (contract_path, manifest_path) {
         (Some(contract_path), Some(manifest_path)) => {
             let contract = load_phase29_recursive_compression_input_contract(contract_path)?;
@@ -4544,6 +4611,7 @@ fn verify_stwo_recursive_compression_statement_contract_command(
     require_stwo_backend("S-two Phase 32 recursive-compression statement contract")?;
 
     let contract = load_phase32_recursive_compression_statement_contract(input_path)?;
+    verify_phase32_recursive_compression_statement_contract(&contract)?;
     if let Some(manifest_path) = manifest_path {
         let manifest = load_phase31_recursive_compression_decode_boundary_manifest(manifest_path)?;
         verify_phase32_recursive_compression_statement_contract_against_phase31(
@@ -4652,6 +4720,7 @@ fn verify_stwo_recursive_compression_public_input_manifest_command(
     require_stwo_backend("S-two Phase 33 recursive-compression public-input manifest")?;
 
     let manifest = load_phase33_recursive_compression_public_input_manifest(input_path)?;
+    verify_phase33_recursive_compression_public_input_manifest(&manifest)?;
     if let Some(contract_path) = contract_path {
         let contract = load_phase32_recursive_compression_statement_contract(contract_path)?;
         verify_phase33_recursive_compression_public_input_manifest_against_phase32(
@@ -4767,6 +4836,7 @@ fn verify_stwo_recursive_compression_shared_lookup_manifest_command(
     require_stwo_backend("S-two Phase 34 recursive-compression shared-lookup manifest")?;
 
     let manifest = load_phase34_recursive_compression_shared_lookup_manifest(input_path)?;
+    verify_phase34_recursive_compression_shared_lookup_manifest(&manifest)?;
     match (public_inputs_path, envelopes_path) {
         (Some(public_inputs_path), Some(envelopes_path)) => {
             let public_inputs =
@@ -4882,6 +4952,178 @@ fn print_phase34_recursive_compression_shared_lookup_manifest_report(
     println!(
         "expected_semantic_scope: {}",
         STWO_RECURSIVE_COMPRESSION_SHARED_LOOKUP_MANIFEST_SCOPE_PHASE34
+    );
+}
+
+#[cfg(feature = "stwo-backend")]
+fn prepare_stwo_recursive_compression_target_manifest_command(
+    statement_contract_path: &Path,
+    public_inputs_path: &Path,
+    shared_lookup_path: &Path,
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    require_stwo_backend("S-two Phase 35 recursive-compression target manifest")?;
+
+    reject_phase35_recursive_compression_target_manifest_plain_json_gzip_output(output)?;
+    let statement_contract =
+        load_phase32_recursive_compression_statement_contract(statement_contract_path)?;
+    let public_inputs =
+        load_phase33_recursive_compression_public_input_manifest(public_inputs_path)?;
+    let shared_lookup =
+        load_phase34_recursive_compression_shared_lookup_manifest(shared_lookup_path)?;
+    let manifest = phase35_prepare_recursive_compression_target_manifest(
+        &statement_contract,
+        &public_inputs,
+        &shared_lookup,
+    )?;
+    let json = serde_json::to_vec_pretty(&manifest)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    fs::write(output, json)?;
+
+    println!("output: {}", output.display());
+    println!(
+        "phase32_statement_contract: {}",
+        statement_contract_path.display()
+    );
+    println!("phase33_public_inputs: {}", public_inputs_path.display());
+    println!("phase34_shared_lookup: {}", shared_lookup_path.display());
+    println!("verified_phase32_statement_contract: true");
+    println!("verified_phase33_public_inputs: true");
+    println!("verified_phase34_shared_lookup: true");
+    print_phase35_recursive_compression_target_manifest_report(&manifest);
+
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn verify_stwo_recursive_compression_target_manifest_command(
+    input_path: &Path,
+    statement_contract_path: Option<&Path>,
+    public_inputs_path: Option<&Path>,
+    shared_lookup_path: Option<&Path>,
+) -> llm_provable_computer::Result<()> {
+    require_stwo_backend("S-two Phase 35 recursive-compression target manifest")?;
+
+    let manifest = load_phase35_recursive_compression_target_manifest(input_path)?;
+    verify_phase35_recursive_compression_target_manifest(&manifest)?;
+    match (
+        statement_contract_path,
+        public_inputs_path,
+        shared_lookup_path,
+    ) {
+        (Some(statement_contract_path), Some(public_inputs_path), Some(shared_lookup_path)) => {
+            let statement_contract =
+                load_phase32_recursive_compression_statement_contract(statement_contract_path)?;
+            let public_inputs =
+                load_phase33_recursive_compression_public_input_manifest(public_inputs_path)?;
+            let shared_lookup =
+                load_phase34_recursive_compression_shared_lookup_manifest(shared_lookup_path)?;
+            verify_phase35_recursive_compression_target_manifest_against_sources(
+                &manifest,
+                &statement_contract,
+                &public_inputs,
+                &shared_lookup,
+            )?;
+            println!(
+                "source_bound_statement_contract: {}",
+                statement_contract_path.display()
+            );
+            println!(
+                "source_bound_public_inputs: {}",
+                public_inputs_path.display()
+            );
+            println!(
+                "source_bound_shared_lookup: {}",
+                shared_lookup_path.display()
+            );
+            println!("verified_against_sources: true");
+        }
+        (None, None, None) => {}
+        _ => {
+            return Err(VmError::InvalidConfig(
+                "verify-stwo-recursive-compression-target-manifest requires either all of --statement-contract, --public-inputs, and --shared-lookup or none".to_string(),
+            ));
+        }
+    }
+
+    println!("input: {}", input_path.display());
+    println!("verified_manifest: true");
+    print_phase35_recursive_compression_target_manifest_report(&manifest);
+
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn reject_phase35_recursive_compression_target_manifest_plain_json_gzip_output(
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    if output.extension().and_then(|extension| extension.to_str()) == Some("gz") {
+        return Err(VmError::InvalidConfig(
+            "prepare-stwo-recursive-compression-target-manifest writes plain JSON; use a `.json` output path"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn print_phase35_recursive_compression_target_manifest_report(
+    manifest: &Phase35RecursiveCompressionTargetManifest,
+) {
+    println!("proof_backend: {}", manifest.proof_backend);
+    println!("manifest_version: {}", manifest.manifest_version);
+    println!("semantic_scope: {}", manifest.semantic_scope);
+    println!("proof_backend_version: {}", manifest.proof_backend_version);
+    println!("statement_version: {}", manifest.statement_version);
+    println!("step_relation: {}", manifest.step_relation);
+    println!(
+        "required_recursion_posture: {}",
+        manifest.required_recursion_posture
+    );
+    println!(
+        "recursive_verification_claimed: {}",
+        manifest.recursive_verification_claimed
+    );
+    println!(
+        "cryptographic_compression_claimed: {}",
+        manifest.cryptographic_compression_claimed
+    );
+    println!(
+        "phase32_contract_version: {}",
+        manifest.phase32_contract_version
+    );
+    println!(
+        "phase33_manifest_version: {}",
+        manifest.phase33_manifest_version
+    );
+    println!(
+        "phase34_manifest_version: {}",
+        manifest.phase34_manifest_version
+    );
+    println!("total_steps: {}", manifest.total_steps);
+    println!(
+        "phase32_recursive_statement_contract_commitment: {}",
+        manifest.phase32_recursive_statement_contract_commitment
+    );
+    println!(
+        "phase33_recursive_public_inputs_commitment: {}",
+        manifest.phase33_recursive_public_inputs_commitment
+    );
+    println!(
+        "phase34_shared_lookup_public_inputs_commitment: {}",
+        manifest.phase34_shared_lookup_public_inputs_commitment
+    );
+    println!(
+        "recursive_target_manifest_commitment: {}",
+        manifest.recursive_target_manifest_commitment
+    );
+    println!(
+        "expected_manifest_version: {}",
+        STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_VERSION_PHASE35
+    );
+    println!(
+        "expected_semantic_scope: {}",
+        STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_SCOPE_PHASE35
     );
 }
 
@@ -11319,6 +11561,12 @@ mod cli_dispatch_tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-recursive-compression-shared-lookup-manifest"
         ));
+        assert!(!needs_run_subcommand(
+            "prepare-stwo-recursive-compression-target-manifest"
+        ));
+        assert!(!needs_run_subcommand(
+            "verify-stwo-recursive-compression-target-manifest"
+        ));
     }
 }
 
@@ -11717,6 +11965,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-recursive-compression-public-input-manifest"
                 | "prepare-stwo-recursive-compression-shared-lookup-manifest"
                 | "verify-stwo-recursive-compression-shared-lookup-manifest"
+                | "prepare-stwo-recursive-compression-target-manifest"
+                | "verify-stwo-recursive-compression-target-manifest"
                 | "prepare-stwo-recursion-batch"
                 | "research-v2-step"
                 | "research-v2-trace"

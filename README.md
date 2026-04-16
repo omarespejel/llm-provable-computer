@@ -583,6 +583,17 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-recursive-compression-shared-lookup-manifest \
   --input recursive-compression-shared-lookup-manifest.stwo.json
 
+# Derive and verify the Phase 35 recursive target manifest that unifies the preserved statement, public-input, and shared-lookup commitments
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-recursive-compression-target-manifest \
+  --statement-contract recursive-compression-statement-contract.stwo.json \
+  --public-inputs recursive-compression-public-input-manifest.stwo.json \
+  --shared-lookup recursive-compression-shared-lookup-manifest.stwo.json \
+  -o recursive-compression-target-manifest.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-recursive-compression-target-manifest \
+  --input recursive-compression-target-manifest.stwo.json
+
 # Freeze a canonical pre-aggregation batch manifest for future recursion work
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-recursion-batch \
