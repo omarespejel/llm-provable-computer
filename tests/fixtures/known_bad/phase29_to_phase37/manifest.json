@@ -1,0 +1,83 @@
+{
+  "schema_version": "known-bad-phase29-to-phase37-v1",
+  "description": "Manifest-driven known-bad corpus for paper-facing Phase 29 through Phase 37 public artifact surfaces. The Rust runner derives valid artifacts in memory, applies these mutations, and checks that the public parser/verifier rejects each result.",
+  "cases": [
+    {
+      "name": "phase29_recursive_claim_recommitted",
+      "phase": "phase29",
+      "verifier": "parse",
+      "mutation": "recursive_claim_recommitted",
+      "expected_error_contains": "must not claim recursive verification"
+    },
+    {
+      "name": "phase30_malformed_json",
+      "phase": "phase30",
+      "verifier": "parse",
+      "mutation": "malformed_json",
+      "expected_error_contains": "EOF"
+    },
+    {
+      "name": "phase30_step_index_drift",
+      "phase": "phase30",
+      "verifier": "parse",
+      "mutation": "step_index_drift",
+      "expected_error_contains": "records step_index"
+    },
+    {
+      "name": "phase31_total_steps_recommitted_against_sources",
+      "phase": "phase31",
+      "verifier": "against_sources",
+      "mutation": "total_steps_recommitted",
+      "expected_error_contains": "recomputed Phase 29 + Phase 30 source artifacts"
+    },
+    {
+      "name": "phase32_phase31_commitment_recommitted_against_source",
+      "phase": "phase32",
+      "verifier": "against_sources",
+      "mutation": "phase31_commitment_recommitted",
+      "expected_error_contains": "recomputed Phase 31 source manifest"
+    },
+    {
+      "name": "phase33_phase32_commitment_recommitted_against_source",
+      "phase": "phase33",
+      "verifier": "against_sources",
+      "mutation": "phase32_commitment_recommitted",
+      "expected_error_contains": "recomputed Phase 32 source contract"
+    },
+    {
+      "name": "phase34_lookup_commitment_recommitted_against_sources",
+      "phase": "phase34",
+      "verifier": "against_sources",
+      "mutation": "lookup_commitment_recommitted",
+      "expected_error_contains": "recomputed Phase 33 + Phase 30 source artifacts"
+    },
+    {
+      "name": "phase35_phase33_commitment_recommitted_against_sources",
+      "phase": "phase35",
+      "verifier": "against_sources",
+      "mutation": "phase33_commitment_recommitted",
+      "expected_error_contains": "recomputed Phase 32 + Phase 33 + Phase 34 source artifacts"
+    },
+    {
+      "name": "phase36_source_binding_false_recommitted",
+      "phase": "phase36",
+      "verifier": "parse",
+      "mutation": "source_binding_false_recommitted",
+      "expected_error_contains": "must record source_binding_verified=true"
+    },
+    {
+      "name": "phase37_phase35_malformed_hash_recommitted",
+      "phase": "phase37",
+      "verifier": "parse",
+      "mutation": "phase35_malformed_hash_recommitted",
+      "expected_error_contains": "32-byte lowercase hex"
+    },
+    {
+      "name": "phase37_phase36_commitment_recommitted_against_sources",
+      "phase": "phase37",
+      "verifier": "against_sources",
+      "mutation": "phase36_commitment_recommitted",
+      "expected_error_contains": "recomputed Phase 29 + Phase 30 source artifacts"
+    }
+  ]
+}

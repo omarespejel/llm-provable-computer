@@ -36,7 +36,7 @@ change requires.
   validation notes and use `workflow_dispatch` intentionally.
 - Merge trusted-core PRs through `scripts/local_merge_gate.sh` so the final
   merge decision is tied to the exact PR head SHA, local evidence logs, a clean
-  GitHub check rollup, zero unresolved review threads, and a five-minute quiet
+  GitHub check rollup, zero unresolved review threads, and a seven-minute quiet
   window after the last CodeRabbit, Greptile, or Qodo event.
 
 ## Local Commands
@@ -58,6 +58,7 @@ scripts/run_workflow_audit_suite.sh
 scripts/run_dependency_audit_suite.sh
 python3 scripts/fuzz/generate_decoding_fuzz_corpus.py
 FUZZ_TIME_PER_TARGET=20 scripts/run_fuzz_smoke_suite.sh
+scripts/run_known_bad_phase_artifact_corpus.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_miri_suite.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_asan_suite.sh
@@ -68,6 +69,11 @@ scripts/run_formal_contract_suite.sh
 corpus. `scripts/run_fuzz_smoke_suite.sh` generates its own temporary corpus
 under `target/fuzz-smoke/generated-corpus` so the hardening gate does not
 rewrite tracked fuzz seeds as a side effect.
+
+`scripts/run_known_bad_phase_artifact_corpus.sh` runs the manifest-driven Phase
+29-37 known-bad artifact corpus. It derives valid artifacts in memory, mutates
+them, and checks that public parsers and source-bound verifiers reject both
+stale-root and self-consistent bad artifacts.
 
 The sanitizer and UB hardening scripts use the curated exact test lists in
 `scripts/hardening_test_names.sh`; update that file when adding new trusted-core
@@ -133,11 +139,14 @@ Available local command tiers:
   those surfaces, the statement-spec contract, allowlisted integration smoke
   targets, and exact pinned-nightly `stwo-backend` smokes for the Phase 28
   aggregation verifier, Phase 29 recursive-compression input contract, and
-  non-heavy Phase 29 CLI artifact verification paths.
+  non-heavy Phase 29 CLI artifact verification paths. It also runs the
+  Phase 29-37 known-bad artifact corpus when the PR changes those artifact
+  surfaces or corpus files.
 - `--mode full`: runs the same PR-range whitespace and formatting hygiene, full
   library tests, integration tests, doctests, the same conditional workflow
   auditing, dependency auditing, and shellcheck, and the exact pinned-nightly
-  `stwo-backend` smokes.
+  `stwo-backend` smokes, plus the Phase 29-37 known-bad artifact corpus when
+  relevant files change.
 - `--mode hardening`: runs the `full` tier, including the same conditional
   workflow auditing for `.github/workflows/**` and `zizmor.yml`, the same
   conditional dependency auditing for `Cargo.toml`, `Cargo.lock`,
@@ -145,11 +154,13 @@ Available local command tiers:
   `scripts/run_dependency_audit_suite.sh`, and `vendor/onnx-protobuf/**`, and
   the same conditional shellcheck for `scripts/*.sh` and `scripts/**/*.sh`,
   plus diff-scoped mutation testing when the trusted-core prover files change,
-  curated fuzz smoke, UB checks, ASAN, Miri, and the formal contract suite. The
-  inherited whitespace gate is still scoped to the committed PR delta, not the
-  whole worktree. Prefer running this tier inside Lima for Linux parity.
+  curated fuzz smoke, UB checks, ASAN, Miri, and the formal contract suite. It
+  also runs the Phase 29-37 known-bad artifact corpus when relevant files
+  change. The inherited whitespace gate is still scoped to the committed PR
+  delta, not the whole worktree. Prefer running this tier inside Lima for Linux
+  parity.
 - `--mode none`: only checks GitHub status, review-thread state, and the
-  five-minute AI-review quiet window. Use this only after a prior evidence run
+  seven-minute AI-review quiet window. Use this only after a prior evidence run
   for the same PR head SHA.
 
 The GitHub side of the merge gate is intentionally narrow:
@@ -166,7 +177,7 @@ The GitHub side of the merge gate is intentionally narrow:
   fails closed if any individual review thread has more than 100 comments,
   because the gate cannot safely inspect that nested comment stream.
 - No CodeRabbit, Greptile, or Qodo review/comment event may have occurred in the
-  previous 300 seconds. If no AI review/comment event exists yet, the gate
+  previous 420 seconds. If no AI review/comment event exists yet, the gate
   refuses to merge. Passing `--wait` sleeps through the remaining quiet window
   and then rechecks without rerunning local tests; any PR head change causes the
   recheck to fail.
