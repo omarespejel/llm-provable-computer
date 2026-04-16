@@ -16,6 +16,7 @@ surfaces.
 | Phase 30 decoding step proof envelope manifest | ordered manifest binding step proofs, boundaries, and package commitments | statement-preserving manifest layer; not recursive proof closure |
 | Phase 31 recursive-compression decode-boundary manifest | bridge binding the published recursion input contract to the ordered decode-envelope manifest | recursive-adjacent bridge only; not recursive proof closure |
 | Phase 32 recursive-compression statement contract | public recursive target restating the same decode boundary exposed by the Phase 31 bridge | recursive-adjacent contract only; not recursive proof closure |
+| Phase 33 recursive-compression public-input manifest | ordered public-input surface derived from the Phase 32 contract for future recursive verification | recursive-adjacent manifest only; not recursive proof closure |
 
 ## D2. Adjacent evidence surfaces
 

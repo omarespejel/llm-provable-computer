@@ -43,12 +43,14 @@ use llm_provable_computer::{
     load_phase29_recursive_compression_input_contract,
     load_phase30_decoding_step_proof_envelope_manifest,
     load_phase31_recursive_compression_decode_boundary_manifest,
-    load_phase32_recursive_compression_statement_contract, load_phase3_binary_step_lookup_proof,
+    load_phase32_recursive_compression_statement_contract,
+    load_phase33_recursive_compression_public_input_manifest, load_phase3_binary_step_lookup_proof,
     load_phase5_normalization_lookup_proof,
     phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28,
     phase30_prepare_decoding_step_proof_envelope_manifest,
     phase31_prepare_recursive_compression_decode_boundary_manifest,
     phase32_prepare_recursive_compression_statement_contract,
+    phase33_prepare_recursive_compression_public_input_manifest,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
     prove_phase12_decoding_demo, prove_phase13_decoding_layout_matrix_demo,
@@ -93,10 +95,11 @@ use llm_provable_computer::{
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
     verify_phase31_recursive_compression_decode_boundary_manifest_against_sources,
     verify_phase32_recursive_compression_statement_contract_against_phase31,
+    verify_phase33_recursive_compression_public_input_manifest_against_phase32,
     verify_phase3_binary_step_lookup_demo_envelope,
     verify_phase5_normalization_lookup_demo_envelope, Phase29RecursiveCompressionInputContract,
     Phase30DecodingStepProofEnvelopeManifest, Phase31RecursiveCompressionDecodeBoundaryManifest,
-    Phase32RecursiveCompressionStatementContract,
+    Phase32RecursiveCompressionStatementContract, Phase33RecursiveCompressionPublicInputManifest,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
     STWO_BACKEND_VERSION_PHASE12,
     STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
@@ -124,6 +127,8 @@ use llm_provable_computer::{
     STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_VERSION_PHASE31,
     STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29,
     STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29,
+    STWO_RECURSIVE_COMPRESSION_PUBLIC_INPUT_MANIFEST_SCOPE_PHASE33,
+    STWO_RECURSIVE_COMPRESSION_PUBLIC_INPUT_MANIFEST_VERSION_PHASE33,
     STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_SCOPE_PHASE32,
     STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32,
 };
@@ -604,6 +609,26 @@ enum Command {
         /// Optional Phase 31 manifest JSON or JSON.gz file for exact source binding.
         #[arg(long = "manifest")]
         manifest: Option<PathBuf>,
+    },
+    /// Derive a Phase 33 recursive-compression public-input manifest from a verified Phase 32 contract.
+    #[cfg(feature = "stwo-backend")]
+    PrepareStwoRecursiveCompressionPublicInputManifest {
+        /// Path to the serialized Phase 32 statement contract JSON or JSON.gz file.
+        #[arg(long = "contract")]
+        contract: PathBuf,
+        /// File where the serialized Phase 33 public-input manifest JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a serialized Phase 33 recursive-compression public-input manifest.
+    #[cfg(feature = "stwo-backend")]
+    VerifyStwoRecursiveCompressionPublicInputManifest {
+        /// Path to the serialized Phase 33 public-input manifest JSON or JSON.gz file.
+        #[arg(long = "input")]
+        input: PathBuf,
+        /// Optional Phase 32 statement contract JSON or JSON.gz file for exact source binding.
+        #[arg(long = "contract")]
+        contract: Option<PathBuf>,
     },
     /// Prepare a canonical multi-proof batch manifest for future S-two recursion.
     PrepareStwoRecursionBatch {
@@ -1749,6 +1774,17 @@ fn run() -> llm_provable_computer::Result<()> {
             verify_stwo_recursive_compression_statement_contract_command(
                 &input,
                 manifest.as_deref(),
+            )?
+        }
+        #[cfg(feature = "stwo-backend")]
+        Command::PrepareStwoRecursiveCompressionPublicInputManifest { contract, output } => {
+            prepare_stwo_recursive_compression_public_input_manifest_command(&contract, &output)?
+        }
+        #[cfg(feature = "stwo-backend")]
+        Command::VerifyStwoRecursiveCompressionPublicInputManifest { input, contract } => {
+            verify_stwo_recursive_compression_public_input_manifest_command(
+                &input,
+                contract.as_deref(),
             )?
         }
         Command::PrepareStwoRecursionBatch { proofs, output } => {
@@ -4531,6 +4567,114 @@ fn print_phase32_recursive_compression_statement_contract_report(
     println!(
         "expected_semantic_scope: {}",
         STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_SCOPE_PHASE32
+    );
+}
+
+#[cfg(feature = "stwo-backend")]
+fn prepare_stwo_recursive_compression_public_input_manifest_command(
+    contract_path: &Path,
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    require_stwo_backend("S-two Phase 33 recursive-compression public-input manifest")?;
+
+    reject_phase33_recursive_compression_public_input_manifest_plain_json_gzip_output(output)?;
+    let contract = load_phase32_recursive_compression_statement_contract(contract_path)?;
+    let manifest = phase33_prepare_recursive_compression_public_input_manifest(&contract)?;
+    let json = serde_json::to_vec_pretty(&manifest)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    fs::write(output, json)?;
+
+    println!("output: {}", output.display());
+    println!("phase32_contract: {}", contract_path.display());
+    println!("verified_phase32_contract: true");
+    print_phase33_recursive_compression_public_input_manifest_report(&manifest);
+
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn verify_stwo_recursive_compression_public_input_manifest_command(
+    input_path: &Path,
+    contract_path: Option<&Path>,
+) -> llm_provable_computer::Result<()> {
+    require_stwo_backend("S-two Phase 33 recursive-compression public-input manifest")?;
+
+    let manifest = load_phase33_recursive_compression_public_input_manifest(input_path)?;
+    if let Some(contract_path) = contract_path {
+        let contract = load_phase32_recursive_compression_statement_contract(contract_path)?;
+        verify_phase33_recursive_compression_public_input_manifest_against_phase32(
+            &manifest, &contract,
+        )?;
+        println!("source_bound_contract: {}", contract_path.display());
+        println!("verified_against_source: true");
+    }
+
+    println!("input: {}", input_path.display());
+    println!("verified_manifest: true");
+    print_phase33_recursive_compression_public_input_manifest_report(&manifest);
+
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn reject_phase33_recursive_compression_public_input_manifest_plain_json_gzip_output(
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    if output.extension().and_then(|extension| extension.to_str()) == Some("gz") {
+        return Err(VmError::InvalidConfig(
+            "prepare-stwo-recursive-compression-public-input-manifest writes plain JSON; use a `.json` output path"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn print_phase33_recursive_compression_public_input_manifest_report(
+    manifest: &Phase33RecursiveCompressionPublicInputManifest,
+) {
+    println!("proof_backend: {}", manifest.proof_backend);
+    println!("manifest_version: {}", manifest.manifest_version);
+    println!("semantic_scope: {}", manifest.semantic_scope);
+    println!("proof_backend_version: {}", manifest.proof_backend_version);
+    println!("statement_version: {}", manifest.statement_version);
+    println!("step_relation: {}", manifest.step_relation);
+    println!(
+        "required_recursion_posture: {}",
+        manifest.required_recursion_posture
+    );
+    println!(
+        "recursive_verification_claimed: {}",
+        manifest.recursive_verification_claimed
+    );
+    println!(
+        "cryptographic_compression_claimed: {}",
+        manifest.cryptographic_compression_claimed
+    );
+    println!(
+        "phase32_contract_version: {}",
+        manifest.phase32_contract_version
+    );
+    println!(
+        "phase32_semantic_scope: {}",
+        manifest.phase32_semantic_scope
+    );
+    println!("total_steps: {}", manifest.total_steps);
+    println!(
+        "phase32_recursive_statement_contract_commitment: {}",
+        manifest.phase32_recursive_statement_contract_commitment
+    );
+    println!(
+        "recursive_public_inputs_commitment: {}",
+        manifest.recursive_public_inputs_commitment
+    );
+    println!(
+        "expected_manifest_version: {}",
+        STWO_RECURSIVE_COMPRESSION_PUBLIC_INPUT_MANIFEST_VERSION_PHASE33
+    );
+    println!(
+        "expected_semantic_scope: {}",
+        STWO_RECURSIVE_COMPRESSION_PUBLIC_INPUT_MANIFEST_SCOPE_PHASE33
     );
 }
 
@@ -10956,6 +11100,12 @@ mod cli_dispatch_tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-recursive-compression-statement-contract"
         ));
+        assert!(!needs_run_subcommand(
+            "prepare-stwo-recursive-compression-public-input-manifest"
+        ));
+        assert!(!needs_run_subcommand(
+            "verify-stwo-recursive-compression-public-input-manifest"
+        ));
     }
 }
 
@@ -11350,6 +11500,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-recursive-compression-decode-boundary-manifest"
                 | "prepare-stwo-recursive-compression-statement-contract"
                 | "verify-stwo-recursive-compression-statement-contract"
+                | "prepare-stwo-recursive-compression-public-input-manifest"
+                | "verify-stwo-recursive-compression-public-input-manifest"
                 | "prepare-stwo-recursion-batch"
                 | "research-v2-step"
                 | "research-v2-trace"
