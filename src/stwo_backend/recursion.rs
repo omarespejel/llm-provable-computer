@@ -79,6 +79,16 @@ pub const STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_SCOPE_PHASE35: &str =
     "stwo_execution_parameterized_recursive_compression_target_manifest";
 #[cfg(feature = "stwo-backend")]
 const MAX_PHASE35_RECURSIVE_COMPRESSION_TARGET_MANIFEST_JSON_BYTES: usize = 1024 * 1024;
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_VERSION_PHASE36: &str =
+    "stwo-phase36-recursive-verifier-harness-receipt-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_SCOPE_PHASE36: &str =
+    "stwo_execution_parameterized_recursive_verifier_harness_receipt";
+#[cfg(feature = "stwo-backend")]
+const STWO_RECURSIVE_VERIFIER_HARNESS_KIND_PHASE36: &str = "source-bound-target-verifier-v1";
+#[cfg(feature = "stwo-backend")]
+const MAX_PHASE36_RECURSIVE_VERIFIER_HARNESS_RECEIPT_JSON_BYTES: usize = 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase6RecursionBatchEntry {
@@ -469,6 +479,74 @@ struct Phase35RecursiveCompressionTargetManifestUnchecked {
 }
 
 #[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "Phase36RecursiveVerifierHarnessReceiptUnchecked")]
+pub struct Phase36RecursiveVerifierHarnessReceipt {
+    pub proof_backend: StarkProofBackend,
+    pub receipt_version: String,
+    pub semantic_scope: String,
+    pub verifier_harness: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub step_relation: String,
+    pub required_recursion_posture: String,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub target_manifest_verified: bool,
+    pub source_binding_verified: bool,
+    pub phase35_manifest_version: String,
+    pub phase35_semantic_scope: String,
+    pub phase35_recursive_target_manifest_commitment: String,
+    pub phase32_recursive_statement_contract_commitment: String,
+    pub phase33_recursive_public_inputs_commitment: String,
+    pub phase34_shared_lookup_public_inputs_commitment: String,
+    pub total_steps: usize,
+    pub phase30_source_chain_commitment: String,
+    pub phase30_step_envelopes_commitment: String,
+    pub chain_start_boundary_commitment: String,
+    pub chain_end_boundary_commitment: String,
+    pub input_lookup_rows_commitments_commitment: String,
+    pub output_lookup_rows_commitments_commitment: String,
+    pub shared_lookup_artifact_commitments_commitment: String,
+    pub static_lookup_registry_commitments_commitment: String,
+    pub recursive_verifier_harness_receipt_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Phase36RecursiveVerifierHarnessReceiptUnchecked {
+    pub proof_backend: StarkProofBackend,
+    pub receipt_version: String,
+    pub semantic_scope: String,
+    pub verifier_harness: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub step_relation: String,
+    pub required_recursion_posture: String,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub target_manifest_verified: bool,
+    pub source_binding_verified: bool,
+    pub phase35_manifest_version: String,
+    pub phase35_semantic_scope: String,
+    pub phase35_recursive_target_manifest_commitment: String,
+    pub phase32_recursive_statement_contract_commitment: String,
+    pub phase33_recursive_public_inputs_commitment: String,
+    pub phase34_shared_lookup_public_inputs_commitment: String,
+    pub total_steps: usize,
+    pub phase30_source_chain_commitment: String,
+    pub phase30_step_envelopes_commitment: String,
+    pub chain_start_boundary_commitment: String,
+    pub chain_end_boundary_commitment: String,
+    pub input_lookup_rows_commitments_commitment: String,
+    pub output_lookup_rows_commitments_commitment: String,
+    pub shared_lookup_artifact_commitments_commitment: String,
+    pub static_lookup_registry_commitments_commitment: String,
+    pub recursive_verifier_harness_receipt_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
 impl TryFrom<Phase29RecursiveCompressionInputContractUnchecked>
     for Phase29RecursiveCompressionInputContract
 {
@@ -682,7 +760,7 @@ impl TryFrom<Phase35RecursiveCompressionTargetManifestUnchecked>
     type Error = VmError;
 
     fn try_from(unchecked: Phase35RecursiveCompressionTargetManifestUnchecked) -> Result<Self> {
-        Ok(Self {
+        let manifest = Self {
             proof_backend: unchecked.proof_backend,
             manifest_version: unchecked.manifest_version,
             semantic_scope: unchecked.semantic_scope,
@@ -720,7 +798,60 @@ impl TryFrom<Phase35RecursiveCompressionTargetManifestUnchecked>
             static_lookup_registry_commitments_commitment: unchecked
                 .static_lookup_registry_commitments_commitment,
             recursive_target_manifest_commitment: unchecked.recursive_target_manifest_commitment,
-        })
+        };
+        verify_phase35_recursive_compression_target_manifest(&manifest)?;
+        Ok(manifest)
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+impl TryFrom<Phase36RecursiveVerifierHarnessReceiptUnchecked>
+    for Phase36RecursiveVerifierHarnessReceipt
+{
+    type Error = VmError;
+
+    fn try_from(unchecked: Phase36RecursiveVerifierHarnessReceiptUnchecked) -> Result<Self> {
+        let receipt = Self {
+            proof_backend: unchecked.proof_backend,
+            receipt_version: unchecked.receipt_version,
+            semantic_scope: unchecked.semantic_scope,
+            verifier_harness: unchecked.verifier_harness,
+            proof_backend_version: unchecked.proof_backend_version,
+            statement_version: unchecked.statement_version,
+            step_relation: unchecked.step_relation,
+            required_recursion_posture: unchecked.required_recursion_posture,
+            recursive_verification_claimed: unchecked.recursive_verification_claimed,
+            cryptographic_compression_claimed: unchecked.cryptographic_compression_claimed,
+            target_manifest_verified: unchecked.target_manifest_verified,
+            source_binding_verified: unchecked.source_binding_verified,
+            phase35_manifest_version: unchecked.phase35_manifest_version,
+            phase35_semantic_scope: unchecked.phase35_semantic_scope,
+            phase35_recursive_target_manifest_commitment: unchecked
+                .phase35_recursive_target_manifest_commitment,
+            phase32_recursive_statement_contract_commitment: unchecked
+                .phase32_recursive_statement_contract_commitment,
+            phase33_recursive_public_inputs_commitment: unchecked
+                .phase33_recursive_public_inputs_commitment,
+            phase34_shared_lookup_public_inputs_commitment: unchecked
+                .phase34_shared_lookup_public_inputs_commitment,
+            total_steps: unchecked.total_steps,
+            phase30_source_chain_commitment: unchecked.phase30_source_chain_commitment,
+            phase30_step_envelopes_commitment: unchecked.phase30_step_envelopes_commitment,
+            chain_start_boundary_commitment: unchecked.chain_start_boundary_commitment,
+            chain_end_boundary_commitment: unchecked.chain_end_boundary_commitment,
+            input_lookup_rows_commitments_commitment: unchecked
+                .input_lookup_rows_commitments_commitment,
+            output_lookup_rows_commitments_commitment: unchecked
+                .output_lookup_rows_commitments_commitment,
+            shared_lookup_artifact_commitments_commitment: unchecked
+                .shared_lookup_artifact_commitments_commitment,
+            static_lookup_registry_commitments_commitment: unchecked
+                .static_lookup_registry_commitments_commitment,
+            recursive_verifier_harness_receipt_commitment: unchecked
+                .recursive_verifier_harness_receipt_commitment,
+        };
+        verify_phase36_recursive_verifier_harness_receipt(&receipt)?;
+        Ok(receipt)
     }
 }
 
@@ -1544,6 +1675,69 @@ pub fn phase35_prepare_recursive_compression_target_manifest(
         commit_phase35_recursive_compression_target_manifest(&manifest)?;
     verify_phase35_recursive_compression_target_manifest(&manifest)?;
     Ok(manifest)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase36_prepare_recursive_verifier_harness_receipt(
+    target: &Phase35RecursiveCompressionTargetManifest,
+    phase32: &Phase32RecursiveCompressionStatementContract,
+    phase33: &Phase33RecursiveCompressionPublicInputManifest,
+    phase34: &Phase34RecursiveCompressionSharedLookupManifest,
+) -> Result<Phase36RecursiveVerifierHarnessReceipt> {
+    verify_phase35_recursive_compression_target_manifest_against_sources(
+        target, phase32, phase33, phase34,
+    )?;
+
+    let mut receipt = Phase36RecursiveVerifierHarnessReceipt {
+        proof_backend: StarkProofBackend::Stwo,
+        receipt_version: STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_VERSION_PHASE36.to_string(),
+        semantic_scope: STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_SCOPE_PHASE36.to_string(),
+        verifier_harness: STWO_RECURSIVE_VERIFIER_HARNESS_KIND_PHASE36.to_string(),
+        proof_backend_version: target.proof_backend_version.clone(),
+        statement_version: target.statement_version.clone(),
+        step_relation: target.step_relation.clone(),
+        required_recursion_posture: target.required_recursion_posture.clone(),
+        recursive_verification_claimed: target.recursive_verification_claimed,
+        cryptographic_compression_claimed: target.cryptographic_compression_claimed,
+        target_manifest_verified: true,
+        source_binding_verified: true,
+        phase35_manifest_version: target.manifest_version.clone(),
+        phase35_semantic_scope: target.semantic_scope.clone(),
+        phase35_recursive_target_manifest_commitment: target
+            .recursive_target_manifest_commitment
+            .clone(),
+        phase32_recursive_statement_contract_commitment: target
+            .phase32_recursive_statement_contract_commitment
+            .clone(),
+        phase33_recursive_public_inputs_commitment: target
+            .phase33_recursive_public_inputs_commitment
+            .clone(),
+        phase34_shared_lookup_public_inputs_commitment: target
+            .phase34_shared_lookup_public_inputs_commitment
+            .clone(),
+        total_steps: target.total_steps,
+        phase30_source_chain_commitment: target.phase30_source_chain_commitment.clone(),
+        phase30_step_envelopes_commitment: target.phase30_step_envelopes_commitment.clone(),
+        chain_start_boundary_commitment: target.chain_start_boundary_commitment.clone(),
+        chain_end_boundary_commitment: target.chain_end_boundary_commitment.clone(),
+        input_lookup_rows_commitments_commitment: target
+            .input_lookup_rows_commitments_commitment
+            .clone(),
+        output_lookup_rows_commitments_commitment: target
+            .output_lookup_rows_commitments_commitment
+            .clone(),
+        shared_lookup_artifact_commitments_commitment: target
+            .shared_lookup_artifact_commitments_commitment
+            .clone(),
+        static_lookup_registry_commitments_commitment: target
+            .static_lookup_registry_commitments_commitment
+            .clone(),
+        recursive_verifier_harness_receipt_commitment: String::new(),
+    };
+    receipt.recursive_verifier_harness_receipt_commitment =
+        commit_phase36_recursive_verifier_harness_receipt(&receipt)?;
+    verify_phase36_recursive_verifier_harness_receipt(&receipt)?;
+    Ok(receipt)
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -2415,6 +2609,207 @@ pub fn verify_phase35_recursive_compression_target_manifest_against_sources(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn verify_phase36_recursive_verifier_harness_receipt(
+    receipt: &Phase36RecursiveVerifierHarnessReceipt,
+) -> Result<()> {
+    if receipt.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 36 recursive verifier harness receipt requires `stwo` backend, got `{}`",
+            receipt.proof_backend
+        )));
+    }
+    if receipt.receipt_version != STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_VERSION_PHASE36 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 36 recursive verifier harness receipt version `{}` does not match expected `{}`",
+            receipt.receipt_version, STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_VERSION_PHASE36
+        )));
+    }
+    if receipt.semantic_scope != STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_SCOPE_PHASE36 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 36 recursive verifier harness receipt scope `{}` does not match expected `{}`",
+            receipt.semantic_scope, STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_SCOPE_PHASE36
+        )));
+    }
+    if receipt.verifier_harness != STWO_RECURSIVE_VERIFIER_HARNESS_KIND_PHASE36 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 36 recursive verifier harness receipt requires verifier harness `{}`, got `{}`",
+            STWO_RECURSIVE_VERIFIER_HARNESS_KIND_PHASE36, receipt.verifier_harness
+        )));
+    }
+    if receipt.proof_backend_version != STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 36 recursive verifier harness receipt requires proof backend version `{}`, got `{}`",
+            STWO_BACKEND_VERSION_PHASE12, receipt.proof_backend_version
+        )));
+    }
+    if receipt.statement_version != CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 36 recursive verifier harness receipt requires statement version `{}`, got `{}`",
+            CLAIM_STATEMENT_VERSION_V1, receipt.statement_version
+        )));
+    }
+    if receipt.step_relation != STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 36 recursive verifier harness receipt requires step relation `{}`, got `{}`",
+            STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30, receipt.step_relation
+        )));
+    }
+    if receipt.required_recursion_posture != STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 36 recursive verifier harness receipt requires recursion posture `{}`, got `{}`",
+            STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE, receipt.required_recursion_posture
+        )));
+    }
+    if receipt.recursive_verification_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 36 recursive verifier harness receipt must not claim recursive verification"
+                .to_string(),
+        ));
+    }
+    if receipt.cryptographic_compression_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 36 recursive verifier harness receipt must not claim cryptographic compression"
+                .to_string(),
+        ));
+    }
+    if !receipt.target_manifest_verified {
+        return Err(VmError::InvalidConfig(
+            "Phase 36 recursive verifier harness receipt must record target_manifest_verified=true"
+                .to_string(),
+        ));
+    }
+    if !receipt.source_binding_verified {
+        return Err(VmError::InvalidConfig(
+            "Phase 36 recursive verifier harness receipt must record source_binding_verified=true"
+                .to_string(),
+        ));
+    }
+    if receipt.phase35_manifest_version
+        != STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_VERSION_PHASE35
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 36 recursive verifier harness receipt requires Phase 35 manifest version `{}`, got `{}`",
+            STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_VERSION_PHASE35,
+            receipt.phase35_manifest_version
+        )));
+    }
+    if receipt.phase35_semantic_scope != STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_SCOPE_PHASE35 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 36 recursive verifier harness receipt requires Phase 35 semantic scope `{}`, got `{}`",
+            STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_SCOPE_PHASE35,
+            receipt.phase35_semantic_scope
+        )));
+    }
+    if receipt.total_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 36 recursive verifier harness receipt requires at least one decode step"
+                .to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase35_recursive_target_manifest_commitment",
+            receipt
+                .phase35_recursive_target_manifest_commitment
+                .as_str(),
+        ),
+        (
+            "phase32_recursive_statement_contract_commitment",
+            receipt
+                .phase32_recursive_statement_contract_commitment
+                .as_str(),
+        ),
+        (
+            "phase33_recursive_public_inputs_commitment",
+            receipt.phase33_recursive_public_inputs_commitment.as_str(),
+        ),
+        (
+            "phase34_shared_lookup_public_inputs_commitment",
+            receipt
+                .phase34_shared_lookup_public_inputs_commitment
+                .as_str(),
+        ),
+        (
+            "phase30_source_chain_commitment",
+            receipt.phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase30_step_envelopes_commitment",
+            receipt.phase30_step_envelopes_commitment.as_str(),
+        ),
+        (
+            "chain_start_boundary_commitment",
+            receipt.chain_start_boundary_commitment.as_str(),
+        ),
+        (
+            "chain_end_boundary_commitment",
+            receipt.chain_end_boundary_commitment.as_str(),
+        ),
+        (
+            "input_lookup_rows_commitments_commitment",
+            receipt.input_lookup_rows_commitments_commitment.as_str(),
+        ),
+        (
+            "output_lookup_rows_commitments_commitment",
+            receipt.output_lookup_rows_commitments_commitment.as_str(),
+        ),
+        (
+            "shared_lookup_artifact_commitments_commitment",
+            receipt
+                .shared_lookup_artifact_commitments_commitment
+                .as_str(),
+        ),
+        (
+            "static_lookup_registry_commitments_commitment",
+            receipt
+                .static_lookup_registry_commitments_commitment
+                .as_str(),
+        ),
+        (
+            "recursive_verifier_harness_receipt_commitment",
+            receipt
+                .recursive_verifier_harness_receipt_commitment
+                .as_str(),
+        ),
+    ] {
+        if value.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 36 recursive verifier harness receipt `{label}` must be non-empty"
+            )));
+        }
+    }
+
+    let expected = commit_phase36_recursive_verifier_harness_receipt(receipt)?;
+    if receipt.recursive_verifier_harness_receipt_commitment != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 36 recursive verifier harness receipt commitment `{}` does not match recomputed `{}`",
+            receipt.recursive_verifier_harness_receipt_commitment, expected
+        )));
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase36_recursive_verifier_harness_receipt_against_sources(
+    receipt: &Phase36RecursiveVerifierHarnessReceipt,
+    target: &Phase35RecursiveCompressionTargetManifest,
+    phase32: &Phase32RecursiveCompressionStatementContract,
+    phase33: &Phase33RecursiveCompressionPublicInputManifest,
+    phase34: &Phase34RecursiveCompressionSharedLookupManifest,
+) -> Result<()> {
+    verify_phase36_recursive_verifier_harness_receipt(receipt)?;
+    let expected =
+        phase36_prepare_recursive_verifier_harness_receipt(target, phase32, phase33, phase34)?;
+    if receipt != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 36 recursive verifier harness receipt does not match the recomputed Phase 35 target + Phase 32 + Phase 33 + Phase 34 source artifacts".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn parse_phase31_recursive_compression_decode_boundary_manifest_json(
     json: &str,
 ) -> Result<Phase31RecursiveCompressionDecodeBoundaryManifest> {
@@ -2485,6 +2880,20 @@ pub fn parse_phase35_recursive_compression_target_manifest_json(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn parse_phase36_recursive_verifier_harness_receipt_json(
+    json: &str,
+) -> Result<Phase36RecursiveVerifierHarnessReceipt> {
+    if json.len() > MAX_PHASE36_RECURSIVE_VERIFIER_HARNESS_RECEIPT_JSON_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 36 recursive verifier harness receipt JSON is {} bytes, exceeding the limit of {} bytes",
+            json.len(),
+            MAX_PHASE36_RECURSIVE_VERIFIER_HARNESS_RECEIPT_JSON_BYTES
+        )));
+    }
+    serde_json::from_str(json).map_err(phase36_json_error)
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn load_phase31_recursive_compression_decode_boundary_manifest(
     path: &Path,
 ) -> Result<Phase31RecursiveCompressionDecodeBoundaryManifest> {
@@ -2545,6 +2954,18 @@ pub fn load_phase35_recursive_compression_target_manifest(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn load_phase36_recursive_verifier_harness_receipt(
+    path: &Path,
+) -> Result<Phase36RecursiveVerifierHarnessReceipt> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE36_RECURSIVE_VERIFIER_HARNESS_RECEIPT_JSON_BYTES,
+        "Phase 36 recursive verifier harness receipt",
+    )?;
+    serde_json::from_slice(&bytes).map_err(phase36_json_error)
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase31_json_error(error: serde_json::Error) -> VmError {
     match error.classify() {
         serde_json::error::Category::Data
@@ -2586,6 +3007,16 @@ fn phase34_json_error(error: serde_json::Error) -> VmError {
 
 #[cfg(feature = "stwo-backend")]
 fn phase35_json_error(error: serde_json::Error) -> VmError {
+    match error.classify() {
+        serde_json::error::Category::Data
+        | serde_json::error::Category::Syntax
+        | serde_json::error::Category::Eof => VmError::InvalidConfig(error.to_string()),
+        serde_json::error::Category::Io => VmError::Serialization(error.to_string()),
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase36_json_error(error: serde_json::Error) -> VmError {
     match error.classify() {
         serde_json::error::Category::Data
         | serde_json::error::Category::Syntax
@@ -2937,6 +3368,100 @@ pub fn commit_phase35_recursive_compression_target_manifest(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn commit_phase36_recursive_verifier_harness_receipt(
+    receipt: &Phase36RecursiveVerifierHarnessReceipt,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 36 recursive verifier harness receipt commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase36-recursive-verifier-harness-receipt");
+    phase29_update_len_prefixed(&mut hasher, receipt.proof_backend.to_string().as_bytes());
+    phase29_update_len_prefixed(&mut hasher, receipt.receipt_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, receipt.semantic_scope.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, receipt.verifier_harness.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, receipt.proof_backend_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, receipt.statement_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, receipt.step_relation.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, receipt.required_recursion_posture.as_bytes());
+    phase29_update_bool(&mut hasher, receipt.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, receipt.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, receipt.target_manifest_verified);
+    phase29_update_bool(&mut hasher, receipt.source_binding_verified);
+    phase29_update_len_prefixed(&mut hasher, receipt.phase35_manifest_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, receipt.phase35_semantic_scope.as_bytes());
+    phase29_update_len_prefixed(
+        &mut hasher,
+        receipt
+            .phase35_recursive_target_manifest_commitment
+            .as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        receipt
+            .phase32_recursive_statement_contract_commitment
+            .as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        receipt
+            .phase33_recursive_public_inputs_commitment
+            .as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        receipt
+            .phase34_shared_lookup_public_inputs_commitment
+            .as_bytes(),
+    );
+    phase29_update_usize(&mut hasher, receipt.total_steps);
+    phase29_update_len_prefixed(
+        &mut hasher,
+        receipt.phase30_source_chain_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        receipt.phase30_step_envelopes_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        receipt.chain_start_boundary_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        receipt.chain_end_boundary_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        receipt.input_lookup_rows_commitments_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        receipt.output_lookup_rows_commitments_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        receipt
+            .shared_lookup_artifact_commitments_commitment
+            .as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        receipt
+            .static_lookup_registry_commitments_commitment
+            .as_bytes(),
+    );
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 36 recursive verifier harness receipt commitment hash: {err}"
+        ))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase34_commit_ordered_commitment_list<'a>(
     domain: &[u8],
     commitments: impl IntoIterator<Item = &'a str>,
@@ -3115,6 +3640,18 @@ mod tests {
         let phase34 = sample_phase34_manifest();
         phase35_prepare_recursive_compression_target_manifest(&phase32, &phase33, &phase34)
             .expect("prepare phase35 manifest")
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn sample_phase36_receipt() -> Phase36RecursiveVerifierHarnessReceipt {
+        let phase32 = sample_phase32_contract();
+        let phase33 = sample_phase33_manifest();
+        let phase34 = sample_phase34_manifest();
+        let target =
+            phase35_prepare_recursive_compression_target_manifest(&phase32, &phase33, &phase34)
+                .expect("prepare phase35 manifest");
+        phase36_prepare_recursive_verifier_harness_receipt(&target, &phase32, &phase33, &phase34)
+            .expect("prepare phase36 receipt")
     }
 
     #[cfg(feature = "stwo-backend")]
@@ -3855,10 +4392,7 @@ mod tests {
 
         let mut tampered = serde_json::to_value(&manifest).expect("serialize phase35 value");
         tampered["recursive_target_manifest_commitment"] = serde_json::json!("0".repeat(64));
-        let reparsed =
-            serde_json::from_value::<Phase35RecursiveCompressionTargetManifest>(tampered)
-                .expect("deserialize tampered phase35 manifest");
-        let err = verify_phase35_recursive_compression_target_manifest(&reparsed)
+        let err = serde_json::from_value::<Phase35RecursiveCompressionTargetManifest>(tampered)
             .expect_err("tampered phase35 manifest must be rejected");
         assert!(err.to_string().contains("does not match recomputed"));
     }
@@ -3872,6 +4406,101 @@ mod tests {
         let json = serde_json::to_string(&value).expect("json with unknown field");
 
         let err = parse_phase35_recursive_compression_target_manifest_json(&json)
+            .expect_err("unknown fields must be rejected");
+        assert!(matches!(err, VmError::InvalidConfig(_)));
+        assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase36_recursive_verifier_harness_receipt_accepts_matching_sources() {
+        let phase32 = sample_phase32_contract();
+        let phase33 = sample_phase33_manifest();
+        let phase34 = sample_phase34_manifest();
+        let target =
+            phase35_prepare_recursive_compression_target_manifest(&phase32, &phase33, &phase34)
+                .expect("prepare phase35 manifest");
+        let receipt = phase36_prepare_recursive_verifier_harness_receipt(
+            &target, &phase32, &phase33, &phase34,
+        )
+        .expect("prepare phase36 receipt");
+
+        assert_eq!(receipt.proof_backend, StarkProofBackend::Stwo);
+        assert_eq!(
+            receipt.receipt_version,
+            STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_VERSION_PHASE36
+        );
+        assert_eq!(
+            receipt.semantic_scope,
+            STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_SCOPE_PHASE36
+        );
+        assert_eq!(
+            receipt.phase35_recursive_target_manifest_commitment,
+            target.recursive_target_manifest_commitment
+        );
+        assert!(!receipt.recursive_verification_claimed);
+        assert!(!receipt.cryptographic_compression_claimed);
+        assert!(receipt.target_manifest_verified);
+        assert!(receipt.source_binding_verified);
+        verify_phase36_recursive_verifier_harness_receipt(&receipt)
+            .expect("verify phase36 receipt");
+        verify_phase36_recursive_verifier_harness_receipt_against_sources(
+            &receipt, &target, &phase32, &phase33, &phase34,
+        )
+        .expect("verify phase36 receipt against sources");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase36_recursive_verifier_harness_receipt_rejects_recursive_claim() {
+        let mut receipt = sample_phase36_receipt();
+        receipt.recursive_verification_claimed = true;
+        receipt.recursive_verifier_harness_receipt_commitment =
+            commit_phase36_recursive_verifier_harness_receipt(&receipt)
+                .expect("recommit phase36 receipt");
+        let err = verify_phase36_recursive_verifier_harness_receipt(&receipt)
+            .expect_err("recursive claim must fail");
+        assert!(err
+            .to_string()
+            .contains("must not claim recursive verification"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase36_recursive_verifier_harness_receipt_rejects_tampered_commitment() {
+        let mut receipt = sample_phase36_receipt();
+        receipt.recursive_verifier_harness_receipt_commitment = "00".repeat(32);
+        let err = verify_phase36_recursive_verifier_harness_receipt(&receipt)
+            .expect_err("tampered phase36 receipt must fail");
+        assert!(err.to_string().contains("does not match recomputed"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase36_recursive_verifier_harness_receipt_deserialization_verifies_receipt() {
+        let receipt = sample_phase36_receipt();
+        let json = serde_json::to_string(&receipt).expect("serialize phase36 receipt");
+        let parsed = parse_phase36_recursive_verifier_harness_receipt_json(&json)
+            .expect("parse phase36 receipt");
+        assert_eq!(parsed, receipt);
+
+        let mut tampered = serde_json::to_value(&receipt).expect("serialize phase36 value");
+        tampered["recursive_verifier_harness_receipt_commitment"] =
+            serde_json::json!("0".repeat(64));
+        let err = serde_json::from_value::<Phase36RecursiveVerifierHarnessReceipt>(tampered)
+            .expect_err("tampered phase36 receipt must be rejected");
+        assert!(err.to_string().contains("does not match recomputed"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase36_recursive_verifier_harness_receipt_parse_rejects_unknown_fields() {
+        let receipt = sample_phase36_receipt();
+        let mut value = serde_json::to_value(&receipt).expect("serialize phase36 value");
+        value["unexpected_phase36_field"] = serde_json::json!(true);
+        let json = serde_json::to_string(&value).expect("json with unknown field");
+
+        let err = parse_phase36_recursive_verifier_harness_receipt_json(&json)
             .expect_err("unknown fields must be rejected");
         assert!(matches!(err, VmError::InvalidConfig(_)));
         assert!(err.to_string().contains("unknown field"));

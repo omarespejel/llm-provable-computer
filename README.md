@@ -594,6 +594,19 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-recursive-compression-target-manifest \
   --input recursive-compression-target-manifest.stwo.json
 
+# Run and verify the Phase 36 source-bound verifier harness receipt over that target.
+# This is an operational receipt for the exact verifier path, not a recursive proof.
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-recursive-verifier-harness-receipt \
+  --target recursive-compression-target-manifest.stwo.json \
+  --statement-contract recursive-compression-statement-contract.stwo.json \
+  --public-inputs recursive-compression-public-input-manifest.stwo.json \
+  --shared-lookup recursive-compression-shared-lookup-manifest.stwo.json \
+  -o recursive-verifier-harness-receipt.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-recursive-verifier-harness-receipt \
+  --input recursive-verifier-harness-receipt.stwo.json
+
 # Freeze a canonical pre-aggregation batch manifest for future recursion work
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-recursion-batch \
