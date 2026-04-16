@@ -384,6 +384,7 @@ stwo_smoke_targets=(
   "stwo_backend::decoding::tests::phase30_step_envelope_manifest_rejects_step_index_drift"
   "stwo_backend::recursion::tests::phase29_recursive_compression_input_contract_rejects_tampered_commitment"
   "stwo_backend::recursion::tests::phase37_recursive_artifact_chain_harness_receipt_rejects_tampered_commitment"
+  "stwo_backend::recursion::tests::phase37_recursive_artifact_chain_harness_receipt_rejects_malformed_commitment_field"
 )
 onnx_smoke_targets=(
   "onnx_export::tests::load_onnx_program_metadata_rejects_wrong_format_version"
