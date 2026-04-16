@@ -6793,6 +6793,86 @@ fn cli_verify_stwo_recursive_verifier_harness_receipt_rejects_source_drift() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_prepare_stwo_recursive_verifier_harness_receipt_rejects_gzip_output_path() {
+    let target_path = unique_temp_dir("cli-stwo-recursive-verifier-harness-receipt-gzip-target")
+        .with_extension("json");
+    let statement_contract_path =
+        unique_temp_dir("cli-stwo-recursive-verifier-harness-receipt-gzip-statement")
+            .with_extension("json");
+    let public_inputs_path =
+        unique_temp_dir("cli-stwo-recursive-verifier-harness-receipt-gzip-public")
+            .with_extension("json");
+    let shared_lookup_path =
+        unique_temp_dir("cli-stwo-recursive-verifier-harness-receipt-gzip-shared")
+            .with_extension("json");
+    let output_path = unique_temp_dir("cli-stwo-recursive-verifier-harness-receipt-gzip-output")
+        .with_extension("json.gz");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-stwo-recursive-verifier-harness-receipt")
+        .arg("--target")
+        .arg(&target_path)
+        .arg("--statement-contract")
+        .arg(&statement_contract_path)
+        .arg("--public-inputs")
+        .arg(&public_inputs_path)
+        .arg("--shared-lookup")
+        .arg(&shared_lookup_path)
+        .arg("-o")
+        .arg(&output_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "writes plain JSON; use a `.json` output path",
+        ));
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_recursive_verifier_harness_receipt_requires_all_source_args() {
+    let fixture = prepare_phase35_recursive_compression_cli_fixture(
+        "cli-stwo-recursive-verifier-harness-receipt-partial-source",
+    );
+    let phase36_path =
+        unique_temp_dir("cli-stwo-recursive-verifier-harness-receipt-partial-phase36")
+            .with_extension("json");
+
+    let mut prepare_phase36 = tvm_command();
+    prepare_phase36
+        .arg("prepare-stwo-recursive-verifier-harness-receipt")
+        .arg("--target")
+        .arg(&fixture.phase35_path)
+        .arg("--statement-contract")
+        .arg(&fixture.phase32_path)
+        .arg("--public-inputs")
+        .arg(&fixture.phase33_path)
+        .arg("--shared-lookup")
+        .arg(&fixture.phase34_path)
+        .arg("-o")
+        .arg(&phase36_path)
+        .assert()
+        .success();
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-recursive-verifier-harness-receipt")
+        .arg("--input")
+        .arg(&phase36_path)
+        .arg("--target")
+        .arg(&fixture.phase35_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "requires either all of --target, --statement-contract, --public-inputs, and --shared-lookup or none",
+        ));
+
+    fixture.cleanup();
+    let _ = std::fs::remove_file(phase36_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_prepare_stwo_recursive_compression_input_contract_rejects_gzip_output_path() {
     let phase28_path = unique_temp_dir("cli-stwo-recursive-compression-input-missing-phase28")
         .with_extension("json");

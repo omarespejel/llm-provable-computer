@@ -4505,4 +4505,70 @@ mod tests {
         assert!(matches!(err, VmError::InvalidConfig(_)));
         assert!(err.to_string().contains("unknown field"));
     }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase36_parse_recursive_verifier_harness_receipt_reports_malformed_json_as_invalid_config() {
+        let err = parse_phase36_recursive_verifier_harness_receipt_json("{")
+            .expect_err("malformed Phase 36 receipt JSON must fail");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase36_parse_recursive_verifier_harness_receipt_rejects_oversized_json() {
+        let json = " ".repeat(MAX_PHASE36_RECURSIVE_VERIFIER_HARNESS_RECEIPT_JSON_BYTES + 1);
+        let err = parse_phase36_recursive_verifier_harness_receipt_json(&json)
+            .expect_err("oversized Phase 36 receipt JSON must fail before serde parsing");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase36_load_recursive_verifier_harness_receipt_rejects_oversized_file() {
+        let path = std::env::temp_dir().join(format!(
+            "phase36-recursive-verifier-harness-receipt-oversized-{}.json",
+            std::process::id()
+        ));
+        std::fs::write(
+            &path,
+            vec![b'x'; MAX_PHASE36_RECURSIVE_VERIFIER_HARNESS_RECEIPT_JSON_BYTES + 1],
+        )
+        .expect("write oversized Phase 36 receipt");
+
+        let err = load_phase36_recursive_verifier_harness_receipt(&path)
+            .expect_err("oversized Phase 36 receipt should fail");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+        assert!(err.to_string().contains("exceeding the limit"));
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase36_load_recursive_verifier_harness_receipt_rejects_non_regular_file() {
+        let path = std::env::temp_dir().join(format!(
+            "phase36-recursive-verifier-harness-receipt-dir-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&path).expect("create Phase 36 receipt test dir");
+
+        let err = load_phase36_recursive_verifier_harness_receipt(&path)
+            .expect_err("directory path should fail");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+        assert!(err.to_string().contains("is not a regular file"));
+        let _ = std::fs::remove_dir_all(path);
+    }
 }
