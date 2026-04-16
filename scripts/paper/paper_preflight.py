@@ -409,7 +409,13 @@ def check_claim_evidence_path_anchor(
 ) -> None:
     rel_path, anchor = split_evidence_path_anchor(entry)
     relative_path = pathlib.Path(rel_path)
-    if relative_path.is_absolute() or ".." in relative_path.parts:
+    windows_path = pathlib.PureWindowsPath(rel_path)
+    if (
+        relative_path.is_absolute()
+        or windows_path.is_absolute()
+        or ".." in relative_path.parts
+        or ".." in windows_path.parts
+    ):
         findings.error(
             f"{evidence_path}: claim `{claim_id}` `{key}` path must be repo-relative "
             f"and must not contain `..`: {entry}"

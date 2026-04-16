@@ -511,6 +511,24 @@ class PaperPreflightTests(unittest.TestCase):
                 findings.errors,
             )
 
+            for windows_entry in (
+                r"C:\tmp\outside.rs:escaped_anchor",
+                r"\\server\share\file.txt:escaped_anchor",
+            ):
+                findings = MOD.Findings()
+                MOD.check_claim_evidence_path_anchor(
+                    repo,
+                    repo / MOD.CLAIM_EVIDENCE_FILE,
+                    "phase37_artifact_chain_harness_receipt",
+                    "implementation",
+                    windows_entry,
+                    findings,
+                )
+                self.assertTrue(
+                    any("path must be repo-relative" in msg for msg in findings.errors),
+                    findings.errors,
+                )
+
             link = repo / "inside-link.rs"
             try:
                 link.symlink_to(outside)
