@@ -18,6 +18,7 @@ surfaces.
 | Phase 32 recursive-compression statement contract | public recursive target restating the same decode boundary exposed by the Phase 31 bridge | recursive-adjacent contract only; not recursive proof closure |
 | Phase 33 recursive-compression public-input manifest | ordered public-input surface derived from the Phase 32 contract for future recursive verification | recursive-adjacent manifest only; not recursive proof closure |
 | Phase 34 recursive-compression shared-lookup manifest | ordered lookup-facing public-input surface derived from the Phase 33 contract and the Phase 30 envelopes | recursive-adjacent manifest only; not recursive proof closure |
+| Phase 35 recursive-compression target manifest | canonical recursive target binding the preserved Phase 32 statement, Phase 33 public inputs, and Phase 34 shared-lookup commitments | recursive-adjacent manifest only; not recursive proof closure |
 
 ## D2. Adjacent evidence surfaces
 

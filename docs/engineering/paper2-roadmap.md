@@ -29,6 +29,8 @@ The repository is already strong enough for the bounded paper-2 claim:
 - a Phase 34 shared-lookup manifest now freezes the ordered lookup-facing
   public inputs a future recursive/shared-table verifier would need to preserve
   over that same statement,
+- a Phase 35 target manifest now unifies the Phase 32, Phase 33, and Phase 34
+  preserved commitments into one canonical recursive target artifact,
 - bounded multi-runtime semantic-agreement artifacts exist,
 - Hugging Face provenance manifests exist as reproducibility artifacts,
 - ONNX-facing provenance now binds exported graph, metadata companion, and
@@ -101,7 +103,8 @@ same boundary as the public recursive target, and a Phase 33 manifest that
 freezes the exact ordered public inputs a recursive verifier would need to
 preserve. The repository now also has a Phase 34 manifest that freezes the
 ordered lookup-facing public inputs already exposed by the Phase 30 step
-envelopes.
+envelopes. The new Phase 35 target manifest binds those preserved surfaces into
+one canonical recursive target commitment.
 
 That means the next recursive work should preserve:
 
@@ -113,6 +116,8 @@ That means the next recursive work should preserve:
   contract.
 - the Phase 34 shared-lookup ordering and commitments derived from those public
   inputs and the Phase 30 envelopes.
+- the Phase 35 unified recursive target commitment derived from Phase 32,
+  Phase 33, and Phase 34.
 
 ### 5. Then move to recursive compression
 
@@ -142,8 +147,8 @@ The next concrete engineering slice should be:
    local identity binding and external statement binding versus what would still
    require external signed attestation verification,
 2. keep the Phase 31 decode-boundary bridge, Phase 32 recursive statement
-   contract, Phase 33 public-input manifest, and Phase 34 shared-lookup
-   manifest narrow and explicit about what is bound from earlier artifacts
-   versus what would require actual recursive verification,
+   contract, Phase 33 public-input manifest, Phase 34 shared-lookup manifest,
+   and Phase 35 target manifest narrow and explicit about what is bound from
+   earlier artifacts versus what would require actual recursive verification,
 3. then recurse over that existing decode boundary and public-input ordering
    rather than inventing a new statement surface.

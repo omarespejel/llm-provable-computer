@@ -71,6 +71,14 @@ pub const STWO_RECURSIVE_COMPRESSION_SHARED_LOOKUP_MANIFEST_SCOPE_PHASE34: &str 
     "stwo_execution_parameterized_recursive_compression_shared_lookup_manifest";
 #[cfg(feature = "stwo-backend")]
 const MAX_PHASE34_RECURSIVE_COMPRESSION_SHARED_LOOKUP_MANIFEST_JSON_BYTES: usize = 1024 * 1024;
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_VERSION_PHASE35: &str =
+    "stwo-phase35-recursive-compression-target-manifest-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_SCOPE_PHASE35: &str =
+    "stwo_execution_parameterized_recursive_compression_target_manifest";
+#[cfg(feature = "stwo-backend")]
+const MAX_PHASE35_RECURSIVE_COMPRESSION_TARGET_MANIFEST_JSON_BYTES: usize = 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase6RecursionBatchEntry {
@@ -389,6 +397,78 @@ struct Phase34RecursiveCompressionSharedLookupManifestUnchecked {
 }
 
 #[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "Phase35RecursiveCompressionTargetManifestUnchecked")]
+pub struct Phase35RecursiveCompressionTargetManifest {
+    pub proof_backend: StarkProofBackend,
+    pub manifest_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub step_relation: String,
+    pub required_recursion_posture: String,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub phase32_contract_version: String,
+    pub phase32_semantic_scope: String,
+    pub phase32_recursive_statement_contract_commitment: String,
+    pub phase33_manifest_version: String,
+    pub phase33_semantic_scope: String,
+    pub phase33_recursive_public_inputs_commitment: String,
+    pub phase34_manifest_version: String,
+    pub phase34_semantic_scope: String,
+    pub phase34_shared_lookup_public_inputs_commitment: String,
+    pub total_steps: usize,
+    pub phase30_source_chain_commitment: String,
+    pub phase30_step_envelopes_commitment: String,
+    pub chain_start_boundary_commitment: String,
+    pub chain_end_boundary_commitment: String,
+    pub source_template_commitment: String,
+    pub aggregation_template_commitment: String,
+    pub input_lookup_rows_commitments_commitment: String,
+    pub output_lookup_rows_commitments_commitment: String,
+    pub shared_lookup_artifact_commitments_commitment: String,
+    pub static_lookup_registry_commitments_commitment: String,
+    pub recursive_target_manifest_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Phase35RecursiveCompressionTargetManifestUnchecked {
+    pub proof_backend: StarkProofBackend,
+    pub manifest_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub step_relation: String,
+    pub required_recursion_posture: String,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub phase32_contract_version: String,
+    pub phase32_semantic_scope: String,
+    pub phase32_recursive_statement_contract_commitment: String,
+    pub phase33_manifest_version: String,
+    pub phase33_semantic_scope: String,
+    pub phase33_recursive_public_inputs_commitment: String,
+    pub phase34_manifest_version: String,
+    pub phase34_semantic_scope: String,
+    pub phase34_shared_lookup_public_inputs_commitment: String,
+    pub total_steps: usize,
+    pub phase30_source_chain_commitment: String,
+    pub phase30_step_envelopes_commitment: String,
+    pub chain_start_boundary_commitment: String,
+    pub chain_end_boundary_commitment: String,
+    pub source_template_commitment: String,
+    pub aggregation_template_commitment: String,
+    pub input_lookup_rows_commitments_commitment: String,
+    pub output_lookup_rows_commitments_commitment: String,
+    pub shared_lookup_artifact_commitments_commitment: String,
+    pub static_lookup_registry_commitments_commitment: String,
+    pub recursive_target_manifest_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
 impl TryFrom<Phase29RecursiveCompressionInputContractUnchecked>
     for Phase29RecursiveCompressionInputContract
 {
@@ -592,6 +672,55 @@ impl TryFrom<Phase34RecursiveCompressionSharedLookupManifestUnchecked>
         };
         verify_phase34_recursive_compression_shared_lookup_manifest(&manifest)?;
         Ok(manifest)
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+impl TryFrom<Phase35RecursiveCompressionTargetManifestUnchecked>
+    for Phase35RecursiveCompressionTargetManifest
+{
+    type Error = VmError;
+
+    fn try_from(unchecked: Phase35RecursiveCompressionTargetManifestUnchecked) -> Result<Self> {
+        Ok(Self {
+            proof_backend: unchecked.proof_backend,
+            manifest_version: unchecked.manifest_version,
+            semantic_scope: unchecked.semantic_scope,
+            proof_backend_version: unchecked.proof_backend_version,
+            statement_version: unchecked.statement_version,
+            step_relation: unchecked.step_relation,
+            required_recursion_posture: unchecked.required_recursion_posture,
+            recursive_verification_claimed: unchecked.recursive_verification_claimed,
+            cryptographic_compression_claimed: unchecked.cryptographic_compression_claimed,
+            phase32_contract_version: unchecked.phase32_contract_version,
+            phase32_semantic_scope: unchecked.phase32_semantic_scope,
+            phase32_recursive_statement_contract_commitment: unchecked
+                .phase32_recursive_statement_contract_commitment,
+            phase33_manifest_version: unchecked.phase33_manifest_version,
+            phase33_semantic_scope: unchecked.phase33_semantic_scope,
+            phase33_recursive_public_inputs_commitment: unchecked
+                .phase33_recursive_public_inputs_commitment,
+            phase34_manifest_version: unchecked.phase34_manifest_version,
+            phase34_semantic_scope: unchecked.phase34_semantic_scope,
+            phase34_shared_lookup_public_inputs_commitment: unchecked
+                .phase34_shared_lookup_public_inputs_commitment,
+            total_steps: unchecked.total_steps,
+            phase30_source_chain_commitment: unchecked.phase30_source_chain_commitment,
+            phase30_step_envelopes_commitment: unchecked.phase30_step_envelopes_commitment,
+            chain_start_boundary_commitment: unchecked.chain_start_boundary_commitment,
+            chain_end_boundary_commitment: unchecked.chain_end_boundary_commitment,
+            source_template_commitment: unchecked.source_template_commitment,
+            aggregation_template_commitment: unchecked.aggregation_template_commitment,
+            input_lookup_rows_commitments_commitment: unchecked
+                .input_lookup_rows_commitments_commitment,
+            output_lookup_rows_commitments_commitment: unchecked
+                .output_lookup_rows_commitments_commitment,
+            shared_lookup_artifact_commitments_commitment: unchecked
+                .shared_lookup_artifact_commitments_commitment,
+            static_lookup_registry_commitments_commitment: unchecked
+                .static_lookup_registry_commitments_commitment,
+            recursive_target_manifest_commitment: unchecked.recursive_target_manifest_commitment,
+        })
     }
 }
 
@@ -1260,6 +1389,164 @@ pub fn phase34_prepare_recursive_compression_shared_lookup_manifest(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn phase35_prepare_recursive_compression_target_manifest(
+    phase32: &Phase32RecursiveCompressionStatementContract,
+    phase33: &Phase33RecursiveCompressionPublicInputManifest,
+    phase34: &Phase34RecursiveCompressionSharedLookupManifest,
+) -> Result<Phase35RecursiveCompressionTargetManifest> {
+    verify_phase32_recursive_compression_statement_contract(phase32)?;
+    verify_phase33_recursive_compression_public_input_manifest(phase33)?;
+    verify_phase34_recursive_compression_shared_lookup_manifest(phase34)?;
+
+    if phase32.proof_backend_version != phase33.proof_backend_version
+        || phase32.proof_backend_version != phase34.proof_backend_version
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive target manifest requires Phase 32, Phase 33, and Phase 34 proof backend versions to match".to_string(),
+        ));
+    }
+    if phase32.statement_version != phase33.statement_version
+        || phase32.statement_version != phase34.statement_version
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive target manifest requires Phase 32, Phase 33, and Phase 34 statement versions to match".to_string(),
+        ));
+    }
+    if phase32.step_relation != phase33.step_relation
+        || phase32.step_relation != phase34.step_relation
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive target manifest requires Phase 32, Phase 33, and Phase 34 step relations to match".to_string(),
+        ));
+    }
+    if phase32.required_recursion_posture != phase33.required_recursion_posture
+        || phase32.required_recursion_posture != phase34.required_recursion_posture
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive target manifest requires Phase 32, Phase 33, and Phase 34 recursion posture to match".to_string(),
+        ));
+    }
+    if phase32.recursive_verification_claimed != phase33.recursive_verification_claimed
+        || phase32.recursive_verification_claimed != phase34.recursive_verification_claimed
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive target manifest requires Phase 32, Phase 33, and Phase 34 recursive-verification flags to match".to_string(),
+        ));
+    }
+    if phase32.cryptographic_compression_claimed != phase33.cryptographic_compression_claimed
+        || phase32.cryptographic_compression_claimed != phase34.cryptographic_compression_claimed
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive target manifest requires Phase 32, Phase 33, and Phase 34 cryptographic-compression flags to match".to_string(),
+        ));
+    }
+    if phase32.total_steps != phase33.total_steps || phase32.total_steps != phase34.total_steps {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive target manifest requires Phase 32, Phase 33, and Phase 34 total_steps to match".to_string(),
+        ));
+    }
+    if phase33.phase32_recursive_statement_contract_commitment
+        != phase32.recursive_statement_contract_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive target manifest requires the Phase 33 statement-contract commitment to match the Phase 32 statement-contract commitment".to_string(),
+        ));
+    }
+    if phase34.phase33_recursive_public_inputs_commitment
+        != phase33.recursive_public_inputs_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive target manifest requires the Phase 34 public-input commitment to match the Phase 33 public-input commitment".to_string(),
+        ));
+    }
+    if phase32.phase30_source_chain_commitment != phase33.phase30_source_chain_commitment
+        || phase32.phase30_source_chain_commitment != phase34.phase30_source_chain_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive target manifest requires Phase 32, Phase 33, and Phase 34 source-chain commitments to match".to_string(),
+        ));
+    }
+    if phase32.phase30_step_envelopes_commitment != phase33.phase30_step_envelopes_commitment
+        || phase32.phase30_step_envelopes_commitment != phase34.phase30_step_envelopes_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive target manifest requires Phase 32, Phase 33, and Phase 34 step-envelope commitments to match".to_string(),
+        ));
+    }
+    if phase32.chain_start_boundary_commitment != phase33.chain_start_boundary_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive target manifest requires the Phase 32 and Phase 33 start-boundary commitments to match".to_string(),
+        ));
+    }
+    if phase32.chain_end_boundary_commitment != phase33.chain_end_boundary_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive target manifest requires the Phase 32 and Phase 33 end-boundary commitments to match".to_string(),
+        ));
+    }
+    if phase32.source_template_commitment != phase33.source_template_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive target manifest requires the Phase 32 and Phase 33 source-template commitments to match".to_string(),
+        ));
+    }
+    if phase32.aggregation_template_commitment != phase33.aggregation_template_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive target manifest requires the Phase 32 and Phase 33 aggregation-template commitments to match".to_string(),
+        ));
+    }
+
+    let mut manifest = Phase35RecursiveCompressionTargetManifest {
+        proof_backend: StarkProofBackend::Stwo,
+        manifest_version: STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_VERSION_PHASE35.to_string(),
+        semantic_scope: STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_SCOPE_PHASE35.to_string(),
+        proof_backend_version: phase32.proof_backend_version.clone(),
+        statement_version: phase32.statement_version.clone(),
+        step_relation: phase32.step_relation.clone(),
+        required_recursion_posture: phase32.required_recursion_posture.clone(),
+        recursive_verification_claimed: phase32.recursive_verification_claimed,
+        cryptographic_compression_claimed: phase32.cryptographic_compression_claimed,
+        phase32_contract_version: phase32.contract_version.clone(),
+        phase32_semantic_scope: phase32.semantic_scope.clone(),
+        phase32_recursive_statement_contract_commitment: phase32
+            .recursive_statement_contract_commitment
+            .clone(),
+        phase33_manifest_version: phase33.manifest_version.clone(),
+        phase33_semantic_scope: phase33.semantic_scope.clone(),
+        phase33_recursive_public_inputs_commitment: phase33
+            .recursive_public_inputs_commitment
+            .clone(),
+        phase34_manifest_version: phase34.manifest_version.clone(),
+        phase34_semantic_scope: phase34.semantic_scope.clone(),
+        phase34_shared_lookup_public_inputs_commitment: phase34
+            .shared_lookup_public_inputs_commitment
+            .clone(),
+        total_steps: phase32.total_steps,
+        phase30_source_chain_commitment: phase32.phase30_source_chain_commitment.clone(),
+        phase30_step_envelopes_commitment: phase32.phase30_step_envelopes_commitment.clone(),
+        chain_start_boundary_commitment: phase32.chain_start_boundary_commitment.clone(),
+        chain_end_boundary_commitment: phase32.chain_end_boundary_commitment.clone(),
+        source_template_commitment: phase32.source_template_commitment.clone(),
+        aggregation_template_commitment: phase32.aggregation_template_commitment.clone(),
+        input_lookup_rows_commitments_commitment: phase34
+            .input_lookup_rows_commitments_commitment
+            .clone(),
+        output_lookup_rows_commitments_commitment: phase34
+            .output_lookup_rows_commitments_commitment
+            .clone(),
+        shared_lookup_artifact_commitments_commitment: phase34
+            .shared_lookup_artifact_commitments_commitment
+            .clone(),
+        static_lookup_registry_commitments_commitment: phase34
+            .static_lookup_registry_commitments_commitment
+            .clone(),
+        recursive_target_manifest_commitment: String::new(),
+    };
+    manifest.recursive_target_manifest_commitment =
+        commit_phase35_recursive_compression_target_manifest(&manifest)?;
+    verify_phase35_recursive_compression_target_manifest(&manifest)?;
+    Ok(manifest)
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn verify_phase31_recursive_compression_decode_boundary_manifest(
     manifest: &Phase31RecursiveCompressionDecodeBoundaryManifest,
 ) -> Result<()> {
@@ -1906,6 +2193,228 @@ pub fn verify_phase34_recursive_compression_shared_lookup_manifest_against_sourc
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn verify_phase35_recursive_compression_target_manifest(
+    manifest: &Phase35RecursiveCompressionTargetManifest,
+) -> Result<()> {
+    if manifest.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 35 recursive-compression target manifest requires `stwo` backend, got `{}`",
+            manifest.proof_backend
+        )));
+    }
+    if manifest.manifest_version != STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_VERSION_PHASE35 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 35 recursive-compression target manifest version `{}` does not match expected `{}`",
+            manifest.manifest_version,
+            STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_VERSION_PHASE35
+        )));
+    }
+    if manifest.semantic_scope != STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_SCOPE_PHASE35 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 35 recursive-compression target manifest scope `{}` does not match expected `{}`",
+            manifest.semantic_scope,
+            STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_SCOPE_PHASE35
+        )));
+    }
+    if manifest.proof_backend_version != STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 35 recursive-compression target manifest requires proof backend version `{}`, got `{}`",
+            STWO_BACKEND_VERSION_PHASE12, manifest.proof_backend_version
+        )));
+    }
+    if manifest.statement_version != CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 35 recursive-compression target manifest requires statement version `{}`, got `{}`",
+            CLAIM_STATEMENT_VERSION_V1, manifest.statement_version
+        )));
+    }
+    if manifest.step_relation != STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 35 recursive-compression target manifest requires step relation `{}`, got `{}`",
+            STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30, manifest.step_relation
+        )));
+    }
+    if manifest.required_recursion_posture != STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 35 recursive-compression target manifest requires recursion posture `{}`, got `{}`",
+            STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE, manifest.required_recursion_posture
+        )));
+    }
+    if manifest.recursive_verification_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive-compression target manifest must not claim recursive verification"
+                .to_string(),
+        ));
+    }
+    if manifest.cryptographic_compression_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive-compression target manifest must not claim cryptographic compression"
+                .to_string(),
+        ));
+    }
+    if manifest.phase32_contract_version
+        != STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 35 recursive-compression target manifest requires Phase 32 contract version `{}`, got `{}`",
+            STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32,
+            manifest.phase32_contract_version
+        )));
+    }
+    if manifest.phase32_semantic_scope
+        != STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_SCOPE_PHASE32
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 35 recursive-compression target manifest requires Phase 32 semantic scope `{}`, got `{}`",
+            STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_SCOPE_PHASE32,
+            manifest.phase32_semantic_scope
+        )));
+    }
+    if manifest.phase33_manifest_version
+        != STWO_RECURSIVE_COMPRESSION_PUBLIC_INPUT_MANIFEST_VERSION_PHASE33
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 35 recursive-compression target manifest requires Phase 33 manifest version `{}`, got `{}`",
+            STWO_RECURSIVE_COMPRESSION_PUBLIC_INPUT_MANIFEST_VERSION_PHASE33,
+            manifest.phase33_manifest_version
+        )));
+    }
+    if manifest.phase33_semantic_scope
+        != STWO_RECURSIVE_COMPRESSION_PUBLIC_INPUT_MANIFEST_SCOPE_PHASE33
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 35 recursive-compression target manifest requires Phase 33 semantic scope `{}`, got `{}`",
+            STWO_RECURSIVE_COMPRESSION_PUBLIC_INPUT_MANIFEST_SCOPE_PHASE33,
+            manifest.phase33_semantic_scope
+        )));
+    }
+    if manifest.phase34_manifest_version
+        != STWO_RECURSIVE_COMPRESSION_SHARED_LOOKUP_MANIFEST_VERSION_PHASE34
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 35 recursive-compression target manifest requires Phase 34 manifest version `{}`, got `{}`",
+            STWO_RECURSIVE_COMPRESSION_SHARED_LOOKUP_MANIFEST_VERSION_PHASE34,
+            manifest.phase34_manifest_version
+        )));
+    }
+    if manifest.phase34_semantic_scope
+        != STWO_RECURSIVE_COMPRESSION_SHARED_LOOKUP_MANIFEST_SCOPE_PHASE34
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 35 recursive-compression target manifest requires Phase 34 semantic scope `{}`, got `{}`",
+            STWO_RECURSIVE_COMPRESSION_SHARED_LOOKUP_MANIFEST_SCOPE_PHASE34,
+            manifest.phase34_semantic_scope
+        )));
+    }
+    if manifest.total_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive-compression target manifest requires at least one decode step"
+                .to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase32_recursive_statement_contract_commitment",
+            manifest
+                .phase32_recursive_statement_contract_commitment
+                .as_str(),
+        ),
+        (
+            "phase33_recursive_public_inputs_commitment",
+            manifest.phase33_recursive_public_inputs_commitment.as_str(),
+        ),
+        (
+            "phase34_shared_lookup_public_inputs_commitment",
+            manifest
+                .phase34_shared_lookup_public_inputs_commitment
+                .as_str(),
+        ),
+        (
+            "phase30_source_chain_commitment",
+            manifest.phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase30_step_envelopes_commitment",
+            manifest.phase30_step_envelopes_commitment.as_str(),
+        ),
+        (
+            "chain_start_boundary_commitment",
+            manifest.chain_start_boundary_commitment.as_str(),
+        ),
+        (
+            "chain_end_boundary_commitment",
+            manifest.chain_end_boundary_commitment.as_str(),
+        ),
+        (
+            "source_template_commitment",
+            manifest.source_template_commitment.as_str(),
+        ),
+        (
+            "aggregation_template_commitment",
+            manifest.aggregation_template_commitment.as_str(),
+        ),
+        (
+            "input_lookup_rows_commitments_commitment",
+            manifest.input_lookup_rows_commitments_commitment.as_str(),
+        ),
+        (
+            "output_lookup_rows_commitments_commitment",
+            manifest.output_lookup_rows_commitments_commitment.as_str(),
+        ),
+        (
+            "shared_lookup_artifact_commitments_commitment",
+            manifest
+                .shared_lookup_artifact_commitments_commitment
+                .as_str(),
+        ),
+        (
+            "static_lookup_registry_commitments_commitment",
+            manifest
+                .static_lookup_registry_commitments_commitment
+                .as_str(),
+        ),
+        (
+            "recursive_target_manifest_commitment",
+            manifest.recursive_target_manifest_commitment.as_str(),
+        ),
+    ] {
+        if value.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 35 recursive-compression target manifest `{label}` must be non-empty"
+            )));
+        }
+    }
+
+    let expected = commit_phase35_recursive_compression_target_manifest(manifest)?;
+    if manifest.recursive_target_manifest_commitment != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 35 recursive-compression target manifest commitment `{}` does not match recomputed `{}`",
+            manifest.recursive_target_manifest_commitment, expected
+        )));
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase35_recursive_compression_target_manifest_against_sources(
+    manifest: &Phase35RecursiveCompressionTargetManifest,
+    phase32: &Phase32RecursiveCompressionStatementContract,
+    phase33: &Phase33RecursiveCompressionPublicInputManifest,
+    phase34: &Phase34RecursiveCompressionSharedLookupManifest,
+) -> Result<()> {
+    verify_phase35_recursive_compression_target_manifest(manifest)?;
+    let expected =
+        phase35_prepare_recursive_compression_target_manifest(phase32, phase33, phase34)?;
+    if manifest != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 35 recursive-compression target manifest does not match the recomputed Phase 32 + Phase 33 + Phase 34 source artifacts".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn parse_phase31_recursive_compression_decode_boundary_manifest_json(
     json: &str,
 ) -> Result<Phase31RecursiveCompressionDecodeBoundaryManifest> {
@@ -1962,6 +2471,20 @@ pub fn parse_phase34_recursive_compression_shared_lookup_manifest_json(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn parse_phase35_recursive_compression_target_manifest_json(
+    json: &str,
+) -> Result<Phase35RecursiveCompressionTargetManifest> {
+    if json.len() > MAX_PHASE35_RECURSIVE_COMPRESSION_TARGET_MANIFEST_JSON_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 35 recursive-compression target manifest JSON is {} bytes, exceeding the limit of {} bytes",
+            json.len(),
+            MAX_PHASE35_RECURSIVE_COMPRESSION_TARGET_MANIFEST_JSON_BYTES
+        )));
+    }
+    serde_json::from_str(json).map_err(phase35_json_error)
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn load_phase31_recursive_compression_decode_boundary_manifest(
     path: &Path,
 ) -> Result<Phase31RecursiveCompressionDecodeBoundaryManifest> {
@@ -2010,6 +2533,18 @@ pub fn load_phase34_recursive_compression_shared_lookup_manifest(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn load_phase35_recursive_compression_target_manifest(
+    path: &Path,
+) -> Result<Phase35RecursiveCompressionTargetManifest> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE35_RECURSIVE_COMPRESSION_TARGET_MANIFEST_JSON_BYTES,
+        "Phase 35 recursive-compression target manifest",
+    )?;
+    serde_json::from_slice(&bytes).map_err(phase35_json_error)
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase31_json_error(error: serde_json::Error) -> VmError {
     match error.classify() {
         serde_json::error::Category::Data
@@ -2041,6 +2576,16 @@ fn phase33_json_error(error: serde_json::Error) -> VmError {
 
 #[cfg(feature = "stwo-backend")]
 fn phase34_json_error(error: serde_json::Error) -> VmError {
+    match error.classify() {
+        serde_json::error::Category::Data
+        | serde_json::error::Category::Syntax
+        | serde_json::error::Category::Eof => VmError::InvalidConfig(error.to_string()),
+        serde_json::error::Category::Io => VmError::Serialization(error.to_string()),
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase35_json_error(error: serde_json::Error) -> VmError {
     match error.classify() {
         serde_json::error::Category::Data
         | serde_json::error::Category::Syntax
@@ -2296,6 +2841,102 @@ pub fn commit_phase34_recursive_compression_shared_lookup_manifest(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn commit_phase35_recursive_compression_target_manifest(
+    manifest: &Phase35RecursiveCompressionTargetManifest,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 35 recursive-compression target manifest commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase35-recursive-target-manifest");
+    phase29_update_len_prefixed(&mut hasher, manifest.proof_backend.to_string().as_bytes());
+    phase29_update_len_prefixed(&mut hasher, manifest.manifest_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, manifest.semantic_scope.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, manifest.proof_backend_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, manifest.statement_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, manifest.step_relation.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, manifest.required_recursion_posture.as_bytes());
+    phase29_update_bool(&mut hasher, manifest.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, manifest.cryptographic_compression_claimed);
+    phase29_update_len_prefixed(&mut hasher, manifest.phase32_contract_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, manifest.phase32_semantic_scope.as_bytes());
+    phase29_update_len_prefixed(
+        &mut hasher,
+        manifest
+            .phase32_recursive_statement_contract_commitment
+            .as_bytes(),
+    );
+    phase29_update_len_prefixed(&mut hasher, manifest.phase33_manifest_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, manifest.phase33_semantic_scope.as_bytes());
+    phase29_update_len_prefixed(
+        &mut hasher,
+        manifest
+            .phase33_recursive_public_inputs_commitment
+            .as_bytes(),
+    );
+    phase29_update_len_prefixed(&mut hasher, manifest.phase34_manifest_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, manifest.phase34_semantic_scope.as_bytes());
+    phase29_update_len_prefixed(
+        &mut hasher,
+        manifest
+            .phase34_shared_lookup_public_inputs_commitment
+            .as_bytes(),
+    );
+    phase29_update_usize(&mut hasher, manifest.total_steps);
+    phase29_update_len_prefixed(
+        &mut hasher,
+        manifest.phase30_source_chain_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        manifest.phase30_step_envelopes_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        manifest.chain_start_boundary_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        manifest.chain_end_boundary_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(&mut hasher, manifest.source_template_commitment.as_bytes());
+    phase29_update_len_prefixed(
+        &mut hasher,
+        manifest.aggregation_template_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        manifest.input_lookup_rows_commitments_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        manifest
+            .output_lookup_rows_commitments_commitment
+            .as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        manifest
+            .shared_lookup_artifact_commitments_commitment
+            .as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        manifest
+            .static_lookup_registry_commitments_commitment
+            .as_bytes(),
+    );
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 35 recursive-compression target manifest commitment hash: {err}"
+        ))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase34_commit_ordered_commitment_list<'a>(
     domain: &[u8],
     commitments: impl IntoIterator<Item = &'a str>,
@@ -2457,6 +3098,23 @@ mod tests {
         let contract = sample_phase32_contract();
         phase33_prepare_recursive_compression_public_input_manifest(&contract)
             .expect("prepare phase33 manifest")
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn sample_phase34_manifest() -> Phase34RecursiveCompressionSharedLookupManifest {
+        let phase30 = sample_phase30_manifest();
+        let public_inputs = sample_phase33_manifest();
+        phase34_prepare_recursive_compression_shared_lookup_manifest(&public_inputs, &phase30)
+            .expect("prepare phase34 manifest")
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn sample_phase35_manifest() -> Phase35RecursiveCompressionTargetManifest {
+        let phase32 = sample_phase32_contract();
+        let phase33 = sample_phase33_manifest();
+        let phase34 = sample_phase34_manifest();
+        phase35_prepare_recursive_compression_target_manifest(&phase32, &phase33, &phase34)
+            .expect("prepare phase35 manifest")
     }
 
     #[cfg(feature = "stwo-backend")]
@@ -3133,6 +3791,87 @@ mod tests {
         let json = serde_json::to_string(&value).expect("json with unknown field");
 
         let err = parse_phase34_recursive_compression_shared_lookup_manifest_json(&json)
+            .expect_err("unknown fields must be rejected");
+        assert!(matches!(err, VmError::InvalidConfig(_)));
+        assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase35_recursive_target_manifest_accepts_matching_sources() {
+        let phase32 = sample_phase32_contract();
+        let phase33 = sample_phase33_manifest();
+        let phase34 = sample_phase34_manifest();
+        let manifest =
+            phase35_prepare_recursive_compression_target_manifest(&phase32, &phase33, &phase34)
+                .expect("prepare phase35 manifest");
+        assert_eq!(manifest.proof_backend, StarkProofBackend::Stwo);
+        assert_eq!(
+            manifest.manifest_version,
+            STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_VERSION_PHASE35
+        );
+        assert_eq!(
+            manifest.semantic_scope,
+            STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_SCOPE_PHASE35
+        );
+        assert_eq!(
+            manifest.phase32_recursive_statement_contract_commitment,
+            phase32.recursive_statement_contract_commitment
+        );
+        assert_eq!(
+            manifest.phase33_recursive_public_inputs_commitment,
+            phase33.recursive_public_inputs_commitment
+        );
+        assert_eq!(
+            manifest.phase34_shared_lookup_public_inputs_commitment,
+            phase34.shared_lookup_public_inputs_commitment
+        );
+        verify_phase35_recursive_compression_target_manifest(&manifest)
+            .expect("verify phase35 manifest");
+        verify_phase35_recursive_compression_target_manifest_against_sources(
+            &manifest, &phase32, &phase33, &phase34,
+        )
+        .expect("verify phase35 manifest against sources");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase35_recursive_target_manifest_rejects_tampered_commitment() {
+        let mut manifest = sample_phase35_manifest();
+        manifest.recursive_target_manifest_commitment = "00".repeat(32);
+        let err = verify_phase35_recursive_compression_target_manifest(&manifest)
+            .expect_err("tampered phase35 manifest must fail");
+        assert!(err.to_string().contains("does not match recomputed"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase35_recursive_target_manifest_deserialization_verifies_manifest() {
+        let manifest = sample_phase35_manifest();
+        let json = serde_json::to_string(&manifest).expect("serialize phase35 manifest");
+        let parsed = parse_phase35_recursive_compression_target_manifest_json(&json)
+            .expect("parse phase35 manifest");
+        assert_eq!(parsed, manifest);
+
+        let mut tampered = serde_json::to_value(&manifest).expect("serialize phase35 value");
+        tampered["recursive_target_manifest_commitment"] = serde_json::json!("0".repeat(64));
+        let reparsed =
+            serde_json::from_value::<Phase35RecursiveCompressionTargetManifest>(tampered)
+                .expect("deserialize tampered phase35 manifest");
+        let err = verify_phase35_recursive_compression_target_manifest(&reparsed)
+            .expect_err("tampered phase35 manifest must be rejected");
+        assert!(err.to_string().contains("does not match recomputed"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase35_recursive_target_manifest_parse_rejects_unknown_fields() {
+        let manifest = sample_phase35_manifest();
+        let mut value = serde_json::to_value(&manifest).expect("serialize phase35 value");
+        value["unexpected_phase35_field"] = serde_json::json!(true);
+        let json = serde_json::to_string(&value).expect("json with unknown field");
+
+        let err = parse_phase35_recursive_compression_target_manifest_json(&json)
             .expect_err("unknown fields must be rejected");
         assert!(matches!(err, VmError::InvalidConfig(_)));
         assert!(err.to_string().contains("unknown field"));
