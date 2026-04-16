@@ -365,6 +365,117 @@ class PaperPreflightTests(unittest.TestCase):
                 findings.errors,
             )
 
+    def test_claim_evidence_matrix_accepts_complete_record_set(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            for rel_path in (
+                "docs/paper/paper2/appendix-artifact-map.md",
+                "docs/paper/paper2/proof-carrying-decode-surfaces-2026.md",
+                "src/stwo_backend/recursion.rs",
+                "spec/stwo-phase37-recursive-artifact-chain-harness-receipt.schema.json",
+                "tests/phase37.rs",
+            ):
+                write_text(repo / rel_path, "")
+            write_text(
+                repo / "src/stwo_backend/recursion.rs",
+                (
+                    "fn phase37_prepare_recursive_artifact_chain_harness_receipt() {}\n"
+                    "fn verify_phase37_recursive_artifact_chain_harness_receipt_against_sources() {}\n"
+                ),
+            )
+            write_text(
+                repo / "tests/phase37.rs",
+                (
+                    "fn phase37_recursive_artifact_chain_harness_receipt_accepts_matching_sources() {}\n"
+                    "fn phase37_recursive_artifact_chain_harness_receipt_rejects_tampered_commitment() {}\n"
+                ),
+            )
+            records = []
+            for claim_id in sorted(MOD.REQUIRED_CLAIM_IDS):
+                records.append(
+                    f"""- id: {claim_id}
+  claim: "Bounded claim for {claim_id}."
+  paper_locations:
+    - docs/paper/paper2/appendix-artifact-map.md
+  implementation:
+    - src/stwo_backend/recursion.rs:phase37_prepare_recursive_artifact_chain_harness_receipt
+    - src/stwo_backend/recursion.rs:verify_phase37_recursive_artifact_chain_harness_receipt_against_sources
+  specs:
+    - spec/stwo-phase37-recursive-artifact-chain-harness-receipt.schema.json
+  positive_tests:
+    - phase37_recursive_artifact_chain_harness_receipt_accepts_matching_sources
+  negative_tests:
+    - phase37_recursive_artifact_chain_harness_receipt_rejects_tampered_commitment
+  evidence_commands:
+    - cargo test -q phase37
+  non_claims:
+    - "Does not claim recursive proof closure."
+"""
+                )
+            write_text(
+                repo / MOD.CLAIM_EVIDENCE_FILE,
+                "\n".join(records),
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_evidence_matrix(repo, findings)
+            self.assertEqual(findings.errors, [])
+
+    def test_claim_evidence_matrix_rejects_missing_required_claim_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(repo / MOD.CLAIM_EVIDENCE_FILE, "")
+
+            findings = MOD.Findings()
+            MOD.check_claim_evidence_matrix(repo, findings)
+            self.assertTrue(
+                any("missing required paper-2 claim evidence ids" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_claim_evidence_matrix_rejects_missing_anchor_and_test_token(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(repo / "docs/paper/paper2/appendix-artifact-map.md", "")
+            write_text(repo / "src/stwo_backend/recursion.rs", "fn other_symbol() {}\n")
+            write_text(
+                repo / "spec/stwo-phase37-recursive-artifact-chain-harness-receipt.schema.json",
+                "{}\n",
+            )
+            records = []
+            for claim_id in sorted(MOD.REQUIRED_CLAIM_IDS):
+                records.append(
+                    f"""- id: {claim_id}
+  claim: "Bounded claim for {claim_id}."
+  paper_locations:
+    - docs/paper/paper2/appendix-artifact-map.md
+  implementation:
+    - src/stwo_backend/recursion.rs:missing_symbol
+  specs:
+    - spec/stwo-phase37-recursive-artifact-chain-harness-receipt.schema.json
+  positive_tests:
+    - missing_positive_test
+  negative_tests:
+    - missing_negative_test
+  evidence_commands:
+    - cargo test -q phase37
+  non_claims:
+    - "Does not claim recursive proof closure."
+"""
+                )
+            write_text(repo / MOD.CLAIM_EVIDENCE_FILE, "\n".join(records))
+
+            findings = MOD.Findings()
+            MOD.check_claim_evidence_matrix(repo, findings)
+            self.assertTrue(
+                any("anchor `missing_symbol` not found" in msg for msg in findings.errors),
+                findings.errors,
+            )
+            self.assertTrue(
+                any("references missing test token: missing_positive_test" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

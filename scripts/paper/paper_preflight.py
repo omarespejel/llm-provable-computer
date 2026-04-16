@@ -7,7 +7,8 @@ Checks:
 3) figure/link cross-reference existence for local file links,
 4) source-note presence in appendix-system-comparison,
 5) backend appendix timing/size consistency against frozen artifact indices,
-6) unresolved publication snapshot placeholder detection.
+6) unresolved publication snapshot placeholder detection,
+7) paper-2 claim evidence matrix completeness.
 """
 
 from __future__ import annotations
@@ -52,6 +53,33 @@ LOCAL_REPOS = {
     ("omarespejel", "provable-transformer-vm"),
 }
 
+CLAIM_EVIDENCE_FILE = "docs/engineering/paper2-claim-evidence.yml"
+
+REQUIRED_CLAIM_IDS = {
+    "phase29_recursive_input_contract",
+    "phase30_step_envelope_manifest",
+    "phase31_decode_boundary_bridge",
+    "phase32_recursive_statement_contract",
+    "phase33_public_input_manifest",
+    "phase34_shared_lookup_manifest",
+    "phase35_recursive_target_manifest",
+    "phase36_verifier_harness_receipt",
+    "phase37_artifact_chain_harness_receipt",
+    "bounded_runtime_semantic_agreement",
+    "release_provenance_boundary",
+}
+
+CLAIM_EVIDENCE_REQUIRED_SCALARS = ("id", "claim")
+CLAIM_EVIDENCE_REQUIRED_LISTS = (
+    "paper_locations",
+    "implementation",
+    "specs",
+    "positive_tests",
+    "negative_tests",
+    "evidence_commands",
+    "non_claims",
+)
+
 
 @dataclass
 class Findings:
@@ -94,7 +122,7 @@ def expand_citation_token(token: str) -> list[int]:
     out: list[int] = []
     for part in re.split(r"\s*,\s*", token):
         if "-" in part:
-            a, b = re.split(r"\s*-\s*", part, 1)
+            a, b = re.split(r"\s*-\s*", part, maxsplit=1)
             if a.isdigit() and b.isdigit():
                 ai, bi = int(a), int(b)
                 if ai <= bi:
@@ -257,6 +285,219 @@ def check_publication_snapshot_placeholders(
                     f"{path}: unresolved publication snapshot placeholder {token!r}; "
                     "replace it before paper preflight."
                 )
+
+
+def unquote_claim_evidence_scalar(value: str) -> str:
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+        return value[1:-1]
+    return value
+
+
+def parse_claim_evidence_records(
+    path: pathlib.Path, findings: Findings
+) -> list[dict[str, object]]:
+    """Parse the restricted YAML shape used by paper2-claim-evidence.yml.
+
+    This is intentionally not a general YAML parser. The evidence ledger uses a
+    small stdlib-friendly subset so preflight does not grow a PyYAML dependency.
+    """
+
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        findings.error(f"{path}: failed to read claim evidence matrix: {exc}")
+        return []
+
+    records: list[dict[str, object]] = []
+    current: dict[str, object] | None = None
+    current_list_key: str | None = None
+
+    for line_number, raw_line in enumerate(text.splitlines(), start=1):
+        stripped = raw_line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("- id:"):
+            value = unquote_claim_evidence_scalar(stripped.split(":", 1)[1])
+            current = {"id": value}
+            records.append(current)
+            current_list_key = None
+            continue
+        if current is None:
+            findings.error(
+                f"{path}:{line_number}: claim evidence content must start with `- id:`"
+            )
+            continue
+        if stripped.startswith("- "):
+            if current_list_key is None:
+                findings.error(
+                    f"{path}:{line_number}: list item has no active claim evidence key"
+                )
+                continue
+            items = current.setdefault(current_list_key, [])
+            if not isinstance(items, list):
+                findings.error(
+                    f"{path}:{line_number}: `{current_list_key}` cannot mix scalar and list values"
+                )
+                continue
+            items.append(unquote_claim_evidence_scalar(stripped[2:]))
+            continue
+        match = re.match(r"^([a-z_]+):\s*(.*)$", stripped)
+        if not match:
+            findings.error(
+                f"{path}:{line_number}: unsupported claim evidence syntax: {stripped}"
+            )
+            continue
+        key, value = match.groups()
+        if value:
+            current[key] = unquote_claim_evidence_scalar(value)
+            current_list_key = None
+        else:
+            current[key] = []
+            current_list_key = key
+
+    return records
+
+
+def iter_code_and_test_files(repo_root: pathlib.Path):
+    for rel_root in ("src", "tests", "scripts", "fuzz"):
+        root = repo_root / rel_root
+        if not root.exists():
+            continue
+        for path in root.rglob("*"):
+            if path.is_file() and path.suffix in {".rs", ".py", ".md", ".sh", ".yml", ".json"}:
+                yield path
+
+
+def repo_contains_token(repo_root: pathlib.Path, token: str) -> bool:
+    for path in iter_code_and_test_files(repo_root):
+        try:
+            if token in path.read_text(encoding="utf-8", errors="ignore"):
+                return True
+        except OSError:
+            continue
+    return False
+
+
+def split_evidence_path_anchor(entry: str) -> tuple[str, str | None]:
+    path_part = entry.split("#", 1)[0]
+    if ":" not in path_part:
+        return path_part, None
+    rel_path, anchor = path_part.rsplit(":", 1)
+    if "/" not in rel_path and not rel_path.endswith((".rs", ".py", ".md", ".json", ".yml")):
+        return path_part, None
+    return rel_path, anchor or None
+
+
+def check_claim_evidence_path_anchor(
+    repo_root: pathlib.Path,
+    evidence_path: pathlib.Path,
+    claim_id: str,
+    key: str,
+    entry: str,
+    findings: Findings,
+) -> None:
+    rel_path, anchor = split_evidence_path_anchor(entry)
+    target = repo_root / rel_path
+    if not target.exists():
+        findings.error(
+            f"{evidence_path}: claim `{claim_id}` `{key}` references missing path: {entry}"
+        )
+        return
+    if anchor is None:
+        return
+    try:
+        text = target.read_text(encoding="utf-8", errors="ignore")
+    except OSError as exc:
+        findings.error(
+            f"{evidence_path}: claim `{claim_id}` `{key}` failed to read anchor path {target}: {exc}"
+        )
+        return
+    if anchor not in text:
+        findings.error(
+            f"{evidence_path}: claim `{claim_id}` `{key}` anchor `{anchor}` not found in {rel_path}"
+        )
+
+
+def list_field(record: dict[str, object], key: str) -> list[str]:
+    value = record.get(key)
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    return []
+
+
+def check_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> None:
+    evidence_path = repo_root / CLAIM_EVIDENCE_FILE
+    if not evidence_path.exists():
+        findings.error(f"{evidence_path}: missing paper-2 claim evidence matrix.")
+        return
+
+    parse_findings = Findings()
+    records = parse_claim_evidence_records(evidence_path, parse_findings)
+    findings.errors.extend(parse_findings.errors)
+    findings.warnings.extend(parse_findings.warnings)
+    if parse_findings.errors:
+        return
+
+    seen_ids: set[str] = set()
+    for record in records:
+        claim_id = str(record.get("id", "")).strip()
+        if not claim_id:
+            findings.error(f"{evidence_path}: claim evidence record has empty `id`.")
+            continue
+        if claim_id in seen_ids:
+            findings.error(f"{evidence_path}: duplicate claim evidence id `{claim_id}`.")
+        seen_ids.add(claim_id)
+
+        for key in CLAIM_EVIDENCE_REQUIRED_SCALARS:
+            value = record.get(key)
+            if not isinstance(value, str) or not value.strip():
+                findings.error(
+                    f"{evidence_path}: claim `{claim_id}` requires non-empty scalar `{key}`."
+                )
+
+        for key in CLAIM_EVIDENCE_REQUIRED_LISTS:
+            values = list_field(record, key)
+            if not values:
+                findings.error(
+                    f"{evidence_path}: claim `{claim_id}` requires at least one `{key}` entry."
+                )
+                continue
+            if any("TODO" in value or "TBD" in value for value in values):
+                findings.error(
+                    f"{evidence_path}: claim `{claim_id}` `{key}` contains unresolved placeholder text."
+                )
+
+        for key in ("paper_locations", "implementation", "specs"):
+            for entry in list_field(record, key):
+                check_claim_evidence_path_anchor(
+                    repo_root, evidence_path, claim_id, key, entry, findings
+                )
+
+        for key in ("positive_tests", "negative_tests"):
+            for test_name in list_field(record, key):
+                if not repo_contains_token(repo_root, test_name):
+                    findings.error(
+                        f"{evidence_path}: claim `{claim_id}` `{key}` references missing test token: {test_name}"
+                    )
+
+        for non_claim in list_field(record, "non_claims"):
+            lowered = non_claim.lower()
+            if "not " not in lowered and "does not" not in lowered:
+                findings.error(
+                    f"{evidence_path}: claim `{claim_id}` non-claim must explicitly negate an overclaim: {non_claim}"
+                )
+
+    missing_ids = sorted(REQUIRED_CLAIM_IDS - seen_ids)
+    extra_ids = sorted(seen_ids - REQUIRED_CLAIM_IDS)
+    if missing_ids:
+        findings.error(
+            f"{evidence_path}: missing required paper-2 claim evidence ids: {missing_ids}"
+        )
+    if extra_ids:
+        findings.warn(
+            f"{evidence_path}: extra paper-2 claim evidence ids not in required set: {extra_ids}"
+        )
 
 
 def iter_snapshot_field_lines(text: str):
@@ -591,6 +832,7 @@ def main() -> int:
     check_appendix_source_note(repo_root, findings)
     check_backend_appendix_consistency(repo_root, findings)
     check_publication_snapshot_placeholders(repo_root, findings)
+    check_claim_evidence_matrix(repo_root, findings)
 
     if findings.warnings:
         print("Warnings:")

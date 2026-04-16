@@ -7,6 +7,7 @@ Contents:
 - `design/`: implementation and artifact-line design notes
 - `design/engineering-timeline.md`: detailed internal phase chronology moved out of the public README
 - `hardening-policy.md`: local CI, hardening, and merge-gate policy
+- `paper2-claim-evidence.yml`: machine-readable claim-to-evidence ledger enforced by paper preflight
 - `paper2-roadmap.md`: engineering roadmap for bounded paper-2 implementation hardening and provenance/reproducibility work
 - `reproducibility.md`: broader engineering reproducibility guidance, including non-paper artifact flows
 

@@ -1,0 +1,242 @@
+# Machine-readable evidence ledger for the bounded paper-2 claim surface.
+# This file is intentionally small and strict. `scripts/paper/paper_preflight.py`
+# validates that each paper-facing claim has implementation, spec/schema,
+# positive-test, negative-test, evidence-command, and non-claim anchors.
+
+- id: phase29_recursive_input_contract
+  claim: "Phase 29 defines a recursive-adjacent input contract derived from a verified pre-recursive aggregate."
+  paper_locations:
+    - docs/paper/paper2/appendix-artifact-map.md
+    - docs/paper/paper2/proof-carrying-decode-surfaces-2026.md
+  implementation:
+    - src/stwo_backend/recursion.rs:phase29_prepare_recursive_compression_input_contract
+    - src/stwo_backend/recursion.rs:verify_phase29_recursive_compression_input_contract
+  specs:
+    - docs/engineering/design/phase29-recursive-compression-input-contract-spec.md
+  positive_tests:
+    - phase29_recursive_compression_input_contract_accepts_committed_shape
+  negative_tests:
+    - phase29_recursive_compression_input_contract_rejects_recursive_claim
+    - phase29_recursive_compression_input_contract_rejects_tampered_commitment
+    - phase29_recursive_compression_input_contract_parse_rejects_unknown_fields
+  evidence_commands:
+    - cargo +nightly-2025-07-14 test -q --features stwo-backend phase29_recursive_compression_input_contract
+  non_claims:
+    - "Does not claim recursive proof verification."
+    - "Does not claim cryptographic compression."
+
+- id: phase30_step_envelope_manifest
+  claim: "Phase 30 binds ordered decode-step envelopes, source-chain commitment, and chain boundary commitments."
+  paper_locations:
+    - docs/paper/paper2/appendix-artifact-map.md
+    - docs/paper/paper2/proof-carrying-decode-surfaces-2026.md
+  implementation:
+    - src/stwo_backend/decoding.rs:phase30_prepare_decoding_step_proof_envelope_manifest
+    - src/stwo_backend/decoding.rs:verify_phase30_decoding_step_proof_envelope_manifest
+  specs:
+    - spec/stwo-phase30-decoding-step-envelope-manifest.schema.json
+  positive_tests:
+    - phase30_step_envelope_manifest_binds_phase12_chain_boundaries
+  negative_tests:
+    - phase30_step_envelope_manifest_rejects_tampered_start_boundary
+    - phase30_step_envelope_manifest_rejects_step_index_drift
+    - phase30_parse_manifest_rejects_unknown_top_level_fields
+  evidence_commands:
+    - cargo +nightly-2025-07-14 test -q --features stwo-backend phase30_step_envelope_manifest
+  non_claims:
+    - "Does not claim recursive proof closure."
+    - "Does not claim full model-inference proving."
+
+- id: phase31_decode_boundary_bridge
+  claim: "Phase 31 bridges the Phase 29 input contract and Phase 30 envelope manifest without changing the public decode statement."
+  paper_locations:
+    - docs/paper/paper2/appendix-artifact-map.md
+    - docs/paper/paper2/proof-carrying-decode-surfaces-2026.md
+  implementation:
+    - src/stwo_backend/recursion.rs:phase31_prepare_recursive_compression_decode_boundary_manifest
+    - src/stwo_backend/recursion.rs:verify_phase31_recursive_compression_decode_boundary_manifest_against_sources
+  specs:
+    - spec/stwo-phase31-recursive-compression-decode-boundary-manifest.schema.json
+  positive_tests:
+    - phase31_decode_boundary_manifest_accepts_matching_phase29_and_phase30_sources
+  negative_tests:
+    - phase31_decode_boundary_manifest_rejects_step_count_mismatch
+    - phase31_decode_boundary_manifest_rejects_boundary_mismatch
+    - phase31_decode_boundary_manifest_parse_rejects_unknown_fields
+  evidence_commands:
+    - cargo +nightly-2025-07-14 test -q --features stwo-backend phase31
+  non_claims:
+    - "Does not claim recursive proof closure."
+    - "Does not invent a new recursive statement surface."
+
+- id: phase32_recursive_statement_contract
+  claim: "Phase 32 restates the bridged decode boundary as a future recursive target statement contract."
+  paper_locations:
+    - docs/paper/paper2/appendix-artifact-map.md
+    - docs/paper/paper2/proof-carrying-decode-surfaces-2026.md
+  implementation:
+    - src/stwo_backend/recursion.rs:phase32_prepare_recursive_compression_statement_contract
+    - src/stwo_backend/recursion.rs:verify_phase32_recursive_compression_statement_contract_against_phase31
+  specs:
+    - spec/stwo-phase32-recursive-compression-statement-contract.schema.json
+  positive_tests:
+    - phase32_recursive_statement_contract_accepts_matching_phase31_source
+  negative_tests:
+    - phase32_recursive_statement_contract_rejects_tampered_commitment
+    - phase32_recursive_statement_contract_parse_rejects_unknown_fields
+  evidence_commands:
+    - cargo +nightly-2025-07-14 test -q --features stwo-backend phase32
+  non_claims:
+    - "Does not claim recursive proof closure."
+    - "Does not prove semantic equivalence across runtimes."
+
+- id: phase33_public_input_manifest
+  claim: "Phase 33 freezes the ordered public-input surface that future recursion must preserve."
+  paper_locations:
+    - docs/paper/paper2/appendix-artifact-map.md
+    - docs/paper/paper2/proof-carrying-decode-surfaces-2026.md
+  implementation:
+    - src/stwo_backend/recursion.rs:phase33_prepare_recursive_compression_public_input_manifest
+    - src/stwo_backend/recursion.rs:verify_phase33_recursive_compression_public_input_manifest_against_phase32
+  specs:
+    - spec/stwo-phase33-recursive-compression-public-input-manifest.schema.json
+  positive_tests:
+    - phase33_recursive_public_input_manifest_accepts_matching_phase32_source
+  negative_tests:
+    - phase33_recursive_public_input_manifest_rejects_tampered_commitment
+    - phase33_recursive_public_input_manifest_parse_rejects_unknown_fields
+  evidence_commands:
+    - cargo +nightly-2025-07-14 test -q --features stwo-backend phase33
+  non_claims:
+    - "Does not claim recursive proof closure."
+    - "Does not claim a complete recursive verifier."
+
+- id: phase34_shared_lookup_manifest
+  claim: "Phase 34 freezes the ordered lookup-facing public inputs derived from Phase 33 and Phase 30."
+  paper_locations:
+    - docs/paper/paper2/appendix-artifact-map.md
+    - docs/paper/paper2/proof-carrying-decode-surfaces-2026.md
+  implementation:
+    - src/stwo_backend/recursion.rs:phase34_prepare_recursive_compression_shared_lookup_manifest
+    - src/stwo_backend/recursion.rs:verify_phase34_recursive_compression_shared_lookup_manifest_against_sources
+  specs:
+    - spec/stwo-phase34-recursive-compression-shared-lookup-manifest.schema.json
+  positive_tests:
+    - phase34_recursive_shared_lookup_manifest_accepts_matching_phase33_and_phase30_sources
+  negative_tests:
+    - phase34_recursive_shared_lookup_manifest_rejects_tampered_commitment
+    - phase34_recursive_shared_lookup_manifest_parse_rejects_unknown_fields
+  evidence_commands:
+    - cargo +nightly-2025-07-14 test -q --features stwo-backend phase34
+  non_claims:
+    - "Does not claim recursive shared-table accumulation as a compressed proof."
+    - "Does not claim recursive proof closure."
+
+- id: phase35_recursive_target_manifest
+  claim: "Phase 35 binds the Phase 32 statement, Phase 33 public inputs, and Phase 34 lookup inputs into one canonical recursive target manifest."
+  paper_locations:
+    - docs/paper/paper2/appendix-artifact-map.md
+    - docs/paper/paper2/proof-carrying-decode-surfaces-2026.md
+  implementation:
+    - src/stwo_backend/recursion.rs:phase35_prepare_recursive_compression_target_manifest
+    - src/stwo_backend/recursion.rs:verify_phase35_recursive_compression_target_manifest_against_sources
+  specs:
+    - spec/stwo-phase35-recursive-compression-target-manifest.schema.json
+  positive_tests:
+    - phase35_recursive_target_manifest_accepts_matching_sources
+  negative_tests:
+    - phase35_recursive_target_manifest_rejects_tampered_commitment
+    - phase35_recursive_target_manifest_parse_rejects_unknown_fields
+  evidence_commands:
+    - cargo +nightly-2025-07-14 test -q --features stwo-backend phase35
+  non_claims:
+    - "Does not claim recursive proof closure."
+    - "Does not claim cryptographic compression."
+
+- id: phase36_verifier_harness_receipt
+  claim: "Phase 36 records source-bound verifier-harness checking of the Phase 35 target and source artifacts."
+  paper_locations:
+    - docs/paper/paper2/appendix-artifact-map.md
+    - docs/paper/paper2/proof-carrying-decode-surfaces-2026.md
+  implementation:
+    - src/stwo_backend/recursion.rs:phase36_prepare_recursive_verifier_harness_receipt
+    - src/stwo_backend/recursion.rs:verify_phase36_recursive_verifier_harness_receipt_against_sources
+  specs:
+    - spec/stwo-phase36-recursive-verifier-harness-receipt.schema.json
+  positive_tests:
+    - phase36_recursive_verifier_harness_receipt_accepts_matching_sources
+  negative_tests:
+    - phase36_recursive_verifier_harness_receipt_rejects_recursive_claim
+    - phase36_recursive_verifier_harness_receipt_rejects_tampered_commitment
+    - phase36_recursive_verifier_harness_receipt_parse_rejects_unknown_fields
+  evidence_commands:
+    - cargo +nightly-2025-07-14 test -q --features stwo-backend phase36
+  non_claims:
+    - "Does not claim recursive proof verification."
+    - "Does not claim cryptographic compression."
+
+- id: phase37_artifact_chain_harness_receipt
+  claim: "Phase 37 recomputes the full Phase 29 + Phase 30 through Phase 36 source-bound artifact chain as heavier operational evidence."
+  paper_locations:
+    - docs/paper/paper2/appendix-artifact-map.md
+    - docs/paper/paper2/proof-carrying-decode-surfaces-2026.md
+  implementation:
+    - src/stwo_backend/recursion.rs:phase37_prepare_recursive_artifact_chain_harness_receipt
+    - src/stwo_backend/recursion.rs:verify_phase37_recursive_artifact_chain_harness_receipt_against_sources
+  specs:
+    - spec/stwo-phase37-recursive-artifact-chain-harness-receipt.schema.json
+  positive_tests:
+    - phase37_recursive_artifact_chain_harness_receipt_accepts_matching_sources
+  negative_tests:
+    - phase37_recursive_artifact_chain_harness_receipt_rejects_recursive_claim
+    - phase37_recursive_artifact_chain_harness_receipt_rejects_tampered_commitment
+    - phase37_recursive_artifact_chain_harness_receipt_rejects_malformed_commitment_field
+  evidence_commands:
+    - cargo +nightly-2025-07-14 test -q --features stwo-backend phase37
+    - TVM_TEST_BINARY=/Users/espejelomar/.codex-targets/ptv-paper-next/debug/tvm cargo +nightly-2025-07-14 test -q --features 'full stwo-backend' --test cli stwo_recursive_artifact_chain
+  non_claims:
+    - "Does not claim recursive proof verification."
+    - "Does not claim cryptographic compression."
+    - "Does not claim a recursively verifiable compressed proof object."
+
+- id: bounded_runtime_semantic_agreement
+  claim: "The research-v3 artifacts provide bounded semantic-agreement evidence, not a general runtime equivalence theorem."
+  paper_locations:
+    - docs/paper/paper2/proof-carrying-decode-surfaces-2026.md
+    - docs/paper/paper2/appendix-engineering-gaps.md
+  implementation:
+    - src/bin/tvm.rs:verify_research_v3_equivalence_artifact
+  specs:
+    - spec/statement-v3-equivalence-kernel.schema.json
+    - spec/statement-v3-equivalence-kernel-research.json
+  positive_tests:
+    - cli_supports_research_v3_equivalence_command
+  negative_tests:
+    - research_v3_rule_witnesses_rejects_event_length_mismatch
+  evidence_commands:
+    - cargo test -q research_v3
+  non_claims:
+    - "Does not claim full semantic equivalence across compilers, frontends, or graph rewrites."
+    - "Does not enlarge the proof statement."
+
+- id: release_provenance_boundary
+  claim: "HF provenance manifests bind release and artifact identity as reproducibility guardrails."
+  paper_locations:
+    - docs/paper/paper2/proof-carrying-decode-surfaces-2026.md
+    - docs/paper/paper2/appendix-engineering-gaps.md
+  implementation:
+    - src/bin/tvm.rs:prepare_hf_provenance_manifest_command
+    - src/bin/tvm.rs:verify_hf_provenance_manifest_command
+  specs:
+    - spec/hf-provenance-manifest.schema.json
+    - docs/engineering/reproducibility.md
+  positive_tests:
+    - cli_can_prepare_and_verify_hf_provenance_manifest
+  negative_tests:
+    - cli_verifier_rejects_tampered_hf_attestation_hash
+    - cli_verifier_rejects_tampered_hf_external_attestation_statement
+  evidence_commands:
+    - cargo test -q --features full --test cli hf_provenance
+  non_claims:
+    - "Does not claim a complete supply-chain attestation theorem."
+    - "Does not claim verified external builder trust unless attestations are actually verified."
