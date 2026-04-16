@@ -564,6 +564,15 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-recursive-compression-statement-contract \
   --input recursive-compression-statement-contract.stwo.json
 
+# Derive and verify the Phase 33 public-input manifest that preserves the Phase 32 recursive target
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-recursive-compression-public-input-manifest \
+  --contract recursive-compression-statement-contract.stwo.json \
+  -o recursive-compression-public-input-manifest.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-recursive-compression-public-input-manifest \
+  --input recursive-compression-public-input-manifest.stwo.json
+
 # Freeze a canonical pre-aggregation batch manifest for future recursion work
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-recursion-batch \

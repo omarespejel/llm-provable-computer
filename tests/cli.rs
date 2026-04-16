@@ -18,7 +18,8 @@ use std::sync::{Mutex, OnceLock};
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::stwo_backend::{
     commit_phase12_shared_lookup_rows, commit_phase29_recursive_compression_input_contract,
-    commit_phase31_recursive_compression_decode_boundary_manifest, phase12_default_decoding_layout,
+    commit_phase31_recursive_compression_decode_boundary_manifest,
+    commit_phase32_recursive_compression_statement_contract, phase12_default_decoding_layout,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase12_decoding_demo_for_layout,
     save_phase12_decoding_chain, Phase10SharedLookupProofEnvelope,
@@ -43,6 +44,8 @@ use llm_provable_computer::stwo_backend::{
     STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_VERSION_PHASE31,
     STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29,
     STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29,
+    STWO_RECURSIVE_COMPRESSION_PUBLIC_INPUT_MANIFEST_SCOPE_PHASE33,
+    STWO_RECURSIVE_COMPRESSION_PUBLIC_INPUT_MANIFEST_VERSION_PHASE33,
     STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_SCOPE_PHASE32,
     STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32,
     STWO_SHARED_LOOKUP_ARTIFACT_SCOPE_PHASE12, STWO_SHARED_LOOKUP_ARTIFACT_VERSION_PHASE12,
@@ -5178,6 +5181,364 @@ fn cli_verify_stwo_recursive_compression_statement_contract_rejects_source_drift
     let _ = std::fs::remove_file(phase31_path);
     let _ = std::fs::remove_file(tampered_phase31_path);
     let _ = std::fs::remove_file(phase32_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_can_prepare_and_verify_stwo_recursive_compression_public_input_manifest() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-recursive-compression-public-input-proof").with_extension("json");
+    let phase30_path = unique_temp_dir("cli-stwo-recursive-compression-public-input-phase30")
+        .with_extension("json");
+    let phase29_path = unique_temp_dir("cli-stwo-recursive-compression-public-input-phase29")
+        .with_extension("json");
+    let phase31_path = unique_temp_dir("cli-stwo-recursive-compression-public-input-phase31")
+        .with_extension("json");
+    let phase32_path = unique_temp_dir("cli-stwo-recursive-compression-public-input-phase32")
+        .with_extension("json");
+    let phase33_path = unique_temp_dir("cli-stwo-recursive-compression-public-input-phase33")
+        .with_extension("json");
+
+    let mut prove = tvm_command();
+    prove
+        .arg("prove-stwo-decoding-family-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut prepare_phase30 = tvm_command();
+    prepare_phase30
+        .arg("prepare-stwo-decoding-step-envelope-manifest")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("-o")
+        .arg(&phase30_path)
+        .assert()
+        .success();
+
+    let phase30_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&phase30_path).expect("phase30 json"))
+            .expect("phase30 value");
+    let phase29 = sample_phase29_contract_matched_to_phase30_manifest(&phase30_json);
+    std::fs::write(
+        &phase29_path,
+        serde_json::to_vec_pretty(&phase29).expect("serialize phase29"),
+    )
+    .expect("write phase29");
+
+    let mut prepare_phase31 = tvm_command();
+    prepare_phase31
+        .arg("prepare-stwo-recursive-compression-decode-boundary-manifest")
+        .arg("--contract")
+        .arg(&phase29_path)
+        .arg("--manifest")
+        .arg(&phase30_path)
+        .arg("-o")
+        .arg(&phase31_path)
+        .assert()
+        .success();
+
+    let mut prepare_phase32 = tvm_command();
+    prepare_phase32
+        .arg("prepare-stwo-recursive-compression-statement-contract")
+        .arg("--manifest")
+        .arg(&phase31_path)
+        .arg("-o")
+        .arg(&phase32_path)
+        .assert()
+        .success();
+
+    let mut prepare_phase33 = tvm_command();
+    prepare_phase33
+        .arg("prepare-stwo-recursive-compression-public-input-manifest")
+        .arg("--contract")
+        .arg(&phase32_path)
+        .arg("-o")
+        .arg(&phase33_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(format!(
+            "manifest_version: {STWO_RECURSIVE_COMPRESSION_PUBLIC_INPUT_MANIFEST_VERSION_PHASE33}",
+        )))
+        .stdout(predicate::str::contains(format!(
+            "semantic_scope: {STWO_RECURSIVE_COMPRESSION_PUBLIC_INPUT_MANIFEST_SCOPE_PHASE33}",
+        )))
+        .stdout(predicate::str::contains("verified_phase32_contract: true"));
+
+    let phase33_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&phase33_path).expect("phase33 json"))
+            .expect("phase33 value");
+    validate_json_against_schema(
+        &phase33_json,
+        "spec/stwo-phase33-recursive-compression-public-input-manifest.schema.json",
+    );
+    assert_eq!(
+        phase33_json
+            .get("manifest_version")
+            .and_then(serde_json::Value::as_str),
+        Some(STWO_RECURSIVE_COMPRESSION_PUBLIC_INPUT_MANIFEST_VERSION_PHASE33)
+    );
+    assert_eq!(
+        phase33_json
+            .get("semantic_scope")
+            .and_then(serde_json::Value::as_str),
+        Some(STWO_RECURSIVE_COMPRESSION_PUBLIC_INPUT_MANIFEST_SCOPE_PHASE33)
+    );
+
+    let mut verify_standalone = tvm_command();
+    verify_standalone
+        .arg("verify-stwo-recursive-compression-public-input-manifest")
+        .arg("--input")
+        .arg(&phase33_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_manifest: true"));
+
+    let mut verify_source = tvm_command();
+    verify_source
+        .arg("verify-stwo-recursive-compression-public-input-manifest")
+        .arg("--input")
+        .arg(&phase33_path)
+        .arg("--contract")
+        .arg(&phase32_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_against_source: true"));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(phase30_path);
+    let _ = std::fs::remove_file(phase29_path);
+    let _ = std::fs::remove_file(phase31_path);
+    let _ = std::fs::remove_file(phase32_path);
+    let _ = std::fs::remove_file(phase33_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_recursive_compression_public_input_manifest_rejects_tampered_commitment() {
+    let proof_path = unique_temp_dir("cli-stwo-recursive-compression-public-input-proof-tamper")
+        .with_extension("json");
+    let phase30_path =
+        unique_temp_dir("cli-stwo-recursive-compression-public-input-phase30-tamper")
+            .with_extension("json");
+    let phase29_path =
+        unique_temp_dir("cli-stwo-recursive-compression-public-input-phase29-tamper")
+            .with_extension("json");
+    let phase31_path =
+        unique_temp_dir("cli-stwo-recursive-compression-public-input-phase31-tamper")
+            .with_extension("json");
+    let phase32_path =
+        unique_temp_dir("cli-stwo-recursive-compression-public-input-phase32-tamper")
+            .with_extension("json");
+    let phase33_path =
+        unique_temp_dir("cli-stwo-recursive-compression-public-input-phase33-tamper")
+            .with_extension("json");
+    let tampered_path =
+        unique_temp_dir("cli-stwo-recursive-compression-public-input-commitment-drift")
+            .with_extension("json");
+
+    let mut prove = tvm_command();
+    prove
+        .arg("prove-stwo-decoding-family-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut prepare_phase30 = tvm_command();
+    prepare_phase30
+        .arg("prepare-stwo-decoding-step-envelope-manifest")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("-o")
+        .arg(&phase30_path)
+        .assert()
+        .success();
+
+    let phase30_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&phase30_path).expect("phase30 json"))
+            .expect("phase30 value");
+    let phase29 = sample_phase29_contract_matched_to_phase30_manifest(&phase30_json);
+    std::fs::write(
+        &phase29_path,
+        serde_json::to_vec_pretty(&phase29).expect("serialize phase29"),
+    )
+    .expect("write phase29");
+
+    let mut prepare_phase31 = tvm_command();
+    prepare_phase31
+        .arg("prepare-stwo-recursive-compression-decode-boundary-manifest")
+        .arg("--contract")
+        .arg(&phase29_path)
+        .arg("--manifest")
+        .arg(&phase30_path)
+        .arg("-o")
+        .arg(&phase31_path)
+        .assert()
+        .success();
+
+    let mut prepare_phase32 = tvm_command();
+    prepare_phase32
+        .arg("prepare-stwo-recursive-compression-statement-contract")
+        .arg("--manifest")
+        .arg(&phase31_path)
+        .arg("-o")
+        .arg(&phase32_path)
+        .assert()
+        .success();
+
+    let mut prepare_phase33 = tvm_command();
+    prepare_phase33
+        .arg("prepare-stwo-recursive-compression-public-input-manifest")
+        .arg("--contract")
+        .arg(&phase32_path)
+        .arg("-o")
+        .arg(&phase33_path)
+        .assert()
+        .success();
+
+    let mut phase33_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&phase33_path).expect("phase33 json"))
+            .expect("phase33 value");
+    phase33_json["recursive_public_inputs_commitment"] = serde_json::Value::String("0".repeat(64));
+    std::fs::write(
+        &tampered_path,
+        serde_json::to_vec(&phase33_json).expect("serialize tampered phase33"),
+    )
+    .expect("write tampered phase33");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-recursive-compression-public-input-manifest")
+        .arg("--input")
+        .arg(&tampered_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("does not match recomputed"));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(phase30_path);
+    let _ = std::fs::remove_file(phase29_path);
+    let _ = std::fs::remove_file(phase31_path);
+    let _ = std::fs::remove_file(phase32_path);
+    let _ = std::fs::remove_file(phase33_path);
+    let _ = std::fs::remove_file(tampered_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_recursive_compression_public_input_manifest_rejects_source_drift() {
+    let proof_path = unique_temp_dir("cli-stwo-recursive-compression-public-input-proof-drift")
+        .with_extension("json");
+    let phase30_path = unique_temp_dir("cli-stwo-recursive-compression-public-input-phase30-drift")
+        .with_extension("json");
+    let phase29_path = unique_temp_dir("cli-stwo-recursive-compression-public-input-phase29-drift")
+        .with_extension("json");
+    let phase31_path = unique_temp_dir("cli-stwo-recursive-compression-public-input-phase31-drift")
+        .with_extension("json");
+    let phase32_path = unique_temp_dir("cli-stwo-recursive-compression-public-input-phase32-drift")
+        .with_extension("json");
+    let tampered_phase32_path =
+        unique_temp_dir("cli-stwo-recursive-compression-public-input-phase32-source-drift")
+            .with_extension("json");
+    let phase33_path = unique_temp_dir("cli-stwo-recursive-compression-public-input-phase33-drift")
+        .with_extension("json");
+
+    let mut prove = tvm_command();
+    prove
+        .arg("prove-stwo-decoding-family-demo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut prepare_phase30 = tvm_command();
+    prepare_phase30
+        .arg("prepare-stwo-decoding-step-envelope-manifest")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("-o")
+        .arg(&phase30_path)
+        .assert()
+        .success();
+
+    let phase30_json: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&phase30_path).expect("phase30 json"))
+            .expect("phase30 value");
+    let phase29 = sample_phase29_contract_matched_to_phase30_manifest(&phase30_json);
+    std::fs::write(
+        &phase29_path,
+        serde_json::to_vec_pretty(&phase29).expect("serialize phase29"),
+    )
+    .expect("write phase29");
+
+    let mut prepare_phase31 = tvm_command();
+    prepare_phase31
+        .arg("prepare-stwo-recursive-compression-decode-boundary-manifest")
+        .arg("--contract")
+        .arg(&phase29_path)
+        .arg("--manifest")
+        .arg(&phase30_path)
+        .arg("-o")
+        .arg(&phase31_path)
+        .assert()
+        .success();
+
+    let mut prepare_phase32 = tvm_command();
+    prepare_phase32
+        .arg("prepare-stwo-recursive-compression-statement-contract")
+        .arg("--manifest")
+        .arg(&phase31_path)
+        .arg("-o")
+        .arg(&phase32_path)
+        .assert()
+        .success();
+
+    let mut prepare_phase33 = tvm_command();
+    prepare_phase33
+        .arg("prepare-stwo-recursive-compression-public-input-manifest")
+        .arg("--contract")
+        .arg(&phase32_path)
+        .arg("-o")
+        .arg(&phase33_path)
+        .assert()
+        .success();
+
+    let mut contract: llm_provable_computer::Phase32RecursiveCompressionStatementContract =
+        serde_json::from_str(&std::fs::read_to_string(&phase32_path).expect("phase32 json"))
+            .expect("parse phase32 contract");
+    contract.chain_start_boundary_commitment = "2".repeat(64);
+    contract.recursive_statement_contract_commitment = String::new();
+    contract.recursive_statement_contract_commitment =
+        commit_phase32_recursive_compression_statement_contract(&contract)
+            .expect("recommit tampered phase32");
+    std::fs::write(
+        &tampered_phase32_path,
+        serde_json::to_vec_pretty(&contract).expect("serialize tampered phase32"),
+    )
+    .expect("write tampered phase32");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-recursive-compression-public-input-manifest")
+        .arg("--input")
+        .arg(&phase33_path)
+        .arg("--contract")
+        .arg(&tampered_phase32_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "does not match the recomputed Phase 32 source contract",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(phase30_path);
+    let _ = std::fs::remove_file(phase29_path);
+    let _ = std::fs::remove_file(phase31_path);
+    let _ = std::fs::remove_file(phase32_path);
+    let _ = std::fs::remove_file(tampered_phase32_path);
+    let _ = std::fs::remove_file(phase33_path);
 }
 
 #[test]

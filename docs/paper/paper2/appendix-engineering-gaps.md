@@ -10,10 +10,12 @@ current bounded claim from a stronger follow-on claim.
 The repository still stops before recursive cryptographic accumulation. The
 current aggregation line preserves statements across ordered artifacts, the
 Phase 31 decode-boundary bridge binds the published Phase 29 recursive input
-contract to the Phase 30 ordered decode-envelope manifest, and the Phase 32
+contract to the Phase 30 ordered decode-envelope manifest, the Phase 32
 statement contract now restates that same public boundary as the future
-recursive target. But the repository still does not produce a recursively
-verifiable compressed proof object.
+recursive target, and the Phase 33 public-input manifest freezes the exact
+ordered commitments a recursive verifier would need to preserve. But the
+repository still does not produce a recursively verifiable compressed proof
+object.
 
 ### Shared-table recursive reuse
 
@@ -53,8 +55,9 @@ proving.
    toward externally signed attestations without overstating the proof claim,
 3. keep semantic-agreement artifacts bounded and explicit rather than pretending
    they are full equivalence proofs,
-4. keep the new Phase 31 bridge and Phase 32 statement contract explicit about
-   what they bind and what they do not claim,
+4. keep the new Phase 31 bridge, Phase 32 statement contract, and Phase 33
+   public-input manifest explicit about what they bind and what they do not
+   claim,
 5. move to recursive compression only after the public decode statement is
    stable enough that recursion preserves an already well-defined claim.
 
