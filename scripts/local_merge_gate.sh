@@ -8,7 +8,7 @@ cd "$ROOT_DIR"
 
 REPO="${MERGE_GATE_REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)}"
 PR_NUMBER="${MERGE_GATE_PR:-}"
-QUIET_SECONDS="${MERGE_GATE_QUIET_SECONDS:-300}"
+QUIET_SECONDS="${MERGE_GATE_QUIET_SECONDS:-420}"
 MAX_WAIT_SECONDS="${MERGE_GATE_MAX_WAIT_SECONDS:-1800}"
 WAIT_STARTED_AT="${MERGE_GATE_WAIT_STARTED_AT:-}"
 EVIDENCE_DIR="${MERGE_GATE_EVIDENCE_DIR:-target/local-hardening}"
@@ -31,7 +31,7 @@ Options:
   --pr NUMBER            Pull request number. Can also be positional.
   --mode smoke|full|hardening|none
                           Local command tier. Default: smoke.
-  --quiet-seconds N      AI-review quiet window. Default: 300.
+  --quiet-seconds N      AI-review quiet window. Default: 420.
   --max-wait-seconds N   Maximum total --wait wall time. Default: 1800; 0 disables.
   --evidence-dir DIR     Evidence output directory. Default: target/local-hardening.
   --wait                 Wait until the quiet window is satisfied.
@@ -467,6 +467,15 @@ changed_path_is_research_v3_surface() {
     changed_path_has_prefix "scripts/run_ub_checks_suite.sh"
 }
 
+changed_path_is_phase_artifact_corpus_surface() {
+  changed_path_has_prefix "src/stwo_backend/decoding.rs" ||
+    changed_path_has_prefix "src/stwo_backend/recursion.rs" ||
+    changed_path_has_prefix "tests/known_bad_phase_artifacts.rs" ||
+    changed_path_has_prefix "tests/fixtures/known_bad/phase29_to_phase37/" ||
+    changed_path_has_prefix "scripts/run_known_bad_phase_artifact_corpus.sh" ||
+    changed_path_has_prefix "scripts/local_merge_gate.sh"
+}
+
 changed_path_is_dependency_audit_input() {
   local path
 
@@ -546,6 +555,10 @@ run_stwo_cli_smoke_targets() {
       -- \
       --exact
   done
+}
+
+run_phase_artifact_corpus_smoke() {
+  run_logged known-bad-phase-artifact-corpus scripts/run_known_bad_phase_artifact_corpus.sh
 }
 
 run_research_v3_smoke_targets() {
@@ -632,6 +645,9 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   fi
   run_stwo_smoke_targets
   run_stwo_cli_smoke_targets
+  if changed_path_is_phase_artifact_corpus_surface; then
+    run_phase_artifact_corpus_smoke
+  fi
   completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
@@ -652,6 +668,9 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   fi
   run_stwo_smoke_targets
   run_stwo_cli_smoke_targets
+  if changed_path_is_phase_artifact_corpus_surface; then
+    run_phase_artifact_corpus_smoke
+  fi
   completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
@@ -672,6 +691,9 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   fi
   run_stwo_smoke_targets
   run_stwo_cli_smoke_targets
+  if changed_path_is_phase_artifact_corpus_surface; then
+    run_phase_artifact_corpus_smoke
+  fi
   run_conditional_mutation_check
   run_logged fuzz-smoke env FUZZ_TIME_PER_TARGET=20 scripts/run_fuzz_smoke_suite.sh
   run_logged ub-checks env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
