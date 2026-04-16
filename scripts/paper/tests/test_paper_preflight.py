@@ -476,6 +476,124 @@ class PaperPreflightTests(unittest.TestCase):
                 findings.errors,
             )
 
+    def test_claim_evidence_path_anchor_rejects_paths_outside_repo(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp) / "repo"
+            repo.mkdir()
+            outside = pathlib.Path(tmp) / "outside.rs"
+            write_text(outside, "fn escaped_anchor() {}\n")
+
+            findings = MOD.Findings()
+            MOD.check_claim_evidence_path_anchor(
+                repo,
+                repo / MOD.CLAIM_EVIDENCE_FILE,
+                "phase37_artifact_chain_harness_receipt",
+                "implementation",
+                f"{outside}:escaped_anchor",
+                findings,
+            )
+            self.assertTrue(
+                any("path must be repo-relative" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_evidence_path_anchor(
+                repo,
+                repo / MOD.CLAIM_EVIDENCE_FILE,
+                "phase37_artifact_chain_harness_receipt",
+                "implementation",
+                "../outside.rs:escaped_anchor",
+                findings,
+            )
+            self.assertTrue(
+                any("path must be repo-relative" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+            for windows_entry in (
+                r"C:\tmp\outside.rs:escaped_anchor",
+                r"\\server\share\file.txt:escaped_anchor",
+            ):
+                findings = MOD.Findings()
+                MOD.check_claim_evidence_path_anchor(
+                    repo,
+                    repo / MOD.CLAIM_EVIDENCE_FILE,
+                    "phase37_artifact_chain_harness_receipt",
+                    "implementation",
+                    windows_entry,
+                    findings,
+                )
+                self.assertTrue(
+                    any("path must be repo-relative" in msg for msg in findings.errors),
+                    findings.errors,
+                )
+
+            link = repo / "inside-link.rs"
+            try:
+                link.symlink_to(outside)
+            except OSError as exc:
+                self.skipTest(f"symlink creation is unavailable: {exc}")
+
+            findings = MOD.Findings()
+            MOD.check_claim_evidence_path_anchor(
+                repo,
+                repo / MOD.CLAIM_EVIDENCE_FILE,
+                "phase37_artifact_chain_harness_receipt",
+                "implementation",
+                "inside-link.rs:escaped_anchor",
+                findings,
+            )
+            self.assertTrue(
+                any("path escapes repo root" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_claim_evidence_path_anchor_reports_resolution_failures(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            findings = MOD.Findings()
+
+            with mock.patch.object(pathlib.Path, "resolve", side_effect=OSError("loop")):
+                MOD.check_claim_evidence_path_anchor(
+                    repo,
+                    repo / MOD.CLAIM_EVIDENCE_FILE,
+                    "phase37_artifact_chain_harness_receipt",
+                    "implementation",
+                    "src/lib.rs:anchor",
+                    findings,
+                )
+
+            self.assertTrue(
+                any("failed to resolve path" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_find_repo_tokens_scans_for_all_tokens_in_one_pass_result(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(repo / "src/lib.rs", "fn alpha_token() {}\n")
+            write_text(repo / "tests/smoke.rs", "fn beta_token() {}\n")
+
+            found = MOD.find_repo_tokens(
+                repo, {"alpha_token", "beta_token", "missing_token"}
+            )
+            self.assertEqual(found, {"alpha_token", "beta_token"})
+
+    def test_parse_claim_evidence_records_reports_invalid_utf8(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / MOD.CLAIM_EVIDENCE_FILE
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b"\xff")
+
+            findings = MOD.Findings()
+            records = MOD.parse_claim_evidence_records(path, findings)
+            self.assertEqual(records, [])
+            self.assertTrue(
+                any("failed to read claim evidence matrix" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
