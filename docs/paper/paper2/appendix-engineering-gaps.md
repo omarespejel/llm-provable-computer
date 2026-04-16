@@ -18,8 +18,11 @@ ordered commitments a recursive verifier would need to preserve. The new Phase
 already exposed by the Phase 30 envelopes. The new Phase 35 target manifest
 unifies those preserved commitments into one canonical recursive target. The
 Phase 36 verifier harness receipt records that the target and its source
-artifacts were checked by the repository verifier path. But the repository
-still does not produce a recursively verifiable compressed proof object.
+artifacts were checked by the repository verifier path. The Phase 37
+artifact-chain harness receipt goes one step heavier: it starts from the Phase
+29 input contract and Phase 30 step-envelope manifest, recomputes Phase 31
+through Phase 36, and records that source-bound chain. But the repository still
+does not produce a recursively verifiable compressed proof object.
 
 ### Shared-table recursive reuse
 
@@ -63,8 +66,8 @@ proving.
    they are full equivalence proofs,
 4. keep the new Phase 31 bridge, Phase 32 statement contract, Phase 33
    public-input manifest, Phase 34 shared-lookup manifest, Phase 35 target
-   manifest, and Phase 36 verifier harness receipt explicit about what they
-   bind and what they do not claim,
+   manifest, Phase 36 verifier harness receipt, and Phase 37 artifact-chain
+   harness receipt explicit about what they bind and what they do not claim,
 5. move to recursive compression only after the public decode statement is
    stable enough that recursion preserves an already well-defined claim.
 
