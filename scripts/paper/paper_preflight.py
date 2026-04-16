@@ -416,8 +416,14 @@ def check_claim_evidence_path_anchor(
         )
         return
 
-    root = repo_root.resolve()
-    target = (root / relative_path).resolve()
+    try:
+        root = repo_root.resolve()
+        target = (root / relative_path).resolve()
+    except (OSError, RuntimeError) as exc:
+        findings.error(
+            f"{evidence_path}: claim `{claim_id}` `{key}` failed to resolve path {entry}: {exc}"
+        )
+        return
     try:
         target.relative_to(root)
     except ValueError:

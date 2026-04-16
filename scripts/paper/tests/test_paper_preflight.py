@@ -531,6 +531,26 @@ class PaperPreflightTests(unittest.TestCase):
                 findings.errors,
             )
 
+    def test_claim_evidence_path_anchor_reports_resolution_failures(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            findings = MOD.Findings()
+
+            with mock.patch.object(pathlib.Path, "resolve", side_effect=OSError("loop")):
+                MOD.check_claim_evidence_path_anchor(
+                    repo,
+                    repo / MOD.CLAIM_EVIDENCE_FILE,
+                    "phase37_artifact_chain_harness_receipt",
+                    "implementation",
+                    "src/lib.rs:anchor",
+                    findings,
+                )
+
+            self.assertTrue(
+                any("failed to resolve path" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
     def test_find_repo_tokens_scans_for_all_tokens_in_one_pass_result(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp)
