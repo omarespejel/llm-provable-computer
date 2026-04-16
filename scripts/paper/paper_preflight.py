@@ -305,7 +305,7 @@ def parse_claim_evidence_records(
 
     try:
         text = path.read_text(encoding="utf-8")
-    except OSError as exc:
+    except (OSError, UnicodeError) as exc:
         findings.error(f"{path}: failed to read claim evidence matrix: {exc}")
         return []
 
@@ -369,14 +369,24 @@ def iter_code_and_test_files(repo_root: pathlib.Path):
                 yield path
 
 
-def repo_contains_token(repo_root: pathlib.Path, token: str) -> bool:
+def find_repo_tokens(repo_root: pathlib.Path, tokens: set[str]) -> set[str]:
+    remaining = {token for token in tokens if token}
+    found: set[str] = set()
+    if not remaining:
+        return found
+
     for path in iter_code_and_test_files(repo_root):
         try:
-            if token in path.read_text(encoding="utf-8", errors="ignore"):
-                return True
-        except OSError:
+            text = path.read_text(encoding="utf-8", errors="ignore")
+        except (OSError, UnicodeError):
             continue
-    return False
+        present = {token for token in remaining if token in text}
+        if present:
+            found.update(present)
+            remaining.difference_update(present)
+            if not remaining:
+                break
+    return found
 
 
 def split_evidence_path_anchor(entry: str) -> tuple[str, str | None]:
@@ -398,7 +408,24 @@ def check_claim_evidence_path_anchor(
     findings: Findings,
 ) -> None:
     rel_path, anchor = split_evidence_path_anchor(entry)
-    target = repo_root / rel_path
+    relative_path = pathlib.Path(rel_path)
+    if relative_path.is_absolute() or ".." in relative_path.parts:
+        findings.error(
+            f"{evidence_path}: claim `{claim_id}` `{key}` path must be repo-relative "
+            f"and must not contain `..`: {entry}"
+        )
+        return
+
+    root = repo_root.resolve()
+    target = (root / relative_path).resolve()
+    try:
+        target.relative_to(root)
+    except ValueError:
+        findings.error(
+            f"{evidence_path}: claim `{claim_id}` `{key}` path escapes repo root: {entry}"
+        )
+        return
+
     if not target.exists():
         findings.error(
             f"{evidence_path}: claim `{claim_id}` `{key}` references missing path: {entry}"
@@ -439,6 +466,14 @@ def check_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> 
     if parse_findings.errors:
         return
 
+    test_tokens = {
+        test_name
+        for record in records
+        for key in ("positive_tests", "negative_tests")
+        for test_name in list_field(record, key)
+    }
+    found_test_tokens = find_repo_tokens(repo_root, test_tokens)
+
     seen_ids: set[str] = set()
     for record in records:
         claim_id = str(record.get("id", "")).strip()
@@ -476,7 +511,7 @@ def check_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> 
 
         for key in ("positive_tests", "negative_tests"):
             for test_name in list_field(record, key):
-                if not repo_contains_token(repo_root, test_name):
+                if test_name not in found_test_tokens:
                     findings.error(
                         f"{evidence_path}: claim `{claim_id}` `{key}` references missing test token: {test_name}"
                     )
