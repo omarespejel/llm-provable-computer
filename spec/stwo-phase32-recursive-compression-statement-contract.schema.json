@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://llm-provable-computer/spec/stwo-phase32-recursive-compression-statement-contract.schema.json",
+  "title": "S-two Phase 32 Recursive Compression Statement Contract",
+  "type": "object",
+  "required": [
+    "proof_backend",
+    "contract_version",
+    "semantic_scope",
+    "proof_backend_version",
+    "statement_version",
+    "step_relation",
+    "required_recursion_posture",
+    "recursive_verification_claimed",
+    "cryptographic_compression_claimed",
+    "phase31_manifest_version",
+    "phase31_semantic_scope",
+    "phase31_decode_boundary_bridge_commitment",
+    "phase30_source_chain_commitment",
+    "phase30_step_envelopes_commitment",
+    "total_steps",
+    "chain_start_boundary_commitment",
+    "chain_end_boundary_commitment",
+    "source_template_commitment",
+    "aggregation_template_commitment",
+    "recursive_statement_contract_commitment"
+  ],
+  "properties": {
+    "proof_backend": { "const": "stwo" },
+    "contract_version": {
+      "const": "stwo-phase32-recursive-compression-statement-contract-v1"
+    },
+    "semantic_scope": {
+      "const": "stwo_execution_parameterized_recursive_compression_statement_contract"
+    },
+    "proof_backend_version": { "const": "stwo-phase12-decoding-family-v9" },
+    "statement_version": { "const": "statement-v1" },
+    "step_relation": { "const": "decoding_step_v2" },
+    "required_recursion_posture": {
+      "const": "pre-recursive-proof-carrying-aggregation"
+    },
+    "recursive_verification_claimed": { "const": false },
+    "cryptographic_compression_claimed": { "const": false },
+    "phase31_manifest_version": {
+      "const": "stwo-phase31-recursive-compression-decode-boundary-manifest-v1"
+    },
+    "phase31_semantic_scope": {
+      "const": "stwo_execution_parameterized_recursive_compression_decode_boundary_manifest"
+    },
+    "phase31_decode_boundary_bridge_commitment": {
+      "$ref": "#/$defs/hash_blake2b_256_hex"
+    },
+    "phase30_source_chain_commitment": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+    "phase30_step_envelopes_commitment": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+    "total_steps": { "type": "integer", "minimum": 1 },
+    "chain_start_boundary_commitment": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+    "chain_end_boundary_commitment": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+    "source_template_commitment": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+    "aggregation_template_commitment": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+    "recursive_statement_contract_commitment": {
+      "$ref": "#/$defs/hash_blake2b_256_hex"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "hash_blake2b_256_hex": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

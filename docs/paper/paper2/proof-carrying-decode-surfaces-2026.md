@@ -270,7 +270,9 @@ The strongest paper-2 surface is the phase line that reaches:
 - a recursive-compression input contract,
 - a step-proof envelope manifest,
 - a decode-boundary bridge manifest that binds those two recursive-adjacent
-  surfaces together without changing the underlying decode statement.
+  surfaces together without changing the underlying decode statement,
+- and a Phase 32 statement contract that restates that same decode boundary as
+  the public recursive target.
 
 In publication-facing prose, those layers are best described as chain, segment,
 interval bundle, rollup, matrix, and pre-recursive aggregation boundary. The
@@ -388,6 +390,8 @@ Relative to folding and IVC systems, the repository contributes:
 - packaging-layer validity conditions,
 - a recursive-adjacent bridge that binds the published recursion input contract
   to the ordered decode-envelope surface without redefining the statement,
+- a recursive-adjacent statement contract that preserves that same decode
+  boundary for future recursive consumption,
 - proof-carrying pre-recursive aggregation objects,
 - bounded runtime-consistency and release-provenance guardrails.
 
@@ -418,6 +422,7 @@ provided the prose stays disciplined:
 - the pre-recursive aggregation boundary is real,
 - the decode-boundary bridge between the recursive-adjacent inputs and the
   ordered step-envelope surface is real,
+- the recursive-adjacent statement contract derived from that bridge is real,
 - semantic-agreement artifacts are real as bounded evidence,
 - provenance manifests are real as release guardrails.
 
@@ -448,9 +453,9 @@ explicit carried-state boundaries and statement-preserving pre-recursive
 packaging layers.
 
 That is enough for a real crypto-systems paper because it gives later recursive
-work a fixed public statement to preserve. The artifact is therefore not the end
-state. It is the first honest recursive-adjacent boundary that does not need to
-pretend recursion already exists.
+work a fixed public statement to preserve. The artifact line is therefore not
+the end state. It is the first honest recursive-adjacent boundary family that
+does not need to pretend recursion already exists.
 
 ______________________________________________________________________
 

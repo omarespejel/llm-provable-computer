@@ -41,12 +41,14 @@ use llm_provable_computer::{
     load_phase27_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     load_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     load_phase29_recursive_compression_input_contract,
+    load_phase30_decoding_step_proof_envelope_manifest,
     load_phase31_recursive_compression_decode_boundary_manifest,
-    load_phase30_decoding_step_proof_envelope_manifest, load_phase3_binary_step_lookup_proof,
+    load_phase32_recursive_compression_statement_contract, load_phase3_binary_step_lookup_proof,
     load_phase5_normalization_lookup_proof,
     phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28,
-    phase31_prepare_recursive_compression_decode_boundary_manifest,
     phase30_prepare_decoding_step_proof_envelope_manifest,
+    phase31_prepare_recursive_compression_decode_boundary_manifest,
+    phase32_prepare_recursive_compression_statement_contract,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
     prove_phase12_decoding_demo, prove_phase13_decoding_layout_matrix_demo,
@@ -88,12 +90,13 @@ use llm_provable_computer::{
     verify_phase24_decoding_state_relation_accumulator_with_proof_checks,
     verify_phase25_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase26_folded_intervalized_decoding_state_relation_with_proof_checks,
-    verify_phase31_recursive_compression_decode_boundary_manifest_against_sources,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
+    verify_phase31_recursive_compression_decode_boundary_manifest_against_sources,
+    verify_phase32_recursive_compression_statement_contract_against_phase31,
     verify_phase3_binary_step_lookup_demo_envelope,
     verify_phase5_normalization_lookup_demo_envelope, Phase29RecursiveCompressionInputContract,
-    Phase30DecodingStepProofEnvelopeManifest,
-    Phase31RecursiveCompressionDecodeBoundaryManifest,
+    Phase30DecodingStepProofEnvelopeManifest, Phase31RecursiveCompressionDecodeBoundaryManifest,
+    Phase32RecursiveCompressionStatementContract,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
     STWO_BACKEND_VERSION_PHASE12,
     STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
@@ -121,6 +124,8 @@ use llm_provable_computer::{
     STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_VERSION_PHASE31,
     STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29,
     STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29,
+    STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_SCOPE_PHASE32,
+    STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32,
 };
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
@@ -580,6 +585,26 @@ enum Command {
         #[arg(long = "manifest")]
         manifest: Option<PathBuf>,
     },
+    /// Derive a Phase 32 recursive-compression statement contract from a verified Phase 31 manifest.
+    #[cfg(feature = "stwo-backend")]
+    PrepareStwoRecursiveCompressionStatementContract {
+        /// Path to the serialized Phase 31 manifest JSON or JSON.gz file.
+        #[arg(long = "manifest")]
+        manifest: PathBuf,
+        /// File where the serialized Phase 32 statement contract JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a serialized Phase 32 recursive-compression statement contract.
+    #[cfg(feature = "stwo-backend")]
+    VerifyStwoRecursiveCompressionStatementContract {
+        /// Path to the serialized Phase 32 statement contract JSON or JSON.gz file.
+        #[arg(long = "input")]
+        input: PathBuf,
+        /// Optional Phase 31 manifest JSON or JSON.gz file for exact source binding.
+        #[arg(long = "manifest")]
+        manifest: Option<PathBuf>,
+    },
     /// Prepare a canonical multi-proof batch manifest for future S-two recursion.
     PrepareStwoRecursionBatch {
         /// Proof JSON paths to include in the batch (repeatable).
@@ -962,8 +987,7 @@ const HF_PROVENANCE_SEMANTIC_SCOPE: &str = "hf-release-provenance-boundary-v1";
 const HF_PROVENANCE_HASH_FUNCTION: &str = "blake2b-256";
 const HF_ONNX_METADATA_IDENTITY_VERSION: &str = "onnx-program-metadata-identity-v1";
 const HF_ONNX_EXPORTER_IDENTITY_VERSION: &str = "onnx-exporter-identity-v1";
-const HF_ONNX_GRAPH_CONSTRAINT_IDENTITY_VERSION: &str =
-    "onnx-graph-constraint-identity-v1";
+const HF_ONNX_GRAPH_CONSTRAINT_IDENTITY_VERSION: &str = "onnx-graph-constraint-identity-v1";
 const HF_ATTESTATION_METADATA_VERSION: &str = "hf-attestation-metadata-v1";
 const HF_EXTERNAL_ATTESTATION_IDENTITY_VERSION: &str = "hf-external-attestation-identity-v1";
 
@@ -1704,9 +1728,7 @@ fn run() -> llm_provable_computer::Result<()> {
             manifest,
             output,
         } => prepare_stwo_recursive_compression_decode_boundary_manifest_command(
-            &contract,
-            &manifest,
-            &output,
+            &contract, &manifest, &output,
         )?,
         #[cfg(feature = "stwo-backend")]
         Command::VerifyStwoRecursiveCompressionDecodeBoundaryManifest {
@@ -1718,6 +1740,17 @@ fn run() -> llm_provable_computer::Result<()> {
             contract.as_deref(),
             manifest.as_deref(),
         )?,
+        #[cfg(feature = "stwo-backend")]
+        Command::PrepareStwoRecursiveCompressionStatementContract { manifest, output } => {
+            prepare_stwo_recursive_compression_statement_contract_command(&manifest, &output)?
+        }
+        #[cfg(feature = "stwo-backend")]
+        Command::VerifyStwoRecursiveCompressionStatementContract { input, manifest } => {
+            verify_stwo_recursive_compression_statement_contract_command(
+                &input,
+                manifest.as_deref(),
+            )?
+        }
         Command::PrepareStwoRecursionBatch { proofs, output } => {
             prepare_stwo_recursion_batch_command(&proofs, &output)?
         }
@@ -4284,7 +4317,8 @@ fn prepare_stwo_recursive_compression_decode_boundary_manifest_command(
     reject_phase31_decode_boundary_manifest_plain_json_gzip_output(output)?;
     let contract = load_phase29_recursive_compression_input_contract(contract_path)?;
     let phase30 = load_phase30_decoding_step_proof_envelope_manifest(manifest_path)?;
-    let bridge = phase31_prepare_recursive_compression_decode_boundary_manifest(&contract, &phase30)?;
+    let bridge =
+        phase31_prepare_recursive_compression_decode_boundary_manifest(&contract, &phase30)?;
     let json = serde_json::to_vec_pretty(&bridge)
         .map_err(|error| VmError::Serialization(error.to_string()))?;
     fs::write(output, json)?;
@@ -4389,6 +4423,114 @@ fn print_phase31_recursive_compression_decode_boundary_manifest_report(
     println!(
         "expected_semantic_scope: {}",
         STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_SCOPE_PHASE31
+    );
+}
+
+#[cfg(feature = "stwo-backend")]
+fn prepare_stwo_recursive_compression_statement_contract_command(
+    manifest_path: &Path,
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    require_stwo_backend("S-two Phase 32 recursive-compression statement contract")?;
+
+    reject_phase32_recursive_compression_statement_contract_plain_json_gzip_output(output)?;
+    let manifest = load_phase31_recursive_compression_decode_boundary_manifest(manifest_path)?;
+    let contract = phase32_prepare_recursive_compression_statement_contract(&manifest)?;
+    let json = serde_json::to_vec_pretty(&contract)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    fs::write(output, json)?;
+
+    println!("output: {}", output.display());
+    println!("phase31_manifest: {}", manifest_path.display());
+    println!("verified_phase31_manifest: true");
+    print_phase32_recursive_compression_statement_contract_report(&contract);
+
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn verify_stwo_recursive_compression_statement_contract_command(
+    input_path: &Path,
+    manifest_path: Option<&Path>,
+) -> llm_provable_computer::Result<()> {
+    require_stwo_backend("S-two Phase 32 recursive-compression statement contract")?;
+
+    let contract = load_phase32_recursive_compression_statement_contract(input_path)?;
+    if let Some(manifest_path) = manifest_path {
+        let manifest = load_phase31_recursive_compression_decode_boundary_manifest(manifest_path)?;
+        verify_phase32_recursive_compression_statement_contract_against_phase31(
+            &contract, &manifest,
+        )?;
+        println!("source_bound_manifest: {}", manifest_path.display());
+        println!("verified_against_source: true");
+    }
+
+    println!("input: {}", input_path.display());
+    println!("verified_contract: true");
+    print_phase32_recursive_compression_statement_contract_report(&contract);
+
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn reject_phase32_recursive_compression_statement_contract_plain_json_gzip_output(
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    if output.extension().and_then(|extension| extension.to_str()) == Some("gz") {
+        return Err(VmError::InvalidConfig(
+            "prepare-stwo-recursive-compression-statement-contract writes plain JSON; use a `.json` output path"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn print_phase32_recursive_compression_statement_contract_report(
+    contract: &Phase32RecursiveCompressionStatementContract,
+) {
+    println!("proof_backend: {}", contract.proof_backend);
+    println!("contract_version: {}", contract.contract_version);
+    println!("semantic_scope: {}", contract.semantic_scope);
+    println!("proof_backend_version: {}", contract.proof_backend_version);
+    println!("statement_version: {}", contract.statement_version);
+    println!("step_relation: {}", contract.step_relation);
+    println!(
+        "required_recursion_posture: {}",
+        contract.required_recursion_posture
+    );
+    println!(
+        "recursive_verification_claimed: {}",
+        contract.recursive_verification_claimed
+    );
+    println!(
+        "cryptographic_compression_claimed: {}",
+        contract.cryptographic_compression_claimed
+    );
+    println!(
+        "phase31_manifest_version: {}",
+        contract.phase31_manifest_version
+    );
+    println!(
+        "phase31_semantic_scope: {}",
+        contract.phase31_semantic_scope
+    );
+    println!("total_steps: {}", contract.total_steps);
+    println!(
+        "phase31_decode_boundary_bridge_commitment: {}",
+        contract.phase31_decode_boundary_bridge_commitment
+    );
+    println!(
+        "recursive_statement_contract_commitment: {}",
+        contract.recursive_statement_contract_commitment
+    );
+    println!(
+        "expected_contract_version: {}",
+        STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32
+    );
+    println!(
+        "expected_semantic_scope: {}",
+        STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_SCOPE_PHASE32
     );
 }
 
@@ -4595,32 +4737,32 @@ fn prepare_hf_provenance_manifest_command(
                 external_data_files.push(external_data_commitment);
             }
             external_data_files.sort_by(|a, b| a.path.cmp(&b.path));
-            let (metadata, metadata_identity, graph_constraint_identity) = if let Some(metadata_path) =
-                command.onnx_metadata.as_deref()
-            {
-                let (metadata_identity_binding, metadata_commitment, metadata_bytes) =
-                    inspect_hf_onnx_metadata_file(metadata_path)?;
-                ensure_unique_hf_identity(
-                    "HF provenance onnx_export.metadata",
-                    &metadata_path.display().to_string(),
-                    metadata_identity_binding,
-                    &mut bound_paths,
-                )?;
-                let metadata_json = parse_hf_onnx_metadata_json(metadata_path, &metadata_bytes)?;
-                (
-                    Some(metadata_commitment),
-                    Some(derive_hf_onnx_metadata_identity_from_value(
-                        metadata_path,
-                        &metadata_json,
-                    )?),
-                    Some(derive_hf_onnx_graph_constraint_identity_from_value(
-                        metadata_path,
-                        &metadata_json,
-                    )?),
-                )
-            } else {
-                (None, None, None)
-            };
+            let (metadata, metadata_identity, graph_constraint_identity) =
+                if let Some(metadata_path) = command.onnx_metadata.as_deref() {
+                    let (metadata_identity_binding, metadata_commitment, metadata_bytes) =
+                        inspect_hf_onnx_metadata_file(metadata_path)?;
+                    ensure_unique_hf_identity(
+                        "HF provenance onnx_export.metadata",
+                        &metadata_path.display().to_string(),
+                        metadata_identity_binding,
+                        &mut bound_paths,
+                    )?;
+                    let metadata_json =
+                        parse_hf_onnx_metadata_json(metadata_path, &metadata_bytes)?;
+                    (
+                        Some(metadata_commitment),
+                        Some(derive_hf_onnx_metadata_identity_from_value(
+                            metadata_path,
+                            &metadata_json,
+                        )?),
+                        Some(derive_hf_onnx_graph_constraint_identity_from_value(
+                            metadata_path,
+                            &metadata_json,
+                        )?),
+                    )
+                } else {
+                    (None, None, None)
+                };
             Ok::<HfOnnxExportProvenance, VmError>(HfOnnxExportProvenance {
                 exporter: command.onnx_exporter.clone(),
                 exporter_version: command.onnx_exporter_version.clone(),
@@ -4723,9 +4865,7 @@ fn prepare_hf_provenance_manifest_command(
             safetensors_manifest_hash: hash_json_projection_hex(&safetensors)?,
             onnx_export_hash: hash_json_projection_hex(&onnx_export)?,
             onnx_exporter_identity_hash: hash_json_projection_hex(
-                &onnx_export
-                    .as_ref()
-                    .map(|export| &export.exporter_identity),
+                &onnx_export.as_ref().map(|export| &export.exporter_identity),
             )?,
             onnx_metadata_identity_hash: hash_json_projection_hex(
                 &onnx_export
@@ -5507,14 +5647,10 @@ fn verify_hf_provenance_manifest(
                 "HF provenance external_attestation requires attestation metadata".to_string(),
             )
         })?;
-        let (
-            statement_identity,
-            computed_statement,
-            computed_identity,
-            statement_subjects,
-        ) = inspect_hf_external_attestation_statement(Path::new(
-            &external_attestation.statement.path,
-        ))?;
+        let (statement_identity, computed_statement, computed_identity, statement_subjects) =
+            inspect_hf_external_attestation_statement(Path::new(
+                &external_attestation.statement.path,
+            ))?;
         ensure_hf_file_commitment_matches(
             "external_attestation.statement",
             &external_attestation.statement,
@@ -5539,21 +5675,13 @@ fn verify_hf_provenance_manifest(
             attestation.builder_id.as_deref(),
             external_attestation.identity.builder_id.as_deref(),
         ) {
-            expect_eq(
-                "hf attestation.builder_id",
-                attested,
-                external,
-            )?;
+            expect_eq("hf attestation.builder_id", attested, external)?;
         }
         if let (Some(attested), Some(external)) = (
             attestation.build_invocation_id.as_deref(),
             external_attestation.identity.build_invocation_id.as_deref(),
         ) {
-            expect_eq(
-                "hf attestation.build_invocation_id",
-                attested,
-                external,
-            )?;
+            expect_eq("hf attestation.build_invocation_id", attested, external)?;
         }
     }
 
@@ -9131,9 +9259,7 @@ mod hf_provenance_manifest_tests {
                 .expect("safetensors hash"),
                 onnx_export_hash: hash_json_projection_hex(&onnx_export).expect("onnx hash"),
                 onnx_exporter_identity_hash: hash_json_projection_hex(
-                    &onnx_export
-                        .as_ref()
-                        .map(|export| &export.exporter_identity),
+                    &onnx_export.as_ref().map(|export| &export.exporter_identity),
                 )
                 .expect("onnx exporter identity hash"),
                 onnx_metadata_identity_hash: hash_json_projection_hex(
@@ -9378,8 +9504,7 @@ mod hf_provenance_manifest_tests {
 
     #[test]
     fn load_hf_provenance_manifest_rejects_v7_missing_onnx_graph_constraint_identity_hash_field() {
-        let file =
-            hf_provenance_test_manifest_file("missing-onnx-graph-constraint-identity-hash");
+        let file = hf_provenance_test_manifest_file("missing-onnx-graph-constraint-identity-hash");
         let mut value = sample_hf_provenance_manifest_value();
         value["onnx_export"] = serde_json::json!({
             "exporter": "optimum",
@@ -9406,8 +9531,9 @@ mod hf_provenance_manifest_tests {
             .remove("onnx_graph_constraint_identity_hash");
         write_hf_provenance_test_manifest(file.path(), &value);
 
-        let err = load_hf_provenance_manifest(file.path())
-            .expect_err("v7 manifest missing onnx_graph_constraint_identity_hash field should fail");
+        let err = load_hf_provenance_manifest(file.path()).expect_err(
+            "v7 manifest missing onnx_graph_constraint_identity_hash field should fail",
+        );
         assert!(err
             .to_string()
             .contains("missing field `onnx_graph_constraint_identity_hash`"));
@@ -9710,8 +9836,8 @@ mod hf_provenance_manifest_tests {
                     role: "model_card".to_string(),
                     path: bound_dir.display().to_string(),
                     sha256: "1".repeat(64),
-                    }],
-                }),
+                }],
+            }),
             external_attestation: None,
             limitations,
             commitments: HfProvenanceCommitments {
@@ -10824,6 +10950,12 @@ mod cli_dispatch_tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-recursive-compression-decode-boundary-manifest"
         ));
+        assert!(!needs_run_subcommand(
+            "prepare-stwo-recursive-compression-statement-contract"
+        ));
+        assert!(!needs_run_subcommand(
+            "verify-stwo-recursive-compression-statement-contract"
+        ));
     }
 }
 
@@ -11216,6 +11348,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-recursive-compression-input-contract"
                 | "prepare-stwo-recursive-compression-decode-boundary-manifest"
                 | "verify-stwo-recursive-compression-decode-boundary-manifest"
+                | "prepare-stwo-recursive-compression-statement-contract"
+                | "verify-stwo-recursive-compression-statement-contract"
                 | "prepare-stwo-recursion-batch"
                 | "research-v2-step"
                 | "research-v2-trace"
