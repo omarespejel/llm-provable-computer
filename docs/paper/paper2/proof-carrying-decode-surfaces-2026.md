@@ -278,7 +278,9 @@ The strongest paper-2 surface is the phase line that reaches:
 - and a Phase 34 shared-lookup manifest that freezes the ordered lookup-facing
   commitments already exposed by the Phase 30 step envelopes,
 - and a Phase 35 target manifest that binds the preserved Phase 32, Phase 33,
-  and Phase 34 commitments into one canonical recursive target.
+  and Phase 34 commitments into one canonical recursive target,
+- and a Phase 36 verifier harness receipt that records source-bound checking of
+  that target without claiming recursive proof closure.
 
 In publication-facing prose, those layers are best described as chain, segment,
 interval bundle, rollup, matrix, and pre-recursive aggregation boundary. The
@@ -404,6 +406,8 @@ Relative to folding and IVC systems, the repository contributes:
   lookup-facing commitments future recursive/shared-table work must consume,
 - a recursive-adjacent target manifest that unifies those preserved
   commitments into one later-recursion entry point,
+- a verifier harness receipt that records source-bound checking of that target
+  as operational evidence rather than recursive compression,
 - proof-carrying pre-recursive aggregation objects,
 - bounded runtime-consistency and release-provenance guardrails.
 

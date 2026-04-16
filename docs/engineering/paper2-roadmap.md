@@ -31,6 +31,9 @@ The repository is already strong enough for the bounded paper-2 claim:
   over that same statement,
 - a Phase 35 target manifest now unifies the Phase 32, Phase 33, and Phase 34
   preserved commitments into one canonical recursive target artifact,
+- a Phase 36 verifier harness receipt now records that the exact Phase 35
+  target and its Phase 32, Phase 33, and Phase 34 sources were checked by the
+  repository verifier path, without claiming recursive compression,
 - bounded multi-runtime semantic-agreement artifacts exist,
 - Hugging Face provenance manifests exist as reproducibility artifacts,
 - ONNX-facing provenance now binds exported graph, metadata companion, and
@@ -104,7 +107,10 @@ freezes the exact ordered public inputs a recursive verifier would need to
 preserve. The repository now also has a Phase 34 manifest that freezes the
 ordered lookup-facing public inputs already exposed by the Phase 30 step
 envelopes. The new Phase 35 target manifest binds those preserved surfaces into
-one canonical recursive target commitment.
+one canonical recursive target commitment. The Phase 36 verifier harness
+receipt then records that the target verifier was run against those exact source
+artifacts. It is useful operational evidence, but it is still not recursive
+proof closure.
 
 That means the next recursive work should preserve:
 
@@ -118,6 +124,8 @@ That means the next recursive work should preserve:
   inputs and the Phase 30 envelopes.
 - the Phase 35 unified recursive target commitment derived from Phase 32,
   Phase 33, and Phase 34.
+- the Phase 36 source-bound verifier receipt over that target, as an
+  operational check rather than a compressed proof.
 
 ### 5. Then move to recursive compression
 
@@ -148,7 +156,8 @@ The next concrete engineering slice should be:
    require external signed attestation verification,
 2. keep the Phase 31 decode-boundary bridge, Phase 32 recursive statement
    contract, Phase 33 public-input manifest, Phase 34 shared-lookup manifest,
-   and Phase 35 target manifest narrow and explicit about what is bound from
-   earlier artifacts versus what would require actual recursive verification,
+   Phase 35 target manifest, and Phase 36 verifier harness receipt narrow and
+   explicit about what is bound from earlier artifacts versus what would require
+   actual recursive verification,
 3. then recurse over that existing decode boundary and public-input ordering
    rather than inventing a new statement surface.
