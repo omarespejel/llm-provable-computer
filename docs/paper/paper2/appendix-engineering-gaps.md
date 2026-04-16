@@ -21,12 +21,13 @@ compressed proof object.
 
 The Hugging Face provenance line is strong as a bounded reproducibility surface,
 but it is not yet a complete supply-chain attestation story. In particular,
-stronger binding of exporter-side ONNX provenance and attestation-compatible
-release metadata remains a live engineering gap. Today the repository binds the
+stronger binding of exporter-side ONNX provenance and externally signed
+attestations remains a live engineering gap. Today the repository binds the
 produced ONNX-facing graph, metadata, and external-file identities together with
-local file hashes, but it does not yet expose a broader attestation-compatible
-layer for exporter graph identity, shape/range constraints, or richer build
-provenance.
+local file hashes, attestation-friendly subject digests, and optional
+builder/source release metadata, but it does not yet expose a verified external
+attestation layer for exporter graph identity, shape/range constraints, or
+builder trust.
 
 ### Runtime-consistency scope
 
@@ -45,8 +46,8 @@ proving.
 1. keep hardening parser, verifier, and manifest boundaries that sit directly on
    the paper-2 claim surface,
 2. extend the current ONNX graph/metadata/external-file provenance binding
-   toward exporter identity, graph-constraint identity, and
-   attestation-compatible release metadata,
+   toward exporter identity, graph-constraint identity, and externally signed
+   attestations,
 3. keep semantic-agreement artifacts bounded and explicit rather than pretending
    they are full equivalence proofs,
 4. move to recursive compression only after the public decode statement is

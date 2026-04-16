@@ -717,6 +717,18 @@ enum Command {
         /// Extra manifest note (repeatable).
         #[arg(long = "note")]
         notes: Vec<String>,
+        /// Optional attestation-friendly builder identity, for example a GitHub workflow URI.
+        #[arg(long = "attestation-builder-id")]
+        attestation_builder_id: Option<String>,
+        /// Optional attestation-friendly build invocation identifier.
+        #[arg(long = "attestation-build-invocation-id")]
+        attestation_build_invocation_id: Option<String>,
+        /// Optional source repository coordinate for build provenance metadata.
+        #[arg(long = "attestation-source-repository")]
+        attestation_source_repository: Option<String>,
+        /// Optional pinned source revision for build provenance metadata.
+        #[arg(long = "attestation-source-revision")]
+        attestation_source_revision: Option<String>,
     },
     /// Verify a Hugging Face release/provenance manifest and local file bindings.
     VerifyHfProvenanceManifest {
@@ -912,6 +924,7 @@ const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v5";
 const HF_PROVENANCE_SEMANTIC_SCOPE: &str = "hf-release-provenance-boundary-v1";
 const HF_PROVENANCE_HASH_FUNCTION: &str = "blake2b-256";
 const HF_ONNX_METADATA_IDENTITY_VERSION: &str = "onnx-program-metadata-identity-v1";
+const HF_ATTESTATION_METADATA_VERSION: &str = "hf-attestation-metadata-v1";
 
 struct HfProvenanceManifestCommand {
     output: PathBuf,
@@ -932,6 +945,10 @@ struct HfProvenanceManifestCommand {
     doi: Option<String>,
     datasets: Vec<String>,
     notes: Vec<String>,
+    attestation_builder_id: Option<String>,
+    attestation_build_invocation_id: Option<String>,
+    attestation_source_repository: Option<String>,
+    attestation_source_revision: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -998,6 +1015,25 @@ struct HfReleaseMetadata {
     notes: Vec<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct HfAttestationSubject {
+    role: String,
+    path: String,
+    sha256: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct HfAttestationMetadata {
+    attestation_version: String,
+    builder_id: Option<String>,
+    build_invocation_id: Option<String>,
+    source_repository: Option<String>,
+    source_revision: Option<String>,
+    subjects: Vec<HfAttestationSubject>,
+}
+
 #[derive(Debug, Serialize)]
 struct HfHubBinding<'a> {
     hub_repo: &'a str,
@@ -1013,6 +1049,8 @@ struct HfProvenanceCommitments {
     onnx_export_hash: String,
     onnx_metadata_identity_hash: String,
     release_metadata_hash: String,
+    #[serde(default = "default_hf_attestation_hash")]
+    attestation_hash: String,
     limitations_hash: String,
 }
 
@@ -1028,8 +1066,15 @@ struct HfProvenanceManifest {
     safetensors: Vec<HfSafetensorsFileCommitment>,
     onnx_export: Option<HfOnnxExportProvenance>,
     release: HfReleaseMetadata,
+    #[serde(default)]
+    attestation: Option<HfAttestationMetadata>,
     limitations: Vec<String>,
     commitments: HfProvenanceCommitments,
+}
+
+fn default_hf_attestation_hash() -> String {
+    hash_json_projection_hex(&Option::<HfAttestationMetadata>::None)
+        .expect("default HF attestation hash")
 }
 
 #[cfg(feature = "onnx-export")]
@@ -1629,6 +1674,10 @@ fn run() -> llm_provable_computer::Result<()> {
             doi,
             datasets,
             notes,
+            attestation_builder_id,
+            attestation_build_invocation_id,
+            attestation_source_repository,
+            attestation_source_revision,
         } => prepare_hf_provenance_manifest_command(HfProvenanceManifestCommand {
             output,
             hub_repo,
@@ -1648,6 +1697,10 @@ fn run() -> llm_provable_computer::Result<()> {
             doi,
             datasets,
             notes,
+            attestation_builder_id,
+            attestation_build_invocation_id,
+            attestation_source_repository,
+            attestation_source_revision,
         })?,
         Command::VerifyHfProvenanceManifest { manifest } => {
             verify_hf_provenance_manifest_command(&manifest)?
@@ -4344,6 +4397,19 @@ fn prepare_hf_provenance_manifest_command(
         datasets: command.datasets,
         notes: command.notes,
     };
+    let attestation = Some(HfAttestationMetadata {
+        attestation_version: HF_ATTESTATION_METADATA_VERSION.to_string(),
+        builder_id: command.attestation_builder_id,
+        build_invocation_id: command.attestation_build_invocation_id,
+        source_repository: command.attestation_source_repository,
+        source_revision: command.attestation_source_revision,
+        subjects: derive_hf_attestation_subjects(
+            &tokenizer,
+            &safetensors,
+            onnx_export.as_ref(),
+            &release,
+        ),
+    });
     let limitations = hf_provenance_limitations();
     let hub_binding_hash = hash_json_projection_hex(&HfHubBinding {
         hub_repo: &command.hub_repo,
@@ -4366,12 +4432,14 @@ fn prepare_hf_provenance_manifest_command(
                     .and_then(|export| export.metadata_identity.as_ref()),
             )?,
             release_metadata_hash: hash_json_projection_hex(&release)?,
+            attestation_hash: hash_json_projection_hex(&attestation)?,
             limitations_hash: hash_json_projection_hex(&limitations)?,
         },
         tokenizer,
         safetensors,
         onnx_export,
         release,
+        attestation,
         limitations,
     };
     verify_hf_provenance_manifest(&manifest)?;
@@ -4385,6 +4453,13 @@ fn prepare_hf_provenance_manifest_command(
     println!("hub_revision: {}", manifest.hub_revision);
     println!("tokenizer_id: {}", manifest.tokenizer.tokenizer_id);
     println!("safetensors_files: {}", manifest.safetensors.len());
+    println!(
+        "attestation_subjects: {}",
+        manifest
+            .attestation
+            .as_ref()
+            .map_or(0, |attestation| attestation.subjects.len())
+    );
     println!(
         "commitment_safetensors_manifest_hash: {}",
         manifest.commitments.safetensors_manifest_hash
@@ -4828,6 +4903,11 @@ fn verify_hf_provenance_manifest(
         &hash_json_projection_hex(&manifest.release)?,
     )?;
     verify_hash_commitment(
+        "hf attestation_hash",
+        &manifest.commitments.attestation_hash,
+        &hash_json_projection_hex(&manifest.attestation)?,
+    )?;
+    verify_hash_commitment(
         "hf limitations_hash",
         &manifest.commitments.limitations_hash,
         &hash_json_projection_hex(&manifest.limitations)?,
@@ -4950,6 +5030,56 @@ fn verify_hf_provenance_manifest(
             )));
         }
     }
+    if let Some(attestation) = &manifest.attestation {
+        expect_eq(
+            "hf attestation.attestation_version",
+            &attestation.attestation_version,
+            HF_ATTESTATION_METADATA_VERSION,
+        )?;
+        validate_hf_optional_identifier(
+            "attestation.builder_id",
+            attestation.builder_id.as_deref(),
+        )?;
+        validate_hf_optional_identifier(
+            "attestation.build_invocation_id",
+            attestation.build_invocation_id.as_deref(),
+        )?;
+        validate_hf_optional_identifier(
+            "attestation.source_repository",
+            attestation.source_repository.as_deref(),
+        )?;
+        match (
+            attestation.source_repository.as_deref(),
+            attestation.source_revision.as_deref(),
+        ) {
+            (Some(_), Some(source_revision)) => {
+                validate_hf_pinned_revision("attestation.source_revision", source_revision)?;
+            }
+            (Some(_), None) => {
+                return Err(VmError::InvalidConfig(
+                    "HF provenance attestation.source_revision must be present when attestation.source_repository is set".to_string(),
+                ));
+            }
+            (None, Some(_)) => {
+                return Err(VmError::InvalidConfig(
+                    "HF provenance attestation.source_repository must be present when attestation.source_revision is set".to_string(),
+                ));
+            }
+            (None, None) => {}
+        }
+        let expected_subjects = derive_hf_attestation_subjects(
+            &manifest.tokenizer,
+            &manifest.safetensors,
+            manifest.onnx_export.as_ref(),
+            &manifest.release,
+        );
+        if attestation.subjects != expected_subjects {
+            return Err(VmError::InvalidConfig(
+                "HF provenance attestation.subjects do not match the bound local-file surface"
+                    .to_string(),
+            ));
+        }
+    }
 
     Ok(())
 }
@@ -4967,6 +5097,73 @@ fn hf_provenance_limitations() -> Vec<String> {
     .into_iter()
     .map(str::to_string)
     .collect()
+}
+
+fn derive_hf_attestation_subjects(
+    tokenizer: &HfTokenizerProvenance,
+    safetensors: &[HfSafetensorsFileCommitment],
+    onnx_export: Option<&HfOnnxExportProvenance>,
+    release: &HfReleaseMetadata,
+) -> Vec<HfAttestationSubject> {
+    let mut subjects = Vec::new();
+
+    push_hf_attestation_file_subject(
+        &mut subjects,
+        "tokenizer_json",
+        tokenizer.tokenizer_json.as_ref(),
+    );
+    push_hf_attestation_file_subject(
+        &mut subjects,
+        "tokenizer_config",
+        tokenizer.tokenizer_config.as_ref(),
+    );
+    push_hf_attestation_file_subject(
+        &mut subjects,
+        "tokenization_transcript",
+        tokenizer.tokenization_transcript.as_ref(),
+    );
+    for commitment in safetensors {
+        subjects.push(HfAttestationSubject {
+            role: "safetensors".to_string(),
+            path: commitment.path.clone(),
+            sha256: commitment.sha256.clone(),
+        });
+    }
+    if let Some(onnx_export) = onnx_export {
+        push_hf_attestation_file_subject(
+            &mut subjects,
+            "onnx_export.graph",
+            Some(&onnx_export.graph),
+        );
+        push_hf_attestation_file_subject(
+            &mut subjects,
+            "onnx_export.metadata",
+            onnx_export.metadata.as_ref(),
+        );
+        for commitment in &onnx_export.external_data_files {
+            subjects.push(HfAttestationSubject {
+                role: "onnx_export.external_data_files".to_string(),
+                path: commitment.path.clone(),
+                sha256: commitment.sha256.clone(),
+            });
+        }
+    }
+    push_hf_attestation_file_subject(&mut subjects, "model_card", release.model_card.as_ref());
+    subjects
+}
+
+fn push_hf_attestation_file_subject(
+    subjects: &mut Vec<HfAttestationSubject>,
+    role: &str,
+    commitment: Option<&HfFileCommitment>,
+) {
+    if let Some(commitment) = commitment {
+        subjects.push(HfAttestationSubject {
+            role: role.to_string(),
+            path: commitment.path.clone(),
+            sha256: commitment.sha256.clone(),
+        });
+    }
 }
 
 fn validate_hf_identifier(label: &str, value: &str) -> llm_provable_computer::Result<()> {
@@ -8136,6 +8333,7 @@ mod hf_provenance_manifest_tests {
                 "datasets": [],
                 "notes": []
             },
+            "attestation": null,
             "limitations": hf_provenance_limitations(),
             "commitments": {
                 "hub_binding_hash": "f".repeat(64),
@@ -8144,6 +8342,7 @@ mod hf_provenance_manifest_tests {
                 "onnx_export_hash": "2".repeat(64),
                 "onnx_metadata_identity_hash": "3".repeat(64),
                 "release_metadata_hash": "5".repeat(64),
+                "attestation_hash": default_hf_attestation_hash(),
                 "limitations_hash": "4".repeat(64)
             }
         })
@@ -8184,6 +8383,19 @@ mod hf_provenance_manifest_tests {
             safetensors,
             onnx_export: onnx_export.clone(),
             release: release.clone(),
+            attestation: Some(HfAttestationMetadata {
+                attestation_version: HF_ATTESTATION_METADATA_VERSION.to_string(),
+                builder_id: None,
+                build_invocation_id: None,
+                source_repository: None,
+                source_revision: None,
+                subjects: derive_hf_attestation_subjects(
+                    &tokenizer,
+                    &Vec::<HfSafetensorsFileCommitment>::new(),
+                    onnx_export.as_ref(),
+                    &release,
+                ),
+            }),
             limitations: limitations.clone(),
             commitments: HfProvenanceCommitments {
                 hub_binding_hash: hash_json_projection_hex(&HfHubBinding {
@@ -8204,6 +8416,20 @@ mod hf_provenance_manifest_tests {
                 )
                 .expect("onnx metadata identity hash"),
                 release_metadata_hash: hash_json_projection_hex(&release).expect("release hash"),
+                attestation_hash: hash_json_projection_hex(&Some(HfAttestationMetadata {
+                    attestation_version: HF_ATTESTATION_METADATA_VERSION.to_string(),
+                    builder_id: None,
+                    build_invocation_id: None,
+                    source_repository: None,
+                    source_revision: None,
+                    subjects: derive_hf_attestation_subjects(
+                        &tokenizer,
+                        &Vec::<HfSafetensorsFileCommitment>::new(),
+                        onnx_export.as_ref(),
+                        &release,
+                    ),
+                }))
+                .expect("attestation hash"),
                 limitations_hash: hash_json_projection_hex(&limitations).expect("limitations hash"),
             },
         }
@@ -8448,6 +8674,10 @@ mod hf_provenance_manifest_tests {
             doi: None,
             datasets: Vec::new(),
             notes: vec!["x".repeat(MAX_HF_PROVENANCE_MANIFEST_JSON_BYTES)],
+            attestation_builder_id: None,
+            attestation_build_invocation_id: None,
+            attestation_source_repository: None,
+            attestation_source_revision: None,
         })
         .expect_err("oversized manifest output should fail");
 
@@ -8524,6 +8754,18 @@ mod hf_provenance_manifest_tests {
             safetensors,
             onnx_export,
             release,
+            attestation: Some(HfAttestationMetadata {
+                attestation_version: HF_ATTESTATION_METADATA_VERSION.to_string(),
+                builder_id: None,
+                build_invocation_id: None,
+                source_repository: None,
+                source_revision: None,
+                subjects: vec![HfAttestationSubject {
+                    role: "model_card".to_string(),
+                    path: bound_dir.display().to_string(),
+                    sha256: "1".repeat(64),
+                }],
+            }),
             limitations,
             commitments: HfProvenanceCommitments {
                 hub_binding_hash: hash_json_projection_hex(&HfHubBinding {
@@ -8561,6 +8803,19 @@ mod hf_provenance_manifest_tests {
                     notes: Vec::new(),
                 })
                 .expect("release hash"),
+                attestation_hash: hash_json_projection_hex(&Some(HfAttestationMetadata {
+                    attestation_version: HF_ATTESTATION_METADATA_VERSION.to_string(),
+                    builder_id: None,
+                    build_invocation_id: None,
+                    source_repository: None,
+                    source_revision: None,
+                    subjects: vec![HfAttestationSubject {
+                        role: "model_card".to_string(),
+                        path: bound_dir.display().to_string(),
+                        sha256: "1".repeat(64),
+                    }],
+                }))
+                .expect("attestation hash"),
                 limitations_hash: hash_json_projection_hex(&hf_provenance_limitations())
                     .expect("limitations hash"),
             },
@@ -8597,6 +8852,10 @@ mod hf_provenance_manifest_tests {
             doi: None,
             datasets: Vec::new(),
             notes: vec!["release note".to_string()],
+            attestation_builder_id: None,
+            attestation_build_invocation_id: None,
+            attestation_source_repository: None,
+            attestation_source_revision: None,
         })
         .expect_err("ONNX sidecars without graph should fail");
 

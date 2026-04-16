@@ -295,11 +295,12 @@ safetensors identities to explicit local-file hashes and pinned release
 coordinates. In the ONNX-facing path, that boundary now includes the exported
 graph, its metadata companion, declared external-data side files, and
 attestation-friendly SHA-256 subject digests alongside the repository's local
-BLAKE2b-256 commitments. This is operationally valuable, especially for frozen
-artifact bundles and release-verification workflows that already key on
-SHA-256. It should not be confused with a proof relation or a verified
-attestation pipeline. It is a release boundary, not a theorem that exporter or
-supply-chain semantics are preserved.
+BLAKE2b-256 commitments and optional builder/source release metadata. This is
+operationally valuable, especially for frozen artifact bundles and
+release-verification workflows that already key on SHA-256. It should not be
+confused with a proof relation or a verified attestation pipeline. It is a
+release boundary, not a theorem that exporter or supply-chain semantics are
+preserved.
 
 ______________________________________________________________________
 

@@ -34,6 +34,12 @@
       ]
     },
     "release": { "$ref": "#/$defs/release" },
+    "attestation": {
+      "anyOf": [
+        { "$ref": "#/$defs/attestation" },
+        { "type": "null" }
+      ]
+    },
     "limitations": {
       "type": "array",
       "minItems": 1,
@@ -198,6 +204,59 @@
       },
       "additionalProperties": false
     },
+    "attestation_subject": {
+      "type": "object",
+      "required": ["role", "path", "sha256"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/hash_sha256_hex" }
+      },
+      "additionalProperties": false
+    },
+    "attestation": {
+      "type": "object",
+      "required": [
+        "attestation_version",
+        "builder_id",
+        "build_invocation_id",
+        "source_repository",
+        "source_revision",
+        "subjects"
+      ],
+      "properties": {
+        "attestation_version": { "const": "hf-attestation-metadata-v1" },
+        "builder_id": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "build_invocation_id": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "source_repository": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "source_revision": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "subjects": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/attestation_subject" }
+        }
+      },
+      "additionalProperties": false
+    },
     "commitments": {
       "type": "object",
       "required": [
@@ -216,6 +275,7 @@
         "onnx_export_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "onnx_metadata_identity_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "release_metadata_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
+        "attestation_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" },
         "limitations_hash": { "$ref": "#/$defs/hash_blake2b_256_hex" }
       },
       "additionalProperties": false

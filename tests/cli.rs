@@ -4832,10 +4832,19 @@ fn cli_can_prepare_and_verify_hf_provenance_manifest() {
         .arg("example/prompts")
         .arg("--note")
         .arg("fixture only")
+        .arg("--attestation-builder-id")
+        .arg("https://github.com/example/workflows/release.yml@refs/tags/v1")
+        .arg("--attestation-build-invocation-id")
+        .arg("build-123")
+        .arg("--attestation-source-repository")
+        .arg("omarespejel/provable-transformer-vm")
+        .arg("--attestation-source-revision")
+        .arg("45706ff0776fd2e5a36b22b4c3cb85533d0676c6")
         .assert()
         .success()
         .stdout(predicate::str::contains("hf_provenance_manifest:"))
-        .stdout(predicate::str::contains("safetensors_files: 1"));
+        .stdout(predicate::str::contains("safetensors_files: 1"))
+        .stdout(predicate::str::contains("attestation_subjects: 6"));
 
     let manifest_json: serde_json::Value =
         serde_json::from_slice(&std::fs::read(&manifest).expect("manifest bytes"))
@@ -4847,6 +4856,32 @@ fn cli_can_prepare_and_verify_hf_provenance_manifest() {
             .get("manifest_version")
             .and_then(serde_json::Value::as_str),
         Some("hf-provenance-manifest-v5")
+    );
+    assert_eq!(
+        manifest_json["attestation"]["attestation_version"].as_str(),
+        Some("hf-attestation-metadata-v1")
+    );
+    assert_eq!(
+        manifest_json["attestation"]["builder_id"].as_str(),
+        Some("https://github.com/example/workflows/release.yml@refs/tags/v1")
+    );
+    assert_eq!(
+        manifest_json["attestation"]["build_invocation_id"].as_str(),
+        Some("build-123")
+    );
+    assert_eq!(
+        manifest_json["attestation"]["source_repository"].as_str(),
+        Some("omarespejel/provable-transformer-vm")
+    );
+    assert_eq!(
+        manifest_json["attestation"]["source_revision"].as_str(),
+        Some("45706ff0776fd2e5a36b22b4c3cb85533d0676c6")
+    );
+    assert_eq!(
+        manifest_json["attestation"]["subjects"]
+            .as_array()
+            .map(|subjects| subjects.len()),
+        Some(6)
     );
     assert_eq!(
         manifest_json
@@ -4869,6 +4904,14 @@ fn cli_can_prepare_and_verify_hf_provenance_manifest() {
                 digest.len() == 64 && digest.chars().all(|c| c.is_ascii_hexdigit())
             }),
         "commitments.onnx_metadata_identity_hash must be hex",
+    );
+    assert!(
+        manifest_json["commitments"]["attestation_hash"]
+            .as_str()
+            .is_some_and(|digest| {
+                digest.len() == 64 && digest.chars().all(|c| c.is_ascii_hexdigit())
+            }),
+        "commitments.attestation_hash must be hex",
     );
     assert!(manifest_json["onnx_export"]["metadata_identity"].is_null());
     assert_eq!(
@@ -5532,6 +5575,117 @@ fn cli_prepare_hf_manifest_emits_onnx_metadata_identity() {
             }),
         "commitments.onnx_metadata_identity_hash must be hex",
     );
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
+fn cli_verifier_rejects_tampered_hf_attestation_hash() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-attestation-hash-tamper");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let tokenizer_json = fixture_dir.join("tokenizer.json");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(
+        &tokenizer_json,
+        br#"{"version":"1.0","model":{"type":"WordPiece","unk_token":"[UNK]"}}"#,
+    )
+    .expect("write tokenizer json");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&tokenizer_json)
+        .arg("--attestation-builder-id")
+        .arg("https://github.com/example/workflows/release.yml@refs/tags/v1")
+        .assert()
+        .success();
+
+    let mut manifest_json: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).expect("manifest bytes"))
+            .expect("manifest json");
+    manifest_json["commitments"]["attestation_hash"] = serde_json::json!("0".repeat(64));
+    std::fs::write(
+        &manifest,
+        serde_json::to_vec_pretty(&manifest_json).expect("serialize tampered manifest"),
+    )
+    .expect("write tampered manifest");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "hf attestation_hash commitment mismatch",
+        ));
+
+    let _ = std::fs::remove_dir_all(fixture_dir);
+}
+
+#[test]
+fn cli_verifier_rejects_tampered_hf_attestation_subjects() {
+    let fixture_dir = unique_temp_dir("cli-hf-provenance-attestation-subjects-tamper");
+    std::fs::create_dir_all(&fixture_dir).expect("create HF provenance fixture dir");
+    let tokenizer_json = fixture_dir.join("tokenizer.json");
+    let manifest = fixture_dir.join("hf-provenance.json");
+
+    std::fs::write(
+        &tokenizer_json,
+        br#"{"version":"1.0","model":{"type":"WordPiece","unk_token":"[UNK]"}}"#,
+    )
+    .expect("write tokenizer json");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-hf-provenance-manifest")
+        .arg("-o")
+        .arg(&manifest)
+        .arg("--hub-repo")
+        .arg("example/test-model")
+        .arg("--hub-revision")
+        .arg("0123456789abcdef")
+        .arg("--tokenizer-id")
+        .arg("example/test-model")
+        .arg("--tokenizer-json")
+        .arg(&tokenizer_json)
+        .assert()
+        .success();
+
+    let mut manifest_json: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).expect("manifest bytes"))
+            .expect("manifest json");
+    manifest_json["attestation"]["subjects"][0]["sha256"] = serde_json::json!("0".repeat(64));
+    manifest_json["commitments"]["attestation_hash"] = serde_json::Value::String(hash_json_value(
+        manifest_json
+            .get("attestation")
+            .expect("attestation section after tamper"),
+    ));
+    std::fs::write(
+        &manifest,
+        serde_json::to_vec_pretty(&manifest_json).expect("serialize tampered manifest"),
+    )
+    .expect("write tampered manifest");
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-hf-provenance-manifest")
+        .arg(&manifest)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "HF provenance attestation.subjects do not match the bound local-file surface",
+        ));
 
     let _ = std::fs::remove_dir_all(fixture_dir);
 }

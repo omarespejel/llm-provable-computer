@@ -25,6 +25,8 @@ The repository is already strong enough for the bounded paper-2 claim:
 - Hugging Face provenance manifests exist as reproducibility artifacts,
 - ONNX-facing provenance now binds exported graph, metadata companion, and
   declared external-data side files,
+- attestation-friendly subject digests plus optional builder/source release
+  metadata now exist on the HF provenance surface,
 - parser/verifier hardening has materially improved the trust boundary around
   those surfaces.
 
@@ -44,18 +46,19 @@ This work remains highest leverage because the paper’s main claim is that thes
 verifier boundaries define the repository’s current reproducibility and
 statement-stability envelope.
 
-### 2. Extend provenance binding toward attestation-friendly release metadata
+### 2. Deepen provenance binding beyond the new attestation-friendly release layer
 
-The next substantive gap is no longer basic ONNX sidecar binding. It is richer
-attestation-friendly provenance over the same release surface.
+The next substantive gap is no longer basic ONNX sidecar binding or release-side
+subject digests. It is stronger exporter and externally signed provenance over
+the same release surface.
 
 Concrete targets:
 
 - bind exporter identity more explicitly,
 - bind graph-constraint identity where exporter metadata exposes it,
 - preserve external-file identity where ONNX layout requires it,
-- add richer release/build metadata without letting the claim drift into proof
-  semantics,
+- keep the new builder/source metadata aligned with signed attestation subjects
+  rather than proof semantics,
 - keep the claim phrased as provenance/reproducibility, not proof semantics.
 
 ### 3. Keep semantic-agreement artifacts bounded
@@ -95,6 +98,6 @@ exists to sequence the implementation work that keeps those boundaries honest.
 The next concrete engineering slice should be:
 
 1. one more targeted verifier/tamper pass over the expanded HF provenance
-   manifest surface,
-2. then attestation-friendly release-metadata hardening over the same bounded
-   provenance claim.
+   attestation block and the exact paper-facing `research-v3` boundary,
+2. then explicit exporter-identity or graph-constraint binding over the same
+   bounded provenance claim.
