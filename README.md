@@ -837,7 +837,8 @@ cargo run --bin tvm -- prepare-hf-provenance-manifest \
   --onnx-model path/to/model.onnx \
   --onnx-metadata path/to/metadata.json \
   --onnx-external-data path/to/model.onnx_data \
-  --model-card path/to/README.md
+  --model-card path/to/README.md \
+  --external-attestation-statement path/to/release.attestation.json
 cargo run --bin tvm -- verify-hf-provenance-manifest compiled/hf-provenance.json
 ```
 
@@ -852,17 +853,22 @@ algorithm correctness, safetensors architectural semantics, ONNX exporter semant
 equivalence, ONNX metadata semantic correctness, live Hub availability, DOI
 validity, or GitHub/Sigstore/in-toto/SLSA attestation validity. The current wire
 format also carries `sha256` digests for bound files so release assets can be
-matched against attestation subject digests without turning the manifest into an
-attestation verifier. When an ONNX metadata sidecar is bound, the manifest now
-also carries a versioned metadata-identity projection over the exporter-facing
-format/opset/shape/encoding surface and instruction-table cardinality.
+matched against attestation subject digests. When an external in-toto/SLSA-style
+statement file is supplied, the manifest can also bind that statement file plus a
+narrow identity projection over its statement type, predicate type, builder id,
+build invocation id, and subject inventory. This still does not turn the
+manifest into a signed-attestation verifier. When an ONNX metadata sidecar is
+bound, the manifest also carries a versioned metadata-identity projection over
+the exporter-facing format/opset/shape/encoding surface and instruction-table
+cardinality.
 
-The current manifest wire format is `hf-provenance-manifest-v5`. Older
+The current manifest wire format is `hf-provenance-manifest-v7`. Older
 `hf-provenance-manifest-v1`, `hf-provenance-manifest-v2`,
-`hf-provenance-manifest-v3`, and `hf-provenance-manifest-v4` files must be
+`hf-provenance-manifest-v3`, `hf-provenance-manifest-v4`,
+`hf-provenance-manifest-v5`, and `hf-provenance-manifest-v6` files must be
 regenerated before verification because the ONNX sidecar surface, hub-binding
-commitment, metadata-identity projection, and attestation-digest inventory now
-have explicit versioned format boundaries.
+commitment, metadata-identity projection, attestation-digest inventory, and
+external-statement binding now have explicit versioned format boundaries.
 
 Canonical HF provenance spec file:
 

@@ -761,6 +761,9 @@ enum Command {
         /// Optional pinned source revision for build provenance metadata.
         #[arg(long = "attestation-source-revision")]
         attestation_source_revision: Option<String>,
+        /// Optional external in-toto/SLSA-style attestation statement to bind at the release layer.
+        #[arg(long = "external-attestation-statement")]
+        external_attestation_statement: Option<PathBuf>,
     },
     /// Verify a Hugging Face release/provenance manifest and local file bindings.
     VerifyHfProvenanceManifest {
@@ -953,7 +956,8 @@ const HF_PROVENANCE_MANIFEST_VERSION_V2_LEGACY: &str = "hf-provenance-manifest-v
 const HF_PROVENANCE_MANIFEST_VERSION_V3_LEGACY: &str = "hf-provenance-manifest-v3";
 const HF_PROVENANCE_MANIFEST_VERSION_V4_LEGACY: &str = "hf-provenance-manifest-v4";
 const HF_PROVENANCE_MANIFEST_VERSION_V5_LEGACY: &str = "hf-provenance-manifest-v5";
-const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v6";
+const HF_PROVENANCE_MANIFEST_VERSION_V6_LEGACY: &str = "hf-provenance-manifest-v6";
+const HF_PROVENANCE_MANIFEST_VERSION: &str = "hf-provenance-manifest-v7";
 const HF_PROVENANCE_SEMANTIC_SCOPE: &str = "hf-release-provenance-boundary-v1";
 const HF_PROVENANCE_HASH_FUNCTION: &str = "blake2b-256";
 const HF_ONNX_METADATA_IDENTITY_VERSION: &str = "onnx-program-metadata-identity-v1";
@@ -961,6 +965,7 @@ const HF_ONNX_EXPORTER_IDENTITY_VERSION: &str = "onnx-exporter-identity-v1";
 const HF_ONNX_GRAPH_CONSTRAINT_IDENTITY_VERSION: &str =
     "onnx-graph-constraint-identity-v1";
 const HF_ATTESTATION_METADATA_VERSION: &str = "hf-attestation-metadata-v1";
+const HF_EXTERNAL_ATTESTATION_IDENTITY_VERSION: &str = "hf-external-attestation-identity-v1";
 
 struct HfProvenanceManifestCommand {
     output: PathBuf,
@@ -985,6 +990,7 @@ struct HfProvenanceManifestCommand {
     attestation_build_invocation_id: Option<String>,
     attestation_source_repository: Option<String>,
     attestation_source_revision: Option<String>,
+    external_attestation_statement: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1094,6 +1100,24 @@ struct HfAttestationMetadata {
     subjects: Vec<HfAttestationSubject>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct HfExternalAttestationIdentity {
+    identity_version: String,
+    statement_type: String,
+    predicate_type: String,
+    builder_id: Option<String>,
+    build_invocation_id: Option<String>,
+    subject_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct HfExternalAttestationProvenance {
+    statement: HfFileCommitment,
+    identity: HfExternalAttestationIdentity,
+}
+
 #[derive(Debug, Serialize)]
 struct HfHubBinding<'a> {
     hub_repo: &'a str,
@@ -1113,6 +1137,8 @@ struct HfProvenanceCommitments {
     release_metadata_hash: String,
     #[serde(default = "default_hf_attestation_hash")]
     attestation_hash: String,
+    #[serde(default = "default_hf_external_attestation_hash")]
+    external_attestation_hash: String,
     limitations_hash: String,
 }
 
@@ -1130,6 +1156,8 @@ struct HfProvenanceManifest {
     release: HfReleaseMetadata,
     #[serde(default)]
     attestation: Option<HfAttestationMetadata>,
+    #[serde(default)]
+    external_attestation: Option<HfExternalAttestationProvenance>,
     limitations: Vec<String>,
     commitments: HfProvenanceCommitments,
 }
@@ -1137,6 +1165,11 @@ struct HfProvenanceManifest {
 fn default_hf_attestation_hash() -> String {
     hash_json_projection_hex(&Option::<HfAttestationMetadata>::None)
         .expect("default HF attestation hash")
+}
+
+fn default_hf_external_attestation_hash() -> String {
+    hash_json_projection_hex(&Option::<HfExternalAttestationProvenance>::None)
+        .expect("default HF external attestation hash")
 }
 
 #[cfg(feature = "onnx-export")]
@@ -1760,6 +1793,7 @@ fn run() -> llm_provable_computer::Result<()> {
             attestation_build_invocation_id,
             attestation_source_repository,
             attestation_source_revision,
+            external_attestation_statement,
         } => prepare_hf_provenance_manifest_command(HfProvenanceManifestCommand {
             output,
             hub_repo,
@@ -1783,6 +1817,7 @@ fn run() -> llm_provable_computer::Result<()> {
             attestation_build_invocation_id,
             attestation_source_repository,
             attestation_source_revision,
+            external_attestation_statement,
         })?,
         Command::VerifyHfProvenanceManifest { manifest } => {
             verify_hf_provenance_manifest_command(&manifest)?
@@ -4607,18 +4642,69 @@ fn prepare_hf_provenance_manifest_command(
         datasets: command.datasets,
         notes: command.notes,
     };
+    let expected_attestation_subjects =
+        derive_hf_attestation_subjects(&tokenizer, &safetensors, onnx_export.as_ref(), &release);
+    let external_attestation = command
+        .external_attestation_statement
+        .as_deref()
+        .map(|path| {
+            let (statement_identity, statement_commitment, identity, statement_subjects) =
+                inspect_hf_external_attestation_statement(path)?;
+            let expected_statement_subjects =
+                derive_hf_external_attestation_statement_subjects(&expected_attestation_subjects);
+            if statement_subjects != expected_statement_subjects {
+                return Err(VmError::InvalidConfig(
+                    "HF provenance external attestation subjects do not match the bound local-file surface".to_string(),
+                ));
+            }
+            if let (Some(expected), Some(observed)) = (
+                command.attestation_builder_id.as_deref(),
+                identity.builder_id.as_deref(),
+            ) {
+                expect_eq(
+                    "hf external_attestation.identity.builder_id",
+                    observed,
+                    expected,
+                )?;
+            }
+            if let (Some(expected), Some(observed)) = (
+                command.attestation_build_invocation_id.as_deref(),
+                identity.build_invocation_id.as_deref(),
+            ) {
+                expect_eq(
+                    "hf external_attestation.identity.build_invocation_id",
+                    observed,
+                    expected,
+                )?;
+            }
+            let mut bound_paths = std::collections::BTreeSet::new();
+            ensure_unique_hf_identity(
+                "HF provenance external_attestation.statement",
+                &statement_commitment.path,
+                statement_identity,
+                &mut bound_paths,
+            )?;
+            Ok::<HfExternalAttestationProvenance, VmError>(HfExternalAttestationProvenance {
+                statement: statement_commitment,
+                identity,
+            })
+        })
+        .transpose()?;
     let attestation = Some(HfAttestationMetadata {
         attestation_version: HF_ATTESTATION_METADATA_VERSION.to_string(),
-        builder_id: command.attestation_builder_id,
-        build_invocation_id: command.attestation_build_invocation_id,
+        builder_id: command.attestation_builder_id.clone().or_else(|| {
+            external_attestation
+                .as_ref()
+                .and_then(|binding| binding.identity.builder_id.clone())
+        }),
+        build_invocation_id: command.attestation_build_invocation_id.clone().or_else(|| {
+            external_attestation
+                .as_ref()
+                .and_then(|binding| binding.identity.build_invocation_id.clone())
+        }),
         source_repository: command.attestation_source_repository,
         source_revision: command.attestation_source_revision,
-        subjects: derive_hf_attestation_subjects(
-            &tokenizer,
-            &safetensors,
-            onnx_export.as_ref(),
-            &release,
-        ),
+        subjects: expected_attestation_subjects,
     });
     let limitations = hf_provenance_limitations();
     let hub_binding_hash = hash_json_projection_hex(&HfHubBinding {
@@ -4653,6 +4739,7 @@ fn prepare_hf_provenance_manifest_command(
             )?,
             release_metadata_hash: hash_json_projection_hex(&release)?,
             attestation_hash: hash_json_projection_hex(&attestation)?,
+            external_attestation_hash: hash_json_projection_hex(&external_attestation)?,
             limitations_hash: hash_json_projection_hex(&limitations)?,
         },
         tokenizer,
@@ -4660,6 +4747,7 @@ fn prepare_hf_provenance_manifest_command(
         onnx_export,
         release,
         attestation,
+        external_attestation,
         limitations,
     };
     verify_hf_provenance_manifest(&manifest)?;
@@ -4989,8 +5077,14 @@ fn load_hf_provenance_manifest(
             HF_PROVENANCE_MANIFEST_VERSION_V5_LEGACY,
             HF_PROVENANCE_MANIFEST_VERSION
         ))),
+        HF_PROVENANCE_MANIFEST_VERSION_V6_LEGACY => Err(VmError::Serialization(format!(
+            "failed to parse HF provenance manifest {}: legacy manifest_version `{}` is no longer accepted after the external attestation binding update; regenerate the manifest as {}",
+            manifest_path.display(),
+            HF_PROVENANCE_MANIFEST_VERSION_V6_LEGACY,
+            HF_PROVENANCE_MANIFEST_VERSION
+        ))),
         HF_PROVENANCE_MANIFEST_VERSION => {
-            ensure_hf_provenance_manifest_v6_required_fields(manifest_path, &manifest_value)?;
+            ensure_hf_provenance_manifest_v7_required_fields(manifest_path, &manifest_value)?;
             serde_json::from_value(manifest_value).map_err(|err| {
                 VmError::Serialization(format!(
                     "failed to parse HF provenance manifest {}: {err}",
@@ -5005,10 +5099,21 @@ fn load_hf_provenance_manifest(
     }
 }
 
-fn ensure_hf_provenance_manifest_v6_required_fields(
+fn ensure_hf_provenance_manifest_v7_required_fields(
     manifest_path: &Path,
     manifest_value: &serde_json::Value,
 ) -> llm_provable_computer::Result<()> {
+    let manifest_label = HF_PROVENANCE_MANIFEST_VERSION;
+    if !manifest_value
+        .as_object()
+        .is_some_and(|object| object.contains_key("external_attestation"))
+    {
+        return Err(VmError::Serialization(format!(
+            "failed to parse HF provenance manifest {}: missing field `external_attestation` for {}",
+            manifest_path.display(),
+            manifest_label
+        )));
+    }
     if let Some(commitments_obj) = manifest_value
         .get("commitments")
         .and_then(|v| v.as_object())
@@ -5017,28 +5122,42 @@ fn ensure_hf_provenance_manifest_v6_required_fields(
             return Err(VmError::Serialization(format!(
                 "failed to parse HF provenance manifest {}: missing field `hub_binding_hash` in `commitments` for {}",
                 manifest_path.display(),
-                HF_PROVENANCE_MANIFEST_VERSION
+                manifest_label
             )));
         }
         if !commitments_obj.contains_key("onnx_metadata_identity_hash") {
             return Err(VmError::Serialization(format!(
                 "failed to parse HF provenance manifest {}: missing field `onnx_metadata_identity_hash` in `commitments` for {}",
                 manifest_path.display(),
-                HF_PROVENANCE_MANIFEST_VERSION
+                manifest_label
             )));
         }
         if !commitments_obj.contains_key("onnx_exporter_identity_hash") {
             return Err(VmError::Serialization(format!(
                 "failed to parse HF provenance manifest {}: missing field `onnx_exporter_identity_hash` in `commitments` for {}",
                 manifest_path.display(),
-                HF_PROVENANCE_MANIFEST_VERSION
+                manifest_label
             )));
         }
         if !commitments_obj.contains_key("onnx_graph_constraint_identity_hash") {
             return Err(VmError::Serialization(format!(
                 "failed to parse HF provenance manifest {}: missing field `onnx_graph_constraint_identity_hash` in `commitments` for {}",
                 manifest_path.display(),
-                HF_PROVENANCE_MANIFEST_VERSION
+                manifest_label
+            )));
+        }
+        if !commitments_obj.contains_key("attestation_hash") {
+            return Err(VmError::Serialization(format!(
+                "failed to parse HF provenance manifest {}: missing field `attestation_hash` in `commitments` for {}",
+                manifest_path.display(),
+                manifest_label
+            )));
+        }
+        if !commitments_obj.contains_key("external_attestation_hash") {
+            return Err(VmError::Serialization(format!(
+                "failed to parse HF provenance manifest {}: missing field `external_attestation_hash` in `commitments` for {}",
+                manifest_path.display(),
+                manifest_label
             )));
         }
     }
@@ -5060,7 +5179,7 @@ fn ensure_hf_provenance_manifest_v6_required_fields(
             return Err(VmError::Serialization(format!(
                 "failed to parse HF provenance manifest {}: missing field `{field}` in `onnx_export` for {}",
                 manifest_path.display(),
-                HF_PROVENANCE_MANIFEST_VERSION
+                manifest_label
             )));
         }
     }
@@ -5168,6 +5287,11 @@ fn verify_hf_provenance_manifest(
         "hf attestation_hash",
         &manifest.commitments.attestation_hash,
         &hash_json_projection_hex(&manifest.attestation)?,
+    )?;
+    verify_hash_commitment(
+        "hf external_attestation_hash",
+        &manifest.commitments.external_attestation_hash,
+        &hash_json_projection_hex(&manifest.external_attestation)?,
     )?;
     verify_hash_commitment(
         "hf limitations_hash",
@@ -5377,6 +5501,61 @@ fn verify_hf_provenance_manifest(
             ));
         }
     }
+    if let Some(external_attestation) = &manifest.external_attestation {
+        let attestation = manifest.attestation.as_ref().ok_or_else(|| {
+            VmError::InvalidConfig(
+                "HF provenance external_attestation requires attestation metadata".to_string(),
+            )
+        })?;
+        let (
+            statement_identity,
+            computed_statement,
+            computed_identity,
+            statement_subjects,
+        ) = inspect_hf_external_attestation_statement(Path::new(
+            &external_attestation.statement.path,
+        ))?;
+        ensure_hf_file_commitment_matches(
+            "external_attestation.statement",
+            &external_attestation.statement,
+            &computed_statement,
+            statement_identity,
+            &mut bound_paths,
+        )?;
+        if external_attestation.identity != computed_identity {
+            return Err(VmError::InvalidConfig(format!(
+                "hf external_attestation.identity mismatch: expected {:?}, got {:?}",
+                external_attestation.identity, computed_identity
+            )));
+        }
+        let expected_subjects =
+            derive_hf_external_attestation_statement_subjects(&attestation.subjects);
+        if statement_subjects != expected_subjects {
+            return Err(VmError::InvalidConfig(
+                "HF provenance external attestation subjects do not match the bound local-file surface".to_string(),
+            ));
+        }
+        if let (Some(attested), Some(external)) = (
+            attestation.builder_id.as_deref(),
+            external_attestation.identity.builder_id.as_deref(),
+        ) {
+            expect_eq(
+                "hf attestation.builder_id",
+                attested,
+                external,
+            )?;
+        }
+        if let (Some(attested), Some(external)) = (
+            attestation.build_invocation_id.as_deref(),
+            external_attestation.identity.build_invocation_id.as_deref(),
+        ) {
+            expect_eq(
+                "hf attestation.build_invocation_id",
+                attested,
+                external,
+            )?;
+        }
+    }
 
     Ok(())
 }
@@ -5384,7 +5563,7 @@ fn verify_hf_provenance_manifest(
 fn hf_provenance_limitations() -> Vec<String> {
     [
         "HF provenance manifests pin artifact identity and local file hashes only",
-        "attestation-friendly SHA-256 digests do not by themselves verify GitHub, Sigstore, in-toto, or SLSA attestations",
+        "attestation-friendly SHA-256 digests and optional external statement binding do not by themselves verify GitHub, Sigstore, in-toto, or SLSA attestations",
         "the manifest does not prove tokenizer algorithm correctness",
         "the manifest does not prove safetensors weights implement a model architecture",
         "the manifest does not prove Optimum or ONNX exporter semantic equivalence even when exporter identity is pinned",
@@ -5472,6 +5651,187 @@ fn push_hf_attestation_file_subject(
             sha256: commitment.sha256.clone(),
         });
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct HfExternalAttestationStatementSubject {
+    path: String,
+    sha256: String,
+}
+
+fn derive_hf_external_attestation_statement_subjects(
+    subjects: &[HfAttestationSubject],
+) -> Vec<HfExternalAttestationStatementSubject> {
+    let mut projected = subjects
+        .iter()
+        .map(|subject| HfExternalAttestationStatementSubject {
+            path: subject.path.clone(),
+            sha256: subject.sha256.clone(),
+        })
+        .collect::<Vec<_>>();
+    projected.sort();
+    projected
+}
+
+fn inspect_hf_external_attestation_statement(
+    path: &Path,
+) -> llm_provable_computer::Result<(
+    HfFileIdentity,
+    HfFileCommitment,
+    HfExternalAttestationIdentity,
+    Vec<HfExternalAttestationStatementSubject>,
+)> {
+    let label = "HF external attestation statement";
+    let max_bytes = MAX_HF_ONNX_METADATA_JSON_BYTES as u64;
+    let (file, size_bytes) = open_checked_regular_file(path, label, Some(max_bytes))?;
+    let identity = hf_file_identity_from_open_file(path, label, &file)?;
+    let bytes = read_checked_bounded_file_bytes(file, path, label, size_bytes, max_bytes)?;
+    let (blake2b_256, sha256) = hash_hf_commitment_bytes(&bytes)?;
+    let statement = parse_hf_external_attestation_statement_json(path, &bytes)?;
+    let (projection, subjects) =
+        derive_hf_external_attestation_identity_from_value(path, &statement)?;
+    Ok((
+        identity,
+        HfFileCommitment {
+            path: path.display().to_string(),
+            size_bytes,
+            blake2b_256,
+            sha256,
+        },
+        projection,
+        subjects,
+    ))
+}
+
+fn parse_hf_external_attestation_statement_json(
+    path: &Path,
+    bytes: &[u8],
+) -> llm_provable_computer::Result<serde_json::Value> {
+    serde_json::from_slice(bytes).map_err(|err| {
+        VmError::Serialization(format!(
+            "failed to parse HF external attestation statement {}: {err}",
+            path.display()
+        ))
+    })
+}
+
+fn derive_hf_external_attestation_identity_from_value(
+    path: &Path,
+    statement: &serde_json::Value,
+) -> llm_provable_computer::Result<(
+    HfExternalAttestationIdentity,
+    Vec<HfExternalAttestationStatementSubject>,
+)> {
+    let statement_type = statement
+        .get("_type")
+        .and_then(serde_json::Value::as_str)
+        .filter(|value| !value.trim().is_empty())
+        .ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "HF external attestation statement {} missing non-empty string field `_type`",
+                path.display()
+            ))
+        })?
+        .to_string();
+    let predicate_type = statement
+        .get("predicateType")
+        .and_then(serde_json::Value::as_str)
+        .filter(|value| !value.trim().is_empty())
+        .ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "HF external attestation statement {} missing non-empty string field `predicateType`",
+                path.display()
+            ))
+        })?
+        .to_string();
+    let subject_values = statement
+        .get("subject")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "HF external attestation statement {} missing subject array",
+                path.display()
+            ))
+        })?;
+    if subject_values.is_empty() {
+        return Err(VmError::InvalidConfig(format!(
+            "HF external attestation statement {} subject array must be non-empty",
+            path.display()
+        )));
+    }
+    let mut seen_subjects = std::collections::BTreeSet::new();
+    let mut subjects = Vec::with_capacity(subject_values.len());
+    for (idx, subject) in subject_values.iter().enumerate() {
+        let path_value = subject
+            .get("name")
+            .and_then(serde_json::Value::as_str)
+            .filter(|value| !value.trim().is_empty())
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "HF external attestation statement {} subject[{idx}] missing non-empty string field `name`",
+                    path.display()
+                ))
+            })?;
+        let sha256 = subject
+            .get("digest")
+            .and_then(|digest| digest.get("sha256"))
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "HF external attestation statement {} subject[{idx}] missing string field `digest.sha256`",
+                    path.display()
+                ))
+            })?;
+        expect_hash_hex(
+            &format!(
+                "HF external attestation statement {} subject[{idx}] digest.sha256",
+                path.display()
+            ),
+            sha256,
+        )?;
+        let projected = HfExternalAttestationStatementSubject {
+            path: path_value.to_string(),
+            sha256: sha256.to_string(),
+        };
+        if !seen_subjects.insert(projected.clone()) {
+            return Err(VmError::InvalidConfig(format!(
+                "HF external attestation statement {} repeats subject `{}` with the same SHA-256 digest",
+                path.display(),
+                projected.path
+            )));
+        }
+        subjects.push(projected);
+    }
+    subjects.sort();
+    let builder_id = statement
+        .pointer("/predicate/runDetails/builder/id")
+        .and_then(serde_json::Value::as_str)
+        .filter(|value| !value.trim().is_empty())
+        .map(str::to_string);
+    let build_invocation_id = statement
+        .pointer("/predicate/runDetails/metadata/invocationId")
+        .and_then(serde_json::Value::as_str)
+        .filter(|value| !value.trim().is_empty())
+        .map(str::to_string);
+    validate_hf_optional_identifier(
+        "external_attestation.identity.builder_id",
+        builder_id.as_deref(),
+    )?;
+    validate_hf_optional_identifier(
+        "external_attestation.identity.build_invocation_id",
+        build_invocation_id.as_deref(),
+    )?;
+    Ok((
+        HfExternalAttestationIdentity {
+            identity_version: HF_EXTERNAL_ATTESTATION_IDENTITY_VERSION.to_string(),
+            statement_type,
+            predicate_type,
+            builder_id,
+            build_invocation_id,
+            subject_count: subjects.len(),
+        },
+        subjects,
+    ))
 }
 
 fn validate_hf_identifier(label: &str, value: &str) -> llm_provable_computer::Result<()> {
@@ -8690,6 +9050,7 @@ mod hf_provenance_manifest_tests {
                 "notes": []
             },
             "attestation": null,
+            "external_attestation": null,
             "limitations": hf_provenance_limitations(),
             "commitments": {
                 "hub_binding_hash": "f".repeat(64),
@@ -8701,6 +9062,7 @@ mod hf_provenance_manifest_tests {
                 "onnx_graph_constraint_identity_hash": "8".repeat(64),
                 "release_metadata_hash": "5".repeat(64),
                 "attestation_hash": default_hf_attestation_hash(),
+                "external_attestation_hash": default_hf_external_attestation_hash(),
                 "limitations_hash": "4".repeat(64)
             }
         })
@@ -8754,6 +9116,7 @@ mod hf_provenance_manifest_tests {
                     &release,
                 ),
             }),
+            external_attestation: None,
             limitations: limitations.clone(),
             commitments: HfProvenanceCommitments {
                 hub_binding_hash: hash_json_projection_hex(&HfHubBinding {
@@ -8800,6 +9163,7 @@ mod hf_provenance_manifest_tests {
                     ),
                 }))
                 .expect("attestation hash"),
+                external_attestation_hash: default_hf_external_attestation_hash(),
                 limitations_hash: hash_json_projection_hex(&limitations).expect("limitations hash"),
             },
         }
@@ -8852,7 +9216,7 @@ mod hf_provenance_manifest_tests {
     }
 
     #[test]
-    fn load_hf_provenance_manifest_rejects_v6_missing_onnx_exporter_identity_field() {
+    fn load_hf_provenance_manifest_rejects_v7_missing_onnx_exporter_identity_field() {
         let file = hf_provenance_test_manifest_file("missing-onnx-exporter-identity");
         let mut value = sample_hf_provenance_manifest_value();
         value["onnx_export"] = serde_json::json!({
@@ -8872,14 +9236,14 @@ mod hf_provenance_manifest_tests {
         write_hf_provenance_test_manifest(file.path(), &value);
 
         let err = load_hf_provenance_manifest(file.path())
-            .expect_err("v6 manifest missing onnx exporter_identity field should fail");
+            .expect_err("v7 manifest missing onnx exporter_identity field should fail");
         assert!(err
             .to_string()
             .contains("missing field `exporter_identity`"));
     }
 
     #[test]
-    fn load_hf_provenance_manifest_rejects_v6_missing_onnx_metadata_identity_field() {
+    fn load_hf_provenance_manifest_rejects_v7_missing_onnx_metadata_identity_field() {
         let file = hf_provenance_test_manifest_file("missing-onnx-metadata");
         let mut value = sample_hf_provenance_manifest_value();
         value["onnx_export"] = serde_json::json!({
@@ -8903,14 +9267,14 @@ mod hf_provenance_manifest_tests {
         write_hf_provenance_test_manifest(file.path(), &value);
 
         let err = load_hf_provenance_manifest(file.path())
-            .expect_err("v6 manifest missing onnx metadata_identity field should fail");
+            .expect_err("v7 manifest missing onnx metadata_identity field should fail");
         assert!(err
             .to_string()
             .contains("missing field `metadata_identity`"));
     }
 
     #[test]
-    fn load_hf_provenance_manifest_rejects_v6_missing_onnx_graph_constraint_identity_field() {
+    fn load_hf_provenance_manifest_rejects_v7_missing_onnx_graph_constraint_identity_field() {
         let file = hf_provenance_test_manifest_file("missing-onnx-graph-constraint-identity");
         let mut value = sample_hf_provenance_manifest_value();
         value["onnx_export"] = serde_json::json!({
@@ -8934,14 +9298,14 @@ mod hf_provenance_manifest_tests {
         write_hf_provenance_test_manifest(file.path(), &value);
 
         let err = load_hf_provenance_manifest(file.path())
-            .expect_err("v6 manifest missing onnx graph_constraint_identity field should fail");
+            .expect_err("v7 manifest missing onnx graph_constraint_identity field should fail");
         assert!(err
             .to_string()
             .contains("missing field `graph_constraint_identity`"));
     }
 
     #[test]
-    fn load_hf_provenance_manifest_rejects_v6_missing_onnx_metadata_identity_hash_field() {
+    fn load_hf_provenance_manifest_rejects_v7_missing_onnx_metadata_identity_hash_field() {
         let file = hf_provenance_test_manifest_file("missing-onnx-metadata-identity-hash");
         let mut value = sample_hf_provenance_manifest_value();
         value["onnx_export"] = serde_json::json!({
@@ -8970,14 +9334,14 @@ mod hf_provenance_manifest_tests {
         write_hf_provenance_test_manifest(file.path(), &value);
 
         let err = load_hf_provenance_manifest(file.path())
-            .expect_err("v6 manifest missing onnx_metadata_identity_hash field should fail");
+            .expect_err("v7 manifest missing onnx_metadata_identity_hash field should fail");
         assert!(err
             .to_string()
             .contains("missing field `onnx_metadata_identity_hash`"));
     }
 
     #[test]
-    fn load_hf_provenance_manifest_rejects_v6_missing_onnx_exporter_identity_hash_field() {
+    fn load_hf_provenance_manifest_rejects_v7_missing_onnx_exporter_identity_hash_field() {
         let file = hf_provenance_test_manifest_file("missing-onnx-exporter-identity-hash");
         let mut value = sample_hf_provenance_manifest_value();
         value["onnx_export"] = serde_json::json!({
@@ -9006,14 +9370,14 @@ mod hf_provenance_manifest_tests {
         write_hf_provenance_test_manifest(file.path(), &value);
 
         let err = load_hf_provenance_manifest(file.path())
-            .expect_err("v6 manifest missing onnx_exporter_identity_hash field should fail");
+            .expect_err("v7 manifest missing onnx_exporter_identity_hash field should fail");
         assert!(err
             .to_string()
             .contains("missing field `onnx_exporter_identity_hash`"));
     }
 
     #[test]
-    fn load_hf_provenance_manifest_rejects_v6_missing_onnx_graph_constraint_identity_hash_field() {
+    fn load_hf_provenance_manifest_rejects_v7_missing_onnx_graph_constraint_identity_hash_field() {
         let file =
             hf_provenance_test_manifest_file("missing-onnx-graph-constraint-identity-hash");
         let mut value = sample_hf_provenance_manifest_value();
@@ -9043,10 +9407,44 @@ mod hf_provenance_manifest_tests {
         write_hf_provenance_test_manifest(file.path(), &value);
 
         let err = load_hf_provenance_manifest(file.path())
-            .expect_err("v6 manifest missing onnx_graph_constraint_identity_hash field should fail");
+            .expect_err("v7 manifest missing onnx_graph_constraint_identity_hash field should fail");
         assert!(err
             .to_string()
             .contains("missing field `onnx_graph_constraint_identity_hash`"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_v7_missing_external_attestation_field() {
+        let file = hf_provenance_test_manifest_file("missing-external-attestation");
+        let mut value = sample_hf_provenance_manifest_value();
+        value
+            .as_object_mut()
+            .expect("manifest object")
+            .remove("external_attestation");
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("v7 manifest missing external_attestation field should fail");
+        assert!(err
+            .to_string()
+            .contains("missing field `external_attestation`"));
+    }
+
+    #[test]
+    fn load_hf_provenance_manifest_rejects_v7_missing_external_attestation_hash_field() {
+        let file = hf_provenance_test_manifest_file("missing-external-attestation-hash");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["commitments"]
+            .as_object_mut()
+            .expect("commitments object")
+            .remove("external_attestation_hash");
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("v7 manifest missing external_attestation_hash should fail");
+        assert!(err
+            .to_string()
+            .contains("missing field `external_attestation_hash`"));
     }
 
     #[test]
@@ -9146,6 +9544,20 @@ mod hf_provenance_manifest_tests {
     }
 
     #[test]
+    fn load_hf_provenance_manifest_rejects_legacy_v6_with_upgrade_message() {
+        let file = hf_provenance_test_manifest_file("legacy-v6");
+        let mut value = sample_hf_provenance_manifest_value();
+        value["manifest_version"] = serde_json::json!(HF_PROVENANCE_MANIFEST_VERSION_V6_LEGACY);
+        write_hf_provenance_test_manifest(file.path(), &value);
+
+        let err = load_hf_provenance_manifest(file.path())
+            .expect_err("legacy v6 manifest should require regeneration");
+        assert!(err
+            .to_string()
+            .contains("legacy manifest_version `hf-provenance-manifest-v6` is no longer accepted"));
+    }
+
+    #[test]
     fn load_hf_provenance_manifest_reports_malformed_json_as_serialization() {
         let file = hf_provenance_test_manifest_file("malformed");
         fs::write(file.path(), b"{").expect("write malformed manifest");
@@ -9211,6 +9623,7 @@ mod hf_provenance_manifest_tests {
             attestation_build_invocation_id: None,
             attestation_source_repository: None,
             attestation_source_revision: None,
+            external_attestation_statement: None,
         })
         .expect_err("oversized manifest output should fail");
 
@@ -9297,8 +9710,9 @@ mod hf_provenance_manifest_tests {
                     role: "model_card".to_string(),
                     path: bound_dir.display().to_string(),
                     sha256: "1".repeat(64),
-                }],
-            }),
+                    }],
+                }),
+            external_attestation: None,
             limitations,
             commitments: HfProvenanceCommitments {
                 hub_binding_hash: hash_json_projection_hex(&HfHubBinding {
@@ -9357,6 +9771,7 @@ mod hf_provenance_manifest_tests {
                     }],
                 }))
                 .expect("attestation hash"),
+                external_attestation_hash: default_hf_external_attestation_hash(),
                 limitations_hash: hash_json_projection_hex(&hf_provenance_limitations())
                     .expect("limitations hash"),
             },
@@ -9397,6 +9812,7 @@ mod hf_provenance_manifest_tests {
             attestation_build_invocation_id: None,
             attestation_source_repository: None,
             attestation_source_revision: None,
+            external_attestation_statement: None,
         })
         .expect_err("ONNX sidecars without graph should fail");
 

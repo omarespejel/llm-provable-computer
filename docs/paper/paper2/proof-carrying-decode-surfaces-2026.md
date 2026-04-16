@@ -305,6 +305,13 @@ confused with a proof relation or a verified attestation pipeline. It is a
 release boundary, not a theorem that exporter or supply-chain semantics are
 preserved.
 
+The current release layer can also bind an external in-toto/SLSA-style
+statement file through a narrow identity projection over its statement type,
+predicate type, builder id, build invocation id, and subject inventory. That
+still does not verify the statement's signature or trust chain. It keeps the
+provenance surface aligned with existing release workflows without turning the
+manifest into a supply-chain theorem.
+
 ______________________________________________________________________
 
 ## 6. Negative Results and Non-Claims
