@@ -13,15 +13,17 @@ Phase 31 decode-boundary bridge binds the published Phase 29 recursive input
 contract to the Phase 30 ordered decode-envelope manifest, the Phase 32
 statement contract now restates that same public boundary as the future
 recursive target, and the Phase 33 public-input manifest freezes the exact
-ordered commitments a recursive verifier would need to preserve. But the
-repository still does not produce a recursively verifiable compressed proof
-object.
+ordered commitments a recursive verifier would need to preserve. The new Phase
+34 shared-lookup manifest does the same for the lookup-facing public inputs
+already exposed by the Phase 30 envelopes. But the repository still does not
+produce a recursively verifiable compressed proof object.
 
 ### Shared-table recursive reuse
 
-The repository binds shared lookup-table identity inside public artifacts, but
-it does not yet expose recursive cross-step shared-table accumulation as a
-compressed proof object.
+The repository binds shared lookup-table identity inside public artifacts and
+now freezes ordered lookup-facing public inputs in a recursive-adjacent Phase
+34 manifest, but it does not yet expose recursive cross-step shared-table
+accumulation as a compressed proof object.
 
 ### Exporter and provenance binding
 
@@ -55,9 +57,9 @@ proving.
    toward externally signed attestations without overstating the proof claim,
 3. keep semantic-agreement artifacts bounded and explicit rather than pretending
    they are full equivalence proofs,
-4. keep the new Phase 31 bridge, Phase 32 statement contract, and Phase 33
-   public-input manifest explicit about what they bind and what they do not
-   claim,
+4. keep the new Phase 31 bridge, Phase 32 statement contract, Phase 33
+   public-input manifest, and Phase 34 shared-lookup manifest explicit about
+   what they bind and what they do not claim,
 5. move to recursive compression only after the public decode statement is
    stable enough that recursion preserves an already well-defined claim.
 
