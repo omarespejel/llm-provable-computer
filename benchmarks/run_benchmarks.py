@@ -202,9 +202,16 @@ def load_case_manifest(path: Path) -> tuple[dict[str, Any], list[CaseSpec]]:
                 continue
             raise ValueError(f"case {name!r} inputs must be strings or objects")
         timeout_value = entry.get("timeout_s")
-        timeout_s = float(timeout_value) if timeout_value is not None else None
-        if timeout_s is not None and timeout_s <= 0:
-            raise ValueError(f"case {name!r} timeout_s must be > 0")
+        timeout_s = None
+        if timeout_value is not None:
+            if isinstance(timeout_value, bool) or not isinstance(timeout_value, (int, float)):
+                raise ValueError(f"case {name!r} timeout_s must be numeric")
+            timeout_s = float(timeout_value)
+            if not math.isfinite(timeout_s) or timeout_s <= 0:
+                raise ValueError(f"case {name!r} timeout_s must be finite and > 0")
+        allow_failure_value = entry.get("allow_failure", False)
+        if not isinstance(allow_failure_value, bool):
+            raise ValueError(f"case {name!r} allow_failure must be boolean")
         cases.append(
             CaseSpec(
                 name=name,
@@ -214,7 +221,7 @@ def load_case_manifest(path: Path) -> tuple[dict[str, Any], list[CaseSpec]]:
                 repeat=repeat,
                 env=env,
                 timeout_s=timeout_s,
-                allow_failure=bool(entry.get("allow_failure", False)),
+                allow_failure=allow_failure_value,
                 inputs=inputs,
                 log_dir_name=log_dir_name,
             )

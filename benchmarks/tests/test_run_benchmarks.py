@@ -11,7 +11,8 @@ from pathlib import Path
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "run_benchmarks.py"
 SPEC = importlib.util.spec_from_file_location("run_benchmarks", MODULE_PATH)
-assert SPEC and SPEC.loader
+if SPEC is None or SPEC.loader is None:
+    raise RuntimeError(f"failed to load benchmark harness module from {MODULE_PATH}")
 harness = importlib.util.module_from_spec(SPEC)
 sys.modules["run_benchmarks"] = harness
 SPEC.loader.exec_module(harness)
@@ -42,6 +43,22 @@ class BenchmarkHarnessTests(unittest.TestCase):
         manifest = self.write_manifest({"version": 2, "cases": [self.valid_case()]})
 
         with self.assertRaisesRegex(ValueError, "unsupported case manifest version"):
+            harness.load_case_manifest(manifest)
+
+    def test_rejects_non_finite_timeout(self) -> None:
+        manifest = self.write_manifest(
+            {"version": 1, "cases": [self.valid_case(timeout_s=float("nan"))]}
+        )
+
+        with self.assertRaisesRegex(ValueError, "timeout_s must be finite and > 0"):
+            harness.load_case_manifest(manifest)
+
+    def test_rejects_non_boolean_allow_failure(self) -> None:
+        manifest = self.write_manifest(
+            {"version": 1, "cases": [self.valid_case(allow_failure="yes")]}
+        )
+
+        with self.assertRaisesRegex(ValueError, "allow_failure must be boolean"):
             harness.load_case_manifest(manifest)
 
     def test_rejects_paths_that_escape_repo_root(self) -> None:
