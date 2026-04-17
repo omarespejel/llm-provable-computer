@@ -49,4 +49,3 @@ This slice does not attempt to:
 - defend the external model provider or tokenizer provider against compromise
 - guarantee freshness of third-party public web pages beyond the frozen evidence bundle
 - certify that a paper claim is globally true in the mathematical sense
-
