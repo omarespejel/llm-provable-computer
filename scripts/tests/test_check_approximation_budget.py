@@ -28,8 +28,26 @@ class ApproximationBudgetTests(unittest.TestCase):
         )
         return copy.deepcopy(payload["cases"][0])
 
+    def load_negative_cases(self) -> list[dict]:
+        payload = MOD.load_json(
+            REPO
+            / "tests"
+            / "fixtures"
+            / "reference_cases"
+            / "toy_approximation_budget_negative_bundle.json"
+        )
+        return copy.deepcopy(payload["cases"])
+
     def test_valid_fixture_case_passes(self) -> None:
         MOD.check_case(self.load_case())
+
+    def test_negative_fixture_cases_fail_closed(self) -> None:
+        cases = self.load_negative_cases()
+        self.assertGreaterEqual(len(cases), 3)
+        for case in cases:
+            with self.subTest(case_id=case["case_id"]):
+                with self.assertRaises(ValueError):
+                    MOD.check_case(case)
 
     def test_rejects_bool_as_number(self) -> None:
         case = self.load_case()
