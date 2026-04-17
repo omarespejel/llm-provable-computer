@@ -38,9 +38,12 @@ def require_number_list(name: str, value: Any) -> List[float]:
     items = require_list(name, value)
     result: List[float] = []
     for index, item in enumerate(items):
-        if not isinstance(item, (int, float)):
+        if isinstance(item, bool) or not isinstance(item, (int, float)):
             raise ValueError(f"{name}[{index}] must be numeric")
-        result.append(float(item))
+        number = float(item)
+        if not math.isfinite(number):
+            raise ValueError(f"{name}[{index}] must be finite")
+        result.append(number)
     return result
 
 
@@ -48,10 +51,25 @@ def require_int_list(name: str, value: Any) -> List[int]:
     items = require_list(name, value)
     result: List[int] = []
     for index, item in enumerate(items):
-        if not isinstance(item, int):
+        if isinstance(item, bool) or not isinstance(item, int):
             raise ValueError(f"{name}[{index}] must be an integer")
         result.append(int(item))
     return result
+
+
+def require_number(name: str, value: Any) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{name} must be numeric")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"{name} must be finite")
+    return number
+
+
+def require_positive_int(name: str, value: Any) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValueError(f"{name} must be a positive integer")
+    return int(value)
 
 
 def softmax(logits: Sequence[float]) -> List[float]:
@@ -78,22 +96,19 @@ def reference_logits(case: Dict[str, Any]) -> Dict[str, Any]:
 
     context_tokens = require_int_list("reference_decode.context_tokens", decode.get("context_tokens"))
     logit_bias = require_number_list("reference_decode.logit_bias", decode.get("logit_bias"))
-    context_scale = decode.get("context_scale")
-    position_slope = decode.get("position_slope")
-    top_k = decode.get("top_k")
-
-    if not isinstance(context_scale, (int, float)):
-        raise ValueError("reference_decode.context_scale must be numeric")
-    if not isinstance(position_slope, (int, float)):
-        raise ValueError("reference_decode.position_slope must be numeric")
-    if not isinstance(top_k, int) or top_k <= 0:
-        raise ValueError("reference_decode.top_k must be a positive integer")
+    context_scale = require_number(
+        "reference_decode.context_scale", decode.get("context_scale")
+    )
+    position_slope = require_number(
+        "reference_decode.position_slope", decode.get("position_slope")
+    )
+    top_k = require_positive_int("reference_decode.top_k", decode.get("top_k"))
     if len(logit_bias) == 0:
         raise ValueError("reference_decode.logit_bias must not be empty")
 
     context_score = sum(context_tokens)
     logits = [
-        round(float(context_scale) * context_score + bias + float(position_slope) * index, 12)
+        round(context_scale * context_score + bias + position_slope * index, 12)
         for index, bias in enumerate(logit_bias)
     ]
     ranked = top_indices(logits, min(top_k, len(logits)))
@@ -105,11 +120,17 @@ def reference_logits(case: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def compare_logits(reference: Sequence[float], candidate: Sequence[float]) -> Dict[str, Any]:
+def compare_logits(
+    reference: Sequence[float],
+    candidate: Sequence[float],
+    top_k: int,
+) -> Dict[str, Any]:
     if len(reference) != len(candidate):
         raise ValueError(
             f"reference and candidate logits length mismatch: {len(reference)} != {len(candidate)}"
         )
+    if top_k <= 0:
+        raise ValueError("top_k must be positive")
 
     absolute_errors = [abs(ref - cand) for ref, cand in zip(reference, candidate)]
     reference_probs = softmax(reference)
@@ -121,9 +142,9 @@ def compare_logits(reference: Sequence[float], candidate: Sequence[float]) -> Di
 
     reference_top1 = top_indices(reference, 1)[0]
     candidate_top1 = top_indices(candidate, 1)[0]
-    top_k = min(2, len(reference))
-    reference_topk = top_indices(reference, top_k)
-    candidate_topk = top_indices(candidate, top_k)
+    bounded_top_k = min(top_k, len(reference))
+    reference_topk = top_indices(reference, bounded_top_k)
+    candidate_topk = top_indices(candidate, bounded_top_k)
     topk_overlap = len(set(reference_topk).intersection(candidate_topk))
 
     return {
@@ -151,7 +172,9 @@ def build_report(case: Dict[str, Any]) -> Dict[str, Any]:
     candidate_logits = require_number_list("candidate.logits", candidate.get("logits"))
 
     reference = reference_logits(case)
-    metrics = compare_logits(reference["logits"], candidate_logits)
+    metrics = compare_logits(
+        reference["logits"], candidate_logits, top_k=len(reference["topk"])
+    )
 
     return {
         "case_id": case_id,

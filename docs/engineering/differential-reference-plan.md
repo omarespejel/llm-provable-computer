@@ -10,7 +10,7 @@ Create a minimal, deterministic decode reference that:
 - reads a fixture JSON file
 - computes a toy reference decode
 - emits a comparison JSON report
-- validates the report against the fixture or a golden comparison file
+- validates the report against the fixture's embedded expected comparison
 - fails non-zero if evidence is missing or inconsistent
 
 ## Scope
