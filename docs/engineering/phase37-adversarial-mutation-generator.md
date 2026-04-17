@@ -23,4 +23,7 @@ python3 -B scripts/generate_bad_phase37_artifacts.py \
   target/phase37-adversarial-artifacts
 ```
 
+The output directory must be absent or empty. This avoids silently mixing old
+mutation files with a fresh manifest when the mutation set changes.
+
 The output directory contains one JSON file per mutation plus `phase37-adversarial-manifest.json`, including the expected and actual reference-verifier outcome for each mutation.

@@ -69,13 +69,18 @@ class Phase37AdversarialMutationGeneratorTests(unittest.TestCase):
             ]
             self.assertEqual(first["schema"], "phase37-adversarial-mutation-manifest-v1")
             self.assertEqual(first["mutation_count"], len(expected_names))
+            self.assertEqual(
+                first["source_receipt"]["path"],
+                "tools/reference_verifier/fixtures/phase37-reference-receipt.json",
+            )
+            self.assertEqual(first["source_receipt"], second["source_receipt"])
+            self.assertNotIn("output_dir", first)
             self.assertEqual([item["name"] for item in first["mutations"]], expected_names)
             self.assertEqual([item["name"] for item in second["mutations"]], expected_names)
             self.assertEqual(
                 [item["file_name"] for item in first["mutations"]],
                 [item["file_name"] for item in second["mutations"]],
             )
-            self.assertEqual(first["source_receipt"]["sha256"], second["source_receipt"]["sha256"])
 
     def test_generated_artifacts_match_expected_reference_verifier_outcomes(self) -> None:
         with tempfile.TemporaryDirectory() as tempdir:
@@ -123,6 +128,20 @@ class Phase37AdversarialMutationGeneratorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tempdir:
             run_generator(pathlib.Path(tempdir) / "mutations")
         self.assertEqual(pycache_dirs(), [])
+
+    def test_generator_rejects_populated_output_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as tempdir:
+            output_dir = pathlib.Path(tempdir) / "mutations"
+            output_dir.mkdir()
+            (output_dir / "stale.json").write_text("{}", encoding="utf-8")
+            completed = subprocess.run(
+                [sys.executable, "-B", str(GENERATOR), str(FIXTURE), str(output_dir)],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("output directory must be empty", completed.stderr)
 
 
 if __name__ == "__main__":

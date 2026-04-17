@@ -56,6 +56,13 @@ def sha256_file(path: pathlib.Path) -> str:
     return hasher.hexdigest()
 
 
+def manifest_display_path(path: pathlib.Path) -> str:
+    try:
+        return path.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return path.name
+
+
 def load_receipt(path: pathlib.Path) -> dict[str, Any]:
     receipt = REF.load_json_object(path)
     REF.verify_phase37_receipt(receipt)
@@ -221,16 +228,20 @@ def mutation_file_name(index: int, name: str) -> str:
 
 def generate(receipt_path: pathlib.Path, output_dir: pathlib.Path) -> pathlib.Path:
     source = load_receipt(receipt_path)
+    if output_dir.exists():
+        if not output_dir.is_dir():
+            raise MutationGeneratorError(f"output path is not a directory: {output_dir}")
+        if any(output_dir.iterdir()):
+            raise MutationGeneratorError(f"output directory must be empty: {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     manifest: dict[str, Any] = {
         "schema": "phase37-adversarial-mutation-manifest-v1",
         "generator_version": GENERATOR_VERSION,
         "source_receipt": {
-            "path": str(receipt_path.resolve()),
+            "path": manifest_display_path(receipt_path),
             "sha256": sha256_file(receipt_path),
         },
-        "output_dir": str(output_dir.resolve()),
         "mutation_count": len(MUTATIONS),
         "mutations": [],
     }
