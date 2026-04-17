@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "description": "Safe example cases for the benchmark evidence harness. These commands are lightweight and do not perform prover work by default.",
+  "cases": [
+    {
+      "name": "git-head-sha",
+      "description": "Record the repository commit SHA for the evidence bundle.",
+      "command": ["git", "rev-parse", "HEAD"],
+      "repeat": 3
+    },
+    {
+      "name": "rustc-version",
+      "description": "Capture the active Rust compiler version and host triple.",
+      "command": ["rustc", "-Vv"],
+      "repeat": 3
+    },
+    {
+      "name": "cargo-version",
+      "description": "Capture the Cargo version used for benchmark orchestration.",
+      "command": ["cargo", "-V"],
+      "repeat": 3
+    }
+  ]
+}
