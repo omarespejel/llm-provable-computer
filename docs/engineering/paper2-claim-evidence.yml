@@ -183,17 +183,23 @@
   implementation:
     - src/stwo_backend/recursion.rs:phase37_prepare_recursive_artifact_chain_harness_receipt
     - src/stwo_backend/recursion.rs:verify_phase37_recursive_artifact_chain_harness_receipt_against_sources
+    - tools/reference_verifier/reference_verifier.py:verify_phase37_receipt
+    - tools/reference_verifier/reference_verifier.py:commit_phase37_receipt
   specs:
     - spec/stwo-phase37-recursive-artifact-chain-harness-receipt.schema.json
   positive_tests:
     - phase37_recursive_artifact_chain_harness_receipt_accepts_matching_sources
+    - test_reference_fixture_verifies_and_commitment_is_stable
   negative_tests:
     - phase37_recursive_artifact_chain_harness_receipt_rejects_recursive_claim
     - phase37_recursive_artifact_chain_harness_receipt_rejects_tampered_commitment
     - phase37_recursive_artifact_chain_harness_receipt_rejects_malformed_commitment_field
+    - test_deterministic_parser_mutation_corpus_rejects_invalid_receipts
+    - test_rejects_total_steps_that_exceed_u128_encoding
   evidence_commands:
     - cargo +nightly-2025-07-14 test -q --features stwo-backend phase37
     - cargo +nightly-2025-07-14 build -q --features 'full stwo-backend' --bin tvm && TVM_TEST_BINARY=target/debug/tvm cargo +nightly-2025-07-14 test -q --features 'full stwo-backend' --test cli stwo_recursive_artifact_chain
+    - scripts/run_reference_verifier_suite.sh
   non_claims:
     - "Does not claim recursive proof verification."
     - "Does not claim cryptographic compression."

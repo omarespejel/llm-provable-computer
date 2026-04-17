@@ -476,6 +476,13 @@ changed_path_is_phase_artifact_corpus_surface() {
     changed_path_has_prefix "scripts/local_merge_gate.sh"
 }
 
+changed_path_is_reference_verifier_surface() {
+  changed_path_has_prefix "tools/reference_verifier/" ||
+    changed_path_has_prefix "scripts/run_reference_verifier_suite.sh" ||
+    changed_path_has_prefix "docs/engineering/paper2-claim-evidence.yml" ||
+    changed_path_has_prefix "scripts/local_merge_gate.sh"
+}
+
 changed_path_is_dependency_audit_input() {
   local path
 
@@ -559,6 +566,16 @@ run_stwo_cli_smoke_targets() {
 
 run_phase_artifact_corpus_smoke() {
   run_logged known-bad-phase-artifact-corpus scripts/run_known_bad_phase_artifact_corpus.sh
+}
+
+run_reference_verifier_smoke() {
+  run_logged reference-verifier bash scripts/run_reference_verifier_suite.sh
+}
+
+run_reference_verifier_if_needed() {
+  if changed_path_is_reference_verifier_surface; then
+    run_reference_verifier_smoke
+  fi
 }
 
 run_research_v3_smoke_targets() {
@@ -648,6 +665,7 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   if changed_path_is_phase_artifact_corpus_surface; then
     run_phase_artifact_corpus_smoke
   fi
+  run_reference_verifier_if_needed
   completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
@@ -671,6 +689,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   if changed_path_is_phase_artifact_corpus_surface; then
     run_phase_artifact_corpus_smoke
   fi
+  run_reference_verifier_if_needed
   completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
@@ -694,6 +713,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   if changed_path_is_phase_artifact_corpus_surface; then
     run_phase_artifact_corpus_smoke
   fi
+  run_reference_verifier_if_needed
   run_conditional_mutation_check
   run_logged fuzz-smoke env FUZZ_TIME_PER_TARGET=20 scripts/run_fuzz_smoke_suite.sh
   run_logged ub-checks env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh

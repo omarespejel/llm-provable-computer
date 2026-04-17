@@ -437,7 +437,7 @@ def parse_claim_evidence_records(
 
 
 def iter_code_and_test_files(repo_root: pathlib.Path):
-    for rel_root in ("src", "tests", "scripts", "fuzz"):
+    for rel_root in ("src", "tests", "scripts", "fuzz", "tools"):
         root = repo_root / rel_root
         if not root.exists():
             continue
