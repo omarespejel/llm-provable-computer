@@ -80,6 +80,83 @@ CLAIM_EVIDENCE_REQUIRED_LISTS = (
     "non_claims",
 )
 
+CLAIM_LANGUAGE_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "recursive proof",
+        (
+            "not",
+            "no",
+            "without",
+            "pre-recursive",
+            "non-claim",
+            "non-goal",
+            "boundary",
+            "wrong",
+        ),
+    ),
+    (
+        "proves model inference",
+        (
+            "bounded",
+            "specific",
+            "not",
+            "does not",
+            "non-claim",
+            "boundary",
+        ),
+    ),
+    (
+        "semantic equivalence",
+        ("bounded",),
+    ),
+    (
+        "preserves accuracy",
+        (
+            "bounded",
+            "budget",
+            "evidence",
+            "measured",
+            "not",
+            "does not",
+        ),
+    ),
+    (
+        "same model behavior",
+        (
+            "bounded",
+            "budget",
+            "evidence",
+            "not",
+            "does not",
+            "non-claim",
+        ),
+    ),
+    (
+        "supply-chain attestation",
+        (
+            "not",
+            "does not",
+            "bounded",
+            "gap",
+            "boundary",
+            "missing",
+            "non-claim",
+        ),
+    ),
+    (
+        "supply-chain attestations",
+        (
+            "not",
+            "does not",
+            "bounded",
+            "gap",
+            "boundary",
+            "missing",
+            "non-claim",
+        ),
+    ),
+)
+
 
 @dataclass
 class Findings:
@@ -547,6 +624,97 @@ def check_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> 
         )
 
 
+def paragraph_start_line(text: str, offset: int) -> int:
+    return text.count("\n", 0, offset) + 1
+
+
+def iter_markdown_paragraphs(text: str):
+    start = 0
+    lines: list[str] = []
+    offset = 0
+
+    for line in text.splitlines(keepends=True):
+        stripped = line.strip()
+        if not stripped:
+            if lines:
+                yield start, "".join(lines)
+                lines = []
+            offset += len(line)
+            continue
+        starts_list_item = bool(re.match(r"^\s*(?:[-*+]\s+|\d+[.)]\s+)", line))
+        if starts_list_item and lines:
+            yield start, "".join(lines)
+            lines = []
+        if not lines:
+            start = offset
+        lines.append(line)
+        offset += len(line)
+
+    if lines:
+        yield start, "".join(lines)
+
+
+def normalized_claim_tokens(text: str) -> list[str]:
+    return re.sub(r"[^a-z0-9]+", " ", text.lower()).split()
+
+
+def contains_token_sequence(tokens: list[str], phrase: str) -> bool:
+    phrase_tokens = normalized_claim_tokens(phrase)
+    if not phrase_tokens or len(phrase_tokens) > len(tokens):
+        return False
+    width = len(phrase_tokens)
+    return any(
+        tokens[index : index + width] == phrase_tokens
+        for index in range(len(tokens) - width + 1)
+    )
+
+
+def check_claim_language_in_file(path: pathlib.Path, findings: Findings) -> None:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        findings.error(f"{path}: failed to read paper claim language for linting: {exc}")
+        return
+
+    for paragraph_offset, paragraph in iter_markdown_paragraphs(text):
+        paragraph_tokens = normalized_claim_tokens(paragraph)
+        for phrase, required_context in CLAIM_LANGUAGE_RULES:
+            if not contains_token_sequence(paragraph_tokens, phrase):
+                continue
+            if any(
+                contains_token_sequence(paragraph_tokens, token)
+                for token in required_context
+            ):
+                continue
+            line_number = paragraph_start_line(text, paragraph_offset)
+            findings.error(
+                f"{path}:{line_number}: overclaim-prone phrase `{phrase}` lacks nearby "
+                f"bounded/non-claim context. Add one of: {', '.join(required_context)}."
+            )
+
+
+def discover_paper_claim_lint_files(repo_root: pathlib.Path) -> list[pathlib.Path]:
+    paper_root = repo_root / "docs/paper"
+    if not paper_root.exists():
+        return []
+    return sorted(path for path in paper_root.rglob("*.md") if path.is_file())
+
+
+def check_paper_claim_language(repo_root: pathlib.Path, findings: Findings) -> None:
+    paper_root = repo_root / "docs/paper"
+    if not paper_root.exists():
+        findings.error(f"{paper_root}: missing docs/paper directory for claim-language linting.")
+        return
+    paths = discover_paper_claim_lint_files(repo_root)
+    if not paths:
+        findings.error(
+            f"{paper_root}: no markdown files found for claim-language linting."
+        )
+        return
+    for path in paths:
+        check_claim_language_in_file(path, findings)
+
+
 def iter_snapshot_field_lines(text: str):
     lines = text.splitlines()
     for index, line in enumerate(lines):
@@ -880,6 +1048,7 @@ def main() -> int:
     check_backend_appendix_consistency(repo_root, findings)
     check_publication_snapshot_placeholders(repo_root, findings)
     check_claim_evidence_matrix(repo_root, findings)
+    check_paper_claim_language(repo_root, findings)
 
     if findings.warnings:
         print("Warnings:")

@@ -594,6 +594,183 @@ class PaperPreflightTests(unittest.TestCase):
                 findings.errors,
             )
 
+    def test_claim_language_linter_rejects_unbounded_semantic_equivalence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                "The artifact proves semantic equivalence across runtime frontends.\n",
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertTrue(
+                any("semantic equivalence" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_claim_language_linter_accepts_bounded_equivalence_language(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                (
+                    "The artifact provides bounded semantic equivalence evidence "
+                    "inside a stated claim boundary, not a general theorem.\n"
+                ),
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertEqual(findings.errors, [])
+
+    def test_claim_language_linter_splits_adjacent_list_items(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                (
+                    "- bounded semantic equivalence evidence for a toy case\n"
+                    "- The artifact proves semantic equivalence across runtimes.\n"
+                ),
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertTrue(
+                any(":2:" in msg and "semantic equivalence" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_claim_language_linter_rejects_hyphenated_unbounded_equivalence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                "The artifact proves semantic-equivalence across runtime frontends.\n",
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertTrue(
+                any("semantic equivalence" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_claim_language_linter_accepts_hyphenated_bounded_equivalence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                "This is bounded semantic-equivalence evidence for one fixture.\n",
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertEqual(findings.errors, [])
+
+    def test_claim_language_linter_rejects_accuracy_claim_without_budget(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                "The quantized artifact preserves accuracy across model exports.\n",
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertTrue(
+                any("preserves accuracy" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_claim_language_linter_accepts_wrong_comparison_examples(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                (
+                    "The wrong comparison language is `already recursive "
+                    "proof-carrying data`; the repository does not claim that.\n"
+                ),
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertEqual(findings.errors, [])
+
+    def test_claim_language_linter_rejects_attestation_verified_as_context(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                "The release provides supply-chain attestation with verified identity.\n",
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertTrue(
+                any("supply-chain attestation" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_claim_language_linter_rejects_complete_attestation_as_context(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                "The release provides complete supply-chain attestation.\n",
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertTrue(
+                any("supply-chain attestation" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_claim_language_linter_accepts_attestation_gap_language(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                "Supply-chain attestations remain a missing gap for future work.\n",
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertEqual(findings.errors, [])
+
+    def test_claim_language_linter_discovers_new_paper_docs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(repo / "docs/paper/existing.md", "Bounded claims only.\n")
+            write_text(
+                repo / "docs/paper/new-section/new-paper.md",
+                "The artifact proves semantic equivalence across runtimes.\n",
+            )
+
+            findings = MOD.Findings()
+            MOD.check_paper_claim_language(repo, findings)
+            self.assertTrue(
+                any(
+                    "new-paper.md" in msg and "semantic equivalence" in msg
+                    for msg in findings.errors
+                ),
+                findings.errors,
+            )
+
+    def test_claim_language_linter_reports_missing_paper_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+
+            findings = MOD.Findings()
+            MOD.check_paper_claim_language(repo, findings)
+            self.assertTrue(
+                any("missing docs/paper directory" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

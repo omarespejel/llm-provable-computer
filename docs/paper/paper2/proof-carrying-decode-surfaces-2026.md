@@ -339,8 +339,8 @@ The repository does not yet support the following stronger claims:
    HyperNova, NeutronNova, ProtoStar, SnarkFold, or related folding lines,
 3. general implementation-equivalence proofs over runtime/compiler frontends,
 4. full standard-softmax transformer proving on the `stwo` path,
-5. supply-chain attestation theorems comparable to a complete in-toto or SLSA
-   provenance story.
+5. supply-chain attestation theorems are still a missing gap compared with an
+   in-toto or SLSA provenance story.
 
 These are not cosmetic disclaimers. They define the boundary that protects the
 paper from overclaiming.
@@ -461,7 +461,7 @@ For a stronger follow-on paper, the missing milestones are clear:
 - recursive cryptographic compression over the same decode statement,
 - recursive shared-table accumulation as a compressed proof object,
 - stronger exporter/provenance binding for ONNX-facing release artifacts,
-- broader signed supply-chain attestations with verified builder identity,
+- missing broader signed supply-chain attestations with verified builder identity,
 - broader `stwo` transformer coverage beyond the current narrow experimental
   boundary.
 
