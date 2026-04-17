@@ -60,7 +60,7 @@ def manifest_display_path(path: pathlib.Path) -> str:
     try:
         return path.resolve().relative_to(ROOT).as_posix()
     except ValueError:
-        return path.name
+        return path.as_posix()
 
 
 def load_receipt(path: pathlib.Path) -> dict[str, Any]:

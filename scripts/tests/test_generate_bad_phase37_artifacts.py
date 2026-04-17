@@ -36,9 +36,9 @@ def pycache_dirs() -> list[pathlib.Path]:
     ]
 
 
-def run_generator(output_dir: pathlib.Path) -> pathlib.Path:
+def run_generator(output_dir: pathlib.Path, receipt: pathlib.Path = FIXTURE) -> pathlib.Path:
     completed = subprocess.run(
-        [sys.executable, "-B", str(GENERATOR), str(FIXTURE), str(output_dir)],
+        [sys.executable, "-B", str(GENERATOR), str(receipt), str(output_dir)],
         check=True,
         capture_output=True,
         text=True,
@@ -142,6 +142,16 @@ class Phase37AdversarialMutationGeneratorTests(unittest.TestCase):
             )
             self.assertNotEqual(completed.returncode, 0)
             self.assertIn("output directory must be empty", completed.stderr)
+
+    def test_external_receipt_path_is_not_collapsed_to_basename(self) -> None:
+        with tempfile.TemporaryDirectory() as tempdir:
+            temp = pathlib.Path(tempdir)
+            external_receipt = temp / "nested" / "phase37-reference-receipt.json"
+            external_receipt.parent.mkdir()
+            shutil.copy2(FIXTURE, external_receipt)
+
+            manifest = load_json(run_generator(temp / "mutations", external_receipt))
+            self.assertEqual(manifest["source_receipt"]["path"], str(external_receipt))
 
 
 if __name__ == "__main__":
