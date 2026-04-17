@@ -36,16 +36,6 @@ PAPER_FILES = [
     *PUBLICATION_METADATA_FILES,
 ]
 
-PAPER_CLAIM_LINT_FILES = [
-    "docs/paper/stark-transformer-alignment-2026.md",
-    "docs/paper/paper2/README.md",
-    "docs/paper/paper2/proof-carrying-decode-surfaces-2026.md",
-    "docs/paper/paper2/appendix-artifact-map.md",
-    "docs/paper/paper2/appendix-claim-boundary.md",
-    "docs/paper/paper2/appendix-engineering-gaps.md",
-    "docs/paper/paper2/appendix-ivc-positioning.md",
-]
-
 SNAPSHOT_FIELD_PREFIXES = (
     "Canonical publication snapshot",
     "Canonical repository snapshot",
@@ -146,7 +136,6 @@ CLAIM_LANGUAGE_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
         (
             "not",
             "does not",
-            "complete",
             "bounded",
             "gap",
             "boundary",
@@ -159,7 +148,6 @@ CLAIM_LANGUAGE_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
         (
             "not",
             "does not",
-            "complete",
             "bounded",
             "gap",
             "boundary",
@@ -701,12 +689,21 @@ def check_claim_language_in_file(path: pathlib.Path, findings: Findings) -> None
             )
 
 
+def discover_paper_claim_lint_files(repo_root: pathlib.Path) -> list[pathlib.Path]:
+    paper_root = repo_root / "docs/paper"
+    if not paper_root.exists():
+        return []
+    return sorted(path for path in paper_root.rglob("*.md") if path.is_file())
+
+
 def check_paper_claim_language(repo_root: pathlib.Path, findings: Findings) -> None:
-    for rel_path in PAPER_CLAIM_LINT_FILES:
-        path = repo_root / rel_path
-        if not path.exists():
-            findings.error(f"{path}: missing expected paper claim-language lint file.")
-            continue
+    paths = discover_paper_claim_lint_files(repo_root)
+    if not paths:
+        findings.error(
+            f"{repo_root / 'docs/paper'}: no markdown files found for claim-language linting."
+        )
+        return
+    for path in paths:
         check_claim_language_in_file(path, findings)
 
 

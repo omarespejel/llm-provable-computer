@@ -696,6 +696,21 @@ class PaperPreflightTests(unittest.TestCase):
                 findings.errors,
             )
 
+    def test_claim_language_linter_rejects_complete_attestation_as_context(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                "The release provides complete supply-chain attestation.\n",
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertTrue(
+                any("supply-chain attestation" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
     def test_claim_language_linter_accepts_attestation_gap_language(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = pathlib.Path(tmp) / "paper.md"
@@ -707,6 +722,25 @@ class PaperPreflightTests(unittest.TestCase):
             findings = MOD.Findings()
             MOD.check_claim_language_in_file(path, findings)
             self.assertEqual(findings.errors, [])
+
+    def test_claim_language_linter_discovers_new_paper_docs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(repo / "docs/paper/existing.md", "Bounded claims only.\n")
+            write_text(
+                repo / "docs/paper/new-section/new-paper.md",
+                "The artifact proves semantic equivalence across runtimes.\n",
+            )
+
+            findings = MOD.Findings()
+            MOD.check_paper_claim_language(repo, findings)
+            self.assertTrue(
+                any(
+                    "new-paper.md" in msg and "semantic equivalence" in msg
+                    for msg in findings.errors
+                ),
+                findings.errors,
+            )
 
 
 if __name__ == "__main__":

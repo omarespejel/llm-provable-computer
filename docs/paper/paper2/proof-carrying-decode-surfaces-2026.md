@@ -339,7 +339,7 @@ The repository does not yet support the following stronger claims:
    HyperNova, NeutronNova, ProtoStar, SnarkFold, or related folding lines,
 3. general implementation-equivalence proofs over runtime/compiler frontends,
 4. full standard-softmax transformer proving on the `stwo` path,
-5. supply-chain attestation theorems comparable to a complete in-toto or SLSA
+5. missing supply-chain attestation theorems comparable to an in-toto or SLSA
    provenance story.
 
 These are not cosmetic disclaimers. They define the boundary that protects the
