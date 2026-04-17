@@ -569,7 +569,7 @@ run_phase_artifact_corpus_smoke() {
 }
 
 run_reference_verifier_smoke() {
-  run_logged reference-verifier scripts/run_reference_verifier_suite.sh
+  run_logged reference-verifier bash scripts/run_reference_verifier_suite.sh
 }
 
 run_research_v3_smoke_targets() {
