@@ -1,6 +1,5 @@
 {
   "case_id": "toy_reference_case_v1",
-  "related_fixtures": ["toy_reference_case_topk3.json"],
   "reference_decode": {
     "context_tokens": [2, 0, 1],
     "logit_bias": [0.35, 0.15, 0.05],

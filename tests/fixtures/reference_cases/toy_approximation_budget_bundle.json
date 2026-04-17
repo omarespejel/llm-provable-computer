@@ -1,6 +1,5 @@
 {
   "suite_id": "toy_approximation_budget_v1",
-  "negative_case_bundle": "toy_approximation_budget_negative_bundle.json",
   "cases": [
     {
       "case_id": "toy_reference_case_v1",

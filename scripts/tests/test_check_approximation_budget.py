@@ -45,7 +45,7 @@ class ApproximationBudgetTests(unittest.TestCase):
         cases = self.load_negative_cases()
         self.assertGreaterEqual(len(cases), 3)
         for case in cases:
-            with self.subTest(case_id=case["case_id"]):
+            with self.subTest(case_id=case.get("case_id", "<missing>")):
                 with self.assertRaises(ValueError):
                     MOD.check_case(case)
 
