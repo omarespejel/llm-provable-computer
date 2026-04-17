@@ -615,9 +615,36 @@ class PaperPreflightTests(unittest.TestCase):
             write_text(
                 path,
                 (
-                    "The artifact provides bounded semantic-equivalence evidence "
+                    "The artifact provides bounded semantic equivalence evidence "
                     "inside a stated claim boundary, not a general theorem.\n"
                 ),
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertEqual(findings.errors, [])
+
+    def test_claim_language_linter_rejects_hyphenated_unbounded_equivalence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                "The artifact proves semantic-equivalence across runtime frontends.\n",
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertTrue(
+                any("semantic equivalence" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_claim_language_linter_accepts_hyphenated_bounded_equivalence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                "This is bounded semantic-equivalence evidence for one fixture.\n",
             )
 
             findings = MOD.Findings()
@@ -648,6 +675,33 @@ class PaperPreflightTests(unittest.TestCase):
                     "The wrong comparison language is `already recursive "
                     "proof-carrying data`; the repository does not claim that.\n"
                 ),
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertEqual(findings.errors, [])
+
+    def test_claim_language_linter_rejects_attestation_verified_as_context(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                "The release provides supply-chain attestation with verified identity.\n",
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertTrue(
+                any("supply-chain attestation" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_claim_language_linter_accepts_attestation_gap_language(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                "Supply-chain attestations remain a missing gap for future work.\n",
             )
 
             findings = MOD.Findings()

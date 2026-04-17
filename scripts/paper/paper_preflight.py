@@ -95,7 +95,7 @@ CLAIM_LANGUAGE_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
         "recursive proof",
         (
             "not",
-            "no ",
+            "no",
             "without",
             "pre-recursive",
             "non-claim",
@@ -117,14 +117,7 @@ CLAIM_LANGUAGE_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ),
     (
         "semantic equivalence",
-        (
-            "bounded",
-            "not",
-            "does not",
-            "scope",
-            "boundary",
-            "evidence",
-        ),
+        ("bounded",),
     ),
     (
         "preserves accuracy",
@@ -155,9 +148,23 @@ CLAIM_LANGUAGE_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
             "does not",
             "complete",
             "bounded",
-            "verified",
             "gap",
             "boundary",
+            "missing",
+            "non-claim",
+        ),
+    ),
+    (
+        "supply-chain attestations",
+        (
+            "not",
+            "does not",
+            "complete",
+            "bounded",
+            "gap",
+            "boundary",
+            "missing",
+            "non-claim",
         ),
     ),
 )
@@ -655,6 +662,21 @@ def iter_markdown_paragraphs(text: str):
         yield start, "".join(lines)
 
 
+def normalized_claim_tokens(text: str) -> list[str]:
+    return re.sub(r"[^a-z0-9]+", " ", text.lower()).split()
+
+
+def contains_token_sequence(tokens: list[str], phrase: str) -> bool:
+    phrase_tokens = normalized_claim_tokens(phrase)
+    if not phrase_tokens or len(phrase_tokens) > len(tokens):
+        return False
+    width = len(phrase_tokens)
+    return any(
+        tokens[index : index + width] == phrase_tokens
+        for index in range(len(tokens) - width + 1)
+    )
+
+
 def check_claim_language_in_file(path: pathlib.Path, findings: Findings) -> None:
     try:
         text = path.read_text(encoding="utf-8")
@@ -663,11 +685,14 @@ def check_claim_language_in_file(path: pathlib.Path, findings: Findings) -> None
         return
 
     for paragraph_offset, paragraph in iter_markdown_paragraphs(text):
-        lowered = paragraph.lower()
+        paragraph_tokens = normalized_claim_tokens(paragraph)
         for phrase, required_context in CLAIM_LANGUAGE_RULES:
-            if phrase not in lowered:
+            if not contains_token_sequence(paragraph_tokens, phrase):
                 continue
-            if any(token in lowered for token in required_context):
+            if any(
+                contains_token_sequence(paragraph_tokens, token)
+                for token in required_context
+            ):
                 continue
             line_number = paragraph_start_line(text, paragraph_offset)
             findings.error(
