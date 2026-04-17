@@ -697,10 +697,14 @@ def discover_paper_claim_lint_files(repo_root: pathlib.Path) -> list[pathlib.Pat
 
 
 def check_paper_claim_language(repo_root: pathlib.Path, findings: Findings) -> None:
+    paper_root = repo_root / "docs/paper"
+    if not paper_root.exists():
+        findings.error(f"{paper_root}: missing docs/paper directory for claim-language linting.")
+        return
     paths = discover_paper_claim_lint_files(repo_root)
     if not paths:
         findings.error(
-            f"{repo_root / 'docs/paper'}: no markdown files found for claim-language linting."
+            f"{paper_root}: no markdown files found for claim-language linting."
         )
         return
     for path in paths:

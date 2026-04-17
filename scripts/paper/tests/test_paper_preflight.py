@@ -742,6 +742,17 @@ class PaperPreflightTests(unittest.TestCase):
                 findings.errors,
             )
 
+    def test_claim_language_linter_reports_missing_paper_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+
+            findings = MOD.Findings()
+            MOD.check_paper_claim_language(repo, findings)
+            self.assertTrue(
+                any("missing docs/paper directory" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
