@@ -1,0 +1,60 @@
+{
+  "suite_id": "toy_approximation_budget_negative_v1",
+  "cases": [
+    {
+      "case_id": "toy_reference_case_v1_missing_token_flips",
+      "budget": {
+        "max_logit_error": 0.01,
+        "max_mean_logit_error": 0.01,
+        "max_kl": 0.01,
+        "require_top1_match": true,
+        "min_topk_overlap": 2,
+        "max_token_flips": 0
+      },
+      "evidence": {
+        "max_logit_error": 0.0,
+        "mean_logit_error": 0.0,
+        "kl_divergence": 0.0,
+        "top1_match": true,
+        "topk_overlap": 2
+      }
+    },
+    {
+      "case_id": "toy_reference_case_v1_wrong_metric_type",
+      "budget": {
+        "max_logit_error": 0.01,
+        "max_mean_logit_error": 0.01,
+        "max_kl": 0.01,
+        "require_top1_match": true,
+        "min_topk_overlap": 2,
+        "max_token_flips": 0
+      },
+      "evidence": {
+        "max_logit_error": "0.0",
+        "mean_logit_error": 0.0,
+        "kl_divergence": 0.0,
+        "top1_match": true,
+        "topk_overlap": 2,
+        "token_flips": 0
+      }
+    },
+    {
+      "case_id": "toy_reference_case_v1_missing_top1_match",
+      "budget": {
+        "max_logit_error": 0.01,
+        "max_mean_logit_error": 0.01,
+        "max_kl": 0.01,
+        "require_top1_match": true,
+        "min_topk_overlap": 2,
+        "max_token_flips": 0
+      },
+      "evidence": {
+        "max_logit_error": 0.0,
+        "mean_logit_error": 0.0,
+        "kl_divergence": 0.0,
+        "topk_overlap": 2,
+        "token_flips": 0
+      }
+    }
+  ]
+}

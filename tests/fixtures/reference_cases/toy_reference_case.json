@@ -1,0 +1,36 @@
+{
+  "case_id": "toy_reference_case_v1",
+  "reference_decode": {
+    "context_tokens": [2, 0, 1],
+    "logit_bias": [0.35, 0.15, 0.05],
+    "context_scale": 0.2,
+    "position_slope": -0.1,
+    "top_k": 2
+  },
+  "candidate": {
+    "logits": [0.95, 0.65, 0.45]
+  },
+  "expected_comparison": {
+    "case_id": "toy_reference_case_v1",
+    "reference": {
+      "context_score": 3,
+      "logits": [0.95, 0.65, 0.45],
+      "top1": 0,
+      "topk": [0, 1]
+    },
+    "candidate": {
+      "logits": [0.95, 0.65, 0.45],
+      "top1": 0,
+      "topk": [0, 1]
+    },
+    "metrics": {
+      "max_logit_error": 0.0,
+      "mean_logit_error": 0.0,
+      "kl_divergence": 0.0,
+      "top1_match": true,
+      "topk_overlap": 2,
+      "token_flips": 0
+    },
+    "status": "pass"
+  }
+}
