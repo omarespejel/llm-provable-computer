@@ -174,6 +174,8 @@ def update_bool(hasher: Any, value: bool) -> None:
 def update_usize(hasher: Any, value: int) -> None:
     if value < 0:
         raise ReferenceVerifierError("usize commitment input must be non-negative")
+    if value >= 2**128:
+        raise ReferenceVerifierError("usize commitment input exceeds 128-bit encoding")
     hasher.update(value.to_bytes(16, byteorder="little", signed=False))
 
 

@@ -81,6 +81,54 @@ class Phase37ReferenceVerifierTests(unittest.TestCase):
             MOD.commit_phase37_receipt(changed),
         )
 
+    def test_rejects_total_steps_that_exceed_u128_encoding(self) -> None:
+        receipt = self.load_fixture()
+        receipt["total_steps"] = 2**128
+        with self.assertRaisesRegex(MOD.ReferenceVerifierError, "exceeds 128-bit encoding"):
+            MOD.verify_phase37_receipt(receipt)
+
+    def test_deterministic_parser_mutation_corpus_rejects_invalid_receipts(self) -> None:
+        mutations = {
+            "wrong_backend_type": (
+                lambda receipt: receipt.__setitem__("proof_backend", 7),
+                "proof_backend must be a string",
+            ),
+            "boolean_total_steps": (
+                lambda receipt: receipt.__setitem__("total_steps", True),
+                "total_steps must be an integer",
+            ),
+            "zero_total_steps": (
+                lambda receipt: receipt.__setitem__("total_steps", 0),
+                "total_steps must be positive",
+            ),
+            "short_hash": (
+                lambda receipt: receipt.__setitem__("phase29_input_contract_commitment", "abc"),
+                "lowercase 64-character hex",
+            ),
+            "missing_hash": (
+                lambda receipt: receipt.__delitem__("phase30_source_chain_commitment"),
+                "missing Phase 37 fields",
+            ),
+            "unknown_field": (
+                lambda receipt: receipt.__setitem__("extra_debug_field", "not-bound"),
+                "unknown Phase 37 fields",
+            ),
+            "source_binding_false": (
+                lambda receipt: receipt.__setitem__("source_binding_verified", False),
+                "source_binding_verified",
+            ),
+            "commitment_drift": (
+                lambda receipt: receipt.__setitem__("phase30_source_chain_commitment", "1" * 64),
+                "commitment mismatch",
+            ),
+        }
+        for name, (mutate, expected_error) in mutations.items():
+            with self.subTest(name=name):
+                receipt = self.load_fixture()
+                mutate(receipt)
+                with self.assertRaisesRegex(MOD.ReferenceVerifierError, expected_error):
+                    MOD.verify_phase37_receipt(receipt)
+
 
 if __name__ == "__main__":
     unittest.main()
