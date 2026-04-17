@@ -624,6 +624,24 @@ class PaperPreflightTests(unittest.TestCase):
             MOD.check_claim_language_in_file(path, findings)
             self.assertEqual(findings.errors, [])
 
+    def test_claim_language_linter_splits_adjacent_list_items(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                (
+                    "- bounded semantic equivalence evidence for a toy case\n"
+                    "- The artifact proves semantic equivalence across runtimes.\n"
+                ),
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertTrue(
+                any(":2:" in msg and "semantic equivalence" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
     def test_claim_language_linter_rejects_hyphenated_unbounded_equivalence(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = pathlib.Path(tmp) / "paper.md"

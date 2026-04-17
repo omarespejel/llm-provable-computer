@@ -461,7 +461,7 @@ For a stronger follow-on paper, the missing milestones are clear:
 - recursive cryptographic compression over the same decode statement,
 - recursive shared-table accumulation as a compressed proof object,
 - stronger exporter/provenance binding for ONNX-facing release artifacts,
-- broader signed supply-chain attestations with verified builder identity,
+- missing broader signed supply-chain attestations with verified builder identity,
 - broader `stwo` transformer coverage beyond the current narrow experimental
   boundary.
 

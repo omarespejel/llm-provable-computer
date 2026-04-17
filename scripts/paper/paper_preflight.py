@@ -641,6 +641,10 @@ def iter_markdown_paragraphs(text: str):
                 lines = []
             offset += len(line)
             continue
+        starts_list_item = bool(re.match(r"^\s*(?:[-*+]\s+|\d+[.)]\s+)", line))
+        if starts_list_item and lines:
+            yield start, "".join(lines)
+            lines = []
         if not lines:
             start = offset
         lines.append(line)
