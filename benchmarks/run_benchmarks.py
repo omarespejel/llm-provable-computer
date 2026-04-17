@@ -16,6 +16,7 @@ import json
 import math
 import os
 import platform
+import signal
 import statistics
 import subprocess
 import sys
@@ -23,6 +24,10 @@ import tempfile
 import time
 from pathlib import Path
 from typing import Any
+
+
+SUPPORTED_CASE_MANIFEST_VERSION = 1
+CHUNK_SIZE = 1024 * 1024
 
 
 @dataclasses.dataclass(frozen=True)
@@ -43,6 +48,7 @@ class CaseSpec:
     timeout_s: float | None = None
     allow_failure: bool = False
     inputs: list[InputSpec] = dataclasses.field(default_factory=list)
+    log_dir_name: str | None = None
 
 
 def repo_root() -> Path:
@@ -78,6 +84,24 @@ def sanitize_token(value: str | None, fallback: str = "anon") -> str:
     return cleaned or fallback
 
 
+def case_log_dir_name(index: int, name: str) -> str:
+    name_hash = sha256_bytes(name.encode("utf-8"))[:8]
+    return f"{index:03d}-{sanitize_token(name)}-{name_hash}"
+
+
+def resolve_under_repo(root: Path, value: str, field: str) -> Path:
+    path = Path(value)
+    if path.is_absolute():
+        raise ValueError(f"{field} must be repo-relative: {value}")
+    resolved_root = root.resolve()
+    resolved = (resolved_root / path).resolve()
+    try:
+        resolved.relative_to(resolved_root)
+    except ValueError as exc:
+        raise ValueError(f"{field} escapes repo root: {value}") from exc
+    return resolved
+
+
 def percentile(values: list[float], pct: float) -> float:
     if not values:
         raise ValueError("cannot compute percentile on an empty list")
@@ -95,18 +119,25 @@ def percentile(values: list[float], pct: float) -> float:
 
 def load_case_manifest(path: Path) -> tuple[dict[str, Any], list[CaseSpec]]:
     raw = json.loads(path.read_text(encoding="utf-8"))
-    if isinstance(raw, list):
-        manifest_meta: dict[str, Any] = {}
-        cases_raw = raw
-    elif isinstance(raw, dict):
-        manifest_meta = {k: v for k, v in raw.items() if k != "cases"}
-        cases_raw = raw.get("cases", [])
-        if not isinstance(cases_raw, list):
-            raise ValueError("case manifest must contain a list under 'cases'")
-    else:
-        raise ValueError("case manifest must be a JSON object or list")
+    if not isinstance(raw, dict):
+        raise ValueError("case manifest must be a JSON object")
+    version = raw.get("version")
+    if isinstance(version, bool) or not isinstance(version, int):
+        raise ValueError("case manifest must declare integer version 1")
+    if version != SUPPORTED_CASE_MANIFEST_VERSION:
+        raise ValueError(
+            f"unsupported case manifest version {version}; "
+            f"expected {SUPPORTED_CASE_MANIFEST_VERSION}"
+        )
+    manifest_meta = {k: v for k, v in raw.items() if k != "cases"}
+    cases_raw = raw.get("cases")
+    if not isinstance(cases_raw, list):
+        raise ValueError("case manifest must contain a list under 'cases'")
 
     cases: list[CaseSpec] = []
+    seen_names: set[str] = set()
+    seen_log_dirs: set[str] = set()
+    root = repo_root()
     for index, entry in enumerate(cases_raw, 1):
         if not isinstance(entry, dict):
             raise ValueError(f"case #{index} must be an object")
@@ -118,11 +149,22 @@ def load_case_manifest(path: Path) -> tuple[dict[str, Any], list[CaseSpec]]:
             isinstance(arg, str) for arg in command
         ):
             raise ValueError(f"case {name!r} must define command as a non-empty string list")
+        if name in seen_names:
+            raise ValueError(f"case name {name!r} is duplicated")
+        seen_names.add(name)
+        log_dir_name = case_log_dir_name(index, name)
+        if log_dir_name in seen_log_dirs:
+            raise ValueError(f"case log directory {log_dir_name!r} is duplicated")
+        seen_log_dirs.add(log_dir_name)
         repeat = int(entry.get("repeat", 1))
         if repeat < 1:
             raise ValueError(f"case {name!r} repeat must be >= 1")
         cwd_value = entry.get("cwd")
-        cwd = (repo_root() / cwd_value).resolve() if isinstance(cwd_value, str) else None
+        cwd = (
+            resolve_under_repo(root, cwd_value, f"case {name!r} cwd")
+            if isinstance(cwd_value, str)
+            else None
+        )
         env_value = entry.get("env")
         env = None
         if env_value is not None:
@@ -134,25 +176,35 @@ def load_case_manifest(path: Path) -> tuple[dict[str, Any], list[CaseSpec]]:
         inputs: list[InputSpec] = []
         for raw_input in entry.get("inputs", []) or []:
             if isinstance(raw_input, str):
-                inputs.append(InputSpec(path=(repo_root() / raw_input).resolve()))
+                inputs.append(
+                    InputSpec(
+                        path=resolve_under_repo(root, raw_input, f"case {name!r} input")
+                    )
+                )
                 continue
             if isinstance(raw_input, dict):
                 path_value = raw_input.get("path")
                 if not isinstance(path_value, str) or not path_value:
                     raise ValueError(f"case {name!r} input entries need a path")
                 label_value = raw_input.get("label")
-                optional_value = bool(raw_input.get("optional", False))
+                optional_raw = raw_input.get("optional", False)
+                if not isinstance(optional_raw, bool):
+                    raise ValueError(f"case {name!r} input optional must be boolean")
                 inputs.append(
                     InputSpec(
-                        path=(repo_root() / path_value).resolve(),
+                        path=resolve_under_repo(
+                            root, path_value, f"case {name!r} input"
+                        ),
                         label=label_value if isinstance(label_value, str) else None,
-                        optional=optional_value,
+                        optional=optional_raw,
                     )
                 )
                 continue
             raise ValueError(f"case {name!r} inputs must be strings or objects")
         timeout_value = entry.get("timeout_s")
         timeout_s = float(timeout_value) if timeout_value is not None else None
+        if timeout_s is not None and timeout_s <= 0:
+            raise ValueError(f"case {name!r} timeout_s must be > 0")
         cases.append(
             CaseSpec(
                 name=name,
@@ -164,6 +216,7 @@ def load_case_manifest(path: Path) -> tuple[dict[str, Any], list[CaseSpec]]:
                 timeout_s=timeout_s,
                 allow_failure=bool(entry.get("allow_failure", False)),
                 inputs=inputs,
+                log_dir_name=log_dir_name,
             )
         )
     return manifest_meta, cases
@@ -242,16 +295,30 @@ def peak_rss_unit() -> str:
     return "kilobytes" if platform.system() == "Linux" else "bytes"
 
 
-def hash_inputs(inputs: list[InputSpec]) -> list[dict[str, Any]]:
-    hashed: list[dict[str, Any]] = []
+def describe_inputs(inputs: list[InputSpec], hash_files: bool) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
     for spec in inputs:
+        base: dict[str, Any] = {
+            "path": str(spec.path),
+            "label": spec.label,
+            "optional": spec.optional,
+        }
+        if not hash_files:
+            records.append(
+                {
+                    **base,
+                    "exists": None,
+                    "sha256": None,
+                    "size_bytes": None,
+                    "hashing": "deferred-until-run",
+                }
+            )
+            continue
         if not spec.path.exists():
             if spec.optional:
-                hashed.append(
+                records.append(
                     {
-                        "path": str(spec.path),
-                        "label": spec.label,
-                        "optional": True,
+                        **base,
                         "exists": False,
                         "sha256": None,
                         "size_bytes": None,
@@ -259,17 +326,46 @@ def hash_inputs(inputs: list[InputSpec]) -> list[dict[str, Any]]:
                 )
                 continue
             raise FileNotFoundError(f"missing input file: {spec.path}")
-        hashed.append(
+        records.append(
             {
-                "path": str(spec.path),
-                "label": spec.label,
-                "optional": spec.optional,
+                **base,
                 "exists": True,
                 "sha256": sha256_file(spec.path),
                 "size_bytes": spec.path.stat().st_size,
             }
         )
-    return hashed
+    return records
+
+
+def copy_temp_file_to_path_and_hash(source: Any, destination: Path) -> tuple[str, int]:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    hasher = hashlib.sha256()
+    size = 0
+    source.seek(0)
+    with destination.open("wb") as handle:
+        for chunk in iter(lambda: source.read(CHUNK_SIZE), b""):
+            hasher.update(chunk)
+            size += len(chunk)
+            handle.write(chunk)
+    return hasher.hexdigest(), size
+
+
+def process_spawn_kwargs() -> dict[str, Any]:
+    if os.name == "posix":
+        return {"start_new_session": True}
+    if hasattr(subprocess, "CREATE_NEW_PROCESS_GROUP"):
+        return {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+    return {}
+
+
+def kill_process_group(proc: subprocess.Popen[Any]) -> None:
+    try:
+        if os.name == "posix":
+            os.killpg(proc.pid, signal.SIGKILL)
+        else:
+            proc.kill()
+    except ProcessLookupError:
+        return
 
 
 def write_text(path: Path, text: str) -> None:
@@ -282,6 +378,8 @@ def run_case(
     run_root: Path,
     dry_run: bool,
 ) -> dict[str, Any]:
+    case_dir_name = case.log_dir_name or case_log_dir_name(0, case.name)
+    case_dir = run_root / case_dir_name
     result: dict[str, Any] = {
         "name": case.name,
         "description": case.description,
@@ -289,7 +387,9 @@ def run_case(
         "cwd": str(case.cwd or repo_root()),
         "repeat": case.repeat,
         "allow_failure": case.allow_failure,
-        "inputs": hash_inputs(case.inputs),
+        "inputs": describe_inputs(case.inputs, hash_files=not dry_run),
+        "log_dir_name": case_dir_name,
+        "log_dir": str(case_dir),
         "runs": [],
     }
     if dry_run:
@@ -300,7 +400,6 @@ def run_case(
     if case.env:
         env.update(case.env)
 
-    case_dir = run_root / sanitize_token(case.name)
     case_dir.mkdir(parents=True, exist_ok=True)
 
     durations_ms: list[float] = []
@@ -316,6 +415,10 @@ def run_case(
         peak_rss_value: int | None = None
         user_time_s: float | None = None
         system_time_s: float | None = None
+        stdout_sha256 = ""
+        stderr_sha256 = ""
+        stdout_size_bytes = 0
+        stderr_size_bytes = 0
 
         with tempfile.TemporaryFile() as stdout_tmp, tempfile.TemporaryFile() as stderr_tmp:
             proc = subprocess.Popen(
@@ -324,6 +427,7 @@ def run_case(
                 env=env,
                 stdout=stdout_tmp,
                 stderr=stderr_tmp,
+                **process_spawn_kwargs(),
             )
             try:
                 if hasattr(os, "wait4"):
@@ -337,11 +441,12 @@ def run_case(
                                 break
                             if time.monotonic() >= deadline:
                                 timed_out = True
-                                proc.kill()
+                                kill_process_group(proc)
                                 _, status, rusage = os.wait4(proc.pid, 0)
                                 break
                             time.sleep(0.05)
                     returncode = os.waitstatus_to_exitcode(status)
+                    proc.returncode = returncode
                     peak_rss_value = getattr(rusage, "ru_maxrss", None)
                     user_time_s = getattr(rusage, "ru_utime", None)
                     system_time_s = getattr(rusage, "ru_stime", None)
@@ -350,17 +455,16 @@ def run_case(
                     returncode = proc.returncode
             except subprocess.TimeoutExpired:
                 timed_out = True
-                proc.kill()
+                kill_process_group(proc)
                 proc.wait()
                 returncode = proc.returncode
             ended_perf = time.perf_counter()
-            stdout_tmp.seek(0)
-            stderr_tmp.seek(0)
-            stdout_bytes = stdout_tmp.read()
-            stderr_bytes = stderr_tmp.read()
-
-        write_text(stdout_path, stdout_bytes.decode("utf-8", errors="replace"))
-        write_text(stderr_path, stderr_bytes.decode("utf-8", errors="replace"))
+            stdout_sha256, stdout_size_bytes = copy_temp_file_to_path_and_hash(
+                stdout_tmp, stdout_path
+            )
+            stderr_sha256, stderr_size_bytes = copy_temp_file_to_path_and_hash(
+                stderr_tmp, stderr_path
+            )
 
         duration_ms = (ended_perf - started_perf) * 1000.0
         durations_ms.append(duration_ms)
@@ -373,10 +477,10 @@ def run_case(
             "timed_out": timed_out,
             "stdout_path": str(stdout_path),
             "stderr_path": str(stderr_path),
-            "stdout_sha256": sha256_bytes(stdout_bytes),
-            "stderr_sha256": sha256_bytes(stderr_bytes),
-            "stdout_size_bytes": len(stdout_bytes),
-            "stderr_size_bytes": len(stderr_bytes),
+            "stdout_sha256": stdout_sha256,
+            "stderr_sha256": stderr_sha256,
+            "stdout_size_bytes": stdout_size_bytes,
+            "stderr_size_bytes": stderr_size_bytes,
             "peak_rss": peak_rss_value,
             "peak_rss_unit": peak_rss_unit() if peak_rss_value is not None else None,
             "user_time_s": round(user_time_s, 6) if user_time_s is not None else None,

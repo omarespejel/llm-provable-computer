@@ -23,7 +23,8 @@ Every benchmark record should capture:
 - input hashes
 - run mode (`dry-run` or `run`)
 - repetition count
-- output artifact hashes when applicable
+- stdout/stderr hashes captured by the harness
+- output artifact hashes only when supplied by a separate evidence step
 
 If a metric is unavailable, record `null` and explain why in the case notes or
 bundle README instead of inventing a placeholder value.
@@ -102,4 +103,3 @@ The JSON bundle should include:
 - It does not replace fuzzing, mutation testing, Miri, sanitizers, or formal
   checks.
 - It is not intended to run heavyweight prover workloads by default.
-
