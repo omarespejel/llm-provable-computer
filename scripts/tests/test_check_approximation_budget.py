@@ -10,7 +10,8 @@ import unittest
 REPO = pathlib.Path(__file__).resolve().parents[2]
 MODULE_PATH = REPO / "scripts" / "check_approximation_budget.py"
 SPEC = importlib.util.spec_from_file_location("check_approximation_budget", MODULE_PATH)
-assert SPEC and SPEC.loader
+if SPEC is None or SPEC.loader is None:
+    raise RuntimeError(f"failed to load approximation budget module from {MODULE_PATH}")
 MOD = importlib.util.module_from_spec(SPEC)
 sys.modules["check_approximation_budget"] = MOD
 SPEC.loader.exec_module(MOD)

@@ -10,7 +10,8 @@ import unittest
 REPO = pathlib.Path(__file__).resolve().parents[3]
 MODULE_PATH = REPO / "scripts" / "reference" / "run_reference_decode.py"
 SPEC = importlib.util.spec_from_file_location("run_reference_decode", MODULE_PATH)
-assert SPEC and SPEC.loader
+if SPEC is None or SPEC.loader is None:
+    raise RuntimeError(f"failed to load reference decode module from {MODULE_PATH}")
 MOD = importlib.util.module_from_spec(SPEC)
 sys.modules["run_reference_decode"] = MOD
 SPEC.loader.exec_module(MOD)
