@@ -20,10 +20,12 @@ Every benchmark record should capture:
 - hardware
 - OS
 - command
-- input hashes
+- input hashes for executed `run` records
 - run mode (`dry-run` or `run`)
-- dry-run records are execution plans; they do not produce stdout/stderr
-  sidecar hashes
+- dry-run records are execution plans; the harness calls
+  `describe_inputs(case.inputs, hash_files=not dry_run)`, so dry-run records
+  keep declared input paths but do not read inputs or produce input hashes,
+  stdout hashes, or stderr hashes
 - repetition count
 - stdout/stderr hashes captured by the harness for executed `run` records
 - output artifact hashes only when supplied by a separate evidence step
