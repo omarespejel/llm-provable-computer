@@ -35,6 +35,13 @@ class ReferenceDecodeTests(unittest.TestCase):
         self.assertEqual(report["candidate"]["topk"], [1, 0, 2])
         self.assertEqual(report["metrics"]["topk_overlap"], 3)
 
+    def test_check_report_rejects_tampered_expected_comparison(self) -> None:
+        fixture = copy.deepcopy(self.load_fixture("toy_reference_case.json"))
+        report = MOD.build_report(fixture)
+        fixture["expected_comparison"]["metrics"]["max_logit_error"] = 0.25
+        with self.assertRaisesRegex(ValueError, "did not match expected_comparison"):
+            MOD.check_report(fixture, report)
+
     def test_rejects_bool_in_numeric_fields(self) -> None:
         fixture = self.load_fixture("toy_reference_case.json")
         fixture = copy.deepcopy(fixture)

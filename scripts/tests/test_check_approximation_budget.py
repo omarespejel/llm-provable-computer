@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import copy
+import io
 import importlib.util
 import pathlib
 import sys
+import tempfile
 import unittest
+from unittest import mock
 
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
@@ -40,6 +43,17 @@ class ApproximationBudgetTests(unittest.TestCase):
 
     def test_valid_fixture_case_passes(self) -> None:
         MOD.check_case(self.load_case())
+
+    def test_main_rejects_non_object_json_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "bundle.json"
+            path.write_text("[]", encoding="utf-8")
+            with (
+                mock.patch.object(sys, "argv", ["check_approximation_budget.py", str(path)]),
+                mock.patch("sys.stderr", new_callable=io.StringIO) as stderr,
+            ):
+                self.assertEqual(MOD.main(), 1)
+                self.assertIn("budget JSON must be an object", stderr.getvalue())
 
     def test_negative_fixture_cases_fail_closed(self) -> None:
         cases = self.load_negative_cases()

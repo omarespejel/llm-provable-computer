@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 
-def load_json(path: Path) -> Dict[str, Any]:
+def load_json(path: Path) -> Any:
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
 
@@ -118,6 +118,8 @@ def main() -> int:
 
     try:
         payload = load_json(args.budget_json)
+        if not isinstance(payload, dict):
+            return die("budget JSON must be an object with a non-empty cases array")
         cases = payload.get("cases")
         if not isinstance(cases, list) or not cases:
             return die("budget JSON must contain a non-empty cases array")
