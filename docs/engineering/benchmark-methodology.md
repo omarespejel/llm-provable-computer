@@ -22,8 +22,10 @@ Every benchmark record should capture:
 - command
 - input hashes
 - run mode (`dry-run` or `run`)
+- dry-run records are execution plans; they do not produce stdout/stderr
+  sidecar hashes
 - repetition count
-- stdout/stderr hashes captured by the harness
+- stdout/stderr hashes captured by the harness for executed `run` records
 - output artifact hashes only when supplied by a separate evidence step
 
 If a metric is unavailable, record `null` and explain why in the case notes or
