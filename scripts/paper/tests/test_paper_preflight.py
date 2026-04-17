@@ -594,6 +594,66 @@ class PaperPreflightTests(unittest.TestCase):
                 findings.errors,
             )
 
+    def test_claim_language_linter_rejects_unbounded_semantic_equivalence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                "The artifact proves semantic equivalence across runtime frontends.\n",
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertTrue(
+                any("semantic equivalence" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_claim_language_linter_accepts_bounded_equivalence_language(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                (
+                    "The artifact provides bounded semantic-equivalence evidence "
+                    "inside a stated claim boundary, not a general theorem.\n"
+                ),
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertEqual(findings.errors, [])
+
+    def test_claim_language_linter_rejects_accuracy_claim_without_budget(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                "The quantized artifact preserves accuracy across model exports.\n",
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertTrue(
+                any("preserves accuracy" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_claim_language_linter_accepts_wrong_comparison_examples(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "paper.md"
+            write_text(
+                path,
+                (
+                    "The wrong comparison language is `already recursive "
+                    "proof-carrying data`; the repository does not claim that.\n"
+                ),
+            )
+
+            findings = MOD.Findings()
+            MOD.check_claim_language_in_file(path, findings)
+            self.assertEqual(findings.errors, [])
+
 
 if __name__ == "__main__":
     unittest.main()

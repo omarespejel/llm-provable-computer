@@ -17,8 +17,8 @@ The repository currently provides:
 
 ## B2. What recursive systems additionally provide
 
-Recursive proof-carrying data, IVC, and folding systems aim to provide one or
-more of the following:
+Recursive proof-carrying data, IVC, and folding systems, which this repository
+does not yet claim, aim to provide one or more of the following:
 
 - a verifier whose output becomes the next proof input,
 - asymptotic or practical proof-size compression across many steps,
@@ -39,7 +39,7 @@ The right comparison language is:
 The wrong comparison language is:
 
 - “already an IVC system”
-- “already recursive proof-carrying data”
+- “already recursive proof-carrying data” (not claimed here)
 - “already a folding construction”
 - “already compressed recursive verification”
 

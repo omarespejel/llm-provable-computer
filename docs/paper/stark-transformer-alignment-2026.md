@@ -549,8 +549,9 @@ relation.
 This artifact narrows the gap between analytic and systems claims by showing:
 
 1. transformer-relevant traces can be proved directly,
-2. semantic equivalence can be checked across runtimes before proving and exposed as
-   transition-relation hashes rather than prose-only assertions,
+2. bounded semantic-equivalence evidence can be checked across runtimes before
+   proving and exposed as transition-relation hashes rather than prose-only
+   assertions,
 3. one parameterized decode relation preserves carried state across layouts and
    packaging layers,
 4. carried-state packages can be aggregated as pre-recursive statements without changing

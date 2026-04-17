@@ -36,6 +36,16 @@ PAPER_FILES = [
     *PUBLICATION_METADATA_FILES,
 ]
 
+PAPER_CLAIM_LINT_FILES = [
+    "docs/paper/stark-transformer-alignment-2026.md",
+    "docs/paper/paper2/README.md",
+    "docs/paper/paper2/proof-carrying-decode-surfaces-2026.md",
+    "docs/paper/paper2/appendix-artifact-map.md",
+    "docs/paper/paper2/appendix-claim-boundary.md",
+    "docs/paper/paper2/appendix-engineering-gaps.md",
+    "docs/paper/paper2/appendix-ivc-positioning.md",
+]
+
 SNAPSHOT_FIELD_PREFIXES = (
     "Canonical publication snapshot",
     "Canonical repository snapshot",
@@ -78,6 +88,78 @@ CLAIM_EVIDENCE_REQUIRED_LISTS = (
     "negative_tests",
     "evidence_commands",
     "non_claims",
+)
+
+CLAIM_LANGUAGE_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "recursive proof",
+        (
+            "not",
+            "no ",
+            "without",
+            "pre-recursive",
+            "non-claim",
+            "non-goal",
+            "boundary",
+            "wrong",
+        ),
+    ),
+    (
+        "proves model inference",
+        (
+            "bounded",
+            "specific",
+            "not",
+            "does not",
+            "non-claim",
+            "boundary",
+        ),
+    ),
+    (
+        "semantic equivalence",
+        (
+            "bounded",
+            "not",
+            "does not",
+            "scope",
+            "boundary",
+            "evidence",
+        ),
+    ),
+    (
+        "preserves accuracy",
+        (
+            "bounded",
+            "budget",
+            "evidence",
+            "measured",
+            "not",
+            "does not",
+        ),
+    ),
+    (
+        "same model behavior",
+        (
+            "bounded",
+            "budget",
+            "evidence",
+            "not",
+            "does not",
+            "non-claim",
+        ),
+    ),
+    (
+        "supply-chain attestation",
+        (
+            "not",
+            "does not",
+            "complete",
+            "bounded",
+            "verified",
+            "gap",
+            "boundary",
+        ),
+    ),
 )
 
 
@@ -547,6 +629,62 @@ def check_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> 
         )
 
 
+def paragraph_start_line(text: str, offset: int) -> int:
+    return text.count("\n", 0, offset) + 1
+
+
+def iter_markdown_paragraphs(text: str):
+    start = 0
+    lines: list[str] = []
+    offset = 0
+
+    for line in text.splitlines(keepends=True):
+        stripped = line.strip()
+        if not stripped:
+            if lines:
+                yield start, "".join(lines)
+                lines = []
+            offset += len(line)
+            continue
+        if not lines:
+            start = offset
+        lines.append(line)
+        offset += len(line)
+
+    if lines:
+        yield start, "".join(lines)
+
+
+def check_claim_language_in_file(path: pathlib.Path, findings: Findings) -> None:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        findings.error(f"{path}: failed to read paper claim language for linting: {exc}")
+        return
+
+    for paragraph_offset, paragraph in iter_markdown_paragraphs(text):
+        lowered = paragraph.lower()
+        for phrase, required_context in CLAIM_LANGUAGE_RULES:
+            if phrase not in lowered:
+                continue
+            if any(token in lowered for token in required_context):
+                continue
+            line_number = paragraph_start_line(text, paragraph_offset)
+            findings.error(
+                f"{path}:{line_number}: overclaim-prone phrase `{phrase}` lacks nearby "
+                f"bounded/non-claim context. Add one of: {', '.join(required_context)}."
+            )
+
+
+def check_paper_claim_language(repo_root: pathlib.Path, findings: Findings) -> None:
+    for rel_path in PAPER_CLAIM_LINT_FILES:
+        path = repo_root / rel_path
+        if not path.exists():
+            findings.error(f"{path}: missing expected paper claim-language lint file.")
+            continue
+        check_claim_language_in_file(path, findings)
+
+
 def iter_snapshot_field_lines(text: str):
     lines = text.splitlines()
     for index, line in enumerate(lines):
@@ -880,6 +1018,7 @@ def main() -> int:
     check_backend_appendix_consistency(repo_root, findings)
     check_publication_snapshot_placeholders(repo_root, findings)
     check_claim_evidence_matrix(repo_root, findings)
+    check_paper_claim_language(repo_root, findings)
 
     if findings.warnings:
         print("Warnings:")
