@@ -1,0 +1,76 @@
+- id: phase38_source_validated_receipt_binding
+  claim: "Phase 38 binds every composition segment to source-validated Phase 29, Phase 30, and Phase 37 artifacts."
+  paper_locations:
+    - docs/engineering/paper3-composition-prototype.md#Input surface
+  implementation:
+    - src/stwo_backend/recursion.rs:Phase38Paper3CompositionSource
+    - src/stwo_backend/recursion.rs:phase38_verify_segment_receipt_binding
+    - src/stwo_backend/recursion.rs:verify_phase37_recursive_artifact_chain_harness_receipt_against_sources
+  specs:
+    - docs/engineering/paper3-composition-prototype.md#Input surface
+  positive_tests:
+    - phase38_paper3_composition_prototype_accepts_contiguous_shared_lookup_segments
+  negative_tests:
+    - phase38_paper3_composition_prototype_rejects_unbound_phase37_commitment_swap
+  evidence_commands:
+    - cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase38_paper3_composition_prototype
+  non_claims:
+    - "Does not claim recursive proof closure."
+
+- id: phase38_composition_continuity
+  claim: "Phase 38 requires adjacent segment boundaries and step intervals to compose without gaps."
+  paper_locations:
+    - docs/engineering/paper3-composition-prototype.md#Checks performed
+  implementation:
+    - src/stwo_backend/recursion.rs:phase38_prepare_paper3_composition_prototype
+    - src/stwo_backend/recursion.rs:verify_phase38_paper3_composition_prototype
+  specs:
+    - docs/engineering/paper3-composition-prototype.md#Checks performed
+  positive_tests:
+    - phase38_paper3_composition_prototype_accepts_contiguous_shared_lookup_segments
+  negative_tests:
+    - phase38_paper3_composition_prototype_rejects_boundary_gap
+  evidence_commands:
+    - cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase38_paper3_composition_prototype
+  non_claims:
+    - "Does not claim open-ended or implicit boundary initialization."
+
+- id: phase38_shared_lookup_source_chain_and_template_identity
+  claim: "Phase 38 rejects segment splicing when source-chain, execution-template, or shared-lookup identity drifts across segments."
+  paper_locations:
+    - docs/engineering/paper3-composition-prototype.md#Checks performed
+  implementation:
+    - src/stwo_backend/recursion.rs:phase38_source_chain_matches
+    - src/stwo_backend/recursion.rs:phase38_execution_template_matches
+    - src/stwo_backend/recursion.rs:phase38_shared_lookup_identity_matches
+  specs:
+    - docs/engineering/paper3-composition-prototype.md#Checks performed
+  positive_tests:
+    - phase38_paper3_composition_prototype_accepts_contiguous_shared_lookup_segments
+  negative_tests:
+    - phase38_paper3_composition_prototype_rejects_source_chain_drift
+    - phase38_paper3_composition_prototype_rejects_execution_template_drift
+    - phase38_paper3_composition_prototype_rejects_shared_lookup_identity_drift
+  evidence_commands:
+    - cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase38_paper3_composition_prototype
+  non_claims:
+    - "Does not claim shared-table accumulation inside a recursive verifier."
+
+- id: phase38_packaging_baseline
+  claim: "Phase 38 records a reproducible naive-versus-composed package-count baseline."
+  paper_locations:
+    - docs/engineering/paper3-composition-prototype.md#Baseline accounting
+  implementation:
+    - src/stwo_backend/recursion.rs:naive_per_step_package_count
+    - src/stwo_backend/recursion.rs:composed_segment_package_count
+    - src/stwo_backend/recursion.rs:package_count_delta
+  specs:
+    - docs/engineering/paper3-composition-prototype.md#Baseline accounting
+  positive_tests:
+    - phase38_paper3_composition_prototype_accepts_contiguous_shared_lookup_segments
+  negative_tests:
+    - phase38_paper3_composition_prototype_rejects_tampered_baseline
+  evidence_commands:
+    - cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase38_paper3_composition_prototype
+  non_claims:
+    - "Does not claim performance speedup."

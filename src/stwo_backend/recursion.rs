@@ -106,6 +106,8 @@ pub const STWO_PAPER3_COMPOSITION_PROTOTYPE_VERSION_PHASE38: &str =
 #[cfg(feature = "stwo-backend")]
 pub const STWO_PAPER3_COMPOSITION_PROTOTYPE_SCOPE_PHASE38: &str =
     "stwo_execution_parameterized_paper3_composition_prototype";
+#[cfg(feature = "stwo-backend")]
+const MAX_PHASE38_PAPER3_COMPOSITION_PROTOTYPE_JSON_BYTES: usize = 1024 * 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase6RecursionBatchEntry {
@@ -661,12 +663,22 @@ struct Phase37RecursiveArtifactChainHarnessReceiptUnchecked {
 
 #[cfg(feature = "stwo-backend")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase38Paper3CompositionSource {
+    pub phase29_contract: Phase29RecursiveCompressionInputContract,
+    pub phase30_manifest: Phase30DecodingStepProofEnvelopeManifest,
+    pub phase37_receipt: Phase37RecursiveArtifactChainHarnessReceipt,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "Phase38Paper3CompositionSegmentUnchecked")]
 pub struct Phase38Paper3CompositionSegment {
     pub segment_index: usize,
     pub step_start: usize,
     pub step_end: usize,
     pub total_steps: usize,
+    pub phase29_contract: Phase29RecursiveCompressionInputContract,
+    pub phase30_manifest: Phase30DecodingStepProofEnvelopeManifest,
     pub phase37_receipt: Phase37RecursiveArtifactChainHarnessReceipt,
     pub phase37_receipt_commitment: String,
     pub phase30_source_chain_commitment: String,
@@ -690,6 +702,8 @@ struct Phase38Paper3CompositionSegmentUnchecked {
     pub step_start: usize,
     pub step_end: usize,
     pub total_steps: usize,
+    pub phase29_contract: Phase29RecursiveCompressionInputContract,
+    pub phase30_manifest: Phase30DecodingStepProofEnvelopeManifest,
     pub phase37_receipt: Phase37RecursiveArtifactChainHarnessReceipt,
     pub phase37_receipt_commitment: String,
     pub phase30_source_chain_commitment: String,
@@ -765,6 +779,8 @@ impl TryFrom<Phase38Paper3CompositionSegmentUnchecked> for Phase38Paper3Composit
             step_start: unchecked.step_start,
             step_end: unchecked.step_end,
             total_steps: unchecked.total_steps,
+            phase29_contract: unchecked.phase29_contract,
+            phase30_manifest: unchecked.phase30_manifest,
             phase37_receipt: unchecked.phase37_receipt,
             phase37_receipt_commitment: unchecked.phase37_receipt_commitment,
             phase30_source_chain_commitment: unchecked.phase30_source_chain_commitment,
@@ -3995,11 +4011,17 @@ pub fn verify_phase37_recursive_artifact_chain_harness_receipt_against_sources(
 }
 
 #[cfg(feature = "stwo-backend")]
-fn phase38_segment_from_phase37_receipt(
+fn phase38_segment_from_phase37_source(
     segment_index: usize,
     step_start: usize,
-    receipt: &Phase37RecursiveArtifactChainHarnessReceipt,
+    source: &Phase38Paper3CompositionSource,
 ) -> Result<Phase38Paper3CompositionSegment> {
+    verify_phase37_recursive_artifact_chain_harness_receipt_against_sources(
+        &source.phase37_receipt,
+        &source.phase29_contract,
+        &source.phase30_manifest,
+    )?;
+    let receipt = &source.phase37_receipt;
     let step_end = step_start.checked_add(receipt.total_steps).ok_or_else(|| {
         VmError::InvalidConfig(
             "Phase 38 Paper 3 composition prototype step interval overflowed usize".to_string(),
@@ -4010,6 +4032,8 @@ fn phase38_segment_from_phase37_receipt(
         step_start,
         step_end,
         total_steps: receipt.total_steps,
+        phase29_contract: source.phase29_contract.clone(),
+        phase30_manifest: source.phase30_manifest.clone(),
         phase37_receipt: receipt.clone(),
         phase37_receipt_commitment: receipt
             .recursive_artifact_chain_harness_receipt_commitment
@@ -4043,10 +4067,7 @@ fn phase38_shared_lookup_identity_matches(
     left: &Phase38Paper3CompositionSegment,
     right: &Phase38Paper3CompositionSegment,
 ) -> bool {
-    left.phase34_shared_lookup_public_inputs_commitment
-        == right.phase34_shared_lookup_public_inputs_commitment
-        && left.input_lookup_rows_commitments_commitment
-            == right.input_lookup_rows_commitments_commitment
+    left.input_lookup_rows_commitments_commitment == right.input_lookup_rows_commitments_commitment
         && left.output_lookup_rows_commitments_commitment
             == right.output_lookup_rows_commitments_commitment
         && left.shared_lookup_artifact_commitments_commitment
@@ -4062,6 +4083,14 @@ fn phase38_execution_template_matches(
 ) -> bool {
     left.source_template_commitment == right.source_template_commitment
         && left.aggregation_template_commitment == right.aggregation_template_commitment
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase38_source_chain_matches(
+    left: &Phase38Paper3CompositionSegment,
+    right: &Phase38Paper3CompositionSegment,
+) -> bool {
+    left.phase30_source_chain_commitment == right.phase30_source_chain_commitment
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -4082,7 +4111,11 @@ fn phase38_require_segment_receipt_field(
 
 #[cfg(feature = "stwo-backend")]
 fn phase38_verify_segment_receipt_binding(segment: &Phase38Paper3CompositionSegment) -> Result<()> {
-    verify_phase37_recursive_artifact_chain_harness_receipt(&segment.phase37_receipt)?;
+    verify_phase37_recursive_artifact_chain_harness_receipt_against_sources(
+        &segment.phase37_receipt,
+        &segment.phase29_contract,
+        &segment.phase30_manifest,
+    )?;
     let expected_receipt_commitment =
         commit_phase37_recursive_artifact_chain_harness_receipt(&segment.phase37_receipt)?;
     if segment.phase37_receipt_commitment != expected_receipt_commitment {
@@ -4180,26 +4213,36 @@ fn phase38_verify_segment_receipt_binding(segment: &Phase38Paper3CompositionSegm
 
 #[cfg(feature = "stwo-backend")]
 pub fn phase38_prepare_paper3_composition_prototype(
-    receipts: &[Phase37RecursiveArtifactChainHarnessReceipt],
+    sources: &[Phase38Paper3CompositionSource],
 ) -> Result<Phase38Paper3CompositionPrototype> {
-    let first = receipts.first().ok_or_else(|| {
+    let first_source = sources.first().ok_or_else(|| {
         VmError::InvalidConfig(
-            "Phase 38 Paper 3 composition prototype requires at least two Phase 37 receipts"
+            "Phase 38 Paper 3 composition prototype requires at least two Phase 37 source records"
                 .to_string(),
         )
     })?;
-    if receipts.len() < 2 {
+    if sources.len() < 2 {
         return Err(VmError::InvalidConfig(
-            "Phase 38 Paper 3 composition prototype requires at least two Phase 37 receipts"
+            "Phase 38 Paper 3 composition prototype requires at least two Phase 37 source records"
                 .to_string(),
         ));
     }
 
-    verify_phase37_recursive_artifact_chain_harness_receipt(first)?;
-    let mut segments: Vec<Phase38Paper3CompositionSegment> = Vec::with_capacity(receipts.len());
+    verify_phase37_recursive_artifact_chain_harness_receipt_against_sources(
+        &first_source.phase37_receipt,
+        &first_source.phase29_contract,
+        &first_source.phase30_manifest,
+    )?;
+    let first = &first_source.phase37_receipt;
+    let mut segments: Vec<Phase38Paper3CompositionSegment> = Vec::with_capacity(sources.len());
     let mut cursor = 0usize;
-    for (index, receipt) in receipts.iter().enumerate() {
-        verify_phase37_recursive_artifact_chain_harness_receipt(receipt)?;
+    for (index, source) in sources.iter().enumerate() {
+        verify_phase37_recursive_artifact_chain_harness_receipt_against_sources(
+            &source.phase37_receipt,
+            &source.phase29_contract,
+            &source.phase30_manifest,
+        )?;
+        let receipt = &source.phase37_receipt;
         if receipt.proof_backend != first.proof_backend
             || receipt.proof_backend_version != first.proof_backend_version
             || receipt.statement_version != first.statement_version
@@ -4216,7 +4259,7 @@ pub fn phase38_prepare_paper3_composition_prototype(
             ));
         }
 
-        let segment = phase38_segment_from_phase37_receipt(index, cursor, receipt)?;
+        let segment = phase38_segment_from_phase37_source(index, cursor, source)?;
         if let Some(previous) = segments.last() {
             if segment.chain_start_boundary_commitment != previous.chain_end_boundary_commitment {
                 return Err(VmError::InvalidConfig(format!(
@@ -4230,6 +4273,12 @@ pub fn phase38_prepare_paper3_composition_prototype(
             if !phase38_shared_lookup_identity_matches(previous, &segment) {
                 return Err(VmError::InvalidConfig(format!(
                     "Phase 38 Paper 3 composition prototype shared lookup identity drift at segment {}",
+                    segment.segment_index
+                )));
+            }
+            if !phase38_source_chain_matches(previous, &segment) {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 38 Paper 3 composition prototype source-chain identity drift at segment {}",
                     segment.segment_index
                 )));
             }
@@ -4433,6 +4482,11 @@ pub fn verify_phase38_paper3_composition_prototype(
         if index > 0 && !phase38_shared_lookup_identity_matches(&prototype.segments[0], segment) {
             return Err(VmError::InvalidConfig(format!(
                 "Phase 38 Paper 3 composition prototype shared lookup identity drift at segment {index}"
+            )));
+        }
+        if index > 0 && !phase38_source_chain_matches(&prototype.segments[0], segment) {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 38 Paper 3 composition prototype source-chain identity drift at segment {index}"
             )));
         }
         if index > 0 && !phase38_execution_template_matches(&prototype.segments[0], segment) {
@@ -4653,6 +4707,20 @@ pub fn parse_phase37_recursive_artifact_chain_harness_receipt_json(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn parse_phase38_paper3_composition_prototype_json(
+    json: &str,
+) -> Result<Phase38Paper3CompositionPrototype> {
+    if json.len() > MAX_PHASE38_PAPER3_COMPOSITION_PROTOTYPE_JSON_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 38 Paper 3 composition prototype JSON is {} bytes, exceeding the limit of {} bytes",
+            json.len(),
+            MAX_PHASE38_PAPER3_COMPOSITION_PROTOTYPE_JSON_BYTES
+        )));
+    }
+    serde_json::from_str(json).map_err(phase38_json_error)
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn load_phase31_recursive_compression_decode_boundary_manifest(
     path: &Path,
 ) -> Result<Phase31RecursiveCompressionDecodeBoundaryManifest> {
@@ -4737,6 +4805,18 @@ pub fn load_phase37_recursive_artifact_chain_harness_receipt(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn load_phase38_paper3_composition_prototype(
+    path: &Path,
+) -> Result<Phase38Paper3CompositionPrototype> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE38_PAPER3_COMPOSITION_PROTOTYPE_JSON_BYTES,
+        "Phase 38 Paper 3 composition prototype",
+    )?;
+    serde_json::from_slice(&bytes).map_err(phase38_json_error)
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase31_json_error(error: serde_json::Error) -> VmError {
     match error.classify() {
         serde_json::error::Category::Data
@@ -4798,6 +4878,16 @@ fn phase36_json_error(error: serde_json::Error) -> VmError {
 
 #[cfg(feature = "stwo-backend")]
 fn phase37_json_error(error: serde_json::Error) -> VmError {
+    match error.classify() {
+        serde_json::error::Category::Data
+        | serde_json::error::Category::Syntax
+        | serde_json::error::Category::Eof => VmError::InvalidConfig(error.to_string()),
+        serde_json::error::Category::Io => VmError::Serialization(error.to_string()),
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase38_json_error(error: serde_json::Error) -> VmError {
     match error.classify() {
         serde_json::error::Category::Data
         | serde_json::error::Category::Syntax
@@ -5367,12 +5457,6 @@ fn commit_phase38_shared_lookup_identity(
     phase29_update_len_prefixed(&mut hasher, b"phase38-paper3-shared-lookup-identity");
     phase29_update_len_prefixed(
         &mut hasher,
-        segment
-            .phase34_shared_lookup_public_inputs_commitment
-            .as_bytes(),
-    );
-    phase29_update_len_prefixed(
-        &mut hasher,
         segment.input_lookup_rows_commitments_commitment.as_bytes(),
     );
     phase29_update_len_prefixed(
@@ -5551,6 +5635,10 @@ mod tests {
     };
     use crate::state::MachineState;
     #[cfg(feature = "stwo-backend")]
+    use crate::stwo_backend::decoding::{
+        commit_phase30_step_envelope, commit_phase30_step_envelope_list,
+    };
+    #[cfg(feature = "stwo-backend")]
     use crate::stwo_backend::{
         phase12_default_decoding_layout, phase30_prepare_decoding_step_proof_envelope_manifest,
         prove_phase12_decoding_demo_for_layout,
@@ -5724,48 +5812,70 @@ mod tests {
     }
 
     #[cfg(feature = "stwo-backend")]
-    fn sample_phase37_segment_receipt(
+    fn sample_phase38_segment_source(
         start: &str,
         end: &str,
         total_steps: usize,
         source_chain: &str,
-        step_envelopes: &str,
-    ) -> Phase37RecursiveArtifactChainHarnessReceipt {
-        let mut receipt = sample_phase37_receipt();
-        receipt.total_steps = total_steps;
-        receipt.chain_start_boundary_commitment = start.to_string();
-        receipt.chain_end_boundary_commitment = end.to_string();
-        receipt.phase30_source_chain_commitment = source_chain.to_string();
-        receipt.phase30_step_envelopes_commitment = step_envelopes.to_string();
-        receipt.recursive_artifact_chain_harness_receipt_commitment =
-            commit_phase37_recursive_artifact_chain_harness_receipt(&receipt)
-                .expect("recommit phase37 segment receipt");
-        verify_phase37_recursive_artifact_chain_harness_receipt(&receipt)
-            .expect("verify phase37 segment receipt");
-        receipt
+    ) -> Phase38Paper3CompositionSource {
+        let mut phase30 = sample_phase30_manifest();
+        let template = phase30.envelopes[0].clone();
+        phase30.source_chain_commitment = source_chain.to_string();
+        phase30.total_steps = total_steps;
+        phase30.envelopes = (0..total_steps)
+            .map(|step_index| {
+                let mut envelope = template.clone();
+                envelope.source_chain_commitment = source_chain.to_string();
+                envelope.step_index = step_index;
+                envelope.input_boundary_commitment = if step_index == 0 {
+                    start.to_string()
+                } else {
+                    format!("{}{:063x}", &phase38_test_hash32('9')[..1], step_index)
+                };
+                envelope.output_boundary_commitment = if step_index + 1 == total_steps {
+                    end.to_string()
+                } else {
+                    format!("{}{:063x}", &phase38_test_hash32('9')[..1], step_index + 1)
+                };
+                envelope.envelope_commitment = commit_phase30_step_envelope(&envelope);
+                envelope
+            })
+            .collect();
+        phase30.chain_start_boundary_commitment = start.to_string();
+        phase30.chain_end_boundary_commitment = end.to_string();
+        phase30.step_envelopes_commitment = commit_phase30_step_envelope_list(&phase30.envelopes);
+        verify_phase30_decoding_step_proof_envelope_manifest(&phase30)
+            .expect("verify source-backed Phase 30 segment manifest");
+        let phase29_contract = sample_phase29_contract_for_phase30(&phase30);
+        let phase37_receipt =
+            phase37_prepare_recursive_artifact_chain_harness_receipt(&phase29_contract, &phase30)
+                .expect("prepare source-backed Phase 37 segment receipt");
+        Phase38Paper3CompositionSource {
+            phase29_contract,
+            phase30_manifest: phase30,
+            phase37_receipt,
+        }
     }
 
     #[cfg(feature = "stwo-backend")]
-    fn sample_phase38_segment_receipts() -> Vec<Phase37RecursiveArtifactChainHarnessReceipt> {
+    fn sample_phase38_segment_sources() -> Vec<Phase38Paper3CompositionSource> {
         let start = phase38_test_hash32('a');
         let mid = phase38_test_hash32('b');
         let end = phase38_test_hash32('c');
+        let source_chain = phase38_test_hash32('1');
         vec![
-            sample_phase37_segment_receipt(
-                &start,
-                &mid,
-                2,
-                &phase38_test_hash32('1'),
-                &phase38_test_hash32('2'),
-            ),
-            sample_phase37_segment_receipt(
-                &mid,
-                &end,
-                3,
-                &phase38_test_hash32('3'),
-                &phase38_test_hash32('4'),
-            ),
+            sample_phase38_segment_source(&start, &mid, 2, &source_chain),
+            sample_phase38_segment_source(&mid, &end, 2, &source_chain),
         ]
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn refresh_phase38_source_receipt(source: &mut Phase38Paper3CompositionSource) {
+        source.phase37_receipt = phase37_prepare_recursive_artifact_chain_harness_receipt(
+            &source.phase29_contract,
+            &source.phase30_manifest,
+        )
+        .expect("refresh source-backed Phase 37 receipt");
     }
 
     #[cfg(feature = "stwo-backend")]
@@ -6806,19 +6916,19 @@ mod tests {
     #[cfg(feature = "stwo-backend")]
     #[test]
     fn phase38_paper3_composition_prototype_accepts_contiguous_shared_lookup_segments() {
-        let receipts = sample_phase38_segment_receipts();
-        let prototype = phase38_prepare_paper3_composition_prototype(&receipts)
+        let sources = sample_phase38_segment_sources();
+        let prototype = phase38_prepare_paper3_composition_prototype(&sources)
             .expect("prepare Phase 38 composition prototype");
 
         assert_eq!(prototype.segment_count, 2);
-        assert_eq!(prototype.total_steps, 5);
-        assert_eq!(prototype.naive_per_step_package_count, 5);
+        assert_eq!(prototype.total_steps, 4);
+        assert_eq!(prototype.naive_per_step_package_count, 4);
         assert_eq!(prototype.composed_segment_package_count, 2);
-        assert_eq!(prototype.package_count_delta, 3);
+        assert_eq!(prototype.package_count_delta, 2);
         assert_eq!(prototype.segments[0].step_start, 0);
         assert_eq!(prototype.segments[0].step_end, 2);
         assert_eq!(prototype.segments[1].step_start, 2);
-        assert_eq!(prototype.segments[1].step_end, 5);
+        assert_eq!(prototype.segments[1].step_end, 4);
         assert_eq!(
             prototype.segments[0].chain_end_boundary_commitment,
             prototype.segments[1].chain_start_boundary_commitment
@@ -6832,13 +6942,16 @@ mod tests {
     #[cfg(feature = "stwo-backend")]
     #[test]
     fn phase38_paper3_composition_prototype_rejects_boundary_gap() {
-        let mut receipts = sample_phase38_segment_receipts();
-        receipts[1].chain_start_boundary_commitment = phase38_test_hash32('d');
-        receipts[1].recursive_artifact_chain_harness_receipt_commitment =
-            commit_phase37_recursive_artifact_chain_harness_receipt(&receipts[1])
-                .expect("recommit boundary-gap receipt");
+        let mut sources = sample_phase38_segment_sources();
+        let source_chain = sources[0].phase30_manifest.source_chain_commitment.clone();
+        let end = sources[1]
+            .phase37_receipt
+            .chain_end_boundary_commitment
+            .clone();
+        sources[1] =
+            sample_phase38_segment_source(&phase38_test_hash32('d'), &end, 2, &source_chain);
 
-        let err = phase38_prepare_paper3_composition_prototype(&receipts)
+        let err = phase38_prepare_paper3_composition_prototype(&sources)
             .expect_err("boundary gap must fail");
         assert!(err.to_string().contains("boundary gap"));
     }
@@ -6846,27 +6959,50 @@ mod tests {
     #[cfg(feature = "stwo-backend")]
     #[test]
     fn phase38_paper3_composition_prototype_rejects_shared_lookup_identity_drift() {
-        let mut receipts = sample_phase38_segment_receipts();
-        receipts[1].phase34_shared_lookup_public_inputs_commitment = phase38_test_hash32('e');
-        receipts[1].recursive_artifact_chain_harness_receipt_commitment =
-            commit_phase37_recursive_artifact_chain_harness_receipt(&receipts[1])
-                .expect("recommit lookup-drift receipt");
+        let mut sources = sample_phase38_segment_sources();
+        sources[1].phase30_manifest.envelopes[0].input_lookup_rows_commitment =
+            phase38_test_hash32('e');
+        sources[1].phase30_manifest.envelopes[0].envelope_commitment =
+            commit_phase30_step_envelope(&sources[1].phase30_manifest.envelopes[0]);
+        sources[1].phase30_manifest.step_envelopes_commitment =
+            commit_phase30_step_envelope_list(&sources[1].phase30_manifest.envelopes);
+        refresh_phase38_source_receipt(&mut sources[1]);
 
-        let err = phase38_prepare_paper3_composition_prototype(&receipts)
+        let err = phase38_prepare_paper3_composition_prototype(&sources)
             .expect_err("shared lookup drift must fail");
         assert!(err.to_string().contains("shared lookup identity drift"));
     }
 
     #[cfg(feature = "stwo-backend")]
     #[test]
-    fn phase38_paper3_composition_prototype_rejects_execution_template_drift() {
-        let mut receipts = sample_phase38_segment_receipts();
-        receipts[1].source_template_commitment = phase38_test_hash32('5');
-        receipts[1].recursive_artifact_chain_harness_receipt_commitment =
-            commit_phase37_recursive_artifact_chain_harness_receipt(&receipts[1])
-                .expect("recommit template-drift receipt");
+    fn phase38_paper3_composition_prototype_rejects_source_chain_drift() {
+        let mut sources = sample_phase38_segment_sources();
+        let start = sources[0]
+            .phase37_receipt
+            .chain_end_boundary_commitment
+            .clone();
+        let end = sources[1]
+            .phase37_receipt
+            .chain_end_boundary_commitment
+            .clone();
+        sources[1] = sample_phase38_segment_source(&start, &end, 2, &phase38_test_hash32('8'));
 
-        let err = phase38_prepare_paper3_composition_prototype(&receipts)
+        let err = phase38_prepare_paper3_composition_prototype(&sources)
+            .expect_err("source-chain drift must fail");
+        assert!(err.to_string().contains("source-chain identity drift"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase38_paper3_composition_prototype_rejects_execution_template_drift() {
+        let mut sources = sample_phase38_segment_sources();
+        sources[1].phase29_contract.source_template_commitment = phase38_test_hash32('5');
+        sources[1].phase29_contract.input_contract_commitment =
+            commit_phase29_recursive_compression_input_contract(&sources[1].phase29_contract)
+                .expect("recommit template-drift Phase 29 contract");
+        refresh_phase38_source_receipt(&mut sources[1]);
+
+        let err = phase38_prepare_paper3_composition_prototype(&sources)
             .expect_err("execution template drift must fail");
         assert!(err.to_string().contains("execution template drift"));
     }
@@ -6874,8 +7010,8 @@ mod tests {
     #[cfg(feature = "stwo-backend")]
     #[test]
     fn phase38_paper3_composition_prototype_rejects_unbound_phase37_commitment_swap() {
-        let receipts = sample_phase38_segment_receipts();
-        let mut prototype = phase38_prepare_paper3_composition_prototype(&receipts)
+        let sources = sample_phase38_segment_sources();
+        let mut prototype = phase38_prepare_paper3_composition_prototype(&sources)
             .expect("prepare Phase 38 composition prototype");
         prototype.segments[0].phase37_receipt_commitment = phase38_test_hash32('f');
         prototype.segment_list_commitment = commit_phase38_segment_list(&prototype.segments)
@@ -6892,8 +7028,8 @@ mod tests {
     #[cfg(feature = "stwo-backend")]
     #[test]
     fn phase38_paper3_composition_prototype_rejects_tampered_baseline() {
-        let receipts = sample_phase38_segment_receipts();
-        let mut prototype = phase38_prepare_paper3_composition_prototype(&receipts)
+        let sources = sample_phase38_segment_sources();
+        let mut prototype = phase38_prepare_paper3_composition_prototype(&sources)
             .expect("prepare Phase 38 composition prototype");
         prototype.package_count_delta += 1;
         prototype.composition_commitment = commit_phase38_paper3_composition_prototype(&prototype)
@@ -6907,12 +7043,12 @@ mod tests {
     #[cfg(feature = "stwo-backend")]
     #[test]
     fn phase38_paper3_composition_prototype_deserialization_verifies_prototype() {
-        let receipts = sample_phase38_segment_receipts();
-        let prototype = phase38_prepare_paper3_composition_prototype(&receipts)
+        let sources = sample_phase38_segment_sources();
+        let prototype = phase38_prepare_paper3_composition_prototype(&sources)
             .expect("prepare Phase 38 composition prototype");
         let json = serde_json::to_string(&prototype).expect("serialize phase38 prototype");
-        let parsed: Phase38Paper3CompositionPrototype =
-            serde_json::from_str(&json).expect("parse phase38 prototype");
+        let parsed = parse_phase38_paper3_composition_prototype_json(&json)
+            .expect("parse phase38 prototype");
         assert_eq!(parsed, prototype);
 
         let mut tampered = serde_json::to_value(&prototype).expect("serialize phase38 value");
@@ -6925,15 +7061,63 @@ mod tests {
     #[cfg(feature = "stwo-backend")]
     #[test]
     fn phase38_paper3_composition_prototype_deserialization_rejects_unknown_fields() {
-        let receipts = sample_phase38_segment_receipts();
-        let prototype = phase38_prepare_paper3_composition_prototype(&receipts)
+        let sources = sample_phase38_segment_sources();
+        let prototype = phase38_prepare_paper3_composition_prototype(&sources)
             .expect("prepare Phase 38 composition prototype");
         let mut value = serde_json::to_value(&prototype).expect("serialize phase38 value");
         value["unexpected_phase38_field"] = serde_json::json!(true);
+        let json = serde_json::to_string(&value).expect("json with unknown field");
 
-        let err = serde_json::from_value::<Phase38Paper3CompositionPrototype>(value)
+        let err = parse_phase38_paper3_composition_prototype_json(&json)
             .expect_err("unknown Phase 38 fields must be rejected");
         assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase38_parse_paper3_composition_prototype_reports_malformed_json_as_invalid_config() {
+        let err = parse_phase38_paper3_composition_prototype_json("{")
+            .expect_err("malformed Phase 38 prototype JSON must fail");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase38_parse_paper3_composition_prototype_rejects_oversized_json() {
+        let json = " ".repeat(MAX_PHASE38_PAPER3_COMPOSITION_PROTOTYPE_JSON_BYTES + 1);
+        let err = parse_phase38_paper3_composition_prototype_json(&json)
+            .expect_err("oversized Phase 38 prototype JSON must fail before serde parsing");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase38_load_paper3_composition_prototype_rejects_oversized_file() {
+        let path = std::env::temp_dir().join(format!(
+            "phase38-paper3-composition-prototype-oversized-{}.json",
+            std::process::id()
+        ));
+        std::fs::write(
+            &path,
+            vec![b'x'; MAX_PHASE38_PAPER3_COMPOSITION_PROTOTYPE_JSON_BYTES + 1],
+        )
+        .expect("write oversized Phase 38 prototype");
+
+        let err = load_phase38_paper3_composition_prototype(&path)
+            .expect_err("oversized Phase 38 prototype should fail");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig, got {err:?}"
+        );
+        assert!(err.to_string().contains("exceeding the limit"));
+        let _ = std::fs::remove_file(path);
     }
 
     #[cfg(feature = "stwo-backend")]

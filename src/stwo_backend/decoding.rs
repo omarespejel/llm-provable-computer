@@ -11547,7 +11547,7 @@ impl Write for Phase30JsonDigestWriter {
     }
 }
 
-fn commit_phase30_step_envelope(envelope: &Phase30DecodingStepProofEnvelope) -> String {
+pub(crate) fn commit_phase30_step_envelope(envelope: &Phase30DecodingStepProofEnvelope) -> String {
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30.as_bytes());
     hasher.update(b"step-envelope");
@@ -11589,7 +11589,9 @@ fn phase30_hash_part(hasher: &mut Blake2bVar, bytes: &[u8]) {
     hasher.update(bytes);
 }
 
-fn commit_phase30_step_envelope_list(envelopes: &[Phase30DecodingStepProofEnvelope]) -> String {
+pub(crate) fn commit_phase30_step_envelope_list(
+    envelopes: &[Phase30DecodingStepProofEnvelope],
+) -> String {
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30.as_bytes());
     hasher.update(b"step-envelope-list");

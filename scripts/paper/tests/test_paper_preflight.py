@@ -428,6 +428,71 @@ class PaperPreflightTests(unittest.TestCase):
             MOD.check_claim_evidence_matrix(repo, findings)
             self.assertEqual(findings.errors, [])
 
+    def test_paper3_claim_evidence_matrix_accepts_complete_record_set(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            for rel_path in (
+                "docs/engineering/paper3-composition-prototype.md",
+                "src/stwo_backend/recursion.rs",
+            ):
+                write_text(repo / rel_path, "")
+            write_text(
+                repo / "src/stwo_backend/recursion.rs",
+                (
+                    "struct Phase38Paper3CompositionSource;\n"
+                    "fn phase38_prepare_paper3_composition_prototype() {}\n"
+                    "fn verify_phase38_paper3_composition_prototype() {}\n"
+                    "fn phase38_source_chain_matches() {}\n"
+                    "fn phase38_execution_template_matches() {}\n"
+                    "fn phase38_shared_lookup_identity_matches() {}\n"
+                    "fn phase38_verify_segment_receipt_binding() {}\n"
+                    "fn verify_phase37_recursive_artifact_chain_harness_receipt_against_sources() {}\n"
+                    "let naive_per_step_package_count = 0;\n"
+                    "let composed_segment_package_count = 0;\n"
+                    "let package_count_delta = 0;\n"
+                    "fn phase38_paper3_composition_prototype_accepts_contiguous_shared_lookup_segments() {}\n"
+                    "fn phase38_paper3_composition_prototype_rejects_unbound_phase37_commitment_swap() {}\n"
+                    "fn phase38_paper3_composition_prototype_rejects_boundary_gap() {}\n"
+                    "fn phase38_paper3_composition_prototype_rejects_source_chain_drift() {}\n"
+                    "fn phase38_paper3_composition_prototype_rejects_execution_template_drift() {}\n"
+                    "fn phase38_paper3_composition_prototype_rejects_shared_lookup_identity_drift() {}\n"
+                    "fn phase38_paper3_composition_prototype_rejects_tampered_baseline() {}\n"
+                ),
+            )
+            write_text(
+                repo / "docs/engineering/paper3-composition-prototype.md",
+                "\n".join(
+                    f"`evidence:{claim_id}`"
+                    for claim_id in sorted(MOD.REQUIRED_PAPER3_CLAIM_IDS)
+                ),
+            )
+            records = []
+            for claim_id in sorted(MOD.REQUIRED_PAPER3_CLAIM_IDS):
+                records.append(
+                    f"""- id: {claim_id}
+  claim: "Bounded Paper 3 claim for {claim_id}."
+  paper_locations:
+    - docs/engineering/paper3-composition-prototype.md
+  implementation:
+    - src/stwo_backend/recursion.rs:phase38_prepare_paper3_composition_prototype
+  specs:
+    - docs/engineering/paper3-composition-prototype.md
+  positive_tests:
+    - phase38_paper3_composition_prototype_accepts_contiguous_shared_lookup_segments
+  negative_tests:
+    - phase38_paper3_composition_prototype_rejects_boundary_gap
+  evidence_commands:
+    - cargo test -q phase38
+  non_claims:
+    - "Does not claim recursive proof closure."
+"""
+                )
+            write_text(repo / MOD.PAPER3_CLAIM_EVIDENCE_FILE, "\n".join(records))
+
+            findings = MOD.Findings()
+            MOD.check_paper3_claim_evidence_matrix(repo, findings)
+            self.assertEqual(findings.errors, [])
+
     def test_paper2_evidence_anchor_honors_fragment_scope(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp)
