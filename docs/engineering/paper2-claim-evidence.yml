@@ -99,12 +99,14 @@
     - src/stwo_backend/recursion.rs:phase33_prepare_recursive_compression_public_input_manifest
     - src/stwo_backend/recursion.rs:verify_phase33_recursive_compression_public_input_manifest_against_phase32
     - src/stwo_backend/recursion.rs:kani_phase33_public_input_ordering_accepts_canonical_order
+    - src/stwo_backend/recursion.rs:kani_phase33_public_input_lane_payload_wires_canonical_fields
     - src/stwo_backend/recursion.rs:kani_phase33_public_input_ordering_rejects_any_lane_drift
   specs:
     - spec/stwo-phase33-recursive-compression-public-input-manifest.schema.json
   positive_tests:
     - phase33_recursive_public_input_manifest_accepts_matching_phase32_source
     - kani_phase33_public_input_ordering_accepts_canonical_order
+    - kani_phase33_public_input_lane_payload_wires_canonical_fields
   negative_tests:
     - phase33_recursive_public_input_manifest_rejects_tampered_commitment
     - phase33_recursive_public_input_manifest_parse_rejects_unknown_fields
@@ -115,7 +117,7 @@
   non_claims:
     - "Does not claim recursive proof closure."
     - "Does not claim a complete recursive verifier."
-    - "Does not claim formal coverage beyond bounded scalar public-input ordering checks."
+    - "Does not claim formal coverage beyond bounded scalar public-input ordering and lane-to-field wiring checks."
 
 - id: phase34_shared_lookup_manifest
   claim: "Phase 34 freezes the ordered lookup-facing public inputs derived from Phase 33 and Phase 30."

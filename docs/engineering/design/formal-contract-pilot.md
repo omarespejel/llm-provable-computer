@@ -26,6 +26,7 @@ Scope:
   - manifests must preserve ordered step indexes and declared counts
 - Phase 33 public-input ordering:
   - the recursive statement commitment, step count, source chain, step envelopes, decode boundary, chain boundaries, and template commitments must remain in canonical order
+  - each canonical lane must remain wired to its intended manifest field
 - Phase 36 and Phase 37 receipt posture:
   - valid receipts must not claim recursive verification
   - valid receipts must not claim cryptographic compression

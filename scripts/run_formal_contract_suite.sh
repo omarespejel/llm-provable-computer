@@ -102,6 +102,8 @@ KANI_ARGS=(
   --harness
   kani_phase33_public_input_ordering_accepts_canonical_order
   --harness
+  kani_phase33_public_input_lane_payload_wires_canonical_fields
+  --harness
   kani_phase33_public_input_ordering_rejects_any_lane_drift
 )
 

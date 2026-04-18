@@ -1490,6 +1490,13 @@ const PHASE33_PUBLIC_INPUT_LANES: [Phase33PublicInputLane; 9] = [
     Phase33PublicInputLane::AggregationTemplate,
 ];
 
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Phase33PublicInputLanePayload<'a> {
+    Bytes(&'a str),
+    Usize(usize),
+}
+
 #[cfg(all(kani, feature = "stwo-backend"))]
 fn phase33_public_input_lanes_are_canonical(lanes: &[Phase33PublicInputLane; 9]) -> bool {
     *lanes
@@ -1504,6 +1511,46 @@ fn phase33_public_input_lanes_are_canonical(lanes: &[Phase33PublicInputLane; 9])
             Phase33PublicInputLane::SourceTemplate,
             Phase33PublicInputLane::AggregationTemplate,
         ]
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase33_public_input_lane_payload<'a>(
+    manifest: &'a Phase33RecursiveCompressionPublicInputManifest,
+    lane: Phase33PublicInputLane,
+) -> Phase33PublicInputLanePayload<'a> {
+    match lane {
+        Phase33PublicInputLane::Phase32RecursiveStatementContract => {
+            Phase33PublicInputLanePayload::Bytes(
+                &manifest.phase32_recursive_statement_contract_commitment,
+            )
+        }
+        Phase33PublicInputLane::TotalSteps => {
+            Phase33PublicInputLanePayload::Usize(manifest.total_steps)
+        }
+        Phase33PublicInputLane::Phase30SourceChain => {
+            Phase33PublicInputLanePayload::Bytes(&manifest.phase30_source_chain_commitment)
+        }
+        Phase33PublicInputLane::Phase30StepEnvelopes => {
+            Phase33PublicInputLanePayload::Bytes(&manifest.phase30_step_envelopes_commitment)
+        }
+        Phase33PublicInputLane::Phase31DecodeBoundaryBridge => {
+            Phase33PublicInputLanePayload::Bytes(
+                &manifest.phase31_decode_boundary_bridge_commitment,
+            )
+        }
+        Phase33PublicInputLane::ChainStartBoundary => {
+            Phase33PublicInputLanePayload::Bytes(&manifest.chain_start_boundary_commitment)
+        }
+        Phase33PublicInputLane::ChainEndBoundary => {
+            Phase33PublicInputLanePayload::Bytes(&manifest.chain_end_boundary_commitment)
+        }
+        Phase33PublicInputLane::SourceTemplate => {
+            Phase33PublicInputLanePayload::Bytes(&manifest.source_template_commitment)
+        }
+        Phase33PublicInputLane::AggregationTemplate => {
+            Phase33PublicInputLanePayload::Bytes(&manifest.aggregation_template_commitment)
+        }
+    }
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -1557,10 +1604,13 @@ fn phase37_require_hash32(label: &str, value: &str) -> Result<()> {
 #[cfg(all(kani, feature = "stwo-backend"))]
 mod kani_phase36_phase37_proofs {
     use super::{
-        phase33_public_input_lanes_are_canonical, phase36_receipt_flag_surface_is_valid,
-        phase37_is_hash32_lower_hex, phase37_is_lower_hex_byte,
-        phase37_receipt_flag_surface_is_valid, Phase33PublicInputLane, PHASE33_PUBLIC_INPUT_LANES,
+        phase33_public_input_lane_payload, phase33_public_input_lanes_are_canonical,
+        phase36_receipt_flag_surface_is_valid, phase37_is_hash32_lower_hex,
+        phase37_is_lower_hex_byte, phase37_receipt_flag_surface_is_valid, Phase33PublicInputLane,
+        Phase33PublicInputLanePayload, Phase33RecursiveCompressionPublicInputManifest,
+        PHASE33_PUBLIC_INPUT_LANES,
     };
+    use crate::proof::StarkProofBackend;
 
     const PHASE37_SOURCE_FLAG_COUNT: usize = 9;
 
@@ -1584,8 +1634,8 @@ mod kani_phase36_phase37_proofs {
 
     #[kani::proof]
     fn kani_phase37_hash32_rejects_non_lowercase_hex_examples() {
-        const UPPERCASE: &str = concat!(
-            "G", "aaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa",
+        const UPPERCASE_HEX: &str = concat!(
+            "A", "aaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa",
             "aaaaaaaa"
         );
         const PUNCTUATION: &str = concat!(
@@ -1593,11 +1643,11 @@ mod kani_phase36_phase37_proofs {
             "aaaaaaa", ":"
         );
 
-        assert!(UPPERCASE.len() == 64);
+        assert!(UPPERCASE_HEX.len() == 64);
         assert!(PUNCTUATION.len() == 64);
-        assert!(!phase37_is_lower_hex_byte(b'G'));
+        assert!(!phase37_is_lower_hex_byte(b'A'));
         assert!(!phase37_is_lower_hex_byte(b':'));
-        assert!(!phase37_is_hash32_lower_hex(UPPERCASE));
+        assert!(!phase37_is_hash32_lower_hex(UPPERCASE_HEX));
         assert!(!phase37_is_hash32_lower_hex(PUNCTUATION));
     }
 
@@ -1703,6 +1753,82 @@ mod kani_phase36_phase37_proofs {
         assert!(phase33_public_input_lanes_are_canonical(
             &PHASE33_PUBLIC_INPUT_LANES
         ));
+    }
+
+    #[kani::proof]
+    fn kani_phase33_public_input_lane_payload_wires_canonical_fields() {
+        let manifest = Phase33RecursiveCompressionPublicInputManifest {
+            proof_backend: StarkProofBackend::Stwo,
+            manifest_version: "manifest-version".to_string(),
+            semantic_scope: "semantic-scope".to_string(),
+            proof_backend_version: "proof-backend-version".to_string(),
+            statement_version: "statement-version".to_string(),
+            step_relation: "step-relation".to_string(),
+            required_recursion_posture: "required-recursion-posture".to_string(),
+            recursive_verification_claimed: false,
+            cryptographic_compression_claimed: false,
+            phase32_contract_version: "phase32-contract-version".to_string(),
+            phase32_semantic_scope: "phase32-semantic-scope".to_string(),
+            phase32_recursive_statement_contract_commitment: "lane-phase32-contract".to_string(),
+            total_steps: 73,
+            phase30_source_chain_commitment: "lane-phase30-source-chain".to_string(),
+            phase30_step_envelopes_commitment: "lane-phase30-step-envelopes".to_string(),
+            phase31_decode_boundary_bridge_commitment: "lane-phase31-boundary-bridge".to_string(),
+            chain_start_boundary_commitment: "lane-chain-start".to_string(),
+            chain_end_boundary_commitment: "lane-chain-end".to_string(),
+            source_template_commitment: "lane-source-template".to_string(),
+            aggregation_template_commitment: "lane-aggregation-template".to_string(),
+            recursive_public_inputs_commitment: "not-a-public-input-lane".to_string(),
+        };
+
+        assert!(
+            phase33_public_input_lane_payload(
+                &manifest,
+                Phase33PublicInputLane::Phase32RecursiveStatementContract
+            ) == Phase33PublicInputLanePayload::Bytes("lane-phase32-contract")
+        );
+        assert!(
+            phase33_public_input_lane_payload(&manifest, Phase33PublicInputLane::TotalSteps)
+                == Phase33PublicInputLanePayload::Usize(73)
+        );
+        assert!(
+            phase33_public_input_lane_payload(
+                &manifest,
+                Phase33PublicInputLane::Phase30SourceChain
+            ) == Phase33PublicInputLanePayload::Bytes("lane-phase30-source-chain")
+        );
+        assert!(
+            phase33_public_input_lane_payload(
+                &manifest,
+                Phase33PublicInputLane::Phase30StepEnvelopes
+            ) == Phase33PublicInputLanePayload::Bytes("lane-phase30-step-envelopes")
+        );
+        assert!(
+            phase33_public_input_lane_payload(
+                &manifest,
+                Phase33PublicInputLane::Phase31DecodeBoundaryBridge
+            ) == Phase33PublicInputLanePayload::Bytes("lane-phase31-boundary-bridge")
+        );
+        assert!(
+            phase33_public_input_lane_payload(
+                &manifest,
+                Phase33PublicInputLane::ChainStartBoundary
+            ) == Phase33PublicInputLanePayload::Bytes("lane-chain-start")
+        );
+        assert!(
+            phase33_public_input_lane_payload(&manifest, Phase33PublicInputLane::ChainEndBoundary)
+                == Phase33PublicInputLanePayload::Bytes("lane-chain-end")
+        );
+        assert!(
+            phase33_public_input_lane_payload(&manifest, Phase33PublicInputLane::SourceTemplate)
+                == Phase33PublicInputLanePayload::Bytes("lane-source-template")
+        );
+        assert!(
+            phase33_public_input_lane_payload(
+                &manifest,
+                Phase33PublicInputLane::AggregationTemplate
+            ) == Phase33PublicInputLanePayload::Bytes("lane-aggregation-template")
+        );
     }
 
     #[kani::proof]
@@ -4004,55 +4130,12 @@ fn phase33_update_public_input_lane(
     manifest: &Phase33RecursiveCompressionPublicInputManifest,
     lane: Phase33PublicInputLane,
 ) {
-    match lane {
-        Phase33PublicInputLane::Phase32RecursiveStatementContract => {
-            phase29_update_len_prefixed(
-                hasher,
-                manifest
-                    .phase32_recursive_statement_contract_commitment
-                    .as_bytes(),
-            );
+    match phase33_public_input_lane_payload(manifest, lane) {
+        Phase33PublicInputLanePayload::Bytes(value) => {
+            phase29_update_len_prefixed(hasher, value.as_bytes());
         }
-        Phase33PublicInputLane::TotalSteps => {
-            phase29_update_usize(hasher, manifest.total_steps);
-        }
-        Phase33PublicInputLane::Phase30SourceChain => {
-            phase29_update_len_prefixed(
-                hasher,
-                manifest.phase30_source_chain_commitment.as_bytes(),
-            );
-        }
-        Phase33PublicInputLane::Phase30StepEnvelopes => {
-            phase29_update_len_prefixed(
-                hasher,
-                manifest.phase30_step_envelopes_commitment.as_bytes(),
-            );
-        }
-        Phase33PublicInputLane::Phase31DecodeBoundaryBridge => {
-            phase29_update_len_prefixed(
-                hasher,
-                manifest
-                    .phase31_decode_boundary_bridge_commitment
-                    .as_bytes(),
-            );
-        }
-        Phase33PublicInputLane::ChainStartBoundary => {
-            phase29_update_len_prefixed(
-                hasher,
-                manifest.chain_start_boundary_commitment.as_bytes(),
-            );
-        }
-        Phase33PublicInputLane::ChainEndBoundary => {
-            phase29_update_len_prefixed(hasher, manifest.chain_end_boundary_commitment.as_bytes());
-        }
-        Phase33PublicInputLane::SourceTemplate => {
-            phase29_update_len_prefixed(hasher, manifest.source_template_commitment.as_bytes());
-        }
-        Phase33PublicInputLane::AggregationTemplate => {
-            phase29_update_len_prefixed(
-                hasher,
-                manifest.aggregation_template_commitment.as_bytes(),
-            );
+        Phase33PublicInputLanePayload::Usize(value) => {
+            phase29_update_usize(hasher, value);
         }
     }
 }
