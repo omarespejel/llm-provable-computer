@@ -17,6 +17,7 @@ EVIDENCE="${ARTIFACT_DIR}/evidence.json"
 
 mkdir -p "${ARTIFACT_DIR}"
 rm -f "${ARTIFACT}" "${EVIDENCE}"
+rm -rf "${ARTIFACT_DIR}/mutations"
 
 PHASE39_COMPOSITION_ARTIFACT_OUT="${ARTIFACT}" \
   cargo +nightly-2025-07-14 test -q --features stwo-backend --lib \
@@ -208,6 +209,7 @@ evidence = {
         "Does not claim cryptographic compression.",
         "Does not claim performance speedup.",
         "Does not claim a Phase 29 contract derived from a real Phase 28 recursive-compression source.",
+        "Does not claim the full Paper 3 result until reproducibility and negative controls pass.",
     ],
 }
 evidence_path.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")

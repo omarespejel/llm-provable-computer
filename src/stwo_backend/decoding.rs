@@ -2427,6 +2427,8 @@ pub fn phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(
         .iter()
         .enumerate()
         .map(|(step_index, step)| {
+            // Segment manifests are range-local; the shared source-chain
+            // commitment and boundary pair bind them back to the full run.
             let artifact = artifact_index
                 .get(step.shared_lookup_artifact_commitment.as_str())
                 .copied()
@@ -19384,6 +19386,34 @@ mod tests {
             2,
         )
         .expect("range verifies against source slice");
+
+        let nonzero_range_manifest =
+            phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(&chain, 1, 3)
+                .expect("nonzero range manifest");
+        assert_eq!(nonzero_range_manifest.total_steps, 2);
+        assert_eq!(
+            nonzero_range_manifest
+                .envelopes
+                .iter()
+                .map(|envelope| envelope.step_index)
+                .collect::<Vec<_>>(),
+            vec![0, 1]
+        );
+        assert_eq!(
+            nonzero_range_manifest.chain_start_boundary_commitment,
+            chain.steps[1].from_state.public_state_commitment
+        );
+        assert_eq!(
+            nonzero_range_manifest.chain_end_boundary_commitment,
+            chain.steps[2].to_state.public_state_commitment
+        );
+        verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range(
+            &nonzero_range_manifest,
+            &chain,
+            1,
+            3,
+        )
+        .expect("nonzero range verifies against source slice");
 
         let wrong_range = verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range(
             &range_manifest,
