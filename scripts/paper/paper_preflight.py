@@ -467,13 +467,40 @@ def find_repo_tokens(repo_root: pathlib.Path, tokens: set[str]) -> set[str]:
 
 
 def split_evidence_path_anchor(entry: str) -> tuple[str, str | None]:
-    path_part = entry.split("#", 1)[0]
+    path_part, fragment = (
+        entry.split("#", 1) if "#" in entry else (entry, None)
+    )
     if ":" not in path_part:
-        return path_part, None
+        return path_part, fragment or None
     rel_path, anchor = path_part.rsplit(":", 1)
     if "/" not in rel_path and not rel_path.endswith((".rs", ".py", ".md", ".json", ".yml")):
-        return path_part, None
-    return rel_path, anchor or None
+        return path_part, fragment or None
+    return rel_path, anchor or fragment or None
+
+
+def resolve_repo_relative_path(
+    repo_root: pathlib.Path, rel_path: str
+) -> tuple[pathlib.Path | None, str | None]:
+    relative_path = pathlib.Path(rel_path)
+    windows_path = pathlib.PureWindowsPath(rel_path)
+    if relative_path.is_absolute() or windows_path.is_absolute():
+        return None, "path must be repo-relative"
+    if (
+        ".." in relative_path.parts
+        or ".." in windows_path.parts
+    ):
+        return None, "path must be repo-relative (must not contain `..`)"
+
+    try:
+        root = repo_root.resolve()
+        target = (root / relative_path).resolve()
+    except (OSError, RuntimeError) as exc:
+        return None, f"failed to resolve path: {exc}"
+    try:
+        target.relative_to(root)
+    except ValueError:
+        return None, "path escapes repo root"
+    return target, None
 
 
 def check_claim_evidence_path_anchor(
@@ -485,33 +512,10 @@ def check_claim_evidence_path_anchor(
     findings: Findings,
 ) -> None:
     rel_path, anchor = split_evidence_path_anchor(entry)
-    relative_path = pathlib.Path(rel_path)
-    windows_path = pathlib.PureWindowsPath(rel_path)
-    if (
-        relative_path.is_absolute()
-        or windows_path.is_absolute()
-        or ".." in relative_path.parts
-        or ".." in windows_path.parts
-    ):
+    target, path_error = resolve_repo_relative_path(repo_root, rel_path)
+    if target is None:
         findings.error(
-            f"{evidence_path}: claim `{claim_id}` `{key}` path must be repo-relative "
-            f"and must not contain `..`: {entry}"
-        )
-        return
-
-    try:
-        root = repo_root.resolve()
-        target = (root / relative_path).resolve()
-    except (OSError, RuntimeError) as exc:
-        findings.error(
-            f"{evidence_path}: claim `{claim_id}` `{key}` failed to resolve path {entry}: {exc}"
-        )
-        return
-    try:
-        target.relative_to(root)
-    except ValueError:
-        findings.error(
-            f"{evidence_path}: claim `{claim_id}` `{key}` path escapes repo root: {entry}"
+            f"{evidence_path}: claim `{claim_id}` `{key}` invalid path `{entry}`: {path_error}"
         )
         return
 
@@ -540,6 +544,129 @@ def list_field(record: dict[str, object], key: str) -> list[str]:
     if isinstance(value, list):
         return [str(item) for item in value]
     return []
+
+
+def fragment_scoped_search_text(text: str, anchor_offset: int) -> str | None:
+    """Return the text region governed by a declared paper fragment.
+
+    For Markdown headings, the fragment owns that heading's section up to the
+    next heading at the same or a higher level. Non-heading matches are invalid
+    fragment references; returning None prevents broadening the search to EOF.
+    """
+
+    line_start = text.rfind("\n", 0, anchor_offset) + 1
+    line_end = text.find("\n", anchor_offset)
+    if line_end < 0:
+        line_end = len(text)
+    heading_line = text[line_start:line_end]
+    heading_match = re.match(r"^[ \t]{0,3}(#{1,6})[ \t]+", heading_line)
+    if heading_match is None:
+        return None
+
+    heading_level = len(heading_match.group(1))
+    remainder_start = min(line_end + 1, len(text))
+    remainder = text[remainder_start:]
+    next_heading = re.search(rf"(?m)^[ \t]{{0,3}}#{{1,{heading_level}}}[ \t]+", remainder)
+    section_end = (
+        len(text) if next_heading is None else remainder_start + next_heading.start()
+    )
+    return text[line_start:section_end]
+
+
+def markdown_heading_title(heading_line: str) -> str | None:
+    heading_match = re.match(r"^[ \t]{0,3}#{1,6}[ \t]+(.*?)[ \t]*$", heading_line)
+    if heading_match is None:
+        return None
+    # CommonMark permits optional closing hashes, e.g. "## Title ##".
+    return re.sub(r"\s+#+\s*$", "", heading_match.group(1)).strip()
+
+
+def fragment_scoped_search_texts(text: str, location_anchor: str) -> list[str]:
+    """Return Markdown sections whose heading title exactly matches a fragment."""
+
+    scoped_sections: list[str] = []
+    for heading_match in re.finditer(r"(?m)^[ \t]{0,3}#{1,6}[ \t]+.*$", text):
+        heading_line = heading_match.group(0)
+        if markdown_heading_title(heading_line) != location_anchor:
+            continue
+        scoped_text = fragment_scoped_search_text(text, heading_match.start())
+        if scoped_text is not None:
+            scoped_sections.append(scoped_text)
+    return scoped_sections
+
+
+def check_paper2_evidence_anchors(
+    repo_root: pathlib.Path,
+    evidence_path: pathlib.Path,
+    records: list[dict[str, object]],
+    findings: Findings,
+) -> None:
+    """Require each evidence-ledger claim to be cited by Paper 2 prose.
+
+    The evidence matrix says where a claim appears. The paper text must contain
+    an explicit `evidence:<claim_id>` anchor in at least one declared location,
+    otherwise a strong paper claim can drift away from its implementation,
+    negative controls, evidence commands, and non-claim boundary.
+    """
+
+    for record in records:
+        claim_id = str(record.get("id", "")).strip()
+        if not claim_id:
+            continue
+        anchor = f"evidence:{claim_id}"
+        locations = list_field(record, "paper_locations")
+        if not locations:
+            continue
+
+        searched: list[str] = []
+        invalid_paths: list[str] = []
+        missing_fragments: list[str] = []
+        invalid_fragments: list[str] = []
+        unreadable: list[str] = []
+        found = False
+        for entry in locations:
+            rel_path, location_anchor = split_evidence_path_anchor(entry)
+            searched.append(entry)
+            path, path_error = resolve_repo_relative_path(repo_root, rel_path)
+            if path is None:
+                invalid_paths.append(f"{rel_path} ({path_error})")
+                continue
+            if not path.exists() or not path.is_file():
+                continue
+            try:
+                text = path.read_text(encoding="utf-8", errors="ignore")
+            except (OSError, UnicodeError) as exc:
+                unreadable.append(f"{rel_path} ({exc})")
+                continue
+            search_texts = [text]
+            if location_anchor is not None:
+                search_texts = fragment_scoped_search_texts(text, location_anchor)
+                if not search_texts:
+                    missing_fragments.append(
+                        f"{entry} (heading fragment `{location_anchor}` not found)"
+                    )
+                    continue
+            if any(
+                re.search(rf"{re.escape(anchor)}(?![A-Za-z0-9_])", search_text)
+                for search_text in search_texts
+            ):
+                found = True
+                break
+
+        if not found:
+            details = f"searched locations: {searched}"
+            if invalid_paths:
+                details += f"; skipped invalid paths: {invalid_paths}"
+            if missing_fragments:
+                details += f"; missing fragments: {missing_fragments}"
+            if invalid_fragments:
+                details += f"; invalid fragments: {invalid_fragments}"
+            if unreadable:
+                details += f"; unreadable locations: {unreadable}"
+            findings.error(
+                f"{evidence_path}: claim `{claim_id}` is not explicitly cited by "
+                f"`{anchor}` in any declared paper location; {details}"
+            )
 
 
 def check_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> None:
@@ -622,6 +749,7 @@ def check_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> 
         findings.warn(
             f"{evidence_path}: extra paper-2 claim evidence ids not in required set: {extra_ids}"
         )
+    check_paper2_evidence_anchors(repo_root, evidence_path, records, findings)
 
 
 def paragraph_start_line(text: str, offset: int) -> int:

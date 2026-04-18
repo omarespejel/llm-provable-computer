@@ -325,6 +325,32 @@ still does not verify the statement's signature or trust chain. It keeps the
 provenance surface aligned with existing release workflows without turning the
 manifest into a supply-chain theorem.
 
+### 5.4 Evidence ledger
+
+Every strong claim in this draft is tied to the machine-readable evidence ledger
+in `docs/engineering/paper2-claim-evidence.yml`. The ledger records
+implementation anchors, schema/spec anchors, positive controls, negative
+controls, evidence commands, and explicit non-claim boundaries. The table below
+is the paper-facing index into that ledger.
+
+| Evidence anchor | What the paper is allowed to claim | Boundary that must travel with the claim |
+| --- | --- | --- |
+| `evidence:phase29_recursive_input_contract` | Phase 29 defines a recursive-adjacent input contract derived from a verified pre-recursive aggregate. | No recursive proof verification and no cryptographic compression. |
+| `evidence:phase30_step_envelope_manifest` | Phase 30 binds ordered decode-step envelopes, source-chain commitment, and chain boundary commitments. | No recursive proof closure and no full model-inference proving. |
+| `evidence:phase31_decode_boundary_bridge` | Phase 31 bridges the Phase 29 input contract and Phase 30 envelope manifest without changing the public decode statement. | No recursive proof closure and no new recursive statement surface. |
+| `evidence:phase32_recursive_statement_contract` | Phase 32 restates the bridged decode boundary as a future recursive target statement contract. | No recursive proof closure and no semantic-equivalence theorem across runtimes. |
+| `evidence:phase33_public_input_manifest` | Phase 33 freezes the ordered public-input surface that future recursion must preserve. | No complete recursive verifier and only bounded formal coverage of ordering and lane-to-field wiring. |
+| `evidence:phase34_shared_lookup_manifest` | Phase 34 freezes the ordered lookup-facing public inputs derived from Phase 33 and Phase 30. | No recursive shared-table accumulation as a compressed proof object. |
+| `evidence:phase35_recursive_target_manifest` | Phase 35 binds the Phase 32 statement, Phase 33 public inputs, and Phase 34 lookup inputs into one canonical recursive target manifest. | No recursive proof closure and no cryptographic compression. |
+| `evidence:phase36_verifier_harness_receipt` | Phase 36 records source-bound verifier-harness checking of the Phase 35 target and source artifacts. | No recursive proof verification, no cryptographic compression, and only bounded formal flag-surface checks. |
+| `evidence:phase37_artifact_chain_harness_receipt` | Phase 37 recomputes the Phase 29 plus Phase 30 through Phase 36 source-bound artifact chain as heavier operational evidence. | No recursively verifiable compressed proof object and only bounded formal syntax, flag-surface, and ordering checks. |
+| `evidence:bounded_runtime_semantic_agreement` | The research-v3 artifacts provide bounded semantic-agreement evidence. | No general compiler, frontend, graph-rewrite, or runtime-equivalence theorem. |
+| `evidence:release_provenance_boundary` | HF provenance manifests bind release and artifact identity as reproducibility guardrails. | No complete supply-chain attestation theorem and no verified external builder trust unless attestations are actually verified. |
+
+This table is intentionally conservative. If a sentence in the paper cannot be
+connected to one of these anchors or to an explicit non-claim, it should be
+weakened before publication.
+
 ______________________________________________________________________
 
 ## 6. Negative Results and Non-Claims

@@ -413,6 +413,13 @@ class PaperPreflightTests(unittest.TestCase):
 """
                 )
             write_text(
+                repo / "docs/paper/paper2/appendix-artifact-map.md",
+                "\n".join(
+                    f"`evidence:{claim_id}`"
+                    for claim_id in sorted(MOD.REQUIRED_CLAIM_IDS)
+                ),
+            )
+            write_text(
                 repo / MOD.CLAIM_EVIDENCE_FILE,
                 "\n".join(records),
             )
@@ -420,6 +427,126 @@ class PaperPreflightTests(unittest.TestCase):
             findings = MOD.Findings()
             MOD.check_claim_evidence_matrix(repo, findings)
             self.assertEqual(findings.errors, [])
+
+    def test_paper2_evidence_anchor_honors_fragment_scope(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            path = repo / "docs/paper/paper2/paper.md"
+            write_text(
+                path,
+                (
+                    "`evidence:phase29_recursive_input_contract`\n\n"
+                    "## Target Section\n"
+                    "No scoped evidence here.\n\n"
+                    "## Later Section\n"
+                    "`evidence:phase29_recursive_input_contract`\n"
+                ),
+            )
+            records = [
+                {
+                    "id": "phase29_recursive_input_contract",
+                    "paper_locations": ["docs/paper/paper2/paper.md#Target Section"],
+                }
+            ]
+
+            findings = MOD.Findings()
+            MOD.check_paper2_evidence_anchors(
+                repo, repo / MOD.CLAIM_EVIDENCE_FILE, records, findings
+            )
+            self.assertTrue(
+                any("not explicitly cited" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+            write_text(
+                path,
+                (
+                    "  ## Target Section\n"
+                    "Scoped evidence can live in this section.\n\n"
+                    "### Evidence paragraph\n"
+                    "`evidence:phase29_recursive_input_contract`\n\n"
+                    "## Later Section\n"
+                ),
+            )
+            findings = MOD.Findings()
+            MOD.check_paper2_evidence_anchors(
+                repo, repo / MOD.CLAIM_EVIDENCE_FILE, records, findings
+            )
+            self.assertEqual(findings.errors, [])
+
+    def test_paper2_evidence_anchor_reports_missing_fragments_separately(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(repo / "docs/paper/paper2/paper.md", "## Other Section\n")
+            records = [
+                {
+                    "id": "phase29_recursive_input_contract",
+                    "paper_locations": ["docs/paper/paper2/paper.md#Target Section"],
+                }
+            ]
+
+            findings = MOD.Findings()
+            MOD.check_paper2_evidence_anchors(
+                repo, repo / MOD.CLAIM_EVIDENCE_FILE, records, findings
+            )
+
+            self.assertTrue(findings.errors)
+            self.assertIn("missing fragments:", findings.errors[0])
+            self.assertNotIn("skipped invalid paths:", findings.errors[0])
+
+    def test_paper2_evidence_anchor_ignores_body_text_fragment_match(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(
+                repo / "docs/paper/paper2/paper.md",
+                (
+                    "# Paper\n"
+                    "The phrase Target Section appears in body text.\n\n"
+                    "## Target Section\n"
+                    "`evidence:phase29_recursive_input_contract`\n"
+                ),
+            )
+            records = [
+                {
+                    "id": "phase29_recursive_input_contract",
+                    "paper_locations": ["docs/paper/paper2/paper.md#Target Section"],
+                }
+            ]
+
+            findings = MOD.Findings()
+            MOD.check_paper2_evidence_anchors(
+                repo, repo / MOD.CLAIM_EVIDENCE_FILE, records, findings
+            )
+
+            self.assertEqual(findings.errors, [])
+
+    def test_paper2_evidence_anchor_requires_fragment_to_be_heading(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(
+                repo / "docs/paper/paper2/paper.md",
+                (
+                    "# Paper\n"
+                    "The phrase Target Section appears in body text.\n\n"
+                    "## Later Section\n"
+                    "`evidence:phase29_recursive_input_contract`\n"
+                ),
+            )
+            records = [
+                {
+                    "id": "phase29_recursive_input_contract",
+                    "paper_locations": ["docs/paper/paper2/paper.md#Target Section"],
+                }
+            ]
+
+            findings = MOD.Findings()
+            MOD.check_paper2_evidence_anchors(
+                repo, repo / MOD.CLAIM_EVIDENCE_FILE, records, findings
+            )
+
+            self.assertTrue(findings.errors)
+            self.assertIn("missing fragments:", findings.errors[0])
+            self.assertNotIn("invalid fragments:", findings.errors[0])
 
     def test_claim_evidence_matrix_rejects_missing_required_claim_id(self):
         with tempfile.TemporaryDirectory() as tmp:
