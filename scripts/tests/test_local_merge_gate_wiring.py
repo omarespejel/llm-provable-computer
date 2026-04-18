@@ -14,8 +14,18 @@ class LocalMergeGateWiringTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.script = MERGE_GATE.read_text(encoding="utf-8")
 
+    def _shell_function_body(self, fn_name: str) -> str:
+        match = re.search(
+            rf"^{re.escape(fn_name)}\(\) \{{(?P<body>.*?)^\}}",
+            self.script,
+            flags=re.MULTILINE | re.DOTALL,
+        )
+        self.assertIsNotNone(match, f"missing function: {fn_name}")
+        return match.group("body")
+
     def test_paper_preflight_surface_is_conditionally_wired(self) -> None:
         self.assertIn("changed_path_is_paper_preflight_surface()", self.script)
+        body = self._shell_function_body("changed_path_is_paper_preflight_surface")
         expected_triggers = [
             "docs/paper/",
             "docs/engineering/",
@@ -35,13 +45,14 @@ class LocalMergeGateWiringTests(unittest.TestCase):
         ]
         for trigger in expected_triggers:
             with self.subTest(trigger=trigger):
-                self.assertIn(f'changed_path_has_prefix "{trigger}"', self.script)
+                self.assertIn(f'changed_path_has_prefix "{trigger}"', body)
         self.assertIn("run_paper_preflight_if_needed()", self.script)
         self.assertIn("run_logged paper-preflight bash scripts/run_paper_preflight_suite.sh", self.script)
         self.assertGreaterEqual(len(re.findall(r"run_paper_preflight_if_needed", self.script)), 4)
 
     def test_approximation_budget_surface_is_conditionally_wired(self) -> None:
         self.assertIn("changed_path_is_approximation_budget_surface()", self.script)
+        body = self._shell_function_body("changed_path_is_approximation_budget_surface")
         expected_triggers = [
             "docs/engineering/approximation-budget.md",
             "scripts/check_approximation_budget.py",
@@ -53,7 +64,7 @@ class LocalMergeGateWiringTests(unittest.TestCase):
         ]
         for trigger in expected_triggers:
             with self.subTest(trigger=trigger):
-                self.assertIn(f'changed_path_has_prefix "{trigger}"', self.script)
+                self.assertIn(f'changed_path_has_prefix "{trigger}"', body)
         self.assertIn("run_approximation_budget_if_needed()", self.script)
         self.assertIn(
             "run_logged approximation-budget bash scripts/run_approximation_budget_suite.sh",
