@@ -480,6 +480,12 @@ changed_path_is_reference_verifier_surface() {
   changed_path_has_prefix "tools/reference_verifier/" ||
     changed_path_has_prefix "scripts/run_reference_verifier_suite.sh" ||
     changed_path_has_prefix "docs/engineering/paper2-claim-evidence.yml" ||
+    changed_path_has_prefix "docs/engineering/paper3-claim-evidence.yml" ||
+    changed_path_has_prefix "docs/engineering/paper3-composition-prototype.md" ||
+    changed_path_has_prefix "spec/stwo-phase38-paper3-composition-prototype.schema.json" ||
+    changed_path_has_prefix "spec/stwo-phase30-decoding-step-envelope-manifest.schema.json" ||
+    changed_path_has_prefix "spec/stwo-phase37-recursive-artifact-chain-harness-receipt.schema.json" ||
+    changed_path_has_prefix "src/stwo_backend/recursion.rs" ||
     changed_path_has_prefix "scripts/local_merge_gate.sh"
 }
 

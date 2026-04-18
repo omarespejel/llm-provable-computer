@@ -21,3 +21,5 @@ PY
 python3 -B -m unittest discover -s tools/reference_verifier/tests
 python3 -B tools/reference_verifier/reference_verifier.py verify-phase37 \
   tools/reference_verifier/fixtures/phase37-reference-receipt.json
+python3 -B tools/reference_verifier/reference_verifier.py verify-phase38 \
+  tools/reference_verifier/fixtures/phase38-reference-composition.json

@@ -23,6 +23,12 @@ After source validation, Phase 38 extracts the public composition surface from e
 
 The resulting segment record is not a proof. It is a `Phase38Paper3CompositionSegment` inside a `Phase38Paper3CompositionPrototype`: a source-backed composition surface over existing Phase 37 receipts. The public JSON shape is frozen in `spec/stwo-phase38-paper3-composition-prototype.schema.json`, while serde `TryFrom` and parse/load APIs enforce the semantic cross-checks.
 
+The same public surface is also checked by the independent Python reference
+verifier in `tools/reference_verifier/reference_verifier.py`. That verifier does
+not import the Rust structs; it reparses the JSON, recomputes the Phase 37 and
+Phase 38 commitments it needs, and applies a separate set of continuity and
+identity checks.
+
 ## Checks performed
 
 The verifier accepts a prototype only if all of the following hold:
@@ -77,5 +83,6 @@ cargo +nightly-2025-07-14 test -q --features stwo-backend --lib
 cargo fmt --check
 cargo test -q --lib statement_spec_contract_is_synced_with_constants
 scripts/run_phase38_schema_suite.sh
+scripts/run_reference_verifier_suite.sh
 python3 scripts/paper/paper_preflight.py
 ```

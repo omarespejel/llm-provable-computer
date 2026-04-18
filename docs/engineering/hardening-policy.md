@@ -62,6 +62,7 @@ scripts/run_known_bad_phase_artifact_corpus.sh
 scripts/run_paper_preflight_suite.sh
 scripts/run_approximation_budget_suite.sh
 scripts/run_phase38_schema_suite.sh
+scripts/run_reference_verifier_suite.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_miri_suite.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_asan_suite.sh
@@ -85,6 +86,9 @@ unit tests, accepts the positive fixture, and checks that the negative fixture
 fails closed. `scripts/run_phase38_schema_suite.sh` pins the Phase 38 Paper 3
 composition-prototype JSON schema surface and reruns paper preflight so schema
 drift cannot silently detach the paper claims from the serialized artifact.
+`scripts/run_reference_verifier_suite.sh` independently checks the Phase 37
+receipt and Phase 38 Paper 3 composition prototype surfaces without importing
+the Rust structs or repo-local schemas.
 
 The sanitizer and UB hardening scripts use the curated exact test lists in
 `scripts/hardening_test_names.sh`; update that file when adding new trusted-core
@@ -152,9 +156,12 @@ Available local command tiers:
   aggregation verifier, Phase 29 recursive-compression input contract, and
   non-heavy Phase 29 CLI artifact verification paths. It also runs the
   Phase 29-37 known-bad artifact corpus when the PR changes those artifact
-  surfaces or corpus files, plus the Phase 38 schema suite when the Paper 3
-  composition-prototype schema, evidence, docs, local-gate wiring, or backing
-  Phase 38 implementation changes.
+  surfaces or corpus files, the independent reference verifier when
+  `tools/reference_verifier/**`, `scripts/run_reference_verifier_suite.sh`,
+  Paper 2/Paper 3 claim-evidence or composition docs, Phase 30/37/38 spec
+  schemas, `src/stwo_backend/recursion.rs`, or local-gate wiring changes, plus
+  the Phase 38 schema suite when the Paper 3 composition-prototype schema,
+  evidence, docs, local-gate wiring, or backing Phase 38 implementation changes.
 - `--mode full`: runs the same PR-range whitespace and formatting hygiene, full
   library tests, integration tests, doctests, the same conditional workflow
   auditing, dependency auditing, and shellcheck, and the exact pinned-nightly
