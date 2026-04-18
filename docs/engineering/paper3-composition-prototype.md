@@ -21,7 +21,7 @@ After source validation, Phase 38 extracts the public composition surface from e
 - the shared lookup artifact commitment,
 - and the static lookup registry commitment.
 
-The resulting segment record is not a proof. It is a `Phase38Paper3CompositionSegment` inside a `Phase38Paper3CompositionPrototype`: a source-backed composition surface over existing Phase 37 receipts.
+The resulting segment record is not a proof. It is a `Phase38Paper3CompositionSegment` inside a `Phase38Paper3CompositionPrototype`: a source-backed composition surface over existing Phase 37 receipts. The public JSON shape is frozen in `spec/stwo-phase38-paper3-composition-prototype.schema.json`, while serde `TryFrom` and parse/load APIs enforce the semantic cross-checks.
 
 ## Checks performed
 
@@ -76,5 +76,6 @@ Those remain future work. The point of this prototype is to make the next Paper 
 cargo +nightly-2025-07-14 test -q --features stwo-backend --lib
 cargo fmt --check
 cargo test -q --lib statement_spec_contract_is_synced_with_constants
+scripts/run_phase38_schema_suite.sh
 python3 scripts/paper/paper_preflight.py
 ```
