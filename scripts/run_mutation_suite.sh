@@ -67,6 +67,32 @@ if [[ -n "${MUTATION_DIFF_FILE:-}" ]]; then
   args+=(--in-diff "${MUTATION_DIFF_FILE}")
 fi
 
+mtime_epoch() {
+  local path="$1"
+  stat -f %m "$path" 2>/dev/null || stat -c %Y "$path" 2>/dev/null
+}
+
+is_fresh_path() {
+  local path="$1"
+  local mtime
+  mtime="$(mtime_epoch "$path" || true)"
+  [[ -n "$mtime" ]] && (( mtime >= mutation_run_started_epoch ))
+}
+
+find_fresh_mutants_dir() {
+  local candidate outcome
+  for candidate in "$@"; do
+    [[ -d "$candidate" ]] || continue
+    for outcome in caught.txt caught missed.txt missed timeout.txt timeout unviable.txt unviable outcomes.json; do
+      if [[ -e "$candidate/$outcome" ]] && is_fresh_path "$candidate/$outcome"; then
+        printf '%s\n' "$candidate"
+        return 0
+      fi
+    done
+  done
+  return 1
+}
+
 mutation_output_root="${MUTATION_OUTPUT_ROOT:-.}"
 if [[ "$mutation_output_root" != "." ]]; then
   mkdir -p "$mutation_output_root"
@@ -77,14 +103,24 @@ else
 fi
 
 mutation_status=0
+mutation_run_started_epoch="$(date +%s)"
 "${args[@]}" "$@" || mutation_status=$?
 
-if [[ -d "$mutation_results_dir" ]]; then
-  survivor_report="${MUTATION_SURVIVOR_REPORT:-$mutation_results_dir/survivors.json}"
+fresh_mutation_results_dir=""
+if [[ "$mutation_output_root" != "." ]]; then
+  fresh_mutation_results_dir="$(find_fresh_mutants_dir "$mutation_results_dir" "$mutation_output_root" || true)"
+else
+  fresh_mutation_results_dir="$(find_fresh_mutants_dir "$mutation_results_dir" || true)"
+fi
+
+if [[ -n "$fresh_mutation_results_dir" ]]; then
+  survivor_report="${MUTATION_SURVIVOR_REPORT:-$fresh_mutation_results_dir/survivors.json}"
   python3 scripts/collect_mutation_survivors.py summarize \
-    --mutants-dir "$mutation_results_dir" \
+    --mutants-dir "$fresh_mutation_results_dir" \
     --output "$survivor_report"
   echo "mutation survivor report: $survivor_report"
+elif [[ -d "$mutation_results_dir" || -d "$mutation_output_root" ]]; then
+  echo "warning: no fresh cargo-mutants output found; skipping mutation survivor report" >&2
 fi
 
 exit "$mutation_status"

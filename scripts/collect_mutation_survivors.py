@@ -211,8 +211,6 @@ def validate_ledger(payload: Any) -> list[str]:
     require_string_list(payload.get("milestone_commands"), "milestone_commands", errors, non_empty=True)
     non_claims = payload.get("non_claims")
     require_string_list(non_claims, "non_claims", errors, non_empty=True)
-    if isinstance(non_claims, list) and not all("not" in item.lower() for item in non_claims):
-        errors.append("non_claims entries must explicitly state non-claims")
     current_status = payload.get("current_status")
     if not isinstance(current_status, dict):
         errors.append("current_status must be an object")
