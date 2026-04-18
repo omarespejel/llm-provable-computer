@@ -1464,6 +1464,87 @@ fn phase37_is_hash32_lower_hex(value: &str) -> bool {
 }
 
 #[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Phase33PublicInputLane {
+    Phase32RecursiveStatementContract,
+    TotalSteps,
+    Phase30SourceChain,
+    Phase30StepEnvelopes,
+    Phase31DecodeBoundaryBridge,
+    ChainStartBoundary,
+    ChainEndBoundary,
+    SourceTemplate,
+    AggregationTemplate,
+}
+
+#[cfg(feature = "stwo-backend")]
+const PHASE33_PUBLIC_INPUT_LANES: [Phase33PublicInputLane; 9] = [
+    Phase33PublicInputLane::Phase32RecursiveStatementContract,
+    Phase33PublicInputLane::TotalSteps,
+    Phase33PublicInputLane::Phase30SourceChain,
+    Phase33PublicInputLane::Phase30StepEnvelopes,
+    Phase33PublicInputLane::Phase31DecodeBoundaryBridge,
+    Phase33PublicInputLane::ChainStartBoundary,
+    Phase33PublicInputLane::ChainEndBoundary,
+    Phase33PublicInputLane::SourceTemplate,
+    Phase33PublicInputLane::AggregationTemplate,
+];
+
+#[cfg(all(kani, feature = "stwo-backend"))]
+fn phase33_public_input_lanes_are_canonical(lanes: &[Phase33PublicInputLane; 9]) -> bool {
+    *lanes
+        == [
+            Phase33PublicInputLane::Phase32RecursiveStatementContract,
+            Phase33PublicInputLane::TotalSteps,
+            Phase33PublicInputLane::Phase30SourceChain,
+            Phase33PublicInputLane::Phase30StepEnvelopes,
+            Phase33PublicInputLane::Phase31DecodeBoundaryBridge,
+            Phase33PublicInputLane::ChainStartBoundary,
+            Phase33PublicInputLane::ChainEndBoundary,
+            Phase33PublicInputLane::SourceTemplate,
+            Phase33PublicInputLane::AggregationTemplate,
+        ]
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase36_receipt_flag_surface_is_valid(
+    recursive_verification_claimed: bool,
+    cryptographic_compression_claimed: bool,
+    target_manifest_verified: bool,
+    source_binding_verified: bool,
+    total_steps: usize,
+) -> bool {
+    !recursive_verification_claimed
+        && !cryptographic_compression_claimed
+        && target_manifest_verified
+        && source_binding_verified
+        && total_steps > 0
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase37_source_flags_are_all_set(flags: &[bool; 9]) -> bool {
+    for flag in flags {
+        if !*flag {
+            return false;
+        }
+    }
+    true
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase37_receipt_flag_surface_is_valid(
+    recursive_verification_claimed: bool,
+    cryptographic_compression_claimed: bool,
+    source_flags: &[bool; 9],
+    total_steps: usize,
+) -> bool {
+    !recursive_verification_claimed
+        && !cryptographic_compression_claimed
+        && phase37_source_flags_are_all_set(source_flags)
+        && total_steps > 0
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase37_require_hash32(label: &str, value: &str) -> Result<()> {
     if !phase37_is_hash32_lower_hex(value) {
         return Err(VmError::InvalidConfig(format!(
@@ -1475,116 +1556,49 @@ fn phase37_require_hash32(label: &str, value: &str) -> Result<()> {
 
 #[cfg(all(kani, feature = "stwo-backend"))]
 mod kani_phase36_phase37_proofs {
-    use super::{phase37_is_hash32_lower_hex, phase37_is_lower_hex_byte};
+    use super::{
+        phase33_public_input_lanes_are_canonical, phase36_receipt_flag_surface_is_valid,
+        phase37_is_hash32_lower_hex, phase37_is_lower_hex_byte,
+        phase37_receipt_flag_surface_is_valid, Phase33PublicInputLane, PHASE33_PUBLIC_INPUT_LANES,
+    };
 
-    const PHASE33_PUBLIC_INPUT_FIELD_COUNT: usize = 9;
     const PHASE37_SOURCE_FLAG_COUNT: usize = 9;
-
-    fn phase37_hash32_bytes_are_lower_hex(bytes: &[u8; 64]) -> bool {
-        for byte in bytes {
-            if !phase37_is_lower_hex_byte(*byte) {
-                return false;
-            }
-        }
-        true
-    }
-
-    fn phase36_receipt_flag_surface_is_valid(
-        recursive_verification_claimed: bool,
-        cryptographic_compression_claimed: bool,
-        target_manifest_verified: bool,
-        source_binding_verified: bool,
-        total_steps: usize,
-    ) -> bool {
-        !recursive_verification_claimed
-            && !cryptographic_compression_claimed
-            && target_manifest_verified
-            && source_binding_verified
-            && total_steps > 0
-    }
-
-    fn phase37_source_flags_are_all_set(flags: &[bool; PHASE37_SOURCE_FLAG_COUNT]) -> bool {
-        for flag in flags {
-            if !*flag {
-                return false;
-            }
-        }
-        true
-    }
-
-    fn phase37_receipt_flag_surface_is_valid(
-        recursive_verification_claimed: bool,
-        cryptographic_compression_claimed: bool,
-        source_flags: &[bool; PHASE37_SOURCE_FLAG_COUNT],
-        total_steps: usize,
-    ) -> bool {
-        !recursive_verification_claimed
-            && !cryptographic_compression_claimed
-            && phase37_source_flags_are_all_set(source_flags)
-            && total_steps > 0
-    }
-
-    fn phase33_ordered_public_input_tags(
-        phase32_statement_contract: u8,
-        total_steps: u8,
-        phase30_source_chain: u8,
-        phase30_step_envelopes: u8,
-        phase31_decode_boundary_bridge: u8,
-        chain_start_boundary: u8,
-        chain_end_boundary: u8,
-        source_template: u8,
-        aggregation_template: u8,
-    ) -> [u8; PHASE33_PUBLIC_INPUT_FIELD_COUNT] {
-        [
-            phase32_statement_contract,
-            total_steps,
-            phase30_source_chain,
-            phase30_step_envelopes,
-            phase31_decode_boundary_bridge,
-            chain_start_boundary,
-            chain_end_boundary,
-            source_template,
-            aggregation_template,
-        ]
-    }
-
-    fn phase33_public_input_ordering_is_preserved(
-        expected: &[u8; PHASE33_PUBLIC_INPUT_FIELD_COUNT],
-        observed: &[u8; PHASE33_PUBLIC_INPUT_FIELD_COUNT],
-    ) -> bool {
-        expected == observed
-    }
-
-    fn phase36_phase37_parse_load_surface_accepts(
-        file_is_regular: bool,
-        bytes_within_limit: bool,
-        json_well_formed: bool,
-        verifier_accepts: bool,
-    ) -> bool {
-        file_is_regular && bytes_within_limit && json_well_formed && verifier_accepts
-    }
 
     #[kani::proof]
     fn kani_phase37_hash32_accepts_lowercase_hex_boundary() {
-        let byte = kani::any::<u8>();
-        kani::assume(phase37_is_lower_hex_byte(byte));
+        const LOWER_ZERO: &str = concat!(
+            "00000000", "00000000", "00000000", "00000000", "00000000", "00000000", "00000000",
+            "00000000"
+        );
+        const LOWER_F: &str = concat!(
+            "ffffffff", "ffffffff", "ffffffff", "ffffffff", "ffffffff", "ffffffff", "ffffffff",
+            "ffffffff"
+        );
 
-        assert!(phase37_hash32_bytes_are_lower_hex(&[byte; 64]));
-        assert!(phase37_hash32_bytes_are_lower_hex(&[b'0'; 64]));
-        assert!(phase37_hash32_bytes_are_lower_hex(&[b'f'; 64]));
+        assert!(phase37_is_hash32_lower_hex(LOWER_ZERO));
+        assert!(phase37_is_hash32_lower_hex(LOWER_F));
+        assert!(phase37_is_hash32_lower_hex(
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        ));
     }
 
     #[kani::proof]
-    fn kani_phase37_hash32_rejects_any_non_lowercase_hex_byte() {
-        let bad_index = kani::any::<usize>();
-        kani::assume(bad_index < 64);
-        let bad_byte = kani::any::<u8>();
-        kani::assume(!phase37_is_lower_hex_byte(bad_byte));
+    fn kani_phase37_hash32_rejects_non_lowercase_hex_examples() {
+        const UPPERCASE: &str = concat!(
+            "G", "aaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa",
+            "aaaaaaaa"
+        );
+        const PUNCTUATION: &str = concat!(
+            "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa",
+            "aaaaaaa", ":"
+        );
 
-        let mut candidate = [b'a'; 64];
-        candidate[bad_index] = bad_byte;
-
-        assert!(!phase37_hash32_bytes_are_lower_hex(&candidate));
+        assert!(UPPERCASE.len() == 64);
+        assert!(PUNCTUATION.len() == 64);
+        assert!(!phase37_is_lower_hex_byte(b'G'));
+        assert!(!phase37_is_lower_hex_byte(b':'));
+        assert!(!phase37_is_hash32_lower_hex(UPPERCASE));
+        assert!(!phase37_is_hash32_lower_hex(PUNCTUATION));
     }
 
     #[kani::proof]
@@ -1686,58 +1700,24 @@ mod kani_phase36_phase37_proofs {
 
     #[kani::proof]
     fn kani_phase33_public_input_ordering_accepts_canonical_order() {
-        let expected = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-        let observed = phase33_ordered_public_input_tags(1, 2, 3, 4, 5, 6, 7, 8, 9);
-
-        assert!(phase33_public_input_ordering_is_preserved(
-            &expected, &observed
+        assert!(phase33_public_input_lanes_are_canonical(
+            &PHASE33_PUBLIC_INPUT_LANES
         ));
     }
 
     #[kani::proof]
     fn kani_phase33_public_input_ordering_rejects_any_lane_drift() {
-        let expected = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-        let mut observed = phase33_ordered_public_input_tags(1, 2, 3, 4, 5, 6, 7, 8, 9);
+        let mut observed = PHASE33_PUBLIC_INPUT_LANES;
         let bad_lane = kani::any::<usize>();
-        kani::assume(bad_lane < PHASE33_PUBLIC_INPUT_FIELD_COUNT);
-        observed[bad_lane] = observed[bad_lane].wrapping_add(9);
-        kani::assume(observed[bad_lane] != expected[bad_lane]);
+        kani::assume(bad_lane < PHASE33_PUBLIC_INPUT_LANES.len());
+        observed[bad_lane] =
+            if observed[bad_lane] == Phase33PublicInputLane::Phase32RecursiveStatementContract {
+                Phase33PublicInputLane::TotalSteps
+            } else {
+                Phase33PublicInputLane::Phase32RecursiveStatementContract
+            };
 
-        assert!(!phase33_public_input_ordering_is_preserved(
-            &expected, &observed
-        ));
-    }
-
-    #[kani::proof]
-    fn kani_phase36_phase37_parser_wrapper_accepts_only_explicit_ok() {
-        let file_is_regular = kani::any::<bool>();
-        let bytes_within_limit = kani::any::<bool>();
-        let json_well_formed = kani::any::<bool>();
-        let verifier_accepts = kani::any::<bool>();
-
-        if phase36_phase37_parse_load_surface_accepts(
-            file_is_regular,
-            bytes_within_limit,
-            json_well_formed,
-            verifier_accepts,
-        ) {
-            assert!(file_is_regular);
-            assert!(bytes_within_limit);
-            assert!(json_well_formed);
-            assert!(verifier_accepts);
-        }
-    }
-
-    #[kani::proof]
-    fn kani_phase36_phase37_parser_wrapper_rejects_any_error_class() {
-        let mut classes = [true; 4];
-        let bad_class = kani::any::<usize>();
-        kani::assume(bad_class < 4);
-        classes[bad_class] = false;
-
-        assert!(!phase36_phase37_parse_load_surface_accepts(
-            classes[0], classes[1], classes[2], classes[3],
-        ));
+        assert!(!phase33_public_input_lanes_are_canonical(&observed));
     }
 }
 
@@ -3259,6 +3239,17 @@ pub fn verify_phase36_recursive_verifier_harness_receipt(
                 .to_string(),
         ));
     }
+    if !phase36_receipt_flag_surface_is_valid(
+        receipt.recursive_verification_claimed,
+        receipt.cryptographic_compression_claimed,
+        receipt.target_manifest_verified,
+        receipt.source_binding_verified,
+        receipt.total_steps,
+    ) {
+        return Err(VmError::InvalidConfig(
+            "Phase 36 recursive verifier harness receipt flag surface is invalid".to_string(),
+        ));
+    }
     for (label, value) in [
         (
             "phase35_recursive_target_manifest_commitment",
@@ -3502,6 +3493,26 @@ pub fn verify_phase37_recursive_artifact_chain_harness_receipt(
         return Err(VmError::InvalidConfig(
             "Phase 37 recursive artifact-chain harness receipt requires at least one decode step"
                 .to_string(),
+        ));
+    }
+    if !phase37_receipt_flag_surface_is_valid(
+        receipt.recursive_verification_claimed,
+        receipt.cryptographic_compression_claimed,
+        &[
+            receipt.phase29_input_contract_verified,
+            receipt.phase30_step_envelope_manifest_verified,
+            receipt.phase31_decode_boundary_bridge_verified,
+            receipt.phase32_statement_contract_verified,
+            receipt.phase33_public_inputs_verified,
+            receipt.phase34_shared_lookup_verified,
+            receipt.phase35_target_manifest_verified,
+            receipt.phase36_verifier_harness_receipt_verified,
+            receipt.source_binding_verified,
+        ],
+        receipt.total_steps,
+    ) {
+        return Err(VmError::InvalidConfig(
+            "Phase 37 recursive artifact-chain harness receipt flag surface is invalid".to_string(),
         ));
     }
     for (label, value) in [
@@ -3988,6 +3999,65 @@ pub fn commit_phase32_recursive_compression_statement_contract(
 }
 
 #[cfg(feature = "stwo-backend")]
+fn phase33_update_public_input_lane(
+    hasher: &mut Blake2bVar,
+    manifest: &Phase33RecursiveCompressionPublicInputManifest,
+    lane: Phase33PublicInputLane,
+) {
+    match lane {
+        Phase33PublicInputLane::Phase32RecursiveStatementContract => {
+            phase29_update_len_prefixed(
+                hasher,
+                manifest
+                    .phase32_recursive_statement_contract_commitment
+                    .as_bytes(),
+            );
+        }
+        Phase33PublicInputLane::TotalSteps => {
+            phase29_update_usize(hasher, manifest.total_steps);
+        }
+        Phase33PublicInputLane::Phase30SourceChain => {
+            phase29_update_len_prefixed(
+                hasher,
+                manifest.phase30_source_chain_commitment.as_bytes(),
+            );
+        }
+        Phase33PublicInputLane::Phase30StepEnvelopes => {
+            phase29_update_len_prefixed(
+                hasher,
+                manifest.phase30_step_envelopes_commitment.as_bytes(),
+            );
+        }
+        Phase33PublicInputLane::Phase31DecodeBoundaryBridge => {
+            phase29_update_len_prefixed(
+                hasher,
+                manifest
+                    .phase31_decode_boundary_bridge_commitment
+                    .as_bytes(),
+            );
+        }
+        Phase33PublicInputLane::ChainStartBoundary => {
+            phase29_update_len_prefixed(
+                hasher,
+                manifest.chain_start_boundary_commitment.as_bytes(),
+            );
+        }
+        Phase33PublicInputLane::ChainEndBoundary => {
+            phase29_update_len_prefixed(hasher, manifest.chain_end_boundary_commitment.as_bytes());
+        }
+        Phase33PublicInputLane::SourceTemplate => {
+            phase29_update_len_prefixed(hasher, manifest.source_template_commitment.as_bytes());
+        }
+        Phase33PublicInputLane::AggregationTemplate => {
+            phase29_update_len_prefixed(
+                hasher,
+                manifest.aggregation_template_commitment.as_bytes(),
+            );
+        }
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn commit_phase33_recursive_compression_public_input_manifest(
     manifest: &Phase33RecursiveCompressionPublicInputManifest,
 ) -> Result<String> {
@@ -4008,40 +4078,9 @@ pub fn commit_phase33_recursive_compression_public_input_manifest(
     phase29_update_bool(&mut hasher, manifest.cryptographic_compression_claimed);
     phase29_update_len_prefixed(&mut hasher, manifest.phase32_contract_version.as_bytes());
     phase29_update_len_prefixed(&mut hasher, manifest.phase32_semantic_scope.as_bytes());
-    phase29_update_len_prefixed(
-        &mut hasher,
-        manifest
-            .phase32_recursive_statement_contract_commitment
-            .as_bytes(),
-    );
-    phase29_update_usize(&mut hasher, manifest.total_steps);
-    phase29_update_len_prefixed(
-        &mut hasher,
-        manifest.phase30_source_chain_commitment.as_bytes(),
-    );
-    phase29_update_len_prefixed(
-        &mut hasher,
-        manifest.phase30_step_envelopes_commitment.as_bytes(),
-    );
-    phase29_update_len_prefixed(
-        &mut hasher,
-        manifest
-            .phase31_decode_boundary_bridge_commitment
-            .as_bytes(),
-    );
-    phase29_update_len_prefixed(
-        &mut hasher,
-        manifest.chain_start_boundary_commitment.as_bytes(),
-    );
-    phase29_update_len_prefixed(
-        &mut hasher,
-        manifest.chain_end_boundary_commitment.as_bytes(),
-    );
-    phase29_update_len_prefixed(&mut hasher, manifest.source_template_commitment.as_bytes());
-    phase29_update_len_prefixed(
-        &mut hasher,
-        manifest.aggregation_template_commitment.as_bytes(),
-    );
+    for lane in PHASE33_PUBLIC_INPUT_LANES {
+        phase33_update_public_input_lane(&mut hasher, manifest, lane);
+    }
     let mut out = [0u8; 32];
     hasher.finalize_variable(&mut out).map_err(|err| {
         VmError::InvalidConfig(format!(

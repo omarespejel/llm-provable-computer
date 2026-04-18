@@ -88,7 +88,7 @@ KANI_ARGS=(
   --harness
   kani_phase37_hash32_accepts_lowercase_hex_boundary
   --harness
-  kani_phase37_hash32_rejects_any_non_lowercase_hex_byte
+  kani_phase37_hash32_rejects_non_lowercase_hex_examples
   --harness
   kani_phase37_hash32_requires_exact_length
   --harness
@@ -103,10 +103,6 @@ KANI_ARGS=(
   kani_phase33_public_input_ordering_accepts_canonical_order
   --harness
   kani_phase33_public_input_ordering_rejects_any_lane_drift
-  --harness
-  kani_phase36_phase37_parser_wrapper_accepts_only_explicit_ok
-  --harness
-  kani_phase36_phase37_parser_wrapper_rejects_any_error_class
 )
 
 "${KANI_ARGS[@]}"

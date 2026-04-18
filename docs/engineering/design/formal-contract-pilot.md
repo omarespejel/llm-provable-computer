@@ -33,9 +33,6 @@ Scope:
   - receipt surfaces must require at least one decode step
 - Phase 37 commitment syntax:
   - commitment fields are bounded as 64-character lowercase hex strings
-- Phase 36 and Phase 37 parse/load wrapper classification:
-  - accepting a loaded artifact requires a regular file, byte-limit compliance, well-formed JSON, and verifier acceptance
-  - every other class is an explicit error path in the bounded model
 
 Mechanization:
 - Kani harnesses live in `src/stwo_backend/decoding.rs` and `src/stwo_backend/recursion.rs`
@@ -47,7 +44,8 @@ Non-goals:
 - this does not prove the full decoding verifier
 - this does not prove the `stwo` backend itself
 - this does not prove parser memory safety beyond Rust's normal safety model
-- this does not replace runtime negative tests for malformed JSON, oversized files, non-regular files, fuzzing, mutation testing, or oracle checks
+- this does not claim formal parser/load coverage; malformed JSON, oversized files, non-regular files, and load wrappers remain covered by runtime negative tests
+- this does not replace fuzzing, mutation testing, or oracle checks
 
 Why this exists:
 - the artifact chain is now stable enough that its scalar binding kernels are worth machine-checking
