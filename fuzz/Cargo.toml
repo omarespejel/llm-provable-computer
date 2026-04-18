@@ -83,5 +83,26 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "phase35_recursive_compression_target_manifest"
+path = "fuzz_targets/phase35_recursive_compression_target_manifest.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "phase36_recursive_verifier_harness_receipt"
+path = "fuzz_targets/phase36_recursive_verifier_harness_receipt.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "phase37_recursive_artifact_chain_harness_receipt"
+path = "fuzz_targets/phase37_recursive_artifact_chain_harness_receipt.rs"
+test = false
+doc = false
+bench = false
+
 [workspace]
 members = ["."]

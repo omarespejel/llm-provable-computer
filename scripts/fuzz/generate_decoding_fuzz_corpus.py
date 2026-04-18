@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import hashlib
 import json
 import os
 import pathlib
@@ -10,9 +11,6 @@ import tomllib
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "fuzz" / "corpus"
 FUZZ_TOOLCHAIN_TOML = ROOT / "fuzz" / "rust-toolchain.toml"
-PHASE29_CURATED_CORPUS = (
-    CORPUS / "phase29_recursive_compression_input_contract" / "valid_phase29.json"
-)
 RUN_TIMEOUT_SECONDS = 300
 DEFAULT_RUST_TOOLCHAIN = "nightly-2025-07-14"
 
@@ -91,6 +89,137 @@ def write_json(path: pathlib.Path, value: object) -> None:
     json.loads(path.read_text())
 
 
+def phase29_update_usize(hasher, value: int) -> None:
+    hasher.update(int(value).to_bytes(16, byteorder="little", signed=False))
+
+
+def phase29_update_bool(hasher, value: bool) -> None:
+    hasher.update(bytes([1 if value else 0]))
+
+
+def phase29_update_len_prefixed(hasher, value: str) -> None:
+    encoded = value.encode()
+    phase29_update_usize(hasher, len(encoded))
+    hasher.update(encoded)
+
+
+def commit_phase29_contract(contract: dict[str, object]) -> str:
+    hasher = hashlib.blake2b(digest_size=32)
+    phase29_update_len_prefixed(hasher, "phase29-contract")
+    for field in (
+        "proof_backend",
+        "contract_version",
+        "semantic_scope",
+        "phase28_artifact_version",
+        "phase28_semantic_scope",
+        "phase28_proof_backend_version",
+        "statement_version",
+        "required_recursion_posture",
+    ):
+        value = contract[field]
+        if not isinstance(value, str):
+            raise SystemExit(f"Phase 29 `{field}` must be a string")
+        phase29_update_len_prefixed(hasher, value)
+    for field in ("recursive_verification_claimed", "cryptographic_compression_claimed"):
+        value = contract[field]
+        if not isinstance(value, bool):
+            raise SystemExit(f"Phase 29 `{field}` must be a bool")
+        phase29_update_bool(hasher, value)
+    for field in (
+        "phase28_bounded_aggregation_arity",
+        "phase28_member_count",
+        "phase28_member_summaries",
+        "phase28_nested_members",
+        "total_phase26_members",
+        "total_phase25_members",
+        "max_nested_chain_arity",
+        "max_nested_fold_arity",
+        "total_matrices",
+        "total_layouts",
+        "total_rollups",
+        "total_segments",
+        "total_steps",
+        "lookup_delta_entries",
+        "max_lookup_frontier_entries",
+    ):
+        value = contract[field]
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise SystemExit(f"Phase 29 `{field}` must be a non-negative integer")
+        phase29_update_usize(hasher, value)
+    for field in (
+        "source_template_commitment",
+        "global_start_state_commitment",
+        "global_end_state_commitment",
+        "aggregation_template_commitment",
+        "aggregated_chained_folded_interval_accumulator_commitment",
+    ):
+        value = contract[field]
+        if not isinstance(value, str):
+            raise SystemExit(f"Phase 29 `{field}` must be a string")
+        phase29_update_len_prefixed(hasher, value)
+    return hasher.hexdigest()
+
+
+def phase29_contract_for_phase30(phase30: dict[str, object]) -> dict[str, object]:
+    total_steps = phase30.get("total_steps")
+    start_commitment = phase30.get("chain_start_boundary_commitment")
+    end_commitment = phase30.get("chain_end_boundary_commitment")
+    proof_backend_version = phase30.get("proof_backend_version")
+    statement_version = phase30.get("statement_version")
+    if not isinstance(total_steps, int) or total_steps <= 0:
+        raise SystemExit("Phase 30 seed must declare a positive integer total_steps")
+    for label, value in (
+        ("chain_start_boundary_commitment", start_commitment),
+        ("chain_end_boundary_commitment", end_commitment),
+        ("proof_backend_version", proof_backend_version),
+        ("statement_version", statement_version),
+    ):
+        if not isinstance(value, str) or not value:
+            raise SystemExit(f"Phase 30 seed is missing `{label}`")
+
+    contract: dict[str, object] = {
+        "proof_backend": "stwo",
+        "contract_version": "stwo-phase29-recursive-compression-input-contract-v1",
+        "semantic_scope": "stwo_phase29_recursive_compression_input_contract",
+        "phase28_artifact_version": (
+            "stwo-phase28-aggregated-chained-folded-intervalized-"
+            "decoding-state-relation-v1"
+        ),
+        "phase28_semantic_scope": (
+            "stwo_execution_parameterized_aggregated_chained_folded_intervalized_"
+            "proof_carrying_decoding_state_relation"
+        ),
+        "phase28_proof_backend_version": proof_backend_version,
+        "statement_version": statement_version,
+        "required_recursion_posture": "pre-recursive-proof-carrying-aggregation",
+        "recursive_verification_claimed": False,
+        "cryptographic_compression_claimed": False,
+        "phase28_bounded_aggregation_arity": 2,
+        "phase28_member_count": 2,
+        "phase28_member_summaries": 2,
+        "phase28_nested_members": 2,
+        "total_phase26_members": 4,
+        "total_phase25_members": 8,
+        "max_nested_chain_arity": 2,
+        "max_nested_fold_arity": 2,
+        "total_matrices": 16,
+        "total_layouts": 16,
+        "total_rollups": 8,
+        "total_segments": 8,
+        "total_steps": total_steps,
+        "lookup_delta_entries": 12,
+        "max_lookup_frontier_entries": 4,
+        "source_template_commitment": "a" * 64,
+        "global_start_state_commitment": start_commitment,
+        "global_end_state_commitment": end_commitment,
+        "aggregation_template_commitment": "b" * 64,
+        "aggregated_chained_folded_interval_accumulator_commitment": "c" * 64,
+        "input_contract_commitment": "",
+    }
+    contract["input_contract_commitment"] = commit_phase29_contract(contract)
+    return contract
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate curated fuzz corpus inputs for decoding-related targets."
@@ -117,12 +246,31 @@ def main() -> int:
     phase30_path = (
         corpus_root / "phase30_decoding_step_proof_envelope_manifest" / "valid_phase30.json"
     )
+    support_root = corpus_root / "_support"
+    phase30_raw_path = support_root / "phase30_raw.json"
+    phase31_path = support_root / "phase31_decode_boundary_manifest.json"
+    phase32_path = support_root / "phase32_statement_contract.json"
+    phase33_path = support_root / "phase33_public_input_manifest.json"
+    phase34_path = support_root / "phase34_shared_lookup_manifest.json"
+    phase35_path = (
+        corpus_root / "phase35_recursive_compression_target_manifest" / "valid_phase35.json"
+    )
+    phase36_path = (
+        corpus_root / "phase36_recursive_verifier_harness_receipt" / "valid_phase36.json"
+    )
+    phase37_path = (
+        corpus_root / "phase37_recursive_artifact_chain_harness_receipt" / "valid_phase37.json"
+    )
 
     phase12_path.parent.mkdir(parents=True, exist_ok=True)
     phase14_path.parent.mkdir(parents=True, exist_ok=True)
     artifact_path.parent.mkdir(parents=True, exist_ok=True)
     phase29_path.parent.mkdir(parents=True, exist_ok=True)
     phase30_path.parent.mkdir(parents=True, exist_ok=True)
+    support_root.mkdir(parents=True, exist_ok=True)
+    phase35_path.parent.mkdir(parents=True, exist_ok=True)
+    phase36_path.parent.mkdir(parents=True, exist_ok=True)
+    phase37_path.parent.mkdir(parents=True, exist_ok=True)
 
     run(
         "cargo",
@@ -216,15 +364,15 @@ def main() -> int:
         str(phase30_path),
     )
     phase30 = json.loads(phase30_path.read_text())
+    write_json(phase30_raw_path, phase30)
     phase30_input = {
         "manifest": phase30,
         "chain": phase12,
     }
     write_json(phase30_path, phase30_input)
 
-    if not PHASE29_CURATED_CORPUS.is_file():
-        raise SystemExit(f"missing checked-in Phase 29 corpus seed: {PHASE29_CURATED_CORPUS}")
-
+    phase29 = phase29_contract_for_phase30(phase30)
+    write_json(phase29_path, phase29)
     run(
         "cargo",
         f"+{RUST_TOOLCHAIN}",
@@ -237,11 +385,146 @@ def main() -> int:
         "--",
         "verify-stwo-recursive-compression-input-contract",
         "--input",
-        str(PHASE29_CURATED_CORPUS),
+        str(phase29_path),
     )
-
-    phase29 = json.loads(PHASE29_CURATED_CORPUS.read_text())
-    write_json(phase29_path, phase29)
+    run(
+        "cargo",
+        f"+{RUST_TOOLCHAIN}",
+        "run",
+        "--quiet",
+        "--features",
+        "stwo-backend",
+        "--bin",
+        "tvm",
+        "--",
+        "prepare-stwo-recursive-compression-decode-boundary-manifest",
+        "--contract",
+        str(phase29_path),
+        "--manifest",
+        str(phase30_raw_path),
+        "-o",
+        str(phase31_path),
+    )
+    run(
+        "cargo",
+        f"+{RUST_TOOLCHAIN}",
+        "run",
+        "--quiet",
+        "--features",
+        "stwo-backend",
+        "--bin",
+        "tvm",
+        "--",
+        "prepare-stwo-recursive-compression-statement-contract",
+        "--manifest",
+        str(phase31_path),
+        "-o",
+        str(phase32_path),
+    )
+    run(
+        "cargo",
+        f"+{RUST_TOOLCHAIN}",
+        "run",
+        "--quiet",
+        "--features",
+        "stwo-backend",
+        "--bin",
+        "tvm",
+        "--",
+        "prepare-stwo-recursive-compression-public-input-manifest",
+        "--contract",
+        str(phase32_path),
+        "-o",
+        str(phase33_path),
+    )
+    run(
+        "cargo",
+        f"+{RUST_TOOLCHAIN}",
+        "run",
+        "--quiet",
+        "--features",
+        "stwo-backend",
+        "--bin",
+        "tvm",
+        "--",
+        "prepare-stwo-recursive-compression-shared-lookup-manifest",
+        "--public-inputs",
+        str(phase33_path),
+        "--envelopes",
+        str(phase30_raw_path),
+        "-o",
+        str(phase34_path),
+    )
+    run(
+        "cargo",
+        f"+{RUST_TOOLCHAIN}",
+        "run",
+        "--quiet",
+        "--features",
+        "stwo-backend",
+        "--bin",
+        "tvm",
+        "--",
+        "prepare-stwo-recursive-compression-target-manifest",
+        "--statement-contract",
+        str(phase32_path),
+        "--public-inputs",
+        str(phase33_path),
+        "--shared-lookup",
+        str(phase34_path),
+        "-o",
+        str(phase35_path),
+    )
+    run(
+        "cargo",
+        f"+{RUST_TOOLCHAIN}",
+        "run",
+        "--quiet",
+        "--features",
+        "stwo-backend",
+        "--bin",
+        "tvm",
+        "--",
+        "prepare-stwo-recursive-verifier-harness-receipt",
+        "--target",
+        str(phase35_path),
+        "--statement-contract",
+        str(phase32_path),
+        "--public-inputs",
+        str(phase33_path),
+        "--shared-lookup",
+        str(phase34_path),
+        "-o",
+        str(phase36_path),
+    )
+    run(
+        "cargo",
+        f"+{RUST_TOOLCHAIN}",
+        "run",
+        "--quiet",
+        "--features",
+        "stwo-backend",
+        "--bin",
+        "tvm",
+        "--",
+        "prepare-stwo-recursive-artifact-chain-harness-receipt",
+        "--contract",
+        str(phase29_path),
+        "--manifest",
+        str(phase30_raw_path),
+        "-o",
+        str(phase37_path),
+    )
+    for generated_path in (
+        phase31_path,
+        phase32_path,
+        phase33_path,
+        phase34_path,
+        phase35_path,
+        phase36_path,
+        phase37_path,
+    ):
+        write_json(generated_path, json.loads(generated_path.read_text()))
     return 0
 
 
