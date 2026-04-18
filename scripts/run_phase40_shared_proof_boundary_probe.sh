@@ -86,11 +86,22 @@ sha256_stdin() {
   fi
 }
 
+NIGHTLY_VERSION="nightly-2025-07-14"
+if ! command -v rustup >/dev/null 2>&1; then
+  printf 'error: rustup is required to select toolchain %s\n' "${NIGHTLY_VERSION}" >&2
+  exit 127
+fi
+if ! rustup run "${NIGHTLY_VERSION}" rustc --version >/dev/null 2>&1; then
+  printf 'error: toolchain %s is required; install via: rustup toolchain install %s\n' \
+    "${NIGHTLY_VERSION}" "${NIGHTLY_VERSION}" >&2
+  exit 127
+fi
+
 GENERATOR_CMD=(
   env
   "PHASE40_BOUNDARY_PROBE_OUT=${EVIDENCE_RELATIVE}"
   cargo
-  +nightly-2025-07-14
+  "+${NIGHTLY_VERSION}"
   test
   -q
   --features
@@ -115,9 +126,10 @@ if [[ -n "${GIT_STATUS_PORCELAIN}" ]]; then
   GIT_DIRTY="true"
   GIT_DIRTY_FINGERPRINT="$(
     {
-      printf '%s\n' "${GIT_STATUS_PORCELAIN}"
-      git diff --binary --no-ext-diff
-      git diff --cached --binary --no-ext-diff
+      printf 'status\0%s\0unstaged-name-status\0' "${GIT_STATUS_PORCELAIN}"
+      git diff --name-status -z --no-ext-diff
+      printf '\0staged-name-status\0'
+      git diff --cached --name-status -z --no-ext-diff
     } | sha256_stdin
   )"
 else

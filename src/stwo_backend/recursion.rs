@@ -6005,13 +6005,38 @@ mod tests {
         phase31_error: &str,
         phase37_error: &str,
         source_kind: &str,
-    ) {
+    ) -> Result<()> {
         let Ok(path) = std::env::var("PHASE40_BOUNDARY_PROBE_OUT") else {
-            return;
+            return Ok(());
         };
+        if path.is_empty() {
+            return Err(VmError::InvalidConfig(
+                "PHASE40_BOUNDARY_PROBE_OUT must not be empty".to_string(),
+            ));
+        }
         let path = std::path::PathBuf::from(path);
+        if path.is_absolute()
+            || path.components().any(|component| {
+                matches!(
+                    component,
+                    std::path::Component::ParentDir
+                        | std::path::Component::RootDir
+                        | std::path::Component::Prefix(_)
+                )
+            })
+        {
+            return Err(VmError::InvalidConfig(
+                "PHASE40_BOUNDARY_PROBE_OUT must be a repo-relative path without traversal"
+                    .to_string(),
+            ));
+        }
+        if path.file_name().and_then(|name| name.to_str()) != Some("evidence.json") {
+            return Err(VmError::InvalidConfig(
+                "PHASE40_BOUNDARY_PROBE_OUT must target an evidence.json file".to_string(),
+            ));
+        }
         if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
-            std::fs::create_dir_all(parent).expect("create Phase 40 artifact directory");
+            std::fs::create_dir_all(parent)?;
         }
         let evidence = serde_json::json!({
             "issue": 176,
@@ -6040,7 +6065,8 @@ mod tests {
             "phase37_error": phase37_error,
         });
         let json = serde_json::to_vec_pretty(&evidence).expect("serialize Phase 40 evidence");
-        std::fs::write(&path, json).expect("write Phase 40 boundary probe evidence");
+        std::fs::write(&path, json)?;
+        Ok(())
     }
 
     #[cfg(feature = "stwo-backend")]
@@ -7270,7 +7296,8 @@ mod tests {
             &phase31_message,
             &phase37_message,
             "structural Phase29/Phase30 boundary-domain smoke",
-        );
+        )
+        .expect("write structural Phase40 boundary probe evidence if requested");
     }
 
     #[cfg(feature = "stwo-backend")]
@@ -7325,7 +7352,8 @@ mod tests {
             &phase31_message,
             &phase37_message,
             "full shared-proof Phase29/Phase30 boundary-domain probe",
-        );
+        )
+        .expect("write full shared-proof Phase40 boundary probe evidence if requested");
     }
 
     #[cfg(feature = "stwo-backend")]

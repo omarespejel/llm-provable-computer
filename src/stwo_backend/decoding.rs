@@ -10483,6 +10483,16 @@ fn phase28_phase30_prepare_shared_proof_demo_for_layout(
             phase28.statement_version, phase30.statement_version
         )));
     }
+    if phase28.global_start_state_commitment == phase30.chain_start_boundary_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 40 shared-proof boundary demo expected Phase28 global_start_state_commitment to differ from Phase30 chain_start_boundary_commitment".to_string(),
+        ));
+    }
+    if phase28.global_end_state_commitment == phase30.chain_end_boundary_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 40 shared-proof boundary demo expected Phase28 global_end_state_commitment to differ from Phase30 chain_end_boundary_commitment".to_string(),
+        ));
+    }
     Ok((phase28, phase30))
 }
 
