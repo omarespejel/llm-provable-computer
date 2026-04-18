@@ -681,6 +681,7 @@ pub struct Phase38Paper3CompositionSegment {
     pub phase30_manifest: Phase30DecodingStepProofEnvelopeManifest,
     pub phase37_receipt: Phase37RecursiveArtifactChainHarnessReceipt,
     pub phase37_receipt_commitment: String,
+    pub lookup_identity_commitment: String,
     pub phase30_source_chain_commitment: String,
     pub phase30_step_envelopes_commitment: String,
     pub chain_start_boundary_commitment: String,
@@ -706,6 +707,7 @@ struct Phase38Paper3CompositionSegmentUnchecked {
     pub phase30_manifest: Phase30DecodingStepProofEnvelopeManifest,
     pub phase37_receipt: Phase37RecursiveArtifactChainHarnessReceipt,
     pub phase37_receipt_commitment: String,
+    pub lookup_identity_commitment: String,
     pub phase30_source_chain_commitment: String,
     pub phase30_step_envelopes_commitment: String,
     pub chain_start_boundary_commitment: String,
@@ -783,6 +785,7 @@ impl TryFrom<Phase38Paper3CompositionSegmentUnchecked> for Phase38Paper3Composit
             phase30_manifest: unchecked.phase30_manifest,
             phase37_receipt: unchecked.phase37_receipt,
             phase37_receipt_commitment: unchecked.phase37_receipt_commitment,
+            lookup_identity_commitment: unchecked.lookup_identity_commitment,
             phase30_source_chain_commitment: unchecked.phase30_source_chain_commitment,
             phase30_step_envelopes_commitment: unchecked.phase30_step_envelopes_commitment,
             chain_start_boundary_commitment: unchecked.chain_start_boundary_commitment,
@@ -804,6 +807,10 @@ impl TryFrom<Phase38Paper3CompositionSegmentUnchecked> for Phase38Paper3Composit
             (
                 "phase37_receipt_commitment",
                 segment.phase37_receipt_commitment.as_str(),
+            ),
+            (
+                "lookup_identity_commitment",
+                segment.lookup_identity_commitment.as_str(),
             ),
             (
                 "phase30_source_chain_commitment",
@@ -4011,6 +4018,45 @@ pub fn verify_phase37_recursive_artifact_chain_harness_receipt_against_sources(
 }
 
 #[cfg(feature = "stwo-backend")]
+fn commit_phase38_lookup_identity(
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<String> {
+    verify_phase30_decoding_step_proof_envelope_manifest(phase30)?;
+    let mut static_registries = phase30
+        .envelopes
+        .iter()
+        .map(|envelope| envelope.static_lookup_registry_commitment.as_str())
+        .collect::<Vec<_>>();
+    static_registries.sort_unstable();
+    static_registries.dedup();
+
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 38 lookup identity commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase38-paper3-lookup-identity");
+    phase29_update_len_prefixed(&mut hasher, phase30.proof_backend_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, phase30.statement_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, phase30.source_chain_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, phase30.source_chain_semantic_scope.as_bytes());
+    let layout_json = serde_json::to_vec(&phase30.layout)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    phase29_update_len_prefixed(&mut hasher, &layout_json);
+    phase29_update_usize(&mut hasher, static_registries.len());
+    for registry in static_registries {
+        phase29_update_len_prefixed(&mut hasher, registry.as_bytes());
+    }
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 38 lookup identity commitment hash: {err}"
+        ))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase38_segment_from_phase37_source(
     segment_index: usize,
     step_start: usize,
@@ -4038,6 +4084,7 @@ fn phase38_segment_from_phase37_source(
         phase37_receipt_commitment: receipt
             .recursive_artifact_chain_harness_receipt_commitment
             .clone(),
+        lookup_identity_commitment: commit_phase38_lookup_identity(&source.phase30_manifest)?,
         phase30_source_chain_commitment: receipt.phase30_source_chain_commitment.clone(),
         phase30_step_envelopes_commitment: receipt.phase30_step_envelopes_commitment.clone(),
         chain_start_boundary_commitment: receipt.chain_start_boundary_commitment.clone(),
@@ -4067,13 +4114,7 @@ fn phase38_shared_lookup_identity_matches(
     left: &Phase38Paper3CompositionSegment,
     right: &Phase38Paper3CompositionSegment,
 ) -> bool {
-    left.input_lookup_rows_commitments_commitment == right.input_lookup_rows_commitments_commitment
-        && left.output_lookup_rows_commitments_commitment
-            == right.output_lookup_rows_commitments_commitment
-        && left.shared_lookup_artifact_commitments_commitment
-            == right.shared_lookup_artifact_commitments_commitment
-        && left.static_lookup_registry_commitments_commitment
-            == right.static_lookup_registry_commitments_commitment
+    left.lookup_identity_commitment == right.lookup_identity_commitment
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -4228,21 +4269,12 @@ pub fn phase38_prepare_paper3_composition_prototype(
         ));
     }
 
-    verify_phase37_recursive_artifact_chain_harness_receipt_against_sources(
-        &first_source.phase37_receipt,
-        &first_source.phase29_contract,
-        &first_source.phase30_manifest,
-    )?;
     let first = &first_source.phase37_receipt;
     let mut segments: Vec<Phase38Paper3CompositionSegment> = Vec::with_capacity(sources.len());
     let mut cursor = 0usize;
     for (index, source) in sources.iter().enumerate() {
-        verify_phase37_recursive_artifact_chain_harness_receipt_against_sources(
-            &source.phase37_receipt,
-            &source.phase29_contract,
-            &source.phase30_manifest,
-        )?;
-        let receipt = &source.phase37_receipt;
+        let segment = phase38_segment_from_phase37_source(index, cursor, source)?;
+        let receipt = &segment.phase37_receipt;
         if receipt.proof_backend != first.proof_backend
             || receipt.proof_backend_version != first.proof_backend_version
             || receipt.statement_version != first.statement_version
@@ -4259,7 +4291,6 @@ pub fn phase38_prepare_paper3_composition_prototype(
             ));
         }
 
-        let segment = phase38_segment_from_phase37_source(index, cursor, source)?;
         if let Some(previous) = segments.last() {
             if segment.chain_start_boundary_commitment != previous.chain_end_boundary_commitment {
                 return Err(VmError::InvalidConfig(format!(
@@ -4498,6 +4529,10 @@ pub fn verify_phase38_paper3_composition_prototype(
             (
                 "phase37_receipt_commitment",
                 segment.phase37_receipt_commitment.as_str(),
+            ),
+            (
+                "lookup_identity_commitment",
+                segment.lookup_identity_commitment.as_str(),
             ),
             (
                 "phase30_source_chain_commitment",
@@ -5455,26 +5490,7 @@ fn commit_phase38_shared_lookup_identity(
         ))
     })?;
     phase29_update_len_prefixed(&mut hasher, b"phase38-paper3-shared-lookup-identity");
-    phase29_update_len_prefixed(
-        &mut hasher,
-        segment.input_lookup_rows_commitments_commitment.as_bytes(),
-    );
-    phase29_update_len_prefixed(
-        &mut hasher,
-        segment.output_lookup_rows_commitments_commitment.as_bytes(),
-    );
-    phase29_update_len_prefixed(
-        &mut hasher,
-        segment
-            .shared_lookup_artifact_commitments_commitment
-            .as_bytes(),
-    );
-    phase29_update_len_prefixed(
-        &mut hasher,
-        segment
-            .static_lookup_registry_commitments_commitment
-            .as_bytes(),
-    );
+    phase29_update_len_prefixed(&mut hasher, segment.lookup_identity_commitment.as_bytes());
     let mut out = [0u8; 32];
     hasher.finalize_variable(&mut out).map_err(|err| {
         VmError::InvalidConfig(format!(
@@ -5499,6 +5515,7 @@ fn commit_phase38_segment_list(segments: &[Phase38Paper3CompositionSegment]) -> 
         phase29_update_usize(&mut hasher, segment.step_end);
         phase29_update_usize(&mut hasher, segment.total_steps);
         phase29_update_len_prefixed(&mut hasher, segment.phase37_receipt_commitment.as_bytes());
+        phase29_update_len_prefixed(&mut hasher, segment.lookup_identity_commitment.as_bytes());
         phase29_update_len_prefixed(
             &mut hasher,
             segment.phase30_source_chain_commitment.as_bytes(),
@@ -5865,7 +5882,7 @@ mod tests {
         let source_chain = phase38_test_hash32('1');
         vec![
             sample_phase38_segment_source(&start, &mid, 2, &source_chain),
-            sample_phase38_segment_source(&mid, &end, 2, &source_chain),
+            sample_phase38_segment_source(&mid, &end, 3, &source_chain),
         ]
     }
 
@@ -6921,14 +6938,14 @@ mod tests {
             .expect("prepare Phase 38 composition prototype");
 
         assert_eq!(prototype.segment_count, 2);
-        assert_eq!(prototype.total_steps, 4);
-        assert_eq!(prototype.naive_per_step_package_count, 4);
+        assert_eq!(prototype.total_steps, 5);
+        assert_eq!(prototype.naive_per_step_package_count, 5);
         assert_eq!(prototype.composed_segment_package_count, 2);
-        assert_eq!(prototype.package_count_delta, 2);
+        assert_eq!(prototype.package_count_delta, 3);
         assert_eq!(prototype.segments[0].step_start, 0);
         assert_eq!(prototype.segments[0].step_end, 2);
         assert_eq!(prototype.segments[1].step_start, 2);
-        assert_eq!(prototype.segments[1].step_end, 4);
+        assert_eq!(prototype.segments[1].step_end, 5);
         assert_eq!(
             prototype.segments[0].chain_end_boundary_commitment,
             prototype.segments[1].chain_start_boundary_commitment
@@ -6949,7 +6966,7 @@ mod tests {
             .chain_end_boundary_commitment
             .clone();
         sources[1] =
-            sample_phase38_segment_source(&phase38_test_hash32('d'), &end, 2, &source_chain);
+            sample_phase38_segment_source(&phase38_test_hash32('d'), &end, 3, &source_chain);
 
         let err = phase38_prepare_paper3_composition_prototype(&sources)
             .expect_err("boundary gap must fail");
@@ -6960,7 +6977,7 @@ mod tests {
     #[test]
     fn phase38_paper3_composition_prototype_rejects_shared_lookup_identity_drift() {
         let mut sources = sample_phase38_segment_sources();
-        sources[1].phase30_manifest.envelopes[0].input_lookup_rows_commitment =
+        sources[1].phase30_manifest.envelopes[0].static_lookup_registry_commitment =
             phase38_test_hash32('e');
         sources[1].phase30_manifest.envelopes[0].envelope_commitment =
             commit_phase30_step_envelope(&sources[1].phase30_manifest.envelopes[0]);
@@ -6985,7 +7002,7 @@ mod tests {
             .phase37_receipt
             .chain_end_boundary_commitment
             .clone();
-        sources[1] = sample_phase38_segment_source(&start, &end, 2, &phase38_test_hash32('8'));
+        sources[1] = sample_phase38_segment_source(&start, &end, 3, &phase38_test_hash32('8'));
 
         let err = phase38_prepare_paper3_composition_prototype(&sources)
             .expect_err("source-chain drift must fail");

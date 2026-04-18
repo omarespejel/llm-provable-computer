@@ -44,7 +44,7 @@ The verifier accepts a prototype only if all of the following hold:
 
 The boundary check is pairwise: only adjacent segment pairs are linked. The first and last boundaries are not invented by Phase 38; they are copied from the first and last source-validated segment and become the public start/end of the prototype. `evidence:phase38_composition_continuity`
 
-The identity checks prevent a prototype from silently splicing together segments that use different Phase 30 source-chain commitments, different execution templates, or different shared lookup surfaces. Here the shared lookup identity means the ordered lookup-row, shared-artifact, and static-registry commitments; the Phase 34 public-input commitment remains segment-specific because it also binds per-segment envelope commitments. `evidence:phase38_shared_lookup_source_chain_and_template_identity`
+The identity checks prevent a prototype from silently splicing together segments that use different Phase 30 source-chain commitments, different execution templates, or different shared lookup surfaces. Here the shared lookup identity means the Phase 30 layout plus static lookup registry surface; the Phase 34 public-input and ordered row-list commitments remain segment-specific because they also bind per-segment envelope counts and contents. `evidence:phase38_shared_lookup_source_chain_and_template_identity`
 
 These are structural checks. They are meant to test whether the artifact boundary is usable as a composition primitive before claiming recursive compression.
 

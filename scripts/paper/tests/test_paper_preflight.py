@@ -481,6 +481,14 @@ class PaperPreflightTests(unittest.TestCase):
     - phase38_paper3_composition_prototype_accepts_contiguous_shared_lookup_segments
   negative_tests:
     - phase38_paper3_composition_prototype_rejects_boundary_gap
+  schemas:
+    - "Not applicable: no standalone schema."
+  artifact_files:
+    - docs/engineering/paper3-composition-prototype.md
+  artifact_hashes:
+    - "Not applicable: no frozen artifact hash."
+  fuzz_or_formal:
+    - "Not applicable: targeted negative tests only."
   evidence_commands:
     - cargo test -q phase38
   non_claims:

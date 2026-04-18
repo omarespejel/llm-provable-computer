@@ -87,6 +87,12 @@ CLAIM_EVIDENCE_REQUIRED_LISTS = (
     "evidence_commands",
     "non_claims",
 )
+PAPER3_CLAIM_EVIDENCE_REQUIRED_LISTS = CLAIM_EVIDENCE_REQUIRED_LISTS + (
+    "schemas",
+    "artifact_files",
+    "artifact_hashes",
+    "fuzz_or_formal",
+)
 
 CLAIM_LANGUAGE_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
@@ -683,6 +689,7 @@ def check_claim_evidence_matrix_file(
     evidence_file: str,
     required_claim_ids: set[str],
     paper_label: str,
+    required_lists: tuple[str, ...] = CLAIM_EVIDENCE_REQUIRED_LISTS,
 ) -> None:
     evidence_path = repo_root / evidence_file
     if not evidence_path.exists():
@@ -721,7 +728,7 @@ def check_claim_evidence_matrix_file(
                     f"{evidence_path}: claim `{claim_id}` requires non-empty scalar `{key}`."
                 )
 
-        for key in CLAIM_EVIDENCE_REQUIRED_LISTS:
+        for key in required_lists:
             values = list_field(record, key)
             if not values:
                 findings.error(
@@ -783,6 +790,7 @@ def check_paper3_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findin
         PAPER3_CLAIM_EVIDENCE_FILE,
         REQUIRED_PAPER3_CLAIM_IDS,
         "paper-3",
+        PAPER3_CLAIM_EVIDENCE_REQUIRED_LISTS,
     )
 
 
