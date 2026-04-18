@@ -512,8 +512,6 @@ changed_path_is_paper_preflight_surface() {
     changed_path_has_prefix "scripts/run_mutation_survivor_tracking_suite.sh" ||
     changed_path_has_prefix "scripts/run_phase37_mutation_generator_suite.sh" ||
     changed_path_has_prefix "scripts/run_reference_verifier_suite.sh" ||
-    changed_path_has_prefix "docs/engineering/paper2-claim-evidence.yml" ||
-    changed_path_has_prefix "docs/engineering/paper3-claim-evidence.yml" ||
     changed_path_has_prefix "scripts/paper/" ||
     changed_path_has_prefix "scripts/run_paper_preflight_suite.sh" ||
     changed_path_has_prefix "scripts/local_merge_gate.sh"

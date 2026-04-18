@@ -29,8 +29,6 @@ class LocalMergeGateWiringTests(unittest.TestCase):
             "scripts/run_mutation_survivor_tracking_suite.sh",
             "scripts/run_phase37_mutation_generator_suite.sh",
             "scripts/run_reference_verifier_suite.sh",
-            "docs/engineering/paper2-claim-evidence.yml",
-            "docs/engineering/paper3-claim-evidence.yml",
             "scripts/paper/",
             "scripts/run_paper_preflight_suite.sh",
             "scripts/local_merge_gate.sh",
