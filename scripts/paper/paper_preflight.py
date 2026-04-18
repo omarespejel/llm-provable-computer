@@ -478,24 +478,27 @@ def split_evidence_path_anchor(entry: str) -> tuple[str, str | None]:
 
 def resolve_repo_relative_path(
     repo_root: pathlib.Path, rel_path: str
-) -> pathlib.Path | None:
+) -> tuple[pathlib.Path | None, str | None]:
     relative_path = pathlib.Path(rel_path)
     windows_path = pathlib.PureWindowsPath(rel_path)
+    if relative_path.is_absolute() or windows_path.is_absolute():
+        return None, "path must be repo-relative"
     if (
-        relative_path.is_absolute()
-        or windows_path.is_absolute()
-        or ".." in relative_path.parts
+        ".." in relative_path.parts
         or ".." in windows_path.parts
     ):
-        return None
+        return None, "path must not contain `..`"
 
     try:
         root = repo_root.resolve()
         target = (root / relative_path).resolve()
+    except (OSError, RuntimeError) as exc:
+        return None, f"failed to resolve path: {exc}"
+    try:
         target.relative_to(root)
-    except (OSError, RuntimeError, ValueError):
-        return None
-    return target
+    except ValueError:
+        return None, "path escapes repo root"
+    return target, None
 
 
 def check_claim_evidence_path_anchor(
@@ -507,11 +510,10 @@ def check_claim_evidence_path_anchor(
     findings: Findings,
 ) -> None:
     rel_path, anchor = split_evidence_path_anchor(entry)
-    target = resolve_repo_relative_path(repo_root, rel_path)
+    target, path_error = resolve_repo_relative_path(repo_root, rel_path)
     if target is None:
         findings.error(
-            f"{evidence_path}: claim `{claim_id}` `{key}` path must be repo-relative "
-            f"and must not contain `..`: {entry}"
+            f"{evidence_path}: claim `{claim_id}` `{key}` invalid path `{entry}`: {path_error}"
         )
         return
 
@@ -566,16 +568,22 @@ def check_paper2_evidence_anchors(
             continue
 
         searched: list[str] = []
+        skipped: list[str] = []
+        unreadable: list[str] = []
         found = False
         for entry in locations:
             rel_path, location_anchor = split_evidence_path_anchor(entry)
             searched.append(rel_path)
-            path = resolve_repo_relative_path(repo_root, rel_path)
-            if path is None or not path.exists() or not path.is_file():
+            path, path_error = resolve_repo_relative_path(repo_root, rel_path)
+            if path is None:
+                skipped.append(f"{rel_path} ({path_error})")
+                continue
+            if not path.exists() or not path.is_file():
                 continue
             try:
                 text = path.read_text(encoding="utf-8", errors="ignore")
-            except (OSError, UnicodeError):
+            except (OSError, UnicodeError) as exc:
+                unreadable.append(f"{rel_path} ({exc})")
                 continue
             search_text = text
             if location_anchor is not None:
@@ -583,14 +591,19 @@ def check_paper2_evidence_anchors(
                 if anchor_offset < 0:
                     continue
                 search_text = text[anchor_offset:]
-            if anchor in search_text:
+            if re.search(rf"{re.escape(anchor)}(?![A-Za-z0-9_])", search_text):
                 found = True
                 break
 
         if not found:
+            details = f"searched locations: {searched}"
+            if skipped:
+                details += f"; skipped invalid paths: {skipped}"
+            if unreadable:
+                details += f"; unreadable locations: {unreadable}"
             findings.error(
                 f"{evidence_path}: claim `{claim_id}` is not explicitly cited by "
-                f"`{anchor}` in any declared paper location: {searched}"
+                f"`{anchor}` in any declared paper location; {details}"
             )
 
 
