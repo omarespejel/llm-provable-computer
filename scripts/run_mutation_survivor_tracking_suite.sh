@@ -30,6 +30,9 @@ while (($# > 0)); do
   esac
 done
 
+if [[ -z "$output_root" && -n "${FAKE_CARGO_ALLOW_DEFAULT_OUTPUT:-}" ]]; then
+  output_root="."
+fi
 : "${output_root:?fake cargo expected --output}"
 
 if [[ -n "${FAKE_CARGO_NO_OUTPUT:-}" ]]; then
@@ -122,5 +125,21 @@ if [[ -e "$tmp_dir/mixed-survivors.json" ]]; then
   exit 1
 fi
 grep -q "succeeded but no fresh mutation output was found" "$tmp_dir/mixed.stderr"
+
+default_repo="$tmp_dir/default-repo"
+mkdir -p "$default_repo/scripts" "$default_repo/src/stwo_backend"
+cp scripts/run_mutation_suite.sh scripts/collect_mutation_survivors.py "$default_repo/scripts/"
+for target in \
+  src/stwo_backend/decoding.rs \
+  src/stwo_backend/shared_lookup_artifact.rs \
+  src/stwo_backend/arithmetic_subset_prover.rs
+do
+  printf '%s\n' '// fake mutation target' >"$default_repo/$target"
+done
+PATH="$tmp_dir/bin:$PATH" \
+  FAKE_CARGO_ALLOW_DEFAULT_OUTPUT=1 \
+  "$default_repo/scripts/run_mutation_suite.sh" >/dev/null
+test -s "$default_repo/mutants.out/missed.txt"
+test -s "$default_repo/mutants.out/survivors.json"
 
 echo "mutation survivor tracking suite passed"
