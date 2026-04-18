@@ -591,6 +591,9 @@ def check_paper2_evidence_anchors(
             if location_anchor is not None:
                 anchor_offset = text.find(location_anchor)
                 if anchor_offset < 0:
+                    skipped.append(
+                        f"{entry} (fragment `{location_anchor}` not found)"
+                    )
                     continue
                 search_text = text[anchor_offset:]
             if re.search(rf"{re.escape(anchor)}(?![A-Za-z0-9_])", search_text):
