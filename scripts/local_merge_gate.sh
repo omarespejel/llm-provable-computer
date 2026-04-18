@@ -507,6 +507,17 @@ changed_path_is_benchmark_reproducibility_surface() {
     changed_path_has_prefix "scripts/local_merge_gate.sh"
 }
 
+changed_path_is_release_evidence_surface() {
+  changed_path_has_prefix "scripts/collect_release_evidence.py" ||
+    changed_path_has_prefix "scripts/tests/test_collect_release_evidence.py" ||
+    changed_path_has_prefix "scripts/run_release_evidence_bundle_suite.sh" ||
+    changed_path_has_prefix "spec/release-evidence.schema.json" ||
+    changed_path_has_prefix "spec/benchmark-result.schema.json" ||
+    changed_path_has_prefix "docs/engineering/release-evidence-bundle.md" ||
+    changed_path_has_prefix "docs/engineering/reproducibility.md" ||
+    changed_path_has_prefix "scripts/local_merge_gate.sh"
+}
+
 changed_path_is_dependency_audit_input() {
   local path
 
@@ -626,6 +637,12 @@ run_benchmark_reproducibility_if_needed() {
   fi
 }
 
+run_release_evidence_if_needed() {
+  if changed_path_is_release_evidence_surface; then
+    run_logged release-evidence-bundle bash scripts/run_release_evidence_bundle_suite.sh
+  fi
+}
+
 run_research_v3_smoke_targets() {
   local research_v3_smoke label
   for research_v3_smoke in "${research_v3_smoke_targets[@]}"; do
@@ -717,6 +734,7 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   run_phase37_mutation_generator_if_needed
   run_fuzz_smoke_if_needed
   run_benchmark_reproducibility_if_needed
+  run_release_evidence_if_needed
   completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
@@ -744,6 +762,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_phase37_mutation_generator_if_needed
   run_fuzz_smoke_if_needed
   run_benchmark_reproducibility_if_needed
+  run_release_evidence_if_needed
   completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
@@ -770,6 +789,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_reference_verifier_if_needed
   run_phase37_mutation_generator_if_needed
   run_benchmark_reproducibility_if_needed
+  run_release_evidence_if_needed
   run_conditional_mutation_check
   run_logged fuzz-smoke env FUZZ_TIME_PER_TARGET=20 scripts/run_fuzz_smoke_suite.sh
   run_logged ub-checks env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
@@ -1012,8 +1032,27 @@ jq -n \
     local_commands:$commands[0]
   }' >"$evidence_file"
 
+release_evidence_file=""
+if [[ -f "$local_evidence_marker" ]]; then
+  release_evidence_file="$run_evidence_dir/release-evidence.json"
+  python3 scripts/collect_release_evidence.py collect \
+    --output "$release_evidence_file" \
+    --checkpoint "pr-${PR_NUMBER}-local-merge-gate" \
+    --checkpoint-kind local-merge-gate \
+    --merge-gate-evidence "$evidence_file" \
+    --require-clean \
+    --clean-ignore-prefix "$run_evidence_dir" \
+    --schema-artifact spec/benchmark-result.schema.json >/dev/null
+  python3 scripts/collect_release_evidence.py validate "$release_evidence_file" >/dev/null
+else
+  log "skipping release evidence; no completed local evidence marker for this PR head"
+fi
+
 log "gate passed for ${pr_url}"
 log "evidence: ${evidence_file}"
+if [[ -n "$release_evidence_file" ]]; then
+  log "release evidence: ${release_evidence_file}"
+fi
 
 if (( MERGE )); then
   merge_args=(gh pr merge "$PR_NUMBER" --repo "$REPO" --match-head-commit "$head_sha")
