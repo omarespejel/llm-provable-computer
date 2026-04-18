@@ -19,22 +19,55 @@ mkdir -p "${ARTIFACT_DIR}"
 rm -f "${ARTIFACT}" "${EVIDENCE}"
 rm -rf "${ARTIFACT_DIR}/mutations"
 
-PHASE39_COMPOSITION_ARTIFACT_OUT="${ARTIFACT}" \
-  cargo +nightly-2025-07-14 test -q --features stwo-backend --lib \
-  stwo_backend::recursion::tests::phase39_real_decode_composition_artifact_accepts_generated_five_step_chain -- --exact
+shell_quote_command() {
+  local arg
+  local quoted_arg
+  local rendered=""
+  for arg in "$@"; do
+    printf -v quoted_arg '%q' "${arg}"
+    rendered+="${rendered:+ }${quoted_arg}"
+  done
+  printf '%s' "${rendered}"
+}
+
+GENERATOR_CMD=(
+  env
+  "PHASE39_COMPOSITION_ARTIFACT_OUT=${ARTIFACT}"
+  cargo
+  +nightly-2025-07-14
+  test
+  -q
+  --features
+  stwo-backend
+  --lib
+  stwo_backend::recursion::tests::phase39_real_decode_composition_artifact_accepts_generated_five_step_chain
+  --
+  --exact
+)
+GENERATOR_COMMAND="$(shell_quote_command "${GENERATOR_CMD[@]}")"
+"${GENERATOR_CMD[@]}"
 
 if [[ ! -s "${ARTIFACT}" ]]; then
   printf 'error: Phase 39 artifact was not written: %s\n' "${ARTIFACT}" >&2
   exit 1
 fi
 
+REFERENCE_VERIFIER_BASE_CMD=(
+  python3
+  -B
+  tools/reference_verifier/reference_verifier.py
+  verify-phase38
+  "${ARTIFACT}"
+)
 if command -v timeout >/dev/null 2>&1; then
-  timeout 120 python3 -B tools/reference_verifier/reference_verifier.py verify-phase38 "${ARTIFACT}"
+  REFERENCE_VERIFIER_CMD=(timeout 120 "${REFERENCE_VERIFIER_BASE_CMD[@]}")
 elif command -v gtimeout >/dev/null 2>&1; then
-  gtimeout 120 python3 -B tools/reference_verifier/reference_verifier.py verify-phase38 "${ARTIFACT}"
+  REFERENCE_VERIFIER_CMD=(gtimeout 120 "${REFERENCE_VERIFIER_BASE_CMD[@]}")
 else
-  python3 -B tools/reference_verifier/reference_verifier.py verify-phase38 "${ARTIFACT}"
+  REFERENCE_VERIFIER_CMD=("${REFERENCE_VERIFIER_BASE_CMD[@]}")
 fi
+REFERENCE_VERIFIER_COMMAND="$(shell_quote_command "${REFERENCE_VERIFIER_CMD[@]}")"
+"${REFERENCE_VERIFIER_CMD[@]}"
 
 if command -v shasum >/dev/null 2>&1; then
   ARTIFACT_SHA256="$(LC_ALL=C LANG=C shasum -a 256 "${ARTIFACT}" | awk '{print $1}')"
@@ -45,9 +78,8 @@ else
   exit 127
 fi
 GIT_SHA="$(git rev-parse HEAD)"
-GENERATOR_COMMAND="PHASE39_COMPOSITION_ARTIFACT_OUT=${ARTIFACT} cargo +nightly-2025-07-14 test -q --features stwo-backend --lib stwo_backend::recursion::tests::phase39_real_decode_composition_artifact_accepts_generated_five_step_chain -- --exact"
 
-python3 -B - "${ARTIFACT}" "${EVIDENCE}" "${ARTIFACT_SHA256}" "${GIT_SHA}" "${GENERATOR_COMMAND}" <<'PY'
+python3 -B - "${ARTIFACT}" "${EVIDENCE}" "${ARTIFACT_SHA256}" "${GIT_SHA}" "${GENERATOR_COMMAND}" "${REFERENCE_VERIFIER_COMMAND}" <<'PY'
 from __future__ import annotations
 
 import copy
@@ -61,6 +93,7 @@ evidence_path = pathlib.Path(sys.argv[2])
 artifact_sha256 = sys.argv[3]
 git_sha = sys.argv[4]
 generator_command = sys.argv[5]
+reference_verifier_command = sys.argv[6]
 
 sys.path.insert(0, str(pathlib.Path("tools/reference_verifier").resolve()))
 import reference_verifier as rv
@@ -119,7 +152,7 @@ def expect_reference_rejection(name: str, candidate: dict) -> dict:
     path.write_text(json.dumps(candidate, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     try:
         rv.verify_phase38_composition(candidate)
-    except Exception as exc:
+    except rv.ReferenceVerifierError as exc:
         return {
             "name": name,
             "path": str(path),
@@ -185,7 +218,7 @@ evidence = {
     "issue": 174,
     "git_sha": git_sha,
     "generator_command": generator_command,
-    "reference_verifier_command": f"python3 -B tools/reference_verifier/reference_verifier.py verify-phase38 {artifact_path}",
+    "reference_verifier_command": reference_verifier_command,
     "artifact": {
         "path": str(artifact_path),
         "sha256": artifact_sha256,
