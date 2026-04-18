@@ -72,6 +72,14 @@ The result is intentionally a blocker, not a success claim: direct Phase 31/37 b
 
 The local probe writes `target/phase40-shared-proof-boundary-probe/evidence.json` with both boundary domains, the Phase29 and Phase30 commitments, and the exact Phase31/37 rejection messages. This is useful progress toward Paper 3 because it turns the harness caveat into a concrete implementation requirement: the next recursive-closure step must prove or encode the Phase12-to-Phase14/23 boundary correspondence, not just compare unequal hashes.
 
+## Boundary translation witness
+
+Issue #178 adds Phase 41 as the explicit witness surface for the Phase 40 blocker. The witness binds the compatibility header (`proof_backend`, `proof_backend_version`, `statement_version`, `step_relation`, and `required_recursion_posture`), Phase29 and Phase30 version/scope identifiers, the Phase29 input contract commitment, Phase30 source-chain and step-envelope commitments, total steps, the Phase29 global start/end boundary commitments, the Phase30 chain start/end boundary commitments, source and aggregation template commitments, start/end translation commitments, and a top-level witness commitment. These fields are verifier-enforced, not just descriptive, so later Phase31/37 bridge consumers can rely on the same witness semantics and schema surface. The JSON surface is pinned by `spec/stwo-phase41-boundary-translation-witness.schema.json`.
+
+Phase 41 is deliberately not a recursive proof and not a hidden success path. It rejects direct Phase29/Phase30 boundary equality as a false-positive translation witness, requires at least one boundary to remain in the translated domain, rejects recursive verification, compression, and proof-level derivation claims, and verifies source-bound recomputation against the Phase29 and Phase30 artifacts. Standalone JSON parse/load verifies internal commitments only; callers must use the source-bound verifier before trusting a witness for specific Phase29/Phase30 artifacts. A valid Phase41 witness still leaves Phase31/37 direct equality failing until a later bridge consumes the witness or proves the Phase12-to-Phase14/23 correspondence.
+
+The local hardening suite is `scripts/run_phase41_boundary_translation_suite.sh`. It runs the pinned schema checks plus Rust adversarial tests for source-bound recomputation, swapped boundary mutation, direct-equality false positives, unknown fields, malformed JSON, oversized JSON, and the invariant that Phase41 does not make Phase31/37 pass by itself.
+
 ## Baseline accounting
 
 The prototype also records a simple packaging baseline:
@@ -103,6 +111,7 @@ cargo test -q --lib statement_spec_contract_is_synced_with_constants
 scripts/run_phase38_schema_suite.sh
 scripts/run_phase39_real_decode_composition_suite.sh
 scripts/run_phase40_shared_proof_boundary_probe.sh
+scripts/run_phase41_boundary_translation_suite.sh
 scripts/run_reference_verifier_suite.sh
 python3 scripts/paper/paper_preflight.py
 ```
