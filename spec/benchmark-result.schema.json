@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/provable-transformer-vm/benchmark-result.schema.json",
+  "title": "Provable Transformer VM benchmark evidence result",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "mode",
+    "repo_root",
+    "case_manifest",
+    "harness",
+    "result_schema",
+    "git",
+    "toolchain",
+    "host",
+    "selected_cases",
+    "cases"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "generated_at": { "type": "string" },
+    "mode": { "enum": ["dry-run", "run"] },
+    "repo_root": { "type": "string", "minLength": 1 },
+    "case_manifest": {
+      "type": "object",
+      "required": ["path", "sha256", "metadata"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "metadata": { "type": "object" }
+      }
+    },
+    "harness": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "result_schema": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "git": { "type": "object" },
+    "toolchain": { "type": "object" },
+    "host": { "type": "object" },
+    "selected_cases": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "cases": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/case" },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "fileRecord": {
+      "type": "object",
+      "required": ["path", "label", "optional", "exists", "sha256", "size_bytes"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "label": { "type": ["string", "null"] },
+        "optional": { "type": "boolean" },
+        "exists": { "type": ["boolean", "null"] },
+        "sha256": { "anyOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+        "size_bytes": { "type": ["integer", "null"], "minimum": 0 },
+        "hashing": { "type": "string" }
+      }
+    },
+    "run": {
+      "type": "object",
+      "required": [
+        "index",
+        "started_at",
+        "ended_at",
+        "duration_ms",
+        "returncode",
+        "timed_out",
+        "stdout_path",
+        "stderr_path",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_size_bytes",
+        "stderr_size_bytes",
+        "log_sha256"
+      ],
+      "properties": {
+        "index": { "type": "integer", "minimum": 1 },
+        "started_at": { "type": "string" },
+        "ended_at": { "type": "string" },
+        "duration_ms": { "type": "number", "minimum": 0 },
+        "returncode": { "type": "integer" },
+        "timed_out": { "type": "boolean" },
+        "stdout_path": { "type": "string", "minLength": 1 },
+        "stderr_path": { "type": "string", "minLength": 1 },
+        "stdout_sha256": { "$ref": "#/$defs/sha256" },
+        "stderr_sha256": { "$ref": "#/$defs/sha256" },
+        "stdout_size_bytes": { "type": "integer", "minimum": 0 },
+        "stderr_size_bytes": { "type": "integer", "minimum": 0 },
+        "log_sha256": { "$ref": "#/$defs/sha256" },
+        "peak_rss": { "type": ["integer", "null"] },
+        "peak_rss_unit": { "type": ["string", "null"] },
+        "user_time_s": { "type": ["number", "null"] },
+        "system_time_s": { "type": ["number", "null"] }
+      }
+    },
+    "case": {
+      "type": "object",
+      "required": [
+        "name",
+        "command",
+        "command_binding",
+        "command_sha256",
+        "cwd",
+        "repeat",
+        "allow_failure",
+        "inputs",
+        "outputs",
+        "runs",
+        "status"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": ["string", "null"] },
+        "command": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "command_binding": { "type": "object" },
+        "command_sha256": { "$ref": "#/$defs/sha256" },
+        "cwd": { "type": "string", "minLength": 1 },
+        "repeat": { "type": "integer", "minimum": 1 },
+        "allow_failure": { "type": "boolean" },
+        "inputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/fileRecord" }
+        },
+        "outputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/fileRecord" }
+        },
+        "log_dir_name": { "type": "string" },
+        "log_dir": { "type": "string" },
+        "runs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/run" }
+        },
+        "status": { "enum": ["dry-run", "passed", "failed"] },
+        "summary": {
+          "type": "object",
+          "required": ["runs", "min_ms", "mean_ms", "p50_ms", "p95_ms", "max_ms"],
+          "properties": {
+            "runs": { "type": "integer", "minimum": 0 },
+            "min_ms": { "type": "number", "minimum": 0 },
+            "mean_ms": { "type": "number", "minimum": 0 },
+            "p50_ms": { "type": "number", "minimum": 0 },
+            "p95_ms": { "type": "number", "minimum": 0 },
+            "max_ms": { "type": "number", "minimum": 0 }
+          }
+        }
+      }
+    }
+  }
+}

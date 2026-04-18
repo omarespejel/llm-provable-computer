@@ -19,6 +19,22 @@
       "description": "Capture the Cargo version used for benchmark orchestration.",
       "command": ["cargo", "-V"],
       "repeat": 3
+    },
+    {
+      "name": "output-artifact-hash-smoke",
+      "description": "Write a tiny artifact so the harness records declared output hashes.",
+      "command": [
+        "python3",
+        "-c",
+        "from pathlib import Path; Path('target/benchmark-output-hash-smoke.txt').write_text('benchmark output\\n', encoding='utf-8')"
+      ],
+      "repeat": 1,
+      "outputs": [
+        {
+          "path": "target/benchmark-output-hash-smoke.txt",
+          "label": "smoke output artifact"
+        }
+      ]
     }
   ]
 }
