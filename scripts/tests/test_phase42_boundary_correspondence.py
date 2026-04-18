@@ -121,6 +121,90 @@ def sample_phase30_manifest(start: str, end: str, total_steps: int = 3) -> dict:
     return manifest
 
 
+def sample_phase12_state(step_index: int, layout_commitment: str, salt: str) -> dict:
+    state = {
+        "state_version": PHASE42.STWO_DECODING_STATE_VERSION_PHASE12,
+        "step_index": step_index,
+        "position": step_index,
+        "layout_commitment": layout_commitment,
+        "persistent_state_commitment": hash32("a"),
+        "kv_history_commitment": hash32(salt),
+        "kv_history_length": step_index,
+        "kv_cache_commitment": hash32("b"),
+        "incoming_token_commitment": hash32("c"),
+        "query_commitment": hash32("d"),
+        "output_commitment": hash32("e"),
+        "lookup_rows_commitment": hash32("f"),
+        "public_state_commitment": "",
+    }
+    state["public_state_commitment"] = PHASE42.commit_phase12_public_state(state)
+    return state
+
+
+def sample_phase14_state_from_phase12(phase12: dict, salt: str) -> dict:
+    state = {
+        "state_version": PHASE42.STWO_DECODING_STATE_VERSION_PHASE14,
+        "step_index": phase12["step_index"],
+        "position": phase12["position"],
+        "layout_commitment": phase12["layout_commitment"],
+        "persistent_state_commitment": phase12["persistent_state_commitment"],
+        "kv_history_commitment": phase12["kv_history_commitment"],
+        "kv_history_length": phase12["kv_history_length"],
+        "kv_history_chunk_size": 2,
+        "kv_history_sealed_commitment": hash32("1"),
+        "kv_history_sealed_chunks": 1,
+        "kv_history_open_chunk_commitment": hash32("2"),
+        "kv_history_open_chunk_pairs": 1,
+        "kv_history_frontier_commitment": hash32(salt),
+        "kv_history_frontier_pairs": 1,
+        "lookup_transcript_commitment": hash32("4"),
+        "lookup_transcript_entries": phase12["step_index"] + 1,
+        "lookup_frontier_commitment": hash32("5"),
+        "lookup_frontier_entries": 1,
+        "kv_cache_commitment": phase12["kv_cache_commitment"],
+        "incoming_token_commitment": phase12["incoming_token_commitment"],
+        "query_commitment": phase12["query_commitment"],
+        "output_commitment": phase12["output_commitment"],
+        "lookup_rows_commitment": phase12["lookup_rows_commitment"],
+        "public_state_commitment": "",
+    }
+    state["public_state_commitment"] = PHASE42.commit_phase14_public_state(state)
+    return state
+
+
+def sample_boundary_preimage_bundle(total_steps: int = 3) -> tuple[dict, dict, dict, dict]:
+    layout = {
+        "layout_version": PHASE42.STWO_DECODING_LAYOUT_VERSION_PHASE12,
+        "rolling_kv_pairs": 4,
+        "pair_width": 4,
+    }
+    layout_commitment = PHASE42.commit_phase12_layout(layout)
+    phase12_start = sample_phase12_state(0, layout_commitment, "0")
+    phase12_end = sample_phase12_state(total_steps, layout_commitment, "9")
+    phase14_start = sample_phase14_state_from_phase12(phase12_start, "6")
+    phase14_end = sample_phase14_state_from_phase12(phase12_end, "7")
+    phase30 = sample_phase30_manifest(
+        phase12_start["public_state_commitment"],
+        phase12_end["public_state_commitment"],
+        total_steps,
+    )
+    phase29 = sample_phase29_contract(
+        PHASE42.commit_phase23_boundary_state(phase14_start),
+        PHASE42.commit_phase23_boundary_state(phase14_end),
+        total_steps,
+    )
+    evidence = {
+        "issue": 180,
+        "evidence_version": PHASE42.PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_VERSION,
+        "relation_outcome": "hash_preimage_relation",
+        "phase12_start_state": phase12_start,
+        "phase12_end_state": phase12_end,
+        "phase14_start_state": phase14_start,
+        "phase14_end_state": phase14_end,
+    }
+    return phase29, phase30, PHASE42.prepare_phase41_expected(phase29, phase30), evidence
+
+
 class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
     def test_source_bound_phase41_is_not_phase42_success(self) -> None:
         phase29 = sample_phase29_contract(hash32("d"), hash32("e"))
@@ -135,6 +219,20 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
         self.assertEqual(result["decision"], "patch_required")
         self.assertTrue(result["phase41_source_bound"])
         self.assertIn("Phase12 public-state boundary preimage", result["missing_evidence"])
+
+    def test_boundary_preimage_evidence_unlocks_hash_preimage_relation(self) -> None:
+        phase29, phase30, phase41, evidence = sample_boundary_preimage_bundle()
+
+        result = PHASE42.evaluate(phase29, phase30, phase41, evidence)
+
+        self.assertTrue(result["accepted"])
+        self.assertEqual(result["relation_outcome"], "hash_preimage_relation")
+        self.assertEqual(result["decision"], "stay_current_path")
+        self.assertTrue(result["phase41_source_bound"])
+        self.assertEqual(
+            result["boundary_preimage_commitments"]["phase23_start_boundary_commitment"],
+            phase29["global_start_state_commitment"],
+        )
 
     def test_direct_equality_is_accepted_as_direct_binding(self) -> None:
         phase30 = sample_phase30_manifest(hash32("7"), hash32("8"))
@@ -191,6 +289,39 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
         with self.assertRaisesRegex(PHASE42.Phase42Error, "source-bound Phase41"):
             PHASE42.evaluate(phase29, phase30, swapped)
 
+    def test_rejects_phase14_preimage_that_does_not_bind_phase29(self) -> None:
+        phase29, phase30, phase41, evidence = sample_boundary_preimage_bundle()
+        evidence = copy.deepcopy(evidence)
+        evidence["phase14_start_state"]["kv_history_frontier_commitment"] = hash32("8")
+        evidence["phase14_start_state"]["public_state_commitment"] = (
+            PHASE42.commit_phase14_public_state(evidence["phase14_start_state"])
+        )
+
+        with self.assertRaisesRegex(PHASE42.Phase42Error, "Phase14 start preimage"):
+            PHASE42.evaluate(phase29, phase30, phase41, evidence)
+
+    def test_rejects_phase12_preimage_that_does_not_bind_phase30(self) -> None:
+        phase29, phase30, phase41, evidence = sample_boundary_preimage_bundle()
+        evidence = copy.deepcopy(evidence)
+        evidence["phase12_start_state"]["kv_cache_commitment"] = hash32("8")
+        evidence["phase12_start_state"]["public_state_commitment"] = (
+            PHASE42.commit_phase12_public_state(evidence["phase12_start_state"])
+        )
+
+        with self.assertRaisesRegex(PHASE42.Phase42Error, "Phase12 start preimage"):
+            PHASE42.evaluate(phase29, phase30, phase41, evidence)
+
+    def test_rejects_phase12_phase14_shared_core_mismatch(self) -> None:
+        phase29, phase30, phase41, evidence = sample_boundary_preimage_bundle()
+        evidence = copy.deepcopy(evidence)
+        evidence["phase14_end_state"]["query_commitment"] = hash32("8")
+        evidence["phase14_end_state"]["public_state_commitment"] = (
+            PHASE42.commit_phase14_public_state(evidence["phase14_end_state"])
+        )
+
+        with self.assertRaisesRegex(PHASE42.Phase42Error, "shared carried-state field"):
+            PHASE42.evaluate(phase29, phase30, phase41, evidence)
+
     def test_cli_reports_issue_and_patch_required_decision(self) -> None:
         phase29 = sample_phase29_contract(hash32("d"), hash32("e"))
         phase30 = sample_phase30_manifest(hash32("7"), hash32("8"))
@@ -222,6 +353,41 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
             result = json.loads(completed.stdout)
         self.assertEqual(result["issue"], 180)
         self.assertEqual(result["decision"], "patch_required")
+
+    def test_cli_accepts_boundary_preimage_evidence(self) -> None:
+        phase29, phase30, phase41, evidence = sample_boundary_preimage_bundle()
+        with tempfile.TemporaryDirectory() as tempdir:
+            temp = pathlib.Path(tempdir)
+            phase29_path = temp / "phase29.json"
+            phase30_path = temp / "phase30.json"
+            phase41_path = temp / "phase41.json"
+            evidence_path = temp / "phase42-evidence.json"
+            phase29_path.write_text(json.dumps(phase29), encoding="utf-8")
+            phase30_path.write_text(json.dumps(phase30), encoding="utf-8")
+            phase41_path.write_text(json.dumps(phase41), encoding="utf-8")
+            evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "-B",
+                    str(CHECKER),
+                    "--phase29",
+                    str(phase29_path),
+                    "--phase30",
+                    str(phase30_path),
+                    "--phase41",
+                    str(phase41_path),
+                    "--boundary-preimage-evidence",
+                    str(evidence_path),
+                    "--require-clean-relation",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            result = json.loads(completed.stdout)
+        self.assertTrue(result["accepted"])
+        self.assertEqual(result["relation_outcome"], "hash_preimage_relation")
 
     def test_docs_refer_back_to_issue_180_and_checker(self) -> None:
         spec = SPEC.read_text(encoding="utf-8")

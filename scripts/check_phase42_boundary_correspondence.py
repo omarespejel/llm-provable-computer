@@ -29,6 +29,8 @@ CLAIM_STATEMENT_VERSION_V1 = "statement-v1"
 STWO_DECODING_CHAIN_VERSION_PHASE12 = "stwo-phase12-decoding-chain-v9"
 STWO_DECODING_CHAIN_SCOPE_PHASE12 = "stwo_execution_parameterized_proof_carrying_decoding_chain"
 STWO_DECODING_LAYOUT_VERSION_PHASE12 = "stwo-decoding-layout-v1"
+STWO_DECODING_STATE_VERSION_PHASE12 = "stwo-decoding-state-v11"
+STWO_DECODING_STATE_VERSION_PHASE14 = "stwo-decoding-state-v6"
 STWO_DECODING_STEP_ENVELOPE_VERSION_PHASE30 = "stwo-phase30-decoding-step-proof-envelope-v1"
 STWO_DECODING_STEP_ENVELOPE_SCOPE_PHASE30 = "stwo_execution_parameterized_decoding_step_proof_envelope"
 STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30 = (
@@ -48,6 +50,10 @@ STWO_BOUNDARY_TRANSLATION_WITNESS_SCOPE_PHASE41 = (
     "stwo_execution_parameterized_boundary_translation_witness"
 )
 STWO_BOUNDARY_TRANSLATION_RULE_PHASE41 = "explicit-phase29-phase30-boundary-pair-v1"
+STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23 = (
+    "stwo-phase23-decoding-cross-step-lookup-accumulator-v1"
+)
+PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_VERSION = "phase42-boundary-preimage-evidence-v1"
 
 PHASE12_OUTPUT_WIDTH = 3
 PHASE12_SHARED_LOOKUP_ROWS = 8
@@ -157,6 +163,73 @@ PHASE41_FIELDS = (
     "boundary_translation_witness_commitment",
 )
 
+PHASE12_STATE_FIELDS = (
+    "state_version",
+    "step_index",
+    "position",
+    "layout_commitment",
+    "persistent_state_commitment",
+    "kv_history_commitment",
+    "kv_history_length",
+    "kv_cache_commitment",
+    "incoming_token_commitment",
+    "query_commitment",
+    "output_commitment",
+    "lookup_rows_commitment",
+    "public_state_commitment",
+)
+
+PHASE14_STATE_FIELDS = (
+    "state_version",
+    "step_index",
+    "position",
+    "layout_commitment",
+    "persistent_state_commitment",
+    "kv_history_commitment",
+    "kv_history_length",
+    "kv_history_chunk_size",
+    "kv_history_sealed_commitment",
+    "kv_history_sealed_chunks",
+    "kv_history_open_chunk_commitment",
+    "kv_history_open_chunk_pairs",
+    "kv_history_frontier_commitment",
+    "kv_history_frontier_pairs",
+    "lookup_transcript_commitment",
+    "lookup_transcript_entries",
+    "lookup_frontier_commitment",
+    "lookup_frontier_entries",
+    "kv_cache_commitment",
+    "incoming_token_commitment",
+    "query_commitment",
+    "output_commitment",
+    "lookup_rows_commitment",
+    "public_state_commitment",
+)
+
+PHASE42_EVIDENCE_FIELDS = (
+    "issue",
+    "evidence_version",
+    "relation_outcome",
+    "phase12_start_state",
+    "phase12_end_state",
+    "phase14_start_state",
+    "phase14_end_state",
+)
+
+SHARED_STATE_FIELDS = (
+    "step_index",
+    "position",
+    "layout_commitment",
+    "persistent_state_commitment",
+    "kv_history_commitment",
+    "kv_history_length",
+    "kv_cache_commitment",
+    "incoming_token_commitment",
+    "query_commitment",
+    "output_commitment",
+    "lookup_rows_commitment",
+)
+
 
 class Phase42Error(Exception):
     """Raised when a supplied artifact fails the Phase42 source checks."""
@@ -203,6 +276,16 @@ def require_usize(label: str, value: Any) -> int:
     if not isinstance(value, int) or value < 0:
         raise Phase42Error(f"{label}: expected a non-negative integer")
     return value
+
+
+def require_i16(label: str, value: Any) -> int:
+    if not isinstance(value, int) or value < -32768 or value > 32767:
+        raise Phase42Error(f"{label}: expected an i16 integer")
+    return value
+
+
+def update_i16(hasher: Any, value: int) -> None:
+    hasher.update(require_i16("i16 hash input", value).to_bytes(2, "little", signed=True))
 
 
 def update_len_prefixed(hasher: Any, value: str | bytes) -> None:
@@ -287,6 +370,133 @@ def commit_phase29_contract(contract: dict[str, Any]) -> str:
         "aggregated_chained_folded_interval_accumulator_commitment",
     ):
         update_len_prefixed(hasher, contract[field])
+    return lower_hex(hasher.digest())
+
+
+def verify_phase12_state(state: dict[str, Any], label: str) -> None:
+    require_fields(state, PHASE12_STATE_FIELDS, label)
+    if state["state_version"] != STWO_DECODING_STATE_VERSION_PHASE12:
+        raise Phase42Error(f"{label}: unsupported state_version")
+    require_usize(f"{label} step_index", state["step_index"])
+    require_i16(f"{label} position", state["position"])
+    require_usize(f"{label} kv_history_length", state["kv_history_length"])
+    for field in (
+        "layout_commitment",
+        "persistent_state_commitment",
+        "kv_history_commitment",
+        "kv_cache_commitment",
+        "incoming_token_commitment",
+        "query_commitment",
+        "output_commitment",
+        "lookup_rows_commitment",
+        "public_state_commitment",
+    ):
+        require_hash32(f"{label} {field}", state[field])
+    expected = commit_phase12_public_state(state)
+    if state["public_state_commitment"] != expected:
+        raise Phase42Error(f"{label}: public_state_commitment mismatch")
+
+
+def verify_phase14_state(state: dict[str, Any], label: str) -> None:
+    require_fields(state, PHASE14_STATE_FIELDS, label)
+    if state["state_version"] != STWO_DECODING_STATE_VERSION_PHASE14:
+        raise Phase42Error(f"{label}: unsupported state_version")
+    require_usize(f"{label} step_index", state["step_index"])
+    require_i16(f"{label} position", state["position"])
+    for field in (
+        "kv_history_length",
+        "kv_history_chunk_size",
+        "kv_history_sealed_chunks",
+        "kv_history_open_chunk_pairs",
+        "kv_history_frontier_pairs",
+        "lookup_transcript_entries",
+        "lookup_frontier_entries",
+    ):
+        require_usize(f"{label} {field}", state[field])
+    for field in (
+        "layout_commitment",
+        "persistent_state_commitment",
+        "kv_history_commitment",
+        "kv_history_sealed_commitment",
+        "kv_history_open_chunk_commitment",
+        "kv_history_frontier_commitment",
+        "lookup_transcript_commitment",
+        "lookup_frontier_commitment",
+        "kv_cache_commitment",
+        "incoming_token_commitment",
+        "query_commitment",
+        "output_commitment",
+        "lookup_rows_commitment",
+        "public_state_commitment",
+    ):
+        require_hash32(f"{label} {field}", state[field])
+    expected = commit_phase14_public_state(state)
+    if state["public_state_commitment"] != expected:
+        raise Phase42Error(f"{label}: public_state_commitment mismatch")
+
+
+def commit_phase12_public_state(state: dict[str, Any]) -> str:
+    hasher = blake2b32()
+    hasher.update(STWO_DECODING_STATE_VERSION_PHASE12.encode())
+    hasher.update(b"public-state")
+    hasher.update(state["state_version"].encode())
+    hasher.update(require_usize("Phase12 step_index", state["step_index"]).to_bytes(8, "little"))
+    update_i16(hasher, state["position"])
+    hasher.update(state["layout_commitment"].encode())
+    hasher.update(state["persistent_state_commitment"].encode())
+    hasher.update(state["kv_history_commitment"].encode())
+    hasher.update(require_usize("Phase12 kv_history_length", state["kv_history_length"]).to_bytes(8, "little"))
+    hasher.update(state["kv_cache_commitment"].encode())
+    return lower_hex(hasher.digest())
+
+
+def commit_phase14_public_state(state: dict[str, Any]) -> str:
+    hasher = blake2b32()
+    hasher.update(STWO_DECODING_STATE_VERSION_PHASE14.encode())
+    hasher.update(b"public-state")
+    hasher.update(state["state_version"].encode())
+    hasher.update(require_usize("Phase14 step_index", state["step_index"]).to_bytes(8, "little"))
+    update_i16(hasher, state["position"])
+    hasher.update(state["layout_commitment"].encode())
+    hasher.update(state["persistent_state_commitment"].encode())
+    hasher.update(state["kv_history_commitment"].encode())
+    hasher.update(require_usize("Phase14 kv_history_length", state["kv_history_length"]).to_bytes(8, "little"))
+    hasher.update(require_usize("Phase14 kv_history_chunk_size", state["kv_history_chunk_size"]).to_bytes(8, "little"))
+    hasher.update(state["kv_history_sealed_commitment"].encode())
+    hasher.update(require_usize("Phase14 kv_history_sealed_chunks", state["kv_history_sealed_chunks"]).to_bytes(8, "little"))
+    hasher.update(state["kv_history_open_chunk_commitment"].encode())
+    hasher.update(require_usize("Phase14 kv_history_open_chunk_pairs", state["kv_history_open_chunk_pairs"]).to_bytes(8, "little"))
+    hasher.update(state["kv_history_frontier_commitment"].encode())
+    hasher.update(require_usize("Phase14 kv_history_frontier_pairs", state["kv_history_frontier_pairs"]).to_bytes(8, "little"))
+    hasher.update(state["lookup_transcript_commitment"].encode())
+    hasher.update(require_usize("Phase14 lookup_transcript_entries", state["lookup_transcript_entries"]).to_bytes(8, "little"))
+    hasher.update(state["lookup_frontier_commitment"].encode())
+    hasher.update(require_usize("Phase14 lookup_frontier_entries", state["lookup_frontier_entries"]).to_bytes(8, "little"))
+    hasher.update(state["kv_cache_commitment"].encode())
+    return lower_hex(hasher.digest())
+
+
+def commit_phase23_boundary_state(state: dict[str, Any]) -> str:
+    hasher = blake2b32()
+    hasher.update(STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23.encode())
+    hasher.update(b"boundary-state")
+    update_i16(hasher, state["position"])
+    hasher.update(state["layout_commitment"].encode())
+    hasher.update(state["persistent_state_commitment"].encode())
+    hasher.update(state["kv_history_commitment"].encode())
+    hasher.update(require_usize("Phase23 kv_history_length", state["kv_history_length"]).to_bytes(8, "little"))
+    hasher.update(require_usize("Phase23 kv_history_chunk_size", state["kv_history_chunk_size"]).to_bytes(8, "little"))
+    hasher.update(state["kv_history_sealed_commitment"].encode())
+    hasher.update(require_usize("Phase23 kv_history_sealed_chunks", state["kv_history_sealed_chunks"]).to_bytes(8, "little"))
+    hasher.update(state["kv_history_open_chunk_commitment"].encode())
+    hasher.update(require_usize("Phase23 kv_history_open_chunk_pairs", state["kv_history_open_chunk_pairs"]).to_bytes(8, "little"))
+    hasher.update(state["kv_history_frontier_commitment"].encode())
+    hasher.update(require_usize("Phase23 kv_history_frontier_pairs", state["kv_history_frontier_pairs"]).to_bytes(8, "little"))
+    hasher.update(state["lookup_transcript_commitment"].encode())
+    hasher.update(require_usize("Phase23 lookup_transcript_entries", state["lookup_transcript_entries"]).to_bytes(8, "little"))
+    hasher.update(state["lookup_frontier_commitment"].encode())
+    hasher.update(require_usize("Phase23 lookup_frontier_entries", state["lookup_frontier_entries"]).to_bytes(8, "little"))
+    hasher.update(state["kv_cache_commitment"].encode())
     return lower_hex(hasher.digest())
 
 
@@ -644,10 +854,96 @@ def verify_phase41_against_sources(
         raise Phase42Error("source-bound Phase41 witness does not match Phase29 + Phase30")
 
 
+def compare_shared_boundary_core(
+    phase12_state: dict[str, Any],
+    phase14_state: dict[str, Any],
+    label: str,
+) -> None:
+    for field in SHARED_STATE_FIELDS:
+        if phase12_state[field] != phase14_state[field]:
+            raise Phase42Error(
+                f"Phase42 {label}: shared carried-state field `{field}` differs between Phase12 and Phase14"
+            )
+
+
+def verify_boundary_preimage_evidence(
+    evidence: dict[str, Any],
+    phase29: dict[str, Any],
+    phase30: dict[str, Any],
+) -> dict[str, Any]:
+    require_fields(evidence, PHASE42_EVIDENCE_FIELDS, "Phase42 boundary preimage evidence")
+    if evidence["issue"] != ISSUE:
+        raise Phase42Error("Phase42 boundary preimage evidence: issue must be 180")
+    if evidence["evidence_version"] != PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_VERSION:
+        raise Phase42Error("Phase42 boundary preimage evidence: unsupported evidence_version")
+    if evidence["relation_outcome"] != "hash_preimage_relation":
+        raise Phase42Error(
+            "Phase42 boundary preimage evidence: relation_outcome must be hash_preimage_relation"
+        )
+
+    phase12_start = evidence["phase12_start_state"]
+    phase12_end = evidence["phase12_end_state"]
+    phase14_start = evidence["phase14_start_state"]
+    phase14_end = evidence["phase14_end_state"]
+    for label, state, verifier in (
+        ("phase12_start_state", phase12_start, verify_phase12_state),
+        ("phase12_end_state", phase12_end, verify_phase12_state),
+        ("phase14_start_state", phase14_start, verify_phase14_state),
+        ("phase14_end_state", phase14_end, verify_phase14_state),
+    ):
+        if not isinstance(state, dict):
+            raise Phase42Error(f"Phase42 boundary preimage evidence: {label} must be an object")
+        verifier(state, f"Phase42 {label}")
+
+    expected_layout = commit_phase12_layout(phase30["layout"])
+    for label, state in (
+        ("phase12_start_state", phase12_start),
+        ("phase12_end_state", phase12_end),
+        ("phase14_start_state", phase14_start),
+        ("phase14_end_state", phase14_end),
+    ):
+        if state["layout_commitment"] != expected_layout:
+            raise Phase42Error(
+                f"Phase42 evidence: {label} layout_commitment does not match Phase30 layout"
+            )
+
+    if phase12_start["public_state_commitment"] != phase30["chain_start_boundary_commitment"]:
+        raise Phase42Error("Phase42 evidence: Phase12 start preimage does not bind Phase30 start")
+    if phase12_end["public_state_commitment"] != phase30["chain_end_boundary_commitment"]:
+        raise Phase42Error("Phase42 evidence: Phase12 end preimage does not bind Phase30 end")
+
+    phase23_start = commit_phase23_boundary_state(phase14_start)
+    phase23_end = commit_phase23_boundary_state(phase14_end)
+    if phase23_start != phase29["global_start_state_commitment"]:
+        raise Phase42Error("Phase42 evidence: Phase14 start preimage does not bind Phase29 start")
+    if phase23_end != phase29["global_end_state_commitment"]:
+        raise Phase42Error("Phase42 evidence: Phase14 end preimage does not bind Phase29 end")
+
+    compare_shared_boundary_core(phase12_start, phase14_start, "start")
+    compare_shared_boundary_core(phase12_end, phase14_end, "end")
+
+    if phase12_start["step_index"] != 0 or phase14_start["step_index"] != 0:
+        raise Phase42Error("Phase42 evidence: start states must have step_index=0")
+    if phase12_end["step_index"] != phase30["total_steps"]:
+        raise Phase42Error("Phase42 evidence: Phase12 end step_index must equal total_steps")
+    if phase14_end["step_index"] != phase30["total_steps"]:
+        raise Phase42Error("Phase42 evidence: Phase14 end step_index must equal total_steps")
+
+    return {
+        "phase12_start_public_state_commitment": phase12_start["public_state_commitment"],
+        "phase12_end_public_state_commitment": phase12_end["public_state_commitment"],
+        "phase14_start_public_state_commitment": phase14_start["public_state_commitment"],
+        "phase14_end_public_state_commitment": phase14_end["public_state_commitment"],
+        "phase23_start_boundary_commitment": phase23_start,
+        "phase23_end_boundary_commitment": phase23_end,
+    }
+
+
 def evaluate(
     phase29: dict[str, Any],
     phase30: dict[str, Any],
     phase41: dict[str, Any] | None = None,
+    boundary_preimage_evidence: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     verify_phase29_contract(phase29)
     verify_phase30_manifest(phase30)
@@ -681,7 +977,7 @@ def evaluate(
             "required_next_step": "Use direct Phase31/37 binding; no Phase41 translation is needed.",
         }
 
-    if phase41 is None:
+    if phase41 is None and boundary_preimage_evidence is None:
         return {
             **base,
             "accepted": False,
@@ -691,7 +987,31 @@ def evaluate(
             "required_next_step": "Supply Phase41 plus Phase12 and Phase14/23 boundary preimage evidence, or pivot per Issue #180.",
         }
 
-    verify_phase41_against_sources(phase41, phase29, phase30)
+    if phase41 is not None:
+        verify_phase41_against_sources(phase41, phase29, phase30)
+
+    if boundary_preimage_evidence is not None:
+        evidence_commitments = verify_boundary_preimage_evidence(
+            boundary_preimage_evidence, phase29, phase30
+        )
+        return {
+            **base,
+            "accepted": True,
+            "relation_outcome": "hash_preimage_relation",
+            "decision": "stay_current_path",
+            "phase41_source_bound": phase41 is not None,
+            "boundary_preimage_evidence_version": PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_VERSION,
+            "boundary_preimage_commitments": evidence_commitments,
+            "reason": (
+                "Phase12 and Phase14/23 boundary preimages recompute to the Phase30 and Phase29 "
+                "boundary commitments and share the same carried-state core."
+            ),
+            "required_next_step": (
+                "Promote the preimage evidence into a Rust-produced Phase42 artifact and consume it in Phase31/37."
+            ),
+        }
+
+    assert phase41 is not None
     return {
         **base,
         "accepted": False,
@@ -719,6 +1039,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--phase29", required=True, type=pathlib.Path)
     parser.add_argument("--phase30", required=True, type=pathlib.Path)
     parser.add_argument("--phase41", type=pathlib.Path)
+    parser.add_argument("--boundary-preimage-evidence", type=pathlib.Path)
     parser.add_argument("--pretty", action="store_true")
     parser.add_argument(
         "--require-clean-relation",
@@ -734,7 +1055,12 @@ def main(argv: list[str]) -> int:
         phase29 = load_json(args.phase29)
         phase30 = load_json(args.phase30)
         phase41 = load_json(args.phase41) if args.phase41 else None
-        result = evaluate(phase29, phase30, phase41)
+        evidence = (
+            load_json(args.boundary_preimage_evidence)
+            if args.boundary_preimage_evidence
+            else None
+        )
+        result = evaluate(phase29, phase30, phase41, evidence)
     except Phase42Error as exc:
         print(f"Phase42 issue #{ISSUE}: {exc}", file=sys.stderr)
         return 1

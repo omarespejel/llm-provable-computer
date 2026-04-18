@@ -76,7 +76,7 @@ Any other wording is not a Phase42 success condition.
 
 ## Current Decision State
 
-For the current Phase29/30/41 artifact surface, the executable decision gate is:
+For the Phase29/30/41-only artifact surface, the executable decision gate is:
 
 ```text
 relation_outcome = impossible
@@ -89,10 +89,45 @@ not expose the Phase12 public-state preimage and Phase14/23 boundary-state
 preimage needed to classify the relation as `projection`,
 `deterministic_transform`, or `hash_preimage_relation`.
 
-The next stay-current-path step is therefore one minimal upstream exposure
-patch: expose or derive the missing preimage data in a way the Phase42 checker
-can recompute from real sources. If that cannot be done without witness-only
-claims, Issue #180 requires a pivot.
+The first minimal upstream exposure is a Phase42 boundary-preimage evidence
+file. It carries:
+
+```text
+phase12_start_state
+phase12_end_state
+phase14_start_state
+phase14_end_state
+```
+
+The checker recomputes:
+
+```text
+commit_phase12_public_state(phase12_start_state)
+commit_phase12_public_state(phase12_end_state)
+commit_phase14_public_state(phase14_start_state)
+commit_phase14_public_state(phase14_end_state)
+commit_phase23_boundary_state(phase14_start_state)
+commit_phase23_boundary_state(phase14_end_state)
+```
+
+and then verifies:
+
+```text
+Phase12 start/end commitments == Phase30 chain start/end boundaries
+Phase23 start/end commitments == Phase29 global start/end boundaries
+Phase12 and Phase14 preimages share the same carried-state core
+```
+
+When those checks pass, the current relation outcome is:
+
+```text
+relation_outcome = hash_preimage_relation
+decision = stay_current_path
+```
+
+This keeps the success criterion proof-oriented: Phase42 succeeds only when the
+two boundary domains are recomputable from exposed preimages, not when a
+witness merely says they are compatible.
 
 ## Required Checker Behavior
 
@@ -104,8 +139,12 @@ The Phase42 checker must:
   commitments, and step-envelope list commitment;
 - verify Phase41 internal commitments when a witness is supplied;
 - verify Phase41 source binding against Phase29 and Phase30;
+- verify optional Phase42 boundary-preimage evidence;
 - reject stale Phase29 or Phase30 commitments;
 - reject swapped or stale Phase41 boundaries;
+- reject Phase12/Phase14 preimages that do not recompute to the Phase30/Phase29
+  boundary commitments;
+- reject Phase12/Phase14 shared carried-state-core mismatches;
 - report Phase41-only compatibility as `patch_required`, not success.
 
 The checker is intentionally stricter than a descriptive manifest. It is a
@@ -153,4 +192,3 @@ Phase42 does not claim:
 - full standard-softmax transformer inference;
 - external benchmark superiority;
 - that Phase41 alone makes Phase31/37 pass.
-
