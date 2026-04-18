@@ -4357,10 +4357,10 @@ pub fn phase41_prepare_boundary_translation_witness(
         )));
     }
     if contract.global_start_state_commitment == phase30.chain_start_boundary_commitment
-        || contract.global_end_state_commitment == phase30.chain_end_boundary_commitment
+        && contract.global_end_state_commitment == phase30.chain_end_boundary_commitment
     {
         return Err(VmError::InvalidConfig(
-            "Phase 41 boundary-translation witness requires differing Phase29/Phase30 boundary domains; use Phase31 direct binding when boundaries already match".to_string(),
+            "Phase 41 boundary-translation witness requires at least one differing Phase29/Phase30 boundary; use Phase31 direct binding when both boundaries already match".to_string(),
         ));
     }
 
@@ -4522,11 +4522,11 @@ pub fn verify_phase41_boundary_translation_witness(
     }
     if witness.phase29_global_start_state_commitment
         == witness.phase30_chain_start_boundary_commitment
-        || witness.phase29_global_end_state_commitment
+        && witness.phase29_global_end_state_commitment
             == witness.phase30_chain_end_boundary_commitment
     {
         return Err(VmError::InvalidConfig(
-            "Phase 41 boundary-translation witness must bind differing Phase29 and Phase30 boundary domains".to_string(),
+            "Phase 41 boundary-translation witness must bind at least one differing Phase29 and Phase30 boundary".to_string(),
         ));
     }
 
@@ -5381,6 +5381,12 @@ pub fn parse_phase38_paper3_composition_prototype_json(
 }
 
 #[cfg(feature = "stwo-backend")]
+/// Parses a Phase 41 witness and verifies its internal commitments only.
+///
+/// Source provenance is intentionally checked by
+/// [`verify_phase41_boundary_translation_witness_against_sources`], because a
+/// standalone JSON witness does not carry the full Phase 29 and Phase 30 source
+/// artifacts needed to reject stale or swapped source bindings.
 pub fn parse_phase41_boundary_translation_witness_json(
     json: &str,
 ) -> Result<Phase41BoundaryTranslationWitness> {
@@ -5491,6 +5497,11 @@ pub fn load_phase38_paper3_composition_prototype(
 }
 
 #[cfg(feature = "stwo-backend")]
+/// Loads a Phase 41 witness and verifies its internal commitments only.
+///
+/// Call [`verify_phase41_boundary_translation_witness_against_sources`] before
+/// trusting the witness as bound to specific Phase 29 and Phase 30 source
+/// artifacts.
 pub fn load_phase41_boundary_translation_witness(
     path: &Path,
 ) -> Result<Phase41BoundaryTranslationWitness> {
@@ -8040,7 +8051,33 @@ mod tests {
 
         let err = phase41_prepare_boundary_translation_witness(&phase29, &phase30)
             .expect_err("direct Phase29/Phase30 boundary equality is not a translation witness");
-        assert!(err.to_string().contains("requires differing"));
+        assert!(err.to_string().contains("both boundaries already match"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase41_boundary_translation_witness_accepts_single_sided_boundary_equality() {
+        let (mut phase29, phase30) = sample_phase41_boundary_gap_sources();
+        phase29.global_start_state_commitment = phase30.chain_start_boundary_commitment.clone();
+        phase29.input_contract_commitment =
+            commit_phase29_recursive_compression_input_contract(&phase29)
+                .expect("recommit one-sided Phase41 Phase29 contract");
+
+        let witness = phase41_prepare_boundary_translation_witness(&phase29, &phase30)
+            .expect("one-sided boundary equality still needs a translation witness");
+        assert_eq!(
+            witness.phase29_global_start_state_commitment,
+            witness.phase30_chain_start_boundary_commitment
+        );
+        assert_ne!(
+            witness.phase29_global_end_state_commitment,
+            witness.phase30_chain_end_boundary_commitment
+        );
+        verify_phase41_boundary_translation_witness_against_sources(&witness, &phase29, &phase30)
+            .expect("verify one-sided Phase41 witness against sources");
+
+        phase31_prepare_recursive_compression_decode_boundary_manifest(&phase29, &phase30)
+            .expect_err("one-sided equality must not silently satisfy Phase31");
     }
 
     #[cfg(feature = "stwo-backend")]

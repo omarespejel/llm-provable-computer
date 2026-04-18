@@ -41,7 +41,7 @@ WITNESS_FIELDS = [
     "boundary_translation_witness_commitment",
 ]
 
-HASH_FIELDS = {
+HASH_FIELDS = (
     "phase29_contract_commitment",
     "phase30_source_chain_commitment",
     "phase30_step_envelopes_commitment",
@@ -54,7 +54,7 @@ HASH_FIELDS = {
     "start_boundary_translation_commitment",
     "end_boundary_translation_commitment",
     "boundary_translation_witness_commitment",
-}
+)
 
 
 class Phase41SchemaTests(unittest.TestCase):
