@@ -10431,8 +10431,20 @@ fn phase28_phase30_prepare_shared_proof_demo_for_layout(
     let phase12 = phase12_prepare_decoding_chain(layout, &proofs)?;
     verify_phase12_decoding_chain_with_proof_checks(&phase12)?;
 
+    let verified_proofs = phase12
+        .steps
+        .iter()
+        .map(|step| step.proof.clone())
+        .collect::<Vec<_>>();
+    if verified_proofs.len() != phase12.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 40 shared-proof source mismatch: Phase12 records total_steps {} but exposes {} verified proofs",
+            phase12.total_steps,
+            verified_proofs.len()
+        )));
+    }
     let cumulative_members =
-        phase25_prepare_cumulative_members_from_proof_prefixes(layout, &proofs)?;
+        phase25_prepare_cumulative_members_from_proof_prefixes(layout, &verified_proofs)?;
     let interval_members =
         phase25_prepare_intervalized_members_from_cumulative_members(&cumulative_members, 2)?;
     let folded_members =
@@ -10443,6 +10455,24 @@ fn phase28_phase30_prepare_shared_proof_demo_for_layout(
     )?;
 
     let phase30 = phase30_prepare_decoding_step_proof_envelope_manifest(&phase12)?;
+    if phase28.total_steps != phase30.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 40 shared-proof source mismatch: Phase28 total_steps {} differs from Phase30 total_steps {}",
+            phase28.total_steps, phase30.total_steps
+        )));
+    }
+    if phase28.proof_backend_version != phase30.proof_backend_version {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 40 shared-proof source mismatch: Phase28 backend version `{}` differs from Phase30 backend version `{}`",
+            phase28.proof_backend_version, phase30.proof_backend_version
+        )));
+    }
+    if phase28.statement_version != phase30.statement_version {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 40 shared-proof source mismatch: Phase28 statement version `{}` differs from Phase30 statement version `{}`",
+            phase28.statement_version, phase30.statement_version
+        )));
+    }
     Ok((phase28, phase30))
 }
 
@@ -10545,19 +10575,41 @@ pub fn prove_phase28_phase30_shared_proof_boundary_demo() -> Result<(
     Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
     Phase30DecodingStepProofEnvelopeManifest,
 )> {
-    let mut last_error = None;
-    for layout in phase25_default_decoding_layouts()? {
-        match phase28_phase30_prepare_shared_proof_demo_for_layout(&layout) {
-            Ok(artifacts) => return Ok(artifacts),
-            Err(error) => last_error = Some(error),
-        }
-    }
-    Err(last_error.unwrap_or_else(|| {
-        VmError::InvalidConfig(
+    let mut layouts = phase25_default_decoding_layouts()?;
+    layouts.sort_by(|left, right| {
+        (
+            left.layout_version.as_str(),
+            left.rolling_kv_pairs,
+            left.pair_width,
+        )
+            .cmp(&(
+                right.layout_version.as_str(),
+                right.rolling_kv_pairs,
+                right.pair_width,
+            ))
+    });
+    if layouts.is_empty() {
+        return Err(VmError::InvalidConfig(
             "Phase 40 shared-proof boundary demo did not have any candidate layouts to try"
                 .to_string(),
-        )
-    }))
+        ));
+    }
+
+    let mut failures = Vec::new();
+    for layout in layouts {
+        match phase28_phase30_prepare_shared_proof_demo_for_layout(&layout) {
+            Ok(artifacts) => return Ok(artifacts),
+            Err(error) => failures.push(format!(
+                "layout_version={} rolling_kv_pairs={} pair_width={}: {}",
+                layout.layout_version, layout.rolling_kv_pairs, layout.pair_width, error
+            )),
+        }
+    }
+    Err(VmError::InvalidConfig(format!(
+        "Phase 40 shared-proof boundary demo failed for {} deterministic candidate layouts: {}",
+        failures.len(),
+        failures.join(" | ")
+    )))
 }
 
 fn derive_phase11_state(memory: &[i16], step_index: usize) -> Result<Phase11DecodingState> {
