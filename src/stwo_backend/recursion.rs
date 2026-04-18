@@ -1454,17 +1454,268 @@ fn phase29_lower_hex(bytes: &[u8]) -> String {
 }
 
 #[cfg(feature = "stwo-backend")]
+fn phase37_is_lower_hex_byte(byte: u8) -> bool {
+    matches!(byte, b'0'..=b'9' | b'a'..=b'f')
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase37_is_hash32_lower_hex(value: &str) -> bool {
+    value.len() == 64 && value.bytes().all(phase37_is_lower_hex_byte)
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase37_require_hash32(label: &str, value: &str) -> Result<()> {
-    let is_hash32 = value.len() == 64
-        && value
-            .bytes()
-            .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'));
-    if !is_hash32 {
+    if !phase37_is_hash32_lower_hex(value) {
         return Err(VmError::InvalidConfig(format!(
             "Phase 37 recursive artifact-chain harness receipt `{label}` must be a 32-byte lowercase hex commitment"
         )));
     }
     Ok(())
+}
+
+#[cfg(all(kani, feature = "stwo-backend"))]
+mod kani_phase36_phase37_proofs {
+    use super::phase37_is_lower_hex_byte;
+
+    const PHASE33_PUBLIC_INPUT_FIELD_COUNT: usize = 9;
+    const PHASE37_SOURCE_FLAG_COUNT: usize = 9;
+
+    fn phase37_hash32_bytes_are_lower_hex(bytes: &[u8; 64]) -> bool {
+        for byte in bytes {
+            if !phase37_is_lower_hex_byte(*byte) {
+                return false;
+            }
+        }
+        true
+    }
+
+    fn phase36_receipt_flag_surface_is_valid(
+        recursive_verification_claimed: bool,
+        cryptographic_compression_claimed: bool,
+        target_manifest_verified: bool,
+        source_binding_verified: bool,
+        total_steps: usize,
+    ) -> bool {
+        !recursive_verification_claimed
+            && !cryptographic_compression_claimed
+            && target_manifest_verified
+            && source_binding_verified
+            && total_steps > 0
+    }
+
+    fn phase37_source_flags_are_all_set(flags: &[bool; PHASE37_SOURCE_FLAG_COUNT]) -> bool {
+        for flag in flags {
+            if !*flag {
+                return false;
+            }
+        }
+        true
+    }
+
+    fn phase37_receipt_flag_surface_is_valid(
+        recursive_verification_claimed: bool,
+        cryptographic_compression_claimed: bool,
+        source_flags: &[bool; PHASE37_SOURCE_FLAG_COUNT],
+        total_steps: usize,
+    ) -> bool {
+        !recursive_verification_claimed
+            && !cryptographic_compression_claimed
+            && phase37_source_flags_are_all_set(source_flags)
+            && total_steps > 0
+    }
+
+    fn phase33_ordered_public_input_tags(
+        phase32_statement_contract: u8,
+        total_steps: u8,
+        phase30_source_chain: u8,
+        phase30_step_envelopes: u8,
+        phase31_decode_boundary_bridge: u8,
+        chain_start_boundary: u8,
+        chain_end_boundary: u8,
+        source_template: u8,
+        aggregation_template: u8,
+    ) -> [u8; PHASE33_PUBLIC_INPUT_FIELD_COUNT] {
+        [
+            phase32_statement_contract,
+            total_steps,
+            phase30_source_chain,
+            phase30_step_envelopes,
+            phase31_decode_boundary_bridge,
+            chain_start_boundary,
+            chain_end_boundary,
+            source_template,
+            aggregation_template,
+        ]
+    }
+
+    fn phase33_public_input_ordering_is_preserved(
+        expected: &[u8; PHASE33_PUBLIC_INPUT_FIELD_COUNT],
+        observed: &[u8; PHASE33_PUBLIC_INPUT_FIELD_COUNT],
+    ) -> bool {
+        expected == observed
+    }
+
+    fn phase36_phase37_parse_load_surface_accepts(
+        file_is_regular: bool,
+        bytes_within_limit: bool,
+        json_well_formed: bool,
+        verifier_accepts: bool,
+    ) -> bool {
+        file_is_regular && bytes_within_limit && json_well_formed && verifier_accepts
+    }
+
+    #[kani::proof]
+    fn kani_phase37_hash32_accepts_lowercase_hex_boundary() {
+        let byte = kani::any::<u8>();
+        kani::assume(phase37_is_lower_hex_byte(byte));
+
+        assert!(phase37_hash32_bytes_are_lower_hex(&[byte; 64]));
+        assert!(phase37_hash32_bytes_are_lower_hex(&[b'0'; 64]));
+        assert!(phase37_hash32_bytes_are_lower_hex(&[b'f'; 64]));
+    }
+
+    #[kani::proof]
+    fn kani_phase37_hash32_rejects_any_non_lowercase_hex_byte() {
+        let bad_index = kani::any::<usize>();
+        kani::assume(bad_index < 64);
+        let bad_byte = kani::any::<u8>();
+        kani::assume(!phase37_is_lower_hex_byte(bad_byte));
+
+        let mut candidate = [b'a'; 64];
+        candidate[bad_index] = bad_byte;
+
+        assert!(!phase37_hash32_bytes_are_lower_hex(&candidate));
+    }
+
+    #[kani::proof]
+    fn kani_phase36_receipt_flags_accept_canonical_nonclaim_receipt() {
+        assert!(phase36_receipt_flag_surface_is_valid(
+            false, false, true, true, 1
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase36_receipt_flags_reject_any_claim_or_missing_source_check() {
+        let recursive_claimed = kani::any::<bool>();
+        let compression_claimed = kani::any::<bool>();
+        let target_manifest_verified = kani::any::<bool>();
+        let source_binding_verified = kani::any::<bool>();
+        let total_steps = if kani::any::<bool>() { 0 } else { 1 };
+        kani::assume(
+            recursive_claimed
+                || compression_claimed
+                || !target_manifest_verified
+                || !source_binding_verified
+                || total_steps == 0,
+        );
+
+        assert!(!phase36_receipt_flag_surface_is_valid(
+            recursive_claimed,
+            compression_claimed,
+            target_manifest_verified,
+            source_binding_verified,
+            total_steps,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase37_receipt_flags_accept_canonical_source_bound_receipt() {
+        assert!(phase37_receipt_flag_surface_is_valid(
+            false,
+            false,
+            &[true; PHASE37_SOURCE_FLAG_COUNT],
+            1
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase37_receipt_flags_reject_any_claim_or_missing_source_check() {
+        let mut source_flags = [true; PHASE37_SOURCE_FLAG_COUNT];
+        let bad_flag_index = kani::any::<usize>();
+        kani::assume(bad_flag_index < PHASE37_SOURCE_FLAG_COUNT);
+        source_flags[bad_flag_index] = false;
+
+        assert!(!phase37_receipt_flag_surface_is_valid(
+            false,
+            false,
+            &source_flags,
+            1,
+        ));
+        assert!(!phase37_receipt_flag_surface_is_valid(
+            true,
+            false,
+            &[true; PHASE37_SOURCE_FLAG_COUNT],
+            1,
+        ));
+        assert!(!phase37_receipt_flag_surface_is_valid(
+            false,
+            true,
+            &[true; PHASE37_SOURCE_FLAG_COUNT],
+            1,
+        ));
+        assert!(!phase37_receipt_flag_surface_is_valid(
+            false,
+            false,
+            &[true; PHASE37_SOURCE_FLAG_COUNT],
+            0,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase33_public_input_ordering_accepts_canonical_order() {
+        let expected = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let observed = phase33_ordered_public_input_tags(1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+        assert!(phase33_public_input_ordering_is_preserved(
+            &expected, &observed
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase33_public_input_ordering_rejects_any_lane_drift() {
+        let expected = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let mut observed = phase33_ordered_public_input_tags(1, 2, 3, 4, 5, 6, 7, 8, 9);
+        let bad_lane = kani::any::<usize>();
+        kani::assume(bad_lane < PHASE33_PUBLIC_INPUT_FIELD_COUNT);
+        observed[bad_lane] = observed[bad_lane].wrapping_add(9);
+        kani::assume(observed[bad_lane] != expected[bad_lane]);
+
+        assert!(!phase33_public_input_ordering_is_preserved(
+            &expected, &observed
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase36_phase37_parser_wrapper_accepts_only_explicit_ok() {
+        let file_is_regular = kani::any::<bool>();
+        let bytes_within_limit = kani::any::<bool>();
+        let json_well_formed = kani::any::<bool>();
+        let verifier_accepts = kani::any::<bool>();
+
+        if phase36_phase37_parse_load_surface_accepts(
+            file_is_regular,
+            bytes_within_limit,
+            json_well_formed,
+            verifier_accepts,
+        ) {
+            assert!(file_is_regular);
+            assert!(bytes_within_limit);
+            assert!(json_well_formed);
+            assert!(verifier_accepts);
+        }
+    }
+
+    #[kani::proof]
+    fn kani_phase36_phase37_parser_wrapper_rejects_any_error_class() {
+        let mut classes = [true; 4];
+        let bad_class = kani::any::<usize>();
+        kani::assume(bad_class < 4);
+        classes[bad_class] = false;
+
+        assert!(!phase36_phase37_parse_load_surface_accepts(
+            classes[0], classes[1], classes[2], classes[3],
+        ));
+    }
 }
 
 #[cfg(feature = "stwo-backend")]

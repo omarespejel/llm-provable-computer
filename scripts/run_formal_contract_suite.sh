@@ -85,6 +85,26 @@ KANI_ARGS=(
   kani_phase30_manifest_counts_reject_zero_envelopes
   --harness
   kani_phase30_manifest_counts_reject_mismatched_totals
+  --harness
+  kani_phase37_hash32_accepts_lowercase_hex_boundary
+  --harness
+  kani_phase37_hash32_rejects_any_non_lowercase_hex_byte
+  --harness
+  kani_phase36_receipt_flags_accept_canonical_nonclaim_receipt
+  --harness
+  kani_phase36_receipt_flags_reject_any_claim_or_missing_source_check
+  --harness
+  kani_phase37_receipt_flags_accept_canonical_source_bound_receipt
+  --harness
+  kani_phase37_receipt_flags_reject_any_claim_or_missing_source_check
+  --harness
+  kani_phase33_public_input_ordering_accepts_canonical_order
+  --harness
+  kani_phase33_public_input_ordering_rejects_any_lane_drift
+  --harness
+  kani_phase36_phase37_parser_wrapper_accepts_only_explicit_ok
+  --harness
+  kani_phase36_phase37_parser_wrapper_rejects_any_error_class
 )
 
 "${KANI_ARGS[@]}"

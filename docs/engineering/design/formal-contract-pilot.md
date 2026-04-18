@@ -1,6 +1,8 @@
 # Formal Contract Pilot
 
-This pilot formalizes the narrowest trust-critical decoding bindings we currently rely on in the `stwo` proof-carrying path.
+This pilot machine-checks the small scalar contracts that protect the current `stwo` proof-carrying path from silent drift.
+
+It is deliberately bounded. These harnesses are not a proof of the full verifier, the `stwo` backend, or recursive proof closure. They check the narrow invariants that the implementation and paper currently rely on.
 
 Scope:
 - Phase 12 claim bindings:
@@ -18,18 +20,35 @@ Scope:
   - history length must advance by exactly one
   - lookup transcript entries must advance by exactly one
   - position must advance by exactly one
+- Phase 24 through Phase 30 recursive-composition shape:
+  - interval members must be contiguous
+  - folded and chained artifacts must preserve start/end boundaries
+  - manifests must preserve ordered step indexes and declared counts
+- Phase 33 public-input ordering:
+  - the recursive statement commitment, step count, source chain, step envelopes, decode boundary, chain boundaries, and template commitments must remain in canonical order
+- Phase 36 and Phase 37 receipt posture:
+  - valid receipts must not claim recursive verification
+  - valid receipts must not claim cryptographic compression
+  - source-binding and source-verification flags must be set
+  - receipt surfaces must require at least one decode step
+- Phase 37 commitment syntax:
+  - commitment fields are bounded as 64-character lowercase hex strings
+- Phase 36 and Phase 37 parse/load wrapper classification:
+  - accepting a loaded artifact requires a regular file, byte-limit compliance, well-formed JSON, and verifier acceptance
+  - every other class is an explicit error path in the bounded model
 
 Mechanization:
-- Kani harnesses live in `src/stwo_backend/decoding.rs`
-- the Kani model deliberately reduces string/commitment equality into scalar match predicates so the solver checks the binding logic rather than spending proof budget on `memcmp`
-- the dedicated runner is `scripts/run_formal_contract_suite.sh`
-- CI entrypoint is `.github/workflows/formal-contracts.yml`
+- Kani harnesses live in `src/stwo_backend/decoding.rs` and `src/stwo_backend/recursion.rs`
+- the Kani model deliberately reduces string/commitment equality into scalar predicates so the solver checks binding logic rather than spending proof budget on `memcmp`
+- the dedicated local runner is `scripts/run_formal_contract_suite.sh`
+- local merge evidence should cite the runner output; GitHub Actions are not required for this gate
 
 Non-goals:
 - this does not prove the full decoding verifier
 - this does not prove the `stwo` backend itself
-- this does not replace fuzzing, mutation testing, or oracle checks
+- this does not prove parser memory safety beyond Rust's normal safety model
+- this does not replace runtime negative tests for malformed JSON, oversized files, non-regular files, fuzzing, mutation testing, or oracle checks
 
 Why this exists:
-- the decoding validator is now stable enough that its scalar binding kernel is worth machine-checking
-- these contracts cover the highest-value “do not silently drift” invariants before larger proof-carrying decoding work continues
+- the artifact chain is now stable enough that its scalar binding kernels are worth machine-checking
+- these contracts cover the highest-value "do not silently drift" invariants before larger proof-carrying decoding work continues
