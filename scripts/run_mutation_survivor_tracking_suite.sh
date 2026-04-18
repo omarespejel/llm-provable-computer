@@ -30,6 +30,8 @@ while (($# > 0)); do
   esac
 done
 
+: "${output_root:?fake cargo expected --output}"
+
 if [[ -n "${FAKE_CARGO_NO_OUTPUT:-}" ]]; then
   exit 2
 fi
@@ -38,7 +40,6 @@ if [[ -n "${FAKE_CARGO_SUCCESS_NO_OUTPUT:-}" ]]; then
   exit 0
 fi
 
-: "${output_root:?fake cargo expected --output}"
 if [[ -n "${FAKE_CARGO_DIRECT_OUTPUT:-}" ]]; then
   mkdir -p "$output_root"
   printf '%s\n' 'src/stwo_backend/decoding.rs:1 direct-output survivor' >"$output_root/missed.txt"

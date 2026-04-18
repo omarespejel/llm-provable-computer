@@ -69,7 +69,16 @@ fi
 
 mtime_epoch() {
   local path="$1"
-  stat -f %m "$path" 2>/dev/null || stat -c %Y "$path" 2>/dev/null
+  local mtime
+  if mtime="$(stat -c %Y "$path" 2>/dev/null)" && [[ "$mtime" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "$mtime"
+    return 0
+  fi
+  if mtime="$(stat -f %m "$path" 2>/dev/null)" && [[ "$mtime" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "$mtime"
+    return 0
+  fi
+  return 1
 }
 
 is_fresh_path() {
