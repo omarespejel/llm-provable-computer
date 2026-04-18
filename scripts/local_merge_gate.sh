@@ -1039,7 +1039,7 @@ python3 scripts/collect_release_evidence.py collect \
   --checkpoint-kind local-merge-gate \
   --merge-gate-evidence "$evidence_file" \
   --require-clean \
-  --clean-ignore-prefix "$EVIDENCE_DIR" \
+  --clean-ignore-prefix "$run_evidence_dir" \
   --schema-artifact spec/benchmark-result.schema.json >/dev/null
 python3 scripts/collect_release_evidence.py validate "$release_evidence_file" >/dev/null
 

@@ -481,6 +481,9 @@ def validate_merge_gate_record(
         errors.append(f"{field}.head_sha must be lowercase 40-char hex")
     elif repo_head and head_sha != repo_head:
         errors.append(f"{field}.head_sha does not match bundle git.head_sha")
+    base_sha = record.get("base_sha")
+    if not is_hex40(base_sha):
+        errors.append(f"{field}.base_sha must be lowercase 40-char hex")
     if evidence_path and evidence_path.exists():
         try:
             evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
@@ -488,6 +491,8 @@ def validate_merge_gate_record(
             errors.append(f"{field}.evidence_file failed to parse: {exc}")
             evidence = None
         if isinstance(evidence, dict):
+            if evidence.get("base_sha") != base_sha:
+                errors.append(f"{field}.base_sha does not match evidence file")
             if evidence.get("head_sha") != head_sha:
                 errors.append(f"{field}.head_sha does not match evidence file")
             evidence_commands = evidence.get("local_commands")
@@ -542,6 +547,7 @@ def validate_benchmark_record(
     errors: list[str],
     bundle_root: Path,
     repo_root: Path | None,
+    trusted_repo_root: Path | None,
 ) -> None:
     field = f"benchmark_results[{index}]"
     if not isinstance(record, dict):
@@ -557,27 +563,24 @@ def validate_benchmark_record(
     validator = record.get("validator")
     if not isinstance(validator, dict):
         errors.append(f"{field}.validator must be an object")
-    elif validator.get("passed") is not True or validator.get("exit_code") != 0:
-        errors.append(f"{field}.validator must have passed with exit_code 0")
-    if result_path and result_path.exists() and repo_root is not None:
-        validator_path = repo_root / "benchmarks" / "validate_benchmark_result.py"
+    else:
+        if validator.get("passed") is not True or validator.get("exit_code") != 0:
+            errors.append(f"{field}.validator must have passed with exit_code 0")
+        if not is_hex64(validator.get("stdout_sha256")):
+            errors.append(f"{field}.validator.stdout_sha256 must be lowercase 64-char hex")
+        if not is_hex64(validator.get("stderr_sha256")):
+            errors.append(f"{field}.validator.stderr_sha256 must be lowercase 64-char hex")
+    if result_path and result_path.exists() and trusted_repo_root is not None:
+        validator_path = trusted_repo_root / "benchmarks" / "validate_benchmark_result.py"
         completed = subprocess.run(
             [sys.executable, str(validator_path), str(result_path)],
-            cwd=repo_root,
+            cwd=trusted_repo_root,
             text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             check=False,
         )
         if completed.returncode != 0:
             errors.append(f"{field}.result_file no longer passes benchmark validator")
-        elif isinstance(validator, dict):
-            stdout_sha = sha256_bytes(completed.stdout.encode("utf-8"))
-            stderr_sha = sha256_bytes(completed.stderr.encode("utf-8"))
-            if validator.get("stdout_sha256") != stdout_sha:
-                errors.append(f"{field}.validator.stdout_sha256 does not match current validator output")
-            if validator.get("stderr_sha256") != stderr_sha:
-                errors.append(f"{field}.validator.stderr_sha256 does not match current validator output")
 
 
 def validate_release_evidence(path: Path, *, check_live_repo: bool = False) -> list[str]:
@@ -591,6 +594,7 @@ def validate_release_evidence(path: Path, *, check_live_repo: bool = False) -> l
     bundle_root = path.resolve().parent
     repo_root_raw = payload.get("repo_root")
     repo_root = Path(repo_root_raw) if isinstance(repo_root_raw, str) and repo_root_raw else None
+    trusted_repo_root = default_repo_root().resolve() if check_live_repo else None
     if payload.get("schema_version") != SCHEMA_VERSION:
         errors.append("schema_version must be 1")
     generated_at = payload.get("generated_at")
@@ -664,7 +668,14 @@ def validate_release_evidence(path: Path, *, check_live_repo: bool = False) -> l
         errors.append("benchmark_results must be a list")
     else:
         for index, record in enumerate(benchmarks):
-            validate_benchmark_record(record, index, errors, bundle_root, repo_root)
+            validate_benchmark_record(
+                record,
+                index,
+                errors,
+                bundle_root,
+                repo_root,
+                trusted_repo_root,
+            )
     for list_key in ("artifacts", "schema_artifacts"):
         records = payload.get(list_key)
         if not isinstance(records, list):

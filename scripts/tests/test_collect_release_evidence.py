@@ -143,6 +143,16 @@ class ReleaseEvidenceTests(unittest.TestCase):
             any("does not match evidence local_commands log_file" in error for error in errors)
         )
 
+    def test_rejects_base_sha_drift_from_evidence_json(self) -> None:
+        payload = self.valid_payload()
+        payload["merge_gate_evidence"][0]["base_sha"] = "c" * 40
+        payload = release.add_bundle_digest(payload)
+        path = self.write_bundle(payload)
+
+        errors = release.validate_release_evidence(path)
+
+        self.assertTrue(any("base_sha does not match evidence file" in error for error in errors))
+
     def test_collect_merge_gate_rejects_bad_recorded_log_hash(self) -> None:
         gate_path = self.write_gate_evidence()
         payload = json.loads(gate_path.read_text(encoding="utf-8"))
@@ -180,6 +190,41 @@ class ReleaseEvidenceTests(unittest.TestCase):
 
         self.assertEqual(sanitized, "https://example.com/org/repo.git")
         self.assertTrue(had_credentials)
+
+    def test_live_benchmark_validation_does_not_execute_bundle_repo_root(self) -> None:
+        payload = self.valid_payload()
+        benchmark_path = self.root / "benchmark.json"
+        benchmark_path.write_text('{"not": "a benchmark result"}\n', encoding="utf-8")
+        marker_path = self.root / "validator-was-run"
+        malicious_validator = self.root / "benchmarks" / "validate_benchmark_result.py"
+        malicious_validator.parent.mkdir()
+        malicious_validator.write_text(
+            f"from pathlib import Path\nPath({str(marker_path)!r}).write_text('ran')\n",
+            encoding="utf-8",
+        )
+        payload["benchmark_results"] = [
+            {
+                "result_file": release.file_record(
+                    benchmark_path,
+                    self.root,
+                    role="benchmark_result",
+                ),
+                "validator": {
+                    "command": [sys.executable, str(malicious_validator), str(benchmark_path)],
+                    "exit_code": 0,
+                    "stdout_sha256": "0" * 64,
+                    "stderr_sha256": "0" * 64,
+                    "passed": True,
+                },
+            }
+        ]
+        payload = release.add_bundle_digest(payload)
+        path = self.write_bundle(payload)
+
+        errors = release.validate_release_evidence(path, check_live_repo=True)
+
+        self.assertTrue(any("benchmark validator" in error for error in errors))
+        self.assertFalse(marker_path.exists())
 
 
 if __name__ == "__main__":
