@@ -98,18 +98,26 @@
   implementation:
     - src/stwo_backend/recursion.rs:phase33_prepare_recursive_compression_public_input_manifest
     - src/stwo_backend/recursion.rs:verify_phase33_recursive_compression_public_input_manifest_against_phase32
+    - src/stwo_backend/recursion.rs:kani_phase33_public_input_ordering_accepts_canonical_order
+    - src/stwo_backend/recursion.rs:kani_phase33_public_input_lane_payload_wires_canonical_fields
+    - src/stwo_backend/recursion.rs:kani_phase33_public_input_ordering_rejects_any_lane_drift
   specs:
     - spec/stwo-phase33-recursive-compression-public-input-manifest.schema.json
   positive_tests:
     - phase33_recursive_public_input_manifest_accepts_matching_phase32_source
+    - kani_phase33_public_input_ordering_accepts_canonical_order
+    - kani_phase33_public_input_lane_payload_wires_canonical_fields
   negative_tests:
     - phase33_recursive_public_input_manifest_rejects_tampered_commitment
     - phase33_recursive_public_input_manifest_parse_rejects_unknown_fields
+    - kani_phase33_public_input_ordering_rejects_any_lane_drift
   evidence_commands:
     - cargo +nightly-2025-07-14 test -q --features stwo-backend phase33
+    - scripts/run_formal_contract_suite.sh
   non_claims:
     - "Does not claim recursive proof closure."
     - "Does not claim a complete recursive verifier."
+    - "Does not claim formal coverage beyond bounded scalar public-input ordering and lane-to-field wiring checks."
 
 - id: phase34_shared_lookup_manifest
   claim: "Phase 34 freezes the ordered lookup-facing public inputs derived from Phase 33 and Phase 30."
@@ -163,21 +171,27 @@
   implementation:
     - src/stwo_backend/recursion.rs:phase36_prepare_recursive_verifier_harness_receipt
     - src/stwo_backend/recursion.rs:verify_phase36_recursive_verifier_harness_receipt_against_sources
+    - src/stwo_backend/recursion.rs:kani_phase36_receipt_flags_accept_canonical_nonclaim_receipt
+    - src/stwo_backend/recursion.rs:kani_phase36_receipt_flags_reject_any_claim_or_missing_source_check
     - fuzz/fuzz_targets/phase36_recursive_verifier_harness_receipt.rs
   specs:
     - spec/stwo-phase36-recursive-verifier-harness-receipt.schema.json
   positive_tests:
     - phase36_recursive_verifier_harness_receipt_accepts_matching_sources
+    - kani_phase36_receipt_flags_accept_canonical_nonclaim_receipt
   negative_tests:
     - phase36_recursive_verifier_harness_receipt_rejects_recursive_claim
     - phase36_recursive_verifier_harness_receipt_rejects_tampered_commitment
     - phase36_recursive_verifier_harness_receipt_parse_rejects_unknown_fields
+    - kani_phase36_receipt_flags_reject_any_claim_or_missing_source_check
   evidence_commands:
     - cargo +nightly-2025-07-14 test -q --features stwo-backend phase36
+    - scripts/run_formal_contract_suite.sh
     - FUZZ_TIME_PER_TARGET=5 scripts/run_fuzz_smoke_suite.sh
   non_claims:
     - "Does not claim recursive proof verification."
     - "Does not claim cryptographic compression."
+    - "Does not claim formal coverage beyond bounded scalar flag-surface checks."
 
 - id: phase37_artifact_chain_harness_receipt
   claim: "Phase 37 recomputes the full Phase 29 + Phase 30 through Phase 36 source-bound artifact chain as heavier operational evidence."
@@ -187,6 +201,11 @@
   implementation:
     - src/stwo_backend/recursion.rs:phase37_prepare_recursive_artifact_chain_harness_receipt
     - src/stwo_backend/recursion.rs:verify_phase37_recursive_artifact_chain_harness_receipt_against_sources
+    - src/stwo_backend/recursion.rs:kani_phase37_hash32_accepts_lowercase_hex_boundary
+    - src/stwo_backend/recursion.rs:kani_phase37_hash32_rejects_non_lowercase_hex_examples
+    - src/stwo_backend/recursion.rs:kani_phase37_hash32_requires_exact_length
+    - src/stwo_backend/recursion.rs:kani_phase37_receipt_flags_accept_canonical_source_bound_receipt
+    - src/stwo_backend/recursion.rs:kani_phase37_receipt_flags_reject_any_claim_or_missing_source_check
     - tools/reference_verifier/reference_verifier.py:verify_phase37_receipt
     - tools/reference_verifier/reference_verifier.py:commit_phase37_receipt
     - scripts/generate_bad_phase37_artifacts.py:generate
@@ -196,15 +215,22 @@
   positive_tests:
     - phase37_recursive_artifact_chain_harness_receipt_accepts_matching_sources
     - test_reference_fixture_verifies_and_commitment_is_stable
+    - kani_phase37_hash32_accepts_lowercase_hex_boundary
+    - kani_phase37_hash32_requires_exact_length
+    - kani_phase37_receipt_flags_accept_canonical_source_bound_receipt
   negative_tests:
     - phase37_recursive_artifact_chain_harness_receipt_rejects_recursive_claim
     - phase37_recursive_artifact_chain_harness_receipt_rejects_tampered_commitment
     - phase37_recursive_artifact_chain_harness_receipt_rejects_malformed_commitment_field
+    - kani_phase37_hash32_rejects_non_lowercase_hex_examples
+    - kani_phase37_hash32_requires_exact_length
+    - kani_phase37_receipt_flags_reject_any_claim_or_missing_source_check
     - test_deterministic_parser_mutation_corpus_rejects_invalid_receipts
     - test_rejects_total_steps_that_exceed_u128_encoding
     - test_generated_artifacts_match_expected_reference_verifier_outcomes
   evidence_commands:
     - cargo +nightly-2025-07-14 test -q --features stwo-backend phase37
+    - scripts/run_formal_contract_suite.sh
     - cargo +nightly-2025-07-14 build -q --features 'full stwo-backend' --bin tvm && TVM_TEST_BINARY=target/debug/tvm cargo +nightly-2025-07-14 test -q --features 'full stwo-backend' --test cli stwo_recursive_artifact_chain
     - scripts/run_reference_verifier_suite.sh
     - scripts/run_phase37_mutation_generator_suite.sh
@@ -214,6 +240,7 @@
     - "Does not claim recursive proof verification."
     - "Does not claim cryptographic compression."
     - "Does not claim a recursively verifiable compressed proof object."
+    - "Does not claim formal coverage beyond bounded scalar syntax, flag-surface, and ordering checks."
 
 - id: bounded_runtime_semantic_agreement
   claim: "The research-v3 artifacts provide bounded semantic-agreement evidence, not a general runtime equivalence theorem."

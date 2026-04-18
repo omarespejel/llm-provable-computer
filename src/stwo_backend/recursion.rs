@@ -1454,17 +1454,397 @@ fn phase29_lower_hex(bytes: &[u8]) -> String {
 }
 
 #[cfg(feature = "stwo-backend")]
+fn phase37_is_lower_hex_byte(byte: u8) -> bool {
+    matches!(byte, b'0'..=b'9' | b'a'..=b'f')
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase37_is_hash32_lower_hex(value: &str) -> bool {
+    value.len() == 64 && value.bytes().all(phase37_is_lower_hex_byte)
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Phase33PublicInputLane {
+    Phase32RecursiveStatementContract,
+    TotalSteps,
+    Phase30SourceChain,
+    Phase30StepEnvelopes,
+    Phase31DecodeBoundaryBridge,
+    ChainStartBoundary,
+    ChainEndBoundary,
+    SourceTemplate,
+    AggregationTemplate,
+}
+
+#[cfg(feature = "stwo-backend")]
+const PHASE33_PUBLIC_INPUT_LANES: [Phase33PublicInputLane; 9] = [
+    Phase33PublicInputLane::Phase32RecursiveStatementContract,
+    Phase33PublicInputLane::TotalSteps,
+    Phase33PublicInputLane::Phase30SourceChain,
+    Phase33PublicInputLane::Phase30StepEnvelopes,
+    Phase33PublicInputLane::Phase31DecodeBoundaryBridge,
+    Phase33PublicInputLane::ChainStartBoundary,
+    Phase33PublicInputLane::ChainEndBoundary,
+    Phase33PublicInputLane::SourceTemplate,
+    Phase33PublicInputLane::AggregationTemplate,
+];
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Phase33PublicInputLanePayload<'a> {
+    Bytes(&'a str),
+    Usize(usize),
+}
+
+#[cfg(all(kani, feature = "stwo-backend"))]
+fn phase33_public_input_lanes_are_canonical(lanes: &[Phase33PublicInputLane; 9]) -> bool {
+    *lanes
+        == [
+            Phase33PublicInputLane::Phase32RecursiveStatementContract,
+            Phase33PublicInputLane::TotalSteps,
+            Phase33PublicInputLane::Phase30SourceChain,
+            Phase33PublicInputLane::Phase30StepEnvelopes,
+            Phase33PublicInputLane::Phase31DecodeBoundaryBridge,
+            Phase33PublicInputLane::ChainStartBoundary,
+            Phase33PublicInputLane::ChainEndBoundary,
+            Phase33PublicInputLane::SourceTemplate,
+            Phase33PublicInputLane::AggregationTemplate,
+        ]
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase33_public_input_lane_payload<'a>(
+    manifest: &'a Phase33RecursiveCompressionPublicInputManifest,
+    lane: Phase33PublicInputLane,
+) -> Phase33PublicInputLanePayload<'a> {
+    match lane {
+        Phase33PublicInputLane::Phase32RecursiveStatementContract => {
+            Phase33PublicInputLanePayload::Bytes(
+                &manifest.phase32_recursive_statement_contract_commitment,
+            )
+        }
+        Phase33PublicInputLane::TotalSteps => {
+            Phase33PublicInputLanePayload::Usize(manifest.total_steps)
+        }
+        Phase33PublicInputLane::Phase30SourceChain => {
+            Phase33PublicInputLanePayload::Bytes(&manifest.phase30_source_chain_commitment)
+        }
+        Phase33PublicInputLane::Phase30StepEnvelopes => {
+            Phase33PublicInputLanePayload::Bytes(&manifest.phase30_step_envelopes_commitment)
+        }
+        Phase33PublicInputLane::Phase31DecodeBoundaryBridge => {
+            Phase33PublicInputLanePayload::Bytes(
+                &manifest.phase31_decode_boundary_bridge_commitment,
+            )
+        }
+        Phase33PublicInputLane::ChainStartBoundary => {
+            Phase33PublicInputLanePayload::Bytes(&manifest.chain_start_boundary_commitment)
+        }
+        Phase33PublicInputLane::ChainEndBoundary => {
+            Phase33PublicInputLanePayload::Bytes(&manifest.chain_end_boundary_commitment)
+        }
+        Phase33PublicInputLane::SourceTemplate => {
+            Phase33PublicInputLanePayload::Bytes(&manifest.source_template_commitment)
+        }
+        Phase33PublicInputLane::AggregationTemplate => {
+            Phase33PublicInputLanePayload::Bytes(&manifest.aggregation_template_commitment)
+        }
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase36_receipt_flag_surface_is_valid(
+    recursive_verification_claimed: bool,
+    cryptographic_compression_claimed: bool,
+    target_manifest_verified: bool,
+    source_binding_verified: bool,
+    total_steps: usize,
+) -> bool {
+    !recursive_verification_claimed
+        && !cryptographic_compression_claimed
+        && target_manifest_verified
+        && source_binding_verified
+        && total_steps > 0
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase37_source_flags_are_all_set(flags: &[bool; 9]) -> bool {
+    for flag in flags {
+        if !*flag {
+            return false;
+        }
+    }
+    true
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase37_receipt_flag_surface_is_valid(
+    recursive_verification_claimed: bool,
+    cryptographic_compression_claimed: bool,
+    source_flags: &[bool; 9],
+    total_steps: usize,
+) -> bool {
+    !recursive_verification_claimed
+        && !cryptographic_compression_claimed
+        && phase37_source_flags_are_all_set(source_flags)
+        && total_steps > 0
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase37_require_hash32(label: &str, value: &str) -> Result<()> {
-    let is_hash32 = value.len() == 64
-        && value
-            .bytes()
-            .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'));
-    if !is_hash32 {
+    if !phase37_is_hash32_lower_hex(value) {
         return Err(VmError::InvalidConfig(format!(
             "Phase 37 recursive artifact-chain harness receipt `{label}` must be a 32-byte lowercase hex commitment"
         )));
     }
     Ok(())
+}
+
+#[cfg(all(kani, feature = "stwo-backend"))]
+mod kani_phase36_phase37_proofs {
+    use super::{
+        phase33_public_input_lane_payload, phase33_public_input_lanes_are_canonical,
+        phase36_receipt_flag_surface_is_valid, phase37_is_hash32_lower_hex,
+        phase37_is_lower_hex_byte, phase37_receipt_flag_surface_is_valid, Phase33PublicInputLane,
+        Phase33PublicInputLanePayload, Phase33RecursiveCompressionPublicInputManifest,
+        PHASE33_PUBLIC_INPUT_LANES,
+    };
+    use crate::proof::StarkProofBackend;
+
+    const PHASE37_SOURCE_FLAG_COUNT: usize = 9;
+
+    #[kani::proof]
+    fn kani_phase37_hash32_accepts_lowercase_hex_boundary() {
+        const LOWER_ZERO: &str = concat!(
+            "00000000", "00000000", "00000000", "00000000", "00000000", "00000000", "00000000",
+            "00000000"
+        );
+        const LOWER_F: &str = concat!(
+            "ffffffff", "ffffffff", "ffffffff", "ffffffff", "ffffffff", "ffffffff", "ffffffff",
+            "ffffffff"
+        );
+
+        assert!(phase37_is_hash32_lower_hex(LOWER_ZERO));
+        assert!(phase37_is_hash32_lower_hex(LOWER_F));
+        assert!(phase37_is_hash32_lower_hex(
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase37_hash32_rejects_non_lowercase_hex_examples() {
+        const UPPERCASE_HEX: &str = concat!(
+            "A", "aaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa",
+            "aaaaaaaa"
+        );
+        const PUNCTUATION: &str = concat!(
+            "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa",
+            "aaaaaaa", ":"
+        );
+
+        assert!(UPPERCASE_HEX.len() == 64);
+        assert!(PUNCTUATION.len() == 64);
+        assert!(!phase37_is_lower_hex_byte(b'A'));
+        assert!(!phase37_is_lower_hex_byte(b':'));
+        assert!(!phase37_is_hash32_lower_hex(UPPERCASE_HEX));
+        assert!(!phase37_is_hash32_lower_hex(PUNCTUATION));
+    }
+
+    #[kani::proof]
+    fn kani_phase37_hash32_requires_exact_length() {
+        const HEX_63: &str = concat!(
+            "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa",
+            "aaaaaaa"
+        );
+        const HEX_64: &str = concat!(
+            "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa",
+            "aaaaaaaa"
+        );
+        const HEX_65: &str = concat!(
+            "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa",
+            "aaaaaaaa", "a"
+        );
+
+        assert!(HEX_63.len() == 63);
+        assert!(HEX_64.len() == 64);
+        assert!(HEX_65.len() == 65);
+        assert!(!phase37_is_hash32_lower_hex(HEX_63));
+        assert!(phase37_is_hash32_lower_hex(HEX_64));
+        assert!(!phase37_is_hash32_lower_hex(HEX_65));
+    }
+
+    #[kani::proof]
+    fn kani_phase36_receipt_flags_accept_canonical_nonclaim_receipt() {
+        assert!(phase36_receipt_flag_surface_is_valid(
+            false, false, true, true, 1
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase36_receipt_flags_reject_any_claim_or_missing_source_check() {
+        let recursive_claimed = kani::any::<bool>();
+        let compression_claimed = kani::any::<bool>();
+        let target_manifest_verified = kani::any::<bool>();
+        let source_binding_verified = kani::any::<bool>();
+        let total_steps = if kani::any::<bool>() { 0 } else { 1 };
+        kani::assume(
+            recursive_claimed
+                || compression_claimed
+                || !target_manifest_verified
+                || !source_binding_verified
+                || total_steps == 0,
+        );
+
+        assert!(!phase36_receipt_flag_surface_is_valid(
+            recursive_claimed,
+            compression_claimed,
+            target_manifest_verified,
+            source_binding_verified,
+            total_steps,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase37_receipt_flags_accept_canonical_source_bound_receipt() {
+        assert!(phase37_receipt_flag_surface_is_valid(
+            false,
+            false,
+            &[true; PHASE37_SOURCE_FLAG_COUNT],
+            1
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase37_receipt_flags_reject_any_claim_or_missing_source_check() {
+        let mut source_flags = [true; PHASE37_SOURCE_FLAG_COUNT];
+        let bad_flag_index = kani::any::<usize>();
+        kani::assume(bad_flag_index < PHASE37_SOURCE_FLAG_COUNT);
+        source_flags[bad_flag_index] = false;
+
+        assert!(!phase37_receipt_flag_surface_is_valid(
+            false,
+            false,
+            &source_flags,
+            1,
+        ));
+        assert!(!phase37_receipt_flag_surface_is_valid(
+            true,
+            false,
+            &[true; PHASE37_SOURCE_FLAG_COUNT],
+            1,
+        ));
+        assert!(!phase37_receipt_flag_surface_is_valid(
+            false,
+            true,
+            &[true; PHASE37_SOURCE_FLAG_COUNT],
+            1,
+        ));
+        assert!(!phase37_receipt_flag_surface_is_valid(
+            false,
+            false,
+            &[true; PHASE37_SOURCE_FLAG_COUNT],
+            0,
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase33_public_input_ordering_accepts_canonical_order() {
+        assert!(phase33_public_input_lanes_are_canonical(
+            &PHASE33_PUBLIC_INPUT_LANES
+        ));
+    }
+
+    #[kani::proof]
+    fn kani_phase33_public_input_lane_payload_wires_canonical_fields() {
+        let manifest = Phase33RecursiveCompressionPublicInputManifest {
+            proof_backend: StarkProofBackend::Stwo,
+            manifest_version: "manifest-version".to_string(),
+            semantic_scope: "semantic-scope".to_string(),
+            proof_backend_version: "proof-backend-version".to_string(),
+            statement_version: "statement-version".to_string(),
+            step_relation: "step-relation".to_string(),
+            required_recursion_posture: "required-recursion-posture".to_string(),
+            recursive_verification_claimed: false,
+            cryptographic_compression_claimed: false,
+            phase32_contract_version: "phase32-contract-version".to_string(),
+            phase32_semantic_scope: "phase32-semantic-scope".to_string(),
+            phase32_recursive_statement_contract_commitment: "lane-phase32-contract".to_string(),
+            total_steps: 73,
+            phase30_source_chain_commitment: "lane-phase30-source-chain".to_string(),
+            phase30_step_envelopes_commitment: "lane-phase30-step-envelopes".to_string(),
+            phase31_decode_boundary_bridge_commitment: "lane-phase31-boundary-bridge".to_string(),
+            chain_start_boundary_commitment: "lane-chain-start".to_string(),
+            chain_end_boundary_commitment: "lane-chain-end".to_string(),
+            source_template_commitment: "lane-source-template".to_string(),
+            aggregation_template_commitment: "lane-aggregation-template".to_string(),
+            recursive_public_inputs_commitment: "not-a-public-input-lane".to_string(),
+        };
+
+        assert!(
+            phase33_public_input_lane_payload(
+                &manifest,
+                Phase33PublicInputLane::Phase32RecursiveStatementContract
+            ) == Phase33PublicInputLanePayload::Bytes("lane-phase32-contract")
+        );
+        assert!(
+            phase33_public_input_lane_payload(&manifest, Phase33PublicInputLane::TotalSteps)
+                == Phase33PublicInputLanePayload::Usize(73)
+        );
+        assert!(
+            phase33_public_input_lane_payload(
+                &manifest,
+                Phase33PublicInputLane::Phase30SourceChain
+            ) == Phase33PublicInputLanePayload::Bytes("lane-phase30-source-chain")
+        );
+        assert!(
+            phase33_public_input_lane_payload(
+                &manifest,
+                Phase33PublicInputLane::Phase30StepEnvelopes
+            ) == Phase33PublicInputLanePayload::Bytes("lane-phase30-step-envelopes")
+        );
+        assert!(
+            phase33_public_input_lane_payload(
+                &manifest,
+                Phase33PublicInputLane::Phase31DecodeBoundaryBridge
+            ) == Phase33PublicInputLanePayload::Bytes("lane-phase31-boundary-bridge")
+        );
+        assert!(
+            phase33_public_input_lane_payload(
+                &manifest,
+                Phase33PublicInputLane::ChainStartBoundary
+            ) == Phase33PublicInputLanePayload::Bytes("lane-chain-start")
+        );
+        assert!(
+            phase33_public_input_lane_payload(&manifest, Phase33PublicInputLane::ChainEndBoundary)
+                == Phase33PublicInputLanePayload::Bytes("lane-chain-end")
+        );
+        assert!(
+            phase33_public_input_lane_payload(&manifest, Phase33PublicInputLane::SourceTemplate)
+                == Phase33PublicInputLanePayload::Bytes("lane-source-template")
+        );
+        assert!(
+            phase33_public_input_lane_payload(
+                &manifest,
+                Phase33PublicInputLane::AggregationTemplate
+            ) == Phase33PublicInputLanePayload::Bytes("lane-aggregation-template")
+        );
+    }
+
+    #[kani::proof]
+    fn kani_phase33_public_input_ordering_rejects_any_lane_drift() {
+        let mut observed = PHASE33_PUBLIC_INPUT_LANES;
+        let bad_lane = kani::any::<usize>();
+        kani::assume(bad_lane < PHASE33_PUBLIC_INPUT_LANES.len());
+        observed[bad_lane] =
+            if observed[bad_lane] == Phase33PublicInputLane::Phase32RecursiveStatementContract {
+                Phase33PublicInputLane::TotalSteps
+            } else {
+                Phase33PublicInputLane::Phase32RecursiveStatementContract
+            };
+
+        assert!(!phase33_public_input_lanes_are_canonical(&observed));
+    }
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -2985,6 +3365,17 @@ pub fn verify_phase36_recursive_verifier_harness_receipt(
                 .to_string(),
         ));
     }
+    if !phase36_receipt_flag_surface_is_valid(
+        receipt.recursive_verification_claimed,
+        receipt.cryptographic_compression_claimed,
+        receipt.target_manifest_verified,
+        receipt.source_binding_verified,
+        receipt.total_steps,
+    ) {
+        return Err(VmError::InvalidConfig(
+            "Phase 36 recursive verifier harness receipt flag surface is invalid".to_string(),
+        ));
+    }
     for (label, value) in [
         (
             "phase35_recursive_target_manifest_commitment",
@@ -3228,6 +3619,26 @@ pub fn verify_phase37_recursive_artifact_chain_harness_receipt(
         return Err(VmError::InvalidConfig(
             "Phase 37 recursive artifact-chain harness receipt requires at least one decode step"
                 .to_string(),
+        ));
+    }
+    if !phase37_receipt_flag_surface_is_valid(
+        receipt.recursive_verification_claimed,
+        receipt.cryptographic_compression_claimed,
+        &[
+            receipt.phase29_input_contract_verified,
+            receipt.phase30_step_envelope_manifest_verified,
+            receipt.phase31_decode_boundary_bridge_verified,
+            receipt.phase32_statement_contract_verified,
+            receipt.phase33_public_inputs_verified,
+            receipt.phase34_shared_lookup_verified,
+            receipt.phase35_target_manifest_verified,
+            receipt.phase36_verifier_harness_receipt_verified,
+            receipt.source_binding_verified,
+        ],
+        receipt.total_steps,
+    ) {
+        return Err(VmError::InvalidConfig(
+            "Phase 37 recursive artifact-chain harness receipt flag surface is invalid".to_string(),
         ));
     }
     for (label, value) in [
@@ -3714,6 +4125,22 @@ pub fn commit_phase32_recursive_compression_statement_contract(
 }
 
 #[cfg(feature = "stwo-backend")]
+fn phase33_update_public_input_lane(
+    hasher: &mut Blake2bVar,
+    manifest: &Phase33RecursiveCompressionPublicInputManifest,
+    lane: Phase33PublicInputLane,
+) {
+    match phase33_public_input_lane_payload(manifest, lane) {
+        Phase33PublicInputLanePayload::Bytes(value) => {
+            phase29_update_len_prefixed(hasher, value.as_bytes());
+        }
+        Phase33PublicInputLanePayload::Usize(value) => {
+            phase29_update_usize(hasher, value);
+        }
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn commit_phase33_recursive_compression_public_input_manifest(
     manifest: &Phase33RecursiveCompressionPublicInputManifest,
 ) -> Result<String> {
@@ -3734,40 +4161,9 @@ pub fn commit_phase33_recursive_compression_public_input_manifest(
     phase29_update_bool(&mut hasher, manifest.cryptographic_compression_claimed);
     phase29_update_len_prefixed(&mut hasher, manifest.phase32_contract_version.as_bytes());
     phase29_update_len_prefixed(&mut hasher, manifest.phase32_semantic_scope.as_bytes());
-    phase29_update_len_prefixed(
-        &mut hasher,
-        manifest
-            .phase32_recursive_statement_contract_commitment
-            .as_bytes(),
-    );
-    phase29_update_usize(&mut hasher, manifest.total_steps);
-    phase29_update_len_prefixed(
-        &mut hasher,
-        manifest.phase30_source_chain_commitment.as_bytes(),
-    );
-    phase29_update_len_prefixed(
-        &mut hasher,
-        manifest.phase30_step_envelopes_commitment.as_bytes(),
-    );
-    phase29_update_len_prefixed(
-        &mut hasher,
-        manifest
-            .phase31_decode_boundary_bridge_commitment
-            .as_bytes(),
-    );
-    phase29_update_len_prefixed(
-        &mut hasher,
-        manifest.chain_start_boundary_commitment.as_bytes(),
-    );
-    phase29_update_len_prefixed(
-        &mut hasher,
-        manifest.chain_end_boundary_commitment.as_bytes(),
-    );
-    phase29_update_len_prefixed(&mut hasher, manifest.source_template_commitment.as_bytes());
-    phase29_update_len_prefixed(
-        &mut hasher,
-        manifest.aggregation_template_commitment.as_bytes(),
-    );
+    for lane in PHASE33_PUBLIC_INPUT_LANES {
+        phase33_update_public_input_lane(&mut hasher, manifest, lane);
+    }
     let mut out = [0u8; 32];
     hasher.finalize_variable(&mut out).map_err(|err| {
         VmError::InvalidConfig(format!(
