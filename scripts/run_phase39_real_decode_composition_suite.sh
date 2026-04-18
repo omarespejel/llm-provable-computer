@@ -28,7 +28,13 @@ if [[ ! -s "${ARTIFACT}" ]]; then
   exit 1
 fi
 
-python3 -B tools/reference_verifier/reference_verifier.py verify-phase38 "${ARTIFACT}"
+if command -v timeout >/dev/null 2>&1; then
+  timeout 120 python3 -B tools/reference_verifier/reference_verifier.py verify-phase38 "${ARTIFACT}"
+elif command -v gtimeout >/dev/null 2>&1; then
+  gtimeout 120 python3 -B tools/reference_verifier/reference_verifier.py verify-phase38 "${ARTIFACT}"
+else
+  python3 -B tools/reference_verifier/reference_verifier.py verify-phase38 "${ARTIFACT}"
+fi
 
 if command -v shasum >/dev/null 2>&1; then
   ARTIFACT_SHA256="$(LC_ALL=C LANG=C shasum -a 256 "${ARTIFACT}" | awk '{print $1}')"
@@ -61,6 +67,8 @@ import reference_verifier as rv
 
 prototype = json.loads(artifact_path.read_text(encoding="utf-8"))
 
+# These constants mirror the Rust generator test:
+# stwo_backend::recursion::tests::phase39_real_decode_composition_artifact_accepts_generated_five_step_chain
 if prototype["total_steps"] != 5:
     raise SystemExit("Phase 39 artifact must cover exactly five generated decode steps")
 if prototype["segment_count"] != 2:
