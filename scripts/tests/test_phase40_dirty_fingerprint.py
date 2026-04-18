@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Optional
 
 
 REPO = Path(__file__).resolve().parents[2]
@@ -24,7 +25,7 @@ class Phase40DirtyFingerprintTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def run_fingerprint(
-        self, limit: int = 1024, cwd: Path | None = None
+        self, limit: int = 1024, cwd: Optional[Path] = None
     ) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
             [sys.executable, "-B", str(SCRIPT), str(limit)],

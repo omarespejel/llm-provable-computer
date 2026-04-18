@@ -8,6 +8,7 @@ import pathlib
 import stat as stat_module
 import subprocess
 import sys
+from typing import Optional
 
 
 class DirtyFingerprintError(RuntimeError):
@@ -122,7 +123,7 @@ def compute_dirty_fingerprint(repo_root: pathlib.Path, limit: int) -> tuple[str,
     return hasher.hexdigest(), truncated
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         description="Emit the Phase40 dirty-state fingerprint hash and truncation flag."
     )
