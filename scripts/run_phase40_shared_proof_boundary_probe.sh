@@ -44,6 +44,11 @@ print(resolved)
 PY
 )"
 EVIDENCE="${ARTIFACT_DIR}/evidence.json"
+EVIDENCE_RELATIVE="${EVIDENCE#"${REPO_ROOT}/"}"
+if [[ "${EVIDENCE_RELATIVE}" == "${EVIDENCE}" ]]; then
+  printf 'error: evidence path must resolve below the repo root: %s\n' "${EVIDENCE}" >&2
+  exit 2
+fi
 mkdir -p -- "${ARTIFACT_DIR}"
 rm -f -- "${EVIDENCE}"
 
@@ -58,9 +63,32 @@ shell_quote_command() {
   printf '%s' "${rendered}"
 }
 
+sha256_file() {
+  local path="$1"
+  if command -v shasum >/dev/null 2>&1; then
+    LC_ALL=C LANG=C shasum -a 256 "${path}" | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    LC_ALL=C LANG=C sha256sum "${path}" | awk '{print $1}'
+  else
+    printf 'error: shasum or sha256sum is required to hash %s\n' "${path}" >&2
+    exit 127
+  fi
+}
+
+sha256_stdin() {
+  if command -v shasum >/dev/null 2>&1; then
+    LC_ALL=C LANG=C shasum -a 256 | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    LC_ALL=C LANG=C sha256sum | awk '{print $1}'
+  else
+    printf 'error: shasum or sha256sum is required for dirty-state fingerprinting\n' >&2
+    exit 127
+  fi
+}
+
 GENERATOR_CMD=(
   env
-  "PHASE40_BOUNDARY_PROBE_OUT=${EVIDENCE}"
+  "PHASE40_BOUNDARY_PROBE_OUT=${EVIDENCE_RELATIVE}"
   cargo
   +nightly-2025-07-14
   test
@@ -80,27 +108,37 @@ if [[ ! -s "${EVIDENCE}" ]]; then
   exit 1
 fi
 
-if command -v shasum >/dev/null 2>&1; then
-  EVIDENCE_SHA256="$(LC_ALL=C LANG=C shasum -a 256 "${EVIDENCE}" | awk '{print $1}')"
-elif command -v sha256sum >/dev/null 2>&1; then
-  EVIDENCE_SHA256="$(LC_ALL=C LANG=C sha256sum "${EVIDENCE}" | awk '{print $1}')"
-else
-  printf 'error: shasum or sha256sum is required to hash %s\n' "${EVIDENCE}" >&2
-  exit 127
-fi
+EVIDENCE_PAYLOAD_SHA256="$(sha256_file "${EVIDENCE}")"
 GIT_SHA="$(git rev-parse HEAD)"
+GIT_STATUS_PORCELAIN="$(git status --porcelain=v1)"
+if [[ -n "${GIT_STATUS_PORCELAIN}" ]]; then
+  GIT_DIRTY="true"
+  GIT_DIRTY_FINGERPRINT="$(
+    {
+      printf '%s\n' "${GIT_STATUS_PORCELAIN}"
+      git diff --binary --no-ext-diff
+      git diff --cached --binary --no-ext-diff
+    } | sha256_stdin
+  )"
+else
+  GIT_DIRTY="false"
+  GIT_DIRTY_FINGERPRINT=""
+fi
 
-python3 -B - "${EVIDENCE}" "${EVIDENCE_SHA256}" "${GIT_SHA}" "${GENERATOR_COMMAND}" <<'PY'
+python3 -B - "${EVIDENCE}" "${EVIDENCE_PAYLOAD_SHA256}" "${GIT_SHA}" "${GENERATOR_COMMAND}" "${GIT_DIRTY}" "${GIT_DIRTY_FINGERPRINT}" <<'PY'
 from __future__ import annotations
 
+import hashlib
 import json
 import pathlib
 import sys
 
 evidence_path = pathlib.Path(sys.argv[1])
-evidence_sha256 = sys.argv[2]
+evidence_payload_sha256 = sys.argv[2]
 git_sha = sys.argv[3]
 generator_command = sys.argv[4]
+git_dirty = sys.argv[5]
+git_dirty_fingerprint = sys.argv[6]
 
 evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
 if not isinstance(evidence, dict):
@@ -137,17 +175,31 @@ if not isinstance(phase31_error, str) or not phase31_error.strip():
     raise SystemExit("Phase 40 evidence missing required non-empty field: phase31_error")
 if not isinstance(phase37_error, str) or not phase37_error.strip():
     raise SystemExit("Phase 40 evidence missing required non-empty field: phase37_error")
-if "global_start_state_commitment" not in phase31_error:
-    raise SystemExit("Phase 40 Phase31 error must identify the start-boundary blocker")
-if "global_start_state_commitment" not in phase37_error:
-    raise SystemExit("Phase 40 Phase37 error must inherit the start-boundary blocker")
+required_exact = {
+    "phase31_error_kind": "InvalidConfig",
+    "phase31_boundary_blocker": "global_start_state_commitment",
+    "phase37_error_kind": "InvalidConfig",
+    "phase37_boundary_blocker": "global_start_state_commitment",
+}
+for key, expected in required_exact.items():
+    if evidence.get(key) != expected:
+        raise SystemExit(f"Phase 40 evidence {key} must be {expected!r}")
 if evidence.get("phase29_boundary_domain") == evidence.get("phase30_boundary_domain"):
     raise SystemExit("Phase 40 evidence must distinguish Phase29 and Phase30 boundary domains")
 
 evidence["schema_version"] = "phase40-boundary-domain-probe-evidence-v1"
 evidence["git_sha"] = git_sha
+evidence["git_dirty"] = git_dirty == "true"
+evidence["git_dirty_fingerprint_sha256"] = git_dirty_fingerprint
 evidence["generator_command"] = generator_command
-evidence["evidence_sha256_before_footer"] = evidence_sha256
+evidence["evidence_payload_sha256_before_footer"] = evidence_payload_sha256
+evidence["evidence_sha256_scope"] = (
+    "canonical JSON with evidence_sha256_canonical_excluding_hash removed"
+)
+canonical = dict(evidence)
+evidence["evidence_sha256_canonical_excluding_hash"] = hashlib.sha256(
+    (json.dumps(canonical, indent=2, sort_keys=True) + "\n").encode("utf-8")
+).hexdigest()
 evidence_path.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 PY
 

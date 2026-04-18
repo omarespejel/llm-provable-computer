@@ -10427,7 +10427,15 @@ fn phase28_phase30_prepare_shared_proof_demo_for_layout(
     Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
     Phase30DecodingStepProofEnvelopeManifest,
 )> {
-    let proofs = phase25_demo_proofs_for_layout(layout, 16)?;
+    const PHASE40_SHARED_PROOF_DEMO_STEPS: usize = 16;
+
+    let proofs = phase25_demo_proofs_for_layout(layout, PHASE40_SHARED_PROOF_DEMO_STEPS)?;
+    if proofs.len() != PHASE40_SHARED_PROOF_DEMO_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 40 shared-proof source mismatch: requested {PHASE40_SHARED_PROOF_DEMO_STEPS} proofs but received {}",
+            proofs.len()
+        )));
+    }
     let phase12 = phase12_prepare_decoding_chain(layout, &proofs)?;
     verify_phase12_decoding_chain_with_proof_checks(&phase12)?;
 
@@ -10436,9 +10444,11 @@ fn phase28_phase30_prepare_shared_proof_demo_for_layout(
         .iter()
         .map(|step| step.proof.clone())
         .collect::<Vec<_>>();
-    if verified_proofs.len() != phase12.total_steps {
+    if phase12.total_steps != PHASE40_SHARED_PROOF_DEMO_STEPS
+        || verified_proofs.len() != PHASE40_SHARED_PROOF_DEMO_STEPS
+    {
         return Err(VmError::InvalidConfig(format!(
-            "Phase 40 shared-proof source mismatch: Phase12 records total_steps {} but exposes {} verified proofs",
+            "Phase 40 shared-proof source mismatch: expected {PHASE40_SHARED_PROOF_DEMO_STEPS} verified steps, Phase12 records total_steps {} and exposes {} verified proofs",
             phase12.total_steps,
             verified_proofs.len()
         )));

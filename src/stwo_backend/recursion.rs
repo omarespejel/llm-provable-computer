@@ -6032,7 +6032,11 @@ mod tests {
             "phase30_chain_start_boundary_commitment": phase30.chain_start_boundary_commitment.as_str(),
             "phase29_global_end_state_commitment": phase29.global_end_state_commitment.as_str(),
             "phase30_chain_end_boundary_commitment": phase30.chain_end_boundary_commitment.as_str(),
+            "phase31_error_kind": "InvalidConfig",
+            "phase31_boundary_blocker": "global_start_state_commitment",
             "phase31_error": phase31_error,
+            "phase37_error_kind": "InvalidConfig",
+            "phase37_boundary_blocker": "global_start_state_commitment",
             "phase37_error": phase37_error,
         });
         let json = serde_json::to_vec_pretty(&evidence).expect("serialize Phase 40 evidence");
@@ -6051,7 +6055,7 @@ mod tests {
 
     #[cfg(feature = "stwo-backend")]
     fn phase40_start_boundary_mismatch_display() -> String {
-        format!("invalid config: {PHASE31_START_BOUNDARY_MISMATCH_ERROR}")
+        VmError::InvalidConfig(PHASE31_START_BOUNDARY_MISMATCH_ERROR.to_string()).to_string()
     }
 
     #[cfg(feature = "stwo-backend")]
