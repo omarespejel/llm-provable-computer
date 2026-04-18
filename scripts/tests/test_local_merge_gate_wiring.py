@@ -23,6 +23,10 @@ class LocalMergeGateWiringTests(unittest.TestCase):
         self.assertIsNotNone(match, f"missing function: {fn_name}")
         return match.group("body")
 
+    def _shell_call_site_count(self, fn_name: str) -> int:
+        # Count invocation lines only; this intentionally excludes definitions.
+        return len(re.findall(rf"(?m)^\s*{re.escape(fn_name)}\s*$", self.script))
+
     def test_paper_preflight_surface_is_conditionally_wired(self) -> None:
         self.assertIn("changed_path_is_paper_preflight_surface()", self.script)
         body = self._shell_function_body("changed_path_is_paper_preflight_surface")
@@ -51,9 +55,16 @@ class LocalMergeGateWiringTests(unittest.TestCase):
             with self.subTest(trigger=trigger):
                 self.assertIn(f'changed_path_has_prefix "{trigger}"', body)
         self.assertNotIn('changed_path_has_prefix "docs/engineering/"', body)
-        self.assertIn("run_paper_preflight_if_needed()", self.script)
-        self.assertIn("run_logged paper-preflight bash scripts/run_paper_preflight_suite.sh", self.script)
-        self.assertGreaterEqual(len(re.findall(r"run_paper_preflight_if_needed", self.script)), 4)
+        runner_body = self._shell_function_body("run_paper_preflight_if_needed")
+        self.assertIn("if changed_path_is_paper_preflight_surface; then", runner_body)
+        self.assertIn(
+            "run_logged paper-preflight bash scripts/run_paper_preflight_suite.sh",
+            runner_body,
+        )
+        self.assertGreaterEqual(
+            self._shell_call_site_count("run_paper_preflight_if_needed"),
+            3,
+        )
 
     def test_approximation_budget_surface_is_conditionally_wired(self) -> None:
         self.assertIn("changed_path_is_approximation_budget_surface()", self.script)
@@ -70,14 +81,18 @@ class LocalMergeGateWiringTests(unittest.TestCase):
         for trigger in expected_triggers:
             with self.subTest(trigger=trigger):
                 self.assertIn(f'changed_path_has_prefix "{trigger}"', body)
-        self.assertIn("run_approximation_budget_if_needed()", self.script)
+        runner_body = self._shell_function_body("run_approximation_budget_if_needed")
+        self.assertIn(
+            "if changed_path_is_approximation_budget_surface; then",
+            runner_body,
+        )
         self.assertIn(
             "run_logged approximation-budget bash scripts/run_approximation_budget_suite.sh",
-            self.script,
+            runner_body,
         )
         self.assertGreaterEqual(
-            len(re.findall(r"run_approximation_budget_if_needed", self.script)),
-            4,
+            self._shell_call_site_count("run_approximation_budget_if_needed"),
+            3,
         )
 
 
