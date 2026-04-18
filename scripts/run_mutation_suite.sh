@@ -67,4 +67,92 @@ if [[ -n "${MUTATION_DIFF_FILE:-}" ]]; then
   args+=(--in-diff "${MUTATION_DIFF_FILE}")
 fi
 
-"${args[@]}" "$@"
+mtime_epoch() {
+  local path="$1"
+  local mtime
+  if mtime="$(stat -c %Y "$path" 2>/dev/null)" && [[ "$mtime" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "$mtime"
+    return 0
+  fi
+  if mtime="$(stat -f %m "$path" 2>/dev/null)" && [[ "$mtime" =~ ^[0-9]+$ ]]; then
+    printf '%s\n' "$mtime"
+    return 0
+  fi
+  return 1
+}
+
+is_fresh_path() {
+  local path="$1"
+  local mtime
+  mtime="$(mtime_epoch "$path" || true)"
+  [[ "$mtime" =~ ^[0-9]+$ ]] && (( mtime >= mutation_run_started_epoch ))
+}
+
+find_fresh_mutants_dir() {
+  local candidate outcome saw_marker all_fresh
+  for candidate in "$@"; do
+    [[ -d "$candidate" ]] || continue
+    saw_marker=0
+    all_fresh=1
+    for outcome in caught.txt caught missed.txt missed timeout.txt timeout unviable.txt unviable outcomes.json; do
+      [[ -e "$candidate/$outcome" ]] || continue
+      saw_marker=1
+      if ! is_fresh_path "$candidate/$outcome"; then
+        all_fresh=0
+        break
+      fi
+    done
+    if (( saw_marker && all_fresh )); then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+mutation_output_root="${MUTATION_OUTPUT_ROOT:-.}"
+if [[ "$mutation_output_root" != "." ]]; then
+  mkdir -p "$mutation_output_root"
+  args+=(--output "$mutation_output_root")
+  mutation_results_dir="$mutation_output_root/mutants.out"
+else
+  mutation_results_dir="mutants.out"
+fi
+
+mutation_status=0
+mutation_run_started_epoch="$(date +%s)"
+"${args[@]}" "$@" || mutation_status=$?
+
+fresh_mutation_results_dir=""
+if [[ "$mutation_output_root" != "." ]]; then
+  fresh_mutation_results_dir="$(find_fresh_mutants_dir "$mutation_results_dir" "$mutation_output_root" || true)"
+else
+  fresh_mutation_results_dir="$(find_fresh_mutants_dir "$mutation_results_dir" || true)"
+fi
+
+if [[ -n "$fresh_mutation_results_dir" ]]; then
+  survivor_report="${MUTATION_SURVIVOR_REPORT:-$fresh_mutation_results_dir/survivors.json}"
+  python3 scripts/collect_mutation_survivors.py summarize \
+    --mutants-dir "$fresh_mutation_results_dir" \
+    --output "$survivor_report"
+  echo "mutation survivor report: $survivor_report"
+else
+  stale_output_seen=0
+  if [[ "$mutation_output_root" == "." ]]; then
+    [[ -d "$mutation_results_dir" ]] && stale_output_seen=1
+  elif [[ -d "$mutation_results_dir" || -d "$mutation_output_root" ]]; then
+    stale_output_seen=1
+  fi
+  if (( stale_output_seen )); then
+    if (( mutation_status == 0 )); then
+      echo "error: cargo-mutants succeeded but no fresh mutation output was found; refusing to skip survivor report" >&2
+      exit 1
+    fi
+    echo "warning: no fresh cargo-mutants output found after failed cargo-mutants run; skipping mutation survivor report" >&2
+  elif (( mutation_status == 0 )); then
+    echo "error: cargo-mutants succeeded but did not produce mutation output; refusing to skip survivor report" >&2
+    exit 1
+  fi
+fi
+
+exit "$mutation_status"

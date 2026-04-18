@@ -518,6 +518,15 @@ changed_path_is_release_evidence_surface() {
     changed_path_has_prefix "scripts/local_merge_gate.sh"
 }
 
+changed_path_is_mutation_survivor_tracking_surface() {
+  changed_path_has_prefix "scripts/collect_mutation_survivors.py" ||
+    changed_path_has_prefix "scripts/tests/test_collect_mutation_survivors.py" ||
+    changed_path_has_prefix "scripts/run_mutation_survivor_tracking_suite.sh" ||
+    changed_path_has_prefix "scripts/run_mutation_suite.sh" ||
+    changed_path_has_prefix "docs/engineering/mutation-survivors.md" ||
+    changed_path_has_prefix "scripts/local_merge_gate.sh"
+}
+
 changed_path_is_dependency_audit_input() {
   local path
 
@@ -643,6 +652,12 @@ run_release_evidence_if_needed() {
   fi
 }
 
+run_mutation_survivor_tracking_if_needed() {
+  if changed_path_is_mutation_survivor_tracking_surface; then
+    run_logged mutation-survivor-tracking bash scripts/run_mutation_survivor_tracking_suite.sh
+  fi
+}
+
 run_research_v3_smoke_targets() {
   local research_v3_smoke label
   for research_v3_smoke in "${research_v3_smoke_targets[@]}"; do
@@ -735,6 +750,7 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   run_fuzz_smoke_if_needed
   run_benchmark_reproducibility_if_needed
   run_release_evidence_if_needed
+  run_mutation_survivor_tracking_if_needed
   completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
@@ -763,6 +779,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_fuzz_smoke_if_needed
   run_benchmark_reproducibility_if_needed
   run_release_evidence_if_needed
+  run_mutation_survivor_tracking_if_needed
   completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
@@ -790,6 +807,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_phase37_mutation_generator_if_needed
   run_benchmark_reproducibility_if_needed
   run_release_evidence_if_needed
+  run_mutation_survivor_tracking_if_needed
   run_conditional_mutation_check
   run_logged fuzz-smoke env FUZZ_TIME_PER_TARGET=20 scripts/run_fuzz_smoke_suite.sh
   run_logged ub-checks env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh

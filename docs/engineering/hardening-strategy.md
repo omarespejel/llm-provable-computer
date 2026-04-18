@@ -44,6 +44,9 @@ do not let trusted-core changes merge on smoke alone.
 | scheduled baseline | Detect drift that diff-scoped PR checks cannot see | scheduled or `main`-branch dependency audit, manually dispatched heavy CI baselines when needed |
 
 The merge gate in `scripts/local_merge_gate.sh` enforces the first three tiers.
+Mutation-testing evidence is tracked through
+`docs/engineering/mutation-survivors.md`; survived and timed-out mutants must be
+triaged there or killed with stronger tests before paper milestones.
 
 ## Required Test Types
 
