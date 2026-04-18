@@ -158,8 +158,12 @@ for raw_path in sorted(paths):
     if remaining <= 0:
         truncated = True
         continue
-    with path.open("rb") as handle:
-        chunk = handle.read(min(remaining, stat.st_size))
+    try:
+        with path.open("rb") as handle:
+            chunk = handle.read(min(remaining, stat.st_size))
+    except OSError as error:
+        hasher.update(f"read-error:{error.errno}".encode("ascii"))
+        continue
     hasher.update(chunk)
     remaining -= len(chunk)
     if stat.st_size > len(chunk):
