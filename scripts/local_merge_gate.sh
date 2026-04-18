@@ -521,6 +521,7 @@ changed_path_is_paper_preflight_surface() {
     changed_path_has_prefix "scripts/run_fuzz_smoke_suite.sh" ||
     changed_path_has_prefix "scripts/run_mutation_survivor_tracking_suite.sh" ||
     changed_path_has_prefix "scripts/run_phase37_mutation_generator_suite.sh" ||
+    changed_path_has_prefix "scripts/run_phase39_real_decode_composition_suite.sh" ||
     changed_path_has_prefix "scripts/run_reference_verifier_suite.sh" ||
     changed_path_has_prefix "scripts/paper/" ||
     changed_path_has_prefix "scripts/run_paper_preflight_suite.sh" ||
@@ -546,6 +547,16 @@ changed_path_is_phase38_schema_surface() {
     changed_path_has_prefix "src/stwo_backend/recursion.rs" ||
     changed_path_has_prefix "scripts/tests/test_phase38_schema.py" ||
     changed_path_has_prefix "scripts/run_phase38_schema_suite.sh" ||
+    changed_path_has_prefix "scripts/local_merge_gate.sh"
+}
+
+changed_path_is_phase39_real_decode_composition_surface() {
+  changed_path_has_prefix "src/stwo_backend/decoding.rs" ||
+    changed_path_has_prefix "src/stwo_backend/recursion.rs" ||
+    changed_path_has_prefix "docs/engineering/paper3-claim-evidence.yml" ||
+    changed_path_has_prefix "docs/engineering/paper3-composition-prototype.md" ||
+    changed_path_has_prefix "scripts/run_phase39_real_decode_composition_suite.sh" ||
+    changed_path_has_prefix "tools/reference_verifier/" ||
     changed_path_has_prefix "scripts/local_merge_gate.sh"
 }
 
@@ -712,6 +723,12 @@ run_phase38_schema_if_needed() {
   fi
 }
 
+run_phase39_real_decode_composition_if_needed() {
+  if changed_path_is_phase39_real_decode_composition_surface; then
+    run_logged phase39-real-decode-composition bash scripts/run_phase39_real_decode_composition_suite.sh
+  fi
+}
+
 run_benchmark_reproducibility_if_needed() {
   if changed_path_is_benchmark_reproducibility_surface; then
     run_logged benchmark-reproducibility bash scripts/run_benchmark_reproducibility_suite.sh
@@ -823,6 +840,7 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   run_paper_preflight_if_needed
   run_approximation_budget_if_needed
   run_phase38_schema_if_needed
+  run_phase39_real_decode_composition_if_needed
   run_benchmark_reproducibility_if_needed
   run_release_evidence_if_needed
   run_mutation_survivor_tracking_if_needed
@@ -855,6 +873,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_paper_preflight_if_needed
   run_approximation_budget_if_needed
   run_phase38_schema_if_needed
+  run_phase39_real_decode_composition_if_needed
   run_benchmark_reproducibility_if_needed
   run_release_evidence_if_needed
   run_mutation_survivor_tracking_if_needed
@@ -886,6 +905,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_paper_preflight_if_needed
   run_approximation_budget_if_needed
   run_phase38_schema_if_needed
+  run_phase39_real_decode_composition_if_needed
   run_benchmark_reproducibility_if_needed
   run_release_evidence_if_needed
   run_mutation_survivor_tracking_if_needed

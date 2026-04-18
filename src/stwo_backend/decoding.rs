@@ -2392,7 +2392,30 @@ pub fn verify_phase12_decoding_chain_with_proof_checks(
 pub fn phase30_prepare_decoding_step_proof_envelope_manifest(
     chain: &Phase12DecodingChainManifest,
 ) -> Result<Phase30DecodingStepProofEnvelopeManifest> {
+    phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(
+        chain,
+        0,
+        chain.steps.len(),
+    )
+}
+
+pub fn phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(
+    chain: &Phase12DecodingChainManifest,
+    step_start: usize,
+    step_end: usize,
+) -> Result<Phase30DecodingStepProofEnvelopeManifest> {
     verify_phase12_decoding_chain(chain)?;
+    if step_start >= step_end {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding step envelope manifest step range {step_start}..{step_end} must contain at least one step"
+        )));
+    }
+    if step_end > chain.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding step envelope manifest step range {step_start}..{step_end} exceeds source chain length {}",
+            chain.steps.len()
+        )));
+    }
     let layout_commitment = commit_phase12_layout(&chain.layout);
     let source_chain_commitment = commit_phase12_decoding_chain_for_step_envelopes(chain)?;
     let artifact_index = chain
@@ -2400,22 +2423,24 @@ pub fn phase30_prepare_decoding_step_proof_envelope_manifest(
         .iter()
         .map(|artifact| (artifact.artifact_commitment.as_str(), artifact))
         .collect::<HashMap<_, _>>();
-    let envelopes = chain
-        .steps
+    let envelopes = chain.steps[step_start..step_end]
         .iter()
         .enumerate()
-        .map(|(step_index, step)| {
+        .map(|(local_step_index, step)| {
+            // Segment manifests are range-local; the shared source-chain
+            // commitment and boundary pair bind them back to the full run.
+            let global_step_index = step_start + local_step_index;
             let artifact = artifact_index
                 .get(step.shared_lookup_artifact_commitment.as_str())
                 .copied()
                 .ok_or_else(|| {
                     VmError::InvalidConfig(format!(
-                        "decoding step {step_index} shared lookup artifact `{}` is not present in the Phase 12 registry",
+                        "decoding step {global_step_index} (range-local {local_step_index}) shared lookup artifact `{}` is not present in the Phase 12 registry",
                         step.shared_lookup_artifact_commitment
                     ))
                 })?;
             build_phase30_decoding_step_proof_envelope(
-                step_index,
+                local_step_index,
                 step,
                 &layout_commitment,
                 &source_chain_commitment,
@@ -2683,6 +2708,23 @@ pub fn verify_phase30_decoding_step_proof_envelope_manifest_against_chain(
         return Err(VmError::InvalidConfig(
             "decoding step envelope manifest does not match the derived Phase 12 chain".to_string(),
         ));
+    }
+    Ok(())
+}
+
+pub fn verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range(
+    manifest: &Phase30DecodingStepProofEnvelopeManifest,
+    chain: &Phase12DecodingChainManifest,
+    step_start: usize,
+    step_end: usize,
+) -> Result<()> {
+    let expected = phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(
+        chain, step_start, step_end,
+    )?;
+    if manifest != &expected {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding step envelope manifest does not match the derived Phase 12 chain range {step_start}..{step_end}"
+        )));
     }
     Ok(())
 }
@@ -9818,13 +9860,30 @@ pub fn phase13_default_decoding_layout_matrix() -> Result<Vec<Phase12DecodingLay
 pub fn prove_phase12_decoding_demo_for_layout(
     layout: &Phase12DecodingLayout,
 ) -> Result<Phase12DecodingChainManifest> {
+    prove_phase12_decoding_demo_for_layout_steps(layout, 3)
+}
+
+pub fn prove_phase12_decoding_demo_for_layout_steps(
+    layout: &Phase12DecodingLayout,
+    total_steps: usize,
+) -> Result<Phase12DecodingChainManifest> {
+    if total_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 12 decoding demo must contain at least one step".to_string(),
+        ));
+    }
+    if total_steps > MAX_DECODING_CHAIN_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 12 decoding demo requested {total_steps} steps, exceeding the limit of {MAX_DECODING_CHAIN_STEPS}"
+        )));
+    }
     let config = TransformerVmConfig {
         num_layers: 1,
         attention_mode: Attention2DMode::AverageHard,
         ..TransformerVmConfig::default()
     };
-    let mut proofs = Vec::new();
-    for initial_memory in phase12_demo_initial_memories(layout)? {
+    let mut proofs = Vec::with_capacity(total_steps);
+    for initial_memory in phase12_demo_initial_memories_for_steps(layout, total_steps)? {
         let program = decoding_step_v2_program_with_initial_memory(layout, initial_memory)?;
         let model = ProgramCompiler.compile_program(program, config.clone())?;
         let proof = prove_execution_stark_with_backend_and_options(
@@ -9843,6 +9902,13 @@ pub fn prove_phase12_decoding_demo_for_layout(
 pub fn prove_phase12_decoding_demo() -> Result<Phase12DecodingChainManifest> {
     let layout = phase12_default_decoding_layout();
     prove_phase12_decoding_demo_for_layout(&layout)
+}
+
+pub fn prove_phase12_decoding_demo_steps(
+    total_steps: usize,
+) -> Result<Phase12DecodingChainManifest> {
+    let layout = phase12_default_decoding_layout();
+    prove_phase12_decoding_demo_for_layout_steps(&layout, total_steps)
 }
 
 pub fn prove_phase13_decoding_layout_matrix_demo() -> Result<Phase13DecodingLayoutMatrixManifest> {
@@ -12459,7 +12525,24 @@ fn write_phase12_noncanonical_lookup_seed(memory: &mut [i16], lookup: std::ops::
 pub(crate) fn phase12_demo_initial_memories(
     layout: &Phase12DecodingLayout,
 ) -> Result<Vec<Vec<i16>>> {
+    phase12_demo_initial_memories_for_steps(layout, 3)
+}
+
+pub(crate) fn phase12_demo_initial_memories_for_steps(
+    layout: &Phase12DecodingLayout,
+    total_steps: usize,
+) -> Result<Vec<Vec<i16>>> {
     layout.validate()?;
+    if total_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 12 demo seed generation requires at least one step".to_string(),
+        ));
+    }
+    if total_steps > MAX_DECODING_CHAIN_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 12 demo seed generation requested {total_steps} steps, exceeding the limit of {MAX_DECODING_CHAIN_STEPS}"
+        )));
+    }
     let kv_cache_range = layout.kv_cache_range()?;
     let incoming_token_range = layout.incoming_token_range()?;
     let query_range = layout.query_range()?;
@@ -12468,8 +12551,8 @@ pub(crate) fn phase12_demo_initial_memories(
     let position_increment_index = layout.position_increment_index()?;
     let mut kv_cache = vec![0; kv_cache_range.len()];
 
-    let mut memories = Vec::with_capacity(3);
-    for position in 0..3 {
+    let mut memories = Vec::with_capacity(total_steps);
+    for position in 0..total_steps {
         let incoming_values = phase12_demo_incoming_values(layout.pair_width, position);
         let query_values = phase12_demo_query_values(layout.pair_width, position);
         let mut memory = vec![0; layout.memory_size()?];
@@ -19274,6 +19357,116 @@ mod tests {
         verify_phase30_decoding_step_proof_envelope_manifest(&manifest).expect("verify");
         verify_phase30_decoding_step_proof_envelope_manifest_against_chain(&manifest, &chain)
             .expect("verify against chain");
+    }
+
+    #[test]
+    fn phase30_step_envelope_manifest_range_binds_source_slice() {
+        let (chain, full_manifest) = sample_phase30_chain_and_manifest();
+        let range_manifest =
+            phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(&chain, 0, 2)
+                .expect("range manifest");
+
+        assert_eq!(range_manifest.total_steps, 2);
+        assert_eq!(range_manifest.envelopes.len(), 2);
+        assert_eq!(
+            range_manifest.source_chain_commitment,
+            full_manifest.source_chain_commitment
+        );
+        assert_eq!(
+            range_manifest.chain_start_boundary_commitment,
+            chain.steps[0].from_state.public_state_commitment
+        );
+        assert_eq!(
+            range_manifest.chain_end_boundary_commitment,
+            chain.steps[1].to_state.public_state_commitment
+        );
+        verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range(
+            &range_manifest,
+            &chain,
+            0,
+            2,
+        )
+        .expect("range verifies against source slice");
+
+        let nonzero_range_manifest =
+            phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(&chain, 1, 3)
+                .expect("nonzero range manifest");
+        assert_eq!(nonzero_range_manifest.total_steps, 2);
+        assert_eq!(
+            nonzero_range_manifest
+                .envelopes
+                .iter()
+                .map(|envelope| envelope.step_index)
+                .collect::<Vec<_>>(),
+            vec![0, 1]
+        );
+        assert_eq!(
+            nonzero_range_manifest.chain_start_boundary_commitment,
+            chain.steps[1].from_state.public_state_commitment
+        );
+        assert_eq!(
+            nonzero_range_manifest.chain_end_boundary_commitment,
+            chain.steps[2].to_state.public_state_commitment
+        );
+        verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range(
+            &nonzero_range_manifest,
+            &chain,
+            1,
+            3,
+        )
+        .expect("nonzero range verifies against source slice");
+
+        let wrong_range = verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range(
+            &range_manifest,
+            &chain,
+            1,
+            3,
+        )
+        .expect_err("range manifest must not verify against a different slice");
+        assert!(
+            wrong_range
+                .to_string()
+                .contains("does not match the derived Phase 12 chain range"),
+            "unexpected error: {wrong_range}"
+        );
+
+        let full_chain_err = verify_phase30_decoding_step_proof_envelope_manifest_against_chain(
+            &range_manifest,
+            &chain,
+        )
+        .expect_err("range manifest must not verify as the full chain");
+        assert!(
+            full_chain_err
+                .to_string()
+                .contains("does not match the derived Phase 12 chain"),
+            "unexpected error: {full_chain_err}"
+        );
+    }
+
+    #[test]
+    fn phase30_step_envelope_manifest_range_rejects_invalid_bounds() {
+        let (chain, _) = sample_phase30_chain_and_manifest();
+
+        let empty =
+            phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(&chain, 1, 1)
+                .expect_err("empty range must be rejected");
+        assert!(
+            empty.to_string().contains("must contain at least one step"),
+            "unexpected error: {empty}"
+        );
+
+        let out_of_bounds = phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(
+            &chain,
+            0,
+            chain.steps.len() + 1,
+        )
+        .expect_err("out-of-bounds range must be rejected");
+        assert!(
+            out_of_bounds
+                .to_string()
+                .contains("exceeds source chain length"),
+            "unexpected error: {out_of_bounds}"
+        );
     }
 
     #[test]

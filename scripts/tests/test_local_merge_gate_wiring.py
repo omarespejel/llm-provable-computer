@@ -69,6 +69,7 @@ class LocalMergeGateWiringTests(unittest.TestCase):
             "scripts/run_fuzz_smoke_suite.sh",
             "scripts/run_mutation_survivor_tracking_suite.sh",
             "scripts/run_phase37_mutation_generator_suite.sh",
+            "scripts/run_phase39_real_decode_composition_suite.sh",
             "scripts/run_reference_verifier_suite.sh",
             "scripts/paper/",
             "scripts/run_paper_preflight_suite.sh",
@@ -163,6 +164,34 @@ class LocalMergeGateWiringTests(unittest.TestCase):
             runner_body,
         )
         self._assert_runner_in_local_modes("run_phase38_schema_if_needed")
+
+    def test_phase39_real_decode_composition_surface_is_conditionally_wired(self) -> None:
+        self.assertIn("changed_path_is_phase39_real_decode_composition_surface()", self.script)
+        body = self._shell_function_body("changed_path_is_phase39_real_decode_composition_surface")
+        expected_triggers = [
+            "src/stwo_backend/decoding.rs",
+            "src/stwo_backend/recursion.rs",
+            "docs/engineering/paper3-claim-evidence.yml",
+            "docs/engineering/paper3-composition-prototype.md",
+            "scripts/run_phase39_real_decode_composition_suite.sh",
+            "tools/reference_verifier/",
+            "scripts/local_merge_gate.sh",
+        ]
+        for trigger in expected_triggers:
+            with self.subTest(trigger=trigger):
+                self.assertIn(f'changed_path_has_prefix "{trigger}"', body)
+        runner_body = self._shell_function_body(
+            "run_phase39_real_decode_composition_if_needed"
+        )
+        self.assertIn(
+            "if changed_path_is_phase39_real_decode_composition_surface; then",
+            runner_body,
+        )
+        self.assertIn(
+            "run_logged phase39-real-decode-composition bash scripts/run_phase39_real_decode_composition_suite.sh",
+            runner_body,
+        )
+        self._assert_runner_in_local_modes("run_phase39_real_decode_composition_if_needed")
 
 
 if __name__ == "__main__":

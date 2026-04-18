@@ -12,6 +12,7 @@
     - docs/engineering/paper3-composition-prototype.md#Input surface
   positive_tests:
     - phase38_paper3_composition_prototype_accepts_contiguous_shared_lookup_segments
+    - phase39_real_decode_composition_artifact_accepts_generated_five_step_chain
     - test_reference_fixture_verifies_and_commitment_is_stable
   negative_tests:
     - phase38_paper3_composition_prototype_rejects_unbound_phase37_commitment_swap
@@ -28,6 +29,7 @@
   evidence_commands:
     - cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase38_paper3_composition_prototype
     - scripts/run_phase38_schema_suite.sh
+    - scripts/run_phase39_real_decode_composition_suite.sh
     - scripts/run_reference_verifier_suite.sh
   non_claims:
     - "Does not claim recursive proof closure."
@@ -44,6 +46,7 @@
     - docs/engineering/paper3-composition-prototype.md#Checks performed
   positive_tests:
     - phase38_paper3_composition_prototype_accepts_contiguous_shared_lookup_segments
+    - phase39_real_decode_composition_artifact_accepts_generated_five_step_chain
     - test_reference_fixture_verifies_and_commitment_is_stable
   negative_tests:
     - phase38_paper3_composition_prototype_rejects_boundary_gap
@@ -61,6 +64,7 @@
   evidence_commands:
     - cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase38_paper3_composition_prototype
     - scripts/run_phase38_schema_suite.sh
+    - scripts/run_phase39_real_decode_composition_suite.sh
     - scripts/run_reference_verifier_suite.sh
   non_claims:
     - "Does not claim open-ended or implicit boundary initialization."
@@ -80,6 +84,7 @@
     - docs/engineering/paper3-composition-prototype.md#Checks performed
   positive_tests:
     - phase38_paper3_composition_prototype_accepts_contiguous_shared_lookup_segments
+    - phase39_real_decode_composition_artifact_accepts_generated_five_step_chain
     - test_reference_fixture_verifies_and_commitment_is_stable
   negative_tests:
     - phase38_paper3_composition_prototype_rejects_source_chain_drift
@@ -100,6 +105,7 @@
   evidence_commands:
     - cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase38_paper3_composition_prototype
     - scripts/run_phase38_schema_suite.sh
+    - scripts/run_phase39_real_decode_composition_suite.sh
     - scripts/run_reference_verifier_suite.sh
   non_claims:
     - "Does not claim shared-table accumulation inside a recursive verifier."
@@ -117,6 +123,7 @@
     - docs/engineering/paper3-composition-prototype.md#Baseline accounting
   positive_tests:
     - phase38_paper3_composition_prototype_accepts_contiguous_shared_lookup_segments
+    - phase39_real_decode_composition_artifact_accepts_generated_five_step_chain
     - test_reference_fixture_verifies_and_commitment_is_stable
   negative_tests:
     - phase38_paper3_composition_prototype_rejects_tampered_baseline
@@ -133,6 +140,7 @@
   evidence_commands:
     - cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase38_paper3_composition_prototype
     - scripts/run_phase38_schema_suite.sh
+    - scripts/run_phase39_real_decode_composition_suite.sh
     - scripts/run_reference_verifier_suite.sh
   non_claims:
     - "Does not claim performance speedup."
