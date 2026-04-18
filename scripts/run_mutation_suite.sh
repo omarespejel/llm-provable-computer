@@ -119,8 +119,16 @@ if [[ -n "$fresh_mutation_results_dir" ]]; then
     --mutants-dir "$fresh_mutation_results_dir" \
     --output "$survivor_report"
   echo "mutation survivor report: $survivor_report"
-elif [[ -d "$mutation_results_dir" || -d "$mutation_output_root" ]]; then
-  echo "warning: no fresh cargo-mutants output found; skipping mutation survivor report" >&2
+else
+  stale_output_seen=0
+  if [[ "$mutation_output_root" == "." ]]; then
+    [[ -d "$mutation_results_dir" ]] && stale_output_seen=1
+  elif [[ -d "$mutation_results_dir" || -d "$mutation_output_root" ]]; then
+    stale_output_seen=1
+  fi
+  if (( stale_output_seen )); then
+    echo "warning: no fresh cargo-mutants output found; skipping mutation survivor report" >&2
+  fi
 fi
 
 exit "$mutation_status"
