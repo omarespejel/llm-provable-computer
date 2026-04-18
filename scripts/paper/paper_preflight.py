@@ -546,6 +546,33 @@ def list_field(record: dict[str, object], key: str) -> list[str]:
     return []
 
 
+def fragment_scoped_search_text(text: str, anchor_offset: int) -> str:
+    """Return the text region governed by a declared paper fragment.
+
+    For Markdown headings, the fragment owns that heading's section up to the
+    next heading at the same or a higher level. For non-heading anchors, retain
+    the historical behavior and search from the anchor to EOF.
+    """
+
+    line_start = text.rfind("\n", 0, anchor_offset) + 1
+    line_end = text.find("\n", anchor_offset)
+    if line_end < 0:
+        line_end = len(text)
+    heading_line = text[line_start:line_end]
+    heading_match = re.match(r"^(#{1,6})\s+", heading_line)
+    if heading_match is None:
+        return text[anchor_offset:]
+
+    heading_level = len(heading_match.group(1))
+    remainder_start = min(line_end + 1, len(text))
+    remainder = text[remainder_start:]
+    next_heading = re.search(rf"(?m)^#{{1,{heading_level}}}\s+", remainder)
+    section_end = (
+        len(text) if next_heading is None else remainder_start + next_heading.start()
+    )
+    return text[line_start:section_end]
+
+
 def check_paper2_evidence_anchors(
     repo_root: pathlib.Path,
     evidence_path: pathlib.Path,
@@ -570,7 +597,8 @@ def check_paper2_evidence_anchors(
             continue
 
         searched: list[str] = []
-        skipped: list[str] = []
+        invalid_paths: list[str] = []
+        missing_fragments: list[str] = []
         unreadable: list[str] = []
         found = False
         for entry in locations:
@@ -578,7 +606,7 @@ def check_paper2_evidence_anchors(
             searched.append(entry)
             path, path_error = resolve_repo_relative_path(repo_root, rel_path)
             if path is None:
-                skipped.append(f"{rel_path} ({path_error})")
+                invalid_paths.append(f"{rel_path} ({path_error})")
                 continue
             if not path.exists() or not path.is_file():
                 continue
@@ -591,19 +619,21 @@ def check_paper2_evidence_anchors(
             if location_anchor is not None:
                 anchor_offset = text.find(location_anchor)
                 if anchor_offset < 0:
-                    skipped.append(
+                    missing_fragments.append(
                         f"{entry} (fragment `{location_anchor}` not found)"
                     )
                     continue
-                search_text = text[anchor_offset:]
+                search_text = fragment_scoped_search_text(text, anchor_offset)
             if re.search(rf"{re.escape(anchor)}(?![A-Za-z0-9_])", search_text):
                 found = True
                 break
 
         if not found:
             details = f"searched locations: {searched}"
-            if skipped:
-                details += f"; skipped invalid paths: {skipped}"
+            if invalid_paths:
+                details += f"; skipped invalid paths: {invalid_paths}"
+            if missing_fragments:
+                details += f"; missing fragments: {missing_fragments}"
             if unreadable:
                 details += f"; unreadable locations: {unreadable}"
             findings.error(
