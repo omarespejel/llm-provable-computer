@@ -37,14 +37,15 @@
     "git": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["head_sha", "branch", "remote_origin", "remote_origin_had_credentials", "dirty", "status_sha256"],
+      "required": ["head_sha", "branch", "remote_origin", "remote_origin_had_credentials", "dirty", "status_sha256", "clean_ignored_prefixes"],
       "properties": {
         "head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
         "branch": {"type": ["string", "null"]},
         "remote_origin": {"type": ["string", "null"]},
         "remote_origin_had_credentials": {"type": "boolean"},
         "dirty": {"type": "boolean"},
-        "status_sha256": {"$ref": "#/$defs/sha256"}
+        "status_sha256": {"$ref": "#/$defs/sha256"},
+        "clean_ignored_prefixes": {"type": "array", "items": {"type": "string"}}
       }
     },
     "toolchain": {

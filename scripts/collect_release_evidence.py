@@ -78,6 +78,35 @@ def run_capture(args: list[str], cwd: Path) -> str | None:
         return None
 
 
+def normalize_repo_prefix(value: str, repo_root: Path) -> str:
+    path = Path(value)
+    resolved = path if path.is_absolute() else repo_root / path
+    try:
+        rel = str(resolved.resolve().relative_to(repo_root.resolve()))
+    except ValueError:
+        return ""
+    return rel.rstrip("/") + "/"
+
+
+def status_entry_path(line: str) -> str:
+    path = line[3:] if len(line) > 3 else ""
+    if " -> " in path:
+        path = path.rsplit(" -> ", 1)[1]
+    return path.strip()
+
+
+def filter_status_porcelain(status: str, ignored_prefixes: list[str]) -> str:
+    if not ignored_prefixes:
+        return status
+    kept = []
+    for line in status.splitlines():
+        path = status_entry_path(line)
+        if path and any(path == prefix.rstrip("/") or path.startswith(prefix) for prefix in ignored_prefixes):
+            continue
+        kept.append(line)
+    return "\n".join(kept) + ("\n" if kept else "")
+
+
 def sanitize_remote_url(value: str | None) -> tuple[str | None, bool]:
     if not value:
         return None, False
@@ -137,14 +166,27 @@ def file_record(path: Path, repo_root: Path, *, role: str, label: str | None = N
     return record
 
 
-def git_metadata(repo_root: Path, *, require_clean: bool) -> dict[str, Any]:
+def git_metadata(
+    repo_root: Path,
+    *,
+    require_clean: bool,
+    clean_ignore_prefixes: list[str] | None = None,
+) -> dict[str, Any]:
     head = run_capture(["git", "rev-parse", "HEAD"], repo_root)
     branch = run_capture(["git", "rev-parse", "--abbrev-ref", "HEAD"], repo_root)
     remote_raw = run_capture(["git", "config", "--get", "remote.origin.url"], repo_root)
     remote, remote_had_credentials = sanitize_remote_url(remote_raw)
     if not is_hex40(head):
         raise ReleaseEvidenceError("git rev-parse HEAD did not return a lowercase 40-char SHA")
-    status = run_capture(["git", "status", "--porcelain"], repo_root) or ""
+    ignored_prefixes = [
+        prefix
+        for prefix in (
+            normalize_repo_prefix(value, repo_root) for value in (clean_ignore_prefixes or [])
+        )
+        if prefix
+    ]
+    raw_status = run_capture(["git", "status", "--porcelain"], repo_root) or ""
+    status = filter_status_porcelain(raw_status, ignored_prefixes)
     dirty = bool(status.strip())
     if require_clean and dirty:
         raise ReleaseEvidenceError("worktree is dirty; release evidence must bind a clean checkout")
@@ -155,6 +197,7 @@ def git_metadata(repo_root: Path, *, require_clean: bool) -> dict[str, Any]:
         "remote_origin_had_credentials": remote_had_credentials,
         "dirty": dirty,
         "status_sha256": sha256_bytes(status.encode("utf-8")),
+        "clean_ignored_prefixes": ignored_prefixes,
     }
 
 
@@ -309,7 +352,11 @@ def collect_release_evidence(args: argparse.Namespace) -> dict[str, Any]:
         raise ReleaseEvidenceError("at least one --merge-gate-evidence file is required")
     schema_path = repo_root / RELEASE_EVIDENCE_SCHEMA
     schema = file_record(schema_path, repo_root, role="release_evidence_schema")
-    git = git_metadata(repo_root, require_clean=args.require_clean)
+    git = git_metadata(
+        repo_root,
+        require_clean=args.require_clean,
+        clean_ignore_prefixes=args.clean_ignore_prefix,
+    )
     artifacts = [
         file_record(Path(path), repo_root, role="release_artifact")
         for path in args.artifact
@@ -524,9 +571,16 @@ def validate_benchmark_record(
         )
         if completed.returncode != 0:
             errors.append(f"{field}.result_file no longer passes benchmark validator")
+        elif isinstance(validator, dict):
+            stdout_sha = sha256_bytes(completed.stdout.encode("utf-8"))
+            stderr_sha = sha256_bytes(completed.stderr.encode("utf-8"))
+            if validator.get("stdout_sha256") != stdout_sha:
+                errors.append(f"{field}.validator.stdout_sha256 does not match current validator output")
+            if validator.get("stderr_sha256") != stderr_sha:
+                errors.append(f"{field}.validator.stderr_sha256 does not match current validator output")
 
 
-def validate_release_evidence(path: Path) -> list[str]:
+def validate_release_evidence(path: Path, *, check_live_repo: bool = False) -> list[str]:
     errors: list[str] = []
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -566,16 +620,28 @@ def validate_release_evidence(path: Path) -> list[str]:
             errors.append("git.remote_origin must be string or null")
         if not isinstance(git.get("remote_origin_had_credentials"), bool):
             errors.append("git.remote_origin_had_credentials must be boolean")
+        ignored_prefixes = git.get("clean_ignored_prefixes")
+        if not isinstance(ignored_prefixes, list) or not all(
+            isinstance(prefix, str) for prefix in ignored_prefixes
+        ):
+            errors.append("git.clean_ignored_prefixes must be a string list")
         if not isinstance(git.get("dirty"), bool):
             errors.append("git.dirty must be boolean")
         if not is_hex64(git.get("status_sha256")):
             errors.append("git.status_sha256 must be lowercase 64-char hex")
-        if repo_root is not None and repo_root.exists():
+        if check_live_repo and repo_root is not None and repo_root.exists():
             live_head = run_capture(["git", "rev-parse", "HEAD"], repo_root)
             live_status = run_capture(["git", "status", "--porcelain"], repo_root)
             if live_head is not None and live_head != git.get("head_sha"):
                 errors.append("git.head_sha does not match current repo HEAD")
             if live_status is not None:
+                ignored_prefixes = (
+                    git["clean_ignored_prefixes"]
+                    if isinstance(git.get("clean_ignored_prefixes"), list)
+                    and all(isinstance(prefix, str) for prefix in git["clean_ignored_prefixes"])
+                    else []
+                )
+                live_status = filter_status_porcelain(live_status, ignored_prefixes)
                 live_dirty = bool(live_status.strip())
                 if isinstance(git.get("dirty"), bool) and live_dirty != git["dirty"]:
                     errors.append("git.dirty does not match current repo state")
@@ -628,9 +694,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
     collect.add_argument("--artifact", action="append", default=[], help="release artifact to hash")
     collect.add_argument("--schema-artifact", action="append", default=[], help="schema artifact to hash")
     collect.add_argument("--require-clean", action="store_true", help="fail when git status is dirty")
+    collect.add_argument("--clean-ignore-prefix", action="append", default=[], help="repo-relative prefix ignored only for clean-status checks")
 
     validate = subparsers.add_parser("validate", help="validate a release evidence bundle")
     validate.add_argument("bundle", help="release evidence JSON")
+    validate.add_argument("--check-live-repo", action="store_true", help="also compare recorded git state to the current repo_root checkout")
     return parser
 
 
@@ -641,7 +709,7 @@ def main(argv: list[str] | None = None) -> int:
             payload = collect_release_evidence(args)
             output = Path(args.output)
             write_json_atomic(output, payload)
-            errors = validate_release_evidence(output)
+            errors = validate_release_evidence(output, check_live_repo=True)
         except ReleaseEvidenceError as exc:
             print(f"release evidence collection failed: {exc}", file=sys.stderr)
             return 1
@@ -652,7 +720,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"release evidence bundle written: {output}")
         return 0
     if args.command == "validate":
-        errors = validate_release_evidence(Path(args.bundle))
+        errors = validate_release_evidence(Path(args.bundle), check_live_repo=args.check_live_repo)
         if errors:
             for error in errors:
                 print(error, file=sys.stderr)

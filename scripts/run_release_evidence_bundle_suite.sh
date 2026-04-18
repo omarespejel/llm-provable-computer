@@ -24,7 +24,14 @@ print(out_dir.resolve())
 PY
 )"
 mkdir -p "$repo_root/target"
-target_root="$(cd "$repo_root/target" && pwd)"
+target_root="$(
+  python3 - "$repo_root/target" <<'PY'
+import sys
+from pathlib import Path
+
+print(Path(sys.argv[1]).resolve())
+PY
+)"
 case "$out_dir" in
   "$target_root"/*) ;;
   *)

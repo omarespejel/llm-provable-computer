@@ -79,6 +79,7 @@ class ReleaseEvidenceTests(unittest.TestCase):
                 "remote_origin_had_credentials": False,
                 "dirty": False,
                 "status_sha256": release.sha256_bytes(b""),
+                "clean_ignored_prefixes": [],
             },
             "toolchain": {
                 "python": "3.test",

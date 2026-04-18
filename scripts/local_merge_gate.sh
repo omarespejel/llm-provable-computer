@@ -512,6 +512,7 @@ changed_path_is_release_evidence_surface() {
     changed_path_has_prefix "scripts/tests/test_collect_release_evidence.py" ||
     changed_path_has_prefix "scripts/run_release_evidence_bundle_suite.sh" ||
     changed_path_has_prefix "spec/release-evidence.schema.json" ||
+    changed_path_has_prefix "spec/benchmark-result.schema.json" ||
     changed_path_has_prefix "docs/engineering/release-evidence-bundle.md" ||
     changed_path_has_prefix "docs/engineering/reproducibility.md" ||
     changed_path_has_prefix "scripts/local_merge_gate.sh"
@@ -1037,6 +1038,8 @@ python3 scripts/collect_release_evidence.py collect \
   --checkpoint "pr-${PR_NUMBER}-local-merge-gate" \
   --checkpoint-kind local-merge-gate \
   --merge-gate-evidence "$evidence_file" \
+  --require-clean \
+  --clean-ignore-prefix "$EVIDENCE_DIR" \
   --schema-artifact spec/benchmark-result.schema.json >/dev/null
 python3 scripts/collect_release_evidence.py validate "$release_evidence_file" >/dev/null
 
