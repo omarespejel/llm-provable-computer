@@ -663,7 +663,17 @@ struct Phase37RecursiveArtifactChainHarnessReceiptUnchecked {
 
 #[cfg(feature = "stwo-backend")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "Phase38Paper3CompositionSourceUnchecked")]
 pub struct Phase38Paper3CompositionSource {
+    pub phase29_contract: Phase29RecursiveCompressionInputContract,
+    pub phase30_manifest: Phase30DecodingStepProofEnvelopeManifest,
+    pub phase37_receipt: Phase37RecursiveArtifactChainHarnessReceipt,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Phase38Paper3CompositionSourceUnchecked {
     pub phase29_contract: Phase29RecursiveCompressionInputContract,
     pub phase30_manifest: Phase30DecodingStepProofEnvelopeManifest,
     pub phase37_receipt: Phase37RecursiveArtifactChainHarnessReceipt,
@@ -772,6 +782,25 @@ struct Phase38Paper3CompositionPrototypeUnchecked {
 }
 
 #[cfg(feature = "stwo-backend")]
+impl TryFrom<Phase38Paper3CompositionSourceUnchecked> for Phase38Paper3CompositionSource {
+    type Error = VmError;
+
+    fn try_from(unchecked: Phase38Paper3CompositionSourceUnchecked) -> Result<Self> {
+        let source = Self {
+            phase29_contract: unchecked.phase29_contract,
+            phase30_manifest: unchecked.phase30_manifest,
+            phase37_receipt: unchecked.phase37_receipt,
+        };
+        verify_phase37_recursive_artifact_chain_harness_receipt_against_sources(
+            &source.phase37_receipt,
+            &source.phase29_contract,
+            &source.phase30_manifest,
+        )?;
+        Ok(source)
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
 impl TryFrom<Phase38Paper3CompositionSegmentUnchecked> for Phase38Paper3CompositionSegment {
     type Error = VmError;
 
@@ -864,6 +893,42 @@ impl TryFrom<Phase38Paper3CompositionSegmentUnchecked> for Phase38Paper3Composit
             ),
         ] {
             phase38_require_hash32(label, value)?;
+        }
+        if segment.total_steps == 0 {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 38 Paper 3 composition prototype segment {} must contain at least one step",
+                segment.segment_index
+            )));
+        }
+        let span = segment
+            .step_end
+            .checked_sub(segment.step_start)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 38 Paper 3 composition prototype segment {} step interval is reversed",
+                    segment.segment_index
+                ))
+            })?;
+        if span != segment.total_steps {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 38 Paper 3 composition prototype segment {} spans `{span}` steps but declares `{}`",
+                segment.segment_index, segment.total_steps
+            )));
+        }
+        let expected_end = segment
+            .step_start
+            .checked_add(segment.total_steps)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "Phase 38 Paper 3 composition prototype segment {} step interval overflowed usize",
+                    segment.segment_index
+                ))
+            })?;
+        if segment.step_end != expected_end {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 38 Paper 3 composition prototype segment {} ends at `{}` but expected `{expected_end}`",
+                segment.segment_index, segment.step_end
+            )));
         }
         phase38_verify_segment_receipt_binding(&segment)?;
         Ok(segment)
@@ -7107,6 +7172,44 @@ mod tests {
             .expect_err("forged lookup identity must fail against embedded manifest");
         assert!(err.to_string().contains("lookup identity commitment"));
         assert!(err.to_string().contains("does not match recomputed"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase38_paper3_composition_source_deserialization_rejects_unbound_bundle() {
+        let source = sample_phase38_segment_sources()
+            .pop()
+            .expect("sample source");
+        let mut value = serde_json::to_value(&source).expect("serialize phase38 source");
+        value["phase37_receipt"]["total_steps"] = serde_json::json!(99);
+
+        let err = serde_json::from_value::<Phase38Paper3CompositionSource>(value)
+            .expect_err("source deserialization must verify cross-artifact binding");
+        assert!(err.to_string().contains("Phase 37"));
+
+        let mut with_unknown = serde_json::to_value(&source).expect("serialize phase38 source");
+        with_unknown["unexpected_source_field"] = serde_json::json!(true);
+        let err = serde_json::from_value::<Phase38Paper3CompositionSource>(with_unknown)
+            .expect_err("source deserialization must reject unknown fields");
+        assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase38_paper3_composition_segment_deserialization_rejects_bad_interval() {
+        let sources = sample_phase38_segment_sources();
+        let prototype = phase38_prepare_paper3_composition_prototype(&sources)
+            .expect("prepare Phase 38 composition prototype");
+        let mut segment_value =
+            serde_json::to_value(&prototype.segments[0]).expect("serialize phase38 segment");
+        segment_value["step_end"] = serde_json::json!(
+            prototype.segments[0].step_start + prototype.segments[0].total_steps + 1
+        );
+
+        let err = serde_json::from_value::<Phase38Paper3CompositionSegment>(segment_value)
+            .expect_err("segment deserialization must reject inconsistent interval");
+        assert!(err.to_string().contains("spans"));
+        assert!(err.to_string().contains("declares"));
     }
 
     #[cfg(feature = "stwo-backend")]

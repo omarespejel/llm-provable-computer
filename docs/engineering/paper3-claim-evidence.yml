@@ -12,6 +12,7 @@
     - phase38_paper3_composition_prototype_accepts_contiguous_shared_lookup_segments
   negative_tests:
     - phase38_paper3_composition_prototype_rejects_unbound_phase37_commitment_swap
+    - phase38_paper3_composition_source_deserialization_rejects_unbound_bundle
   schemas:
     - "Not applicable: no standalone Phase 38 JSON schema has been published yet; bounded serde TryFrom plus parse/load APIs enforce the current shape."
   artifact_files:
@@ -38,6 +39,7 @@
     - phase38_paper3_composition_prototype_accepts_contiguous_shared_lookup_segments
   negative_tests:
     - phase38_paper3_composition_prototype_rejects_boundary_gap
+    - phase38_paper3_composition_segment_deserialization_rejects_bad_interval
   schemas:
     - "Not applicable: no standalone Phase 38 JSON schema has been published yet; bounded serde TryFrom plus parse/load APIs enforce the current shape."
   artifact_files:
