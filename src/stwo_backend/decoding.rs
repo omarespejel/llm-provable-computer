@@ -10421,6 +10421,31 @@ fn phase28_prepare_demo_manifest_for_layout(
     phase28_prepare_aggregated_chained_folded_intervalized_decoding_state_relation(&chained_members)
 }
 
+fn phase28_phase30_prepare_shared_proof_demo_for_layout(
+    layout: &Phase12DecodingLayout,
+) -> Result<(
+    Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    Phase30DecodingStepProofEnvelopeManifest,
+)> {
+    let proofs = phase25_demo_proofs_for_layout(layout, 16)?;
+    let phase12 = phase12_prepare_decoding_chain(layout, &proofs)?;
+    verify_phase12_decoding_chain_with_proof_checks(&phase12)?;
+
+    let cumulative_members =
+        phase25_prepare_cumulative_members_from_proof_prefixes(layout, &proofs)?;
+    let interval_members =
+        phase25_prepare_intervalized_members_from_cumulative_members(&cumulative_members, 2)?;
+    let folded_members =
+        phase26_prepare_folded_members_from_interval_members(&interval_members, 2)?;
+    let chained_members = phase27_prepare_chained_members_from_folded_members(&folded_members, 2)?;
+    let phase28 = phase28_prepare_aggregated_chained_folded_intervalized_decoding_state_relation(
+        &chained_members,
+    )?;
+
+    let phase30 = phase30_prepare_decoding_step_proof_envelope_manifest(&phase12)?;
+    Ok((phase28, phase30))
+}
+
 pub fn prove_phase24_decoding_state_relation_accumulator_demo(
 ) -> Result<Phase24DecodingStateRelationAccumulatorManifest> {
     let layout = phase12_default_decoding_layout();
@@ -10511,6 +10536,25 @@ pub fn prove_phase28_aggregated_chained_folded_intervalized_decoding_state_relat
     Err(last_error.unwrap_or_else(|| {
         VmError::InvalidConfig(
             "Phase 28 aggregated chained folded intervalized demo did not have any candidate layouts to try"
+                .to_string(),
+        )
+    }))
+}
+
+pub fn prove_phase28_phase30_shared_proof_boundary_demo() -> Result<(
+    Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    Phase30DecodingStepProofEnvelopeManifest,
+)> {
+    let mut last_error = None;
+    for layout in phase25_default_decoding_layouts()? {
+        match phase28_phase30_prepare_shared_proof_demo_for_layout(&layout) {
+            Ok(artifacts) => return Ok(artifacts),
+            Err(error) => last_error = Some(error),
+        }
+    }
+    Err(last_error.unwrap_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 40 shared-proof boundary demo did not have any candidate layouts to try"
                 .to_string(),
         )
     }))
