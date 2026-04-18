@@ -501,6 +501,17 @@ changed_path_is_fuzz_surface() {
 
 changed_path_is_paper_preflight_surface() {
   changed_path_has_prefix "docs/paper/" ||
+    changed_path_has_prefix "docs/engineering/" ||
+    changed_path_has_prefix "src/" ||
+    changed_path_has_prefix "spec/" ||
+    changed_path_has_prefix "tools/reference_verifier/" ||
+    changed_path_has_prefix "fuzz/fuzz_targets/" ||
+    changed_path_has_prefix "scripts/generate_bad_phase37_artifacts.py" ||
+    changed_path_has_prefix "scripts/run_formal_contract_suite.sh" ||
+    changed_path_has_prefix "scripts/run_fuzz_smoke_suite.sh" ||
+    changed_path_has_prefix "scripts/run_mutation_survivor_tracking_suite.sh" ||
+    changed_path_has_prefix "scripts/run_phase37_mutation_generator_suite.sh" ||
+    changed_path_has_prefix "scripts/run_reference_verifier_suite.sh" ||
     changed_path_has_prefix "docs/engineering/paper2-claim-evidence.yml" ||
     changed_path_has_prefix "docs/engineering/paper3-claim-evidence.yml" ||
     changed_path_has_prefix "scripts/paper/" ||
