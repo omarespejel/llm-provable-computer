@@ -499,6 +499,38 @@ changed_path_is_fuzz_surface() {
     changed_path_has_prefix "scripts/local_merge_gate.sh"
 }
 
+changed_path_is_paper_preflight_surface() {
+  changed_path_has_prefix "docs/paper/" ||
+    changed_path_has_prefix "docs/engineering/paper2-claim-evidence.yml" ||
+    changed_path_has_prefix "docs/engineering/paper3-claim-evidence.yml" ||
+    changed_path_has_prefix "docs/engineering/design/phase29-recursive-compression-input-contract-spec.md" ||
+    changed_path_has_prefix "docs/engineering/paper3-composition-prototype.md" ||
+    changed_path_has_prefix "docs/engineering/reproducibility.md" ||
+    changed_path_has_prefix "src/" ||
+    changed_path_has_prefix "spec/" ||
+    changed_path_has_prefix "tools/reference_verifier/" ||
+    changed_path_has_prefix "fuzz/fuzz_targets/" ||
+    changed_path_has_prefix "scripts/generate_bad_phase37_artifacts.py" ||
+    changed_path_has_prefix "scripts/run_formal_contract_suite.sh" ||
+    changed_path_has_prefix "scripts/run_fuzz_smoke_suite.sh" ||
+    changed_path_has_prefix "scripts/run_mutation_survivor_tracking_suite.sh" ||
+    changed_path_has_prefix "scripts/run_phase37_mutation_generator_suite.sh" ||
+    changed_path_has_prefix "scripts/run_reference_verifier_suite.sh" ||
+    changed_path_has_prefix "scripts/paper/" ||
+    changed_path_has_prefix "scripts/run_paper_preflight_suite.sh" ||
+    changed_path_has_prefix "scripts/local_merge_gate.sh"
+}
+
+changed_path_is_approximation_budget_surface() {
+  changed_path_has_prefix "docs/engineering/approximation-budget.md" ||
+    changed_path_has_prefix "scripts/check_approximation_budget.py" ||
+    changed_path_has_prefix "scripts/tests/test_check_approximation_budget.py" ||
+    changed_path_has_prefix "scripts/run_approximation_budget_suite.sh" ||
+    changed_path_has_prefix "tests/fixtures/reference_cases/toy_approximation_budget_bundle.json" ||
+    changed_path_has_prefix "tests/fixtures/reference_cases/toy_approximation_budget_negative_bundle.json" ||
+    changed_path_has_prefix "scripts/local_merge_gate.sh"
+}
+
 changed_path_is_benchmark_reproducibility_surface() {
   changed_path_has_prefix "benchmarks/" ||
     changed_path_has_prefix "docs/engineering/benchmark-methodology.md" ||
@@ -640,6 +672,18 @@ run_fuzz_smoke_if_needed() {
   fi
 }
 
+run_paper_preflight_if_needed() {
+  if changed_path_is_paper_preflight_surface; then
+    run_logged paper-preflight bash scripts/run_paper_preflight_suite.sh
+  fi
+}
+
+run_approximation_budget_if_needed() {
+  if changed_path_is_approximation_budget_surface; then
+    run_logged approximation-budget bash scripts/run_approximation_budget_suite.sh
+  fi
+}
+
 run_benchmark_reproducibility_if_needed() {
   if changed_path_is_benchmark_reproducibility_surface; then
     run_logged benchmark-reproducibility bash scripts/run_benchmark_reproducibility_suite.sh
@@ -748,6 +792,8 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   run_reference_verifier_if_needed
   run_phase37_mutation_generator_if_needed
   run_fuzz_smoke_if_needed
+  run_paper_preflight_if_needed
+  run_approximation_budget_if_needed
   run_benchmark_reproducibility_if_needed
   run_release_evidence_if_needed
   run_mutation_survivor_tracking_if_needed
@@ -777,6 +823,8 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_reference_verifier_if_needed
   run_phase37_mutation_generator_if_needed
   run_fuzz_smoke_if_needed
+  run_paper_preflight_if_needed
+  run_approximation_budget_if_needed
   run_benchmark_reproducibility_if_needed
   run_release_evidence_if_needed
   run_mutation_survivor_tracking_if_needed
@@ -805,6 +853,8 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   fi
   run_reference_verifier_if_needed
   run_phase37_mutation_generator_if_needed
+  run_paper_preflight_if_needed
+  run_approximation_budget_if_needed
   run_benchmark_reproducibility_if_needed
   run_release_evidence_if_needed
   run_mutation_survivor_tracking_if_needed
