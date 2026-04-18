@@ -5962,13 +5962,15 @@ mod tests {
     }
 
     #[cfg(feature = "stwo-backend")]
-    fn phase38_source_from_real_phase30_segment(
+    fn phase38_source_from_generated_phase30_segment_harness(
         phase30: Phase30DecodingStepProofEnvelopeManifest,
     ) -> Phase38Paper3CompositionSource {
+        // Phase 39 makes the Phase 12/30 decode surface generated. The Phase 29
+        // contract remains the existing pre-recursive harness boundary.
         let phase29_contract = sample_phase29_contract_for_phase30(&phase30);
         let phase37_receipt =
             phase37_prepare_recursive_artifact_chain_harness_receipt(&phase29_contract, &phase30)
-                .expect("prepare Phase 37 receipt for real Phase 30 segment");
+                .expect("prepare Phase 37 receipt for generated Phase 30 segment");
         Phase38Paper3CompositionSource {
             phase29_contract,
             phase30_manifest: phase30,
@@ -5984,7 +5986,7 @@ mod tests {
             return;
         };
         let path = std::path::PathBuf::from(path);
-        if let Some(parent) = path.parent() {
+        if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
             std::fs::create_dir_all(parent).expect("create Phase 39 artifact directory");
         }
         let json =
@@ -7120,8 +7122,8 @@ mod tests {
         );
 
         let sources = vec![
-            phase38_source_from_real_phase30_segment(first_segment),
-            phase38_source_from_real_phase30_segment(second_segment),
+            phase38_source_from_generated_phase30_segment_harness(first_segment),
+            phase38_source_from_generated_phase30_segment_harness(second_segment),
         ];
         let prototype = phase38_prepare_paper3_composition_prototype(&sources)
             .expect("compose real generated decode segments");

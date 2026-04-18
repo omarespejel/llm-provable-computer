@@ -2423,14 +2423,7 @@ pub fn phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(
         .iter()
         .map(|artifact| (artifact.artifact_commitment.as_str(), artifact))
         .collect::<HashMap<_, _>>();
-    let envelopes = chain
-        .steps
-        .get(step_start..step_end)
-        .ok_or_else(|| {
-            VmError::InvalidConfig(format!(
-                "decoding step envelope manifest step range {step_start}..{step_end} is not a valid source-chain slice"
-            ))
-        })?
+    let envelopes = chain.steps[step_start..step_end]
         .iter()
         .enumerate()
         .map(|(step_index, step)| {
@@ -19361,6 +19354,88 @@ mod tests {
         verify_phase30_decoding_step_proof_envelope_manifest(&manifest).expect("verify");
         verify_phase30_decoding_step_proof_envelope_manifest_against_chain(&manifest, &chain)
             .expect("verify against chain");
+    }
+
+    #[test]
+    fn phase30_step_envelope_manifest_range_binds_source_slice() {
+        let (chain, full_manifest) = sample_phase30_chain_and_manifest();
+        let range_manifest =
+            phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(&chain, 0, 2)
+                .expect("range manifest");
+
+        assert_eq!(range_manifest.total_steps, 2);
+        assert_eq!(range_manifest.envelopes.len(), 2);
+        assert_eq!(
+            range_manifest.source_chain_commitment,
+            full_manifest.source_chain_commitment
+        );
+        assert_eq!(
+            range_manifest.chain_start_boundary_commitment,
+            chain.steps[0].from_state.public_state_commitment
+        );
+        assert_eq!(
+            range_manifest.chain_end_boundary_commitment,
+            chain.steps[1].to_state.public_state_commitment
+        );
+        verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range(
+            &range_manifest,
+            &chain,
+            0,
+            2,
+        )
+        .expect("range verifies against source slice");
+
+        let wrong_range = verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range(
+            &range_manifest,
+            &chain,
+            1,
+            3,
+        )
+        .expect_err("range manifest must not verify against a different slice");
+        assert!(
+            wrong_range
+                .to_string()
+                .contains("does not match the derived Phase 12 chain range"),
+            "unexpected error: {wrong_range}"
+        );
+
+        let full_chain_err = verify_phase30_decoding_step_proof_envelope_manifest_against_chain(
+            &range_manifest,
+            &chain,
+        )
+        .expect_err("range manifest must not verify as the full chain");
+        assert!(
+            full_chain_err
+                .to_string()
+                .contains("does not match the derived Phase 12 chain"),
+            "unexpected error: {full_chain_err}"
+        );
+    }
+
+    #[test]
+    fn phase30_step_envelope_manifest_range_rejects_invalid_bounds() {
+        let (chain, _) = sample_phase30_chain_and_manifest();
+
+        let empty =
+            phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(&chain, 1, 1)
+                .expect_err("empty range must be rejected");
+        assert!(
+            empty.to_string().contains("must contain at least one step"),
+            "unexpected error: {empty}"
+        );
+
+        let out_of_bounds = phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(
+            &chain,
+            0,
+            chain.steps.len() + 1,
+        )
+        .expect_err("out-of-bounds range must be rejected");
+        assert!(
+            out_of_bounds
+                .to_string()
+                .contains("exceeds source chain length"),
+            "unexpected error: {out_of_bounds}"
+        );
     }
 
     #[test]
