@@ -4167,6 +4167,15 @@ fn phase38_verify_segment_receipt_binding(segment: &Phase38Paper3CompositionSegm
             expected_receipt_commitment
         )));
     }
+    let expected_lookup_identity = commit_phase38_lookup_identity(&segment.phase30_manifest)?;
+    if segment.lookup_identity_commitment != expected_lookup_identity {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 38 Paper 3 composition prototype segment {} lookup identity commitment `{}` does not match recomputed `{}`",
+            segment.segment_index,
+            segment.lookup_identity_commitment,
+            expected_lookup_identity
+        )));
+    }
     if segment.total_steps != segment.phase37_receipt.total_steps {
         return Err(VmError::InvalidConfig(format!(
             "Phase 38 Paper 3 composition prototype segment {} total steps `{}` do not match embedded Phase 37 receipt `{}`",
@@ -7072,6 +7081,31 @@ mod tests {
         tampered["composition_commitment"] = serde_json::json!("0".repeat(64));
         let err = serde_json::from_value::<Phase38Paper3CompositionPrototype>(tampered)
             .expect_err("tampered Phase 38 commitment must be rejected");
+        assert!(err.to_string().contains("does not match recomputed"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase38_paper3_composition_prototype_rejects_forged_lookup_identity() {
+        let sources = sample_phase38_segment_sources();
+        let mut prototype = phase38_prepare_paper3_composition_prototype(&sources)
+            .expect("prepare Phase 38 composition prototype");
+        let forged_lookup_identity = phase38_test_hash32('7');
+        for segment in &mut prototype.segments {
+            segment.lookup_identity_commitment = forged_lookup_identity.clone();
+        }
+        prototype.shared_lookup_identity_commitment =
+            commit_phase38_shared_lookup_identity(&prototype.segments[0])
+                .expect("recommit forged shared lookup identity");
+        prototype.segment_list_commitment =
+            commit_phase38_segment_list(&prototype.segments).expect("recommit forged segment list");
+        prototype.composition_commitment = commit_phase38_paper3_composition_prototype(&prototype)
+            .expect("recommit forged prototype");
+
+        let json = serde_json::to_string(&prototype).expect("serialize forged phase38 prototype");
+        let err = parse_phase38_paper3_composition_prototype_json(&json)
+            .expect_err("forged lookup identity must fail against embedded manifest");
+        assert!(err.to_string().contains("lookup identity commitment"));
         assert!(err.to_string().contains("does not match recomputed"));
     }
 

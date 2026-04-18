@@ -68,6 +68,7 @@
     - phase38_paper3_composition_prototype_rejects_source_chain_drift
     - phase38_paper3_composition_prototype_rejects_execution_template_drift
     - phase38_paper3_composition_prototype_rejects_shared_lookup_identity_drift
+    - phase38_paper3_composition_prototype_rejects_forged_lookup_identity
   schemas:
     - "Not applicable: no standalone Phase 38 JSON schema has been published yet; bounded serde TryFrom plus parse/load APIs enforce the current shape."
   artifact_files:
