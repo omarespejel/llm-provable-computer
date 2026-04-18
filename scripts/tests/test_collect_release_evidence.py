@@ -122,6 +122,16 @@ class ReleaseEvidenceTests(unittest.TestCase):
 
         self.assertTrue(any("sha256 does not match log bytes" in error for error in errors))
 
+    def test_rejects_command_log_directory_path_without_crashing(self) -> None:
+        payload = self.valid_payload()
+        payload["merge_gate_evidence"][0]["command_logs"][0]["path"] = "target/local-hardening/pr-1/logs"
+        payload = release.add_bundle_digest(payload)
+        path = self.write_bundle(payload)
+
+        errors = release.validate_release_evidence(path)
+
+        self.assertTrue(any("path is not a regular file" in error for error in errors))
+
     def test_rejects_bundle_digest_drift(self) -> None:
         payload = self.valid_payload()
         payload["checkpoint"]["name"] = "changed-after-digest"

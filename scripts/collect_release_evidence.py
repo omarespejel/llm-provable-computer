@@ -537,6 +537,9 @@ def validate_merge_gate_record(
         if not path.exists():
             errors.append(f"{command_field}.path does not exist: {path}")
             continue
+        if not path.is_file():
+            errors.append(f"{command_field}.path is not a regular file: {path}")
+            continue
         if sha256_file(path) != command["sha256"]:
             errors.append(f"{command_field}.sha256 does not match log bytes: {path}")
 
