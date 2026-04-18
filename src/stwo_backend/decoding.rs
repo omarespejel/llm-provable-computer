@@ -2426,7 +2426,7 @@ pub fn phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(
     let envelopes = chain.steps[step_start..step_end]
         .iter()
         .enumerate()
-        .map(|(step_index, step)| {
+        .map(|(local_step_index, step)| {
             // Segment manifests are range-local; the shared source-chain
             // commitment and boundary pair bind them back to the full run.
             let artifact = artifact_index
@@ -2434,12 +2434,12 @@ pub fn phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(
                 .copied()
                 .ok_or_else(|| {
                     VmError::InvalidConfig(format!(
-                        "decoding step {step_index} shared lookup artifact `{}` is not present in the Phase 12 registry",
+                        "decoding step {local_step_index} shared lookup artifact `{}` is not present in the Phase 12 registry",
                         step.shared_lookup_artifact_commitment
                     ))
                 })?;
             build_phase30_decoding_step_proof_envelope(
-                step_index,
+                local_step_index,
                 step,
                 &layout_commitment,
                 &source_chain_commitment,
