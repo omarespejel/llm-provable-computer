@@ -461,7 +461,7 @@ class PaperPreflightTests(unittest.TestCase):
             write_text(
                 path,
                 (
-                    "## Target Section\n"
+                    "  ## Target Section\n"
                     "Scoped evidence can live in this section.\n\n"
                     "### Evidence paragraph\n"
                     "`evidence:phase29_recursive_input_contract`\n\n"
@@ -493,6 +493,34 @@ class PaperPreflightTests(unittest.TestCase):
             self.assertTrue(findings.errors)
             self.assertIn("missing fragments:", findings.errors[0])
             self.assertNotIn("skipped invalid paths:", findings.errors[0])
+
+    def test_paper2_evidence_anchor_rejects_non_heading_fragment_match(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(
+                repo / "docs/paper/paper2/paper.md",
+                (
+                    "# Paper\n"
+                    "The phrase Target Section appears in body text.\n\n"
+                    "## Later Section\n"
+                    "`evidence:phase29_recursive_input_contract`\n"
+                ),
+            )
+            records = [
+                {
+                    "id": "phase29_recursive_input_contract",
+                    "paper_locations": ["docs/paper/paper2/paper.md#Target Section"],
+                }
+            ]
+
+            findings = MOD.Findings()
+            MOD.check_paper2_evidence_anchors(
+                repo, repo / MOD.CLAIM_EVIDENCE_FILE, records, findings
+            )
+
+            self.assertTrue(findings.errors)
+            self.assertIn("invalid fragments:", findings.errors[0])
+            self.assertIn("does not identify a Markdown heading", findings.errors[0])
 
     def test_claim_evidence_matrix_rejects_missing_required_claim_id(self):
         with tempfile.TemporaryDirectory() as tmp:

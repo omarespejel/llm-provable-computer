@@ -546,12 +546,12 @@ def list_field(record: dict[str, object], key: str) -> list[str]:
     return []
 
 
-def fragment_scoped_search_text(text: str, anchor_offset: int) -> str:
+def fragment_scoped_search_text(text: str, anchor_offset: int) -> str | None:
     """Return the text region governed by a declared paper fragment.
 
     For Markdown headings, the fragment owns that heading's section up to the
-    next heading at the same or a higher level. For non-heading anchors, retain
-    the historical behavior and search from the anchor to EOF.
+    next heading at the same or a higher level. Non-heading matches are invalid
+    fragment references; returning None prevents broadening the search to EOF.
     """
 
     line_start = text.rfind("\n", 0, anchor_offset) + 1
@@ -559,14 +559,14 @@ def fragment_scoped_search_text(text: str, anchor_offset: int) -> str:
     if line_end < 0:
         line_end = len(text)
     heading_line = text[line_start:line_end]
-    heading_match = re.match(r"^(#{1,6})\s+", heading_line)
+    heading_match = re.match(r"^\s{0,3}(#{1,6})\s+", heading_line)
     if heading_match is None:
-        return text[anchor_offset:]
+        return None
 
     heading_level = len(heading_match.group(1))
     remainder_start = min(line_end + 1, len(text))
     remainder = text[remainder_start:]
-    next_heading = re.search(rf"(?m)^#{{1,{heading_level}}}\s+", remainder)
+    next_heading = re.search(rf"(?m)^\s{{0,3}}#{{1,{heading_level}}}\s+", remainder)
     section_end = (
         len(text) if next_heading is None else remainder_start + next_heading.start()
     )
@@ -599,6 +599,7 @@ def check_paper2_evidence_anchors(
         searched: list[str] = []
         invalid_paths: list[str] = []
         missing_fragments: list[str] = []
+        invalid_fragments: list[str] = []
         unreadable: list[str] = []
         found = False
         for entry in locations:
@@ -623,7 +624,13 @@ def check_paper2_evidence_anchors(
                         f"{entry} (fragment `{location_anchor}` not found)"
                     )
                     continue
-                search_text = fragment_scoped_search_text(text, anchor_offset)
+                scoped_text = fragment_scoped_search_text(text, anchor_offset)
+                if scoped_text is None:
+                    invalid_fragments.append(
+                        f"{entry} (fragment `{location_anchor}` does not identify a Markdown heading)"
+                    )
+                    continue
+                search_text = scoped_text
             if re.search(rf"{re.escape(anchor)}(?![A-Za-z0-9_])", search_text):
                 found = True
                 break
@@ -634,6 +641,8 @@ def check_paper2_evidence_anchors(
                 details += f"; skipped invalid paths: {invalid_paths}"
             if missing_fragments:
                 details += f"; missing fragments: {missing_fragments}"
+            if invalid_fragments:
+                details += f"; invalid fragments: {invalid_fragments}"
             if unreadable:
                 details += f"; unreadable locations: {unreadable}"
             findings.error(
