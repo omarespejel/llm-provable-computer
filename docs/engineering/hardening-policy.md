@@ -62,6 +62,7 @@ scripts/run_known_bad_phase_artifact_corpus.sh
 scripts/run_paper_preflight_suite.sh
 scripts/run_approximation_budget_suite.sh
 scripts/run_phase38_schema_suite.sh
+scripts/run_reference_verifier_suite.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_miri_suite.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_asan_suite.sh
