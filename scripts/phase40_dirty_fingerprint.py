@@ -15,7 +15,26 @@ class DirtyFingerprintError(RuntimeError):
 
 
 def _git_output(repo_root: pathlib.Path, command: list[str]) -> bytes:
-    return subprocess.check_output(command, cwd=repo_root)
+    try:
+        result = subprocess.run(
+            command,
+            cwd=repo_root,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    except FileNotFoundError as error:
+        raise DirtyFingerprintError(f"failed to run {' '.join(command)}: executable not found") from error
+    except OSError as error:
+        raise DirtyFingerprintError(f"failed to run {' '.join(command)}: {error}") from error
+
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout).decode("utf-8", "replace").strip()
+        suffix = f": {detail}" if detail else ""
+        raise DirtyFingerprintError(
+            f"git command failed ({' '.join(command)}): exit {result.returncode}{suffix}"
+        )
+    return result.stdout
 
 
 def compute_dirty_fingerprint(repo_root: pathlib.Path, limit: int) -> tuple[str, bool]:
