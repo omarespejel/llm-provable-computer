@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 import json
 import pathlib
 import re
@@ -80,6 +81,7 @@ class Phase37AdversarialMutationGeneratorTests(unittest.TestCase):
                 [item["file_name"] for item in first["mutations"]],
                 [item["file_name"] for item in second["mutations"]],
             )
+            self.assertEqual(first, second)
 
     def test_generated_artifacts_match_expected_reference_verifier_outcomes(self) -> None:
         with tempfile.TemporaryDirectory() as tempdir:
@@ -88,7 +90,12 @@ class Phase37AdversarialMutationGeneratorTests(unittest.TestCase):
             by_name = {item["name"]: item for item in manifest["mutations"]}
 
             for item in manifest["mutations"]:
-                artifact = load_json(output_dir / item["file_name"])
+                artifact_path = output_dir / item["file_name"]
+                artifact = load_json(artifact_path)
+                self.assertEqual(
+                    item["sha256"],
+                    hashlib.sha256(artifact_path.read_bytes()).hexdigest(),
+                )
                 if item["expected_reference_verifier"] == "fail":
                     with self.assertRaisesRegex(REF.ReferenceVerifierError, re.escape(item["actual_error"])):
                         REF.verify_phase37_receipt(artifact)
@@ -140,6 +147,8 @@ class Phase37AdversarialMutationGeneratorTests(unittest.TestCase):
             )
             self.assertNotEqual(completed.returncode, 0)
             self.assertIn("output directory must be empty", completed.stderr)
+            self.assertEqual(sorted(path.name for path in output_dir.iterdir()), ["stale.json"])
+            self.assertFalse((output_dir / "phase37-adversarial-manifest.json").exists())
 
     def test_external_receipt_path_is_not_collapsed_to_basename(self) -> None:
         with tempfile.TemporaryDirectory() as tempdir:
