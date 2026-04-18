@@ -501,7 +501,11 @@ changed_path_is_fuzz_surface() {
 
 changed_path_is_paper_preflight_surface() {
   changed_path_has_prefix "docs/paper/" ||
-    changed_path_has_prefix "docs/engineering/" ||
+    changed_path_has_prefix "docs/engineering/paper2-claim-evidence.yml" ||
+    changed_path_has_prefix "docs/engineering/paper3-claim-evidence.yml" ||
+    changed_path_has_prefix "docs/engineering/design/phase29-recursive-compression-input-contract-spec.md" ||
+    changed_path_has_prefix "docs/engineering/paper3-composition-prototype.md" ||
+    changed_path_has_prefix "docs/engineering/reproducibility.md" ||
     changed_path_has_prefix "src/" ||
     changed_path_has_prefix "spec/" ||
     changed_path_has_prefix "tools/reference_verifier/" ||

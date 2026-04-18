@@ -28,7 +28,11 @@ class LocalMergeGateWiringTests(unittest.TestCase):
         body = self._shell_function_body("changed_path_is_paper_preflight_surface")
         expected_triggers = [
             "docs/paper/",
-            "docs/engineering/",
+            "docs/engineering/paper2-claim-evidence.yml",
+            "docs/engineering/paper3-claim-evidence.yml",
+            "docs/engineering/design/phase29-recursive-compression-input-contract-spec.md",
+            "docs/engineering/paper3-composition-prototype.md",
+            "docs/engineering/reproducibility.md",
             "src/",
             "spec/",
             "tools/reference_verifier/",
@@ -46,6 +50,7 @@ class LocalMergeGateWiringTests(unittest.TestCase):
         for trigger in expected_triggers:
             with self.subTest(trigger=trigger):
                 self.assertIn(f'changed_path_has_prefix "{trigger}"', body)
+        self.assertNotIn('changed_path_has_prefix "docs/engineering/"', body)
         self.assertIn("run_paper_preflight_if_needed()", self.script)
         self.assertIn("run_logged paper-preflight bash scripts/run_paper_preflight_suite.sh", self.script)
         self.assertGreaterEqual(len(re.findall(r"run_paper_preflight_if_needed", self.script)), 4)
