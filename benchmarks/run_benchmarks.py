@@ -28,6 +28,7 @@ from typing import Any
 
 SUPPORTED_CASE_MANIFEST_VERSION = 1
 CHUNK_SIZE = 1024 * 1024
+BENCHMARK_RESULT_SCHEMA = "spec/benchmark-result.schema.json"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -48,6 +49,7 @@ class CaseSpec:
     timeout_s: float | None = None
     allow_failure: bool = False
     inputs: list[InputSpec] = dataclasses.field(default_factory=list)
+    outputs: list[InputSpec] = dataclasses.field(default_factory=list)
     log_dir_name: str | None = None
 
 
@@ -61,6 +63,14 @@ def utc_now() -> str:
 
 def sha256_bytes(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
+
+
+def canonical_json_bytes(payload: Any) -> bytes:
+    return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def sha256_canonical_json(payload: Any) -> str:
+    return sha256_bytes(canonical_json_bytes(payload))
 
 
 def sha256_file(path: Path) -> str:
@@ -100,6 +110,34 @@ def resolve_under_repo(root: Path, value: str, field: str) -> Path:
     except ValueError as exc:
         raise ValueError(f"{field} escapes repo root: {value}") from exc
     return resolved
+
+
+def parse_file_specs(root: Path, name: str, entries: Any, field: str) -> list[InputSpec]:
+    specs: list[InputSpec] = []
+    for raw_entry in entries or []:
+        if isinstance(raw_entry, str):
+            specs.append(
+                InputSpec(path=resolve_under_repo(root, raw_entry, f"case {name!r} {field}"))
+            )
+            continue
+        if isinstance(raw_entry, dict):
+            path_value = raw_entry.get("path")
+            if not isinstance(path_value, str) or not path_value:
+                raise ValueError(f"case {name!r} {field} entries need a path")
+            label_value = raw_entry.get("label")
+            optional_raw = raw_entry.get("optional", False)
+            if not isinstance(optional_raw, bool):
+                raise ValueError(f"case {name!r} {field} optional must be boolean")
+            specs.append(
+                InputSpec(
+                    path=resolve_under_repo(root, path_value, f"case {name!r} {field}"),
+                    label=label_value if isinstance(label_value, str) else None,
+                    optional=optional_raw,
+                )
+            )
+            continue
+        raise ValueError(f"case {name!r} {field} must be strings or objects")
+    return specs
 
 
 def percentile(values: list[float], pct: float) -> float:
@@ -173,34 +211,8 @@ def load_case_manifest(path: Path) -> tuple[dict[str, Any], list[CaseSpec]]:
             ):
                 raise ValueError(f"case {name!r} env must be a string-to-string object")
             env = dict(env_value)
-        inputs: list[InputSpec] = []
-        for raw_input in entry.get("inputs", []) or []:
-            if isinstance(raw_input, str):
-                inputs.append(
-                    InputSpec(
-                        path=resolve_under_repo(root, raw_input, f"case {name!r} input")
-                    )
-                )
-                continue
-            if isinstance(raw_input, dict):
-                path_value = raw_input.get("path")
-                if not isinstance(path_value, str) or not path_value:
-                    raise ValueError(f"case {name!r} input entries need a path")
-                label_value = raw_input.get("label")
-                optional_raw = raw_input.get("optional", False)
-                if not isinstance(optional_raw, bool):
-                    raise ValueError(f"case {name!r} input optional must be boolean")
-                inputs.append(
-                    InputSpec(
-                        path=resolve_under_repo(
-                            root, path_value, f"case {name!r} input"
-                        ),
-                        label=label_value if isinstance(label_value, str) else None,
-                        optional=optional_raw,
-                    )
-                )
-                continue
-            raise ValueError(f"case {name!r} inputs must be strings or objects")
+        inputs = parse_file_specs(root, name, entry.get("inputs", []), "input")
+        outputs = parse_file_specs(root, name, entry.get("outputs", []), "output")
         timeout_value = entry.get("timeout_s")
         timeout_s = None
         if timeout_value is not None:
@@ -223,6 +235,7 @@ def load_case_manifest(path: Path) -> tuple[dict[str, Any], list[CaseSpec]]:
                 timeout_s=timeout_s,
                 allow_failure=allow_failure_value,
                 inputs=inputs,
+                outputs=outputs,
                 log_dir_name=log_dir_name,
             )
         )
@@ -344,6 +357,42 @@ def describe_inputs(inputs: list[InputSpec], hash_files: bool) -> list[dict[str,
     return records
 
 
+def file_specs_for_binding(specs: list[InputSpec]) -> list[dict[str, Any]]:
+    return [
+        {
+            "path": str(spec.path),
+            "label": spec.label,
+            "optional": spec.optional,
+        }
+        for spec in specs
+    ]
+
+
+def case_command_binding(case: CaseSpec) -> dict[str, Any]:
+    return {
+        "name": case.name,
+        "command": case.command,
+        "cwd": str(case.cwd or repo_root()),
+        "repeat": case.repeat,
+        "env": dict(sorted((case.env or {}).items())),
+        "allow_failure": case.allow_failure,
+        "inputs": file_specs_for_binding(case.inputs),
+        "outputs": file_specs_for_binding(case.outputs),
+    }
+
+
+def run_log_binding(run_record: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "index": run_record["index"],
+        "returncode": run_record["returncode"],
+        "timed_out": run_record["timed_out"],
+        "stdout_sha256": run_record["stdout_sha256"],
+        "stdout_size_bytes": run_record["stdout_size_bytes"],
+        "stderr_sha256": run_record["stderr_sha256"],
+        "stderr_size_bytes": run_record["stderr_size_bytes"],
+    }
+
+
 def copy_temp_file_to_path_and_hash(source: Any, destination: Path) -> tuple[str, int]:
     destination.parent.mkdir(parents=True, exist_ok=True)
     hasher = hashlib.sha256()
@@ -391,10 +440,13 @@ def run_case(
         "name": case.name,
         "description": case.description,
         "command": case.command,
+        "command_binding": case_command_binding(case),
+        "command_sha256": sha256_canonical_json(case_command_binding(case)),
         "cwd": str(case.cwd or repo_root()),
         "repeat": case.repeat,
         "allow_failure": case.allow_failure,
         "inputs": describe_inputs(case.inputs, hash_files=not dry_run),
+        "outputs": describe_inputs(case.outputs, hash_files=False),
         "log_dir_name": case_dir_name,
         "log_dir": str(case_dir),
         "runs": [],
@@ -493,6 +545,7 @@ def run_case(
             "user_time_s": round(user_time_s, 6) if user_time_s is not None else None,
             "system_time_s": round(system_time_s, 6) if system_time_s is not None else None,
         }
+        run_record["log_sha256"] = sha256_canonical_json(run_log_binding(run_record))
         result["runs"].append(run_record)
 
         if returncode != 0:
@@ -500,6 +553,7 @@ def run_case(
             if not case.allow_failure:
                 break
 
+    result["outputs"] = describe_inputs(case.outputs, hash_files=True)
     result["status"] = "passed" if not failed_runs else "failed"
     if durations_ms:
         result["summary"] = {
@@ -584,6 +638,12 @@ def main() -> int:
         "harness": {
             "path": str(Path(__file__).resolve()),
             "sha256": harness_hash,
+        },
+        "result_schema": {
+            "path": str((root / BENCHMARK_RESULT_SCHEMA).resolve()),
+            "sha256": sha256_file((root / BENCHMARK_RESULT_SCHEMA).resolve())
+            if (root / BENCHMARK_RESULT_SCHEMA).exists()
+            else None,
         },
         "inputs": [
             {
