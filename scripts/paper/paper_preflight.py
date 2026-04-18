@@ -54,6 +54,7 @@ LOCAL_REPOS = {
 }
 
 CLAIM_EVIDENCE_FILE = "docs/engineering/paper2-claim-evidence.yml"
+PAPER3_CLAIM_EVIDENCE_FILE = "docs/engineering/paper3-claim-evidence.yml"
 
 REQUIRED_CLAIM_IDS = {
     "phase29_recursive_input_contract",
@@ -69,6 +70,13 @@ REQUIRED_CLAIM_IDS = {
     "release_provenance_boundary",
 }
 
+REQUIRED_PAPER3_CLAIM_IDS = {
+    "phase38_source_validated_receipt_binding",
+    "phase38_composition_continuity",
+    "phase38_shared_lookup_source_chain_and_template_identity",
+    "phase38_packaging_baseline",
+}
+
 CLAIM_EVIDENCE_REQUIRED_SCALARS = ("id", "claim")
 CLAIM_EVIDENCE_REQUIRED_LISTS = (
     "paper_locations",
@@ -78,6 +86,12 @@ CLAIM_EVIDENCE_REQUIRED_LISTS = (
     "negative_tests",
     "evidence_commands",
     "non_claims",
+)
+PAPER3_CLAIM_EVIDENCE_REQUIRED_LISTS = CLAIM_EVIDENCE_REQUIRED_LISTS + (
+    "schemas",
+    "artifact_files",
+    "artifact_hashes",
+    "fuzz_or_formal",
 )
 
 CLAIM_LANGUAGE_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
@@ -669,10 +683,17 @@ def check_paper2_evidence_anchors(
             )
 
 
-def check_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> None:
-    evidence_path = repo_root / CLAIM_EVIDENCE_FILE
+def check_claim_evidence_matrix_file(
+    repo_root: pathlib.Path,
+    findings: Findings,
+    evidence_file: str,
+    required_claim_ids: set[str],
+    paper_label: str,
+    required_lists: tuple[str, ...] = CLAIM_EVIDENCE_REQUIRED_LISTS,
+) -> None:
+    evidence_path = repo_root / evidence_file
     if not evidence_path.exists():
-        findings.error(f"{evidence_path}: missing paper-2 claim evidence matrix.")
+        findings.error(f"{evidence_path}: missing {paper_label} claim evidence matrix.")
         return
 
     parse_findings = Findings()
@@ -707,7 +728,7 @@ def check_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> 
                     f"{evidence_path}: claim `{claim_id}` requires non-empty scalar `{key}`."
                 )
 
-        for key in CLAIM_EVIDENCE_REQUIRED_LISTS:
+        for key in required_lists:
             values = list_field(record, key)
             if not values:
                 findings.error(
@@ -739,17 +760,38 @@ def check_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> 
                     f"{evidence_path}: claim `{claim_id}` non-claim must explicitly negate an overclaim: {non_claim}"
                 )
 
-    missing_ids = sorted(REQUIRED_CLAIM_IDS - seen_ids)
-    extra_ids = sorted(seen_ids - REQUIRED_CLAIM_IDS)
+    missing_ids = sorted(required_claim_ids - seen_ids)
+    extra_ids = sorted(seen_ids - required_claim_ids)
     if missing_ids:
         findings.error(
-            f"{evidence_path}: missing required paper-2 claim evidence ids: {missing_ids}"
+            f"{evidence_path}: missing required {paper_label} claim evidence ids: {missing_ids}"
         )
     if extra_ids:
         findings.warn(
-            f"{evidence_path}: extra paper-2 claim evidence ids not in required set: {extra_ids}"
+            f"{evidence_path}: extra {paper_label} claim evidence ids not in required set: {extra_ids}"
         )
     check_paper2_evidence_anchors(repo_root, evidence_path, records, findings)
+
+
+def check_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> None:
+    check_claim_evidence_matrix_file(
+        repo_root,
+        findings,
+        CLAIM_EVIDENCE_FILE,
+        REQUIRED_CLAIM_IDS,
+        "paper-2",
+    )
+
+
+def check_paper3_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> None:
+    check_claim_evidence_matrix_file(
+        repo_root,
+        findings,
+        PAPER3_CLAIM_EVIDENCE_FILE,
+        REQUIRED_PAPER3_CLAIM_IDS,
+        "paper-3",
+        PAPER3_CLAIM_EVIDENCE_REQUIRED_LISTS,
+    )
 
 
 def paragraph_start_line(text: str, offset: int) -> int:
@@ -1176,6 +1218,7 @@ def main() -> int:
     check_backend_appendix_consistency(repo_root, findings)
     check_publication_snapshot_placeholders(repo_root, findings)
     check_claim_evidence_matrix(repo_root, findings)
+    check_paper3_claim_evidence_matrix(repo_root, findings)
     check_paper_claim_language(repo_root, findings)
 
     if findings.warnings:
