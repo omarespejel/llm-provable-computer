@@ -278,8 +278,7 @@ struct Phase31RecursiveCompressionDecodeBoundaryManifestUnchecked {
 }
 
 #[cfg(feature = "stwo-backend")]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(try_from = "Phase41BoundaryTranslationWitnessUnchecked")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Phase41BoundaryTranslationWitness {
     pub proof_backend: StarkProofBackend,
     pub witness_version: String,
@@ -313,9 +312,9 @@ pub struct Phase41BoundaryTranslationWitness {
 }
 
 #[cfg(feature = "stwo-backend")]
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Phase41BoundaryTranslationWitnessUnchecked {
+pub struct Phase41BoundaryTranslationWitnessArtifact {
     pub proof_backend: StarkProofBackend,
     pub witness_version: String,
     pub semantic_scope: String,
@@ -1137,48 +1136,42 @@ impl TryFrom<Phase31RecursiveCompressionDecodeBoundaryManifestUnchecked>
 }
 
 #[cfg(feature = "stwo-backend")]
-impl TryFrom<Phase41BoundaryTranslationWitnessUnchecked> for Phase41BoundaryTranslationWitness {
-    type Error = VmError;
-
-    fn try_from(
-        unchecked: Phase41BoundaryTranslationWitnessUnchecked,
-    ) -> std::result::Result<Self, Self::Error> {
-        let witness = Self {
-            proof_backend: unchecked.proof_backend,
-            witness_version: unchecked.witness_version,
-            semantic_scope: unchecked.semantic_scope,
-            proof_backend_version: unchecked.proof_backend_version,
-            statement_version: unchecked.statement_version,
-            step_relation: unchecked.step_relation,
-            required_recursion_posture: unchecked.required_recursion_posture,
-            recursive_verification_claimed: unchecked.recursive_verification_claimed,
-            cryptographic_compression_claimed: unchecked.cryptographic_compression_claimed,
-            derivation_proof_claimed: unchecked.derivation_proof_claimed,
-            translation_rule: unchecked.translation_rule,
-            phase29_contract_version: unchecked.phase29_contract_version,
-            phase29_semantic_scope: unchecked.phase29_semantic_scope,
-            phase29_contract_commitment: unchecked.phase29_contract_commitment,
-            phase30_manifest_version: unchecked.phase30_manifest_version,
-            phase30_semantic_scope: unchecked.phase30_semantic_scope,
-            phase30_source_chain_commitment: unchecked.phase30_source_chain_commitment,
-            phase30_step_envelopes_commitment: unchecked.phase30_step_envelopes_commitment,
-            total_steps: unchecked.total_steps,
-            phase29_global_start_state_commitment: unchecked.phase29_global_start_state_commitment,
-            phase29_global_end_state_commitment: unchecked.phase29_global_end_state_commitment,
-            phase30_chain_start_boundary_commitment: unchecked
-                .phase30_chain_start_boundary_commitment,
-            phase30_chain_end_boundary_commitment: unchecked.phase30_chain_end_boundary_commitment,
-            source_template_commitment: unchecked.source_template_commitment,
-            aggregation_template_commitment: unchecked.aggregation_template_commitment,
-            boundary_domains_differ: unchecked.boundary_domains_differ,
-            start_boundary_translation_commitment: unchecked.start_boundary_translation_commitment,
-            end_boundary_translation_commitment: unchecked.end_boundary_translation_commitment,
-            boundary_translation_witness_commitment: unchecked
-                .boundary_translation_witness_commitment,
-        };
-        verify_phase41_boundary_translation_witness(&witness)?;
-        Ok(witness)
-    }
+fn phase41_witness_from_artifact(
+    artifact: Phase41BoundaryTranslationWitnessArtifact,
+) -> Result<Phase41BoundaryTranslationWitness> {
+    let witness = Phase41BoundaryTranslationWitness {
+        proof_backend: artifact.proof_backend,
+        witness_version: artifact.witness_version,
+        semantic_scope: artifact.semantic_scope,
+        proof_backend_version: artifact.proof_backend_version,
+        statement_version: artifact.statement_version,
+        step_relation: artifact.step_relation,
+        required_recursion_posture: artifact.required_recursion_posture,
+        recursive_verification_claimed: artifact.recursive_verification_claimed,
+        cryptographic_compression_claimed: artifact.cryptographic_compression_claimed,
+        derivation_proof_claimed: artifact.derivation_proof_claimed,
+        translation_rule: artifact.translation_rule,
+        phase29_contract_version: artifact.phase29_contract_version,
+        phase29_semantic_scope: artifact.phase29_semantic_scope,
+        phase29_contract_commitment: artifact.phase29_contract_commitment,
+        phase30_manifest_version: artifact.phase30_manifest_version,
+        phase30_semantic_scope: artifact.phase30_semantic_scope,
+        phase30_source_chain_commitment: artifact.phase30_source_chain_commitment,
+        phase30_step_envelopes_commitment: artifact.phase30_step_envelopes_commitment,
+        total_steps: artifact.total_steps,
+        phase29_global_start_state_commitment: artifact.phase29_global_start_state_commitment,
+        phase29_global_end_state_commitment: artifact.phase29_global_end_state_commitment,
+        phase30_chain_start_boundary_commitment: artifact.phase30_chain_start_boundary_commitment,
+        phase30_chain_end_boundary_commitment: artifact.phase30_chain_end_boundary_commitment,
+        source_template_commitment: artifact.source_template_commitment,
+        aggregation_template_commitment: artifact.aggregation_template_commitment,
+        boundary_domains_differ: artifact.boundary_domains_differ,
+        start_boundary_translation_commitment: artifact.start_boundary_translation_commitment,
+        end_boundary_translation_commitment: artifact.end_boundary_translation_commitment,
+        boundary_translation_witness_commitment: artifact.boundary_translation_witness_commitment,
+    };
+    verify_phase41_boundary_translation_witness(&witness)?;
+    Ok(witness)
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -5381,7 +5374,8 @@ pub fn parse_phase38_paper3_composition_prototype_json(
 }
 
 #[cfg(feature = "stwo-backend")]
-/// Parses a Phase 41 witness and verifies its internal commitments only.
+/// Parses an untrusted Phase 41 witness artifact and verifies its internal
+/// commitments only.
 ///
 /// Source provenance is intentionally checked by
 /// [`verify_phase41_boundary_translation_witness_against_sources`], because a
@@ -5389,7 +5383,7 @@ pub fn parse_phase38_paper3_composition_prototype_json(
 /// artifacts needed to reject stale or swapped source bindings.
 pub fn parse_phase41_boundary_translation_witness_json(
     json: &str,
-) -> Result<Phase41BoundaryTranslationWitness> {
+) -> Result<Phase41BoundaryTranslationWitnessArtifact> {
     if json.len() > MAX_PHASE41_BOUNDARY_TRANSLATION_WITNESS_JSON_BYTES {
         return Err(VmError::InvalidConfig(format!(
             "Phase 41 boundary-translation witness JSON is {} bytes, exceeding the limit of {} bytes",
@@ -5397,7 +5391,22 @@ pub fn parse_phase41_boundary_translation_witness_json(
             MAX_PHASE41_BOUNDARY_TRANSLATION_WITNESS_JSON_BYTES
         )));
     }
-    serde_json::from_str(json).map_err(phase41_json_error)
+    let artifact: Phase41BoundaryTranslationWitnessArtifact =
+        serde_json::from_str(json).map_err(phase41_json_error)?;
+    phase41_witness_from_artifact(artifact.clone())?;
+    Ok(artifact)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn parse_phase41_boundary_translation_witness_json_against_sources(
+    json: &str,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase41BoundaryTranslationWitness> {
+    let artifact = parse_phase41_boundary_translation_witness_json(json)?;
+    let witness = phase41_witness_from_artifact(artifact)?;
+    verify_phase41_boundary_translation_witness_against_sources(&witness, contract, phase30)?;
+    Ok(witness)
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -5497,20 +5506,36 @@ pub fn load_phase38_paper3_composition_prototype(
 }
 
 #[cfg(feature = "stwo-backend")]
-/// Loads a Phase 41 witness and verifies its internal commitments only.
+/// Loads an untrusted Phase 41 witness artifact and verifies its internal
+/// commitments only.
 ///
 /// Call [`verify_phase41_boundary_translation_witness_against_sources`] before
 /// trusting the witness as bound to specific Phase 29 and Phase 30 source
 /// artifacts.
 pub fn load_phase41_boundary_translation_witness(
     path: &Path,
-) -> Result<Phase41BoundaryTranslationWitness> {
+) -> Result<Phase41BoundaryTranslationWitnessArtifact> {
     let bytes = read_json_bytes_with_limit(
         path,
         MAX_PHASE41_BOUNDARY_TRANSLATION_WITNESS_JSON_BYTES,
         "Phase 41 boundary-translation witness",
     )?;
-    serde_json::from_slice(&bytes).map_err(phase41_json_error)
+    let artifact: Phase41BoundaryTranslationWitnessArtifact =
+        serde_json::from_slice(&bytes).map_err(phase41_json_error)?;
+    phase41_witness_from_artifact(artifact.clone())?;
+    Ok(artifact)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn load_phase41_boundary_translation_witness_against_sources(
+    path: &Path,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase41BoundaryTranslationWitness> {
+    let artifact = load_phase41_boundary_translation_witness(path)?;
+    let witness = phase41_witness_from_artifact(artifact)?;
+    verify_phase41_boundary_translation_witness_against_sources(&witness, contract, phase30)?;
+    Ok(witness)
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -8028,8 +8053,16 @@ mod tests {
         assert_phase40_start_boundary_mismatch(&phase37_error);
 
         let json = serde_json::to_string_pretty(&witness).expect("serialize Phase41 witness");
-        let parsed =
-            parse_phase41_boundary_translation_witness_json(&json).expect("parse Phase41 witness");
+        let parsed_artifact = parse_phase41_boundary_translation_witness_json(&json)
+            .expect("parse untrusted Phase41 witness artifact");
+        assert_eq!(
+            parsed_artifact.boundary_translation_witness_commitment,
+            witness.boundary_translation_witness_commitment
+        );
+        let parsed = parse_phase41_boundary_translation_witness_json_against_sources(
+            &json, &phase29, &phase30,
+        )
+        .expect("parse source-bound Phase41 witness");
         assert_eq!(parsed, witness);
 
         let path = std::env::temp_dir().join(format!(
@@ -8037,8 +8070,15 @@ mod tests {
             std::process::id()
         ));
         std::fs::write(&path, json).expect("write Phase41 witness temp file");
-        let loaded = load_phase41_boundary_translation_witness(&path)
-            .expect("load Phase41 witness temp file");
+        let loaded_artifact =
+            load_phase41_boundary_translation_witness(&path).expect("load Phase41 artifact file");
+        assert_eq!(
+            loaded_artifact.boundary_translation_witness_commitment,
+            witness.boundary_translation_witness_commitment
+        );
+        let loaded =
+            load_phase41_boundary_translation_witness_against_sources(&path, &phase29, &phase30)
+                .expect("load source-bound Phase41 witness temp file");
         std::fs::remove_file(&path).expect("remove Phase41 witness temp file");
         assert_eq!(loaded, witness);
     }
@@ -8108,6 +8148,15 @@ mod tests {
             &witness, &phase29, &phase30,
         )
         .expect_err("source-swapped Phase41 witness must fail source recomputation");
+        assert!(err.to_string().contains("does not match the recomputed"));
+
+        let json = serde_json::to_string(&witness).expect("serialize swapped Phase41 witness");
+        parse_phase41_boundary_translation_witness_json(&json)
+            .expect("standalone parse only checks internal consistency");
+        let err = parse_phase41_boundary_translation_witness_json_against_sources(
+            &json, &phase29, &phase30,
+        )
+        .expect_err("source-bound parse must reject swapped Phase41 witness");
         assert!(err.to_string().contains("does not match the recomputed"));
     }
 
