@@ -51,6 +51,17 @@ const MAX_PHASE31_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_JSON_BYTES: usi
 const PHASE31_START_BOUNDARY_MISMATCH_ERROR: &str =
     "Phase 31 decode-boundary manifest requires Phase 29 global_start_state_commitment to match the Phase 30 chain_start_boundary_commitment";
 #[cfg(feature = "stwo-backend")]
+pub const STWO_BOUNDARY_TRANSLATION_WITNESS_VERSION_PHASE41: &str =
+    "stwo-phase41-boundary-translation-witness-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_BOUNDARY_TRANSLATION_WITNESS_SCOPE_PHASE41: &str =
+    "stwo_execution_parameterized_boundary_translation_witness";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_BOUNDARY_TRANSLATION_RULE_PHASE41: &str =
+    "explicit-phase29-phase30-boundary-pair-v1";
+#[cfg(feature = "stwo-backend")]
+const MAX_PHASE41_BOUNDARY_TRANSLATION_WITNESS_JSON_BYTES: usize = 1024 * 1024;
+#[cfg(feature = "stwo-backend")]
 pub const STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32: &str =
     "stwo-phase32-recursive-compression-statement-contract-v1";
 #[cfg(feature = "stwo-backend")]
@@ -264,6 +275,76 @@ struct Phase31RecursiveCompressionDecodeBoundaryManifestUnchecked {
     pub source_template_commitment: String,
     pub aggregation_template_commitment: String,
     pub decode_boundary_bridge_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "Phase41BoundaryTranslationWitnessUnchecked")]
+pub struct Phase41BoundaryTranslationWitness {
+    pub proof_backend: StarkProofBackend,
+    pub witness_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub step_relation: String,
+    pub required_recursion_posture: String,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub derivation_proof_claimed: bool,
+    pub translation_rule: String,
+    pub phase29_contract_version: String,
+    pub phase29_semantic_scope: String,
+    pub phase29_contract_commitment: String,
+    pub phase30_manifest_version: String,
+    pub phase30_semantic_scope: String,
+    pub phase30_source_chain_commitment: String,
+    pub phase30_step_envelopes_commitment: String,
+    pub total_steps: usize,
+    pub phase29_global_start_state_commitment: String,
+    pub phase29_global_end_state_commitment: String,
+    pub phase30_chain_start_boundary_commitment: String,
+    pub phase30_chain_end_boundary_commitment: String,
+    pub source_template_commitment: String,
+    pub aggregation_template_commitment: String,
+    pub boundary_domains_differ: bool,
+    pub start_boundary_translation_commitment: String,
+    pub end_boundary_translation_commitment: String,
+    pub boundary_translation_witness_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Phase41BoundaryTranslationWitnessUnchecked {
+    pub proof_backend: StarkProofBackend,
+    pub witness_version: String,
+    pub semantic_scope: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub step_relation: String,
+    pub required_recursion_posture: String,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub derivation_proof_claimed: bool,
+    pub translation_rule: String,
+    pub phase29_contract_version: String,
+    pub phase29_semantic_scope: String,
+    pub phase29_contract_commitment: String,
+    pub phase30_manifest_version: String,
+    pub phase30_semantic_scope: String,
+    pub phase30_source_chain_commitment: String,
+    pub phase30_step_envelopes_commitment: String,
+    pub total_steps: usize,
+    pub phase29_global_start_state_commitment: String,
+    pub phase29_global_end_state_commitment: String,
+    pub phase30_chain_start_boundary_commitment: String,
+    pub phase30_chain_end_boundary_commitment: String,
+    pub source_template_commitment: String,
+    pub aggregation_template_commitment: String,
+    pub boundary_domains_differ: bool,
+    pub start_boundary_translation_commitment: String,
+    pub end_boundary_translation_commitment: String,
+    pub boundary_translation_witness_commitment: String,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -1052,6 +1133,51 @@ impl TryFrom<Phase31RecursiveCompressionDecodeBoundaryManifestUnchecked>
         };
         verify_phase31_recursive_compression_decode_boundary_manifest(&manifest)?;
         Ok(manifest)
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+impl TryFrom<Phase41BoundaryTranslationWitnessUnchecked> for Phase41BoundaryTranslationWitness {
+    type Error = VmError;
+
+    fn try_from(
+        unchecked: Phase41BoundaryTranslationWitnessUnchecked,
+    ) -> std::result::Result<Self, Self::Error> {
+        let witness = Self {
+            proof_backend: unchecked.proof_backend,
+            witness_version: unchecked.witness_version,
+            semantic_scope: unchecked.semantic_scope,
+            proof_backend_version: unchecked.proof_backend_version,
+            statement_version: unchecked.statement_version,
+            step_relation: unchecked.step_relation,
+            required_recursion_posture: unchecked.required_recursion_posture,
+            recursive_verification_claimed: unchecked.recursive_verification_claimed,
+            cryptographic_compression_claimed: unchecked.cryptographic_compression_claimed,
+            derivation_proof_claimed: unchecked.derivation_proof_claimed,
+            translation_rule: unchecked.translation_rule,
+            phase29_contract_version: unchecked.phase29_contract_version,
+            phase29_semantic_scope: unchecked.phase29_semantic_scope,
+            phase29_contract_commitment: unchecked.phase29_contract_commitment,
+            phase30_manifest_version: unchecked.phase30_manifest_version,
+            phase30_semantic_scope: unchecked.phase30_semantic_scope,
+            phase30_source_chain_commitment: unchecked.phase30_source_chain_commitment,
+            phase30_step_envelopes_commitment: unchecked.phase30_step_envelopes_commitment,
+            total_steps: unchecked.total_steps,
+            phase29_global_start_state_commitment: unchecked.phase29_global_start_state_commitment,
+            phase29_global_end_state_commitment: unchecked.phase29_global_end_state_commitment,
+            phase30_chain_start_boundary_commitment: unchecked
+                .phase30_chain_start_boundary_commitment,
+            phase30_chain_end_boundary_commitment: unchecked.phase30_chain_end_boundary_commitment,
+            source_template_commitment: unchecked.source_template_commitment,
+            aggregation_template_commitment: unchecked.aggregation_template_commitment,
+            boundary_domains_differ: unchecked.boundary_domains_differ,
+            start_boundary_translation_commitment: unchecked.start_boundary_translation_commitment,
+            end_boundary_translation_commitment: unchecked.end_boundary_translation_commitment,
+            boundary_translation_witness_commitment: unchecked
+                .boundary_translation_witness_commitment,
+        };
+        verify_phase41_boundary_translation_witness(&witness)?;
+        Ok(witness)
     }
 }
 
@@ -4086,6 +4212,428 @@ pub fn verify_phase37_recursive_artifact_chain_harness_receipt_against_sources(
 }
 
 #[cfg(feature = "stwo-backend")]
+fn phase41_require_hash32(label: &str, value: &str) -> Result<()> {
+    if !phase37_is_hash32_lower_hex(value) {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness `{label}` must be a 32-byte lowercase hex commitment"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn commit_phase41_boundary_translation_pair(
+    boundary_label: &str,
+    phase29_boundary_commitment: &str,
+    phase30_boundary_commitment: &str,
+    witness: &Phase41BoundaryTranslationWitness,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 41 boundary-pair commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase41-boundary-translation-pair");
+    phase29_update_len_prefixed(&mut hasher, boundary_label.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.translation_rule.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.phase29_contract_commitment.as_bytes());
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase30_source_chain_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase30_step_envelopes_commitment.as_bytes(),
+    );
+    phase29_update_usize(&mut hasher, witness.total_steps);
+    phase29_update_len_prefixed(&mut hasher, phase29_boundary_commitment.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, phase30_boundary_commitment.as_bytes());
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 41 boundary-pair commitment hash: {err}"
+        ))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase41_boundary_translation_witness(
+    witness: &Phase41BoundaryTranslationWitness,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 41 boundary-translation witness commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase41-boundary-translation-witness");
+    phase29_update_len_prefixed(&mut hasher, witness.proof_backend.to_string().as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.witness_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.semantic_scope.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.proof_backend_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.statement_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.step_relation.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.required_recursion_posture.as_bytes());
+    phase29_update_bool(&mut hasher, witness.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, witness.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, witness.derivation_proof_claimed);
+    phase29_update_len_prefixed(&mut hasher, witness.translation_rule.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.phase29_contract_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.phase29_semantic_scope.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.phase29_contract_commitment.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.phase30_manifest_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.phase30_semantic_scope.as_bytes());
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase30_source_chain_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase30_step_envelopes_commitment.as_bytes(),
+    );
+    phase29_update_usize(&mut hasher, witness.total_steps);
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase29_global_start_state_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase29_global_end_state_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase30_chain_start_boundary_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase30_chain_end_boundary_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(&mut hasher, witness.source_template_commitment.as_bytes());
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.aggregation_template_commitment.as_bytes(),
+    );
+    phase29_update_bool(&mut hasher, witness.boundary_domains_differ);
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.start_boundary_translation_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.end_boundary_translation_commitment.as_bytes(),
+    );
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 41 boundary-translation witness commitment hash: {err}"
+        ))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase41_prepare_boundary_translation_witness(
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase41BoundaryTranslationWitness> {
+    verify_phase29_recursive_compression_input_contract(contract)?;
+    verify_phase30_decoding_step_proof_envelope_manifest(phase30)?;
+    if contract.phase28_proof_backend_version != phase30.proof_backend_version {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness requires matching proof backend version between Phase 29 (`{}`) and Phase 30 (`{}`)",
+            contract.phase28_proof_backend_version, phase30.proof_backend_version
+        )));
+    }
+    if contract.statement_version != phase30.statement_version {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness requires matching statement version between Phase 29 (`{}`) and Phase 30 (`{}`)",
+            contract.statement_version, phase30.statement_version
+        )));
+    }
+    if contract.total_steps != phase30.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness requires matching total_steps between Phase 29 ({}) and Phase 30 ({})",
+            contract.total_steps, phase30.total_steps
+        )));
+    }
+    if contract.global_start_state_commitment == phase30.chain_start_boundary_commitment
+        || contract.global_end_state_commitment == phase30.chain_end_boundary_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 41 boundary-translation witness requires differing Phase29/Phase30 boundary domains; use Phase31 direct binding when boundaries already match".to_string(),
+        ));
+    }
+
+    let mut witness = Phase41BoundaryTranslationWitness {
+        proof_backend: StarkProofBackend::Stwo,
+        witness_version: STWO_BOUNDARY_TRANSLATION_WITNESS_VERSION_PHASE41.to_string(),
+        semantic_scope: STWO_BOUNDARY_TRANSLATION_WITNESS_SCOPE_PHASE41.to_string(),
+        proof_backend_version: contract.phase28_proof_backend_version.clone(),
+        statement_version: contract.statement_version.clone(),
+        step_relation: STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30.to_string(),
+        required_recursion_posture: contract.required_recursion_posture.clone(),
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        derivation_proof_claimed: false,
+        translation_rule: STWO_BOUNDARY_TRANSLATION_RULE_PHASE41.to_string(),
+        phase29_contract_version: contract.contract_version.clone(),
+        phase29_semantic_scope: contract.semantic_scope.clone(),
+        phase29_contract_commitment: contract.input_contract_commitment.clone(),
+        phase30_manifest_version: phase30.manifest_version.clone(),
+        phase30_semantic_scope: phase30.semantic_scope.clone(),
+        phase30_source_chain_commitment: phase30.source_chain_commitment.clone(),
+        phase30_step_envelopes_commitment: phase30.step_envelopes_commitment.clone(),
+        total_steps: phase30.total_steps,
+        phase29_global_start_state_commitment: contract.global_start_state_commitment.clone(),
+        phase29_global_end_state_commitment: contract.global_end_state_commitment.clone(),
+        phase30_chain_start_boundary_commitment: phase30.chain_start_boundary_commitment.clone(),
+        phase30_chain_end_boundary_commitment: phase30.chain_end_boundary_commitment.clone(),
+        source_template_commitment: contract.source_template_commitment.clone(),
+        aggregation_template_commitment: contract.aggregation_template_commitment.clone(),
+        boundary_domains_differ: true,
+        start_boundary_translation_commitment: String::new(),
+        end_boundary_translation_commitment: String::new(),
+        boundary_translation_witness_commitment: String::new(),
+    };
+    witness.start_boundary_translation_commitment = commit_phase41_boundary_translation_pair(
+        "start",
+        &witness.phase29_global_start_state_commitment,
+        &witness.phase30_chain_start_boundary_commitment,
+        &witness,
+    )?;
+    witness.end_boundary_translation_commitment = commit_phase41_boundary_translation_pair(
+        "end",
+        &witness.phase29_global_end_state_commitment,
+        &witness.phase30_chain_end_boundary_commitment,
+        &witness,
+    )?;
+    witness.boundary_translation_witness_commitment =
+        commit_phase41_boundary_translation_witness(&witness)?;
+    verify_phase41_boundary_translation_witness(&witness)?;
+    Ok(witness)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase41_boundary_translation_witness(
+    witness: &Phase41BoundaryTranslationWitness,
+) -> Result<()> {
+    if witness.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness requires `stwo` backend, got `{}`",
+            witness.proof_backend
+        )));
+    }
+    if witness.witness_version != STWO_BOUNDARY_TRANSLATION_WITNESS_VERSION_PHASE41 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness version `{}` does not match expected `{}`",
+            witness.witness_version, STWO_BOUNDARY_TRANSLATION_WITNESS_VERSION_PHASE41
+        )));
+    }
+    if witness.semantic_scope != STWO_BOUNDARY_TRANSLATION_WITNESS_SCOPE_PHASE41 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness scope `{}` does not match expected `{}`",
+            witness.semantic_scope, STWO_BOUNDARY_TRANSLATION_WITNESS_SCOPE_PHASE41
+        )));
+    }
+    if witness.proof_backend_version != STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness requires proof backend version `{}`, got `{}`",
+            STWO_BACKEND_VERSION_PHASE12, witness.proof_backend_version
+        )));
+    }
+    if witness.statement_version != CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness requires statement version `{}`, got `{}`",
+            CLAIM_STATEMENT_VERSION_V1, witness.statement_version
+        )));
+    }
+    if witness.step_relation != STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness requires step relation `{}`, got `{}`",
+            STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30, witness.step_relation
+        )));
+    }
+    if witness.required_recursion_posture != STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness requires recursion posture `{}`, got `{}`",
+            STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE, witness.required_recursion_posture
+        )));
+    }
+    if witness.recursive_verification_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 41 boundary-translation witness must not claim recursive verification"
+                .to_string(),
+        ));
+    }
+    if witness.cryptographic_compression_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 41 boundary-translation witness must not claim cryptographic compression"
+                .to_string(),
+        ));
+    }
+    if witness.derivation_proof_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 41 boundary-translation witness must not claim proof-level derivation"
+                .to_string(),
+        ));
+    }
+    if witness.translation_rule != STWO_BOUNDARY_TRANSLATION_RULE_PHASE41 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness rule `{}` does not match expected `{}`",
+            witness.translation_rule, STWO_BOUNDARY_TRANSLATION_RULE_PHASE41
+        )));
+    }
+    if witness.phase29_contract_version != STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness requires Phase 29 contract version `{}`, got `{}`",
+            STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29,
+            witness.phase29_contract_version
+        )));
+    }
+    if witness.phase29_semantic_scope != STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness requires Phase 29 semantic scope `{}`, got `{}`",
+            STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29, witness.phase29_semantic_scope
+        )));
+    }
+    if witness.phase30_manifest_version != STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness requires Phase 30 manifest version `{}`, got `{}`",
+            STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30, witness.phase30_manifest_version
+        )));
+    }
+    if witness.phase30_semantic_scope != STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness requires Phase 30 semantic scope `{}`, got `{}`",
+            STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30, witness.phase30_semantic_scope
+        )));
+    }
+    if witness.total_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 41 boundary-translation witness requires at least one decode step".to_string(),
+        ));
+    }
+    if !witness.boundary_domains_differ {
+        return Err(VmError::InvalidConfig(
+            "Phase 41 boundary-translation witness requires boundary_domains_differ=true"
+                .to_string(),
+        ));
+    }
+    if witness.phase29_global_start_state_commitment
+        == witness.phase30_chain_start_boundary_commitment
+        || witness.phase29_global_end_state_commitment
+            == witness.phase30_chain_end_boundary_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 41 boundary-translation witness must bind differing Phase29 and Phase30 boundary domains".to_string(),
+        ));
+    }
+
+    for (label, value) in [
+        (
+            "phase29_contract_commitment",
+            witness.phase29_contract_commitment.as_str(),
+        ),
+        (
+            "phase30_source_chain_commitment",
+            witness.phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase30_step_envelopes_commitment",
+            witness.phase30_step_envelopes_commitment.as_str(),
+        ),
+        (
+            "phase29_global_start_state_commitment",
+            witness.phase29_global_start_state_commitment.as_str(),
+        ),
+        (
+            "phase29_global_end_state_commitment",
+            witness.phase29_global_end_state_commitment.as_str(),
+        ),
+        (
+            "phase30_chain_start_boundary_commitment",
+            witness.phase30_chain_start_boundary_commitment.as_str(),
+        ),
+        (
+            "phase30_chain_end_boundary_commitment",
+            witness.phase30_chain_end_boundary_commitment.as_str(),
+        ),
+        (
+            "source_template_commitment",
+            witness.source_template_commitment.as_str(),
+        ),
+        (
+            "aggregation_template_commitment",
+            witness.aggregation_template_commitment.as_str(),
+        ),
+        (
+            "start_boundary_translation_commitment",
+            witness.start_boundary_translation_commitment.as_str(),
+        ),
+        (
+            "end_boundary_translation_commitment",
+            witness.end_boundary_translation_commitment.as_str(),
+        ),
+        (
+            "boundary_translation_witness_commitment",
+            witness.boundary_translation_witness_commitment.as_str(),
+        ),
+    ] {
+        phase41_require_hash32(label, value)?;
+    }
+
+    let expected_start = commit_phase41_boundary_translation_pair(
+        "start",
+        &witness.phase29_global_start_state_commitment,
+        &witness.phase30_chain_start_boundary_commitment,
+        witness,
+    )?;
+    if witness.start_boundary_translation_commitment != expected_start {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 start-boundary translation commitment `{}` does not match recomputed `{}`",
+            witness.start_boundary_translation_commitment, expected_start
+        )));
+    }
+    let expected_end = commit_phase41_boundary_translation_pair(
+        "end",
+        &witness.phase29_global_end_state_commitment,
+        &witness.phase30_chain_end_boundary_commitment,
+        witness,
+    )?;
+    if witness.end_boundary_translation_commitment != expected_end {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 end-boundary translation commitment `{}` does not match recomputed `{}`",
+            witness.end_boundary_translation_commitment, expected_end
+        )));
+    }
+    let expected = commit_phase41_boundary_translation_witness(witness)?;
+    if witness.boundary_translation_witness_commitment != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness commitment `{}` does not match recomputed `{}`",
+            witness.boundary_translation_witness_commitment, expected
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase41_boundary_translation_witness_against_sources(
+    witness: &Phase41BoundaryTranslationWitness,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<()> {
+    verify_phase41_boundary_translation_witness(witness)?;
+    let expected = phase41_prepare_boundary_translation_witness(contract, phase30)?;
+    if witness != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 41 boundary-translation witness does not match the recomputed Phase 29 + Phase 30 source artifacts".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
 fn commit_phase38_lookup_identity(
     phase30: &Phase30DecodingStepProofEnvelopeManifest,
 ) -> Result<String> {
@@ -4833,6 +5381,20 @@ pub fn parse_phase38_paper3_composition_prototype_json(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn parse_phase41_boundary_translation_witness_json(
+    json: &str,
+) -> Result<Phase41BoundaryTranslationWitness> {
+    if json.len() > MAX_PHASE41_BOUNDARY_TRANSLATION_WITNESS_JSON_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 41 boundary-translation witness JSON is {} bytes, exceeding the limit of {} bytes",
+            json.len(),
+            MAX_PHASE41_BOUNDARY_TRANSLATION_WITNESS_JSON_BYTES
+        )));
+    }
+    serde_json::from_str(json).map_err(phase41_json_error)
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn load_phase31_recursive_compression_decode_boundary_manifest(
     path: &Path,
 ) -> Result<Phase31RecursiveCompressionDecodeBoundaryManifest> {
@@ -4929,6 +5491,18 @@ pub fn load_phase38_paper3_composition_prototype(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn load_phase41_boundary_translation_witness(
+    path: &Path,
+) -> Result<Phase41BoundaryTranslationWitness> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE41_BOUNDARY_TRANSLATION_WITNESS_JSON_BYTES,
+        "Phase 41 boundary-translation witness",
+    )?;
+    serde_json::from_slice(&bytes).map_err(phase41_json_error)
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase31_json_error(error: serde_json::Error) -> VmError {
     match error.classify() {
         serde_json::error::Category::Data
@@ -5000,6 +5574,16 @@ fn phase37_json_error(error: serde_json::Error) -> VmError {
 
 #[cfg(feature = "stwo-backend")]
 fn phase38_json_error(error: serde_json::Error) -> VmError {
+    match error.classify() {
+        serde_json::error::Category::Data
+        | serde_json::error::Category::Syntax
+        | serde_json::error::Category::Eof => VmError::InvalidConfig(error.to_string()),
+        serde_json::error::Category::Io => VmError::Serialization(error.to_string()),
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase41_json_error(error: serde_json::Error) -> VmError {
     match error.classify() {
         serde_json::error::Category::Data
         | serde_json::error::Category::Syntax
@@ -6113,6 +6697,30 @@ mod tests {
             commit_phase29_recursive_compression_input_contract(&contract)
                 .expect("recommit phase29 contract");
         contract
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn sample_phase41_boundary_gap_sources() -> (
+        Phase29RecursiveCompressionInputContract,
+        Phase30DecodingStepProofEnvelopeManifest,
+    ) {
+        let phase30 = sample_phase30_manifest();
+        let mut phase29 = sample_phase29_contract();
+        phase29.phase28_proof_backend_version = phase30.proof_backend_version.clone();
+        phase29.statement_version = phase30.statement_version.clone();
+        phase29.total_steps = phase30.total_steps;
+        phase29.input_contract_commitment =
+            commit_phase29_recursive_compression_input_contract(&phase29)
+                .expect("recommit Phase41 boundary-gap Phase29 contract");
+        assert_ne!(
+            phase29.global_start_state_commitment,
+            phase30.chain_start_boundary_commitment
+        );
+        assert_ne!(
+            phase29.global_end_state_commitment,
+            phase30.chain_end_boundary_commitment
+        );
+        (phase29, phase30)
     }
 
     #[cfg(feature = "stwo-backend")]
@@ -7360,6 +7968,161 @@ mod tests {
             "full shared-proof Phase29/Phase30 boundary-domain probe",
         )
         .expect("write full shared-proof Phase40 boundary probe evidence if requested");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase41_boundary_translation_witness_binds_phase40_gap_without_closing_phase31() {
+        let (phase29, phase30) = sample_phase41_boundary_gap_sources();
+
+        let witness = phase41_prepare_boundary_translation_witness(&phase29, &phase30)
+            .expect("prepare Phase41 boundary-translation witness");
+        assert_eq!(witness.proof_backend, StarkProofBackend::Stwo);
+        assert_eq!(
+            witness.witness_version,
+            STWO_BOUNDARY_TRANSLATION_WITNESS_VERSION_PHASE41
+        );
+        assert_eq!(
+            witness.semantic_scope,
+            STWO_BOUNDARY_TRANSLATION_WITNESS_SCOPE_PHASE41
+        );
+        assert_eq!(
+            witness.translation_rule,
+            STWO_BOUNDARY_TRANSLATION_RULE_PHASE41
+        );
+        assert!(witness.boundary_domains_differ);
+        assert!(!witness.recursive_verification_claimed);
+        assert!(!witness.cryptographic_compression_claimed);
+        assert!(!witness.derivation_proof_claimed);
+        assert_eq!(
+            witness.phase29_global_start_state_commitment,
+            phase29.global_start_state_commitment
+        );
+        assert_eq!(
+            witness.phase30_chain_start_boundary_commitment,
+            phase30.chain_start_boundary_commitment
+        );
+
+        verify_phase41_boundary_translation_witness(&witness).expect("verify Phase41 witness");
+        verify_phase41_boundary_translation_witness_against_sources(&witness, &phase29, &phase30)
+            .expect("verify Phase41 witness against sources");
+
+        let phase31_error =
+            phase31_prepare_recursive_compression_decode_boundary_manifest(&phase29, &phase30)
+                .expect_err("Phase41 witness must not silently satisfy Phase31 direct equality");
+        assert_phase40_start_boundary_mismatch(&phase31_error);
+        let phase37_error =
+            phase37_prepare_recursive_artifact_chain_harness_receipt(&phase29, &phase30)
+                .expect_err("Phase41 witness must not silently satisfy Phase37 direct equality");
+        assert_phase40_start_boundary_mismatch(&phase37_error);
+
+        let json = serde_json::to_string_pretty(&witness).expect("serialize Phase41 witness");
+        let parsed =
+            parse_phase41_boundary_translation_witness_json(&json).expect("parse Phase41 witness");
+        assert_eq!(parsed, witness);
+
+        let path = std::env::temp_dir().join(format!(
+            "phase41-boundary-translation-witness-{}.json",
+            std::process::id()
+        ));
+        std::fs::write(&path, json).expect("write Phase41 witness temp file");
+        let loaded = load_phase41_boundary_translation_witness(&path)
+            .expect("load Phase41 witness temp file");
+        std::fs::remove_file(&path).expect("remove Phase41 witness temp file");
+        assert_eq!(loaded, witness);
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase41_boundary_translation_witness_rejects_direct_equality_false_positive() {
+        let phase30 = sample_phase30_manifest();
+        let phase29 = sample_phase29_contract_for_phase30(&phase30);
+
+        let err = phase41_prepare_boundary_translation_witness(&phase29, &phase30)
+            .expect_err("direct Phase29/Phase30 boundary equality is not a translation witness");
+        assert!(err.to_string().contains("requires differing"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase41_boundary_translation_witness_rejects_swapped_source_boundary() {
+        let (phase29, phase30) = sample_phase41_boundary_gap_sources();
+        let mut witness = phase41_prepare_boundary_translation_witness(&phase29, &phase30)
+            .expect("prepare Phase41 boundary-translation witness");
+
+        witness.phase30_chain_start_boundary_commitment =
+            phase30.chain_end_boundary_commitment.clone();
+        let phase29_start = witness.phase29_global_start_state_commitment.clone();
+        let phase30_start = witness.phase30_chain_start_boundary_commitment.clone();
+        witness.start_boundary_translation_commitment = commit_phase41_boundary_translation_pair(
+            "start",
+            &phase29_start,
+            &phase30_start,
+            &witness,
+        )
+        .expect("recommit swapped start boundary translation");
+        witness.boundary_translation_witness_commitment =
+            commit_phase41_boundary_translation_witness(&witness)
+                .expect("recommit swapped Phase41 witness");
+
+        verify_phase41_boundary_translation_witness(&witness)
+            .expect("internally consistent swapped witness verifies without sources");
+        let err = verify_phase41_boundary_translation_witness_against_sources(
+            &witness, &phase29, &phase30,
+        )
+        .expect_err("source-swapped Phase41 witness must fail source recomputation");
+        assert!(err.to_string().contains("does not match the recomputed"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase41_boundary_translation_witness_rejects_proof_derivation_claim_even_recommitted() {
+        let (phase29, phase30) = sample_phase41_boundary_gap_sources();
+        let mut witness = phase41_prepare_boundary_translation_witness(&phase29, &phase30)
+            .expect("prepare Phase41 boundary-translation witness");
+        witness.derivation_proof_claimed = true;
+        witness.boundary_translation_witness_commitment =
+            commit_phase41_boundary_translation_witness(&witness)
+                .expect("recommit Phase41 witness with false proof-derivation claim");
+
+        let err = verify_phase41_boundary_translation_witness(&witness)
+            .expect_err("Phase41 must reject proof-level derivation claims");
+        assert!(err.to_string().contains("proof-level derivation"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase41_boundary_translation_witness_deserialization_rejects_unknown_fields() {
+        let (phase29, phase30) = sample_phase41_boundary_gap_sources();
+        let witness = phase41_prepare_boundary_translation_witness(&phase29, &phase30)
+            .expect("prepare Phase41 boundary-translation witness");
+        let mut value = serde_json::to_value(&witness).expect("serialize Phase41 witness value");
+        value["unexpected_phase41_field"] = serde_json::json!(true);
+        let json = serde_json::to_string(&value).expect("serialize unknown-field Phase41 JSON");
+
+        let err = parse_phase41_boundary_translation_witness_json(&json)
+            .expect_err("unknown Phase41 fields must be rejected");
+        assert!(err.to_string().contains("unknown field"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase41_boundary_translation_witness_rejects_malformed_and_oversized_json() {
+        let err = parse_phase41_boundary_translation_witness_json("{")
+            .expect_err("malformed Phase41 witness JSON must fail");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig for malformed JSON, got {err:?}"
+        );
+
+        let json = " ".repeat(MAX_PHASE41_BOUNDARY_TRANSLATION_WITNESS_JSON_BYTES + 1);
+        let err = parse_phase41_boundary_translation_witness_json(&json)
+            .expect_err("oversized Phase41 witness JSON must fail before serde parsing");
+        assert!(
+            matches!(err, VmError::InvalidConfig(_)),
+            "expected InvalidConfig for oversized JSON, got {err:?}"
+        );
+        assert!(err.to_string().contains("exceeding the limit"));
     }
 
     #[cfg(feature = "stwo-backend")]
