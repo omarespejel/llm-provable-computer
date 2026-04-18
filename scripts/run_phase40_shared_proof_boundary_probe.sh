@@ -6,6 +6,11 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
 cd "${REPO_ROOT}"
 
+if ! command -v python3 >/dev/null 2>&1; then
+  printf 'error: python3 is required for the Phase 40 boundary probe\n' >&2
+  exit 127
+fi
+
 ARTIFACT_DIR_INPUT="${PHASE40_ARTIFACT_DIR:-target/phase40-shared-proof-boundary-probe}"
 ARTIFACT_DIR="$(python3 -B - "${REPO_ROOT}" "${ARTIFACT_DIR_INPUT}" <<'PY'
 from __future__ import annotations
