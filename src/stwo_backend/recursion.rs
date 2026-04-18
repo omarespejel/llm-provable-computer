@@ -48,6 +48,9 @@ pub const STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_SCOPE_PHASE31: &st
 #[cfg(feature = "stwo-backend")]
 const MAX_PHASE31_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_JSON_BYTES: usize = 1024 * 1024;
 #[cfg(feature = "stwo-backend")]
+const PHASE31_START_BOUNDARY_MISMATCH_ERROR: &str =
+    "Phase 31 decode-boundary manifest requires Phase 29 global_start_state_commitment to match the Phase 30 chain_start_boundary_commitment";
+#[cfg(feature = "stwo-backend")]
 pub const STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32: &str =
     "stwo-phase32-recursive-compression-statement-contract-v1";
 #[cfg(feature = "stwo-backend")]
@@ -2197,7 +2200,7 @@ pub fn phase31_prepare_recursive_compression_decode_boundary_manifest(
     }
     if contract.global_start_state_commitment != phase30.chain_start_boundary_commitment {
         return Err(VmError::InvalidConfig(
-            "Phase 31 decode-boundary manifest requires Phase 29 global_start_state_commitment to match the Phase 30 chain_start_boundary_commitment".to_string(),
+            PHASE31_START_BOUNDARY_MISMATCH_ERROR.to_string(),
         ));
     }
     if contract.global_end_state_commitment != phase30.chain_end_boundary_commitment {
@@ -5734,6 +5737,7 @@ mod tests {
         phase12_default_decoding_layout, phase30_prepare_decoding_step_proof_envelope_manifest,
         phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range,
         prove_phase12_decoding_demo_for_layout, prove_phase12_decoding_demo_for_layout_steps,
+        prove_phase28_phase30_shared_proof_boundary_demo,
         verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range,
         STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_SCOPE_PHASE31,
         STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_VERSION_PHASE31,
@@ -5992,6 +5996,98 @@ mod tests {
         let json =
             serde_json::to_vec_pretty(prototype).expect("serialize Phase 39 prototype artifact");
         std::fs::write(&path, json).expect("write Phase 39 prototype artifact");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn write_phase40_boundary_probe_if_requested(
+        phase29: &Phase29RecursiveCompressionInputContract,
+        phase30: &Phase30DecodingStepProofEnvelopeManifest,
+        phase31_error: &str,
+        phase37_error: &str,
+        source_kind: &str,
+    ) -> Result<()> {
+        let path = match std::env::var("PHASE40_BOUNDARY_PROBE_OUT") {
+            Ok(path) => path,
+            Err(std::env::VarError::NotPresent) => return Ok(()),
+            Err(std::env::VarError::NotUnicode(_)) => {
+                return Err(VmError::InvalidConfig(
+                    "PHASE40_BOUNDARY_PROBE_OUT must be valid UTF-8".to_string(),
+                ));
+            }
+        };
+        if path.is_empty() {
+            return Err(VmError::InvalidConfig(
+                "PHASE40_BOUNDARY_PROBE_OUT must not be empty".to_string(),
+            ));
+        }
+        let path = std::path::PathBuf::from(path);
+        if path.is_absolute()
+            || path.components().any(|component| {
+                matches!(
+                    component,
+                    std::path::Component::ParentDir
+                        | std::path::Component::RootDir
+                        | std::path::Component::Prefix(_)
+                )
+            })
+        {
+            return Err(VmError::InvalidConfig(
+                "PHASE40_BOUNDARY_PROBE_OUT must be a repo-relative path without traversal"
+                    .to_string(),
+            ));
+        }
+        if path.file_name().and_then(|name| name.to_str()) != Some("evidence.json") {
+            return Err(VmError::InvalidConfig(
+                "PHASE40_BOUNDARY_PROBE_OUT must target an evidence.json file".to_string(),
+            ));
+        }
+        if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
+            std::fs::create_dir_all(parent)?;
+        }
+        let evidence = serde_json::json!({
+            "issue": 176,
+            "probe": "phase40-phase28-domain-phase30-boundary",
+            "total_steps": phase30.total_steps,
+            "source_kind": source_kind,
+            "full_shared_proof_probe": "available via prove_phase28_phase30_shared_proof_boundary_demo; not run by the default local gate because 16-proof generation is expensive",
+            "phase29_contract_commitment": phase29.input_contract_commitment.as_str(),
+            "phase30_source_chain_commitment": phase30.source_chain_commitment.as_str(),
+            "phase30_step_envelopes_commitment": phase30.step_envelopes_commitment.as_str(),
+            "phase29_boundary_domain": "Phase28-derived Phase14/Phase23 boundary-state commitment",
+            "phase30_boundary_domain": "Phase30 Phase12 public-state commitment",
+            "direct_phase31_boundary_equality": {
+                "start": phase29.global_start_state_commitment == phase30.chain_start_boundary_commitment,
+                "end": phase29.global_end_state_commitment == phase30.chain_end_boundary_commitment,
+            },
+            "phase29_global_start_state_commitment": phase29.global_start_state_commitment.as_str(),
+            "phase30_chain_start_boundary_commitment": phase30.chain_start_boundary_commitment.as_str(),
+            "phase29_global_end_state_commitment": phase29.global_end_state_commitment.as_str(),
+            "phase30_chain_end_boundary_commitment": phase30.chain_end_boundary_commitment.as_str(),
+            "phase31_error_kind": "InvalidConfig",
+            "phase31_boundary_blocker": "global_start_state_commitment",
+            "phase31_error": phase31_error,
+            "phase37_error_kind": "InvalidConfig",
+            "phase37_boundary_blocker": "global_start_state_commitment",
+            "phase37_error": phase37_error,
+        });
+        let json = serde_json::to_vec_pretty(&evidence).expect("serialize Phase 40 evidence");
+        std::fs::write(&path, json)?;
+        Ok(())
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn assert_phase40_start_boundary_mismatch(error: &VmError) {
+        match error {
+            VmError::InvalidConfig(message) => {
+                assert_eq!(message, PHASE31_START_BOUNDARY_MISMATCH_ERROR);
+            }
+            other => panic!("unexpected Phase40 boundary mismatch error: {other}"),
+        }
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn phase40_start_boundary_mismatch_display() -> String {
+        VmError::InvalidConfig(PHASE31_START_BOUNDARY_MISMATCH_ERROR.to_string()).to_string()
     }
 
     #[cfg(feature = "stwo-backend")]
@@ -7155,6 +7251,115 @@ mod tests {
             .expect("parse serialized prototype");
         assert_eq!(parsed, prototype);
         write_phase39_composition_artifact_if_requested(&prototype);
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase40_phase28_domain_phase29_phase30_boundary_probe_exposes_domain_gap() {
+        let phase30 = sample_phase30_manifest();
+        let mut phase29 = sample_phase29_contract();
+        phase29.phase28_proof_backend_version = phase30.proof_backend_version.clone();
+        phase29.statement_version = phase30.statement_version.clone();
+        phase29.total_steps = phase30.total_steps;
+        phase29.input_contract_commitment =
+            commit_phase29_recursive_compression_input_contract(&phase29)
+                .expect("recommit Phase40 boundary-domain probe contract");
+
+        assert_eq!(phase29.total_steps, phase30.total_steps);
+        assert_eq!(
+            phase29.phase28_proof_backend_version,
+            phase30.proof_backend_version
+        );
+        assert_eq!(phase29.statement_version, phase30.statement_version);
+        assert_ne!(
+            phase29.global_start_state_commitment,
+            phase30.chain_start_boundary_commitment
+        );
+        assert_ne!(
+            phase29.global_end_state_commitment,
+            phase30.chain_end_boundary_commitment
+        );
+
+        let phase31_error =
+            phase31_prepare_recursive_compression_decode_boundary_manifest(&phase29, &phase30)
+                .expect_err(
+                    "Phase28-domain Phase29 should not directly match Phase30 boundary domain",
+                );
+        assert_phase40_start_boundary_mismatch(&phase31_error);
+        let phase31_message = phase31_error.to_string();
+        assert_eq!(phase31_message, phase40_start_boundary_mismatch_display());
+
+        let phase37_error =
+            phase37_prepare_recursive_artifact_chain_harness_receipt(&phase29, &phase30)
+                .expect_err("Phase37 should inherit the Phase29/Phase30 boundary-domain gap");
+        assert_phase40_start_boundary_mismatch(&phase37_error);
+        let phase37_message = phase37_error.to_string();
+        assert_eq!(phase37_message, phase40_start_boundary_mismatch_display());
+
+        write_phase40_boundary_probe_if_requested(
+            &phase29,
+            &phase30,
+            &phase31_message,
+            &phase37_message,
+            "structural Phase29/Phase30 boundary-domain smoke",
+        )
+        .expect("write structural Phase40 boundary probe evidence if requested");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    #[ignore = "generates and checks a 16-step Stwo shared-proof source; too expensive for the default local merge gate"]
+    fn phase40_full_shared_proof_phase28_phase30_boundary_probe_exposes_domain_gap() {
+        let (phase28, phase30) = prove_phase28_phase30_shared_proof_boundary_demo()
+            .expect("derive Phase 28 and Phase 30 from one proof list");
+        let phase29 =
+            phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28(
+                &phase28,
+            )
+            .expect("derive Phase 29 from the shared-proof Phase 28 artifact");
+
+        assert_eq!(phase28.total_steps, phase30.total_steps);
+        assert_eq!(phase29.total_steps, phase30.total_steps);
+        assert_eq!(
+            phase29.phase28_proof_backend_version,
+            phase30.proof_backend_version
+        );
+        assert_eq!(phase29.statement_version, phase30.statement_version);
+        assert_ne!(
+            phase29.global_start_state_commitment,
+            phase30.chain_start_boundary_commitment
+        );
+        assert_ne!(
+            phase29.global_end_state_commitment,
+            phase30.chain_end_boundary_commitment
+        );
+
+        let phase31_error =
+            phase31_prepare_recursive_compression_decode_boundary_manifest(&phase29, &phase30)
+                .expect_err(
+                "real Phase28-derived Phase29 should not directly match Phase30 boundary domain",
+            );
+        assert_phase40_start_boundary_mismatch(&phase31_error);
+        let phase31_message = phase31_error.to_string();
+        assert_eq!(phase31_message, phase40_start_boundary_mismatch_display());
+
+        let phase37_error =
+            phase37_prepare_recursive_artifact_chain_harness_receipt(&phase29, &phase30)
+                .expect_err(
+                    "Phase37 harness receipt should inherit the real Phase29/Phase30 boundary gap",
+                );
+        assert_phase40_start_boundary_mismatch(&phase37_error);
+        let phase37_message = phase37_error.to_string();
+        assert_eq!(phase37_message, phase40_start_boundary_mismatch_display());
+
+        write_phase40_boundary_probe_if_requested(
+            &phase29,
+            &phase30,
+            &phase31_message,
+            &phase37_message,
+            "full shared-proof Phase29/Phase30 boundary-domain probe",
+        )
+        .expect("write full shared-proof Phase40 boundary probe evidence if requested");
     }
 
     #[cfg(feature = "stwo-backend")]

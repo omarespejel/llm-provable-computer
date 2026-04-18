@@ -64,6 +64,14 @@ The segment manifests use local Phase 30 envelope indexes, but they keep the sam
 
 The suite writes `target/phase39-real-decode-composition/phase39-real-decode-composition-prototype.json` and verifies that generated artifact with the independent Python reference verifier. It also writes `target/phase39-real-decode-composition/evidence.json` with the generator command, artifact hash, source step ranges, segment count, shared source-chain commitment, package-count baseline, and independent-verifier negative controls. The mutation files under `target/phase39-real-decode-composition/mutations/` intentionally break boundary continuity, source-chain identity, source-template identity, shared lookup identity, package-count accounting, and Phase 37 receipt binding. These files are generated evidence, not frozen release artifacts. `evidence:phase38_source_validated_receipt_binding` `evidence:phase38_composition_continuity` `evidence:phase38_shared_lookup_source_chain_and_template_identity`
 
+## Boundary domain probe
+
+Issue #176 adds the Phase 40 bridge probe for the largest remaining caveat. The default local probe is a fast boundary-domain smoke test: it compares a Phase28-domain Phase29 contract surface against a Phase30 envelope manifest with matching backend, statement version, and step count, without rewriting the Phase29 boundaries to match Phase30. The code also exposes `prove_phase28_phase30_shared_proof_boundary_demo` for the heavyweight follow-up path that derives both surfaces from one 16-step proving-safe Phase12 proof list, but that full run is not part of the default merge gate because local 16-proof generation is expensive.
+
+The result is intentionally a blocker, not a success claim: direct Phase 31/37 binding fails because the two boundary surfaces use different commitment domains. Phase 29 inherits Phase 28's Phase14/Phase23 boundary-state commitments, while Phase 30 exposes Phase12 public-state commitments. The current Phase31 equality check therefore cannot be satisfied by a real Phase28-derived Phase29 contract without either synthesizing Phase29 boundaries, as Phase39 does for its harness, or adding an explicit boundary-translation witness.
+
+The local probe writes `target/phase40-shared-proof-boundary-probe/evidence.json` with both boundary domains, the Phase29 and Phase30 commitments, and the exact Phase31/37 rejection messages. This is useful progress toward Paper 3 because it turns the harness caveat into a concrete implementation requirement: the next recursive-closure step must prove or encode the Phase12-to-Phase14/23 boundary correspondence, not just compare unequal hashes.
+
 ## Baseline accounting
 
 The prototype also records a simple packaging baseline:
@@ -94,6 +102,7 @@ cargo fmt --check
 cargo test -q --lib statement_spec_contract_is_synced_with_constants
 scripts/run_phase38_schema_suite.sh
 scripts/run_phase39_real_decode_composition_suite.sh
+scripts/run_phase40_shared_proof_boundary_probe.sh
 scripts/run_reference_verifier_suite.sh
 python3 scripts/paper/paper_preflight.py
 ```

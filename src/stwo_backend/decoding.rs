@@ -10421,6 +10421,83 @@ fn phase28_prepare_demo_manifest_for_layout(
     phase28_prepare_aggregated_chained_folded_intervalized_decoding_state_relation(&chained_members)
 }
 
+fn phase28_phase30_prepare_shared_proof_demo_for_layout(
+    layout: &Phase12DecodingLayout,
+) -> Result<(
+    Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    Phase30DecodingStepProofEnvelopeManifest,
+)> {
+    const PHASE40_SHARED_PROOF_DEMO_STEPS: usize = 16;
+
+    let proofs = phase25_demo_proofs_for_layout(layout, PHASE40_SHARED_PROOF_DEMO_STEPS)?;
+    if proofs.len() != PHASE40_SHARED_PROOF_DEMO_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 40 shared-proof source mismatch: requested {PHASE40_SHARED_PROOF_DEMO_STEPS} proofs but received {}",
+            proofs.len()
+        )));
+    }
+    let phase12 = phase12_prepare_decoding_chain(layout, &proofs)?;
+    verify_phase12_decoding_chain_with_proof_checks(&phase12)?;
+
+    let verified_proofs = phase12
+        .steps
+        .iter()
+        .map(|step| step.proof.clone())
+        .collect::<Vec<_>>();
+    if phase12.total_steps != PHASE40_SHARED_PROOF_DEMO_STEPS
+        || verified_proofs.len() != PHASE40_SHARED_PROOF_DEMO_STEPS
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 40 shared-proof source mismatch: expected {PHASE40_SHARED_PROOF_DEMO_STEPS} verified steps, Phase12 records total_steps {} and exposes {} verified proofs",
+            phase12.total_steps,
+            verified_proofs.len()
+        )));
+    }
+    let cumulative_members =
+        phase25_prepare_cumulative_members_from_proof_prefixes(layout, &verified_proofs)?;
+    let interval_members =
+        phase25_prepare_intervalized_members_from_cumulative_members(&cumulative_members, 2)?;
+    let folded_members =
+        phase26_prepare_folded_members_from_interval_members(&interval_members, 2)?;
+    let chained_members = phase27_prepare_chained_members_from_folded_members(&folded_members, 2)?;
+    let phase28 = phase28_prepare_aggregated_chained_folded_intervalized_decoding_state_relation(
+        &chained_members,
+    )?;
+
+    let phase30 = phase30_prepare_decoding_step_proof_envelope_manifest(&phase12)?;
+    if phase28.total_steps != PHASE40_SHARED_PROOF_DEMO_STEPS
+        || phase30.total_steps != PHASE40_SHARED_PROOF_DEMO_STEPS
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 40 shared-proof source mismatch: expected {PHASE40_SHARED_PROOF_DEMO_STEPS} manifest steps, Phase28 reports {} and Phase30 reports {}",
+            phase28.total_steps, phase30.total_steps
+        )));
+    }
+    if phase28.proof_backend_version != phase30.proof_backend_version {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 40 shared-proof source mismatch: Phase28 backend version `{}` differs from Phase30 backend version `{}`",
+            phase28.proof_backend_version, phase30.proof_backend_version
+        )));
+    }
+    if phase28.statement_version != phase30.statement_version {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 40 shared-proof source mismatch: Phase28 statement version `{}` differs from Phase30 statement version `{}`",
+            phase28.statement_version, phase30.statement_version
+        )));
+    }
+    if phase28.global_start_state_commitment == phase30.chain_start_boundary_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 40 shared-proof boundary demo expected Phase28 global_start_state_commitment to differ from Phase30 chain_start_boundary_commitment".to_string(),
+        ));
+    }
+    if phase28.global_end_state_commitment == phase30.chain_end_boundary_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 40 shared-proof boundary demo expected Phase28 global_end_state_commitment to differ from Phase30 chain_end_boundary_commitment".to_string(),
+        ));
+    }
+    Ok((phase28, phase30))
+}
+
 pub fn prove_phase24_decoding_state_relation_accumulator_demo(
 ) -> Result<Phase24DecodingStateRelationAccumulatorManifest> {
     let layout = phase12_default_decoding_layout();
@@ -10514,6 +10591,58 @@ pub fn prove_phase28_aggregated_chained_folded_intervalized_decoding_state_relat
                 .to_string(),
         )
     }))
+}
+
+pub fn prove_phase28_phase30_shared_proof_boundary_demo() -> Result<(
+    Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    Phase30DecodingStepProofEnvelopeManifest,
+)> {
+    let mut layouts = phase25_default_decoding_layouts()?;
+    layouts.sort_by(|left, right| {
+        (
+            left.layout_version.as_str(),
+            left.rolling_kv_pairs,
+            left.pair_width,
+        )
+            .cmp(&(
+                right.layout_version.as_str(),
+                right.rolling_kv_pairs,
+                right.pair_width,
+            ))
+    });
+    if layouts.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 40 shared-proof boundary demo did not have any candidate layouts to try"
+                .to_string(),
+        ));
+    }
+
+    let mut failures = Vec::new();
+    for layout in layouts {
+        match phase28_phase30_prepare_shared_proof_demo_for_layout(&layout) {
+            Ok((phase28, phase30)) => {
+                if phase28.global_start_state_commitment == phase30.chain_start_boundary_commitment
+                    || phase28.global_end_state_commitment == phase30.chain_end_boundary_commitment
+                {
+                    failures.push(format!(
+                        "layout_version={} rolling_kv_pairs={} pair_width={}: shared-proof artifacts did not reproduce the Phase40 boundary-domain blocker",
+                        layout.layout_version, layout.rolling_kv_pairs, layout.pair_width
+                    ));
+                    continue;
+                }
+                return Ok((phase28, phase30));
+            }
+            Err(error) => failures.push(format!(
+                "layout_version={} rolling_kv_pairs={} pair_width={}: {}",
+                layout.layout_version, layout.rolling_kv_pairs, layout.pair_width, error
+            )),
+        }
+    }
+    Err(VmError::InvalidConfig(format!(
+        "Phase 40 shared-proof boundary demo failed for {} deterministic candidate layouts: {}",
+        failures.len(),
+        failures.join(" | ")
+    )))
 }
 
 fn derive_phase11_state(memory: &[i16], step_index: usize) -> Result<Phase11DecodingState> {
