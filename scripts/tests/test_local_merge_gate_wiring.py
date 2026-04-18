@@ -117,6 +117,8 @@ class LocalMergeGateWiringTests(unittest.TestCase):
         body = self._shell_function_body("changed_path_is_phase38_schema_surface")
         expected_triggers = [
             "spec/stwo-phase38-paper3-composition-prototype.schema.json",
+            "spec/stwo-phase30-decoding-step-envelope-manifest.schema.json",
+            "spec/stwo-phase37-recursive-artifact-chain-harness-receipt.schema.json",
             "docs/engineering/paper3-claim-evidence.yml",
             "docs/engineering/paper3-composition-prototype.md",
             "src/stwo_backend/recursion.rs",
@@ -129,6 +131,10 @@ class LocalMergeGateWiringTests(unittest.TestCase):
                 self.assertIn(f'changed_path_has_prefix "{trigger}"', body)
         runner_body = self._shell_function_body("run_phase38_schema_if_needed")
         self.assertIn("if changed_path_is_phase38_schema_surface; then", runner_body)
+        self.assertIn(
+            "run_logged phase38-schema env SKIP_PAPER_PREFLIGHT=1 bash scripts/run_phase38_schema_suite.sh",
+            runner_body,
+        )
         self.assertIn(
             "run_logged phase38-schema bash scripts/run_phase38_schema_suite.sh",
             runner_body,

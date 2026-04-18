@@ -533,6 +533,8 @@ changed_path_is_approximation_budget_surface() {
 
 changed_path_is_phase38_schema_surface() {
   changed_path_has_prefix "spec/stwo-phase38-paper3-composition-prototype.schema.json" ||
+    changed_path_has_prefix "spec/stwo-phase30-decoding-step-envelope-manifest.schema.json" ||
+    changed_path_has_prefix "spec/stwo-phase37-recursive-artifact-chain-harness-receipt.schema.json" ||
     changed_path_has_prefix "docs/engineering/paper3-claim-evidence.yml" ||
     changed_path_has_prefix "docs/engineering/paper3-composition-prototype.md" ||
     changed_path_has_prefix "src/stwo_backend/recursion.rs" ||
@@ -696,7 +698,11 @@ run_approximation_budget_if_needed() {
 
 run_phase38_schema_if_needed() {
   if changed_path_is_phase38_schema_surface; then
-    run_logged phase38-schema bash scripts/run_phase38_schema_suite.sh
+    if changed_path_is_paper_preflight_surface; then
+      run_logged phase38-schema env SKIP_PAPER_PREFLIGHT=1 bash scripts/run_phase38_schema_suite.sh
+    else
+      run_logged phase38-schema bash scripts/run_phase38_schema_suite.sh
+    fi
   fi
 }
 

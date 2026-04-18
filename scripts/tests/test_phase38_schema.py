@@ -119,7 +119,8 @@ class Phase38SchemaTests(unittest.TestCase):
 
     def assert_required_matches_properties(self, node: dict, expected: list[str]) -> None:
         self.assertEqual(node.get("type"), "object")
-        self.assertFalse(node.get("additionalProperties"))
+        self.assertIn("additionalProperties", node)
+        self.assertIs(node["additionalProperties"], False)
         self.assertEqual(node.get("required"), expected)
         self.assertEqual(set(node.get("properties", {})), set(expected))
 
@@ -152,7 +153,12 @@ class Phase38SchemaTests(unittest.TestCase):
             self.schema["properties"]["cryptographic_compression_claimed"],
             {"const": False},
         )
+        self.assertEqual(self.schema["properties"]["segments"]["type"], "array")
         self.assertEqual(self.schema["properties"]["segments"]["minItems"], 2)
+        self.assertEqual(
+            self.schema["properties"]["segments"]["items"],
+            {"$ref": "#/$defs/segment"},
+        )
         self.assert_hash_fields_use_hash32(self.schema)
 
     def test_schema_pins_nested_phase29_source_and_segment_surfaces(self) -> None:
@@ -175,6 +181,10 @@ class Phase38SchemaTests(unittest.TestCase):
         self.assert_required_matches_properties(
             defs["source"],
             ["phase29_contract", "phase30_manifest", "phase37_receipt"],
+        )
+        self.assertEqual(
+            defs["source"]["properties"]["phase29_contract"],
+            {"$ref": "#/$defs/phase29_contract"},
         )
         self.assertEqual(
             defs["source"]["properties"]["phase30_manifest"],
