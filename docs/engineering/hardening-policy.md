@@ -85,6 +85,9 @@ unit tests, accepts the positive fixture, and checks that the negative fixture
 fails closed. `scripts/run_phase38_schema_suite.sh` pins the Phase 38 Paper 3
 composition-prototype JSON schema surface and reruns paper preflight so schema
 drift cannot silently detach the paper claims from the serialized artifact.
+`scripts/run_reference_verifier_suite.sh` independently checks the Phase 37
+receipt and Phase 38 Paper 3 composition prototype surfaces without importing
+the Rust structs or repo-local schemas.
 
 The sanitizer and UB hardening scripts use the curated exact test lists in
 `scripts/hardening_test_names.sh`; update that file when adding new trusted-core
@@ -152,9 +155,10 @@ Available local command tiers:
   aggregation verifier, Phase 29 recursive-compression input contract, and
   non-heavy Phase 29 CLI artifact verification paths. It also runs the
   Phase 29-37 known-bad artifact corpus when the PR changes those artifact
-  surfaces or corpus files, plus the Phase 38 schema suite when the Paper 3
-  composition-prototype schema, evidence, docs, local-gate wiring, or backing
-  Phase 38 implementation changes.
+  surfaces or corpus files, the independent reference verifier when Paper 2 or
+  Paper 3 artifact-verifier surfaces change, plus the Phase 38 schema suite
+  when the Paper 3 composition-prototype schema, evidence, docs, local-gate
+  wiring, or backing Phase 38 implementation changes.
 - `--mode full`: runs the same PR-range whitespace and formatting hygiene, full
   library tests, integration tests, doctests, the same conditional workflow
   auditing, dependency auditing, and shellcheck, and the exact pinned-nightly

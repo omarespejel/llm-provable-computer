@@ -86,6 +86,29 @@ class LocalMergeGateWiringTests(unittest.TestCase):
         )
         self._assert_runner_in_local_modes("run_paper_preflight_if_needed")
 
+    def test_reference_verifier_surface_is_conditionally_wired(self) -> None:
+        self.assertIn("changed_path_is_reference_verifier_surface()", self.script)
+        body = self._shell_function_body("changed_path_is_reference_verifier_surface")
+        expected_triggers = [
+            "tools/reference_verifier/",
+            "scripts/run_reference_verifier_suite.sh",
+            "docs/engineering/paper2-claim-evidence.yml",
+            "docs/engineering/paper3-claim-evidence.yml",
+            "docs/engineering/paper3-composition-prototype.md",
+            "spec/stwo-phase38-paper3-composition-prototype.schema.json",
+            "spec/stwo-phase30-decoding-step-envelope-manifest.schema.json",
+            "spec/stwo-phase37-recursive-artifact-chain-harness-receipt.schema.json",
+            "src/stwo_backend/recursion.rs",
+            "scripts/local_merge_gate.sh",
+        ]
+        for trigger in expected_triggers:
+            with self.subTest(trigger=trigger):
+                self.assertIn(f'changed_path_has_prefix "{trigger}"', body)
+        runner_body = self._shell_function_body("run_reference_verifier_if_needed")
+        self.assertIn("if changed_path_is_reference_verifier_surface; then", runner_body)
+        self.assertIn("run_reference_verifier_smoke", runner_body)
+        self._assert_runner_in_local_modes("run_reference_verifier_if_needed")
+
     def test_approximation_budget_surface_is_conditionally_wired(self) -> None:
         self.assertIn("changed_path_is_approximation_budget_surface()", self.script)
         body = self._shell_function_body("changed_path_is_approximation_budget_surface")
