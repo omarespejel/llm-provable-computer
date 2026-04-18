@@ -467,13 +467,15 @@ def find_repo_tokens(repo_root: pathlib.Path, tokens: set[str]) -> set[str]:
 
 
 def split_evidence_path_anchor(entry: str) -> tuple[str, str | None]:
-    path_part = entry.split("#", 1)[0]
+    path_part, fragment = (
+        entry.split("#", 1) if "#" in entry else (entry, None)
+    )
     if ":" not in path_part:
-        return path_part, None
+        return path_part, fragment or None
     rel_path, anchor = path_part.rsplit(":", 1)
     if "/" not in rel_path and not rel_path.endswith((".rs", ".py", ".md", ".json", ".yml")):
-        return path_part, None
-    return rel_path, anchor or None
+        return path_part, fragment or None
+    return rel_path, anchor or fragment or None
 
 
 def resolve_repo_relative_path(
@@ -487,7 +489,7 @@ def resolve_repo_relative_path(
         ".." in relative_path.parts
         or ".." in windows_path.parts
     ):
-        return None, "path must not contain `..`"
+        return None, "path must be repo-relative (must not contain `..`)"
 
     try:
         root = repo_root.resolve()
@@ -573,7 +575,7 @@ def check_paper2_evidence_anchors(
         found = False
         for entry in locations:
             rel_path, location_anchor = split_evidence_path_anchor(entry)
-            searched.append(rel_path)
+            searched.append(entry)
             path, path_error = resolve_repo_relative_path(repo_root, rel_path)
             if path is None:
                 skipped.append(f"{rel_path} ({path_error})")
