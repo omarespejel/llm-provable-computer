@@ -119,7 +119,9 @@ if [[ -n "${GIT_STATUS_PORCELAIN}" ]]; then
 from __future__ import annotations
 
 import hashlib
+import os
 import pathlib
+import stat as stat_module
 import subprocess
 import sys
 
@@ -127,6 +129,7 @@ limit = int(sys.argv[1])
 remaining = limit
 truncated = False
 hasher = hashlib.sha256()
+repo_root = pathlib.Path.cwd()
 
 status = subprocess.check_output(["git", "status", "--porcelain=v1", "-z"])
 hasher.update(b"status\0")
@@ -143,30 +146,54 @@ for command in (
 
 for raw_path in sorted(paths):
     path_text = raw_path.decode("utf-8", "surrogateescape")
-    path = pathlib.Path(path_text)
+    repo_relative_path = pathlib.Path(path_text)
+    if repo_relative_path.is_absolute() or ".." in repo_relative_path.parts:
+        raise SystemExit(f"dirty fingerprint path escapes repository: {path_text!r}")
+    path = repo_root / repo_relative_path
     hasher.update(b"path\0")
     hasher.update(raw_path)
     hasher.update(b"\0")
     try:
-        stat = path.stat()
+        stat = path.lstat()
     except OSError as error:
         hasher.update(f"missing:{error.errno}".encode("ascii"))
         continue
     hasher.update(f"mode:{stat.st_mode}:size:{stat.st_size}".encode("ascii"))
-    if not path.is_file():
+    if stat_module.S_ISLNK(stat.st_mode):
+        try:
+            link_target = os.readlink(path)
+        except OSError as error:
+            raise SystemExit(f"failed to read dirty symlink target {path_text!r}: {error}") from error
+        hasher.update(b"symlink\0")
+        hasher.update(os.fsencode(link_target))
+        continue
+    if not stat_module.S_ISREG(stat.st_mode):
         continue
     if remaining <= 0:
         truncated = True
         continue
+    fd = None
     try:
-        with path.open("rb") as handle:
-            chunk = handle.read(min(remaining, stat.st_size))
+        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
     except OSError as error:
-        hasher.update(f"read-error:{error.errno}".encode("ascii"))
-        continue
+        raise SystemExit(f"failed to read dirty file {path_text!r}: {error}") from error
+    try:
+        open_stat = os.fstat(fd)
+        if not stat_module.S_ISREG(open_stat.st_mode):
+            raise SystemExit(f"dirty path is no longer a regular file: {path_text!r}")
+        if (open_stat.st_dev, open_stat.st_ino) != (stat.st_dev, stat.st_ino):
+            raise SystemExit(f"dirty file changed while fingerprinting: {path_text!r}")
+        with os.fdopen(fd, "rb") as handle:
+            fd = None
+            chunk = handle.read(min(remaining, open_stat.st_size))
+    except OSError as error:
+        raise SystemExit(f"failed to read dirty file {path_text!r}: {error}") from error
+    finally:
+        if fd is not None:
+            os.close(fd)
     hasher.update(chunk)
     remaining -= len(chunk)
-    if stat.st_size > len(chunk):
+    if open_stat.st_size > len(chunk):
         truncated = True
 
 print(hasher.hexdigest())
