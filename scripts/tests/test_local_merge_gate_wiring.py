@@ -23,9 +23,32 @@ class LocalMergeGateWiringTests(unittest.TestCase):
         self.assertIsNotNone(match, f"missing function: {fn_name}")
         return match.group("body")
 
-    def _shell_call_site_count(self, fn_name: str) -> int:
-        # Count invocation lines only; this intentionally excludes definitions.
-        return len(re.findall(rf"(?m)^\s*{re.escape(fn_name)}\s*$", self.script))
+    def _run_mode_body(self, mode: str) -> str:
+        markers = [
+            ("smoke", 'if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then'),
+            ("full", 'elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then'),
+            ("hardening", 'elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then'),
+            ("none", 'elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "none" ]]; then'),
+        ]
+        marker_by_mode = dict(markers)
+        marker = marker_by_mode[mode]
+        start = self.script.find(marker)
+        self.assertNotEqual(start, -1, f"missing RUN_MODE block: {mode}")
+        body_start = start + len(marker)
+        next_starts = [
+            self.script.find(next_marker, body_start)
+            for next_mode, next_marker in markers
+            if next_mode != mode
+        ]
+        next_starts = [index for index in next_starts if index != -1 and index > start]
+        self.assertTrue(next_starts, f"missing end marker for RUN_MODE block: {mode}")
+        return self.script[body_start : min(next_starts)]
+
+    def _assert_runner_in_local_modes(self, fn_name: str) -> None:
+        pattern = rf"(?m)^\s*{re.escape(fn_name)}(?!\(\))\b"
+        for mode in ("smoke", "full", "hardening"):
+            with self.subTest(mode=mode, runner=fn_name):
+                self.assertRegex(self._run_mode_body(mode), pattern)
 
     def test_paper_preflight_surface_is_conditionally_wired(self) -> None:
         self.assertIn("changed_path_is_paper_preflight_surface()", self.script)
@@ -61,10 +84,7 @@ class LocalMergeGateWiringTests(unittest.TestCase):
             "run_logged paper-preflight bash scripts/run_paper_preflight_suite.sh",
             runner_body,
         )
-        self.assertGreaterEqual(
-            self._shell_call_site_count("run_paper_preflight_if_needed"),
-            3,
-        )
+        self._assert_runner_in_local_modes("run_paper_preflight_if_needed")
 
     def test_approximation_budget_surface_is_conditionally_wired(self) -> None:
         self.assertIn("changed_path_is_approximation_budget_surface()", self.script)
@@ -90,10 +110,7 @@ class LocalMergeGateWiringTests(unittest.TestCase):
             "run_logged approximation-budget bash scripts/run_approximation_budget_suite.sh",
             runner_body,
         )
-        self.assertGreaterEqual(
-            self._shell_call_site_count("run_approximation_budget_if_needed"),
-            3,
-        )
+        self._assert_runner_in_local_modes("run_approximation_budget_if_needed")
 
 
 if __name__ == "__main__":
