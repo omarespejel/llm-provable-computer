@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import shutil
 import sys
 import tempfile
 import unittest
@@ -92,6 +93,29 @@ class BenchmarkHarnessTests(unittest.TestCase):
             }
         )
         with self.assertRaisesRegex(ValueError, "input escapes repo root"):
+            harness.load_case_manifest(manifest)
+
+    def test_rejects_non_list_file_specs(self) -> None:
+        manifest = self.write_manifest(
+            {
+                "version": 1,
+                "cases": [
+                    self.valid_case(inputs={"path": "input.txt"}),
+                ],
+            }
+        )
+        with self.assertRaisesRegex(ValueError, "inputs must be a list"):
+            harness.load_case_manifest(manifest)
+
+        manifest = self.write_manifest(
+            {
+                "version": 1,
+                "cases": [
+                    self.valid_case(outputs={"path": "output.txt"}),
+                ],
+            }
+        )
+        with self.assertRaisesRegex(ValueError, "outputs must be a list"):
             harness.load_case_manifest(manifest)
 
     def test_dry_run_does_not_hash_or_require_declared_inputs(self) -> None:
@@ -232,6 +256,12 @@ class BenchmarkHarnessTests(unittest.TestCase):
             sys.argv = old_argv
 
         self.assertEqual(validator.validate_result(output), [])
+
+        relocated = self.root / "relocated" / "result.json"
+        relocated.parent.mkdir()
+        shutil.copy2(output, relocated)
+        shutil.copytree(output.parent / "result-logs", relocated.parent / "result-logs")
+        self.assertEqual(validator.validate_result(relocated), [])
 
         payload = json.loads(output.read_text(encoding="utf-8"))
         payload["cases"][0]["runs"][0]["stdout_sha256"] = "0" * 64

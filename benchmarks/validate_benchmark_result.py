@@ -44,12 +44,46 @@ def is_hex64(value: Any) -> bool:
     return isinstance(value, str) and bool(HEX_64_RE.fullmatch(value))
 
 
+def validator_repo_root() -> Path:
+    return Path(__file__).resolve().parents[1]
+
+
+def resolve_evidence_path(
+    raw_path: str,
+    bundle_root: Path,
+    repo_root: Path | None = None,
+) -> Path:
+    path = Path(raw_path)
+    if path.is_absolute():
+        return path
+    candidates = [bundle_root / path]
+    if repo_root is not None:
+        candidates.append(repo_root / path)
+    candidates.extend(
+        [
+            validator_repo_root() / path,
+            Path.cwd() / path,
+        ]
+    )
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return bundle_root / path
+
+
 def require(condition: bool, errors: list[str], message: str) -> None:
     if not condition:
         errors.append(message)
 
 
-def validate_file_record(record: Any, field: str, mode: str, errors: list[str]) -> None:
+def validate_file_record(
+    record: Any,
+    field: str,
+    mode: str,
+    errors: list[str],
+    bundle_root: Path,
+    repo_root: Path | None,
+) -> None:
     if not isinstance(record, dict):
         errors.append(f"{field} must be an object")
         return
@@ -63,7 +97,7 @@ def validate_file_record(record: Any, field: str, mode: str, errors: list[str]) 
     exists = record.get("exists")
     require(isinstance(exists, bool), errors, f"{field}.exists must be boolean in run mode")
     if exists:
-        path = Path(record["path"])
+        path = resolve_evidence_path(record["path"], bundle_root, repo_root)
         require(path.exists(), errors, f"{field}.path does not exist: {path}")
         require(is_hex64(record.get("sha256")), errors, f"{field}.sha256 must be lowercase 64-char hex")
         if path.exists() and is_hex64(record.get("sha256")):
@@ -76,7 +110,12 @@ def validate_file_record(record: Any, field: str, mode: str, errors: list[str]) 
         require(record.get("sha256") is None, errors, f"{field}.sha256 must be null when missing")
 
 
-def validate_run_record(record: Any, field: str, errors: list[str]) -> None:
+def validate_run_record(
+    record: Any,
+    field: str,
+    errors: list[str],
+    bundle_root: Path,
+) -> None:
     if not isinstance(record, dict):
         errors.append(f"{field} must be an object")
         return
@@ -87,10 +126,10 @@ def validate_run_record(record: Any, field: str, errors: list[str]) -> None:
         require(is_hex64(record.get(key)), errors, f"{field}.{key} must be lowercase 64-char hex")
     for key in ("stdout_path", "stderr_path"):
         require(isinstance(record.get(key), str) and record[key], errors, f"{field}.{key} must be a non-empty string")
-        path = Path(record.get(key, ""))
+        path = resolve_evidence_path(record.get(key, ""), bundle_root)
         require(path.exists(), errors, f"{field}.{key} does not exist: {path}")
-    stdout_path = Path(record.get("stdout_path", ""))
-    stderr_path = Path(record.get("stderr_path", ""))
+    stdout_path = resolve_evidence_path(record.get("stdout_path", ""), bundle_root)
+    stderr_path = resolve_evidence_path(record.get("stderr_path", ""), bundle_root)
     if stdout_path.exists() and is_hex64(record.get("stdout_sha256")):
         require(sha256_file(stdout_path) == record["stdout_sha256"], errors, f"{field}.stdout_sha256 does not match log bytes")
     if stderr_path.exists() and is_hex64(record.get("stderr_sha256")):
@@ -108,7 +147,14 @@ def validate_run_record(record: Any, field: str, errors: list[str]) -> None:
         require(record["log_sha256"] == sha256_canonical_json(binding), errors, f"{field}.log_sha256 does not bind stdout/stderr hashes")
 
 
-def validate_case(case: Any, index: int, mode: str, errors: list[str]) -> None:
+def validate_case(
+    case: Any,
+    index: int,
+    mode: str,
+    errors: list[str],
+    bundle_root: Path,
+    repo_root: Path | None,
+) -> None:
     field = f"cases[{index}]"
     if not isinstance(case, dict):
         errors.append(f"{field} must be an object")
@@ -126,14 +172,21 @@ def validate_case(case: Any, index: int, mode: str, errors: list[str]) -> None:
     for list_key in ("inputs", "outputs"):
         require(isinstance(case.get(list_key), list), errors, f"{field}.{list_key} must be a list")
         for item_index, item in enumerate(case.get(list_key, [])):
-            validate_file_record(item, f"{field}.{list_key}[{item_index}]", mode, errors)
+            validate_file_record(
+                item,
+                f"{field}.{list_key}[{item_index}]",
+                mode,
+                errors,
+                bundle_root,
+                repo_root,
+            )
     require(isinstance(case.get("runs"), list), errors, f"{field}.runs must be a list")
     if mode == "dry-run":
         require(case.get("status") == "dry-run", errors, f"{field}.status must be dry-run in dry-run mode")
         require(case.get("runs") == [], errors, f"{field}.runs must be empty in dry-run mode")
         return
     for run_index, run in enumerate(case.get("runs", [])):
-        validate_run_record(run, f"{field}.runs[{run_index}]", errors)
+        validate_run_record(run, f"{field}.runs[{run_index}]", errors, bundle_root)
     summary = case.get("summary")
     require(isinstance(summary, dict), errors, f"{field}.summary must be present in run mode")
     if isinstance(summary, dict):
@@ -149,6 +202,11 @@ def validate_result(path: Path) -> list[str]:
         return [f"failed to parse JSON: {exc}"]
     if not isinstance(payload, dict):
         return ["benchmark result must be a JSON object"]
+    bundle_root = path.resolve().parent
+    repo_root = None
+    repo_root_raw = payload.get("repo_root")
+    if isinstance(repo_root_raw, str) and repo_root_raw:
+        repo_root = Path(repo_root_raw)
 
     require(payload.get("schema_version") == SUPPORTED_SCHEMA_VERSION, errors, "schema_version must be 1")
     mode = payload.get("mode")
@@ -158,7 +216,11 @@ def validate_result(path: Path) -> list[str]:
     if isinstance(schema, dict):
         require(schema.get("path", "").endswith(str(SCHEMA_PATH)), errors, "result_schema.path must point to spec/benchmark-result.schema.json")
         require(is_hex64(schema.get("sha256")), errors, "result_schema.sha256 must be lowercase 64-char hex")
-        schema_path = Path(schema.get("path", ""))
+        schema_path = resolve_evidence_path(
+            schema.get("path", ""),
+            bundle_root,
+            repo_root or validator_repo_root(),
+        )
         require(schema_path.exists(), errors, f"result_schema.path does not exist: {schema_path}")
         if schema_path.exists() and is_hex64(schema.get("sha256")):
             require(sha256_file(schema_path) == schema["sha256"], errors, "result_schema.sha256 does not match schema file")
@@ -167,7 +229,7 @@ def validate_result(path: Path) -> list[str]:
     require(isinstance(payload.get("cases"), list) and payload["cases"], errors, "cases must be a non-empty list")
     if isinstance(payload.get("cases"), list) and mode in {"dry-run", "run"}:
         for index, case in enumerate(payload["cases"]):
-            validate_case(case, index, mode, errors)
+            validate_case(case, index, mode, errors, bundle_root, repo_root)
     return errors
 
 

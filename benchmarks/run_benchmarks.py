@@ -112,9 +112,22 @@ def resolve_under_repo(root: Path, value: str, field: str) -> Path:
     return resolved
 
 
+def path_for_json(path: Path, base: Path | None = None) -> str:
+    if base is not None:
+        try:
+            return str(path.resolve().relative_to(base.resolve()))
+        except ValueError:
+            pass
+    return str(path)
+
+
 def parse_file_specs(root: Path, name: str, entries: Any, field: str) -> list[InputSpec]:
+    if entries is None:
+        entries = []
+    if not isinstance(entries, list):
+        raise ValueError(f"case {name!r} {field}s must be a list")
     specs: list[InputSpec] = []
-    for raw_entry in entries or []:
+    for raw_entry in entries:
         if isinstance(raw_entry, str):
             specs.append(
                 InputSpec(path=resolve_under_repo(root, raw_entry, f"case {name!r} {field}"))
@@ -315,11 +328,16 @@ def peak_rss_unit() -> str:
     return "kilobytes" if platform.system() == "Linux" else "bytes"
 
 
-def describe_inputs(inputs: list[InputSpec], hash_files: bool) -> list[dict[str, Any]]:
+def describe_file_specs(
+    specs: list[InputSpec],
+    hash_files: bool,
+    kind: str,
+    path_base: Path | None = None,
+) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
-    for spec in inputs:
+    for spec in specs:
         base: dict[str, Any] = {
-            "path": str(spec.path),
+            "path": path_for_json(spec.path, path_base),
             "label": spec.label,
             "optional": spec.optional,
         }
@@ -345,7 +363,7 @@ def describe_inputs(inputs: list[InputSpec], hash_files: bool) -> list[dict[str,
                     }
                 )
                 continue
-            raise FileNotFoundError(f"missing input file: {spec.path}")
+            raise FileNotFoundError(f"missing {kind} file: {spec.path}")
         records.append(
             {
                 **base,
@@ -360,7 +378,7 @@ def describe_inputs(inputs: list[InputSpec], hash_files: bool) -> list[dict[str,
 def file_specs_for_binding(specs: list[InputSpec]) -> list[dict[str, Any]]:
     return [
         {
-            "path": str(spec.path),
+            "path": path_for_json(spec.path),
             "label": spec.label,
             "optional": spec.optional,
         }
@@ -372,7 +390,7 @@ def case_command_binding(case: CaseSpec) -> dict[str, Any]:
     return {
         "name": case.name,
         "command": case.command,
-        "cwd": str(case.cwd or repo_root()),
+        "cwd": path_for_json(case.cwd or repo_root()),
         "repeat": case.repeat,
         "env": dict(sorted((case.env or {}).items())),
         "allow_failure": case.allow_failure,
@@ -426,25 +444,32 @@ def kill_process_group(proc: subprocess.Popen[Any]) -> None:
 
 def write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        "w",
-        encoding="utf-8",
-        dir=path.parent,
-        prefix=f".{path.name}.",
-        suffix=".tmp",
-        delete=False,
-    ) as handle:
-        tmp_path = Path(handle.name)
-        handle.write(text)
-        handle.flush()
-        os.fsync(handle.fileno())
-    tmp_path.replace(path)
+    tmp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            tmp_path = Path(handle.name)
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        tmp_path.replace(path)
+        tmp_path = None
+    finally:
+        if tmp_path is not None:
+            tmp_path.unlink(missing_ok=True)
 
 
 def run_case(
     case: CaseSpec,
     run_root: Path,
     dry_run: bool,
+    path_base: Path | None = None,
 ) -> dict[str, Any]:
     case_dir_name = case.log_dir_name or case_log_dir_name(0, case.name)
     case_dir = run_root / case_dir_name
@@ -454,13 +479,18 @@ def run_case(
         "command": case.command,
         "command_binding": case_command_binding(case),
         "command_sha256": sha256_canonical_json(case_command_binding(case)),
-        "cwd": str(case.cwd or repo_root()),
+        "cwd": path_for_json(case.cwd or repo_root()),
         "repeat": case.repeat,
         "allow_failure": case.allow_failure,
-        "inputs": describe_inputs(case.inputs, hash_files=not dry_run),
-        "outputs": describe_inputs(case.outputs, hash_files=False),
+        "inputs": describe_file_specs(case.inputs, hash_files=not dry_run, kind="input"),
+        "outputs": describe_file_specs(
+            case.outputs,
+            hash_files=False,
+            kind="output",
+            path_base=path_base,
+        ),
         "log_dir_name": case_dir_name,
-        "log_dir": str(case_dir),
+        "log_dir": path_for_json(case_dir, path_base),
         "runs": [],
     }
     if dry_run:
@@ -546,8 +576,8 @@ def run_case(
             "duration_ms": round(duration_ms, 3),
             "returncode": returncode,
             "timed_out": timed_out,
-            "stdout_path": str(stdout_path),
-            "stderr_path": str(stderr_path),
+            "stdout_path": path_for_json(stdout_path, path_base),
+            "stderr_path": path_for_json(stderr_path, path_base),
             "stdout_sha256": stdout_sha256,
             "stderr_sha256": stderr_sha256,
             "stdout_size_bytes": stdout_size_bytes,
@@ -565,7 +595,12 @@ def run_case(
             if not case.allow_failure:
                 break
 
-    result["outputs"] = describe_inputs(case.outputs, hash_files=True)
+    result["outputs"] = describe_file_specs(
+        case.outputs,
+        hash_files=True,
+        kind="output",
+        path_base=path_base,
+    )
     result["status"] = "passed" if not failed_runs else "failed"
     if durations_ms:
         result["summary"] = {
@@ -643,28 +678,28 @@ def main() -> int:
         "output_path": str(output_path),
         "benchmark_root": str(Path(__file__).resolve().parent),
         "case_manifest": {
-            "path": str(cases_path),
+            "path": path_for_json(cases_path, root),
             "sha256": case_manifest_hash,
             "metadata": manifest_meta,
         },
         "harness": {
-            "path": str(Path(__file__).resolve()),
+            "path": path_for_json(Path(__file__).resolve(), root),
             "sha256": harness_hash,
         },
         "result_schema": {
-            "path": str((root / BENCHMARK_RESULT_SCHEMA).resolve()),
+            "path": BENCHMARK_RESULT_SCHEMA,
             "sha256": sha256_file((root / BENCHMARK_RESULT_SCHEMA).resolve())
             if (root / BENCHMARK_RESULT_SCHEMA).exists()
             else None,
         },
         "inputs": [
             {
-                "path": str(cases_path),
+                "path": path_for_json(cases_path, root),
                 "role": "case_manifest",
                 "sha256": case_manifest_hash,
             },
             {
-                "path": str(Path(__file__).resolve()),
+                "path": path_for_json(Path(__file__).resolve(), root),
                 "role": "harness",
                 "sha256": harness_hash,
             },
@@ -678,7 +713,12 @@ def main() -> int:
 
     exit_code = 0
     for case in cases:
-        case_result = run_case(case, run_root=run_root, dry_run=dry_run)
+        case_result = run_case(
+            case,
+            run_root=run_root,
+            dry_run=dry_run,
+            path_base=output_path.parent,
+        )
         payload["cases"].append(case_result)
         if case_result["status"] == "failed" and not case.allow_failure:
             exit_code = 1
