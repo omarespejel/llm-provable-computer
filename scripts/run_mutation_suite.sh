@@ -67,4 +67,24 @@ if [[ -n "${MUTATION_DIFF_FILE:-}" ]]; then
   args+=(--in-diff "${MUTATION_DIFF_FILE}")
 fi
 
-"${args[@]}" "$@"
+mutation_output_root="${MUTATION_OUTPUT_ROOT:-.}"
+if [[ "$mutation_output_root" != "." ]]; then
+  mkdir -p "$mutation_output_root"
+  args+=(--output "$mutation_output_root")
+  mutation_results_dir="$mutation_output_root/mutants.out"
+else
+  mutation_results_dir="mutants.out"
+fi
+
+mutation_status=0
+"${args[@]}" "$@" || mutation_status=$?
+
+if [[ -d "$mutation_results_dir" ]]; then
+  survivor_report="${MUTATION_SURVIVOR_REPORT:-$mutation_results_dir/survivors.json}"
+  python3 scripts/collect_mutation_survivors.py summarize \
+    --mutants-dir "$mutation_results_dir" \
+    --output "$survivor_report"
+  echo "mutation survivor report: $survivor_report"
+fi
+
+exit "$mutation_status"

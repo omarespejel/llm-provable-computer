@@ -155,10 +155,12 @@ Available local command tiers:
   the same conditional shellcheck for `scripts/*.sh` and `scripts/**/*.sh`,
   plus diff-scoped mutation testing when the trusted-core prover files change,
   curated fuzz smoke, UB checks, ASAN, Miri, and the formal contract suite. It
-  also runs the Phase 29-37 known-bad artifact corpus when relevant files
-  change. The inherited whitespace gate is still scoped to the committed PR
-  delta, not the whole worktree. Prefer running this tier inside Lima for Linux
-  parity.
+  records mutation survivors through `scripts/collect_mutation_survivors.py`
+  when mutation output exists, and validates the mutation-survivor ledger when
+  that evidence surface changes. It also runs the Phase 29-37 known-bad
+  artifact corpus when relevant files change. The inherited whitespace gate is
+  still scoped to the committed PR delta, not the whole worktree. Prefer running
+  this tier inside Lima for Linux parity.
 - `--mode none`: only checks GitHub status, review-thread state, and the
   seven-minute AI-review quiet window. Use this only after a prior evidence run
   for the same PR head SHA.
