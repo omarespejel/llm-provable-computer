@@ -20,6 +20,7 @@ import tempfile
 import time
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 
 SCHEMA_VERSION = 1
@@ -27,6 +28,7 @@ RELEASE_EVIDENCE_SCHEMA = "spec/release-evidence.schema.json"
 CHUNK_SIZE = 1024 * 1024
 HEX_40_RE = re.compile(r"^[0-9a-f]{40}$")
 HEX_64_RE = re.compile(r"^[0-9a-f]{64}$")
+UTC_TIMESTAMP_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 
 
 class ReleaseEvidenceError(RuntimeError):
@@ -76,6 +78,23 @@ def run_capture(args: list[str], cwd: Path) -> str | None:
         return None
 
 
+def sanitize_remote_url(value: str | None) -> tuple[str | None, bool]:
+    if not value:
+        return None, False
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return None, True
+    if parsed.scheme and parsed.netloc:
+        had_credentials = bool(parsed.username or parsed.password)
+        host = parsed.hostname or ""
+        if parsed.port is not None:
+            host = f"{host}:{parsed.port}"
+        sanitized = urlunsplit((parsed.scheme, host, parsed.path, parsed.query, parsed.fragment))
+        return sanitized, had_credentials
+    return value, False
+
+
 def path_for_json(path: Path, repo_root: Path) -> str:
     resolved = path.resolve()
     try:
@@ -121,7 +140,10 @@ def file_record(path: Path, repo_root: Path, *, role: str, label: str | None = N
 def git_metadata(repo_root: Path, *, require_clean: bool) -> dict[str, Any]:
     head = run_capture(["git", "rev-parse", "HEAD"], repo_root)
     branch = run_capture(["git", "rev-parse", "--abbrev-ref", "HEAD"], repo_root)
-    remote = run_capture(["git", "config", "--get", "remote.origin.url"], repo_root)
+    remote_raw = run_capture(["git", "config", "--get", "remote.origin.url"], repo_root)
+    remote, remote_had_credentials = sanitize_remote_url(remote_raw)
+    if not is_hex40(head):
+        raise ReleaseEvidenceError("git rev-parse HEAD did not return a lowercase 40-char SHA")
     status = run_capture(["git", "status", "--porcelain"], repo_root) or ""
     dirty = bool(status.strip())
     if require_clean and dirty:
@@ -130,6 +152,7 @@ def git_metadata(repo_root: Path, *, require_clean: bool) -> dict[str, Any]:
         "head_sha": head,
         "branch": branch,
         "remote_origin": remote,
+        "remote_origin_had_credentials": remote_had_credentials,
         "dirty": dirty,
         "status_sha256": sha256_bytes(status.encode("utf-8")),
     }
@@ -209,6 +232,9 @@ def collect_merge_gate_evidence(path: Path, repo_root: Path) -> dict[str, Any]:
     evidence = load_json(resolved, "merge-gate evidence")
     if not isinstance(evidence, dict):
         raise ReleaseEvidenceError(f"{resolved}: merge-gate evidence must be a JSON object")
+    for key in ("base_sha", "head_sha"):
+        if not is_hex40(evidence.get(key)):
+            raise ReleaseEvidenceError(f"{resolved}: {key} must be a lowercase 40-char SHA")
     command_logs = merge_gate_command_logs(evidence, repo_root, resolved)
     return {
         "evidence_file": record,
@@ -279,6 +305,8 @@ def write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
 
 def collect_release_evidence(args: argparse.Namespace) -> dict[str, Any]:
     repo_root = Path(args.repo_root).resolve()
+    if not args.merge_gate_evidence:
+        raise ReleaseEvidenceError("at least one --merge-gate-evidence file is required")
     schema_path = repo_root / RELEASE_EVIDENCE_SCHEMA
     schema = file_record(schema_path, repo_root, role="release_evidence_schema")
     git = git_metadata(repo_root, require_clean=args.require_clean)
@@ -418,6 +446,10 @@ def validate_merge_gate_record(
             evidence_commands = evidence.get("local_commands")
             if isinstance(evidence_commands, list) and len(evidence_commands) != len(command_logs):
                 errors.append(f"{field}.command_logs length does not match evidence local_commands")
+        else:
+            evidence_commands = None
+    else:
+        evidence_commands = None
     for command_index, command in enumerate(command_logs):
         command_field = f"{field}.command_logs[{command_index}]"
         if not isinstance(command, dict):
@@ -435,6 +467,21 @@ def validate_merge_gate_record(
         if command.get("recorded_sha256") != command.get("sha256"):
             errors.append(f"{command_field}.recorded_sha256 must match sha256")
         path = resolve_path(raw_path, bundle_root, repo_root)
+        if isinstance(evidence_commands, list) and command_index < len(evidence_commands):
+            evidence_command = evidence_commands[command_index]
+            if not isinstance(evidence_command, dict):
+                errors.append(f"{command_field} evidence local_commands entry must be an object")
+            else:
+                evidence_log_file = evidence_command.get("log_file")
+                evidence_log_sha = evidence_command.get("log_sha256")
+                if not isinstance(evidence_log_file, str) or not evidence_log_file:
+                    errors.append(f"{command_field} evidence log_file is missing")
+                else:
+                    evidence_log_path = resolve_path(evidence_log_file, bundle_root, repo_root)
+                    if evidence_log_path.resolve() != path.resolve():
+                        errors.append(f"{command_field}.path does not match evidence local_commands log_file")
+                if evidence_log_sha != command.get("sha256"):
+                    errors.append(f"{command_field}.sha256 does not match evidence local_commands log_sha256")
         if not path.exists():
             errors.append(f"{command_field}.path does not exist: {path}")
             continue
@@ -492,6 +539,9 @@ def validate_release_evidence(path: Path) -> list[str]:
     repo_root = Path(repo_root_raw) if isinstance(repo_root_raw, str) and repo_root_raw else None
     if payload.get("schema_version") != SCHEMA_VERSION:
         errors.append("schema_version must be 1")
+    generated_at = payload.get("generated_at")
+    if not isinstance(generated_at, str) or not UTC_TIMESTAMP_RE.fullmatch(generated_at):
+        errors.append("generated_at must be a UTC timestamp like 2026-04-18T00:00:00Z")
     validate_bundle_digest(payload, errors)
     validate_file_record(payload.get("bundle_schema"), "bundle_schema", errors, bundle_root, repo_root)
     checkpoint = payload.get("checkpoint")
@@ -510,16 +560,36 @@ def validate_release_evidence(path: Path) -> list[str]:
         repo_head = git.get("head_sha") if is_hex40(git.get("head_sha")) else None
         if repo_head is None:
             errors.append("git.head_sha must be lowercase 40-char hex")
+        if not isinstance(git.get("branch"), str) and git.get("branch") is not None:
+            errors.append("git.branch must be string or null")
+        if not isinstance(git.get("remote_origin"), str) and git.get("remote_origin") is not None:
+            errors.append("git.remote_origin must be string or null")
+        if not isinstance(git.get("remote_origin_had_credentials"), bool):
+            errors.append("git.remote_origin_had_credentials must be boolean")
         if not isinstance(git.get("dirty"), bool):
             errors.append("git.dirty must be boolean")
         if not is_hex64(git.get("status_sha256")):
             errors.append("git.status_sha256 must be lowercase 64-char hex")
+        if repo_root is not None and repo_root.exists():
+            live_head = run_capture(["git", "rev-parse", "HEAD"], repo_root)
+            live_status = run_capture(["git", "status", "--porcelain"], repo_root)
+            if live_head is not None and live_head != git.get("head_sha"):
+                errors.append("git.head_sha does not match current repo HEAD")
+            if live_status is not None:
+                live_dirty = bool(live_status.strip())
+                if isinstance(git.get("dirty"), bool) and live_dirty != git["dirty"]:
+                    errors.append("git.dirty does not match current repo state")
+                live_status_sha = sha256_bytes(live_status.encode("utf-8"))
+                if is_hex64(git.get("status_sha256")) and live_status_sha != git["status_sha256"]:
+                    errors.append("git.status_sha256 does not match current repo status")
     for key in ("toolchain", "host"):
         if not isinstance(payload.get(key), dict):
             errors.append(f"{key} must be an object")
     merge_gates = payload.get("merge_gate_evidence")
     if not isinstance(merge_gates, list):
         errors.append("merge_gate_evidence must be a list")
+    elif not merge_gates:
+        errors.append("merge_gate_evidence must contain at least one evidence record")
     else:
         for index, record in enumerate(merge_gates):
             validate_merge_gate_record(record, index, errors, bundle_root, repo_root, repo_head)

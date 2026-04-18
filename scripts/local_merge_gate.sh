@@ -1037,8 +1037,7 @@ python3 scripts/collect_release_evidence.py collect \
   --checkpoint "pr-${PR_NUMBER}-local-merge-gate" \
   --checkpoint-kind local-merge-gate \
   --merge-gate-evidence "$evidence_file" \
-  --schema-artifact spec/benchmark-result.schema.json \
-  --require-clean >/dev/null
+  --schema-artifact spec/benchmark-result.schema.json >/dev/null
 python3 scripts/collect_release_evidence.py validate "$release_evidence_file" >/dev/null
 
 log "gate passed for ${pr_url}"

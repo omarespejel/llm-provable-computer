@@ -76,6 +76,7 @@ class ReleaseEvidenceTests(unittest.TestCase):
                 "head_sha": "a" * 40,
                 "branch": "test",
                 "remote_origin": None,
+                "remote_origin_had_credentials": False,
                 "dirty": False,
                 "status_sha256": release.sha256_bytes(b""),
             },
@@ -129,6 +130,18 @@ class ReleaseEvidenceTests(unittest.TestCase):
 
         self.assertTrue(any("bundle_digest.sha256" in error for error in errors))
 
+    def test_rejects_command_log_drift_from_evidence_json(self) -> None:
+        payload = self.valid_payload()
+        payload["merge_gate_evidence"][0]["command_logs"][0]["path"] = "different.log"
+        payload = release.add_bundle_digest(payload)
+        path = self.write_bundle(payload)
+
+        errors = release.validate_release_evidence(path)
+
+        self.assertTrue(
+            any("does not match evidence local_commands log_file" in error for error in errors)
+        )
+
     def test_collect_merge_gate_rejects_bad_recorded_log_hash(self) -> None:
         gate_path = self.write_gate_evidence()
         payload = json.loads(gate_path.read_text(encoding="utf-8"))
@@ -148,6 +161,24 @@ class ReleaseEvidenceTests(unittest.TestCase):
         errors = release.validate_release_evidence(relocated)
 
         self.assertTrue(any("path does not exist" in error for error in errors))
+
+    def test_rejects_bundle_with_no_merge_gate_evidence(self) -> None:
+        payload = self.valid_payload()
+        payload["merge_gate_evidence"] = []
+        payload = release.add_bundle_digest(payload)
+        path = self.write_bundle(payload)
+
+        errors = release.validate_release_evidence(path)
+
+        self.assertTrue(any("merge_gate_evidence" in error for error in errors))
+
+    def test_sanitizes_remote_url_credentials(self) -> None:
+        sanitized, had_credentials = release.sanitize_remote_url(
+            "https://token@example.com/org/repo.git"
+        )
+
+        self.assertEqual(sanitized, "https://example.com/org/repo.git")
+        self.assertTrue(had_credentials)
 
 
 if __name__ == "__main__":

@@ -5,7 +5,34 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
 out_dir="${RELEASE_EVIDENCE_OUT_DIR:-target/local-validation/release-evidence}"
-rm -rf "$out_dir"
+case "$out_dir" in
+  ""|"/"|"."|"..")
+    echo "unsafe RELEASE_EVIDENCE_OUT_DIR: $out_dir" >&2
+    exit 1
+    ;;
+esac
+out_dir="$(
+  python3 - "$repo_root" "$out_dir" <<'PY'
+import sys
+from pathlib import Path
+
+repo_root = Path(sys.argv[1]).resolve()
+out_dir = Path(sys.argv[2])
+if not out_dir.is_absolute():
+    out_dir = repo_root / out_dir
+print(out_dir.resolve())
+PY
+)"
+mkdir -p "$repo_root/target"
+target_root="$(cd "$repo_root/target" && pwd)"
+case "$out_dir" in
+  "$target_root"/*) ;;
+  *)
+    echo "RELEASE_EVIDENCE_OUT_DIR must stay under target/: $out_dir" >&2
+    exit 1
+    ;;
+esac
+rm -rf -- "$out_dir"
 mkdir -p "$out_dir/gate/logs"
 
 python3 -B -m unittest scripts.tests.test_collect_release_evidence
