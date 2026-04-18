@@ -476,6 +476,28 @@ def split_evidence_path_anchor(entry: str) -> tuple[str, str | None]:
     return rel_path, anchor or None
 
 
+def resolve_repo_relative_path(
+    repo_root: pathlib.Path, rel_path: str
+) -> pathlib.Path | None:
+    relative_path = pathlib.Path(rel_path)
+    windows_path = pathlib.PureWindowsPath(rel_path)
+    if (
+        relative_path.is_absolute()
+        or windows_path.is_absolute()
+        or ".." in relative_path.parts
+        or ".." in windows_path.parts
+    ):
+        return None
+
+    try:
+        root = repo_root.resolve()
+        target = (root / relative_path).resolve()
+        target.relative_to(root)
+    except (OSError, RuntimeError, ValueError):
+        return None
+    return target
+
+
 def check_claim_evidence_path_anchor(
     repo_root: pathlib.Path,
     evidence_path: pathlib.Path,
@@ -485,33 +507,11 @@ def check_claim_evidence_path_anchor(
     findings: Findings,
 ) -> None:
     rel_path, anchor = split_evidence_path_anchor(entry)
-    relative_path = pathlib.Path(rel_path)
-    windows_path = pathlib.PureWindowsPath(rel_path)
-    if (
-        relative_path.is_absolute()
-        or windows_path.is_absolute()
-        or ".." in relative_path.parts
-        or ".." in windows_path.parts
-    ):
+    target = resolve_repo_relative_path(repo_root, rel_path)
+    if target is None:
         findings.error(
             f"{evidence_path}: claim `{claim_id}` `{key}` path must be repo-relative "
             f"and must not contain `..`: {entry}"
-        )
-        return
-
-    try:
-        root = repo_root.resolve()
-        target = (root / relative_path).resolve()
-    except (OSError, RuntimeError) as exc:
-        findings.error(
-            f"{evidence_path}: claim `{claim_id}` `{key}` failed to resolve path {entry}: {exc}"
-        )
-        return
-    try:
-        target.relative_to(root)
-    except ValueError:
-        findings.error(
-            f"{evidence_path}: claim `{claim_id}` `{key}` path escapes repo root: {entry}"
         )
         return
 
@@ -568,16 +568,22 @@ def check_paper2_evidence_anchors(
         searched: list[str] = []
         found = False
         for entry in locations:
-            rel_path, _anchor = split_evidence_path_anchor(entry)
-            path = repo_root / rel_path
+            rel_path, location_anchor = split_evidence_path_anchor(entry)
             searched.append(rel_path)
-            if not path.exists():
+            path = resolve_repo_relative_path(repo_root, rel_path)
+            if path is None or not path.exists() or not path.is_file():
                 continue
             try:
-                text = path.read_text(encoding="utf-8")
+                text = path.read_text(encoding="utf-8", errors="ignore")
             except (OSError, UnicodeError):
                 continue
-            if anchor in text:
+            search_text = text
+            if location_anchor is not None:
+                anchor_offset = text.find(location_anchor)
+                if anchor_offset < 0:
+                    continue
+                search_text = text[anchor_offset:]
+            if anchor in search_text:
                 found = True
                 break
 
