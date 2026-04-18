@@ -7,6 +7,7 @@ For the publication-facing paper package, start with:
 - `docs/paper/README.md`
 - `docs/paper/PUBLICATION_RELEASE.md`
 - `docs/paper/submission-v4-2026-04-11/REPRODUCIBILITY_NOTE.md`
+- `docs/engineering/release-evidence-bundle.md`
 
 ## Tooling notes
 

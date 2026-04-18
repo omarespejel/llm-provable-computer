@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/omarespejel/provable-transformer-vm/spec/release-evidence.schema.json",
+  "title": "Provable Transformer VM Release Evidence Bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "checkpoint",
+    "repo_root",
+    "bundle_schema",
+    "git",
+    "toolchain",
+    "host",
+    "merge_gate_evidence",
+    "benchmark_results",
+    "artifacts",
+    "schema_artifacts",
+    "non_claims",
+    "bundle_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "generated_at": {"type": "string"},
+    "checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "kind"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "kind": {"type": "string", "minLength": 1}
+      }
+    },
+    "repo_root": {"type": "string", "minLength": 1},
+    "bundle_schema": {"$ref": "#/$defs/file_record"},
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["head_sha", "branch", "remote_origin", "dirty", "status_sha256"],
+      "properties": {
+        "head_sha": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+        "branch": {"type": ["string", "null"]},
+        "remote_origin": {"type": ["string", "null"]},
+        "dirty": {"type": "boolean"},
+        "status_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["python", "python_executable", "rustc", "cargo", "rustup_active_toolchain"],
+      "properties": {
+        "python": {"type": "string"},
+        "python_executable": {"type": "string"},
+        "rustc": {"type": ["string", "null"]},
+        "cargo": {"type": ["string", "null"]},
+        "rustup_active_toolchain": {"type": ["string", "null"]}
+      }
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["system", "release", "machine", "platform", "processor"],
+      "properties": {
+        "system": {"type": "string"},
+        "release": {"type": "string"},
+        "machine": {"type": "string"},
+        "platform": {"type": "string"},
+        "processor": {"type": "string"}
+      }
+    },
+    "merge_gate_evidence": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/merge_gate_evidence"}
+    },
+    "benchmark_results": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/benchmark_result"}
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/file_record"}
+    },
+    "schema_artifacts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/file_record"}
+    },
+    "non_claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "bundle_digest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "sha256"],
+      "properties": {
+        "algorithm": {"const": "sha256-canonical-json-without-bundle_digest"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "sha40": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+    "file_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "size_bytes", "sha256"],
+      "properties": {
+        "role": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "size_bytes": {"type": "integer", "minimum": 0},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "label": {"type": "string"}
+      }
+    },
+    "command_log": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "command", "exit_code", "path", "sha256", "recorded_sha256", "matches_recorded"],
+      "properties": {
+        "name": {"type": ["string", "null"]},
+        "command": {"type": ["string", "null"]},
+        "exit_code": {"type": ["integer", "null"]},
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "recorded_sha256": {"$ref": "#/$defs/sha256"},
+        "matches_recorded": {"const": true}
+      }
+    },
+    "merge_gate_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_file",
+        "pr_number",
+        "pr_url",
+        "base_sha",
+        "head_sha",
+        "run_mode",
+        "quiet_seconds",
+        "review_gate",
+        "local_command_count",
+        "command_logs"
+      ],
+      "properties": {
+        "evidence_file": {"$ref": "#/$defs/file_record"},
+        "pr_number": {"type": ["integer", "null"]},
+        "pr_url": {"type": ["string", "null"]},
+        "base_sha": {"$ref": "#/$defs/sha40"},
+        "head_sha": {"$ref": "#/$defs/sha40"},
+        "run_mode": {"type": ["string", "null"]},
+        "quiet_seconds": {"type": ["integer", "null"]},
+        "review_gate": {"type": ["object", "null"]},
+        "local_command_count": {"type": "integer", "minimum": 0},
+        "command_logs": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/command_log"}
+        }
+      }
+    },
+    "benchmark_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["result_file", "validator"],
+      "properties": {
+        "result_file": {"$ref": "#/$defs/file_record"},
+        "validator": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["command", "exit_code", "stdout_sha256", "stderr_sha256", "passed"],
+          "properties": {
+            "command": {"type": "array", "items": {"type": "string"}},
+            "exit_code": {"type": "integer"},
+            "stdout_sha256": {"$ref": "#/$defs/sha256"},
+            "stderr_sha256": {"$ref": "#/$defs/sha256"},
+            "passed": {"type": "boolean"}
+          }
+        }
+      }
+    }
+  }
+}
