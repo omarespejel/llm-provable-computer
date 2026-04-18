@@ -594,7 +594,18 @@ def validate_release_evidence(path: Path, *, check_live_repo: bool = False) -> l
     bundle_root = path.resolve().parent
     repo_root_raw = payload.get("repo_root")
     repo_root = Path(repo_root_raw) if isinstance(repo_root_raw, str) and repo_root_raw else None
-    trusted_repo_root = default_repo_root().resolve() if check_live_repo else None
+    live_repo_root: Path | None = None
+    trusted_repo_root: Path | None = None
+    if check_live_repo:
+        if repo_root is None:
+            errors.append("repo_root must be a non-empty string for --check-live-repo")
+        elif not repo_root.exists() or not repo_root.is_dir():
+            errors.append("repo_root must be an existing directory for --check-live-repo")
+        else:
+            live_repo_root = repo_root.resolve()
+            current_repo_root = default_repo_root().resolve()
+            if live_repo_root == current_repo_root:
+                trusted_repo_root = live_repo_root
     if payload.get("schema_version") != SCHEMA_VERSION:
         errors.append("schema_version must be 1")
     generated_at = payload.get("generated_at")
@@ -633,9 +644,9 @@ def validate_release_evidence(path: Path, *, check_live_repo: bool = False) -> l
             errors.append("git.dirty must be boolean")
         if not is_hex64(git.get("status_sha256")):
             errors.append("git.status_sha256 must be lowercase 64-char hex")
-        if check_live_repo and repo_root is not None and repo_root.exists():
-            live_head = run_capture(["git", "rev-parse", "HEAD"], repo_root)
-            live_status = run_capture(["git", "status", "--porcelain"], repo_root)
+        if live_repo_root is not None:
+            live_head = run_capture(["git", "rev-parse", "HEAD"], live_repo_root)
+            live_status = run_capture(["git", "status", "--porcelain"], live_repo_root)
             if live_head is not None and live_head != git.get("head_sha"):
                 errors.append("git.head_sha does not match current repo HEAD")
             if live_status is not None:
@@ -667,6 +678,11 @@ def validate_release_evidence(path: Path, *, check_live_repo: bool = False) -> l
     if not isinstance(benchmarks, list):
         errors.append("benchmark_results must be a list")
     else:
+        if check_live_repo and benchmarks and trusted_repo_root is None and live_repo_root is not None:
+            errors.append(
+                "benchmark_results cannot be live-validated safely unless repo_root "
+                "matches the current trusted checkout"
+            )
         for index, record in enumerate(benchmarks):
             validate_benchmark_record(
                 record,

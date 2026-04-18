@@ -223,8 +223,20 @@ class ReleaseEvidenceTests(unittest.TestCase):
 
         errors = release.validate_release_evidence(path, check_live_repo=True)
 
-        self.assertTrue(any("benchmark validator" in error for error in errors))
+        self.assertTrue(any("cannot be live-validated safely" in error for error in errors))
         self.assertFalse(marker_path.exists())
+
+    def test_live_repo_check_rejects_regular_file_repo_root(self) -> None:
+        payload = self.valid_payload()
+        fake_repo_root = self.root / "not-a-directory"
+        fake_repo_root.write_text("not a directory\n", encoding="utf-8")
+        payload["repo_root"] = str(fake_repo_root)
+        payload = release.add_bundle_digest(payload)
+        path = self.write_bundle(payload)
+
+        errors = release.validate_release_evidence(path, check_live_repo=True)
+
+        self.assertTrue(any("repo_root must be an existing directory" in error for error in errors))
 
 
 if __name__ == "__main__":

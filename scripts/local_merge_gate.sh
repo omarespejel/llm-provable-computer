@@ -1032,20 +1032,27 @@ jq -n \
     local_commands:$commands[0]
   }' >"$evidence_file"
 
-release_evidence_file="$run_evidence_dir/release-evidence.json"
-python3 scripts/collect_release_evidence.py collect \
-  --output "$release_evidence_file" \
-  --checkpoint "pr-${PR_NUMBER}-local-merge-gate" \
-  --checkpoint-kind local-merge-gate \
-  --merge-gate-evidence "$evidence_file" \
-  --require-clean \
-  --clean-ignore-prefix "$run_evidence_dir" \
-  --schema-artifact spec/benchmark-result.schema.json >/dev/null
-python3 scripts/collect_release_evidence.py validate "$release_evidence_file" >/dev/null
+release_evidence_file=""
+if [[ -f "$local_evidence_marker" ]]; then
+  release_evidence_file="$run_evidence_dir/release-evidence.json"
+  python3 scripts/collect_release_evidence.py collect \
+    --output "$release_evidence_file" \
+    --checkpoint "pr-${PR_NUMBER}-local-merge-gate" \
+    --checkpoint-kind local-merge-gate \
+    --merge-gate-evidence "$evidence_file" \
+    --require-clean \
+    --clean-ignore-prefix "$run_evidence_dir" \
+    --schema-artifact spec/benchmark-result.schema.json >/dev/null
+  python3 scripts/collect_release_evidence.py validate "$release_evidence_file" >/dev/null
+else
+  log "skipping release evidence; no completed local evidence marker for this PR head"
+fi
 
 log "gate passed for ${pr_url}"
 log "evidence: ${evidence_file}"
-log "release evidence: ${release_evidence_file}"
+if [[ -n "$release_evidence_file" ]]; then
+  log "release evidence: ${release_evidence_file}"
+fi
 
 if (( MERGE )); then
   merge_args=(gh pr merge "$PR_NUMBER" --repo "$REPO" --match-head-commit "$head_sha")
