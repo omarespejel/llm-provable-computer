@@ -9,18 +9,21 @@ mkdir -p "$out_dir"
 
 dry_run_json="$out_dir/example-dry-run.json"
 run_json="$out_dir/example-run.json"
+rm -f "$dry_run_json" "$run_json"
 
 python3 -B -m unittest benchmarks.tests.test_run_benchmarks
 
 python3 benchmarks/run_benchmarks.py \
   --cases benchmarks/cases.example.json \
   --output "$dry_run_json"
+[[ -s "$dry_run_json" ]] || { echo "missing benchmark output: $dry_run_json" >&2; exit 1; }
 python3 benchmarks/validate_benchmark_result.py "$dry_run_json"
 
 python3 benchmarks/run_benchmarks.py \
   --cases benchmarks/cases.example.json \
   --output "$run_json" \
   --run
+[[ -s "$run_json" ]] || { echo "missing benchmark output: $run_json" >&2; exit 1; }
 python3 benchmarks/validate_benchmark_result.py "$run_json"
 
 echo "benchmark reproducibility suite passed: $out_dir"

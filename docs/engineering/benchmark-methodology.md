@@ -34,8 +34,10 @@ Every benchmark record should capture:
   stdout hashes, or stderr hashes
 - repetition count
 - stdout/stderr hashes captured by the harness for executed `run` records
-- `log_sha256` binding the stdout/stderr hashes and run status
-- output artifact hashes for every declared case output
+- `log_sha256` binding the stdout/stderr hashes and run status for executed
+  `run` records
+- output artifact hashes for every declared case output in executed `run`
+  records
 
 If a metric is unavailable, record `null` and explain why in the case notes or
 bundle README instead of inventing a placeholder value.

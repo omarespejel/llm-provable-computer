@@ -426,7 +426,19 @@ def kill_process_group(proc: subprocess.Popen[Any]) -> None:
 
 def write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        delete=False,
+    ) as handle:
+        tmp_path = Path(handle.name)
+        handle.write(text)
+        handle.flush()
+        os.fsync(handle.fileno())
+    tmp_path.replace(path)
 
 
 def run_case(
