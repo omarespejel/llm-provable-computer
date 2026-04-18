@@ -205,6 +205,7 @@
     - src/stwo_backend/recursion.rs:verify_phase37_recursive_artifact_chain_harness_receipt_against_sources
     - src/stwo_backend/recursion.rs:kani_phase37_hash32_accepts_lowercase_hex_boundary
     - src/stwo_backend/recursion.rs:kani_phase37_hash32_rejects_any_non_lowercase_hex_byte
+    - src/stwo_backend/recursion.rs:kani_phase37_hash32_requires_exact_length
     - src/stwo_backend/recursion.rs:kani_phase37_receipt_flags_accept_canonical_source_bound_receipt
     - src/stwo_backend/recursion.rs:kani_phase37_receipt_flags_reject_any_claim_or_missing_source_check
     - src/stwo_backend/recursion.rs:kani_phase36_phase37_parser_wrapper_accepts_only_explicit_ok
@@ -219,6 +220,7 @@
     - phase37_recursive_artifact_chain_harness_receipt_accepts_matching_sources
     - test_reference_fixture_verifies_and_commitment_is_stable
     - kani_phase37_hash32_accepts_lowercase_hex_boundary
+    - kani_phase37_hash32_requires_exact_length
     - kani_phase37_receipt_flags_accept_canonical_source_bound_receipt
     - kani_phase36_phase37_parser_wrapper_accepts_only_explicit_ok
   negative_tests:
@@ -226,6 +228,7 @@
     - phase37_recursive_artifact_chain_harness_receipt_rejects_tampered_commitment
     - phase37_recursive_artifact_chain_harness_receipt_rejects_malformed_commitment_field
     - kani_phase37_hash32_rejects_any_non_lowercase_hex_byte
+    - kani_phase37_hash32_requires_exact_length
     - kani_phase37_receipt_flags_reject_any_claim_or_missing_source_check
     - kani_phase36_phase37_parser_wrapper_rejects_any_error_class
     - test_deterministic_parser_mutation_corpus_rejects_invalid_receipts

@@ -1475,7 +1475,7 @@ fn phase37_require_hash32(label: &str, value: &str) -> Result<()> {
 
 #[cfg(all(kani, feature = "stwo-backend"))]
 mod kani_phase36_phase37_proofs {
-    use super::phase37_is_lower_hex_byte;
+    use super::{phase37_is_hash32_lower_hex, phase37_is_lower_hex_byte};
 
     const PHASE33_PUBLIC_INPUT_FIELD_COUNT: usize = 9;
     const PHASE37_SOURCE_FLAG_COUNT: usize = 9;
@@ -1585,6 +1585,29 @@ mod kani_phase36_phase37_proofs {
         candidate[bad_index] = bad_byte;
 
         assert!(!phase37_hash32_bytes_are_lower_hex(&candidate));
+    }
+
+    #[kani::proof]
+    fn kani_phase37_hash32_requires_exact_length() {
+        const HEX_63: &str = concat!(
+            "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa",
+            "aaaaaaa"
+        );
+        const HEX_64: &str = concat!(
+            "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa",
+            "aaaaaaaa"
+        );
+        const HEX_65: &str = concat!(
+            "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa", "aaaaaaaa",
+            "aaaaaaaa", "a"
+        );
+
+        assert!(HEX_63.len() == 63);
+        assert!(HEX_64.len() == 64);
+        assert!(HEX_65.len() == 65);
+        assert!(!phase37_is_hash32_lower_hex(HEX_63));
+        assert!(phase37_is_hash32_lower_hex(HEX_64));
+        assert!(!phase37_is_hash32_lower_hex(HEX_65));
     }
 
     #[kani::proof]

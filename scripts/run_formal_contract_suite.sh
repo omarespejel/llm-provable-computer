@@ -90,6 +90,8 @@ KANI_ARGS=(
   --harness
   kani_phase37_hash32_rejects_any_non_lowercase_hex_byte
   --harness
+  kani_phase37_hash32_requires_exact_length
+  --harness
   kani_phase36_receipt_flags_accept_canonical_nonclaim_receipt
   --harness
   kani_phase36_receipt_flags_reject_any_claim_or_missing_source_check
