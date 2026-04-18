@@ -10,15 +10,16 @@ Phase 38 ingests a list of Phase 37 recursive artifact-chain harness receipts.
 
 Each Phase 37 receipt is first verified with `verify_phase37_recursive_artifact_chain_harness_receipt`. Phase 38 then extracts only the public fields needed for composition:
 
-- the Phase 37 receipt commitment,
+- the embedded Phase 37 receipt and its recomputed receipt commitment,
 - the Phase 30 source-chain and step-envelope commitments,
 - the segment start and end boundary commitments,
+- the source-template and aggregation-template commitments,
 - the Phase 34 shared lookup public-input commitment,
 - the ordered input/output lookup-row commitments,
 - the shared lookup artifact commitment,
 - and the static lookup registry commitment.
 
-The resulting segment record is not a proof. It is a composition witness over existing Phase 37 receipts. Phase 38 does not reopen Phase 29 or Phase 30 source artifacts; it relies on the Phase 37 receipt surface and checks only composition-time continuity and lookup identity.
+The resulting segment record is not a proof. It is a composition witness over existing Phase 37 receipts. Phase 38 does not reopen Phase 29 or Phase 30 source artifacts; it relies on the embedded Phase 37 receipt surface and checks composition-time continuity, template stability, lookup identity, and receipt-commitment binding.
 
 ## Checks performed
 
@@ -29,7 +30,9 @@ The verifier accepts a prototype only if all of the following hold:
 - no segment claims cryptographic compression,
 - segment intervals are contiguous,
 - the end boundary of segment `i` is exactly the start boundary of segment `i + 1`,
+- the source and aggregation template commitments remain unchanged across all segments,
 - the shared lookup identity remains unchanged across all segments,
+- each segment commitment matches its embedded Phase 37 receipt contents,
 - the segment-list commitment recomputes,
 - the shared-lookup-identity commitment recomputes,
 - and the top-level composition commitment recomputes.
