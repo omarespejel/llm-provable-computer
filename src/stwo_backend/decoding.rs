@@ -10465,9 +10465,11 @@ fn phase28_phase30_prepare_shared_proof_demo_for_layout(
     )?;
 
     let phase30 = phase30_prepare_decoding_step_proof_envelope_manifest(&phase12)?;
-    if phase28.total_steps != phase30.total_steps {
+    if phase28.total_steps != PHASE40_SHARED_PROOF_DEMO_STEPS
+        || phase30.total_steps != PHASE40_SHARED_PROOF_DEMO_STEPS
+    {
         return Err(VmError::InvalidConfig(format!(
-            "Phase 40 shared-proof source mismatch: Phase28 total_steps {} differs from Phase30 total_steps {}",
+            "Phase 40 shared-proof source mismatch: expected {PHASE40_SHARED_PROOF_DEMO_STEPS} manifest steps, Phase28 reports {} and Phase30 reports {}",
             phase28.total_steps, phase30.total_steps
         )));
     }
@@ -10618,7 +10620,18 @@ pub fn prove_phase28_phase30_shared_proof_boundary_demo() -> Result<(
     let mut failures = Vec::new();
     for layout in layouts {
         match phase28_phase30_prepare_shared_proof_demo_for_layout(&layout) {
-            Ok(artifacts) => return Ok(artifacts),
+            Ok((phase28, phase30)) => {
+                if phase28.global_start_state_commitment == phase30.chain_start_boundary_commitment
+                    || phase28.global_end_state_commitment == phase30.chain_end_boundary_commitment
+                {
+                    failures.push(format!(
+                        "layout_version={} rolling_kv_pairs={} pair_width={}: shared-proof artifacts did not reproduce the Phase40 boundary-domain blocker",
+                        layout.layout_version, layout.rolling_kv_pairs, layout.pair_width
+                    ));
+                    continue;
+                }
+                return Ok((phase28, phase30));
+            }
             Err(error) => failures.push(format!(
                 "layout_version={} rolling_kv_pairs={} pair_width={}: {}",
                 layout.layout_version, layout.rolling_kv_pairs, layout.pair_width, error

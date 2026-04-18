@@ -75,17 +75,6 @@ sha256_file() {
   fi
 }
 
-sha256_stdin() {
-  if command -v shasum >/dev/null 2>&1; then
-    LC_ALL=C LANG=C shasum -a 256 | awk '{print $1}'
-  elif command -v sha256sum >/dev/null 2>&1; then
-    LC_ALL=C LANG=C sha256sum | awk '{print $1}'
-  else
-    printf 'error: shasum or sha256sum is required for dirty-state fingerprinting\n' >&2
-    exit 127
-  fi
-}
-
 NIGHTLY_VERSION="nightly-2025-07-14"
 if ! command -v rustup >/dev/null 2>&1; then
   printf 'error: rustup is required to select toolchain %s\n' "${NIGHTLY_VERSION}" >&2
@@ -122,22 +111,73 @@ fi
 EVIDENCE_PAYLOAD_SHA256="$(sha256_file "${EVIDENCE}")"
 GIT_SHA="$(git rev-parse HEAD)"
 GIT_STATUS_PORCELAIN="$(git status --porcelain=v1)"
+GIT_DIRTY_FINGERPRINT_LIMIT_BYTES=1048576
 if [[ -n "${GIT_STATUS_PORCELAIN}" ]]; then
   GIT_DIRTY="true"
-  GIT_DIRTY_FINGERPRINT="$(
-    {
-      printf 'status\0%s\0unstaged-name-status\0' "${GIT_STATUS_PORCELAIN}"
-      git diff --name-status -z --no-ext-diff
-      printf '\0staged-name-status\0'
-      git diff --cached --name-status -z --no-ext-diff
-    } | sha256_stdin
+  GIT_DIRTY_FINGERPRINT_OUTPUT="$(
+    python3 -B - "${GIT_DIRTY_FINGERPRINT_LIMIT_BYTES}" <<'PY'
+from __future__ import annotations
+
+import hashlib
+import pathlib
+import subprocess
+import sys
+
+limit = int(sys.argv[1])
+remaining = limit
+truncated = False
+hasher = hashlib.sha256()
+
+status = subprocess.check_output(["git", "status", "--porcelain=v1", "-z"])
+hasher.update(b"status\0")
+hasher.update(status)
+
+paths: set[bytes] = set()
+for command in (
+    ["git", "diff", "--name-only", "-z", "--no-ext-diff"],
+    ["git", "diff", "--cached", "--name-only", "-z", "--no-ext-diff"],
+    ["git", "ls-files", "--others", "--exclude-standard", "-z"],
+):
+    output = subprocess.check_output(command)
+    paths.update(path for path in output.split(b"\0") if path)
+
+for raw_path in sorted(paths):
+    path_text = raw_path.decode("utf-8", "surrogateescape")
+    path = pathlib.Path(path_text)
+    hasher.update(b"path\0")
+    hasher.update(raw_path)
+    hasher.update(b"\0")
+    try:
+        stat = path.stat()
+    except OSError as error:
+        hasher.update(f"missing:{error.errno}".encode("ascii"))
+        continue
+    hasher.update(f"mode:{stat.st_mode}:size:{stat.st_size}".encode("ascii"))
+    if not path.is_file():
+        continue
+    if remaining <= 0:
+        truncated = True
+        continue
+    with path.open("rb") as handle:
+        chunk = handle.read(min(remaining, stat.st_size))
+    hasher.update(chunk)
+    remaining -= len(chunk)
+    if stat.st_size > len(chunk):
+        truncated = True
+
+print(hasher.hexdigest())
+print("true" if truncated else "false")
+PY
   )"
+  GIT_DIRTY_FINGERPRINT="$(printf '%s\n' "${GIT_DIRTY_FINGERPRINT_OUTPUT}" | sed -n '1p')"
+  GIT_DIRTY_FINGERPRINT_TRUNCATED="$(printf '%s\n' "${GIT_DIRTY_FINGERPRINT_OUTPUT}" | sed -n '2p')"
 else
   GIT_DIRTY="false"
   GIT_DIRTY_FINGERPRINT=""
+  GIT_DIRTY_FINGERPRINT_TRUNCATED="false"
 fi
 
-python3 -B - "${EVIDENCE}" "${EVIDENCE_PAYLOAD_SHA256}" "${GIT_SHA}" "${GENERATOR_COMMAND}" "${GIT_DIRTY}" "${GIT_DIRTY_FINGERPRINT}" <<'PY'
+python3 -B - "${EVIDENCE}" "${EVIDENCE_PAYLOAD_SHA256}" "${GIT_SHA}" "${GENERATOR_COMMAND}" "${GIT_DIRTY}" "${GIT_DIRTY_FINGERPRINT}" "${GIT_DIRTY_FINGERPRINT_TRUNCATED}" "${GIT_DIRTY_FINGERPRINT_LIMIT_BYTES}" <<'PY'
 from __future__ import annotations
 
 import hashlib
@@ -151,6 +191,8 @@ git_sha = sys.argv[3]
 generator_command = sys.argv[4]
 git_dirty = sys.argv[5]
 git_dirty_fingerprint = sys.argv[6]
+git_dirty_fingerprint_truncated = sys.argv[7]
+git_dirty_fingerprint_limit_bytes = int(sys.argv[8])
 
 evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
 if not isinstance(evidence, dict):
@@ -203,6 +245,8 @@ evidence["schema_version"] = "phase40-boundary-domain-probe-evidence-v1"
 evidence["git_sha"] = git_sha
 evidence["git_dirty"] = git_dirty == "true"
 evidence["git_dirty_fingerprint_sha256"] = git_dirty_fingerprint
+evidence["git_dirty_fingerprint_truncated"] = git_dirty_fingerprint_truncated == "true"
+evidence["git_dirty_fingerprint_limit_bytes"] = git_dirty_fingerprint_limit_bytes
 evidence["generator_command"] = generator_command
 evidence["evidence_payload_sha256_before_footer"] = evidence_payload_sha256
 evidence["evidence_sha256_scope"] = (

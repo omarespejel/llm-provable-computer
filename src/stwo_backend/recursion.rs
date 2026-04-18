@@ -6006,8 +6006,14 @@ mod tests {
         phase37_error: &str,
         source_kind: &str,
     ) -> Result<()> {
-        let Ok(path) = std::env::var("PHASE40_BOUNDARY_PROBE_OUT") else {
-            return Ok(());
+        let path = match std::env::var("PHASE40_BOUNDARY_PROBE_OUT") {
+            Ok(path) => path,
+            Err(std::env::VarError::NotPresent) => return Ok(()),
+            Err(std::env::VarError::NotUnicode(_)) => {
+                return Err(VmError::InvalidConfig(
+                    "PHASE40_BOUNDARY_PROBE_OUT must be valid UTF-8".to_string(),
+                ));
+            }
         };
         if path.is_empty() {
             return Err(VmError::InvalidConfig(
