@@ -34,6 +34,10 @@ if [[ -n "${FAKE_CARGO_NO_OUTPUT:-}" ]]; then
   exit 2
 fi
 
+if [[ -n "${FAKE_CARGO_SUCCESS_NO_OUTPUT:-}" ]]; then
+  exit 0
+fi
+
 : "${output_root:?fake cargo expected --output}"
 if [[ -n "${FAKE_CARGO_DIRECT_OUTPUT:-}" ]]; then
   mkdir -p "$output_root"
@@ -77,6 +81,45 @@ if [[ -e "$tmp_dir/stale-survivors.json" ]]; then
   echo "stale-output check produced a survivor report" >&2
   exit 1
 fi
-grep -q "no fresh cargo-mutants output found" "$tmp_dir/stale.stderr"
+grep -q "no fresh cargo-mutants output found after failed cargo-mutants run" "$tmp_dir/stale.stderr"
+
+set +e
+PATH="$tmp_dir/bin:$PATH" \
+  FAKE_CARGO_SUCCESS_NO_OUTPUT=1 \
+  MUTATION_OUTPUT_ROOT="$tmp_dir/missing-output" \
+  MUTATION_SURVIVOR_REPORT="$tmp_dir/missing-output-survivors.json" \
+  scripts/run_mutation_suite.sh >/dev/null 2>"$tmp_dir/missing-output.stderr"
+status=$?
+set -e
+if [[ "$status" -eq 0 ]]; then
+  echo "expected successful cargo run without output to fail evidence collection" >&2
+  exit 1
+fi
+if [[ -e "$tmp_dir/missing-output-survivors.json" ]]; then
+  echo "missing-output check produced a survivor report" >&2
+  exit 1
+fi
+grep -q "succeeded but no fresh mutation output was found" "$tmp_dir/missing-output.stderr"
+
+mkdir -p "$tmp_dir/mixed"
+printf '%s\n' 'old killed mutant' >"$tmp_dir/mixed/caught.txt"
+touch -t 200001010000 "$tmp_dir/mixed/caught.txt"
+set +e
+PATH="$tmp_dir/bin:$PATH" \
+  FAKE_CARGO_DIRECT_OUTPUT=1 \
+  MUTATION_OUTPUT_ROOT="$tmp_dir/mixed" \
+  MUTATION_SURVIVOR_REPORT="$tmp_dir/mixed-survivors.json" \
+  scripts/run_mutation_suite.sh >/dev/null 2>"$tmp_dir/mixed.stderr"
+status=$?
+set -e
+if [[ "$status" -eq 0 ]]; then
+  echo "expected mixed stale/fresh mutation output to fail evidence collection" >&2
+  exit 1
+fi
+if [[ -e "$tmp_dir/mixed-survivors.json" ]]; then
+  echo "mixed freshness check produced a survivor report" >&2
+  exit 1
+fi
+grep -q "succeeded but no fresh mutation output was found" "$tmp_dir/mixed.stderr"
 
 echo "mutation survivor tracking suite passed"

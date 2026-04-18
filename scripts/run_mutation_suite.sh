@@ -76,19 +76,27 @@ is_fresh_path() {
   local path="$1"
   local mtime
   mtime="$(mtime_epoch "$path" || true)"
-  [[ -n "$mtime" ]] && (( mtime >= mutation_run_started_epoch ))
+  [[ "$mtime" =~ ^[0-9]+$ ]] && (( mtime >= mutation_run_started_epoch ))
 }
 
 find_fresh_mutants_dir() {
-  local candidate outcome
+  local candidate outcome saw_marker all_fresh
   for candidate in "$@"; do
     [[ -d "$candidate" ]] || continue
+    saw_marker=0
+    all_fresh=1
     for outcome in caught.txt caught missed.txt missed timeout.txt timeout unviable.txt unviable outcomes.json; do
-      if [[ -e "$candidate/$outcome" ]] && is_fresh_path "$candidate/$outcome"; then
-        printf '%s\n' "$candidate"
-        return 0
+      [[ -e "$candidate/$outcome" ]] || continue
+      saw_marker=1
+      if ! is_fresh_path "$candidate/$outcome"; then
+        all_fresh=0
+        break
       fi
     done
+    if (( saw_marker && all_fresh )); then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
   done
   return 1
 }
@@ -127,7 +135,14 @@ else
     stale_output_seen=1
   fi
   if (( stale_output_seen )); then
-    echo "warning: no fresh cargo-mutants output found; skipping mutation survivor report" >&2
+    if (( mutation_status == 0 )); then
+      echo "error: cargo-mutants succeeded but no fresh mutation output was found; refusing to skip survivor report" >&2
+      exit 1
+    fi
+    echo "warning: no fresh cargo-mutants output found after failed cargo-mutants run; skipping mutation survivor report" >&2
+  elif (( mutation_status == 0 )); then
+    echo "error: cargo-mutants succeeded but did not produce mutation output; refusing to skip survivor report" >&2
+    exit 1
   fi
 fi
 
