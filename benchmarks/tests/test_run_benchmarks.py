@@ -257,6 +257,16 @@ class BenchmarkHarnessTests(unittest.TestCase):
 
         self.assertEqual(validator.validate_result(output), [])
 
+        relocated_missing = self.root / "relocated-missing" / "result.json"
+        relocated_missing.parent.mkdir()
+        shutil.copy2(output, relocated_missing)
+        self.assertTrue(
+            any(
+                "stdout_path does not exist" in error
+                for error in validator.validate_result(relocated_missing)
+            )
+        )
+
         relocated = self.root / "relocated" / "result.json"
         relocated.parent.mkdir()
         shutil.copy2(output, relocated)

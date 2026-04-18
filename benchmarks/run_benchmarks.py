@@ -688,9 +688,7 @@ def main() -> int:
         },
         "result_schema": {
             "path": BENCHMARK_RESULT_SCHEMA,
-            "sha256": sha256_file((root / BENCHMARK_RESULT_SCHEMA).resolve())
-            if (root / BENCHMARK_RESULT_SCHEMA).exists()
-            else None,
+            "sha256": sha256_file((root / BENCHMARK_RESULT_SCHEMA).resolve()),
         },
         "inputs": [
             {

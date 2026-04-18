@@ -51,24 +51,29 @@ def validator_repo_root() -> Path:
 def resolve_evidence_path(
     raw_path: str,
     bundle_root: Path,
-    repo_root: Path | None = None,
+    extra_roots: tuple[Path, ...] = (),
 ) -> Path:
     path = Path(raw_path)
     if path.is_absolute():
         return path
     candidates = [bundle_root / path]
-    if repo_root is not None:
-        candidates.append(repo_root / path)
-    candidates.extend(
-        [
-            validator_repo_root() / path,
-            Path.cwd() / path,
-        ]
-    )
+    candidates.extend(root / path for root in extra_roots)
     for candidate in candidates:
         if candidate.exists():
             return candidate
     return bundle_root / path
+
+
+def resolve_schema_path(
+    raw_path: str,
+    bundle_root: Path,
+    repo_root: Path | None,
+) -> Path:
+    roots = []
+    if repo_root is not None:
+        roots.append(repo_root)
+    roots.append(validator_repo_root())
+    return resolve_evidence_path(raw_path, bundle_root, tuple(roots))
 
 
 def require(condition: bool, errors: list[str], message: str) -> None:
@@ -97,7 +102,8 @@ def validate_file_record(
     exists = record.get("exists")
     require(isinstance(exists, bool), errors, f"{field}.exists must be boolean in run mode")
     if exists:
-        path = resolve_evidence_path(record["path"], bundle_root, repo_root)
+        roots = (repo_root,) if repo_root is not None else ()
+        path = resolve_evidence_path(record["path"], bundle_root, roots)
         require(path.exists(), errors, f"{field}.path does not exist: {path}")
         require(is_hex64(record.get("sha256")), errors, f"{field}.sha256 must be lowercase 64-char hex")
         if path.exists() and is_hex64(record.get("sha256")):
@@ -216,11 +222,7 @@ def validate_result(path: Path) -> list[str]:
     if isinstance(schema, dict):
         require(schema.get("path", "").endswith(str(SCHEMA_PATH)), errors, "result_schema.path must point to spec/benchmark-result.schema.json")
         require(is_hex64(schema.get("sha256")), errors, "result_schema.sha256 must be lowercase 64-char hex")
-        schema_path = resolve_evidence_path(
-            schema.get("path", ""),
-            bundle_root,
-            repo_root or validator_repo_root(),
-        )
+        schema_path = resolve_schema_path(schema.get("path", ""), bundle_root, repo_root)
         require(schema_path.exists(), errors, f"result_schema.path does not exist: {schema_path}")
         if schema_path.exists() and is_hex64(schema.get("sha256")):
             require(sha256_file(schema_path) == schema["sha256"], errors, "result_schema.sha256 does not match schema file")
