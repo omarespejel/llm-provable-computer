@@ -559,18 +559,40 @@ def fragment_scoped_search_text(text: str, anchor_offset: int) -> str | None:
     if line_end < 0:
         line_end = len(text)
     heading_line = text[line_start:line_end]
-    heading_match = re.match(r"^\s{0,3}(#{1,6})\s+", heading_line)
+    heading_match = re.match(r"^[ \t]{0,3}(#{1,6})[ \t]+", heading_line)
     if heading_match is None:
         return None
 
     heading_level = len(heading_match.group(1))
     remainder_start = min(line_end + 1, len(text))
     remainder = text[remainder_start:]
-    next_heading = re.search(rf"(?m)^\s{{0,3}}#{{1,{heading_level}}}\s+", remainder)
+    next_heading = re.search(rf"(?m)^[ \t]{{0,3}}#{{1,{heading_level}}}[ \t]+", remainder)
     section_end = (
         len(text) if next_heading is None else remainder_start + next_heading.start()
     )
     return text[line_start:section_end]
+
+
+def markdown_heading_title(heading_line: str) -> str | None:
+    heading_match = re.match(r"^[ \t]{0,3}#{1,6}[ \t]+(.*?)[ \t]*$", heading_line)
+    if heading_match is None:
+        return None
+    # CommonMark permits optional closing hashes, e.g. "## Title ##".
+    return re.sub(r"\s+#+\s*$", "", heading_match.group(1)).strip()
+
+
+def fragment_scoped_search_texts(text: str, location_anchor: str) -> list[str]:
+    """Return Markdown sections whose heading title exactly matches a fragment."""
+
+    scoped_sections: list[str] = []
+    for heading_match in re.finditer(r"(?m)^[ \t]{0,3}#{1,6}[ \t]+.*$", text):
+        heading_line = heading_match.group(0)
+        if markdown_heading_title(heading_line) != location_anchor:
+            continue
+        scoped_text = fragment_scoped_search_text(text, heading_match.start())
+        if scoped_text is not None:
+            scoped_sections.append(scoped_text)
+    return scoped_sections
 
 
 def check_paper2_evidence_anchors(
@@ -616,22 +638,18 @@ def check_paper2_evidence_anchors(
             except (OSError, UnicodeError) as exc:
                 unreadable.append(f"{rel_path} ({exc})")
                 continue
-            search_text = text
+            search_texts = [text]
             if location_anchor is not None:
-                anchor_offset = text.find(location_anchor)
-                if anchor_offset < 0:
+                search_texts = fragment_scoped_search_texts(text, location_anchor)
+                if not search_texts:
                     missing_fragments.append(
-                        f"{entry} (fragment `{location_anchor}` not found)"
+                        f"{entry} (heading fragment `{location_anchor}` not found)"
                     )
                     continue
-                scoped_text = fragment_scoped_search_text(text, anchor_offset)
-                if scoped_text is None:
-                    invalid_fragments.append(
-                        f"{entry} (fragment `{location_anchor}` does not identify a Markdown heading)"
-                    )
-                    continue
-                search_text = scoped_text
-            if re.search(rf"{re.escape(anchor)}(?![A-Za-z0-9_])", search_text):
+            if any(
+                re.search(rf"{re.escape(anchor)}(?![A-Za-z0-9_])", search_text)
+                for search_text in search_texts
+            ):
                 found = True
                 break
 
