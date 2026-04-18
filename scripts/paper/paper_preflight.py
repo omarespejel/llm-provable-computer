@@ -542,6 +542,52 @@ def list_field(record: dict[str, object], key: str) -> list[str]:
     return []
 
 
+def check_paper2_evidence_anchors(
+    repo_root: pathlib.Path,
+    evidence_path: pathlib.Path,
+    records: list[dict[str, object]],
+    findings: Findings,
+) -> None:
+    """Require each evidence-ledger claim to be cited by Paper 2 prose.
+
+    The evidence matrix says where a claim appears. The paper text must contain
+    an explicit `evidence:<claim_id>` anchor in at least one declared location,
+    otherwise a strong paper claim can drift away from its implementation,
+    negative controls, evidence commands, and non-claim boundary.
+    """
+
+    for record in records:
+        claim_id = str(record.get("id", "")).strip()
+        if not claim_id:
+            continue
+        anchor = f"evidence:{claim_id}"
+        locations = list_field(record, "paper_locations")
+        if not locations:
+            continue
+
+        searched: list[str] = []
+        found = False
+        for entry in locations:
+            rel_path, _anchor = split_evidence_path_anchor(entry)
+            path = repo_root / rel_path
+            searched.append(rel_path)
+            if not path.exists():
+                continue
+            try:
+                text = path.read_text(encoding="utf-8")
+            except (OSError, UnicodeError):
+                continue
+            if anchor in text:
+                found = True
+                break
+
+        if not found:
+            findings.error(
+                f"{evidence_path}: claim `{claim_id}` is not explicitly cited by "
+                f"`{anchor}` in any declared paper location: {searched}"
+            )
+
+
 def check_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> None:
     evidence_path = repo_root / CLAIM_EVIDENCE_FILE
     if not evidence_path.exists():
@@ -622,6 +668,7 @@ def check_claim_evidence_matrix(repo_root: pathlib.Path, findings: Findings) -> 
         findings.warn(
             f"{evidence_path}: extra paper-2 claim evidence ids not in required set: {extra_ids}"
         )
+    check_paper2_evidence_anchors(repo_root, evidence_path, records, findings)
 
 
 def paragraph_start_line(text: str, offset: int) -> int:
