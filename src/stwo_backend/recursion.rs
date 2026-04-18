@@ -5732,7 +5732,9 @@ mod tests {
     #[cfg(feature = "stwo-backend")]
     use crate::stwo_backend::{
         phase12_default_decoding_layout, phase30_prepare_decoding_step_proof_envelope_manifest,
-        prove_phase12_decoding_demo_for_layout,
+        phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range,
+        prove_phase12_decoding_demo_for_layout, prove_phase12_decoding_demo_for_layout_steps,
+        verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range,
         STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_SCOPE_PHASE31,
         STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_VERSION_PHASE31,
     };
@@ -5818,11 +5820,10 @@ mod tests {
             lookup_delta_entries: 12,
             max_lookup_frontier_entries: 4,
             source_template_commitment: "a".repeat(64),
-            global_start_state_commitment: "phase28-start".to_string(),
-            global_end_state_commitment: "phase28-end".to_string(),
+            global_start_state_commitment: "d".repeat(64),
+            global_end_state_commitment: "e".repeat(64),
             aggregation_template_commitment: "b".repeat(64),
-            aggregated_chained_folded_interval_accumulator_commitment:
-                "phase28-aggregate-accumulator".to_string(),
+            aggregated_chained_folded_interval_accumulator_commitment: "f".repeat(64),
             input_contract_commitment: String::new(),
         };
         contract.input_contract_commitment =
@@ -5958,6 +5959,37 @@ mod tests {
             sample_phase38_segment_source(&start, &mid, 2, &source_chain),
             sample_phase38_segment_source(&mid, &end, 3, &source_chain),
         ]
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn phase38_source_from_real_phase30_segment(
+        phase30: Phase30DecodingStepProofEnvelopeManifest,
+    ) -> Phase38Paper3CompositionSource {
+        let phase29_contract = sample_phase29_contract_for_phase30(&phase30);
+        let phase37_receipt =
+            phase37_prepare_recursive_artifact_chain_harness_receipt(&phase29_contract, &phase30)
+                .expect("prepare Phase 37 receipt for real Phase 30 segment");
+        Phase38Paper3CompositionSource {
+            phase29_contract,
+            phase30_manifest: phase30,
+            phase37_receipt,
+        }
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn write_phase39_composition_artifact_if_requested(
+        prototype: &Phase38Paper3CompositionPrototype,
+    ) {
+        let Ok(path) = std::env::var("PHASE39_COMPOSITION_ARTIFACT_OUT") else {
+            return;
+        };
+        let path = std::path::PathBuf::from(path);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).expect("create Phase 39 artifact directory");
+        }
+        let json =
+            serde_json::to_vec_pretty(prototype).expect("serialize Phase 39 prototype artifact");
+        std::fs::write(&path, json).expect("write Phase 39 prototype artifact");
     }
 
     #[cfg(feature = "stwo-backend")]
@@ -7028,6 +7060,99 @@ mod tests {
         assert!(!prototype.cryptographic_compression_claimed);
         verify_phase38_paper3_composition_prototype(&prototype)
             .expect("verify Phase 38 composition prototype");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase39_real_decode_composition_artifact_accepts_generated_five_step_chain() {
+        let layout =
+            crate::stwo_backend::Phase12DecodingLayout::new(2, 2).expect("valid Phase 12 layout");
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 5)
+            .expect("generate five-step Phase 12 decoding chain");
+        assert_eq!(chain.total_steps, 5);
+        assert_eq!(chain.steps.len(), 5);
+
+        let first_segment =
+            phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(&chain, 0, 2)
+                .expect("prepare first real Phase 30 segment");
+        let second_segment =
+            phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(&chain, 2, 5)
+                .expect("prepare second real Phase 30 segment");
+        assert_eq!(first_segment.total_steps, 2);
+        assert_eq!(second_segment.total_steps, 3);
+        assert_eq!(
+            first_segment.source_chain_commitment,
+            second_segment.source_chain_commitment
+        );
+        assert_eq!(
+            first_segment.chain_end_boundary_commitment,
+            second_segment.chain_start_boundary_commitment
+        );
+        verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range(
+            &first_segment,
+            &chain,
+            0,
+            2,
+        )
+        .expect("first segment matches the generated source-chain range");
+        verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range(
+            &second_segment,
+            &chain,
+            2,
+            5,
+        )
+        .expect("second segment matches the generated source-chain range");
+
+        let full_manifest =
+            phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(&chain, 0, 5)
+                .expect("prepare full real Phase 30 manifest");
+        assert_eq!(
+            first_segment.source_chain_commitment,
+            full_manifest.source_chain_commitment
+        );
+        assert_eq!(
+            first_segment.chain_start_boundary_commitment,
+            full_manifest.chain_start_boundary_commitment
+        );
+        assert_eq!(
+            second_segment.chain_end_boundary_commitment,
+            full_manifest.chain_end_boundary_commitment
+        );
+
+        let sources = vec![
+            phase38_source_from_real_phase30_segment(first_segment),
+            phase38_source_from_real_phase30_segment(second_segment),
+        ];
+        let prototype = phase38_prepare_paper3_composition_prototype(&sources)
+            .expect("compose real generated decode segments");
+
+        assert_eq!(prototype.segment_count, 2);
+        assert_eq!(prototype.total_steps, 5);
+        assert_eq!(prototype.naive_per_step_package_count, 5);
+        assert_eq!(prototype.composed_segment_package_count, 2);
+        assert_eq!(prototype.package_count_delta, 3);
+        assert_eq!(prototype.segments[0].step_start, 0);
+        assert_eq!(prototype.segments[0].step_end, 2);
+        assert_eq!(prototype.segments[1].step_start, 2);
+        assert_eq!(prototype.segments[1].step_end, 5);
+        assert_eq!(
+            prototype.chain_start_boundary_commitment,
+            full_manifest.chain_start_boundary_commitment
+        );
+        assert_eq!(
+            prototype.chain_end_boundary_commitment,
+            full_manifest.chain_end_boundary_commitment
+        );
+        assert!(!prototype.recursive_verification_claimed);
+        assert!(!prototype.cryptographic_compression_claimed);
+
+        verify_phase38_paper3_composition_prototype(&prototype)
+            .expect("verify real Phase 38 composition prototype");
+        let json = serde_json::to_string_pretty(&prototype).expect("serialize prototype");
+        let parsed = parse_phase38_paper3_composition_prototype_json(&json)
+            .expect("parse serialized prototype");
+        assert_eq!(parsed, prototype);
+        write_phase39_composition_artifact_if_requested(&prototype);
     }
 
     #[cfg(feature = "stwo-backend")]

@@ -2392,7 +2392,30 @@ pub fn verify_phase12_decoding_chain_with_proof_checks(
 pub fn phase30_prepare_decoding_step_proof_envelope_manifest(
     chain: &Phase12DecodingChainManifest,
 ) -> Result<Phase30DecodingStepProofEnvelopeManifest> {
+    phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(
+        chain,
+        0,
+        chain.steps.len(),
+    )
+}
+
+pub fn phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(
+    chain: &Phase12DecodingChainManifest,
+    step_start: usize,
+    step_end: usize,
+) -> Result<Phase30DecodingStepProofEnvelopeManifest> {
     verify_phase12_decoding_chain(chain)?;
+    if step_start >= step_end {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding step envelope manifest step range {step_start}..{step_end} must contain at least one step"
+        )));
+    }
+    if step_end > chain.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding step envelope manifest step range {step_start}..{step_end} exceeds source chain length {}",
+            chain.steps.len()
+        )));
+    }
     let layout_commitment = commit_phase12_layout(&chain.layout);
     let source_chain_commitment = commit_phase12_decoding_chain_for_step_envelopes(chain)?;
     let artifact_index = chain
@@ -2402,6 +2425,12 @@ pub fn phase30_prepare_decoding_step_proof_envelope_manifest(
         .collect::<HashMap<_, _>>();
     let envelopes = chain
         .steps
+        .get(step_start..step_end)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "decoding step envelope manifest step range {step_start}..{step_end} is not a valid source-chain slice"
+            ))
+        })?
         .iter()
         .enumerate()
         .map(|(step_index, step)| {
@@ -2683,6 +2712,23 @@ pub fn verify_phase30_decoding_step_proof_envelope_manifest_against_chain(
         return Err(VmError::InvalidConfig(
             "decoding step envelope manifest does not match the derived Phase 12 chain".to_string(),
         ));
+    }
+    Ok(())
+}
+
+pub fn verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range(
+    manifest: &Phase30DecodingStepProofEnvelopeManifest,
+    chain: &Phase12DecodingChainManifest,
+    step_start: usize,
+    step_end: usize,
+) -> Result<()> {
+    let expected = phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(
+        chain, step_start, step_end,
+    )?;
+    if manifest != &expected {
+        return Err(VmError::InvalidConfig(format!(
+            "decoding step envelope manifest does not match the derived Phase 12 chain range {step_start}..{step_end}"
+        )));
     }
     Ok(())
 }
@@ -9818,13 +9864,30 @@ pub fn phase13_default_decoding_layout_matrix() -> Result<Vec<Phase12DecodingLay
 pub fn prove_phase12_decoding_demo_for_layout(
     layout: &Phase12DecodingLayout,
 ) -> Result<Phase12DecodingChainManifest> {
+    prove_phase12_decoding_demo_for_layout_steps(layout, 3)
+}
+
+pub fn prove_phase12_decoding_demo_for_layout_steps(
+    layout: &Phase12DecodingLayout,
+    total_steps: usize,
+) -> Result<Phase12DecodingChainManifest> {
+    if total_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 12 decoding demo must contain at least one step".to_string(),
+        ));
+    }
+    if total_steps > MAX_DECODING_CHAIN_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 12 decoding demo requested {total_steps} steps, exceeding the limit of {MAX_DECODING_CHAIN_STEPS}"
+        )));
+    }
     let config = TransformerVmConfig {
         num_layers: 1,
         attention_mode: Attention2DMode::AverageHard,
         ..TransformerVmConfig::default()
     };
-    let mut proofs = Vec::new();
-    for initial_memory in phase12_demo_initial_memories(layout)? {
+    let mut proofs = Vec::with_capacity(total_steps);
+    for initial_memory in phase12_demo_initial_memories_for_steps(layout, total_steps)? {
         let program = decoding_step_v2_program_with_initial_memory(layout, initial_memory)?;
         let model = ProgramCompiler.compile_program(program, config.clone())?;
         let proof = prove_execution_stark_with_backend_and_options(
@@ -9843,6 +9906,13 @@ pub fn prove_phase12_decoding_demo_for_layout(
 pub fn prove_phase12_decoding_demo() -> Result<Phase12DecodingChainManifest> {
     let layout = phase12_default_decoding_layout();
     prove_phase12_decoding_demo_for_layout(&layout)
+}
+
+pub fn prove_phase12_decoding_demo_steps(
+    total_steps: usize,
+) -> Result<Phase12DecodingChainManifest> {
+    let layout = phase12_default_decoding_layout();
+    prove_phase12_decoding_demo_for_layout_steps(&layout, total_steps)
 }
 
 pub fn prove_phase13_decoding_layout_matrix_demo() -> Result<Phase13DecodingLayoutMatrixManifest> {
@@ -12459,7 +12529,24 @@ fn write_phase12_noncanonical_lookup_seed(memory: &mut [i16], lookup: std::ops::
 pub(crate) fn phase12_demo_initial_memories(
     layout: &Phase12DecodingLayout,
 ) -> Result<Vec<Vec<i16>>> {
+    phase12_demo_initial_memories_for_steps(layout, 3)
+}
+
+pub(crate) fn phase12_demo_initial_memories_for_steps(
+    layout: &Phase12DecodingLayout,
+    total_steps: usize,
+) -> Result<Vec<Vec<i16>>> {
     layout.validate()?;
+    if total_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 12 demo seed generation requires at least one step".to_string(),
+        ));
+    }
+    if total_steps > MAX_DECODING_CHAIN_STEPS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 12 demo seed generation requested {total_steps} steps, exceeding the limit of {MAX_DECODING_CHAIN_STEPS}"
+        )));
+    }
     let kv_cache_range = layout.kv_cache_range()?;
     let incoming_token_range = layout.incoming_token_range()?;
     let query_range = layout.query_range()?;
@@ -12468,8 +12555,8 @@ pub(crate) fn phase12_demo_initial_memories(
     let position_increment_index = layout.position_increment_index()?;
     let mut kv_cache = vec![0; kv_cache_range.len()];
 
-    let mut memories = Vec::with_capacity(3);
-    for position in 0..3 {
+    let mut memories = Vec::with_capacity(total_steps);
+    for position in 0..total_steps {
         let incoming_values = phase12_demo_incoming_values(layout.pair_width, position);
         let query_values = phase12_demo_query_values(layout.pair_width, position);
         let mut memory = vec![0; layout.memory_size()?];

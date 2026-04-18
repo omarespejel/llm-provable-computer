@@ -54,6 +54,14 @@ The identity checks prevent a prototype from silently splicing together segments
 
 These are structural checks. They are meant to test whether the artifact boundary is usable as a composition primitive before claiming recursive compression.
 
+## Generated source-chain evidence
+
+Issue #174 adds a stronger local artifact path for the same prototype. The Phase 39 suite generates a real five-step Phase 12 decode chain with a small valid layout, derives two Phase 30 segment manifests from contiguous slices of that chain, and then composes those source-backed segments through Phase 37 into Phase 38.
+
+The segment manifests use local Phase 30 envelope indexes, but they keep the same generated Phase 12 source-chain commitment. That keeps the segment artifact valid under the Phase 30 schema while still checking the composition property we care about: the first segment's output boundary must be the second segment's input boundary, and both segments must come from the same generated decode run.
+
+The suite writes `target/phase39-real-decode-composition/phase39-real-decode-composition-prototype.json` and verifies that generated artifact with the independent Python reference verifier. It also writes `target/phase39-real-decode-composition/evidence.json` with the artifact hash, source step ranges, shared source-chain commitment, and package-count baseline. These files are generated evidence, not frozen release artifacts. `evidence:phase38_source_validated_receipt_binding` `evidence:phase38_composition_continuity` `evidence:phase38_shared_lookup_source_chain_and_template_identity`
+
 ## Baseline accounting
 
 The prototype also records a simple packaging baseline:
@@ -83,6 +91,7 @@ cargo +nightly-2025-07-14 test -q --features stwo-backend --lib
 cargo fmt --check
 cargo test -q --lib statement_spec_contract_is_synced_with_constants
 scripts/run_phase38_schema_suite.sh
+scripts/run_phase39_real_decode_composition_suite.sh
 scripts/run_reference_verifier_suite.sh
 python3 scripts/paper/paper_preflight.py
 ```
