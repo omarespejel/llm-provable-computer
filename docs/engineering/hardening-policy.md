@@ -61,6 +61,7 @@ FUZZ_TIME_PER_TARGET=20 scripts/run_fuzz_smoke_suite.sh
 scripts/run_known_bad_phase_artifact_corpus.sh
 scripts/run_paper_preflight_suite.sh
 scripts/run_approximation_budget_suite.sh
+scripts/run_phase38_schema_suite.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_miri_suite.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
 HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_asan_suite.sh
@@ -81,7 +82,9 @@ stale-root and self-consistent bad artifacts.
 and the full paper preflight, including the Paper 2 and Paper 3 claim-evidence
 matrices. `scripts/run_approximation_budget_suite.sh` runs approximation-budget
 unit tests, accepts the positive fixture, and checks that the negative fixture
-fails closed.
+fails closed. `scripts/run_phase38_schema_suite.sh` pins the Phase 38 Paper 3
+composition-prototype JSON schema surface and reruns paper preflight so schema
+drift cannot silently detach the paper claims from the serialized artifact.
 
 The sanitizer and UB hardening scripts use the curated exact test lists in
 `scripts/hardening_test_names.sh`; update that file when adding new trusted-core
@@ -149,15 +152,17 @@ Available local command tiers:
   aggregation verifier, Phase 29 recursive-compression input contract, and
   non-heavy Phase 29 CLI artifact verification paths. It also runs the
   Phase 29-37 known-bad artifact corpus when the PR changes those artifact
-  surfaces or corpus files.
+  surfaces or corpus files, plus the Phase 38 schema suite when the Paper 3
+  composition-prototype schema, evidence, docs, local-gate wiring, or backing
+  Phase 38 implementation changes.
 - `--mode full`: runs the same PR-range whitespace and formatting hygiene, full
   library tests, integration tests, doctests, the same conditional workflow
   auditing, dependency auditing, and shellcheck, and the exact pinned-nightly
   `stwo-backend` smokes, plus the Phase 29-37 known-bad artifact corpus, paper
   preflight, approximation-budget suite, independent reference verifier, Phase
   37 mutation generator, fuzz smoke, benchmark reproducibility suite, release
-  evidence suite, and mutation-survivor tracking suite when their relevant files
-  change.
+  evidence suite, Phase 38 schema suite, and mutation-survivor tracking suite
+  when their relevant files change.
 - `--mode hardening`: runs the `full` tier, including the same conditional
   workflow auditing for `.github/workflows/**` and `zizmor.yml`, the same
   conditional dependency auditing for `Cargo.toml`, `Cargo.lock`,
@@ -171,9 +176,10 @@ Available local command tiers:
   that evidence surface changes. It also runs the Phase 29-37 known-bad
   artifact corpus, paper preflight, approximation-budget suite, independent
   reference verifier, Phase 37 mutation generator, benchmark reproducibility
-  suite, and release evidence suite when relevant files change. The inherited
-  whitespace gate is still scoped to the committed PR delta, not the whole
-  worktree. Prefer running this tier inside Lima for Linux parity.
+  suite, release evidence suite, and Phase 38 schema suite when relevant files
+  change. The inherited whitespace gate is still scoped to the committed PR
+  delta, not the whole worktree. Prefer running this tier inside Lima for Linux
+  parity.
 - `--mode none`: only checks GitHub status, review-thread state, and the
   seven-minute AI-review quiet window. Use this only after a prior evidence run
   for the same PR head SHA.

@@ -531,6 +531,18 @@ changed_path_is_approximation_budget_surface() {
     changed_path_has_prefix "scripts/local_merge_gate.sh"
 }
 
+changed_path_is_phase38_schema_surface() {
+  changed_path_has_prefix "spec/stwo-phase38-paper3-composition-prototype.schema.json" ||
+    changed_path_has_prefix "spec/stwo-phase30-decoding-step-envelope-manifest.schema.json" ||
+    changed_path_has_prefix "spec/stwo-phase37-recursive-artifact-chain-harness-receipt.schema.json" ||
+    changed_path_has_prefix "docs/engineering/paper3-claim-evidence.yml" ||
+    changed_path_has_prefix "docs/engineering/paper3-composition-prototype.md" ||
+    changed_path_has_prefix "src/stwo_backend/recursion.rs" ||
+    changed_path_has_prefix "scripts/tests/test_phase38_schema.py" ||
+    changed_path_has_prefix "scripts/run_phase38_schema_suite.sh" ||
+    changed_path_has_prefix "scripts/local_merge_gate.sh"
+}
+
 changed_path_is_benchmark_reproducibility_surface() {
   changed_path_has_prefix "benchmarks/" ||
     changed_path_has_prefix "docs/engineering/benchmark-methodology.md" ||
@@ -684,6 +696,16 @@ run_approximation_budget_if_needed() {
   fi
 }
 
+run_phase38_schema_if_needed() {
+  if changed_path_is_phase38_schema_surface; then
+    if changed_path_is_paper_preflight_surface; then
+      run_logged phase38-schema env SKIP_PAPER_PREFLIGHT=1 bash scripts/run_phase38_schema_suite.sh
+    else
+      run_logged phase38-schema bash scripts/run_phase38_schema_suite.sh
+    fi
+  fi
+}
+
 run_benchmark_reproducibility_if_needed() {
   if changed_path_is_benchmark_reproducibility_surface; then
     run_logged benchmark-reproducibility bash scripts/run_benchmark_reproducibility_suite.sh
@@ -794,6 +816,7 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   run_fuzz_smoke_if_needed
   run_paper_preflight_if_needed
   run_approximation_budget_if_needed
+  run_phase38_schema_if_needed
   run_benchmark_reproducibility_if_needed
   run_release_evidence_if_needed
   run_mutation_survivor_tracking_if_needed
@@ -825,6 +848,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_fuzz_smoke_if_needed
   run_paper_preflight_if_needed
   run_approximation_budget_if_needed
+  run_phase38_schema_if_needed
   run_benchmark_reproducibility_if_needed
   run_release_evidence_if_needed
   run_mutation_survivor_tracking_if_needed
@@ -855,6 +879,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_phase37_mutation_generator_if_needed
   run_paper_preflight_if_needed
   run_approximation_budget_if_needed
+  run_phase38_schema_if_needed
   run_benchmark_reproducibility_if_needed
   run_release_evidence_if_needed
   run_mutation_survivor_tracking_if_needed

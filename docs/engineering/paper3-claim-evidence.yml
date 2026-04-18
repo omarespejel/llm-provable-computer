@@ -14,7 +14,7 @@
     - phase38_paper3_composition_prototype_rejects_unbound_phase37_commitment_swap
     - phase38_paper3_composition_source_deserialization_rejects_unbound_bundle
   schemas:
-    - "Not applicable: no standalone Phase 38 JSON schema has been published yet; bounded serde TryFrom plus parse/load APIs enforce the current shape."
+    - spec/stwo-phase38-paper3-composition-prototype.schema.json
   artifact_files:
     - docs/engineering/paper3-composition-prototype.md
   artifact_hashes:
@@ -23,6 +23,7 @@
     - "Not applicable: targeted adversarial mutation tests cover this prototype; fuzz/formal coverage remains future hardening."
   evidence_commands:
     - cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase38_paper3_composition_prototype
+    - scripts/run_phase38_schema_suite.sh
   non_claims:
     - "Does not claim recursive proof closure."
 
@@ -41,7 +42,7 @@
     - phase38_paper3_composition_prototype_rejects_boundary_gap
     - phase38_paper3_composition_segment_deserialization_rejects_bad_interval
   schemas:
-    - "Not applicable: no standalone Phase 38 JSON schema has been published yet; bounded serde TryFrom plus parse/load APIs enforce the current shape."
+    - spec/stwo-phase38-paper3-composition-prototype.schema.json
   artifact_files:
     - docs/engineering/paper3-composition-prototype.md
   artifact_hashes:
@@ -50,6 +51,7 @@
     - "Not applicable: targeted adversarial mutation tests cover this prototype; fuzz/formal coverage remains future hardening."
   evidence_commands:
     - cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase38_paper3_composition_prototype
+    - scripts/run_phase38_schema_suite.sh
   non_claims:
     - "Does not claim open-ended or implicit boundary initialization."
 
@@ -72,7 +74,7 @@
     - phase38_paper3_composition_prototype_rejects_shared_lookup_identity_drift
     - phase38_paper3_composition_prototype_rejects_forged_lookup_identity
   schemas:
-    - "Not applicable: no standalone Phase 38 JSON schema has been published yet; bounded serde TryFrom plus parse/load APIs enforce the current shape."
+    - spec/stwo-phase38-paper3-composition-prototype.schema.json
   artifact_files:
     - docs/engineering/paper3-composition-prototype.md
   artifact_hashes:
@@ -81,6 +83,7 @@
     - "Not applicable: targeted adversarial mutation tests cover this prototype; fuzz/formal coverage remains future hardening."
   evidence_commands:
     - cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase38_paper3_composition_prototype
+    - scripts/run_phase38_schema_suite.sh
   non_claims:
     - "Does not claim shared-table accumulation inside a recursive verifier."
 
@@ -99,7 +102,7 @@
   negative_tests:
     - phase38_paper3_composition_prototype_rejects_tampered_baseline
   schemas:
-    - "Not applicable: no standalone Phase 38 JSON schema has been published yet; bounded serde TryFrom plus parse/load APIs enforce the current shape."
+    - spec/stwo-phase38-paper3-composition-prototype.schema.json
   artifact_files:
     - docs/engineering/paper3-composition-prototype.md
   artifact_hashes:
@@ -108,5 +111,6 @@
     - "Not applicable: targeted adversarial mutation tests cover this prototype; fuzz/formal coverage remains future hardening."
   evidence_commands:
     - cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase38_paper3_composition_prototype
+    - scripts/run_phase38_schema_suite.sh
   non_claims:
     - "Does not claim performance speedup."
