@@ -5,6 +5,8 @@ mod arithmetic_component;
 mod arithmetic_subset_prover;
 #[cfg(feature = "stwo-backend")]
 mod decoding;
+#[cfg(feature = "stwo-backend")]
+mod history_replay_projection_prover;
 mod layout;
 #[cfg(feature = "stwo-backend")]
 mod lookup_component;
@@ -169,6 +171,14 @@ pub use decoding::{
     STWO_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE25,
     STWO_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE25,
     STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE,
+};
+#[cfg(feature = "stwo-backend")]
+pub use history_replay_projection_prover::{
+    prove_phase43_history_replay_projection_envelope,
+    verify_phase43_history_replay_projection_envelope, Phase43HistoryReplayProjectionProofEnvelope,
+    STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43,
+    STWO_HISTORY_REPLAY_PROJECTION_SEMANTIC_SCOPE_PHASE43,
+    STWO_HISTORY_REPLAY_PROJECTION_STATEMENT_VERSION_PHASE43,
 };
 pub use layout::{
     phase2_fixture_matrix, phase2_module_layout, phase2_supported_mnemonics,

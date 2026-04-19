@@ -6,3 +6,4 @@ cd "$(dirname "$0")/.."
 python3 -B -m unittest scripts/tests/test_phase42_boundary_correspondence.py -q
 cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase42
 cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase43_history_replay_trace
+cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase43_history_replay_projection
