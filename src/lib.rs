@@ -66,7 +66,7 @@ pub use runtime::ExecutionRuntime;
 pub use state::{decode_state, encode_state, MachineState, MIN_D_MODEL};
 #[cfg(feature = "stwo-backend")]
 pub use stwo_backend::{
-    assess_phase43_history_replay_projection_boundary,
+    assess_phase43_history_replay_projection_boundary, assess_phase43_proof_native_source_exposure,
     commit_phase29_recursive_compression_input_contract,
     commit_phase31_recursive_compression_decode_boundary_manifest,
     commit_phase32_recursive_compression_statement_contract,
@@ -143,8 +143,8 @@ pub use stwo_backend::{
     Phase36RecursiveVerifierHarnessReceipt, Phase37RecursiveArtifactChainHarnessReceipt,
     Phase42BoundaryHistoryEquivalenceWitness, Phase42BoundaryPreimageEvidence,
     Phase43HistoryReplayProjectionBoundaryAssessment, Phase43HistoryReplayProjectionProofEnvelope,
-    Phase43HistoryReplayTrace, Phase43HistoryReplayTraceRow,
-    STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42,
+    Phase43HistoryReplayProofNativeSourceExposureAssessment, Phase43HistoryReplayTrace,
+    Phase43HistoryReplayTraceRow, STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42,
     STWO_BOUNDARY_HISTORY_EQUIVALENCE_RULE_PHASE42,
     STWO_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_VERSION_PHASE42,
     STWO_BOUNDARY_PREIMAGE_EVIDENCE_VERSION_PHASE42, STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
@@ -154,6 +154,8 @@ pub use stwo_backend::{
     STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43,
     STWO_HISTORY_REPLAY_PROJECTION_SEMANTIC_SCOPE_PHASE43,
     STWO_HISTORY_REPLAY_PROJECTION_STATEMENT_VERSION_PHASE43,
+    STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_DECISION_PHASE43,
+    STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_VERSION_PHASE43,
     STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43, STWO_HISTORY_REPLAY_TRACE_RULE_PHASE43,
     STWO_HISTORY_REPLAY_TRACE_VERSION_PHASE43,
     STWO_RECURSIVE_ARTIFACT_CHAIN_HARNESS_RECEIPT_SCOPE_PHASE37,

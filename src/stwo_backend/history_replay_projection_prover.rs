@@ -23,6 +23,10 @@ use stwo_constraint_framework::{
     EvalAtRow, FrameworkComponent, FrameworkEval, TraceLocationAllocator,
 };
 
+use super::decoding::{
+    commit_phase12_layout, verify_phase30_decoding_step_proof_envelope_manifest,
+    Phase30DecodingStepProofEnvelopeManifest,
+};
 use super::recursion::{
     commit_phase43_history_replay_trace, verify_phase43_history_replay_trace,
     Phase43HistoryReplayTrace,
@@ -40,6 +44,10 @@ pub const STWO_HISTORY_REPLAY_PROJECTION_BOUNDARY_ASSESSMENT_VERSION_PHASE43: &s
     "phase43-history-replay-projection-boundary-assessment-v1";
 pub const STWO_HISTORY_REPLAY_PROJECTION_BOUNDARY_DECISION_PHASE43: &str =
     "not_a_compression_boundary_requires_full_trace";
+pub const STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_VERSION_PHASE43: &str =
+    "phase43-proof-native-source-exposure-assessment-v1";
+pub const STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_DECISION_PHASE43: &str =
+    "source_exposure_insufficient_legacy_hash_only";
 
 const PHASE43_PROJECTION_ONE_COLUMN: &str = "phase43/history_replay_projection/one";
 const PHASE43_PROJECTION_HASH_LIMBS: usize = 16;
@@ -104,6 +112,34 @@ pub struct Phase43HistoryReplayProjectionBoundaryAssessment {
     pub blake2b_preimage_proven: bool,
     pub source_chain_step_envelopes_proven: bool,
     pub useful_compression_boundary: bool,
+    pub decision: String,
+    pub required_next_step: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase43HistoryReplayProofNativeSourceExposureAssessment {
+    pub exposure_version: String,
+    pub phase43_trace_commitment: String,
+    pub phase30_source_chain_commitment: String,
+    pub phase30_step_envelopes_commitment: String,
+    pub total_steps: usize,
+    pub phase30_envelope_count: usize,
+    pub phase30_manifest_verified: bool,
+    pub source_chain_commitment_matches_trace: bool,
+    pub step_envelopes_commitment_matches_trace: bool,
+    pub phase30_layout_commitment_matches_trace: bool,
+    pub row_envelope_commitments_match_trace: bool,
+    pub row_boundary_commitments_match_trace: bool,
+    pub exposes_phase30_source_chain_commitment: bool,
+    pub exposes_phase30_step_envelopes_commitment: bool,
+    pub exposes_legacy_blake2b_commitments_only: bool,
+    pub exposes_stwo_public_inputs: bool,
+    pub exposes_stwo_trace_commitments: bool,
+    pub exposes_projection_commitment: bool,
+    pub exposes_projection_rows: bool,
+    pub verifier_can_drop_full_phase43_trace: bool,
+    pub missing_proof_native_inputs: Vec<String>,
     pub decision: String,
     pub required_next_step: String,
 }
@@ -408,6 +444,50 @@ pub fn assess_phase43_history_replay_projection_boundary(
         decision: STWO_HISTORY_REPLAY_PROJECTION_BOUNDARY_DECISION_PHASE43.to_string(),
         required_next_step:
             "Make the source chain emit proof-native Stwo commitments/public inputs, or prove the legacy Blake2b trace/source commitments inside AIR; otherwise pivot to layerwise/tensor proving."
+                .to_string(),
+    })
+}
+
+pub fn assess_phase43_proof_native_source_exposure(
+    trace: &Phase43HistoryReplayTrace,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase43HistoryReplayProofNativeSourceExposureAssessment> {
+    verify_phase43_history_replay_trace(trace)?;
+    verify_phase30_decoding_step_proof_envelope_manifest(phase30)?;
+    validate_phase43_phase30_source_match(trace, phase30)?;
+
+    Ok(Phase43HistoryReplayProofNativeSourceExposureAssessment {
+        exposure_version: STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_VERSION_PHASE43
+            .to_string(),
+        phase43_trace_commitment: trace.trace_commitment.clone(),
+        phase30_source_chain_commitment: phase30.source_chain_commitment.clone(),
+        phase30_step_envelopes_commitment: phase30.step_envelopes_commitment.clone(),
+        total_steps: trace.total_steps,
+        phase30_envelope_count: phase30.envelopes.len(),
+        phase30_manifest_verified: true,
+        source_chain_commitment_matches_trace: true,
+        step_envelopes_commitment_matches_trace: true,
+        phase30_layout_commitment_matches_trace: true,
+        row_envelope_commitments_match_trace: true,
+        row_boundary_commitments_match_trace: true,
+        exposes_phase30_source_chain_commitment: true,
+        exposes_phase30_step_envelopes_commitment: true,
+        exposes_legacy_blake2b_commitments_only: true,
+        exposes_stwo_public_inputs: false,
+        exposes_stwo_trace_commitments: false,
+        exposes_projection_commitment: false,
+        exposes_projection_rows: false,
+        verifier_can_drop_full_phase43_trace: false,
+        missing_proof_native_inputs: vec![
+            "projection_commitment_emitted_by_source_chain".to_string(),
+            "projection_row_commitment_or_openings_in_stwo_field_domain".to_string(),
+            "phase12_to_phase14_history_transform_public_inputs".to_string(),
+            "phase30_step_envelope_commitments_as_stwo_public_inputs".to_string(),
+            "non_blake2b_source_commitment_path_for_verifier".to_string(),
+        ],
+        decision: STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_DECISION_PHASE43.to_string(),
+        required_next_step:
+            "Patch the source side to emit projection_commitment plus Stwo-field public inputs/openings for the carried replay rows; if that requires proving Blake2b/string commitments or full replay, pivot to layerwise/tensor proving."
                 .to_string(),
     })
 }
@@ -748,6 +828,71 @@ fn validate_phase43_projection_envelope(
     Ok(())
 }
 
+fn validate_phase43_phase30_source_match(
+    trace: &Phase43HistoryReplayTrace,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<()> {
+    if phase30.source_chain_commitment != trace.phase30_source_chain_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 proof-native source exposure Phase30 source_chain_commitment does not match the supplied trace"
+                .to_string(),
+        ));
+    }
+    if phase30.step_envelopes_commitment != trace.phase30_step_envelopes_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 proof-native source exposure Phase30 step_envelopes_commitment does not match the supplied trace"
+                .to_string(),
+        ));
+    }
+    if phase30.total_steps != trace.total_steps || phase30.envelopes.len() != trace.rows.len() {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 proof-native source exposure Phase30 row counts do not match the supplied trace"
+                .to_string(),
+        ));
+    }
+    let phase30_layout_commitment = commit_phase12_layout(&phase30.layout);
+    if phase30_layout_commitment != trace.layout_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 proof-native source exposure Phase30 layout commitment does not match the supplied trace"
+                .to_string(),
+        ));
+    }
+    for (row_index, (row, envelope)) in trace.rows.iter().zip(phase30.envelopes.iter()).enumerate()
+    {
+        if envelope.step_index != row_index || row.step_index != row_index {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 43 proof-native source exposure row {row_index} step index mismatch"
+            )));
+        }
+        if envelope.envelope_commitment != row.phase30_step_envelope_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 43 proof-native source exposure row {row_index} envelope commitment does not match the supplied trace"
+            )));
+        }
+        if envelope.input_boundary_commitment != row.phase12_from_state.public_state_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 43 proof-native source exposure row {row_index} input boundary commitment does not match the supplied trace"
+            )));
+        }
+        if envelope.output_boundary_commitment != row.phase12_to_state.public_state_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 43 proof-native source exposure row {row_index} output boundary commitment does not match the supplied trace"
+            )));
+        }
+        if envelope.input_lookup_rows_commitment != row.input_lookup_rows_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 43 proof-native source exposure row {row_index} input lookup commitment does not match the supplied trace"
+            )));
+        }
+        if envelope.output_lookup_rows_commitment != row.output_lookup_rows_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 43 proof-native source exposure row {row_index} output lookup commitment does not match the supplied trace"
+            )));
+        }
+    }
+    Ok(())
+}
+
 fn mix_phase43_projection_claim(
     channel: &mut Blake2sM31Channel,
     projection: &Phase43Projection,
@@ -952,9 +1097,11 @@ fn column_id(id: &str) -> PreProcessedColumnId {
 #[cfg(test)]
 mod tests {
     use super::super::decoding::{
-        commit_phase23_boundary_state, phase14_prepare_decoding_chain,
+        commit_phase12_layout, commit_phase23_boundary_state, commit_phase30_step_envelope,
+        commit_phase30_step_envelope_list, phase14_prepare_decoding_chain,
         phase30_prepare_decoding_step_proof_envelope_manifest,
         prove_phase12_decoding_demo_for_layout_steps, Phase12DecodingLayout,
+        Phase30DecodingStepProofEnvelopeManifest,
         STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30,
     };
     use super::super::STWO_BACKEND_VERSION_PHASE12;
@@ -968,6 +1115,13 @@ mod tests {
     }
 
     fn sample_trace() -> Phase43HistoryReplayTrace {
+        sample_trace_and_phase30().0
+    }
+
+    fn sample_trace_and_phase30() -> (
+        Phase43HistoryReplayTrace,
+        Phase30DecodingStepProofEnvelopeManifest,
+    ) {
         let layout = Phase12DecodingLayout::new(2, 2).expect("valid layout");
         let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 2)
             .expect("generate Phase12 sample chain");
@@ -1023,8 +1177,8 @@ mod tests {
             phase42_witness_commitment: hash32('1'),
             phase29_contract_commitment: hash32('2'),
             phase28_aggregate_commitment: hash32('3'),
-            phase30_source_chain_commitment: phase30.source_chain_commitment,
-            phase30_step_envelopes_commitment: phase30.step_envelopes_commitment,
+            phase30_source_chain_commitment: phase30.source_chain_commitment.clone(),
+            phase30_step_envelopes_commitment: phase30.step_envelopes_commitment.clone(),
             total_steps: rows.len(),
             layout_commitment: first.phase12_from_state.layout_commitment.clone(),
             rolling_kv_pairs: chain.layout.rolling_kv_pairs,
@@ -1064,7 +1218,7 @@ mod tests {
         trace.lookup_rows_commitments_commitment = test_commit_lookup_rows(&trace);
         trace.trace_commitment = commit_phase43_history_replay_trace(&trace).expect("commit trace");
         verify_phase43_history_replay_trace(&trace).expect("sample trace verifies");
-        trace
+        (trace, phase30)
     }
 
     fn recommit_trace(trace: &mut Phase43HistoryReplayTrace) {
@@ -1235,6 +1389,120 @@ mod tests {
         let error = assess_phase43_history_replay_projection_boundary(&trace, &envelope)
             .expect_err("invalid Blake2b claim must be rejected before assessment");
         assert!(error.to_string().contains("Blake2b preimage"));
+    }
+
+    #[test]
+    fn phase43_history_replay_projection_source_exposure_marks_legacy_hash_only_no_go() {
+        let (trace, phase30) = sample_trace_and_phase30();
+        let exposure = assess_phase43_proof_native_source_exposure(&trace, &phase30)
+            .expect("assess proof-native source exposure");
+
+        assert_eq!(
+            exposure.exposure_version,
+            STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_VERSION_PHASE43
+        );
+        assert_eq!(
+            exposure.decision,
+            STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_DECISION_PHASE43
+        );
+        assert_eq!(exposure.phase43_trace_commitment, trace.trace_commitment);
+        assert_eq!(
+            exposure.phase30_source_chain_commitment,
+            trace.phase30_source_chain_commitment
+        );
+        assert_eq!(
+            exposure.phase30_step_envelopes_commitment,
+            trace.phase30_step_envelopes_commitment
+        );
+        assert_eq!(exposure.total_steps, trace.total_steps);
+        assert_eq!(exposure.phase30_envelope_count, trace.rows.len());
+        assert!(exposure.phase30_manifest_verified);
+        assert!(exposure.source_chain_commitment_matches_trace);
+        assert!(exposure.step_envelopes_commitment_matches_trace);
+        assert!(exposure.phase30_layout_commitment_matches_trace);
+        assert!(exposure.row_envelope_commitments_match_trace);
+        assert!(exposure.row_boundary_commitments_match_trace);
+        assert!(exposure.exposes_phase30_source_chain_commitment);
+        assert!(exposure.exposes_phase30_step_envelopes_commitment);
+        assert!(exposure.exposes_legacy_blake2b_commitments_only);
+        assert!(!exposure.exposes_stwo_public_inputs);
+        assert!(!exposure.exposes_stwo_trace_commitments);
+        assert!(!exposure.exposes_projection_commitment);
+        assert!(!exposure.exposes_projection_rows);
+        assert!(!exposure.verifier_can_drop_full_phase43_trace);
+        assert!(exposure
+            .missing_proof_native_inputs
+            .contains(&"projection_commitment_emitted_by_source_chain".to_string()));
+        assert!(exposure
+            .missing_proof_native_inputs
+            .contains(&"non_blake2b_source_commitment_path_for_verifier".to_string()));
+    }
+
+    #[test]
+    fn phase43_history_replay_projection_source_exposure_rejects_stale_phase30_manifest() {
+        let (trace, mut phase30) = sample_trace_and_phase30();
+        phase30.source_chain_commitment = hash32('f');
+
+        let error = assess_phase43_proof_native_source_exposure(&trace, &phase30)
+            .expect_err("stale Phase30 source manifest must be rejected");
+        assert!(error.to_string().contains("source_chain_commitment"));
+    }
+
+    #[test]
+    fn phase43_history_replay_projection_source_exposure_rejects_stale_row_envelope() {
+        let (trace, mut phase30) = sample_trace_and_phase30();
+        phase30.envelopes[0].envelope_commitment = hash32('e');
+
+        let error = assess_phase43_proof_native_source_exposure(&trace, &phase30)
+            .expect_err("stale Phase30 row envelope must be rejected");
+        assert!(
+            error.to_string().contains("commitment"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn phase43_history_replay_projection_source_exposure_rejects_manifest_layout_mismatch() {
+        let (mut trace, mut phase30) = sample_trace_and_phase30();
+        phase30.layout = Phase12DecodingLayout::new(3, 2).expect("alternate valid layout");
+        let stale_layout_commitment = commit_phase12_layout(&phase30.layout);
+        for (row, envelope) in trace.rows.iter_mut().zip(phase30.envelopes.iter_mut()) {
+            envelope.layout_commitment = stale_layout_commitment.clone();
+            envelope.envelope_commitment = commit_phase30_step_envelope(envelope);
+            row.phase30_step_envelope_commitment = envelope.envelope_commitment.clone();
+        }
+        phase30.step_envelopes_commitment = commit_phase30_step_envelope_list(&phase30.envelopes);
+        trace.phase30_step_envelopes_commitment = phase30.step_envelopes_commitment.clone();
+        recommit_trace(&mut trace);
+
+        let error = assess_phase43_proof_native_source_exposure(&trace, &phase30)
+            .expect_err("Phase30 layout mismatch must be rejected");
+        assert!(
+            error.to_string().contains("layout commitment"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn phase43_history_replay_projection_source_exposure_rejects_manifest_boundary_mismatch() {
+        let (mut trace, mut phase30) = sample_trace_and_phase30();
+        phase30.envelopes[0].input_boundary_commitment = hash32('d');
+        phase30.chain_start_boundary_commitment =
+            phase30.envelopes[0].input_boundary_commitment.clone();
+        phase30.envelopes[0].envelope_commitment =
+            commit_phase30_step_envelope(&phase30.envelopes[0]);
+        phase30.step_envelopes_commitment = commit_phase30_step_envelope_list(&phase30.envelopes);
+        trace.rows[0].phase30_step_envelope_commitment =
+            phase30.envelopes[0].envelope_commitment.clone();
+        trace.phase30_step_envelopes_commitment = phase30.step_envelopes_commitment.clone();
+        recommit_trace(&mut trace);
+
+        let error = assess_phase43_proof_native_source_exposure(&trace, &phase30)
+            .expect_err("Phase30 boundary mismatch must be rejected");
+        assert!(
+            error.to_string().contains("input boundary commitment"),
+            "unexpected error: {error}"
+        );
     }
 
     #[test]

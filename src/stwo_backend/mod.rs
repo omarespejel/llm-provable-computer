@@ -174,15 +174,18 @@ pub use decoding::{
 };
 #[cfg(feature = "stwo-backend")]
 pub use history_replay_projection_prover::{
-    assess_phase43_history_replay_projection_boundary,
+    assess_phase43_history_replay_projection_boundary, assess_phase43_proof_native_source_exposure,
     prove_phase43_history_replay_projection_envelope,
     verify_phase43_history_replay_projection_envelope,
     Phase43HistoryReplayProjectionBoundaryAssessment, Phase43HistoryReplayProjectionProofEnvelope,
+    Phase43HistoryReplayProofNativeSourceExposureAssessment,
     STWO_HISTORY_REPLAY_PROJECTION_BOUNDARY_ASSESSMENT_VERSION_PHASE43,
     STWO_HISTORY_REPLAY_PROJECTION_BOUNDARY_DECISION_PHASE43,
     STWO_HISTORY_REPLAY_PROJECTION_PROOF_VERSION_PHASE43,
     STWO_HISTORY_REPLAY_PROJECTION_SEMANTIC_SCOPE_PHASE43,
     STWO_HISTORY_REPLAY_PROJECTION_STATEMENT_VERSION_PHASE43,
+    STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_DECISION_PHASE43,
+    STWO_HISTORY_REPLAY_PROOF_NATIVE_SOURCE_EXPOSURE_VERSION_PHASE43,
 };
 pub use layout::{
     phase2_fixture_matrix, phase2_module_layout, phase2_supported_mnemonics,
