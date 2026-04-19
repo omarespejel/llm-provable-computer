@@ -130,14 +130,30 @@ two boundary domains are recomputable from exposed preimages, not when a
 witness merely says they are compatible.
 
 The Rust Phase42 source-bound implementation makes this gate stricter than the
-synthetic JSON checker. It can construct and verify the evidence object, but the
-expensive live shared-proof test currently rejects real Phase12/28/29/30 sources:
+synthetic JSON checker. It can construct and verify the boundary-preimage
+evidence object, but that object still rejects real Phase12/28/29/30 sources:
 Phase12 and Phase14 share the carried execution fields, but their
 `kv_history_commitment` fields are different commitment domains. Phase12 uses a
 linear history chain, while Phase14 uses the chunked history accumulator carried
-into Phase23. Therefore the current Rust result is not `stay_current_path`; the
-next patch must either expose a real history-equivalence witness/preimage or
-the route remains blocked under Issue #180.
+into Phase23.
+
+The next minimal patch is a separate Phase42 history-equivalence witness:
+
+```text
+witness_version = phase42-boundary-history-equivalence-witness-v1
+relation_outcome = deterministic_transform
+transform_rule = phase12-chain-replay-to-phase14-chunked-history-v1
+full_history_replay_required = true
+cryptographic_compression_claimed = false
+```
+
+This witness does not weaken the boundary-preimage evidence. Instead, it
+replays the real Phase12 chain into the Phase14 chunked-history construction,
+checks that the replayed Phase14 start/end states are exactly the Phase28 global
+boundary preimages, and binds the append stream plus lookup-row replay with
+commitments. If the live source stack accepts this witness, the current path is
+not killed, but it is still not a final breakthrough result: Phase43 must
+replace full replay with a compact proof or the route remains too expensive.
 
 ## Required Checker Behavior
 
@@ -150,6 +166,7 @@ The Phase42 checker must:
 - verify Phase41 internal commitments when a witness is supplied;
 - verify Phase41 source binding against Phase29 and Phase30;
 - verify optional Phase42 boundary-preimage evidence;
+- verify optional Phase42 history-equivalence witness against real Phase12/28/29/30 sources;
 - reject stale Phase29 or Phase30 commitments;
 - reject swapped or stale Phase41 boundaries;
 - reject Phase12/Phase14 preimages that do not recompute to the Phase30/Phase29
@@ -177,6 +194,11 @@ Stay on the current route only if a later Phase42 update can report:
 
 `equality` is also accepted, but it means Phase31 direct binding should be used
 instead of Phase41 translation.
+
+A full-replay `deterministic_transform` witness is an intermediate keep-alive
+signal, not final success. It can justify proceeding to Phase43 only if it is
+source-bound, mutation-tested, and explicit that no cryptographic compression is
+claimed.
 
 ## Fail Criteria
 

@@ -8,8 +8,8 @@ use crate::proof::{ExecutionClaimCommitments, StarkProofBackend, VanillaStarkExe
 #[cfg(feature = "stwo-backend")]
 use super::decoding::{
     commit_phase12_public_state, commit_phase14_public_state, commit_phase23_boundary_state,
-    phase28_global_boundary_preimage_states, read_json_bytes_with_limit,
-    verify_phase12_decoding_chain,
+    phase14_prepare_decoding_chain, phase28_global_boundary_preimage_states,
+    read_json_bytes_with_limit, verify_phase12_decoding_chain, verify_phase14_decoding_chain,
     verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation,
     verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase30_decoding_step_proof_envelope_manifest,
@@ -76,6 +76,16 @@ pub const STWO_BOUNDARY_PREIMAGE_RELATION_PHASE42: &str = "hash_preimage_relatio
 pub const STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42: usize = 180;
 #[cfg(feature = "stwo-backend")]
 const MAX_PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_JSON_BYTES: usize = 1024 * 1024;
+#[cfg(feature = "stwo-backend")]
+pub const STWO_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_VERSION_PHASE42: &str =
+    "phase42-boundary-history-equivalence-witness-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42: &str = "deterministic_transform";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_BOUNDARY_HISTORY_EQUIVALENCE_RULE_PHASE42: &str =
+    "phase12-chain-replay-to-phase14-chunked-history-v1";
+#[cfg(feature = "stwo-backend")]
+const MAX_PHASE42_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_JSON_BYTES: usize = 1024 * 1024;
 #[cfg(feature = "stwo-backend")]
 pub const STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32: &str =
     "stwo-phase32-recursive-compression-statement-contract-v1";
@@ -372,6 +382,43 @@ pub struct Phase42BoundaryPreimageEvidence {
     pub phase12_end_state: Phase12DecodingState,
     pub phase14_start_state: Phase14DecodingState,
     pub phase14_end_state: Phase14DecodingState,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase42BoundaryHistoryEquivalenceWitness {
+    pub issue: usize,
+    pub witness_version: String,
+    pub relation_outcome: String,
+    pub transform_rule: String,
+    pub proof_backend: StarkProofBackend,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub phase29_contract_commitment: String,
+    pub phase28_aggregate_commitment: String,
+    pub phase30_source_chain_commitment: String,
+    pub phase30_step_envelopes_commitment: String,
+    pub total_steps: usize,
+    pub layout_commitment: String,
+    pub rolling_kv_pairs: usize,
+    pub pair_width: usize,
+    pub phase12_start_public_state_commitment: String,
+    pub phase12_end_public_state_commitment: String,
+    pub phase14_start_boundary_commitment: String,
+    pub phase14_end_boundary_commitment: String,
+    pub phase12_start_history_commitment: String,
+    pub phase12_end_history_commitment: String,
+    pub phase14_start_history_commitment: String,
+    pub phase14_end_history_commitment: String,
+    pub initial_kv_cache_commitment: String,
+    pub appended_pairs_commitment: String,
+    pub appended_pair_count: usize,
+    pub lookup_rows_commitments_commitment: String,
+    pub lookup_rows_commitment_count: usize,
+    pub full_history_replay_required: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub witness_commitment: String,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -4829,6 +4876,394 @@ pub fn verify_phase42_boundary_preimage_evidence_against_sources(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn commit_phase42_boundary_history_equivalence_witness(
+    witness: &Phase42BoundaryHistoryEquivalenceWitness,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 42 history-equivalence witness commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase42-boundary-history-equivalence-witness");
+    phase29_update_usize(&mut hasher, witness.issue);
+    phase29_update_len_prefixed(&mut hasher, witness.witness_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.relation_outcome.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.transform_rule.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.proof_backend.to_string().as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.proof_backend_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.statement_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.phase29_contract_commitment.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.phase28_aggregate_commitment.as_bytes());
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase30_source_chain_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase30_step_envelopes_commitment.as_bytes(),
+    );
+    phase29_update_usize(&mut hasher, witness.total_steps);
+    phase29_update_len_prefixed(&mut hasher, witness.layout_commitment.as_bytes());
+    phase29_update_usize(&mut hasher, witness.rolling_kv_pairs);
+    phase29_update_usize(&mut hasher, witness.pair_width);
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase12_start_public_state_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase12_end_public_state_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase14_start_boundary_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase14_end_boundary_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase12_start_history_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase12_end_history_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase14_start_history_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase14_end_history_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(&mut hasher, witness.initial_kv_cache_commitment.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.appended_pairs_commitment.as_bytes());
+    phase29_update_usize(&mut hasher, witness.appended_pair_count);
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.lookup_rows_commitments_commitment.as_bytes(),
+    );
+    phase29_update_usize(&mut hasher, witness.lookup_rows_commitment_count);
+    phase29_update_bool(&mut hasher, witness.full_history_replay_required);
+    phase29_update_bool(&mut hasher, witness.cryptographic_compression_claimed);
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 42 history-equivalence witness commitment hash: {err}"
+        ))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase42_prepare_boundary_history_equivalence_witness(
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase42BoundaryHistoryEquivalenceWitness> {
+    phase42_verify_source_stack(chain, phase28, contract, phase30)?;
+
+    let first_step = chain.steps.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness requires a Phase 12 chain with at least one step"
+                .to_string(),
+        )
+    })?;
+    let last_step = chain
+        .steps
+        .last()
+        .expect("checked non-empty Phase 12 chain");
+
+    let replayed_phase14 = phase14_prepare_decoding_chain(chain)?;
+    verify_phase14_decoding_chain(&replayed_phase14)?;
+    let replayed_first_step = replayed_phase14.steps.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness requires a replayed Phase 14 chain with at least one step"
+                .to_string(),
+        )
+    })?;
+    let replayed_last_step = replayed_phase14
+        .steps
+        .last()
+        .expect("checked non-empty Phase 14 chain");
+    let replayed_phase14_start_state = replayed_first_step.from_state.clone();
+    let replayed_phase14_end_state = replayed_last_step.to_state.clone();
+    let (phase28_phase14_start_state, phase28_phase14_end_state) =
+        phase28_global_boundary_preimage_states(phase28)?;
+    if replayed_phase14_start_state != phase28_phase14_start_state {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness replayed Phase14 start state does not match the Phase28 global start preimage"
+                .to_string(),
+        ));
+    }
+    if replayed_phase14_end_state != phase28_phase14_end_state {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness replayed Phase14 end state does not match the Phase28 global end preimage"
+                .to_string(),
+        ));
+    }
+
+    phase42_shared_core_matches_with_history_bridge(
+        "start",
+        &first_step.from_state,
+        &replayed_phase14_start_state,
+    )?;
+    phase42_shared_core_matches_with_history_bridge(
+        "end",
+        &last_step.to_state,
+        &replayed_phase14_end_state,
+    )?;
+
+    let phase14_start_boundary = commit_phase23_boundary_state(&replayed_phase14_start_state);
+    let phase14_end_boundary = commit_phase23_boundary_state(&replayed_phase14_end_state);
+    if phase14_start_boundary != phase28.global_start_state_commitment
+        || phase14_start_boundary != contract.global_start_state_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness replayed Phase14 start state does not bind Phase28/29 start boundary"
+                .to_string(),
+        ));
+    }
+    if phase14_end_boundary != phase28.global_end_state_commitment
+        || phase14_end_boundary != contract.global_end_state_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness replayed Phase14 end state does not bind Phase28/29 end boundary"
+                .to_string(),
+        ));
+    }
+
+    let (appended_pairs_commitment, appended_pair_count) =
+        phase42_commit_source_appended_pairs(chain)?;
+    let (lookup_rows_commitments_commitment, lookup_rows_commitment_count) =
+        phase42_commit_source_lookup_rows_commitments(chain)?;
+    let mut witness = Phase42BoundaryHistoryEquivalenceWitness {
+        issue: STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
+        witness_version: STWO_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_VERSION_PHASE42.to_string(),
+        relation_outcome: STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42.to_string(),
+        transform_rule: STWO_BOUNDARY_HISTORY_EQUIVALENCE_RULE_PHASE42.to_string(),
+        proof_backend: StarkProofBackend::Stwo,
+        proof_backend_version: phase30.proof_backend_version.clone(),
+        statement_version: phase30.statement_version.clone(),
+        phase29_contract_commitment: contract.input_contract_commitment.clone(),
+        phase28_aggregate_commitment: phase28
+            .aggregated_chained_folded_interval_accumulator_commitment
+            .clone(),
+        phase30_source_chain_commitment: phase30.source_chain_commitment.clone(),
+        phase30_step_envelopes_commitment: phase30.step_envelopes_commitment.clone(),
+        total_steps: phase30.total_steps,
+        layout_commitment: first_step.from_state.layout_commitment.clone(),
+        rolling_kv_pairs: chain.layout.rolling_kv_pairs,
+        pair_width: chain.layout.pair_width,
+        phase12_start_public_state_commitment: first_step
+            .from_state
+            .public_state_commitment
+            .clone(),
+        phase12_end_public_state_commitment: last_step.to_state.public_state_commitment.clone(),
+        phase14_start_boundary_commitment: phase14_start_boundary,
+        phase14_end_boundary_commitment: phase14_end_boundary,
+        phase12_start_history_commitment: first_step.from_state.kv_history_commitment.clone(),
+        phase12_end_history_commitment: last_step.to_state.kv_history_commitment.clone(),
+        phase14_start_history_commitment: replayed_phase14_start_state.kv_history_commitment,
+        phase14_end_history_commitment: replayed_phase14_end_state.kv_history_commitment,
+        initial_kv_cache_commitment: first_step.from_state.kv_cache_commitment.clone(),
+        appended_pairs_commitment,
+        appended_pair_count,
+        lookup_rows_commitments_commitment,
+        lookup_rows_commitment_count,
+        full_history_replay_required: true,
+        cryptographic_compression_claimed: false,
+        witness_commitment: String::new(),
+    };
+    witness.witness_commitment = commit_phase42_boundary_history_equivalence_witness(&witness)?;
+    verify_phase42_boundary_history_equivalence_witness(&witness)?;
+    Ok(witness)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase42_boundary_history_equivalence_witness(
+    witness: &Phase42BoundaryHistoryEquivalenceWitness,
+) -> Result<()> {
+    if witness.issue != STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness must reference Issue #{}, got #{}",
+            STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42, witness.issue
+        )));
+    }
+    if witness.witness_version != STWO_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_VERSION_PHASE42 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness version `{}` does not match expected `{}`",
+            witness.witness_version, STWO_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_VERSION_PHASE42
+        )));
+    }
+    if witness.relation_outcome != STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness relation `{}` does not match expected `{}`",
+            witness.relation_outcome, STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42
+        )));
+    }
+    if witness.transform_rule != STWO_BOUNDARY_HISTORY_EQUIVALENCE_RULE_PHASE42 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness transform rule `{}` does not match expected `{}`",
+            witness.transform_rule, STWO_BOUNDARY_HISTORY_EQUIVALENCE_RULE_PHASE42
+        )));
+    }
+    if witness.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness requires `stwo` backend, got `{}`",
+            witness.proof_backend
+        )));
+    }
+    if witness.proof_backend_version != STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness requires proof backend version `{}`, got `{}`",
+            STWO_BACKEND_VERSION_PHASE12, witness.proof_backend_version
+        )));
+    }
+    if witness.statement_version != CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness requires statement version `{}`, got `{}`",
+            CLAIM_STATEMENT_VERSION_V1, witness.statement_version
+        )));
+    }
+    if witness.total_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness requires at least one decode step".to_string(),
+        ));
+    }
+    if witness.rolling_kv_pairs == 0 || witness.pair_width == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness requires non-zero layout widths".to_string(),
+        ));
+    }
+    if witness.appended_pair_count != witness.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness appended_pair_count={} must equal total_steps={}",
+            witness.appended_pair_count, witness.total_steps
+        )));
+    }
+    let expected_lookup_count = witness.total_steps.checked_add(1).ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness lookup count overflowed".to_string(),
+        )
+    })?;
+    if witness.lookup_rows_commitment_count != expected_lookup_count {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness lookup_rows_commitment_count={} must equal total_steps+1={expected_lookup_count}",
+            witness.lookup_rows_commitment_count
+        )));
+    }
+    if !witness.full_history_replay_required {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness must declare full_history_replay_required=true until a compact proof replaces replay"
+                .to_string(),
+        ));
+    }
+    if witness.cryptographic_compression_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness must not claim cryptographic compression"
+                .to_string(),
+        ));
+    }
+    for (field, value) in [
+        (
+            "phase29_contract_commitment",
+            witness.phase29_contract_commitment.as_str(),
+        ),
+        (
+            "phase28_aggregate_commitment",
+            witness.phase28_aggregate_commitment.as_str(),
+        ),
+        (
+            "phase30_source_chain_commitment",
+            witness.phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase30_step_envelopes_commitment",
+            witness.phase30_step_envelopes_commitment.as_str(),
+        ),
+        ("layout_commitment", witness.layout_commitment.as_str()),
+        (
+            "phase12_start_public_state_commitment",
+            witness.phase12_start_public_state_commitment.as_str(),
+        ),
+        (
+            "phase12_end_public_state_commitment",
+            witness.phase12_end_public_state_commitment.as_str(),
+        ),
+        (
+            "phase14_start_boundary_commitment",
+            witness.phase14_start_boundary_commitment.as_str(),
+        ),
+        (
+            "phase14_end_boundary_commitment",
+            witness.phase14_end_boundary_commitment.as_str(),
+        ),
+        (
+            "phase12_start_history_commitment",
+            witness.phase12_start_history_commitment.as_str(),
+        ),
+        (
+            "phase12_end_history_commitment",
+            witness.phase12_end_history_commitment.as_str(),
+        ),
+        (
+            "phase14_start_history_commitment",
+            witness.phase14_start_history_commitment.as_str(),
+        ),
+        (
+            "phase14_end_history_commitment",
+            witness.phase14_end_history_commitment.as_str(),
+        ),
+        (
+            "initial_kv_cache_commitment",
+            witness.initial_kv_cache_commitment.as_str(),
+        ),
+        (
+            "appended_pairs_commitment",
+            witness.appended_pairs_commitment.as_str(),
+        ),
+        (
+            "lookup_rows_commitments_commitment",
+            witness.lookup_rows_commitments_commitment.as_str(),
+        ),
+        ("witness_commitment", witness.witness_commitment.as_str()),
+    ] {
+        phase42_require_hash32(&format!("history_equivalence.{field}"), value)?;
+    }
+    let expected = commit_phase42_boundary_history_equivalence_witness(witness)?;
+    if witness.witness_commitment != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness commitment does not match recomputed `{expected}`"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase42_boundary_history_equivalence_witness_against_sources(
+    witness: &Phase42BoundaryHistoryEquivalenceWitness,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<()> {
+    verify_phase42_boundary_history_equivalence_witness(witness)?;
+    let expected =
+        phase42_prepare_boundary_history_equivalence_witness(chain, phase28, contract, phase30)?;
+    if witness != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness does not match the recomputed Phase12 replay over supplied sources"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn parse_phase42_boundary_preimage_evidence_json(
     json: &str,
 ) -> Result<Phase42BoundaryPreimageEvidence> {
@@ -4843,6 +5278,23 @@ pub fn parse_phase42_boundary_preimage_evidence_json(
         serde_json::from_str(json).map_err(phase42_json_error)?;
     verify_phase42_boundary_preimage_evidence(&evidence)?;
     Ok(evidence)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn parse_phase42_boundary_history_equivalence_witness_json(
+    json: &str,
+) -> Result<Phase42BoundaryHistoryEquivalenceWitness> {
+    if json.len() > MAX_PHASE42_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_JSON_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness JSON is {} bytes, exceeding the limit of {} bytes",
+            json.len(),
+            MAX_PHASE42_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_JSON_BYTES
+        )));
+    }
+    let witness: Phase42BoundaryHistoryEquivalenceWitness =
+        serde_json::from_str(json).map_err(phase42_json_error)?;
+    verify_phase42_boundary_history_equivalence_witness(&witness)?;
+    Ok(witness)
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -4861,6 +5313,21 @@ pub fn parse_phase42_boundary_preimage_evidence_json_against_sources(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn parse_phase42_boundary_history_equivalence_witness_json_against_sources(
+    json: &str,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase42BoundaryHistoryEquivalenceWitness> {
+    let witness = parse_phase42_boundary_history_equivalence_witness_json(json)?;
+    verify_phase42_boundary_history_equivalence_witness_against_sources(
+        &witness, chain, phase28, contract, phase30,
+    )?;
+    Ok(witness)
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn load_phase42_boundary_preimage_evidence(
     path: &Path,
 ) -> Result<Phase42BoundaryPreimageEvidence> {
@@ -4876,6 +5343,21 @@ pub fn load_phase42_boundary_preimage_evidence(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn load_phase42_boundary_history_equivalence_witness(
+    path: &Path,
+) -> Result<Phase42BoundaryHistoryEquivalenceWitness> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE42_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_JSON_BYTES,
+        "Phase 42 history-equivalence witness",
+    )?;
+    let witness: Phase42BoundaryHistoryEquivalenceWitness =
+        serde_json::from_slice(&bytes).map_err(phase42_json_error)?;
+    verify_phase42_boundary_history_equivalence_witness(&witness)?;
+    Ok(witness)
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn load_phase42_boundary_preimage_evidence_against_sources(
     path: &Path,
     chain: &Phase12DecodingChainManifest,
@@ -4888,6 +5370,21 @@ pub fn load_phase42_boundary_preimage_evidence_against_sources(
         &evidence, chain, phase28, contract, phase30,
     )?;
     Ok(evidence)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn load_phase42_boundary_history_equivalence_witness_against_sources(
+    path: &Path,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase42BoundaryHistoryEquivalenceWitness> {
+    let witness = load_phase42_boundary_history_equivalence_witness(path)?;
+    verify_phase42_boundary_history_equivalence_witness_against_sources(
+        &witness, chain, phase28, contract, phase30,
+    )?;
+    Ok(witness)
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -4939,6 +5436,93 @@ fn phase42_verify_source_stack(
         )));
     }
     Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_commit_source_appended_pairs(
+    chain: &Phase12DecodingChainManifest,
+) -> Result<(String, usize)> {
+    let latest_cached_pair_range = chain.layout.latest_cached_pair_range()?;
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 42 appended-pairs commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase42-source-appended-pairs");
+    phase29_update_len_prefixed(
+        &mut hasher,
+        chain
+            .steps
+            .first()
+            .map(|step| step.from_state.layout_commitment.as_bytes())
+            .unwrap_or_default(),
+    );
+    phase29_update_usize(&mut hasher, chain.layout.pair_width);
+    phase29_update_usize(&mut hasher, chain.steps.len());
+    for (step_index, step) in chain.steps.iter().enumerate() {
+        let pair = &step.proof.claim.final_state.memory[latest_cached_pair_range.clone()];
+        if pair.len() != chain.layout.pair_width {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 42 source appended pair {step_index} has {} values, expected pair_width={}",
+                pair.len(),
+                chain.layout.pair_width
+            )));
+        }
+        phase29_update_usize(&mut hasher, step_index);
+        for value in pair {
+            hasher.update(&value.to_le_bytes());
+        }
+    }
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 42 appended-pairs commitment hash: {err}"
+        ))
+    })?;
+    Ok((phase29_lower_hex(&out), chain.steps.len()))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_commit_source_lookup_rows_commitments(
+    chain: &Phase12DecodingChainManifest,
+) -> Result<(String, usize)> {
+    let first_step = chain.steps.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 source lookup-row commitment requires a non-empty chain".to_string(),
+        )
+    })?;
+    let mut commitments = Vec::with_capacity(chain.steps.len() + 1);
+    commitments.push(first_step.from_state.lookup_rows_commitment.as_str());
+    for step in &chain.steps {
+        commitments.push(step.to_state.lookup_rows_commitment.as_str());
+    }
+
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 42 lookup-row replay commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase42-source-lookup-rows");
+    phase29_update_len_prefixed(
+        &mut hasher,
+        first_step.from_state.layout_commitment.as_bytes(),
+    );
+    phase29_update_usize(&mut hasher, commitments.len());
+    for (index, commitment) in commitments.iter().enumerate() {
+        phase42_require_hash32(
+            &format!("history_equivalence.lookup_rows[{index}]"),
+            commitment,
+        )?;
+        phase29_update_usize(&mut hasher, index);
+        phase29_update_len_prefixed(&mut hasher, commitment.as_bytes());
+    }
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 42 lookup-row replay commitment hash: {err}"
+        ))
+    })?;
+    Ok((phase29_lower_hex(&out), commitments.len()))
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -5069,6 +5653,45 @@ fn phase42_require_phase14_state_hashes(label: &str, state: &Phase14DecodingStat
         ),
     ] {
         phase42_require_hash32(&format!("{label}.{field}"), value)?;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_shared_core_matches_with_history_bridge(
+    label: &str,
+    phase12: &Phase12DecodingState,
+    phase14: &Phase14DecodingState,
+) -> Result<()> {
+    if phase12.step_index != phase14.step_index {
+        return phase42_shared_core_mismatch(label, "step_index");
+    }
+    if phase12.position != phase14.position {
+        return phase42_shared_core_mismatch(label, "position");
+    }
+    if phase12.layout_commitment != phase14.layout_commitment {
+        return phase42_shared_core_mismatch(label, "layout_commitment");
+    }
+    if phase12.persistent_state_commitment != phase14.persistent_state_commitment {
+        return phase42_shared_core_mismatch(label, "persistent_state_commitment");
+    }
+    if phase12.kv_history_length != phase14.kv_history_length {
+        return phase42_shared_core_mismatch(label, "kv_history_length");
+    }
+    if phase12.kv_cache_commitment != phase14.kv_cache_commitment {
+        return phase42_shared_core_mismatch(label, "kv_cache_commitment");
+    }
+    if phase12.incoming_token_commitment != phase14.incoming_token_commitment {
+        return phase42_shared_core_mismatch(label, "incoming_token_commitment");
+    }
+    if phase12.query_commitment != phase14.query_commitment {
+        return phase42_shared_core_mismatch(label, "query_commitment");
+    }
+    if phase12.output_commitment != phase14.output_commitment {
+        return phase42_shared_core_mismatch(label, "output_commitment");
+    }
+    if phase12.lookup_rows_commitment != phase14.lookup_rows_commitment {
+        return phase42_shared_core_mismatch(label, "lookup_rows_commitment");
     }
     Ok(())
 }
@@ -8778,6 +9401,46 @@ mod tests {
     }
 
     #[cfg(feature = "stwo-backend")]
+    fn phase42_sample_history_equivalence_witness() -> Phase42BoundaryHistoryEquivalenceWitness {
+        let mut witness = Phase42BoundaryHistoryEquivalenceWitness {
+            issue: STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
+            witness_version: STWO_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_VERSION_PHASE42.to_string(),
+            relation_outcome: STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42.to_string(),
+            transform_rule: STWO_BOUNDARY_HISTORY_EQUIVALENCE_RULE_PHASE42.to_string(),
+            proof_backend: StarkProofBackend::Stwo,
+            proof_backend_version: STWO_BACKEND_VERSION_PHASE12.to_string(),
+            statement_version: CLAIM_STATEMENT_VERSION_V1.to_string(),
+            phase29_contract_commitment: phase42_hash('1'),
+            phase28_aggregate_commitment: phase42_hash('2'),
+            phase30_source_chain_commitment: phase42_hash('3'),
+            phase30_step_envelopes_commitment: phase42_hash('4'),
+            total_steps: 2,
+            layout_commitment: phase42_hash('5'),
+            rolling_kv_pairs: 2,
+            pair_width: 2,
+            phase12_start_public_state_commitment: phase42_hash('6'),
+            phase12_end_public_state_commitment: phase42_hash('7'),
+            phase14_start_boundary_commitment: phase42_hash('8'),
+            phase14_end_boundary_commitment: phase42_hash('9'),
+            phase12_start_history_commitment: phase42_hash('a'),
+            phase12_end_history_commitment: phase42_hash('b'),
+            phase14_start_history_commitment: phase42_hash('c'),
+            phase14_end_history_commitment: phase42_hash('d'),
+            initial_kv_cache_commitment: phase42_hash('e'),
+            appended_pairs_commitment: phase42_hash('f'),
+            appended_pair_count: 2,
+            lookup_rows_commitments_commitment: phase42_hash('0'),
+            lookup_rows_commitment_count: 3,
+            full_history_replay_required: true,
+            cryptographic_compression_claimed: false,
+            witness_commitment: String::new(),
+        };
+        witness.witness_commitment = commit_phase42_boundary_history_equivalence_witness(&witness)
+            .expect("commit sample Phase42 history witness");
+        witness
+    }
+
+    #[cfg(feature = "stwo-backend")]
     #[test]
     fn phase42_boundary_preimage_evidence_accepts_hash_preimage_relation_shape() {
         let evidence = phase42_sample_evidence();
@@ -8833,6 +9496,82 @@ mod tests {
 
     #[cfg(feature = "stwo-backend")]
     #[test]
+    fn phase42_history_equivalence_witness_accepts_replay_transform_shape() {
+        let witness = phase42_sample_history_equivalence_witness();
+        verify_phase42_boundary_history_equivalence_witness(&witness)
+            .expect("verify standalone Phase42 history-equivalence witness");
+
+        assert_eq!(
+            witness.relation_outcome,
+            STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42
+        );
+        assert!(witness.full_history_replay_required);
+        assert!(!witness.cryptographic_compression_claimed);
+
+        let json = serde_json::to_string_pretty(&witness)
+            .expect("serialize Phase42 history-equivalence witness");
+        let parsed = parse_phase42_boundary_history_equivalence_witness_json(&json)
+            .expect("parse standalone Phase42 history-equivalence witness");
+        assert_eq!(parsed, witness);
+
+        let path = std::env::temp_dir().join(format!(
+            "phase42-history-equivalence-witness-{}.json",
+            std::process::id()
+        ));
+        std::fs::write(&path, json).expect("write Phase42 history-equivalence witness temp file");
+        let loaded = load_phase42_boundary_history_equivalence_witness(&path)
+            .expect("load Phase42 history-equivalence witness file");
+        std::fs::remove_file(&path).expect("remove Phase42 history-equivalence witness temp file");
+        assert_eq!(loaded, witness);
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase42_history_equivalence_witness_rejects_compression_claim_and_tamper() {
+        let mut witness = phase42_sample_history_equivalence_witness();
+        witness.cryptographic_compression_claimed = true;
+        witness.witness_commitment = commit_phase42_boundary_history_equivalence_witness(&witness)
+            .expect("recommit tampered compression claim");
+        let err = verify_phase42_boundary_history_equivalence_witness(&witness)
+            .expect_err("Phase42 replay witness must not claim compression");
+        assert!(err.to_string().contains("cryptographic compression"));
+
+        let mut witness = phase42_sample_history_equivalence_witness();
+        witness.appended_pair_count += 1;
+        witness.witness_commitment = commit_phase42_boundary_history_equivalence_witness(&witness)
+            .expect("recommit tampered pair count");
+        let err = verify_phase42_boundary_history_equivalence_witness(&witness)
+            .expect_err("Phase42 replay witness must reject pair-count drift");
+        assert!(err.to_string().contains("appended_pair_count"));
+
+        let mut witness = phase42_sample_history_equivalence_witness();
+        witness.phase14_end_history_commitment = phase42_hash('a');
+        let err = verify_phase42_boundary_history_equivalence_witness(&witness)
+            .expect_err("Phase42 replay witness must reject stale witness commitment");
+        assert!(err.to_string().contains("witness commitment"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase42_history_equivalence_witness_rejects_unknown_and_oversized_json() {
+        let witness = phase42_sample_history_equivalence_witness();
+        let mut value =
+            serde_json::to_value(&witness).expect("serialize Phase42 history witness value");
+        value["unexpected_phase42_history_field"] = serde_json::json!(true);
+        let json =
+            serde_json::to_string(&value).expect("serialize unknown-field Phase42 history JSON");
+        let err = parse_phase42_boundary_history_equivalence_witness_json(&json)
+            .expect_err("unknown Phase42 history fields must be rejected");
+        assert!(err.to_string().contains("unknown field"));
+
+        let json = " ".repeat(MAX_PHASE42_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_JSON_BYTES + 1);
+        let err = parse_phase42_boundary_history_equivalence_witness_json(&json)
+            .expect_err("oversized Phase42 history witness JSON must fail before serde parsing");
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
     fn phase42_boundary_preimage_evidence_rejects_synthetic_phase28_shell_sources() {
         let layout =
             crate::stwo_backend::Phase12DecodingLayout::new(2, 2).expect("valid Phase 12 layout");
@@ -8864,7 +9603,7 @@ mod tests {
     #[cfg(feature = "stwo-backend")]
     #[test]
     #[ignore = "generates and checks a 16-step shared-proof Phase12/28/29/30 source; run explicitly for the expensive Phase42 kill decision"]
-    fn phase42_live_shared_phase28_phase30_sources_expose_history_commitment_gap() {
+    fn phase42_live_shared_phase28_phase30_sources_expose_history_gap_and_accept_replay_witness() {
         let (chain, phase28, phase30) = prove_phase42_boundary_preimage_shared_proof_demo()
             .expect("derive shared Phase12/28/30 boundary-preimage sources");
         let phase29 =
@@ -8880,6 +9619,36 @@ mod tests {
             .expect_err("live Phase42 source stack must expose the Phase12/Phase14 history gap");
         let message = err.to_string();
         assert!(message.contains("kv_history_commitment"), "{message}");
+
+        let witness = phase42_prepare_boundary_history_equivalence_witness(
+            &chain, &phase28, &phase29, &phase30,
+        )
+        .expect("live Phase42 source stack must accept full-replay history equivalence");
+        assert_eq!(
+            witness.relation_outcome,
+            STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42
+        );
+        assert!(witness.full_history_replay_required);
+        assert!(!witness.cryptographic_compression_claimed);
+        assert_ne!(
+            witness.phase12_end_history_commitment,
+            witness.phase14_end_history_commitment
+        );
+        verify_phase42_boundary_history_equivalence_witness_against_sources(
+            &witness, &chain, &phase28, &phase29, &phase30,
+        )
+        .expect("source-bound Phase42 history-equivalence witness must verify");
+
+        let mut tampered = witness.clone();
+        tampered.appended_pairs_commitment = phase42_hash('e');
+        tampered.witness_commitment =
+            commit_phase42_boundary_history_equivalence_witness(&tampered)
+                .expect("recommit tampered Phase42 history-equivalence witness");
+        let err = verify_phase42_boundary_history_equivalence_witness_against_sources(
+            &tampered, &chain, &phase28, &phase29, &phase30,
+        )
+        .expect_err("source-bound Phase42 history witness must reject appended-pair drift");
+        assert!(err.to_string().contains("does not match the recomputed"));
     }
 
     #[cfg(feature = "stwo-backend")]
