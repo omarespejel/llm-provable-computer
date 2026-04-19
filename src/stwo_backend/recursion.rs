@@ -7,13 +7,19 @@ use crate::proof::{ExecutionClaimCommitments, StarkProofBackend, VanillaStarkExe
 
 #[cfg(feature = "stwo-backend")]
 use super::decoding::{
-    read_json_bytes_with_limit,
+    commit_phase12_public_state, commit_phase14_public_state, commit_phase23_boundary_state,
+    phase28_global_boundary_preimage_states, read_json_bytes_with_limit,
+    verify_phase12_decoding_chain,
+    verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation,
     verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase30_decoding_step_proof_envelope_manifest,
+    verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
+    Phase12DecodingChainManifest, Phase12DecodingState, Phase14DecodingState,
     Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
     Phase30DecodingStepProofEnvelopeManifest,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE28,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
+    STWO_DECODING_STATE_VERSION_PHASE12, STWO_DECODING_STATE_VERSION_PHASE14,
     STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30,
     STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30,
     STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30, STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE,
@@ -61,6 +67,15 @@ pub const STWO_BOUNDARY_TRANSLATION_RULE_PHASE41: &str =
     "explicit-phase29-phase30-boundary-pair-v1";
 #[cfg(feature = "stwo-backend")]
 const MAX_PHASE41_BOUNDARY_TRANSLATION_WITNESS_JSON_BYTES: usize = 1024 * 1024;
+#[cfg(feature = "stwo-backend")]
+pub const STWO_BOUNDARY_PREIMAGE_EVIDENCE_VERSION_PHASE42: &str =
+    "phase42-boundary-preimage-evidence-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_BOUNDARY_PREIMAGE_RELATION_PHASE42: &str = "hash_preimage_relation";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42: usize = 180;
+#[cfg(feature = "stwo-backend")]
+const MAX_PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_JSON_BYTES: usize = 1024 * 1024;
 #[cfg(feature = "stwo-backend")]
 pub const STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32: &str =
     "stwo-phase32-recursive-compression-statement-contract-v1";
@@ -344,6 +359,19 @@ pub struct Phase41BoundaryTranslationWitnessArtifact {
     pub start_boundary_translation_commitment: String,
     pub end_boundary_translation_commitment: String,
     pub boundary_translation_witness_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase42BoundaryPreimageEvidence {
+    pub issue: usize,
+    pub evidence_version: String,
+    pub relation_outcome: String,
+    pub phase12_start_state: Phase12DecodingState,
+    pub phase12_end_state: Phase12DecodingState,
+    pub phase14_start_state: Phase14DecodingState,
+    pub phase14_end_state: Phase14DecodingState,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -4627,6 +4655,474 @@ pub fn verify_phase41_boundary_translation_witness_against_sources(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn phase42_prepare_boundary_preimage_evidence(
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase42BoundaryPreimageEvidence> {
+    phase42_verify_source_stack(chain, phase28, contract, phase30)?;
+    let first_step = chain.steps.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence requires a Phase 12 chain with at least one step"
+                .to_string(),
+        )
+    })?;
+    let last_step = chain
+        .steps
+        .last()
+        .expect("checked non-empty Phase 12 chain");
+    let (phase14_start_state, phase14_end_state) =
+        phase28_global_boundary_preimage_states(phase28)?;
+
+    let evidence = Phase42BoundaryPreimageEvidence {
+        issue: STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
+        evidence_version: STWO_BOUNDARY_PREIMAGE_EVIDENCE_VERSION_PHASE42.to_string(),
+        relation_outcome: STWO_BOUNDARY_PREIMAGE_RELATION_PHASE42.to_string(),
+        phase12_start_state: first_step.from_state.clone(),
+        phase12_end_state: last_step.to_state.clone(),
+        phase14_start_state,
+        phase14_end_state,
+    };
+    verify_phase42_boundary_preimage_evidence_against_sources(
+        &evidence, chain, phase28, contract, phase30,
+    )?;
+    Ok(evidence)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase42_boundary_preimage_evidence(
+    evidence: &Phase42BoundaryPreimageEvidence,
+) -> Result<()> {
+    if evidence.issue != STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence must reference Issue #{}, got #{}",
+            STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42, evidence.issue
+        )));
+    }
+    if evidence.evidence_version != STWO_BOUNDARY_PREIMAGE_EVIDENCE_VERSION_PHASE42 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence version `{}` does not match expected `{}`",
+            evidence.evidence_version, STWO_BOUNDARY_PREIMAGE_EVIDENCE_VERSION_PHASE42
+        )));
+    }
+    if evidence.relation_outcome != STWO_BOUNDARY_PREIMAGE_RELATION_PHASE42 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence relation `{}` does not match expected `{}`",
+            evidence.relation_outcome, STWO_BOUNDARY_PREIMAGE_RELATION_PHASE42
+        )));
+    }
+
+    phase42_verify_phase12_state("phase12_start_state", &evidence.phase12_start_state)?;
+    phase42_verify_phase12_state("phase12_end_state", &evidence.phase12_end_state)?;
+    phase42_verify_phase14_state("phase14_start_state", &evidence.phase14_start_state)?;
+    phase42_verify_phase14_state("phase14_end_state", &evidence.phase14_end_state)?;
+    phase42_shared_core_matches(
+        "start",
+        &evidence.phase12_start_state,
+        &evidence.phase14_start_state,
+    )?;
+    phase42_shared_core_matches(
+        "end",
+        &evidence.phase12_end_state,
+        &evidence.phase14_end_state,
+    )?;
+    if evidence.phase12_start_state.step_index != 0 || evidence.phase14_start_state.step_index != 0
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence start states must have step_index=0".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase42_boundary_preimage_evidence_against_sources(
+    evidence: &Phase42BoundaryPreimageEvidence,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<()> {
+    verify_phase42_boundary_preimage_evidence(evidence)?;
+    phase42_verify_source_stack(chain, phase28, contract, phase30)?;
+
+    let first_step = chain.steps.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence source binding requires a non-empty Phase 12 chain"
+                .to_string(),
+        )
+    })?;
+    let last_step = chain
+        .steps
+        .last()
+        .expect("checked non-empty Phase 12 chain");
+    if evidence.phase12_start_state != first_step.from_state {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence phase12_start_state does not match the Phase 12 chain start state"
+                .to_string(),
+        ));
+    }
+    if evidence.phase12_end_state != last_step.to_state {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence phase12_end_state does not match the Phase 12 chain end state"
+                .to_string(),
+        ));
+    }
+
+    let (phase14_start_state, phase14_end_state) =
+        phase28_global_boundary_preimage_states(phase28)?;
+    if evidence.phase14_start_state != phase14_start_state {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence phase14_start_state does not match the Phase 28 global start preimage"
+                .to_string(),
+        ));
+    }
+    if evidence.phase14_end_state != phase14_end_state {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence phase14_end_state does not match the Phase 28 global end preimage"
+                .to_string(),
+        ));
+    }
+
+    if evidence.phase12_start_state.public_state_commitment
+        != phase30.chain_start_boundary_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence Phase12 start preimage does not bind the Phase 30 start boundary"
+                .to_string(),
+        ));
+    }
+    if evidence.phase12_end_state.public_state_commitment != phase30.chain_end_boundary_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence Phase12 end preimage does not bind the Phase 30 end boundary"
+                .to_string(),
+        ));
+    }
+    let phase14_start_boundary = commit_phase23_boundary_state(&evidence.phase14_start_state);
+    let phase14_end_boundary = commit_phase23_boundary_state(&evidence.phase14_end_state);
+    if phase14_start_boundary != phase28.global_start_state_commitment
+        || phase14_start_boundary != contract.global_start_state_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence Phase14 start preimage does not bind the Phase 28/29 start boundary"
+                .to_string(),
+        ));
+    }
+    if phase14_end_boundary != phase28.global_end_state_commitment
+        || phase14_end_boundary != contract.global_end_state_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence Phase14 end preimage does not bind the Phase 28/29 end boundary"
+                .to_string(),
+        ));
+    }
+    if evidence.phase12_end_state.step_index != phase30.total_steps
+        || evidence.phase14_end_state.step_index != phase30.total_steps
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence end step_index must equal total_steps {}",
+            phase30.total_steps
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn parse_phase42_boundary_preimage_evidence_json(
+    json: &str,
+) -> Result<Phase42BoundaryPreimageEvidence> {
+    if json.len() > MAX_PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_JSON_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence JSON is {} bytes, exceeding the limit of {} bytes",
+            json.len(),
+            MAX_PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_JSON_BYTES
+        )));
+    }
+    let evidence: Phase42BoundaryPreimageEvidence =
+        serde_json::from_str(json).map_err(phase42_json_error)?;
+    verify_phase42_boundary_preimage_evidence(&evidence)?;
+    Ok(evidence)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn parse_phase42_boundary_preimage_evidence_json_against_sources(
+    json: &str,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase42BoundaryPreimageEvidence> {
+    let evidence = parse_phase42_boundary_preimage_evidence_json(json)?;
+    verify_phase42_boundary_preimage_evidence_against_sources(
+        &evidence, chain, phase28, contract, phase30,
+    )?;
+    Ok(evidence)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn load_phase42_boundary_preimage_evidence(
+    path: &Path,
+) -> Result<Phase42BoundaryPreimageEvidence> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_JSON_BYTES,
+        "Phase 42 boundary preimage evidence",
+    )?;
+    let evidence: Phase42BoundaryPreimageEvidence =
+        serde_json::from_slice(&bytes).map_err(phase42_json_error)?;
+    verify_phase42_boundary_preimage_evidence(&evidence)?;
+    Ok(evidence)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn load_phase42_boundary_preimage_evidence_against_sources(
+    path: &Path,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase42BoundaryPreimageEvidence> {
+    let evidence = load_phase42_boundary_preimage_evidence(path)?;
+    verify_phase42_boundary_preimage_evidence_against_sources(
+        &evidence, chain, phase28, contract, phase30,
+    )?;
+    Ok(evidence)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_json_error(error: serde_json::Error) -> VmError {
+    if error.is_data() || error.is_syntax() {
+        VmError::InvalidConfig(format!(
+            "invalid Phase 42 boundary preimage evidence JSON: {error}"
+        ))
+    } else {
+        VmError::Serialization(error.to_string())
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_verify_source_stack(
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<()> {
+    verify_phase12_decoding_chain(chain)?;
+    verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation(phase28)?;
+    verify_phase29_recursive_compression_input_contract(contract)?;
+    verify_phase30_decoding_step_proof_envelope_manifest_against_chain(phase30, chain)?;
+    let expected_contract =
+        phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28(phase28)?;
+    if contract != &expected_contract {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence requires the Phase 29 contract to be derived from the supplied Phase 28 aggregate"
+                .to_string(),
+        ));
+    }
+    if phase28.proof_backend_version != phase30.proof_backend_version {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence requires matching Phase28/Phase30 proof backend versions (`{}` != `{}`)",
+            phase28.proof_backend_version, phase30.proof_backend_version
+        )));
+    }
+    if phase28.statement_version != phase30.statement_version {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence requires matching Phase28/Phase30 statement versions (`{}` != `{}`)",
+            phase28.statement_version, phase30.statement_version
+        )));
+    }
+    if phase28.total_steps != phase30.total_steps || chain.total_steps != phase30.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence requires matching total_steps across Phase12 ({}) Phase28 ({}) and Phase30 ({})",
+            chain.total_steps, phase28.total_steps, phase30.total_steps
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_verify_phase12_state(label: &str, state: &Phase12DecodingState) -> Result<()> {
+    if state.state_version != STWO_DECODING_STATE_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 `{label}` state version `{}` does not match expected `{}`",
+            state.state_version, STWO_DECODING_STATE_VERSION_PHASE12
+        )));
+    }
+    phase42_require_phase12_state_hashes(label, state)?;
+    let expected = commit_phase12_public_state(state);
+    if state.public_state_commitment != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 `{label}` public_state_commitment does not match recomputed `{expected}`"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_verify_phase14_state(label: &str, state: &Phase14DecodingState) -> Result<()> {
+    if state.state_version != STWO_DECODING_STATE_VERSION_PHASE14 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 `{label}` state version `{}` does not match expected `{}`",
+            state.state_version, STWO_DECODING_STATE_VERSION_PHASE14
+        )));
+    }
+    phase42_require_phase14_state_hashes(label, state)?;
+    let expected = commit_phase14_public_state(state);
+    if state.public_state_commitment != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 `{label}` public_state_commitment does not match recomputed `{expected}`"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_require_hash32(label: &str, value: &str) -> Result<()> {
+    if !phase37_is_hash32_lower_hex(value) {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence `{label}` must be a 32-byte lowercase hex commitment"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_require_phase12_state_hashes(label: &str, state: &Phase12DecodingState) -> Result<()> {
+    for (field, value) in [
+        ("layout_commitment", state.layout_commitment.as_str()),
+        (
+            "persistent_state_commitment",
+            state.persistent_state_commitment.as_str(),
+        ),
+        (
+            "kv_history_commitment",
+            state.kv_history_commitment.as_str(),
+        ),
+        ("kv_cache_commitment", state.kv_cache_commitment.as_str()),
+        (
+            "incoming_token_commitment",
+            state.incoming_token_commitment.as_str(),
+        ),
+        ("query_commitment", state.query_commitment.as_str()),
+        ("output_commitment", state.output_commitment.as_str()),
+        (
+            "lookup_rows_commitment",
+            state.lookup_rows_commitment.as_str(),
+        ),
+        (
+            "public_state_commitment",
+            state.public_state_commitment.as_str(),
+        ),
+    ] {
+        phase42_require_hash32(&format!("{label}.{field}"), value)?;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_require_phase14_state_hashes(label: &str, state: &Phase14DecodingState) -> Result<()> {
+    for (field, value) in [
+        ("layout_commitment", state.layout_commitment.as_str()),
+        (
+            "persistent_state_commitment",
+            state.persistent_state_commitment.as_str(),
+        ),
+        (
+            "kv_history_commitment",
+            state.kv_history_commitment.as_str(),
+        ),
+        (
+            "kv_history_sealed_commitment",
+            state.kv_history_sealed_commitment.as_str(),
+        ),
+        (
+            "kv_history_open_chunk_commitment",
+            state.kv_history_open_chunk_commitment.as_str(),
+        ),
+        (
+            "kv_history_frontier_commitment",
+            state.kv_history_frontier_commitment.as_str(),
+        ),
+        (
+            "lookup_transcript_commitment",
+            state.lookup_transcript_commitment.as_str(),
+        ),
+        (
+            "lookup_frontier_commitment",
+            state.lookup_frontier_commitment.as_str(),
+        ),
+        ("kv_cache_commitment", state.kv_cache_commitment.as_str()),
+        (
+            "incoming_token_commitment",
+            state.incoming_token_commitment.as_str(),
+        ),
+        ("query_commitment", state.query_commitment.as_str()),
+        ("output_commitment", state.output_commitment.as_str()),
+        (
+            "lookup_rows_commitment",
+            state.lookup_rows_commitment.as_str(),
+        ),
+        (
+            "public_state_commitment",
+            state.public_state_commitment.as_str(),
+        ),
+    ] {
+        phase42_require_hash32(&format!("{label}.{field}"), value)?;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_shared_core_matches(
+    label: &str,
+    phase12: &Phase12DecodingState,
+    phase14: &Phase14DecodingState,
+) -> Result<()> {
+    if phase12.step_index != phase14.step_index {
+        return phase42_shared_core_mismatch(label, "step_index");
+    }
+    if phase12.position != phase14.position {
+        return phase42_shared_core_mismatch(label, "position");
+    }
+    if phase12.layout_commitment != phase14.layout_commitment {
+        return phase42_shared_core_mismatch(label, "layout_commitment");
+    }
+    if phase12.persistent_state_commitment != phase14.persistent_state_commitment {
+        return phase42_shared_core_mismatch(label, "persistent_state_commitment");
+    }
+    if phase12.kv_history_commitment != phase14.kv_history_commitment {
+        return phase42_shared_core_mismatch(label, "kv_history_commitment");
+    }
+    if phase12.kv_history_length != phase14.kv_history_length {
+        return phase42_shared_core_mismatch(label, "kv_history_length");
+    }
+    if phase12.kv_cache_commitment != phase14.kv_cache_commitment {
+        return phase42_shared_core_mismatch(label, "kv_cache_commitment");
+    }
+    if phase12.incoming_token_commitment != phase14.incoming_token_commitment {
+        return phase42_shared_core_mismatch(label, "incoming_token_commitment");
+    }
+    if phase12.query_commitment != phase14.query_commitment {
+        return phase42_shared_core_mismatch(label, "query_commitment");
+    }
+    if phase12.output_commitment != phase14.output_commitment {
+        return phase42_shared_core_mismatch(label, "output_commitment");
+    }
+    if phase12.lookup_rows_commitment != phase14.lookup_rows_commitment {
+        return phase42_shared_core_mismatch(label, "lookup_rows_commitment");
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_shared_core_mismatch(label: &str, field: &str) -> Result<()> {
+    Err(VmError::InvalidConfig(format!(
+        "Phase 42 boundary preimage evidence {label} states differ in shared carried-state field `{field}`"
+    )))
+}
+
+#[cfg(feature = "stwo-backend")]
 fn commit_phase38_lookup_identity(
     phase30: &Phase30DecodingStepProofEnvelopeManifest,
 ) -> Result<String> {
@@ -6358,6 +6854,7 @@ mod tests {
         phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range,
         prove_phase12_decoding_demo_for_layout, prove_phase12_decoding_demo_for_layout_steps,
         prove_phase28_phase30_shared_proof_boundary_demo,
+        prove_phase42_boundary_preimage_shared_proof_demo,
         verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range,
         STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_SCOPE_PHASE31,
         STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_VERSION_PHASE31,
@@ -8209,6 +8706,180 @@ mod tests {
             "expected InvalidConfig for oversized JSON, got {err:?}"
         );
         assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn phase42_hash(hex: char) -> String {
+        hex.to_string().repeat(64)
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn phase42_phase14_state_from_phase12(
+        state: &Phase12DecodingState,
+        salt: char,
+    ) -> Phase14DecodingState {
+        let mut phase14 = Phase14DecodingState {
+            state_version: STWO_DECODING_STATE_VERSION_PHASE14.to_string(),
+            step_index: state.step_index,
+            position: state.position,
+            layout_commitment: state.layout_commitment.clone(),
+            persistent_state_commitment: state.persistent_state_commitment.clone(),
+            kv_history_commitment: state.kv_history_commitment.clone(),
+            kv_history_length: state.kv_history_length,
+            kv_history_chunk_size: 2,
+            kv_history_sealed_commitment: phase42_hash(salt),
+            kv_history_sealed_chunks: state.step_index / 2,
+            kv_history_open_chunk_commitment: phase42_hash('b'),
+            kv_history_open_chunk_pairs: state.step_index % 2,
+            kv_history_frontier_commitment: phase42_hash('c'),
+            kv_history_frontier_pairs: state.kv_history_length,
+            lookup_transcript_commitment: phase42_hash('d'),
+            lookup_transcript_entries: state.step_index,
+            lookup_frontier_commitment: phase42_hash('e'),
+            lookup_frontier_entries: state.step_index,
+            kv_cache_commitment: state.kv_cache_commitment.clone(),
+            incoming_token_commitment: state.incoming_token_commitment.clone(),
+            query_commitment: state.query_commitment.clone(),
+            output_commitment: state.output_commitment.clone(),
+            lookup_rows_commitment: state.lookup_rows_commitment.clone(),
+            public_state_commitment: String::new(),
+        };
+        phase14.public_state_commitment = commit_phase14_public_state(&phase14);
+        phase14
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn phase42_sample_evidence() -> Phase42BoundaryPreimageEvidence {
+        let layout =
+            crate::stwo_backend::Phase12DecodingLayout::new(2, 2).expect("valid Phase 12 layout");
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 2)
+            .expect("generate two-step Phase 12 decoding chain");
+        let phase12_start = chain
+            .steps
+            .first()
+            .expect("Phase 12 sample chain has a first step")
+            .from_state
+            .clone();
+        let phase12_end = chain
+            .steps
+            .last()
+            .expect("Phase 12 sample chain has a last step")
+            .to_state
+            .clone();
+        Phase42BoundaryPreimageEvidence {
+            issue: STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
+            evidence_version: STWO_BOUNDARY_PREIMAGE_EVIDENCE_VERSION_PHASE42.to_string(),
+            relation_outcome: STWO_BOUNDARY_PREIMAGE_RELATION_PHASE42.to_string(),
+            phase14_start_state: phase42_phase14_state_from_phase12(&phase12_start, 'a'),
+            phase14_end_state: phase42_phase14_state_from_phase12(&phase12_end, 'f'),
+            phase12_start_state: phase12_start,
+            phase12_end_state: phase12_end,
+        }
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase42_boundary_preimage_evidence_accepts_hash_preimage_relation_shape() {
+        let evidence = phase42_sample_evidence();
+        verify_phase42_boundary_preimage_evidence(&evidence)
+            .expect("verify standalone Phase42 preimage evidence");
+
+        let json = serde_json::to_string_pretty(&evidence).expect("serialize Phase42 evidence");
+        let parsed = parse_phase42_boundary_preimage_evidence_json(&json)
+            .expect("parse standalone Phase42 preimage evidence");
+        assert_eq!(parsed, evidence);
+
+        let path = std::env::temp_dir().join(format!(
+            "phase42-boundary-preimage-evidence-{}.json",
+            std::process::id()
+        ));
+        std::fs::write(&path, json).expect("write Phase42 evidence temp file");
+        let loaded =
+            load_phase42_boundary_preimage_evidence(&path).expect("load Phase42 evidence file");
+        std::fs::remove_file(&path).expect("remove Phase42 evidence temp file");
+        assert_eq!(loaded, evidence);
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase42_boundary_preimage_evidence_rejects_shared_core_mismatch() {
+        let mut evidence = phase42_sample_evidence();
+        evidence.phase14_end_state.output_commitment = phase42_hash('9');
+        evidence.phase14_end_state.public_state_commitment =
+            commit_phase14_public_state(&evidence.phase14_end_state);
+
+        let err = verify_phase42_boundary_preimage_evidence(&evidence)
+            .expect_err("Phase42 must reject mismatched Phase12/Phase14 shared core");
+        assert!(err.to_string().contains("shared carried-state field"));
+        assert!(err.to_string().contains("output_commitment"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase42_boundary_preimage_evidence_rejects_unknown_and_oversized_json() {
+        let evidence = phase42_sample_evidence();
+        let mut value = serde_json::to_value(&evidence).expect("serialize Phase42 evidence value");
+        value["unexpected_phase42_field"] = serde_json::json!(true);
+        let json = serde_json::to_string(&value).expect("serialize unknown-field Phase42 JSON");
+        let err = parse_phase42_boundary_preimage_evidence_json(&json)
+            .expect_err("unknown Phase42 fields must be rejected");
+        assert!(err.to_string().contains("unknown field"));
+
+        let json = " ".repeat(MAX_PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_JSON_BYTES + 1);
+        let err = parse_phase42_boundary_preimage_evidence_json(&json)
+            .expect_err("oversized Phase42 evidence JSON must fail before serde parsing");
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase42_boundary_preimage_evidence_rejects_synthetic_phase28_shell_sources() {
+        let layout =
+            crate::stwo_backend::Phase12DecodingLayout::new(2, 2).expect("valid Phase 12 layout");
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 2)
+            .expect("generate two-step Phase 12 decoding chain");
+        let phase30 = phase30_prepare_decoding_step_proof_envelope_manifest(&chain)
+            .expect("derive Phase30 from Phase12 chain");
+        let mut phase28 = empty_phase28_shell();
+        phase28.proof_backend_version = phase30.proof_backend_version.clone();
+        phase28.statement_version = phase30.statement_version.clone();
+        phase28.total_steps = phase30.total_steps;
+        let mut phase29 = sample_phase29_contract();
+        phase29.phase28_proof_backend_version = phase30.proof_backend_version.clone();
+        phase29.statement_version = phase30.statement_version.clone();
+        phase29.total_steps = phase30.total_steps;
+        phase29.input_contract_commitment =
+            commit_phase29_recursive_compression_input_contract(&phase29)
+                .expect("recommit Phase29 source");
+
+        let err = phase42_prepare_boundary_preimage_evidence(&chain, &phase28, &phase29, &phase30)
+            .expect_err("Phase42 must reject Phase28 shells without nested boundary preimages");
+        let message = err.to_string();
+        assert!(
+            message.contains("at least two members") || message.contains("Phase 28"),
+            "{message}"
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    #[ignore = "generates and checks a 16-step shared-proof Phase12/28/29/30 source; run explicitly for the expensive Phase42 kill decision"]
+    fn phase42_live_shared_phase28_phase30_sources_expose_history_commitment_gap() {
+        let (chain, phase28, phase30) = prove_phase42_boundary_preimage_shared_proof_demo()
+            .expect("derive shared Phase12/28/30 boundary-preimage sources");
+        let phase29 =
+            phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28(
+                &phase28,
+            )
+            .expect("derive Phase29 from Phase28 source");
+        assert_ne!(
+            phase29.global_start_state_commitment,
+            phase30.chain_start_boundary_commitment
+        );
+        let err = phase42_prepare_boundary_preimage_evidence(&chain, &phase28, &phase29, &phase30)
+            .expect_err("live Phase42 source stack must expose the Phase12/Phase14 history gap");
+        let message = err.to_string();
+        assert!(message.contains("kv_history_commitment"), "{message}");
     }
 
     #[cfg(feature = "stwo-backend")]

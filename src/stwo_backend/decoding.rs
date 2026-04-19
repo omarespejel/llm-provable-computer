@@ -4396,7 +4396,7 @@ fn collect_phase23_member_rollups<'a>(
     Ok(rollups)
 }
 
-fn commit_phase23_boundary_state(state: &Phase14DecodingState) -> String {
+pub(crate) fn commit_phase23_boundary_state(state: &Phase14DecodingState) -> String {
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23.as_bytes());
     hasher.update(b"boundary-state");
@@ -4549,6 +4549,123 @@ fn derive_phase23_boundary_state_within_segment<'a>(
         return Ok(&segment.global_to_state);
     }
     Ok(&segment.chain.steps[local_step_count - 1].to_state)
+}
+
+pub(crate) fn phase28_global_boundary_preimage_states(
+    manifest: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+) -> Result<(Phase14DecodingState, Phase14DecodingState)> {
+    let first_segment = phase28_boundary_segment(manifest, true)?;
+    let last_segment = phase28_boundary_segment(manifest, false)?;
+    Ok((
+        first_segment.global_from_state.clone(),
+        last_segment.global_to_state.clone(),
+    ))
+}
+
+fn phase28_boundary_segment<'a>(
+    manifest: &'a Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    first: bool,
+) -> Result<&'a Phase15DecodingHistorySegment> {
+    let member = if first {
+        manifest.members.first()
+    } else {
+        manifest.members.last()
+    }
+    .ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 boundary preimage extraction requires a Phase 28 aggregate with at least one Phase 27 member"
+                .to_string(),
+        )
+    })?;
+    let folded = if first {
+        member.members.first()
+    } else {
+        member.members.last()
+    }
+    .ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 boundary preimage extraction requires a Phase 27 member with at least one Phase 26 member"
+                .to_string(),
+        )
+    })?;
+    let interval = if first {
+        folded.members.first()
+    } else {
+        folded.members.last()
+    }
+    .ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 boundary preimage extraction requires a Phase 26 member with at least one Phase 25 member"
+                .to_string(),
+        )
+    })?;
+    let cross_step = if first {
+        interval.members.first()
+    } else {
+        interval.members.last()
+    }
+    .ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 boundary preimage extraction requires a Phase 25 member with at least one Phase 23 member"
+                .to_string(),
+        )
+    })?;
+    let lookup = if first {
+        cross_step.members.first()
+    } else {
+        cross_step.members.last()
+    }
+    .ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 boundary preimage extraction requires a Phase 23 member with at least one Phase 22 member"
+                .to_string(),
+        )
+    })?;
+    let matrix = if first {
+        lookup.accumulator.matrices.first()
+    } else {
+        lookup.accumulator.matrices.last()
+    }
+    .ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 boundary preimage extraction requires a Phase 22 accumulator with at least one Phase 17 matrix"
+                .to_string(),
+        )
+    })?;
+    let rollup_manifest = if first {
+        matrix.rollups.first()
+    } else {
+        matrix.rollups.last()
+    }
+    .ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 boundary preimage extraction requires a Phase 17 matrix with at least one Phase 16 rollup manifest"
+                .to_string(),
+        )
+    })?;
+    let rollup = if first {
+        rollup_manifest.rollups.first()
+    } else {
+        rollup_manifest.rollups.last()
+    }
+    .ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 boundary preimage extraction requires a Phase 16 manifest with at least one rollup"
+                .to_string(),
+        )
+    })?;
+    let segment = if first {
+        rollup.segments.first()
+    } else {
+        rollup.segments.last()
+    }
+    .ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 boundary preimage extraction requires a Phase 16 rollup with at least one Phase 15 segment"
+                .to_string(),
+        )
+    })?;
+    Ok(segment)
 }
 
 fn derive_phase23_member_boundary_commitments(
@@ -10424,6 +10541,7 @@ fn phase28_prepare_demo_manifest_for_layout(
 fn phase28_phase30_prepare_shared_proof_demo_for_layout(
     layout: &Phase12DecodingLayout,
 ) -> Result<(
+    Phase12DecodingChainManifest,
     Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
     Phase30DecodingStepProofEnvelopeManifest,
 )> {
@@ -10495,7 +10613,7 @@ fn phase28_phase30_prepare_shared_proof_demo_for_layout(
             "Phase 40 shared-proof boundary demo expected Phase28 global_end_state_commitment to differ from Phase30 chain_end_boundary_commitment".to_string(),
         ));
     }
-    Ok((phase28, phase30))
+    Ok((phase12, phase28, phase30))
 }
 
 pub fn prove_phase24_decoding_state_relation_accumulator_demo(
@@ -10597,6 +10715,15 @@ pub fn prove_phase28_phase30_shared_proof_boundary_demo() -> Result<(
     Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
     Phase30DecodingStepProofEnvelopeManifest,
 )> {
+    let (_, phase28, phase30) = prove_phase42_boundary_preimage_shared_proof_demo()?;
+    Ok((phase28, phase30))
+}
+
+pub fn prove_phase42_boundary_preimage_shared_proof_demo() -> Result<(
+    Phase12DecodingChainManifest,
+    Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    Phase30DecodingStepProofEnvelopeManifest,
+)> {
     let mut layouts = phase25_default_decoding_layouts()?;
     layouts.sort_by(|left, right| {
         (
@@ -10620,7 +10747,7 @@ pub fn prove_phase28_phase30_shared_proof_boundary_demo() -> Result<(
     let mut failures = Vec::new();
     for layout in layouts {
         match phase28_phase30_prepare_shared_proof_demo_for_layout(&layout) {
-            Ok((phase28, phase30)) => {
+            Ok((phase12, phase28, phase30)) => {
                 if phase28.global_start_state_commitment == phase30.chain_start_boundary_commitment
                     || phase28.global_end_state_commitment == phase30.chain_end_boundary_commitment
                 {
@@ -10630,7 +10757,7 @@ pub fn prove_phase28_phase30_shared_proof_boundary_demo() -> Result<(
                     ));
                     continue;
                 }
-                return Ok((phase28, phase30));
+                return Ok((phase12, phase28, phase30));
             }
             Err(error) => failures.push(format!(
                 "layout_version={} rolling_kv_pairs={} pair_width={}: {}",
@@ -11612,7 +11739,7 @@ fn commit_phase12_persistent_state(
 
 /// Commits only the carried Phase 12 state that must remain stable across links.
 /// Step-local I/O commitments are excluded because the execution proof already binds them.
-fn commit_phase12_public_state(state: &Phase12DecodingState) -> String {
+pub(crate) fn commit_phase12_public_state(state: &Phase12DecodingState) -> String {
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_DECODING_STATE_VERSION_PHASE12.as_bytes());
     hasher.update(b"public-state");
@@ -11818,7 +11945,7 @@ fn phase30_chain_boundary_pair(
 
 /// Commits only the carried Phase 14 state that must remain stable across links.
 /// Step-local I/O commitments are excluded because the execution proof already binds them.
-fn commit_phase14_public_state(state: &Phase14DecodingState) -> String {
+pub(crate) fn commit_phase14_public_state(state: &Phase14DecodingState) -> String {
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_DECODING_STATE_VERSION_PHASE14.as_bytes());
     hasher.update(b"public-state");

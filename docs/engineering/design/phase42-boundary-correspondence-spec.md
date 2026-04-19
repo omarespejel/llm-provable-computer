@@ -118,7 +118,7 @@ Phase23 start/end commitments == Phase29 global start/end boundaries
 Phase12 and Phase14 preimages share the same carried-state core
 ```
 
-When those checks pass, the current relation outcome is:
+When those checks pass, the intended relation outcome is:
 
 ```text
 relation_outcome = hash_preimage_relation
@@ -128,6 +128,16 @@ decision = stay_current_path
 This keeps the success criterion proof-oriented: Phase42 succeeds only when the
 two boundary domains are recomputable from exposed preimages, not when a
 witness merely says they are compatible.
+
+The Rust Phase42 source-bound implementation makes this gate stricter than the
+synthetic JSON checker. It can construct and verify the evidence object, but the
+expensive live shared-proof test currently rejects real Phase12/28/29/30 sources:
+Phase12 and Phase14 share the carried execution fields, but their
+`kv_history_commitment` fields are different commitment domains. Phase12 uses a
+linear history chain, while Phase14 uses the chunked history accumulator carried
+into Phase23. Therefore the current Rust result is not `stay_current_path`; the
+next patch must either expose a real history-equivalence witness/preimage or
+the route remains blocked under Issue #180.
 
 ## Required Checker Behavior
 
@@ -145,6 +155,8 @@ The Phase42 checker must:
 - reject Phase12/Phase14 preimages that do not recompute to the Phase30/Phase29
   boundary commitments;
 - reject Phase12/Phase14 shared carried-state-core mismatches;
+- reject real source stacks where Phase12 linear history and Phase14 chunked
+  history are not bridged by an explicit equivalence witness;
 - report Phase41-only compatibility as `patch_required`, not success.
 
 The checker is intentionally stricter than a descriptive manifest. It is a
