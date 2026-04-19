@@ -87,6 +87,15 @@ pub const STWO_BOUNDARY_HISTORY_EQUIVALENCE_RULE_PHASE42: &str =
 #[cfg(feature = "stwo-backend")]
 const MAX_PHASE42_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_JSON_BYTES: usize = 1024 * 1024;
 #[cfg(feature = "stwo-backend")]
+pub const STWO_HISTORY_REPLAY_TRACE_VERSION_PHASE43: &str = "phase43-history-replay-trace-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43: &str = "normalized_replay_trace";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_HISTORY_REPLAY_TRACE_RULE_PHASE43: &str =
+    "phase12-chain-to-phase14-chunked-history-trace-v1";
+#[cfg(feature = "stwo-backend")]
+const MAX_PHASE43_HISTORY_REPLAY_TRACE_JSON_BYTES: usize = 8 * 1024 * 1024;
+#[cfg(feature = "stwo-backend")]
 pub const STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32: &str =
     "stwo-phase32-recursive-compression-statement-contract-v1";
 #[cfg(feature = "stwo-backend")]
@@ -419,6 +428,59 @@ pub struct Phase42BoundaryHistoryEquivalenceWitness {
     pub full_history_replay_required: bool,
     pub cryptographic_compression_claimed: bool,
     pub witness_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase43HistoryReplayTraceRow {
+    pub step_index: usize,
+    pub appended_pair: Vec<i16>,
+    pub input_lookup_rows_commitment: String,
+    pub output_lookup_rows_commitment: String,
+    pub phase30_step_envelope_commitment: String,
+    pub phase12_from_state: Phase12DecodingState,
+    pub phase12_to_state: Phase12DecodingState,
+    pub phase14_from_state: Phase14DecodingState,
+    pub phase14_to_state: Phase14DecodingState,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase43HistoryReplayTrace {
+    pub issue: usize,
+    pub trace_version: String,
+    pub relation_outcome: String,
+    pub transform_rule: String,
+    pub proof_backend: StarkProofBackend,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub phase42_witness_commitment: String,
+    pub phase29_contract_commitment: String,
+    pub phase28_aggregate_commitment: String,
+    pub phase30_source_chain_commitment: String,
+    pub phase30_step_envelopes_commitment: String,
+    pub total_steps: usize,
+    pub layout_commitment: String,
+    pub rolling_kv_pairs: usize,
+    pub pair_width: usize,
+    pub phase12_start_public_state_commitment: String,
+    pub phase12_end_public_state_commitment: String,
+    pub phase14_start_boundary_commitment: String,
+    pub phase14_end_boundary_commitment: String,
+    pub phase12_start_history_commitment: String,
+    pub phase12_end_history_commitment: String,
+    pub phase14_start_history_commitment: String,
+    pub phase14_end_history_commitment: String,
+    pub initial_kv_cache_commitment: String,
+    pub appended_pairs_commitment: String,
+    pub lookup_rows_commitments_commitment: String,
+    pub rows: Vec<Phase43HistoryReplayTraceRow>,
+    pub full_history_replay_required: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub stwo_air_proof_claimed: bool,
+    pub trace_commitment: String,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -5264,6 +5326,863 @@ pub fn verify_phase42_boundary_history_equivalence_witness_against_sources(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn commit_phase43_history_replay_trace(trace: &Phase43HistoryReplayTrace) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 43 history replay trace commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase43-history-replay-trace");
+    phase29_update_usize(&mut hasher, trace.issue);
+    let proof_backend = trace.proof_backend.to_string();
+    for part in [
+        trace.trace_version.as_bytes(),
+        trace.relation_outcome.as_bytes(),
+        trace.transform_rule.as_bytes(),
+        proof_backend.as_bytes(),
+        trace.proof_backend_version.as_bytes(),
+        trace.statement_version.as_bytes(),
+        trace.phase42_witness_commitment.as_bytes(),
+        trace.phase29_contract_commitment.as_bytes(),
+        trace.phase28_aggregate_commitment.as_bytes(),
+        trace.phase30_source_chain_commitment.as_bytes(),
+        trace.phase30_step_envelopes_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, trace.total_steps);
+    phase29_update_len_prefixed(&mut hasher, trace.layout_commitment.as_bytes());
+    phase29_update_usize(&mut hasher, trace.rolling_kv_pairs);
+    phase29_update_usize(&mut hasher, trace.pair_width);
+    for part in [
+        trace.phase12_start_public_state_commitment.as_bytes(),
+        trace.phase12_end_public_state_commitment.as_bytes(),
+        trace.phase14_start_boundary_commitment.as_bytes(),
+        trace.phase14_end_boundary_commitment.as_bytes(),
+        trace.phase12_start_history_commitment.as_bytes(),
+        trace.phase12_end_history_commitment.as_bytes(),
+        trace.phase14_start_history_commitment.as_bytes(),
+        trace.phase14_end_history_commitment.as_bytes(),
+        trace.initial_kv_cache_commitment.as_bytes(),
+        trace.appended_pairs_commitment.as_bytes(),
+        trace.lookup_rows_commitments_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, trace.rows.len());
+    for row in &trace.rows {
+        phase43_update_trace_row(&mut hasher, row);
+    }
+    phase29_update_bool(&mut hasher, trace.full_history_replay_required);
+    phase29_update_bool(&mut hasher, trace.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, trace.stwo_air_proof_claimed);
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 43 history replay trace commitment hash: {err}"
+        ))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase43_prepare_history_replay_trace(
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase43HistoryReplayTrace> {
+    let phase42_witness =
+        phase42_prepare_boundary_history_equivalence_witness(chain, phase28, contract, phase30)?;
+    let replayed_phase14 = phase14_prepare_decoding_chain(chain)?;
+    verify_phase14_decoding_chain(&replayed_phase14)?;
+    if replayed_phase14.steps.len() != chain.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 replay trace expected {} replayed Phase14 steps, got {}",
+            chain.steps.len(),
+            replayed_phase14.steps.len()
+        )));
+    }
+    if phase30.envelopes.len() != chain.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 replay trace expected {} Phase30 envelopes, got {}",
+            chain.steps.len(),
+            phase30.envelopes.len()
+        )));
+    }
+    let latest_cached_pair_range = chain.layout.latest_cached_pair_range()?;
+    let mut rows = Vec::with_capacity(chain.steps.len());
+    for (step_index, ((phase12_step, phase14_step), phase30_envelope)) in chain
+        .steps
+        .iter()
+        .zip(replayed_phase14.steps.iter())
+        .zip(phase30.envelopes.iter())
+        .enumerate()
+    {
+        if phase30_envelope.step_index != step_index {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 43 replay trace Phase30 envelope at row {step_index} has step_index {}",
+                phase30_envelope.step_index
+            )));
+        }
+        rows.push(Phase43HistoryReplayTraceRow {
+            step_index,
+            appended_pair: phase12_step.proof.claim.final_state.memory
+                [latest_cached_pair_range.clone()]
+            .to_vec(),
+            input_lookup_rows_commitment: phase12_step.from_state.lookup_rows_commitment.clone(),
+            output_lookup_rows_commitment: phase12_step.to_state.lookup_rows_commitment.clone(),
+            phase30_step_envelope_commitment: phase30_envelope.envelope_commitment.clone(),
+            phase12_from_state: phase12_step.from_state.clone(),
+            phase12_to_state: phase12_step.to_state.clone(),
+            phase14_from_state: phase14_step.from_state.clone(),
+            phase14_to_state: phase14_step.to_state.clone(),
+        });
+    }
+    let mut trace = Phase43HistoryReplayTrace {
+        issue: STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
+        trace_version: STWO_HISTORY_REPLAY_TRACE_VERSION_PHASE43.to_string(),
+        relation_outcome: STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43.to_string(),
+        transform_rule: STWO_HISTORY_REPLAY_TRACE_RULE_PHASE43.to_string(),
+        proof_backend: StarkProofBackend::Stwo,
+        proof_backend_version: phase42_witness.proof_backend_version,
+        statement_version: phase42_witness.statement_version,
+        phase42_witness_commitment: phase42_witness.witness_commitment,
+        phase29_contract_commitment: phase42_witness.phase29_contract_commitment,
+        phase28_aggregate_commitment: phase42_witness.phase28_aggregate_commitment,
+        phase30_source_chain_commitment: phase42_witness.phase30_source_chain_commitment,
+        phase30_step_envelopes_commitment: phase42_witness.phase30_step_envelopes_commitment,
+        total_steps: phase42_witness.total_steps,
+        layout_commitment: phase42_witness.layout_commitment,
+        rolling_kv_pairs: phase42_witness.rolling_kv_pairs,
+        pair_width: phase42_witness.pair_width,
+        phase12_start_public_state_commitment: phase42_witness
+            .phase12_start_public_state_commitment,
+        phase12_end_public_state_commitment: phase42_witness.phase12_end_public_state_commitment,
+        phase14_start_boundary_commitment: phase42_witness.phase14_start_boundary_commitment,
+        phase14_end_boundary_commitment: phase42_witness.phase14_end_boundary_commitment,
+        phase12_start_history_commitment: phase42_witness.phase12_start_history_commitment,
+        phase12_end_history_commitment: phase42_witness.phase12_end_history_commitment,
+        phase14_start_history_commitment: phase42_witness.phase14_start_history_commitment,
+        phase14_end_history_commitment: phase42_witness.phase14_end_history_commitment,
+        initial_kv_cache_commitment: phase42_witness.initial_kv_cache_commitment,
+        appended_pairs_commitment: phase42_witness.appended_pairs_commitment,
+        lookup_rows_commitments_commitment: phase42_witness.lookup_rows_commitments_commitment,
+        rows,
+        full_history_replay_required: true,
+        cryptographic_compression_claimed: false,
+        stwo_air_proof_claimed: false,
+        trace_commitment: String::new(),
+    };
+    trace.trace_commitment = commit_phase43_history_replay_trace(&trace)?;
+    verify_phase43_history_replay_trace(&trace)?;
+    Ok(trace)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase43_history_replay_trace(trace: &Phase43HistoryReplayTrace) -> Result<()> {
+    phase43_verify_header(trace)?;
+    if trace.total_steps != trace.rows.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace total_steps={} must equal rows.len()={}",
+            trace.total_steps,
+            trace.rows.len()
+        )));
+    }
+    if trace.total_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace requires at least one row".to_string(),
+        ));
+    }
+    let expected_appended_pairs = phase43_commit_trace_appended_pairs(trace)?;
+    if trace.appended_pairs_commitment != expected_appended_pairs {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace appended_pairs_commitment does not match recomputed `{expected_appended_pairs}`"
+        )));
+    }
+    let expected_lookup_rows = phase43_commit_trace_lookup_rows_commitments(trace)?;
+    if trace.lookup_rows_commitments_commitment != expected_lookup_rows {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace lookup_rows_commitments_commitment does not match recomputed `{expected_lookup_rows}`"
+        )));
+    }
+    let expected_step_envelopes = phase43_commit_trace_phase30_step_envelopes(trace)?;
+    if trace.phase30_step_envelopes_commitment != expected_step_envelopes {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace phase30_step_envelopes_commitment does not match recomputed `{expected_step_envelopes}`"
+        )));
+    }
+
+    for (expected_step, row) in trace.rows.iter().enumerate() {
+        phase43_verify_row(trace, expected_step, row)?;
+        if let Some(next) = trace.rows.get(expected_step + 1) {
+            phase43_require_phase12_link(
+                expected_step,
+                &row.phase12_to_state,
+                &next.phase12_from_state,
+            )?;
+            phase43_require_phase14_link(
+                expected_step,
+                &row.phase14_to_state,
+                &next.phase14_from_state,
+            )?;
+        }
+    }
+
+    let first = trace.rows.first().expect("checked non-empty trace");
+    let last = trace.rows.last().expect("checked non-empty trace");
+    if trace.phase12_start_public_state_commitment
+        != first.phase12_from_state.public_state_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace Phase12 start commitment does not match first row"
+                .to_string(),
+        ));
+    }
+    if trace.phase12_end_public_state_commitment != last.phase12_to_state.public_state_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace Phase12 end commitment does not match last row"
+                .to_string(),
+        ));
+    }
+    let expected_start_boundary = commit_phase23_boundary_state(&first.phase14_from_state);
+    if trace.phase14_start_boundary_commitment != expected_start_boundary {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace Phase14 start boundary does not match recomputed `{expected_start_boundary}`"
+        )));
+    }
+    let expected_end_boundary = commit_phase23_boundary_state(&last.phase14_to_state);
+    if trace.phase14_end_boundary_commitment != expected_end_boundary {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace Phase14 end boundary does not match recomputed `{expected_end_boundary}`"
+        )));
+    }
+    if trace.phase12_start_history_commitment != first.phase12_from_state.kv_history_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace Phase12 start history does not match first row"
+                .to_string(),
+        ));
+    }
+    if trace.phase12_end_history_commitment != last.phase12_to_state.kv_history_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace Phase12 end history does not match last row".to_string(),
+        ));
+    }
+    if trace.phase14_start_history_commitment != first.phase14_from_state.kv_history_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace Phase14 start history does not match first row"
+                .to_string(),
+        ));
+    }
+    if trace.phase14_end_history_commitment != last.phase14_to_state.kv_history_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace Phase14 end history does not match last row".to_string(),
+        ));
+    }
+    if trace.initial_kv_cache_commitment != first.phase12_from_state.kv_cache_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace initial_kv_cache_commitment does not match first row"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase43_history_replay_trace(trace)?;
+    if trace.trace_commitment != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace commitment does not match recomputed `{expected}`"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase43_history_replay_trace_against_sources(
+    trace: &Phase43HistoryReplayTrace,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<()> {
+    verify_phase43_history_replay_trace(trace)?;
+    let expected = phase43_prepare_history_replay_trace(chain, phase28, contract, phase30)?;
+    if trace != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace does not match the recomputed Phase42 full replay over supplied sources"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_verify_header(trace: &Phase43HistoryReplayTrace) -> Result<()> {
+    if trace.issue != STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace must reference Issue #{}, got #{}",
+            STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42, trace.issue
+        )));
+    }
+    if trace.trace_version != STWO_HISTORY_REPLAY_TRACE_VERSION_PHASE43 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace version `{}` does not match expected `{}`",
+            trace.trace_version, STWO_HISTORY_REPLAY_TRACE_VERSION_PHASE43
+        )));
+    }
+    if trace.relation_outcome != STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace relation `{}` does not match expected `{}`",
+            trace.relation_outcome, STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43
+        )));
+    }
+    if trace.transform_rule != STWO_HISTORY_REPLAY_TRACE_RULE_PHASE43 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace transform rule `{}` does not match expected `{}`",
+            trace.transform_rule, STWO_HISTORY_REPLAY_TRACE_RULE_PHASE43
+        )));
+    }
+    if trace.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace requires `stwo` backend, got `{}`",
+            trace.proof_backend
+        )));
+    }
+    if trace.proof_backend_version != STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace requires proof backend version `{}`, got `{}`",
+            STWO_BACKEND_VERSION_PHASE12, trace.proof_backend_version
+        )));
+    }
+    if trace.statement_version != CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace requires statement version `{}`, got `{}`",
+            CLAIM_STATEMENT_VERSION_V1, trace.statement_version
+        )));
+    }
+    if trace.rolling_kv_pairs == 0 || trace.pair_width == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace requires non-zero layout widths".to_string(),
+        ));
+    }
+    if !trace.full_history_replay_required {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace must declare full_history_replay_required=true until a compact proof replaces replay"
+                .to_string(),
+        ));
+    }
+    if trace.cryptographic_compression_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace must not claim cryptographic compression".to_string(),
+        ));
+    }
+    if trace.stwo_air_proof_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace must not claim a Stwo AIR proof yet".to_string(),
+        ));
+    }
+    for (field, value) in [
+        (
+            "phase42_witness_commitment",
+            trace.phase42_witness_commitment.as_str(),
+        ),
+        (
+            "phase29_contract_commitment",
+            trace.phase29_contract_commitment.as_str(),
+        ),
+        (
+            "phase28_aggregate_commitment",
+            trace.phase28_aggregate_commitment.as_str(),
+        ),
+        (
+            "phase30_source_chain_commitment",
+            trace.phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase30_step_envelopes_commitment",
+            trace.phase30_step_envelopes_commitment.as_str(),
+        ),
+        ("layout_commitment", trace.layout_commitment.as_str()),
+        (
+            "phase12_start_public_state_commitment",
+            trace.phase12_start_public_state_commitment.as_str(),
+        ),
+        (
+            "phase12_end_public_state_commitment",
+            trace.phase12_end_public_state_commitment.as_str(),
+        ),
+        (
+            "phase14_start_boundary_commitment",
+            trace.phase14_start_boundary_commitment.as_str(),
+        ),
+        (
+            "phase14_end_boundary_commitment",
+            trace.phase14_end_boundary_commitment.as_str(),
+        ),
+        (
+            "phase12_start_history_commitment",
+            trace.phase12_start_history_commitment.as_str(),
+        ),
+        (
+            "phase12_end_history_commitment",
+            trace.phase12_end_history_commitment.as_str(),
+        ),
+        (
+            "phase14_start_history_commitment",
+            trace.phase14_start_history_commitment.as_str(),
+        ),
+        (
+            "phase14_end_history_commitment",
+            trace.phase14_end_history_commitment.as_str(),
+        ),
+        (
+            "initial_kv_cache_commitment",
+            trace.initial_kv_cache_commitment.as_str(),
+        ),
+        (
+            "appended_pairs_commitment",
+            trace.appended_pairs_commitment.as_str(),
+        ),
+        (
+            "lookup_rows_commitments_commitment",
+            trace.lookup_rows_commitments_commitment.as_str(),
+        ),
+        ("trace_commitment", trace.trace_commitment.as_str()),
+    ] {
+        phase43_require_hash32(&format!("history_replay_trace.{field}"), value)?;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_verify_row(
+    trace: &Phase43HistoryReplayTrace,
+    expected_step: usize,
+    row: &Phase43HistoryReplayTraceRow,
+) -> Result<()> {
+    if row.step_index != expected_step {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {expected_step} has step_index {}",
+            row.step_index
+        )));
+    }
+    if row.appended_pair.len() != trace.pair_width {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {expected_step} appended_pair has {} values, expected pair_width={}",
+            row.appended_pair.len(),
+            trace.pair_width
+        )));
+    }
+    for (field, value) in [
+        (
+            "input_lookup_rows_commitment",
+            row.input_lookup_rows_commitment.as_str(),
+        ),
+        (
+            "output_lookup_rows_commitment",
+            row.output_lookup_rows_commitment.as_str(),
+        ),
+        (
+            "phase30_step_envelope_commitment",
+            row.phase30_step_envelope_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(
+            &format!("history_replay_trace.rows[{expected_step}].{field}"),
+            value,
+        )?;
+    }
+    phase42_verify_phase12_state(
+        &format!("phase43.rows[{expected_step}].phase12_from_state"),
+        &row.phase12_from_state,
+    )?;
+    phase42_verify_phase12_state(
+        &format!("phase43.rows[{expected_step}].phase12_to_state"),
+        &row.phase12_to_state,
+    )?;
+    phase42_verify_phase14_state(
+        &format!("phase43.rows[{expected_step}].phase14_from_state"),
+        &row.phase14_from_state,
+    )?;
+    phase42_verify_phase14_state(
+        &format!("phase43.rows[{expected_step}].phase14_to_state"),
+        &row.phase14_to_state,
+    )?;
+    if row.phase12_from_state.step_index != expected_step
+        || row.phase14_from_state.step_index != expected_step
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {expected_step} from_state step_index mismatch"
+        )));
+    }
+    let expected_to_step = expected_step.checked_add(1).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 43 history replay trace step_index overflowed".to_string())
+    })?;
+    if row.phase12_to_state.step_index != expected_to_step
+        || row.phase14_to_state.step_index != expected_to_step
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {expected_step} to_state step_index mismatch"
+        )));
+    }
+    if row.phase12_from_state.layout_commitment != trace.layout_commitment
+        || row.phase12_to_state.layout_commitment != trace.layout_commitment
+        || row.phase14_from_state.layout_commitment != trace.layout_commitment
+        || row.phase14_to_state.layout_commitment != trace.layout_commitment
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {expected_step} layout commitment mismatch"
+        )));
+    }
+    if row.input_lookup_rows_commitment != row.phase12_from_state.lookup_rows_commitment
+        || row.input_lookup_rows_commitment != row.phase14_from_state.lookup_rows_commitment
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {expected_step} input_lookup_rows_commitment mismatch"
+        )));
+    }
+    if row.output_lookup_rows_commitment != row.phase12_to_state.lookup_rows_commitment
+        || row.output_lookup_rows_commitment != row.phase14_to_state.lookup_rows_commitment
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {expected_step} output_lookup_rows_commitment mismatch"
+        )));
+    }
+    phase42_shared_core_matches_with_history_bridge(
+        &format!("phase43 row {expected_step} from"),
+        &row.phase12_from_state,
+        &row.phase14_from_state,
+    )?;
+    phase42_shared_core_matches_with_history_bridge(
+        &format!("phase43 row {expected_step} to"),
+        &row.phase12_to_state,
+        &row.phase14_to_state,
+    )?;
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_require_phase12_link(
+    row_index: usize,
+    previous: &Phase12DecodingState,
+    next: &Phase12DecodingState,
+) -> Result<()> {
+    if previous.public_state_commitment != next.public_state_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase12 link does not preserve public_state_commitment"
+        )));
+    }
+    if previous.persistent_state_commitment != next.persistent_state_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase12 link does not preserve persistent_state_commitment"
+        )));
+    }
+    if previous.kv_cache_commitment != next.kv_cache_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase12 link does not preserve kv_cache_commitment"
+        )));
+    }
+    if previous.position != next.position {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase12 link does not preserve position"
+        )));
+    }
+    if previous.kv_history_commitment != next.kv_history_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase12 link does not preserve kv_history_commitment"
+        )));
+    }
+    if previous.kv_history_length != next.kv_history_length {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase12 link does not preserve kv_history_length"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_require_phase14_link(
+    row_index: usize,
+    previous: &Phase14DecodingState,
+    next: &Phase14DecodingState,
+) -> Result<()> {
+    if previous.public_state_commitment != next.public_state_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve public_state_commitment"
+        )));
+    }
+    if previous.persistent_state_commitment != next.persistent_state_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve persistent_state_commitment"
+        )));
+    }
+    if previous.kv_cache_commitment != next.kv_cache_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_cache_commitment"
+        )));
+    }
+    if previous.position != next.position {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve position"
+        )));
+    }
+    if previous.kv_history_commitment != next.kv_history_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_history_commitment"
+        )));
+    }
+    if previous.kv_history_length != next.kv_history_length {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_history_length"
+        )));
+    }
+    if previous.kv_history_sealed_commitment != next.kv_history_sealed_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_history_sealed_commitment"
+        )));
+    }
+    if previous.kv_history_sealed_chunks != next.kv_history_sealed_chunks {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_history_sealed_chunks"
+        )));
+    }
+    if previous.kv_history_open_chunk_commitment != next.kv_history_open_chunk_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_history_open_chunk_commitment"
+        )));
+    }
+    if previous.kv_history_open_chunk_pairs != next.kv_history_open_chunk_pairs {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_history_open_chunk_pairs"
+        )));
+    }
+    if previous.kv_history_frontier_commitment != next.kv_history_frontier_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_history_frontier_commitment"
+        )));
+    }
+    if previous.kv_history_frontier_pairs != next.kv_history_frontier_pairs {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_history_frontier_pairs"
+        )));
+    }
+    if previous.lookup_transcript_commitment != next.lookup_transcript_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve lookup_transcript_commitment"
+        )));
+    }
+    if previous.lookup_transcript_entries != next.lookup_transcript_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve lookup_transcript_entries"
+        )));
+    }
+    if previous.lookup_frontier_commitment != next.lookup_frontier_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve lookup_frontier_commitment"
+        )));
+    }
+    if previous.lookup_frontier_entries != next.lookup_frontier_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve lookup_frontier_entries"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_commit_trace_appended_pairs(trace: &Phase43HistoryReplayTrace) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 43 appended-pairs commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase42-source-appended-pairs");
+    phase29_update_len_prefixed(&mut hasher, trace.layout_commitment.as_bytes());
+    phase29_update_usize(&mut hasher, trace.pair_width);
+    phase29_update_usize(&mut hasher, trace.rows.len());
+    for (step_index, row) in trace.rows.iter().enumerate() {
+        if row.appended_pair.len() != trace.pair_width {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 43 appended pair {step_index} has {} values, expected pair_width={}",
+                row.appended_pair.len(),
+                trace.pair_width
+            )));
+        }
+        phase29_update_usize(&mut hasher, step_index);
+        for value in &row.appended_pair {
+            hasher.update(&value.to_le_bytes());
+        }
+    }
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 43 appended-pairs commitment hash: {err}"
+        ))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_commit_trace_lookup_rows_commitments(
+    trace: &Phase43HistoryReplayTrace,
+) -> Result<String> {
+    let first = trace.rows.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 43 lookup-row commitment requires a non-empty trace".to_string(),
+        )
+    })?;
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 43 lookup-row replay commitment hash: {err}"
+        ))
+    })?;
+    let commitment_count = trace.rows.len().checked_add(1).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 43 lookup-row commitment count overflowed".to_string())
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase42-source-lookup-rows");
+    phase29_update_len_prefixed(&mut hasher, trace.layout_commitment.as_bytes());
+    phase29_update_usize(&mut hasher, commitment_count);
+    phase43_hash_lookup_row_commitment(&mut hasher, 0, &first.input_lookup_rows_commitment)?;
+    for (index, row) in trace.rows.iter().enumerate() {
+        phase43_hash_lookup_row_commitment(
+            &mut hasher,
+            index + 1,
+            &row.output_lookup_rows_commitment,
+        )?;
+    }
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 43 lookup-row replay commitment hash: {err}"
+        ))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_hash_lookup_row_commitment(
+    hasher: &mut Blake2bVar,
+    index: usize,
+    commitment: &str,
+) -> Result<()> {
+    phase43_require_hash32(
+        &format!("history_replay_trace.lookup_rows[{index}]"),
+        commitment,
+    )?;
+    phase29_update_usize(hasher, index);
+    phase29_update_len_prefixed(hasher, commitment.as_bytes());
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_commit_trace_phase30_step_envelopes(
+    trace: &Phase43HistoryReplayTrace,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 43 Phase30 envelope-list commitment hash: {err}"
+        ))
+    })?;
+    hasher.update(STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30.as_bytes());
+    hasher.update(b"step-envelope-list");
+    hasher.update(&(trace.rows.len() as u64).to_le_bytes());
+    for (index, row) in trace.rows.iter().enumerate() {
+        phase43_require_hash32(
+            &format!("history_replay_trace.phase30_step_envelopes[{index}]"),
+            &row.phase30_step_envelope_commitment,
+        )?;
+        hasher.update(row.phase30_step_envelope_commitment.as_bytes());
+    }
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 43 Phase30 envelope-list commitment hash: {err}"
+        ))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_update_trace_row(hasher: &mut Blake2bVar, row: &Phase43HistoryReplayTraceRow) {
+    phase29_update_usize(hasher, row.step_index);
+    phase29_update_usize(hasher, row.appended_pair.len());
+    for value in &row.appended_pair {
+        hasher.update(&value.to_le_bytes());
+    }
+    for part in [
+        row.input_lookup_rows_commitment.as_bytes(),
+        row.output_lookup_rows_commitment.as_bytes(),
+        row.phase30_step_envelope_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(hasher, part);
+    }
+    phase43_update_phase12_state(hasher, &row.phase12_from_state);
+    phase43_update_phase12_state(hasher, &row.phase12_to_state);
+    phase43_update_phase14_state(hasher, &row.phase14_from_state);
+    phase43_update_phase14_state(hasher, &row.phase14_to_state);
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_update_phase12_state(hasher: &mut Blake2bVar, state: &Phase12DecodingState) {
+    for part in [
+        state.state_version.as_bytes(),
+        state.layout_commitment.as_bytes(),
+        state.persistent_state_commitment.as_bytes(),
+        state.kv_history_commitment.as_bytes(),
+        state.kv_cache_commitment.as_bytes(),
+        state.incoming_token_commitment.as_bytes(),
+        state.query_commitment.as_bytes(),
+        state.output_commitment.as_bytes(),
+        state.lookup_rows_commitment.as_bytes(),
+        state.public_state_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(hasher, part);
+    }
+    phase29_update_usize(hasher, state.step_index);
+    hasher.update(&state.position.to_le_bytes());
+    phase29_update_usize(hasher, state.kv_history_length);
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_update_phase14_state(hasher: &mut Blake2bVar, state: &Phase14DecodingState) {
+    for part in [
+        state.state_version.as_bytes(),
+        state.layout_commitment.as_bytes(),
+        state.persistent_state_commitment.as_bytes(),
+        state.kv_history_commitment.as_bytes(),
+        state.kv_history_sealed_commitment.as_bytes(),
+        state.kv_history_open_chunk_commitment.as_bytes(),
+        state.kv_history_frontier_commitment.as_bytes(),
+        state.lookup_transcript_commitment.as_bytes(),
+        state.lookup_frontier_commitment.as_bytes(),
+        state.kv_cache_commitment.as_bytes(),
+        state.incoming_token_commitment.as_bytes(),
+        state.query_commitment.as_bytes(),
+        state.output_commitment.as_bytes(),
+        state.lookup_rows_commitment.as_bytes(),
+        state.public_state_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(hasher, part);
+    }
+    phase29_update_usize(hasher, state.step_index);
+    hasher.update(&state.position.to_le_bytes());
+    phase29_update_usize(hasher, state.kv_history_length);
+    phase29_update_usize(hasher, state.kv_history_chunk_size);
+    phase29_update_usize(hasher, state.kv_history_sealed_chunks);
+    phase29_update_usize(hasher, state.kv_history_open_chunk_pairs);
+    phase29_update_usize(hasher, state.kv_history_frontier_pairs);
+    phase29_update_usize(hasher, state.lookup_transcript_entries);
+    phase29_update_usize(hasher, state.lookup_frontier_entries);
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_require_hash32(label: &str, value: &str) -> Result<()> {
+    if !phase37_is_hash32_lower_hex(value) {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace `{label}` must be a 32-byte lowercase hex commitment"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn parse_phase42_boundary_preimage_evidence_json(
     json: &str,
 ) -> Result<Phase42BoundaryPreimageEvidence> {
@@ -5298,6 +6217,21 @@ pub fn parse_phase42_boundary_history_equivalence_witness_json(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn parse_phase43_history_replay_trace_json(json: &str) -> Result<Phase43HistoryReplayTrace> {
+    if json.len() > MAX_PHASE43_HISTORY_REPLAY_TRACE_JSON_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace JSON is {} bytes, exceeding the limit of {} bytes",
+            json.len(),
+            MAX_PHASE43_HISTORY_REPLAY_TRACE_JSON_BYTES
+        )));
+    }
+    let trace: Phase43HistoryReplayTrace =
+        serde_json::from_str(json).map_err(phase43_json_error)?;
+    verify_phase43_history_replay_trace(&trace)?;
+    Ok(trace)
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn parse_phase42_boundary_preimage_evidence_json_against_sources(
     json: &str,
     chain: &Phase12DecodingChainManifest,
@@ -5325,6 +6259,19 @@ pub fn parse_phase42_boundary_history_equivalence_witness_json_against_sources(
         &witness, chain, phase28, contract, phase30,
     )?;
     Ok(witness)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn parse_phase43_history_replay_trace_json_against_sources(
+    json: &str,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase43HistoryReplayTrace> {
+    let trace = parse_phase43_history_replay_trace_json(json)?;
+    verify_phase43_history_replay_trace_against_sources(&trace, chain, phase28, contract, phase30)?;
+    Ok(trace)
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -5358,6 +6305,19 @@ pub fn load_phase42_boundary_history_equivalence_witness(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn load_phase43_history_replay_trace(path: &Path) -> Result<Phase43HistoryReplayTrace> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE43_HISTORY_REPLAY_TRACE_JSON_BYTES,
+        "Phase 43 history replay trace",
+    )?;
+    let trace: Phase43HistoryReplayTrace =
+        serde_json::from_slice(&bytes).map_err(phase43_json_error)?;
+    verify_phase43_history_replay_trace(&trace)?;
+    Ok(trace)
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn load_phase42_boundary_preimage_evidence_against_sources(
     path: &Path,
     chain: &Phase12DecodingChainManifest,
@@ -5388,10 +6348,34 @@ pub fn load_phase42_boundary_history_equivalence_witness_against_sources(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn load_phase43_history_replay_trace_against_sources(
+    path: &Path,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase43HistoryReplayTrace> {
+    let trace = load_phase43_history_replay_trace(path)?;
+    verify_phase43_history_replay_trace_against_sources(&trace, chain, phase28, contract, phase30)?;
+    Ok(trace)
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase42_json_error(error: serde_json::Error) -> VmError {
     if error.is_data() || error.is_syntax() {
         VmError::InvalidConfig(format!(
             "invalid Phase 42 boundary preimage evidence JSON: {error}"
+        ))
+    } else {
+        VmError::Serialization(error.to_string())
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_json_error(error: serde_json::Error) -> VmError {
+    if error.is_data() || error.is_syntax() {
+        VmError::InvalidConfig(format!(
+            "invalid Phase 43 history replay trace JSON: {error}"
         ))
     } else {
         VmError::Serialization(error.to_string())
@@ -9441,6 +10425,120 @@ mod tests {
     }
 
     #[cfg(feature = "stwo-backend")]
+    fn phase43_sample_history_replay_trace() -> Phase43HistoryReplayTrace {
+        let layout =
+            crate::stwo_backend::Phase12DecodingLayout::new(2, 2).expect("valid Phase 12 layout");
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 2)
+            .expect("generate two-step Phase 12 decoding chain");
+        let phase30 = phase30_prepare_decoding_step_proof_envelope_manifest(&chain)
+            .expect("derive Phase30 from Phase12 chain");
+        let replayed_phase14 =
+            phase14_prepare_decoding_chain(&chain).expect("derive replayed Phase14 chain");
+        let latest_cached_pair_range = chain
+            .layout
+            .latest_cached_pair_range()
+            .expect("latest cached pair range");
+        let rows = chain
+            .steps
+            .iter()
+            .zip(replayed_phase14.steps.iter())
+            .zip(phase30.envelopes.iter())
+            .enumerate()
+            .map(
+                |(step_index, ((phase12_step, phase14_step), phase30_envelope))| {
+                    Phase43HistoryReplayTraceRow {
+                        step_index,
+                        appended_pair: phase12_step.proof.claim.final_state.memory
+                            [latest_cached_pair_range.clone()]
+                        .to_vec(),
+                        input_lookup_rows_commitment: phase12_step
+                            .from_state
+                            .lookup_rows_commitment
+                            .clone(),
+                        output_lookup_rows_commitment: phase12_step
+                            .to_state
+                            .lookup_rows_commitment
+                            .clone(),
+                        phase30_step_envelope_commitment: phase30_envelope
+                            .envelope_commitment
+                            .clone(),
+                        phase12_from_state: phase12_step.from_state.clone(),
+                        phase12_to_state: phase12_step.to_state.clone(),
+                        phase14_from_state: phase14_step.from_state.clone(),
+                        phase14_to_state: phase14_step.to_state.clone(),
+                    }
+                },
+            )
+            .collect::<Vec<_>>();
+        let (appended_pairs_commitment, appended_pair_count) =
+            phase42_commit_source_appended_pairs(&chain).expect("commit Phase43 sample pairs");
+        assert_eq!(appended_pair_count, rows.len());
+        let (lookup_rows_commitments_commitment, lookup_row_count) =
+            phase42_commit_source_lookup_rows_commitments(&chain)
+                .expect("commit Phase43 sample lookup rows");
+        assert_eq!(lookup_row_count, rows.len() + 1);
+        let first = rows.first().expect("sample trace has first row");
+        let last = rows.last().expect("sample trace has last row");
+        let mut trace = Phase43HistoryReplayTrace {
+            issue: STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
+            trace_version: STWO_HISTORY_REPLAY_TRACE_VERSION_PHASE43.to_string(),
+            relation_outcome: STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43.to_string(),
+            transform_rule: STWO_HISTORY_REPLAY_TRACE_RULE_PHASE43.to_string(),
+            proof_backend: StarkProofBackend::Stwo,
+            proof_backend_version: STWO_BACKEND_VERSION_PHASE12.to_string(),
+            statement_version: CLAIM_STATEMENT_VERSION_V1.to_string(),
+            phase42_witness_commitment: phase42_hash('1'),
+            phase29_contract_commitment: phase42_hash('2'),
+            phase28_aggregate_commitment: phase42_hash('3'),
+            phase30_source_chain_commitment: phase30.source_chain_commitment,
+            phase30_step_envelopes_commitment: phase30.step_envelopes_commitment,
+            total_steps: rows.len(),
+            layout_commitment: first.phase12_from_state.layout_commitment.clone(),
+            rolling_kv_pairs: chain.layout.rolling_kv_pairs,
+            pair_width: chain.layout.pair_width,
+            phase12_start_public_state_commitment: first
+                .phase12_from_state
+                .public_state_commitment
+                .clone(),
+            phase12_end_public_state_commitment: last
+                .phase12_to_state
+                .public_state_commitment
+                .clone(),
+            phase14_start_boundary_commitment: commit_phase23_boundary_state(
+                &first.phase14_from_state,
+            ),
+            phase14_end_boundary_commitment: commit_phase23_boundary_state(&last.phase14_to_state),
+            phase12_start_history_commitment: first
+                .phase12_from_state
+                .kv_history_commitment
+                .clone(),
+            phase12_end_history_commitment: last.phase12_to_state.kv_history_commitment.clone(),
+            phase14_start_history_commitment: first
+                .phase14_from_state
+                .kv_history_commitment
+                .clone(),
+            phase14_end_history_commitment: last.phase14_to_state.kv_history_commitment.clone(),
+            initial_kv_cache_commitment: first.phase12_from_state.kv_cache_commitment.clone(),
+            appended_pairs_commitment,
+            lookup_rows_commitments_commitment,
+            rows,
+            full_history_replay_required: true,
+            cryptographic_compression_claimed: false,
+            stwo_air_proof_claimed: false,
+            trace_commitment: String::new(),
+        };
+        trace.trace_commitment =
+            commit_phase43_history_replay_trace(&trace).expect("commit Phase43 sample trace");
+        trace
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn phase43_recommit_trace(trace: &mut Phase43HistoryReplayTrace) {
+        trace.trace_commitment =
+            commit_phase43_history_replay_trace(trace).expect("recommit Phase43 trace");
+    }
+
+    #[cfg(feature = "stwo-backend")]
     #[test]
     fn phase42_boundary_preimage_evidence_accepts_hash_preimage_relation_shape() {
         let evidence = phase42_sample_evidence();
@@ -9572,6 +10670,144 @@ mod tests {
 
     #[cfg(feature = "stwo-backend")]
     #[test]
+    fn phase43_history_replay_trace_accepts_normalized_replay_shape() {
+        let trace = phase43_sample_history_replay_trace();
+        verify_phase43_history_replay_trace(&trace).expect("verify standalone Phase43 trace");
+
+        assert_eq!(
+            trace.relation_outcome,
+            STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43
+        );
+        assert!(trace.full_history_replay_required);
+        assert!(!trace.cryptographic_compression_claimed);
+        assert!(!trace.stwo_air_proof_claimed);
+        assert_eq!(trace.rows.len(), trace.total_steps);
+        assert_ne!(
+            trace.phase12_end_history_commitment, trace.phase14_end_history_commitment,
+            "Phase43 trace must preserve the Phase12/Phase14 history-domain gap"
+        );
+
+        let json = serde_json::to_string_pretty(&trace).expect("serialize Phase43 trace");
+        let parsed =
+            parse_phase43_history_replay_trace_json(&json).expect("parse standalone Phase43 trace");
+        assert_eq!(parsed, trace);
+
+        let path = std::env::temp_dir().join(format!(
+            "phase43-history-replay-trace-{}.json",
+            std::process::id()
+        ));
+        std::fs::write(&path, json).expect("write Phase43 trace temp file");
+        let loaded = load_phase43_history_replay_trace(&path).expect("load Phase43 trace file");
+        std::fs::remove_file(&path).expect("remove Phase43 trace temp file");
+        assert_eq!(loaded, trace);
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase43_history_replay_trace_rejects_reordered_row_even_when_recommitted() {
+        let mut trace = phase43_sample_history_replay_trace();
+        trace.rows.swap(0, 1);
+        trace.appended_pairs_commitment =
+            phase43_commit_trace_appended_pairs(&trace).expect("recommit swapped pairs");
+        trace.lookup_rows_commitments_commitment =
+            phase43_commit_trace_lookup_rows_commitments(&trace)
+                .expect("recommit swapped lookup rows");
+        trace.phase30_step_envelopes_commitment =
+            phase43_commit_trace_phase30_step_envelopes(&trace)
+                .expect("recommit swapped Phase30 envelope rows");
+        phase43_recommit_trace(&mut trace);
+
+        let err = verify_phase43_history_replay_trace(&trace)
+            .expect_err("Phase43 must reject reordered replay rows");
+        assert!(err.to_string().contains("step_index"), "{err}");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase43_history_replay_trace_rejects_stale_lookup_handle_even_when_recommitted() {
+        let mut trace = phase43_sample_history_replay_trace();
+        trace.rows[0].output_lookup_rows_commitment = phase42_hash('a');
+        trace.lookup_rows_commitments_commitment =
+            phase43_commit_trace_lookup_rows_commitments(&trace)
+                .expect("recommit stale lookup rows");
+        phase43_recommit_trace(&mut trace);
+
+        let err = verify_phase43_history_replay_trace(&trace)
+            .expect_err("Phase43 must reject stale row-level lookup handle");
+        assert!(
+            err.to_string().contains("output_lookup_rows_commitment"),
+            "{err}"
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase43_history_replay_trace_rejects_boundary_count_claim_and_commitment_tamper() {
+        let mut boundary_swap = phase43_sample_history_replay_trace();
+        boundary_swap.phase14_start_boundary_commitment =
+            boundary_swap.phase14_end_boundary_commitment.clone();
+        phase43_recommit_trace(&mut boundary_swap);
+        let err = verify_phase43_history_replay_trace(&boundary_swap)
+            .expect_err("Phase43 must reject swapped Phase28/Phase14 boundary");
+        assert!(err.to_string().contains("start boundary"), "{err}");
+
+        let mut count_mismatch = phase43_sample_history_replay_trace();
+        count_mismatch.total_steps += 1;
+        phase43_recommit_trace(&mut count_mismatch);
+        let err = verify_phase43_history_replay_trace(&count_mismatch)
+            .expect_err("Phase43 must reject count mismatch");
+        assert!(err.to_string().contains("total_steps"), "{err}");
+
+        let mut air_claim = phase43_sample_history_replay_trace();
+        air_claim.stwo_air_proof_claimed = true;
+        phase43_recommit_trace(&mut air_claim);
+        let err = verify_phase43_history_replay_trace(&air_claim)
+            .expect_err("Phase43 must reject premature AIR proof claims");
+        assert!(err.to_string().contains("Stwo AIR proof"), "{err}");
+
+        let mut envelope_drift = phase43_sample_history_replay_trace();
+        envelope_drift.rows[0].phase30_step_envelope_commitment = phase42_hash('e');
+        phase43_recommit_trace(&mut envelope_drift);
+        let err = verify_phase43_history_replay_trace(&envelope_drift)
+            .expect_err("Phase43 must reject stale Phase30 envelope handle");
+        assert!(err.to_string().contains("step_envelopes"), "{err}");
+
+        let mut compression_claim = phase43_sample_history_replay_trace();
+        compression_claim.cryptographic_compression_claimed = true;
+        phase43_recommit_trace(&mut compression_claim);
+        let err = verify_phase43_history_replay_trace(&compression_claim)
+            .expect_err("Phase43 must reject premature compression claims");
+        assert!(
+            err.to_string().contains("cryptographic compression"),
+            "{err}"
+        );
+
+        let mut stale_commitment = phase43_sample_history_replay_trace();
+        stale_commitment.phase30_source_chain_commitment = phase42_hash('f');
+        let err = verify_phase43_history_replay_trace(&stale_commitment)
+            .expect_err("Phase43 must reject stale trace commitment");
+        assert!(err.to_string().contains("trace commitment"), "{err}");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase43_history_replay_trace_rejects_unknown_and_oversized_json() {
+        let trace = phase43_sample_history_replay_trace();
+        let mut value = serde_json::to_value(&trace).expect("serialize Phase43 trace value");
+        value["unexpected_phase43_trace_field"] = serde_json::json!(true);
+        let json = serde_json::to_string(&value).expect("serialize unknown-field Phase43 JSON");
+        let err = parse_phase43_history_replay_trace_json(&json)
+            .expect_err("unknown Phase43 fields must be rejected");
+        assert!(err.to_string().contains("unknown field"));
+
+        let json = " ".repeat(MAX_PHASE43_HISTORY_REPLAY_TRACE_JSON_BYTES + 1);
+        let err = parse_phase43_history_replay_trace_json(&json)
+            .expect_err("oversized Phase43 trace JSON must fail before serde parsing");
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
     fn phase42_boundary_preimage_evidence_rejects_synthetic_phase28_shell_sources() {
         let layout =
             crate::stwo_backend::Phase12DecodingLayout::new(2, 2).expect("valid Phase 12 layout");
@@ -9648,6 +10884,47 @@ mod tests {
             &tampered, &chain, &phase28, &phase29, &phase30,
         )
         .expect_err("source-bound Phase42 history witness must reject appended-pair drift");
+        assert!(err.to_string().contains("does not match the recomputed"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    #[ignore = "generates and checks a 16-step shared-proof Phase12/28/29/30 source; run explicitly for the expensive Phase43 kill decision"]
+    fn phase43_live_shared_sources_accept_trace_and_reject_source_chain_swap() {
+        let (chain, phase28, phase30) = prove_phase42_boundary_preimage_shared_proof_demo()
+            .expect("derive shared Phase12/28/30 Phase43 replay-trace sources");
+        let phase29 =
+            phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28(
+                &phase28,
+            )
+            .expect("derive Phase29 from Phase28 source");
+        let trace = phase43_prepare_history_replay_trace(&chain, &phase28, &phase29, &phase30)
+            .expect("live Phase43 source stack must produce a replay trace");
+        assert_eq!(
+            trace.relation_outcome,
+            STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43
+        );
+        assert!(trace.full_history_replay_required);
+        assert!(!trace.cryptographic_compression_claimed);
+        assert!(!trace.stwo_air_proof_claimed);
+        verify_phase43_history_replay_trace_against_sources(
+            &trace, &chain, &phase28, &phase29, &phase30,
+        )
+        .expect("source-bound Phase43 replay trace must verify");
+
+        let mut source_chain_swap = trace.clone();
+        source_chain_swap.phase30_source_chain_commitment = phase42_hash('f');
+        phase43_recommit_trace(&mut source_chain_swap);
+        verify_phase43_history_replay_trace(&source_chain_swap)
+            .expect("standalone Phase43 trace only checks internal replay shape");
+        let err = verify_phase43_history_replay_trace_against_sources(
+            &source_chain_swap,
+            &chain,
+            &phase28,
+            &phase29,
+            &phase30,
+        )
+        .expect_err("source-bound Phase43 trace must reject Phase30 source-chain swap");
         assert!(err.to_string().contains("does not match the recomputed"));
     }
 
