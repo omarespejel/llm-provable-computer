@@ -36,6 +36,10 @@ pub const STWO_HISTORY_REPLAY_PROJECTION_STATEMENT_VERSION_PHASE43: &str =
     "phase43-history-replay-field-projection-v1";
 pub const STWO_HISTORY_REPLAY_PROJECTION_SEMANTIC_SCOPE_PHASE43: &str =
     "phase43_field_native_history_replay_projection_no_blake2b_compression";
+pub const STWO_HISTORY_REPLAY_PROJECTION_BOUNDARY_ASSESSMENT_VERSION_PHASE43: &str =
+    "phase43-history-replay-projection-boundary-assessment-v1";
+pub const STWO_HISTORY_REPLAY_PROJECTION_BOUNDARY_DECISION_PHASE43: &str =
+    "not_a_compression_boundary_requires_full_trace";
 
 const PHASE43_PROJECTION_ONE_COLUMN: &str = "phase43/history_replay_projection/one";
 const PHASE43_PROJECTION_HASH_LIMBS: usize = 16;
@@ -77,6 +81,31 @@ pub struct Phase43HistoryReplayProjectionProofEnvelope {
     pub cryptographic_compression_claimed: bool,
     pub blake2b_preimage_proven: bool,
     pub proof: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase43HistoryReplayProjectionBoundaryAssessment {
+    pub assessment_version: String,
+    pub phase43_trace_commitment: String,
+    pub projection_commitment: String,
+    pub total_steps: usize,
+    pub pair_width: usize,
+    pub projection_row_count: usize,
+    pub projection_column_count: usize,
+    pub projected_field_cells: usize,
+    pub proof_size_bytes: usize,
+    pub proof_native_trace_commitments: usize,
+    pub stwo_projection_air_verified: bool,
+    pub verifier_requires_full_phase43_trace: bool,
+    pub verifier_embeds_projection_rows_as_constants: bool,
+    pub full_trace_commitment_proven: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub blake2b_preimage_proven: bool,
+    pub source_chain_step_envelopes_proven: bool,
+    pub useful_compression_boundary: bool,
+    pub decision: String,
+    pub required_next_step: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -296,7 +325,7 @@ pub fn prove_phase43_history_replay_projection_envelope(
         projection_version: STWO_HISTORY_REPLAY_PROJECTION_STATEMENT_VERSION_PHASE43.to_string(),
         projection_row_count: bundle.projection.rows.len(),
         projection_column_count: bundle.projection.layout.column_count(),
-        projection_commitment: bundle.projection.commitment,
+        projection_commitment: bundle.projection.commitment.clone(),
         projection_air_proof_claimed: true,
         full_trace_commitment_proven: false,
         cryptographic_compression_claimed: false,
@@ -339,6 +368,48 @@ pub fn verify_phase43_history_replay_projection_envelope(
         stark_proof,
     )
     .is_ok())
+}
+
+pub fn assess_phase43_history_replay_projection_boundary(
+    trace: &Phase43HistoryReplayTrace,
+    envelope: &Phase43HistoryReplayProjectionProofEnvelope,
+) -> Result<Phase43HistoryReplayProjectionBoundaryAssessment> {
+    let bundle = build_phase43_projection_bundle(trace)?;
+    validate_phase43_projection_envelope(trace, envelope, &bundle.projection)?;
+    let payload: Phase43ProjectionProofPayload = serde_json::from_slice(&envelope.proof)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    let stwo_projection_air_verified =
+        verify_phase43_history_replay_projection_envelope(trace, envelope)?;
+
+    Ok(Phase43HistoryReplayProjectionBoundaryAssessment {
+        assessment_version: STWO_HISTORY_REPLAY_PROJECTION_BOUNDARY_ASSESSMENT_VERSION_PHASE43
+            .to_string(),
+        phase43_trace_commitment: trace.trace_commitment.clone(),
+        projection_commitment: bundle.projection.commitment,
+        total_steps: trace.total_steps,
+        pair_width: trace.pair_width,
+        projection_row_count: bundle.projection.rows.len(),
+        projection_column_count: bundle.projection.layout.column_count(),
+        projected_field_cells: bundle
+            .projection
+            .rows
+            .len()
+            .saturating_mul(bundle.projection.layout.column_count()),
+        proof_size_bytes: envelope.proof.len(),
+        proof_native_trace_commitments: payload.stark_proof.commitments.len(),
+        stwo_projection_air_verified,
+        verifier_requires_full_phase43_trace: true,
+        verifier_embeds_projection_rows_as_constants: true,
+        full_trace_commitment_proven: envelope.full_trace_commitment_proven,
+        cryptographic_compression_claimed: envelope.cryptographic_compression_claimed,
+        blake2b_preimage_proven: envelope.blake2b_preimage_proven,
+        source_chain_step_envelopes_proven: false,
+        useful_compression_boundary: false,
+        decision: STWO_HISTORY_REPLAY_PROJECTION_BOUNDARY_DECISION_PHASE43.to_string(),
+        required_next_step:
+            "Make the source chain emit proof-native Stwo commitments/public inputs, or prove the legacy Blake2b trace/source commitments inside AIR; otherwise pivot to layerwise/tensor proving."
+                .to_string(),
+    })
 }
 
 fn prove_phase43_projection(bundle: &Phase43ProjectionBundle) -> Result<Vec<u8>> {
@@ -1114,6 +1185,56 @@ mod tests {
         let error = verify_phase43_history_replay_projection_envelope(&trace, &envelope)
             .expect_err("full trace proof claim must be rejected");
         assert!(error.to_string().contains("full trace commitment"));
+    }
+
+    #[test]
+    fn phase43_history_replay_projection_boundary_assessment_marks_not_compression_boundary() {
+        let trace = sample_trace();
+        let envelope = prove_phase43_history_replay_projection_envelope(&trace)
+            .expect("prove Phase43 projection");
+        let assessment = assess_phase43_history_replay_projection_boundary(&trace, &envelope)
+            .expect("assess Phase43 projection boundary");
+
+        assert_eq!(
+            assessment.assessment_version,
+            STWO_HISTORY_REPLAY_PROJECTION_BOUNDARY_ASSESSMENT_VERSION_PHASE43
+        );
+        assert_eq!(
+            assessment.decision,
+            STWO_HISTORY_REPLAY_PROJECTION_BOUNDARY_DECISION_PHASE43
+        );
+        assert_eq!(assessment.phase43_trace_commitment, trace.trace_commitment);
+        assert_eq!(assessment.total_steps, trace.total_steps);
+        assert_eq!(assessment.pair_width, trace.pair_width);
+        assert_eq!(assessment.projection_row_count, trace.total_steps);
+        assert_eq!(
+            assessment.projected_field_cells,
+            trace.total_steps * (PHASE43_PROJECTION_PREFIX_WIDTH + trace.pair_width + 96)
+        );
+        assert!(assessment.proof_size_bytes > 0);
+        assert!(assessment.proof_native_trace_commitments >= 3);
+        assert!(assessment.stwo_projection_air_verified);
+        assert!(assessment.verifier_requires_full_phase43_trace);
+        assert!(assessment.verifier_embeds_projection_rows_as_constants);
+        assert!(!assessment.full_trace_commitment_proven);
+        assert!(!assessment.cryptographic_compression_claimed);
+        assert!(!assessment.blake2b_preimage_proven);
+        assert!(!assessment.source_chain_step_envelopes_proven);
+        assert!(!assessment.useful_compression_boundary);
+        assert!(assessment.required_next_step.contains("proof-native Stwo"));
+        assert!(assessment.required_next_step.contains("Blake2b"));
+    }
+
+    #[test]
+    fn phase43_history_replay_projection_boundary_assessment_rejects_invalid_envelope_claims() {
+        let trace = sample_trace();
+        let mut envelope = prove_phase43_history_replay_projection_envelope(&trace)
+            .expect("prove Phase43 projection");
+        envelope.blake2b_preimage_proven = true;
+
+        let error = assess_phase43_history_replay_projection_boundary(&trace, &envelope)
+            .expect_err("invalid Blake2b claim must be rejected before assessment");
+        assert!(error.to_string().contains("Blake2b preimage"));
     }
 
     #[test]
