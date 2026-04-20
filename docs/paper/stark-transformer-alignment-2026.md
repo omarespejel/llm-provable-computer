@@ -421,7 +421,8 @@ shared-table accumulation.
 
 On the current proof-carrying state line, this boundary is made more explicit by three
 test-covered verifier surfaces. Phase 63 binds one shared lookup-table identity across
-the Phase 62 step envelopes; Phase 64 introduces a small typed carried-state boundary
+the Phase 62 step envelopes, the proof-carrying steps on this line; Phase 64 introduces
+a small typed carried-state boundary
 that exposes the state, lookup identity, tensor handle, KV-cache handle, and token handle
 checked at each step; and Phase 65 binds those typed boundaries to one first-layer
 gated-feed-forward transformer-shaped transition artifact backed by the Phase 60 runtime
@@ -499,9 +500,10 @@ reproducibility tier and primary transformer relation still live on the vanilla 
 while the `stwo` path remains a bounded experimental tier rather than a broad production
 zkML surface. Second, the main proved transformer relation still uses `average-hard`
 rather than full standard softmax. Third, the current repository already binds shared
-lookup-table identity inside public artifacts and across proof-carrying steps, but it
-does not yet expose recursive cross-step shared-table accumulation as a compressed proof
-object. Fourth, the decode overlays, semantic-agreement artifacts, and pre-recursive
+lookup-table identity inside public artifacts and across those Phase 62 proof-carrying
+step envelopes, but it does not yet expose recursive cross-step shared-table accumulation
+as a compressed proof object. Fourth, the decode overlays, semantic-agreement artifacts,
+and pre-recursive
 aggregation boundaries are
 statement-preserving packaging layers, not recursive cryptographic wrappers, SMT-backed
 implementation-equivalence proofs, or production-scale learned-model zkML claims.
@@ -564,7 +566,7 @@ This artifact narrows the gap between analytic and systems claims by showing:
    proving and exposed as transition-relation hashes rather than prose-only
    assertions,
 3. one parameterized decode relation preserves carried state and shared lookup identity
-   across layouts, proof-carrying steps, and packaging layers,
+   across layouts, Phase 62 proof-carrying step envelopes, and packaging layers,
 4. carried-state packages can be aggregated as pre-recursive statements without changing
    the underlying decode relation,
 5. reproducibility can be anchored in immutable bundles and commit-pinned artifacts.
