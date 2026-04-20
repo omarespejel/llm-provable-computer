@@ -8952,6 +8952,29 @@ mod tests {
     }
 
     #[test]
+    fn phase62_proof_carrying_state_continuity_rejects_empty_chain_without_panicking() {
+        let (_, _, _, _, _, _, _, _, mut phase62) =
+            sample_phase62_proof_carrying_state_continuity_claim();
+
+        phase62.step_envelopes.clear();
+        phase62.step_count = 0;
+        phase62.continuity_link_count = 0;
+        recommit_phase62_claim(&mut phase62);
+
+        let result = std::panic::catch_unwind(|| {
+            verify_phase62_proof_carrying_state_continuity_claim(&phase62)
+        });
+        match result {
+            Ok(Err(error)) => assert!(
+                error.to_string().contains("multi-step envelope chain"),
+                "{error}"
+            ),
+            Ok(Ok(())) => panic!("empty Phase62 chain must be rejected"),
+            Err(_) => panic!("empty Phase62 chain must return Err, not panic"),
+        }
+    }
+
+    #[test]
     fn phase62_proof_carrying_state_continuity_rejects_broken_link_even_when_recommitted() {
         let (_, _, _, _, _, _, _, _, mut phase62) =
             sample_phase62_proof_carrying_state_continuity_claim();
