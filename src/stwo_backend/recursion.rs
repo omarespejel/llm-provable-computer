@@ -12593,11 +12593,10 @@ pub(crate) fn verify_phase57_first_layer_mle_opening_verifier_claim(
                     .to_string(),
             ));
         }
-        let binding = format!(
-            "{}:{}:{}",
-            receipt.source_phase54_opening_claim_commitment,
-            receipt.opening_kind,
-            receipt.opening_name
+        let binding = (
+            receipt.source_phase54_opening_claim_commitment.clone(),
+            receipt.opening_kind.clone(),
+            receipt.opening_name.clone(),
         );
         if seen_receipt_bindings.contains(&binding) {
             return Err(VmError::InvalidConfig(
@@ -13573,11 +13572,10 @@ pub fn verify_phase58_first_layer_witness_pcs_opening_claim(
                     .to_string(),
             ));
         }
-        let binding = format!(
-            "{}:{}:{}",
-            opening.source_phase57_opening_receipt_commitment,
-            opening.opening_kind,
-            opening.opening_name
+        let binding = (
+            opening.source_phase57_opening_receipt_commitment.clone(),
+            opening.opening_kind.clone(),
+            opening.opening_name.clone(),
         );
         if seen_receipt_bindings.contains(&binding) {
             return Err(VmError::InvalidConfig(
