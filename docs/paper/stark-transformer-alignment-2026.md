@@ -426,9 +426,12 @@ a small typed carried-state boundary
 that exposes the state, lookup identity, tensor handle, KV-cache handle, and token handle
 checked at each step; and Phase 65 binds those typed boundaries to a relation-kind-bound
 transformer-shaped transition artifact backed by the Phase 60 runtime relation witness.
-This is stronger systems evidence for the proof surface, but it is still not a claim of
-standard-softmax transformer inference, recursive verification, or compressed shared-table
-accumulation.
+The Phase 63-65 checkpoint is pinned in the April 20 verifier-surface index at
+`docs/paper/artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/`, with source
+files, validation commands, reviewer status, and non-claims recorded there. This is
+stronger systems evidence for the proof surface, but it is still not a claim of
+standard-softmax transformer inference, recursive verification, or compressed
+shared-table accumulation.
 
 ### 5.2 Carried-state relation
 
@@ -530,6 +533,13 @@ lookup proof envelope, a block-shaped execution proof, and a carried-state decod
 The broader repository artifact inventory also includes bounded multi-runtime
 semantic-agreement artifacts and pre-recursive aggregation bundles. Appendix C1 compares
 the two backend-facing tiers.
+
+Finally, a post-freeze April 20 verifier-surface index records the Phase 63-65
+proof-carrying bridge merged at checkpoint `03cc77f371275c8d9ef5f4244a23d3e35c98a41b`.
+That index is not a new timing or proof-size benchmark. It is the citation-facing
+implementation checkpoint for the claim that shared lookup identity and typed carried
+state are now verifier-visible across a transformer-shaped proof-carrying artifact line
+[30].
 
 ### 5.5 Pre-recursive aggregation boundary
 
@@ -819,10 +829,11 @@ ______________________________________________________________________
     Accessed April 5, 2026.
     <https://starkware.co/blog/giza-x-s-two-powering-verifiable-ml-with-luminair/>
 30. `omarespejel/provable-transformer-vm`. “Staging Repository Snapshot Discussed in
-    Sections 5 and 8.” GitHub repository snapshot (pinned carried-state evidence
-    commit), commit `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`. This commit remains the
-    citation target until the final publication repository and release tag are cut.
-    <https://github.com/omarespejel/provable-transformer-vm/tree/6ff972ddda4051d73dc65c92a88c0d00683ec8c7>
+    Sections 5 and 8.” GitHub repository snapshot (pinned Phase 63-65
+    proof-carrying artifact checkpoint), commit
+    `03cc77f371275c8d9ef5f4244a23d3e35c98a41b`. This commit remains the citation
+    target until the final publication repository and release tag are cut.
+    <https://github.com/omarespejel/provable-transformer-vm/tree/03cc77f371275c8d9ef5f4244a23d3e35c98a41b>
 31. `omarespejel/provable-transformer-vm`. “Appendix Artifact Index (Production V1).”
     GitHub artifact snapshot, commit `8d435d540b8e3cf33ec4381bb820a00b6fe7aae6`, with
     command logs, hashes, and proof artifacts for the vanilla reproducibility tier.

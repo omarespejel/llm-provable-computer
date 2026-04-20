@@ -1,0 +1,30 @@
+Phase63-65 proof-carrying bridge validation summary.
+
+Implementation checkpoint:
+03cc77f371275c8d9ef5f4244a23d3e35c98a41b
+
+Final PR head validated before merge:
+19b2cca49b505eadff09d4645f8f0e7a00c74303
+
+Commands and results:
+- cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase63 -- --nocapture
+  result: 8 passed
+- cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase64 -- --nocapture
+  result: 6 passed
+- cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase65 -- --nocapture
+  result: 4 passed
+- cargo +nightly-2025-07-14 check --quiet --features stwo-backend
+  result: passed with pre-existing phase12_demo_initial_memories dead-code warning
+- python3 scripts/paper/paper_preflight.py
+  result: paper preflight: PASS
+- cargo +nightly-2025-07-14 fmt --check
+  result: passed
+- git diff --check
+  result: passed
+- cargo +nightly-2025-07-14 test -q --features stwo-backend --lib
+  result: 827 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out
+
+Reviewer state before merge:
+- CodeRabbit: success
+- Qodo: Bugs (0), Rule violations (0), Requirement gaps (0)
+- PR merge state: CLEAN

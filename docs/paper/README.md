@@ -20,6 +20,10 @@ Supporting publication assets:
 - `submission-v4-2026-04-11/`
 - `artifacts/`
 
+Current paper-freeze addendum:
+
+- `artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/`
+
 Draft next-paper package:
 
 - `paper2/README.md`

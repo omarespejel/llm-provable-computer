@@ -1,0 +1,11 @@
+generated_at_utc: 2026-04-20T18:19:23Z
+artifact_label: phase63-65-proof-carrying-artifact-v1-2026-04-20
+implementation_checkpoint: 03cc77f371275c8d9ef5f4244a23d3e35c98a41b
+source_pr: https://github.com/omarespejel/provable-transformer-vm/pull/188
+source_branch: codex/phase63-65-proof-carrying-artifact
+final_pr_head: 19b2cca49b505eadff09d4645f8f0e7a00c74303
+artifact_type: code-and-validation verifier-surface index
+proof_output_bundle: false
+performance_benchmark_bundle: false
+recursive_compression_claimed: false
+standard_softmax_inference_claimed: false
