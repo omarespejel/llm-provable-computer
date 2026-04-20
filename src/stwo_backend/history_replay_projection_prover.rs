@@ -4555,6 +4555,8 @@ mod tests {
         commit_phase57_mle_opening_verification_receipt,
         commit_phase58_first_layer_witness_pcs_opening_claim,
         commit_phase58_witness_bound_pcs_opening,
+        commit_phase59_first_layer_relation_witness_binding_claim,
+        commit_phase59_relation_witness_component_binding,
         phase44d_prepare_recursive_verifier_public_output_aggregation,
         phase44d_prepare_recursive_verifier_public_output_handoff,
         phase45_prepare_recursive_verifier_public_input_bridge,
@@ -4573,6 +4575,7 @@ mod tests {
         phase58_build_pcs_opening_proof_for_tests, phase58_commit_pcs_proof_bytes_for_tests,
         phase58_derive_opening_witness_values_for_tests,
         phase58_prepare_first_layer_witness_pcs_opening_claim,
+        phase59_prepare_first_layer_relation_witness_binding_claim,
         verify_phase44d_recursive_verifier_public_output_aggregation,
         verify_phase44d_recursive_verifier_public_output_handoff,
         verify_phase44d_recursive_verifier_public_output_handoff_against_boundary,
@@ -4606,12 +4609,15 @@ mod tests {
         verify_phase57_mle_opening_verification_receipt,
         verify_phase58_first_layer_witness_pcs_opening_claim,
         verify_phase58_first_layer_witness_pcs_opening_claim_against_phase57,
-        verify_phase58_witness_bound_pcs_opening, Phase48RecursiveProofWrapperAttempt,
-        Phase49LayerwiseTensorClaimPropagationContract, Phase50LayerIoClaim,
-        Phase51FirstLayerRelationClaim, Phase52LayerEndpointAnchoringClaim,
+        verify_phase58_witness_bound_pcs_opening,
+        verify_phase59_first_layer_relation_witness_binding_claim,
+        verify_phase59_first_layer_relation_witness_binding_claim_against_phase58,
+        Phase48RecursiveProofWrapperAttempt, Phase49LayerwiseTensorClaimPropagationContract,
+        Phase50LayerIoClaim, Phase51FirstLayerRelationClaim, Phase52LayerEndpointAnchoringClaim,
         Phase53FirstLayerRelationBenchmarkClaim, Phase54FirstLayerSumcheckSkeletonClaim,
         Phase55FirstLayerCompressionEffectivenessClaim, Phase56FirstLayerExecutableSumcheckClaim,
         Phase57FirstLayerMleOpeningVerifierClaim, Phase58FirstLayerWitnessPcsOpeningClaim,
+        Phase59FirstLayerRelationWitnessBindingClaim,
     };
     use super::super::STWO_BACKEND_VERSION_PHASE12;
     use super::*;
@@ -8249,6 +8255,212 @@ mod tests {
         )
         .expect_err("Phase58 must reject source drift against Phase57");
         assert!(error.to_string().contains("source drift against Phase57"));
+    }
+
+    fn sample_phase59_relation_witness_binding_claim() -> (
+        Phase53FirstLayerRelationBenchmarkClaim,
+        Phase54FirstLayerSumcheckSkeletonClaim,
+        Phase56FirstLayerExecutableSumcheckClaim,
+        Phase57FirstLayerMleOpeningVerifierClaim,
+        Phase58FirstLayerWitnessPcsOpeningClaim,
+        Phase59FirstLayerRelationWitnessBindingClaim,
+    ) {
+        let (phase53, phase54, phase56, phase57, phase58) =
+            sample_phase58_witness_pcs_opening_claim();
+        let phase59 = phase59_prepare_first_layer_relation_witness_binding_claim(
+            &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect("prepare Phase59 relation witness binding claim");
+        (phase53, phase54, phase56, phase57, phase58, phase59)
+    }
+
+    #[test]
+    fn phase59_relation_witness_binding_claim_accepts_phase58_openings() {
+        let (_, phase54, phase56, phase57, phase58, phase59) =
+            sample_phase59_relation_witness_binding_claim();
+
+        verify_phase59_first_layer_relation_witness_binding_claim(&phase59)
+            .expect("verify standalone Phase59 relation witness binding claim");
+        verify_phase59_first_layer_relation_witness_binding_claim_against_phase58(
+            &phase59, &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect("verify Phase59 relation witness binding against Phase58");
+
+        assert_eq!(phase59.component_binding_count, 4);
+        assert_eq!(phase59.total_runtime_opening_binding_count, 5);
+        assert_eq!(phase59.total_parameter_opening_binding_count, 6);
+        assert_eq!(phase59.total_terminal_evaluation_count, 8);
+        assert_eq!(
+            phase59.phase58_combined_verifier_surface_unit_count,
+            phase58.combined_verifier_surface_unit_count
+        );
+        assert!(phase59.executable_sumcheck_round_verifier_available);
+        assert!(phase59.executable_mle_opening_verifier_available);
+        assert!(phase59.witness_pcs_opening_proof_available);
+        assert!(phase59.relation_witness_binding_available);
+        assert!(!phase59.full_layer_relation_witness_available);
+        assert!(!phase59.actual_runtime_model_witness_available);
+        assert!(!phase59.recursive_verification_claimed);
+        assert!(!phase59.cryptographic_compression_claimed);
+        assert!(!phase59.breakthrough_claimed);
+        assert!(!phase59.paper_ready);
+        assert_eq!(phase59.component_bindings[0].runtime_opening_count, 1);
+        assert_eq!(phase59.component_bindings[0].parameter_opening_count, 2);
+        assert_eq!(
+            phase59.component_bindings[0].terminal_sum,
+            phase59.component_bindings[0].final_evaluations[0]
+        );
+    }
+
+    #[test]
+    fn phase59_prepare_preserves_phase58_source_validation_precedence() {
+        let (_, phase54, phase56, phase57, mut phase58) =
+            sample_phase58_witness_pcs_opening_claim();
+
+        phase58.source_phase57_opening_verifier_claim_commitment = hash32('e');
+        phase58.witness_pcs_opening_claim_commitment =
+            commit_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+                .expect("recommit internally consistent Phase58 source drift");
+
+        let error = phase59_prepare_first_layer_relation_witness_binding_claim(
+            &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect_err("Phase59 prepare must preserve Phase58 source-validation precedence");
+        assert!(error.to_string().contains("source drift against Phase57"));
+    }
+
+    #[test]
+    fn phase59_relation_witness_binding_rejects_terminal_drift_against_phase56() {
+        let (_, phase54, phase56, phase57, phase58, mut phase59) =
+            sample_phase59_relation_witness_binding_claim();
+
+        phase59.component_bindings[0].final_evaluations[0] =
+            (phase59.component_bindings[0].final_evaluations[0] + 1) % ((1u32 << 31) - 1);
+        phase59.component_bindings[0].terminal_sum =
+            phase59.component_bindings[0].final_evaluations[0];
+        phase59.component_bindings[0].relation_binding_commitment =
+            commit_phase59_relation_witness_component_binding(&phase59.component_bindings[0])
+                .expect("recommit forged Phase59 component binding");
+        phase59.relation_witness_binding_claim_commitment =
+            commit_phase59_first_layer_relation_witness_binding_claim(&phase59)
+                .expect("recommit forged Phase59 claim");
+
+        verify_phase59_first_layer_relation_witness_binding_claim(&phase59)
+            .expect("standalone Phase59 accepts internally consistent terminal drift");
+        let error = verify_phase59_first_layer_relation_witness_binding_claim_against_phase58(
+            &phase59, &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect_err("Phase59 must reject terminal drift against Phase56 source");
+        assert!(error
+            .to_string()
+            .contains("does not match verified Phase58 openings"));
+    }
+
+    #[test]
+    fn phase59_relation_witness_binding_rejects_parameter_assignment_drift() {
+        let (_, _, _, _, _, mut phase59) = sample_phase59_relation_witness_binding_claim();
+
+        let parameter_component_index = phase59
+            .component_bindings
+            .iter()
+            .position(|binding| binding.parameter_opening_bindings.len() >= 2)
+            .expect("fixture must include a component with at least two parameter openings");
+        phase59.component_bindings[parameter_component_index]
+            .parameter_opening_bindings
+            .swap(0, 1);
+        phase59.component_bindings[parameter_component_index].relation_binding_commitment =
+            commit_phase59_relation_witness_component_binding(
+                &phase59.component_bindings[parameter_component_index],
+            )
+            .expect("recommit forged Phase59 component binding");
+        phase59.relation_witness_binding_claim_commitment =
+            commit_phase59_first_layer_relation_witness_binding_claim(&phase59)
+                .expect("recommit forged Phase59 assignment-drift claim");
+
+        let error = verify_phase59_first_layer_relation_witness_binding_claim(&phase59)
+            .expect_err("Phase59 must reject reordered parameter opening assignment");
+        assert!(error.to_string().contains("parameter opening order drift"));
+    }
+
+    #[test]
+    fn phase59_relation_witness_binding_rejects_runtime_assignment_drift() {
+        let (_, _, _, _, _, mut phase59) = sample_phase59_relation_witness_binding_claim();
+
+        let runtime_component_index = phase59
+            .component_bindings
+            .iter()
+            .position(|binding| binding.runtime_opening_bindings.len() >= 2)
+            .expect("fixture must include a component with at least two runtime openings");
+        phase59.component_bindings[runtime_component_index]
+            .runtime_opening_bindings
+            .swap(0, 1);
+        phase59.component_bindings[runtime_component_index].relation_binding_commitment =
+            commit_phase59_relation_witness_component_binding(
+                &phase59.component_bindings[runtime_component_index],
+            )
+            .expect("recommit forged Phase59 component binding");
+        phase59.relation_witness_binding_claim_commitment =
+            commit_phase59_first_layer_relation_witness_binding_claim(&phase59)
+                .expect("recommit forged Phase59 runtime-assignment-drift claim");
+
+        let error = verify_phase59_first_layer_relation_witness_binding_claim(&phase59)
+            .expect_err("Phase59 must reject reordered runtime opening assignment");
+        assert!(error.to_string().contains("runtime opening order drift"));
+    }
+
+    #[test]
+    fn phase59_relation_witness_binding_rejects_component_assignment_drift() {
+        let (_, _, _, _, _, mut phase59) = sample_phase59_relation_witness_binding_claim();
+
+        phase59.component_bindings.swap(0, 1);
+        phase59.relation_witness_binding_claim_commitment =
+            commit_phase59_first_layer_relation_witness_binding_claim(&phase59)
+                .expect("recommit forged Phase59 component-assignment-drift claim");
+
+        let error = verify_phase59_first_layer_relation_witness_binding_claim(&phase59)
+            .expect_err("Phase59 must reject reordered component bindings");
+        assert!(error.to_string().contains("component order drift"));
+    }
+
+    #[test]
+    fn phase59_relation_witness_binding_rejects_false_full_relation_and_paper_flags() {
+        let (_, _, _, _, _, mut phase59) = sample_phase59_relation_witness_binding_claim();
+
+        phase59.full_layer_relation_witness_available = true;
+        phase59.actual_runtime_model_witness_available = true;
+        phase59.recursive_verification_claimed = true;
+        phase59.cryptographic_compression_claimed = true;
+        phase59.breakthrough_claimed = true;
+        phase59.paper_ready = true;
+        phase59.relation_witness_binding_claim_commitment =
+            commit_phase59_first_layer_relation_witness_binding_claim(&phase59)
+                .expect("recommit forged Phase59 false-ready claim");
+
+        let error = verify_phase59_first_layer_relation_witness_binding_claim(&phase59)
+            .expect_err("Phase59 must reject false full-relation/compression/paper claims");
+        assert!(error
+            .to_string()
+            .contains("must not claim full runtime relation"));
+    }
+
+    #[test]
+    fn phase59_relation_witness_binding_rejects_source_drift_against_phase58() {
+        let (_, phase54, phase56, phase57, phase58, mut phase59) =
+            sample_phase59_relation_witness_binding_claim();
+
+        phase59.source_phase58_witness_pcs_opening_claim_commitment =
+            "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string();
+        phase59.relation_witness_binding_claim_commitment =
+            commit_phase59_first_layer_relation_witness_binding_claim(&phase59)
+                .expect("recommit forged Phase59 source-drift claim");
+        verify_phase59_first_layer_relation_witness_binding_claim(&phase59)
+            .expect("standalone Phase59 accepts internally bound source hash");
+
+        let error = verify_phase59_first_layer_relation_witness_binding_claim_against_phase58(
+            &phase59, &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect_err("Phase59 must reject source drift against Phase58");
+        assert!(error.to_string().contains("source drift against Phase58"));
     }
 
     #[test]
