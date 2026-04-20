@@ -275,6 +275,20 @@ class Phase44DFinalBoundaryAcceptanceTests(unittest.TestCase):
 
         self.assert_rejected(envelope, "mismatched_source_root")
 
+    def test_source_layout_drift_rejects_recommitted_root_claim_and_proof(self) -> None:
+        envelope = build_envelope(useful=True)
+        preimage = copy.deepcopy(envelope["canonical_source_root_preimage"])
+        preimage["projection_row_count"] = 4
+        preimage["projection_log_size"] = 2
+        preimage["row_labels"] = preimage["row_labels"][:4]
+        wrong_root = canonical_source_root(preimage)
+        envelope["canonical_source_root_preimage"] = preimage
+        envelope["externally_emitted_canonical_source_root"] = wrong_root
+        envelope["source_claim"] = build_source_claim(wrong_root)
+        envelope["compact_proof"] = build_compact_proof(wrong_root)
+
+        self.assert_rejected(envelope, "mismatched_source_layout")
+
     def test_stale_source_claim_rejects_recommitted_claim(self) -> None:
         envelope = build_envelope(useful=True)
         source_claim = copy.deepcopy(envelope["source_claim"])
@@ -302,6 +316,18 @@ class Phase44DFinalBoundaryAcceptanceTests(unittest.TestCase):
     def test_compact_proof_payload_mismatch_keeps_boundary_false(self) -> None:
         envelope = build_envelope(useful=True)
         envelope["compact_proof"]["payload_digest"] = hash32("tampered", "payload")
+
+        self.assert_rejected(envelope, "compact_proof_mismatch")
+
+    def test_compact_proof_payload_digest_drift_rejects_recommitted_proof(self) -> None:
+        envelope = build_envelope(useful=True)
+        compact_proof = copy.deepcopy(envelope["compact_proof"])
+        compact_proof["payload_digest"] = hash32("tampered", "payload")
+        compact_proof["compact_proof_commitment"] = hash32(
+            COMPACT_PROOF_VERSION,
+            commitment_payload(compact_proof, "compact_proof_commitment"),
+        )
+        envelope["compact_proof"] = compact_proof
 
         self.assert_rejected(envelope, "compact_proof_mismatch")
 

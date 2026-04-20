@@ -617,8 +617,8 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 # Verify with the default production profile (includes lockstep re-execution)
 cargo run --bin tvm -- verify-stark fact.proof.json
 
-# Select the weaker named `Default` profile: claim/proof boundary only,
-# without forced transformer/native re-execution.
+# Select the weaker named `Default` profile, not the CLI default `ProductionV1`:
+# claim/proof boundary only, without forced transformer/native re-execution.
 cargo run --bin tvm -- verify-stark fact.proof.json --verification-profile default
 
 # Verify and re-execute transformer/native runtimes from claim data
