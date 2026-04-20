@@ -7999,6 +7999,27 @@ mod tests {
     }
 
     #[test]
+    fn phase58_witness_pcs_opening_rejects_sampled_value_drift_even_when_recommitted() {
+        let (_, _, _, _, mut phase58) = sample_phase58_witness_pcs_opening_claim();
+
+        phase58.opening_proofs[0].pcs_sampled_value_limbs[0] =
+            (phase58.opening_proofs[0].pcs_sampled_value_limbs[0] + 1) % ((1u32 << 31) - 1);
+        phase58.opening_proofs[0].opening_proof_commitment =
+            commit_phase58_witness_bound_pcs_opening(&phase58.opening_proofs[0])
+                .expect("recommit forged Phase58 sampled-value opening");
+        phase58.witness_pcs_opening_claim_commitment =
+            commit_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+                .expect("recommit forged Phase58 sampled-value claim");
+
+        let error = verify_phase58_witness_bound_pcs_opening(&phase58.opening_proofs[0])
+            .expect_err("Phase58 must reject sampled value drift");
+        assert!(error.to_string().contains("sampled value drift"));
+        let error = verify_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+            .expect_err("Phase58 claim must reject sampled value drift");
+        assert!(error.to_string().contains("sampled value drift"));
+    }
+
+    #[test]
     fn phase58_witness_pcs_opening_claim_rejects_pcs_proof_tamper_even_when_recommitted() {
         let (_, _, _, _, mut phase58) = sample_phase58_witness_pcs_opening_claim();
 
@@ -8014,6 +8035,32 @@ mod tests {
         let error = verify_phase58_first_layer_witness_pcs_opening_claim(&phase58)
             .expect_err("Phase58 must reject PCS proof-byte tamper");
         assert!(error.to_string().contains("PCS proof commitment drift"));
+    }
+
+    #[test]
+    fn phase58_witness_pcs_opening_claim_rejects_pcs_config_drift_even_when_recommitted() {
+        let (_, _, _, _, mut phase58) = sample_phase58_witness_pcs_opening_claim();
+        let mut payload: serde_json::Value =
+            serde_json::from_slice(&phase58.pcs_proof).expect("decode Phase58 PCS proof JSON");
+        let pow_bits_value = payload
+            .pointer_mut("/proof/config/pow_bits")
+            .expect("Phase58 PCS proof exposes pow_bits config");
+        let pow_bits = pow_bits_value
+            .as_u64()
+            .expect("Phase58 PCS pow_bits config is numeric");
+        *pow_bits_value = serde_json::json!(pow_bits + 1);
+        phase58.pcs_proof =
+            serde_json::to_vec(&payload).expect("re-encode forged Phase58 PCS proof JSON");
+        phase58.pcs_proof_commitment =
+            super::super::recursion::phase58_commit_pcs_proof_bytes_for_tests(&phase58.pcs_proof)
+                .expect("recommit forged Phase58 PCS proof bytes");
+        phase58.witness_pcs_opening_claim_commitment =
+            commit_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+                .expect("recommit forged Phase58 PCS config claim");
+
+        let error = verify_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+            .expect_err("Phase58 must reject PCS config drift");
+        assert!(error.to_string().contains("PCS proof config drift"));
     }
 
     #[test]

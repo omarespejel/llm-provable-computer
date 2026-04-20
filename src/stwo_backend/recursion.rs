@@ -13706,6 +13706,27 @@ fn phase58_circle_point_from_index(index: u64) -> Result<CirclePoint<SecureField
 }
 
 #[cfg(feature = "stwo-backend")]
+fn phase58_lifted_circle_point(
+    log_size: u32,
+    lifting_log_size: u32,
+    point_index: u64,
+) -> Result<CirclePoint<SecureField>> {
+    let extended_log_size = log_size
+        .checked_add(PcsConfig::default().fri_config.log_blowup_factor)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 58 PCS extended log-size overflow".to_string())
+        })?;
+    if lifting_log_size < extended_log_size {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS lifting log size is smaller than the extended column log size"
+                .to_string(),
+        ));
+    }
+    Ok(phase58_circle_point_from_index(point_index)?
+        .repeated_double(lifting_log_size - extended_log_size))
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase58_circle_evaluation_for_witness(
     raw_values: &[u32],
     log_size: u32,
@@ -13734,21 +13755,20 @@ fn phase58_circle_sample_value(
     lifting_log_size: u32,
     point_index: u64,
 ) -> Result<SecureField> {
-    let extended_log_size = log_size
-        .checked_add(PcsConfig::default().fri_config.log_blowup_factor)
-        .ok_or_else(|| {
-            VmError::InvalidConfig("Phase 58 PCS extended log-size overflow".to_string())
-        })?;
-    if lifting_log_size < extended_log_size {
-        return Err(VmError::InvalidConfig(
-            "Phase 58 PCS lifting log size is smaller than the extended column log size"
-                .to_string(),
-        ));
-    }
-    let point = phase58_circle_point_from_index(point_index)?
-        .repeated_double(lifting_log_size - extended_log_size);
+    let point = phase58_lifted_circle_point(log_size, lifting_log_size, point_index)?;
     let evaluation = phase58_circle_evaluation_for_witness(raw_values, log_size)?;
     Ok(evaluation.interpolate().eval_at_point(point))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_stwo_pcs_api_sample_point(
+    opening: &Phase58WitnessBoundPcsOpening,
+) -> Result<Vec<CirclePoint<SecureField>>> {
+    // S-two's PCS API expects the unlifted OODS point here. `prove_values` and
+    // `verify_values` internally evaluate each column at
+    // `point.repeated_double(lifting_log_size - column_log_size)`, which is the
+    // lifted point used by `phase58_circle_sample_value`.
+    phase58_circle_point_from_index(opening.pcs_opening_point_index).map(|point| vec![point])
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -13799,6 +13819,11 @@ fn phase58_commit_pcs_proof_bytes(bytes: &[u8]) -> Result<String> {
     phase29_update_usize(&mut hasher, bytes.len());
     phase29_update_len_prefixed(&mut hasher, bytes);
     phase44d_finalize_hash(hasher, "Phase 58 PCS proof bytes")
+}
+
+#[cfg(all(feature = "stwo-backend", test))]
+pub(crate) fn phase58_commit_pcs_proof_bytes_for_tests(bytes: &[u8]) -> Result<String> {
+    phase58_commit_pcs_proof_bytes(bytes)
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -13893,9 +13918,13 @@ fn phase58_build_pcs_opening_proof(openings: &[Phase58WitnessBoundPcsOpening]) -
         .ok_or_else(|| {
             VmError::InvalidConfig("Phase 58 PCS opening proof has no columns".to_string())
         })?;
-    let twiddles = CpuBackend::precompute_twiddles(
-        CanonicCoset::new(max_log_size + config.fri_config.log_blowup_factor).half_coset(),
-    );
+    let twiddle_log_size = max_log_size
+        .checked_add(config.fri_config.log_blowup_factor)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 58 PCS twiddle log-size overflow".to_string())
+        })?;
+    let twiddles =
+        CpuBackend::precompute_twiddles(CanonicCoset::new(twiddle_log_size).half_coset());
     let channel = &mut Blake2sM31Channel::default();
     let mut commitment_scheme =
         CommitmentSchemeProver::<CpuBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
@@ -13914,10 +13943,7 @@ fn phase58_build_pcs_opening_proof(openings: &[Phase58WitnessBoundPcsOpening]) -
     tree_builder.commit(channel);
     let sampled_points = TreeVec(vec![openings
         .iter()
-        .map(|opening| {
-            phase58_circle_point_from_index(opening.pcs_opening_point_index)
-                .map(|point| vec![point])
-        })
+        .map(phase58_stwo_pcs_api_sample_point)
         .collect::<Result<Vec<_>>>()?]);
     let proof = commitment_scheme.prove_values(sampled_points, channel);
     let bytes = serde_json::to_vec(&Phase58PcsOpeningProofPayload { proof: proof.proof })
@@ -13970,16 +13996,18 @@ fn phase58_verify_pcs_opening_proof_bytes(
     }
     let sampled_points = TreeVec(vec![openings
         .iter()
-        .map(|opening| {
-            phase58_circle_point_from_index(opening.pcs_opening_point_index)
-                .map(|point| vec![point])
-        })
+        .map(phase58_stwo_pcs_api_sample_point)
         .collect::<Result<Vec<_>>>()?]);
     let log_sizes = openings
         .iter()
         .map(|opening| opening.pcs_column_log_size)
         .collect::<Vec<_>>();
-    let config = proof.config;
+    let config = PcsConfig::default();
+    if proof.config != config {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS proof config drift".to_string(),
+        ));
+    }
     let channel = &mut Blake2sM31Channel::default();
     let mut verifier = CommitmentSchemeVerifier::<Blake2sM31MerkleChannel>::new(config);
     verifier.commit(proof.commitments[0], &log_sizes, channel);
