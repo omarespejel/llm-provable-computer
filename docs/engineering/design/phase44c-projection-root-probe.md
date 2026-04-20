@@ -25,10 +25,11 @@ attempted.
 ## Prerequisites
 
 Phase44C can optionally inspect a local checkout of the upstream Stwo source.
-Set `STWO_ROOT` or pass `--stwo-root` to the checker when that evidence is
-needed. The path must point at a checkout containing `crates/stwo/Cargo.toml`.
-If no Stwo checkout is supplied, Phase44C still validates the canonical
-manifest and mutation checks, but omits source-mechanics evidence.
+Pass `--stwo-root` to the checker when that evidence is needed; the local
+runner forwards `STWO_ROOT` to that flag when the environment variable is set.
+The path must point at a checkout containing `crates/stwo/Cargo.toml`. If no
+Stwo checkout is supplied, Phase44C still validates the canonical manifest and
+mutation checks, and emits `source_mechanics: null` in the evidence.
 
 ## Why Stwo Matters Here
 
@@ -109,7 +110,7 @@ The local mutation checks are simple, bounded, and deterministic:
 1. Load the canonical manifest.
 2. Recompute the projection root from the canonical preimage.
 3. Recompute the canonical source-root from the same preimage.
-4. Verify the Stwo source mechanics from the cloned upstream tree.
+4. Verify the Stwo source mechanics when a cloned upstream tree is supplied.
 5. Apply each kill-label mutation and require rejection.
 
 Acceptance requires all of the following:
@@ -117,7 +118,9 @@ Acceptance requires all of the following:
 - the manifest schema is correct,
 - the projection row count is a power of two,
 - the log size matches the row count,
-- the Stwo source mechanics are present in the cloned source tree,
+- if `--stwo-root` is supplied directly, or `STWO_ROOT` is supplied through the
+  local runner, the Stwo source mechanics are present in that cloned source
+  tree,
 - every kill label fails closed.
 
 ## Local Runner

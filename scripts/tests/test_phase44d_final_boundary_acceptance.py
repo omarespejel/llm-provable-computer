@@ -150,6 +150,8 @@ def validate_phase44d_boundary(envelope: dict[str, Any]) -> dict[str, Any]:
             rejection_labels.append("mismatched_source_root")
         if source_claim.get("source_claim_commitment") != expected_claim_commitment:
             rejection_labels.append("stale_source_claim")
+        if isinstance(external_root, str) and source_claim != build_source_claim(external_root):
+            rejection_labels.append("stale_source_claim")
 
     compact_proof = envelope.get("compact_proof")
     if not isinstance(compact_proof, dict):
@@ -242,6 +244,7 @@ class Phase44DFinalBoundaryAcceptanceTests(unittest.TestCase):
             "publication-grade source emission proof",
             "missing_source_root",
             "mismatched_source_root",
+            "mismatched_source_layout",
             "stale_source_claim",
             "compact_proof_mismatch",
         ):
@@ -305,6 +308,18 @@ class Phase44DFinalBoundaryAcceptanceTests(unittest.TestCase):
         envelope = build_envelope(useful=True)
         source_claim = copy.deepcopy(envelope["source_claim"])
         source_claim["claim_epoch"] = "phase44c-prior-claim-epoch"
+        source_claim["source_claim_commitment"] = hash32(
+            SOURCE_CLAIM_VERSION,
+            commitment_payload(source_claim, "source_claim_commitment"),
+        )
+        envelope["source_claim"] = source_claim
+
+        self.assert_rejected(envelope, "stale_source_claim")
+
+    def test_source_claim_payload_drift_rejects_recommitted_claim(self) -> None:
+        envelope = build_envelope(useful=True)
+        source_claim = copy.deepcopy(envelope["source_claim"])
+        source_claim["source_emitter"] = "phase44d-forged-source-emitter"
         source_claim["source_claim_commitment"] = hash32(
             SOURCE_CLAIM_VERSION,
             commitment_payload(source_claim, "source_claim_commitment"),
