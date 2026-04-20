@@ -8540,7 +8540,8 @@ mod tests {
 
     #[test]
     fn phase60_runtime_relation_witness_rejects_gate_equation_drift_even_when_recommitted() {
-        let (_, _, _, _, _, _, mut phase60) = sample_phase60_runtime_relation_witness_claim();
+        let (_, phase54, phase56, phase57, phase58, phase59, mut phase60) =
+            sample_phase60_runtime_relation_witness_claim();
 
         phase60.gate_tensor.values[0] = (phase60.gate_tensor.values[0] + 1) % ((1u32 << 31) - 1);
         recommit_phase60_tensor(&mut phase60.gate_tensor);
@@ -8548,12 +8549,22 @@ mod tests {
 
         let error = verify_phase60_first_layer_runtime_relation_witness_claim(&phase60)
             .expect_err("Phase60 must reject relation equation drift");
-        assert!(error.to_string().contains("Phase 60 gate affine relation"));
+        assert!(error
+            .to_string()
+            .contains("canonical Percepta/Nop/default-state runtime witness drift"));
+        let error = verify_phase60_first_layer_runtime_relation_witness_claim_against_phase59(
+            &phase60, &phase59, &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect_err("source-bound Phase60 must reject relation equation drift");
+        assert!(error
+            .to_string()
+            .contains("canonical Percepta/Nop/default-state runtime witness drift"));
     }
 
     #[test]
     fn phase60_runtime_relation_witness_rejects_tensor_commitment_drift() {
-        let (_, _, _, _, _, _, mut phase60) = sample_phase60_runtime_relation_witness_claim();
+        let (_, phase54, phase56, phase57, phase58, phase59, mut phase60) =
+            sample_phase60_runtime_relation_witness_claim();
 
         phase60.input_tensor.values[0] = (phase60.input_tensor.values[0] + 1) % ((1u32 << 31) - 1);
         phase60.input_tensor.tensor_witness_commitment =
@@ -8567,11 +8578,17 @@ mod tests {
         let error = verify_phase60_first_layer_runtime_relation_witness_claim(&phase60)
             .expect_err("Phase60 claim must propagate tensor commitment drift");
         assert!(error.to_string().contains("values commitment drift"));
+        let error = verify_phase60_first_layer_runtime_relation_witness_claim_against_phase59(
+            &phase60, &phase59, &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect_err("source-bound Phase60 must reject tensor commitment drift");
+        assert!(error.to_string().contains("values commitment drift"));
     }
 
     #[test]
     fn phase60_runtime_relation_witness_rejects_false_pcs_recursion_and_paper_flags() {
-        let (_, _, _, _, _, _, mut phase60) = sample_phase60_runtime_relation_witness_claim();
+        let (_, phase54, phase56, phase57, phase58, phase59, mut phase60) =
+            sample_phase60_runtime_relation_witness_claim();
 
         phase60.witness_pcs_replacement_available = true;
         phase60.actual_proof_byte_benchmark_available = true;
@@ -8584,6 +8601,29 @@ mod tests {
         let error = verify_phase60_first_layer_runtime_relation_witness_claim(&phase60)
             .expect_err("Phase60 must reject false PCS/recurse/compression claims");
         assert!(error.to_string().contains("must not claim PCS replacement"));
+        let error = verify_phase60_first_layer_runtime_relation_witness_claim_against_phase59(
+            &phase60, &phase59, &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect_err("source-bound Phase60 must reject false PCS/recurse/compression claims");
+        assert!(error.to_string().contains("must not claim PCS replacement"));
+    }
+
+    #[test]
+    fn phase60_runtime_relation_witness_rejects_noncanonical_operand_label_drift() {
+        let (_, phase54, phase56, phase57, phase58, phase59, mut phase60) =
+            sample_phase60_runtime_relation_witness_claim();
+
+        phase60.operand_value = 1;
+        recommit_phase60_claim(&mut phase60);
+
+        let error = verify_phase60_first_layer_runtime_relation_witness_claim(&phase60)
+            .expect_err("Phase60 must reject operand drift from the canonical label");
+        assert!(error.to_string().contains("instruction or operand drift"));
+        let error = verify_phase60_first_layer_runtime_relation_witness_claim_against_phase59(
+            &phase60, &phase59, &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect_err("source-bound Phase60 must reject operand drift");
+        assert!(error.to_string().contains("instruction or operand drift"));
     }
 
     #[test]

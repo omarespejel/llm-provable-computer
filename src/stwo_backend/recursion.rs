@@ -14713,7 +14713,7 @@ pub fn verify_phase60_first_layer_runtime_relation_witness_claim(
         phase43_require_hash32(label, value)?;
     }
     if claim.witness_instruction != STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_INSTRUCTION_PHASE60
-        || claim.operand_value >= PHASE44D_M31_MODULUS
+        || claim.operand_value != 0
     {
         return Err(VmError::InvalidConfig(
             "Phase 60 runtime witness instruction or operand drift".to_string(),
@@ -14796,6 +14796,7 @@ pub fn verify_phase60_first_layer_runtime_relation_witness_claim(
             "Phase 60 runtime witness state commitment drift".to_string(),
         ));
     }
+    phase60_verify_canonical_runtime_witness_payload(claim)?;
     phase60_verify_first_layer_relation_equations(claim)?;
     let expected_gate_checks = hidden_width;
     let expected_value_checks = hidden_width;
@@ -15154,6 +15155,7 @@ fn phase60_build_first_layer_runtime_witness() -> Result<Phase60PreparedRuntimeW
     let compiled = compiler.compile_instruction(Instruction::Nop)?;
     let state = MachineState::new(8);
     let input_scalars = build_input_vector(&state, 0);
+    phase60_validate_exact_integer_scalars("phase60_input_scalars", &input_scalars)?;
     let gate_scalars = compiled
         .ff_weights
         .gate
@@ -15162,6 +15164,7 @@ fn phase60_build_first_layer_runtime_witness() -> Result<Phase60PreparedRuntimeW
         .zip(compiled.ff_weights.gate_bias.iter().copied())
         .map(|(value, bias)| value + bias)
         .collect::<Vec<_>>();
+    phase60_validate_exact_integer_scalars("phase60_gate_scalars", &gate_scalars)?;
     let value_scalars = compiled
         .ff_weights
         .value
@@ -15170,12 +15173,14 @@ fn phase60_build_first_layer_runtime_witness() -> Result<Phase60PreparedRuntimeW
         .zip(compiled.ff_weights.value_bias.iter().copied())
         .map(|(value, bias)| value + bias)
         .collect::<Vec<_>>();
+    phase60_validate_exact_integer_scalars("phase60_value_scalars", &value_scalars)?;
     let hidden_scalars = gate_scalars
         .iter()
         .copied()
         .zip(value_scalars.iter().copied())
         .map(|(left, right)| left * right)
         .collect::<Vec<_>>();
+    phase60_validate_exact_integer_scalars("phase60_hidden_scalars", &hidden_scalars)?;
     let output_scalars = compiled
         .ff_weights
         .out
@@ -15184,6 +15189,7 @@ fn phase60_build_first_layer_runtime_witness() -> Result<Phase60PreparedRuntimeW
         .zip(compiled.ff_weights.out_bias.iter().copied())
         .map(|(value, bias)| value + bias)
         .collect::<Vec<_>>();
+    phase60_validate_exact_integer_scalars("phase60_output_scalars", &output_scalars)?;
 
     let input_values = phase60_scalars_to_m31(&input_scalars)?;
     let witness_state_commitment = phase60_commit_witness_state(
@@ -15377,6 +15383,31 @@ fn phase60_verify_first_layer_relation_equations(
 }
 
 #[cfg(feature = "stwo-backend")]
+fn phase60_verify_canonical_runtime_witness_payload(
+    claim: &Phase60FirstLayerRuntimeRelationWitnessClaim,
+) -> Result<()> {
+    let expected = phase60_build_first_layer_runtime_witness()?;
+    if claim.witness_state_commitment != expected.witness_state_commitment
+        || claim.input_tensor != expected.input_tensor
+        || claim.gate_tensor != expected.gate_tensor
+        || claim.value_tensor != expected.value_tensor
+        || claim.hidden_tensor != expected.hidden_tensor
+        || claim.output_tensor != expected.output_tensor
+        || claim.gate_weight_tensor != expected.gate_weight_tensor
+        || claim.gate_bias_tensor != expected.gate_bias_tensor
+        || claim.value_weight_tensor != expected.value_weight_tensor
+        || claim.value_bias_tensor != expected.value_bias_tensor
+        || claim.output_weight_tensor != expected.output_weight_tensor
+        || claim.output_bias_tensor != expected.output_bias_tensor
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 canonical Percepta/Nop/default-state runtime witness drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase60_verify_affine_relation(
     label: &str,
     input: &[u32],
@@ -15476,25 +15507,35 @@ fn phase60_scalars_to_m31(values: &[f64]) -> Result<Vec<u32>> {
 }
 
 #[cfg(feature = "stwo-backend")]
+fn phase60_validate_exact_integer_scalars(label: &str, values: &[f64]) -> Result<()> {
+    for value in values {
+        phase60_scalar_to_m31(*value).map_err(|err| {
+            VmError::InvalidConfig(format!("{label} contains non-exact scalar: {err}"))
+        })?;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase60_scalar_to_m31(value: f64) -> Result<u32> {
     if !value.is_finite() {
         return Err(VmError::InvalidConfig(
             "Phase 60 scalar witness value must be finite".to_string(),
         ));
     }
-    let rounded = value.round();
-    if (value - rounded).abs() > 1e-9 {
+    if value.abs() > ((1u64 << 53) as f64) {
         return Err(VmError::InvalidConfig(
-            "Phase 60 scalar witness value must be integral before M31 encoding".to_string(),
+            "Phase 60 scalar witness value exceeds exact f64 integer range".to_string(),
         ));
     }
-    if rounded < i64::MIN as f64 || rounded > i64::MAX as f64 {
+    if value.trunc() != value {
         return Err(VmError::InvalidConfig(
-            "Phase 60 scalar witness value exceeds integer encoding range".to_string(),
+            "Phase 60 scalar witness value must be exactly integral before M31 encoding"
+                .to_string(),
         ));
     }
     let modulus = i128::from(PHASE44D_M31_MODULUS);
-    let integer = rounded as i64 as i128;
+    let integer = value as i64 as i128;
     Ok(integer.rem_euclid(modulus) as u32)
 }
 
