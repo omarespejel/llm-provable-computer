@@ -802,7 +802,7 @@ pub fn verify_execution_stark_with_policy(
     proof: &VanillaStarkExecutionProof,
     policy: StarkVerificationPolicy,
 ) -> Result<bool> {
-    verify_execution_stark_with_backend_and_policy(proof, proof.proof_backend, policy)
+    verify_execution_stark_with_reexecution_and_policy(proof, policy)
 }
 
 pub fn verify_execution_stark_claim_only(proof: &VanillaStarkExecutionProof) -> Result<bool> {
@@ -813,12 +813,7 @@ pub fn verify_execution_stark_claim_only_with_policy(
     proof: &VanillaStarkExecutionProof,
     policy: StarkVerificationPolicy,
 ) -> Result<bool> {
-    verify_execution_stark_with_backend_policy_and_mode(
-        proof,
-        proof.proof_backend,
-        policy,
-        StarkVerificationExecutionMode::ClaimOnly,
-    )
+    verify_execution_stark_with_backend_and_policy(proof, proof.proof_backend, policy)
 }
 
 pub fn verify_execution_stark_with_backend_and_policy(
@@ -830,7 +825,7 @@ pub fn verify_execution_stark_with_backend_and_policy(
         proof,
         backend,
         policy,
-        StarkVerificationExecutionMode::Reexecute,
+        StarkVerificationExecutionMode::ClaimOnly,
     )
 }
 
@@ -1910,6 +1905,12 @@ HALT
         proof.claim.equivalence = None;
 
         assert!(verify_execution_stark_claim_only(&proof).expect("claim-only verify"));
+        assert!(verify_execution_stark_with_backend_and_policy(
+            &proof,
+            proof.proof_backend,
+            production_v1_verification_policy()
+        )
+        .expect("backend/policy claim-only verify"));
 
         let err = verify_execution_stark(&proof).unwrap_err();
         assert!(err

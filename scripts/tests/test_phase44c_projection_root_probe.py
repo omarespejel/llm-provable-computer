@@ -64,7 +64,11 @@ class Phase44CProjectionRootProbeTests(unittest.TestCase):
                     PHASE44C.probe_manifest(trimmed)
 
     def test_stwo_source_mechanics_are_verified(self) -> None:
-        if STWO_ROOT is None or not STWO_ROOT.exists():
+        if (
+            STWO_ROOT is None
+            or not STWO_ROOT.is_dir()
+            or not (STWO_ROOT / "crates/stwo/Cargo.toml").exists()
+        ):
             self.skipTest("STWO_ROOT is not set to an available Stwo checkout")
         mechanics = PHASE44C.load_stwo_source_mechanics(STWO_ROOT)
         self.assertIn("pcs_mix_root", mechanics)

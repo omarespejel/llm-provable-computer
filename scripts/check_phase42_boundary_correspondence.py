@@ -55,6 +55,7 @@ STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23 = (
 )
 PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_VERSION = "phase42-boundary-preimage-evidence-v1"
 MAX_JSON_BYTES = 8 * 1024 * 1024
+MAX_USIZE = (1 << 64) - 1
 
 PHASE12_OUTPUT_WIDTH = 3
 PHASE12_SHARED_LOOKUP_ROWS = 8
@@ -283,6 +284,8 @@ def require_bool(label: str, value: Any) -> None:
 def require_usize(label: str, value: Any) -> int:
     if type(value) is not int or value < 0:
         raise Phase42Error(f"{label}: expected a non-negative integer")
+    if value > MAX_USIZE:
+        raise Phase42Error(f"{label}: expected an unsigned 64-bit integer")
     return value
 
 

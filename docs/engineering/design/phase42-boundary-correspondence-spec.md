@@ -169,21 +169,25 @@ replace full replay with a compact proof or the route remains too expensive.
 The Phase42 checker must:
 
 - refer to Issue #180 in its output;
+- expose executable inputs for `--phase29`, `--phase30`, optional `--phase41`,
+  and optional `--boundary-preimage-evidence`;
 - verify the Phase29 input contract commitment;
 - verify Phase30 envelope commitments, chain boundaries, step links, layout
   commitments, and step-envelope list commitment;
 - verify Phase41 internal commitments when a witness is supplied;
 - verify Phase41 source binding against Phase29 and Phase30;
 - verify optional Phase42 boundary-preimage evidence;
-- verify optional Phase42 history-equivalence witness against real Phase12/28/29/30 sources;
 - reject stale Phase29 or Phase30 commitments;
 - reject swapped or stale Phase41 boundaries;
 - reject Phase12/Phase14 preimages that do not recompute to the Phase30/Phase29
   boundary commitments;
 - reject Phase12/Phase14 shared carried-state-core mismatches;
-- reject real source stacks where Phase12 linear history and Phase14 chunked
-  history are not bridged by an explicit equivalence witness;
 - report Phase41-only compatibility as `patch_once_then_stay`, not success.
+
+History-equivalence-witness validation remains future work for a later Phase42
+update. The current checker has no history-equivalence-witness CLI input, so it
+does not yet reject full real source stacks solely because Phase12 linear history
+and Phase14 chunked history are not bridged by that witness.
 
 The checker is intentionally stricter than a descriptive manifest. It is a
 decision tool: either the boundary relation is clean, or the route is blocked.
