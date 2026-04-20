@@ -4572,6 +4572,8 @@ mod tests {
         phase55_prepare_first_layer_compression_effectiveness_claim,
         phase56_prepare_first_layer_executable_sumcheck_claim,
         phase57_prepare_first_layer_mle_opening_verifier_claim,
+        phase58_build_pcs_opening_proof_for_tests, phase58_commit_pcs_proof_bytes_for_tests,
+        phase58_derive_opening_witness_values_for_tests,
         phase58_prepare_first_layer_witness_pcs_opening_claim,
         phase59_prepare_first_layer_relation_witness_binding_claim,
         verify_phase44d_recursive_verifier_public_output_aggregation,
@@ -8016,6 +8018,9 @@ mod tests {
         let error = verify_phase58_witness_bound_pcs_opening(&phase58.opening_proofs[0])
             .expect_err("Phase58 must reject raw witness drift");
         assert!(error.to_string().contains("canonical witness drift"));
+        let error = verify_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+            .expect_err("Phase58 claim must propagate raw witness drift");
+        assert!(error.to_string().contains("canonical witness drift"));
     }
 
     #[test]
@@ -8044,11 +8049,78 @@ mod tests {
         let (_, _, _, _, mut phase58) = sample_phase58_witness_pcs_opening_claim();
 
         phase58.opening_proofs[0].pcs_lifting_log_size = 65;
+        phase58.opening_proofs[0].opening_proof_commitment =
+            commit_phase58_witness_bound_pcs_opening(&phase58.opening_proofs[0])
+                .expect("recommit forged Phase58 lifting-log-size opening");
+        phase58.witness_pcs_opening_claim_commitment =
+            commit_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+                .expect("recommit forged Phase58 lifting-log-size claim");
         let error = verify_phase58_first_layer_witness_pcs_opening_claim(&phase58)
             .expect_err("Phase58 must reject oversized PCS lifting log size");
         assert!(error
             .to_string()
             .contains("lifting log size exceeds bounded verifier limit"));
+    }
+
+    #[test]
+    fn phase58_witness_pcs_opening_claim_rejects_unbounded_pcs_proof_bytes() {
+        let (_, _, _, _, mut phase58) = sample_phase58_witness_pcs_opening_claim();
+
+        phase58.pcs_proof = vec![b' '; 4 * 1024 * 1024 + 1];
+        phase58.measured_pcs_proof_bytes = phase58.pcs_proof.len();
+        let error = phase58_commit_pcs_proof_bytes_for_tests(&phase58.pcs_proof)
+            .expect_err("oversized Phase58 PCS proof bytes must fail commitment");
+        assert!(error
+            .to_string()
+            .contains("PCS proof bytes exceed bounded verifier limit"));
+        let error = verify_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+            .expect_err("Phase58 claim must reject oversized PCS proof bytes");
+        assert!(error
+            .to_string()
+            .contains("PCS proof bytes exceed bounded verifier limit"));
+    }
+
+    #[test]
+    fn phase58_witness_pcs_opening_claim_rejects_noncanonical_pcs_commitment() {
+        let (_, _, _, _, mut phase58) = sample_phase58_witness_pcs_opening_claim();
+        let mut forged_openings = phase58.opening_proofs.clone();
+
+        forged_openings[0].raw_witness_values[0] =
+            (forged_openings[0].raw_witness_values[0] + 1) % ((1u32 << 31) - 1);
+        phase58.pcs_proof = phase58_build_pcs_opening_proof_for_tests(&forged_openings)
+            .expect("build forged Phase58 PCS proof over noncanonical witness");
+        phase58.measured_pcs_proof_bytes = phase58.pcs_proof.len();
+        phase58.pcs_proof_commitment = phase58_commit_pcs_proof_bytes_for_tests(&phase58.pcs_proof)
+            .expect("recommit forged Phase58 PCS proof bytes");
+        phase58.witness_pcs_opening_claim_commitment =
+            commit_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+                .expect("recommit forged Phase58 noncanonical PCS claim");
+
+        let error = verify_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+            .expect_err("Phase58 must reject PCS proofs over noncanonical witness columns");
+        assert!(error
+            .to_string()
+            .contains("canonical witness PCS commitment drift"));
+    }
+
+    #[test]
+    fn phase58_witness_derivation_accepts_padded_only_zero_opening() {
+        let (_, _, _, _, phase58) = sample_phase58_witness_pcs_opening_claim();
+        let mut opening = phase58.opening_proofs[0].clone();
+
+        opening.tensor_shape = vec![3];
+        opening.logical_element_count = 3;
+        opening.padded_element_count = 4;
+        opening.opening_point_dimension = 2;
+        opening.opening_point = vec![1, 1];
+        opening.opened_value = 0;
+
+        let (values, adjusted_index, adjusted_weight) =
+            phase58_derive_opening_witness_values_for_tests(&opening)
+                .expect("padded-only zero opening should be derivable");
+        assert_eq!(values.len(), 3);
+        assert_eq!(adjusted_index, 0);
+        assert_eq!(adjusted_weight, 0);
     }
 
     #[test]
