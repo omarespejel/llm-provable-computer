@@ -116,6 +116,12 @@ pub fn production_v1_verification_policy() -> StarkVerificationPolicy {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum StarkVerificationExecutionMode {
+    ClaimOnly,
+    Reexecute,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct VanillaStarkExecutionClaim {
     #[serde(default)]
@@ -799,10 +805,35 @@ pub fn verify_execution_stark_with_policy(
     verify_execution_stark_with_backend_and_policy(proof, proof.proof_backend, policy)
 }
 
+pub fn verify_execution_stark_claim_only(proof: &VanillaStarkExecutionProof) -> Result<bool> {
+    verify_execution_stark_claim_only_with_policy(proof, production_v1_verification_policy())
+}
+
+pub fn verify_execution_stark_claim_only_with_policy(
+    proof: &VanillaStarkExecutionProof,
+    policy: StarkVerificationPolicy,
+) -> Result<bool> {
+    verify_execution_stark_with_backend_and_policy(proof, proof.proof_backend, policy)
+}
+
 pub fn verify_execution_stark_with_backend_and_policy(
     proof: &VanillaStarkExecutionProof,
     backend: StarkProofBackend,
     policy: StarkVerificationPolicy,
+) -> Result<bool> {
+    verify_execution_stark_with_backend_policy_and_mode(
+        proof,
+        backend,
+        policy,
+        StarkVerificationExecutionMode::ClaimOnly,
+    )
+}
+
+fn verify_execution_stark_with_backend_policy_and_mode(
+    proof: &VanillaStarkExecutionProof,
+    backend: StarkProofBackend,
+    policy: StarkVerificationPolicy,
+    execution_mode: StarkVerificationExecutionMode,
 ) -> Result<bool> {
     validate_backend_metadata(proof, backend)?;
     validate_statement_metadata(&proof.claim)?;
@@ -831,7 +862,9 @@ pub fn verify_execution_stark_with_backend_and_policy(
         return Ok(false);
     }
 
-    enforce_equivalence_scope(&proof.claim)?;
+    if matches!(execution_mode, StarkVerificationExecutionMode::Reexecute) {
+        enforce_equivalence_scope(&proof.claim)?;
+    }
     Ok(true)
 }
 
@@ -843,7 +876,12 @@ pub fn verify_execution_stark_with_reexecution_and_policy(
     proof: &VanillaStarkExecutionProof,
     policy: StarkVerificationPolicy,
 ) -> Result<bool> {
-    verify_execution_stark_with_policy(proof, policy)
+    verify_execution_stark_with_backend_policy_and_mode(
+        proof,
+        proof.proof_backend,
+        policy,
+        StarkVerificationExecutionMode::Reexecute,
+    )
 }
 
 pub(crate) fn validate_execution_stark_support(
@@ -1123,6 +1161,12 @@ fn validate_statement_metadata(claim: &VanillaStarkExecutionClaim) -> Result<()>
 fn enforce_equivalence_scope(claim: &VanillaStarkExecutionClaim) -> Result<()> {
     if claim.semantic_scope != CLAIM_SEMANTIC_SCOPE_V1 {
         return Ok(());
+    }
+    if claim.equivalence.is_none() {
+        return Err(VmError::UnsupportedProof(
+            "proof claim is missing equivalence metadata required for re-execution verification"
+                .to_string(),
+        ));
     }
 
     let config = claim.transformer_config.clone().ok_or_else(|| {
@@ -1853,6 +1897,20 @@ HALT
     fn reexecution_verification_round_trips() {
         let proof = prove_program("programs/addition.tvm", 32);
         assert!(verify_execution_stark_with_reexecution(&proof).expect("verify with reexecution"));
+    }
+
+    #[test]
+    fn claim_only_verification_does_not_reexecute_equivalence_metadata() {
+        let mut proof = prove_program("programs/addition.tvm", 32);
+        proof.claim.equivalence = None;
+
+        assert!(verify_execution_stark_claim_only(&proof).expect("claim-only verify"));
+        assert!(verify_execution_stark(&proof).expect("default claim-only verify"));
+
+        let err = verify_execution_stark_with_reexecution(&proof).unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("missing equivalence metadata required for re-execution"));
     }
 
     #[test]

@@ -1,0 +1,69 @@
+{
+  "canonical_source_root_preimage": {
+    "projection_log_size": 3,
+    "projection_row_count": 8,
+    "row_labels": [
+      "phase44c/projection/row-0",
+      "phase44c/projection/row-1",
+      "phase44c/projection/row-2",
+      "phase44c/projection/row-3",
+      "phase44c/projection/row-4",
+      "phase44c/projection/row-5",
+      "phase44c/projection/row-6",
+      "phase44c/projection/row-7"
+    ],
+    "source_surface_version": "phase43-history-replay-field-projection-v1"
+  },
+  "kill_labels": [
+    "row_count_drift",
+    "log_size_drift",
+    "row_order_drift",
+    "row_replacement",
+    "source_surface_version_drift",
+    "canonical_preimage_truncation",
+    "binding_alias_drift"
+  ],
+  "mutation_checks": [
+    {
+      "description": "the projection row count stops matching the canonical preimage",
+      "expect": "reject",
+      "label": "row_count_drift"
+    },
+    {
+      "description": "the projection log size no longer equals ilog2(row_count)",
+      "expect": "reject",
+      "label": "log_size_drift"
+    },
+    {
+      "description": "the canonical row ordering is changed",
+      "expect": "reject",
+      "label": "row_order_drift"
+    },
+    {
+      "description": "one projection row label is replaced with a different label",
+      "expect": "reject",
+      "label": "row_replacement"
+    },
+    {
+      "description": "the Phase43 source surface version drifts",
+      "expect": "reject",
+      "label": "source_surface_version_drift"
+    },
+    {
+      "description": "the canonical preimage loses required fields or rows",
+      "expect": "reject",
+      "label": "canonical_preimage_truncation"
+    },
+    {
+      "description": "the binding surface no longer behaves like a canonical source-root binding",
+      "expect": "reject",
+      "label": "binding_alias_drift"
+    }
+  ],
+  "probe": "phase44c-source-emitted-projection-root-binding",
+  "projection_log_size": 3,
+  "projection_row_count": 8,
+  "schema": "phase44c-projection-root-binding-manifest-v1",
+  "source_emitted_projection_root": "d9950da07dc99e192bb9b0fdddf3efa843c3dadb29fa71c77cfd7e250d49959d",
+  "source_surface_version": "phase43-history-replay-field-projection-v1"
+}
