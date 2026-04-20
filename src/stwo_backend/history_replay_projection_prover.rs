@@ -8343,12 +8343,19 @@ mod tests {
     fn phase59_relation_witness_binding_rejects_parameter_assignment_drift() {
         let (_, _, _, _, _, mut phase59) = sample_phase59_relation_witness_binding_claim();
 
-        phase59.component_bindings[0]
+        let parameter_component_index = phase59
+            .component_bindings
+            .iter()
+            .position(|binding| binding.parameter_opening_bindings.len() >= 2)
+            .expect("fixture must include a component with at least two parameter openings");
+        phase59.component_bindings[parameter_component_index]
             .parameter_opening_bindings
             .swap(0, 1);
-        phase59.component_bindings[0].relation_binding_commitment =
-            commit_phase59_relation_witness_component_binding(&phase59.component_bindings[0])
-                .expect("recommit forged Phase59 component binding");
+        phase59.component_bindings[parameter_component_index].relation_binding_commitment =
+            commit_phase59_relation_witness_component_binding(
+                &phase59.component_bindings[parameter_component_index],
+            )
+            .expect("recommit forged Phase59 component binding");
         phase59.relation_witness_binding_claim_commitment =
             commit_phase59_first_layer_relation_witness_binding_claim(&phase59)
                 .expect("recommit forged Phase59 assignment-drift claim");
@@ -8362,12 +8369,19 @@ mod tests {
     fn phase59_relation_witness_binding_rejects_runtime_assignment_drift() {
         let (_, _, _, _, _, mut phase59) = sample_phase59_relation_witness_binding_claim();
 
-        phase59.component_bindings[2]
+        let runtime_component_index = phase59
+            .component_bindings
+            .iter()
+            .position(|binding| binding.runtime_opening_bindings.len() >= 2)
+            .expect("fixture must include a component with at least two runtime openings");
+        phase59.component_bindings[runtime_component_index]
             .runtime_opening_bindings
             .swap(0, 1);
-        phase59.component_bindings[2].relation_binding_commitment =
-            commit_phase59_relation_witness_component_binding(&phase59.component_bindings[2])
-                .expect("recommit forged Phase59 component binding");
+        phase59.component_bindings[runtime_component_index].relation_binding_commitment =
+            commit_phase59_relation_witness_component_binding(
+                &phase59.component_bindings[runtime_component_index],
+            )
+            .expect("recommit forged Phase59 component binding");
         phase59.relation_witness_binding_claim_commitment =
             commit_phase59_first_layer_relation_witness_binding_claim(&phase59)
                 .expect("recommit forged Phase59 runtime-assignment-drift claim");
