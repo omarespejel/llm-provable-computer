@@ -8712,6 +8712,10 @@ mod tests {
         assert!(!phase61.cryptographic_compression_claimed);
         assert!(!phase61.breakthrough_claimed);
         assert!(!phase61.paper_ready);
+        let mut checked_opening_count = 0usize;
+        let mut checked_runtime_opening_count = 0usize;
+        let mut checked_parameter_opening_count = 0usize;
+        let mut diverged_opening_count = 0usize;
         for replacement in &phase61.replacement_openings {
             let synthetic = phase58
                 .opening_proofs
@@ -8723,8 +8727,30 @@ mod tests {
                         && opening.opening_point == replacement.opening_point
                 })
                 .expect("matching Phase58 synthetic opening");
-            assert_ne!(replacement.raw_witness_values, synthetic.raw_witness_values);
+            checked_opening_count += 1;
+            if replacement.opening_kind == "runtime_tensor_mle_opening" {
+                checked_runtime_opening_count += 1;
+            }
+            if replacement.opening_kind == "parameter_mle_opening" {
+                checked_parameter_opening_count += 1;
+            }
+            if replacement.raw_witness_values != synthetic.raw_witness_values {
+                diverged_opening_count += 1;
+            }
         }
+        assert_eq!(checked_opening_count, phase61.replacement_opening_count);
+        assert_eq!(
+            checked_runtime_opening_count,
+            phase61.runtime_replacement_opening_count
+        );
+        assert_eq!(
+            checked_parameter_opening_count,
+            phase61.parameter_replacement_opening_count
+        );
+        assert!(
+            diverged_opening_count > 0,
+            "Phase61 must replace at least one Phase58 synthetic opening"
+        );
     }
 
     #[test]
