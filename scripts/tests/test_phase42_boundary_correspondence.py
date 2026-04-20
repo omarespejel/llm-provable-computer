@@ -263,6 +263,20 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
         with self.assertRaisesRegex(PHASE42.Phase42Error, "Phase30 envelope 0"):
             PHASE42.evaluate(phase29, phase30)
 
+    def test_rejects_non_object_phase30_layout(self) -> None:
+        with self.assertRaisesRegex(PHASE42.Phase42Error, "layout must be an object"):
+            PHASE42.commit_phase12_layout("not-a-layout")
+
+    def test_rejects_boolean_numeric_fields(self) -> None:
+        layout = {
+            "layout_version": PHASE42.STWO_DECODING_LAYOUT_VERSION_PHASE12,
+            "rolling_kv_pairs": True,
+            "pair_width": 2,
+        }
+
+        with self.assertRaisesRegex(PHASE42.Phase42Error, "non-negative integer"):
+            PHASE42.commit_phase12_layout(layout)
+
     def test_rejects_swapped_phase41_source_boundary(self) -> None:
         phase29 = sample_phase29_contract(hash32("d"), hash32("e"))
         phase30 = sample_phase30_manifest(hash32("7"), hash32("8"))

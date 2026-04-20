@@ -54,6 +54,7 @@ STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23 = (
     "stwo-phase23-decoding-cross-step-lookup-accumulator-v1"
 )
 PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_VERSION = "phase42-boundary-preimage-evidence-v1"
+MAX_JSON_BYTES = 8 * 1024 * 1024
 
 PHASE12_OUTPUT_WIDTH = 3
 PHASE12_SHARED_LOOKUP_ROWS = 8
@@ -237,7 +238,14 @@ class Phase42Error(Exception):
 
 def load_json(path: pathlib.Path) -> dict[str, Any]:
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        size = path.stat().st_size
+        if size > MAX_JSON_BYTES:
+            raise Phase42Error(f"{path}: JSON artifact exceeds {MAX_JSON_BYTES} bytes")
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise Phase42Error(f"{path}: unable to read JSON artifact: {exc}") from exc
+    try:
+        data = json.loads(text)
     except json.JSONDecodeError as exc:
         raise Phase42Error(f"{path}: invalid JSON: {exc}") from exc
     if not isinstance(data, dict):
@@ -273,13 +281,13 @@ def require_bool(label: str, value: Any) -> None:
 
 
 def require_usize(label: str, value: Any) -> int:
-    if not isinstance(value, int) or value < 0:
+    if type(value) is not int or value < 0:
         raise Phase42Error(f"{label}: expected a non-negative integer")
     return value
 
 
 def require_i16(label: str, value: Any) -> int:
-    if not isinstance(value, int) or value < -32768 or value > 32767:
+    if type(value) is not int or value < -32768 or value > 32767:
         raise Phase42Error(f"{label}: expected an i16 integer")
     return value
 
@@ -309,6 +317,8 @@ def phase30_hash_part(hasher: Any, value: str | bytes) -> None:
 
 
 def commit_phase12_layout(layout: dict[str, Any]) -> str:
+    if not isinstance(layout, dict):
+        raise Phase42Error("Phase30 layout: layout must be an object")
     if set(layout) != {"layout_version", "rolling_kv_pairs", "pair_width"}:
         raise Phase42Error("Phase30 layout: unexpected fields")
     if layout["layout_version"] != STWO_DECODING_LAYOUT_VERSION_PHASE12:

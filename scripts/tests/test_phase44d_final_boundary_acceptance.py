@@ -47,6 +47,17 @@ def canonical_source_root(preimage: dict[str, Any]) -> str:
     return hash32("phase44d-canonical-source-root-v1", preimage)
 
 
+def source_preimage_layout_errors(preimage: dict[str, Any]) -> list[str]:
+    expected = build_source_preimage()
+    required = set(expected)
+    if set(preimage) != required:
+        return ["mismatched_source_layout"]
+    for key, value in expected.items():
+        if preimage.get(key) != value:
+            return ["mismatched_source_layout"]
+    return []
+
+
 def build_source_claim(root: str) -> dict[str, Any]:
     claim = {
         "claim_epoch": CURRENT_SOURCE_CLAIM_EPOCH,
@@ -116,6 +127,7 @@ def validate_phase44d_boundary(envelope: dict[str, Any]) -> dict[str, Any]:
         rejection_labels.append("missing_source_root")
         recomputed_root = None
     else:
+        rejection_labels.extend(source_preimage_layout_errors(preimage))
         recomputed_root = canonical_source_root(preimage)
         if preimage.get("source_surface_version") != CURRENT_SOURCE_SURFACE_VERSION:
             rejection_labels.append("stale_source_claim")
@@ -143,11 +155,33 @@ def validate_phase44d_boundary(envelope: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(compact_proof, dict):
         rejection_labels.append("compact_proof_mismatch")
     else:
-        proof_payload = commitment_payload(compact_proof, "compact_proof_commitment")
-        expected_proof_commitment = hash32(COMPACT_PROOF_VERSION, proof_payload)
+        expected_terms = [
+            "phase12-start-boundary",
+            compact_proof.get("source_root"),
+            "phase14-end-boundary",
+        ]
+        recomputed_payload_digest = hash32(
+            "phase44d-compact-proof-payload-v1",
+            {
+                "projection_row_count": 8,
+                "source_root": compact_proof.get("source_root"),
+                "transcript_shape": "phase44d-boundary-compression-placeholder",
+            },
+        )
+        expected_proof_payload = {
+            "compact_proof_version": COMPACT_PROOF_VERSION,
+            "payload_digest": recomputed_payload_digest,
+            "source_root": compact_proof.get("source_root"),
+            "transcript_terms": expected_terms,
+        }
+        expected_proof_commitment = hash32(COMPACT_PROOF_VERSION, expected_proof_payload)
         if compact_proof.get("compact_proof_version") != COMPACT_PROOF_VERSION:
             rejection_labels.append("compact_proof_mismatch")
         if compact_proof.get("source_root") != external_root:
+            rejection_labels.append("compact_proof_mismatch")
+        if compact_proof.get("transcript_terms") != expected_terms:
+            rejection_labels.append("compact_proof_mismatch")
+        if compact_proof.get("payload_digest") != recomputed_payload_digest:
             rejection_labels.append("compact_proof_mismatch")
         if compact_proof.get("compact_proof_commitment") != expected_proof_commitment:
             rejection_labels.append("compact_proof_mismatch")

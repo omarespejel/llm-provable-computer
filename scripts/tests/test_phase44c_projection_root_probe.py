@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import pathlib
 import tempfile
 import unittest
@@ -10,7 +11,7 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 CHECKER = ROOT / "scripts" / "check_phase44c_projection_root_probe.py"
 MANIFEST = ROOT / "docs" / "engineering" / "design" / "phase44c-projection-root-manifest.json"
-STWO_ROOT = pathlib.Path("/tmp/zkai-research/repos/stwo")
+STWO_ROOT = pathlib.Path(os.environ["STWO_ROOT"]) if os.environ.get("STWO_ROOT") else None
 
 SPEC = importlib.util.spec_from_file_location("phase44c_checker", CHECKER)
 if SPEC is None or SPEC.loader is None:
@@ -33,7 +34,7 @@ class Phase44CProjectionRootProbeTests(unittest.TestCase):
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         with tempfile.TemporaryDirectory() as tempdir:
             output = pathlib.Path(tempdir) / "evidence.json"
-            evidence = PHASE44C.probe_manifest(manifest, STWO_ROOT)
+            evidence = PHASE44C.probe_manifest(manifest)
             PHASE44C.write_json(output, evidence)
             round_tripped = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(round_tripped["probe"], PHASE44C.PROBE)
@@ -47,7 +48,7 @@ class Phase44CProjectionRootProbeTests(unittest.TestCase):
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         manifest["source_emitted_projection_root"] = "0" * 64
         with self.assertRaises(PHASE44C.Phase44CError):
-            PHASE44C.probe_manifest(manifest, STWO_ROOT)
+            PHASE44C.probe_manifest(manifest)
 
     def test_each_kill_label_rejects(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
@@ -60,9 +61,11 @@ class Phase44CProjectionRootProbeTests(unittest.TestCase):
                     "mutation_checks": [mutation],
                 }
                 with self.assertRaises(PHASE44C.Phase44CError):
-                    PHASE44C.probe_manifest(trimmed, STWO_ROOT)
+                    PHASE44C.probe_manifest(trimmed)
 
     def test_stwo_source_mechanics_are_verified(self) -> None:
+        if STWO_ROOT is None or not STWO_ROOT.exists():
+            self.skipTest("STWO_ROOT is not set to an available Stwo checkout")
         mechanics = PHASE44C.load_stwo_source_mechanics(STWO_ROOT)
         self.assertIn("pcs_mix_root", mechanics)
         self.assertIn("twiddle_root_coset", mechanics)

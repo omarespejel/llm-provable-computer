@@ -22,10 +22,18 @@ source-bound probe. If the answer is no, the source-side projection contract is
 too loose and the route should be killed before any Rust-side integration is
 attempted.
 
+## Prerequisites
+
+Phase44C can optionally inspect a local checkout of the upstream Stwo source.
+Set `STWO_ROOT` or pass `--stwo-root` to the checker when that evidence is
+needed. The path must point at a checkout containing `crates/stwo/Cargo.toml`.
+If no Stwo checkout is supplied, Phase44C still validates the canonical
+manifest and mutation checks, but omits source-mechanics evidence.
+
 ## Why Stwo Matters Here
 
-The cloned Stwo source under `/tmp/zkai-research/repos/stwo` shows that root
-binding and log-size mechanics are explicit, not implicit:
+The Stwo source under `STWO_ROOT` shows that root binding and log-size mechanics
+are explicit, not implicit:
 
 - `crates/stwo/src/prover/pcs/mod.rs` mixes Merkle roots into the channel with
   `MC::mix_root(channel, tree.commitment.root())`.
