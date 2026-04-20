@@ -47,6 +47,17 @@ def canonical_source_root(preimage: dict[str, Any]) -> str:
     return hash32("phase44d-canonical-source-root-v1", preimage)
 
 
+def source_preimage_layout_errors(preimage: dict[str, Any]) -> list[str]:
+    expected = build_source_preimage()
+    required = set(expected)
+    if set(preimage) != required:
+        return ["mismatched_source_layout"]
+    for key, value in expected.items():
+        if preimage.get(key) != value:
+            return ["mismatched_source_layout"]
+    return []
+
+
 def build_source_claim(root: str) -> dict[str, Any]:
     claim = {
         "claim_epoch": CURRENT_SOURCE_CLAIM_EPOCH,
@@ -116,6 +127,7 @@ def validate_phase44d_boundary(envelope: dict[str, Any]) -> dict[str, Any]:
         rejection_labels.append("missing_source_root")
         recomputed_root = None
     else:
+        rejection_labels.extend(source_preimage_layout_errors(preimage))
         recomputed_root = canonical_source_root(preimage)
         if preimage.get("source_surface_version") != CURRENT_SOURCE_SURFACE_VERSION:
             rejection_labels.append("stale_source_claim")
@@ -138,16 +150,40 @@ def validate_phase44d_boundary(envelope: dict[str, Any]) -> dict[str, Any]:
             rejection_labels.append("mismatched_source_root")
         if source_claim.get("source_claim_commitment") != expected_claim_commitment:
             rejection_labels.append("stale_source_claim")
+        if isinstance(external_root, str) and source_claim != build_source_claim(external_root):
+            rejection_labels.append("stale_source_claim")
 
     compact_proof = envelope.get("compact_proof")
     if not isinstance(compact_proof, dict):
         rejection_labels.append("compact_proof_mismatch")
     else:
-        proof_payload = commitment_payload(compact_proof, "compact_proof_commitment")
-        expected_proof_commitment = hash32(COMPACT_PROOF_VERSION, proof_payload)
+        expected_terms = [
+            "phase12-start-boundary",
+            compact_proof.get("source_root"),
+            "phase14-end-boundary",
+        ]
+        recomputed_payload_digest = hash32(
+            "phase44d-compact-proof-payload-v1",
+            {
+                "projection_row_count": 8,
+                "source_root": compact_proof.get("source_root"),
+                "transcript_shape": "phase44d-boundary-compression-placeholder",
+            },
+        )
+        expected_proof_payload = {
+            "compact_proof_version": COMPACT_PROOF_VERSION,
+            "payload_digest": recomputed_payload_digest,
+            "source_root": compact_proof.get("source_root"),
+            "transcript_terms": expected_terms,
+        }
+        expected_proof_commitment = hash32(COMPACT_PROOF_VERSION, expected_proof_payload)
         if compact_proof.get("compact_proof_version") != COMPACT_PROOF_VERSION:
             rejection_labels.append("compact_proof_mismatch")
         if compact_proof.get("source_root") != external_root:
+            rejection_labels.append("compact_proof_mismatch")
+        if compact_proof.get("transcript_terms") != expected_terms:
+            rejection_labels.append("compact_proof_mismatch")
+        if compact_proof.get("payload_digest") != recomputed_payload_digest:
             rejection_labels.append("compact_proof_mismatch")
         if compact_proof.get("compact_proof_commitment") != expected_proof_commitment:
             rejection_labels.append("compact_proof_mismatch")
@@ -208,6 +244,7 @@ class Phase44DFinalBoundaryAcceptanceTests(unittest.TestCase):
             "publication-grade source emission proof",
             "missing_source_root",
             "mismatched_source_root",
+            "mismatched_source_layout",
             "stale_source_claim",
             "compact_proof_mismatch",
         ):
@@ -241,6 +278,20 @@ class Phase44DFinalBoundaryAcceptanceTests(unittest.TestCase):
 
         self.assert_rejected(envelope, "mismatched_source_root")
 
+    def test_source_layout_drift_rejects_recommitted_root_claim_and_proof(self) -> None:
+        envelope = build_envelope(useful=True)
+        preimage = copy.deepcopy(envelope["canonical_source_root_preimage"])
+        preimage["projection_row_count"] = 4
+        preimage["projection_log_size"] = 2
+        preimage["row_labels"] = preimage["row_labels"][:4]
+        wrong_root = canonical_source_root(preimage)
+        envelope["canonical_source_root_preimage"] = preimage
+        envelope["externally_emitted_canonical_source_root"] = wrong_root
+        envelope["source_claim"] = build_source_claim(wrong_root)
+        envelope["compact_proof"] = build_compact_proof(wrong_root)
+
+        self.assert_rejected(envelope, "mismatched_source_layout")
+
     def test_stale_source_claim_rejects_recommitted_claim(self) -> None:
         envelope = build_envelope(useful=True)
         source_claim = copy.deepcopy(envelope["source_claim"])
@@ -265,9 +316,33 @@ class Phase44DFinalBoundaryAcceptanceTests(unittest.TestCase):
 
         self.assert_rejected(envelope, "stale_source_claim")
 
+    def test_source_claim_payload_drift_rejects_recommitted_claim(self) -> None:
+        envelope = build_envelope(useful=True)
+        source_claim = copy.deepcopy(envelope["source_claim"])
+        source_claim["source_emitter"] = "phase44d-forged-source-emitter"
+        source_claim["source_claim_commitment"] = hash32(
+            SOURCE_CLAIM_VERSION,
+            commitment_payload(source_claim, "source_claim_commitment"),
+        )
+        envelope["source_claim"] = source_claim
+
+        self.assert_rejected(envelope, "stale_source_claim")
+
     def test_compact_proof_payload_mismatch_keeps_boundary_false(self) -> None:
         envelope = build_envelope(useful=True)
         envelope["compact_proof"]["payload_digest"] = hash32("tampered", "payload")
+
+        self.assert_rejected(envelope, "compact_proof_mismatch")
+
+    def test_compact_proof_payload_digest_drift_rejects_recommitted_proof(self) -> None:
+        envelope = build_envelope(useful=True)
+        compact_proof = copy.deepcopy(envelope["compact_proof"])
+        compact_proof["payload_digest"] = hash32("tampered", "payload")
+        compact_proof["compact_proof_commitment"] = hash32(
+            COMPACT_PROOF_VERSION,
+            commitment_payload(compact_proof, "compact_proof_commitment"),
+        )
+        envelope["compact_proof"] = compact_proof
 
         self.assert_rejected(envelope, "compact_proof_mismatch")
 

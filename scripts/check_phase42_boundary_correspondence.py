@@ -54,6 +54,8 @@ STWO_DECODING_CROSS_STEP_LOOKUP_ACCUMULATOR_VERSION_PHASE23 = (
     "stwo-phase23-decoding-cross-step-lookup-accumulator-v1"
 )
 PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_VERSION = "phase42-boundary-preimage-evidence-v1"
+MAX_JSON_BYTES = 8 * 1024 * 1024
+MAX_USIZE = (1 << 64) - 1
 
 PHASE12_OUTPUT_WIDTH = 3
 PHASE12_SHARED_LOOKUP_ROWS = 8
@@ -217,17 +219,12 @@ PHASE42_EVIDENCE_FIELDS = (
 )
 
 SHARED_STATE_FIELDS = (
-    "step_index",
     "position",
     "layout_commitment",
     "persistent_state_commitment",
     "kv_history_commitment",
     "kv_history_length",
     "kv_cache_commitment",
-    "incoming_token_commitment",
-    "query_commitment",
-    "output_commitment",
-    "lookup_rows_commitment",
 )
 
 
@@ -237,7 +234,14 @@ class Phase42Error(Exception):
 
 def load_json(path: pathlib.Path) -> dict[str, Any]:
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        size = path.stat().st_size
+        if size > MAX_JSON_BYTES:
+            raise Phase42Error(f"{path}: JSON artifact exceeds {MAX_JSON_BYTES} bytes")
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise Phase42Error(f"{path}: unable to read JSON artifact: {exc}") from exc
+    try:
+        data = json.loads(text)
     except json.JSONDecodeError as exc:
         raise Phase42Error(f"{path}: invalid JSON: {exc}") from exc
     if not isinstance(data, dict):
@@ -273,13 +277,15 @@ def require_bool(label: str, value: Any) -> None:
 
 
 def require_usize(label: str, value: Any) -> int:
-    if not isinstance(value, int) or value < 0:
+    if type(value) is not int or value < 0:
         raise Phase42Error(f"{label}: expected a non-negative integer")
+    if value > MAX_USIZE:
+        raise Phase42Error(f"{label}: expected an unsigned 64-bit integer")
     return value
 
 
 def require_i16(label: str, value: Any) -> int:
-    if not isinstance(value, int) or value < -32768 or value > 32767:
+    if type(value) is not int or value < -32768 or value > 32767:
         raise Phase42Error(f"{label}: expected an i16 integer")
     return value
 
@@ -309,6 +315,8 @@ def phase30_hash_part(hasher: Any, value: str | bytes) -> None:
 
 
 def commit_phase12_layout(layout: dict[str, Any]) -> str:
+    if not isinstance(layout, dict):
+        raise Phase42Error("Phase30 layout: layout must be an object")
     if set(layout) != {"layout_version", "rolling_kv_pairs", "pair_width"}:
         raise Phase42Error("Phase30 layout: unexpected fields")
     if layout["layout_version"] != STWO_DECODING_LAYOUT_VERSION_PHASE12:
@@ -972,7 +980,7 @@ def evaluate(
             **base,
             "accepted": True,
             "relation_outcome": "equality",
-            "decision": "stay_current_path_direct_binding",
+            "decision": "stay_current_path",
             "reason": "Phase29 and Phase30 boundaries already match; Phase31 direct binding is the clean path.",
             "required_next_step": "Use direct Phase31/37 binding; no Phase41 translation is needed.",
         }
@@ -982,7 +990,7 @@ def evaluate(
             **base,
             "accepted": False,
             "relation_outcome": "impossible",
-            "decision": "patch_required",
+            "decision": "patch_once_then_stay",
             "reason": "Phase29/30 boundaries differ and no source-bound Phase41 witness was supplied.",
             "required_next_step": "Supply Phase41 plus Phase12 and Phase14/23 boundary preimage evidence, or pivot per Issue #180.",
         }
@@ -991,6 +999,10 @@ def evaluate(
         verify_phase41_against_sources(phase41, phase29, phase30)
 
     if boundary_preimage_evidence is not None:
+        if phase41 is None:
+            raise Phase42Error(
+                "Phase42 boundary preimage evidence requires a source-bound Phase41 witness"
+            )
         evidence_commitments = verify_boundary_preimage_evidence(
             boundary_preimage_evidence, phase29, phase30
         )
@@ -1016,7 +1028,7 @@ def evaluate(
         **base,
         "accepted": False,
         "relation_outcome": "impossible",
-        "decision": "patch_required",
+        "decision": "patch_once_then_stay",
         "phase41_witness_commitment": phase41["boundary_translation_witness_commitment"],
         "phase41_source_bound": True,
         "missing_evidence": [

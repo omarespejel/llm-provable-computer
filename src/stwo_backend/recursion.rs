@@ -501,6 +501,8 @@ const STWO_FIRST_LAYER_WITNESS_PCS_OPENING_STATUS_PHASE58: &str =
 const STWO_FIRST_LAYER_WITNESS_PCS_OPENING_NEXT_STEP_PHASE58: &str =
     "integrate_phase58_openings_into_full_first_layer_relation_witness_and_recursive_aggregation";
 #[cfg(feature = "stwo-backend")]
+const PHASE58_MAX_PCS_LIFTING_LOG_SIZE: u32 = 64;
+#[cfg(feature = "stwo-backend")]
 const STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_COMPLEXITY_PHASE59: &str =
     "O(phase56_terminal_checks + phase58_opening_bindings)";
 #[cfg(feature = "stwo-backend")]
@@ -1565,7 +1567,7 @@ pub struct Phase57MleOpeningVerificationReceipt {
     pub opened_value: u32,
     pub opening_root_commitment: String,
     pub opening_transcript_commitment: String,
-    pub measured_receipt_bytes: usize,
+    pub measured_payload_bytes: usize,
     pub executable_opening_check_available: bool,
     pub pcs_opening_proof_available: bool,
     pub relation_witness_binding_available: bool,
@@ -1587,7 +1589,7 @@ pub struct Phase57FirstLayerMleOpeningVerifierClaim {
     pub runtime_tensor_opening_count: usize,
     pub parameter_opening_count: usize,
     pub total_opening_point_dimension: usize,
-    pub measured_opening_receipt_bytes: usize,
+    pub measured_opening_receipt_payload_bytes: usize,
     pub phase56_executable_verifier_surface_unit_count: usize,
     pub opening_verifier_surface_unit_count: usize,
     pub combined_verifier_surface_unit_count: usize,
@@ -12248,7 +12250,7 @@ pub fn commit_phase57_mle_opening_verification_receipt(
     phase29_update_usize(&mut hasher, receipt.opening_point_dimension);
     phase44d_update_u32_vec(&mut hasher, &receipt.opening_point);
     hasher.update(&receipt.opened_value.to_le_bytes());
-    phase29_update_usize(&mut hasher, receipt.measured_receipt_bytes);
+    phase29_update_usize(&mut hasher, receipt.measured_payload_bytes);
     phase29_update_bool(&mut hasher, receipt.executable_opening_check_available);
     phase29_update_bool(&mut hasher, receipt.pcs_opening_proof_available);
     phase29_update_bool(&mut hasher, receipt.relation_witness_binding_available);
@@ -12288,7 +12290,7 @@ pub fn commit_phase57_first_layer_mle_opening_verifier_claim(
     phase29_update_usize(&mut hasher, claim.runtime_tensor_opening_count);
     phase29_update_usize(&mut hasher, claim.parameter_opening_count);
     phase29_update_usize(&mut hasher, claim.total_opening_point_dimension);
-    phase29_update_usize(&mut hasher, claim.measured_opening_receipt_bytes);
+    phase29_update_usize(&mut hasher, claim.measured_opening_receipt_payload_bytes);
     phase29_update_usize(
         &mut hasher,
         claim.phase56_executable_verifier_surface_unit_count,
@@ -12355,9 +12357,9 @@ pub fn phase57_prepare_first_layer_mle_opening_verifier_claim(
         .iter()
         .map(|receipt| receipt.opening_point_dimension)
         .sum();
-    let measured_opening_receipt_bytes: usize = opening_receipts
+    let measured_opening_receipt_payload_bytes: usize = opening_receipts
         .iter()
-        .map(|receipt| receipt.measured_receipt_bytes)
+        .map(|receipt| receipt.measured_payload_bytes)
         .sum();
     let opening_verifier_surface_unit_count =
         opening_receipt_count + total_opening_point_dimension + opening_receipt_count;
@@ -12382,7 +12384,7 @@ pub fn phase57_prepare_first_layer_mle_opening_verifier_claim(
         runtime_tensor_opening_count,
         parameter_opening_count,
         total_opening_point_dimension,
-        measured_opening_receipt_bytes,
+        measured_opening_receipt_payload_bytes,
         phase56_executable_verifier_surface_unit_count: phase56_claim
             .executable_verifier_surface_unit_count,
         opening_verifier_surface_unit_count,
@@ -12494,7 +12496,7 @@ pub fn verify_phase57_mle_opening_verification_receipt(
         ));
     }
     let expected_bytes = phase57_mle_opening_receipt_payload_bytes(receipt)?;
-    if receipt.measured_receipt_bytes != expected_bytes {
+    if receipt.measured_payload_bytes != expected_bytes {
         return Err(VmError::InvalidConfig(
             "Phase 57 MLE opening receipt measured byte count drift".to_string(),
         ));
@@ -12519,7 +12521,7 @@ pub fn verify_phase57_mle_opening_verification_receipt(
 }
 
 #[cfg(feature = "stwo-backend")]
-pub fn verify_phase57_first_layer_mle_opening_verifier_claim(
+pub(crate) fn verify_phase57_first_layer_mle_opening_verifier_claim(
     claim: &Phase57FirstLayerMleOpeningVerifierClaim,
 ) -> Result<()> {
     if claim.proof_backend != StarkProofBackend::Stwo {
@@ -12608,10 +12610,10 @@ pub fn verify_phase57_first_layer_mle_opening_verifier_claim(
         .iter()
         .map(|receipt| receipt.opening_point_dimension)
         .sum();
-    let measured_opening_receipt_bytes: usize = claim
+    let measured_opening_receipt_payload_bytes: usize = claim
         .opening_receipts
         .iter()
-        .map(|receipt| receipt.measured_receipt_bytes)
+        .map(|receipt| receipt.measured_payload_bytes)
         .sum();
     let opening_surface =
         opening_receipt_count + total_opening_point_dimension + opening_receipt_count;
@@ -12627,8 +12629,7 @@ pub fn verify_phase57_first_layer_mle_opening_verifier_claim(
         || claim.runtime_tensor_opening_count != runtime_tensor_opening_count
         || claim.parameter_opening_count != parameter_opening_count
         || claim.total_opening_point_dimension != total_opening_point_dimension
-        || claim.measured_opening_receipt_bytes != measured_opening_receipt_bytes
-        || claim.phase56_executable_verifier_surface_unit_count != 123
+        || claim.measured_opening_receipt_payload_bytes != measured_opening_receipt_payload_bytes
         || claim.opening_verifier_surface_unit_count != opening_surface
         || claim.combined_verifier_surface_unit_count != combined_surface
         || claim.surface_delta_from_phase56 != opening_surface
@@ -12726,7 +12727,7 @@ fn phase57_prepare_mle_opening_receipt(
         )?,
         opening_root_commitment: opening_root_commitment.to_string(),
         opening_transcript_commitment: String::new(),
-        measured_receipt_bytes: 0,
+        measured_payload_bytes: 0,
         executable_opening_check_available: true,
         pcs_opening_proof_available: false,
         relation_witness_binding_available: false,
@@ -12735,7 +12736,7 @@ fn phase57_prepare_mle_opening_receipt(
     };
     receipt.opening_point = phase57_derive_opening_point(&receipt)?;
     receipt.opening_transcript_commitment = phase57_commit_mle_opening_transcript(&receipt)?;
-    receipt.measured_receipt_bytes = phase57_mle_opening_receipt_payload_bytes(&receipt)?;
+    receipt.measured_payload_bytes = phase57_mle_opening_receipt_payload_bytes(&receipt)?;
     receipt.opening_receipt_commitment = commit_phase57_mle_opening_verification_receipt(&receipt)?;
     verify_phase57_mle_opening_verification_receipt(&receipt)?;
     Ok(receipt)
@@ -12798,32 +12799,77 @@ fn phase57_commit_mle_opening_transcript(
 }
 
 #[cfg(feature = "stwo-backend")]
+#[derive(Serialize)]
+struct Phase57MleOpeningReceiptPayloadView<'a> {
+    proof_backend: String,
+    source_phase56_executable_claim_commitment: &'a str,
+    source_phase54_opening_claim_commitment: &'a str,
+    opening_name: &'a str,
+    opening_kind: &'a str,
+    opening_scheme: &'a str,
+    tensor_shape: &'a [usize],
+    logical_element_count: usize,
+    padded_element_count: usize,
+    opening_point_dimension: usize,
+    opening_point: &'a [u32],
+    opened_value: u32,
+    opening_root_commitment: &'a str,
+    opening_transcript_commitment: &'a str,
+    executable_opening_check_available: bool,
+    pcs_opening_proof_available: bool,
+    relation_witness_binding_available: bool,
+    cryptographic_soundness_claimed: bool,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Default)]
+struct Phase57JsonByteCounter {
+    bytes: usize,
+}
+
+#[cfg(feature = "stwo-backend")]
+impl std::io::Write for Phase57JsonByteCounter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.bytes = self.bytes.checked_add(buf.len()).ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::Other, "json byte count overflow")
+        })?;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase57_mle_opening_receipt_payload_bytes(
     receipt: &Phase57MleOpeningVerificationReceipt,
 ) -> Result<usize> {
-    let payload = serde_json::json!({
-        "proof_backend": receipt.proof_backend.to_string(),
-        "source_phase56_executable_claim_commitment": &receipt.source_phase56_executable_claim_commitment,
-        "source_phase54_opening_claim_commitment": &receipt.source_phase54_opening_claim_commitment,
-        "opening_name": &receipt.opening_name,
-        "opening_kind": &receipt.opening_kind,
-        "opening_scheme": &receipt.opening_scheme,
-        "tensor_shape": &receipt.tensor_shape,
-        "logical_element_count": receipt.logical_element_count,
-        "padded_element_count": receipt.padded_element_count,
-        "opening_point_dimension": receipt.opening_point_dimension,
-        "opening_point": &receipt.opening_point,
-        "opened_value": receipt.opened_value,
-        "opening_root_commitment": &receipt.opening_root_commitment,
-        "opening_transcript_commitment": &receipt.opening_transcript_commitment,
-        "executable_opening_check_available": receipt.executable_opening_check_available,
-        "pcs_opening_proof_available": receipt.pcs_opening_proof_available,
-        "relation_witness_binding_available": receipt.relation_witness_binding_available,
-        "cryptographic_soundness_claimed": receipt.cryptographic_soundness_claimed,
-    });
-    serde_json::to_vec(&payload)
-        .map(|bytes| bytes.len())
-        .map_err(|err| VmError::Serialization(err.to_string()))
+    let payload = Phase57MleOpeningReceiptPayloadView {
+        proof_backend: receipt.proof_backend.to_string(),
+        source_phase56_executable_claim_commitment: &receipt
+            .source_phase56_executable_claim_commitment,
+        source_phase54_opening_claim_commitment: &receipt.source_phase54_opening_claim_commitment,
+        opening_name: &receipt.opening_name,
+        opening_kind: &receipt.opening_kind,
+        opening_scheme: &receipt.opening_scheme,
+        tensor_shape: &receipt.tensor_shape,
+        logical_element_count: receipt.logical_element_count,
+        padded_element_count: receipt.padded_element_count,
+        opening_point_dimension: receipt.opening_point_dimension,
+        opening_point: &receipt.opening_point,
+        opened_value: receipt.opened_value,
+        opening_root_commitment: &receipt.opening_root_commitment,
+        opening_transcript_commitment: &receipt.opening_transcript_commitment,
+        executable_opening_check_available: receipt.executable_opening_check_available,
+        pcs_opening_proof_available: receipt.pcs_opening_proof_available,
+        relation_witness_binding_available: receipt.relation_witness_binding_available,
+        cryptographic_soundness_claimed: receipt.cryptographic_soundness_claimed,
+    };
+    let mut counter = Phase57JsonByteCounter::default();
+    serde_json::to_writer(&mut counter, &payload)
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    Ok(counter.bytes)
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -12838,7 +12884,7 @@ fn phase57_opening_verifier_transcript_order() -> Vec<String> {
         "opening_names",
         "opening_points",
         "opened_values",
-        "measured_receipt_bytes",
+        "measured_payload_bytes",
         "surface_accounting",
         "availability_flags",
         "required_next_step",
@@ -14567,6 +14613,32 @@ fn phase58_circle_point_from_index(index: u64) -> Result<CirclePoint<SecureField
 }
 
 #[cfg(feature = "stwo-backend")]
+fn phase58_lifted_circle_point(
+    log_size: u32,
+    lifting_log_size: u32,
+    point_index: u64,
+) -> Result<CirclePoint<SecureField>> {
+    let extended_log_size = log_size
+        .checked_add(PcsConfig::default().fri_config.log_blowup_factor)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 58 PCS extended log-size overflow".to_string())
+        })?;
+    if lifting_log_size < extended_log_size {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS lifting log size is smaller than the extended column log size"
+                .to_string(),
+        ));
+    }
+    if lifting_log_size > PHASE58_MAX_PCS_LIFTING_LOG_SIZE {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS lifting log size exceeds bounded verifier limit".to_string(),
+        ));
+    }
+    Ok(phase58_circle_point_from_index(point_index)?
+        .repeated_double(lifting_log_size - extended_log_size))
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase58_circle_evaluation_for_witness(
     raw_values: &[u32],
     log_size: u32,
@@ -14595,21 +14667,21 @@ fn phase58_circle_sample_value(
     lifting_log_size: u32,
     point_index: u64,
 ) -> Result<SecureField> {
-    let extended_log_size = log_size
-        .checked_add(PcsConfig::default().fri_config.log_blowup_factor)
-        .ok_or_else(|| {
-            VmError::InvalidConfig("Phase 58 PCS extended log-size overflow".to_string())
-        })?;
-    if lifting_log_size < extended_log_size {
-        return Err(VmError::InvalidConfig(
-            "Phase 58 PCS lifting log size is smaller than the extended column log size"
-                .to_string(),
-        ));
-    }
-    let point = phase58_circle_point_from_index(point_index)?
-        .repeated_double(lifting_log_size - extended_log_size);
+    let point = phase58_lifted_circle_point(log_size, lifting_log_size, point_index)?;
     let evaluation = phase58_circle_evaluation_for_witness(raw_values, log_size)?;
     Ok(evaluation.interpolate().eval_at_point(point))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_unlifted_stwo_pcs_api_sample_point(
+    opening: &Phase58WitnessBoundPcsOpening,
+) -> Result<Vec<CirclePoint<SecureField>>> {
+    // S-two's PCS API expects the unlifted OODS point here. Its prover/verifier
+    // path lifts each column relative to the committed domain, equivalent to
+    // `lifting_log_size - (pcs_column_log_size + fri_log_blowup)`. Phase58 uses
+    // that same lifted point only when recomputing the sampled value; pre-lifting
+    // this API argument would double-lift it.
+    phase58_circle_point_from_index(opening.pcs_opening_point_index).map(|point| vec![point])
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -14660,6 +14732,11 @@ fn phase58_commit_pcs_proof_bytes(bytes: &[u8]) -> Result<String> {
     phase29_update_usize(&mut hasher, bytes.len());
     phase29_update_len_prefixed(&mut hasher, bytes);
     phase44d_finalize_hash(hasher, "Phase 58 PCS proof bytes")
+}
+
+#[cfg(all(feature = "stwo-backend", test))]
+pub(crate) fn phase58_commit_pcs_proof_bytes_for_tests(bytes: &[u8]) -> Result<String> {
+    phase58_commit_pcs_proof_bytes(bytes)
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -14754,9 +14831,13 @@ fn phase58_build_pcs_opening_proof(openings: &[Phase58WitnessBoundPcsOpening]) -
         .ok_or_else(|| {
             VmError::InvalidConfig("Phase 58 PCS opening proof has no columns".to_string())
         })?;
-    let twiddles = CpuBackend::precompute_twiddles(
-        CanonicCoset::new(max_log_size + config.fri_config.log_blowup_factor).half_coset(),
-    );
+    let twiddle_log_size = max_log_size
+        .checked_add(config.fri_config.log_blowup_factor)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 58 PCS twiddle log-size overflow".to_string())
+        })?;
+    let twiddles =
+        CpuBackend::precompute_twiddles(CanonicCoset::new(twiddle_log_size).half_coset());
     let channel = &mut Blake2sM31Channel::default();
     let mut commitment_scheme =
         CommitmentSchemeProver::<CpuBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
@@ -14775,10 +14856,7 @@ fn phase58_build_pcs_opening_proof(openings: &[Phase58WitnessBoundPcsOpening]) -
     tree_builder.commit(channel);
     let sampled_points = TreeVec(vec![openings
         .iter()
-        .map(|opening| {
-            phase58_circle_point_from_index(opening.pcs_opening_point_index)
-                .map(|point| vec![point])
-        })
+        .map(phase58_unlifted_stwo_pcs_api_sample_point)
         .collect::<Result<Vec<_>>>()?]);
     let proof = commitment_scheme.prove_values(sampled_points, channel);
     let bytes = serde_json::to_vec(&Phase58PcsOpeningProofPayload { proof: proof.proof })
@@ -14831,16 +14909,18 @@ fn phase58_verify_pcs_opening_proof_bytes(
     }
     let sampled_points = TreeVec(vec![openings
         .iter()
-        .map(|opening| {
-            phase58_circle_point_from_index(opening.pcs_opening_point_index)
-                .map(|point| vec![point])
-        })
+        .map(phase58_unlifted_stwo_pcs_api_sample_point)
         .collect::<Result<Vec<_>>>()?]);
     let log_sizes = openings
         .iter()
         .map(|opening| opening.pcs_column_log_size)
         .collect::<Vec<_>>();
-    let config = proof.config;
+    let config = PcsConfig::default();
+    if proof.config != config {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS proof config drift".to_string(),
+        ));
+    }
     let channel = &mut Blake2sM31Channel::default();
     let mut verifier = CommitmentSchemeVerifier::<Blake2sM31MerkleChannel>::new(config);
     verifier.commit(proof.commitments[0], &log_sizes, channel);

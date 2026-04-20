@@ -216,7 +216,7 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
         self.assertEqual(result["issue"], 180)
         self.assertFalse(result["accepted"])
         self.assertEqual(result["relation_outcome"], "impossible")
-        self.assertEqual(result["decision"], "patch_required")
+        self.assertEqual(result["decision"], "patch_once_then_stay")
         self.assertTrue(result["phase41_source_bound"])
         self.assertIn("Phase12 public-state boundary preimage", result["missing_evidence"])
 
@@ -245,7 +245,7 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
 
         self.assertTrue(result["accepted"])
         self.assertEqual(result["relation_outcome"], "equality")
-        self.assertEqual(result["decision"], "stay_current_path_direct_binding")
+        self.assertEqual(result["decision"], "stay_current_path")
 
     def test_rejects_stale_phase29_commitment(self) -> None:
         phase29 = sample_phase29_contract(hash32("d"), hash32("e"))
@@ -262,6 +262,30 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
 
         with self.assertRaisesRegex(PHASE42.Phase42Error, "Phase30 envelope 0"):
             PHASE42.evaluate(phase29, phase30)
+
+    def test_rejects_non_object_phase30_layout(self) -> None:
+        with self.assertRaisesRegex(PHASE42.Phase42Error, "layout must be an object"):
+            PHASE42.commit_phase12_layout("not-a-layout")
+
+    def test_rejects_boolean_numeric_fields(self) -> None:
+        layout = {
+            "layout_version": PHASE42.STWO_DECODING_LAYOUT_VERSION_PHASE12,
+            "rolling_kv_pairs": True,
+            "pair_width": 2,
+        }
+
+        with self.assertRaisesRegex(PHASE42.Phase42Error, "non-negative integer"):
+            PHASE42.commit_phase12_layout(layout)
+
+    def test_rejects_oversized_usize_fields_without_overflow(self) -> None:
+        layout = {
+            "layout_version": PHASE42.STWO_DECODING_LAYOUT_VERSION_PHASE12,
+            "rolling_kv_pairs": 1 << 64,
+            "pair_width": 2,
+        }
+
+        with self.assertRaisesRegex(PHASE42.Phase42Error, "unsigned 64-bit integer"):
+            PHASE42.commit_phase12_layout(layout)
 
     def test_rejects_swapped_phase41_source_boundary(self) -> None:
         phase29 = sample_phase29_contract(hash32("d"), hash32("e"))
@@ -312,17 +336,28 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
             PHASE42.evaluate(phase29, phase30, phase41, evidence)
 
     def test_rejects_phase12_phase14_shared_core_mismatch(self) -> None:
-        phase29, phase30, phase41, evidence = sample_boundary_preimage_bundle()
+        phase29, phase30, _, evidence = sample_boundary_preimage_bundle()
         evidence = copy.deepcopy(evidence)
-        evidence["phase14_end_state"]["query_commitment"] = hash32("8")
+        evidence["phase14_end_state"]["kv_cache_commitment"] = hash32("8")
         evidence["phase14_end_state"]["public_state_commitment"] = (
             PHASE42.commit_phase14_public_state(evidence["phase14_end_state"])
         )
+        phase29["global_end_state_commitment"] = PHASE42.commit_phase23_boundary_state(
+            evidence["phase14_end_state"]
+        )
+        phase29["input_contract_commitment"] = PHASE42.commit_phase29_contract(phase29)
+        phase41 = PHASE42.prepare_phase41_expected(phase29, phase30)
 
         with self.assertRaisesRegex(PHASE42.Phase42Error, "shared carried-state field"):
             PHASE42.evaluate(phase29, phase30, phase41, evidence)
 
-    def test_cli_reports_issue_and_patch_required_decision(self) -> None:
+    def test_rejects_boundary_preimage_evidence_without_phase41_source_binding(self) -> None:
+        phase29, phase30, _, evidence = sample_boundary_preimage_bundle()
+
+        with self.assertRaisesRegex(PHASE42.Phase42Error, "requires a source-bound Phase41"):
+            PHASE42.evaluate(phase29, phase30, None, evidence)
+
+    def test_cli_reports_issue_and_patch_once_decision(self) -> None:
         phase29 = sample_phase29_contract(hash32("d"), hash32("e"))
         phase30 = sample_phase30_manifest(hash32("7"), hash32("8"))
         phase41 = PHASE42.prepare_phase41_expected(phase29, phase30)
@@ -349,10 +384,11 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
                 check=True,
                 capture_output=True,
                 text=True,
+                timeout=10,
             )
             result = json.loads(completed.stdout)
         self.assertEqual(result["issue"], 180)
-        self.assertEqual(result["decision"], "patch_required")
+        self.assertEqual(result["decision"], "patch_once_then_stay")
 
     def test_cli_accepts_boundary_preimage_evidence(self) -> None:
         phase29, phase30, phase41, evidence = sample_boundary_preimage_bundle()
@@ -384,6 +420,7 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
                 check=True,
                 capture_output=True,
                 text=True,
+                timeout=10,
             )
             result = json.loads(completed.stdout)
         self.assertTrue(result["accepted"])

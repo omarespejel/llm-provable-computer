@@ -227,7 +227,6 @@ pub use stwo_backend::{
     verify_phase56_executable_sumcheck_component_proof,
     verify_phase56_first_layer_executable_sumcheck_claim,
     verify_phase56_first_layer_executable_sumcheck_claim_against_phase54,
-    verify_phase57_first_layer_mle_opening_verifier_claim,
     verify_phase57_first_layer_mle_opening_verifier_claim_against_phase56,
     verify_phase57_mle_opening_verification_receipt,
     verify_phase58_first_layer_witness_pcs_opening_claim,

@@ -1905,7 +1905,17 @@ HALT
         proof.claim.equivalence = None;
 
         assert!(verify_execution_stark_claim_only(&proof).expect("claim-only verify"));
+        assert!(verify_execution_stark_with_backend_and_policy(
+            &proof,
+            proof.proof_backend,
+            production_v1_verification_policy()
+        )
+        .expect("backend/policy claim-only verify"));
         assert!(verify_execution_stark(&proof).expect("default claim-only verify"));
+        assert!(
+            verify_execution_stark_with_policy(&proof, production_v1_verification_policy())
+                .expect("policy claim-only verify")
+        );
 
         let err = verify_execution_stark_with_reexecution(&proof).unwrap_err();
         assert!(err

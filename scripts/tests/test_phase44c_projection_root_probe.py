@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import pathlib
 import tempfile
 import unittest
@@ -10,7 +11,7 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 CHECKER = ROOT / "scripts" / "check_phase44c_projection_root_probe.py"
 MANIFEST = ROOT / "docs" / "engineering" / "design" / "phase44c-projection-root-manifest.json"
-STWO_ROOT = pathlib.Path("/tmp/zkai-research/repos/stwo")
+STWO_ROOT = pathlib.Path(os.environ["STWO_ROOT"]) if os.environ.get("STWO_ROOT") else None
 
 SPEC = importlib.util.spec_from_file_location("phase44c_checker", CHECKER)
 if SPEC is None or SPEC.loader is None:
@@ -27,46 +28,70 @@ class Phase44CProjectionRootProbeTests(unittest.TestCase):
         self.assertEqual(manifest["source_surface_version"], PHASE44C.PHASE43_SURFACE_VERSION)
         self.assertEqual(manifest["projection_row_count"], 8)
         self.assertEqual(manifest["projection_log_size"], 3)
+        self.assertEqual(manifest["kill_labels"], PHASE44C.EXPECTED_KILL_LABELS)
         self.assertEqual(len(manifest["canonical_source_root_preimage"]["row_labels"]), 8)
 
     def test_probe_accepts_canonical_manifest_and_writes_evidence(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         with tempfile.TemporaryDirectory() as tempdir:
             output = pathlib.Path(tempdir) / "evidence.json"
-            evidence = PHASE44C.probe_manifest(manifest, STWO_ROOT)
+            evidence = PHASE44C.probe_manifest(manifest)
             PHASE44C.write_json(output, evidence)
             round_tripped = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(round_tripped["schema"], "phase44c-projection-root-binding-evidence-v1")
             self.assertEqual(round_tripped["probe"], PHASE44C.PROBE)
+            self.assertEqual(round_tripped["source_surface_version"], PHASE44C.PHASE43_SURFACE_VERSION)
             self.assertEqual(round_tripped["projection_row_count"], 8)
             self.assertEqual(round_tripped["projection_log_size"], 3)
             self.assertEqual(round_tripped["source_emitted_projection_root"], round_tripped["canonical_source_root"])
             self.assertEqual(len(round_tripped["kill_results"]), len(manifest["mutation_checks"]))
 
-
     def test_probe_rejects_tampered_source_emitted_root(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         manifest["source_emitted_projection_root"] = "0" * 64
         with self.assertRaises(PHASE44C.Phase44CError):
-            PHASE44C.probe_manifest(manifest, STWO_ROOT)
+            PHASE44C.probe_manifest(manifest)
+
+    def test_probe_rejects_non_string_kill_label(self) -> None:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        manifest["kill_labels"][0] = {"not": "a string"}
+        with self.assertRaisesRegex(PHASE44C.Phase44CError, "kill_labels\\[0\\]"):
+            PHASE44C.probe_manifest(manifest)
+
+    def test_probe_rejects_weakened_kill_label_suite(self) -> None:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        manifest["kill_labels"] = manifest["kill_labels"][:-1]
+        manifest["mutation_checks"] = manifest["mutation_checks"][:-1]
+        with self.assertRaisesRegex(PHASE44C.Phase44CError, "expected kill label suite"):
+            PHASE44C.probe_manifest(manifest)
+
+    def test_probe_rejects_top_level_manifest_metadata_drift(self) -> None:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        manifest["projection_log_size"] = 4
+        with self.assertRaisesRegex(PHASE44C.Phase44CError, "projection_log_size"):
+            PHASE44C.probe_manifest(manifest)
 
     def test_each_kill_label_rejects(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         for mutation in manifest["mutation_checks"]:
             with self.subTest(label=mutation["label"]):
                 mutated = PHASE44C.apply_mutation(manifest, mutation["label"])
-                trimmed = {
-                    **mutated,
-                    "kill_labels": [mutation["label"]],
-                    "mutation_checks": [mutation],
-                }
                 with self.assertRaises(PHASE44C.Phase44CError):
-                    PHASE44C.probe_manifest(trimmed, STWO_ROOT)
+                    PHASE44C.probe_manifest(mutated)
 
     def test_stwo_source_mechanics_are_verified(self) -> None:
+        if (
+            STWO_ROOT is None
+            or not STWO_ROOT.is_dir()
+            or not (STWO_ROOT / "crates/stwo/Cargo.toml").exists()
+        ):
+            self.skipTest("STWO_ROOT is not set to an available Stwo checkout")
         mechanics = PHASE44C.load_stwo_source_mechanics(STWO_ROOT)
         self.assertIn("pcs_mix_root", mechanics)
         self.assertIn("twiddle_root_coset", mechanics)
         self.assertIn("accumulation_root_coset", mechanics)
+        for item in mechanics.values():
+            self.assertFalse(pathlib.Path(item["path"]).is_absolute())
         self.assertTrue((STWO_ROOT / "crates/stwo/src/prover/pcs/mod.rs").exists())
 
 

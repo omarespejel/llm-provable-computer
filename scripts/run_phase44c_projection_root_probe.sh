@@ -5,4 +5,9 @@ export LANG=C
 
 cd "$(dirname "$0")/.."
 
-python3 -B scripts/check_phase44c_projection_root_probe.py
+args=()
+if [[ -n "${STWO_ROOT:-}" ]]; then
+  args+=(--stwo-root "$STWO_ROOT")
+fi
+
+python3 -B scripts/check_phase44c_projection_root_probe.py "${args[@]}"
