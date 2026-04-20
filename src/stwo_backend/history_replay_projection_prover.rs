@@ -9037,6 +9037,24 @@ mod tests {
     }
 
     #[test]
+    fn phase62_proof_carrying_state_continuity_rejects_unbound_chain_start_source() {
+        let (_, _, _, _, _, _, _, _, mut phase62) =
+            sample_phase62_proof_carrying_state_continuity_claim();
+
+        for step in &mut phase62.step_envelopes {
+            step.source_phase60_input_tensor_witness_commitment = hash32('g');
+            recommit_phase62_step(step);
+        }
+        recommit_phase62_claim(&mut phase62);
+
+        let error = verify_phase62_proof_carrying_state_continuity_claim(&phase62)
+            .expect_err("Phase62 must reject input tensor drift not reflected in chain start");
+        assert!(error
+            .to_string()
+            .contains("chain start does not match derived source commitments"));
+    }
+
+    #[test]
     fn phase62_proof_carrying_state_continuity_rejects_phase61_source_drift() {
         let (_, phase54, phase56, phase57, phase58, phase59, phase60, phase61, mut phase62) =
             sample_phase62_proof_carrying_state_continuity_claim();

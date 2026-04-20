@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "stwo-backend")]
-use std::path::Path;
+use std::{collections::HashSet, path::Path};
 
 use crate::error::{Result, VmError};
 use crate::proof::{ExecutionClaimCommitments, StarkProofBackend, VanillaStarkExecutionProof};
@@ -16368,16 +16368,27 @@ pub fn verify_phase62_proof_carrying_state_continuity_claim(
                 .as_str()
         })
         .ok_or_else(|| VmError::InvalidConfig("Phase 62 empty step chain".to_string()))?;
-    let mut seen_step_commitments = Vec::with_capacity(claim.step_envelopes.len());
+    let expected_chain_start = phase62_derive_chain_start_state_commitment_from_parts(
+        &claim.relation_template_commitment,
+        &claim.source_phase61_runtime_witness_pcs_replacement_claim_commitment,
+        &claim.source_phase60_runtime_relation_witness_claim_commitment,
+        expected_source_input_tensor,
+    )?;
+    if claim.chain_start_state_commitment != expected_chain_start {
+        return Err(VmError::InvalidConfig(
+            "Phase 62 state-continuity chain start does not match derived source commitments"
+                .to_string(),
+        ));
+    }
+    let mut seen_step_commitments = HashSet::with_capacity(claim.step_envelopes.len());
     let mut previous_output_state: Option<String> = None;
     for (expected_index, step) in claim.step_envelopes.iter().enumerate() {
         verify_phase62_proof_carrying_state_step_envelope(step)?;
-        if seen_step_commitments.contains(&step.step_envelope_commitment) {
+        if !seen_step_commitments.insert(step.step_envelope_commitment.as_str()) {
             return Err(VmError::InvalidConfig(
                 "Phase 62 state-continuity claim duplicate step envelope".to_string(),
             ));
         }
-        seen_step_commitments.push(step.step_envelope_commitment.clone());
         if step.step_index != expected_index {
             return Err(VmError::InvalidConfig(
                 "Phase 62 state-continuity claim step index drift".to_string(),
