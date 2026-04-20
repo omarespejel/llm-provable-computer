@@ -314,6 +314,12 @@ pub const STWO_FIRST_LAYER_WITNESS_PCS_OPENING_CLAIM_VERSION_PHASE58: &str =
 pub const STWO_FIRST_LAYER_WITNESS_PCS_OPENING_CLAIM_SCOPE_PHASE58: &str =
     "phase58_phase57_witness_bound_stwo_pcs_opening_proofs";
 #[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_CLAIM_VERSION_PHASE59: &str =
+    "phase59-first-layer-relation-witness-binding-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_CLAIM_SCOPE_PHASE59: &str =
+    "phase59_phase58_relation_witness_binding_contract";
+#[cfg(feature = "stwo-backend")]
 const STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_KIND_PHASE44D: &str =
     "source-chain-public-output-boundary-verifier-v1";
 #[cfg(feature = "stwo-backend")]
@@ -494,6 +500,15 @@ const STWO_FIRST_LAYER_WITNESS_PCS_OPENING_STATUS_PHASE58: &str =
 #[cfg(feature = "stwo-backend")]
 const STWO_FIRST_LAYER_WITNESS_PCS_OPENING_NEXT_STEP_PHASE58: &str =
     "integrate_phase58_openings_into_full_first_layer_relation_witness_and_recursive_aggregation";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_COMPLEXITY_PHASE59: &str =
+    "O(phase56_terminal_checks + phase58_opening_bindings)";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_STATUS_PHASE59: &str =
+    "relation_witness_binding_contract_available_pending_actual_runtime_witness_extraction";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_NEXT_STEP_PHASE59: &str =
+    "replace_phase58_synthetic_opening_witnesses_with_runtime_relation_witness_and_recursive_aggregation";
 #[cfg(feature = "stwo-backend")]
 const PHASE44D_M31_MODULUS: u32 = (1u32 << 31) - 1;
 
@@ -1672,6 +1687,80 @@ pub struct Phase58FirstLayerWitnessPcsOpeningClaim {
     pub paper_ready: bool,
     pub required_next_step: String,
     pub witness_pcs_opening_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase59RelationWitnessOpeningBinding {
+    pub proof_backend: StarkProofBackend,
+    pub component_name: String,
+    pub opening_name: String,
+    pub opening_kind: String,
+    pub source_phase58_opening_proof_commitment: String,
+    pub raw_witness_commitment: String,
+    pub tensor_shape: Vec<usize>,
+    pub logical_element_count: usize,
+    pub opened_value: u32,
+    pub recomputed_mle_value: u32,
+    pub opening_binding_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase59RelationWitnessComponentBinding {
+    pub proof_backend: StarkProofBackend,
+    pub source_phase56_component_proof_commitment: String,
+    pub component_name: String,
+    pub component_kind: String,
+    pub terminal_sum: u32,
+    pub final_evaluations: Vec<u32>,
+    pub runtime_opening_bindings: Vec<Phase59RelationWitnessOpeningBinding>,
+    pub parameter_opening_bindings: Vec<Phase59RelationWitnessOpeningBinding>,
+    pub runtime_opening_count: usize,
+    pub parameter_opening_count: usize,
+    pub terminal_evaluation_count: usize,
+    pub component_binding_surface_unit_count: usize,
+    pub relation_binding_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase59FirstLayerRelationWitnessBindingClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub source_phase58_witness_pcs_opening_claim_commitment: String,
+    pub source_phase57_opening_verifier_claim_commitment: String,
+    pub source_phase56_executable_claim_commitment: String,
+    pub source_phase54_skeleton_claim_commitment: String,
+    pub component_bindings: Vec<Phase59RelationWitnessComponentBinding>,
+    pub component_binding_count: usize,
+    pub total_runtime_opening_binding_count: usize,
+    pub total_parameter_opening_binding_count: usize,
+    pub total_terminal_evaluation_count: usize,
+    pub phase58_combined_verifier_surface_unit_count: usize,
+    pub relation_binding_surface_unit_count: usize,
+    pub combined_verifier_surface_unit_count: usize,
+    pub surface_delta_from_phase58: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub executable_sumcheck_round_verifier_available: bool,
+    pub executable_mle_opening_verifier_available: bool,
+    pub witness_pcs_opening_proof_available: bool,
+    pub relation_witness_binding_available: bool,
+    pub full_layer_relation_witness_available: bool,
+    pub actual_runtime_model_witness_available: bool,
+    pub actual_proof_byte_benchmark_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub relation_witness_binding_claim_commitment: String,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -12900,6 +12989,132 @@ pub fn commit_phase58_first_layer_witness_pcs_opening_claim(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn commit_phase59_relation_witness_opening_binding(
+    binding: &Phase59RelationWitnessOpeningBinding,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 59 relation witness opening binding hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase59-relation-witness-opening-binding");
+    phase29_update_len_prefixed(&mut hasher, binding.proof_backend.to_string().as_bytes());
+    for part in [
+        binding.component_name.as_bytes(),
+        binding.opening_name.as_bytes(),
+        binding.opening_kind.as_bytes(),
+        binding.source_phase58_opening_proof_commitment.as_bytes(),
+        binding.raw_witness_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_update_usize_vec(&mut hasher, &binding.tensor_shape);
+    phase29_update_usize(&mut hasher, binding.logical_element_count);
+    hasher.update(&binding.opened_value.to_le_bytes());
+    hasher.update(&binding.recomputed_mle_value.to_le_bytes());
+    phase44d_finalize_hash(hasher, "Phase 59 relation witness opening binding")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase59_relation_witness_component_binding(
+    binding: &Phase59RelationWitnessComponentBinding,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 59 relation witness component binding hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase59-relation-witness-component-binding");
+    phase29_update_len_prefixed(&mut hasher, binding.proof_backend.to_string().as_bytes());
+    for part in [
+        binding.source_phase56_component_proof_commitment.as_bytes(),
+        binding.component_name.as_bytes(),
+        binding.component_kind.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    hasher.update(&binding.terminal_sum.to_le_bytes());
+    phase44d_update_u32_vec(&mut hasher, &binding.final_evaluations);
+    for opening in &binding.runtime_opening_bindings {
+        phase29_update_len_prefixed(&mut hasher, opening.opening_binding_commitment.as_bytes());
+    }
+    for opening in &binding.parameter_opening_bindings {
+        phase29_update_len_prefixed(&mut hasher, opening.opening_binding_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, binding.runtime_opening_count);
+    phase29_update_usize(&mut hasher, binding.parameter_opening_count);
+    phase29_update_usize(&mut hasher, binding.terminal_evaluation_count);
+    phase29_update_usize(&mut hasher, binding.component_binding_surface_unit_count);
+    phase44d_finalize_hash(hasher, "Phase 59 relation witness component binding")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase59_first_layer_relation_witness_binding_claim(
+    claim: &Phase59FirstLayerRelationWitnessBindingClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 59 first-layer relation witness binding claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase59-first-layer-relation-witness-binding-claim",
+    );
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim
+            .source_phase58_witness_pcs_opening_claim_commitment
+            .as_bytes(),
+        claim
+            .source_phase57_opening_verifier_claim_commitment
+            .as_bytes(),
+        claim.source_phase56_executable_claim_commitment.as_bytes(),
+        claim.source_phase54_skeleton_claim_commitment.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.verifier_status.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for binding in &claim.component_bindings {
+        phase29_update_len_prefixed(&mut hasher, binding.relation_binding_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, claim.component_binding_count);
+    phase29_update_usize(&mut hasher, claim.total_runtime_opening_binding_count);
+    phase29_update_usize(&mut hasher, claim.total_parameter_opening_binding_count);
+    phase29_update_usize(&mut hasher, claim.total_terminal_evaluation_count);
+    phase29_update_usize(
+        &mut hasher,
+        claim.phase58_combined_verifier_surface_unit_count,
+    );
+    phase29_update_usize(&mut hasher, claim.relation_binding_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.combined_verifier_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.surface_delta_from_phase58);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(
+        &mut hasher,
+        claim.executable_sumcheck_round_verifier_available,
+    );
+    phase29_update_bool(&mut hasher, claim.executable_mle_opening_verifier_available);
+    phase29_update_bool(&mut hasher, claim.witness_pcs_opening_proof_available);
+    phase29_update_bool(&mut hasher, claim.relation_witness_binding_available);
+    phase29_update_bool(&mut hasher, claim.full_layer_relation_witness_available);
+    phase29_update_bool(&mut hasher, claim.actual_runtime_model_witness_available);
+    phase29_update_bool(&mut hasher, claim.actual_proof_byte_benchmark_available);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, claim.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, claim.paper_ready);
+    phase44d_finalize_hash(
+        hasher,
+        "Phase 59 first-layer relation witness binding claim",
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn phase58_prepare_first_layer_witness_pcs_opening_claim(
     phase57_claim: &Phase57FirstLayerMleOpeningVerifierClaim,
     phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
@@ -13481,6 +13696,675 @@ pub fn verify_phase58_first_layer_witness_pcs_opening_claim_against_phase57(
         }
     }
     Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase59_prepare_first_layer_relation_witness_binding_claim(
+    phase58_claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
+    phase57_claim: &Phase57FirstLayerMleOpeningVerifierClaim,
+    phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<Phase59FirstLayerRelationWitnessBindingClaim> {
+    verify_phase58_first_layer_witness_pcs_opening_claim_against_phase57(
+        phase58_claim,
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
+    let component_bindings = phase56_claim
+        .component_proofs
+        .iter()
+        .map(|proof| phase59_prepare_relation_witness_component_binding(proof, phase58_claim))
+        .collect::<Result<Vec<_>>>()?;
+    let component_binding_count = component_bindings.len();
+    let total_runtime_opening_binding_count: usize = component_bindings
+        .iter()
+        .map(|binding| binding.runtime_opening_count)
+        .sum();
+    let total_parameter_opening_binding_count: usize = component_bindings
+        .iter()
+        .map(|binding| binding.parameter_opening_count)
+        .sum();
+    let total_terminal_evaluation_count: usize = component_bindings
+        .iter()
+        .map(|binding| binding.terminal_evaluation_count)
+        .sum();
+    let relation_binding_surface_unit_count: usize = component_bindings
+        .iter()
+        .map(|binding| binding.component_binding_surface_unit_count)
+        .sum();
+    let combined_verifier_surface_unit_count = phase58_claim
+        .combined_verifier_surface_unit_count
+        .checked_add(relation_binding_surface_unit_count)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 59 combined verifier surface accounting overflow".to_string(),
+            )
+        })?;
+    let mut claim = Phase59FirstLayerRelationWitnessBindingClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_CLAIM_VERSION_PHASE59.to_string(),
+        semantic_scope: STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_CLAIM_SCOPE_PHASE59.to_string(),
+        source_phase58_witness_pcs_opening_claim_commitment: phase58_claim
+            .witness_pcs_opening_claim_commitment
+            .clone(),
+        source_phase57_opening_verifier_claim_commitment: phase58_claim
+            .source_phase57_opening_verifier_claim_commitment
+            .clone(),
+        source_phase56_executable_claim_commitment: phase58_claim
+            .source_phase56_executable_claim_commitment
+            .clone(),
+        source_phase54_skeleton_claim_commitment: phase58_claim
+            .source_phase54_skeleton_claim_commitment
+            .clone(),
+        component_bindings,
+        component_binding_count,
+        total_runtime_opening_binding_count,
+        total_parameter_opening_binding_count,
+        total_terminal_evaluation_count,
+        phase58_combined_verifier_surface_unit_count: phase58_claim
+            .combined_verifier_surface_unit_count,
+        relation_binding_surface_unit_count,
+        combined_verifier_surface_unit_count,
+        surface_delta_from_phase58: relation_binding_surface_unit_count,
+        verifier_side_complexity: STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_COMPLEXITY_PHASE59
+            .to_string(),
+        verifier_status: STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_STATUS_PHASE59.to_string(),
+        transcript_order: phase59_relation_witness_binding_transcript_order(),
+        executable_sumcheck_round_verifier_available: true,
+        executable_mle_opening_verifier_available: true,
+        witness_pcs_opening_proof_available: true,
+        relation_witness_binding_available: true,
+        full_layer_relation_witness_available: false,
+        actual_runtime_model_witness_available: false,
+        actual_proof_byte_benchmark_available: phase58_claim.actual_proof_byte_benchmark_available,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_NEXT_STEP_PHASE59.to_string(),
+        relation_witness_binding_claim_commitment: String::new(),
+    };
+    claim.relation_witness_binding_claim_commitment =
+        commit_phase59_first_layer_relation_witness_binding_claim(&claim)?;
+    verify_phase59_first_layer_relation_witness_binding_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase59_relation_witness_opening_binding(
+    binding: &Phase59RelationWitnessOpeningBinding,
+) -> Result<()> {
+    if binding.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness opening binding requires `stwo` backend".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase59_source_phase58_opening_proof_commitment",
+            binding.source_phase58_opening_proof_commitment.as_str(),
+        ),
+        (
+            "phase59_raw_witness_commitment",
+            binding.raw_witness_commitment.as_str(),
+        ),
+        (
+            "phase59_opening_binding_commitment",
+            binding.opening_binding_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if binding.opening_kind != "runtime_tensor_mle_opening"
+        && binding.opening_kind != "parameter_mle_opening"
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness opening binding kind drift".to_string(),
+        ));
+    }
+    if binding.opened_value >= PHASE44D_M31_MODULUS
+        || binding.recomputed_mle_value >= PHASE44D_M31_MODULUS
+        || binding.opened_value != binding.recomputed_mle_value
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness opening binding value drift".to_string(),
+        ));
+    }
+    let logical_element_count = phase50_tensor_element_count(&binding.tensor_shape)?;
+    if binding.logical_element_count != logical_element_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness opening binding tensor shape drift".to_string(),
+        ));
+    }
+    let expected_runtime_names =
+        phase59_runtime_opening_names_for_component(&binding.component_name)?;
+    let expected_parameter_names =
+        phase59_parameter_opening_names_for_component(&binding.component_name)?;
+    match binding.opening_kind.as_str() {
+        "runtime_tensor_mle_opening" => {
+            if !expected_runtime_names.contains(&binding.opening_name) {
+                return Err(VmError::InvalidConfig(
+                    "Phase 59 relation witness runtime opening is not assigned to component"
+                        .to_string(),
+                ));
+            }
+            let (_, expected_shape, _, _, _, _) = phase54_component_spec(&binding.component_name)?;
+            if binding.tensor_shape != expected_shape {
+                return Err(VmError::InvalidConfig(
+                    "Phase 59 relation witness runtime opening shape drift".to_string(),
+                ));
+            }
+        }
+        "parameter_mle_opening" => {
+            if !expected_parameter_names.contains(&binding.opening_name) {
+                return Err(VmError::InvalidConfig(
+                    "Phase 59 relation witness parameter opening is not assigned to component"
+                        .to_string(),
+                ));
+            }
+            let (_, expected_shape) = phase54_parameter_opening_spec(&binding.opening_name)?;
+            if binding.tensor_shape != expected_shape {
+                return Err(VmError::InvalidConfig(
+                    "Phase 59 relation witness parameter opening shape drift".to_string(),
+                ));
+            }
+        }
+        _ => unreachable!(),
+    }
+    let expected = commit_phase59_relation_witness_opening_binding(binding)?;
+    if binding.opening_binding_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness opening binding commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase59_relation_witness_component_binding(
+    binding: &Phase59RelationWitnessComponentBinding,
+) -> Result<()> {
+    if binding.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness component binding requires `stwo` backend".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase59_source_phase56_component_proof_commitment",
+            binding.source_phase56_component_proof_commitment.as_str(),
+        ),
+        (
+            "phase59_relation_binding_commitment",
+            binding.relation_binding_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let (expected_kind, _, _, _, expected_runtime_count, expected_parameter_count) =
+        phase54_component_spec(&binding.component_name)?;
+    if binding.component_kind != expected_kind
+        || binding.final_evaluations.len() != 2
+        || binding.terminal_evaluation_count != binding.final_evaluations.len()
+        || binding.runtime_opening_count != binding.runtime_opening_bindings.len()
+        || binding.parameter_opening_count != binding.parameter_opening_bindings.len()
+        || binding.runtime_opening_count != expected_runtime_count
+        || binding.parameter_opening_count != expected_parameter_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness component binding shape drift".to_string(),
+        ));
+    }
+    phase52_validate_m31_values("phase59_final_evaluations", &binding.final_evaluations)?;
+    if binding.terminal_sum >= PHASE44D_M31_MODULUS {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness component terminal sum exceeds M31 capacity".to_string(),
+        ));
+    }
+    let expected_terminal =
+        phase52_m31_mul(binding.final_evaluations[0], binding.final_evaluations[1]);
+    if binding.terminal_sum != expected_terminal {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness component terminal check drift".to_string(),
+        ));
+    }
+    let runtime_names = phase59_runtime_opening_names_for_component(&binding.component_name)?;
+    for (opening, expected_name) in binding
+        .runtime_opening_bindings
+        .iter()
+        .zip(runtime_names.iter())
+    {
+        verify_phase59_relation_witness_opening_binding(opening)?;
+        if opening.component_name != binding.component_name
+            || opening.opening_kind != "runtime_tensor_mle_opening"
+            || opening.opening_name != *expected_name
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 59 relation witness runtime opening order drift".to_string(),
+            ));
+        }
+    }
+    let parameter_names = phase59_parameter_opening_names_for_component(&binding.component_name)?;
+    for (opening, expected_name) in binding
+        .parameter_opening_bindings
+        .iter()
+        .zip(parameter_names.iter())
+    {
+        verify_phase59_relation_witness_opening_binding(opening)?;
+        if opening.component_name != binding.component_name
+            || opening.opening_kind != "parameter_mle_opening"
+            || opening.opening_name != *expected_name
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 59 relation witness parameter opening order drift".to_string(),
+            ));
+        }
+    }
+    let mut seen_opening_commitments = Vec::new();
+    for opening in binding
+        .runtime_opening_bindings
+        .iter()
+        .chain(binding.parameter_opening_bindings.iter())
+    {
+        if seen_opening_commitments.contains(&opening.source_phase58_opening_proof_commitment) {
+            return Err(VmError::InvalidConfig(
+                "Phase 59 relation witness component binding duplicate opening".to_string(),
+            ));
+        }
+        seen_opening_commitments.push(opening.source_phase58_opening_proof_commitment.clone());
+    }
+    let component_surface = phase59_component_binding_surface_unit_count(binding)?;
+    if binding.component_binding_surface_unit_count != component_surface {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness component surface accounting drift".to_string(),
+        ));
+    }
+    let expected = commit_phase59_relation_witness_component_binding(binding)?;
+    if binding.relation_binding_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness component binding commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase59_first_layer_relation_witness_binding_claim(
+    claim: &Phase59FirstLayerRelationWitnessBindingClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness binding claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_CLAIM_VERSION_PHASE59
+        || claim.semantic_scope != STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_CLAIM_SCOPE_PHASE59
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness binding claim version or semantic scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase59_source_phase58_witness_pcs_opening_claim_commitment",
+            claim
+                .source_phase58_witness_pcs_opening_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase59_source_phase57_opening_verifier_claim_commitment",
+            claim
+                .source_phase57_opening_verifier_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase59_source_phase56_executable_claim_commitment",
+            claim.source_phase56_executable_claim_commitment.as_str(),
+        ),
+        (
+            "phase59_source_phase54_skeleton_claim_commitment",
+            claim.source_phase54_skeleton_claim_commitment.as_str(),
+        ),
+        (
+            "phase59_relation_witness_binding_claim_commitment",
+            claim.relation_witness_binding_claim_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if claim.component_bindings.len() != phase54_component_order().len() {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness binding claim component count drift".to_string(),
+        ));
+    }
+    let mut seen_opening_commitments = Vec::new();
+    for (binding, expected_name) in claim
+        .component_bindings
+        .iter()
+        .zip(phase54_component_order().iter())
+    {
+        verify_phase59_relation_witness_component_binding(binding)?;
+        if binding.component_name != *expected_name {
+            return Err(VmError::InvalidConfig(
+                "Phase 59 relation witness binding claim component order drift".to_string(),
+            ));
+        }
+        for opening in binding
+            .runtime_opening_bindings
+            .iter()
+            .chain(binding.parameter_opening_bindings.iter())
+        {
+            if seen_opening_commitments.contains(&opening.source_phase58_opening_proof_commitment) {
+                return Err(VmError::InvalidConfig(
+                    "Phase 59 relation witness binding claim duplicate opening assignment"
+                        .to_string(),
+                ));
+            }
+            seen_opening_commitments.push(opening.source_phase58_opening_proof_commitment.clone());
+        }
+    }
+    let component_binding_count = claim.component_bindings.len();
+    let total_runtime_opening_binding_count: usize = claim
+        .component_bindings
+        .iter()
+        .map(|binding| binding.runtime_opening_count)
+        .sum();
+    let total_parameter_opening_binding_count: usize = claim
+        .component_bindings
+        .iter()
+        .map(|binding| binding.parameter_opening_count)
+        .sum();
+    let total_terminal_evaluation_count: usize = claim
+        .component_bindings
+        .iter()
+        .map(|binding| binding.terminal_evaluation_count)
+        .sum();
+    let relation_binding_surface_unit_count: usize = claim
+        .component_bindings
+        .iter()
+        .map(|binding| binding.component_binding_surface_unit_count)
+        .sum();
+    let combined_surface = claim
+        .phase58_combined_verifier_surface_unit_count
+        .checked_add(relation_binding_surface_unit_count)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 59 combined verifier surface accounting overflow".to_string(),
+            )
+        })?;
+    if claim.component_binding_count != component_binding_count
+        || claim.total_runtime_opening_binding_count != total_runtime_opening_binding_count
+        || claim.total_parameter_opening_binding_count != total_parameter_opening_binding_count
+        || claim.total_terminal_evaluation_count != total_terminal_evaluation_count
+        || claim.relation_binding_surface_unit_count != relation_binding_surface_unit_count
+        || claim.combined_verifier_surface_unit_count != combined_surface
+        || claim.surface_delta_from_phase58 != relation_binding_surface_unit_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness binding claim surface accounting drift".to_string(),
+        ));
+    }
+    if claim.verifier_side_complexity
+        != STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_COMPLEXITY_PHASE59
+        || claim.verifier_status != STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_STATUS_PHASE59
+        || claim.transcript_order != phase59_relation_witness_binding_transcript_order()
+        || claim.required_next_step != STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_NEXT_STEP_PHASE59
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness binding claim transcript, status, or next-step drift"
+                .to_string(),
+        ));
+    }
+    if !claim.executable_sumcheck_round_verifier_available
+        || !claim.executable_mle_opening_verifier_available
+        || !claim.witness_pcs_opening_proof_available
+        || !claim.relation_witness_binding_available
+        || claim.full_layer_relation_witness_available
+        || claim.actual_runtime_model_witness_available
+        || !claim.actual_proof_byte_benchmark_available
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+        || claim.breakthrough_claimed
+        || claim.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness binding claim must not claim full runtime relation, recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase59_first_layer_relation_witness_binding_claim(claim)?;
+    if claim.relation_witness_binding_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness binding claim commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase59_first_layer_relation_witness_binding_claim_against_phase58(
+    claim: &Phase59FirstLayerRelationWitnessBindingClaim,
+    phase58_claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
+    phase57_claim: &Phase57FirstLayerMleOpeningVerifierClaim,
+    phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<()> {
+    verify_phase58_first_layer_witness_pcs_opening_claim_against_phase57(
+        phase58_claim,
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
+    verify_phase59_first_layer_relation_witness_binding_claim(claim)?;
+    if claim.source_phase58_witness_pcs_opening_claim_commitment
+        != phase58_claim.witness_pcs_opening_claim_commitment
+        || claim.source_phase57_opening_verifier_claim_commitment
+            != phase58_claim.source_phase57_opening_verifier_claim_commitment
+        || claim.source_phase56_executable_claim_commitment
+            != phase58_claim.source_phase56_executable_claim_commitment
+        || claim.source_phase54_skeleton_claim_commitment
+            != phase58_claim.source_phase54_skeleton_claim_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness binding claim source drift against Phase58".to_string(),
+        ));
+    }
+    let expected = phase59_prepare_first_layer_relation_witness_binding_claim(
+        phase58_claim,
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
+    if claim != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 relation witness binding claim does not match verified Phase58 openings"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase59_prepare_relation_witness_component_binding(
+    component_proof: &Phase56ExecutableSumcheckComponentProof,
+    phase58_claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
+) -> Result<Phase59RelationWitnessComponentBinding> {
+    verify_phase56_executable_sumcheck_component_proof(component_proof)?;
+    let runtime_opening_bindings =
+        phase59_runtime_opening_names_for_component(&component_proof.component_name)?
+            .iter()
+            .map(|opening_name| {
+                let opening = phase59_find_phase58_opening(
+                    phase58_claim,
+                    opening_name,
+                    "runtime_tensor_mle_opening",
+                )?;
+                phase59_prepare_relation_witness_opening_binding(
+                    &component_proof.component_name,
+                    opening,
+                )
+            })
+            .collect::<Result<Vec<_>>>()?;
+    let parameter_opening_bindings =
+        phase59_parameter_opening_names_for_component(&component_proof.component_name)?
+            .iter()
+            .map(|opening_name| {
+                let opening = phase59_find_phase58_opening(
+                    phase58_claim,
+                    opening_name,
+                    "parameter_mle_opening",
+                )?;
+                phase59_prepare_relation_witness_opening_binding(
+                    &component_proof.component_name,
+                    opening,
+                )
+            })
+            .collect::<Result<Vec<_>>>()?;
+    let mut binding = Phase59RelationWitnessComponentBinding {
+        proof_backend: StarkProofBackend::Stwo,
+        source_phase56_component_proof_commitment: component_proof
+            .component_proof_commitment
+            .clone(),
+        component_name: component_proof.component_name.clone(),
+        component_kind: component_proof.component_kind.clone(),
+        terminal_sum: component_proof.terminal_sum,
+        final_evaluations: component_proof.final_evaluations.clone(),
+        runtime_opening_count: runtime_opening_bindings.len(),
+        parameter_opening_count: parameter_opening_bindings.len(),
+        terminal_evaluation_count: component_proof.final_evaluations.len(),
+        runtime_opening_bindings,
+        parameter_opening_bindings,
+        component_binding_surface_unit_count: 0,
+        relation_binding_commitment: String::new(),
+    };
+    binding.component_binding_surface_unit_count =
+        phase59_component_binding_surface_unit_count(&binding)?;
+    binding.relation_binding_commitment =
+        commit_phase59_relation_witness_component_binding(&binding)?;
+    verify_phase59_relation_witness_component_binding(&binding)?;
+    Ok(binding)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase59_prepare_relation_witness_opening_binding(
+    component_name: &str,
+    opening: &Phase58WitnessBoundPcsOpening,
+) -> Result<Phase59RelationWitnessOpeningBinding> {
+    verify_phase58_witness_bound_pcs_opening(opening)?;
+    let mut binding = Phase59RelationWitnessOpeningBinding {
+        proof_backend: StarkProofBackend::Stwo,
+        component_name: component_name.to_string(),
+        opening_name: opening.opening_name.clone(),
+        opening_kind: opening.opening_kind.clone(),
+        source_phase58_opening_proof_commitment: opening.opening_proof_commitment.clone(),
+        raw_witness_commitment: opening.raw_witness_commitment.clone(),
+        tensor_shape: opening.tensor_shape.clone(),
+        logical_element_count: opening.logical_element_count,
+        opened_value: opening.opened_value,
+        recomputed_mle_value: opening.recomputed_mle_value,
+        opening_binding_commitment: String::new(),
+    };
+    binding.opening_binding_commitment = commit_phase59_relation_witness_opening_binding(&binding)?;
+    verify_phase59_relation_witness_opening_binding(&binding)?;
+    Ok(binding)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase59_find_phase58_opening<'a>(
+    phase58_claim: &'a Phase58FirstLayerWitnessPcsOpeningClaim,
+    opening_name: &str,
+    opening_kind: &str,
+) -> Result<&'a Phase58WitnessBoundPcsOpening> {
+    phase58_claim
+        .opening_proofs
+        .iter()
+        .find(|opening| {
+            opening.opening_name == opening_name && opening.opening_kind == opening_kind
+        })
+        .ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "Phase 59 missing Phase58 opening `{opening_name}` of kind `{opening_kind}`"
+            ))
+        })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase59_runtime_opening_names_for_component(component_name: &str) -> Result<Vec<String>> {
+    let (_, _, _, _, runtime_tensor_opening_count, _) = phase54_component_spec(component_name)?;
+    Ok((0..runtime_tensor_opening_count)
+        .map(|opening_index| format!("{component_name}_runtime_tensor_opening_{opening_index}"))
+        .collect())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase59_parameter_opening_names_for_component(component_name: &str) -> Result<Vec<String>> {
+    let names = match component_name {
+        "gate_affine_sumcheck" => vec!["gate_weight_mle_opening", "gate_bias_mle_opening"],
+        "value_affine_sumcheck" => vec!["value_weight_mle_opening", "value_bias_mle_opening"],
+        "hidden_hadamard_eq_sumcheck" => Vec::new(),
+        "output_affine_sumcheck" => vec!["output_weight_mle_opening", "output_bias_mle_opening"],
+        _ => {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 59 unknown relation witness component `{component_name}`"
+            )))
+        }
+    };
+    let (_, _, _, _, _, expected_parameter_count) = phase54_component_spec(component_name)?;
+    if names.len() != expected_parameter_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 parameter opening assignment does not match Phase54 component spec"
+                .to_string(),
+        ));
+    }
+    Ok(names.into_iter().map(str::to_string).collect())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase59_component_binding_surface_unit_count(
+    binding: &Phase59RelationWitnessComponentBinding,
+) -> Result<usize> {
+    let opening_count = binding
+        .runtime_opening_bindings
+        .len()
+        .checked_add(binding.parameter_opening_bindings.len())
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 59 opening count accounting overflow".to_string())
+        })?;
+    opening_count
+        .checked_mul(4)
+        .and_then(|value| value.checked_add(binding.final_evaluations.len()))
+        .and_then(|value| value.checked_add(1))
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 59 relation binding surface accounting overflow".to_string(),
+            )
+        })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase59_relation_witness_binding_transcript_order() -> Vec<String> {
+    [
+        "phase59_relation_witness_binding_domain_tag",
+        "claim_version",
+        "semantic_scope",
+        "source_phase58_witness_pcs_opening_claim_commitment",
+        "source_phase57_opening_verifier_claim_commitment",
+        "source_phase56_executable_claim_commitment",
+        "source_phase54_skeleton_claim_commitment",
+        "ordered_phase56_component_proof_commitments",
+        "ordered_phase58_runtime_opening_bindings",
+        "ordered_phase58_parameter_opening_bindings",
+        "terminal_sums_and_final_evaluations",
+        "surface_accounting",
+        "availability_flags",
+        "required_next_step",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
 }
 
 #[cfg(feature = "stwo-backend")]
