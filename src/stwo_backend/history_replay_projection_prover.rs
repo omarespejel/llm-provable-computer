@@ -9033,6 +9033,29 @@ mod tests {
                 "Phase68 oracle: continuity count drift".to_string(),
             ));
         }
+        let expected_chain_links_commitment =
+            super::super::recursion::phase66_commit_chain_links_for_tests(&artifact.chain_links)
+                .map_err(|err| {
+                    VmError::InvalidConfig(format!(
+                        "Phase68 oracle: chain links commitment recompute failed: {err}"
+                    ))
+                })?;
+        if artifact.chain_links_commitment != expected_chain_links_commitment {
+            return Err(VmError::InvalidConfig(
+                "Phase68 oracle: chain links commitment drift".to_string(),
+            ));
+        }
+        let expected_artifact_commitment = commit_phase66_transformer_chain_artifact(artifact)
+            .map_err(|err| {
+                VmError::InvalidConfig(format!(
+                    "Phase68 oracle: artifact commitment recompute failed: {err}"
+                ))
+            })?;
+        if artifact.transformer_chain_artifact_commitment != expected_artifact_commitment {
+            return Err(VmError::InvalidConfig(
+                "Phase68 oracle: artifact commitment drift".to_string(),
+            ));
+        }
         let mut previous_state = None::<String>;
         let mut previous_position = None::<usize>;
         for (expected_index, link) in artifact.chain_links.iter().enumerate() {
@@ -9041,10 +9064,13 @@ mod tests {
                     "Phase68 oracle: step index drift".to_string(),
                 ));
             }
-            if link.chain_link_commitment
-                != commit_phase66_transformer_chain_link(link)
-                    .expect("oracle recomputes Phase66 link")
-            {
+            let expected_link_commitment =
+                commit_phase66_transformer_chain_link(link).map_err(|err| {
+                    VmError::InvalidConfig(format!(
+                        "Phase68 oracle: link commitment recompute failed: {err}"
+                    ))
+                })?;
+            if link.chain_link_commitment != expected_link_commitment {
                 return Err(VmError::InvalidConfig(
                     "Phase68 oracle: link commitment drift".to_string(),
                 ));
@@ -9077,21 +9103,18 @@ mod tests {
             previous_state = Some(link.output_carried_state_commitment.clone());
             previous_position = Some(link.output_position);
         }
+        let first_link = artifact.chain_links.first().ok_or_else(|| {
+            VmError::InvalidConfig("Phase68 oracle: invalid chain length".to_string())
+        })?;
+        let last_link = artifact.chain_links.last().ok_or_else(|| {
+            VmError::InvalidConfig("Phase68 oracle: invalid chain length".to_string())
+        })?;
         if artifact.chain_start_carried_state_commitment
-            != artifact.chain_links[0].input_carried_state_commitment
+            != first_link.input_carried_state_commitment
             || artifact.chain_end_carried_state_commitment
-                != artifact
-                    .chain_links
-                    .last()
-                    .expect("last link")
-                    .output_carried_state_commitment
-            || artifact.chain_start_position != artifact.chain_links[0].input_position
-            || artifact.chain_end_position
-                != artifact
-                    .chain_links
-                    .last()
-                    .expect("last link")
-                    .output_position
+                != last_link.output_carried_state_commitment
+            || artifact.chain_start_position != first_link.input_position
+            || artifact.chain_end_position != last_link.output_position
         {
             return Err(VmError::InvalidConfig(
                 "Phase68 oracle: chain summary drift".to_string(),
@@ -10119,6 +10142,24 @@ mod tests {
         let oracle_error = phase68_slow_chain_replay_oracle(&phase66)
             .expect_err("Phase68 oracle must reject overflowing link position");
         assert!(oracle_error.to_string().contains("local position drift"));
+    }
+
+    #[test]
+    fn phase68_slow_chain_replay_oracle_rejects_stale_top_level_commitments() {
+        let (_, _, _, _, _, _, _, _, _, _, _, _, mut phase66) =
+            sample_phase66_transformer_chain_artifact();
+
+        phase66.chain_links_commitment = hash32('9');
+        let error = phase68_slow_chain_replay_oracle(&phase66)
+            .expect_err("Phase68 oracle must reject stale chain-list commitment");
+        assert!(error.to_string().contains("chain links commitment drift"));
+
+        let (_, _, _, _, _, _, _, _, _, _, _, _, mut phase66) =
+            sample_phase66_transformer_chain_artifact();
+        phase66.transformer_chain_artifact_commitment = hash32('b');
+        let error = phase68_slow_chain_replay_oracle(&phase66)
+            .expect_err("Phase68 oracle must reject stale artifact commitment");
+        assert!(error.to_string().contains("artifact commitment drift"));
     }
 
     #[test]
