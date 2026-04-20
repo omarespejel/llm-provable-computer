@@ -14662,7 +14662,17 @@ fn phase58_derive_pcs_opening_point_index(opening: &Phase58WitnessBoundPcsOpenin
     })?;
     let mut index_bytes = [0u8; 8];
     index_bytes.copy_from_slice(&out[..8]);
-    Ok(u64::from_le_bytes(index_bytes).saturating_add(1))
+    Ok(phase58_nonzero_circle_index_from_hash_prefix(index_bytes))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_nonzero_circle_index_from_hash_prefix(index_bytes: [u8; 8]) -> u64 {
+    let raw = u64::from_le_bytes(index_bytes);
+    if raw == u64::MAX {
+        1
+    } else {
+        raw + 1
+    }
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -18647,6 +18657,20 @@ mod tests {
         STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_VERSION_PHASE31,
     };
     use crate::Attention2DMode;
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase58_nonzero_circle_index_wraps_max_hash_prefix_to_one() {
+        assert_eq!(phase58_nonzero_circle_index_from_hash_prefix([0u8; 8]), 1);
+        assert_eq!(
+            phase58_nonzero_circle_index_from_hash_prefix(u64::MAX.to_le_bytes()),
+            1
+        );
+        assert_eq!(
+            phase58_nonzero_circle_index_from_hash_prefix(41u64.to_le_bytes()),
+            42
+        );
+    }
 
     fn sample_proof(program_source: &str, program_hash: &str) -> VanillaStarkExecutionProof {
         let program = parse_program(program_source).expect("parse");
