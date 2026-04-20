@@ -130,6 +130,7 @@ scripts/run_phase38_schema_suite.sh
 scripts/run_phase39_real_decode_composition_suite.sh
 scripts/run_phase40_shared_proof_boundary_probe.sh
 scripts/run_phase41_boundary_translation_suite.sh
+scripts/run_phase42_boundary_correspondence_suite.sh
 scripts/run_reference_verifier_suite.sh
 python3 scripts/paper/paper_preflight.py
 ```

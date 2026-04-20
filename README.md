@@ -81,7 +81,7 @@ Current public proof surfaces:
 | Run a program                    | `cargo run --bin tvm -- programs/fibonacci.tvm`                                                                                         | Fastest way to see the VM work                   |
 | Inspect a full trace             | `cargo run --bin tvm -- run programs/fibonacci.tvm --trace`                                                                             | Emits the full machine-state trace               |
 | Prove with the vanilla STARK     | `cargo run --bin tvm -- prove-stark programs/fibonacci.tvm -o fib.proof.json`                                                           | Stable proof path                                |
-| Verify a proof                   | `cargo run --bin tvm -- verify-stark fib.proof.json`                                                                                    | Default production profile includes lockstep semantic checks |
+| Verify a proof                   | `cargo run --bin tvm -- verify-stark fib.proof.json`                                                                                    | CLI default uses `production-v1` / `ProductionV1`, including lockstep semantic checks |
 | Try the experimental `stwo` path | `cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- prove-stark programs/addition.tvm -o add.proof.json --backend stwo` | Pinned nightly required                          |
 | Regenerate paper artifacts       | `./scripts/generate_repro_bundle.sh`                                                                                                    | Publication-facing bundle                        |
 
@@ -617,7 +617,8 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 # Verify with the default production profile (includes lockstep re-execution)
 cargo run --bin tvm -- verify-stark fact.proof.json
 
-# Verify only the claim/proof boundary without transformer/native re-execution
+# Select the weaker named `Default` profile, not the CLI default `ProductionV1`:
+# claim/proof boundary only, without forced transformer/native re-execution.
 cargo run --bin tvm -- verify-stark fact.proof.json --verification-profile default
 
 # Verify and re-execute transformer/native runtimes from claim data

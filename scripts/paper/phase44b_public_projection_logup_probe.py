@@ -601,7 +601,10 @@ def build_public_projection_logup_relation_bundle(
         alpha_power = challenge_bundle["lookup_alpha_powers"][row_index]
         denominator = (challenge_bundle["lookup_z"] + row_digest) % M31_MODULUS
         if denominator == 0:
-            denominator = 1
+            raise ValueError(
+                "Phase44B LogUp denominator is zero: "
+                f"lookup_z={challenge_bundle['lookup_z']} row_digest={row_digest} modulus={M31_MODULUS}"
+            )
         inverse_denominator = pow(denominator, M31_MODULUS - 2, M31_MODULUS)
         term = (alpha_power * inverse_denominator) % M31_MODULUS
         claimed_sum = (claimed_sum + term) % M31_MODULUS
