@@ -10038,6 +10038,40 @@ mod tests {
     }
 
     #[test]
+    fn phase66_prepare_transformer_chain_artifact_rejects_source_drift_before_linking() {
+        let (_, _, _, _, _, _, _, _, _, phase63, phase64, mut phase65, _) =
+            sample_phase66_transformer_chain_artifact();
+
+        phase65.transition_steps[0].source_phase64_typed_step_commitment = hash32('7');
+        recommit_phase65_step(&mut phase65.transition_steps[0]);
+        recommit_phase65_artifact(&mut phase65);
+
+        verify_phase65_transformer_transition_artifact(&phase65)
+            .expect("standalone Phase65 accepts internally committed typed-step handle");
+        let error = phase66_prepare_transformer_chain_artifact(&phase65, &phase64, &phase63)
+            .expect_err("Phase66 prepare must reject stale Phase65 typed-step source");
+        assert!(error.to_string().contains("per-step source drift"));
+
+        let (_, _, _, _, _, _, _, _, _, phase63, mut phase64, mut phase65, _) =
+            sample_phase66_transformer_chain_artifact();
+        phase64.source_phase63_shared_lookup_identity_claim_commitment = hash32('8');
+        recommit_phase64_claim(&mut phase64);
+        phase65.source_phase64_typed_carried_state_claim_commitment =
+            phase64.typed_carried_state_claim_commitment.clone();
+        recommit_phase65_artifact(&mut phase65);
+
+        verify_phase64_typed_carried_state_claim(&phase64)
+            .expect("standalone Phase64 accepts internally committed source handle");
+        verify_phase65_transformer_transition_artifact(&phase65)
+            .expect("standalone Phase65 accepts updated Phase64 source handle");
+        let error = phase66_prepare_transformer_chain_artifact(&phase65, &phase64, &phase63)
+            .expect_err("Phase66 prepare must reject Phase64-to-Phase63 source drift");
+        assert!(error
+            .to_string()
+            .contains("source drift against Phase65/64/63"));
+    }
+
+    #[test]
     fn phase66_transformer_chain_artifact_rejects_recommitted_continuity_drift() {
         let (_, _, _, _, _, _, _, _, _, _, _, _, mut phase66) =
             sample_phase66_transformer_chain_artifact();

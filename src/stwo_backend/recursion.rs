@@ -19131,6 +19131,12 @@ pub fn phase66_prepare_transformer_chain_artifact(
             != phase64_claim.typed_carried_state_claim_commitment
         || phase65_artifact.source_phase63_shared_lookup_identity_claim_commitment
             != phase63_claim.shared_lookup_identity_claim_commitment
+        || phase64_claim.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
+        || phase64_claim.shared_lookup_identity_commitment
+            != phase63_claim.shared_lookup_identity_commitment
+        || phase65_artifact.shared_lookup_identity_commitment
+            != phase64_claim.shared_lookup_identity_commitment
     {
         return Err(VmError::InvalidConfig(
             "Phase 66 transformer chain source drift against Phase65/64/63".to_string(),
@@ -19142,6 +19148,19 @@ pub fn phase66_prepare_transformer_chain_artifact(
         .iter()
         .zip(phase64_claim.typed_steps.iter())
         .map(|(transition_step, typed_step)| {
+            if transition_step.source_phase64_typed_step_commitment
+                != typed_step.typed_step_commitment
+                || transition_step.input_boundary_commitment
+                    != typed_step.input_boundary.typed_boundary_commitment
+                || transition_step.output_boundary_commitment
+                    != typed_step.output_boundary.typed_boundary_commitment
+                || transition_step.shared_lookup_identity_commitment
+                    != phase64_claim.shared_lookup_identity_commitment
+            {
+                return Err(VmError::InvalidConfig(
+                    "Phase 66 transformer chain per-step source drift".to_string(),
+                ));
+            }
             let mut link = Phase66TransformerChainLink {
                 proof_backend: StarkProofBackend::Stwo,
                 step_index: transition_step.step_index,
@@ -19534,6 +19553,8 @@ pub fn verify_phase66_transformer_chain_artifact_against_sources(
         || artifact.source_phase64_typed_carried_state_claim_commitment
             != phase64_claim.typed_carried_state_claim_commitment
         || artifact.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
+        || phase64_claim.source_phase63_shared_lookup_identity_claim_commitment
             != phase63_claim.shared_lookup_identity_claim_commitment
         || artifact.step_count != phase65_artifact.step_count
         || artifact.step_count != phase64_claim.step_count

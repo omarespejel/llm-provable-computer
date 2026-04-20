@@ -34,13 +34,13 @@ symbolic-model-to-artifact mapping.
 
 | Command | Result |
 |---|---|
-| `cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase66 -- --nocapture` | `4 passed` |
+| `cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase66 -- --nocapture` | `5 passed` |
 | `cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase67 -- --nocapture` | `2 passed` |
 | `cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase68 -- --nocapture` | `3 passed` |
 | `cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase69 -- --nocapture` | `2 passed` |
 | `cargo +nightly-2025-07-14 check --features stwo-backend --lib` | passed with the pre-existing `phase12_demo_initial_memories` dead-code warning |
 | `cargo +nightly-2025-07-14 fmt --check` | passed |
-| `cargo +nightly-2025-07-14 test -q --features stwo-backend --lib` | `837 passed; 0 failed; 5 ignored` |
+| `cargo +nightly-2025-07-14 test -q --features stwo-backend --lib` | `838 passed; 0 failed; 5 ignored` |
 
 ## Negative controls covered
 
