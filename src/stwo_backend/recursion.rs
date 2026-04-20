@@ -332,6 +332,12 @@ pub const STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_CLAIM_VERSION_PHASE60: &str 
 pub const STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_CLAIM_SCOPE_PHASE60: &str =
     "phase60_actual_first_layer_runtime_relation_witness";
 #[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_CLAIM_VERSION_PHASE61: &str =
+    "phase61-first-layer-runtime-witness-pcs-replacement-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_CLAIM_SCOPE_PHASE61: &str =
+    "phase61_phase60_runtime_witness_columns_stwo_pcs_opening_proofs";
+#[cfg(feature = "stwo-backend")]
 const STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_KIND_PHASE44D: &str =
     "source-chain-public-output-boundary-verifier-v1";
 #[cfg(feature = "stwo-backend")]
@@ -540,6 +546,18 @@ const STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_NEXT_STEP_PHASE60: &str =
 #[cfg(feature = "stwo-backend")]
 const STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_INSTRUCTION_PHASE60: &str =
     "percepta_reference_instruction_nop_pc0_default_state_operand0";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_COMPLEXITY_PHASE61: &str =
+    "O(runtime_relation_witness_width + stwo_pcs_opening_verifier)";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_STATUS_PHASE61: &str =
+    "actual_runtime_witness_columns_pcs_opened_pending_recursive_aggregation";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_NEXT_STEP_PHASE61: &str =
+    "aggregate_phase61_runtime_witness_pcs_openings_into_recursive_decode_state";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_SCHEME_PHASE61: &str =
+    "phase61_actual_runtime_witness_mle_recomputation_plus_stwo_pcs_opening";
 #[cfg(feature = "stwo-backend")]
 const PHASE44D_M31_MODULUS: u32 = (1u32 << 31) - 1;
 
@@ -1862,6 +1880,55 @@ pub struct Phase60FirstLayerRuntimeRelationWitnessClaim {
     pub paper_ready: bool,
     pub required_next_step: String,
     pub runtime_relation_witness_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase61FirstLayerRuntimeWitnessPcsReplacementClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub pcs_config_profile: String,
+    pub source_phase60_runtime_relation_witness_claim_commitment: String,
+    pub source_phase59_relation_witness_binding_claim_commitment: String,
+    pub source_phase58_witness_pcs_opening_claim_commitment: String,
+    pub source_phase57_opening_verifier_claim_commitment: String,
+    pub source_phase56_executable_claim_commitment: String,
+    pub source_phase54_skeleton_claim_commitment: String,
+    pub replacement_openings: Vec<Phase58WitnessBoundPcsOpening>,
+    pub replacement_opening_count: usize,
+    pub runtime_replacement_opening_count: usize,
+    pub parameter_replacement_opening_count: usize,
+    pub total_raw_witness_element_count: usize,
+    pub total_padded_witness_element_count: usize,
+    pub total_opening_point_dimension: usize,
+    pub max_pcs_column_log_size: u32,
+    pub pcs_lifting_log_size: u32,
+    pub pcs_column_log_sizes: Vec<u32>,
+    pub pcs_opening_point_indices: Vec<u64>,
+    pub pcs_proof: Vec<u8>,
+    pub pcs_proof_commitment: String,
+    pub measured_replacement_witness_bytes: usize,
+    pub measured_pcs_proof_bytes: usize,
+    pub phase60_runtime_relation_witness_surface_unit_count: usize,
+    pub runtime_witness_pcs_replacement_surface_unit_count: usize,
+    pub combined_verifier_surface_unit_count: usize,
+    pub surface_delta_from_phase60: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub actual_runtime_model_witness_available: bool,
+    pub relation_equation_evaluation_available: bool,
+    pub phase58_synthetic_openings_replaced: bool,
+    pub witness_pcs_replacement_available: bool,
+    pub actual_proof_byte_benchmark_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub runtime_witness_pcs_replacement_claim_commitment: String,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -13377,6 +13444,139 @@ pub fn commit_phase60_first_layer_runtime_relation_witness_claim(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn commit_phase61_runtime_witness_pcs_replacement_opening(
+    opening: &Phase58WitnessBoundPcsOpening,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 61 runtime witness PCS replacement opening hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase61-runtime-witness-pcs-replacement-opening",
+    );
+    phase29_update_len_prefixed(&mut hasher, opening.proof_backend.to_string().as_bytes());
+    for part in [
+        opening.source_phase57_opening_receipt_commitment.as_bytes(),
+        opening
+            .source_phase56_executable_claim_commitment
+            .as_bytes(),
+        opening.source_phase54_opening_claim_commitment.as_bytes(),
+        opening.opening_name.as_bytes(),
+        opening.opening_kind.as_bytes(),
+        opening.opening_scheme.as_bytes(),
+        opening.pcs_config_profile.as_bytes(),
+        opening.raw_witness_commitment.as_bytes(),
+        opening.pcs_sampled_value_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_update_usize_vec(&mut hasher, &opening.tensor_shape);
+    phase29_update_usize(&mut hasher, opening.logical_element_count);
+    phase29_update_usize(&mut hasher, opening.padded_element_count);
+    phase29_update_usize(&mut hasher, opening.opening_point_dimension);
+    phase44d_update_u32_vec(&mut hasher, &opening.opening_point);
+    hasher.update(&opening.opened_value.to_le_bytes());
+    phase44d_update_u32_vec(&mut hasher, &opening.raw_witness_values);
+    phase29_update_usize(&mut hasher, opening.adjusted_witness_index);
+    hasher.update(&opening.adjusted_witness_basis_weight.to_le_bytes());
+    hasher.update(&opening.recomputed_mle_value.to_le_bytes());
+    hasher.update(&opening.pcs_column_log_size.to_le_bytes());
+    hasher.update(&opening.pcs_lifting_log_size.to_le_bytes());
+    hasher.update(&opening.pcs_opening_point_index.to_le_bytes());
+    phase44d_update_u32_vec(&mut hasher, &opening.pcs_sampled_value_limbs);
+    phase29_update_usize(&mut hasher, opening.measured_witness_bytes);
+    phase29_update_bool(&mut hasher, opening.opening_witness_binding_available);
+    phase29_update_bool(&mut hasher, opening.pcs_opening_proof_available);
+    phase29_update_bool(&mut hasher, opening.cryptographic_opening_soundness_claimed);
+    phase29_update_bool(&mut hasher, opening.full_relation_soundness_claimed);
+    phase44d_finalize_hash(hasher, "Phase 61 runtime witness PCS replacement opening")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase61_first_layer_runtime_witness_pcs_replacement_claim(
+    claim: &Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 61 first-layer runtime witness PCS replacement claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase61-first-layer-runtime-witness-pcs-replacement-claim",
+    );
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim.pcs_config_profile.as_bytes(),
+        claim
+            .source_phase60_runtime_relation_witness_claim_commitment
+            .as_bytes(),
+        claim
+            .source_phase59_relation_witness_binding_claim_commitment
+            .as_bytes(),
+        claim
+            .source_phase58_witness_pcs_opening_claim_commitment
+            .as_bytes(),
+        claim
+            .source_phase57_opening_verifier_claim_commitment
+            .as_bytes(),
+        claim.source_phase56_executable_claim_commitment.as_bytes(),
+        claim.source_phase54_skeleton_claim_commitment.as_bytes(),
+        claim.pcs_proof_commitment.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.verifier_status.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for opening in &claim.replacement_openings {
+        phase29_update_len_prefixed(&mut hasher, opening.opening_proof_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, claim.replacement_opening_count);
+    phase29_update_usize(&mut hasher, claim.runtime_replacement_opening_count);
+    phase29_update_usize(&mut hasher, claim.parameter_replacement_opening_count);
+    phase29_update_usize(&mut hasher, claim.total_raw_witness_element_count);
+    phase29_update_usize(&mut hasher, claim.total_padded_witness_element_count);
+    phase29_update_usize(&mut hasher, claim.total_opening_point_dimension);
+    hasher.update(&claim.max_pcs_column_log_size.to_le_bytes());
+    hasher.update(&claim.pcs_lifting_log_size.to_le_bytes());
+    phase44d_update_u32_vec(&mut hasher, &claim.pcs_column_log_sizes);
+    for index in &claim.pcs_opening_point_indices {
+        hasher.update(&index.to_le_bytes());
+    }
+    phase29_update_usize(&mut hasher, claim.measured_replacement_witness_bytes);
+    phase29_update_usize(&mut hasher, claim.measured_pcs_proof_bytes);
+    phase29_update_usize(
+        &mut hasher,
+        claim.phase60_runtime_relation_witness_surface_unit_count,
+    );
+    phase29_update_usize(
+        &mut hasher,
+        claim.runtime_witness_pcs_replacement_surface_unit_count,
+    );
+    phase29_update_usize(&mut hasher, claim.combined_verifier_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.surface_delta_from_phase60);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.actual_runtime_model_witness_available);
+    phase29_update_bool(&mut hasher, claim.relation_equation_evaluation_available);
+    phase29_update_bool(&mut hasher, claim.phase58_synthetic_openings_replaced);
+    phase29_update_bool(&mut hasher, claim.witness_pcs_replacement_available);
+    phase29_update_bool(&mut hasher, claim.actual_proof_byte_benchmark_available);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, claim.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, claim.paper_ready);
+    phase44d_finalize_hash(
+        hasher,
+        "Phase 61 first-layer runtime witness PCS replacement claim",
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase58_pcs_config() -> PcsConfig {
     PcsConfig {
         pow_bits: 10,
@@ -14926,6 +15126,747 @@ pub fn verify_phase60_first_layer_runtime_relation_witness_claim_against_phase59
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn phase61_prepare_first_layer_runtime_witness_pcs_replacement_claim(
+    phase60_claim: &Phase60FirstLayerRuntimeRelationWitnessClaim,
+    phase59_claim: &Phase59FirstLayerRelationWitnessBindingClaim,
+    phase58_claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
+    phase57_claim: &Phase57FirstLayerMleOpeningVerifierClaim,
+    phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<Phase61FirstLayerRuntimeWitnessPcsReplacementClaim> {
+    verify_phase60_first_layer_runtime_relation_witness_claim_against_phase59(
+        phase60_claim,
+        phase59_claim,
+        phase58_claim,
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
+    let pcs_config = phase58_pcs_config();
+    let pcs_lifting_log_size = phase58_claim
+        .opening_proofs
+        .iter()
+        .map(|opening| {
+            phase58_pcs_column_log_size(opening.logical_element_count).map(|log_size| {
+                log_size
+                    .checked_add(pcs_config.fri_config.log_blowup_factor)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig("Phase 61 PCS lifting log-size overflow".to_string())
+                    })
+            })?
+        })
+        .collect::<Result<Vec<_>>>()?
+        .into_iter()
+        .max()
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 61 requires at least one Phase58 opening".to_string())
+        })?;
+    let replacement_openings = phase58_claim
+        .opening_proofs
+        .iter()
+        .map(|opening| {
+            phase61_prepare_runtime_witness_pcs_replacement_opening(
+                opening,
+                phase60_claim,
+                pcs_lifting_log_size,
+            )
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let pcs_proof = phase58_build_pcs_opening_proof_unchecked(&replacement_openings)?;
+    let pcs_proof_commitment = phase58_commit_pcs_proof_bytes(&pcs_proof)?;
+    let replacement_opening_count = replacement_openings.len();
+    let runtime_replacement_opening_count = replacement_openings
+        .iter()
+        .filter(|opening| opening.opening_kind == "runtime_tensor_mle_opening")
+        .count();
+    let parameter_replacement_opening_count = replacement_openings
+        .iter()
+        .filter(|opening| opening.opening_kind == "parameter_mle_opening")
+        .count();
+    let total_raw_witness_element_count: usize = replacement_openings
+        .iter()
+        .map(|opening| opening.logical_element_count)
+        .sum();
+    let total_padded_witness_element_count: usize = replacement_openings
+        .iter()
+        .map(|opening| opening.padded_element_count)
+        .sum();
+    let total_opening_point_dimension: usize = replacement_openings
+        .iter()
+        .map(|opening| opening.opening_point_dimension)
+        .sum();
+    let max_pcs_column_log_size = replacement_openings
+        .iter()
+        .map(|opening| opening.pcs_column_log_size)
+        .max()
+        .unwrap_or(0);
+    let pcs_column_log_sizes = replacement_openings
+        .iter()
+        .map(|opening| opening.pcs_column_log_size)
+        .collect::<Vec<_>>();
+    let pcs_opening_point_indices = replacement_openings
+        .iter()
+        .map(|opening| opening.pcs_opening_point_index)
+        .collect::<Vec<_>>();
+    let measured_replacement_witness_bytes: usize = replacement_openings
+        .iter()
+        .map(|opening| opening.measured_witness_bytes)
+        .sum();
+    let runtime_witness_pcs_replacement_surface_unit_count =
+        phase58_witness_binding_surface_unit_count(
+            replacement_opening_count,
+            total_raw_witness_element_count,
+            total_opening_point_dimension,
+        )?;
+    let combined_verifier_surface_unit_count = phase60_claim
+        .combined_verifier_surface_unit_count
+        .checked_add(runtime_witness_pcs_replacement_surface_unit_count)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 61 combined verifier surface accounting overflow".to_string(),
+            )
+        })?;
+    let mut claim = Phase61FirstLayerRuntimeWitnessPcsReplacementClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_CLAIM_VERSION_PHASE61
+            .to_string(),
+        semantic_scope: STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_CLAIM_SCOPE_PHASE61
+            .to_string(),
+        pcs_config_profile: PHASE58_PCS_CONFIG_PROFILE.to_string(),
+        source_phase60_runtime_relation_witness_claim_commitment: phase60_claim
+            .runtime_relation_witness_claim_commitment
+            .clone(),
+        source_phase59_relation_witness_binding_claim_commitment: phase60_claim
+            .source_phase59_relation_witness_binding_claim_commitment
+            .clone(),
+        source_phase58_witness_pcs_opening_claim_commitment: phase60_claim
+            .source_phase58_witness_pcs_opening_claim_commitment
+            .clone(),
+        source_phase57_opening_verifier_claim_commitment: phase60_claim
+            .source_phase57_opening_verifier_claim_commitment
+            .clone(),
+        source_phase56_executable_claim_commitment: phase60_claim
+            .source_phase56_executable_claim_commitment
+            .clone(),
+        source_phase54_skeleton_claim_commitment: phase60_claim
+            .source_phase54_skeleton_claim_commitment
+            .clone(),
+        replacement_openings,
+        replacement_opening_count,
+        runtime_replacement_opening_count,
+        parameter_replacement_opening_count,
+        total_raw_witness_element_count,
+        total_padded_witness_element_count,
+        total_opening_point_dimension,
+        max_pcs_column_log_size,
+        pcs_lifting_log_size,
+        pcs_column_log_sizes,
+        pcs_opening_point_indices,
+        pcs_proof,
+        pcs_proof_commitment,
+        measured_replacement_witness_bytes,
+        measured_pcs_proof_bytes: 0,
+        phase60_runtime_relation_witness_surface_unit_count: phase60_claim
+            .runtime_relation_witness_surface_unit_count,
+        runtime_witness_pcs_replacement_surface_unit_count,
+        combined_verifier_surface_unit_count,
+        surface_delta_from_phase60: runtime_witness_pcs_replacement_surface_unit_count,
+        verifier_side_complexity:
+            STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_COMPLEXITY_PHASE61.to_string(),
+        verifier_status: STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_STATUS_PHASE61
+            .to_string(),
+        transcript_order: phase61_runtime_witness_pcs_replacement_transcript_order(),
+        actual_runtime_model_witness_available: true,
+        relation_equation_evaluation_available: true,
+        phase58_synthetic_openings_replaced: true,
+        witness_pcs_replacement_available: true,
+        actual_proof_byte_benchmark_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_NEXT_STEP_PHASE61
+            .to_string(),
+        runtime_witness_pcs_replacement_claim_commitment: String::new(),
+    };
+    claim.measured_pcs_proof_bytes = claim.pcs_proof.len();
+    claim.runtime_witness_pcs_replacement_claim_commitment =
+        commit_phase61_first_layer_runtime_witness_pcs_replacement_claim(&claim)?;
+    verify_phase61_first_layer_runtime_witness_pcs_replacement_claim_against_phase60(
+        &claim,
+        phase60_claim,
+        phase59_claim,
+        phase58_claim,
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase61_runtime_witness_pcs_replacement_opening(
+    opening: &Phase58WitnessBoundPcsOpening,
+) -> Result<()> {
+    if opening.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement opening requires `stwo` backend".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase61_source_phase57_opening_receipt_commitment",
+            opening.source_phase57_opening_receipt_commitment.as_str(),
+        ),
+        (
+            "phase61_source_phase56_executable_claim_commitment",
+            opening.source_phase56_executable_claim_commitment.as_str(),
+        ),
+        (
+            "phase61_source_phase54_opening_claim_commitment",
+            opening.source_phase54_opening_claim_commitment.as_str(),
+        ),
+        (
+            "phase61_raw_witness_commitment",
+            opening.raw_witness_commitment.as_str(),
+        ),
+        (
+            "phase61_pcs_sampled_value_commitment",
+            opening.pcs_sampled_value_commitment.as_str(),
+        ),
+        (
+            "phase61_opening_proof_commitment",
+            opening.opening_proof_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if opening.opening_kind != "runtime_tensor_mle_opening"
+        && opening.opening_kind != "parameter_mle_opening"
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement opening kind drift".to_string(),
+        ));
+    }
+    if opening.opening_scheme != STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_SCHEME_PHASE61 {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement opening scheme drift".to_string(),
+        ));
+    }
+    if opening.pcs_config_profile != PHASE58_PCS_CONFIG_PROFILE {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement opening config profile drift".to_string(),
+        ));
+    }
+    let logical_element_count = phase50_tensor_element_count(&opening.tensor_shape)?;
+    let padded_element_count = phase50_next_power_of_two(logical_element_count)?;
+    let opening_point_dimension = phase53_padded_log2(logical_element_count)?;
+    if opening.logical_element_count != logical_element_count
+        || opening.padded_element_count != padded_element_count
+        || opening.opening_point_dimension != opening_point_dimension
+        || opening.opening_point.len() != opening_point_dimension
+        || opening.raw_witness_values.len() != logical_element_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement opening shape, point, or witness length drift"
+                .to_string(),
+        ));
+    }
+    phase52_validate_m31_values("phase61_opening_point", &opening.opening_point)?;
+    phase52_validate_m31_values("phase61_raw_witness_values", &opening.raw_witness_values)?;
+    phase52_validate_m31_values(
+        "phase61_pcs_sampled_value_limbs",
+        &opening.pcs_sampled_value_limbs,
+    )?;
+    if opening.opened_value >= PHASE44D_M31_MODULUS
+        || opening.recomputed_mle_value >= PHASE44D_M31_MODULUS
+        || opening.adjusted_witness_basis_weight != 0
+        || opening.adjusted_witness_index != 0
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement opening field or synthetic-adjustment drift"
+                .to_string(),
+        ));
+    }
+    let expected_raw_commitment = phase52_commit_raw_tensor_values(&opening.raw_witness_values)?;
+    if opening.raw_witness_commitment != expected_raw_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement opening raw witness commitment drift"
+                .to_string(),
+        ));
+    }
+    let expected_mle_value =
+        phase52_evaluate_padded_mle(&opening.raw_witness_values, &opening.opening_point)?;
+    if opening.recomputed_mle_value != expected_mle_value
+        || opening.opened_value != expected_mle_value
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement opening actual MLE recomputation drift"
+                .to_string(),
+        ));
+    }
+    let expected_log_size = phase58_pcs_column_log_size(opening.logical_element_count)?;
+    let expected_extended_log_size = opening
+        .pcs_column_log_size
+        .checked_add(phase58_pcs_config().fri_config.log_blowup_factor)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 61 PCS extended log-size overflow".to_string())
+        })?;
+    // Individual openings may use the claim-wide canonical max lifting domain;
+    // the Phase61 claim verifier pins that shared value to avoid malleability.
+    if opening.pcs_column_log_size != expected_log_size
+        || opening.pcs_lifting_log_size < expected_extended_log_size
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement opening PCS column, lifting, or point drift"
+                .to_string(),
+        ));
+    }
+    let expected_sample = phase58_circle_sample_value(
+        &opening.raw_witness_values,
+        opening.pcs_column_log_size,
+        opening.pcs_lifting_log_size,
+        opening.pcs_opening_point_index,
+    )?;
+    if opening.pcs_sampled_value_limbs != phase58_secure_field_limbs(expected_sample) {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement opening sampled value drift".to_string(),
+        ));
+    }
+    let expected_sample_commitment =
+        phase58_commit_pcs_sampled_value_limbs(&opening.pcs_sampled_value_limbs)?;
+    if opening.pcs_sampled_value_commitment != expected_sample_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement opening sampled commitment drift".to_string(),
+        ));
+    }
+    let expected_bytes = phase58_witness_opening_payload_bytes(opening)?;
+    if opening.measured_witness_bytes != expected_bytes {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement opening byte count drift".to_string(),
+        ));
+    }
+    if !opening.opening_witness_binding_available
+        || !opening.pcs_opening_proof_available
+        || !opening.cryptographic_opening_soundness_claimed
+        || opening.full_relation_soundness_claimed
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement opening must claim only opening soundness"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase61_runtime_witness_pcs_replacement_opening(opening)?;
+    if opening.opening_proof_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement opening commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+pub(crate) fn phase61_recompute_runtime_witness_pcs_replacement_opening_for_test(
+    opening: &mut Phase58WitnessBoundPcsOpening,
+) -> Result<()> {
+    opening.raw_witness_commitment = phase52_commit_raw_tensor_values(&opening.raw_witness_values)?;
+    let expected_mle_value =
+        phase52_evaluate_padded_mle(&opening.raw_witness_values, &opening.opening_point)?;
+    opening.opened_value = expected_mle_value;
+    opening.recomputed_mle_value = expected_mle_value;
+    opening.pcs_sampled_value_limbs = phase58_secure_field_limbs(phase58_circle_sample_value(
+        &opening.raw_witness_values,
+        opening.pcs_column_log_size,
+        opening.pcs_lifting_log_size,
+        opening.pcs_opening_point_index,
+    )?);
+    opening.pcs_sampled_value_commitment =
+        phase58_commit_pcs_sampled_value_limbs(&opening.pcs_sampled_value_limbs)?;
+    opening.measured_witness_bytes = phase58_witness_opening_payload_bytes(opening)?;
+    opening.opening_proof_commitment =
+        commit_phase61_runtime_witness_pcs_replacement_opening(opening)?;
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase61_first_layer_runtime_witness_pcs_replacement_claim(
+    claim: &Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_CLAIM_VERSION_PHASE61
+        || claim.semantic_scope
+            != STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_CLAIM_SCOPE_PHASE61
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement claim version or semantic scope drift"
+                .to_string(),
+        ));
+    }
+    if claim.pcs_config_profile != PHASE58_PCS_CONFIG_PROFILE {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement claim config profile drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase61_source_phase60_runtime_relation_witness_claim_commitment",
+            claim
+                .source_phase60_runtime_relation_witness_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase61_source_phase59_relation_witness_binding_claim_commitment",
+            claim
+                .source_phase59_relation_witness_binding_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase61_source_phase58_witness_pcs_opening_claim_commitment",
+            claim
+                .source_phase58_witness_pcs_opening_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase61_source_phase57_opening_verifier_claim_commitment",
+            claim
+                .source_phase57_opening_verifier_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase61_source_phase56_executable_claim_commitment",
+            claim.source_phase56_executable_claim_commitment.as_str(),
+        ),
+        (
+            "phase61_source_phase54_skeleton_claim_commitment",
+            claim.source_phase54_skeleton_claim_commitment.as_str(),
+        ),
+        (
+            "phase61_pcs_proof_commitment",
+            claim.pcs_proof_commitment.as_str(),
+        ),
+        (
+            "phase61_runtime_witness_pcs_replacement_claim_commitment",
+            claim
+                .runtime_witness_pcs_replacement_claim_commitment
+                .as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let expected_opening_specs = phase57_expected_first_layer_opening_specs()?;
+    if claim.replacement_openings.len() != expected_opening_specs.len() {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement claim opening count drift".to_string(),
+        ));
+    }
+    // Phase54 opening commitments are per component/parameter, so the
+    // standalone verifier rejects duplicate source reuse here and the
+    // source-bound verifier below checks exact Phase58 provenance membership.
+    let mut seen_source_phase57_receipts = Vec::with_capacity(claim.replacement_openings.len());
+    let mut seen_source_bindings = Vec::with_capacity(claim.replacement_openings.len());
+    for (opening, (expected_name, expected_kind, expected_shape)) in claim
+        .replacement_openings
+        .iter()
+        .zip(expected_opening_specs.iter())
+    {
+        verify_phase61_runtime_witness_pcs_replacement_opening(opening)?;
+        if seen_source_phase57_receipts.contains(&opening.source_phase57_opening_receipt_commitment)
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 61 runtime witness PCS replacement opening mixed Phase57/Phase54 provenance"
+                    .to_string(),
+            ));
+        }
+        seen_source_phase57_receipts
+            .push(opening.source_phase57_opening_receipt_commitment.clone());
+        let source_binding = (
+            opening.source_phase54_opening_claim_commitment.clone(),
+            opening.opening_kind.clone(),
+            opening.opening_name.clone(),
+        );
+        if seen_source_bindings.contains(&source_binding) {
+            return Err(VmError::InvalidConfig(
+                "Phase 61 runtime witness PCS replacement opening mixed Phase57/Phase54 provenance"
+                    .to_string(),
+            ));
+        }
+        seen_source_bindings.push(source_binding);
+        if opening.source_phase56_executable_claim_commitment
+            != claim.source_phase56_executable_claim_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 61 runtime witness PCS replacement opening Phase56 source drift".to_string(),
+            ));
+        }
+        if opening.opening_name != *expected_name
+            || opening.opening_kind != *expected_kind
+            || opening.tensor_shape != *expected_shape
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 61 runtime witness PCS replacement opening order, kind, or shape drift"
+                    .to_string(),
+            ));
+        }
+    }
+    let replacement_opening_count = claim.replacement_openings.len();
+    let runtime_replacement_opening_count = claim
+        .replacement_openings
+        .iter()
+        .filter(|opening| opening.opening_kind == "runtime_tensor_mle_opening")
+        .count();
+    let parameter_replacement_opening_count = claim
+        .replacement_openings
+        .iter()
+        .filter(|opening| opening.opening_kind == "parameter_mle_opening")
+        .count();
+    let total_raw_witness_element_count: usize = claim
+        .replacement_openings
+        .iter()
+        .map(|opening| opening.logical_element_count)
+        .sum();
+    let total_padded_witness_element_count: usize = claim
+        .replacement_openings
+        .iter()
+        .map(|opening| opening.padded_element_count)
+        .sum();
+    let total_opening_point_dimension: usize = claim
+        .replacement_openings
+        .iter()
+        .map(|opening| opening.opening_point_dimension)
+        .sum();
+    let max_pcs_column_log_size = claim
+        .replacement_openings
+        .iter()
+        .map(|opening| opening.pcs_column_log_size)
+        .max()
+        .unwrap_or(0);
+    let pcs_lifting_log_size = claim
+        .replacement_openings
+        .iter()
+        .map(|opening| opening.pcs_lifting_log_size)
+        .max()
+        .unwrap_or(0);
+    let expected_pcs_lifting_log_size = claim
+        .replacement_openings
+        .iter()
+        .map(|opening| {
+            opening
+                .pcs_column_log_size
+                .checked_add(phase58_pcs_config().fri_config.log_blowup_factor)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig("Phase 61 PCS lifting log-size overflow".to_string())
+                })
+        })
+        .collect::<Result<Vec<_>>>()?
+        .into_iter()
+        .max()
+        .unwrap_or(0);
+    if claim
+        .replacement_openings
+        .iter()
+        .any(|opening| opening.pcs_lifting_log_size != pcs_lifting_log_size)
+        || pcs_lifting_log_size != expected_pcs_lifting_log_size
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement claim mixed lifting log sizes".to_string(),
+        ));
+    }
+    let pcs_column_log_sizes = claim
+        .replacement_openings
+        .iter()
+        .map(|opening| opening.pcs_column_log_size)
+        .collect::<Vec<_>>();
+    let pcs_opening_point_indices = claim
+        .replacement_openings
+        .iter()
+        .map(|opening| opening.pcs_opening_point_index)
+        .collect::<Vec<_>>();
+    let measured_replacement_witness_bytes: usize = claim
+        .replacement_openings
+        .iter()
+        .map(|opening| opening.measured_witness_bytes)
+        .sum();
+    let replacement_surface = phase58_witness_binding_surface_unit_count(
+        replacement_opening_count,
+        total_raw_witness_element_count,
+        total_opening_point_dimension,
+    )?;
+    if claim.replacement_opening_count != replacement_opening_count
+        || claim.runtime_replacement_opening_count != runtime_replacement_opening_count
+        || claim.parameter_replacement_opening_count != parameter_replacement_opening_count
+        || claim.total_raw_witness_element_count != total_raw_witness_element_count
+        || claim.total_padded_witness_element_count != total_padded_witness_element_count
+        || claim.total_opening_point_dimension != total_opening_point_dimension
+        || claim.max_pcs_column_log_size != max_pcs_column_log_size
+        || claim.pcs_lifting_log_size != pcs_lifting_log_size
+        || claim.pcs_column_log_sizes != pcs_column_log_sizes
+        || claim.pcs_opening_point_indices != pcs_opening_point_indices
+        || claim.measured_replacement_witness_bytes != measured_replacement_witness_bytes
+        || claim.measured_pcs_proof_bytes != claim.pcs_proof.len()
+        || claim.runtime_witness_pcs_replacement_surface_unit_count != replacement_surface
+        || claim.surface_delta_from_phase60 != replacement_surface
+        || claim.combined_verifier_surface_unit_count < replacement_surface
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement claim surface, proof, or byte accounting drift"
+                .to_string(),
+        ));
+    }
+    let expected_pcs_proof_commitment = phase58_commit_pcs_proof_bytes(&claim.pcs_proof)?;
+    if claim.pcs_proof_commitment != expected_pcs_proof_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement claim proof commitment drift".to_string(),
+        ));
+    }
+    phase58_verify_pcs_opening_proof_bytes(&claim.replacement_openings, &claim.pcs_proof)?;
+    if claim.verifier_side_complexity
+        != STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_COMPLEXITY_PHASE61
+        || claim.verifier_status != STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_STATUS_PHASE61
+        || claim.transcript_order != phase61_runtime_witness_pcs_replacement_transcript_order()
+        || claim.required_next_step
+            != STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_NEXT_STEP_PHASE61
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement claim transcript, status, or next-step drift"
+                .to_string(),
+        ));
+    }
+    if !claim.actual_runtime_model_witness_available
+        || !claim.relation_equation_evaluation_available
+        || !claim.phase58_synthetic_openings_replaced
+        || !claim.witness_pcs_replacement_available
+        || !claim.actual_proof_byte_benchmark_available
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+        || claim.breakthrough_claimed
+        || claim.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement claim must not claim recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase61_first_layer_runtime_witness_pcs_replacement_claim(claim)?;
+    if claim.runtime_witness_pcs_replacement_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement claim commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase61_first_layer_runtime_witness_pcs_replacement_claim_against_phase60(
+    claim: &Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+    phase60_claim: &Phase60FirstLayerRuntimeRelationWitnessClaim,
+    phase59_claim: &Phase59FirstLayerRelationWitnessBindingClaim,
+    phase58_claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
+    phase57_claim: &Phase57FirstLayerMleOpeningVerifierClaim,
+    phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<()> {
+    verify_phase60_first_layer_runtime_relation_witness_claim_against_phase59(
+        phase60_claim,
+        phase59_claim,
+        phase58_claim,
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
+    verify_phase61_first_layer_runtime_witness_pcs_replacement_claim(claim)?;
+    if claim.source_phase60_runtime_relation_witness_claim_commitment
+        != phase60_claim.runtime_relation_witness_claim_commitment
+        || claim.source_phase59_relation_witness_binding_claim_commitment
+            != phase60_claim.source_phase59_relation_witness_binding_claim_commitment
+        || claim.source_phase58_witness_pcs_opening_claim_commitment
+            != phase60_claim.source_phase58_witness_pcs_opening_claim_commitment
+        || claim.source_phase57_opening_verifier_claim_commitment
+            != phase60_claim.source_phase57_opening_verifier_claim_commitment
+        || claim.source_phase56_executable_claim_commitment
+            != phase60_claim.source_phase56_executable_claim_commitment
+        || claim.source_phase54_skeleton_claim_commitment
+            != phase60_claim.source_phase54_skeleton_claim_commitment
+        || claim.phase60_runtime_relation_witness_surface_unit_count
+            != phase60_claim.runtime_relation_witness_surface_unit_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement source drift against Phase60".to_string(),
+        ));
+    }
+    let expected_combined_surface = phase60_claim
+        .combined_verifier_surface_unit_count
+        .checked_add(claim.runtime_witness_pcs_replacement_surface_unit_count)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 61 source-bound combined surface accounting overflow".to_string(),
+            )
+        })?;
+    if claim.combined_verifier_surface_unit_count != expected_combined_surface {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement combined surface drift against Phase60"
+                .to_string(),
+        ));
+    }
+    if claim.replacement_openings.len() != phase58_claim.opening_proofs.len() {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement opening count drift against Phase58"
+                .to_string(),
+        ));
+    }
+    let mut replaced_synthetic_opening = false;
+    for (replacement, synthetic) in claim
+        .replacement_openings
+        .iter()
+        .zip(phase58_claim.opening_proofs.iter())
+    {
+        if replacement.source_phase57_opening_receipt_commitment
+            != synthetic.source_phase57_opening_receipt_commitment
+            || replacement.source_phase56_executable_claim_commitment
+                != synthetic.source_phase56_executable_claim_commitment
+            || replacement.source_phase54_opening_claim_commitment
+                != synthetic.source_phase54_opening_claim_commitment
+            || replacement.opening_name != synthetic.opening_name
+            || replacement.opening_kind != synthetic.opening_kind
+            || replacement.tensor_shape != synthetic.tensor_shape
+            || replacement.opening_point != synthetic.opening_point
+            || replacement.pcs_opening_point_index != synthetic.pcs_opening_point_index
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 61 runtime witness PCS replacement does not preserve Phase58 opening coordinates"
+                    .to_string(),
+            ));
+        }
+        let expected_values = phase61_actual_raw_values_for_opening(
+            phase60_claim,
+            &replacement.opening_name,
+            &replacement.opening_kind,
+        )?;
+        if replacement.raw_witness_values != expected_values {
+            return Err(VmError::InvalidConfig(
+                "Phase 61 runtime witness PCS replacement values do not match Phase60 runtime witness"
+                    .to_string(),
+            ));
+        }
+        if replacement.raw_witness_values != synthetic.raw_witness_values {
+            replaced_synthetic_opening = true;
+        }
+    }
+    if !replaced_synthetic_opening {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 runtime witness PCS replacement did not replace any synthetic Phase58 opening"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase59_prepare_relation_witness_component_binding(
     component_proof: &Phase56ExecutableSumcheckComponentProof,
     phase58_claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
@@ -15144,6 +16085,204 @@ fn phase60_runtime_relation_witness_transcript_order() -> Vec<String> {
     .into_iter()
     .map(str::to_string)
     .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase61_runtime_witness_pcs_replacement_transcript_order() -> Vec<String> {
+    [
+        "phase61_runtime_witness_pcs_replacement_domain_tag",
+        "claim_version",
+        "semantic_scope",
+        "pcs_config_profile",
+        "source_phase60_runtime_relation_witness_claim_commitment",
+        "source_phase59_relation_witness_binding_claim_commitment",
+        "source_phase58_witness_pcs_opening_claim_commitment",
+        "source_phase57_opening_verifier_claim_commitment",
+        "source_phase56_executable_claim_commitment",
+        "source_phase54_skeleton_claim_commitment",
+        "ordered_phase58_opening_coordinates",
+        "ordered_phase60_derived_runtime_witness_columns",
+        "pcs_opening_point_indices",
+        "pcs_sampled_values",
+        "stwo_pcs_opening_proof_bytes",
+        "surface_and_byte_accounting",
+        "availability_flags",
+        "required_next_step",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase61_prepare_runtime_witness_pcs_replacement_opening(
+    source: &Phase58WitnessBoundPcsOpening,
+    phase60_claim: &Phase60FirstLayerRuntimeRelationWitnessClaim,
+    pcs_lifting_log_size: u32,
+) -> Result<Phase58WitnessBoundPcsOpening> {
+    verify_phase58_witness_bound_pcs_opening(source)?;
+    let actual_values = phase61_actual_raw_values_for_opening(
+        phase60_claim,
+        &source.opening_name,
+        &source.opening_kind,
+    )?;
+    if actual_values.len() != source.logical_element_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 actual runtime witness value count does not match Phase58 opening shape"
+                .to_string(),
+        ));
+    }
+    let mut opening = Phase58WitnessBoundPcsOpening {
+        proof_backend: StarkProofBackend::Stwo,
+        source_phase57_opening_receipt_commitment: source
+            .source_phase57_opening_receipt_commitment
+            .clone(),
+        source_phase56_executable_claim_commitment: source
+            .source_phase56_executable_claim_commitment
+            .clone(),
+        source_phase54_opening_claim_commitment: source
+            .source_phase54_opening_claim_commitment
+            .clone(),
+        opening_name: source.opening_name.clone(),
+        opening_kind: source.opening_kind.clone(),
+        opening_scheme: STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_SCHEME_PHASE61.to_string(),
+        pcs_config_profile: PHASE58_PCS_CONFIG_PROFILE.to_string(),
+        tensor_shape: source.tensor_shape.clone(),
+        logical_element_count: source.logical_element_count,
+        padded_element_count: source.padded_element_count,
+        opening_point_dimension: source.opening_point_dimension,
+        opening_point: source.opening_point.clone(),
+        opened_value: 0,
+        raw_witness_values: actual_values,
+        raw_witness_commitment: String::new(),
+        adjusted_witness_index: 0,
+        adjusted_witness_basis_weight: 0,
+        recomputed_mle_value: 0,
+        pcs_column_log_size: phase58_pcs_column_log_size(source.logical_element_count)?,
+        pcs_lifting_log_size,
+        pcs_opening_point_index: source.pcs_opening_point_index,
+        pcs_sampled_value_limbs: Vec::new(),
+        pcs_sampled_value_commitment: String::new(),
+        measured_witness_bytes: 0,
+        opening_witness_binding_available: true,
+        pcs_opening_proof_available: true,
+        cryptographic_opening_soundness_claimed: true,
+        full_relation_soundness_claimed: false,
+        opening_proof_commitment: String::new(),
+    };
+    opening.raw_witness_commitment = phase52_commit_raw_tensor_values(&opening.raw_witness_values)?;
+    opening.recomputed_mle_value =
+        phase52_evaluate_padded_mle(&opening.raw_witness_values, &opening.opening_point)?;
+    opening.opened_value = opening.recomputed_mle_value;
+    opening.pcs_sampled_value_limbs = phase58_secure_field_limbs(phase58_circle_sample_value(
+        &opening.raw_witness_values,
+        opening.pcs_column_log_size,
+        opening.pcs_lifting_log_size,
+        opening.pcs_opening_point_index,
+    )?);
+    opening.pcs_sampled_value_commitment =
+        phase58_commit_pcs_sampled_value_limbs(&opening.pcs_sampled_value_limbs)?;
+    opening.measured_witness_bytes = phase58_witness_opening_payload_bytes(&opening)?;
+    opening.opening_proof_commitment =
+        commit_phase61_runtime_witness_pcs_replacement_opening(&opening)?;
+    verify_phase61_runtime_witness_pcs_replacement_opening(&opening)?;
+    Ok(opening)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase61_actual_raw_values_for_opening(
+    claim: &Phase60FirstLayerRuntimeRelationWitnessClaim,
+    opening_name: &str,
+    opening_kind: &str,
+) -> Result<Vec<u32>> {
+    verify_phase60_first_layer_runtime_relation_witness_claim(claim)?;
+    let hidden_width = TransformerVmConfig::percepta_reference().ff_dim;
+    match (opening_kind, opening_name) {
+        ("runtime_tensor_mle_opening", "gate_affine_sumcheck_runtime_tensor_opening_0") => {
+            phase61_scale_weight_rows(
+                &claim.input_tensor.values,
+                &claim.gate_weight_tensor.values,
+                INPUT_DIM,
+                hidden_width,
+            )
+        }
+        ("runtime_tensor_mle_opening", "value_affine_sumcheck_runtime_tensor_opening_0") => {
+            phase61_scale_weight_rows(
+                &claim.input_tensor.values,
+                &claim.value_weight_tensor.values,
+                INPUT_DIM,
+                hidden_width,
+            )
+        }
+        ("runtime_tensor_mle_opening", "hidden_hadamard_eq_sumcheck_runtime_tensor_opening_0") => {
+            Ok(claim.gate_tensor.values.clone())
+        }
+        ("runtime_tensor_mle_opening", "hidden_hadamard_eq_sumcheck_runtime_tensor_opening_1") => {
+            Ok(claim.value_tensor.values.clone())
+        }
+        ("runtime_tensor_mle_opening", "output_affine_sumcheck_runtime_tensor_opening_0") => {
+            phase61_scale_weight_rows(
+                &claim.hidden_tensor.values,
+                &claim.output_weight_tensor.values,
+                hidden_width,
+                OUTPUT_DIM,
+            )
+        }
+        ("parameter_mle_opening", "gate_weight_mle_opening") => {
+            Ok(claim.gate_weight_tensor.values.clone())
+        }
+        ("parameter_mle_opening", "gate_bias_mle_opening") => {
+            Ok(claim.gate_bias_tensor.values.clone())
+        }
+        ("parameter_mle_opening", "value_weight_mle_opening") => {
+            Ok(claim.value_weight_tensor.values.clone())
+        }
+        ("parameter_mle_opening", "value_bias_mle_opening") => {
+            Ok(claim.value_bias_tensor.values.clone())
+        }
+        ("parameter_mle_opening", "output_weight_mle_opening") => {
+            Ok(claim.output_weight_tensor.values.clone())
+        }
+        ("parameter_mle_opening", "output_bias_mle_opening") => {
+            Ok(claim.output_bias_tensor.values.clone())
+        }
+        _ => Err(VmError::InvalidConfig(format!(
+            "Phase 61 unknown runtime witness replacement opening `{opening_name}` of kind `{opening_kind}`"
+        ))),
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase61_scale_weight_rows(
+    left: &[u32],
+    right_matrix: &[u32],
+    input_width: usize,
+    output_width: usize,
+) -> Result<Vec<u32>> {
+    let matrix_element_count = input_width.checked_mul(output_width).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 61 row-scaled weight shape overflow".to_string())
+    })?;
+    if left.len() != input_width || right_matrix.len() != matrix_element_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 61 row-scaled weight witness shape mismatch".to_string(),
+        ));
+    }
+    let mut values = Vec::with_capacity(matrix_element_count);
+    for input_index in 0..input_width {
+        for output_index in 0..output_width {
+            let row_offset = input_index.checked_mul(output_width).ok_or_else(|| {
+                VmError::InvalidConfig("Phase 61 row-scaled weight index overflow".to_string())
+            })?;
+            let value_index = row_offset.checked_add(output_index).ok_or_else(|| {
+                VmError::InvalidConfig("Phase 61 row-scaled weight index overflow".to_string())
+            })?;
+            values.push(phase52_m31_mul(
+                left[input_index],
+                right_matrix[value_index],
+            ));
+        }
+    }
+    Ok(values)
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -19744,6 +20883,22 @@ mod tests {
             phase58_nonzero_circle_index_from_hash_prefix(41u64.to_le_bytes()),
             42
         );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase61_scale_weight_rows_rejects_shape_overflow() {
+        let error = phase61_scale_weight_rows(&[], &[], usize::MAX, 2)
+            .expect_err("Phase61 row scaling must reject overflowing dimensions");
+        assert!(error.to_string().contains("shape overflow"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase61_scale_weight_rows_scales_each_weight_row() {
+        let values = phase61_scale_weight_rows(&[2, 3], &[5, 7, 11, 13], 2, 2)
+            .expect("scale two weight rows");
+        assert_eq!(values, vec![10, 14, 33, 39]);
     }
 
     fn sample_proof(program_source: &str, program_hash: &str) -> VanillaStarkExecutionProof {

@@ -4559,6 +4559,8 @@ mod tests {
         commit_phase59_relation_witness_component_binding,
         commit_phase60_first_layer_runtime_relation_witness_claim,
         commit_phase60_runtime_tensor_witness,
+        commit_phase61_first_layer_runtime_witness_pcs_replacement_claim,
+        commit_phase61_runtime_witness_pcs_replacement_opening,
         phase44d_prepare_recursive_verifier_public_output_aggregation,
         phase44d_prepare_recursive_verifier_public_output_handoff,
         phase45_prepare_recursive_verifier_public_input_bridge,
@@ -4580,6 +4582,8 @@ mod tests {
         phase59_prepare_first_layer_relation_witness_binding_claim,
         phase60_prepare_first_layer_runtime_relation_witness_claim,
         phase60_recommit_runtime_tensor_for_tests,
+        phase61_prepare_first_layer_runtime_witness_pcs_replacement_claim,
+        phase61_recompute_runtime_witness_pcs_replacement_opening_for_test,
         verify_phase44d_recursive_verifier_public_output_aggregation,
         verify_phase44d_recursive_verifier_public_output_handoff,
         verify_phase44d_recursive_verifier_public_output_handoff_against_boundary,
@@ -4618,13 +4622,17 @@ mod tests {
         verify_phase59_first_layer_relation_witness_binding_claim_against_phase58,
         verify_phase60_first_layer_runtime_relation_witness_claim,
         verify_phase60_first_layer_runtime_relation_witness_claim_against_phase59,
-        verify_phase60_runtime_tensor_witness, Phase48RecursiveProofWrapperAttempt,
-        Phase49LayerwiseTensorClaimPropagationContract, Phase50LayerIoClaim,
-        Phase51FirstLayerRelationClaim, Phase52LayerEndpointAnchoringClaim,
+        verify_phase60_runtime_tensor_witness,
+        verify_phase61_first_layer_runtime_witness_pcs_replacement_claim,
+        verify_phase61_first_layer_runtime_witness_pcs_replacement_claim_against_phase60,
+        verify_phase61_runtime_witness_pcs_replacement_opening,
+        Phase48RecursiveProofWrapperAttempt, Phase49LayerwiseTensorClaimPropagationContract,
+        Phase50LayerIoClaim, Phase51FirstLayerRelationClaim, Phase52LayerEndpointAnchoringClaim,
         Phase53FirstLayerRelationBenchmarkClaim, Phase54FirstLayerSumcheckSkeletonClaim,
         Phase55FirstLayerCompressionEffectivenessClaim, Phase56FirstLayerExecutableSumcheckClaim,
         Phase57FirstLayerMleOpeningVerifierClaim, Phase58FirstLayerWitnessPcsOpeningClaim,
         Phase59FirstLayerRelationWitnessBindingClaim, Phase60FirstLayerRuntimeRelationWitnessClaim,
+        Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
     };
     use super::super::STWO_BACKEND_VERSION_PHASE12;
     use super::*;
@@ -8500,6 +8508,41 @@ mod tests {
                 .expect("recommit Phase60 claim");
     }
 
+    fn sample_phase61_runtime_witness_pcs_replacement_claim() -> (
+        Phase53FirstLayerRelationBenchmarkClaim,
+        Phase54FirstLayerSumcheckSkeletonClaim,
+        Phase56FirstLayerExecutableSumcheckClaim,
+        Phase57FirstLayerMleOpeningVerifierClaim,
+        Phase58FirstLayerWitnessPcsOpeningClaim,
+        Phase59FirstLayerRelationWitnessBindingClaim,
+        Phase60FirstLayerRuntimeRelationWitnessClaim,
+        Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+    ) {
+        let (phase53, phase54, phase56, phase57, phase58, phase59, phase60) =
+            sample_phase60_runtime_relation_witness_claim();
+        let phase61 = phase61_prepare_first_layer_runtime_witness_pcs_replacement_claim(
+            &phase60, &phase59, &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect("prepare Phase61 runtime witness PCS replacement claim");
+        (
+            phase53, phase54, phase56, phase57, phase58, phase59, phase60, phase61,
+        )
+    }
+
+    fn recommit_phase61_opening(
+        opening: &mut super::super::recursion::Phase58WitnessBoundPcsOpening,
+    ) {
+        opening.opening_proof_commitment =
+            commit_phase61_runtime_witness_pcs_replacement_opening(opening)
+                .expect("recommit Phase61 replacement opening");
+    }
+
+    fn recommit_phase61_claim(claim: &mut Phase61FirstLayerRuntimeWitnessPcsReplacementClaim) {
+        claim.runtime_witness_pcs_replacement_claim_commitment =
+            commit_phase61_first_layer_runtime_witness_pcs_replacement_claim(claim)
+                .expect("recommit Phase61 claim");
+    }
+
     #[test]
     fn phase60_runtime_relation_witness_claim_accepts_actual_first_layer_witness() {
         let (_, phase54, phase56, phase57, phase58, phase59, phase60) =
@@ -8642,6 +8685,183 @@ mod tests {
         )
         .expect_err("Phase60 must reject wrong Phase59 source");
         assert!(error.to_string().contains("source drift against Phase59"));
+    }
+
+    #[test]
+    fn phase61_runtime_witness_pcs_replacement_accepts_actual_phase60_columns() {
+        let (_, phase54, phase56, phase57, phase58, phase59, phase60, phase61) =
+            sample_phase61_runtime_witness_pcs_replacement_claim();
+
+        verify_phase61_first_layer_runtime_witness_pcs_replacement_claim(&phase61)
+            .expect("verify standalone Phase61 runtime witness PCS replacement");
+        verify_phase61_first_layer_runtime_witness_pcs_replacement_claim_against_phase60(
+            &phase61, &phase60, &phase59, &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect("verify Phase61 against Phase60 and source chain");
+
+        assert_eq!(phase61.replacement_opening_count, 11);
+        assert_eq!(phase61.runtime_replacement_opening_count, 5);
+        assert_eq!(phase61.parameter_replacement_opening_count, 6);
+        assert!(phase61.measured_pcs_proof_bytes > 0);
+        assert!(phase61.phase58_synthetic_openings_replaced);
+        assert!(phase61.witness_pcs_replacement_available);
+        assert!(phase61.actual_runtime_model_witness_available);
+        assert!(phase61.relation_equation_evaluation_available);
+        assert!(phase61.actual_proof_byte_benchmark_available);
+        assert!(!phase61.recursive_verification_claimed);
+        assert!(!phase61.cryptographic_compression_claimed);
+        assert!(!phase61.breakthrough_claimed);
+        assert!(!phase61.paper_ready);
+        let mut checked_opening_count = 0usize;
+        let mut checked_runtime_opening_count = 0usize;
+        let mut checked_parameter_opening_count = 0usize;
+        let mut diverged_opening_count = 0usize;
+        for replacement in &phase61.replacement_openings {
+            let synthetic = phase58
+                .opening_proofs
+                .iter()
+                .find(|opening| {
+                    opening.opening_name == replacement.opening_name
+                        && opening.opening_kind == replacement.opening_kind
+                        && opening.tensor_shape == replacement.tensor_shape
+                        && opening.opening_point == replacement.opening_point
+                })
+                .expect("matching Phase58 synthetic opening");
+            checked_opening_count += 1;
+            if replacement.opening_kind == "runtime_tensor_mle_opening" {
+                checked_runtime_opening_count += 1;
+            }
+            if replacement.opening_kind == "parameter_mle_opening" {
+                checked_parameter_opening_count += 1;
+            }
+            if replacement.raw_witness_values != synthetic.raw_witness_values {
+                diverged_opening_count += 1;
+            }
+        }
+        assert_eq!(checked_opening_count, phase61.replacement_opening_count);
+        assert_eq!(
+            checked_runtime_opening_count,
+            phase61.runtime_replacement_opening_count
+        );
+        assert_eq!(
+            checked_parameter_opening_count,
+            phase61.parameter_replacement_opening_count
+        );
+        assert!(
+            diverged_opening_count > 0,
+            "Phase61 must replace at least one Phase58 synthetic opening"
+        );
+    }
+
+    #[test]
+    fn phase61_runtime_witness_pcs_replacement_rejects_runtime_column_drift_even_when_recommitted()
+    {
+        let (_, _, _, _, _, _, _, mut phase61) =
+            sample_phase61_runtime_witness_pcs_replacement_claim();
+
+        phase61.replacement_openings[0].opened_value =
+            (phase61.replacement_openings[0].opened_value + 1) % ((1u32 << 31) - 1);
+        phase61.replacement_openings[0].recomputed_mle_value =
+            phase61.replacement_openings[0].opened_value;
+        recommit_phase61_opening(&mut phase61.replacement_openings[0]);
+        recommit_phase61_claim(&mut phase61);
+
+        let error = verify_phase61_runtime_witness_pcs_replacement_opening(
+            &phase61.replacement_openings[0],
+        )
+        .expect_err("Phase61 opening must reject stale actual MLE recomputation");
+        assert!(error.to_string().contains("actual MLE recomputation drift"));
+        let error = verify_phase61_first_layer_runtime_witness_pcs_replacement_claim(&phase61)
+            .expect_err("Phase61 claim must reject stale actual MLE recomputation drift");
+        assert!(error.to_string().contains("actual MLE recomputation drift"));
+    }
+
+    #[test]
+    fn phase61_runtime_witness_pcs_replacement_rejects_duplicate_source_provenance() {
+        let (_, _, _, _, _, _, _, mut phase61) =
+            sample_phase61_runtime_witness_pcs_replacement_claim();
+
+        phase61.replacement_openings[0].source_phase57_opening_receipt_commitment = phase61
+            .replacement_openings[1]
+            .source_phase57_opening_receipt_commitment
+            .clone();
+        phase61.replacement_openings[0].source_phase54_opening_claim_commitment = phase61
+            .replacement_openings[1]
+            .source_phase54_opening_claim_commitment
+            .clone();
+        phase61_recompute_runtime_witness_pcs_replacement_opening_for_test(
+            &mut phase61.replacement_openings[0],
+        )
+        .expect("recompute mutated Phase61 opening");
+        recommit_phase61_claim(&mut phase61);
+
+        let error = verify_phase61_first_layer_runtime_witness_pcs_replacement_claim(&phase61)
+            .expect_err("Phase61 must reject duplicated Phase57/Phase54 provenance");
+        let message = error.to_string();
+        assert!(
+            message.contains("mixed Phase57/Phase54 provenance"),
+            "{message}"
+        );
+    }
+
+    #[test]
+    fn phase61_runtime_witness_pcs_replacement_rejects_inflated_lifting_log_size() {
+        let (_, _, _, _, _, _, _, mut phase61) =
+            sample_phase61_runtime_witness_pcs_replacement_claim();
+
+        phase61.pcs_lifting_log_size += 1;
+        for opening in &mut phase61.replacement_openings {
+            opening.pcs_lifting_log_size = phase61.pcs_lifting_log_size;
+            phase61_recompute_runtime_witness_pcs_replacement_opening_for_test(opening)
+                .expect("recompute inflated Phase61 opening");
+        }
+        recommit_phase61_claim(&mut phase61);
+
+        let error = verify_phase61_first_layer_runtime_witness_pcs_replacement_claim(&phase61)
+            .expect_err("Phase61 must reject non-canonical PCS lifting log size");
+        let message = error.to_string();
+        assert!(
+            message.contains("mixed lifting log sizes")
+                || message.contains("PCS column, lifting, or point drift"),
+            "{message}"
+        );
+    }
+
+    #[test]
+    fn phase61_runtime_witness_pcs_replacement_rejects_phase60_source_drift() {
+        let (_, phase54, phase56, phase57, phase58, phase59, phase60, mut phase61) =
+            sample_phase61_runtime_witness_pcs_replacement_claim();
+
+        phase61.source_phase60_runtime_relation_witness_claim_commitment =
+            "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".to_string();
+        recommit_phase61_claim(&mut phase61);
+
+        verify_phase61_first_layer_runtime_witness_pcs_replacement_claim(&phase61)
+            .expect("standalone Phase61 accepts internally bound source hash");
+        let error =
+            verify_phase61_first_layer_runtime_witness_pcs_replacement_claim_against_phase60(
+                &phase61, &phase60, &phase59, &phase58, &phase57, &phase56, &phase54,
+            )
+            .expect_err("Phase61 must reject wrong Phase60 source");
+        assert!(error.to_string().contains("source drift against Phase60"));
+    }
+
+    #[test]
+    fn phase61_runtime_witness_pcs_replacement_rejects_false_recursion_and_paper_flags() {
+        let (_, _, _, _, _, _, _, mut phase61) =
+            sample_phase61_runtime_witness_pcs_replacement_claim();
+
+        phase61.recursive_verification_claimed = true;
+        phase61.cryptographic_compression_claimed = true;
+        phase61.breakthrough_claimed = true;
+        phase61.paper_ready = true;
+        recommit_phase61_claim(&mut phase61);
+
+        let error = verify_phase61_first_layer_runtime_witness_pcs_replacement_claim(&phase61)
+            .expect_err("Phase61 must reject false recursion/compression claims");
+        assert!(error
+            .to_string()
+            .contains("must not claim recursion, compression"));
     }
 
     #[test]
