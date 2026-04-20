@@ -802,7 +802,7 @@ pub fn verify_execution_stark_with_policy(
     proof: &VanillaStarkExecutionProof,
     policy: StarkVerificationPolicy,
 ) -> Result<bool> {
-    verify_execution_stark_with_reexecution_and_policy(proof, policy)
+    verify_execution_stark_with_backend_and_policy(proof, proof.proof_backend, policy)
 }
 
 pub fn verify_execution_stark_claim_only(proof: &VanillaStarkExecutionProof) -> Result<bool> {
@@ -1911,8 +1911,13 @@ HALT
             production_v1_verification_policy()
         )
         .expect("backend/policy claim-only verify"));
+        assert!(verify_execution_stark(&proof).expect("default claim-only verify"));
+        assert!(
+            verify_execution_stark_with_policy(&proof, production_v1_verification_policy())
+                .expect("policy claim-only verify")
+        );
 
-        let err = verify_execution_stark(&proof).unwrap_err();
+        let err = verify_execution_stark_with_reexecution(&proof).unwrap_err();
         assert!(err
             .to_string()
             .contains("missing equivalence metadata required for re-execution"));

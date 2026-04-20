@@ -336,15 +336,26 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
             PHASE42.evaluate(phase29, phase30, phase41, evidence)
 
     def test_rejects_phase12_phase14_shared_core_mismatch(self) -> None:
-        phase29, phase30, phase41, evidence = sample_boundary_preimage_bundle()
+        phase29, phase30, _, evidence = sample_boundary_preimage_bundle()
         evidence = copy.deepcopy(evidence)
-        evidence["phase14_end_state"]["query_commitment"] = hash32("8")
+        evidence["phase14_end_state"]["kv_cache_commitment"] = hash32("8")
         evidence["phase14_end_state"]["public_state_commitment"] = (
             PHASE42.commit_phase14_public_state(evidence["phase14_end_state"])
         )
+        phase29["global_end_state_commitment"] = PHASE42.commit_phase23_boundary_state(
+            evidence["phase14_end_state"]
+        )
+        phase29["input_contract_commitment"] = PHASE42.commit_phase29_contract(phase29)
+        phase41 = PHASE42.prepare_phase41_expected(phase29, phase30)
 
         with self.assertRaisesRegex(PHASE42.Phase42Error, "shared carried-state field"):
             PHASE42.evaluate(phase29, phase30, phase41, evidence)
+
+    def test_rejects_boundary_preimage_evidence_without_phase41_source_binding(self) -> None:
+        phase29, phase30, _, evidence = sample_boundary_preimage_bundle()
+
+        with self.assertRaisesRegex(PHASE42.Phase42Error, "requires a source-bound Phase41"):
+            PHASE42.evaluate(phase29, phase30, None, evidence)
 
     def test_cli_reports_issue_and_patch_once_decision(self) -> None:
         phase29 = sample_phase29_contract(hash32("d"), hash32("e"))
