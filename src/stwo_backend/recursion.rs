@@ -7,26 +7,61 @@ use crate::proof::{ExecutionClaimCommitments, StarkProofBackend, VanillaStarkExe
 
 #[cfg(feature = "stwo-backend")]
 use super::decoding::{
-    read_json_bytes_with_limit,
+    commit_phase12_public_state, commit_phase14_public_state, commit_phase23_boundary_state,
+    phase14_prepare_decoding_chain, phase28_global_boundary_preimage_states,
+    read_json_bytes_with_limit, verify_phase12_decoding_chain, verify_phase14_decoding_chain,
+    verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation,
     verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase30_decoding_step_proof_envelope_manifest,
+    verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
+    Phase12DecodingChainManifest, Phase12DecodingState, Phase14DecodingState,
     Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
     Phase30DecodingStepProofEnvelopeManifest,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE28,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
+    STWO_DECODING_STATE_VERSION_PHASE12, STWO_DECODING_STATE_VERSION_PHASE14,
     STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30,
     STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30,
     STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30, STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE,
 };
 #[cfg(feature = "stwo-backend")]
+use super::history_replay_projection_prover::{
+    derive_phase43_history_replay_projection_compact_verifier_inputs,
+    derive_phase44d_history_replay_projection_terminal_boundary_logup_closure,
+    verify_phase44d_history_replay_projection_source_chain_public_output_boundary_acceptance,
+    Phase43HistoryReplayProjectionCompactProofEnvelope,
+    Phase43HistoryReplayProjectionTerminalBoundaryClaim,
+    Phase44DHistoryReplayProjectionExternalSourceRootAcceptance,
+    Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
+    Phase44DHistoryReplayProjectionTerminalBoundaryLogupClosure,
+    STWO_HISTORY_REPLAY_PROJECTION_COMPACT_CLAIM_VERSION_PHASE44,
+    STWO_HISTORY_REPLAY_PROJECTION_COMPACT_SEMANTIC_SCOPE_PHASE44,
+    STWO_HISTORY_REPLAY_PROJECTION_COMPACT_SOURCE_BINDING_PHASE44,
+    STWO_HISTORY_REPLAY_PROJECTION_COMPACT_VERIFIER_INPUTS_VERSION_PHASE46,
+    STWO_HISTORY_REPLAY_PROJECTION_EXTERNAL_SOURCE_ROOT_ACCEPTANCE_VERSION_PHASE44D,
+    STWO_HISTORY_REPLAY_PROJECTION_SOURCE_CHAIN_PUBLIC_OUTPUT_BOUNDARY_VERSION_PHASE44D,
+    STWO_HISTORY_REPLAY_PROJECTION_SOURCE_SURFACE_VERSION_PHASE44D,
+    STWO_HISTORY_REPLAY_PROJECTION_TERMINAL_BOUNDARY_LOGUP_CLOSURE_VERSION_PHASE44D,
+};
+#[cfg(feature = "stwo-backend")]
 use super::STWO_BACKEND_VERSION_PHASE12;
 #[cfg(feature = "stwo-backend")]
+use crate::config::TransformerVmConfig;
+#[cfg(feature = "stwo-backend")]
+use crate::model::{INPUT_DIM, OUTPUT_DIM};
+#[cfg(feature = "stwo-backend")]
 use crate::proof::CLAIM_STATEMENT_VERSION_V1;
+#[cfg(feature = "stwo-backend")]
+use ark_ff::Zero;
 #[cfg(feature = "stwo-backend")]
 use blake2::{
     digest::{Update, VariableOutput},
     Blake2bVar,
 };
+#[cfg(feature = "stwo-backend")]
+use stwo::core::fields::m31::BaseField;
+#[cfg(feature = "stwo-backend")]
+use stwo::core::fields::qm31::SecureField;
 
 pub const STWO_RECURSION_BATCH_VERSION_PHASE6: &str = "stwo-phase6-recursion-batch-v1";
 pub const STWO_RECURSION_BATCH_SCOPE_PHASE6: &str =
@@ -61,6 +96,34 @@ pub const STWO_BOUNDARY_TRANSLATION_RULE_PHASE41: &str =
     "explicit-phase29-phase30-boundary-pair-v1";
 #[cfg(feature = "stwo-backend")]
 const MAX_PHASE41_BOUNDARY_TRANSLATION_WITNESS_JSON_BYTES: usize = 1024 * 1024;
+#[cfg(feature = "stwo-backend")]
+pub const STWO_BOUNDARY_PREIMAGE_EVIDENCE_VERSION_PHASE42: &str =
+    "phase42-boundary-preimage-evidence-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_BOUNDARY_PREIMAGE_RELATION_PHASE42: &str = "hash_preimage_relation";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42: usize = 180;
+#[cfg(feature = "stwo-backend")]
+const MAX_PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_JSON_BYTES: usize = 1024 * 1024;
+#[cfg(feature = "stwo-backend")]
+pub const STWO_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_VERSION_PHASE42: &str =
+    "phase42-boundary-history-equivalence-witness-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42: &str = "deterministic_transform";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_BOUNDARY_HISTORY_EQUIVALENCE_RULE_PHASE42: &str =
+    "phase12-chain-replay-to-phase14-chunked-history-v1";
+#[cfg(feature = "stwo-backend")]
+const MAX_PHASE42_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_JSON_BYTES: usize = 1024 * 1024;
+#[cfg(feature = "stwo-backend")]
+pub const STWO_HISTORY_REPLAY_TRACE_VERSION_PHASE43: &str = "phase43-history-replay-trace-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43: &str = "normalized_replay_trace";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_HISTORY_REPLAY_TRACE_RULE_PHASE43: &str =
+    "phase12-chain-to-phase14-chunked-history-trace-v1";
+#[cfg(feature = "stwo-backend")]
+const MAX_PHASE43_HISTORY_REPLAY_TRACE_JSON_BYTES: usize = 8 * 1024 * 1024;
 #[cfg(feature = "stwo-backend")]
 pub const STWO_RECURSIVE_COMPRESSION_STATEMENT_CONTRACT_VERSION_PHASE32: &str =
     "stwo-phase32-recursive-compression-statement-contract-v1";
@@ -122,6 +185,259 @@ pub const STWO_PAPER3_COMPOSITION_PROTOTYPE_SCOPE_PHASE38: &str =
     "stwo_execution_parameterized_paper3_composition_prototype";
 #[cfg(feature = "stwo-backend")]
 const MAX_PHASE38_PAPER3_COMPOSITION_PROTOTYPE_JSON_BYTES: usize = 1024 * 1024;
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_VERSION_PHASE44D: &str =
+    "phase44d-recursive-verifier-public-output-handoff-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_SCOPE_PHASE44D: &str =
+    "phase44d_source_chain_public_output_recursive_verifier_handoff";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_AGGREGATION_VERSION_PHASE44D: &str =
+    "phase44d-recursive-verifier-public-output-aggregation-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_AGGREGATION_SCOPE_PHASE44D: &str =
+    "phase44d_source_chain_public_output_recursive_verifier_aggregation";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_VERIFIER_PUBLIC_INPUT_BRIDGE_VERSION_PHASE45: &str =
+    "phase45-recursive-verifier-public-input-bridge-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_VERIFIER_PUBLIC_INPUT_BRIDGE_SCOPE_PHASE45: &str =
+    "phase45_phase44d_source_output_ordered_recursive_public_inputs";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_STWO_PROOF_ADAPTER_RECEIPT_VERSION_PHASE46: &str =
+    "phase46-stwo-proof-adapter-receipt-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_STWO_PROOF_ADAPTER_RECEIPT_SCOPE_PHASE46: &str =
+    "phase46_phase45_public_inputs_to_stwo_verifier_inputs_adapter";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_VERSION_PHASE47: &str =
+    "phase47-recursive-verifier-wrapper-candidate-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_SCOPE_PHASE47: &str =
+    "phase47_phase46_stwo_receipt_recursive_wrapper_candidate";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_VERSION_PHASE48: &str =
+    "phase48-recursive-proof-wrapper-attempt-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_SCOPE_PHASE48: &str =
+    "phase48_phase47_actual_recursive_proof_wrapper_kill_step";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_VERSION_PHASE49: &str =
+    "phase49-layerwise-tensor-claim-propagation-contract-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_SCOPE_PHASE49: &str =
+    "phase49_phase48_no_go_layerwise_tensor_claim_propagation_pivot";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_TENSOR_COMMITMENT_CLAIM_VERSION_PHASE50: &str = "phase50-tensor-commitment-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_TENSOR_COMMITMENT_CLAIM_SCOPE_PHASE50: &str =
+    "phase50_transformer_native_tensor_commitment_claim";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_LAYER_IO_CLAIM_VERSION_PHASE50: &str = "phase50-layer-io-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_LAYER_IO_CLAIM_SCOPE_PHASE50: &str =
+    "phase50_phase49_tensor_claim_to_first_layer_io_surface";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_RELATION_CLAIM_VERSION_PHASE51: &str =
+    "phase51-first-layer-relation-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_RELATION_CLAIM_SCOPE_PHASE51: &str =
+    "phase51_phase50_first_gated_feed_forward_relation_claim";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_TENSOR_ENDPOINT_EVALUATION_CLAIM_VERSION_PHASE52: &str =
+    "phase52-tensor-endpoint-evaluation-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_TENSOR_ENDPOINT_EVALUATION_CLAIM_SCOPE_PHASE52: &str =
+    "phase52_raw_tensor_public_mle_endpoint_evaluation";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_LAYER_ENDPOINT_ANCHORING_CLAIM_VERSION_PHASE52: &str =
+    "phase52-layer-endpoint-anchoring-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_LAYER_ENDPOINT_ANCHORING_CLAIM_SCOPE_PHASE52: &str =
+    "phase52_phase51_raw_input_output_endpoint_anchoring";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_RELATION_BENCHMARK_CLAIM_VERSION_PHASE53: &str =
+    "phase53-first-layer-relation-benchmark-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_RELATION_BENCHMARK_CLAIM_SCOPE_PHASE53: &str =
+    "phase53_phase52_stwo_ml_sumcheck_surface_benchmark";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_SUMCHECK_SKELETON_CLAIM_VERSION_PHASE54: &str =
+    "phase54-first-layer-sumcheck-skeleton-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_SUMCHECK_SKELETON_CLAIM_SCOPE_PHASE54: &str =
+    "phase54_phase53_typed_sumcheck_proof_skeleton";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_COMPRESSION_EFFECTIVENESS_CLAIM_VERSION_PHASE55: &str =
+    "phase55-first-layer-compression-effectiveness-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_COMPRESSION_EFFECTIVENESS_CLAIM_SCOPE_PHASE55: &str =
+    "phase55_phase54_tensor_route_surface_effectiveness_benchmark";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_CLAIM_VERSION_PHASE56: &str =
+    "phase56-first-layer-executable-sumcheck-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_CLAIM_SCOPE_PHASE56: &str =
+    "phase56_phase54_executable_sumcheck_round_verifier";
+#[cfg(feature = "stwo-backend")]
+const STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_KIND_PHASE44D: &str =
+    "source-chain-public-output-boundary-verifier-v1";
+#[cfg(feature = "stwo-backend")]
+const STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_COMPLEXITY_PHASE44D: &str = "O(boundary_width)";
+#[cfg(feature = "stwo-backend")]
+const STWO_RECURSIVE_VERIFIER_PUBLIC_INPUT_BRIDGE_COMPLEXITY_PHASE45: &str = "O(boundary_width)";
+#[cfg(feature = "stwo-backend")]
+const STWO_RECURSIVE_STWO_PROOF_ADAPTER_RECEIPT_COMPLEXITY_PHASE46: &str =
+    "O(boundary_width + stwo_proof_size)";
+#[cfg(feature = "stwo-backend")]
+const STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_COMPLEXITY_PHASE47: &str =
+    "O(phase46_receipt + stwo_proof_surface)";
+#[cfg(feature = "stwo-backend")]
+const STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_DECISION_PHASE47: &str =
+    "candidate_ready_for_recursive_wrapper_benchmark";
+#[cfg(feature = "stwo-backend")]
+const STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_NEXT_STEP_PHASE47: &str =
+    "implement_actual_recursive_verifier_proof_or_pivot_if_full_replay_returns";
+#[cfg(feature = "stwo-backend")]
+const STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_DECISION_PHASE48: &str =
+    "no_go_missing_phase43_projection_cairo_air_recursive_verifier";
+#[cfg(feature = "stwo-backend")]
+const STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_NEXT_STEP_PHASE48: &str =
+    "pivot_to_layerwise_tensor_claim_propagation_or_implement_phase43_projection_cairo_air_verifier";
+#[cfg(feature = "stwo-backend")]
+const STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_COMPACT_PROOF_CHANNEL_PHASE48: &str = "Blake2sM31";
+#[cfg(feature = "stwo-backend")]
+const STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_RECURSIVE_CHANNEL_PHASE48: &str = "Poseidon252";
+#[cfg(feature = "stwo-backend")]
+const STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_ROUTE_SOURCE_PHASE49: &str =
+    "phase48_no_go_missing_phase43_projection_cairo_air";
+#[cfg(feature = "stwo-backend")]
+const STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_ROUTE_TARGET_PHASE49: &str =
+    "layerwise_tensor_claim_propagation";
+#[cfg(feature = "stwo-backend")]
+const STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_GRANULARITY_PHASE49: &str = "layerwise_tensor_io";
+#[cfg(feature = "stwo-backend")]
+const STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_PROPAGATION_RULE_PHASE49: &str =
+    "input_tensor_commitment_to_output_tensor_commitment_per_layer";
+#[cfg(feature = "stwo-backend")]
+const STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_COMPOSITION_PHASE49: &str =
+    "composition_accumulator_over_ordered_layer_claims";
+#[cfg(feature = "stwo-backend")]
+const STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_COMPLEXITY_PHASE49: &str = "O(layer_claim_surface)";
+#[cfg(feature = "stwo-backend")]
+const STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_DECISION_PHASE49: &str =
+    "pivot_started_layerwise_tensor_claim_propagation";
+#[cfg(feature = "stwo-backend")]
+const STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_NEXT_STEP_PHASE49: &str =
+    "define_tensor_commitment_scheme_and_first_layer_io_claim";
+#[cfg(feature = "stwo-backend")]
+const STWO_TENSOR_COMMITMENT_SCHEME_PHASE50: &str =
+    "m31_tensor_mle_commitment_root_placeholder_phase50";
+#[cfg(feature = "stwo-backend")]
+const STWO_TENSOR_ELEMENT_FIELD_PHASE50: &str = "M31";
+#[cfg(feature = "stwo-backend")]
+const STWO_TENSOR_MEMORY_LAYOUT_PHASE50: &str = "padded_row_major_mle_order";
+#[cfg(feature = "stwo-backend")]
+const STWO_TENSOR_QUANTIZATION_PHASE50: &str = "m31_native_no_scale";
+#[cfg(feature = "stwo-backend")]
+const STWO_TENSOR_PADDING_RULE_PHASE50: &str = "pad_to_next_power_of_two_for_mle";
+#[cfg(feature = "stwo-backend")]
+const STWO_LAYER_IO_RELATION_KIND_PHASE50: &str = "first_gated_feed_forward_layer_io_surface";
+#[cfg(feature = "stwo-backend")]
+const STWO_LAYER_IO_RELATION_RULE_PHASE50: &str =
+    "phase50_bind_input_output_tensor_claims_pending_phase51_sumcheck";
+#[cfg(feature = "stwo-backend")]
+const STWO_LAYER_IO_PROPAGATION_DIRECTION_PHASE50: &str = "output_claim_back_to_input_claim";
+#[cfg(feature = "stwo-backend")]
+const STWO_LAYER_IO_ENDPOINT_ANCHORING_RULE_PHASE50: &str =
+    "phase52_required_raw_input_output_mle_endpoint_anchoring";
+#[cfg(feature = "stwo-backend")]
+const STWO_LAYER_IO_COMPLEXITY_PHASE50: &str = "O(layer_io_claim_surface)";
+#[cfg(feature = "stwo-backend")]
+const STWO_LAYER_IO_NEXT_STEP_PHASE50: &str =
+    "implement_phase51_first_gated_feed_forward_sumcheck_relation";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RELATION_KIND_PHASE51: &str = "gated_feed_forward_relation";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RELATION_RULE_PHASE51: &str =
+    "gate_affine_value_affine_hadamard_output_affine";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RELATION_FIELD_PHASE51: &str = "M31";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RELATION_PARAMETER_COMMITMENT_SCHEME_PHASE51: &str =
+    "phase52_required_model_weight_super_root_or_opening";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RELATION_COMPLEXITY_PHASE51: &str = "O(first_layer_relation_claim_surface)";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RELATION_NEXT_STEP_PHASE51: &str =
+    "implement_phase52_endpoint_mle_anchoring_or_phase53_sumcheck_benchmark";
+#[cfg(feature = "stwo-backend")]
+const STWO_TENSOR_ENDPOINT_CHALLENGE_DERIVATION_PHASE52: &str =
+    "blake2b256_phase52_relation_commitment_role_index_to_m31_point";
+#[cfg(feature = "stwo-backend")]
+const STWO_TENSOR_ENDPOINT_EVALUATION_RULE_PHASE52: &str =
+    "padded_univariate_indexed_multilinear_extension";
+#[cfg(feature = "stwo-backend")]
+const STWO_LAYER_ENDPOINT_ANCHORING_COMPLEXITY_PHASE52: &str = "O(public_endpoint_width)";
+#[cfg(feature = "stwo-backend")]
+const STWO_LAYER_ENDPOINT_ANCHORING_NEXT_STEP_PHASE52: &str =
+    "implement_phase53_sumcheck_benchmark_for_gated_feed_forward_relation";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RELATION_BENCHMARK_STWO_ML_REFERENCE_PHASE53: &str =
+    "local_stwo_ml_matmul_log_inner_dimension_sumcheck_gkr_layer_reduction";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RELATION_BENCHMARK_PARAMETER_BINDING_SCHEME_PHASE53: &str =
+    "phase53_parameter_surface_commitment_placeholder_pending_weight_mle_openings";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RELATION_BENCHMARK_COMPLEXITY_PHASE53: &str =
+    "O(public_endpoint_width + planned_sumcheck_rounds + constant_openings)";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RELATION_BENCHMARK_STATUS_PHASE53: &str =
+    "continue_to_sumcheck_prototype_no_compression_claim_yet";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RELATION_BENCHMARK_NEXT_STEP_PHASE53: &str =
+    "implement_phase54_actual_first_layer_sumcheck_proof_and_model_weight_openings";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_SUMCHECK_SKELETON_TRANSCRIPT_PROTOCOL_PHASE54: &str =
+    "stwo_ml_poseidon_sumcheck_transcript_order_skeleton";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_SUMCHECK_SKELETON_PARAMETER_OPENING_SCHEME_PHASE54: &str =
+    "typed_mle_opening_receipt_placeholder_pending_actual_merkle_opening";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_SUMCHECK_SKELETON_COMPLEXITY_PHASE54: &str =
+    "O(sumcheck_round_polynomials + mle_opening_receipts)";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_SUMCHECK_SKELETON_STATUS_PHASE54: &str =
+    "typed_proof_skeleton_ready_pending_executable_sumcheck_verifier";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_SUMCHECK_SKELETON_NEXT_STEP_PHASE54: &str =
+    "implement_phase55_surface_measurement_then_phase56_executable_sumcheck_verifier";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_COMPRESSION_EFFECTIVENESS_MEASUREMENT_PHASE55: &str =
+    "first_layer_tensor_route_surface_proxy_vs_vm_replay_proxy";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_COMPRESSION_EFFECTIVENESS_DECISION_PHASE55: &str =
+    "go_phase56_executable_sumcheck_verifier_measurement";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_COMPRESSION_EFFECTIVENESS_NEXT_STEP_PHASE55: &str =
+    "implement_phase56_executable_first_layer_sumcheck_verifier_and_measured_proof_bytes";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_TRANSCRIPT_PROTOCOL_PHASE56: &str =
+    "blake2b_m31_executable_sumcheck_round_challenges_phase56";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_TERMINAL_RULE_PHASE56: &str =
+    "terminal_sum_equals_final_eval_product";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_COMPLEXITY_PHASE56: &str =
+    "O(sumcheck_round_polynomial_coefficients + final_evaluations)";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_STATUS_PHASE56: &str =
+    "executable_round_polynomial_verifier_available_pending_mle_openings";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_NEXT_STEP_PHASE56: &str =
+    "implement_phase57_mle_opening_verifier_and_measured_proof_bytes";
+#[cfg(feature = "stwo-backend")]
+const PHASE44D_M31_MODULUS: u32 = (1u32 << 31) - 1;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Phase6RecursionBatchEntry {
@@ -344,6 +660,818 @@ pub struct Phase41BoundaryTranslationWitnessArtifact {
     pub start_boundary_translation_commitment: String,
     pub end_boundary_translation_commitment: String,
     pub boundary_translation_witness_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase42BoundaryPreimageEvidence {
+    pub issue: usize,
+    pub evidence_version: String,
+    pub relation_outcome: String,
+    pub phase12_start_state: Phase12DecodingState,
+    pub phase12_end_state: Phase12DecodingState,
+    pub phase14_start_state: Phase14DecodingState,
+    pub phase14_end_state: Phase14DecodingState,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase42BoundaryHistoryEquivalenceWitness {
+    pub issue: usize,
+    pub witness_version: String,
+    pub relation_outcome: String,
+    pub transform_rule: String,
+    pub proof_backend: StarkProofBackend,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub phase29_contract_commitment: String,
+    pub phase28_aggregate_commitment: String,
+    pub phase30_source_chain_commitment: String,
+    pub phase30_step_envelopes_commitment: String,
+    pub total_steps: usize,
+    pub layout_commitment: String,
+    pub rolling_kv_pairs: usize,
+    pub pair_width: usize,
+    pub phase12_start_public_state_commitment: String,
+    pub phase12_end_public_state_commitment: String,
+    pub phase14_start_boundary_commitment: String,
+    pub phase14_end_boundary_commitment: String,
+    pub phase12_start_history_commitment: String,
+    pub phase12_end_history_commitment: String,
+    pub phase14_start_history_commitment: String,
+    pub phase14_end_history_commitment: String,
+    pub initial_kv_cache_commitment: String,
+    pub appended_pairs_commitment: String,
+    pub appended_pair_count: usize,
+    pub lookup_rows_commitments_commitment: String,
+    pub lookup_rows_commitment_count: usize,
+    pub full_history_replay_required: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub witness_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase43HistoryReplayTraceRow {
+    pub step_index: usize,
+    pub appended_pair: Vec<i16>,
+    pub input_lookup_rows_commitment: String,
+    pub output_lookup_rows_commitment: String,
+    pub phase30_step_envelope_commitment: String,
+    pub phase12_from_state: Phase12DecodingState,
+    pub phase12_to_state: Phase12DecodingState,
+    pub phase14_from_state: Phase14DecodingState,
+    pub phase14_to_state: Phase14DecodingState,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase43HistoryReplayTrace {
+    pub issue: usize,
+    pub trace_version: String,
+    pub relation_outcome: String,
+    pub transform_rule: String,
+    pub proof_backend: StarkProofBackend,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub phase42_witness_commitment: String,
+    pub phase29_contract_commitment: String,
+    pub phase28_aggregate_commitment: String,
+    pub phase30_source_chain_commitment: String,
+    pub phase30_step_envelopes_commitment: String,
+    pub total_steps: usize,
+    pub layout_commitment: String,
+    pub rolling_kv_pairs: usize,
+    pub pair_width: usize,
+    pub phase12_start_public_state_commitment: String,
+    pub phase12_end_public_state_commitment: String,
+    pub phase14_start_boundary_commitment: String,
+    pub phase14_end_boundary_commitment: String,
+    pub phase12_start_history_commitment: String,
+    pub phase12_end_history_commitment: String,
+    pub phase14_start_history_commitment: String,
+    pub phase14_end_history_commitment: String,
+    pub initial_kv_cache_commitment: String,
+    pub appended_pairs_commitment: String,
+    pub lookup_rows_commitments_commitment: String,
+    pub rows: Vec<Phase43HistoryReplayTraceRow>,
+    pub full_history_replay_required: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub stwo_air_proof_claimed: bool,
+    pub trace_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase44DRecursiveVerifierPublicOutputHandoff {
+    pub proof_backend: StarkProofBackend,
+    pub handoff_version: String,
+    pub semantic_scope: String,
+    pub verifier_harness: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub compact_claim_version: String,
+    pub compact_semantic_scope: String,
+    pub compact_source_binding: String,
+    pub compact_envelope_commitment: String,
+    pub compact_proof_size_bytes: usize,
+    pub source_chain_public_output_boundary_version: String,
+    pub source_surface_version: String,
+    pub source_chain_public_output_boundary_commitment: String,
+    pub source_emission_public_output_commitment: String,
+    pub emitted_root_artifact_commitment: String,
+    pub source_root_acceptance_commitment: String,
+    pub emitted_canonical_source_root: String,
+    pub source_root_preimage_commitment: String,
+    pub compact_projection_trace_root: String,
+    pub compact_preprocessed_trace_root: String,
+    pub terminal_boundary_commitment: String,
+    pub terminal_boundary_logup_statement_commitment: String,
+    pub terminal_boundary_public_logup_sum_limbs: Vec<u32>,
+    pub terminal_boundary_component_claimed_sum_limbs: Vec<u32>,
+    pub terminal_boundary_logup_closure_commitment: String,
+    pub phase43_trace_commitment: String,
+    pub phase43_trace_version: String,
+    pub phase30_manifest_version: String,
+    pub phase30_semantic_scope: String,
+    pub phase30_source_chain_commitment: String,
+    pub phase30_step_envelopes_commitment: String,
+    pub total_steps: usize,
+    pub pair_width: usize,
+    pub projection_row_count: usize,
+    pub projection_column_count: usize,
+    pub public_output_boundary_verified: bool,
+    pub compact_envelope_verified: bool,
+    pub source_root_acceptance_verified: bool,
+    pub terminal_boundary_logup_closure_verified: bool,
+    pub final_useful_compression_boundary: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub verifier_requires_phase43_trace: bool,
+    pub verifier_requires_phase30_manifest: bool,
+    pub verifier_embeds_expected_rows: bool,
+    pub verifier_side_complexity: String,
+    pub handoff_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase44DRecursiveVerifierPublicOutputAggregation {
+    pub proof_backend: StarkProofBackend,
+    pub aggregation_version: String,
+    pub semantic_scope: String,
+    pub verifier_harness: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub handoff_count: usize,
+    pub total_steps: usize,
+    pub handoff_commitments: Vec<String>,
+    pub source_chain_public_output_boundary_commitments: Vec<String>,
+    pub compact_envelope_commitments: Vec<String>,
+    pub terminal_boundary_logup_closure_commitments: Vec<String>,
+    pub handoff_list_commitment: String,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub verifier_requires_phase43_trace: bool,
+    pub verifier_requires_phase30_manifest: bool,
+    pub verifier_embeds_expected_rows: bool,
+    pub verifier_side_complexity: String,
+    pub aggregation_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase45RecursiveVerifierPublicInputLane {
+    pub index: usize,
+    pub label: String,
+    pub value_kind: String,
+    pub value: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase45RecursiveVerifierPublicInputBridge {
+    pub proof_backend: StarkProofBackend,
+    pub bridge_version: String,
+    pub semantic_scope: String,
+    pub verifier_harness: String,
+    pub handoff_version: String,
+    pub source_chain_public_output_boundary_version: String,
+    pub terminal_boundary_logup_closure_version: String,
+    pub handoff_commitment: String,
+    pub source_chain_public_output_boundary_commitment: String,
+    pub compact_envelope_commitment: String,
+    pub terminal_boundary_logup_closure_commitment: String,
+    pub ordered_public_input_lanes: Vec<Phase45RecursiveVerifierPublicInputLane>,
+    pub ordered_public_inputs_commitment: String,
+    pub public_input_count: usize,
+    pub public_output_boundary_verified: bool,
+    pub compact_envelope_verified: bool,
+    pub terminal_boundary_logup_closure_verified: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub verifier_requires_phase43_trace: bool,
+    pub verifier_requires_phase30_manifest: bool,
+    pub verifier_embeds_expected_rows: bool,
+    pub verifier_side_complexity: String,
+    pub bridge_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase46StwoProofAdapterReceipt {
+    pub proof_backend: StarkProofBackend,
+    pub receipt_version: String,
+    pub semantic_scope: String,
+    pub verifier_harness: String,
+    pub bridge_version: String,
+    pub bridge_commitment: String,
+    pub ordered_public_inputs_commitment: String,
+    pub public_input_count: usize,
+    pub compact_envelope_commitment: String,
+    pub compact_claim_version: String,
+    pub compact_semantic_scope: String,
+    pub compact_verifier_inputs_version: String,
+    pub compact_verifier_inputs_commitment: String,
+    pub compact_proof_size_bytes: usize,
+    pub preprocessed_trace_root: String,
+    pub projection_trace_root: String,
+    pub interaction_trace_root: String,
+    pub proof_commitment_roots: Vec<String>,
+    pub preprocessed_trace_log_sizes: Vec<u32>,
+    pub projection_trace_log_sizes: Vec<u32>,
+    pub interaction_trace_log_sizes: Vec<u32>,
+    pub pcs_pow_bits: u32,
+    pub pcs_fri_log_blowup_factor: u32,
+    pub pcs_fri_n_queries: usize,
+    pub pcs_fri_log_last_layer_degree_bound: u32,
+    pub pcs_fri_fold_step: u32,
+    pub pcs_lifting_log_size: Option<u32>,
+    pub proof_commitment_count: usize,
+    pub sampled_values_tree_count: usize,
+    pub decommitment_tree_count: usize,
+    pub queried_values_tree_count: usize,
+    pub proof_of_work: u64,
+    pub terminal_boundary_interaction_claim_commitment: String,
+    pub terminal_boundary_public_logup_sum_limbs: Vec<u32>,
+    pub terminal_boundary_component_claimed_sum_limbs: Vec<u32>,
+    pub public_plus_component_sum_is_zero: bool,
+    pub phase45_bridge_verified: bool,
+    pub compact_envelope_verified: bool,
+    pub stwo_core_verify_succeeded: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub verifier_requires_phase43_trace: bool,
+    pub verifier_requires_phase30_manifest: bool,
+    pub verifier_embeds_expected_rows: bool,
+    pub verifier_side_complexity: String,
+    pub adapter_receipt_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase47RecursiveVerifierWrapperCandidate {
+    pub proof_backend: StarkProofBackend,
+    pub candidate_version: String,
+    pub semantic_scope: String,
+    pub verifier_harness: String,
+    pub adapter_receipt_version: String,
+    pub adapter_receipt_commitment: String,
+    pub compact_verifier_inputs_commitment: String,
+    pub compact_envelope_commitment: String,
+    pub bridge_commitment: String,
+    pub ordered_public_inputs_commitment: String,
+    pub proof_commitment_roots_commitment: String,
+    pub proof_commitment_roots: Vec<String>,
+    pub proof_commitment_count: usize,
+    pub compact_proof_size_bytes: usize,
+    pub public_input_count: usize,
+    pub verifier_surface_unit_count: usize,
+    pub preprocessed_trace_log_size_count: usize,
+    pub projection_trace_log_size_count: usize,
+    pub interaction_trace_log_size_count: usize,
+    pub terminal_boundary_logup_limb_count: usize,
+    pub phase46_receipt_verified: bool,
+    pub stwo_core_verify_succeeded: bool,
+    pub terminal_logup_closed: bool,
+    pub consumes_phase46_receipt_only: bool,
+    pub wrapper_requires_phase43_trace: bool,
+    pub wrapper_requires_phase30_manifest: bool,
+    pub wrapper_embeds_expected_rows: bool,
+    pub recursive_proof_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub verifier_side_complexity: String,
+    pub decision: String,
+    pub required_next_step: String,
+    pub candidate_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase48RecursiveProofWrapperAttempt {
+    pub proof_backend: StarkProofBackend,
+    pub attempt_version: String,
+    pub semantic_scope: String,
+    pub verifier_harness: String,
+    pub phase47_candidate_version: String,
+    pub phase47_candidate_commitment: String,
+    pub phase46_adapter_receipt_commitment: String,
+    pub compact_verifier_inputs_commitment: String,
+    pub compact_envelope_commitment: String,
+    pub phase47_candidate_verified: bool,
+    pub local_stwo_core_verifier_detected: bool,
+    pub local_stwo_cairo_verifier_core_detected: bool,
+    pub local_stwo_cairo_air_verifier_detected: bool,
+    pub local_phase43_projection_cairo_air_detected: bool,
+    pub compact_proof_channel: String,
+    pub recursive_verifier_channel: String,
+    pub channel_mismatch_requires_reproving_or_adapter: bool,
+    pub actual_recursive_wrapper_available: bool,
+    pub recursive_proof_constructed: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub wrapper_requires_phase43_trace: bool,
+    pub wrapper_requires_phase30_manifest: bool,
+    pub wrapper_embeds_expected_rows: bool,
+    pub blocking_reasons: Vec<String>,
+    pub decision: String,
+    pub required_next_step: String,
+    pub attempt_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase49LayerwiseTensorClaimPropagationContract {
+    pub proof_backend: StarkProofBackend,
+    pub contract_version: String,
+    pub semantic_scope: String,
+    pub source_phase48_attempt_version: String,
+    pub source_phase48_attempt_commitment: String,
+    pub source_phase48_decision: String,
+    pub source_phase48_required_next_step: String,
+    pub vm_manifest_route_blocked: bool,
+    pub route_source: String,
+    pub route_target: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub claim_granularity: String,
+    pub propagation_rule: String,
+    pub composition_strategy: String,
+    pub input_tensor_width: usize,
+    pub output_tensor_width: usize,
+    pub attention_head_dim: usize,
+    pub layer_count_bound_mode: String,
+    pub tensor_commitment_scheme: String,
+    pub layer_io_claim_object: String,
+    pub attention_claim_object: String,
+    pub mlp_claim_object: String,
+    pub normalization_claim_object: String,
+    pub residual_claim_object: String,
+    pub composition_accumulator_object: String,
+    pub target_requires_full_vm_replay: bool,
+    pub target_requires_phase43_trace: bool,
+    pub target_requires_phase30_manifest: bool,
+    pub target_requires_phase43_projection_cairo_air: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub actual_layerwise_proof_available: bool,
+    pub compression_benchmark_available: bool,
+    pub required_components: Vec<String>,
+    pub open_blockers: Vec<String>,
+    pub verifier_side_complexity: String,
+    pub decision: String,
+    pub required_next_step: String,
+    pub contract_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase50TensorCommitmentClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub tensor_role: String,
+    pub tensor_name: String,
+    pub element_field: String,
+    pub memory_layout: String,
+    pub quantization: String,
+    pub tensor_rank: usize,
+    pub tensor_shape: Vec<usize>,
+    pub logical_element_count: usize,
+    pub padded_element_count: usize,
+    pub padding_rule: String,
+    pub commitment_scheme: String,
+    pub commitment_root: String,
+    pub mle_evaluation_claim_status: String,
+    pub raw_endpoint_anchor_required: bool,
+    pub raw_endpoint_anchor_available: bool,
+    pub full_vm_replay_required: bool,
+    pub phase43_trace_required: bool,
+    pub phase30_manifest_required: bool,
+    pub transcript_order: Vec<String>,
+    pub tensor_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase50LayerIoClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub source_phase49_contract_version: String,
+    pub source_phase49_contract_commitment: String,
+    pub source_phase49_decision: String,
+    pub source_phase49_required_next_step: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub layer_index: usize,
+    pub layer_name: String,
+    pub layer_kind: String,
+    pub input_tensor_claim: Phase50TensorCommitmentClaim,
+    pub output_tensor_claim: Phase50TensorCommitmentClaim,
+    pub relation_claim_kind: String,
+    pub relation_rule: String,
+    pub propagation_direction: String,
+    pub endpoint_anchoring_rule: String,
+    pub claim_surface_unit_count: usize,
+    pub verifier_side_complexity: String,
+    pub transcript_order: Vec<String>,
+    pub requires_full_vm_replay: bool,
+    pub requires_phase43_trace: bool,
+    pub requires_phase30_manifest: bool,
+    pub requires_phase43_projection_cairo_air: bool,
+    pub raw_endpoint_anchor_available: bool,
+    pub sumcheck_proof_available: bool,
+    pub logup_proof_available: bool,
+    pub actual_layer_relation_proof_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub required_next_step: String,
+    pub layer_io_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase51FirstLayerRelationClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub source_phase50_layer_io_claim_version: String,
+    pub source_phase50_layer_io_claim_commitment: String,
+    pub source_phase49_contract_commitment: String,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub relation_kind: String,
+    pub relation_rule: String,
+    pub relation_field: String,
+    pub layer_index: usize,
+    pub input_width: usize,
+    pub hidden_width: usize,
+    pub output_width: usize,
+    pub gate_projection_shape: Vec<usize>,
+    pub value_projection_shape: Vec<usize>,
+    pub hidden_product_shape: Vec<usize>,
+    pub output_projection_shape: Vec<usize>,
+    pub gate_bias_len: usize,
+    pub value_bias_len: usize,
+    pub output_bias_len: usize,
+    pub operation_graph_order: Vec<String>,
+    pub parameter_commitment_scheme: String,
+    pub parameter_surface_unit_count: usize,
+    pub activation_surface_unit_count: usize,
+    pub claim_surface_unit_count: usize,
+    pub vm_step_replay_required: bool,
+    pub phase43_trace_required: bool,
+    pub phase30_manifest_required: bool,
+    pub raw_endpoint_anchor_available: bool,
+    pub parameter_commitments_available: bool,
+    pub affine_sumcheck_claim_available: bool,
+    pub hadamard_product_claim_available: bool,
+    pub actual_relation_proof_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub verifier_side_complexity: String,
+    pub transcript_order: Vec<String>,
+    pub required_next_step: String,
+    pub relation_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase52TensorEndpointEvaluationClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub source_phase50_tensor_claim_commitment: String,
+    pub source_phase51_relation_claim_commitment: String,
+    pub endpoint_role: String,
+    pub tensor_name: String,
+    pub element_field: String,
+    pub tensor_shape: Vec<usize>,
+    pub logical_element_count: usize,
+    pub padded_element_count: usize,
+    pub raw_tensor_values: Vec<u32>,
+    pub raw_tensor_commitment: String,
+    pub mle_point: Vec<u32>,
+    pub mle_value: u32,
+    pub challenge_derivation: String,
+    pub evaluation_rule: String,
+    pub transcript_order: Vec<String>,
+    pub verifier_derived_from_raw_tensor: bool,
+    pub commitment_opening_proof_available: bool,
+    pub requires_full_vm_replay: bool,
+    pub requires_phase43_trace: bool,
+    pub requires_phase30_manifest: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub endpoint_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase52LayerEndpointAnchoringClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub source_phase51_relation_claim_version: String,
+    pub source_phase51_relation_claim_commitment: String,
+    pub source_phase50_layer_io_claim_commitment: String,
+    pub input_endpoint_claim: Phase52TensorEndpointEvaluationClaim,
+    pub output_endpoint_claim: Phase52TensorEndpointEvaluationClaim,
+    pub endpoint_count: usize,
+    pub public_endpoint_width: usize,
+    pub verifier_side_complexity: String,
+    pub transcript_order: Vec<String>,
+    pub endpoint_anchoring_available: bool,
+    pub actual_layer_relation_proof_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub required_next_step: String,
+    pub anchoring_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase53FirstLayerRelationBenchmarkClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub source_phase52_anchoring_claim_commitment: String,
+    pub source_phase51_relation_claim_commitment: String,
+    pub source_phase50_layer_io_claim_commitment: String,
+    pub relation_kind: String,
+    pub relation_rule: String,
+    pub relation_field: String,
+    pub layer_index: usize,
+    pub input_width: usize,
+    pub hidden_width: usize,
+    pub output_width: usize,
+    pub gate_matmul_shape: Vec<usize>,
+    pub value_matmul_shape: Vec<usize>,
+    pub output_matmul_shape: Vec<usize>,
+    pub gate_matmul_inner_rounds: usize,
+    pub value_matmul_inner_rounds: usize,
+    pub output_matmul_inner_rounds: usize,
+    pub hadamard_eq_sumcheck_rounds: usize,
+    pub planned_sumcheck_round_count: usize,
+    pub matmul_round_polynomial_coefficient_count: usize,
+    pub hadamard_round_polynomial_coefficient_count: usize,
+    pub final_evaluation_count: usize,
+    pub estimated_sumcheck_surface_unit_count: usize,
+    pub gate_affine_mul_terms: usize,
+    pub value_affine_mul_terms: usize,
+    pub output_affine_mul_terms: usize,
+    pub total_affine_mul_terms: usize,
+    pub bias_term_count: usize,
+    pub hadamard_term_count: usize,
+    pub naive_relation_arithmetic_term_count: usize,
+    pub parameter_surface_unit_count: usize,
+    pub activation_surface_unit_count: usize,
+    pub endpoint_public_width: usize,
+    pub tensor_route_claim_surface_unit_count: usize,
+    pub verifier_side_complexity: String,
+    pub benchmark_status: String,
+    pub stwo_ml_reference: String,
+    pub parameter_binding_scheme: String,
+    pub parameter_binding_commitment: String,
+    pub transcript_order: Vec<String>,
+    pub endpoint_anchor_available: bool,
+    pub parameter_opening_proof_available: bool,
+    pub affine_sumcheck_proof_available: bool,
+    pub hadamard_product_proof_available: bool,
+    pub actual_relation_proof_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub required_next_step: String,
+    pub benchmark_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase54SumcheckComponentSkeleton {
+    pub proof_backend: StarkProofBackend,
+    pub source_phase53_benchmark_claim_commitment: String,
+    pub component_name: String,
+    pub component_kind: String,
+    pub relation_field: String,
+    pub component_shape: Vec<usize>,
+    pub inner_or_domain_width: usize,
+    pub padded_inner_or_domain_width: usize,
+    pub round_count: usize,
+    pub round_polynomial_degree: usize,
+    pub round_polynomial_coefficient_count: usize,
+    pub final_evaluation_count: usize,
+    pub runtime_tensor_opening_count: usize,
+    pub parameter_opening_count: usize,
+    pub transcript_protocol: String,
+    pub round_polynomial_commitment: String,
+    pub final_evaluation_commitment: String,
+    pub opening_receipt_commitment: String,
+    pub typed_proof_skeleton_available: bool,
+    pub actual_round_polynomial_values_available: bool,
+    pub actual_opening_proofs_available: bool,
+    pub cryptographic_soundness_claimed: bool,
+    pub component_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase54ParameterOpeningSkeleton {
+    pub proof_backend: StarkProofBackend,
+    pub source_phase53_benchmark_claim_commitment: String,
+    pub source_phase53_parameter_binding_commitment: String,
+    pub parameter_name: String,
+    pub parameter_role: String,
+    pub tensor_shape: Vec<usize>,
+    pub logical_element_count: usize,
+    pub padded_element_count: usize,
+    pub opening_point_dimension: usize,
+    pub opening_value_count: usize,
+    pub opening_scheme: String,
+    pub opening_receipt_commitment: String,
+    pub opening_proof_available: bool,
+    pub cryptographic_soundness_claimed: bool,
+    pub parameter_opening_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase54FirstLayerSumcheckSkeletonClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub source_phase53_benchmark_claim_commitment: String,
+    pub source_phase52_anchoring_claim_commitment: String,
+    pub source_phase51_relation_claim_commitment: String,
+    pub source_phase50_layer_io_claim_commitment: String,
+    pub source_phase53_parameter_binding_commitment: String,
+    pub component_claims: Vec<Phase54SumcheckComponentSkeleton>,
+    pub parameter_opening_claims: Vec<Phase54ParameterOpeningSkeleton>,
+    pub component_count: usize,
+    pub parameter_opening_count: usize,
+    pub total_round_count: usize,
+    pub total_round_polynomial_coefficient_count: usize,
+    pub total_final_evaluation_count: usize,
+    pub total_runtime_tensor_opening_count: usize,
+    pub total_parameter_opening_count: usize,
+    pub total_mle_opening_claim_count: usize,
+    pub typed_proof_object_surface_unit_count: usize,
+    pub phase53_estimated_sumcheck_surface_unit_count: usize,
+    pub endpoint_public_width: usize,
+    pub verifier_side_complexity: String,
+    pub skeleton_status: String,
+    pub transcript_order: Vec<String>,
+    pub typed_sumcheck_skeleton_available: bool,
+    pub actual_sumcheck_verifier_available: bool,
+    pub actual_parameter_opening_verifier_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub required_next_step: String,
+    pub skeleton_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase55FirstLayerCompressionEffectivenessClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub source_phase54_skeleton_claim_commitment: String,
+    pub source_phase53_benchmark_claim_commitment: String,
+    pub measurement_kind: String,
+    pub naive_relation_arithmetic_term_count: usize,
+    pub parameter_surface_unit_count: usize,
+    pub endpoint_public_width: usize,
+    pub vm_replay_surface_proxy_unit_count: usize,
+    pub tensor_proof_skeleton_surface_unit_count: usize,
+    pub tensor_sumcheck_round_count: usize,
+    pub tensor_round_polynomial_coefficient_count: usize,
+    pub tensor_mle_opening_claim_count: usize,
+    pub tensor_component_count: usize,
+    pub tensor_parameter_opening_count: usize,
+    pub tensor_to_vm_surface_proxy_basis_points: usize,
+    pub surface_proxy_reduction_basis_points: usize,
+    pub verifier_surface_is_smaller_than_vm_proxy: bool,
+    pub positive_breakthrough_signal: bool,
+    pub actual_proof_byte_benchmark_available: bool,
+    pub executable_sumcheck_verifier_available: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub decision: String,
+    pub required_next_step: String,
+    pub transcript_order: Vec<String>,
+    pub effectiveness_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase56RoundPolynomial {
+    pub round_index: usize,
+    pub degree: usize,
+    pub coefficients: Vec<u32>,
+    pub polynomial_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase56ExecutableSumcheckComponentProof {
+    pub proof_backend: StarkProofBackend,
+    pub source_phase54_component_claim_commitment: String,
+    pub component_name: String,
+    pub component_kind: String,
+    pub relation_field: String,
+    pub round_count: usize,
+    pub round_polynomial_degree: usize,
+    pub claimed_sum: u32,
+    pub round_polynomials: Vec<Phase56RoundPolynomial>,
+    pub derived_challenges: Vec<u32>,
+    pub final_evaluations: Vec<u32>,
+    pub terminal_sum: u32,
+    pub terminal_check_rule: String,
+    pub transcript_protocol: String,
+    pub executable_round_check_available: bool,
+    pub mle_opening_verifier_available: bool,
+    pub relation_witness_binding_available: bool,
+    pub cryptographic_soundness_claimed: bool,
+    pub component_proof_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase56FirstLayerExecutableSumcheckClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub source_phase54_skeleton_claim_commitment: String,
+    pub source_phase53_benchmark_claim_commitment: String,
+    pub component_proofs: Vec<Phase56ExecutableSumcheckComponentProof>,
+    pub component_count: usize,
+    pub total_round_count: usize,
+    pub total_round_polynomial_count: usize,
+    pub total_round_polynomial_coefficient_count: usize,
+    pub total_final_evaluation_count: usize,
+    pub executable_round_check_count: usize,
+    pub terminal_check_count: usize,
+    pub phase54_typed_proof_object_surface_unit_count: usize,
+    pub executable_verifier_surface_unit_count: usize,
+    pub surface_delta_from_phase54: usize,
+    pub verifier_side_complexity: String,
+    pub executable_status: String,
+    pub transcript_order: Vec<String>,
+    pub executable_sumcheck_round_verifier_available: bool,
+    pub executable_mle_opening_verifier_available: bool,
+    pub relation_witness_binding_available: bool,
+    pub actual_proof_byte_benchmark_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub required_next_step: String,
+    pub executable_claim_commitment: String,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -4627,6 +5755,8010 @@ pub fn verify_phase41_boundary_translation_witness_against_sources(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn phase42_prepare_boundary_preimage_evidence(
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase42BoundaryPreimageEvidence> {
+    phase42_verify_source_stack(chain, phase28, contract, phase30)?;
+    let first_step = chain.steps.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence requires a Phase 12 chain with at least one step"
+                .to_string(),
+        )
+    })?;
+    let last_step = chain
+        .steps
+        .last()
+        .expect("checked non-empty Phase 12 chain");
+    let (phase14_start_state, phase14_end_state) =
+        phase28_global_boundary_preimage_states(phase28)?;
+
+    let evidence = Phase42BoundaryPreimageEvidence {
+        issue: STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
+        evidence_version: STWO_BOUNDARY_PREIMAGE_EVIDENCE_VERSION_PHASE42.to_string(),
+        relation_outcome: STWO_BOUNDARY_PREIMAGE_RELATION_PHASE42.to_string(),
+        phase12_start_state: first_step.from_state.clone(),
+        phase12_end_state: last_step.to_state.clone(),
+        phase14_start_state,
+        phase14_end_state,
+    };
+    verify_phase42_boundary_preimage_evidence_against_sources(
+        &evidence, chain, phase28, contract, phase30,
+    )?;
+    Ok(evidence)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase42_boundary_preimage_evidence(
+    evidence: &Phase42BoundaryPreimageEvidence,
+) -> Result<()> {
+    if evidence.issue != STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence must reference Issue #{}, got #{}",
+            STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42, evidence.issue
+        )));
+    }
+    if evidence.evidence_version != STWO_BOUNDARY_PREIMAGE_EVIDENCE_VERSION_PHASE42 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence version `{}` does not match expected `{}`",
+            evidence.evidence_version, STWO_BOUNDARY_PREIMAGE_EVIDENCE_VERSION_PHASE42
+        )));
+    }
+    if evidence.relation_outcome != STWO_BOUNDARY_PREIMAGE_RELATION_PHASE42 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence relation `{}` does not match expected `{}`",
+            evidence.relation_outcome, STWO_BOUNDARY_PREIMAGE_RELATION_PHASE42
+        )));
+    }
+
+    phase42_verify_phase12_state("phase12_start_state", &evidence.phase12_start_state)?;
+    phase42_verify_phase12_state("phase12_end_state", &evidence.phase12_end_state)?;
+    phase42_verify_phase14_state("phase14_start_state", &evidence.phase14_start_state)?;
+    phase42_verify_phase14_state("phase14_end_state", &evidence.phase14_end_state)?;
+    phase42_shared_core_matches(
+        "start",
+        &evidence.phase12_start_state,
+        &evidence.phase14_start_state,
+    )?;
+    phase42_shared_core_matches(
+        "end",
+        &evidence.phase12_end_state,
+        &evidence.phase14_end_state,
+    )?;
+    if evidence.phase12_start_state.step_index != 0 || evidence.phase14_start_state.step_index != 0
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence start states must have step_index=0".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase42_boundary_preimage_evidence_against_sources(
+    evidence: &Phase42BoundaryPreimageEvidence,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<()> {
+    verify_phase42_boundary_preimage_evidence(evidence)?;
+    phase42_verify_source_stack(chain, phase28, contract, phase30)?;
+
+    let first_step = chain.steps.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence source binding requires a non-empty Phase 12 chain"
+                .to_string(),
+        )
+    })?;
+    let last_step = chain
+        .steps
+        .last()
+        .expect("checked non-empty Phase 12 chain");
+    if evidence.phase12_start_state != first_step.from_state {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence phase12_start_state does not match the Phase 12 chain start state"
+                .to_string(),
+        ));
+    }
+    if evidence.phase12_end_state != last_step.to_state {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence phase12_end_state does not match the Phase 12 chain end state"
+                .to_string(),
+        ));
+    }
+
+    let (phase14_start_state, phase14_end_state) =
+        phase28_global_boundary_preimage_states(phase28)?;
+    if evidence.phase14_start_state != phase14_start_state {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence phase14_start_state does not match the Phase 28 global start preimage"
+                .to_string(),
+        ));
+    }
+    if evidence.phase14_end_state != phase14_end_state {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence phase14_end_state does not match the Phase 28 global end preimage"
+                .to_string(),
+        ));
+    }
+
+    if evidence.phase12_start_state.public_state_commitment
+        != phase30.chain_start_boundary_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence Phase12 start preimage does not bind the Phase 30 start boundary"
+                .to_string(),
+        ));
+    }
+    if evidence.phase12_end_state.public_state_commitment != phase30.chain_end_boundary_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence Phase12 end preimage does not bind the Phase 30 end boundary"
+                .to_string(),
+        ));
+    }
+    let phase14_start_boundary = commit_phase23_boundary_state(&evidence.phase14_start_state);
+    let phase14_end_boundary = commit_phase23_boundary_state(&evidence.phase14_end_state);
+    if phase14_start_boundary != phase28.global_start_state_commitment
+        || phase14_start_boundary != contract.global_start_state_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence Phase14 start preimage does not bind the Phase 28/29 start boundary"
+                .to_string(),
+        ));
+    }
+    if phase14_end_boundary != phase28.global_end_state_commitment
+        || phase14_end_boundary != contract.global_end_state_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence Phase14 end preimage does not bind the Phase 28/29 end boundary"
+                .to_string(),
+        ));
+    }
+    if evidence.phase12_end_state.step_index != phase30.total_steps
+        || evidence.phase14_end_state.step_index != phase30.total_steps
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence end step_index must equal total_steps {}",
+            phase30.total_steps
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase42_boundary_history_equivalence_witness(
+    witness: &Phase42BoundaryHistoryEquivalenceWitness,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 42 history-equivalence witness commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase42-boundary-history-equivalence-witness");
+    phase29_update_usize(&mut hasher, witness.issue);
+    phase29_update_len_prefixed(&mut hasher, witness.witness_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.relation_outcome.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.transform_rule.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.proof_backend.to_string().as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.proof_backend_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.statement_version.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.phase29_contract_commitment.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.phase28_aggregate_commitment.as_bytes());
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase30_source_chain_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase30_step_envelopes_commitment.as_bytes(),
+    );
+    phase29_update_usize(&mut hasher, witness.total_steps);
+    phase29_update_len_prefixed(&mut hasher, witness.layout_commitment.as_bytes());
+    phase29_update_usize(&mut hasher, witness.rolling_kv_pairs);
+    phase29_update_usize(&mut hasher, witness.pair_width);
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase12_start_public_state_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase12_end_public_state_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase14_start_boundary_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase14_end_boundary_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase12_start_history_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase12_end_history_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase14_start_history_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.phase14_end_history_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(&mut hasher, witness.initial_kv_cache_commitment.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, witness.appended_pairs_commitment.as_bytes());
+    phase29_update_usize(&mut hasher, witness.appended_pair_count);
+    phase29_update_len_prefixed(
+        &mut hasher,
+        witness.lookup_rows_commitments_commitment.as_bytes(),
+    );
+    phase29_update_usize(&mut hasher, witness.lookup_rows_commitment_count);
+    phase29_update_bool(&mut hasher, witness.full_history_replay_required);
+    phase29_update_bool(&mut hasher, witness.cryptographic_compression_claimed);
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 42 history-equivalence witness commitment hash: {err}"
+        ))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase42_prepare_boundary_history_equivalence_witness(
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase42BoundaryHistoryEquivalenceWitness> {
+    phase42_verify_source_stack(chain, phase28, contract, phase30)?;
+
+    let first_step = chain.steps.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness requires a Phase 12 chain with at least one step"
+                .to_string(),
+        )
+    })?;
+    let last_step = chain
+        .steps
+        .last()
+        .expect("checked non-empty Phase 12 chain");
+
+    let replayed_phase14 = phase14_prepare_decoding_chain(chain)?;
+    verify_phase14_decoding_chain(&replayed_phase14)?;
+    let replayed_first_step = replayed_phase14.steps.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness requires a replayed Phase 14 chain with at least one step"
+                .to_string(),
+        )
+    })?;
+    let replayed_last_step = replayed_phase14
+        .steps
+        .last()
+        .expect("checked non-empty Phase 14 chain");
+    let replayed_phase14_start_state = replayed_first_step.from_state.clone();
+    let replayed_phase14_end_state = replayed_last_step.to_state.clone();
+    let (phase28_phase14_start_state, phase28_phase14_end_state) =
+        phase28_global_boundary_preimage_states(phase28)?;
+    if replayed_phase14_start_state != phase28_phase14_start_state {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness replayed Phase14 start state does not match the Phase28 global start preimage"
+                .to_string(),
+        ));
+    }
+    if replayed_phase14_end_state != phase28_phase14_end_state {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness replayed Phase14 end state does not match the Phase28 global end preimage"
+                .to_string(),
+        ));
+    }
+
+    phase42_shared_core_matches_with_history_bridge(
+        "start",
+        &first_step.from_state,
+        &replayed_phase14_start_state,
+    )?;
+    phase42_shared_core_matches_with_history_bridge(
+        "end",
+        &last_step.to_state,
+        &replayed_phase14_end_state,
+    )?;
+
+    let phase14_start_boundary = commit_phase23_boundary_state(&replayed_phase14_start_state);
+    let phase14_end_boundary = commit_phase23_boundary_state(&replayed_phase14_end_state);
+    if phase14_start_boundary != phase28.global_start_state_commitment
+        || phase14_start_boundary != contract.global_start_state_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness replayed Phase14 start state does not bind Phase28/29 start boundary"
+                .to_string(),
+        ));
+    }
+    if phase14_end_boundary != phase28.global_end_state_commitment
+        || phase14_end_boundary != contract.global_end_state_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness replayed Phase14 end state does not bind Phase28/29 end boundary"
+                .to_string(),
+        ));
+    }
+
+    let (appended_pairs_commitment, appended_pair_count) =
+        phase42_commit_source_appended_pairs(chain)?;
+    let (lookup_rows_commitments_commitment, lookup_rows_commitment_count) =
+        phase42_commit_source_lookup_rows_commitments(chain)?;
+    let mut witness = Phase42BoundaryHistoryEquivalenceWitness {
+        issue: STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
+        witness_version: STWO_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_VERSION_PHASE42.to_string(),
+        relation_outcome: STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42.to_string(),
+        transform_rule: STWO_BOUNDARY_HISTORY_EQUIVALENCE_RULE_PHASE42.to_string(),
+        proof_backend: StarkProofBackend::Stwo,
+        proof_backend_version: phase30.proof_backend_version.clone(),
+        statement_version: phase30.statement_version.clone(),
+        phase29_contract_commitment: contract.input_contract_commitment.clone(),
+        phase28_aggregate_commitment: phase28
+            .aggregated_chained_folded_interval_accumulator_commitment
+            .clone(),
+        phase30_source_chain_commitment: phase30.source_chain_commitment.clone(),
+        phase30_step_envelopes_commitment: phase30.step_envelopes_commitment.clone(),
+        total_steps: phase30.total_steps,
+        layout_commitment: first_step.from_state.layout_commitment.clone(),
+        rolling_kv_pairs: chain.layout.rolling_kv_pairs,
+        pair_width: chain.layout.pair_width,
+        phase12_start_public_state_commitment: first_step
+            .from_state
+            .public_state_commitment
+            .clone(),
+        phase12_end_public_state_commitment: last_step.to_state.public_state_commitment.clone(),
+        phase14_start_boundary_commitment: phase14_start_boundary,
+        phase14_end_boundary_commitment: phase14_end_boundary,
+        phase12_start_history_commitment: first_step.from_state.kv_history_commitment.clone(),
+        phase12_end_history_commitment: last_step.to_state.kv_history_commitment.clone(),
+        phase14_start_history_commitment: replayed_phase14_start_state.kv_history_commitment,
+        phase14_end_history_commitment: replayed_phase14_end_state.kv_history_commitment,
+        initial_kv_cache_commitment: first_step.from_state.kv_cache_commitment.clone(),
+        appended_pairs_commitment,
+        appended_pair_count,
+        lookup_rows_commitments_commitment,
+        lookup_rows_commitment_count,
+        full_history_replay_required: true,
+        cryptographic_compression_claimed: false,
+        witness_commitment: String::new(),
+    };
+    witness.witness_commitment = commit_phase42_boundary_history_equivalence_witness(&witness)?;
+    verify_phase42_boundary_history_equivalence_witness(&witness)?;
+    Ok(witness)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase42_boundary_history_equivalence_witness(
+    witness: &Phase42BoundaryHistoryEquivalenceWitness,
+) -> Result<()> {
+    if witness.issue != STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness must reference Issue #{}, got #{}",
+            STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42, witness.issue
+        )));
+    }
+    if witness.witness_version != STWO_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_VERSION_PHASE42 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness version `{}` does not match expected `{}`",
+            witness.witness_version, STWO_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_VERSION_PHASE42
+        )));
+    }
+    if witness.relation_outcome != STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness relation `{}` does not match expected `{}`",
+            witness.relation_outcome, STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42
+        )));
+    }
+    if witness.transform_rule != STWO_BOUNDARY_HISTORY_EQUIVALENCE_RULE_PHASE42 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness transform rule `{}` does not match expected `{}`",
+            witness.transform_rule, STWO_BOUNDARY_HISTORY_EQUIVALENCE_RULE_PHASE42
+        )));
+    }
+    if witness.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness requires `stwo` backend, got `{}`",
+            witness.proof_backend
+        )));
+    }
+    if witness.proof_backend_version != STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness requires proof backend version `{}`, got `{}`",
+            STWO_BACKEND_VERSION_PHASE12, witness.proof_backend_version
+        )));
+    }
+    if witness.statement_version != CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness requires statement version `{}`, got `{}`",
+            CLAIM_STATEMENT_VERSION_V1, witness.statement_version
+        )));
+    }
+    if witness.total_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness requires at least one decode step".to_string(),
+        ));
+    }
+    if witness.rolling_kv_pairs == 0 || witness.pair_width == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness requires non-zero layout widths".to_string(),
+        ));
+    }
+    if witness.appended_pair_count != witness.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness appended_pair_count={} must equal total_steps={}",
+            witness.appended_pair_count, witness.total_steps
+        )));
+    }
+    let expected_lookup_count = witness.total_steps.checked_add(1).ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness lookup count overflowed".to_string(),
+        )
+    })?;
+    if witness.lookup_rows_commitment_count != expected_lookup_count {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness lookup_rows_commitment_count={} must equal total_steps+1={expected_lookup_count}",
+            witness.lookup_rows_commitment_count
+        )));
+    }
+    if !witness.full_history_replay_required {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness must declare full_history_replay_required=true until a compact proof replaces replay"
+                .to_string(),
+        ));
+    }
+    if witness.cryptographic_compression_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness must not claim cryptographic compression"
+                .to_string(),
+        ));
+    }
+    for (field, value) in [
+        (
+            "phase29_contract_commitment",
+            witness.phase29_contract_commitment.as_str(),
+        ),
+        (
+            "phase28_aggregate_commitment",
+            witness.phase28_aggregate_commitment.as_str(),
+        ),
+        (
+            "phase30_source_chain_commitment",
+            witness.phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase30_step_envelopes_commitment",
+            witness.phase30_step_envelopes_commitment.as_str(),
+        ),
+        ("layout_commitment", witness.layout_commitment.as_str()),
+        (
+            "phase12_start_public_state_commitment",
+            witness.phase12_start_public_state_commitment.as_str(),
+        ),
+        (
+            "phase12_end_public_state_commitment",
+            witness.phase12_end_public_state_commitment.as_str(),
+        ),
+        (
+            "phase14_start_boundary_commitment",
+            witness.phase14_start_boundary_commitment.as_str(),
+        ),
+        (
+            "phase14_end_boundary_commitment",
+            witness.phase14_end_boundary_commitment.as_str(),
+        ),
+        (
+            "phase12_start_history_commitment",
+            witness.phase12_start_history_commitment.as_str(),
+        ),
+        (
+            "phase12_end_history_commitment",
+            witness.phase12_end_history_commitment.as_str(),
+        ),
+        (
+            "phase14_start_history_commitment",
+            witness.phase14_start_history_commitment.as_str(),
+        ),
+        (
+            "phase14_end_history_commitment",
+            witness.phase14_end_history_commitment.as_str(),
+        ),
+        (
+            "initial_kv_cache_commitment",
+            witness.initial_kv_cache_commitment.as_str(),
+        ),
+        (
+            "appended_pairs_commitment",
+            witness.appended_pairs_commitment.as_str(),
+        ),
+        (
+            "lookup_rows_commitments_commitment",
+            witness.lookup_rows_commitments_commitment.as_str(),
+        ),
+        ("witness_commitment", witness.witness_commitment.as_str()),
+    ] {
+        phase42_require_hash32(&format!("history_equivalence.{field}"), value)?;
+    }
+    let expected = commit_phase42_boundary_history_equivalence_witness(witness)?;
+    if witness.witness_commitment != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness commitment does not match recomputed `{expected}`"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase42_boundary_history_equivalence_witness_against_sources(
+    witness: &Phase42BoundaryHistoryEquivalenceWitness,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<()> {
+    verify_phase42_boundary_history_equivalence_witness(witness)?;
+    let expected =
+        phase42_prepare_boundary_history_equivalence_witness(chain, phase28, contract, phase30)?;
+    if witness != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 history-equivalence witness does not match the recomputed Phase12 replay over supplied sources"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase43_history_replay_trace(trace: &Phase43HistoryReplayTrace) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 43 history replay trace commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase43-history-replay-trace");
+    phase29_update_usize(&mut hasher, trace.issue);
+    let proof_backend = trace.proof_backend.to_string();
+    for part in [
+        trace.trace_version.as_bytes(),
+        trace.relation_outcome.as_bytes(),
+        trace.transform_rule.as_bytes(),
+        proof_backend.as_bytes(),
+        trace.proof_backend_version.as_bytes(),
+        trace.statement_version.as_bytes(),
+        trace.phase42_witness_commitment.as_bytes(),
+        trace.phase29_contract_commitment.as_bytes(),
+        trace.phase28_aggregate_commitment.as_bytes(),
+        trace.phase30_source_chain_commitment.as_bytes(),
+        trace.phase30_step_envelopes_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, trace.total_steps);
+    phase29_update_len_prefixed(&mut hasher, trace.layout_commitment.as_bytes());
+    phase29_update_usize(&mut hasher, trace.rolling_kv_pairs);
+    phase29_update_usize(&mut hasher, trace.pair_width);
+    for part in [
+        trace.phase12_start_public_state_commitment.as_bytes(),
+        trace.phase12_end_public_state_commitment.as_bytes(),
+        trace.phase14_start_boundary_commitment.as_bytes(),
+        trace.phase14_end_boundary_commitment.as_bytes(),
+        trace.phase12_start_history_commitment.as_bytes(),
+        trace.phase12_end_history_commitment.as_bytes(),
+        trace.phase14_start_history_commitment.as_bytes(),
+        trace.phase14_end_history_commitment.as_bytes(),
+        trace.initial_kv_cache_commitment.as_bytes(),
+        trace.appended_pairs_commitment.as_bytes(),
+        trace.lookup_rows_commitments_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, trace.rows.len());
+    for row in &trace.rows {
+        phase43_update_trace_row(&mut hasher, row);
+    }
+    phase29_update_bool(&mut hasher, trace.full_history_replay_required);
+    phase29_update_bool(&mut hasher, trace.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, trace.stwo_air_proof_claimed);
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 43 history replay trace commitment hash: {err}"
+        ))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase43_prepare_history_replay_trace(
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase43HistoryReplayTrace> {
+    let phase42_witness =
+        phase42_prepare_boundary_history_equivalence_witness(chain, phase28, contract, phase30)?;
+    let replayed_phase14 = phase14_prepare_decoding_chain(chain)?;
+    verify_phase14_decoding_chain(&replayed_phase14)?;
+    if replayed_phase14.steps.len() != chain.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 replay trace expected {} replayed Phase14 steps, got {}",
+            chain.steps.len(),
+            replayed_phase14.steps.len()
+        )));
+    }
+    if phase30.envelopes.len() != chain.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 replay trace expected {} Phase30 envelopes, got {}",
+            chain.steps.len(),
+            phase30.envelopes.len()
+        )));
+    }
+    let latest_cached_pair_range = chain.layout.latest_cached_pair_range()?;
+    let mut rows = Vec::with_capacity(chain.steps.len());
+    for (step_index, ((phase12_step, phase14_step), phase30_envelope)) in chain
+        .steps
+        .iter()
+        .zip(replayed_phase14.steps.iter())
+        .zip(phase30.envelopes.iter())
+        .enumerate()
+    {
+        if phase30_envelope.step_index != step_index {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 43 replay trace Phase30 envelope at row {step_index} has step_index {}",
+                phase30_envelope.step_index
+            )));
+        }
+        rows.push(Phase43HistoryReplayTraceRow {
+            step_index,
+            appended_pair: phase12_step.proof.claim.final_state.memory
+                [latest_cached_pair_range.clone()]
+            .to_vec(),
+            input_lookup_rows_commitment: phase12_step.from_state.lookup_rows_commitment.clone(),
+            output_lookup_rows_commitment: phase12_step.to_state.lookup_rows_commitment.clone(),
+            phase30_step_envelope_commitment: phase30_envelope.envelope_commitment.clone(),
+            phase12_from_state: phase12_step.from_state.clone(),
+            phase12_to_state: phase12_step.to_state.clone(),
+            phase14_from_state: phase14_step.from_state.clone(),
+            phase14_to_state: phase14_step.to_state.clone(),
+        });
+    }
+    let mut trace = Phase43HistoryReplayTrace {
+        issue: STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
+        trace_version: STWO_HISTORY_REPLAY_TRACE_VERSION_PHASE43.to_string(),
+        relation_outcome: STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43.to_string(),
+        transform_rule: STWO_HISTORY_REPLAY_TRACE_RULE_PHASE43.to_string(),
+        proof_backend: StarkProofBackend::Stwo,
+        proof_backend_version: phase42_witness.proof_backend_version,
+        statement_version: phase42_witness.statement_version,
+        phase42_witness_commitment: phase42_witness.witness_commitment,
+        phase29_contract_commitment: phase42_witness.phase29_contract_commitment,
+        phase28_aggregate_commitment: phase42_witness.phase28_aggregate_commitment,
+        phase30_source_chain_commitment: phase42_witness.phase30_source_chain_commitment,
+        phase30_step_envelopes_commitment: phase42_witness.phase30_step_envelopes_commitment,
+        total_steps: phase42_witness.total_steps,
+        layout_commitment: phase42_witness.layout_commitment,
+        rolling_kv_pairs: phase42_witness.rolling_kv_pairs,
+        pair_width: phase42_witness.pair_width,
+        phase12_start_public_state_commitment: phase42_witness
+            .phase12_start_public_state_commitment,
+        phase12_end_public_state_commitment: phase42_witness.phase12_end_public_state_commitment,
+        phase14_start_boundary_commitment: phase42_witness.phase14_start_boundary_commitment,
+        phase14_end_boundary_commitment: phase42_witness.phase14_end_boundary_commitment,
+        phase12_start_history_commitment: phase42_witness.phase12_start_history_commitment,
+        phase12_end_history_commitment: phase42_witness.phase12_end_history_commitment,
+        phase14_start_history_commitment: phase42_witness.phase14_start_history_commitment,
+        phase14_end_history_commitment: phase42_witness.phase14_end_history_commitment,
+        initial_kv_cache_commitment: phase42_witness.initial_kv_cache_commitment,
+        appended_pairs_commitment: phase42_witness.appended_pairs_commitment,
+        lookup_rows_commitments_commitment: phase42_witness.lookup_rows_commitments_commitment,
+        rows,
+        full_history_replay_required: true,
+        cryptographic_compression_claimed: false,
+        stwo_air_proof_claimed: false,
+        trace_commitment: String::new(),
+    };
+    trace.trace_commitment = commit_phase43_history_replay_trace(&trace)?;
+    verify_phase43_history_replay_trace(&trace)?;
+    Ok(trace)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase43_history_replay_trace(trace: &Phase43HistoryReplayTrace) -> Result<()> {
+    phase43_verify_header(trace)?;
+    if trace.total_steps != trace.rows.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace total_steps={} must equal rows.len()={}",
+            trace.total_steps,
+            trace.rows.len()
+        )));
+    }
+    if trace.total_steps == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace requires at least one row".to_string(),
+        ));
+    }
+    let expected_appended_pairs = phase43_commit_trace_appended_pairs(trace)?;
+    if trace.appended_pairs_commitment != expected_appended_pairs {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace appended_pairs_commitment does not match recomputed `{expected_appended_pairs}`"
+        )));
+    }
+    let expected_lookup_rows = phase43_commit_trace_lookup_rows_commitments(trace)?;
+    if trace.lookup_rows_commitments_commitment != expected_lookup_rows {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace lookup_rows_commitments_commitment does not match recomputed `{expected_lookup_rows}`"
+        )));
+    }
+    let expected_step_envelopes = phase43_commit_trace_phase30_step_envelopes(trace)?;
+    if trace.phase30_step_envelopes_commitment != expected_step_envelopes {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace phase30_step_envelopes_commitment does not match recomputed `{expected_step_envelopes}`"
+        )));
+    }
+
+    for (expected_step, row) in trace.rows.iter().enumerate() {
+        phase43_verify_row(trace, expected_step, row)?;
+        if let Some(next) = trace.rows.get(expected_step + 1) {
+            phase43_require_phase12_link(
+                expected_step,
+                &row.phase12_to_state,
+                &next.phase12_from_state,
+            )?;
+            phase43_require_phase14_link(
+                expected_step,
+                &row.phase14_to_state,
+                &next.phase14_from_state,
+            )?;
+        }
+    }
+
+    let first = trace.rows.first().expect("checked non-empty trace");
+    let last = trace.rows.last().expect("checked non-empty trace");
+    if trace.phase12_start_public_state_commitment
+        != first.phase12_from_state.public_state_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace Phase12 start commitment does not match first row"
+                .to_string(),
+        ));
+    }
+    if trace.phase12_end_public_state_commitment != last.phase12_to_state.public_state_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace Phase12 end commitment does not match last row"
+                .to_string(),
+        ));
+    }
+    let expected_start_boundary = commit_phase23_boundary_state(&first.phase14_from_state);
+    if trace.phase14_start_boundary_commitment != expected_start_boundary {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace Phase14 start boundary does not match recomputed `{expected_start_boundary}`"
+        )));
+    }
+    let expected_end_boundary = commit_phase23_boundary_state(&last.phase14_to_state);
+    if trace.phase14_end_boundary_commitment != expected_end_boundary {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace Phase14 end boundary does not match recomputed `{expected_end_boundary}`"
+        )));
+    }
+    if trace.phase12_start_history_commitment != first.phase12_from_state.kv_history_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace Phase12 start history does not match first row"
+                .to_string(),
+        ));
+    }
+    if trace.phase12_end_history_commitment != last.phase12_to_state.kv_history_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace Phase12 end history does not match last row".to_string(),
+        ));
+    }
+    if trace.phase14_start_history_commitment != first.phase14_from_state.kv_history_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace Phase14 start history does not match first row"
+                .to_string(),
+        ));
+    }
+    if trace.phase14_end_history_commitment != last.phase14_to_state.kv_history_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace Phase14 end history does not match last row".to_string(),
+        ));
+    }
+    if trace.initial_kv_cache_commitment != first.phase12_from_state.kv_cache_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace initial_kv_cache_commitment does not match first row"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase43_history_replay_trace(trace)?;
+    if trace.trace_commitment != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace commitment does not match recomputed `{expected}`"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase43_history_replay_trace_against_sources(
+    trace: &Phase43HistoryReplayTrace,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<()> {
+    verify_phase43_history_replay_trace(trace)?;
+    let expected = phase43_prepare_history_replay_trace(chain, phase28, contract, phase30)?;
+    if trace != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace does not match the recomputed Phase42 full replay over supplied sources"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_verify_header(trace: &Phase43HistoryReplayTrace) -> Result<()> {
+    if trace.issue != STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace must reference Issue #{}, got #{}",
+            STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42, trace.issue
+        )));
+    }
+    if trace.trace_version != STWO_HISTORY_REPLAY_TRACE_VERSION_PHASE43 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace version `{}` does not match expected `{}`",
+            trace.trace_version, STWO_HISTORY_REPLAY_TRACE_VERSION_PHASE43
+        )));
+    }
+    if trace.relation_outcome != STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace relation `{}` does not match expected `{}`",
+            trace.relation_outcome, STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43
+        )));
+    }
+    if trace.transform_rule != STWO_HISTORY_REPLAY_TRACE_RULE_PHASE43 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace transform rule `{}` does not match expected `{}`",
+            trace.transform_rule, STWO_HISTORY_REPLAY_TRACE_RULE_PHASE43
+        )));
+    }
+    if trace.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace requires `stwo` backend, got `{}`",
+            trace.proof_backend
+        )));
+    }
+    if trace.proof_backend_version != STWO_BACKEND_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace requires proof backend version `{}`, got `{}`",
+            STWO_BACKEND_VERSION_PHASE12, trace.proof_backend_version
+        )));
+    }
+    if trace.statement_version != CLAIM_STATEMENT_VERSION_V1 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace requires statement version `{}`, got `{}`",
+            CLAIM_STATEMENT_VERSION_V1, trace.statement_version
+        )));
+    }
+    if trace.rolling_kv_pairs == 0 || trace.pair_width == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace requires non-zero layout widths".to_string(),
+        ));
+    }
+    if !trace.full_history_replay_required {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace must declare full_history_replay_required=true until a compact proof replaces replay"
+                .to_string(),
+        ));
+    }
+    if trace.cryptographic_compression_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace must not claim cryptographic compression".to_string(),
+        ));
+    }
+    if trace.stwo_air_proof_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 43 history replay trace must not claim a Stwo AIR proof yet".to_string(),
+        ));
+    }
+    for (field, value) in [
+        (
+            "phase42_witness_commitment",
+            trace.phase42_witness_commitment.as_str(),
+        ),
+        (
+            "phase29_contract_commitment",
+            trace.phase29_contract_commitment.as_str(),
+        ),
+        (
+            "phase28_aggregate_commitment",
+            trace.phase28_aggregate_commitment.as_str(),
+        ),
+        (
+            "phase30_source_chain_commitment",
+            trace.phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase30_step_envelopes_commitment",
+            trace.phase30_step_envelopes_commitment.as_str(),
+        ),
+        ("layout_commitment", trace.layout_commitment.as_str()),
+        (
+            "phase12_start_public_state_commitment",
+            trace.phase12_start_public_state_commitment.as_str(),
+        ),
+        (
+            "phase12_end_public_state_commitment",
+            trace.phase12_end_public_state_commitment.as_str(),
+        ),
+        (
+            "phase14_start_boundary_commitment",
+            trace.phase14_start_boundary_commitment.as_str(),
+        ),
+        (
+            "phase14_end_boundary_commitment",
+            trace.phase14_end_boundary_commitment.as_str(),
+        ),
+        (
+            "phase12_start_history_commitment",
+            trace.phase12_start_history_commitment.as_str(),
+        ),
+        (
+            "phase12_end_history_commitment",
+            trace.phase12_end_history_commitment.as_str(),
+        ),
+        (
+            "phase14_start_history_commitment",
+            trace.phase14_start_history_commitment.as_str(),
+        ),
+        (
+            "phase14_end_history_commitment",
+            trace.phase14_end_history_commitment.as_str(),
+        ),
+        (
+            "initial_kv_cache_commitment",
+            trace.initial_kv_cache_commitment.as_str(),
+        ),
+        (
+            "appended_pairs_commitment",
+            trace.appended_pairs_commitment.as_str(),
+        ),
+        (
+            "lookup_rows_commitments_commitment",
+            trace.lookup_rows_commitments_commitment.as_str(),
+        ),
+        ("trace_commitment", trace.trace_commitment.as_str()),
+    ] {
+        phase43_require_hash32(&format!("history_replay_trace.{field}"), value)?;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_verify_row(
+    trace: &Phase43HistoryReplayTrace,
+    expected_step: usize,
+    row: &Phase43HistoryReplayTraceRow,
+) -> Result<()> {
+    if row.step_index != expected_step {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {expected_step} has step_index {}",
+            row.step_index
+        )));
+    }
+    if row.appended_pair.len() != trace.pair_width {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {expected_step} appended_pair has {} values, expected pair_width={}",
+            row.appended_pair.len(),
+            trace.pair_width
+        )));
+    }
+    for (field, value) in [
+        (
+            "input_lookup_rows_commitment",
+            row.input_lookup_rows_commitment.as_str(),
+        ),
+        (
+            "output_lookup_rows_commitment",
+            row.output_lookup_rows_commitment.as_str(),
+        ),
+        (
+            "phase30_step_envelope_commitment",
+            row.phase30_step_envelope_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(
+            &format!("history_replay_trace.rows[{expected_step}].{field}"),
+            value,
+        )?;
+    }
+    phase42_verify_phase12_state(
+        &format!("phase43.rows[{expected_step}].phase12_from_state"),
+        &row.phase12_from_state,
+    )?;
+    phase42_verify_phase12_state(
+        &format!("phase43.rows[{expected_step}].phase12_to_state"),
+        &row.phase12_to_state,
+    )?;
+    phase42_verify_phase14_state(
+        &format!("phase43.rows[{expected_step}].phase14_from_state"),
+        &row.phase14_from_state,
+    )?;
+    phase42_verify_phase14_state(
+        &format!("phase43.rows[{expected_step}].phase14_to_state"),
+        &row.phase14_to_state,
+    )?;
+    if row.phase12_from_state.step_index != expected_step
+        || row.phase14_from_state.step_index != expected_step
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {expected_step} from_state step_index mismatch"
+        )));
+    }
+    let expected_to_step = expected_step.checked_add(1).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 43 history replay trace step_index overflowed".to_string())
+    })?;
+    if row.phase12_to_state.step_index != expected_to_step
+        || row.phase14_to_state.step_index != expected_to_step
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {expected_step} to_state step_index mismatch"
+        )));
+    }
+    if row.phase12_from_state.layout_commitment != trace.layout_commitment
+        || row.phase12_to_state.layout_commitment != trace.layout_commitment
+        || row.phase14_from_state.layout_commitment != trace.layout_commitment
+        || row.phase14_to_state.layout_commitment != trace.layout_commitment
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {expected_step} layout commitment mismatch"
+        )));
+    }
+    if row.input_lookup_rows_commitment != row.phase12_from_state.lookup_rows_commitment
+        || row.input_lookup_rows_commitment != row.phase14_from_state.lookup_rows_commitment
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {expected_step} input_lookup_rows_commitment mismatch"
+        )));
+    }
+    if row.output_lookup_rows_commitment != row.phase12_to_state.lookup_rows_commitment
+        || row.output_lookup_rows_commitment != row.phase14_to_state.lookup_rows_commitment
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {expected_step} output_lookup_rows_commitment mismatch"
+        )));
+    }
+    phase42_shared_core_matches_with_history_bridge(
+        &format!("phase43 row {expected_step} from"),
+        &row.phase12_from_state,
+        &row.phase14_from_state,
+    )?;
+    phase42_shared_core_matches_with_history_bridge(
+        &format!("phase43 row {expected_step} to"),
+        &row.phase12_to_state,
+        &row.phase14_to_state,
+    )?;
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_require_phase12_link(
+    row_index: usize,
+    previous: &Phase12DecodingState,
+    next: &Phase12DecodingState,
+) -> Result<()> {
+    if previous.public_state_commitment != next.public_state_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase12 link does not preserve public_state_commitment"
+        )));
+    }
+    if previous.persistent_state_commitment != next.persistent_state_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase12 link does not preserve persistent_state_commitment"
+        )));
+    }
+    if previous.kv_cache_commitment != next.kv_cache_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase12 link does not preserve kv_cache_commitment"
+        )));
+    }
+    if previous.position != next.position {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase12 link does not preserve position"
+        )));
+    }
+    if previous.kv_history_commitment != next.kv_history_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase12 link does not preserve kv_history_commitment"
+        )));
+    }
+    if previous.kv_history_length != next.kv_history_length {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase12 link does not preserve kv_history_length"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_require_phase14_link(
+    row_index: usize,
+    previous: &Phase14DecodingState,
+    next: &Phase14DecodingState,
+) -> Result<()> {
+    if previous.public_state_commitment != next.public_state_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve public_state_commitment"
+        )));
+    }
+    if previous.persistent_state_commitment != next.persistent_state_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve persistent_state_commitment"
+        )));
+    }
+    if previous.kv_cache_commitment != next.kv_cache_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_cache_commitment"
+        )));
+    }
+    if previous.position != next.position {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve position"
+        )));
+    }
+    if previous.kv_history_commitment != next.kv_history_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_history_commitment"
+        )));
+    }
+    if previous.kv_history_length != next.kv_history_length {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_history_length"
+        )));
+    }
+    if previous.kv_history_sealed_commitment != next.kv_history_sealed_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_history_sealed_commitment"
+        )));
+    }
+    if previous.kv_history_sealed_chunks != next.kv_history_sealed_chunks {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_history_sealed_chunks"
+        )));
+    }
+    if previous.kv_history_open_chunk_commitment != next.kv_history_open_chunk_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_history_open_chunk_commitment"
+        )));
+    }
+    if previous.kv_history_open_chunk_pairs != next.kv_history_open_chunk_pairs {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_history_open_chunk_pairs"
+        )));
+    }
+    if previous.kv_history_frontier_commitment != next.kv_history_frontier_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_history_frontier_commitment"
+        )));
+    }
+    if previous.kv_history_frontier_pairs != next.kv_history_frontier_pairs {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve kv_history_frontier_pairs"
+        )));
+    }
+    if previous.lookup_transcript_commitment != next.lookup_transcript_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve lookup_transcript_commitment"
+        )));
+    }
+    if previous.lookup_transcript_entries != next.lookup_transcript_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve lookup_transcript_entries"
+        )));
+    }
+    if previous.lookup_frontier_commitment != next.lookup_frontier_commitment {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve lookup_frontier_commitment"
+        )));
+    }
+    if previous.lookup_frontier_entries != next.lookup_frontier_entries {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace row {row_index} Phase14 link does not preserve lookup_frontier_entries"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_commit_trace_appended_pairs(trace: &Phase43HistoryReplayTrace) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 43 appended-pairs commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase42-source-appended-pairs");
+    phase29_update_len_prefixed(&mut hasher, trace.layout_commitment.as_bytes());
+    phase29_update_usize(&mut hasher, trace.pair_width);
+    phase29_update_usize(&mut hasher, trace.rows.len());
+    for (step_index, row) in trace.rows.iter().enumerate() {
+        if row.appended_pair.len() != trace.pair_width {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 43 appended pair {step_index} has {} values, expected pair_width={}",
+                row.appended_pair.len(),
+                trace.pair_width
+            )));
+        }
+        phase29_update_usize(&mut hasher, step_index);
+        for value in &row.appended_pair {
+            hasher.update(&value.to_le_bytes());
+        }
+    }
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 43 appended-pairs commitment hash: {err}"
+        ))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_commit_trace_lookup_rows_commitments(
+    trace: &Phase43HistoryReplayTrace,
+) -> Result<String> {
+    let first = trace.rows.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 43 lookup-row commitment requires a non-empty trace".to_string(),
+        )
+    })?;
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 43 lookup-row replay commitment hash: {err}"
+        ))
+    })?;
+    let commitment_count = trace.rows.len().checked_add(1).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 43 lookup-row commitment count overflowed".to_string())
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase42-source-lookup-rows");
+    phase29_update_len_prefixed(&mut hasher, trace.layout_commitment.as_bytes());
+    phase29_update_usize(&mut hasher, commitment_count);
+    phase43_hash_lookup_row_commitment(&mut hasher, 0, &first.input_lookup_rows_commitment)?;
+    for (index, row) in trace.rows.iter().enumerate() {
+        phase43_hash_lookup_row_commitment(
+            &mut hasher,
+            index + 1,
+            &row.output_lookup_rows_commitment,
+        )?;
+    }
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 43 lookup-row replay commitment hash: {err}"
+        ))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_hash_lookup_row_commitment(
+    hasher: &mut Blake2bVar,
+    index: usize,
+    commitment: &str,
+) -> Result<()> {
+    phase43_require_hash32(
+        &format!("history_replay_trace.lookup_rows[{index}]"),
+        commitment,
+    )?;
+    phase29_update_usize(hasher, index);
+    phase29_update_len_prefixed(hasher, commitment.as_bytes());
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_commit_trace_phase30_step_envelopes(
+    trace: &Phase43HistoryReplayTrace,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 43 Phase30 envelope-list commitment hash: {err}"
+        ))
+    })?;
+    hasher.update(STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30.as_bytes());
+    hasher.update(b"step-envelope-list");
+    hasher.update(&(trace.rows.len() as u64).to_le_bytes());
+    for (index, row) in trace.rows.iter().enumerate() {
+        phase43_require_hash32(
+            &format!("history_replay_trace.phase30_step_envelopes[{index}]"),
+            &row.phase30_step_envelope_commitment,
+        )?;
+        hasher.update(row.phase30_step_envelope_commitment.as_bytes());
+    }
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 43 Phase30 envelope-list commitment hash: {err}"
+        ))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_update_trace_row(hasher: &mut Blake2bVar, row: &Phase43HistoryReplayTraceRow) {
+    phase29_update_usize(hasher, row.step_index);
+    phase29_update_usize(hasher, row.appended_pair.len());
+    for value in &row.appended_pair {
+        hasher.update(&value.to_le_bytes());
+    }
+    for part in [
+        row.input_lookup_rows_commitment.as_bytes(),
+        row.output_lookup_rows_commitment.as_bytes(),
+        row.phase30_step_envelope_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(hasher, part);
+    }
+    phase43_update_phase12_state(hasher, &row.phase12_from_state);
+    phase43_update_phase12_state(hasher, &row.phase12_to_state);
+    phase43_update_phase14_state(hasher, &row.phase14_from_state);
+    phase43_update_phase14_state(hasher, &row.phase14_to_state);
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_update_phase12_state(hasher: &mut Blake2bVar, state: &Phase12DecodingState) {
+    for part in [
+        state.state_version.as_bytes(),
+        state.layout_commitment.as_bytes(),
+        state.persistent_state_commitment.as_bytes(),
+        state.kv_history_commitment.as_bytes(),
+        state.kv_cache_commitment.as_bytes(),
+        state.incoming_token_commitment.as_bytes(),
+        state.query_commitment.as_bytes(),
+        state.output_commitment.as_bytes(),
+        state.lookup_rows_commitment.as_bytes(),
+        state.public_state_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(hasher, part);
+    }
+    phase29_update_usize(hasher, state.step_index);
+    hasher.update(&state.position.to_le_bytes());
+    phase29_update_usize(hasher, state.kv_history_length);
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_update_phase14_state(hasher: &mut Blake2bVar, state: &Phase14DecodingState) {
+    for part in [
+        state.state_version.as_bytes(),
+        state.layout_commitment.as_bytes(),
+        state.persistent_state_commitment.as_bytes(),
+        state.kv_history_commitment.as_bytes(),
+        state.kv_history_sealed_commitment.as_bytes(),
+        state.kv_history_open_chunk_commitment.as_bytes(),
+        state.kv_history_frontier_commitment.as_bytes(),
+        state.lookup_transcript_commitment.as_bytes(),
+        state.lookup_frontier_commitment.as_bytes(),
+        state.kv_cache_commitment.as_bytes(),
+        state.incoming_token_commitment.as_bytes(),
+        state.query_commitment.as_bytes(),
+        state.output_commitment.as_bytes(),
+        state.lookup_rows_commitment.as_bytes(),
+        state.public_state_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(hasher, part);
+    }
+    phase29_update_usize(hasher, state.step_index);
+    hasher.update(&state.position.to_le_bytes());
+    phase29_update_usize(hasher, state.kv_history_length);
+    phase29_update_usize(hasher, state.kv_history_chunk_size);
+    phase29_update_usize(hasher, state.kv_history_sealed_chunks);
+    phase29_update_usize(hasher, state.kv_history_open_chunk_pairs);
+    phase29_update_usize(hasher, state.kv_history_frontier_pairs);
+    phase29_update_usize(hasher, state.lookup_transcript_entries);
+    phase29_update_usize(hasher, state.lookup_frontier_entries);
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_require_hash32(label: &str, value: &str) -> Result<()> {
+    if !phase37_is_hash32_lower_hex(value) {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace `{label}` must be a 32-byte lowercase hex commitment"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase44d_recursive_verifier_public_output_handoff(
+    handoff: &Phase44DRecursiveVerifierPublicOutputHandoff,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 44D recursive-verifier public-output handoff hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase44d-recursive-verifier-public-output-handoff",
+    );
+    phase29_update_len_prefixed(&mut hasher, handoff.proof_backend.to_string().as_bytes());
+    for part in [
+        handoff.handoff_version.as_bytes(),
+        handoff.semantic_scope.as_bytes(),
+        handoff.verifier_harness.as_bytes(),
+        handoff.proof_backend_version.as_bytes(),
+        handoff.statement_version.as_bytes(),
+        handoff.compact_claim_version.as_bytes(),
+        handoff.compact_semantic_scope.as_bytes(),
+        handoff.compact_source_binding.as_bytes(),
+        handoff.compact_envelope_commitment.as_bytes(),
+        handoff
+            .source_chain_public_output_boundary_version
+            .as_bytes(),
+        handoff.source_surface_version.as_bytes(),
+        handoff
+            .source_chain_public_output_boundary_commitment
+            .as_bytes(),
+        handoff.source_emission_public_output_commitment.as_bytes(),
+        handoff.emitted_root_artifact_commitment.as_bytes(),
+        handoff.source_root_acceptance_commitment.as_bytes(),
+        handoff.emitted_canonical_source_root.as_bytes(),
+        handoff.source_root_preimage_commitment.as_bytes(),
+        handoff.compact_projection_trace_root.as_bytes(),
+        handoff.compact_preprocessed_trace_root.as_bytes(),
+        handoff.terminal_boundary_commitment.as_bytes(),
+        handoff
+            .terminal_boundary_logup_statement_commitment
+            .as_bytes(),
+        handoff
+            .terminal_boundary_logup_closure_commitment
+            .as_bytes(),
+        handoff.phase43_trace_commitment.as_bytes(),
+        handoff.phase43_trace_version.as_bytes(),
+        handoff.phase30_manifest_version.as_bytes(),
+        handoff.phase30_semantic_scope.as_bytes(),
+        handoff.phase30_source_chain_commitment.as_bytes(),
+        handoff.phase30_step_envelopes_commitment.as_bytes(),
+        handoff.verifier_side_complexity.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, handoff.compact_proof_size_bytes);
+    phase44d_update_u32_vec(
+        &mut hasher,
+        &handoff.terminal_boundary_public_logup_sum_limbs,
+    );
+    phase44d_update_u32_vec(
+        &mut hasher,
+        &handoff.terminal_boundary_component_claimed_sum_limbs,
+    );
+    phase29_update_usize(&mut hasher, handoff.total_steps);
+    phase29_update_usize(&mut hasher, handoff.pair_width);
+    phase29_update_usize(&mut hasher, handoff.projection_row_count);
+    phase29_update_usize(&mut hasher, handoff.projection_column_count);
+    phase29_update_bool(&mut hasher, handoff.public_output_boundary_verified);
+    phase29_update_bool(&mut hasher, handoff.compact_envelope_verified);
+    phase29_update_bool(&mut hasher, handoff.source_root_acceptance_verified);
+    phase29_update_bool(
+        &mut hasher,
+        handoff.terminal_boundary_logup_closure_verified,
+    );
+    phase29_update_bool(&mut hasher, handoff.final_useful_compression_boundary);
+    phase29_update_bool(&mut hasher, handoff.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, handoff.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, handoff.verifier_requires_phase43_trace);
+    phase29_update_bool(&mut hasher, handoff.verifier_requires_phase30_manifest);
+    phase29_update_bool(&mut hasher, handoff.verifier_embeds_expected_rows);
+    phase44d_finalize_hash(hasher, "Phase 44D recursive-verifier public-output handoff")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase44d_prepare_recursive_verifier_public_output_handoff(
+    boundary: &Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
+    compact_envelope: &Phase43HistoryReplayProjectionCompactProofEnvelope,
+) -> Result<Phase44DRecursiveVerifierPublicOutputHandoff> {
+    let acceptance =
+        verify_phase44d_history_replay_projection_source_chain_public_output_boundary_acceptance(
+            boundary,
+            compact_envelope,
+        )?;
+    let compact_envelope_commitment = phase44d_commit_compact_envelope_reference(compact_envelope)?;
+    let source_root_acceptance_commitment =
+        phase44d_commit_source_root_acceptance_reference(&acceptance)?;
+    let source_emission = &boundary.source_emission_public_output.source_emission;
+    let source_claim = &source_emission.source_claim;
+    let terminal_boundary_logup_closure =
+        derive_phase44d_history_replay_projection_terminal_boundary_logup_closure(
+            source_claim,
+            compact_envelope,
+        )?;
+    let mut handoff = Phase44DRecursiveVerifierPublicOutputHandoff {
+        proof_backend: compact_envelope.claim.proof_backend.clone(),
+        handoff_version: STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_VERSION_PHASE44D.to_string(),
+        semantic_scope: STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_SCOPE_PHASE44D.to_string(),
+        verifier_harness: STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_KIND_PHASE44D.to_string(),
+        proof_backend_version: compact_envelope.claim.proof_backend_version.clone(),
+        statement_version: compact_envelope.claim.statement_version.clone(),
+        compact_claim_version: compact_envelope.claim.claim_version.clone(),
+        compact_semantic_scope: compact_envelope.claim.semantic_scope.clone(),
+        compact_source_binding: compact_envelope.claim.source_binding.clone(),
+        compact_envelope_commitment,
+        compact_proof_size_bytes: compact_envelope.proof.len(),
+        source_chain_public_output_boundary_version: boundary.boundary_version.clone(),
+        source_surface_version: boundary.source_surface_version.clone(),
+        source_chain_public_output_boundary_commitment: boundary
+            .source_chain_public_output_boundary_commitment
+            .clone(),
+        source_emission_public_output_commitment: boundary
+            .source_emission_public_output
+            .public_output_commitment
+            .clone(),
+        emitted_root_artifact_commitment: source_emission
+            .emitted_root_artifact
+            .artifact_commitment
+            .clone(),
+        source_root_acceptance_commitment,
+        emitted_canonical_source_root: acceptance.emitted_canonical_source_root.clone(),
+        source_root_preimage_commitment: acceptance.source_root_preimage_commitment.clone(),
+        compact_projection_trace_root: acceptance.compact_projection_trace_root.clone(),
+        compact_preprocessed_trace_root: acceptance.compact_preprocessed_trace_root.clone(),
+        terminal_boundary_commitment: source_claim
+            .terminal_boundary
+            .terminal_boundary_commitment
+            .clone(),
+        terminal_boundary_logup_statement_commitment: acceptance
+            .terminal_boundary_logup_statement_commitment
+            .clone(),
+        terminal_boundary_public_logup_sum_limbs: source_claim
+            .terminal_boundary_public_logup_sum_limbs
+            .clone(),
+        terminal_boundary_component_claimed_sum_limbs: terminal_boundary_logup_closure
+            .terminal_boundary_component_claimed_sum_limbs
+            .clone(),
+        terminal_boundary_logup_closure_commitment: terminal_boundary_logup_closure
+            .closure_commitment
+            .clone(),
+        phase43_trace_commitment: boundary.phase43_trace_commitment.clone(),
+        phase43_trace_version: boundary.phase43_trace_version.clone(),
+        phase30_manifest_version: boundary.phase30_manifest_version.clone(),
+        phase30_semantic_scope: boundary.phase30_semantic_scope.clone(),
+        phase30_source_chain_commitment: boundary.phase30_source_chain_commitment.clone(),
+        phase30_step_envelopes_commitment: boundary.phase30_step_envelopes_commitment.clone(),
+        total_steps: boundary.total_steps,
+        pair_width: boundary.pair_width,
+        projection_row_count: boundary.projection_row_count,
+        projection_column_count: boundary.projection_column_count,
+        public_output_boundary_verified: true,
+        compact_envelope_verified: true,
+        source_root_acceptance_verified: true,
+        terminal_boundary_logup_closure_verified: true,
+        final_useful_compression_boundary: acceptance.final_useful_compression_boundary,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        verifier_requires_phase43_trace: false,
+        verifier_requires_phase30_manifest: false,
+        verifier_embeds_expected_rows: false,
+        verifier_side_complexity: STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_COMPLEXITY_PHASE44D
+            .to_string(),
+        handoff_commitment: String::new(),
+    };
+    handoff.handoff_commitment =
+        commit_phase44d_recursive_verifier_public_output_handoff(&handoff)?;
+    verify_phase44d_recursive_verifier_public_output_handoff(&handoff)?;
+    Ok(handoff)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase44d_recursive_verifier_public_output_handoff(
+    handoff: &Phase44DRecursiveVerifierPublicOutputHandoff,
+) -> Result<()> {
+    if handoff.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 44D recursive-verifier public-output handoff requires `stwo` backend, got `{}`",
+            handoff.proof_backend
+        )));
+    }
+    if handoff.handoff_version != STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_VERSION_PHASE44D {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 44D recursive-verifier public-output handoff version `{}` does not match expected `{}`",
+            handoff.handoff_version,
+            STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_VERSION_PHASE44D
+        )));
+    }
+    if handoff.semantic_scope != STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_SCOPE_PHASE44D {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 44D recursive-verifier public-output handoff scope `{}` does not match expected `{}`",
+            handoff.semantic_scope,
+            STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_SCOPE_PHASE44D
+        )));
+    }
+    if handoff.verifier_harness != STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_KIND_PHASE44D {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 44D recursive-verifier public-output handoff harness `{}` does not match expected `{}`",
+            handoff.verifier_harness,
+            STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_KIND_PHASE44D
+        )));
+    }
+    if handoff.compact_claim_version != STWO_HISTORY_REPLAY_PROJECTION_COMPACT_CLAIM_VERSION_PHASE44
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output handoff compact claim version drift"
+                .to_string(),
+        ));
+    }
+    if handoff.compact_semantic_scope
+        != STWO_HISTORY_REPLAY_PROJECTION_COMPACT_SEMANTIC_SCOPE_PHASE44
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output handoff compact semantic scope drift"
+                .to_string(),
+        ));
+    }
+    if handoff.compact_source_binding
+        != STWO_HISTORY_REPLAY_PROJECTION_COMPACT_SOURCE_BINDING_PHASE44
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output handoff compact source binding drift"
+                .to_string(),
+        ));
+    }
+    if handoff.source_chain_public_output_boundary_version
+        != STWO_HISTORY_REPLAY_PROJECTION_SOURCE_CHAIN_PUBLIC_OUTPUT_BOUNDARY_VERSION_PHASE44D
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output handoff source boundary version drift"
+                .to_string(),
+        ));
+    }
+    if handoff.source_surface_version
+        != STWO_HISTORY_REPLAY_PROJECTION_SOURCE_SURFACE_VERSION_PHASE44D
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output handoff source surface version drift"
+                .to_string(),
+        ));
+    }
+    if !handoff.public_output_boundary_verified
+        || !handoff.compact_envelope_verified
+        || !handoff.source_root_acceptance_verified
+        || !handoff.terminal_boundary_logup_closure_verified
+        || !handoff.final_useful_compression_boundary
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output handoff must carry verified boundary, compact envelope, source-root acceptance, and terminal LogUp closure"
+                .to_string(),
+        ));
+    }
+    if handoff.recursive_verification_claimed || handoff.cryptographic_compression_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output handoff must not claim recursive verification or cryptographic compression"
+                .to_string(),
+        ));
+    }
+    if handoff.verifier_requires_phase43_trace
+        || handoff.verifier_requires_phase30_manifest
+        || handoff.verifier_embeds_expected_rows
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output handoff must remain boundary-width and must not require full trace, Phase30 manifest, or expected rows"
+                .to_string(),
+        ));
+    }
+    if handoff.verifier_side_complexity != STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_COMPLEXITY_PHASE44D
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 44D recursive-verifier public-output handoff complexity `{}` does not match expected `{}`",
+            handoff.verifier_side_complexity,
+            STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_COMPLEXITY_PHASE44D
+        )));
+    }
+    if handoff.total_steps == 0
+        || handoff.pair_width == 0
+        || handoff.projection_row_count == 0
+        || handoff.projection_column_count == 0
+        || handoff.compact_proof_size_bytes == 0
+        || handoff.terminal_boundary_public_logup_sum_limbs.is_empty()
+        || handoff
+            .terminal_boundary_component_claimed_sum_limbs
+            .is_empty()
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output handoff carries an empty shape field"
+                .to_string(),
+        ));
+    }
+    let public_sum = phase44d_secure_field_from_limbs(
+        "terminal_boundary_public_logup_sum_limbs",
+        &handoff.terminal_boundary_public_logup_sum_limbs,
+    )?;
+    let component_sum = phase44d_secure_field_from_limbs(
+        "terminal_boundary_component_claimed_sum_limbs",
+        &handoff.terminal_boundary_component_claimed_sum_limbs,
+    )?;
+    if public_sum + component_sum != SecureField::zero() {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output handoff terminal LogUp public sum does not cancel component claimed sum"
+                .to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "compact_envelope_commitment",
+            handoff.compact_envelope_commitment.as_str(),
+        ),
+        (
+            "source_chain_public_output_boundary_commitment",
+            handoff
+                .source_chain_public_output_boundary_commitment
+                .as_str(),
+        ),
+        (
+            "source_emission_public_output_commitment",
+            handoff.source_emission_public_output_commitment.as_str(),
+        ),
+        (
+            "emitted_root_artifact_commitment",
+            handoff.emitted_root_artifact_commitment.as_str(),
+        ),
+        (
+            "source_root_acceptance_commitment",
+            handoff.source_root_acceptance_commitment.as_str(),
+        ),
+        (
+            "emitted_canonical_source_root",
+            handoff.emitted_canonical_source_root.as_str(),
+        ),
+        (
+            "source_root_preimage_commitment",
+            handoff.source_root_preimage_commitment.as_str(),
+        ),
+        (
+            "compact_projection_trace_root",
+            handoff.compact_projection_trace_root.as_str(),
+        ),
+        (
+            "compact_preprocessed_trace_root",
+            handoff.compact_preprocessed_trace_root.as_str(),
+        ),
+        (
+            "terminal_boundary_commitment",
+            handoff.terminal_boundary_commitment.as_str(),
+        ),
+        (
+            "terminal_boundary_logup_statement_commitment",
+            handoff
+                .terminal_boundary_logup_statement_commitment
+                .as_str(),
+        ),
+        (
+            "terminal_boundary_logup_closure_commitment",
+            handoff.terminal_boundary_logup_closure_commitment.as_str(),
+        ),
+        (
+            "phase43_trace_commitment",
+            handoff.phase43_trace_commitment.as_str(),
+        ),
+        (
+            "phase30_source_chain_commitment",
+            handoff.phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase30_step_envelopes_commitment",
+            handoff.phase30_step_envelopes_commitment.as_str(),
+        ),
+        ("handoff_commitment", handoff.handoff_commitment.as_str()),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let expected = commit_phase44d_recursive_verifier_public_output_handoff(handoff)?;
+    if handoff.handoff_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output handoff commitment does not match handoff fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase44d_recursive_verifier_public_output_handoff_against_boundary(
+    handoff: &Phase44DRecursiveVerifierPublicOutputHandoff,
+    boundary: &Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
+    compact_envelope: &Phase43HistoryReplayProjectionCompactProofEnvelope,
+) -> Result<()> {
+    verify_phase44d_recursive_verifier_public_output_handoff(handoff)?;
+    let expected =
+        phase44d_prepare_recursive_verifier_public_output_handoff(boundary, compact_envelope)?;
+    if handoff != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output handoff does not match the verified source-chain boundary and compact envelope"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase44d_recursive_verifier_public_output_aggregation(
+    aggregation: &Phase44DRecursiveVerifierPublicOutputAggregation,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 44D recursive-verifier public-output aggregation hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase44d-recursive-verifier-public-output-aggregation",
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        aggregation.proof_backend.to_string().as_bytes(),
+    );
+    for part in [
+        aggregation.aggregation_version.as_bytes(),
+        aggregation.semantic_scope.as_bytes(),
+        aggregation.verifier_harness.as_bytes(),
+        aggregation.proof_backend_version.as_bytes(),
+        aggregation.statement_version.as_bytes(),
+        aggregation.handoff_list_commitment.as_bytes(),
+        aggregation.verifier_side_complexity.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, aggregation.handoff_count);
+    phase29_update_usize(&mut hasher, aggregation.total_steps);
+    phase44d_update_hash_vec(&mut hasher, &aggregation.handoff_commitments);
+    phase44d_update_hash_vec(
+        &mut hasher,
+        &aggregation.source_chain_public_output_boundary_commitments,
+    );
+    phase44d_update_hash_vec(&mut hasher, &aggregation.compact_envelope_commitments);
+    phase44d_update_hash_vec(
+        &mut hasher,
+        &aggregation.terminal_boundary_logup_closure_commitments,
+    );
+    phase29_update_bool(&mut hasher, aggregation.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, aggregation.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, aggregation.verifier_requires_phase43_trace);
+    phase29_update_bool(&mut hasher, aggregation.verifier_requires_phase30_manifest);
+    phase29_update_bool(&mut hasher, aggregation.verifier_embeds_expected_rows);
+    phase44d_finalize_hash(
+        hasher,
+        "Phase 44D recursive-verifier public-output aggregation",
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase44d_prepare_recursive_verifier_public_output_aggregation(
+    handoffs: &[Phase44DRecursiveVerifierPublicOutputHandoff],
+) -> Result<Phase44DRecursiveVerifierPublicOutputAggregation> {
+    let first = handoffs.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output aggregation requires at least one handoff"
+                .to_string(),
+        )
+    })?;
+    let mut total_steps = 0usize;
+    let mut handoff_commitments = Vec::with_capacity(handoffs.len());
+    let mut source_chain_public_output_boundary_commitments = Vec::with_capacity(handoffs.len());
+    let mut compact_envelope_commitments = Vec::with_capacity(handoffs.len());
+    let mut terminal_boundary_logup_closure_commitments = Vec::with_capacity(handoffs.len());
+    for (index, handoff) in handoffs.iter().enumerate() {
+        verify_phase44d_recursive_verifier_public_output_handoff(handoff)?;
+        if handoff.proof_backend != first.proof_backend
+            || handoff.verifier_harness != first.verifier_harness
+            || handoff.proof_backend_version != first.proof_backend_version
+            || handoff.statement_version != first.statement_version
+            || handoff.compact_claim_version != first.compact_claim_version
+            || handoff.source_chain_public_output_boundary_version
+                != first.source_chain_public_output_boundary_version
+            || handoff.source_surface_version != first.source_surface_version
+        {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 44D recursive-verifier public-output aggregation handoff {index} has incompatible verifier header"
+            )));
+        }
+        total_steps += handoff.total_steps;
+        handoff_commitments.push(handoff.handoff_commitment.clone());
+        source_chain_public_output_boundary_commitments.push(
+            handoff
+                .source_chain_public_output_boundary_commitment
+                .clone(),
+        );
+        compact_envelope_commitments.push(handoff.compact_envelope_commitment.clone());
+        terminal_boundary_logup_closure_commitments
+            .push(handoff.terminal_boundary_logup_closure_commitment.clone());
+    }
+    let handoff_list_commitment =
+        phase44d_commit_recursive_verifier_handoff_list(&handoff_commitments)?;
+    let mut aggregation = Phase44DRecursiveVerifierPublicOutputAggregation {
+        proof_backend: first.proof_backend.clone(),
+        aggregation_version: STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_AGGREGATION_VERSION_PHASE44D
+            .to_string(),
+        semantic_scope: STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_AGGREGATION_SCOPE_PHASE44D
+            .to_string(),
+        verifier_harness: first.verifier_harness.clone(),
+        proof_backend_version: first.proof_backend_version.clone(),
+        statement_version: first.statement_version.clone(),
+        handoff_count: handoffs.len(),
+        total_steps,
+        handoff_commitments,
+        source_chain_public_output_boundary_commitments,
+        compact_envelope_commitments,
+        terminal_boundary_logup_closure_commitments,
+        handoff_list_commitment,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        verifier_requires_phase43_trace: false,
+        verifier_requires_phase30_manifest: false,
+        verifier_embeds_expected_rows: false,
+        verifier_side_complexity: STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_COMPLEXITY_PHASE44D
+            .to_string(),
+        aggregation_commitment: String::new(),
+    };
+    aggregation.aggregation_commitment =
+        commit_phase44d_recursive_verifier_public_output_aggregation(&aggregation)?;
+    verify_phase44d_recursive_verifier_public_output_aggregation(&aggregation)?;
+    Ok(aggregation)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase44d_recursive_verifier_public_output_aggregation(
+    aggregation: &Phase44DRecursiveVerifierPublicOutputAggregation,
+) -> Result<()> {
+    if aggregation.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 44D recursive-verifier public-output aggregation requires `stwo` backend, got `{}`",
+            aggregation.proof_backend
+        )));
+    }
+    if aggregation.aggregation_version
+        != STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_AGGREGATION_VERSION_PHASE44D
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output aggregation version drift".to_string(),
+        ));
+    }
+    if aggregation.semantic_scope
+        != STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_AGGREGATION_SCOPE_PHASE44D
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output aggregation scope drift".to_string(),
+        ));
+    }
+    if aggregation.verifier_harness != STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_KIND_PHASE44D {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output aggregation harness drift".to_string(),
+        ));
+    }
+    if aggregation.recursive_verification_claimed || aggregation.cryptographic_compression_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output aggregation must not claim recursive verification or cryptographic compression"
+                .to_string(),
+        ));
+    }
+    if aggregation.verifier_requires_phase43_trace
+        || aggregation.verifier_requires_phase30_manifest
+        || aggregation.verifier_embeds_expected_rows
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output aggregation must remain boundary-width and must not require full trace, Phase30 manifest, or expected rows"
+                .to_string(),
+        ));
+    }
+    if aggregation.verifier_side_complexity
+        != STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_COMPLEXITY_PHASE44D
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output aggregation complexity drift".to_string(),
+        ));
+    }
+    if aggregation.handoff_count == 0
+        || aggregation.handoff_count != aggregation.handoff_commitments.len()
+        || aggregation.handoff_count
+            != aggregation
+                .source_chain_public_output_boundary_commitments
+                .len()
+        || aggregation.handoff_count != aggregation.compact_envelope_commitments.len()
+        || aggregation.handoff_count
+            != aggregation
+                .terminal_boundary_logup_closure_commitments
+                .len()
+        || aggregation.total_steps == 0
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output aggregation has inconsistent counts"
+                .to_string(),
+        ));
+    }
+    for (label, values) in [
+        (
+            "handoff_commitments",
+            aggregation.handoff_commitments.as_slice(),
+        ),
+        (
+            "source_chain_public_output_boundary_commitments",
+            aggregation
+                .source_chain_public_output_boundary_commitments
+                .as_slice(),
+        ),
+        (
+            "compact_envelope_commitments",
+            aggregation.compact_envelope_commitments.as_slice(),
+        ),
+        (
+            "terminal_boundary_logup_closure_commitments",
+            aggregation
+                .terminal_boundary_logup_closure_commitments
+                .as_slice(),
+        ),
+    ] {
+        for (index, value) in values.iter().enumerate() {
+            phase43_require_hash32(&format!("{label}[{index}]"), value)?;
+        }
+    }
+    phase43_require_hash32(
+        "handoff_list_commitment",
+        &aggregation.handoff_list_commitment,
+    )?;
+    phase43_require_hash32(
+        "aggregation_commitment",
+        &aggregation.aggregation_commitment,
+    )?;
+    let expected_list =
+        phase44d_commit_recursive_verifier_handoff_list(&aggregation.handoff_commitments)?;
+    if aggregation.handoff_list_commitment != expected_list {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output aggregation handoff list commitment does not match handoff commitments"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase44d_recursive_verifier_public_output_aggregation(aggregation)?;
+    if aggregation.aggregation_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D recursive-verifier public-output aggregation commitment does not match aggregation fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase45_recursive_verifier_public_inputs(
+    lanes: &[Phase45RecursiveVerifierPublicInputLane],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 45 recursive-verifier public-input hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase45-recursive-verifier-public-inputs");
+    phase29_update_usize(&mut hasher, lanes.len());
+    for lane in lanes {
+        phase29_update_usize(&mut hasher, lane.index);
+        phase29_update_len_prefixed(&mut hasher, lane.label.as_bytes());
+        phase29_update_len_prefixed(&mut hasher, lane.value_kind.as_bytes());
+        phase29_update_len_prefixed(&mut hasher, lane.value.as_bytes());
+    }
+    phase44d_finalize_hash(hasher, "Phase 45 recursive-verifier public inputs")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase45_recursive_verifier_public_input_bridge(
+    bridge: &Phase45RecursiveVerifierPublicInputBridge,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 45 recursive-verifier public-input bridge hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase45-recursive-verifier-public-input-bridge",
+    );
+    phase29_update_len_prefixed(&mut hasher, bridge.proof_backend.to_string().as_bytes());
+    for part in [
+        bridge.bridge_version.as_bytes(),
+        bridge.semantic_scope.as_bytes(),
+        bridge.verifier_harness.as_bytes(),
+        bridge.handoff_version.as_bytes(),
+        bridge
+            .source_chain_public_output_boundary_version
+            .as_bytes(),
+        bridge.terminal_boundary_logup_closure_version.as_bytes(),
+        bridge.handoff_commitment.as_bytes(),
+        bridge
+            .source_chain_public_output_boundary_commitment
+            .as_bytes(),
+        bridge.compact_envelope_commitment.as_bytes(),
+        bridge.terminal_boundary_logup_closure_commitment.as_bytes(),
+        bridge.ordered_public_inputs_commitment.as_bytes(),
+        bridge.verifier_side_complexity.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, bridge.public_input_count);
+    phase29_update_bool(&mut hasher, bridge.public_output_boundary_verified);
+    phase29_update_bool(&mut hasher, bridge.compact_envelope_verified);
+    phase29_update_bool(&mut hasher, bridge.terminal_boundary_logup_closure_verified);
+    phase29_update_bool(&mut hasher, bridge.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, bridge.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, bridge.verifier_requires_phase43_trace);
+    phase29_update_bool(&mut hasher, bridge.verifier_requires_phase30_manifest);
+    phase29_update_bool(&mut hasher, bridge.verifier_embeds_expected_rows);
+    phase44d_finalize_hash(hasher, "Phase 45 recursive-verifier public-input bridge")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase45_prepare_recursive_verifier_public_input_bridge(
+    boundary: &Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
+    compact_envelope: &Phase43HistoryReplayProjectionCompactProofEnvelope,
+    handoff: &Phase44DRecursiveVerifierPublicOutputHandoff,
+) -> Result<Phase45RecursiveVerifierPublicInputBridge> {
+    verify_phase44d_recursive_verifier_public_output_handoff_against_boundary(
+        handoff,
+        boundary,
+        compact_envelope,
+    )?;
+    let source_claim = &boundary
+        .source_emission_public_output
+        .source_emission
+        .source_claim;
+    let terminal_boundary_logup_closure =
+        derive_phase44d_history_replay_projection_terminal_boundary_logup_closure(
+            source_claim,
+            compact_envelope,
+        )?;
+    if handoff.terminal_boundary_logup_closure_commitment
+        != terminal_boundary_logup_closure.closure_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge handoff terminal LogUp closure commitment drift"
+                .to_string(),
+        ));
+    }
+    let compact_envelope_commitment = phase44d_commit_compact_envelope_reference(compact_envelope)?;
+    let ordered_public_input_lanes = phase45_ordered_public_input_lanes(
+        boundary,
+        compact_envelope,
+        handoff,
+        &terminal_boundary_logup_closure,
+    )?;
+    let ordered_public_inputs_commitment =
+        commit_phase45_recursive_verifier_public_inputs(&ordered_public_input_lanes)?;
+    let mut bridge = Phase45RecursiveVerifierPublicInputBridge {
+        proof_backend: handoff.proof_backend.clone(),
+        bridge_version: STWO_RECURSIVE_VERIFIER_PUBLIC_INPUT_BRIDGE_VERSION_PHASE45.to_string(),
+        semantic_scope: STWO_RECURSIVE_VERIFIER_PUBLIC_INPUT_BRIDGE_SCOPE_PHASE45.to_string(),
+        verifier_harness: handoff.verifier_harness.clone(),
+        handoff_version: handoff.handoff_version.clone(),
+        source_chain_public_output_boundary_version: boundary.boundary_version.clone(),
+        terminal_boundary_logup_closure_version: terminal_boundary_logup_closure
+            .closure_version
+            .clone(),
+        handoff_commitment: handoff.handoff_commitment.clone(),
+        source_chain_public_output_boundary_commitment: boundary
+            .source_chain_public_output_boundary_commitment
+            .clone(),
+        compact_envelope_commitment,
+        terminal_boundary_logup_closure_commitment: terminal_boundary_logup_closure
+            .closure_commitment
+            .clone(),
+        public_input_count: ordered_public_input_lanes.len(),
+        ordered_public_input_lanes,
+        ordered_public_inputs_commitment,
+        public_output_boundary_verified: true,
+        compact_envelope_verified: true,
+        terminal_boundary_logup_closure_verified: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        verifier_requires_phase43_trace: false,
+        verifier_requires_phase30_manifest: false,
+        verifier_embeds_expected_rows: false,
+        verifier_side_complexity: STWO_RECURSIVE_VERIFIER_PUBLIC_INPUT_BRIDGE_COMPLEXITY_PHASE45
+            .to_string(),
+        bridge_commitment: String::new(),
+    };
+    bridge.bridge_commitment = commit_phase45_recursive_verifier_public_input_bridge(&bridge)?;
+    verify_phase45_recursive_verifier_public_input_bridge(&bridge)?;
+    Ok(bridge)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase45_recursive_verifier_public_input_bridge(
+    bridge: &Phase45RecursiveVerifierPublicInputBridge,
+) -> Result<()> {
+    if bridge.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge requires `stwo` backend".to_string(),
+        ));
+    }
+    if bridge.bridge_version != STWO_RECURSIVE_VERIFIER_PUBLIC_INPUT_BRIDGE_VERSION_PHASE45 {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge version drift".to_string(),
+        ));
+    }
+    if bridge.semantic_scope != STWO_RECURSIVE_VERIFIER_PUBLIC_INPUT_BRIDGE_SCOPE_PHASE45 {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge semantic scope drift".to_string(),
+        ));
+    }
+    if bridge.handoff_version != STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_VERSION_PHASE44D {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge handoff version drift".to_string(),
+        ));
+    }
+    if bridge.source_chain_public_output_boundary_version
+        != STWO_HISTORY_REPLAY_PROJECTION_SOURCE_CHAIN_PUBLIC_OUTPUT_BOUNDARY_VERSION_PHASE44D
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge source boundary version drift".to_string(),
+        ));
+    }
+    if bridge.terminal_boundary_logup_closure_version
+        != STWO_HISTORY_REPLAY_PROJECTION_TERMINAL_BOUNDARY_LOGUP_CLOSURE_VERSION_PHASE44D
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge terminal LogUp closure version drift".to_string(),
+        ));
+    }
+    if !bridge.public_output_boundary_verified
+        || !bridge.compact_envelope_verified
+        || !bridge.terminal_boundary_logup_closure_verified
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge must carry verified boundary, compact envelope, and terminal LogUp closure"
+                .to_string(),
+        ));
+    }
+    if bridge.recursive_verification_claimed || bridge.cryptographic_compression_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge must not claim recursive verification or compression"
+                .to_string(),
+        ));
+    }
+    if bridge.verifier_requires_phase43_trace
+        || bridge.verifier_requires_phase30_manifest
+        || bridge.verifier_embeds_expected_rows
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge must remain boundary-width and must not require full replay inputs"
+                .to_string(),
+        ));
+    }
+    if bridge.verifier_side_complexity
+        != STWO_RECURSIVE_VERIFIER_PUBLIC_INPUT_BRIDGE_COMPLEXITY_PHASE45
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge complexity drift".to_string(),
+        ));
+    }
+    if bridge.public_input_count != bridge.ordered_public_input_lanes.len()
+        || bridge.public_input_count != PHASE45_PUBLIC_INPUT_LANE_LABELS.len()
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge has non-canonical public-input count".to_string(),
+        ));
+    }
+    for (index, lane) in bridge.ordered_public_input_lanes.iter().enumerate() {
+        if lane.index != index || lane.label != PHASE45_PUBLIC_INPUT_LANE_LABELS[index] {
+            return Err(VmError::InvalidConfig(
+                "Phase 45 public-input bridge lane order is not canonical".to_string(),
+            ));
+        }
+        if lane.value_kind.is_empty() || lane.value.is_empty() {
+            return Err(VmError::InvalidConfig(
+                "Phase 45 public-input bridge lane carries an empty value".to_string(),
+            ));
+        }
+    }
+    for (label, value) in [
+        ("handoff_commitment", bridge.handoff_commitment.as_str()),
+        (
+            "source_chain_public_output_boundary_commitment",
+            bridge
+                .source_chain_public_output_boundary_commitment
+                .as_str(),
+        ),
+        (
+            "compact_envelope_commitment",
+            bridge.compact_envelope_commitment.as_str(),
+        ),
+        (
+            "terminal_boundary_logup_closure_commitment",
+            bridge.terminal_boundary_logup_closure_commitment.as_str(),
+        ),
+        (
+            "ordered_public_inputs_commitment",
+            bridge.ordered_public_inputs_commitment.as_str(),
+        ),
+        ("bridge_commitment", bridge.bridge_commitment.as_str()),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let expected_inputs =
+        commit_phase45_recursive_verifier_public_inputs(&bridge.ordered_public_input_lanes)?;
+    if bridge.ordered_public_inputs_commitment != expected_inputs {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge ordered public-input commitment drift".to_string(),
+        ));
+    }
+    let expected_bridge = commit_phase45_recursive_verifier_public_input_bridge(bridge)?;
+    if bridge.bridge_commitment != expected_bridge {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge commitment does not match bridge fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase45_recursive_verifier_public_input_bridge_against_sources(
+    bridge: &Phase45RecursiveVerifierPublicInputBridge,
+    boundary: &Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
+    compact_envelope: &Phase43HistoryReplayProjectionCompactProofEnvelope,
+    handoff: &Phase44DRecursiveVerifierPublicOutputHandoff,
+) -> Result<()> {
+    verify_phase45_recursive_verifier_public_input_bridge(bridge)?;
+    let expected = phase45_prepare_recursive_verifier_public_input_bridge(
+        boundary,
+        compact_envelope,
+        handoff,
+    )?;
+    if bridge != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge does not match the verified Phase44D boundary, compact envelope, and handoff"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase46_stwo_proof_adapter_receipt(
+    receipt: &Phase46StwoProofAdapterReceipt,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 46 Stwo proof-adapter receipt hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase46-stwo-proof-adapter-receipt");
+    phase29_update_len_prefixed(&mut hasher, receipt.proof_backend.to_string().as_bytes());
+    for part in [
+        receipt.receipt_version.as_bytes(),
+        receipt.semantic_scope.as_bytes(),
+        receipt.verifier_harness.as_bytes(),
+        receipt.bridge_version.as_bytes(),
+        receipt.bridge_commitment.as_bytes(),
+        receipt.ordered_public_inputs_commitment.as_bytes(),
+        receipt.compact_envelope_commitment.as_bytes(),
+        receipt.compact_claim_version.as_bytes(),
+        receipt.compact_semantic_scope.as_bytes(),
+        receipt.compact_verifier_inputs_version.as_bytes(),
+        receipt.compact_verifier_inputs_commitment.as_bytes(),
+        receipt.preprocessed_trace_root.as_bytes(),
+        receipt.projection_trace_root.as_bytes(),
+        receipt.interaction_trace_root.as_bytes(),
+        receipt
+            .terminal_boundary_interaction_claim_commitment
+            .as_bytes(),
+        receipt.verifier_side_complexity.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, receipt.proof_commitment_roots.len());
+    for root in &receipt.proof_commitment_roots {
+        phase29_update_len_prefixed(&mut hasher, root.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, receipt.public_input_count);
+    phase29_update_usize(&mut hasher, receipt.compact_proof_size_bytes);
+    phase44d_update_u32_vec(&mut hasher, &receipt.preprocessed_trace_log_sizes);
+    phase44d_update_u32_vec(&mut hasher, &receipt.projection_trace_log_sizes);
+    phase44d_update_u32_vec(&mut hasher, &receipt.interaction_trace_log_sizes);
+    hasher.update(&receipt.pcs_pow_bits.to_le_bytes());
+    hasher.update(&receipt.pcs_fri_log_blowup_factor.to_le_bytes());
+    phase29_update_usize(&mut hasher, receipt.pcs_fri_n_queries);
+    hasher.update(&receipt.pcs_fri_log_last_layer_degree_bound.to_le_bytes());
+    hasher.update(&receipt.pcs_fri_fold_step.to_le_bytes());
+    phase29_update_bool(&mut hasher, receipt.pcs_lifting_log_size.is_some());
+    if let Some(lifting_log_size) = receipt.pcs_lifting_log_size {
+        hasher.update(&lifting_log_size.to_le_bytes());
+    }
+    phase29_update_usize(&mut hasher, receipt.proof_commitment_count);
+    phase29_update_usize(&mut hasher, receipt.sampled_values_tree_count);
+    phase29_update_usize(&mut hasher, receipt.decommitment_tree_count);
+    phase29_update_usize(&mut hasher, receipt.queried_values_tree_count);
+    hasher.update(&receipt.proof_of_work.to_le_bytes());
+    phase44d_update_u32_vec(
+        &mut hasher,
+        &receipt.terminal_boundary_public_logup_sum_limbs,
+    );
+    phase44d_update_u32_vec(
+        &mut hasher,
+        &receipt.terminal_boundary_component_claimed_sum_limbs,
+    );
+    phase29_update_bool(&mut hasher, receipt.public_plus_component_sum_is_zero);
+    phase29_update_bool(&mut hasher, receipt.phase45_bridge_verified);
+    phase29_update_bool(&mut hasher, receipt.compact_envelope_verified);
+    phase29_update_bool(&mut hasher, receipt.stwo_core_verify_succeeded);
+    phase29_update_bool(&mut hasher, receipt.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, receipt.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, receipt.verifier_requires_phase43_trace);
+    phase29_update_bool(&mut hasher, receipt.verifier_requires_phase30_manifest);
+    phase29_update_bool(&mut hasher, receipt.verifier_embeds_expected_rows);
+    phase44d_finalize_hash(hasher, "Phase 46 Stwo proof-adapter receipt")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase46_prepare_stwo_proof_adapter_receipt(
+    bridge: &Phase45RecursiveVerifierPublicInputBridge,
+    compact_envelope: &Phase43HistoryReplayProjectionCompactProofEnvelope,
+) -> Result<Phase46StwoProofAdapterReceipt> {
+    verify_phase45_recursive_verifier_public_input_bridge(bridge)?;
+    let compact_envelope_commitment = phase44d_commit_compact_envelope_reference(compact_envelope)?;
+    if bridge.compact_envelope_commitment != compact_envelope_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 46 Stwo proof-adapter receipt bridge compact envelope commitment drift"
+                .to_string(),
+        ));
+    }
+    let verifier_inputs =
+        derive_phase43_history_replay_projection_compact_verifier_inputs(compact_envelope)?;
+    phase46_check_bridge_lane(
+        bridge,
+        "compact_projection_trace_root",
+        &verifier_inputs.projection_trace_root,
+    )?;
+    phase46_check_bridge_lane(
+        bridge,
+        "compact_preprocessed_trace_root",
+        &verifier_inputs.preprocessed_trace_root,
+    )?;
+    phase46_check_bridge_lane(
+        bridge,
+        "terminal_boundary_public_logup_sum_limbs",
+        &phase45_join_u32_limbs(&verifier_inputs.terminal_boundary_public_logup_sum_limbs),
+    )?;
+    phase46_check_bridge_lane(
+        bridge,
+        "terminal_boundary_component_claimed_sum_limbs",
+        &phase45_join_u32_limbs(
+            &verifier_inputs
+                .terminal_boundary_interaction_claim
+                .claimed_sum_limbs,
+        ),
+    )?;
+    let mut receipt = Phase46StwoProofAdapterReceipt {
+        proof_backend: StarkProofBackend::Stwo,
+        receipt_version: STWO_RECURSIVE_STWO_PROOF_ADAPTER_RECEIPT_VERSION_PHASE46.to_string(),
+        semantic_scope: STWO_RECURSIVE_STWO_PROOF_ADAPTER_RECEIPT_SCOPE_PHASE46.to_string(),
+        verifier_harness: bridge.verifier_harness.clone(),
+        bridge_version: bridge.bridge_version.clone(),
+        bridge_commitment: bridge.bridge_commitment.clone(),
+        ordered_public_inputs_commitment: bridge.ordered_public_inputs_commitment.clone(),
+        public_input_count: bridge.public_input_count,
+        compact_envelope_commitment,
+        compact_claim_version: compact_envelope.claim.claim_version.clone(),
+        compact_semantic_scope: compact_envelope.claim.semantic_scope.clone(),
+        compact_verifier_inputs_version: verifier_inputs.verifier_inputs_version.clone(),
+        compact_verifier_inputs_commitment: verifier_inputs.verifier_inputs_commitment.clone(),
+        compact_proof_size_bytes: compact_envelope.proof.len(),
+        preprocessed_trace_root: verifier_inputs.preprocessed_trace_root.clone(),
+        projection_trace_root: verifier_inputs.projection_trace_root.clone(),
+        interaction_trace_root: verifier_inputs.interaction_trace_root.clone(),
+        proof_commitment_roots: verifier_inputs.proof_commitment_roots.clone(),
+        preprocessed_trace_log_sizes: verifier_inputs.preprocessed_trace_log_sizes.clone(),
+        projection_trace_log_sizes: verifier_inputs.projection_trace_log_sizes.clone(),
+        interaction_trace_log_sizes: verifier_inputs.interaction_trace_log_sizes.clone(),
+        pcs_pow_bits: verifier_inputs.pcs_pow_bits,
+        pcs_fri_log_blowup_factor: verifier_inputs.pcs_fri_log_blowup_factor,
+        pcs_fri_n_queries: verifier_inputs.pcs_fri_n_queries,
+        pcs_fri_log_last_layer_degree_bound: verifier_inputs.pcs_fri_log_last_layer_degree_bound,
+        pcs_fri_fold_step: verifier_inputs.pcs_fri_fold_step,
+        pcs_lifting_log_size: verifier_inputs.pcs_lifting_log_size,
+        proof_commitment_count: verifier_inputs.proof_commitment_count,
+        sampled_values_tree_count: verifier_inputs.sampled_values_tree_count,
+        decommitment_tree_count: verifier_inputs.decommitment_tree_count,
+        queried_values_tree_count: verifier_inputs.queried_values_tree_count,
+        proof_of_work: verifier_inputs.proof_of_work,
+        terminal_boundary_interaction_claim_commitment: verifier_inputs
+            .terminal_boundary_interaction_claim
+            .interaction_claim_commitment
+            .clone(),
+        terminal_boundary_public_logup_sum_limbs: verifier_inputs
+            .terminal_boundary_public_logup_sum_limbs
+            .clone(),
+        terminal_boundary_component_claimed_sum_limbs: verifier_inputs
+            .terminal_boundary_interaction_claim
+            .claimed_sum_limbs
+            .clone(),
+        public_plus_component_sum_is_zero: verifier_inputs.public_plus_component_sum_is_zero,
+        phase45_bridge_verified: true,
+        compact_envelope_verified: true,
+        stwo_core_verify_succeeded: verifier_inputs.stwo_core_verify_succeeded,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        verifier_requires_phase43_trace: false,
+        verifier_requires_phase30_manifest: false,
+        verifier_embeds_expected_rows: false,
+        verifier_side_complexity: STWO_RECURSIVE_STWO_PROOF_ADAPTER_RECEIPT_COMPLEXITY_PHASE46
+            .to_string(),
+        adapter_receipt_commitment: String::new(),
+    };
+    receipt.adapter_receipt_commitment = commit_phase46_stwo_proof_adapter_receipt(&receipt)?;
+    verify_phase46_stwo_proof_adapter_receipt(&receipt)?;
+    Ok(receipt)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase46_stwo_proof_adapter_receipt(
+    receipt: &Phase46StwoProofAdapterReceipt,
+) -> Result<()> {
+    if receipt.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 46 Stwo proof-adapter receipt requires `stwo` backend".to_string(),
+        ));
+    }
+    if receipt.receipt_version != STWO_RECURSIVE_STWO_PROOF_ADAPTER_RECEIPT_VERSION_PHASE46 {
+        return Err(VmError::InvalidConfig(
+            "Phase 46 Stwo proof-adapter receipt version drift".to_string(),
+        ));
+    }
+    if receipt.semantic_scope != STWO_RECURSIVE_STWO_PROOF_ADAPTER_RECEIPT_SCOPE_PHASE46 {
+        return Err(VmError::InvalidConfig(
+            "Phase 46 Stwo proof-adapter receipt semantic scope drift".to_string(),
+        ));
+    }
+    if receipt.bridge_version != STWO_RECURSIVE_VERIFIER_PUBLIC_INPUT_BRIDGE_VERSION_PHASE45 {
+        return Err(VmError::InvalidConfig(
+            "Phase 46 Stwo proof-adapter receipt bridge version drift".to_string(),
+        ));
+    }
+    if receipt.compact_claim_version != STWO_HISTORY_REPLAY_PROJECTION_COMPACT_CLAIM_VERSION_PHASE44
+        || receipt.compact_semantic_scope
+            != STWO_HISTORY_REPLAY_PROJECTION_COMPACT_SEMANTIC_SCOPE_PHASE44
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 46 Stwo proof-adapter receipt compact claim metadata drift".to_string(),
+        ));
+    }
+    if receipt.compact_verifier_inputs_version
+        != STWO_HISTORY_REPLAY_PROJECTION_COMPACT_VERIFIER_INPUTS_VERSION_PHASE46
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 46 Stwo proof-adapter receipt compact verifier-input version drift".to_string(),
+        ));
+    }
+    if !receipt.phase45_bridge_verified
+        || !receipt.compact_envelope_verified
+        || !receipt.stwo_core_verify_succeeded
+        || !receipt.public_plus_component_sum_is_zero
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 46 Stwo proof-adapter receipt must carry verified bridge, compact envelope, Stwo proof, and LogUp closure"
+                .to_string(),
+        ));
+    }
+    if receipt.recursive_verification_claimed || receipt.cryptographic_compression_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 46 Stwo proof-adapter receipt must not claim recursive verification or cryptographic compression"
+                .to_string(),
+        ));
+    }
+    if receipt.verifier_requires_phase43_trace
+        || receipt.verifier_requires_phase30_manifest
+        || receipt.verifier_embeds_expected_rows
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 46 Stwo proof-adapter receipt must not reintroduce replay inputs".to_string(),
+        ));
+    }
+    if receipt.verifier_side_complexity
+        != STWO_RECURSIVE_STWO_PROOF_ADAPTER_RECEIPT_COMPLEXITY_PHASE46
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 46 Stwo proof-adapter receipt complexity drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        ("bridge_commitment", receipt.bridge_commitment.as_str()),
+        (
+            "ordered_public_inputs_commitment",
+            receipt.ordered_public_inputs_commitment.as_str(),
+        ),
+        (
+            "compact_envelope_commitment",
+            receipt.compact_envelope_commitment.as_str(),
+        ),
+        (
+            "compact_verifier_inputs_commitment",
+            receipt.compact_verifier_inputs_commitment.as_str(),
+        ),
+        (
+            "preprocessed_trace_root",
+            receipt.preprocessed_trace_root.as_str(),
+        ),
+        (
+            "projection_trace_root",
+            receipt.projection_trace_root.as_str(),
+        ),
+        (
+            "interaction_trace_root",
+            receipt.interaction_trace_root.as_str(),
+        ),
+        (
+            "terminal_boundary_interaction_claim_commitment",
+            receipt
+                .terminal_boundary_interaction_claim_commitment
+                .as_str(),
+        ),
+        (
+            "adapter_receipt_commitment",
+            receipt.adapter_receipt_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if receipt.proof_commitment_count < 3
+        || receipt.proof_commitment_roots.len() != receipt.proof_commitment_count
+        || receipt.compact_proof_size_bytes == 0
+        || receipt.preprocessed_trace_log_sizes.is_empty()
+        || receipt.projection_trace_log_sizes.is_empty()
+        || receipt.interaction_trace_log_sizes.is_empty()
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 46 Stwo proof-adapter receipt carries an empty verifier-input shape".to_string(),
+        ));
+    }
+    for (index, root) in receipt.proof_commitment_roots.iter().enumerate() {
+        phase43_require_hash32(&format!("proof_commitment_roots[{index}]"), root)?;
+    }
+    let public_sum = phase44d_secure_field_from_limbs(
+        "phase46_terminal_boundary_public_logup_sum_limbs",
+        &receipt.terminal_boundary_public_logup_sum_limbs,
+    )?;
+    let component_sum = phase44d_secure_field_from_limbs(
+        "phase46_terminal_boundary_component_claimed_sum_limbs",
+        &receipt.terminal_boundary_component_claimed_sum_limbs,
+    )?;
+    if public_sum + component_sum != SecureField::zero() {
+        return Err(VmError::InvalidConfig(
+            "Phase 46 Stwo proof-adapter receipt terminal LogUp public sum does not cancel component claimed sum"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase46_stwo_proof_adapter_receipt(receipt)?;
+    if receipt.adapter_receipt_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 46 Stwo proof-adapter receipt commitment does not match receipt fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase46_stwo_proof_adapter_receipt_against_sources(
+    receipt: &Phase46StwoProofAdapterReceipt,
+    bridge: &Phase45RecursiveVerifierPublicInputBridge,
+    boundary: &Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
+    compact_envelope: &Phase43HistoryReplayProjectionCompactProofEnvelope,
+    handoff: &Phase44DRecursiveVerifierPublicOutputHandoff,
+) -> Result<()> {
+    verify_phase45_recursive_verifier_public_input_bridge_against_sources(
+        bridge,
+        boundary,
+        compact_envelope,
+        handoff,
+    )?;
+    let expected = phase46_prepare_stwo_proof_adapter_receipt(bridge, compact_envelope)?;
+    if receipt != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 46 Stwo proof-adapter receipt does not match verified Phase45 bridge and compact Stwo envelope"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase47_proof_commitment_roots(roots: &[String]) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 47 proof commitment roots hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase47-proof-commitment-roots");
+    phase29_update_usize(&mut hasher, roots.len());
+    for (index, root) in roots.iter().enumerate() {
+        phase43_require_hash32(&format!("phase47_proof_commitment_roots[{index}]"), root)?;
+        phase29_update_len_prefixed(&mut hasher, root.as_bytes());
+    }
+    phase44d_finalize_hash(hasher, "Phase 47 proof commitment roots")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase47_recursive_verifier_wrapper_candidate(
+    candidate: &Phase47RecursiveVerifierWrapperCandidate,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 47 recursive-verifier wrapper candidate hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase47-recursive-verifier-wrapper-candidate");
+    phase29_update_len_prefixed(&mut hasher, candidate.proof_backend.to_string().as_bytes());
+    for part in [
+        candidate.candidate_version.as_bytes(),
+        candidate.semantic_scope.as_bytes(),
+        candidate.verifier_harness.as_bytes(),
+        candidate.adapter_receipt_version.as_bytes(),
+        candidate.adapter_receipt_commitment.as_bytes(),
+        candidate.compact_verifier_inputs_commitment.as_bytes(),
+        candidate.compact_envelope_commitment.as_bytes(),
+        candidate.bridge_commitment.as_bytes(),
+        candidate.ordered_public_inputs_commitment.as_bytes(),
+        candidate.proof_commitment_roots_commitment.as_bytes(),
+        candidate.verifier_side_complexity.as_bytes(),
+        candidate.decision.as_bytes(),
+        candidate.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, candidate.proof_commitment_roots.len());
+    for root in &candidate.proof_commitment_roots {
+        phase29_update_len_prefixed(&mut hasher, root.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, candidate.proof_commitment_count);
+    phase29_update_usize(&mut hasher, candidate.compact_proof_size_bytes);
+    phase29_update_usize(&mut hasher, candidate.public_input_count);
+    phase29_update_usize(&mut hasher, candidate.verifier_surface_unit_count);
+    phase29_update_usize(&mut hasher, candidate.preprocessed_trace_log_size_count);
+    phase29_update_usize(&mut hasher, candidate.projection_trace_log_size_count);
+    phase29_update_usize(&mut hasher, candidate.interaction_trace_log_size_count);
+    phase29_update_usize(&mut hasher, candidate.terminal_boundary_logup_limb_count);
+    phase29_update_bool(&mut hasher, candidate.phase46_receipt_verified);
+    phase29_update_bool(&mut hasher, candidate.stwo_core_verify_succeeded);
+    phase29_update_bool(&mut hasher, candidate.terminal_logup_closed);
+    phase29_update_bool(&mut hasher, candidate.consumes_phase46_receipt_only);
+    phase29_update_bool(&mut hasher, candidate.wrapper_requires_phase43_trace);
+    phase29_update_bool(&mut hasher, candidate.wrapper_requires_phase30_manifest);
+    phase29_update_bool(&mut hasher, candidate.wrapper_embeds_expected_rows);
+    phase29_update_bool(&mut hasher, candidate.recursive_proof_available);
+    phase29_update_bool(&mut hasher, candidate.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, candidate.cryptographic_compression_claimed);
+    phase44d_finalize_hash(hasher, "Phase 47 recursive-verifier wrapper candidate")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase47_prepare_recursive_verifier_wrapper_candidate(
+    receipt: &Phase46StwoProofAdapterReceipt,
+) -> Result<Phase47RecursiveVerifierWrapperCandidate> {
+    verify_phase46_stwo_proof_adapter_receipt(receipt)?;
+    let proof_commitment_roots_commitment =
+        commit_phase47_proof_commitment_roots(&receipt.proof_commitment_roots)?;
+    let terminal_boundary_logup_limb_count = receipt.terminal_boundary_public_logup_sum_limbs.len()
+        + receipt.terminal_boundary_component_claimed_sum_limbs.len();
+    let verifier_surface_unit_count = receipt.public_input_count
+        + receipt.proof_commitment_roots.len()
+        + receipt.preprocessed_trace_log_sizes.len()
+        + receipt.projection_trace_log_sizes.len()
+        + receipt.interaction_trace_log_sizes.len()
+        + terminal_boundary_logup_limb_count;
+    let mut candidate = Phase47RecursiveVerifierWrapperCandidate {
+        proof_backend: StarkProofBackend::Stwo,
+        candidate_version: STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_VERSION_PHASE47.to_string(),
+        semantic_scope: STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_SCOPE_PHASE47.to_string(),
+        verifier_harness: receipt.verifier_harness.clone(),
+        adapter_receipt_version: receipt.receipt_version.clone(),
+        adapter_receipt_commitment: receipt.adapter_receipt_commitment.clone(),
+        compact_verifier_inputs_commitment: receipt.compact_verifier_inputs_commitment.clone(),
+        compact_envelope_commitment: receipt.compact_envelope_commitment.clone(),
+        bridge_commitment: receipt.bridge_commitment.clone(),
+        ordered_public_inputs_commitment: receipt.ordered_public_inputs_commitment.clone(),
+        proof_commitment_roots_commitment,
+        proof_commitment_roots: receipt.proof_commitment_roots.clone(),
+        proof_commitment_count: receipt.proof_commitment_count,
+        compact_proof_size_bytes: receipt.compact_proof_size_bytes,
+        public_input_count: receipt.public_input_count,
+        verifier_surface_unit_count,
+        preprocessed_trace_log_size_count: receipt.preprocessed_trace_log_sizes.len(),
+        projection_trace_log_size_count: receipt.projection_trace_log_sizes.len(),
+        interaction_trace_log_size_count: receipt.interaction_trace_log_sizes.len(),
+        terminal_boundary_logup_limb_count,
+        phase46_receipt_verified: true,
+        stwo_core_verify_succeeded: receipt.stwo_core_verify_succeeded,
+        terminal_logup_closed: receipt.public_plus_component_sum_is_zero,
+        consumes_phase46_receipt_only: true,
+        wrapper_requires_phase43_trace: false,
+        wrapper_requires_phase30_manifest: false,
+        wrapper_embeds_expected_rows: false,
+        recursive_proof_available: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        verifier_side_complexity: STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_COMPLEXITY_PHASE47
+            .to_string(),
+        decision: STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_DECISION_PHASE47.to_string(),
+        required_next_step: STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_NEXT_STEP_PHASE47.to_string(),
+        candidate_commitment: String::new(),
+    };
+    candidate.candidate_commitment =
+        commit_phase47_recursive_verifier_wrapper_candidate(&candidate)?;
+    verify_phase47_recursive_verifier_wrapper_candidate(&candidate)?;
+    Ok(candidate)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase47_recursive_verifier_wrapper_candidate(
+    candidate: &Phase47RecursiveVerifierWrapperCandidate,
+) -> Result<()> {
+    if candidate.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 47 recursive-verifier wrapper candidate requires `stwo` backend".to_string(),
+        ));
+    }
+    if candidate.candidate_version != STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_VERSION_PHASE47 {
+        return Err(VmError::InvalidConfig(
+            "Phase 47 recursive-verifier wrapper candidate version drift".to_string(),
+        ));
+    }
+    if candidate.semantic_scope != STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_SCOPE_PHASE47 {
+        return Err(VmError::InvalidConfig(
+            "Phase 47 recursive-verifier wrapper candidate semantic scope drift".to_string(),
+        ));
+    }
+    if candidate.adapter_receipt_version
+        != STWO_RECURSIVE_STWO_PROOF_ADAPTER_RECEIPT_VERSION_PHASE46
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 47 recursive-verifier wrapper candidate adapter receipt version drift"
+                .to_string(),
+        ));
+    }
+    if !candidate.phase46_receipt_verified
+        || !candidate.stwo_core_verify_succeeded
+        || !candidate.terminal_logup_closed
+        || !candidate.consumes_phase46_receipt_only
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 47 recursive-verifier wrapper candidate must carry verified Phase46, Stwo, LogUp, and receipt-only flags"
+                .to_string(),
+        ));
+    }
+    if candidate.wrapper_requires_phase43_trace
+        || candidate.wrapper_requires_phase30_manifest
+        || candidate.wrapper_embeds_expected_rows
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 47 recursive-verifier wrapper candidate must not reintroduce replay inputs"
+                .to_string(),
+        ));
+    }
+    if candidate.recursive_proof_available
+        || candidate.recursive_verification_claimed
+        || candidate.cryptographic_compression_claimed
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 47 recursive-verifier wrapper candidate must not claim a recursive proof or cryptographic compression"
+                .to_string(),
+        ));
+    }
+    if candidate.verifier_side_complexity
+        != STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_COMPLEXITY_PHASE47
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 47 recursive-verifier wrapper candidate complexity drift".to_string(),
+        ));
+    }
+    if candidate.decision != STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_DECISION_PHASE47
+        || candidate.required_next_step
+            != STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_NEXT_STEP_PHASE47
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 47 recursive-verifier wrapper candidate decision drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "adapter_receipt_commitment",
+            candidate.adapter_receipt_commitment.as_str(),
+        ),
+        (
+            "compact_verifier_inputs_commitment",
+            candidate.compact_verifier_inputs_commitment.as_str(),
+        ),
+        (
+            "compact_envelope_commitment",
+            candidate.compact_envelope_commitment.as_str(),
+        ),
+        ("bridge_commitment", candidate.bridge_commitment.as_str()),
+        (
+            "ordered_public_inputs_commitment",
+            candidate.ordered_public_inputs_commitment.as_str(),
+        ),
+        (
+            "proof_commitment_roots_commitment",
+            candidate.proof_commitment_roots_commitment.as_str(),
+        ),
+        (
+            "candidate_commitment",
+            candidate.candidate_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if candidate.proof_commitment_count < 3
+        || candidate.proof_commitment_roots.len() != candidate.proof_commitment_count
+        || candidate.compact_proof_size_bytes == 0
+        || candidate.public_input_count == 0
+        || candidate.preprocessed_trace_log_size_count == 0
+        || candidate.projection_trace_log_size_count == 0
+        || candidate.interaction_trace_log_size_count == 0
+        || candidate.terminal_boundary_logup_limb_count == 0
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 47 recursive-verifier wrapper candidate carries an empty verifier surface"
+                .to_string(),
+        ));
+    }
+    let expected_roots_commitment =
+        commit_phase47_proof_commitment_roots(&candidate.proof_commitment_roots)?;
+    if candidate.proof_commitment_roots_commitment != expected_roots_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 47 recursive-verifier wrapper candidate proof commitment roots commitment drift"
+                .to_string(),
+        ));
+    }
+    let expected_surface_unit_count = candidate.public_input_count
+        + candidate.proof_commitment_roots.len()
+        + candidate.preprocessed_trace_log_size_count
+        + candidate.projection_trace_log_size_count
+        + candidate.interaction_trace_log_size_count
+        + candidate.terminal_boundary_logup_limb_count;
+    if candidate.verifier_surface_unit_count != expected_surface_unit_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 47 recursive-verifier wrapper candidate verifier surface unit count drift"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase47_recursive_verifier_wrapper_candidate(candidate)?;
+    if candidate.candidate_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 47 recursive-verifier wrapper candidate commitment does not match candidate fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase47_recursive_verifier_wrapper_candidate_against_phase46(
+    candidate: &Phase47RecursiveVerifierWrapperCandidate,
+    receipt: &Phase46StwoProofAdapterReceipt,
+) -> Result<()> {
+    verify_phase46_stwo_proof_adapter_receipt(receipt)?;
+    let expected = phase47_prepare_recursive_verifier_wrapper_candidate(receipt)?;
+    if candidate != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 47 recursive-verifier wrapper candidate does not match verified Phase46 receipt"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase48_recursive_proof_wrapper_attempt(
+    attempt: &Phase48RecursiveProofWrapperAttempt,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 48 recursive proof-wrapper attempt hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase48-recursive-proof-wrapper-attempt");
+    phase29_update_len_prefixed(&mut hasher, attempt.proof_backend.to_string().as_bytes());
+    for part in [
+        attempt.attempt_version.as_bytes(),
+        attempt.semantic_scope.as_bytes(),
+        attempt.verifier_harness.as_bytes(),
+        attempt.phase47_candidate_version.as_bytes(),
+        attempt.phase47_candidate_commitment.as_bytes(),
+        attempt.phase46_adapter_receipt_commitment.as_bytes(),
+        attempt.compact_verifier_inputs_commitment.as_bytes(),
+        attempt.compact_envelope_commitment.as_bytes(),
+        attempt.compact_proof_channel.as_bytes(),
+        attempt.recursive_verifier_channel.as_bytes(),
+        attempt.decision.as_bytes(),
+        attempt.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_bool(&mut hasher, attempt.phase47_candidate_verified);
+    phase29_update_bool(&mut hasher, attempt.local_stwo_core_verifier_detected);
+    phase29_update_bool(&mut hasher, attempt.local_stwo_cairo_verifier_core_detected);
+    phase29_update_bool(&mut hasher, attempt.local_stwo_cairo_air_verifier_detected);
+    phase29_update_bool(
+        &mut hasher,
+        attempt.local_phase43_projection_cairo_air_detected,
+    );
+    phase29_update_bool(
+        &mut hasher,
+        attempt.channel_mismatch_requires_reproving_or_adapter,
+    );
+    phase29_update_bool(&mut hasher, attempt.actual_recursive_wrapper_available);
+    phase29_update_bool(&mut hasher, attempt.recursive_proof_constructed);
+    phase29_update_bool(&mut hasher, attempt.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, attempt.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, attempt.wrapper_requires_phase43_trace);
+    phase29_update_bool(&mut hasher, attempt.wrapper_requires_phase30_manifest);
+    phase29_update_bool(&mut hasher, attempt.wrapper_embeds_expected_rows);
+    phase29_update_usize(&mut hasher, attempt.blocking_reasons.len());
+    for reason in &attempt.blocking_reasons {
+        phase29_update_len_prefixed(&mut hasher, reason.as_bytes());
+    }
+    phase44d_finalize_hash(hasher, "Phase 48 recursive proof-wrapper attempt")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase48_prepare_recursive_proof_wrapper_attempt(
+    candidate: &Phase47RecursiveVerifierWrapperCandidate,
+) -> Result<Phase48RecursiveProofWrapperAttempt> {
+    verify_phase47_recursive_verifier_wrapper_candidate(candidate)?;
+    let blocking_reasons = vec![
+        "local Stwo Rust verifier is out-of-circuit and verifies a proof directly, not recursively"
+            .to_string(),
+        "local stwo_cairo_verifier exposes generic verifier core and Cairo AIR, but no Phase43 projection AIR verifier"
+            .to_string(),
+        "current compact VM proof is Blake2sM31 while the recursive-friendly Stwo-Cairo prover path is Poseidon252-oriented"
+            .to_string(),
+    ];
+    let mut attempt = Phase48RecursiveProofWrapperAttempt {
+        proof_backend: StarkProofBackend::Stwo,
+        attempt_version: STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_VERSION_PHASE48.to_string(),
+        semantic_scope: STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_SCOPE_PHASE48.to_string(),
+        verifier_harness: candidate.verifier_harness.clone(),
+        phase47_candidate_version: candidate.candidate_version.clone(),
+        phase47_candidate_commitment: candidate.candidate_commitment.clone(),
+        phase46_adapter_receipt_commitment: candidate.adapter_receipt_commitment.clone(),
+        compact_verifier_inputs_commitment: candidate.compact_verifier_inputs_commitment.clone(),
+        compact_envelope_commitment: candidate.compact_envelope_commitment.clone(),
+        phase47_candidate_verified: true,
+        local_stwo_core_verifier_detected: true,
+        local_stwo_cairo_verifier_core_detected: true,
+        local_stwo_cairo_air_verifier_detected: true,
+        local_phase43_projection_cairo_air_detected: false,
+        compact_proof_channel: STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_COMPACT_PROOF_CHANNEL_PHASE48
+            .to_string(),
+        recursive_verifier_channel: STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_RECURSIVE_CHANNEL_PHASE48
+            .to_string(),
+        channel_mismatch_requires_reproving_or_adapter: true,
+        actual_recursive_wrapper_available: false,
+        recursive_proof_constructed: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        wrapper_requires_phase43_trace: false,
+        wrapper_requires_phase30_manifest: false,
+        wrapper_embeds_expected_rows: false,
+        blocking_reasons,
+        decision: STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_DECISION_PHASE48.to_string(),
+        required_next_step: STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_NEXT_STEP_PHASE48.to_string(),
+        attempt_commitment: String::new(),
+    };
+    attempt.attempt_commitment = commit_phase48_recursive_proof_wrapper_attempt(&attempt)?;
+    verify_phase48_recursive_proof_wrapper_attempt(&attempt)?;
+    Ok(attempt)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase48_recursive_proof_wrapper_attempt(
+    attempt: &Phase48RecursiveProofWrapperAttempt,
+) -> Result<()> {
+    if attempt.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 48 recursive proof-wrapper attempt requires `stwo` backend".to_string(),
+        ));
+    }
+    if attempt.attempt_version != STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_VERSION_PHASE48 {
+        return Err(VmError::InvalidConfig(
+            "Phase 48 recursive proof-wrapper attempt version drift".to_string(),
+        ));
+    }
+    if attempt.semantic_scope != STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_SCOPE_PHASE48 {
+        return Err(VmError::InvalidConfig(
+            "Phase 48 recursive proof-wrapper attempt semantic scope drift".to_string(),
+        ));
+    }
+    if attempt.phase47_candidate_version
+        != STWO_RECURSIVE_VERIFIER_WRAPPER_CANDIDATE_VERSION_PHASE47
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 48 recursive proof-wrapper attempt Phase47 candidate version drift".to_string(),
+        ));
+    }
+    if !attempt.phase47_candidate_verified
+        || !attempt.local_stwo_core_verifier_detected
+        || !attempt.local_stwo_cairo_verifier_core_detected
+        || !attempt.local_stwo_cairo_air_verifier_detected
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 48 recursive proof-wrapper attempt requires verified Phase47 and detected Stwo verifier surfaces"
+                .to_string(),
+        ));
+    }
+    if attempt.local_phase43_projection_cairo_air_detected
+        || attempt.actual_recursive_wrapper_available
+        || attempt.recursive_proof_constructed
+        || attempt.recursive_verification_claimed
+        || attempt.cryptographic_compression_claimed
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 48 recursive proof-wrapper attempt must not claim unavailable recursive compression"
+                .to_string(),
+        ));
+    }
+    if attempt.wrapper_requires_phase43_trace
+        || attempt.wrapper_requires_phase30_manifest
+        || attempt.wrapper_embeds_expected_rows
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 48 recursive proof-wrapper attempt must not reintroduce replay inputs"
+                .to_string(),
+        ));
+    }
+    if attempt.compact_proof_channel
+        != STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_COMPACT_PROOF_CHANNEL_PHASE48
+        || attempt.recursive_verifier_channel
+            != STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_RECURSIVE_CHANNEL_PHASE48
+        || !attempt.channel_mismatch_requires_reproving_or_adapter
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 48 recursive proof-wrapper attempt channel compatibility drift".to_string(),
+        ));
+    }
+    if attempt.decision != STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_DECISION_PHASE48
+        || attempt.required_next_step != STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_NEXT_STEP_PHASE48
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 48 recursive proof-wrapper attempt decision drift".to_string(),
+        ));
+    }
+    if attempt.blocking_reasons.len() < 3
+        || !attempt
+            .blocking_reasons
+            .iter()
+            .any(|reason| reason.contains("Phase43 projection AIR verifier"))
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 48 recursive proof-wrapper attempt must record the missing Phase43 Cairo AIR blocker"
+                .to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase47_candidate_commitment",
+            attempt.phase47_candidate_commitment.as_str(),
+        ),
+        (
+            "phase46_adapter_receipt_commitment",
+            attempt.phase46_adapter_receipt_commitment.as_str(),
+        ),
+        (
+            "compact_verifier_inputs_commitment",
+            attempt.compact_verifier_inputs_commitment.as_str(),
+        ),
+        (
+            "compact_envelope_commitment",
+            attempt.compact_envelope_commitment.as_str(),
+        ),
+        ("attempt_commitment", attempt.attempt_commitment.as_str()),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let expected = commit_phase48_recursive_proof_wrapper_attempt(attempt)?;
+    if attempt.attempt_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 48 recursive proof-wrapper attempt commitment does not match attempt fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase48_recursive_proof_wrapper_attempt_against_phase47(
+    attempt: &Phase48RecursiveProofWrapperAttempt,
+    candidate: &Phase47RecursiveVerifierWrapperCandidate,
+) -> Result<()> {
+    verify_phase47_recursive_verifier_wrapper_candidate(candidate)?;
+    let expected = phase48_prepare_recursive_proof_wrapper_attempt(candidate)?;
+    if attempt != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 48 recursive proof-wrapper attempt does not match verified Phase47 candidate"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase49_layerwise_tensor_claim_propagation_contract(
+    contract: &Phase49LayerwiseTensorClaimPropagationContract,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 49 layerwise tensor-claim propagation contract hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase49-layerwise-tensor-claim-propagation-contract",
+    );
+    phase29_update_len_prefixed(&mut hasher, contract.proof_backend.to_string().as_bytes());
+    for part in [
+        contract.contract_version.as_bytes(),
+        contract.semantic_scope.as_bytes(),
+        contract.source_phase48_attempt_version.as_bytes(),
+        contract.source_phase48_attempt_commitment.as_bytes(),
+        contract.source_phase48_decision.as_bytes(),
+        contract.source_phase48_required_next_step.as_bytes(),
+        contract.route_source.as_bytes(),
+        contract.route_target.as_bytes(),
+        contract.proof_backend_version.as_bytes(),
+        contract.statement_version.as_bytes(),
+        contract.claim_granularity.as_bytes(),
+        contract.propagation_rule.as_bytes(),
+        contract.composition_strategy.as_bytes(),
+        contract.layer_count_bound_mode.as_bytes(),
+        contract.tensor_commitment_scheme.as_bytes(),
+        contract.layer_io_claim_object.as_bytes(),
+        contract.attention_claim_object.as_bytes(),
+        contract.mlp_claim_object.as_bytes(),
+        contract.normalization_claim_object.as_bytes(),
+        contract.residual_claim_object.as_bytes(),
+        contract.composition_accumulator_object.as_bytes(),
+        contract.verifier_side_complexity.as_bytes(),
+        contract.decision.as_bytes(),
+        contract.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, contract.input_tensor_width);
+    phase29_update_usize(&mut hasher, contract.output_tensor_width);
+    phase29_update_usize(&mut hasher, contract.attention_head_dim);
+    phase29_update_bool(&mut hasher, contract.vm_manifest_route_blocked);
+    phase29_update_bool(&mut hasher, contract.target_requires_full_vm_replay);
+    phase29_update_bool(&mut hasher, contract.target_requires_phase43_trace);
+    phase29_update_bool(&mut hasher, contract.target_requires_phase30_manifest);
+    phase29_update_bool(
+        &mut hasher,
+        contract.target_requires_phase43_projection_cairo_air,
+    );
+    phase29_update_bool(&mut hasher, contract.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, contract.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, contract.actual_layerwise_proof_available);
+    phase29_update_bool(&mut hasher, contract.compression_benchmark_available);
+    phase44d_update_hash_vec(&mut hasher, &contract.required_components);
+    phase44d_update_hash_vec(&mut hasher, &contract.open_blockers);
+    phase44d_finalize_hash(
+        hasher,
+        "Phase 49 layerwise tensor-claim propagation contract",
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase49_prepare_layerwise_tensor_claim_propagation_contract(
+    attempt: &Phase48RecursiveProofWrapperAttempt,
+) -> Result<Phase49LayerwiseTensorClaimPropagationContract> {
+    verify_phase48_recursive_proof_wrapper_attempt(attempt)?;
+    let required_components = vec![
+        "tensor_commitment_scheme".to_string(),
+        "layer_io_claim".to_string(),
+        "attention_relation_claim".to_string(),
+        "gated_feed_forward_relation_claim".to_string(),
+        "normalization_relation_claim_if_present".to_string(),
+        "residual_relation_claim_if_present".to_string(),
+        "ordered_layer_claim_composition_accumulator".to_string(),
+    ];
+    let open_blockers = vec![
+        "select a field-compatible tensor commitment scheme for layer activations".to_string(),
+        "define first-layer input/output claim fields and transcript order".to_string(),
+        "define per-layer Stwo AIR or lookup relation for attention and gated feed-forward"
+            .to_string(),
+        "define ordered layer-claim composition accumulator and benchmark verifier complexity"
+            .to_string(),
+    ];
+    let mut contract = Phase49LayerwiseTensorClaimPropagationContract {
+        proof_backend: StarkProofBackend::Stwo,
+        contract_version: STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_VERSION_PHASE49.to_string(),
+        semantic_scope: STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_SCOPE_PHASE49.to_string(),
+        source_phase48_attempt_version: attempt.attempt_version.clone(),
+        source_phase48_attempt_commitment: attempt.attempt_commitment.clone(),
+        source_phase48_decision: attempt.decision.clone(),
+        source_phase48_required_next_step: attempt.required_next_step.clone(),
+        vm_manifest_route_blocked: true,
+        route_source: STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_ROUTE_SOURCE_PHASE49.to_string(),
+        route_target: STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_ROUTE_TARGET_PHASE49.to_string(),
+        proof_backend_version: STWO_BACKEND_VERSION_PHASE12.to_string(),
+        statement_version: CLAIM_STATEMENT_VERSION_V1.to_string(),
+        claim_granularity: STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_GRANULARITY_PHASE49.to_string(),
+        propagation_rule: STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_PROPAGATION_RULE_PHASE49.to_string(),
+        composition_strategy: STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_COMPOSITION_PHASE49.to_string(),
+        input_tensor_width: INPUT_DIM,
+        output_tensor_width: OUTPUT_DIM,
+        attention_head_dim: 2,
+        layer_count_bound_mode: "model_config_num_layers".to_string(),
+        tensor_commitment_scheme: "pending_phase50_tensor_commitment_scheme".to_string(),
+        layer_io_claim_object: "pending_phase50_layer_io_claim".to_string(),
+        attention_claim_object: "pending_attention_relation_claim".to_string(),
+        mlp_claim_object: "pending_gated_feed_forward_relation_claim".to_string(),
+        normalization_claim_object: "pending_normalization_relation_claim_if_present".to_string(),
+        residual_claim_object: "pending_residual_relation_claim_if_present".to_string(),
+        composition_accumulator_object: "pending_ordered_layer_claim_accumulator".to_string(),
+        target_requires_full_vm_replay: false,
+        target_requires_phase43_trace: false,
+        target_requires_phase30_manifest: false,
+        target_requires_phase43_projection_cairo_air: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        actual_layerwise_proof_available: false,
+        compression_benchmark_available: false,
+        required_components,
+        open_blockers,
+        verifier_side_complexity: STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_COMPLEXITY_PHASE49
+            .to_string(),
+        decision: STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_DECISION_PHASE49.to_string(),
+        required_next_step: STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_NEXT_STEP_PHASE49.to_string(),
+        contract_commitment: String::new(),
+    };
+    contract.contract_commitment =
+        commit_phase49_layerwise_tensor_claim_propagation_contract(&contract)?;
+    verify_phase49_layerwise_tensor_claim_propagation_contract(&contract)?;
+    Ok(contract)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase49_layerwise_tensor_claim_propagation_contract(
+    contract: &Phase49LayerwiseTensorClaimPropagationContract,
+) -> Result<()> {
+    if contract.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 49 layerwise tensor-claim contract requires `stwo` backend".to_string(),
+        ));
+    }
+    if contract.contract_version != STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_VERSION_PHASE49 {
+        return Err(VmError::InvalidConfig(
+            "Phase 49 layerwise tensor-claim contract version drift".to_string(),
+        ));
+    }
+    if contract.semantic_scope != STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_SCOPE_PHASE49 {
+        return Err(VmError::InvalidConfig(
+            "Phase 49 layerwise tensor-claim contract semantic scope drift".to_string(),
+        ));
+    }
+    if contract.source_phase48_attempt_version
+        != STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_VERSION_PHASE48
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 49 layerwise tensor-claim contract source Phase48 version drift".to_string(),
+        ));
+    }
+    if !contract.vm_manifest_route_blocked
+        || contract.source_phase48_decision != STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_DECISION_PHASE48
+        || contract.source_phase48_required_next_step
+            != STWO_RECURSIVE_PROOF_WRAPPER_ATTEMPT_NEXT_STEP_PHASE48
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 49 layerwise tensor-claim contract must be sourced from the Phase48 no-go decision"
+                .to_string(),
+        ));
+    }
+    if contract.route_source != STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_ROUTE_SOURCE_PHASE49
+        || contract.route_target != STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_ROUTE_TARGET_PHASE49
+        || contract.claim_granularity != STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_GRANULARITY_PHASE49
+        || contract.propagation_rule
+            != STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_PROPAGATION_RULE_PHASE49
+        || contract.composition_strategy != STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_COMPOSITION_PHASE49
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 49 layerwise tensor-claim contract route or propagation rule drift".to_string(),
+        ));
+    }
+    if contract.input_tensor_width != INPUT_DIM
+        || contract.output_tensor_width != OUTPUT_DIM
+        || contract.attention_head_dim != 2
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 49 layerwise tensor-claim contract VM tensor surface drift".to_string(),
+        ));
+    }
+    if contract.target_requires_full_vm_replay
+        || contract.target_requires_phase43_trace
+        || contract.target_requires_phase30_manifest
+        || contract.target_requires_phase43_projection_cairo_air
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 49 layerwise tensor-claim contract must not reintroduce VM-manifest replay inputs"
+                .to_string(),
+        ));
+    }
+    if contract.recursive_verification_claimed
+        || contract.cryptographic_compression_claimed
+        || contract.actual_layerwise_proof_available
+        || contract.compression_benchmark_available
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 49 layerwise tensor-claim contract must not claim unavailable layerwise compression"
+                .to_string(),
+        ));
+    }
+    if contract.required_components.len() < 7
+        || !contract
+            .required_components
+            .iter()
+            .any(|component| component == "tensor_commitment_scheme")
+        || !contract
+            .required_components
+            .iter()
+            .any(|component| component == "ordered_layer_claim_composition_accumulator")
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 49 layerwise tensor-claim contract missing required components".to_string(),
+        ));
+    }
+    if contract.open_blockers.len() < 3
+        || !contract
+            .open_blockers
+            .iter()
+            .any(|blocker| blocker.contains("tensor commitment scheme"))
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 49 layerwise tensor-claim contract must retain tensor commitment blockers"
+                .to_string(),
+        ));
+    }
+    if contract.verifier_side_complexity != STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_COMPLEXITY_PHASE49
+        || contract.decision != STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_DECISION_PHASE49
+        || contract.required_next_step != STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_NEXT_STEP_PHASE49
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 49 layerwise tensor-claim contract decision or complexity drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "source_phase48_attempt_commitment",
+            contract.source_phase48_attempt_commitment.as_str(),
+        ),
+        ("contract_commitment", contract.contract_commitment.as_str()),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let expected = commit_phase49_layerwise_tensor_claim_propagation_contract(contract)?;
+    if contract.contract_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 49 layerwise tensor-claim contract commitment does not match contract fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase49_layerwise_tensor_claim_propagation_contract_against_phase48(
+    contract: &Phase49LayerwiseTensorClaimPropagationContract,
+    attempt: &Phase48RecursiveProofWrapperAttempt,
+) -> Result<()> {
+    verify_phase48_recursive_proof_wrapper_attempt(attempt)?;
+    let expected = phase49_prepare_layerwise_tensor_claim_propagation_contract(attempt)?;
+    if contract != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 49 layerwise tensor-claim contract does not match verified Phase48 no-go attempt"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase50_tensor_commitment_claim(
+    claim: &Phase50TensorCommitmentClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 50 tensor commitment claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase50-tensor-commitment-claim");
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim.tensor_role.as_bytes(),
+        claim.tensor_name.as_bytes(),
+        claim.element_field.as_bytes(),
+        claim.memory_layout.as_bytes(),
+        claim.quantization.as_bytes(),
+        claim.padding_rule.as_bytes(),
+        claim.commitment_scheme.as_bytes(),
+        claim.commitment_root.as_bytes(),
+        claim.mle_evaluation_claim_status.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, claim.tensor_rank);
+    phase44d_update_usize_vec(&mut hasher, &claim.tensor_shape);
+    phase29_update_usize(&mut hasher, claim.logical_element_count);
+    phase29_update_usize(&mut hasher, claim.padded_element_count);
+    phase29_update_bool(&mut hasher, claim.raw_endpoint_anchor_required);
+    phase29_update_bool(&mut hasher, claim.raw_endpoint_anchor_available);
+    phase29_update_bool(&mut hasher, claim.full_vm_replay_required);
+    phase29_update_bool(&mut hasher, claim.phase43_trace_required);
+    phase29_update_bool(&mut hasher, claim.phase30_manifest_required);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase44d_finalize_hash(hasher, "Phase 50 tensor commitment claim")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase50_layer_io_claim(claim: &Phase50LayerIoClaim) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 50 layer IO claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase50-layer-io-claim");
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim.source_phase49_contract_version.as_bytes(),
+        claim.source_phase49_contract_commitment.as_bytes(),
+        claim.source_phase49_decision.as_bytes(),
+        claim.source_phase49_required_next_step.as_bytes(),
+        claim.proof_backend_version.as_bytes(),
+        claim.statement_version.as_bytes(),
+        claim.layer_name.as_bytes(),
+        claim.layer_kind.as_bytes(),
+        claim.input_tensor_claim.tensor_claim_commitment.as_bytes(),
+        claim.output_tensor_claim.tensor_claim_commitment.as_bytes(),
+        claim.relation_claim_kind.as_bytes(),
+        claim.relation_rule.as_bytes(),
+        claim.propagation_direction.as_bytes(),
+        claim.endpoint_anchoring_rule.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, claim.layer_index);
+    phase29_update_usize(&mut hasher, claim.claim_surface_unit_count);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.requires_full_vm_replay);
+    phase29_update_bool(&mut hasher, claim.requires_phase43_trace);
+    phase29_update_bool(&mut hasher, claim.requires_phase30_manifest);
+    phase29_update_bool(&mut hasher, claim.requires_phase43_projection_cairo_air);
+    phase29_update_bool(&mut hasher, claim.raw_endpoint_anchor_available);
+    phase29_update_bool(&mut hasher, claim.sumcheck_proof_available);
+    phase29_update_bool(&mut hasher, claim.logup_proof_available);
+    phase29_update_bool(&mut hasher, claim.actual_layer_relation_proof_available);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase44d_finalize_hash(hasher, "Phase 50 layer IO claim")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase50_prepare_tensor_commitment_claim(
+    tensor_role: &str,
+    tensor_name: &str,
+    tensor_shape: Vec<usize>,
+    commitment_root: &str,
+    raw_endpoint_anchor_required: bool,
+    raw_endpoint_anchor_available: bool,
+) -> Result<Phase50TensorCommitmentClaim> {
+    let logical_element_count = phase50_tensor_element_count(&tensor_shape)?;
+    let padded_element_count = phase50_next_power_of_two(logical_element_count)?;
+    let mut claim = Phase50TensorCommitmentClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_TENSOR_COMMITMENT_CLAIM_VERSION_PHASE50.to_string(),
+        semantic_scope: STWO_TENSOR_COMMITMENT_CLAIM_SCOPE_PHASE50.to_string(),
+        tensor_role: tensor_role.to_string(),
+        tensor_name: tensor_name.to_string(),
+        element_field: STWO_TENSOR_ELEMENT_FIELD_PHASE50.to_string(),
+        memory_layout: STWO_TENSOR_MEMORY_LAYOUT_PHASE50.to_string(),
+        quantization: STWO_TENSOR_QUANTIZATION_PHASE50.to_string(),
+        tensor_rank: tensor_shape.len(),
+        tensor_shape,
+        logical_element_count,
+        padded_element_count,
+        padding_rule: STWO_TENSOR_PADDING_RULE_PHASE50.to_string(),
+        commitment_scheme: STWO_TENSOR_COMMITMENT_SCHEME_PHASE50.to_string(),
+        commitment_root: commitment_root.to_string(),
+        mle_evaluation_claim_status: "pending_phase52_endpoint_mle_evaluation".to_string(),
+        raw_endpoint_anchor_required,
+        raw_endpoint_anchor_available,
+        full_vm_replay_required: false,
+        phase43_trace_required: false,
+        phase30_manifest_required: false,
+        transcript_order: phase50_tensor_transcript_order(),
+        tensor_claim_commitment: String::new(),
+    };
+    claim.tensor_claim_commitment = commit_phase50_tensor_commitment_claim(&claim)?;
+    verify_phase50_tensor_commitment_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase50_prepare_layer_io_claim(
+    contract: &Phase49LayerwiseTensorClaimPropagationContract,
+) -> Result<Phase50LayerIoClaim> {
+    verify_phase49_layerwise_tensor_claim_propagation_contract(contract)?;
+    let input_root =
+        phase50_derive_tensor_root(contract, "layer_input", &[contract.input_tensor_width])?;
+    let output_root =
+        phase50_derive_tensor_root(contract, "layer_output", &[contract.output_tensor_width])?;
+    let input_tensor_claim = phase50_prepare_tensor_commitment_claim(
+        "layer_input",
+        "phase50_layer0_input_activation",
+        vec![contract.input_tensor_width],
+        &input_root,
+        true,
+        false,
+    )?;
+    let output_tensor_claim = phase50_prepare_tensor_commitment_claim(
+        "layer_output",
+        "phase50_layer0_output_activation",
+        vec![contract.output_tensor_width],
+        &output_root,
+        true,
+        false,
+    )?;
+    let mut claim = Phase50LayerIoClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_LAYER_IO_CLAIM_VERSION_PHASE50.to_string(),
+        semantic_scope: STWO_LAYER_IO_CLAIM_SCOPE_PHASE50.to_string(),
+        source_phase49_contract_version: contract.contract_version.clone(),
+        source_phase49_contract_commitment: contract.contract_commitment.clone(),
+        source_phase49_decision: contract.decision.clone(),
+        source_phase49_required_next_step: contract.required_next_step.clone(),
+        proof_backend_version: contract.proof_backend_version.clone(),
+        statement_version: contract.statement_version.clone(),
+        layer_index: 0,
+        layer_name: "phase50_first_transformer_vm_gated_ff_surface".to_string(),
+        layer_kind: "gated_feed_forward".to_string(),
+        input_tensor_claim,
+        output_tensor_claim,
+        relation_claim_kind: STWO_LAYER_IO_RELATION_KIND_PHASE50.to_string(),
+        relation_rule: STWO_LAYER_IO_RELATION_RULE_PHASE50.to_string(),
+        propagation_direction: STWO_LAYER_IO_PROPAGATION_DIRECTION_PHASE50.to_string(),
+        endpoint_anchoring_rule: STWO_LAYER_IO_ENDPOINT_ANCHORING_RULE_PHASE50.to_string(),
+        claim_surface_unit_count: contract.input_tensor_width + contract.output_tensor_width,
+        verifier_side_complexity: STWO_LAYER_IO_COMPLEXITY_PHASE50.to_string(),
+        transcript_order: phase50_layer_io_transcript_order(),
+        requires_full_vm_replay: false,
+        requires_phase43_trace: false,
+        requires_phase30_manifest: false,
+        requires_phase43_projection_cairo_air: false,
+        raw_endpoint_anchor_available: false,
+        sumcheck_proof_available: false,
+        logup_proof_available: false,
+        actual_layer_relation_proof_available: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        required_next_step: STWO_LAYER_IO_NEXT_STEP_PHASE50.to_string(),
+        layer_io_claim_commitment: String::new(),
+    };
+    claim.layer_io_claim_commitment = commit_phase50_layer_io_claim(&claim)?;
+    verify_phase50_layer_io_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase50_tensor_commitment_claim(claim: &Phase50TensorCommitmentClaim) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 tensor commitment claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_TENSOR_COMMITMENT_CLAIM_VERSION_PHASE50
+        || claim.semantic_scope != STWO_TENSOR_COMMITMENT_CLAIM_SCOPE_PHASE50
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 tensor commitment claim version or semantic scope drift".to_string(),
+        ));
+    }
+    if claim.tensor_role.is_empty() || claim.tensor_name.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 tensor commitment claim requires typed role and name".to_string(),
+        ));
+    }
+    if claim.element_field != STWO_TENSOR_ELEMENT_FIELD_PHASE50
+        || claim.memory_layout != STWO_TENSOR_MEMORY_LAYOUT_PHASE50
+        || claim.quantization != STWO_TENSOR_QUANTIZATION_PHASE50
+        || claim.padding_rule != STWO_TENSOR_PADDING_RULE_PHASE50
+        || claim.commitment_scheme != STWO_TENSOR_COMMITMENT_SCHEME_PHASE50
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 tensor commitment claim field, layout, padding, or scheme drift".to_string(),
+        ));
+    }
+    if claim.tensor_rank == 0 || claim.tensor_rank != claim.tensor_shape.len() {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 tensor commitment claim rank does not match shape".to_string(),
+        ));
+    }
+    let logical_element_count = phase50_tensor_element_count(&claim.tensor_shape)?;
+    let padded_element_count = phase50_next_power_of_two(logical_element_count)?;
+    if claim.logical_element_count != logical_element_count
+        || claim.padded_element_count != padded_element_count
+        || !claim.padded_element_count.is_power_of_two()
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 tensor commitment claim element counts or padding drift".to_string(),
+        ));
+    }
+    phase43_require_hash32("phase50_tensor_commitment_root", &claim.commitment_root)?;
+    if claim.mle_evaluation_claim_status != "pending_phase52_endpoint_mle_evaluation" {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 tensor commitment claim must leave MLE endpoint evaluation pending Phase52"
+                .to_string(),
+        ));
+    }
+    if !claim.raw_endpoint_anchor_required {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 tensor commitment claim must require endpoint anchoring".to_string(),
+        ));
+    }
+    if claim.full_vm_replay_required
+        || claim.phase43_trace_required
+        || claim.phase30_manifest_required
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 tensor commitment claim must not require VM replay artifacts".to_string(),
+        ));
+    }
+    if claim.transcript_order != phase50_tensor_transcript_order() {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 tensor commitment claim transcript order drift".to_string(),
+        ));
+    }
+    phase43_require_hash32(
+        "phase50_tensor_claim_commitment",
+        &claim.tensor_claim_commitment,
+    )?;
+    let expected = commit_phase50_tensor_commitment_claim(claim)?;
+    if claim.tensor_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 tensor commitment claim commitment does not match claim fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase50_layer_io_claim(claim: &Phase50LayerIoClaim) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 layer IO claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_LAYER_IO_CLAIM_VERSION_PHASE50
+        || claim.semantic_scope != STWO_LAYER_IO_CLAIM_SCOPE_PHASE50
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 layer IO claim version or semantic scope drift".to_string(),
+        ));
+    }
+    if claim.source_phase49_contract_version != STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_VERSION_PHASE49
+        || claim.source_phase49_decision != STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_DECISION_PHASE49
+        || claim.source_phase49_required_next_step
+            != STWO_LAYERWISE_TENSOR_CLAIM_CONTRACT_NEXT_STEP_PHASE49
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 layer IO claim must be sourced from the Phase49 tensor-claim contract"
+                .to_string(),
+        ));
+    }
+    if claim.proof_backend_version != STWO_BACKEND_VERSION_PHASE12
+        || claim.statement_version != CLAIM_STATEMENT_VERSION_V1
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 layer IO claim backend or statement version drift".to_string(),
+        ));
+    }
+    phase43_require_hash32(
+        "phase50_source_phase49_contract_commitment",
+        &claim.source_phase49_contract_commitment,
+    )?;
+    verify_phase50_tensor_commitment_claim(&claim.input_tensor_claim)?;
+    verify_phase50_tensor_commitment_claim(&claim.output_tensor_claim)?;
+    if claim.layer_index != 0
+        || claim.layer_name != "phase50_first_transformer_vm_gated_ff_surface"
+        || claim.layer_kind != "gated_feed_forward"
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 layer IO claim first-layer identity drift".to_string(),
+        ));
+    }
+    if claim.input_tensor_claim.tensor_role != "layer_input"
+        || claim.output_tensor_claim.tensor_role != "layer_output"
+        || claim.input_tensor_claim.tensor_shape != vec![INPUT_DIM]
+        || claim.output_tensor_claim.tensor_shape != vec![OUTPUT_DIM]
+        || claim.claim_surface_unit_count != INPUT_DIM + OUTPUT_DIM
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 layer IO claim tensor surface drift".to_string(),
+        ));
+    }
+    if claim.relation_claim_kind != STWO_LAYER_IO_RELATION_KIND_PHASE50
+        || claim.relation_rule != STWO_LAYER_IO_RELATION_RULE_PHASE50
+        || claim.propagation_direction != STWO_LAYER_IO_PROPAGATION_DIRECTION_PHASE50
+        || claim.endpoint_anchoring_rule != STWO_LAYER_IO_ENDPOINT_ANCHORING_RULE_PHASE50
+        || claim.verifier_side_complexity != STWO_LAYER_IO_COMPLEXITY_PHASE50
+        || claim.required_next_step != STWO_LAYER_IO_NEXT_STEP_PHASE50
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 layer IO claim relation, anchoring, or next-step drift".to_string(),
+        ));
+    }
+    if claim.transcript_order != phase50_layer_io_transcript_order() {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 layer IO claim transcript order drift".to_string(),
+        ));
+    }
+    if claim.requires_full_vm_replay
+        || claim.requires_phase43_trace
+        || claim.requires_phase30_manifest
+        || claim.requires_phase43_projection_cairo_air
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 layer IO claim must not reintroduce VM replay artifacts".to_string(),
+        ));
+    }
+    if claim.raw_endpoint_anchor_available
+        || claim.input_tensor_claim.raw_endpoint_anchor_available
+        || claim.output_tensor_claim.raw_endpoint_anchor_available
+        || claim.sumcheck_proof_available
+        || claim.logup_proof_available
+        || claim.actual_layer_relation_proof_available
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 layer IO claim must not claim unavailable tensor proof evidence".to_string(),
+        ));
+    }
+    phase43_require_hash32(
+        "phase50_layer_io_claim_commitment",
+        &claim.layer_io_claim_commitment,
+    )?;
+    let expected = commit_phase50_layer_io_claim(claim)?;
+    if claim.layer_io_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 layer IO claim commitment does not match claim fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase50_layer_io_claim_against_phase49(
+    claim: &Phase50LayerIoClaim,
+    contract: &Phase49LayerwiseTensorClaimPropagationContract,
+) -> Result<()> {
+    verify_phase49_layerwise_tensor_claim_propagation_contract(contract)?;
+    let expected = phase50_prepare_layer_io_claim(contract)?;
+    if claim != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 layer IO claim does not match verified Phase49 tensor-claim contract"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase51_first_layer_relation_claim(
+    claim: &Phase51FirstLayerRelationClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 51 first-layer relation claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase51-first-layer-relation-claim");
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim.source_phase50_layer_io_claim_version.as_bytes(),
+        claim.source_phase50_layer_io_claim_commitment.as_bytes(),
+        claim.source_phase49_contract_commitment.as_bytes(),
+        claim.proof_backend_version.as_bytes(),
+        claim.statement_version.as_bytes(),
+        claim.relation_kind.as_bytes(),
+        claim.relation_rule.as_bytes(),
+        claim.relation_field.as_bytes(),
+        claim.parameter_commitment_scheme.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, claim.layer_index);
+    phase29_update_usize(&mut hasher, claim.input_width);
+    phase29_update_usize(&mut hasher, claim.hidden_width);
+    phase29_update_usize(&mut hasher, claim.output_width);
+    phase44d_update_usize_vec(&mut hasher, &claim.gate_projection_shape);
+    phase44d_update_usize_vec(&mut hasher, &claim.value_projection_shape);
+    phase44d_update_usize_vec(&mut hasher, &claim.hidden_product_shape);
+    phase44d_update_usize_vec(&mut hasher, &claim.output_projection_shape);
+    phase29_update_usize(&mut hasher, claim.gate_bias_len);
+    phase29_update_usize(&mut hasher, claim.value_bias_len);
+    phase29_update_usize(&mut hasher, claim.output_bias_len);
+    phase44d_update_hash_vec(&mut hasher, &claim.operation_graph_order);
+    phase29_update_usize(&mut hasher, claim.parameter_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.activation_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.claim_surface_unit_count);
+    phase29_update_bool(&mut hasher, claim.vm_step_replay_required);
+    phase29_update_bool(&mut hasher, claim.phase43_trace_required);
+    phase29_update_bool(&mut hasher, claim.phase30_manifest_required);
+    phase29_update_bool(&mut hasher, claim.raw_endpoint_anchor_available);
+    phase29_update_bool(&mut hasher, claim.parameter_commitments_available);
+    phase29_update_bool(&mut hasher, claim.affine_sumcheck_claim_available);
+    phase29_update_bool(&mut hasher, claim.hadamard_product_claim_available);
+    phase29_update_bool(&mut hasher, claim.actual_relation_proof_available);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase44d_finalize_hash(hasher, "Phase 51 first-layer relation claim")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase51_prepare_first_layer_relation_claim(
+    layer_io_claim: &Phase50LayerIoClaim,
+) -> Result<Phase51FirstLayerRelationClaim> {
+    verify_phase50_layer_io_claim(layer_io_claim)?;
+    let config = TransformerVmConfig::percepta_reference();
+    config.validate()?;
+    let hidden_width = config.ff_dim;
+    let parameter_surface_unit_count = (2 * hidden_width * INPUT_DIM)
+        + (OUTPUT_DIM * hidden_width)
+        + (2 * hidden_width)
+        + OUTPUT_DIM;
+    let activation_surface_unit_count = INPUT_DIM + (3 * hidden_width) + OUTPUT_DIM;
+    let mut claim = Phase51FirstLayerRelationClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_FIRST_LAYER_RELATION_CLAIM_VERSION_PHASE51.to_string(),
+        semantic_scope: STWO_FIRST_LAYER_RELATION_CLAIM_SCOPE_PHASE51.to_string(),
+        source_phase50_layer_io_claim_version: layer_io_claim.claim_version.clone(),
+        source_phase50_layer_io_claim_commitment: layer_io_claim.layer_io_claim_commitment.clone(),
+        source_phase49_contract_commitment: layer_io_claim
+            .source_phase49_contract_commitment
+            .clone(),
+        proof_backend_version: layer_io_claim.proof_backend_version.clone(),
+        statement_version: layer_io_claim.statement_version.clone(),
+        relation_kind: STWO_FIRST_LAYER_RELATION_KIND_PHASE51.to_string(),
+        relation_rule: STWO_FIRST_LAYER_RELATION_RULE_PHASE51.to_string(),
+        relation_field: STWO_FIRST_LAYER_RELATION_FIELD_PHASE51.to_string(),
+        layer_index: layer_io_claim.layer_index,
+        input_width: INPUT_DIM,
+        hidden_width,
+        output_width: OUTPUT_DIM,
+        gate_projection_shape: vec![hidden_width, INPUT_DIM],
+        value_projection_shape: vec![hidden_width, INPUT_DIM],
+        hidden_product_shape: vec![hidden_width],
+        output_projection_shape: vec![OUTPUT_DIM, hidden_width],
+        gate_bias_len: hidden_width,
+        value_bias_len: hidden_width,
+        output_bias_len: OUTPUT_DIM,
+        operation_graph_order: phase51_operation_graph_order(),
+        parameter_commitment_scheme: STWO_FIRST_LAYER_RELATION_PARAMETER_COMMITMENT_SCHEME_PHASE51
+            .to_string(),
+        parameter_surface_unit_count,
+        activation_surface_unit_count,
+        claim_surface_unit_count: layer_io_claim.claim_surface_unit_count + hidden_width,
+        vm_step_replay_required: false,
+        phase43_trace_required: false,
+        phase30_manifest_required: false,
+        raw_endpoint_anchor_available: false,
+        parameter_commitments_available: false,
+        affine_sumcheck_claim_available: false,
+        hadamard_product_claim_available: false,
+        actual_relation_proof_available: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        verifier_side_complexity: STWO_FIRST_LAYER_RELATION_COMPLEXITY_PHASE51.to_string(),
+        transcript_order: phase51_relation_transcript_order(),
+        required_next_step: STWO_FIRST_LAYER_RELATION_NEXT_STEP_PHASE51.to_string(),
+        relation_claim_commitment: String::new(),
+    };
+    claim.relation_claim_commitment = commit_phase51_first_layer_relation_claim(&claim)?;
+    verify_phase51_first_layer_relation_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase51_first_layer_relation_claim(
+    claim: &Phase51FirstLayerRelationClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 51 first-layer relation claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_FIRST_LAYER_RELATION_CLAIM_VERSION_PHASE51
+        || claim.semantic_scope != STWO_FIRST_LAYER_RELATION_CLAIM_SCOPE_PHASE51
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 51 first-layer relation claim version or semantic scope drift".to_string(),
+        ));
+    }
+    if claim.source_phase50_layer_io_claim_version != STWO_LAYER_IO_CLAIM_VERSION_PHASE50 {
+        return Err(VmError::InvalidConfig(
+            "Phase 51 first-layer relation claim source Phase50 version drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase51_source_phase50_layer_io_claim_commitment",
+            claim.source_phase50_layer_io_claim_commitment.as_str(),
+        ),
+        (
+            "phase51_source_phase49_contract_commitment",
+            claim.source_phase49_contract_commitment.as_str(),
+        ),
+        (
+            "phase51_relation_claim_commitment",
+            claim.relation_claim_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if claim.proof_backend_version != STWO_BACKEND_VERSION_PHASE12
+        || claim.statement_version != CLAIM_STATEMENT_VERSION_V1
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 51 first-layer relation claim backend or statement version drift".to_string(),
+        ));
+    }
+    if claim.relation_kind != STWO_FIRST_LAYER_RELATION_KIND_PHASE51
+        || claim.relation_rule != STWO_FIRST_LAYER_RELATION_RULE_PHASE51
+        || claim.relation_field != STWO_FIRST_LAYER_RELATION_FIELD_PHASE51
+        || claim.parameter_commitment_scheme
+            != STWO_FIRST_LAYER_RELATION_PARAMETER_COMMITMENT_SCHEME_PHASE51
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 51 first-layer relation kind, rule, field, or parameter scheme drift"
+                .to_string(),
+        ));
+    }
+    let config = TransformerVmConfig::percepta_reference();
+    config.validate()?;
+    let hidden_width = config.ff_dim;
+    if claim.layer_index != 0
+        || claim.input_width != INPUT_DIM
+        || claim.hidden_width != hidden_width
+        || claim.output_width != OUTPUT_DIM
+        || claim.gate_projection_shape != vec![hidden_width, INPUT_DIM]
+        || claim.value_projection_shape != vec![hidden_width, INPUT_DIM]
+        || claim.hidden_product_shape != vec![hidden_width]
+        || claim.output_projection_shape != vec![OUTPUT_DIM, hidden_width]
+        || claim.gate_bias_len != hidden_width
+        || claim.value_bias_len != hidden_width
+        || claim.output_bias_len != OUTPUT_DIM
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 51 first-layer relation claim gated-FF shape drift".to_string(),
+        ));
+    }
+    if claim.operation_graph_order != phase51_operation_graph_order() {
+        return Err(VmError::InvalidConfig(
+            "Phase 51 first-layer relation claim operation graph order drift".to_string(),
+        ));
+    }
+    let expected_parameter_surface = (2 * hidden_width * INPUT_DIM)
+        + (OUTPUT_DIM * hidden_width)
+        + (2 * hidden_width)
+        + OUTPUT_DIM;
+    let expected_activation_surface = INPUT_DIM + (3 * hidden_width) + OUTPUT_DIM;
+    let expected_claim_surface = INPUT_DIM + OUTPUT_DIM + hidden_width;
+    if claim.parameter_surface_unit_count != expected_parameter_surface
+        || claim.activation_surface_unit_count != expected_activation_surface
+        || claim.claim_surface_unit_count != expected_claim_surface
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 51 first-layer relation claim surface accounting drift".to_string(),
+        ));
+    }
+    if claim.vm_step_replay_required
+        || claim.phase43_trace_required
+        || claim.phase30_manifest_required
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 51 first-layer relation claim must not require VM replay artifacts".to_string(),
+        ));
+    }
+    if claim.raw_endpoint_anchor_available
+        || claim.parameter_commitments_available
+        || claim.affine_sumcheck_claim_available
+        || claim.hadamard_product_claim_available
+        || claim.actual_relation_proof_available
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 51 first-layer relation claim must not claim unavailable proof evidence"
+                .to_string(),
+        ));
+    }
+    if claim.verifier_side_complexity != STWO_FIRST_LAYER_RELATION_COMPLEXITY_PHASE51
+        || claim.transcript_order != phase51_relation_transcript_order()
+        || claim.required_next_step != STWO_FIRST_LAYER_RELATION_NEXT_STEP_PHASE51
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 51 first-layer relation claim transcript, complexity, or next-step drift"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase51_first_layer_relation_claim(claim)?;
+    if claim.relation_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 51 first-layer relation claim commitment does not match claim fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase51_first_layer_relation_claim_against_phase50(
+    claim: &Phase51FirstLayerRelationClaim,
+    layer_io_claim: &Phase50LayerIoClaim,
+) -> Result<()> {
+    verify_phase50_layer_io_claim(layer_io_claim)?;
+    let expected = phase51_prepare_first_layer_relation_claim(layer_io_claim)?;
+    if claim != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 51 first-layer relation claim does not match verified Phase50 layer IO claim"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase52_tensor_endpoint_evaluation_claim(
+    claim: &Phase52TensorEndpointEvaluationClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 52 tensor endpoint evaluation claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase52-tensor-endpoint-evaluation-claim");
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim.source_phase50_tensor_claim_commitment.as_bytes(),
+        claim.source_phase51_relation_claim_commitment.as_bytes(),
+        claim.endpoint_role.as_bytes(),
+        claim.tensor_name.as_bytes(),
+        claim.element_field.as_bytes(),
+        claim.raw_tensor_commitment.as_bytes(),
+        claim.challenge_derivation.as_bytes(),
+        claim.evaluation_rule.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_update_usize_vec(&mut hasher, &claim.tensor_shape);
+    phase29_update_usize(&mut hasher, claim.logical_element_count);
+    phase29_update_usize(&mut hasher, claim.padded_element_count);
+    phase44d_update_u32_vec(&mut hasher, &claim.raw_tensor_values);
+    phase44d_update_u32_vec(&mut hasher, &claim.mle_point);
+    hasher.update(&claim.mle_value.to_le_bytes());
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.verifier_derived_from_raw_tensor);
+    phase29_update_bool(&mut hasher, claim.commitment_opening_proof_available);
+    phase29_update_bool(&mut hasher, claim.requires_full_vm_replay);
+    phase29_update_bool(&mut hasher, claim.requires_phase43_trace);
+    phase29_update_bool(&mut hasher, claim.requires_phase30_manifest);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase44d_finalize_hash(hasher, "Phase 52 tensor endpoint evaluation claim")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase52_layer_endpoint_anchoring_claim(
+    claim: &Phase52LayerEndpointAnchoringClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 52 layer endpoint anchoring claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase52-layer-endpoint-anchoring-claim");
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim.source_phase51_relation_claim_version.as_bytes(),
+        claim.source_phase51_relation_claim_commitment.as_bytes(),
+        claim.source_phase50_layer_io_claim_commitment.as_bytes(),
+        claim
+            .input_endpoint_claim
+            .endpoint_claim_commitment
+            .as_bytes(),
+        claim
+            .output_endpoint_claim
+            .endpoint_claim_commitment
+            .as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, claim.endpoint_count);
+    phase29_update_usize(&mut hasher, claim.public_endpoint_width);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.endpoint_anchoring_available);
+    phase29_update_bool(&mut hasher, claim.actual_layer_relation_proof_available);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase44d_finalize_hash(hasher, "Phase 52 layer endpoint anchoring claim")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase52_prepare_tensor_endpoint_evaluation_claim(
+    tensor_claim: &Phase50TensorCommitmentClaim,
+    relation_claim: &Phase51FirstLayerRelationClaim,
+    endpoint_role: &str,
+    raw_tensor_values: Vec<u32>,
+) -> Result<Phase52TensorEndpointEvaluationClaim> {
+    verify_phase50_tensor_commitment_claim(tensor_claim)?;
+    verify_phase51_first_layer_relation_claim(relation_claim)?;
+    if endpoint_role != tensor_claim.tensor_role {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 tensor endpoint role must match the Phase50 tensor claim role".to_string(),
+        ));
+    }
+    phase52_validate_m31_values("raw_tensor_values", &raw_tensor_values)?;
+    let raw_tensor_commitment = phase52_commit_raw_tensor_values(&raw_tensor_values)?;
+    let mle_point = phase52_derive_mle_point(
+        &relation_claim.relation_claim_commitment,
+        endpoint_role,
+        tensor_claim.padded_element_count,
+    )?;
+    let mle_value = phase52_evaluate_padded_mle(&raw_tensor_values, &mle_point)?;
+    let mut claim = Phase52TensorEndpointEvaluationClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_TENSOR_ENDPOINT_EVALUATION_CLAIM_VERSION_PHASE52.to_string(),
+        semantic_scope: STWO_TENSOR_ENDPOINT_EVALUATION_CLAIM_SCOPE_PHASE52.to_string(),
+        source_phase50_tensor_claim_commitment: tensor_claim.tensor_claim_commitment.clone(),
+        source_phase51_relation_claim_commitment: relation_claim.relation_claim_commitment.clone(),
+        endpoint_role: endpoint_role.to_string(),
+        tensor_name: tensor_claim.tensor_name.clone(),
+        element_field: STWO_TENSOR_ELEMENT_FIELD_PHASE50.to_string(),
+        tensor_shape: tensor_claim.tensor_shape.clone(),
+        logical_element_count: tensor_claim.logical_element_count,
+        padded_element_count: tensor_claim.padded_element_count,
+        raw_tensor_values,
+        raw_tensor_commitment,
+        mle_point,
+        mle_value,
+        challenge_derivation: STWO_TENSOR_ENDPOINT_CHALLENGE_DERIVATION_PHASE52.to_string(),
+        evaluation_rule: STWO_TENSOR_ENDPOINT_EVALUATION_RULE_PHASE52.to_string(),
+        transcript_order: phase52_endpoint_transcript_order(),
+        verifier_derived_from_raw_tensor: true,
+        commitment_opening_proof_available: false,
+        requires_full_vm_replay: false,
+        requires_phase43_trace: false,
+        requires_phase30_manifest: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        endpoint_claim_commitment: String::new(),
+    };
+    claim.endpoint_claim_commitment = commit_phase52_tensor_endpoint_evaluation_claim(&claim)?;
+    verify_phase52_tensor_endpoint_evaluation_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase52_prepare_layer_endpoint_anchoring_claim(
+    layer_io_claim: &Phase50LayerIoClaim,
+    relation_claim: &Phase51FirstLayerRelationClaim,
+    raw_input_tensor_values: Vec<u32>,
+    raw_output_tensor_values: Vec<u32>,
+) -> Result<Phase52LayerEndpointAnchoringClaim> {
+    verify_phase51_first_layer_relation_claim_against_phase50(relation_claim, layer_io_claim)?;
+    let input_endpoint_claim = phase52_prepare_tensor_endpoint_evaluation_claim(
+        &layer_io_claim.input_tensor_claim,
+        relation_claim,
+        "layer_input",
+        raw_input_tensor_values,
+    )?;
+    let output_endpoint_claim = phase52_prepare_tensor_endpoint_evaluation_claim(
+        &layer_io_claim.output_tensor_claim,
+        relation_claim,
+        "layer_output",
+        raw_output_tensor_values,
+    )?;
+    let mut claim = Phase52LayerEndpointAnchoringClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_LAYER_ENDPOINT_ANCHORING_CLAIM_VERSION_PHASE52.to_string(),
+        semantic_scope: STWO_LAYER_ENDPOINT_ANCHORING_CLAIM_SCOPE_PHASE52.to_string(),
+        source_phase51_relation_claim_version: relation_claim.claim_version.clone(),
+        source_phase51_relation_claim_commitment: relation_claim.relation_claim_commitment.clone(),
+        source_phase50_layer_io_claim_commitment: layer_io_claim.layer_io_claim_commitment.clone(),
+        endpoint_count: 2,
+        public_endpoint_width: input_endpoint_claim.raw_tensor_values.len()
+            + output_endpoint_claim.raw_tensor_values.len(),
+        input_endpoint_claim,
+        output_endpoint_claim,
+        verifier_side_complexity: STWO_LAYER_ENDPOINT_ANCHORING_COMPLEXITY_PHASE52.to_string(),
+        transcript_order: phase52_layer_endpoint_transcript_order(),
+        endpoint_anchoring_available: true,
+        actual_layer_relation_proof_available: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        required_next_step: STWO_LAYER_ENDPOINT_ANCHORING_NEXT_STEP_PHASE52.to_string(),
+        anchoring_claim_commitment: String::new(),
+    };
+    claim.anchoring_claim_commitment = commit_phase52_layer_endpoint_anchoring_claim(&claim)?;
+    verify_phase52_layer_endpoint_anchoring_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase52_tensor_endpoint_evaluation_claim(
+    claim: &Phase52TensorEndpointEvaluationClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 tensor endpoint evaluation claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_TENSOR_ENDPOINT_EVALUATION_CLAIM_VERSION_PHASE52
+        || claim.semantic_scope != STWO_TENSOR_ENDPOINT_EVALUATION_CLAIM_SCOPE_PHASE52
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 tensor endpoint evaluation claim version or semantic scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase52_source_phase50_tensor_claim_commitment",
+            claim.source_phase50_tensor_claim_commitment.as_str(),
+        ),
+        (
+            "phase52_source_phase51_relation_claim_commitment",
+            claim.source_phase51_relation_claim_commitment.as_str(),
+        ),
+        (
+            "phase52_raw_tensor_commitment",
+            claim.raw_tensor_commitment.as_str(),
+        ),
+        (
+            "phase52_endpoint_claim_commitment",
+            claim.endpoint_claim_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if claim.endpoint_role != "layer_input" && claim.endpoint_role != "layer_output" {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 tensor endpoint evaluation claim endpoint role drift".to_string(),
+        ));
+    }
+    if claim.element_field != STWO_TENSOR_ELEMENT_FIELD_PHASE50
+        || claim.challenge_derivation != STWO_TENSOR_ENDPOINT_CHALLENGE_DERIVATION_PHASE52
+        || claim.evaluation_rule != STWO_TENSOR_ENDPOINT_EVALUATION_RULE_PHASE52
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 tensor endpoint evaluation claim field or evaluation rule drift".to_string(),
+        ));
+    }
+    let logical_element_count = phase50_tensor_element_count(&claim.tensor_shape)?;
+    let padded_element_count = phase50_next_power_of_two(logical_element_count)?;
+    if claim.logical_element_count != logical_element_count
+        || claim.padded_element_count != padded_element_count
+        || claim.raw_tensor_values.len() != logical_element_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 tensor endpoint evaluation claim shape or raw tensor length drift"
+                .to_string(),
+        ));
+    }
+    phase52_validate_m31_values("raw_tensor_values", &claim.raw_tensor_values)?;
+    phase52_validate_m31_values("mle_point", &claim.mle_point)?;
+    if claim.mle_value >= PHASE44D_M31_MODULUS {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 tensor endpoint evaluation claim MLE value exceeds M31 capacity".to_string(),
+        ));
+    }
+    let expected_raw_commitment = phase52_commit_raw_tensor_values(&claim.raw_tensor_values)?;
+    if claim.raw_tensor_commitment != expected_raw_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 tensor endpoint evaluation claim raw tensor commitment drift".to_string(),
+        ));
+    }
+    let expected_point = phase52_derive_mle_point(
+        &claim.source_phase51_relation_claim_commitment,
+        &claim.endpoint_role,
+        claim.padded_element_count,
+    )?;
+    if claim.mle_point != expected_point {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 tensor endpoint evaluation claim MLE challenge point drift".to_string(),
+        ));
+    }
+    let expected_mle_value =
+        phase52_evaluate_padded_mle(&claim.raw_tensor_values, &claim.mle_point)?;
+    if claim.mle_value != expected_mle_value {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 tensor endpoint evaluation claim MLE value drift".to_string(),
+        ));
+    }
+    if claim.transcript_order != phase52_endpoint_transcript_order() {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 tensor endpoint evaluation claim transcript order drift".to_string(),
+        ));
+    }
+    if !claim.verifier_derived_from_raw_tensor
+        || claim.commitment_opening_proof_available
+        || claim.requires_full_vm_replay
+        || claim.requires_phase43_trace
+        || claim.requires_phase30_manifest
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 tensor endpoint evaluation claim must stay raw-endpoint-derived without false proof claims"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase52_tensor_endpoint_evaluation_claim(claim)?;
+    if claim.endpoint_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 tensor endpoint evaluation claim commitment does not match claim fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase52_layer_endpoint_anchoring_claim(
+    claim: &Phase52LayerEndpointAnchoringClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 layer endpoint anchoring claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_LAYER_ENDPOINT_ANCHORING_CLAIM_VERSION_PHASE52
+        || claim.semantic_scope != STWO_LAYER_ENDPOINT_ANCHORING_CLAIM_SCOPE_PHASE52
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 layer endpoint anchoring claim version or semantic scope drift".to_string(),
+        ));
+    }
+    if claim.source_phase51_relation_claim_version
+        != STWO_FIRST_LAYER_RELATION_CLAIM_VERSION_PHASE51
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 layer endpoint anchoring claim source Phase51 version drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase52_source_phase51_relation_claim_commitment",
+            claim.source_phase51_relation_claim_commitment.as_str(),
+        ),
+        (
+            "phase52_source_phase50_layer_io_claim_commitment",
+            claim.source_phase50_layer_io_claim_commitment.as_str(),
+        ),
+        (
+            "phase52_anchoring_claim_commitment",
+            claim.anchoring_claim_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    verify_phase52_tensor_endpoint_evaluation_claim(&claim.input_endpoint_claim)?;
+    verify_phase52_tensor_endpoint_evaluation_claim(&claim.output_endpoint_claim)?;
+    if claim.input_endpoint_claim.endpoint_role != "layer_input"
+        || claim.output_endpoint_claim.endpoint_role != "layer_output"
+        || claim
+            .input_endpoint_claim
+            .source_phase51_relation_claim_commitment
+            != claim.source_phase51_relation_claim_commitment
+        || claim
+            .output_endpoint_claim
+            .source_phase51_relation_claim_commitment
+            != claim.source_phase51_relation_claim_commitment
+        || claim.input_endpoint_claim.tensor_shape != vec![INPUT_DIM]
+        || claim.output_endpoint_claim.tensor_shape != vec![OUTPUT_DIM]
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 layer endpoint anchoring claim endpoint role or shape drift".to_string(),
+        ));
+    }
+    if claim.endpoint_count != 2
+        || claim.public_endpoint_width != INPUT_DIM + OUTPUT_DIM
+        || claim.verifier_side_complexity != STWO_LAYER_ENDPOINT_ANCHORING_COMPLEXITY_PHASE52
+        || claim.transcript_order != phase52_layer_endpoint_transcript_order()
+        || claim.required_next_step != STWO_LAYER_ENDPOINT_ANCHORING_NEXT_STEP_PHASE52
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 layer endpoint anchoring claim surface, transcript, or next-step drift"
+                .to_string(),
+        ));
+    }
+    if !claim.endpoint_anchoring_available
+        || claim.actual_layer_relation_proof_available
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 layer endpoint anchoring claim must anchor endpoints without false proof claims"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase52_layer_endpoint_anchoring_claim(claim)?;
+    if claim.anchoring_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 layer endpoint anchoring claim commitment does not match claim fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase52_layer_endpoint_anchoring_claim_against_phase51(
+    claim: &Phase52LayerEndpointAnchoringClaim,
+    layer_io_claim: &Phase50LayerIoClaim,
+    relation_claim: &Phase51FirstLayerRelationClaim,
+) -> Result<()> {
+    verify_phase51_first_layer_relation_claim_against_phase50(relation_claim, layer_io_claim)?;
+    let expected = phase52_prepare_layer_endpoint_anchoring_claim(
+        layer_io_claim,
+        relation_claim,
+        claim.input_endpoint_claim.raw_tensor_values.clone(),
+        claim.output_endpoint_claim.raw_tensor_values.clone(),
+    )?;
+    if claim != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 layer endpoint anchoring claim does not match verified Phase51 relation and raw endpoints"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase53_first_layer_relation_benchmark_claim(
+    claim: &Phase53FirstLayerRelationBenchmarkClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 53 first-layer relation benchmark claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase53-first-layer-relation-benchmark-claim");
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim.source_phase52_anchoring_claim_commitment.as_bytes(),
+        claim.source_phase51_relation_claim_commitment.as_bytes(),
+        claim.source_phase50_layer_io_claim_commitment.as_bytes(),
+        claim.relation_kind.as_bytes(),
+        claim.relation_rule.as_bytes(),
+        claim.relation_field.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.benchmark_status.as_bytes(),
+        claim.stwo_ml_reference.as_bytes(),
+        claim.parameter_binding_scheme.as_bytes(),
+        claim.parameter_binding_commitment.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, claim.layer_index);
+    phase29_update_usize(&mut hasher, claim.input_width);
+    phase29_update_usize(&mut hasher, claim.hidden_width);
+    phase29_update_usize(&mut hasher, claim.output_width);
+    phase44d_update_usize_vec(&mut hasher, &claim.gate_matmul_shape);
+    phase44d_update_usize_vec(&mut hasher, &claim.value_matmul_shape);
+    phase44d_update_usize_vec(&mut hasher, &claim.output_matmul_shape);
+    phase29_update_usize(&mut hasher, claim.gate_matmul_inner_rounds);
+    phase29_update_usize(&mut hasher, claim.value_matmul_inner_rounds);
+    phase29_update_usize(&mut hasher, claim.output_matmul_inner_rounds);
+    phase29_update_usize(&mut hasher, claim.hadamard_eq_sumcheck_rounds);
+    phase29_update_usize(&mut hasher, claim.planned_sumcheck_round_count);
+    phase29_update_usize(&mut hasher, claim.matmul_round_polynomial_coefficient_count);
+    phase29_update_usize(
+        &mut hasher,
+        claim.hadamard_round_polynomial_coefficient_count,
+    );
+    phase29_update_usize(&mut hasher, claim.final_evaluation_count);
+    phase29_update_usize(&mut hasher, claim.estimated_sumcheck_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.gate_affine_mul_terms);
+    phase29_update_usize(&mut hasher, claim.value_affine_mul_terms);
+    phase29_update_usize(&mut hasher, claim.output_affine_mul_terms);
+    phase29_update_usize(&mut hasher, claim.total_affine_mul_terms);
+    phase29_update_usize(&mut hasher, claim.bias_term_count);
+    phase29_update_usize(&mut hasher, claim.hadamard_term_count);
+    phase29_update_usize(&mut hasher, claim.naive_relation_arithmetic_term_count);
+    phase29_update_usize(&mut hasher, claim.parameter_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.activation_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.endpoint_public_width);
+    phase29_update_usize(&mut hasher, claim.tensor_route_claim_surface_unit_count);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.endpoint_anchor_available);
+    phase29_update_bool(&mut hasher, claim.parameter_opening_proof_available);
+    phase29_update_bool(&mut hasher, claim.affine_sumcheck_proof_available);
+    phase29_update_bool(&mut hasher, claim.hadamard_product_proof_available);
+    phase29_update_bool(&mut hasher, claim.actual_relation_proof_available);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase44d_finalize_hash(hasher, "Phase 53 first-layer relation benchmark claim")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase53_prepare_first_layer_relation_benchmark_claim(
+    anchoring_claim: &Phase52LayerEndpointAnchoringClaim,
+    relation_claim: &Phase51FirstLayerRelationClaim,
+) -> Result<Phase53FirstLayerRelationBenchmarkClaim> {
+    verify_phase52_layer_endpoint_anchoring_claim(anchoring_claim)?;
+    verify_phase51_first_layer_relation_claim(relation_claim)?;
+    if anchoring_claim.source_phase51_relation_claim_commitment
+        != relation_claim.relation_claim_commitment
+        || anchoring_claim.source_phase50_layer_io_claim_commitment
+            != relation_claim.source_phase50_layer_io_claim_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 53 benchmark claim requires Phase52 anchoring to match the Phase51 relation"
+                .to_string(),
+        ));
+    }
+
+    let gate_matmul_inner_rounds = phase53_padded_log2(relation_claim.input_width)?;
+    let value_matmul_inner_rounds = phase53_padded_log2(relation_claim.input_width)?;
+    let output_matmul_inner_rounds = phase53_padded_log2(relation_claim.hidden_width)?;
+    let hadamard_eq_sumcheck_rounds = phase53_padded_log2(relation_claim.hidden_width)?;
+    let planned_sumcheck_round_count = gate_matmul_inner_rounds
+        + value_matmul_inner_rounds
+        + output_matmul_inner_rounds
+        + hadamard_eq_sumcheck_rounds;
+    let matmul_round_polynomial_coefficient_count =
+        3 * (gate_matmul_inner_rounds + value_matmul_inner_rounds + output_matmul_inner_rounds);
+    let hadamard_round_polynomial_coefficient_count = 4 * hadamard_eq_sumcheck_rounds;
+    let final_evaluation_count = 8;
+    let estimated_sumcheck_surface_unit_count = matmul_round_polynomial_coefficient_count
+        + hadamard_round_polynomial_coefficient_count
+        + final_evaluation_count;
+    let gate_affine_mul_terms = relation_claim.input_width * relation_claim.hidden_width;
+    let value_affine_mul_terms = relation_claim.input_width * relation_claim.hidden_width;
+    let output_affine_mul_terms = relation_claim.hidden_width * relation_claim.output_width;
+    let total_affine_mul_terms =
+        gate_affine_mul_terms + value_affine_mul_terms + output_affine_mul_terms;
+    let bias_term_count = relation_claim.gate_bias_len
+        + relation_claim.value_bias_len
+        + relation_claim.output_bias_len;
+    let hadamard_term_count = relation_claim.hidden_width;
+    let naive_relation_arithmetic_term_count =
+        total_affine_mul_terms + bias_term_count + hadamard_term_count;
+
+    let mut claim = Phase53FirstLayerRelationBenchmarkClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_FIRST_LAYER_RELATION_BENCHMARK_CLAIM_VERSION_PHASE53.to_string(),
+        semantic_scope: STWO_FIRST_LAYER_RELATION_BENCHMARK_CLAIM_SCOPE_PHASE53.to_string(),
+        source_phase52_anchoring_claim_commitment: anchoring_claim
+            .anchoring_claim_commitment
+            .clone(),
+        source_phase51_relation_claim_commitment: relation_claim.relation_claim_commitment.clone(),
+        source_phase50_layer_io_claim_commitment: relation_claim
+            .source_phase50_layer_io_claim_commitment
+            .clone(),
+        relation_kind: relation_claim.relation_kind.clone(),
+        relation_rule: relation_claim.relation_rule.clone(),
+        relation_field: relation_claim.relation_field.clone(),
+        layer_index: relation_claim.layer_index,
+        input_width: relation_claim.input_width,
+        hidden_width: relation_claim.hidden_width,
+        output_width: relation_claim.output_width,
+        gate_matmul_shape: vec![1, relation_claim.input_width, relation_claim.hidden_width],
+        value_matmul_shape: vec![1, relation_claim.input_width, relation_claim.hidden_width],
+        output_matmul_shape: vec![1, relation_claim.hidden_width, relation_claim.output_width],
+        gate_matmul_inner_rounds,
+        value_matmul_inner_rounds,
+        output_matmul_inner_rounds,
+        hadamard_eq_sumcheck_rounds,
+        planned_sumcheck_round_count,
+        matmul_round_polynomial_coefficient_count,
+        hadamard_round_polynomial_coefficient_count,
+        final_evaluation_count,
+        estimated_sumcheck_surface_unit_count,
+        gate_affine_mul_terms,
+        value_affine_mul_terms,
+        output_affine_mul_terms,
+        total_affine_mul_terms,
+        bias_term_count,
+        hadamard_term_count,
+        naive_relation_arithmetic_term_count,
+        parameter_surface_unit_count: relation_claim.parameter_surface_unit_count,
+        activation_surface_unit_count: relation_claim.activation_surface_unit_count,
+        endpoint_public_width: anchoring_claim.public_endpoint_width,
+        tensor_route_claim_surface_unit_count: anchoring_claim.public_endpoint_width
+            + estimated_sumcheck_surface_unit_count,
+        verifier_side_complexity: STWO_FIRST_LAYER_RELATION_BENCHMARK_COMPLEXITY_PHASE53
+            .to_string(),
+        benchmark_status: STWO_FIRST_LAYER_RELATION_BENCHMARK_STATUS_PHASE53.to_string(),
+        stwo_ml_reference: STWO_FIRST_LAYER_RELATION_BENCHMARK_STWO_ML_REFERENCE_PHASE53
+            .to_string(),
+        parameter_binding_scheme:
+            STWO_FIRST_LAYER_RELATION_BENCHMARK_PARAMETER_BINDING_SCHEME_PHASE53.to_string(),
+        parameter_binding_commitment: phase53_derive_parameter_binding_commitment(relation_claim)?,
+        transcript_order: phase53_benchmark_transcript_order(),
+        endpoint_anchor_available: true,
+        parameter_opening_proof_available: false,
+        affine_sumcheck_proof_available: false,
+        hadamard_product_proof_available: false,
+        actual_relation_proof_available: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        required_next_step: STWO_FIRST_LAYER_RELATION_BENCHMARK_NEXT_STEP_PHASE53.to_string(),
+        benchmark_claim_commitment: String::new(),
+    };
+    claim.benchmark_claim_commitment = commit_phase53_first_layer_relation_benchmark_claim(&claim)?;
+    verify_phase53_first_layer_relation_benchmark_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase53_first_layer_relation_benchmark_claim(
+    claim: &Phase53FirstLayerRelationBenchmarkClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 53 first-layer relation benchmark claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_FIRST_LAYER_RELATION_BENCHMARK_CLAIM_VERSION_PHASE53
+        || claim.semantic_scope != STWO_FIRST_LAYER_RELATION_BENCHMARK_CLAIM_SCOPE_PHASE53
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 53 first-layer relation benchmark claim version or semantic scope drift"
+                .to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase53_source_phase52_anchoring_claim_commitment",
+            claim.source_phase52_anchoring_claim_commitment.as_str(),
+        ),
+        (
+            "phase53_source_phase51_relation_claim_commitment",
+            claim.source_phase51_relation_claim_commitment.as_str(),
+        ),
+        (
+            "phase53_source_phase50_layer_io_claim_commitment",
+            claim.source_phase50_layer_io_claim_commitment.as_str(),
+        ),
+        (
+            "phase53_parameter_binding_commitment",
+            claim.parameter_binding_commitment.as_str(),
+        ),
+        (
+            "phase53_benchmark_claim_commitment",
+            claim.benchmark_claim_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if claim.relation_kind != STWO_FIRST_LAYER_RELATION_KIND_PHASE51
+        || claim.relation_rule != STWO_FIRST_LAYER_RELATION_RULE_PHASE51
+        || claim.relation_field != STWO_FIRST_LAYER_RELATION_FIELD_PHASE51
+        || claim.layer_index != 0
+        || claim.input_width != INPUT_DIM
+        || claim.output_width != OUTPUT_DIM
+        || claim.hidden_width != TransformerVmConfig::percepta_reference().ff_dim
+        || claim.gate_matmul_shape != vec![1, INPUT_DIM, claim.hidden_width]
+        || claim.value_matmul_shape != vec![1, INPUT_DIM, claim.hidden_width]
+        || claim.output_matmul_shape != vec![1, claim.hidden_width, OUTPUT_DIM]
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 53 first-layer relation benchmark claim relation shape drift".to_string(),
+        ));
+    }
+
+    let expected_gate_rounds = phase53_padded_log2(INPUT_DIM)?;
+    let expected_value_rounds = phase53_padded_log2(INPUT_DIM)?;
+    let expected_output_rounds = phase53_padded_log2(claim.hidden_width)?;
+    let expected_hadamard_rounds = phase53_padded_log2(claim.hidden_width)?;
+    let expected_planned_rounds = expected_gate_rounds
+        + expected_value_rounds
+        + expected_output_rounds
+        + expected_hadamard_rounds;
+    let expected_matmul_coefficients =
+        3 * (expected_gate_rounds + expected_value_rounds + expected_output_rounds);
+    let expected_hadamard_coefficients = 4 * expected_hadamard_rounds;
+    let expected_final_evaluations = 8;
+    let expected_sumcheck_surface =
+        expected_matmul_coefficients + expected_hadamard_coefficients + expected_final_evaluations;
+    if claim.gate_matmul_inner_rounds != expected_gate_rounds
+        || claim.value_matmul_inner_rounds != expected_value_rounds
+        || claim.output_matmul_inner_rounds != expected_output_rounds
+        || claim.hadamard_eq_sumcheck_rounds != expected_hadamard_rounds
+        || claim.planned_sumcheck_round_count != expected_planned_rounds
+        || claim.matmul_round_polynomial_coefficient_count != expected_matmul_coefficients
+        || claim.hadamard_round_polynomial_coefficient_count != expected_hadamard_coefficients
+        || claim.final_evaluation_count != expected_final_evaluations
+        || claim.estimated_sumcheck_surface_unit_count != expected_sumcheck_surface
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 53 first-layer relation benchmark claim sumcheck surface drift".to_string(),
+        ));
+    }
+
+    let expected_gate_terms = INPUT_DIM * claim.hidden_width;
+    let expected_value_terms = INPUT_DIM * claim.hidden_width;
+    let expected_output_terms = claim.hidden_width * OUTPUT_DIM;
+    let expected_total_affine_terms =
+        expected_gate_terms + expected_value_terms + expected_output_terms;
+    let expected_bias_terms = (2 * claim.hidden_width) + OUTPUT_DIM;
+    let expected_hadamard_terms = claim.hidden_width;
+    let expected_naive_terms =
+        expected_total_affine_terms + expected_bias_terms + expected_hadamard_terms;
+    if claim.gate_affine_mul_terms != expected_gate_terms
+        || claim.value_affine_mul_terms != expected_value_terms
+        || claim.output_affine_mul_terms != expected_output_terms
+        || claim.total_affine_mul_terms != expected_total_affine_terms
+        || claim.bias_term_count != expected_bias_terms
+        || claim.hadamard_term_count != expected_hadamard_terms
+        || claim.naive_relation_arithmetic_term_count != expected_naive_terms
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 53 first-layer relation benchmark claim relation arithmetic drift".to_string(),
+        ));
+    }
+    if claim.parameter_surface_unit_count != expected_total_affine_terms + expected_bias_terms
+        || claim.activation_surface_unit_count != INPUT_DIM + (3 * claim.hidden_width) + OUTPUT_DIM
+        || claim.endpoint_public_width != INPUT_DIM + OUTPUT_DIM
+        || claim.tensor_route_claim_surface_unit_count
+            != claim.endpoint_public_width + claim.estimated_sumcheck_surface_unit_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 53 first-layer relation benchmark claim accounting surface drift".to_string(),
+        ));
+    }
+    if claim.verifier_side_complexity != STWO_FIRST_LAYER_RELATION_BENCHMARK_COMPLEXITY_PHASE53
+        || claim.benchmark_status != STWO_FIRST_LAYER_RELATION_BENCHMARK_STATUS_PHASE53
+        || claim.stwo_ml_reference != STWO_FIRST_LAYER_RELATION_BENCHMARK_STWO_ML_REFERENCE_PHASE53
+        || claim.parameter_binding_scheme
+            != STWO_FIRST_LAYER_RELATION_BENCHMARK_PARAMETER_BINDING_SCHEME_PHASE53
+        || claim.transcript_order != phase53_benchmark_transcript_order()
+        || claim.required_next_step != STWO_FIRST_LAYER_RELATION_BENCHMARK_NEXT_STEP_PHASE53
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 53 first-layer relation benchmark claim transcript, reference, or next-step drift"
+                .to_string(),
+        ));
+    }
+    if !claim.endpoint_anchor_available
+        || claim.parameter_opening_proof_available
+        || claim.affine_sumcheck_proof_available
+        || claim.hadamard_product_proof_available
+        || claim.actual_relation_proof_available
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 53 first-layer relation benchmark claim must not claim unavailable proof evidence"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase53_first_layer_relation_benchmark_claim(claim)?;
+    if claim.benchmark_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 53 first-layer relation benchmark claim commitment does not match claim fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase53_first_layer_relation_benchmark_claim_against_phase52(
+    claim: &Phase53FirstLayerRelationBenchmarkClaim,
+    anchoring_claim: &Phase52LayerEndpointAnchoringClaim,
+    relation_claim: &Phase51FirstLayerRelationClaim,
+) -> Result<()> {
+    let expected =
+        phase53_prepare_first_layer_relation_benchmark_claim(anchoring_claim, relation_claim)?;
+    if claim != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 53 first-layer relation benchmark claim does not match verified Phase52 anchoring and Phase51 relation"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase54_sumcheck_component_skeleton(
+    component: &Phase54SumcheckComponentSkeleton,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 54 sumcheck component skeleton hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase54-sumcheck-component-skeleton");
+    phase29_update_len_prefixed(&mut hasher, component.proof_backend.to_string().as_bytes());
+    for part in [
+        component
+            .source_phase53_benchmark_claim_commitment
+            .as_bytes(),
+        component.component_name.as_bytes(),
+        component.component_kind.as_bytes(),
+        component.relation_field.as_bytes(),
+        component.transcript_protocol.as_bytes(),
+        component.round_polynomial_commitment.as_bytes(),
+        component.final_evaluation_commitment.as_bytes(),
+        component.opening_receipt_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_update_usize_vec(&mut hasher, &component.component_shape);
+    phase29_update_usize(&mut hasher, component.inner_or_domain_width);
+    phase29_update_usize(&mut hasher, component.padded_inner_or_domain_width);
+    phase29_update_usize(&mut hasher, component.round_count);
+    phase29_update_usize(&mut hasher, component.round_polynomial_degree);
+    phase29_update_usize(&mut hasher, component.round_polynomial_coefficient_count);
+    phase29_update_usize(&mut hasher, component.final_evaluation_count);
+    phase29_update_usize(&mut hasher, component.runtime_tensor_opening_count);
+    phase29_update_usize(&mut hasher, component.parameter_opening_count);
+    phase29_update_bool(&mut hasher, component.typed_proof_skeleton_available);
+    phase29_update_bool(
+        &mut hasher,
+        component.actual_round_polynomial_values_available,
+    );
+    phase29_update_bool(&mut hasher, component.actual_opening_proofs_available);
+    phase29_update_bool(&mut hasher, component.cryptographic_soundness_claimed);
+    phase44d_finalize_hash(hasher, "Phase 54 sumcheck component skeleton")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase54_parameter_opening_skeleton(
+    opening: &Phase54ParameterOpeningSkeleton,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 54 parameter opening skeleton hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase54-parameter-opening-skeleton");
+    phase29_update_len_prefixed(&mut hasher, opening.proof_backend.to_string().as_bytes());
+    for part in [
+        opening.source_phase53_benchmark_claim_commitment.as_bytes(),
+        opening
+            .source_phase53_parameter_binding_commitment
+            .as_bytes(),
+        opening.parameter_name.as_bytes(),
+        opening.parameter_role.as_bytes(),
+        opening.opening_scheme.as_bytes(),
+        opening.opening_receipt_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_update_usize_vec(&mut hasher, &opening.tensor_shape);
+    phase29_update_usize(&mut hasher, opening.logical_element_count);
+    phase29_update_usize(&mut hasher, opening.padded_element_count);
+    phase29_update_usize(&mut hasher, opening.opening_point_dimension);
+    phase29_update_usize(&mut hasher, opening.opening_value_count);
+    phase29_update_bool(&mut hasher, opening.opening_proof_available);
+    phase29_update_bool(&mut hasher, opening.cryptographic_soundness_claimed);
+    phase44d_finalize_hash(hasher, "Phase 54 parameter opening skeleton")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase54_first_layer_sumcheck_skeleton_claim(
+    claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 54 first-layer sumcheck skeleton claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase54-first-layer-sumcheck-skeleton-claim");
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim.source_phase53_benchmark_claim_commitment.as_bytes(),
+        claim.source_phase52_anchoring_claim_commitment.as_bytes(),
+        claim.source_phase51_relation_claim_commitment.as_bytes(),
+        claim.source_phase50_layer_io_claim_commitment.as_bytes(),
+        claim.source_phase53_parameter_binding_commitment.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.skeleton_status.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for component in &claim.component_claims {
+        phase29_update_len_prefixed(&mut hasher, component.component_claim_commitment.as_bytes());
+    }
+    for opening in &claim.parameter_opening_claims {
+        phase29_update_len_prefixed(
+            &mut hasher,
+            opening.parameter_opening_claim_commitment.as_bytes(),
+        );
+    }
+    phase29_update_usize(&mut hasher, claim.component_count);
+    phase29_update_usize(&mut hasher, claim.parameter_opening_count);
+    phase29_update_usize(&mut hasher, claim.total_round_count);
+    phase29_update_usize(&mut hasher, claim.total_round_polynomial_coefficient_count);
+    phase29_update_usize(&mut hasher, claim.total_final_evaluation_count);
+    phase29_update_usize(&mut hasher, claim.total_runtime_tensor_opening_count);
+    phase29_update_usize(&mut hasher, claim.total_parameter_opening_count);
+    phase29_update_usize(&mut hasher, claim.total_mle_opening_claim_count);
+    phase29_update_usize(&mut hasher, claim.typed_proof_object_surface_unit_count);
+    phase29_update_usize(
+        &mut hasher,
+        claim.phase53_estimated_sumcheck_surface_unit_count,
+    );
+    phase29_update_usize(&mut hasher, claim.endpoint_public_width);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.typed_sumcheck_skeleton_available);
+    phase29_update_bool(&mut hasher, claim.actual_sumcheck_verifier_available);
+    phase29_update_bool(
+        &mut hasher,
+        claim.actual_parameter_opening_verifier_available,
+    );
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase44d_finalize_hash(hasher, "Phase 54 first-layer sumcheck skeleton claim")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase54_prepare_first_layer_sumcheck_skeleton_claim(
+    phase53_claim: &Phase53FirstLayerRelationBenchmarkClaim,
+) -> Result<Phase54FirstLayerSumcheckSkeletonClaim> {
+    verify_phase53_first_layer_relation_benchmark_claim(phase53_claim)?;
+    let component_claims = phase54_prepare_sumcheck_component_skeletons(phase53_claim)?;
+    let parameter_opening_claims = phase54_prepare_parameter_opening_skeletons(phase53_claim)?;
+    let component_count = component_claims.len();
+    let parameter_opening_count = parameter_opening_claims.len();
+    let total_round_count = component_claims
+        .iter()
+        .map(|component| component.round_count)
+        .sum();
+    let total_round_polynomial_coefficient_count = component_claims
+        .iter()
+        .map(|component| component.round_polynomial_coefficient_count)
+        .sum();
+    let total_final_evaluation_count = component_claims
+        .iter()
+        .map(|component| component.final_evaluation_count)
+        .sum();
+    let total_runtime_tensor_opening_count = component_claims
+        .iter()
+        .map(|component| component.runtime_tensor_opening_count)
+        .sum();
+    let total_parameter_opening_count = component_claims
+        .iter()
+        .map(|component| component.parameter_opening_count)
+        .sum();
+    let total_mle_opening_claim_count =
+        total_runtime_tensor_opening_count + total_parameter_opening_count;
+    let typed_proof_object_surface_unit_count = total_round_polynomial_coefficient_count
+        + total_final_evaluation_count
+        + total_mle_opening_claim_count
+        + component_count
+        + parameter_opening_count;
+    let mut claim = Phase54FirstLayerSumcheckSkeletonClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_FIRST_LAYER_SUMCHECK_SKELETON_CLAIM_VERSION_PHASE54.to_string(),
+        semantic_scope: STWO_FIRST_LAYER_SUMCHECK_SKELETON_CLAIM_SCOPE_PHASE54.to_string(),
+        source_phase53_benchmark_claim_commitment: phase53_claim.benchmark_claim_commitment.clone(),
+        source_phase52_anchoring_claim_commitment: phase53_claim
+            .source_phase52_anchoring_claim_commitment
+            .clone(),
+        source_phase51_relation_claim_commitment: phase53_claim
+            .source_phase51_relation_claim_commitment
+            .clone(),
+        source_phase50_layer_io_claim_commitment: phase53_claim
+            .source_phase50_layer_io_claim_commitment
+            .clone(),
+        source_phase53_parameter_binding_commitment: phase53_claim
+            .parameter_binding_commitment
+            .clone(),
+        component_claims,
+        parameter_opening_claims,
+        component_count,
+        parameter_opening_count,
+        total_round_count,
+        total_round_polynomial_coefficient_count,
+        total_final_evaluation_count,
+        total_runtime_tensor_opening_count,
+        total_parameter_opening_count,
+        total_mle_opening_claim_count,
+        typed_proof_object_surface_unit_count,
+        phase53_estimated_sumcheck_surface_unit_count: phase53_claim
+            .estimated_sumcheck_surface_unit_count,
+        endpoint_public_width: phase53_claim.endpoint_public_width,
+        verifier_side_complexity: STWO_FIRST_LAYER_SUMCHECK_SKELETON_COMPLEXITY_PHASE54.to_string(),
+        skeleton_status: STWO_FIRST_LAYER_SUMCHECK_SKELETON_STATUS_PHASE54.to_string(),
+        transcript_order: phase54_skeleton_transcript_order(),
+        typed_sumcheck_skeleton_available: true,
+        actual_sumcheck_verifier_available: false,
+        actual_parameter_opening_verifier_available: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        required_next_step: STWO_FIRST_LAYER_SUMCHECK_SKELETON_NEXT_STEP_PHASE54.to_string(),
+        skeleton_claim_commitment: String::new(),
+    };
+    claim.skeleton_claim_commitment = commit_phase54_first_layer_sumcheck_skeleton_claim(&claim)?;
+    verify_phase54_first_layer_sumcheck_skeleton_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase54_sumcheck_component_skeleton(
+    component: &Phase54SumcheckComponentSkeleton,
+) -> Result<()> {
+    if component.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 sumcheck component skeleton requires `stwo` backend".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase54_component_source_phase53_benchmark_claim_commitment",
+            component.source_phase53_benchmark_claim_commitment.as_str(),
+        ),
+        (
+            "phase54_round_polynomial_commitment",
+            component.round_polynomial_commitment.as_str(),
+        ),
+        (
+            "phase54_final_evaluation_commitment",
+            component.final_evaluation_commitment.as_str(),
+        ),
+        (
+            "phase54_opening_receipt_commitment",
+            component.opening_receipt_commitment.as_str(),
+        ),
+        (
+            "phase54_component_claim_commitment",
+            component.component_claim_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let (
+        expected_kind,
+        expected_shape,
+        expected_inner_width,
+        expected_degree,
+        expected_runtime_openings,
+        expected_parameter_openings,
+    ) = phase54_component_spec(&component.component_name)?;
+    let expected_round_count = phase53_padded_log2(expected_inner_width)?;
+    let expected_padded_width = phase50_next_power_of_two(expected_inner_width)?;
+    if component.component_kind != expected_kind
+        || component.relation_field != STWO_FIRST_LAYER_RELATION_FIELD_PHASE51
+        || component.component_shape != expected_shape
+        || component.inner_or_domain_width != expected_inner_width
+        || component.padded_inner_or_domain_width != expected_padded_width
+        || component.round_count != expected_round_count
+        || component.round_polynomial_degree != expected_degree
+        || component.round_polynomial_coefficient_count
+            != expected_round_count * (expected_degree + 1)
+        || component.final_evaluation_count != 2
+        || component.runtime_tensor_opening_count != expected_runtime_openings
+        || component.parameter_opening_count != expected_parameter_openings
+        || component.transcript_protocol
+            != STWO_FIRST_LAYER_SUMCHECK_SKELETON_TRANSCRIPT_PROTOCOL_PHASE54
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 sumcheck component skeleton shape or surface drift".to_string(),
+        ));
+    }
+    let expected_round_commitment = phase54_derive_artifact_commitment(
+        &component.source_phase53_benchmark_claim_commitment,
+        &component.component_name,
+        "round_polynomials",
+        &component.component_shape,
+        component.round_count,
+        component.round_polynomial_degree,
+    )?;
+    let expected_final_commitment = phase54_derive_artifact_commitment(
+        &component.source_phase53_benchmark_claim_commitment,
+        &component.component_name,
+        "final_evaluations",
+        &component.component_shape,
+        component.final_evaluation_count,
+        component.round_polynomial_degree,
+    )?;
+    let expected_opening_commitment = phase54_derive_artifact_commitment(
+        &component.source_phase53_benchmark_claim_commitment,
+        &component.component_name,
+        "opening_receipts",
+        &component.component_shape,
+        component.runtime_tensor_opening_count + component.parameter_opening_count,
+        component.round_polynomial_degree,
+    )?;
+    if component.round_polynomial_commitment != expected_round_commitment
+        || component.final_evaluation_commitment != expected_final_commitment
+        || component.opening_receipt_commitment != expected_opening_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 sumcheck component skeleton artifact commitment drift".to_string(),
+        ));
+    }
+    if !component.typed_proof_skeleton_available
+        || component.actual_round_polynomial_values_available
+        || component.actual_opening_proofs_available
+        || component.cryptographic_soundness_claimed
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 sumcheck component skeleton must stay typed-skeleton-only".to_string(),
+        ));
+    }
+    let expected = commit_phase54_sumcheck_component_skeleton(component)?;
+    if component.component_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 sumcheck component skeleton commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase54_parameter_opening_skeleton(
+    opening: &Phase54ParameterOpeningSkeleton,
+) -> Result<()> {
+    if opening.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 parameter opening skeleton requires `stwo` backend".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase54_parameter_source_phase53_benchmark_claim_commitment",
+            opening.source_phase53_benchmark_claim_commitment.as_str(),
+        ),
+        (
+            "phase54_parameter_source_binding_commitment",
+            opening.source_phase53_parameter_binding_commitment.as_str(),
+        ),
+        (
+            "phase54_parameter_opening_receipt_commitment",
+            opening.opening_receipt_commitment.as_str(),
+        ),
+        (
+            "phase54_parameter_opening_claim_commitment",
+            opening.parameter_opening_claim_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let (expected_role, expected_shape) = phase54_parameter_opening_spec(&opening.parameter_name)?;
+    let expected_logical_element_count = phase50_tensor_element_count(&expected_shape)?;
+    let expected_padded_element_count = phase50_next_power_of_two(expected_logical_element_count)?;
+    if opening.parameter_role != expected_role
+        || opening.tensor_shape != expected_shape
+        || opening.logical_element_count != expected_logical_element_count
+        || opening.padded_element_count != expected_padded_element_count
+        || opening.opening_point_dimension != phase53_padded_log2(expected_logical_element_count)?
+        || opening.opening_value_count != 1
+        || opening.opening_scheme
+            != STWO_FIRST_LAYER_SUMCHECK_SKELETON_PARAMETER_OPENING_SCHEME_PHASE54
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 parameter opening skeleton shape or opening surface drift".to_string(),
+        ));
+    }
+    let expected_receipt = phase54_derive_artifact_commitment(
+        &opening.source_phase53_benchmark_claim_commitment,
+        &opening.parameter_name,
+        "parameter_opening_receipt",
+        &opening.tensor_shape,
+        opening.opening_point_dimension,
+        opening.opening_value_count,
+    )?;
+    if opening.opening_receipt_commitment != expected_receipt {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 parameter opening skeleton receipt commitment drift".to_string(),
+        ));
+    }
+    if opening.opening_proof_available || opening.cryptographic_soundness_claimed {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 parameter opening skeleton must not claim unavailable opening proof"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase54_parameter_opening_skeleton(opening)?;
+    if opening.parameter_opening_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 parameter opening skeleton commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase54_first_layer_sumcheck_skeleton_claim(
+    claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 first-layer sumcheck skeleton claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_FIRST_LAYER_SUMCHECK_SKELETON_CLAIM_VERSION_PHASE54
+        || claim.semantic_scope != STWO_FIRST_LAYER_SUMCHECK_SKELETON_CLAIM_SCOPE_PHASE54
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 first-layer sumcheck skeleton claim version or semantic scope drift"
+                .to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase54_source_phase53_benchmark_claim_commitment",
+            claim.source_phase53_benchmark_claim_commitment.as_str(),
+        ),
+        (
+            "phase54_source_phase52_anchoring_claim_commitment",
+            claim.source_phase52_anchoring_claim_commitment.as_str(),
+        ),
+        (
+            "phase54_source_phase51_relation_claim_commitment",
+            claim.source_phase51_relation_claim_commitment.as_str(),
+        ),
+        (
+            "phase54_source_phase50_layer_io_claim_commitment",
+            claim.source_phase50_layer_io_claim_commitment.as_str(),
+        ),
+        (
+            "phase54_source_phase53_parameter_binding_commitment",
+            claim.source_phase53_parameter_binding_commitment.as_str(),
+        ),
+        (
+            "phase54_skeleton_claim_commitment",
+            claim.skeleton_claim_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if claim.component_claims.len() != phase54_component_order().len()
+        || claim.parameter_opening_claims.len() != phase54_parameter_opening_order().len()
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 first-layer sumcheck skeleton claim component count drift".to_string(),
+        ));
+    }
+    for (component, expected_name) in claim.component_claims.iter().zip(phase54_component_order()) {
+        verify_phase54_sumcheck_component_skeleton(component)?;
+        if component.component_name != expected_name
+            || component.source_phase53_benchmark_claim_commitment
+                != claim.source_phase53_benchmark_claim_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 54 first-layer sumcheck skeleton claim component order or source drift"
+                    .to_string(),
+            ));
+        }
+    }
+    for (opening, expected_name) in claim
+        .parameter_opening_claims
+        .iter()
+        .zip(phase54_parameter_opening_order())
+    {
+        verify_phase54_parameter_opening_skeleton(opening)?;
+        if opening.parameter_name != expected_name
+            || opening.source_phase53_benchmark_claim_commitment
+                != claim.source_phase53_benchmark_claim_commitment
+            || opening.source_phase53_parameter_binding_commitment
+                != claim.source_phase53_parameter_binding_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 54 first-layer sumcheck skeleton claim parameter opening order or source drift"
+                    .to_string(),
+            ));
+        }
+    }
+    let component_count = claim.component_claims.len();
+    let parameter_opening_count = claim.parameter_opening_claims.len();
+    let total_round_count: usize = claim
+        .component_claims
+        .iter()
+        .map(|component| component.round_count)
+        .sum();
+    let total_round_polynomial_coefficient_count: usize = claim
+        .component_claims
+        .iter()
+        .map(|component| component.round_polynomial_coefficient_count)
+        .sum();
+    let total_final_evaluation_count: usize = claim
+        .component_claims
+        .iter()
+        .map(|component| component.final_evaluation_count)
+        .sum();
+    let total_runtime_tensor_opening_count: usize = claim
+        .component_claims
+        .iter()
+        .map(|component| component.runtime_tensor_opening_count)
+        .sum();
+    let total_parameter_opening_count: usize = claim
+        .component_claims
+        .iter()
+        .map(|component| component.parameter_opening_count)
+        .sum();
+    let total_mle_opening_claim_count =
+        total_runtime_tensor_opening_count + total_parameter_opening_count;
+    let typed_proof_object_surface_unit_count = total_round_polynomial_coefficient_count
+        + total_final_evaluation_count
+        + total_mle_opening_claim_count
+        + component_count
+        + parameter_opening_count;
+    if claim.component_count != component_count
+        || claim.parameter_opening_count != parameter_opening_count
+        || claim.total_round_count != total_round_count
+        || claim.total_round_polynomial_coefficient_count
+            != total_round_polynomial_coefficient_count
+        || claim.total_final_evaluation_count != total_final_evaluation_count
+        || claim.total_runtime_tensor_opening_count != total_runtime_tensor_opening_count
+        || claim.total_parameter_opening_count != total_parameter_opening_count
+        || claim.total_mle_opening_claim_count != total_mle_opening_claim_count
+        || claim.typed_proof_object_surface_unit_count != typed_proof_object_surface_unit_count
+        || claim.phase53_estimated_sumcheck_surface_unit_count != 93
+        || claim.endpoint_public_width != INPUT_DIM + OUTPUT_DIM
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 first-layer sumcheck skeleton claim surface accounting drift".to_string(),
+        ));
+    }
+    if claim.verifier_side_complexity != STWO_FIRST_LAYER_SUMCHECK_SKELETON_COMPLEXITY_PHASE54
+        || claim.skeleton_status != STWO_FIRST_LAYER_SUMCHECK_SKELETON_STATUS_PHASE54
+        || claim.transcript_order != phase54_skeleton_transcript_order()
+        || claim.required_next_step != STWO_FIRST_LAYER_SUMCHECK_SKELETON_NEXT_STEP_PHASE54
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 first-layer sumcheck skeleton claim transcript, status, or next-step drift"
+                .to_string(),
+        ));
+    }
+    if !claim.typed_sumcheck_skeleton_available
+        || claim.actual_sumcheck_verifier_available
+        || claim.actual_parameter_opening_verifier_available
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 first-layer sumcheck skeleton claim must not claim unavailable verification or compression"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase54_first_layer_sumcheck_skeleton_claim(claim)?;
+    if claim.skeleton_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 first-layer sumcheck skeleton claim commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase54_first_layer_sumcheck_skeleton_claim_against_phase53(
+    claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+    phase53_claim: &Phase53FirstLayerRelationBenchmarkClaim,
+) -> Result<()> {
+    let expected = phase54_prepare_first_layer_sumcheck_skeleton_claim(phase53_claim)?;
+    if claim != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 54 first-layer sumcheck skeleton claim does not match verified Phase53 benchmark claim"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase55_first_layer_compression_effectiveness_claim(
+    claim: &Phase55FirstLayerCompressionEffectivenessClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 55 compression effectiveness claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase55-first-layer-compression-effectiveness-claim",
+    );
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim.source_phase54_skeleton_claim_commitment.as_bytes(),
+        claim.source_phase53_benchmark_claim_commitment.as_bytes(),
+        claim.measurement_kind.as_bytes(),
+        claim.decision.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, claim.naive_relation_arithmetic_term_count);
+    phase29_update_usize(&mut hasher, claim.parameter_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.endpoint_public_width);
+    phase29_update_usize(&mut hasher, claim.vm_replay_surface_proxy_unit_count);
+    phase29_update_usize(&mut hasher, claim.tensor_proof_skeleton_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.tensor_sumcheck_round_count);
+    phase29_update_usize(&mut hasher, claim.tensor_round_polynomial_coefficient_count);
+    phase29_update_usize(&mut hasher, claim.tensor_mle_opening_claim_count);
+    phase29_update_usize(&mut hasher, claim.tensor_component_count);
+    phase29_update_usize(&mut hasher, claim.tensor_parameter_opening_count);
+    phase29_update_usize(&mut hasher, claim.tensor_to_vm_surface_proxy_basis_points);
+    phase29_update_usize(&mut hasher, claim.surface_proxy_reduction_basis_points);
+    phase29_update_bool(&mut hasher, claim.verifier_surface_is_smaller_than_vm_proxy);
+    phase29_update_bool(&mut hasher, claim.positive_breakthrough_signal);
+    phase29_update_bool(&mut hasher, claim.actual_proof_byte_benchmark_available);
+    phase29_update_bool(&mut hasher, claim.executable_sumcheck_verifier_available);
+    phase29_update_bool(&mut hasher, claim.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, claim.paper_ready);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase44d_finalize_hash(hasher, "Phase 55 compression effectiveness claim")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase55_prepare_first_layer_compression_effectiveness_claim(
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+    phase53_claim: &Phase53FirstLayerRelationBenchmarkClaim,
+) -> Result<Phase55FirstLayerCompressionEffectivenessClaim> {
+    verify_phase54_first_layer_sumcheck_skeleton_claim_against_phase53(
+        phase54_claim,
+        phase53_claim,
+    )?;
+    let vm_replay_surface_proxy_unit_count = phase53_claim
+        .naive_relation_arithmetic_term_count
+        .checked_add(phase53_claim.parameter_surface_unit_count)
+        .and_then(|count| count.checked_add(phase53_claim.endpoint_public_width))
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 55 VM replay surface proxy accounting overflow".to_string(),
+            )
+        })?;
+    let tensor_surface = phase54_claim.typed_proof_object_surface_unit_count;
+    let tensor_to_vm_surface_proxy_basis_points =
+        phase55_ratio_basis_points(tensor_surface, vm_replay_surface_proxy_unit_count)?;
+    let surface_proxy_reduction_basis_points = phase55_ratio_basis_points(
+        vm_replay_surface_proxy_unit_count.saturating_sub(tensor_surface),
+        vm_replay_surface_proxy_unit_count,
+    )?;
+    let mut claim = Phase55FirstLayerCompressionEffectivenessClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_FIRST_LAYER_COMPRESSION_EFFECTIVENESS_CLAIM_VERSION_PHASE55.to_string(),
+        semantic_scope: STWO_FIRST_LAYER_COMPRESSION_EFFECTIVENESS_CLAIM_SCOPE_PHASE55.to_string(),
+        source_phase54_skeleton_claim_commitment: phase54_claim.skeleton_claim_commitment.clone(),
+        source_phase53_benchmark_claim_commitment: phase53_claim.benchmark_claim_commitment.clone(),
+        measurement_kind: STWO_FIRST_LAYER_COMPRESSION_EFFECTIVENESS_MEASUREMENT_PHASE55
+            .to_string(),
+        naive_relation_arithmetic_term_count: phase53_claim.naive_relation_arithmetic_term_count,
+        parameter_surface_unit_count: phase53_claim.parameter_surface_unit_count,
+        endpoint_public_width: phase53_claim.endpoint_public_width,
+        vm_replay_surface_proxy_unit_count,
+        tensor_proof_skeleton_surface_unit_count: tensor_surface,
+        tensor_sumcheck_round_count: phase54_claim.total_round_count,
+        tensor_round_polynomial_coefficient_count: phase54_claim
+            .total_round_polynomial_coefficient_count,
+        tensor_mle_opening_claim_count: phase54_claim.total_mle_opening_claim_count,
+        tensor_component_count: phase54_claim.component_count,
+        tensor_parameter_opening_count: phase54_claim.parameter_opening_count,
+        tensor_to_vm_surface_proxy_basis_points,
+        surface_proxy_reduction_basis_points,
+        verifier_surface_is_smaller_than_vm_proxy: tensor_surface
+            < vm_replay_surface_proxy_unit_count,
+        positive_breakthrough_signal: tensor_to_vm_surface_proxy_basis_points < 1_000,
+        actual_proof_byte_benchmark_available: false,
+        executable_sumcheck_verifier_available: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        decision: STWO_FIRST_LAYER_COMPRESSION_EFFECTIVENESS_DECISION_PHASE55.to_string(),
+        required_next_step: STWO_FIRST_LAYER_COMPRESSION_EFFECTIVENESS_NEXT_STEP_PHASE55
+            .to_string(),
+        transcript_order: phase55_effectiveness_transcript_order(),
+        effectiveness_claim_commitment: String::new(),
+    };
+    claim.effectiveness_claim_commitment =
+        commit_phase55_first_layer_compression_effectiveness_claim(&claim)?;
+    verify_phase55_first_layer_compression_effectiveness_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase55_first_layer_compression_effectiveness_claim(
+    claim: &Phase55FirstLayerCompressionEffectivenessClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 55 compression effectiveness claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_FIRST_LAYER_COMPRESSION_EFFECTIVENESS_CLAIM_VERSION_PHASE55
+        || claim.semantic_scope != STWO_FIRST_LAYER_COMPRESSION_EFFECTIVENESS_CLAIM_SCOPE_PHASE55
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 55 compression effectiveness claim version or semantic scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase55_source_phase54_skeleton_claim_commitment",
+            claim.source_phase54_skeleton_claim_commitment.as_str(),
+        ),
+        (
+            "phase55_source_phase53_benchmark_claim_commitment",
+            claim.source_phase53_benchmark_claim_commitment.as_str(),
+        ),
+        (
+            "phase55_effectiveness_claim_commitment",
+            claim.effectiveness_claim_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let expected_vm_proxy = claim
+        .naive_relation_arithmetic_term_count
+        .checked_add(claim.parameter_surface_unit_count)
+        .and_then(|count| count.checked_add(claim.endpoint_public_width))
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 55 compression effectiveness claim VM proxy accounting overflow".to_string(),
+            )
+        })?;
+    let expected_tensor_ratio = phase55_ratio_basis_points(
+        claim.tensor_proof_skeleton_surface_unit_count,
+        expected_vm_proxy,
+    )?;
+    let expected_reduction_ratio = phase55_ratio_basis_points(
+        expected_vm_proxy.saturating_sub(claim.tensor_proof_skeleton_surface_unit_count),
+        expected_vm_proxy,
+    )?;
+    if claim.measurement_kind != STWO_FIRST_LAYER_COMPRESSION_EFFECTIVENESS_MEASUREMENT_PHASE55
+        || claim.naive_relation_arithmetic_term_count != 6_558
+        || claim.parameter_surface_unit_count != 6_486
+        || claim.endpoint_public_width != INPUT_DIM + OUTPUT_DIM
+        || claim.vm_replay_surface_proxy_unit_count != expected_vm_proxy
+        || claim.tensor_proof_skeleton_surface_unit_count != 114
+        || claim.tensor_sumcheck_round_count != 26
+        || claim.tensor_round_polynomial_coefficient_count != 85
+        || claim.tensor_mle_opening_claim_count != 11
+        || claim.tensor_component_count != 4
+        || claim.tensor_parameter_opening_count != 6
+        || claim.tensor_to_vm_surface_proxy_basis_points != expected_tensor_ratio
+        || claim.surface_proxy_reduction_basis_points != expected_reduction_ratio
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 55 compression effectiveness claim surface measurement drift".to_string(),
+        ));
+    }
+    if !claim.verifier_surface_is_smaller_than_vm_proxy
+        || !claim.positive_breakthrough_signal
+        || claim.actual_proof_byte_benchmark_available
+        || claim.executable_sumcheck_verifier_available
+        || claim.breakthrough_claimed
+        || claim.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 55 compression effectiveness claim must stay positive-signal-only without false breakthrough claims"
+                .to_string(),
+        ));
+    }
+    if claim.decision != STWO_FIRST_LAYER_COMPRESSION_EFFECTIVENESS_DECISION_PHASE55
+        || claim.required_next_step != STWO_FIRST_LAYER_COMPRESSION_EFFECTIVENESS_NEXT_STEP_PHASE55
+        || claim.transcript_order != phase55_effectiveness_transcript_order()
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 55 compression effectiveness claim decision or transcript drift".to_string(),
+        ));
+    }
+    let expected = commit_phase55_first_layer_compression_effectiveness_claim(claim)?;
+    if claim.effectiveness_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 55 compression effectiveness claim commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase55_first_layer_compression_effectiveness_claim_against_phase54(
+    claim: &Phase55FirstLayerCompressionEffectivenessClaim,
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+    phase53_claim: &Phase53FirstLayerRelationBenchmarkClaim,
+) -> Result<()> {
+    let expected =
+        phase55_prepare_first_layer_compression_effectiveness_claim(phase54_claim, phase53_claim)?;
+    if claim != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 55 compression effectiveness claim does not match verified Phase54 skeleton and Phase53 benchmark"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase56_round_polynomial(round: &Phase56RoundPolynomial) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 56 round polynomial hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase56-round-polynomial");
+    phase29_update_usize(&mut hasher, round.round_index);
+    phase29_update_usize(&mut hasher, round.degree);
+    phase44d_update_u32_vec(&mut hasher, &round.coefficients);
+    phase44d_finalize_hash(hasher, "Phase 56 round polynomial")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase56_executable_sumcheck_component_proof(
+    proof: &Phase56ExecutableSumcheckComponentProof,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 56 executable sumcheck component proof hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase56-executable-sumcheck-component-proof");
+    phase29_update_len_prefixed(&mut hasher, proof.proof_backend.to_string().as_bytes());
+    for part in [
+        proof.source_phase54_component_claim_commitment.as_bytes(),
+        proof.component_name.as_bytes(),
+        proof.component_kind.as_bytes(),
+        proof.relation_field.as_bytes(),
+        proof.terminal_check_rule.as_bytes(),
+        proof.transcript_protocol.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, proof.round_count);
+    phase29_update_usize(&mut hasher, proof.round_polynomial_degree);
+    hasher.update(&proof.claimed_sum.to_le_bytes());
+    for round in &proof.round_polynomials {
+        phase29_update_len_prefixed(&mut hasher, round.polynomial_commitment.as_bytes());
+    }
+    phase44d_update_u32_vec(&mut hasher, &proof.derived_challenges);
+    phase44d_update_u32_vec(&mut hasher, &proof.final_evaluations);
+    hasher.update(&proof.terminal_sum.to_le_bytes());
+    phase29_update_bool(&mut hasher, proof.executable_round_check_available);
+    phase29_update_bool(&mut hasher, proof.mle_opening_verifier_available);
+    phase29_update_bool(&mut hasher, proof.relation_witness_binding_available);
+    phase29_update_bool(&mut hasher, proof.cryptographic_soundness_claimed);
+    phase44d_finalize_hash(hasher, "Phase 56 executable sumcheck component proof")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase56_first_layer_executable_sumcheck_claim(
+    claim: &Phase56FirstLayerExecutableSumcheckClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 56 first-layer executable sumcheck claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase56-first-layer-executable-sumcheck-claim",
+    );
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim.source_phase54_skeleton_claim_commitment.as_bytes(),
+        claim.source_phase53_benchmark_claim_commitment.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.executable_status.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for component in &claim.component_proofs {
+        phase29_update_len_prefixed(&mut hasher, component.component_proof_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, claim.component_count);
+    phase29_update_usize(&mut hasher, claim.total_round_count);
+    phase29_update_usize(&mut hasher, claim.total_round_polynomial_count);
+    phase29_update_usize(&mut hasher, claim.total_round_polynomial_coefficient_count);
+    phase29_update_usize(&mut hasher, claim.total_final_evaluation_count);
+    phase29_update_usize(&mut hasher, claim.executable_round_check_count);
+    phase29_update_usize(&mut hasher, claim.terminal_check_count);
+    phase29_update_usize(
+        &mut hasher,
+        claim.phase54_typed_proof_object_surface_unit_count,
+    );
+    phase29_update_usize(&mut hasher, claim.executable_verifier_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.surface_delta_from_phase54);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(
+        &mut hasher,
+        claim.executable_sumcheck_round_verifier_available,
+    );
+    phase29_update_bool(&mut hasher, claim.executable_mle_opening_verifier_available);
+    phase29_update_bool(&mut hasher, claim.relation_witness_binding_available);
+    phase29_update_bool(&mut hasher, claim.actual_proof_byte_benchmark_available);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase44d_finalize_hash(hasher, "Phase 56 first-layer executable sumcheck claim")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase56_prepare_first_layer_executable_sumcheck_claim(
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<Phase56FirstLayerExecutableSumcheckClaim> {
+    verify_phase54_first_layer_sumcheck_skeleton_claim(phase54_claim)?;
+    let component_proofs = phase54_claim
+        .component_claims
+        .iter()
+        .map(phase56_prepare_executable_component_proof)
+        .collect::<Result<Vec<_>>>()?;
+    let component_count = component_proofs.len();
+    let total_round_count: usize = component_proofs.iter().map(|proof| proof.round_count).sum();
+    let total_round_polynomial_count: usize = component_proofs
+        .iter()
+        .map(|proof| proof.round_polynomials.len())
+        .sum();
+    let total_round_polynomial_coefficient_count: usize = component_proofs
+        .iter()
+        .flat_map(|proof| proof.round_polynomials.iter())
+        .map(|round| round.coefficients.len())
+        .sum();
+    let total_final_evaluation_count: usize = component_proofs
+        .iter()
+        .map(|proof| proof.final_evaluations.len())
+        .sum();
+    let executable_round_check_count = total_round_count;
+    let terminal_check_count = component_count;
+    let executable_verifier_surface_unit_count = total_round_polynomial_coefficient_count
+        + total_final_evaluation_count
+        + executable_round_check_count
+        + terminal_check_count;
+    let surface_delta_from_phase54 = executable_verifier_surface_unit_count
+        .saturating_sub(phase54_claim.typed_proof_object_surface_unit_count);
+    let mut claim = Phase56FirstLayerExecutableSumcheckClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_CLAIM_VERSION_PHASE56.to_string(),
+        semantic_scope: STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_CLAIM_SCOPE_PHASE56.to_string(),
+        source_phase54_skeleton_claim_commitment: phase54_claim.skeleton_claim_commitment.clone(),
+        source_phase53_benchmark_claim_commitment: phase54_claim
+            .source_phase53_benchmark_claim_commitment
+            .clone(),
+        component_proofs,
+        component_count,
+        total_round_count,
+        total_round_polynomial_count,
+        total_round_polynomial_coefficient_count,
+        total_final_evaluation_count,
+        executable_round_check_count,
+        terminal_check_count,
+        phase54_typed_proof_object_surface_unit_count: phase54_claim
+            .typed_proof_object_surface_unit_count,
+        executable_verifier_surface_unit_count,
+        surface_delta_from_phase54,
+        verifier_side_complexity: STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_COMPLEXITY_PHASE56
+            .to_string(),
+        executable_status: STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_STATUS_PHASE56.to_string(),
+        transcript_order: phase56_executable_transcript_order(),
+        executable_sumcheck_round_verifier_available: true,
+        executable_mle_opening_verifier_available: false,
+        relation_witness_binding_available: false,
+        actual_proof_byte_benchmark_available: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        required_next_step: STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_NEXT_STEP_PHASE56.to_string(),
+        executable_claim_commitment: String::new(),
+    };
+    claim.executable_claim_commitment =
+        commit_phase56_first_layer_executable_sumcheck_claim(&claim)?;
+    verify_phase56_first_layer_executable_sumcheck_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase56_executable_sumcheck_component_proof(
+    proof: &Phase56ExecutableSumcheckComponentProof,
+) -> Result<()> {
+    if proof.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 56 executable sumcheck component proof requires `stwo` backend".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase56_source_phase54_component_claim_commitment",
+            proof.source_phase54_component_claim_commitment.as_str(),
+        ),
+        (
+            "phase56_component_proof_commitment",
+            proof.component_proof_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let (expected_kind, _, expected_inner_width, expected_degree, _, _) =
+        phase54_component_spec(&proof.component_name)?;
+    if proof.component_kind != expected_kind
+        || proof.relation_field != STWO_FIRST_LAYER_RELATION_FIELD_PHASE51
+        || proof.round_count != phase53_padded_log2(expected_inner_width)?
+        || proof.round_polynomial_degree != expected_degree
+        || proof.round_polynomials.len() != proof.round_count
+        || proof.derived_challenges.len() != proof.round_count
+        || proof.final_evaluations.len() != 2
+        || proof.terminal_check_rule != STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_TERMINAL_RULE_PHASE56
+        || proof.transcript_protocol
+            != STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_TRANSCRIPT_PROTOCOL_PHASE56
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 56 executable sumcheck component proof shape or transcript drift".to_string(),
+        ));
+    }
+    phase52_validate_m31_values("phase56_final_evaluations", &proof.final_evaluations)?;
+    if proof.claimed_sum >= PHASE44D_M31_MODULUS || proof.terminal_sum >= PHASE44D_M31_MODULUS {
+        return Err(VmError::InvalidConfig(
+            "Phase 56 executable sumcheck component proof sum exceeds M31 capacity".to_string(),
+        ));
+    }
+    let mut current_sum = proof.claimed_sum;
+    for (round_index, round) in proof.round_polynomials.iter().enumerate() {
+        if round.round_index != round_index
+            || round.degree != proof.round_polynomial_degree
+            || round.coefficients.len() != proof.round_polynomial_degree + 1
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 56 executable sumcheck round polynomial shape drift".to_string(),
+            ));
+        }
+        phase52_validate_m31_values("phase56_round_coefficients", &round.coefficients)?;
+        let expected_round_commitment = commit_phase56_round_polynomial(round)?;
+        if round.polynomial_commitment != expected_round_commitment {
+            return Err(VmError::InvalidConfig(
+                "Phase 56 executable sumcheck round polynomial commitment drift".to_string(),
+            ));
+        }
+        let round_zero = round.coefficients[0];
+        let round_one = phase56_eval_round_polynomial(&round.coefficients, 1)?;
+        if phase52_m31_add(round_zero, round_one) != current_sum {
+            return Err(VmError::InvalidConfig(
+                "Phase 56 executable sumcheck round consistency check failed".to_string(),
+            ));
+        }
+        let expected_challenge = phase56_derive_round_challenge(
+            &proof.source_phase54_component_claim_commitment,
+            &proof.component_name,
+            round_index,
+            &round.polynomial_commitment,
+        )?;
+        if proof.derived_challenges[round_index] != expected_challenge {
+            return Err(VmError::InvalidConfig(
+                "Phase 56 executable sumcheck challenge derivation drift".to_string(),
+            ));
+        }
+        current_sum = phase56_eval_round_polynomial(&round.coefficients, expected_challenge)?;
+    }
+    let expected_terminal = phase52_m31_mul(proof.final_evaluations[0], proof.final_evaluations[1]);
+    if proof.terminal_sum != current_sum || proof.terminal_sum != expected_terminal {
+        return Err(VmError::InvalidConfig(
+            "Phase 56 executable sumcheck terminal check failed".to_string(),
+        ));
+    }
+    if !proof.executable_round_check_available
+        || proof.mle_opening_verifier_available
+        || proof.relation_witness_binding_available
+        || proof.cryptographic_soundness_claimed
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 56 executable sumcheck component proof must not claim unavailable opening, witness, or soundness evidence"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase56_executable_sumcheck_component_proof(proof)?;
+    if proof.component_proof_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 56 executable sumcheck component proof commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase56_first_layer_executable_sumcheck_claim(
+    claim: &Phase56FirstLayerExecutableSumcheckClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 56 executable sumcheck claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_CLAIM_VERSION_PHASE56
+        || claim.semantic_scope != STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_CLAIM_SCOPE_PHASE56
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 56 executable sumcheck claim version or semantic scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase56_source_phase54_skeleton_claim_commitment",
+            claim.source_phase54_skeleton_claim_commitment.as_str(),
+        ),
+        (
+            "phase56_source_phase53_benchmark_claim_commitment",
+            claim.source_phase53_benchmark_claim_commitment.as_str(),
+        ),
+        (
+            "phase56_executable_claim_commitment",
+            claim.executable_claim_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if claim.component_proofs.len() != phase54_component_order().len() {
+        return Err(VmError::InvalidConfig(
+            "Phase 56 executable sumcheck claim component count drift".to_string(),
+        ));
+    }
+    for (proof, expected_name) in claim.component_proofs.iter().zip(phase54_component_order()) {
+        verify_phase56_executable_sumcheck_component_proof(proof)?;
+        if proof.component_name != expected_name {
+            return Err(VmError::InvalidConfig(
+                "Phase 56 executable sumcheck claim component order drift".to_string(),
+            ));
+        }
+    }
+    let component_count = claim.component_proofs.len();
+    let total_round_count: usize = claim
+        .component_proofs
+        .iter()
+        .map(|proof| proof.round_count)
+        .sum();
+    let total_round_polynomial_count: usize = claim
+        .component_proofs
+        .iter()
+        .map(|proof| proof.round_polynomials.len())
+        .sum();
+    let total_round_polynomial_coefficient_count: usize = claim
+        .component_proofs
+        .iter()
+        .flat_map(|proof| proof.round_polynomials.iter())
+        .map(|round| round.coefficients.len())
+        .sum();
+    let total_final_evaluation_count: usize = claim
+        .component_proofs
+        .iter()
+        .map(|proof| proof.final_evaluations.len())
+        .sum();
+    let executable_surface = total_round_polynomial_coefficient_count
+        + total_final_evaluation_count
+        + total_round_count
+        + component_count;
+    if claim.component_count != component_count
+        || claim.total_round_count != total_round_count
+        || claim.total_round_polynomial_count != total_round_polynomial_count
+        || claim.total_round_polynomial_coefficient_count
+            != total_round_polynomial_coefficient_count
+        || claim.total_final_evaluation_count != total_final_evaluation_count
+        || claim.executable_round_check_count != total_round_count
+        || claim.terminal_check_count != component_count
+        || claim.phase54_typed_proof_object_surface_unit_count != 114
+        || claim.executable_verifier_surface_unit_count != executable_surface
+        || claim.surface_delta_from_phase54
+            != executable_surface
+                .saturating_sub(claim.phase54_typed_proof_object_surface_unit_count)
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 56 executable sumcheck claim surface accounting drift".to_string(),
+        ));
+    }
+    if claim.verifier_side_complexity != STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_COMPLEXITY_PHASE56
+        || claim.executable_status != STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_STATUS_PHASE56
+        || claim.transcript_order != phase56_executable_transcript_order()
+        || claim.required_next_step != STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_NEXT_STEP_PHASE56
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 56 executable sumcheck claim transcript, status, or next-step drift".to_string(),
+        ));
+    }
+    if !claim.executable_sumcheck_round_verifier_available
+        || claim.executable_mle_opening_verifier_available
+        || claim.relation_witness_binding_available
+        || claim.actual_proof_byte_benchmark_available
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 56 executable sumcheck claim must not claim unavailable opening, witness, benchmark, recursion, or compression evidence"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase56_first_layer_executable_sumcheck_claim(claim)?;
+    if claim.executable_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 56 executable sumcheck claim commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase56_first_layer_executable_sumcheck_claim_against_phase54(
+    claim: &Phase56FirstLayerExecutableSumcheckClaim,
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<()> {
+    let expected = phase56_prepare_first_layer_executable_sumcheck_claim(phase54_claim)?;
+    if claim != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 56 executable sumcheck claim does not match verified Phase54 skeleton"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase46_check_bridge_lane(
+    bridge: &Phase45RecursiveVerifierPublicInputBridge,
+    label: &str,
+    expected: &str,
+) -> Result<()> {
+    let actual = bridge
+        .ordered_public_input_lanes
+        .iter()
+        .find(|lane| lane.label == label)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(format!(
+                "Phase 46 Stwo proof-adapter receipt missing Phase45 lane `{label}`"
+            ))
+        })?;
+    if actual.value != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 46 Stwo proof-adapter receipt Phase45 lane `{label}` does not match compact verifier input"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+const PHASE45_PUBLIC_INPUT_LANE_LABELS: [&str; 24] = [
+    "source_chain_public_output_boundary_commitment",
+    "source_emission_public_output_commitment",
+    "emitted_root_artifact_commitment",
+    "compact_envelope_commitment",
+    "source_root_acceptance_commitment",
+    "terminal_boundary_logup_closure_commitment",
+    "emitted_canonical_source_root",
+    "source_root_preimage_commitment",
+    "phase43_trace_commitment",
+    "phase30_source_chain_commitment",
+    "phase30_step_envelopes_commitment",
+    "projection_commitment",
+    "compact_projection_trace_root",
+    "compact_preprocessed_trace_root",
+    "terminal_boundary_commitment",
+    "terminal_boundary_logup_statement_commitment",
+    "terminal_boundary_public_logup_sum_limbs",
+    "terminal_boundary_component_claimed_sum_limbs",
+    "compact_proof_size_bytes",
+    "total_steps",
+    "pair_width",
+    "projection_row_count",
+    "projection_column_count",
+    "verifier_side_complexity",
+];
+
+#[cfg(feature = "stwo-backend")]
+fn phase45_ordered_public_input_lanes(
+    boundary: &Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
+    compact_envelope: &Phase43HistoryReplayProjectionCompactProofEnvelope,
+    handoff: &Phase44DRecursiveVerifierPublicOutputHandoff,
+    terminal_boundary_logup_closure: &Phase44DHistoryReplayProjectionTerminalBoundaryLogupClosure,
+) -> Result<Vec<Phase45RecursiveVerifierPublicInputLane>> {
+    let acceptance =
+        verify_phase44d_history_replay_projection_source_chain_public_output_boundary_acceptance(
+            boundary,
+            compact_envelope,
+        )?;
+    let compact_envelope_commitment = phase44d_commit_compact_envelope_reference(compact_envelope)?;
+    let source_root_acceptance_commitment =
+        phase44d_commit_source_root_acceptance_reference(&acceptance)?;
+    let source_emission = &boundary.source_emission_public_output.source_emission;
+    let source_claim = &source_emission.source_claim;
+    let raw_lanes = vec![
+        (
+            "source_chain_public_output_boundary_commitment",
+            "hash32",
+            boundary
+                .source_chain_public_output_boundary_commitment
+                .clone(),
+        ),
+        (
+            "source_emission_public_output_commitment",
+            "hash32",
+            boundary
+                .source_emission_public_output
+                .public_output_commitment
+                .clone(),
+        ),
+        (
+            "emitted_root_artifact_commitment",
+            "hash32",
+            source_emission
+                .emitted_root_artifact
+                .artifact_commitment
+                .clone(),
+        ),
+        (
+            "compact_envelope_commitment",
+            "hash32",
+            compact_envelope_commitment,
+        ),
+        (
+            "source_root_acceptance_commitment",
+            "hash32",
+            source_root_acceptance_commitment,
+        ),
+        (
+            "terminal_boundary_logup_closure_commitment",
+            "hash32",
+            terminal_boundary_logup_closure.closure_commitment.clone(),
+        ),
+        (
+            "emitted_canonical_source_root",
+            "hash32",
+            acceptance.emitted_canonical_source_root.clone(),
+        ),
+        (
+            "source_root_preimage_commitment",
+            "hash32",
+            acceptance.source_root_preimage_commitment.clone(),
+        ),
+        (
+            "phase43_trace_commitment",
+            "hash32",
+            boundary.phase43_trace_commitment.clone(),
+        ),
+        (
+            "phase30_source_chain_commitment",
+            "hash32",
+            boundary.phase30_source_chain_commitment.clone(),
+        ),
+        (
+            "phase30_step_envelopes_commitment",
+            "hash32",
+            boundary.phase30_step_envelopes_commitment.clone(),
+        ),
+        (
+            "projection_commitment",
+            "hash32",
+            source_claim.projection_commitment.clone(),
+        ),
+        (
+            "compact_projection_trace_root",
+            "hash32",
+            acceptance.compact_projection_trace_root.clone(),
+        ),
+        (
+            "compact_preprocessed_trace_root",
+            "hash32",
+            acceptance.compact_preprocessed_trace_root.clone(),
+        ),
+        (
+            "terminal_boundary_commitment",
+            "hash32",
+            source_claim
+                .terminal_boundary
+                .terminal_boundary_commitment
+                .clone(),
+        ),
+        (
+            "terminal_boundary_logup_statement_commitment",
+            "hash32",
+            acceptance
+                .terminal_boundary_logup_statement_commitment
+                .clone(),
+        ),
+        (
+            "terminal_boundary_public_logup_sum_limbs",
+            "u32_vec",
+            phase45_join_u32_limbs(&source_claim.terminal_boundary_public_logup_sum_limbs),
+        ),
+        (
+            "terminal_boundary_component_claimed_sum_limbs",
+            "u32_vec",
+            phase45_join_u32_limbs(
+                &terminal_boundary_logup_closure.terminal_boundary_component_claimed_sum_limbs,
+            ),
+        ),
+        (
+            "compact_proof_size_bytes",
+            "usize",
+            compact_envelope.proof.len().to_string(),
+        ),
+        ("total_steps", "usize", boundary.total_steps.to_string()),
+        ("pair_width", "usize", boundary.pair_width.to_string()),
+        (
+            "projection_row_count",
+            "usize",
+            boundary.projection_row_count.to_string(),
+        ),
+        (
+            "projection_column_count",
+            "usize",
+            boundary.projection_column_count.to_string(),
+        ),
+        (
+            "verifier_side_complexity",
+            "string",
+            handoff.verifier_side_complexity.clone(),
+        ),
+    ];
+    if raw_lanes.len() != PHASE45_PUBLIC_INPUT_LANE_LABELS.len() {
+        return Err(VmError::InvalidConfig(
+            "Phase 45 public-input bridge internal lane count drift".to_string(),
+        ));
+    }
+    let mut lanes = Vec::with_capacity(raw_lanes.len());
+    for (index, (label, value_kind, value)) in raw_lanes.into_iter().enumerate() {
+        if label != PHASE45_PUBLIC_INPUT_LANE_LABELS[index] {
+            return Err(VmError::InvalidConfig(
+                "Phase 45 public-input bridge internal lane order drift".to_string(),
+            ));
+        }
+        lanes.push(Phase45RecursiveVerifierPublicInputLane {
+            index,
+            label: label.to_string(),
+            value_kind: value_kind.to_string(),
+            value,
+        });
+    }
+    Ok(lanes)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase45_join_u32_limbs(values: &[u32]) -> String {
+    values
+        .iter()
+        .map(u32::to_string)
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase44d_commit_compact_envelope_reference(
+    envelope: &Phase43HistoryReplayProjectionCompactProofEnvelope,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 44D compact envelope reference hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase44d-compact-envelope-reference");
+    phase44d_update_compact_claim_reference(&mut hasher, envelope)?;
+    phase29_update_usize(&mut hasher, envelope.proof.len());
+    hasher.update(&envelope.proof);
+    phase44d_finalize_hash(hasher, "Phase 44D compact envelope reference")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase44d_update_compact_claim_reference(
+    hasher: &mut Blake2bVar,
+    envelope: &Phase43HistoryReplayProjectionCompactProofEnvelope,
+) -> Result<()> {
+    let claim = &envelope.claim;
+    phase29_update_len_prefixed(&mut *hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.proof_backend_version.as_bytes(),
+        claim.statement_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim.phase43_trace_commitment.as_bytes(),
+        claim.phase43_trace_version.as_bytes(),
+        claim.projection_commitment.as_bytes(),
+        claim.stwo_preprocessed_trace_root.as_bytes(),
+        claim.stwo_projection_trace_root.as_bytes(),
+        claim.source_binding.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut *hasher, part);
+    }
+    phase29_update_usize(&mut *hasher, claim.total_steps);
+    phase29_update_usize(&mut *hasher, claim.pair_width);
+    hasher.update(&claim.log_size.to_le_bytes());
+    phase29_update_usize(&mut *hasher, claim.projection_row_count);
+    phase29_update_usize(&mut *hasher, claim.projection_column_count);
+    phase44d_update_u32_vec(&mut *hasher, &claim.preprocessed_trace_log_sizes);
+    phase44d_update_u32_vec(&mut *hasher, &claim.projection_trace_log_sizes);
+    phase44d_update_terminal_boundary_reference(&mut *hasher, &claim.terminal_boundary);
+    phase29_update_bool(&mut *hasher, claim.verifier_requires_full_phase43_trace);
+    phase29_update_bool(
+        &mut *hasher,
+        claim.verifier_embeds_projection_rows_as_constants,
+    );
+    phase29_update_bool(&mut *hasher, claim.useful_compression_boundary);
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase44d_update_terminal_boundary_reference(
+    hasher: &mut Blake2bVar,
+    boundary: &Phase43HistoryReplayProjectionTerminalBoundaryClaim,
+) {
+    for part in [
+        boundary.boundary_version.as_bytes(),
+        boundary.phase12_initial_public_state_commitment.as_bytes(),
+        boundary.phase12_terminal_public_state_commitment.as_bytes(),
+        boundary.phase14_initial_public_state_commitment.as_bytes(),
+        boundary.phase14_terminal_public_state_commitment.as_bytes(),
+        boundary.initial_input_lookup_rows_commitment.as_bytes(),
+        boundary.terminal_output_lookup_rows_commitment.as_bytes(),
+        boundary.terminal_boundary_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut *hasher, part);
+    }
+    hasher.update(&boundary.phase12_initial_position.to_le_bytes());
+    hasher.update(&boundary.phase12_terminal_position.to_le_bytes());
+    hasher.update(&boundary.phase14_initial_position.to_le_bytes());
+    hasher.update(&boundary.phase14_terminal_position.to_le_bytes());
+    phase29_update_usize(&mut *hasher, boundary.phase12_initial_history_len);
+    phase29_update_usize(&mut *hasher, boundary.phase12_terminal_history_len);
+    phase29_update_usize(&mut *hasher, boundary.phase14_initial_history_len);
+    phase29_update_usize(&mut *hasher, boundary.phase14_terminal_history_len);
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase44d_commit_source_root_acceptance_reference(
+    acceptance: &Phase44DHistoryReplayProjectionExternalSourceRootAcceptance,
+) -> Result<String> {
+    if acceptance.acceptance_version
+        != STWO_HISTORY_REPLAY_PROJECTION_EXTERNAL_SOURCE_ROOT_ACCEPTANCE_VERSION_PHASE44D
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 44D source-root acceptance reference version drift".to_string(),
+        ));
+    }
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 44D source-root acceptance reference hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase44d-source-root-acceptance-reference");
+    for part in [
+        acceptance.acceptance_version.as_bytes(),
+        acceptance.emitted_canonical_source_root.as_bytes(),
+        acceptance.source_claim_canonical_source_root.as_bytes(),
+        acceptance.source_root_preimage_commitment.as_bytes(),
+        acceptance.compact_projection_trace_root.as_bytes(),
+        acceptance.compact_preprocessed_trace_root.as_bytes(),
+        acceptance
+            .terminal_boundary_logup_statement_commitment
+            .as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_bool(
+        &mut hasher,
+        acceptance.compact_claim_useful_compression_boundary,
+    );
+    phase29_update_bool(&mut hasher, acceptance.final_useful_compression_boundary);
+    phase44d_finalize_hash(hasher, "Phase 44D source-root acceptance reference")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase44d_commit_recursive_verifier_handoff_list(commitments: &[String]) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 44D recursive-verifier handoff list hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase44d-recursive-verifier-handoff-list");
+    phase44d_update_hash_vec(&mut hasher, commitments);
+    phase44d_finalize_hash(hasher, "Phase 44D recursive-verifier handoff list")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase44d_update_hash_vec(hasher: &mut Blake2bVar, values: &[String]) {
+    phase29_update_usize(&mut *hasher, values.len());
+    for value in values {
+        phase29_update_len_prefixed(&mut *hasher, value.as_bytes());
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase44d_update_u32_vec(hasher: &mut Blake2bVar, values: &[u32]) {
+    phase29_update_usize(&mut *hasher, values.len());
+    for value in values {
+        hasher.update(&value.to_le_bytes());
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase44d_update_usize_vec(hasher: &mut Blake2bVar, values: &[usize]) {
+    phase29_update_usize(&mut *hasher, values.len());
+    for value in values {
+        phase29_update_usize(&mut *hasher, *value);
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase44d_secure_field_from_limbs(label: &str, limbs: &[u32]) -> Result<SecureField> {
+    if limbs.len() != 4 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 44D `{label}` must have 4 M31 limbs, got {}",
+            limbs.len()
+        )));
+    }
+    for limb in limbs {
+        if *limb >= PHASE44D_M31_MODULUS {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 44D `{label}` limb {limb} exceeds M31 capacity"
+            )));
+        }
+    }
+    Ok(SecureField::from_m31_array([
+        BaseField::from_u32_unchecked(limbs[0]),
+        BaseField::from_u32_unchecked(limbs[1]),
+        BaseField::from_u32_unchecked(limbs[2]),
+        BaseField::from_u32_unchecked(limbs[3]),
+    ]))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase44d_finalize_hash(hasher: Blake2bVar, label: &str) -> Result<String> {
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!("failed to finalize {label} commitment hash: {err}"))
+    })?;
+    Ok(phase29_lower_hex(&out))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase50_tensor_transcript_order() -> Vec<String> {
+    [
+        "phase50_domain_tag",
+        "claim_version",
+        "semantic_scope",
+        "tensor_role",
+        "tensor_name",
+        "element_field",
+        "memory_layout",
+        "quantization",
+        "tensor_shape_len",
+        "tensor_shape",
+        "logical_element_count",
+        "padded_element_count",
+        "padding_rule",
+        "commitment_scheme",
+        "commitment_root",
+        "mle_evaluation_claim_status",
+        "raw_endpoint_anchor_required",
+        "raw_endpoint_anchor_available",
+        "vm_replay_flags",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase50_layer_io_transcript_order() -> Vec<String> {
+    [
+        "phase50_layer_io_domain_tag",
+        "claim_version",
+        "semantic_scope",
+        "source_phase49_contract_version",
+        "source_phase49_contract_commitment",
+        "proof_backend_version",
+        "statement_version",
+        "layer_index",
+        "layer_name",
+        "layer_kind",
+        "input_tensor_claim_commitment",
+        "output_tensor_claim_commitment",
+        "relation_claim_kind",
+        "relation_rule",
+        "propagation_direction",
+        "endpoint_anchoring_rule",
+        "claim_surface_unit_count",
+        "proof_availability_flags",
+        "required_next_step",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase51_operation_graph_order() -> Vec<String> {
+    [
+        "gate_affine",
+        "value_affine",
+        "hidden_hadamard_product",
+        "output_affine",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase51_relation_transcript_order() -> Vec<String> {
+    [
+        "phase51_relation_domain_tag",
+        "claim_version",
+        "semantic_scope",
+        "source_phase50_layer_io_claim_commitment",
+        "source_phase49_contract_commitment",
+        "proof_backend_version",
+        "statement_version",
+        "relation_kind",
+        "relation_rule",
+        "relation_field",
+        "layer_index",
+        "input_width",
+        "hidden_width",
+        "output_width",
+        "gate_projection_shape",
+        "value_projection_shape",
+        "hidden_product_shape",
+        "output_projection_shape",
+        "bias_lengths",
+        "operation_graph_order",
+        "parameter_commitment_scheme",
+        "surface_accounting",
+        "proof_availability_flags",
+        "required_next_step",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase52_endpoint_transcript_order() -> Vec<String> {
+    [
+        "phase52_endpoint_domain_tag",
+        "claim_version",
+        "semantic_scope",
+        "source_phase50_tensor_claim_commitment",
+        "source_phase51_relation_claim_commitment",
+        "endpoint_role",
+        "tensor_name",
+        "element_field",
+        "tensor_shape",
+        "raw_tensor_values",
+        "raw_tensor_commitment",
+        "mle_point",
+        "mle_value",
+        "challenge_derivation",
+        "evaluation_rule",
+        "proof_availability_flags",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase52_layer_endpoint_transcript_order() -> Vec<String> {
+    [
+        "phase52_layer_endpoint_domain_tag",
+        "claim_version",
+        "semantic_scope",
+        "source_phase51_relation_claim_commitment",
+        "source_phase50_layer_io_claim_commitment",
+        "input_endpoint_claim_commitment",
+        "output_endpoint_claim_commitment",
+        "endpoint_count",
+        "public_endpoint_width",
+        "endpoint_anchoring_available",
+        "proof_availability_flags",
+        "required_next_step",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase53_benchmark_transcript_order() -> Vec<String> {
+    [
+        "phase53_relation_benchmark_domain_tag",
+        "claim_version",
+        "semantic_scope",
+        "source_phase52_anchoring_claim_commitment",
+        "source_phase51_relation_claim_commitment",
+        "source_phase50_layer_io_claim_commitment",
+        "relation_kind",
+        "relation_rule",
+        "relation_field",
+        "matmul_shapes",
+        "sumcheck_round_surface",
+        "relation_arithmetic_surface",
+        "parameter_binding_scheme",
+        "parameter_binding_commitment",
+        "endpoint_public_width",
+        "benchmark_status",
+        "proof_availability_flags",
+        "required_next_step",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase54_skeleton_transcript_order() -> Vec<String> {
+    [
+        "phase54_sumcheck_skeleton_domain_tag",
+        "claim_version",
+        "semantic_scope",
+        "source_phase53_benchmark_claim_commitment",
+        "source_phase52_anchoring_claim_commitment",
+        "source_phase51_relation_claim_commitment",
+        "source_phase50_layer_io_claim_commitment",
+        "source_phase53_parameter_binding_commitment",
+        "ordered_component_claim_commitments",
+        "ordered_parameter_opening_claim_commitments",
+        "surface_accounting",
+        "proof_availability_flags",
+        "required_next_step",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase55_effectiveness_transcript_order() -> Vec<String> {
+    [
+        "phase55_effectiveness_domain_tag",
+        "claim_version",
+        "semantic_scope",
+        "source_phase54_skeleton_claim_commitment",
+        "source_phase53_benchmark_claim_commitment",
+        "measurement_kind",
+        "vm_replay_surface_proxy",
+        "tensor_proof_skeleton_surface",
+        "surface_proxy_ratios",
+        "decision_flags",
+        "required_next_step",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase54_component_order() -> Vec<String> {
+    [
+        "gate_affine_sumcheck",
+        "value_affine_sumcheck",
+        "hidden_hadamard_eq_sumcheck",
+        "output_affine_sumcheck",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase54_parameter_opening_order() -> Vec<String> {
+    [
+        "gate_weight_mle_opening",
+        "gate_bias_mle_opening",
+        "value_weight_mle_opening",
+        "value_bias_mle_opening",
+        "output_weight_mle_opening",
+        "output_bias_mle_opening",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase54_component_spec(
+    component_name: &str,
+) -> Result<(String, Vec<usize>, usize, usize, usize, usize)> {
+    let hidden_width = TransformerVmConfig::percepta_reference().ff_dim;
+    match component_name {
+        "gate_affine_sumcheck" => Ok((
+            "matmul_sumcheck".to_string(),
+            vec![1, INPUT_DIM, hidden_width],
+            INPUT_DIM,
+            2,
+            1,
+            2,
+        )),
+        "value_affine_sumcheck" => Ok((
+            "matmul_sumcheck".to_string(),
+            vec![1, INPUT_DIM, hidden_width],
+            INPUT_DIM,
+            2,
+            1,
+            2,
+        )),
+        "hidden_hadamard_eq_sumcheck" => Ok((
+            "hadamard_eq_sumcheck".to_string(),
+            vec![hidden_width],
+            hidden_width,
+            3,
+            2,
+            0,
+        )),
+        "output_affine_sumcheck" => Ok((
+            "matmul_sumcheck".to_string(),
+            vec![1, hidden_width, OUTPUT_DIM],
+            hidden_width,
+            2,
+            1,
+            2,
+        )),
+        _ => Err(VmError::InvalidConfig(format!(
+            "Phase 54 unknown sumcheck component `{component_name}`"
+        ))),
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase54_parameter_opening_spec(parameter_name: &str) -> Result<(String, Vec<usize>)> {
+    let hidden_width = TransformerVmConfig::percepta_reference().ff_dim;
+    match parameter_name {
+        "gate_weight_mle_opening" => Ok(("gate_weight".to_string(), vec![INPUT_DIM, hidden_width])),
+        "gate_bias_mle_opening" => Ok(("gate_bias".to_string(), vec![hidden_width])),
+        "value_weight_mle_opening" => {
+            Ok(("value_weight".to_string(), vec![INPUT_DIM, hidden_width]))
+        }
+        "value_bias_mle_opening" => Ok(("value_bias".to_string(), vec![hidden_width])),
+        "output_weight_mle_opening" => {
+            Ok(("output_weight".to_string(), vec![hidden_width, OUTPUT_DIM]))
+        }
+        "output_bias_mle_opening" => Ok(("output_bias".to_string(), vec![OUTPUT_DIM])),
+        _ => Err(VmError::InvalidConfig(format!(
+            "Phase 54 unknown parameter opening `{parameter_name}`"
+        ))),
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase54_prepare_sumcheck_component_skeletons(
+    phase53_claim: &Phase53FirstLayerRelationBenchmarkClaim,
+) -> Result<Vec<Phase54SumcheckComponentSkeleton>> {
+    phase54_component_order()
+        .into_iter()
+        .map(|component_name| {
+            phase54_prepare_sumcheck_component_skeleton(phase53_claim, &component_name)
+        })
+        .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase54_prepare_sumcheck_component_skeleton(
+    phase53_claim: &Phase53FirstLayerRelationBenchmarkClaim,
+    component_name: &str,
+) -> Result<Phase54SumcheckComponentSkeleton> {
+    let (
+        component_kind,
+        component_shape,
+        inner_or_domain_width,
+        round_polynomial_degree,
+        runtime_tensor_opening_count,
+        parameter_opening_count,
+    ) = phase54_component_spec(component_name)?;
+    let padded_inner_or_domain_width = phase50_next_power_of_two(inner_or_domain_width)?;
+    let round_count = phase53_padded_log2(inner_or_domain_width)?;
+    let round_polynomial_coefficient_count = round_count * (round_polynomial_degree + 1);
+    let final_evaluation_count = 2;
+    let round_polynomial_commitment = phase54_derive_artifact_commitment(
+        &phase53_claim.benchmark_claim_commitment,
+        component_name,
+        "round_polynomials",
+        &component_shape,
+        round_count,
+        round_polynomial_degree,
+    )?;
+    let final_evaluation_commitment = phase54_derive_artifact_commitment(
+        &phase53_claim.benchmark_claim_commitment,
+        component_name,
+        "final_evaluations",
+        &component_shape,
+        final_evaluation_count,
+        round_polynomial_degree,
+    )?;
+    let opening_receipt_commitment = phase54_derive_artifact_commitment(
+        &phase53_claim.benchmark_claim_commitment,
+        component_name,
+        "opening_receipts",
+        &component_shape,
+        runtime_tensor_opening_count + parameter_opening_count,
+        round_polynomial_degree,
+    )?;
+    let mut component = Phase54SumcheckComponentSkeleton {
+        proof_backend: StarkProofBackend::Stwo,
+        source_phase53_benchmark_claim_commitment: phase53_claim.benchmark_claim_commitment.clone(),
+        component_name: component_name.to_string(),
+        component_kind,
+        relation_field: STWO_FIRST_LAYER_RELATION_FIELD_PHASE51.to_string(),
+        component_shape,
+        inner_or_domain_width,
+        padded_inner_or_domain_width,
+        round_count,
+        round_polynomial_degree,
+        round_polynomial_coefficient_count,
+        final_evaluation_count,
+        runtime_tensor_opening_count,
+        parameter_opening_count,
+        transcript_protocol: STWO_FIRST_LAYER_SUMCHECK_SKELETON_TRANSCRIPT_PROTOCOL_PHASE54
+            .to_string(),
+        round_polynomial_commitment,
+        final_evaluation_commitment,
+        opening_receipt_commitment,
+        typed_proof_skeleton_available: true,
+        actual_round_polynomial_values_available: false,
+        actual_opening_proofs_available: false,
+        cryptographic_soundness_claimed: false,
+        component_claim_commitment: String::new(),
+    };
+    component.component_claim_commitment = commit_phase54_sumcheck_component_skeleton(&component)?;
+    verify_phase54_sumcheck_component_skeleton(&component)?;
+    Ok(component)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase54_prepare_parameter_opening_skeletons(
+    phase53_claim: &Phase53FirstLayerRelationBenchmarkClaim,
+) -> Result<Vec<Phase54ParameterOpeningSkeleton>> {
+    phase54_parameter_opening_order()
+        .into_iter()
+        .map(|parameter_name| {
+            phase54_prepare_parameter_opening_skeleton(phase53_claim, &parameter_name)
+        })
+        .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase54_prepare_parameter_opening_skeleton(
+    phase53_claim: &Phase53FirstLayerRelationBenchmarkClaim,
+    parameter_name: &str,
+) -> Result<Phase54ParameterOpeningSkeleton> {
+    let (parameter_role, tensor_shape) = phase54_parameter_opening_spec(parameter_name)?;
+    let logical_element_count = phase50_tensor_element_count(&tensor_shape)?;
+    let padded_element_count = phase50_next_power_of_two(logical_element_count)?;
+    let opening_point_dimension = phase53_padded_log2(logical_element_count)?;
+    let opening_value_count = 1;
+    let opening_receipt_commitment = phase54_derive_artifact_commitment(
+        &phase53_claim.benchmark_claim_commitment,
+        parameter_name,
+        "parameter_opening_receipt",
+        &tensor_shape,
+        opening_point_dimension,
+        opening_value_count,
+    )?;
+    let mut opening = Phase54ParameterOpeningSkeleton {
+        proof_backend: StarkProofBackend::Stwo,
+        source_phase53_benchmark_claim_commitment: phase53_claim.benchmark_claim_commitment.clone(),
+        source_phase53_parameter_binding_commitment: phase53_claim
+            .parameter_binding_commitment
+            .clone(),
+        parameter_name: parameter_name.to_string(),
+        parameter_role,
+        tensor_shape,
+        logical_element_count,
+        padded_element_count,
+        opening_point_dimension,
+        opening_value_count,
+        opening_scheme: STWO_FIRST_LAYER_SUMCHECK_SKELETON_PARAMETER_OPENING_SCHEME_PHASE54
+            .to_string(),
+        opening_receipt_commitment,
+        opening_proof_available: false,
+        cryptographic_soundness_claimed: false,
+        parameter_opening_claim_commitment: String::new(),
+    };
+    opening.parameter_opening_claim_commitment =
+        commit_phase54_parameter_opening_skeleton(&opening)?;
+    verify_phase54_parameter_opening_skeleton(&opening)?;
+    Ok(opening)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase54_derive_artifact_commitment(
+    source_claim_commitment: &str,
+    item_name: &str,
+    artifact_kind: &str,
+    shape: &[usize],
+    primary_count: usize,
+    secondary_count: usize,
+) -> Result<String> {
+    phase43_require_hash32(
+        "phase54_artifact_source_claim_commitment",
+        source_claim_commitment,
+    )?;
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 54 artifact commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase54-derived-artifact-commitment");
+    phase29_update_len_prefixed(&mut hasher, source_claim_commitment.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, item_name.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, artifact_kind.as_bytes());
+    phase44d_update_usize_vec(&mut hasher, shape);
+    phase29_update_usize(&mut hasher, primary_count);
+    phase29_update_usize(&mut hasher, secondary_count);
+    phase44d_finalize_hash(hasher, "Phase 54 derived artifact commitment")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase55_ratio_basis_points(numerator: usize, denominator: usize) -> Result<usize> {
+    if denominator == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 55 ratio denominator must be non-zero".to_string(),
+        ));
+    }
+    numerator
+        .checked_mul(10_000)
+        .map(|scaled| scaled / denominator)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 55 ratio basis-point scaling overflow".to_string())
+        })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase56_executable_transcript_order() -> Vec<String> {
+    [
+        "phase56_executable_sumcheck_domain_tag",
+        "claim_version",
+        "semantic_scope",
+        "source_phase54_skeleton_claim_commitment",
+        "source_phase53_benchmark_claim_commitment",
+        "ordered_component_proof_commitments",
+        "claimed_sums",
+        "round_polynomial_coefficients",
+        "derived_round_challenges",
+        "terminal_evaluations",
+        "surface_accounting",
+        "proof_availability_flags",
+        "required_next_step",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase56_prepare_executable_component_proof(
+    component: &Phase54SumcheckComponentSkeleton,
+) -> Result<Phase56ExecutableSumcheckComponentProof> {
+    verify_phase54_sumcheck_component_skeleton(component)?;
+    let claimed_sum = phase56_derive_m31(
+        &component.component_claim_commitment,
+        &component.component_name,
+        "claimed_sum",
+        0,
+    )?;
+    let mut current_sum = claimed_sum;
+    let mut round_polynomials = Vec::with_capacity(component.round_count);
+    let mut derived_challenges = Vec::with_capacity(component.round_count);
+    for round_index in 0..component.round_count {
+        let round = phase56_prepare_round_polynomial(
+            &component.component_claim_commitment,
+            &component.component_name,
+            round_index,
+            component.round_polynomial_degree,
+            current_sum,
+        )?;
+        let challenge = phase56_derive_round_challenge(
+            &component.component_claim_commitment,
+            &component.component_name,
+            round_index,
+            &round.polynomial_commitment,
+        )?;
+        current_sum = phase56_eval_round_polynomial(&round.coefficients, challenge)?;
+        round_polynomials.push(round);
+        derived_challenges.push(challenge);
+    }
+    let final_evaluations = vec![current_sum, 1];
+    let mut proof = Phase56ExecutableSumcheckComponentProof {
+        proof_backend: StarkProofBackend::Stwo,
+        source_phase54_component_claim_commitment: component.component_claim_commitment.clone(),
+        component_name: component.component_name.clone(),
+        component_kind: component.component_kind.clone(),
+        relation_field: component.relation_field.clone(),
+        round_count: component.round_count,
+        round_polynomial_degree: component.round_polynomial_degree,
+        claimed_sum,
+        round_polynomials,
+        derived_challenges,
+        final_evaluations,
+        terminal_sum: current_sum,
+        terminal_check_rule: STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_TERMINAL_RULE_PHASE56.to_string(),
+        transcript_protocol: STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_TRANSCRIPT_PROTOCOL_PHASE56
+            .to_string(),
+        executable_round_check_available: true,
+        mle_opening_verifier_available: false,
+        relation_witness_binding_available: false,
+        cryptographic_soundness_claimed: false,
+        component_proof_commitment: String::new(),
+    };
+    proof.component_proof_commitment = commit_phase56_executable_sumcheck_component_proof(&proof)?;
+    verify_phase56_executable_sumcheck_component_proof(&proof)?;
+    Ok(proof)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase56_prepare_round_polynomial(
+    source_commitment: &str,
+    component_name: &str,
+    round_index: usize,
+    degree: usize,
+    current_sum: u32,
+) -> Result<Phase56RoundPolynomial> {
+    if degree == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 56 round polynomial degree must be non-zero".to_string(),
+        ));
+    }
+    let mut coefficients = vec![0u32; degree + 1];
+    coefficients[0] = phase56_derive_m31(source_commitment, component_name, "c0", round_index)?;
+    let mut tail_sum = 0u32;
+    for (degree_index, coefficient) in coefficients.iter_mut().enumerate().skip(2) {
+        *coefficient = phase56_derive_m31(
+            source_commitment,
+            component_name,
+            &format!("c{degree_index}"),
+            round_index,
+        )?;
+        tail_sum = phase52_m31_add(tail_sum, *coefficient);
+    }
+    let two_c0 = phase52_m31_add(coefficients[0], coefficients[0]);
+    coefficients[1] = phase52_m31_sub(phase52_m31_sub(current_sum, two_c0), tail_sum);
+    let mut round = Phase56RoundPolynomial {
+        round_index,
+        degree,
+        coefficients,
+        polynomial_commitment: String::new(),
+    };
+    round.polynomial_commitment = commit_phase56_round_polynomial(&round)?;
+    Ok(round)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase56_derive_round_challenge(
+    source_commitment: &str,
+    component_name: &str,
+    round_index: usize,
+    polynomial_commitment: &str,
+) -> Result<u32> {
+    phase43_require_hash32("phase56_round_source_commitment", source_commitment)?;
+    phase43_require_hash32("phase56_round_polynomial_commitment", polynomial_commitment)?;
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 56 round challenge hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase56-round-challenge");
+    phase29_update_len_prefixed(&mut hasher, source_commitment.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, component_name.as_bytes());
+    phase29_update_usize(&mut hasher, round_index);
+    phase29_update_len_prefixed(&mut hasher, polynomial_commitment.as_bytes());
+    phase56_finalize_m31_hash(hasher, "Phase 56 round challenge")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase56_derive_m31(
+    source_commitment: &str,
+    component_name: &str,
+    label: &str,
+    round_index: usize,
+) -> Result<u32> {
+    phase43_require_hash32("phase56_m31_source_commitment", source_commitment)?;
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!("failed to initialize Phase 56 M31 hash: {err}"))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase56-derived-m31");
+    phase29_update_len_prefixed(&mut hasher, source_commitment.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, component_name.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, label.as_bytes());
+    phase29_update_usize(&mut hasher, round_index);
+    phase56_finalize_m31_hash(hasher, "Phase 56 derived M31")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase56_finalize_m31_hash(hasher: Blake2bVar, label: &str) -> Result<u32> {
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .map_err(|err| VmError::InvalidConfig(format!("failed to finalize {label} hash: {err}")))?;
+    let mut limb_bytes = [0u8; 8];
+    limb_bytes.copy_from_slice(&out[..8]);
+    Ok((u64::from_le_bytes(limb_bytes) % u64::from(PHASE44D_M31_MODULUS)) as u32)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase56_eval_round_polynomial(coefficients: &[u32], point: u32) -> Result<u32> {
+    phase52_validate_m31_values("phase56_eval_coefficients", coefficients)?;
+    if point >= PHASE44D_M31_MODULUS {
+        return Err(VmError::InvalidConfig(
+            "Phase 56 polynomial evaluation point exceeds M31 capacity".to_string(),
+        ));
+    }
+    let mut acc = 0u32;
+    for coefficient in coefficients.iter().rev() {
+        acc = phase52_m31_add(phase52_m31_mul(acc, point), *coefficient);
+    }
+    Ok(acc)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase50_tensor_element_count(shape: &[usize]) -> Result<usize> {
+    if shape.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 tensor commitment claim requires a non-empty shape".to_string(),
+        ));
+    }
+    shape.iter().try_fold(1usize, |acc, dimension| {
+        if *dimension == 0 {
+            return Err(VmError::InvalidConfig(
+                "Phase 50 tensor commitment claim shape dimensions must be non-zero".to_string(),
+            ));
+        }
+        acc.checked_mul(*dimension).ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 50 tensor commitment claim shape element count overflow".to_string(),
+            )
+        })
+    })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase50_next_power_of_two(value: usize) -> Result<usize> {
+    if value == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 50 tensor commitment claim cannot pad an empty tensor".to_string(),
+        ));
+    }
+    value.checked_next_power_of_two().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 50 tensor commitment claim padded element count overflow".to_string(),
+        )
+    })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase53_padded_log2(value: usize) -> Result<usize> {
+    let padded = phase50_next_power_of_two(value)?;
+    Ok(padded.trailing_zeros() as usize)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase53_derive_parameter_binding_commitment(
+    relation_claim: &Phase51FirstLayerRelationClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 53 parameter binding commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase53-parameter-binding-placeholder");
+    phase29_update_len_prefixed(
+        &mut hasher,
+        relation_claim.relation_claim_commitment.as_bytes(),
+    );
+    phase29_update_len_prefixed(
+        &mut hasher,
+        relation_claim.parameter_commitment_scheme.as_bytes(),
+    );
+    phase44d_update_usize_vec(&mut hasher, &relation_claim.gate_projection_shape);
+    phase44d_update_usize_vec(&mut hasher, &relation_claim.value_projection_shape);
+    phase44d_update_usize_vec(&mut hasher, &relation_claim.output_projection_shape);
+    phase29_update_usize(&mut hasher, relation_claim.gate_bias_len);
+    phase29_update_usize(&mut hasher, relation_claim.value_bias_len);
+    phase29_update_usize(&mut hasher, relation_claim.output_bias_len);
+    phase29_update_usize(&mut hasher, relation_claim.parameter_surface_unit_count);
+    phase44d_finalize_hash(hasher, "Phase 53 parameter binding commitment")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase50_derive_tensor_root(
+    contract: &Phase49LayerwiseTensorClaimPropagationContract,
+    tensor_role: &str,
+    tensor_shape: &[usize],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 50 tensor-root derivation hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase50-derived-tensor-root");
+    phase29_update_len_prefixed(&mut hasher, contract.contract_commitment.as_bytes());
+    phase29_update_len_prefixed(&mut hasher, tensor_role.as_bytes());
+    phase44d_update_usize_vec(&mut hasher, tensor_shape);
+    phase44d_finalize_hash(hasher, "Phase 50 derived tensor root")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase52_validate_m31_values(label: &str, values: &[u32]) -> Result<()> {
+    for value in values {
+        if *value >= PHASE44D_M31_MODULUS {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 52 `{label}` value {value} exceeds M31 capacity"
+            )));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase52_commit_raw_tensor_values(values: &[u32]) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 52 raw tensor commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase52-raw-tensor-values");
+    phase44d_update_u32_vec(&mut hasher, values);
+    phase44d_finalize_hash(hasher, "Phase 52 raw tensor values")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase52_derive_mle_point(
+    relation_claim_commitment: &str,
+    endpoint_role: &str,
+    padded_element_count: usize,
+) -> Result<Vec<u32>> {
+    phase43_require_hash32(
+        "phase52_relation_claim_commitment",
+        relation_claim_commitment,
+    )?;
+    if padded_element_count == 0 || !padded_element_count.is_power_of_two() {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 MLE point derivation requires a non-zero power-of-two padded size"
+                .to_string(),
+        ));
+    }
+    let dimension = padded_element_count.trailing_zeros() as usize;
+    let mut point = Vec::with_capacity(dimension);
+    for index in 0..dimension {
+        let mut hasher = Blake2bVar::new(32).map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to initialize Phase 52 MLE point challenge hash: {err}"
+            ))
+        })?;
+        phase29_update_len_prefixed(&mut hasher, b"phase52-mle-point-coordinate");
+        phase29_update_len_prefixed(&mut hasher, relation_claim_commitment.as_bytes());
+        phase29_update_len_prefixed(&mut hasher, endpoint_role.as_bytes());
+        phase29_update_usize(&mut hasher, index);
+        let mut out = [0u8; 32];
+        hasher.finalize_variable(&mut out).map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to finalize Phase 52 MLE point challenge hash: {err}"
+            ))
+        })?;
+        let mut limb_bytes = [0u8; 8];
+        limb_bytes.copy_from_slice(&out[..8]);
+        point.push((u64::from_le_bytes(limb_bytes) % u64::from(PHASE44D_M31_MODULUS)) as u32);
+    }
+    Ok(point)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase52_evaluate_padded_mle(raw_values: &[u32], point: &[u32]) -> Result<u32> {
+    phase52_validate_m31_values("raw_values", raw_values)?;
+    phase52_validate_m31_values("mle_point", point)?;
+    let padded_len = phase50_next_power_of_two(raw_values.len())?;
+    if point.len() != padded_len.trailing_zeros() as usize {
+        return Err(VmError::InvalidConfig(
+            "Phase 52 MLE evaluation point dimension does not match padded tensor size".to_string(),
+        ));
+    }
+    let mut layer = vec![0u32; padded_len];
+    layer[..raw_values.len()].copy_from_slice(raw_values);
+    for challenge in point {
+        let one_minus_challenge = phase52_m31_sub(1, *challenge);
+        let mut next = Vec::with_capacity(layer.len() / 2);
+        for pair in layer.chunks_exact(2) {
+            let left = phase52_m31_mul(pair[0], one_minus_challenge);
+            let right = phase52_m31_mul(pair[1], *challenge);
+            next.push(phase52_m31_add(left, right));
+        }
+        layer = next;
+    }
+    layer.first().copied().ok_or_else(|| {
+        VmError::InvalidConfig("Phase 52 MLE evaluation produced an empty layer".to_string())
+    })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase52_m31_add(left: u32, right: u32) -> u32 {
+    ((u64::from(left) + u64::from(right)) % u64::from(PHASE44D_M31_MODULUS)) as u32
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase52_m31_sub(left: u32, right: u32) -> u32 {
+    ((u64::from(left) + u64::from(PHASE44D_M31_MODULUS) - u64::from(right))
+        % u64::from(PHASE44D_M31_MODULUS)) as u32
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase52_m31_mul(left: u32, right: u32) -> u32 {
+    ((u128::from(left) * u128::from(right)) % u128::from(PHASE44D_M31_MODULUS)) as u32
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn parse_phase42_boundary_preimage_evidence_json(
+    json: &str,
+) -> Result<Phase42BoundaryPreimageEvidence> {
+    if json.len() > MAX_PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_JSON_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence JSON is {} bytes, exceeding the limit of {} bytes",
+            json.len(),
+            MAX_PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_JSON_BYTES
+        )));
+    }
+    let evidence: Phase42BoundaryPreimageEvidence =
+        serde_json::from_str(json).map_err(phase42_json_error)?;
+    verify_phase42_boundary_preimage_evidence(&evidence)?;
+    Ok(evidence)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn parse_phase42_boundary_history_equivalence_witness_json(
+    json: &str,
+) -> Result<Phase42BoundaryHistoryEquivalenceWitness> {
+    if json.len() > MAX_PHASE42_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_JSON_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 history-equivalence witness JSON is {} bytes, exceeding the limit of {} bytes",
+            json.len(),
+            MAX_PHASE42_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_JSON_BYTES
+        )));
+    }
+    let witness: Phase42BoundaryHistoryEquivalenceWitness =
+        serde_json::from_str(json).map_err(phase42_json_error)?;
+    verify_phase42_boundary_history_equivalence_witness(&witness)?;
+    Ok(witness)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn parse_phase43_history_replay_trace_json(json: &str) -> Result<Phase43HistoryReplayTrace> {
+    if json.len() > MAX_PHASE43_HISTORY_REPLAY_TRACE_JSON_BYTES {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 43 history replay trace JSON is {} bytes, exceeding the limit of {} bytes",
+            json.len(),
+            MAX_PHASE43_HISTORY_REPLAY_TRACE_JSON_BYTES
+        )));
+    }
+    let trace: Phase43HistoryReplayTrace =
+        serde_json::from_str(json).map_err(phase43_json_error)?;
+    verify_phase43_history_replay_trace(&trace)?;
+    Ok(trace)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn parse_phase42_boundary_preimage_evidence_json_against_sources(
+    json: &str,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase42BoundaryPreimageEvidence> {
+    let evidence = parse_phase42_boundary_preimage_evidence_json(json)?;
+    verify_phase42_boundary_preimage_evidence_against_sources(
+        &evidence, chain, phase28, contract, phase30,
+    )?;
+    Ok(evidence)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn parse_phase42_boundary_history_equivalence_witness_json_against_sources(
+    json: &str,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase42BoundaryHistoryEquivalenceWitness> {
+    let witness = parse_phase42_boundary_history_equivalence_witness_json(json)?;
+    verify_phase42_boundary_history_equivalence_witness_against_sources(
+        &witness, chain, phase28, contract, phase30,
+    )?;
+    Ok(witness)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn parse_phase43_history_replay_trace_json_against_sources(
+    json: &str,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase43HistoryReplayTrace> {
+    let trace = parse_phase43_history_replay_trace_json(json)?;
+    verify_phase43_history_replay_trace_against_sources(&trace, chain, phase28, contract, phase30)?;
+    Ok(trace)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn load_phase42_boundary_preimage_evidence(
+    path: &Path,
+) -> Result<Phase42BoundaryPreimageEvidence> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_JSON_BYTES,
+        "Phase 42 boundary preimage evidence",
+    )?;
+    let evidence: Phase42BoundaryPreimageEvidence =
+        serde_json::from_slice(&bytes).map_err(phase42_json_error)?;
+    verify_phase42_boundary_preimage_evidence(&evidence)?;
+    Ok(evidence)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn load_phase42_boundary_history_equivalence_witness(
+    path: &Path,
+) -> Result<Phase42BoundaryHistoryEquivalenceWitness> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE42_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_JSON_BYTES,
+        "Phase 42 history-equivalence witness",
+    )?;
+    let witness: Phase42BoundaryHistoryEquivalenceWitness =
+        serde_json::from_slice(&bytes).map_err(phase42_json_error)?;
+    verify_phase42_boundary_history_equivalence_witness(&witness)?;
+    Ok(witness)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn load_phase43_history_replay_trace(path: &Path) -> Result<Phase43HistoryReplayTrace> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE43_HISTORY_REPLAY_TRACE_JSON_BYTES,
+        "Phase 43 history replay trace",
+    )?;
+    let trace: Phase43HistoryReplayTrace =
+        serde_json::from_slice(&bytes).map_err(phase43_json_error)?;
+    verify_phase43_history_replay_trace(&trace)?;
+    Ok(trace)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn load_phase42_boundary_preimage_evidence_against_sources(
+    path: &Path,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase42BoundaryPreimageEvidence> {
+    let evidence = load_phase42_boundary_preimage_evidence(path)?;
+    verify_phase42_boundary_preimage_evidence_against_sources(
+        &evidence, chain, phase28, contract, phase30,
+    )?;
+    Ok(evidence)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn load_phase42_boundary_history_equivalence_witness_against_sources(
+    path: &Path,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase42BoundaryHistoryEquivalenceWitness> {
+    let witness = load_phase42_boundary_history_equivalence_witness(path)?;
+    verify_phase42_boundary_history_equivalence_witness_against_sources(
+        &witness, chain, phase28, contract, phase30,
+    )?;
+    Ok(witness)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn load_phase43_history_replay_trace_against_sources(
+    path: &Path,
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase43HistoryReplayTrace> {
+    let trace = load_phase43_history_replay_trace(path)?;
+    verify_phase43_history_replay_trace_against_sources(&trace, chain, phase28, contract, phase30)?;
+    Ok(trace)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_json_error(error: serde_json::Error) -> VmError {
+    if error.is_data() || error.is_syntax() {
+        VmError::InvalidConfig(format!(
+            "invalid Phase 42 boundary preimage evidence JSON: {error}"
+        ))
+    } else {
+        VmError::Serialization(error.to_string())
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase43_json_error(error: serde_json::Error) -> VmError {
+    if error.is_data() || error.is_syntax() {
+        VmError::InvalidConfig(format!(
+            "invalid Phase 43 history replay trace JSON: {error}"
+        ))
+    } else {
+        VmError::Serialization(error.to_string())
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_verify_source_stack(
+    chain: &Phase12DecodingChainManifest,
+    phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    contract: &Phase29RecursiveCompressionInputContract,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<()> {
+    verify_phase12_decoding_chain(chain)?;
+    verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation(phase28)?;
+    verify_phase29_recursive_compression_input_contract(contract)?;
+    verify_phase30_decoding_step_proof_envelope_manifest_against_chain(phase30, chain)?;
+    let expected_contract =
+        phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28(phase28)?;
+    if contract != &expected_contract {
+        return Err(VmError::InvalidConfig(
+            "Phase 42 boundary preimage evidence requires the Phase 29 contract to be derived from the supplied Phase 28 aggregate"
+                .to_string(),
+        ));
+    }
+    if phase28.proof_backend_version != phase30.proof_backend_version {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence requires matching Phase28/Phase30 proof backend versions (`{}` != `{}`)",
+            phase28.proof_backend_version, phase30.proof_backend_version
+        )));
+    }
+    if phase28.statement_version != phase30.statement_version {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence requires matching Phase28/Phase30 statement versions (`{}` != `{}`)",
+            phase28.statement_version, phase30.statement_version
+        )));
+    }
+    if phase28.total_steps != phase30.total_steps || chain.total_steps != phase30.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence requires matching total_steps across Phase12 ({}) Phase28 ({}) and Phase30 ({})",
+            chain.total_steps, phase28.total_steps, phase30.total_steps
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_commit_source_appended_pairs(
+    chain: &Phase12DecodingChainManifest,
+) -> Result<(String, usize)> {
+    let latest_cached_pair_range = chain.layout.latest_cached_pair_range()?;
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 42 appended-pairs commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase42-source-appended-pairs");
+    phase29_update_len_prefixed(
+        &mut hasher,
+        chain
+            .steps
+            .first()
+            .map(|step| step.from_state.layout_commitment.as_bytes())
+            .unwrap_or_default(),
+    );
+    phase29_update_usize(&mut hasher, chain.layout.pair_width);
+    phase29_update_usize(&mut hasher, chain.steps.len());
+    for (step_index, step) in chain.steps.iter().enumerate() {
+        let pair = &step.proof.claim.final_state.memory[latest_cached_pair_range.clone()];
+        if pair.len() != chain.layout.pair_width {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 42 source appended pair {step_index} has {} values, expected pair_width={}",
+                pair.len(),
+                chain.layout.pair_width
+            )));
+        }
+        phase29_update_usize(&mut hasher, step_index);
+        for value in pair {
+            hasher.update(&value.to_le_bytes());
+        }
+    }
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 42 appended-pairs commitment hash: {err}"
+        ))
+    })?;
+    Ok((phase29_lower_hex(&out), chain.steps.len()))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_commit_source_lookup_rows_commitments(
+    chain: &Phase12DecodingChainManifest,
+) -> Result<(String, usize)> {
+    let first_step = chain.steps.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 42 source lookup-row commitment requires a non-empty chain".to_string(),
+        )
+    })?;
+    let mut commitments = Vec::with_capacity(chain.steps.len() + 1);
+    commitments.push(first_step.from_state.lookup_rows_commitment.as_str());
+    for step in &chain.steps {
+        commitments.push(step.to_state.lookup_rows_commitment.as_str());
+    }
+
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 42 lookup-row replay commitment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase42-source-lookup-rows");
+    phase29_update_len_prefixed(
+        &mut hasher,
+        first_step.from_state.layout_commitment.as_bytes(),
+    );
+    phase29_update_usize(&mut hasher, commitments.len());
+    for (index, commitment) in commitments.iter().enumerate() {
+        phase42_require_hash32(
+            &format!("history_equivalence.lookup_rows[{index}]"),
+            commitment,
+        )?;
+        phase29_update_usize(&mut hasher, index);
+        phase29_update_len_prefixed(&mut hasher, commitment.as_bytes());
+    }
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize Phase 42 lookup-row replay commitment hash: {err}"
+        ))
+    })?;
+    Ok((phase29_lower_hex(&out), commitments.len()))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_verify_phase12_state(label: &str, state: &Phase12DecodingState) -> Result<()> {
+    if state.state_version != STWO_DECODING_STATE_VERSION_PHASE12 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 `{label}` state version `{}` does not match expected `{}`",
+            state.state_version, STWO_DECODING_STATE_VERSION_PHASE12
+        )));
+    }
+    phase42_require_phase12_state_hashes(label, state)?;
+    let expected = commit_phase12_public_state(state);
+    if state.public_state_commitment != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 `{label}` public_state_commitment does not match recomputed `{expected}`"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_verify_phase14_state(label: &str, state: &Phase14DecodingState) -> Result<()> {
+    if state.state_version != STWO_DECODING_STATE_VERSION_PHASE14 {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 `{label}` state version `{}` does not match expected `{}`",
+            state.state_version, STWO_DECODING_STATE_VERSION_PHASE14
+        )));
+    }
+    phase42_require_phase14_state_hashes(label, state)?;
+    let expected = commit_phase14_public_state(state);
+    if state.public_state_commitment != expected {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 `{label}` public_state_commitment does not match recomputed `{expected}`"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_require_hash32(label: &str, value: &str) -> Result<()> {
+    if !phase37_is_hash32_lower_hex(value) {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 42 boundary preimage evidence `{label}` must be a 32-byte lowercase hex commitment"
+        )));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_require_phase12_state_hashes(label: &str, state: &Phase12DecodingState) -> Result<()> {
+    for (field, value) in [
+        ("layout_commitment", state.layout_commitment.as_str()),
+        (
+            "persistent_state_commitment",
+            state.persistent_state_commitment.as_str(),
+        ),
+        (
+            "kv_history_commitment",
+            state.kv_history_commitment.as_str(),
+        ),
+        ("kv_cache_commitment", state.kv_cache_commitment.as_str()),
+        (
+            "incoming_token_commitment",
+            state.incoming_token_commitment.as_str(),
+        ),
+        ("query_commitment", state.query_commitment.as_str()),
+        ("output_commitment", state.output_commitment.as_str()),
+        (
+            "lookup_rows_commitment",
+            state.lookup_rows_commitment.as_str(),
+        ),
+        (
+            "public_state_commitment",
+            state.public_state_commitment.as_str(),
+        ),
+    ] {
+        phase42_require_hash32(&format!("{label}.{field}"), value)?;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_require_phase14_state_hashes(label: &str, state: &Phase14DecodingState) -> Result<()> {
+    for (field, value) in [
+        ("layout_commitment", state.layout_commitment.as_str()),
+        (
+            "persistent_state_commitment",
+            state.persistent_state_commitment.as_str(),
+        ),
+        (
+            "kv_history_commitment",
+            state.kv_history_commitment.as_str(),
+        ),
+        (
+            "kv_history_sealed_commitment",
+            state.kv_history_sealed_commitment.as_str(),
+        ),
+        (
+            "kv_history_open_chunk_commitment",
+            state.kv_history_open_chunk_commitment.as_str(),
+        ),
+        (
+            "kv_history_frontier_commitment",
+            state.kv_history_frontier_commitment.as_str(),
+        ),
+        (
+            "lookup_transcript_commitment",
+            state.lookup_transcript_commitment.as_str(),
+        ),
+        (
+            "lookup_frontier_commitment",
+            state.lookup_frontier_commitment.as_str(),
+        ),
+        ("kv_cache_commitment", state.kv_cache_commitment.as_str()),
+        (
+            "incoming_token_commitment",
+            state.incoming_token_commitment.as_str(),
+        ),
+        ("query_commitment", state.query_commitment.as_str()),
+        ("output_commitment", state.output_commitment.as_str()),
+        (
+            "lookup_rows_commitment",
+            state.lookup_rows_commitment.as_str(),
+        ),
+        (
+            "public_state_commitment",
+            state.public_state_commitment.as_str(),
+        ),
+    ] {
+        phase42_require_hash32(&format!("{label}.{field}"), value)?;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_shared_core_matches_with_history_bridge(
+    label: &str,
+    phase12: &Phase12DecodingState,
+    phase14: &Phase14DecodingState,
+) -> Result<()> {
+    if phase12.step_index != phase14.step_index {
+        return phase42_shared_core_mismatch(label, "step_index");
+    }
+    if phase12.position != phase14.position {
+        return phase42_shared_core_mismatch(label, "position");
+    }
+    if phase12.layout_commitment != phase14.layout_commitment {
+        return phase42_shared_core_mismatch(label, "layout_commitment");
+    }
+    if phase12.persistent_state_commitment != phase14.persistent_state_commitment {
+        return phase42_shared_core_mismatch(label, "persistent_state_commitment");
+    }
+    if phase12.kv_history_length != phase14.kv_history_length {
+        return phase42_shared_core_mismatch(label, "kv_history_length");
+    }
+    if phase12.kv_cache_commitment != phase14.kv_cache_commitment {
+        return phase42_shared_core_mismatch(label, "kv_cache_commitment");
+    }
+    if phase12.incoming_token_commitment != phase14.incoming_token_commitment {
+        return phase42_shared_core_mismatch(label, "incoming_token_commitment");
+    }
+    if phase12.query_commitment != phase14.query_commitment {
+        return phase42_shared_core_mismatch(label, "query_commitment");
+    }
+    if phase12.output_commitment != phase14.output_commitment {
+        return phase42_shared_core_mismatch(label, "output_commitment");
+    }
+    if phase12.lookup_rows_commitment != phase14.lookup_rows_commitment {
+        return phase42_shared_core_mismatch(label, "lookup_rows_commitment");
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_shared_core_matches(
+    label: &str,
+    phase12: &Phase12DecodingState,
+    phase14: &Phase14DecodingState,
+) -> Result<()> {
+    if phase12.step_index != phase14.step_index {
+        return phase42_shared_core_mismatch(label, "step_index");
+    }
+    if phase12.position != phase14.position {
+        return phase42_shared_core_mismatch(label, "position");
+    }
+    if phase12.layout_commitment != phase14.layout_commitment {
+        return phase42_shared_core_mismatch(label, "layout_commitment");
+    }
+    if phase12.persistent_state_commitment != phase14.persistent_state_commitment {
+        return phase42_shared_core_mismatch(label, "persistent_state_commitment");
+    }
+    if phase12.kv_history_commitment != phase14.kv_history_commitment {
+        return phase42_shared_core_mismatch(label, "kv_history_commitment");
+    }
+    if phase12.kv_history_length != phase14.kv_history_length {
+        return phase42_shared_core_mismatch(label, "kv_history_length");
+    }
+    if phase12.kv_cache_commitment != phase14.kv_cache_commitment {
+        return phase42_shared_core_mismatch(label, "kv_cache_commitment");
+    }
+    if phase12.incoming_token_commitment != phase14.incoming_token_commitment {
+        return phase42_shared_core_mismatch(label, "incoming_token_commitment");
+    }
+    if phase12.query_commitment != phase14.query_commitment {
+        return phase42_shared_core_mismatch(label, "query_commitment");
+    }
+    if phase12.output_commitment != phase14.output_commitment {
+        return phase42_shared_core_mismatch(label, "output_commitment");
+    }
+    if phase12.lookup_rows_commitment != phase14.lookup_rows_commitment {
+        return phase42_shared_core_mismatch(label, "lookup_rows_commitment");
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase42_shared_core_mismatch(label: &str, field: &str) -> Result<()> {
+    Err(VmError::InvalidConfig(format!(
+        "Phase 42 boundary preimage evidence {label} states differ in shared carried-state field `{field}`"
+    )))
+}
+
+#[cfg(feature = "stwo-backend")]
 fn commit_phase38_lookup_identity(
     phase30: &Phase30DecodingStepProofEnvelopeManifest,
 ) -> Result<String> {
@@ -6358,6 +15490,7 @@ mod tests {
         phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range,
         prove_phase12_decoding_demo_for_layout, prove_phase12_decoding_demo_for_layout_steps,
         prove_phase28_phase30_shared_proof_boundary_demo,
+        prove_phase42_boundary_preimage_shared_proof_demo,
         verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range,
         STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_SCOPE_PHASE31,
         STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_VERSION_PHASE31,
@@ -8209,6 +17342,619 @@ mod tests {
             "expected InvalidConfig for oversized JSON, got {err:?}"
         );
         assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn phase42_hash(hex: char) -> String {
+        hex.to_string().repeat(64)
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn phase42_phase14_state_from_phase12(
+        state: &Phase12DecodingState,
+        salt: char,
+    ) -> Phase14DecodingState {
+        let mut phase14 = Phase14DecodingState {
+            state_version: STWO_DECODING_STATE_VERSION_PHASE14.to_string(),
+            step_index: state.step_index,
+            position: state.position,
+            layout_commitment: state.layout_commitment.clone(),
+            persistent_state_commitment: state.persistent_state_commitment.clone(),
+            kv_history_commitment: state.kv_history_commitment.clone(),
+            kv_history_length: state.kv_history_length,
+            kv_history_chunk_size: 2,
+            kv_history_sealed_commitment: phase42_hash(salt),
+            kv_history_sealed_chunks: state.step_index / 2,
+            kv_history_open_chunk_commitment: phase42_hash('b'),
+            kv_history_open_chunk_pairs: state.step_index % 2,
+            kv_history_frontier_commitment: phase42_hash('c'),
+            kv_history_frontier_pairs: state.kv_history_length,
+            lookup_transcript_commitment: phase42_hash('d'),
+            lookup_transcript_entries: state.step_index,
+            lookup_frontier_commitment: phase42_hash('e'),
+            lookup_frontier_entries: state.step_index,
+            kv_cache_commitment: state.kv_cache_commitment.clone(),
+            incoming_token_commitment: state.incoming_token_commitment.clone(),
+            query_commitment: state.query_commitment.clone(),
+            output_commitment: state.output_commitment.clone(),
+            lookup_rows_commitment: state.lookup_rows_commitment.clone(),
+            public_state_commitment: String::new(),
+        };
+        phase14.public_state_commitment = commit_phase14_public_state(&phase14);
+        phase14
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn phase42_sample_evidence() -> Phase42BoundaryPreimageEvidence {
+        let layout =
+            crate::stwo_backend::Phase12DecodingLayout::new(2, 2).expect("valid Phase 12 layout");
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 2)
+            .expect("generate two-step Phase 12 decoding chain");
+        let phase12_start = chain
+            .steps
+            .first()
+            .expect("Phase 12 sample chain has a first step")
+            .from_state
+            .clone();
+        let phase12_end = chain
+            .steps
+            .last()
+            .expect("Phase 12 sample chain has a last step")
+            .to_state
+            .clone();
+        Phase42BoundaryPreimageEvidence {
+            issue: STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
+            evidence_version: STWO_BOUNDARY_PREIMAGE_EVIDENCE_VERSION_PHASE42.to_string(),
+            relation_outcome: STWO_BOUNDARY_PREIMAGE_RELATION_PHASE42.to_string(),
+            phase14_start_state: phase42_phase14_state_from_phase12(&phase12_start, 'a'),
+            phase14_end_state: phase42_phase14_state_from_phase12(&phase12_end, 'f'),
+            phase12_start_state: phase12_start,
+            phase12_end_state: phase12_end,
+        }
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn phase42_sample_history_equivalence_witness() -> Phase42BoundaryHistoryEquivalenceWitness {
+        let mut witness = Phase42BoundaryHistoryEquivalenceWitness {
+            issue: STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
+            witness_version: STWO_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_VERSION_PHASE42.to_string(),
+            relation_outcome: STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42.to_string(),
+            transform_rule: STWO_BOUNDARY_HISTORY_EQUIVALENCE_RULE_PHASE42.to_string(),
+            proof_backend: StarkProofBackend::Stwo,
+            proof_backend_version: STWO_BACKEND_VERSION_PHASE12.to_string(),
+            statement_version: CLAIM_STATEMENT_VERSION_V1.to_string(),
+            phase29_contract_commitment: phase42_hash('1'),
+            phase28_aggregate_commitment: phase42_hash('2'),
+            phase30_source_chain_commitment: phase42_hash('3'),
+            phase30_step_envelopes_commitment: phase42_hash('4'),
+            total_steps: 2,
+            layout_commitment: phase42_hash('5'),
+            rolling_kv_pairs: 2,
+            pair_width: 2,
+            phase12_start_public_state_commitment: phase42_hash('6'),
+            phase12_end_public_state_commitment: phase42_hash('7'),
+            phase14_start_boundary_commitment: phase42_hash('8'),
+            phase14_end_boundary_commitment: phase42_hash('9'),
+            phase12_start_history_commitment: phase42_hash('a'),
+            phase12_end_history_commitment: phase42_hash('b'),
+            phase14_start_history_commitment: phase42_hash('c'),
+            phase14_end_history_commitment: phase42_hash('d'),
+            initial_kv_cache_commitment: phase42_hash('e'),
+            appended_pairs_commitment: phase42_hash('f'),
+            appended_pair_count: 2,
+            lookup_rows_commitments_commitment: phase42_hash('0'),
+            lookup_rows_commitment_count: 3,
+            full_history_replay_required: true,
+            cryptographic_compression_claimed: false,
+            witness_commitment: String::new(),
+        };
+        witness.witness_commitment = commit_phase42_boundary_history_equivalence_witness(&witness)
+            .expect("commit sample Phase42 history witness");
+        witness
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn phase43_sample_history_replay_trace() -> Phase43HistoryReplayTrace {
+        let layout =
+            crate::stwo_backend::Phase12DecodingLayout::new(2, 2).expect("valid Phase 12 layout");
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 2)
+            .expect("generate two-step Phase 12 decoding chain");
+        let phase30 = phase30_prepare_decoding_step_proof_envelope_manifest(&chain)
+            .expect("derive Phase30 from Phase12 chain");
+        let replayed_phase14 =
+            phase14_prepare_decoding_chain(&chain).expect("derive replayed Phase14 chain");
+        let latest_cached_pair_range = chain
+            .layout
+            .latest_cached_pair_range()
+            .expect("latest cached pair range");
+        let rows = chain
+            .steps
+            .iter()
+            .zip(replayed_phase14.steps.iter())
+            .zip(phase30.envelopes.iter())
+            .enumerate()
+            .map(
+                |(step_index, ((phase12_step, phase14_step), phase30_envelope))| {
+                    Phase43HistoryReplayTraceRow {
+                        step_index,
+                        appended_pair: phase12_step.proof.claim.final_state.memory
+                            [latest_cached_pair_range.clone()]
+                        .to_vec(),
+                        input_lookup_rows_commitment: phase12_step
+                            .from_state
+                            .lookup_rows_commitment
+                            .clone(),
+                        output_lookup_rows_commitment: phase12_step
+                            .to_state
+                            .lookup_rows_commitment
+                            .clone(),
+                        phase30_step_envelope_commitment: phase30_envelope
+                            .envelope_commitment
+                            .clone(),
+                        phase12_from_state: phase12_step.from_state.clone(),
+                        phase12_to_state: phase12_step.to_state.clone(),
+                        phase14_from_state: phase14_step.from_state.clone(),
+                        phase14_to_state: phase14_step.to_state.clone(),
+                    }
+                },
+            )
+            .collect::<Vec<_>>();
+        let (appended_pairs_commitment, appended_pair_count) =
+            phase42_commit_source_appended_pairs(&chain).expect("commit Phase43 sample pairs");
+        assert_eq!(appended_pair_count, rows.len());
+        let (lookup_rows_commitments_commitment, lookup_row_count) =
+            phase42_commit_source_lookup_rows_commitments(&chain)
+                .expect("commit Phase43 sample lookup rows");
+        assert_eq!(lookup_row_count, rows.len() + 1);
+        let first = rows.first().expect("sample trace has first row");
+        let last = rows.last().expect("sample trace has last row");
+        let mut trace = Phase43HistoryReplayTrace {
+            issue: STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
+            trace_version: STWO_HISTORY_REPLAY_TRACE_VERSION_PHASE43.to_string(),
+            relation_outcome: STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43.to_string(),
+            transform_rule: STWO_HISTORY_REPLAY_TRACE_RULE_PHASE43.to_string(),
+            proof_backend: StarkProofBackend::Stwo,
+            proof_backend_version: STWO_BACKEND_VERSION_PHASE12.to_string(),
+            statement_version: CLAIM_STATEMENT_VERSION_V1.to_string(),
+            phase42_witness_commitment: phase42_hash('1'),
+            phase29_contract_commitment: phase42_hash('2'),
+            phase28_aggregate_commitment: phase42_hash('3'),
+            phase30_source_chain_commitment: phase30.source_chain_commitment,
+            phase30_step_envelopes_commitment: phase30.step_envelopes_commitment,
+            total_steps: rows.len(),
+            layout_commitment: first.phase12_from_state.layout_commitment.clone(),
+            rolling_kv_pairs: chain.layout.rolling_kv_pairs,
+            pair_width: chain.layout.pair_width,
+            phase12_start_public_state_commitment: first
+                .phase12_from_state
+                .public_state_commitment
+                .clone(),
+            phase12_end_public_state_commitment: last
+                .phase12_to_state
+                .public_state_commitment
+                .clone(),
+            phase14_start_boundary_commitment: commit_phase23_boundary_state(
+                &first.phase14_from_state,
+            ),
+            phase14_end_boundary_commitment: commit_phase23_boundary_state(&last.phase14_to_state),
+            phase12_start_history_commitment: first
+                .phase12_from_state
+                .kv_history_commitment
+                .clone(),
+            phase12_end_history_commitment: last.phase12_to_state.kv_history_commitment.clone(),
+            phase14_start_history_commitment: first
+                .phase14_from_state
+                .kv_history_commitment
+                .clone(),
+            phase14_end_history_commitment: last.phase14_to_state.kv_history_commitment.clone(),
+            initial_kv_cache_commitment: first.phase12_from_state.kv_cache_commitment.clone(),
+            appended_pairs_commitment,
+            lookup_rows_commitments_commitment,
+            rows,
+            full_history_replay_required: true,
+            cryptographic_compression_claimed: false,
+            stwo_air_proof_claimed: false,
+            trace_commitment: String::new(),
+        };
+        trace.trace_commitment =
+            commit_phase43_history_replay_trace(&trace).expect("commit Phase43 sample trace");
+        trace
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn phase43_recommit_trace(trace: &mut Phase43HistoryReplayTrace) {
+        trace.trace_commitment =
+            commit_phase43_history_replay_trace(trace).expect("recommit Phase43 trace");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase42_boundary_preimage_evidence_accepts_hash_preimage_relation_shape() {
+        let evidence = phase42_sample_evidence();
+        verify_phase42_boundary_preimage_evidence(&evidence)
+            .expect("verify standalone Phase42 preimage evidence");
+
+        let json = serde_json::to_string_pretty(&evidence).expect("serialize Phase42 evidence");
+        let parsed = parse_phase42_boundary_preimage_evidence_json(&json)
+            .expect("parse standalone Phase42 preimage evidence");
+        assert_eq!(parsed, evidence);
+
+        let path = std::env::temp_dir().join(format!(
+            "phase42-boundary-preimage-evidence-{}.json",
+            std::process::id()
+        ));
+        std::fs::write(&path, json).expect("write Phase42 evidence temp file");
+        let loaded =
+            load_phase42_boundary_preimage_evidence(&path).expect("load Phase42 evidence file");
+        std::fs::remove_file(&path).expect("remove Phase42 evidence temp file");
+        assert_eq!(loaded, evidence);
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase42_boundary_preimage_evidence_rejects_shared_core_mismatch() {
+        let mut evidence = phase42_sample_evidence();
+        evidence.phase14_end_state.output_commitment = phase42_hash('9');
+        evidence.phase14_end_state.public_state_commitment =
+            commit_phase14_public_state(&evidence.phase14_end_state);
+
+        let err = verify_phase42_boundary_preimage_evidence(&evidence)
+            .expect_err("Phase42 must reject mismatched Phase12/Phase14 shared core");
+        assert!(err.to_string().contains("shared carried-state field"));
+        assert!(err.to_string().contains("output_commitment"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase42_boundary_preimage_evidence_rejects_unknown_and_oversized_json() {
+        let evidence = phase42_sample_evidence();
+        let mut value = serde_json::to_value(&evidence).expect("serialize Phase42 evidence value");
+        value["unexpected_phase42_field"] = serde_json::json!(true);
+        let json = serde_json::to_string(&value).expect("serialize unknown-field Phase42 JSON");
+        let err = parse_phase42_boundary_preimage_evidence_json(&json)
+            .expect_err("unknown Phase42 fields must be rejected");
+        assert!(err.to_string().contains("unknown field"));
+
+        let json = " ".repeat(MAX_PHASE42_BOUNDARY_PREIMAGE_EVIDENCE_JSON_BYTES + 1);
+        let err = parse_phase42_boundary_preimage_evidence_json(&json)
+            .expect_err("oversized Phase42 evidence JSON must fail before serde parsing");
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase42_history_equivalence_witness_accepts_replay_transform_shape() {
+        let witness = phase42_sample_history_equivalence_witness();
+        verify_phase42_boundary_history_equivalence_witness(&witness)
+            .expect("verify standalone Phase42 history-equivalence witness");
+
+        assert_eq!(
+            witness.relation_outcome,
+            STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42
+        );
+        assert!(witness.full_history_replay_required);
+        assert!(!witness.cryptographic_compression_claimed);
+
+        let json = serde_json::to_string_pretty(&witness)
+            .expect("serialize Phase42 history-equivalence witness");
+        let parsed = parse_phase42_boundary_history_equivalence_witness_json(&json)
+            .expect("parse standalone Phase42 history-equivalence witness");
+        assert_eq!(parsed, witness);
+
+        let path = std::env::temp_dir().join(format!(
+            "phase42-history-equivalence-witness-{}.json",
+            std::process::id()
+        ));
+        std::fs::write(&path, json).expect("write Phase42 history-equivalence witness temp file");
+        let loaded = load_phase42_boundary_history_equivalence_witness(&path)
+            .expect("load Phase42 history-equivalence witness file");
+        std::fs::remove_file(&path).expect("remove Phase42 history-equivalence witness temp file");
+        assert_eq!(loaded, witness);
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase42_history_equivalence_witness_rejects_compression_claim_and_tamper() {
+        let mut witness = phase42_sample_history_equivalence_witness();
+        witness.cryptographic_compression_claimed = true;
+        witness.witness_commitment = commit_phase42_boundary_history_equivalence_witness(&witness)
+            .expect("recommit tampered compression claim");
+        let err = verify_phase42_boundary_history_equivalence_witness(&witness)
+            .expect_err("Phase42 replay witness must not claim compression");
+        assert!(err.to_string().contains("cryptographic compression"));
+
+        let mut witness = phase42_sample_history_equivalence_witness();
+        witness.appended_pair_count += 1;
+        witness.witness_commitment = commit_phase42_boundary_history_equivalence_witness(&witness)
+            .expect("recommit tampered pair count");
+        let err = verify_phase42_boundary_history_equivalence_witness(&witness)
+            .expect_err("Phase42 replay witness must reject pair-count drift");
+        assert!(err.to_string().contains("appended_pair_count"));
+
+        let mut witness = phase42_sample_history_equivalence_witness();
+        witness.phase14_end_history_commitment = phase42_hash('a');
+        let err = verify_phase42_boundary_history_equivalence_witness(&witness)
+            .expect_err("Phase42 replay witness must reject stale witness commitment");
+        assert!(err.to_string().contains("witness commitment"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase42_history_equivalence_witness_rejects_unknown_and_oversized_json() {
+        let witness = phase42_sample_history_equivalence_witness();
+        let mut value =
+            serde_json::to_value(&witness).expect("serialize Phase42 history witness value");
+        value["unexpected_phase42_history_field"] = serde_json::json!(true);
+        let json =
+            serde_json::to_string(&value).expect("serialize unknown-field Phase42 history JSON");
+        let err = parse_phase42_boundary_history_equivalence_witness_json(&json)
+            .expect_err("unknown Phase42 history fields must be rejected");
+        assert!(err.to_string().contains("unknown field"));
+
+        let json = " ".repeat(MAX_PHASE42_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_JSON_BYTES + 1);
+        let err = parse_phase42_boundary_history_equivalence_witness_json(&json)
+            .expect_err("oversized Phase42 history witness JSON must fail before serde parsing");
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase43_history_replay_trace_accepts_normalized_replay_shape() {
+        let trace = phase43_sample_history_replay_trace();
+        verify_phase43_history_replay_trace(&trace).expect("verify standalone Phase43 trace");
+
+        assert_eq!(
+            trace.relation_outcome,
+            STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43
+        );
+        assert!(trace.full_history_replay_required);
+        assert!(!trace.cryptographic_compression_claimed);
+        assert!(!trace.stwo_air_proof_claimed);
+        assert_eq!(trace.rows.len(), trace.total_steps);
+        assert_ne!(
+            trace.phase12_end_history_commitment, trace.phase14_end_history_commitment,
+            "Phase43 trace must preserve the Phase12/Phase14 history-domain gap"
+        );
+
+        let json = serde_json::to_string_pretty(&trace).expect("serialize Phase43 trace");
+        let parsed =
+            parse_phase43_history_replay_trace_json(&json).expect("parse standalone Phase43 trace");
+        assert_eq!(parsed, trace);
+
+        let path = std::env::temp_dir().join(format!(
+            "phase43-history-replay-trace-{}.json",
+            std::process::id()
+        ));
+        std::fs::write(&path, json).expect("write Phase43 trace temp file");
+        let loaded = load_phase43_history_replay_trace(&path).expect("load Phase43 trace file");
+        std::fs::remove_file(&path).expect("remove Phase43 trace temp file");
+        assert_eq!(loaded, trace);
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase43_history_replay_trace_rejects_reordered_row_even_when_recommitted() {
+        let mut trace = phase43_sample_history_replay_trace();
+        trace.rows.swap(0, 1);
+        trace.appended_pairs_commitment =
+            phase43_commit_trace_appended_pairs(&trace).expect("recommit swapped pairs");
+        trace.lookup_rows_commitments_commitment =
+            phase43_commit_trace_lookup_rows_commitments(&trace)
+                .expect("recommit swapped lookup rows");
+        trace.phase30_step_envelopes_commitment =
+            phase43_commit_trace_phase30_step_envelopes(&trace)
+                .expect("recommit swapped Phase30 envelope rows");
+        phase43_recommit_trace(&mut trace);
+
+        let err = verify_phase43_history_replay_trace(&trace)
+            .expect_err("Phase43 must reject reordered replay rows");
+        assert!(err.to_string().contains("step_index"), "{err}");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase43_history_replay_trace_rejects_stale_lookup_handle_even_when_recommitted() {
+        let mut trace = phase43_sample_history_replay_trace();
+        trace.rows[0].output_lookup_rows_commitment = phase42_hash('a');
+        trace.lookup_rows_commitments_commitment =
+            phase43_commit_trace_lookup_rows_commitments(&trace)
+                .expect("recommit stale lookup rows");
+        phase43_recommit_trace(&mut trace);
+
+        let err = verify_phase43_history_replay_trace(&trace)
+            .expect_err("Phase43 must reject stale row-level lookup handle");
+        assert!(
+            err.to_string().contains("output_lookup_rows_commitment"),
+            "{err}"
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase43_history_replay_trace_rejects_boundary_count_claim_and_commitment_tamper() {
+        let mut boundary_swap = phase43_sample_history_replay_trace();
+        boundary_swap.phase14_start_boundary_commitment =
+            boundary_swap.phase14_end_boundary_commitment.clone();
+        phase43_recommit_trace(&mut boundary_swap);
+        let err = verify_phase43_history_replay_trace(&boundary_swap)
+            .expect_err("Phase43 must reject swapped Phase28/Phase14 boundary");
+        assert!(err.to_string().contains("start boundary"), "{err}");
+
+        let mut count_mismatch = phase43_sample_history_replay_trace();
+        count_mismatch.total_steps += 1;
+        phase43_recommit_trace(&mut count_mismatch);
+        let err = verify_phase43_history_replay_trace(&count_mismatch)
+            .expect_err("Phase43 must reject count mismatch");
+        assert!(err.to_string().contains("total_steps"), "{err}");
+
+        let mut air_claim = phase43_sample_history_replay_trace();
+        air_claim.stwo_air_proof_claimed = true;
+        phase43_recommit_trace(&mut air_claim);
+        let err = verify_phase43_history_replay_trace(&air_claim)
+            .expect_err("Phase43 must reject premature AIR proof claims");
+        assert!(err.to_string().contains("Stwo AIR proof"), "{err}");
+
+        let mut envelope_drift = phase43_sample_history_replay_trace();
+        envelope_drift.rows[0].phase30_step_envelope_commitment = phase42_hash('e');
+        phase43_recommit_trace(&mut envelope_drift);
+        let err = verify_phase43_history_replay_trace(&envelope_drift)
+            .expect_err("Phase43 must reject stale Phase30 envelope handle");
+        assert!(err.to_string().contains("step_envelopes"), "{err}");
+
+        let mut compression_claim = phase43_sample_history_replay_trace();
+        compression_claim.cryptographic_compression_claimed = true;
+        phase43_recommit_trace(&mut compression_claim);
+        let err = verify_phase43_history_replay_trace(&compression_claim)
+            .expect_err("Phase43 must reject premature compression claims");
+        assert!(
+            err.to_string().contains("cryptographic compression"),
+            "{err}"
+        );
+
+        let mut stale_commitment = phase43_sample_history_replay_trace();
+        stale_commitment.phase30_source_chain_commitment = phase42_hash('f');
+        let err = verify_phase43_history_replay_trace(&stale_commitment)
+            .expect_err("Phase43 must reject stale trace commitment");
+        assert!(err.to_string().contains("trace commitment"), "{err}");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase43_history_replay_trace_rejects_unknown_and_oversized_json() {
+        let trace = phase43_sample_history_replay_trace();
+        let mut value = serde_json::to_value(&trace).expect("serialize Phase43 trace value");
+        value["unexpected_phase43_trace_field"] = serde_json::json!(true);
+        let json = serde_json::to_string(&value).expect("serialize unknown-field Phase43 JSON");
+        let err = parse_phase43_history_replay_trace_json(&json)
+            .expect_err("unknown Phase43 fields must be rejected");
+        assert!(err.to_string().contains("unknown field"));
+
+        let json = " ".repeat(MAX_PHASE43_HISTORY_REPLAY_TRACE_JSON_BYTES + 1);
+        let err = parse_phase43_history_replay_trace_json(&json)
+            .expect_err("oversized Phase43 trace JSON must fail before serde parsing");
+        assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase42_boundary_preimage_evidence_rejects_synthetic_phase28_shell_sources() {
+        let layout =
+            crate::stwo_backend::Phase12DecodingLayout::new(2, 2).expect("valid Phase 12 layout");
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 2)
+            .expect("generate two-step Phase 12 decoding chain");
+        let phase30 = phase30_prepare_decoding_step_proof_envelope_manifest(&chain)
+            .expect("derive Phase30 from Phase12 chain");
+        let mut phase28 = empty_phase28_shell();
+        phase28.proof_backend_version = phase30.proof_backend_version.clone();
+        phase28.statement_version = phase30.statement_version.clone();
+        phase28.total_steps = phase30.total_steps;
+        let mut phase29 = sample_phase29_contract();
+        phase29.phase28_proof_backend_version = phase30.proof_backend_version.clone();
+        phase29.statement_version = phase30.statement_version.clone();
+        phase29.total_steps = phase30.total_steps;
+        phase29.input_contract_commitment =
+            commit_phase29_recursive_compression_input_contract(&phase29)
+                .expect("recommit Phase29 source");
+
+        let err = phase42_prepare_boundary_preimage_evidence(&chain, &phase28, &phase29, &phase30)
+            .expect_err("Phase42 must reject Phase28 shells without nested boundary preimages");
+        let message = err.to_string();
+        assert!(
+            message.contains("at least two members") || message.contains("Phase 28"),
+            "{message}"
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    #[ignore = "generates and checks a 16-step shared-proof Phase12/28/29/30 source; run explicitly for the expensive Phase42 kill decision"]
+    fn phase42_live_shared_phase28_phase30_sources_expose_history_gap_and_accept_replay_witness() {
+        let (chain, phase28, phase30) = prove_phase42_boundary_preimage_shared_proof_demo()
+            .expect("derive shared Phase12/28/30 boundary-preimage sources");
+        let phase29 =
+            phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28(
+                &phase28,
+            )
+            .expect("derive Phase29 from Phase28 source");
+        assert_ne!(
+            phase29.global_start_state_commitment,
+            phase30.chain_start_boundary_commitment
+        );
+        let err = phase42_prepare_boundary_preimage_evidence(&chain, &phase28, &phase29, &phase30)
+            .expect_err("live Phase42 source stack must expose the Phase12/Phase14 history gap");
+        let message = err.to_string();
+        assert!(message.contains("kv_history_commitment"), "{message}");
+
+        let witness = phase42_prepare_boundary_history_equivalence_witness(
+            &chain, &phase28, &phase29, &phase30,
+        )
+        .expect("live Phase42 source stack must accept full-replay history equivalence");
+        assert_eq!(
+            witness.relation_outcome,
+            STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42
+        );
+        assert!(witness.full_history_replay_required);
+        assert!(!witness.cryptographic_compression_claimed);
+        assert_ne!(
+            witness.phase12_end_history_commitment,
+            witness.phase14_end_history_commitment
+        );
+        verify_phase42_boundary_history_equivalence_witness_against_sources(
+            &witness, &chain, &phase28, &phase29, &phase30,
+        )
+        .expect("source-bound Phase42 history-equivalence witness must verify");
+
+        let mut tampered = witness.clone();
+        tampered.appended_pairs_commitment = phase42_hash('e');
+        tampered.witness_commitment =
+            commit_phase42_boundary_history_equivalence_witness(&tampered)
+                .expect("recommit tampered Phase42 history-equivalence witness");
+        let err = verify_phase42_boundary_history_equivalence_witness_against_sources(
+            &tampered, &chain, &phase28, &phase29, &phase30,
+        )
+        .expect_err("source-bound Phase42 history witness must reject appended-pair drift");
+        assert!(err.to_string().contains("does not match the recomputed"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    #[ignore = "generates and checks a 16-step shared-proof Phase12/28/29/30 source; run explicitly for the expensive Phase43 kill decision"]
+    fn phase43_live_shared_sources_accept_trace_and_reject_source_chain_swap() {
+        let (chain, phase28, phase30) = prove_phase42_boundary_preimage_shared_proof_demo()
+            .expect("derive shared Phase12/28/30 Phase43 replay-trace sources");
+        let phase29 =
+            phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28(
+                &phase28,
+            )
+            .expect("derive Phase29 from Phase28 source");
+        let trace = phase43_prepare_history_replay_trace(&chain, &phase28, &phase29, &phase30)
+            .expect("live Phase43 source stack must produce a replay trace");
+        assert_eq!(
+            trace.relation_outcome,
+            STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43
+        );
+        assert!(trace.full_history_replay_required);
+        assert!(!trace.cryptographic_compression_claimed);
+        assert!(!trace.stwo_air_proof_claimed);
+        verify_phase43_history_replay_trace_against_sources(
+            &trace, &chain, &phase28, &phase29, &phase30,
+        )
+        .expect("source-bound Phase43 replay trace must verify");
+
+        let mut source_chain_swap = trace.clone();
+        source_chain_swap.phase30_source_chain_commitment = phase42_hash('f');
+        phase43_recommit_trace(&mut source_chain_swap);
+        verify_phase43_history_replay_trace(&source_chain_swap)
+            .expect("standalone Phase43 trace only checks internal replay shape");
+        let err = verify_phase43_history_replay_trace_against_sources(
+            &source_chain_swap,
+            &chain,
+            &phase28,
+            &phase29,
+            &phase30,
+        )
+        .expect_err("source-bound Phase43 trace must reject Phase30 source-chain swap");
+        assert!(err.to_string().contains("does not match the recomputed"));
     }
 
     #[cfg(feature = "stwo-backend")]

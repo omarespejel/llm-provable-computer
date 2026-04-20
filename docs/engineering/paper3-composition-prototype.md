@@ -80,6 +80,24 @@ Phase 41 is deliberately not a recursive proof and not a hidden success path. It
 
 The local hardening suite is `scripts/run_phase41_boundary_translation_suite.sh`. It runs the pinned schema checks plus Rust adversarial tests for source-bound recomputation, swapped boundary mutation, direct-equality false positives, unknown fields, malformed JSON, oversized JSON, and the invariant that Phase41 does not make Phase31/37 pass by itself.
 
+## Boundary correspondence decision gate
+
+Issue #180 adds Phase 42 as the kill-test gate for the current Paper 3 path. The control spec is `docs/engineering/design/phase42-boundary-correspondence-spec.md`, and the first executable checker is `scripts/check_phase42_boundary_correspondence.py`. Every Phase42 implementation note and PR should refer back to Issue #180 so the decision criteria stay anchored to one record.
+
+The current checker verifies the Phase29 input contract commitment, Phase30 envelope commitments and boundary links, optional Phase41 source-bound recomputation, and optional Phase42 boundary-preimage evidence. Its important behavior is still negative for Phase41 alone: a valid Phase41 witness is reported as `decision=patch_once_then_stay` and `relation_outcome=impossible`, because Phase41 binds an explicit boundary pair but does not expose the Phase12 public-state preimage or the Phase14/23 boundary-state preimage. With synthetic Phase42 boundary-preimage evidence, the checker recomputes the Phase12 public-state commitments, recomputes the Phase23 boundary-state commitments over the Phase14 preimages, and verifies the shared carried-state core.
+
+The Rust Phase42 source-bound implementation now tests that criterion against real shared Phase12/28/29/30 artifacts. That hardening found a blocker: the live source stack rejects the direct boundary-preimage evidence with a Phase12/Phase14 `kv_history_commitment` mismatch. Phase12 carries a linear history-chain commitment, while Phase14 carries the chunked history accumulator used by Phase23. The follow-up history-equivalence witness keeps that failure intact and adds a separate full-replay `deterministic_transform`: replay the Phase12 chain into the Phase14 chunked-history construction, require the replayed Phase14 boundaries to equal the Phase28 global boundary preimages, and bind the appended-pair plus lookup-row streams. This is a keep-alive signal only; it still sets `full_history_replay_required=true` and `cryptographic_compression_claimed=false`, so Phase43 must compress/prove the replay before the route can be called a breakthrough.
+
+Phase43 starts with a normalized `history_replay_trace` artifact, not a proof claim. The trace records each replay row with the appended KV pair, lookup-row handles, Phase12 states, replayed Phase14 states, and Phase30 envelope commitment, then verifies row order, carried boundary continuity, Phase12/Phase14 shared-core equality, boundary commitments, and transcript commitments. It deliberately rejects `cryptographic_compression_claimed=true` and `stwo_air_proof_claimed=true`.
+
+The first Phase43 Stwo proof is intentionally narrower: `history_replay_projection_prover` proves a field-native projection of the verified replay trace and binds a projection commitment, but it still sets `full_trace_commitment_proven=false`, `cryptographic_compression_claimed=false`, and `blake2b_preimage_proven=false`. Local hardening caught and removed one false constraint: the proof must not link `output_lookup_rows_commitment` to the next row's `input_lookup_rows_commitment`, because the canonical Phase43 verifier does not carry lookup-row commitments across rows. The added boundary assessment records the current decision as `not_a_compression_boundary_requires_full_trace`: the verifier still rebuilds row constants from the full Phase43 trace, so the proof is a useful AIR smoke test but not a compact boundary.
+
+The proof-native source-exposure check makes the next blocker explicit. Existing Phase30 data can be verified against the Phase43 trace, but it exposes only legacy source-chain and step-envelope commitments. It does not expose Stwo public inputs, Stwo trace commitments, projection rows, or a projection commitment emitted by the source chain. The code records this as `source_exposure_insufficient_legacy_hash_only`, so the current Phase30 surface cannot let the Phase43 verifier drop the full replay trace.
+
+The next kill-test is now sharper. Either the source chain must emit proof-native Stwo commitments/public inputs that the projection proof can verify without the full Phase43 trace, or the AIR must prove the legacy Blake2b/string-domain commitments. If both routes collapse back into full replay cost, Issue #180 requires pivoting away from VM-manifest composition as the main breakthrough route and toward direct layerwise/tensor proving.
+
+This is not a global pivot decision yet. It is a bounded decision gate: one minimal upstream exposure patch may still make the relation clean. If that patch cannot produce recomputable source preimages without witness-only claims, Issue #180 requires pivoting away from VM-manifest composition as the main breakthrough route and toward direct layerwise/tensor proving.
+
 ## Baseline accounting
 
 The prototype also records a simple packaging baseline:
@@ -112,6 +130,7 @@ scripts/run_phase38_schema_suite.sh
 scripts/run_phase39_real_decode_composition_suite.sh
 scripts/run_phase40_shared_proof_boundary_probe.sh
 scripts/run_phase41_boundary_translation_suite.sh
+scripts/run_phase42_boundary_correspondence_suite.sh
 scripts/run_reference_verifier_suite.sh
 python3 scripts/paper/paper_preflight.py
 ```
