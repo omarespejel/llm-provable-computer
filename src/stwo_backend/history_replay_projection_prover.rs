@@ -4557,6 +4557,8 @@ mod tests {
         commit_phase58_witness_bound_pcs_opening,
         commit_phase59_first_layer_relation_witness_binding_claim,
         commit_phase59_relation_witness_component_binding,
+        commit_phase60_first_layer_runtime_relation_witness_claim,
+        commit_phase60_runtime_tensor_witness,
         phase44d_prepare_recursive_verifier_public_output_aggregation,
         phase44d_prepare_recursive_verifier_public_output_handoff,
         phase45_prepare_recursive_verifier_public_input_bridge,
@@ -4576,6 +4578,8 @@ mod tests {
         phase58_derive_opening_witness_values_for_tests,
         phase58_prepare_first_layer_witness_pcs_opening_claim,
         phase59_prepare_first_layer_relation_witness_binding_claim,
+        phase60_prepare_first_layer_runtime_relation_witness_claim,
+        phase60_recommit_runtime_tensor_for_tests,
         verify_phase44d_recursive_verifier_public_output_aggregation,
         verify_phase44d_recursive_verifier_public_output_handoff,
         verify_phase44d_recursive_verifier_public_output_handoff_against_boundary,
@@ -4612,12 +4616,15 @@ mod tests {
         verify_phase58_witness_bound_pcs_opening,
         verify_phase59_first_layer_relation_witness_binding_claim,
         verify_phase59_first_layer_relation_witness_binding_claim_against_phase58,
-        Phase48RecursiveProofWrapperAttempt, Phase49LayerwiseTensorClaimPropagationContract,
-        Phase50LayerIoClaim, Phase51FirstLayerRelationClaim, Phase52LayerEndpointAnchoringClaim,
+        verify_phase60_first_layer_runtime_relation_witness_claim,
+        verify_phase60_first_layer_runtime_relation_witness_claim_against_phase59,
+        verify_phase60_runtime_tensor_witness, Phase48RecursiveProofWrapperAttempt,
+        Phase49LayerwiseTensorClaimPropagationContract, Phase50LayerIoClaim,
+        Phase51FirstLayerRelationClaim, Phase52LayerEndpointAnchoringClaim,
         Phase53FirstLayerRelationBenchmarkClaim, Phase54FirstLayerSumcheckSkeletonClaim,
         Phase55FirstLayerCompressionEffectivenessClaim, Phase56FirstLayerExecutableSumcheckClaim,
         Phase57FirstLayerMleOpeningVerifierClaim, Phase58FirstLayerWitnessPcsOpeningClaim,
-        Phase59FirstLayerRelationWitnessBindingClaim,
+        Phase59FirstLayerRelationWitnessBindingClaim, Phase60FirstLayerRuntimeRelationWitnessClaim,
     };
     use super::super::STWO_BACKEND_VERSION_PHASE12;
     use super::*;
@@ -8461,6 +8468,140 @@ mod tests {
         )
         .expect_err("Phase59 must reject source drift against Phase58");
         assert!(error.to_string().contains("source drift against Phase58"));
+    }
+
+    fn sample_phase60_runtime_relation_witness_claim() -> (
+        Phase53FirstLayerRelationBenchmarkClaim,
+        Phase54FirstLayerSumcheckSkeletonClaim,
+        Phase56FirstLayerExecutableSumcheckClaim,
+        Phase57FirstLayerMleOpeningVerifierClaim,
+        Phase58FirstLayerWitnessPcsOpeningClaim,
+        Phase59FirstLayerRelationWitnessBindingClaim,
+        Phase60FirstLayerRuntimeRelationWitnessClaim,
+    ) {
+        let (phase53, phase54, phase56, phase57, phase58, phase59) =
+            sample_phase59_relation_witness_binding_claim();
+        let phase60 = phase60_prepare_first_layer_runtime_relation_witness_claim(
+            &phase59, &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect("prepare Phase60 runtime relation witness claim");
+        (
+            phase53, phase54, phase56, phase57, phase58, phase59, phase60,
+        )
+    }
+
+    fn recommit_phase60_tensor(tensor: &mut super::super::recursion::Phase60RuntimeTensorWitness) {
+        phase60_recommit_runtime_tensor_for_tests(tensor).expect("recommit Phase60 tensor witness");
+    }
+
+    fn recommit_phase60_claim(claim: &mut Phase60FirstLayerRuntimeRelationWitnessClaim) {
+        claim.runtime_relation_witness_claim_commitment =
+            commit_phase60_first_layer_runtime_relation_witness_claim(claim)
+                .expect("recommit Phase60 claim");
+    }
+
+    #[test]
+    fn phase60_runtime_relation_witness_claim_accepts_actual_first_layer_witness() {
+        let (_, phase54, phase56, phase57, phase58, phase59, phase60) =
+            sample_phase60_runtime_relation_witness_claim();
+
+        verify_phase60_first_layer_runtime_relation_witness_claim(&phase60)
+            .expect("verify standalone Phase60 runtime relation witness");
+        verify_phase60_first_layer_runtime_relation_witness_claim_against_phase59(
+            &phase60, &phase59, &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect("verify Phase60 runtime witness against Phase59 source");
+
+        assert_eq!(phase60.activation_tensor_witness_count, 5);
+        assert_eq!(phase60.parameter_tensor_witness_count, 6);
+        assert_eq!(phase60.tensor_witness_count, 11);
+        assert_eq!(phase60.gate_affine_check_count, 72);
+        assert_eq!(phase60.value_affine_check_count, 72);
+        assert_eq!(phase60.hidden_product_check_count, 72);
+        assert_eq!(phase60.output_affine_check_count, 6);
+        assert_eq!(phase60.relation_check_count, 222);
+        assert_eq!(
+            phase60.input_tensor.logical_element_count,
+            crate::model::INPUT_DIM
+        );
+        assert_eq!(
+            phase60.output_tensor.logical_element_count,
+            crate::model::OUTPUT_DIM
+        );
+        assert!(phase60.actual_runtime_model_witness_available);
+        assert!(phase60.relation_equation_evaluation_available);
+        assert!(phase60.full_layer_relation_witness_available);
+        assert!(!phase60.witness_pcs_replacement_available);
+        assert!(!phase60.recursive_verification_claimed);
+        assert!(!phase60.cryptographic_compression_claimed);
+        assert!(!phase60.breakthrough_claimed);
+        assert!(!phase60.paper_ready);
+    }
+
+    #[test]
+    fn phase60_runtime_relation_witness_rejects_gate_equation_drift_even_when_recommitted() {
+        let (_, _, _, _, _, _, mut phase60) = sample_phase60_runtime_relation_witness_claim();
+
+        phase60.gate_tensor.values[0] = (phase60.gate_tensor.values[0] + 1) % ((1u32 << 31) - 1);
+        recommit_phase60_tensor(&mut phase60.gate_tensor);
+        recommit_phase60_claim(&mut phase60);
+
+        let error = verify_phase60_first_layer_runtime_relation_witness_claim(&phase60)
+            .expect_err("Phase60 must reject relation equation drift");
+        assert!(error.to_string().contains("Phase 60 gate affine relation"));
+    }
+
+    #[test]
+    fn phase60_runtime_relation_witness_rejects_tensor_commitment_drift() {
+        let (_, _, _, _, _, _, mut phase60) = sample_phase60_runtime_relation_witness_claim();
+
+        phase60.input_tensor.values[0] = (phase60.input_tensor.values[0] + 1) % ((1u32 << 31) - 1);
+        phase60.input_tensor.tensor_witness_commitment =
+            commit_phase60_runtime_tensor_witness(&phase60.input_tensor)
+                .expect("recommit Phase60 tensor with stale values commitment");
+        recommit_phase60_claim(&mut phase60);
+
+        let error = verify_phase60_runtime_tensor_witness(&phase60.input_tensor)
+            .expect_err("Phase60 tensor verifier must reject stale value commitment");
+        assert!(error.to_string().contains("values commitment drift"));
+        let error = verify_phase60_first_layer_runtime_relation_witness_claim(&phase60)
+            .expect_err("Phase60 claim must propagate tensor commitment drift");
+        assert!(error.to_string().contains("values commitment drift"));
+    }
+
+    #[test]
+    fn phase60_runtime_relation_witness_rejects_false_pcs_recursion_and_paper_flags() {
+        let (_, _, _, _, _, _, mut phase60) = sample_phase60_runtime_relation_witness_claim();
+
+        phase60.witness_pcs_replacement_available = true;
+        phase60.actual_proof_byte_benchmark_available = true;
+        phase60.recursive_verification_claimed = true;
+        phase60.cryptographic_compression_claimed = true;
+        phase60.breakthrough_claimed = true;
+        phase60.paper_ready = true;
+        recommit_phase60_claim(&mut phase60);
+
+        let error = verify_phase60_first_layer_runtime_relation_witness_claim(&phase60)
+            .expect_err("Phase60 must reject false PCS/recurse/compression claims");
+        assert!(error.to_string().contains("must not claim PCS replacement"));
+    }
+
+    #[test]
+    fn phase60_runtime_relation_witness_rejects_source_drift_against_phase59() {
+        let (_, phase54, phase56, phase57, phase58, phase59, mut phase60) =
+            sample_phase60_runtime_relation_witness_claim();
+
+        phase60.source_phase59_relation_witness_binding_claim_commitment =
+            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff".to_string();
+        recommit_phase60_claim(&mut phase60);
+
+        verify_phase60_first_layer_runtime_relation_witness_claim(&phase60)
+            .expect("standalone Phase60 accepts internally bound source hash");
+        let error = verify_phase60_first_layer_runtime_relation_witness_claim_against_phase59(
+            &phase60, &phase59, &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect_err("Phase60 must reject wrong Phase59 source");
+        assert!(error.to_string().contains("source drift against Phase59"));
     }
 
     #[test]
