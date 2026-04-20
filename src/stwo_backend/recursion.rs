@@ -67,6 +67,8 @@ use stwo::core::fields::m31::BaseField;
 #[cfg(feature = "stwo-backend")]
 use stwo::core::fields::qm31::SecureField;
 #[cfg(feature = "stwo-backend")]
+use stwo::core::fri::FriConfig;
+#[cfg(feature = "stwo-backend")]
 use stwo::core::pcs::quotients::CommitmentSchemeProof;
 #[cfg(feature = "stwo-backend")]
 use stwo::core::pcs::{CommitmentSchemeVerifier, PcsConfig, TreeVec};
@@ -504,6 +506,9 @@ const STWO_FIRST_LAYER_WITNESS_PCS_OPENING_NEXT_STEP_PHASE58: &str =
 const PHASE58_MAX_PCS_LIFTING_LOG_SIZE: u32 = 64;
 #[cfg(feature = "stwo-backend")]
 const MAX_PHASE58_PCS_PROOF_JSON_BYTES: usize = 4 * 1024 * 1024;
+#[cfg(feature = "stwo-backend")]
+const PHASE58_PCS_CONFIG_PROFILE: &str =
+    "phase58-stwo-2.2.0-pcs-pow10-fri-lb1-last0-queries3-fold1-no-lift-v1";
 #[cfg(feature = "stwo-backend")]
 const STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_COMPLEXITY_PHASE59: &str =
     "O(phase56_terminal_checks + phase58_opening_bindings)";
@@ -1623,6 +1628,7 @@ pub struct Phase58WitnessBoundPcsOpening {
     pub opening_name: String,
     pub opening_kind: String,
     pub opening_scheme: String,
+    pub pcs_config_profile: String,
     pub tensor_shape: Vec<usize>,
     pub logical_element_count: usize,
     pub padded_element_count: usize,
@@ -1654,6 +1660,7 @@ pub struct Phase58FirstLayerWitnessPcsOpeningClaim {
     pub proof_backend: StarkProofBackend,
     pub claim_version: String,
     pub semantic_scope: String,
+    pub pcs_config_profile: String,
     pub source_phase57_opening_verifier_claim_commitment: String,
     pub source_phase56_executable_claim_commitment: String,
     pub source_phase54_skeleton_claim_commitment: String,
@@ -12944,6 +12951,7 @@ pub fn commit_phase58_witness_bound_pcs_opening(
         opening.opening_name.as_bytes(),
         opening.opening_kind.as_bytes(),
         opening.opening_scheme.as_bytes(),
+        opening.pcs_config_profile.as_bytes(),
         opening.raw_witness_commitment.as_bytes(),
         opening.pcs_sampled_value_commitment.as_bytes(),
     ] {
@@ -12987,6 +12995,7 @@ pub fn commit_phase58_first_layer_witness_pcs_opening_claim(
     for part in [
         claim.claim_version.as_bytes(),
         claim.semantic_scope.as_bytes(),
+        claim.pcs_config_profile.as_bytes(),
         claim
             .source_phase57_opening_verifier_claim_commitment
             .as_bytes(),
@@ -13166,6 +13175,15 @@ pub fn commit_phase59_first_layer_relation_witness_binding_claim(
 }
 
 #[cfg(feature = "stwo-backend")]
+fn phase58_pcs_config() -> PcsConfig {
+    PcsConfig {
+        pow_bits: 10,
+        fri_config: FriConfig::new(0, 1, 3, 1),
+        lifting_log_size: None,
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn phase58_prepare_first_layer_witness_pcs_opening_claim(
     phase57_claim: &Phase57FirstLayerMleOpeningVerifierClaim,
     phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
@@ -13176,7 +13194,7 @@ pub fn phase58_prepare_first_layer_witness_pcs_opening_claim(
         phase56_claim,
         phase54_claim,
     )?;
-    let pcs_config = PcsConfig::default();
+    let pcs_config = phase58_pcs_config();
     let pcs_lifting_log_size = phase57_claim
         .opening_receipts
         .iter()
@@ -13259,6 +13277,7 @@ pub fn phase58_prepare_first_layer_witness_pcs_opening_claim(
         proof_backend: StarkProofBackend::Stwo,
         claim_version: STWO_FIRST_LAYER_WITNESS_PCS_OPENING_CLAIM_VERSION_PHASE58.to_string(),
         semantic_scope: STWO_FIRST_LAYER_WITNESS_PCS_OPENING_CLAIM_SCOPE_PHASE58.to_string(),
+        pcs_config_profile: PHASE58_PCS_CONFIG_PROFILE.to_string(),
         source_phase57_opening_verifier_claim_commitment: phase57_claim
             .opening_verifier_claim_commitment
             .clone(),
@@ -13361,6 +13380,11 @@ pub fn verify_phase58_witness_bound_pcs_opening(
             "Phase 58 witness PCS opening scheme drift".to_string(),
         ));
     }
+    if opening.pcs_config_profile != PHASE58_PCS_CONFIG_PROFILE {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening config profile drift".to_string(),
+        ));
+    }
     let logical_element_count = phase50_tensor_element_count(&opening.tensor_shape)?;
     let padded_element_count = phase50_next_power_of_two(logical_element_count)?;
     let opening_point_dimension = phase53_padded_log2(logical_element_count)?;
@@ -13417,7 +13441,7 @@ pub fn verify_phase58_witness_bound_pcs_opening(
     let expected_point_index = phase58_derive_pcs_opening_point_index(opening)?;
     let expected_extended_log_size = opening
         .pcs_column_log_size
-        .checked_add(PcsConfig::default().fri_config.log_blowup_factor)
+        .checked_add(phase58_pcs_config().fri_config.log_blowup_factor)
         .ok_or_else(|| {
             VmError::InvalidConfig("Phase 58 PCS extended log-size overflow".to_string())
         })?;
@@ -13487,6 +13511,11 @@ pub fn verify_phase58_first_layer_witness_pcs_opening_claim(
     {
         return Err(VmError::InvalidConfig(
             "Phase 58 witness PCS opening claim version or semantic scope drift".to_string(),
+        ));
+    }
+    if claim.pcs_config_profile != PHASE58_PCS_CONFIG_PROFILE {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening claim config profile drift".to_string(),
         ));
     }
     for (label, value) in [
@@ -14436,6 +14465,7 @@ fn phase58_prepare_witness_bound_pcs_opening(
         opening_name: receipt.opening_name.clone(),
         opening_kind: receipt.opening_kind.clone(),
         opening_scheme: STWO_FIRST_LAYER_WITNESS_PCS_OPENING_SCHEME_PHASE58.to_string(),
+        pcs_config_profile: PHASE58_PCS_CONFIG_PROFILE.to_string(),
         tensor_shape: receipt.tensor_shape.clone(),
         logical_element_count: receipt.logical_element_count,
         padded_element_count: receipt.padded_element_count,
@@ -14634,7 +14664,7 @@ fn phase58_lifted_circle_point(
     point_index: u64,
 ) -> Result<CirclePoint<SecureField>> {
     let extended_log_size = log_size
-        .checked_add(PcsConfig::default().fri_config.log_blowup_factor)
+        .checked_add(phase58_pcs_config().fri_config.log_blowup_factor)
         .ok_or_else(|| {
             VmError::InvalidConfig("Phase 58 PCS extended log-size overflow".to_string())
         })?;
@@ -14769,6 +14799,7 @@ fn phase58_witness_opening_payload_bytes(opening: &Phase58WitnessBoundPcsOpening
         "opening_name": &opening.opening_name,
         "opening_kind": &opening.opening_kind,
         "opening_scheme": &opening.opening_scheme,
+        "pcs_config_profile": &opening.pcs_config_profile,
         "tensor_shape": &opening.tensor_shape,
         "logical_element_count": opening.logical_element_count,
         "padded_element_count": opening.padded_element_count,
@@ -14819,6 +14850,7 @@ fn phase58_witness_pcs_opening_transcript_order() -> Vec<String> {
         "phase58_witness_pcs_opening_domain_tag",
         "claim_version",
         "semantic_scope",
+        "pcs_config_profile",
         "source_phase57_opening_verifier_claim_commitment",
         "ordered_phase57_opening_receipts",
         "canonical_raw_witness_commitments",
@@ -14845,7 +14877,7 @@ fn phase58_canonical_pcs_commitment_bytes(
             "Phase 58 PCS commitment binding requires at least one opening".to_string(),
         ));
     }
-    let config = PcsConfig::default();
+    let config = phase58_pcs_config();
     let max_log_size = openings
         .iter()
         .map(|opening| opening.pcs_column_log_size)
@@ -14889,7 +14921,7 @@ fn phase58_build_pcs_opening_proof_unchecked(
             "Phase 58 PCS opening proof requires at least one opening".to_string(),
         ));
     }
-    let config = PcsConfig::default();
+    let config = phase58_pcs_config();
     let max_log_size = openings
         .iter()
         .map(|opening| opening.pcs_column_log_size)
@@ -14969,7 +15001,7 @@ fn phase58_verify_pcs_opening_proof_bytes(
             "Phase 58 PCS proof sampled-value shape drift".to_string(),
         ));
     }
-    let config = PcsConfig::default();
+    let config = phase58_pcs_config();
     if proof.config != config {
         return Err(VmError::InvalidConfig(
             "Phase 58 PCS proof config drift".to_string(),
