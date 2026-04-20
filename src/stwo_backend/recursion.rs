@@ -13783,11 +13783,6 @@ pub fn phase59_prepare_first_layer_relation_witness_binding_claim(
     phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
     phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
 ) -> Result<Phase59FirstLayerRelationWitnessBindingClaim> {
-    if !phase58_claim.actual_proof_byte_benchmark_available {
-        return Err(VmError::InvalidConfig(
-            "Phase 59 requires Phase58 actual PCS proof byte benchmark availability".to_string(),
-        ));
-    }
     verify_phase58_first_layer_witness_pcs_opening_claim_against_phase57(
         phase58_claim,
         phase57_claim,
