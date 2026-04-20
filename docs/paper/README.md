@@ -23,6 +23,7 @@ Supporting publication assets:
 Current paper-freeze addendum:
 
 - `artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/`
+- `artifacts/phase66-69-proof-carrying-hardening-v1-2026-04-21/`
 
 Draft next-paper package:
 
