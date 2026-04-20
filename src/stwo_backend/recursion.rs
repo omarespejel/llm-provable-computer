@@ -280,6 +280,12 @@ pub const STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_CLAIM_VERSION_PHASE56: &str =
 pub const STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_CLAIM_SCOPE_PHASE56: &str =
     "phase56_phase54_executable_sumcheck_round_verifier";
 #[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_CLAIM_VERSION_PHASE57: &str =
+    "phase57-first-layer-mle-opening-verifier-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_CLAIM_SCOPE_PHASE57: &str =
+    "phase57_phase56_mle_opening_receipt_verifier_and_bytes";
+#[cfg(feature = "stwo-backend")]
 const STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_KIND_PHASE44D: &str =
     "source-chain-public-output-boundary-verifier-v1";
 #[cfg(feature = "stwo-backend")]
@@ -436,6 +442,18 @@ const STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_STATUS_PHASE56: &str =
 #[cfg(feature = "stwo-backend")]
 const STWO_FIRST_LAYER_EXECUTABLE_SUMCHECK_NEXT_STEP_PHASE56: &str =
     "implement_phase57_mle_opening_verifier_and_measured_proof_bytes";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_SCHEME_PHASE57: &str =
+    "phase57_deterministic_m31_mle_opening_receipt_verifier";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_COMPLEXITY_PHASE57: &str =
+    "O(mle_opening_receipts + opening_point_dimensions)";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_STATUS_PHASE57: &str =
+    "mle_opening_receipt_verifier_available_pending_pcs_opening_proofs";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_NEXT_STEP_PHASE57: &str =
+    "implement_phase58_relation_witness_binding_and_real_pcs_opening_proofs";
 #[cfg(feature = "stwo-backend")]
 const PHASE44D_M31_MODULUS: u32 = (1u32 << 31) - 1;
 
@@ -1472,6 +1490,67 @@ pub struct Phase56FirstLayerExecutableSumcheckClaim {
     pub cryptographic_compression_claimed: bool,
     pub required_next_step: String,
     pub executable_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase57MleOpeningVerificationReceipt {
+    pub proof_backend: StarkProofBackend,
+    pub source_phase56_executable_claim_commitment: String,
+    pub source_phase54_opening_claim_commitment: String,
+    pub opening_name: String,
+    pub opening_kind: String,
+    pub opening_scheme: String,
+    pub tensor_shape: Vec<usize>,
+    pub logical_element_count: usize,
+    pub padded_element_count: usize,
+    pub opening_point_dimension: usize,
+    pub opening_point: Vec<u32>,
+    pub opened_value: u32,
+    pub opening_root_commitment: String,
+    pub opening_transcript_commitment: String,
+    pub measured_receipt_bytes: usize,
+    pub executable_opening_check_available: bool,
+    pub pcs_opening_proof_available: bool,
+    pub relation_witness_binding_available: bool,
+    pub cryptographic_soundness_claimed: bool,
+    pub opening_receipt_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase57FirstLayerMleOpeningVerifierClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub source_phase56_executable_claim_commitment: String,
+    pub source_phase54_skeleton_claim_commitment: String,
+    pub opening_receipts: Vec<Phase57MleOpeningVerificationReceipt>,
+    pub opening_receipt_count: usize,
+    pub runtime_tensor_opening_count: usize,
+    pub parameter_opening_count: usize,
+    pub total_opening_point_dimension: usize,
+    pub measured_opening_receipt_bytes: usize,
+    pub phase56_executable_verifier_surface_unit_count: usize,
+    pub opening_verifier_surface_unit_count: usize,
+    pub combined_verifier_surface_unit_count: usize,
+    pub surface_delta_from_phase56: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub executable_mle_opening_verifier_available: bool,
+    pub typed_opening_receipt_byte_measurement_available: bool,
+    pub pcs_opening_proof_available: bool,
+    pub relation_witness_binding_available: bool,
+    pub actual_proof_byte_benchmark_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub opening_verifier_claim_commitment: String,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -11921,6 +12000,661 @@ pub fn verify_phase56_first_layer_executable_sumcheck_claim_against_phase54(
         ));
     }
     Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase57_mle_opening_verification_receipt(
+    receipt: &Phase57MleOpeningVerificationReceipt,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 57 MLE opening receipt hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase57-mle-opening-verification-receipt");
+    phase29_update_len_prefixed(&mut hasher, receipt.proof_backend.to_string().as_bytes());
+    for part in [
+        receipt
+            .source_phase56_executable_claim_commitment
+            .as_bytes(),
+        receipt.source_phase54_opening_claim_commitment.as_bytes(),
+        receipt.opening_name.as_bytes(),
+        receipt.opening_kind.as_bytes(),
+        receipt.opening_scheme.as_bytes(),
+        receipt.opening_root_commitment.as_bytes(),
+        receipt.opening_transcript_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_update_usize_vec(&mut hasher, &receipt.tensor_shape);
+    phase29_update_usize(&mut hasher, receipt.logical_element_count);
+    phase29_update_usize(&mut hasher, receipt.padded_element_count);
+    phase29_update_usize(&mut hasher, receipt.opening_point_dimension);
+    phase44d_update_u32_vec(&mut hasher, &receipt.opening_point);
+    hasher.update(&receipt.opened_value.to_le_bytes());
+    phase29_update_usize(&mut hasher, receipt.measured_receipt_bytes);
+    phase29_update_bool(&mut hasher, receipt.executable_opening_check_available);
+    phase29_update_bool(&mut hasher, receipt.pcs_opening_proof_available);
+    phase29_update_bool(&mut hasher, receipt.relation_witness_binding_available);
+    phase29_update_bool(&mut hasher, receipt.cryptographic_soundness_claimed);
+    phase44d_finalize_hash(hasher, "Phase 57 MLE opening receipt")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase57_first_layer_mle_opening_verifier_claim(
+    claim: &Phase57FirstLayerMleOpeningVerifierClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 57 first-layer MLE opening verifier claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase57-first-layer-mle-opening-verifier-claim",
+    );
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim.source_phase56_executable_claim_commitment.as_bytes(),
+        claim.source_phase54_skeleton_claim_commitment.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.verifier_status.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for receipt in &claim.opening_receipts {
+        phase29_update_len_prefixed(&mut hasher, receipt.opening_receipt_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, claim.opening_receipt_count);
+    phase29_update_usize(&mut hasher, claim.runtime_tensor_opening_count);
+    phase29_update_usize(&mut hasher, claim.parameter_opening_count);
+    phase29_update_usize(&mut hasher, claim.total_opening_point_dimension);
+    phase29_update_usize(&mut hasher, claim.measured_opening_receipt_bytes);
+    phase29_update_usize(
+        &mut hasher,
+        claim.phase56_executable_verifier_surface_unit_count,
+    );
+    phase29_update_usize(&mut hasher, claim.opening_verifier_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.combined_verifier_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.surface_delta_from_phase56);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.executable_mle_opening_verifier_available);
+    phase29_update_bool(
+        &mut hasher,
+        claim.typed_opening_receipt_byte_measurement_available,
+    );
+    phase29_update_bool(&mut hasher, claim.pcs_opening_proof_available);
+    phase29_update_bool(&mut hasher, claim.relation_witness_binding_available);
+    phase29_update_bool(&mut hasher, claim.actual_proof_byte_benchmark_available);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, claim.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, claim.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 57 first-layer MLE opening verifier claim")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase57_prepare_first_layer_mle_opening_verifier_claim(
+    phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<Phase57FirstLayerMleOpeningVerifierClaim> {
+    verify_phase56_first_layer_executable_sumcheck_claim_against_phase54(
+        phase56_claim,
+        phase54_claim,
+    )?;
+    let mut opening_receipts = Vec::new();
+    for component in &phase54_claim.component_claims {
+        for opening_index in 0..component.runtime_tensor_opening_count {
+            let opening_name = format!(
+                "{}_runtime_tensor_opening_{}",
+                component.component_name, opening_index
+            );
+            opening_receipts.push(phase57_prepare_mle_opening_receipt(
+                &phase56_claim.executable_claim_commitment,
+                &component.component_claim_commitment,
+                &opening_name,
+                "runtime_tensor_mle_opening",
+                component.component_shape.clone(),
+                &component.opening_receipt_commitment,
+            )?);
+        }
+    }
+    for opening in &phase54_claim.parameter_opening_claims {
+        opening_receipts.push(phase57_prepare_mle_opening_receipt(
+            &phase56_claim.executable_claim_commitment,
+            &opening.parameter_opening_claim_commitment,
+            &opening.parameter_name,
+            "parameter_mle_opening",
+            opening.tensor_shape.clone(),
+            &opening.opening_receipt_commitment,
+        )?);
+    }
+    let opening_receipt_count = opening_receipts.len();
+    let runtime_tensor_opening_count = phase54_claim.total_runtime_tensor_opening_count;
+    let parameter_opening_count = phase54_claim.total_parameter_opening_count;
+    let total_opening_point_dimension: usize = opening_receipts
+        .iter()
+        .map(|receipt| receipt.opening_point_dimension)
+        .sum();
+    let measured_opening_receipt_bytes: usize = opening_receipts
+        .iter()
+        .map(|receipt| receipt.measured_receipt_bytes)
+        .sum();
+    let opening_verifier_surface_unit_count =
+        opening_receipt_count + total_opening_point_dimension + opening_receipt_count;
+    let combined_verifier_surface_unit_count = phase56_claim
+        .executable_verifier_surface_unit_count
+        .checked_add(opening_verifier_surface_unit_count)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 57 combined verifier surface accounting overflow".to_string(),
+            )
+        })?;
+    let mut claim = Phase57FirstLayerMleOpeningVerifierClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_CLAIM_VERSION_PHASE57.to_string(),
+        semantic_scope: STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_CLAIM_SCOPE_PHASE57.to_string(),
+        source_phase56_executable_claim_commitment: phase56_claim
+            .executable_claim_commitment
+            .clone(),
+        source_phase54_skeleton_claim_commitment: phase54_claim.skeleton_claim_commitment.clone(),
+        opening_receipts,
+        opening_receipt_count,
+        runtime_tensor_opening_count,
+        parameter_opening_count,
+        total_opening_point_dimension,
+        measured_opening_receipt_bytes,
+        phase56_executable_verifier_surface_unit_count: phase56_claim
+            .executable_verifier_surface_unit_count,
+        opening_verifier_surface_unit_count,
+        combined_verifier_surface_unit_count,
+        surface_delta_from_phase56: opening_verifier_surface_unit_count,
+        verifier_side_complexity: STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_COMPLEXITY_PHASE57
+            .to_string(),
+        verifier_status: STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_STATUS_PHASE57.to_string(),
+        transcript_order: phase57_opening_verifier_transcript_order(),
+        executable_mle_opening_verifier_available: true,
+        typed_opening_receipt_byte_measurement_available: true,
+        pcs_opening_proof_available: false,
+        relation_witness_binding_available: false,
+        actual_proof_byte_benchmark_available: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_NEXT_STEP_PHASE57.to_string(),
+        opening_verifier_claim_commitment: String::new(),
+    };
+    claim.opening_verifier_claim_commitment =
+        commit_phase57_first_layer_mle_opening_verifier_claim(&claim)?;
+    verify_phase57_first_layer_mle_opening_verifier_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase57_mle_opening_verification_receipt(
+    receipt: &Phase57MleOpeningVerificationReceipt,
+) -> Result<()> {
+    if receipt.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening receipt requires `stwo` backend".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase57_source_phase56_executable_claim_commitment",
+            receipt.source_phase56_executable_claim_commitment.as_str(),
+        ),
+        (
+            "phase57_source_phase54_opening_claim_commitment",
+            receipt.source_phase54_opening_claim_commitment.as_str(),
+        ),
+        (
+            "phase57_opening_root_commitment",
+            receipt.opening_root_commitment.as_str(),
+        ),
+        (
+            "phase57_opening_transcript_commitment",
+            receipt.opening_transcript_commitment.as_str(),
+        ),
+        (
+            "phase57_opening_receipt_commitment",
+            receipt.opening_receipt_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if receipt.opening_kind != "runtime_tensor_mle_opening"
+        && receipt.opening_kind != "parameter_mle_opening"
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening receipt kind drift".to_string(),
+        ));
+    }
+    if receipt.opening_scheme != STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_SCHEME_PHASE57 {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening receipt scheme drift".to_string(),
+        ));
+    }
+    let expected_logical_element_count = phase50_tensor_element_count(&receipt.tensor_shape)?;
+    let expected_padded_element_count = phase50_next_power_of_two(expected_logical_element_count)?;
+    let expected_opening_point_dimension = phase53_padded_log2(expected_logical_element_count)?;
+    if receipt.logical_element_count != expected_logical_element_count
+        || receipt.padded_element_count != expected_padded_element_count
+        || receipt.opening_point_dimension != expected_opening_point_dimension
+        || receipt.opening_point.len() != expected_opening_point_dimension
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening receipt shape or point-dimension drift".to_string(),
+        ));
+    }
+    phase52_validate_m31_values("phase57_opening_point", &receipt.opening_point)?;
+    if receipt.opened_value >= PHASE44D_M31_MODULUS {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening receipt value exceeds M31 capacity".to_string(),
+        ));
+    }
+    let expected_opening_point = phase57_derive_opening_point(receipt)?;
+    let expected_opened_value = phase56_derive_m31(
+        &receipt.source_phase54_opening_claim_commitment,
+        &receipt.opening_name,
+        "opened_value",
+        0,
+    )?;
+    if receipt.opening_point != expected_opening_point
+        || receipt.opened_value != expected_opened_value
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening receipt deterministic opening evaluation drift".to_string(),
+        ));
+    }
+    let expected_transcript = phase57_commit_mle_opening_transcript(receipt)?;
+    if receipt.opening_transcript_commitment != expected_transcript {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening receipt transcript commitment drift".to_string(),
+        ));
+    }
+    let expected_bytes = phase57_mle_opening_receipt_payload_bytes(receipt)?;
+    if receipt.measured_receipt_bytes != expected_bytes {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening receipt measured byte count drift".to_string(),
+        ));
+    }
+    if !receipt.executable_opening_check_available
+        || receipt.pcs_opening_proof_available
+        || receipt.relation_witness_binding_available
+        || receipt.cryptographic_soundness_claimed
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening receipt must not claim unavailable PCS, witness, or soundness evidence"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase57_mle_opening_verification_receipt(receipt)?;
+    if receipt.opening_receipt_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening receipt commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase57_first_layer_mle_opening_verifier_claim(
+    claim: &Phase57FirstLayerMleOpeningVerifierClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening verifier claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_CLAIM_VERSION_PHASE57
+        || claim.semantic_scope != STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_CLAIM_SCOPE_PHASE57
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening verifier claim version or semantic scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase57_source_phase56_executable_claim_commitment",
+            claim.source_phase56_executable_claim_commitment.as_str(),
+        ),
+        (
+            "phase57_source_phase54_skeleton_claim_commitment",
+            claim.source_phase54_skeleton_claim_commitment.as_str(),
+        ),
+        (
+            "phase57_opening_verifier_claim_commitment",
+            claim.opening_verifier_claim_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let expected_opening_specs = phase57_expected_first_layer_opening_specs()?;
+    if claim.opening_receipts.len() != expected_opening_specs.len() {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening verifier claim opening count drift".to_string(),
+        ));
+    }
+    let mut seen_receipt_bindings = Vec::with_capacity(claim.opening_receipts.len());
+    for (receipt, (expected_name, expected_kind, expected_shape)) in claim
+        .opening_receipts
+        .iter()
+        .zip(expected_opening_specs.iter())
+    {
+        verify_phase57_mle_opening_verification_receipt(receipt)?;
+        if receipt.source_phase56_executable_claim_commitment
+            != claim.source_phase56_executable_claim_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 57 MLE opening verifier claim receipt source Phase56 drift".to_string(),
+            ));
+        }
+        if receipt.opening_name != *expected_name
+            || receipt.opening_kind != *expected_kind
+            || receipt.tensor_shape != *expected_shape
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 57 MLE opening verifier claim opening order, kind, or shape drift"
+                    .to_string(),
+            ));
+        }
+        let binding = format!(
+            "{}:{}:{}",
+            receipt.source_phase54_opening_claim_commitment,
+            receipt.opening_kind,
+            receipt.opening_name
+        );
+        if seen_receipt_bindings.contains(&binding) {
+            return Err(VmError::InvalidConfig(
+                "Phase 57 MLE opening verifier claim duplicate opening receipt".to_string(),
+            ));
+        }
+        seen_receipt_bindings.push(binding);
+    }
+    let opening_receipt_count = claim.opening_receipts.len();
+    let runtime_tensor_opening_count = claim
+        .opening_receipts
+        .iter()
+        .filter(|receipt| receipt.opening_kind == "runtime_tensor_mle_opening")
+        .count();
+    let parameter_opening_count = claim
+        .opening_receipts
+        .iter()
+        .filter(|receipt| receipt.opening_kind == "parameter_mle_opening")
+        .count();
+    let total_opening_point_dimension: usize = claim
+        .opening_receipts
+        .iter()
+        .map(|receipt| receipt.opening_point_dimension)
+        .sum();
+    let measured_opening_receipt_bytes: usize = claim
+        .opening_receipts
+        .iter()
+        .map(|receipt| receipt.measured_receipt_bytes)
+        .sum();
+    let opening_surface =
+        opening_receipt_count + total_opening_point_dimension + opening_receipt_count;
+    let combined_surface = claim
+        .phase56_executable_verifier_surface_unit_count
+        .checked_add(opening_surface)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 57 combined verifier surface accounting overflow".to_string(),
+            )
+        })?;
+    if claim.opening_receipt_count != opening_receipt_count
+        || claim.runtime_tensor_opening_count != runtime_tensor_opening_count
+        || claim.parameter_opening_count != parameter_opening_count
+        || claim.total_opening_point_dimension != total_opening_point_dimension
+        || claim.measured_opening_receipt_bytes != measured_opening_receipt_bytes
+        || claim.phase56_executable_verifier_surface_unit_count != 123
+        || claim.opening_verifier_surface_unit_count != opening_surface
+        || claim.combined_verifier_surface_unit_count != combined_surface
+        || claim.surface_delta_from_phase56 != opening_surface
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening verifier claim surface or byte accounting drift".to_string(),
+        ));
+    }
+    if claim.verifier_side_complexity != STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_COMPLEXITY_PHASE57
+        || claim.verifier_status != STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_STATUS_PHASE57
+        || claim.transcript_order != phase57_opening_verifier_transcript_order()
+        || claim.required_next_step != STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_NEXT_STEP_PHASE57
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening verifier claim transcript, status, or next-step drift"
+                .to_string(),
+        ));
+    }
+    if !claim.executable_mle_opening_verifier_available
+        || !claim.typed_opening_receipt_byte_measurement_available
+        || claim.pcs_opening_proof_available
+        || claim.relation_witness_binding_available
+        || claim.actual_proof_byte_benchmark_available
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+        || claim.breakthrough_claimed
+        || claim.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening verifier claim must not claim unavailable PCS, witness, benchmark, recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase57_first_layer_mle_opening_verifier_claim(claim)?;
+    if claim.opening_verifier_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening verifier claim commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase57_first_layer_mle_opening_verifier_claim_against_phase56(
+    claim: &Phase57FirstLayerMleOpeningVerifierClaim,
+    phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<()> {
+    let expected =
+        phase57_prepare_first_layer_mle_opening_verifier_claim(phase56_claim, phase54_claim)?;
+    if claim != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 57 MLE opening verifier claim does not match verified Phase56 and Phase54 sources"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase57_prepare_mle_opening_receipt(
+    source_phase56_commitment: &str,
+    source_phase54_opening_commitment: &str,
+    opening_name: &str,
+    opening_kind: &str,
+    tensor_shape: Vec<usize>,
+    opening_root_commitment: &str,
+) -> Result<Phase57MleOpeningVerificationReceipt> {
+    phase43_require_hash32("phase57_source_phase56", source_phase56_commitment)?;
+    phase43_require_hash32(
+        "phase57_source_phase54_opening",
+        source_phase54_opening_commitment,
+    )?;
+    phase43_require_hash32("phase57_opening_root", opening_root_commitment)?;
+    let logical_element_count = phase50_tensor_element_count(&tensor_shape)?;
+    let padded_element_count = phase50_next_power_of_two(logical_element_count)?;
+    let opening_point_dimension = phase53_padded_log2(logical_element_count)?;
+    let mut receipt = Phase57MleOpeningVerificationReceipt {
+        proof_backend: StarkProofBackend::Stwo,
+        source_phase56_executable_claim_commitment: source_phase56_commitment.to_string(),
+        source_phase54_opening_claim_commitment: source_phase54_opening_commitment.to_string(),
+        opening_name: opening_name.to_string(),
+        opening_kind: opening_kind.to_string(),
+        opening_scheme: STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_SCHEME_PHASE57.to_string(),
+        tensor_shape,
+        logical_element_count,
+        padded_element_count,
+        opening_point_dimension,
+        opening_point: Vec::new(),
+        opened_value: phase56_derive_m31(
+            source_phase54_opening_commitment,
+            opening_name,
+            "opened_value",
+            0,
+        )?,
+        opening_root_commitment: opening_root_commitment.to_string(),
+        opening_transcript_commitment: String::new(),
+        measured_receipt_bytes: 0,
+        executable_opening_check_available: true,
+        pcs_opening_proof_available: false,
+        relation_witness_binding_available: false,
+        cryptographic_soundness_claimed: false,
+        opening_receipt_commitment: String::new(),
+    };
+    receipt.opening_point = phase57_derive_opening_point(&receipt)?;
+    receipt.opening_transcript_commitment = phase57_commit_mle_opening_transcript(&receipt)?;
+    receipt.measured_receipt_bytes = phase57_mle_opening_receipt_payload_bytes(&receipt)?;
+    receipt.opening_receipt_commitment = commit_phase57_mle_opening_verification_receipt(&receipt)?;
+    verify_phase57_mle_opening_verification_receipt(&receipt)?;
+    Ok(receipt)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase57_derive_opening_point(
+    receipt: &Phase57MleOpeningVerificationReceipt,
+) -> Result<Vec<u32>> {
+    (0..receipt.opening_point_dimension)
+        .map(|index| {
+            phase56_derive_m31(
+                &receipt.source_phase54_opening_claim_commitment,
+                &receipt.opening_name,
+                "opening_point",
+                index,
+            )
+        })
+        .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase57_commit_mle_opening_transcript(
+    receipt: &Phase57MleOpeningVerificationReceipt,
+) -> Result<String> {
+    phase43_require_hash32(
+        "phase57_transcript_source_phase56",
+        &receipt.source_phase56_executable_claim_commitment,
+    )?;
+    phase43_require_hash32(
+        "phase57_transcript_source_phase54",
+        &receipt.source_phase54_opening_claim_commitment,
+    )?;
+    phase43_require_hash32(
+        "phase57_transcript_opening_root",
+        &receipt.opening_root_commitment,
+    )?;
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 57 opening transcript hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase57-mle-opening-transcript");
+    for part in [
+        receipt
+            .source_phase56_executable_claim_commitment
+            .as_bytes(),
+        receipt.source_phase54_opening_claim_commitment.as_bytes(),
+        receipt.opening_name.as_bytes(),
+        receipt.opening_kind.as_bytes(),
+        receipt.opening_scheme.as_bytes(),
+        receipt.opening_root_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_update_usize_vec(&mut hasher, &receipt.tensor_shape);
+    phase44d_update_u32_vec(&mut hasher, &receipt.opening_point);
+    hasher.update(&receipt.opened_value.to_le_bytes());
+    phase44d_finalize_hash(hasher, "Phase 57 MLE opening transcript")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase57_mle_opening_receipt_payload_bytes(
+    receipt: &Phase57MleOpeningVerificationReceipt,
+) -> Result<usize> {
+    let payload = serde_json::json!({
+        "proof_backend": receipt.proof_backend.to_string(),
+        "source_phase56_executable_claim_commitment": &receipt.source_phase56_executable_claim_commitment,
+        "source_phase54_opening_claim_commitment": &receipt.source_phase54_opening_claim_commitment,
+        "opening_name": &receipt.opening_name,
+        "opening_kind": &receipt.opening_kind,
+        "opening_scheme": &receipt.opening_scheme,
+        "tensor_shape": &receipt.tensor_shape,
+        "logical_element_count": receipt.logical_element_count,
+        "padded_element_count": receipt.padded_element_count,
+        "opening_point_dimension": receipt.opening_point_dimension,
+        "opening_point": &receipt.opening_point,
+        "opened_value": receipt.opened_value,
+        "opening_root_commitment": &receipt.opening_root_commitment,
+        "opening_transcript_commitment": &receipt.opening_transcript_commitment,
+        "executable_opening_check_available": receipt.executable_opening_check_available,
+        "pcs_opening_proof_available": receipt.pcs_opening_proof_available,
+        "relation_witness_binding_available": receipt.relation_witness_binding_available,
+        "cryptographic_soundness_claimed": receipt.cryptographic_soundness_claimed,
+    });
+    serde_json::to_vec(&payload)
+        .map(|bytes| bytes.len())
+        .map_err(|err| VmError::Serialization(err.to_string()))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase57_opening_verifier_transcript_order() -> Vec<String> {
+    [
+        "phase57_mle_opening_verifier_domain_tag",
+        "claim_version",
+        "semantic_scope",
+        "source_phase56_executable_claim_commitment",
+        "source_phase54_skeleton_claim_commitment",
+        "ordered_opening_receipt_commitments",
+        "opening_names",
+        "opening_points",
+        "opened_values",
+        "measured_receipt_bytes",
+        "surface_accounting",
+        "availability_flags",
+        "required_next_step",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase57_expected_first_layer_opening_specs() -> Result<Vec<(String, String, Vec<usize>)>> {
+    let mut specs = Vec::new();
+    for component_name in phase54_component_order() {
+        let (_, component_shape, _, _, runtime_tensor_opening_count, _) =
+            phase54_component_spec(&component_name)?;
+        for opening_index in 0..runtime_tensor_opening_count {
+            specs.push((
+                format!("{component_name}_runtime_tensor_opening_{opening_index}"),
+                "runtime_tensor_mle_opening".to_string(),
+                component_shape.clone(),
+            ));
+        }
+    }
+    for parameter_name in phase54_parameter_opening_order() {
+        let (_, tensor_shape) = phase54_parameter_opening_spec(&parameter_name)?;
+        specs.push((
+            parameter_name,
+            "parameter_mle_opening".to_string(),
+            tensor_shape,
+        ));
+    }
+    Ok(specs)
 }
 
 #[cfg(feature = "stwo-backend")]

@@ -4551,6 +4551,8 @@ mod tests {
         commit_phase55_first_layer_compression_effectiveness_claim,
         commit_phase56_executable_sumcheck_component_proof,
         commit_phase56_first_layer_executable_sumcheck_claim, commit_phase56_round_polynomial,
+        commit_phase57_first_layer_mle_opening_verifier_claim,
+        commit_phase57_mle_opening_verification_receipt,
         phase44d_prepare_recursive_verifier_public_output_aggregation,
         phase44d_prepare_recursive_verifier_public_output_handoff,
         phase45_prepare_recursive_verifier_public_input_bridge,
@@ -4565,6 +4567,7 @@ mod tests {
         phase54_prepare_first_layer_sumcheck_skeleton_claim,
         phase55_prepare_first_layer_compression_effectiveness_claim,
         phase56_prepare_first_layer_executable_sumcheck_claim,
+        phase57_prepare_first_layer_mle_opening_verifier_claim,
         verify_phase44d_recursive_verifier_public_output_aggregation,
         verify_phase44d_recursive_verifier_public_output_handoff,
         verify_phase44d_recursive_verifier_public_output_handoff_against_boundary,
@@ -4593,10 +4596,14 @@ mod tests {
         verify_phase56_executable_sumcheck_component_proof,
         verify_phase56_first_layer_executable_sumcheck_claim,
         verify_phase56_first_layer_executable_sumcheck_claim_against_phase54,
-        Phase48RecursiveProofWrapperAttempt, Phase49LayerwiseTensorClaimPropagationContract,
-        Phase50LayerIoClaim, Phase51FirstLayerRelationClaim, Phase52LayerEndpointAnchoringClaim,
+        verify_phase57_first_layer_mle_opening_verifier_claim,
+        verify_phase57_first_layer_mle_opening_verifier_claim_against_phase56,
+        verify_phase57_mle_opening_verification_receipt, Phase48RecursiveProofWrapperAttempt,
+        Phase49LayerwiseTensorClaimPropagationContract, Phase50LayerIoClaim,
+        Phase51FirstLayerRelationClaim, Phase52LayerEndpointAnchoringClaim,
         Phase53FirstLayerRelationBenchmarkClaim, Phase54FirstLayerSumcheckSkeletonClaim,
         Phase55FirstLayerCompressionEffectivenessClaim, Phase56FirstLayerExecutableSumcheckClaim,
+        Phase57FirstLayerMleOpeningVerifierClaim,
     };
     use super::super::STWO_BACKEND_VERSION_PHASE12;
     use super::*;
@@ -7692,6 +7699,159 @@ mod tests {
         assert!(error
             .to_string()
             .contains("does not match verified Phase54"));
+    }
+
+    fn sample_phase57_mle_opening_verifier_claim() -> (
+        Phase53FirstLayerRelationBenchmarkClaim,
+        Phase54FirstLayerSumcheckSkeletonClaim,
+        Phase56FirstLayerExecutableSumcheckClaim,
+        Phase57FirstLayerMleOpeningVerifierClaim,
+    ) {
+        let (phase53, phase54, phase56) = sample_phase56_executable_claim();
+        let phase57 = phase57_prepare_first_layer_mle_opening_verifier_claim(&phase56, &phase54)
+            .expect("prepare Phase57 MLE opening verifier claim");
+        (phase53, phase54, phase56, phase57)
+    }
+
+    #[test]
+    fn phase57_mle_opening_verifier_claim_accepts_phase56_openings() {
+        let (_, phase54, phase56, phase57) = sample_phase57_mle_opening_verifier_claim();
+
+        verify_phase57_first_layer_mle_opening_verifier_claim(&phase57)
+            .expect("verify standalone Phase57 MLE opening verifier claim");
+        verify_phase57_first_layer_mle_opening_verifier_claim_against_phase56(
+            &phase57, &phase56, &phase54,
+        )
+        .expect("verify Phase57 MLE opening verifier claim against Phase56 and Phase54");
+
+        assert_eq!(phase57.opening_receipt_count, 11);
+        assert_eq!(phase57.runtime_tensor_opening_count, 5);
+        assert_eq!(phase57.parameter_opening_count, 6);
+        assert_eq!(phase57.phase56_executable_verifier_surface_unit_count, 123);
+        assert_eq!(
+            phase57.opening_verifier_surface_unit_count,
+            phase57.opening_receipt_count * 2 + phase57.total_opening_point_dimension
+        );
+        assert_eq!(
+            phase57.combined_verifier_surface_unit_count,
+            phase57.phase56_executable_verifier_surface_unit_count
+                + phase57.opening_verifier_surface_unit_count
+        );
+        assert_eq!(
+            phase57.measured_opening_receipt_bytes,
+            phase57
+                .opening_receipts
+                .iter()
+                .map(|receipt| receipt.measured_receipt_bytes)
+                .sum::<usize>()
+        );
+        assert!(phase57.executable_mle_opening_verifier_available);
+        assert!(phase57.typed_opening_receipt_byte_measurement_available);
+        assert!(!phase57.pcs_opening_proof_available);
+        assert!(!phase57.relation_witness_binding_available);
+        assert!(!phase57.cryptographic_compression_claimed);
+        assert!(!phase57.paper_ready);
+    }
+
+    #[test]
+    fn phase57_mle_opening_receipt_rejects_opened_value_drift_even_when_recommitted() {
+        let (_, _, _, mut phase57) = sample_phase57_mle_opening_verifier_claim();
+
+        phase57.opening_receipts[0].opened_value =
+            (phase57.opening_receipts[0].opened_value + 1) % ((1u32 << 31) - 1);
+        phase57.opening_receipts[0].opening_receipt_commitment =
+            commit_phase57_mle_opening_verification_receipt(&phase57.opening_receipts[0])
+                .expect("recommit forged Phase57 opening receipt");
+        phase57.opening_verifier_claim_commitment =
+            commit_phase57_first_layer_mle_opening_verifier_claim(&phase57)
+                .expect("recommit forged Phase57 opening verifier claim");
+
+        let error = verify_phase57_mle_opening_verification_receipt(&phase57.opening_receipts[0])
+            .expect_err("Phase57 opening receipt must reject deterministic value drift");
+        assert!(error
+            .to_string()
+            .contains("deterministic opening evaluation drift"));
+    }
+
+    #[test]
+    fn phase57_mle_opening_verifier_claim_rejects_false_pcs_and_paper_ready_flags() {
+        let (_, _, _, mut phase57) = sample_phase57_mle_opening_verifier_claim();
+
+        phase57.pcs_opening_proof_available = true;
+        phase57.relation_witness_binding_available = true;
+        phase57.actual_proof_byte_benchmark_available = true;
+        phase57.recursive_verification_claimed = true;
+        phase57.cryptographic_compression_claimed = true;
+        phase57.breakthrough_claimed = true;
+        phase57.paper_ready = true;
+        phase57.opening_verifier_claim_commitment =
+            commit_phase57_first_layer_mle_opening_verifier_claim(&phase57)
+                .expect("recommit forged Phase57 opening verifier claim");
+
+        let error = verify_phase57_first_layer_mle_opening_verifier_claim(&phase57)
+            .expect_err("Phase57 must reject false PCS/compression/paper-ready claims");
+        assert!(error
+            .to_string()
+            .contains("unavailable PCS, witness, benchmark, recursion, compression"));
+    }
+
+    #[test]
+    fn phase57_mle_opening_verifier_claim_rejects_receipt_source_drift_even_when_recommitted() {
+        let (_, _, _, mut phase57) = sample_phase57_mle_opening_verifier_claim();
+
+        phase57.source_phase56_executable_claim_commitment =
+            "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc".to_string();
+        phase57.opening_verifier_claim_commitment =
+            commit_phase57_first_layer_mle_opening_verifier_claim(&phase57)
+                .expect("recommit forged Phase57 opening verifier claim");
+
+        let error = verify_phase57_first_layer_mle_opening_verifier_claim(&phase57)
+            .expect_err("Phase57 must reject top-level source drift against receipts");
+        assert!(error.to_string().contains("receipt source Phase56 drift"));
+    }
+
+    #[test]
+    fn phase57_mle_opening_verifier_claim_rejects_opening_order_drift_even_when_recommitted() {
+        let (_, _, _, mut phase57) = sample_phase57_mle_opening_verifier_claim();
+
+        phase57.opening_receipts.swap(0, 1);
+        phase57.opening_verifier_claim_commitment =
+            commit_phase57_first_layer_mle_opening_verifier_claim(&phase57)
+                .expect("recommit forged Phase57 reordered-opening verifier claim");
+
+        let error = verify_phase57_first_layer_mle_opening_verifier_claim(&phase57)
+            .expect_err("Phase57 must reject reordered opening receipts");
+        assert!(error
+            .to_string()
+            .contains("opening order, kind, or shape drift"));
+    }
+
+    #[test]
+    fn phase57_mle_opening_verifier_claim_rejects_extra_opening_receipts() {
+        let (_, _, _, mut phase57) = sample_phase57_mle_opening_verifier_claim();
+
+        phase57
+            .opening_receipts
+            .push(phase57.opening_receipts[0].clone());
+        phase57.opening_receipt_count += 1;
+        phase57.runtime_tensor_opening_count += 1;
+        phase57.total_opening_point_dimension +=
+            phase57.opening_receipts[0].opening_point_dimension;
+        phase57.measured_opening_receipt_bytes +=
+            phase57.opening_receipts[0].measured_receipt_bytes;
+        phase57.opening_verifier_surface_unit_count =
+            phase57.opening_receipt_count * 2 + phase57.total_opening_point_dimension;
+        phase57.combined_verifier_surface_unit_count = phase57
+            .phase56_executable_verifier_surface_unit_count
+            + phase57.opening_verifier_surface_unit_count;
+        phase57.surface_delta_from_phase56 = phase57.opening_verifier_surface_unit_count;
+        phase57.opening_verifier_claim_commitment =
+            commit_phase57_first_layer_mle_opening_verifier_claim(&phase57)
+                .expect("recommit forged Phase57 extra-opening verifier claim");
+
+        let error = verify_phase57_first_layer_mle_opening_verifier_claim(&phase57)
+            .expect_err("Phase57 must reject extra opening receipts");
+        assert!(error.to_string().contains("opening count drift"));
     }
 
     #[test]
