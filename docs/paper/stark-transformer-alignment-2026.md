@@ -424,11 +424,11 @@ test-covered verifier surfaces. Phase 63 binds one shared lookup-table identity 
 the Phase 62 step envelopes, the proof-carrying steps on this line; Phase 64 introduces
 a small typed carried-state boundary
 that exposes the state, lookup identity, tensor handle, KV-cache handle, and token handle
-checked at each step; and Phase 65 binds those typed boundaries to one first-layer
-gated-feed-forward transformer-shaped transition artifact backed by the Phase 60 runtime
-relation witness. This is stronger systems evidence for the proof surface, but it is
-still not a claim of standard-softmax transformer inference, recursive verification, or
-compressed shared-table accumulation.
+checked at each step; and Phase 65 binds those typed boundaries to a relation-kind-bound
+transformer-shaped transition artifact backed by the Phase 60 runtime relation witness.
+This is stronger systems evidence for the proof surface, but it is still not a claim of
+standard-softmax transformer inference, recursive verification, or compressed shared-table
+accumulation.
 
 ### 5.2 Carried-state relation
 

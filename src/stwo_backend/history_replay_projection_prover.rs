@@ -8633,7 +8633,58 @@ mod tests {
             .expect("recommit Phase63 lookup binding");
     }
 
+    fn recompute_phase63_shared_lookup_identity_for_test(
+        claim: &Phase63SharedLookupIdentityClaim,
+    ) -> Result<String> {
+        let mut hasher = Blake2bVar::new(32).map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to initialize Phase63 test shared lookup identity hash: {err}"
+            ))
+        })?;
+        update_len_prefixed(&mut hasher, b"phase63-shared-lookup-identity");
+        for part in [
+            claim
+                .source_phase62_state_continuity_claim_commitment
+                .as_bytes(),
+            claim.relation_template_commitment.as_bytes(),
+            claim
+                .source_phase61_runtime_witness_pcs_replacement_claim_commitment
+                .as_bytes(),
+            claim
+                .source_phase60_runtime_relation_witness_claim_commitment
+                .as_bytes(),
+            claim.lookup_table_registry_commitment.as_bytes(),
+        ] {
+            update_len_prefixed(&mut hasher, part);
+        }
+        update_usize(&mut hasher, claim.step_count);
+        finalize_hash32(hasher, "Phase63 test shared lookup identity")
+    }
+
+    fn recommit_phase63_claim_preserving_step_bindings(
+        claim: &mut Phase63SharedLookupIdentityClaim,
+    ) {
+        claim.step_lookup_bindings_commitment =
+            super::super::recursion::phase63_commit_step_lookup_bindings_for_tests(
+                &claim.step_lookup_bindings,
+            )
+            .expect("recommit Phase63 lookup binding list");
+        claim.shared_lookup_identity_claim_commitment =
+            commit_phase63_shared_lookup_identity_claim(claim)
+                .expect("recommit Phase63 shared lookup identity claim");
+    }
+
     fn recommit_phase63_claim(claim: &mut Phase63SharedLookupIdentityClaim) {
+        claim.shared_lookup_identity_commitment =
+            recompute_phase63_shared_lookup_identity_for_test(claim)
+                .expect("recompute Phase63 shared lookup identity");
+        for binding in &mut claim.step_lookup_bindings {
+            binding.shared_lookup_identity_commitment =
+                claim.shared_lookup_identity_commitment.clone();
+            binding.lookup_table_registry_commitment =
+                claim.lookup_table_registry_commitment.clone();
+            recommit_phase63_binding(binding);
+        }
         claim.step_lookup_bindings_commitment =
             super::super::recursion::phase63_commit_step_lookup_bindings_for_tests(
                 &claim.step_lookup_bindings,
@@ -9323,7 +9374,7 @@ mod tests {
 
         phase63.step_lookup_bindings[1].shared_lookup_identity_commitment = hash32('a');
         recommit_phase63_binding(&mut phase63.step_lookup_bindings[1]);
-        recommit_phase63_claim(&mut phase63);
+        recommit_phase63_claim_preserving_step_bindings(&mut phase63);
 
         let error = verify_phase63_shared_lookup_identity_claim(&phase63)
             .expect_err("Phase63 must reject per-step lookup identity drift");
@@ -9359,7 +9410,9 @@ mod tests {
 
         let error = verify_phase63_shared_lookup_identity_claim(&phase63)
             .expect_err("Phase63 must reject per-step table commitment drift");
-        assert!(error.to_string().contains("drift"));
+        assert!(error
+            .to_string()
+            .contains("Phase 63 shared lookup identity drift across steps"));
     }
 
     #[test]
