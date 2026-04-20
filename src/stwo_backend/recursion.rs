@@ -44,6 +44,13 @@ use super::history_replay_projection_prover::{
     STWO_HISTORY_REPLAY_PROJECTION_TERMINAL_BOUNDARY_LOGUP_CLOSURE_VERSION_PHASE44D,
 };
 #[cfg(feature = "stwo-backend")]
+use super::shared_lookup_artifact::{
+    STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12,
+    STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12,
+    STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12,
+    STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12,
+};
+#[cfg(feature = "stwo-backend")]
 use super::STWO_BACKEND_VERSION_PHASE12;
 #[cfg(feature = "stwo-backend")]
 use crate::config::TransformerVmConfig;
@@ -344,6 +351,24 @@ pub const STWO_PROOF_CARRYING_STATE_CONTINUITY_CLAIM_VERSION_PHASE62: &str =
 pub const STWO_PROOF_CARRYING_STATE_CONTINUITY_CLAIM_SCOPE_PHASE62: &str =
     "phase62_phase61_backed_state_continuity_envelope_chain";
 #[cfg(feature = "stwo-backend")]
+pub const STWO_SHARED_LOOKUP_IDENTITY_CLAIM_VERSION_PHASE63: &str =
+    "phase63-shared-lookup-identity-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_SHARED_LOOKUP_IDENTITY_CLAIM_SCOPE_PHASE63: &str =
+    "phase63_phase62_steps_shared_lookup_identity";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_TYPED_CARRIED_STATE_CLAIM_VERSION_PHASE64: &str =
+    "phase64-typed-carried-state-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_TYPED_CARRIED_STATE_CLAIM_SCOPE_PHASE64: &str =
+    "phase64_phase63_typed_carried_state_boundaries";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_TRANSFORMER_TRANSITION_ARTIFACT_VERSION_PHASE65: &str =
+    "phase65-transformer-transition-artifact-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_TRANSFORMER_TRANSITION_ARTIFACT_SCOPE_PHASE65: &str =
+    "phase65_phase64_first_layer_transformer_transition_artifact";
+#[cfg(feature = "stwo-backend")]
 const STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_KIND_PHASE44D: &str =
     "source-chain-public-output-boundary-verifier-v1";
 #[cfg(feature = "stwo-backend")]
@@ -576,6 +601,38 @@ const STWO_PROOF_CARRYING_STATE_CONTINUITY_NEXT_STEP_PHASE62: &str =
 #[cfg(feature = "stwo-backend")]
 const STWO_PROOF_CARRYING_STATE_TRANSITION_RULE_PHASE62: &str =
     "phase62_phase61_template_carried_state_commitment_transition";
+#[cfg(feature = "stwo-backend")]
+const STWO_SHARED_LOOKUP_IDENTITY_COMPLEXITY_PHASE63: &str =
+    "O(phase62_steps + shared_lookup_identity_bindings)";
+#[cfg(feature = "stwo-backend")]
+const STWO_SHARED_LOOKUP_IDENTITY_STATUS_PHASE63: &str =
+    "shared_lookup_identity_enforced_pending_typed_carried_state";
+#[cfg(feature = "stwo-backend")]
+const STWO_SHARED_LOOKUP_IDENTITY_NEXT_STEP_PHASE63: &str =
+    "bind_typed_carried_state_boundaries_to_phase62_steps";
+#[cfg(feature = "stwo-backend")]
+const STWO_TYPED_CARRIED_STATE_COMPLEXITY_PHASE64: &str = "O(phase63_steps + typed_boundary_links)";
+#[cfg(feature = "stwo-backend")]
+const STWO_TYPED_CARRIED_STATE_STATUS_PHASE64: &str =
+    "typed_carried_state_boundaries_enforced_pending_transformer_transition_artifact";
+#[cfg(feature = "stwo-backend")]
+const STWO_TYPED_CARRIED_STATE_NEXT_STEP_PHASE64: &str =
+    "bind_one_transformer_shaped_transition_artifact_to_typed_state";
+#[cfg(feature = "stwo-backend")]
+const STWO_TYPED_CARRIED_STATE_BOUNDARY_VERSION_PHASE64: &str =
+    "phase64-typed-carried-state-boundary-v1";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSFORMER_TRANSITION_COMPLEXITY_PHASE65: &str =
+    "O(phase64_steps + phase60_tensor_relation_surface)";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSFORMER_TRANSITION_STATUS_PHASE65: &str =
+    "one_first_layer_transformer_shaped_transition_artifact_available";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSFORMER_TRANSITION_NEXT_STEP_PHASE65: &str =
+    "freeze_artifact_section_then_stop_before_recursion_or_full_softmax_claims";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSFORMER_TRANSITION_RELATION_KIND_PHASE65: &str =
+    "phase65_first_layer_gated_feed_forward_transition";
 #[cfg(feature = "stwo-backend")]
 const PHASE44D_M31_MODULUS: u32 = (1u32 << 31) - 1;
 
@@ -1999,6 +2056,193 @@ pub struct Phase62ProofCarryingStateContinuityClaim {
     pub paper_ready: bool,
     pub required_next_step: String,
     pub proof_carrying_state_continuity_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase63SharedLookupStepBinding {
+    pub proof_backend: StarkProofBackend,
+    pub step_index: usize,
+    pub source_phase62_step_envelope_commitment: String,
+    pub shared_lookup_identity_commitment: String,
+    pub lookup_table_registry_commitment: String,
+    pub normalization_table_id: String,
+    pub normalization_table_commitment: String,
+    pub activation_table_id: String,
+    pub activation_table_commitment: String,
+    pub lookup_step_binding_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase63SharedLookupIdentityClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub source_phase62_state_continuity_claim_commitment: String,
+    pub source_phase61_runtime_witness_pcs_replacement_claim_commitment: String,
+    pub source_phase60_runtime_relation_witness_claim_commitment: String,
+    pub relation_template_commitment: String,
+    pub shared_lookup_identity_commitment: String,
+    pub lookup_table_registry_version: String,
+    pub lookup_table_registry_scope: String,
+    pub lookup_table_registry_commitment: String,
+    pub normalization_table_id: String,
+    pub normalization_table_commitment: String,
+    pub activation_table_id: String,
+    pub activation_table_commitment: String,
+    pub step_lookup_bindings_commitment: String,
+    pub step_lookup_bindings: Vec<Phase63SharedLookupStepBinding>,
+    pub step_count: usize,
+    pub phase62_proof_carrying_state_continuity_surface_unit_count: usize,
+    pub phase62_combined_verifier_surface_unit_count: usize,
+    pub shared_lookup_identity_surface_unit_count: usize,
+    pub combined_verifier_surface_unit_count: usize,
+    pub surface_delta_from_phase62: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub phase62_state_continuity_available: bool,
+    pub shared_lookup_identity_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub shared_lookup_identity_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase64TypedCarriedStateBoundary {
+    pub proof_backend: StarkProofBackend,
+    pub boundary_version: String,
+    pub boundary_kind: String,
+    pub step_index: usize,
+    pub position: usize,
+    pub phase62_state_commitment: String,
+    pub relation_template_commitment: String,
+    pub shared_lookup_identity_commitment: String,
+    pub lookup_table_registry_commitment: String,
+    pub tensor_witness_commitment: String,
+    pub kv_cache_commitment: String,
+    pub token_commitment: String,
+    pub typed_boundary_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase64TypedCarriedStateStep {
+    pub proof_backend: StarkProofBackend,
+    pub step_index: usize,
+    pub source_phase62_step_envelope_commitment: String,
+    pub source_phase63_lookup_step_binding_commitment: String,
+    pub input_boundary: Phase64TypedCarriedStateBoundary,
+    pub output_boundary: Phase64TypedCarriedStateBoundary,
+    pub typed_step_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase64TypedCarriedStateClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub source_phase63_shared_lookup_identity_claim_commitment: String,
+    pub source_phase62_state_continuity_claim_commitment: String,
+    pub shared_lookup_identity_commitment: String,
+    pub relation_template_commitment: String,
+    pub chain_start_typed_boundary_commitment: String,
+    pub chain_end_typed_boundary_commitment: String,
+    pub typed_steps_commitment: String,
+    pub typed_steps: Vec<Phase64TypedCarriedStateStep>,
+    pub step_count: usize,
+    pub typed_boundary_count: usize,
+    pub continuity_link_count: usize,
+    pub phase63_shared_lookup_identity_surface_unit_count: usize,
+    pub phase63_combined_verifier_surface_unit_count: usize,
+    pub typed_carried_state_surface_unit_count: usize,
+    pub combined_verifier_surface_unit_count: usize,
+    pub surface_delta_from_phase63: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub phase63_shared_lookup_identity_available: bool,
+    pub typed_carried_state_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub typed_carried_state_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase65TransformerTransitionStepArtifact {
+    pub proof_backend: StarkProofBackend,
+    pub step_index: usize,
+    pub relation_kind: String,
+    pub source_phase64_typed_step_commitment: String,
+    pub source_phase60_runtime_relation_witness_claim_commitment: String,
+    pub input_boundary_commitment: String,
+    pub output_boundary_commitment: String,
+    pub shared_lookup_identity_commitment: String,
+    pub input_tensor_witness_commitment: String,
+    pub gate_tensor_witness_commitment: String,
+    pub value_tensor_witness_commitment: String,
+    pub hidden_tensor_witness_commitment: String,
+    pub output_tensor_witness_commitment: String,
+    pub tensor_relation_commitment: String,
+    pub transition_step_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase65TransformerTransitionArtifact {
+    pub proof_backend: StarkProofBackend,
+    pub artifact_version: String,
+    pub semantic_scope: String,
+    pub source_phase64_typed_carried_state_claim_commitment: String,
+    pub source_phase63_shared_lookup_identity_claim_commitment: String,
+    pub source_phase62_state_continuity_claim_commitment: String,
+    pub source_phase61_runtime_witness_pcs_replacement_claim_commitment: String,
+    pub source_phase60_runtime_relation_witness_claim_commitment: String,
+    pub relation_kind: String,
+    pub shared_lookup_identity_commitment: String,
+    pub relation_template_commitment: String,
+    pub tensor_relation_commitment: String,
+    pub transition_steps_commitment: String,
+    pub transition_steps: Vec<Phase65TransformerTransitionStepArtifact>,
+    pub step_count: usize,
+    pub phase64_typed_carried_state_surface_unit_count: usize,
+    pub phase64_combined_verifier_surface_unit_count: usize,
+    pub transformer_transition_surface_unit_count: usize,
+    pub phase60_relation_check_count: usize,
+    pub combined_verifier_surface_unit_count: usize,
+    pub surface_delta_from_phase64: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub phase64_typed_carried_state_available: bool,
+    pub shared_lookup_identity_available: bool,
+    pub actual_runtime_model_witness_available: bool,
+    pub relation_equation_evaluation_available: bool,
+    pub transformer_transition_artifact_available: bool,
+    pub full_standard_softmax_inference_claimed: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub transformer_transition_artifact_commitment: String,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -13744,6 +13988,321 @@ pub fn commit_phase62_proof_carrying_state_continuity_claim(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn commit_phase63_shared_lookup_step_binding(
+    binding: &Phase63SharedLookupStepBinding,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 63 lookup step binding hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase63-shared-lookup-step-binding");
+    phase29_update_len_prefixed(&mut hasher, binding.proof_backend.to_string().as_bytes());
+    phase29_update_usize(&mut hasher, binding.step_index);
+    for part in [
+        binding.source_phase62_step_envelope_commitment.as_bytes(),
+        binding.shared_lookup_identity_commitment.as_bytes(),
+        binding.lookup_table_registry_commitment.as_bytes(),
+        binding.normalization_table_id.as_bytes(),
+        binding.normalization_table_commitment.as_bytes(),
+        binding.activation_table_id.as_bytes(),
+        binding.activation_table_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 63 shared lookup step binding")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase63_shared_lookup_identity_claim(
+    claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 63 shared lookup identity claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase63-shared-lookup-identity-claim");
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim
+            .source_phase62_state_continuity_claim_commitment
+            .as_bytes(),
+        claim
+            .source_phase61_runtime_witness_pcs_replacement_claim_commitment
+            .as_bytes(),
+        claim
+            .source_phase60_runtime_relation_witness_claim_commitment
+            .as_bytes(),
+        claim.relation_template_commitment.as_bytes(),
+        claim.shared_lookup_identity_commitment.as_bytes(),
+        claim.lookup_table_registry_version.as_bytes(),
+        claim.lookup_table_registry_scope.as_bytes(),
+        claim.lookup_table_registry_commitment.as_bytes(),
+        claim.normalization_table_id.as_bytes(),
+        claim.normalization_table_commitment.as_bytes(),
+        claim.activation_table_id.as_bytes(),
+        claim.activation_table_commitment.as_bytes(),
+        claim.step_lookup_bindings_commitment.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.verifier_status.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for binding in &claim.step_lookup_bindings {
+        phase29_update_len_prefixed(
+            &mut hasher,
+            binding.lookup_step_binding_commitment.as_bytes(),
+        );
+    }
+    phase29_update_usize(&mut hasher, claim.step_count);
+    phase29_update_usize(
+        &mut hasher,
+        claim.phase62_proof_carrying_state_continuity_surface_unit_count,
+    );
+    phase29_update_usize(
+        &mut hasher,
+        claim.phase62_combined_verifier_surface_unit_count,
+    );
+    phase29_update_usize(&mut hasher, claim.shared_lookup_identity_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.combined_verifier_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.surface_delta_from_phase62);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.phase62_state_continuity_available);
+    phase29_update_bool(&mut hasher, claim.shared_lookup_identity_available);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, claim.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, claim.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 63 shared lookup identity claim")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase64_typed_carried_state_boundary(
+    boundary: &Phase64TypedCarriedStateBoundary,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 64 typed carried-state boundary hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase64-typed-carried-state-boundary");
+    phase29_update_len_prefixed(&mut hasher, boundary.proof_backend.to_string().as_bytes());
+    phase29_update_usize(&mut hasher, boundary.step_index);
+    phase29_update_usize(&mut hasher, boundary.position);
+    for part in [
+        boundary.boundary_version.as_bytes(),
+        boundary.boundary_kind.as_bytes(),
+        boundary.phase62_state_commitment.as_bytes(),
+        boundary.relation_template_commitment.as_bytes(),
+        boundary.shared_lookup_identity_commitment.as_bytes(),
+        boundary.lookup_table_registry_commitment.as_bytes(),
+        boundary.tensor_witness_commitment.as_bytes(),
+        boundary.kv_cache_commitment.as_bytes(),
+        boundary.token_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 64 typed carried-state boundary")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase64_typed_carried_state_step(
+    step: &Phase64TypedCarriedStateStep,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 64 typed carried-state step hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase64-typed-carried-state-step");
+    phase29_update_len_prefixed(&mut hasher, step.proof_backend.to_string().as_bytes());
+    phase29_update_usize(&mut hasher, step.step_index);
+    for part in [
+        step.source_phase62_step_envelope_commitment.as_bytes(),
+        step.source_phase63_lookup_step_binding_commitment
+            .as_bytes(),
+        step.input_boundary.typed_boundary_commitment.as_bytes(),
+        step.output_boundary.typed_boundary_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 64 typed carried-state step")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase64_typed_carried_state_claim(
+    claim: &Phase64TypedCarriedStateClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 64 typed carried-state claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase64-typed-carried-state-claim");
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim
+            .source_phase63_shared_lookup_identity_claim_commitment
+            .as_bytes(),
+        claim
+            .source_phase62_state_continuity_claim_commitment
+            .as_bytes(),
+        claim.shared_lookup_identity_commitment.as_bytes(),
+        claim.relation_template_commitment.as_bytes(),
+        claim.chain_start_typed_boundary_commitment.as_bytes(),
+        claim.chain_end_typed_boundary_commitment.as_bytes(),
+        claim.typed_steps_commitment.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.verifier_status.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for step in &claim.typed_steps {
+        phase29_update_len_prefixed(&mut hasher, step.typed_step_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, claim.step_count);
+    phase29_update_usize(&mut hasher, claim.typed_boundary_count);
+    phase29_update_usize(&mut hasher, claim.continuity_link_count);
+    phase29_update_usize(
+        &mut hasher,
+        claim.phase63_shared_lookup_identity_surface_unit_count,
+    );
+    phase29_update_usize(
+        &mut hasher,
+        claim.phase63_combined_verifier_surface_unit_count,
+    );
+    phase29_update_usize(&mut hasher, claim.typed_carried_state_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.combined_verifier_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.surface_delta_from_phase63);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.phase63_shared_lookup_identity_available);
+    phase29_update_bool(&mut hasher, claim.typed_carried_state_available);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, claim.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, claim.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 64 typed carried-state claim")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase65_transformer_transition_step_artifact(
+    step: &Phase65TransformerTransitionStepArtifact,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 65 transformer transition step hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase65-transformer-transition-step");
+    phase29_update_len_prefixed(&mut hasher, step.proof_backend.to_string().as_bytes());
+    phase29_update_usize(&mut hasher, step.step_index);
+    for part in [
+        step.relation_kind.as_bytes(),
+        step.source_phase64_typed_step_commitment.as_bytes(),
+        step.source_phase60_runtime_relation_witness_claim_commitment
+            .as_bytes(),
+        step.input_boundary_commitment.as_bytes(),
+        step.output_boundary_commitment.as_bytes(),
+        step.shared_lookup_identity_commitment.as_bytes(),
+        step.input_tensor_witness_commitment.as_bytes(),
+        step.gate_tensor_witness_commitment.as_bytes(),
+        step.value_tensor_witness_commitment.as_bytes(),
+        step.hidden_tensor_witness_commitment.as_bytes(),
+        step.output_tensor_witness_commitment.as_bytes(),
+        step.tensor_relation_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 65 transformer transition step")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase65_transformer_transition_artifact(
+    artifact: &Phase65TransformerTransitionArtifact,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 65 transformer transition artifact hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase65-transformer-transition-artifact");
+    phase29_update_len_prefixed(&mut hasher, artifact.proof_backend.to_string().as_bytes());
+    for part in [
+        artifact.artifact_version.as_bytes(),
+        artifact.semantic_scope.as_bytes(),
+        artifact
+            .source_phase64_typed_carried_state_claim_commitment
+            .as_bytes(),
+        artifact
+            .source_phase63_shared_lookup_identity_claim_commitment
+            .as_bytes(),
+        artifact
+            .source_phase62_state_continuity_claim_commitment
+            .as_bytes(),
+        artifact
+            .source_phase61_runtime_witness_pcs_replacement_claim_commitment
+            .as_bytes(),
+        artifact
+            .source_phase60_runtime_relation_witness_claim_commitment
+            .as_bytes(),
+        artifact.relation_kind.as_bytes(),
+        artifact.shared_lookup_identity_commitment.as_bytes(),
+        artifact.relation_template_commitment.as_bytes(),
+        artifact.tensor_relation_commitment.as_bytes(),
+        artifact.transition_steps_commitment.as_bytes(),
+        artifact.verifier_side_complexity.as_bytes(),
+        artifact.verifier_status.as_bytes(),
+        artifact.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for step in &artifact.transition_steps {
+        phase29_update_len_prefixed(&mut hasher, step.transition_step_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, artifact.step_count);
+    phase29_update_usize(
+        &mut hasher,
+        artifact.phase64_typed_carried_state_surface_unit_count,
+    );
+    phase29_update_usize(
+        &mut hasher,
+        artifact.phase64_combined_verifier_surface_unit_count,
+    );
+    phase29_update_usize(
+        &mut hasher,
+        artifact.transformer_transition_surface_unit_count,
+    );
+    phase29_update_usize(&mut hasher, artifact.phase60_relation_check_count);
+    phase29_update_usize(&mut hasher, artifact.combined_verifier_surface_unit_count);
+    phase29_update_usize(&mut hasher, artifact.surface_delta_from_phase64);
+    phase44d_update_hash_vec(&mut hasher, &artifact.transcript_order);
+    phase29_update_bool(&mut hasher, artifact.phase64_typed_carried_state_available);
+    phase29_update_bool(&mut hasher, artifact.shared_lookup_identity_available);
+    phase29_update_bool(&mut hasher, artifact.actual_runtime_model_witness_available);
+    phase29_update_bool(&mut hasher, artifact.relation_equation_evaluation_available);
+    phase29_update_bool(
+        &mut hasher,
+        artifact.transformer_transition_artifact_available,
+    );
+    phase29_update_bool(
+        &mut hasher,
+        artifact.full_standard_softmax_inference_claimed,
+    );
+    phase29_update_bool(&mut hasher, artifact.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, artifact.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, artifact.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, artifact.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 65 transformer transition artifact")
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase58_pcs_config() -> PcsConfig {
     PcsConfig {
         pow_bits: 10,
@@ -16679,6 +17238,1785 @@ fn phase62_proof_carrying_state_continuity_transcript_order() -> Vec<String> {
         "ordered_step_envelope_commitments",
         "adjacent_state_continuity_links",
         "chain_end_state_commitment",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase63_prepare_shared_lookup_identity_claim(
+    phase62_claim: &Phase62ProofCarryingStateContinuityClaim,
+) -> Result<Phase63SharedLookupIdentityClaim> {
+    verify_phase62_proof_carrying_state_continuity_claim(phase62_claim)?;
+    let identity = phase63_derive_lookup_identity_commitments(phase62_claim)?;
+    let step_lookup_bindings = phase62_claim
+        .step_envelopes
+        .iter()
+        .map(|step| {
+            let mut binding = Phase63SharedLookupStepBinding {
+                proof_backend: StarkProofBackend::Stwo,
+                step_index: step.step_index,
+                source_phase62_step_envelope_commitment: step.step_envelope_commitment.clone(),
+                shared_lookup_identity_commitment: identity
+                    .shared_lookup_identity_commitment
+                    .clone(),
+                lookup_table_registry_commitment: identity.lookup_table_registry_commitment.clone(),
+                normalization_table_id: STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12
+                    .to_string(),
+                normalization_table_commitment: identity.normalization_table_commitment.clone(),
+                activation_table_id: STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12.to_string(),
+                activation_table_commitment: identity.activation_table_commitment.clone(),
+                lookup_step_binding_commitment: String::new(),
+            };
+            binding.lookup_step_binding_commitment =
+                commit_phase63_shared_lookup_step_binding(&binding)?;
+            verify_phase63_shared_lookup_step_binding(&binding)?;
+            Ok(binding)
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let shared_lookup_identity_surface_unit_count =
+        phase63_shared_lookup_identity_surface_unit_count(phase62_claim.step_count)?;
+    let combined_verifier_surface_unit_count = phase62_claim
+        .combined_verifier_surface_unit_count
+        .checked_add(shared_lookup_identity_surface_unit_count)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 63 combined verifier surface accounting overflow".to_string(),
+            )
+        })?;
+    let mut claim = Phase63SharedLookupIdentityClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_SHARED_LOOKUP_IDENTITY_CLAIM_VERSION_PHASE63.to_string(),
+        semantic_scope: STWO_SHARED_LOOKUP_IDENTITY_CLAIM_SCOPE_PHASE63.to_string(),
+        source_phase62_state_continuity_claim_commitment: phase62_claim
+            .proof_carrying_state_continuity_claim_commitment
+            .clone(),
+        source_phase61_runtime_witness_pcs_replacement_claim_commitment: phase62_claim
+            .source_phase61_runtime_witness_pcs_replacement_claim_commitment
+            .clone(),
+        source_phase60_runtime_relation_witness_claim_commitment: phase62_claim
+            .source_phase60_runtime_relation_witness_claim_commitment
+            .clone(),
+        relation_template_commitment: phase62_claim.relation_template_commitment.clone(),
+        shared_lookup_identity_commitment: identity.shared_lookup_identity_commitment,
+        lookup_table_registry_version: STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12
+            .to_string(),
+        lookup_table_registry_scope: STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12
+            .to_string(),
+        lookup_table_registry_commitment: identity.lookup_table_registry_commitment,
+        normalization_table_id: STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12.to_string(),
+        normalization_table_commitment: identity.normalization_table_commitment,
+        activation_table_id: STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12.to_string(),
+        activation_table_commitment: identity.activation_table_commitment,
+        step_lookup_bindings_commitment: String::new(),
+        step_lookup_bindings,
+        step_count: phase62_claim.step_count,
+        phase62_proof_carrying_state_continuity_surface_unit_count: phase62_claim
+            .proof_carrying_state_continuity_surface_unit_count,
+        phase62_combined_verifier_surface_unit_count: phase62_claim
+            .combined_verifier_surface_unit_count,
+        shared_lookup_identity_surface_unit_count,
+        combined_verifier_surface_unit_count,
+        surface_delta_from_phase62: shared_lookup_identity_surface_unit_count,
+        verifier_side_complexity: STWO_SHARED_LOOKUP_IDENTITY_COMPLEXITY_PHASE63.to_string(),
+        verifier_status: STWO_SHARED_LOOKUP_IDENTITY_STATUS_PHASE63.to_string(),
+        transcript_order: phase63_shared_lookup_identity_transcript_order(),
+        phase62_state_continuity_available: true,
+        shared_lookup_identity_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_SHARED_LOOKUP_IDENTITY_NEXT_STEP_PHASE63.to_string(),
+        shared_lookup_identity_claim_commitment: String::new(),
+    };
+    claim.step_lookup_bindings_commitment =
+        phase63_commit_step_lookup_bindings(&claim.step_lookup_bindings)?;
+    claim.shared_lookup_identity_claim_commitment =
+        commit_phase63_shared_lookup_identity_claim(&claim)?;
+    verify_phase63_shared_lookup_identity_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase63_shared_lookup_step_binding(
+    binding: &Phase63SharedLookupStepBinding,
+) -> Result<()> {
+    if binding.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 63 shared lookup step binding requires `stwo` backend".to_string(),
+        ));
+    }
+    if binding.normalization_table_id != STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12
+        || binding.activation_table_id != STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 63 shared lookup step binding table-id drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase63_source_phase62_step_envelope_commitment",
+            binding.source_phase62_step_envelope_commitment.as_str(),
+        ),
+        (
+            "phase63_shared_lookup_identity_commitment",
+            binding.shared_lookup_identity_commitment.as_str(),
+        ),
+        (
+            "phase63_lookup_table_registry_commitment",
+            binding.lookup_table_registry_commitment.as_str(),
+        ),
+        (
+            "phase63_normalization_table_commitment",
+            binding.normalization_table_commitment.as_str(),
+        ),
+        (
+            "phase63_activation_table_commitment",
+            binding.activation_table_commitment.as_str(),
+        ),
+        (
+            "phase63_lookup_step_binding_commitment",
+            binding.lookup_step_binding_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let expected = commit_phase63_shared_lookup_step_binding(binding)?;
+    if binding.lookup_step_binding_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 63 shared lookup step binding commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase63_shared_lookup_identity_claim(
+    claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 63 shared lookup identity claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_SHARED_LOOKUP_IDENTITY_CLAIM_VERSION_PHASE63
+        || claim.semantic_scope != STWO_SHARED_LOOKUP_IDENTITY_CLAIM_SCOPE_PHASE63
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 63 shared lookup identity claim version or semantic scope drift".to_string(),
+        ));
+    }
+    if claim.lookup_table_registry_version
+        != STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12
+        || claim.lookup_table_registry_scope
+            != STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12
+        || claim.normalization_table_id != STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12
+        || claim.activation_table_id != STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 63 shared lookup identity registry or table descriptor drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase63_source_phase62_claim_commitment",
+            claim
+                .source_phase62_state_continuity_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase63_source_phase61_claim_commitment",
+            claim
+                .source_phase61_runtime_witness_pcs_replacement_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase63_source_phase60_claim_commitment",
+            claim
+                .source_phase60_runtime_relation_witness_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase63_relation_template_commitment",
+            claim.relation_template_commitment.as_str(),
+        ),
+        (
+            "phase63_shared_lookup_identity_commitment",
+            claim.shared_lookup_identity_commitment.as_str(),
+        ),
+        (
+            "phase63_lookup_table_registry_commitment",
+            claim.lookup_table_registry_commitment.as_str(),
+        ),
+        (
+            "phase63_normalization_table_commitment",
+            claim.normalization_table_commitment.as_str(),
+        ),
+        (
+            "phase63_activation_table_commitment",
+            claim.activation_table_commitment.as_str(),
+        ),
+        (
+            "phase63_step_lookup_bindings_commitment",
+            claim.step_lookup_bindings_commitment.as_str(),
+        ),
+        (
+            "phase63_shared_lookup_identity_claim_commitment",
+            claim.shared_lookup_identity_claim_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if claim.step_count < 2 || claim.step_lookup_bindings.len() != claim.step_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 63 shared lookup identity claim requires a multi-step binding chain".to_string(),
+        ));
+    }
+    let expected_surface = phase63_shared_lookup_identity_surface_unit_count(claim.step_count)?;
+    let expected_combined_surface = claim
+        .phase62_combined_verifier_surface_unit_count
+        .checked_add(expected_surface)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 63 shared lookup identity combined surface accounting overflow".to_string(),
+            )
+        })?;
+    if claim.shared_lookup_identity_surface_unit_count != expected_surface
+        || claim.surface_delta_from_phase62 != expected_surface
+        || claim.combined_verifier_surface_unit_count != expected_combined_surface
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 63 shared lookup identity surface accounting drift".to_string(),
+        ));
+    }
+    if claim.step_lookup_bindings_commitment
+        != phase63_commit_step_lookup_bindings(&claim.step_lookup_bindings)?
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 63 shared lookup step binding commitment drift".to_string(),
+        ));
+    }
+    let expected_registry = phase63_static_lookup_registry_commitment_from_parts(
+        &claim.normalization_table_commitment,
+        &claim.activation_table_commitment,
+    )?;
+    if claim.lookup_table_registry_commitment != expected_registry {
+        return Err(VmError::InvalidConfig(
+            "Phase 63 shared lookup table registry commitment drift".to_string(),
+        ));
+    }
+    if claim.verifier_side_complexity != STWO_SHARED_LOOKUP_IDENTITY_COMPLEXITY_PHASE63
+        || claim.verifier_status != STWO_SHARED_LOOKUP_IDENTITY_STATUS_PHASE63
+        || claim.transcript_order != phase63_shared_lookup_identity_transcript_order()
+        || claim.required_next_step != STWO_SHARED_LOOKUP_IDENTITY_NEXT_STEP_PHASE63
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 63 shared lookup identity transcript, status, or next-step drift".to_string(),
+        ));
+    }
+    if !claim.phase62_state_continuity_available
+        || !claim.shared_lookup_identity_available
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+        || claim.breakthrough_claimed
+        || claim.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 63 shared lookup identity claim must not claim recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let mut seen_bindings = HashSet::with_capacity(claim.step_lookup_bindings.len());
+    for (expected_index, binding) in claim.step_lookup_bindings.iter().enumerate() {
+        verify_phase63_shared_lookup_step_binding(binding)?;
+        if binding.step_index != expected_index {
+            return Err(VmError::InvalidConfig(
+                "Phase 63 shared lookup identity step index drift".to_string(),
+            ));
+        }
+        if !seen_bindings.insert(binding.lookup_step_binding_commitment.as_str()) {
+            return Err(VmError::InvalidConfig(
+                "Phase 63 shared lookup identity duplicate step binding".to_string(),
+            ));
+        }
+        if binding.shared_lookup_identity_commitment != claim.shared_lookup_identity_commitment
+            || binding.lookup_table_registry_commitment != claim.lookup_table_registry_commitment
+            || binding.normalization_table_commitment != claim.normalization_table_commitment
+            || binding.activation_table_commitment != claim.activation_table_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 63 shared lookup identity drift across steps".to_string(),
+            ));
+        }
+    }
+    let expected = commit_phase63_shared_lookup_identity_claim(claim)?;
+    if claim.shared_lookup_identity_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 63 shared lookup identity claim commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase63_shared_lookup_identity_claim_against_phase62(
+    claim: &Phase63SharedLookupIdentityClaim,
+    phase62_claim: &Phase62ProofCarryingStateContinuityClaim,
+) -> Result<()> {
+    verify_phase62_proof_carrying_state_continuity_claim(phase62_claim)?;
+    verify_phase63_shared_lookup_identity_claim(claim)?;
+    let identity = phase63_derive_lookup_identity_commitments(phase62_claim)?;
+    if claim.step_count != phase62_claim.step_count
+        || claim.step_lookup_bindings.len() != phase62_claim.step_envelopes.len()
+        || claim.source_phase62_state_continuity_claim_commitment
+            != phase62_claim.proof_carrying_state_continuity_claim_commitment
+        || claim.source_phase61_runtime_witness_pcs_replacement_claim_commitment
+            != phase62_claim.source_phase61_runtime_witness_pcs_replacement_claim_commitment
+        || claim.source_phase60_runtime_relation_witness_claim_commitment
+            != phase62_claim.source_phase60_runtime_relation_witness_claim_commitment
+        || claim.relation_template_commitment != phase62_claim.relation_template_commitment
+        || claim.shared_lookup_identity_commitment != identity.shared_lookup_identity_commitment
+        || claim.lookup_table_registry_commitment != identity.lookup_table_registry_commitment
+        || claim.normalization_table_commitment != identity.normalization_table_commitment
+        || claim.activation_table_commitment != identity.activation_table_commitment
+        || claim.phase62_proof_carrying_state_continuity_surface_unit_count
+            != phase62_claim.proof_carrying_state_continuity_surface_unit_count
+        || claim.phase62_combined_verifier_surface_unit_count
+            != phase62_claim.combined_verifier_surface_unit_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 63 shared lookup identity source drift against Phase62".to_string(),
+        ));
+    }
+    for (binding, step) in claim
+        .step_lookup_bindings
+        .iter()
+        .zip(phase62_claim.step_envelopes.iter())
+    {
+        if binding.source_phase62_step_envelope_commitment != step.step_envelope_commitment {
+            return Err(VmError::InvalidConfig(
+                "Phase 63 shared lookup identity step source drift against Phase62".to_string(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase64_prepare_typed_carried_state_claim(
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+    phase62_claim: &Phase62ProofCarryingStateContinuityClaim,
+) -> Result<Phase64TypedCarriedStateClaim> {
+    verify_phase63_shared_lookup_identity_claim_against_phase62(phase63_claim, phase62_claim)?;
+    let typed_steps = phase62_claim
+        .step_envelopes
+        .iter()
+        .zip(phase63_claim.step_lookup_bindings.iter())
+        .map(|(phase62_step, phase63_binding)| {
+            phase64_prepare_typed_step(phase62_step, phase63_binding, phase63_claim)
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let chain_start_typed_boundary_commitment = typed_steps
+        .first()
+        .map(|step| step.input_boundary.typed_boundary_commitment.clone())
+        .ok_or_else(|| VmError::InvalidConfig("Phase 64 empty typed step chain".to_string()))?;
+    let chain_end_typed_boundary_commitment = typed_steps
+        .last()
+        .map(|step| step.output_boundary.typed_boundary_commitment.clone())
+        .ok_or_else(|| VmError::InvalidConfig("Phase 64 empty typed step chain".to_string()))?;
+    let continuity_link_count = phase63_claim.step_count.checked_sub(1).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 64 continuity link accounting underflow".to_string())
+    })?;
+    let typed_boundary_count = phase63_claim.step_count.checked_mul(2).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 64 typed boundary accounting overflow".to_string())
+    })?;
+    let typed_carried_state_surface_unit_count =
+        phase64_typed_carried_state_surface_unit_count(phase63_claim.step_count)?;
+    let combined_verifier_surface_unit_count = phase63_claim
+        .combined_verifier_surface_unit_count
+        .checked_add(typed_carried_state_surface_unit_count)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 64 combined verifier surface accounting overflow".to_string(),
+            )
+        })?;
+    let mut claim = Phase64TypedCarriedStateClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_TYPED_CARRIED_STATE_CLAIM_VERSION_PHASE64.to_string(),
+        semantic_scope: STWO_TYPED_CARRIED_STATE_CLAIM_SCOPE_PHASE64.to_string(),
+        source_phase63_shared_lookup_identity_claim_commitment: phase63_claim
+            .shared_lookup_identity_claim_commitment
+            .clone(),
+        source_phase62_state_continuity_claim_commitment: phase62_claim
+            .proof_carrying_state_continuity_claim_commitment
+            .clone(),
+        shared_lookup_identity_commitment: phase63_claim.shared_lookup_identity_commitment.clone(),
+        relation_template_commitment: phase62_claim.relation_template_commitment.clone(),
+        chain_start_typed_boundary_commitment,
+        chain_end_typed_boundary_commitment,
+        typed_steps_commitment: String::new(),
+        typed_steps,
+        step_count: phase63_claim.step_count,
+        typed_boundary_count,
+        continuity_link_count,
+        phase63_shared_lookup_identity_surface_unit_count: phase63_claim
+            .shared_lookup_identity_surface_unit_count,
+        phase63_combined_verifier_surface_unit_count: phase63_claim
+            .combined_verifier_surface_unit_count,
+        typed_carried_state_surface_unit_count,
+        combined_verifier_surface_unit_count,
+        surface_delta_from_phase63: typed_carried_state_surface_unit_count,
+        verifier_side_complexity: STWO_TYPED_CARRIED_STATE_COMPLEXITY_PHASE64.to_string(),
+        verifier_status: STWO_TYPED_CARRIED_STATE_STATUS_PHASE64.to_string(),
+        transcript_order: phase64_typed_carried_state_transcript_order(),
+        phase63_shared_lookup_identity_available: true,
+        typed_carried_state_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_TYPED_CARRIED_STATE_NEXT_STEP_PHASE64.to_string(),
+        typed_carried_state_claim_commitment: String::new(),
+    };
+    claim.typed_steps_commitment = phase64_commit_typed_steps(&claim.typed_steps)?;
+    claim.typed_carried_state_claim_commitment = commit_phase64_typed_carried_state_claim(&claim)?;
+    verify_phase64_typed_carried_state_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase64_typed_carried_state_boundary(
+    boundary: &Phase64TypedCarriedStateBoundary,
+) -> Result<()> {
+    if boundary.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state boundary requires `stwo` backend".to_string(),
+        ));
+    }
+    if boundary.boundary_version != STWO_TYPED_CARRIED_STATE_BOUNDARY_VERSION_PHASE64 {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state boundary version drift".to_string(),
+        ));
+    }
+    if boundary.boundary_kind != "input" && boundary.boundary_kind != "output" {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state boundary kind drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase64_state_commitment",
+            boundary.phase62_state_commitment.as_str(),
+        ),
+        (
+            "phase64_relation_template_commitment",
+            boundary.relation_template_commitment.as_str(),
+        ),
+        (
+            "phase64_shared_lookup_identity_commitment",
+            boundary.shared_lookup_identity_commitment.as_str(),
+        ),
+        (
+            "phase64_lookup_table_registry_commitment",
+            boundary.lookup_table_registry_commitment.as_str(),
+        ),
+        (
+            "phase64_tensor_witness_commitment",
+            boundary.tensor_witness_commitment.as_str(),
+        ),
+        (
+            "phase64_kv_cache_commitment",
+            boundary.kv_cache_commitment.as_str(),
+        ),
+        (
+            "phase64_token_commitment",
+            boundary.token_commitment.as_str(),
+        ),
+        (
+            "phase64_typed_boundary_commitment",
+            boundary.typed_boundary_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let expected_kv = phase64_derive_kv_cache_commitment(boundary)?;
+    let expected_token = phase64_derive_token_commitment(boundary)?;
+    if boundary.kv_cache_commitment != expected_kv || boundary.token_commitment != expected_token {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state boundary derived field drift".to_string(),
+        ));
+    }
+    let expected = commit_phase64_typed_carried_state_boundary(boundary)?;
+    if boundary.typed_boundary_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state boundary commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase64_typed_carried_state_step(step: &Phase64TypedCarriedStateStep) -> Result<()> {
+    if step.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state step requires `stwo` backend".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase64_source_phase62_step_envelope_commitment",
+            step.source_phase62_step_envelope_commitment.as_str(),
+        ),
+        (
+            "phase64_source_phase63_lookup_step_binding_commitment",
+            step.source_phase63_lookup_step_binding_commitment.as_str(),
+        ),
+        (
+            "phase64_typed_step_commitment",
+            step.typed_step_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    verify_phase64_typed_carried_state_boundary(&step.input_boundary)?;
+    verify_phase64_typed_carried_state_boundary(&step.output_boundary)?;
+    if step.input_boundary.boundary_kind != "input"
+        || step.output_boundary.boundary_kind != "output"
+        || step.input_boundary.step_index != step.step_index
+        || step.output_boundary.step_index != step.step_index
+        || step.input_boundary.position != step.step_index
+        || step.output_boundary.position
+            != step.step_index.checked_add(1).ok_or_else(|| {
+                VmError::InvalidConfig("Phase 64 typed step position overflow".to_string())
+            })?
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state step boundary index drift".to_string(),
+        ));
+    }
+    if step.input_boundary.relation_template_commitment
+        != step.output_boundary.relation_template_commitment
+        || step.input_boundary.shared_lookup_identity_commitment
+            != step.output_boundary.shared_lookup_identity_commitment
+        || step.input_boundary.lookup_table_registry_commitment
+            != step.output_boundary.lookup_table_registry_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state step shared field drift".to_string(),
+        ));
+    }
+    let expected = commit_phase64_typed_carried_state_step(step)?;
+    if step.typed_step_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state step commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase64_typed_carried_state_claim(
+    claim: &Phase64TypedCarriedStateClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_TYPED_CARRIED_STATE_CLAIM_VERSION_PHASE64
+        || claim.semantic_scope != STWO_TYPED_CARRIED_STATE_CLAIM_SCOPE_PHASE64
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state claim version or semantic scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase64_source_phase63_claim_commitment",
+            claim
+                .source_phase63_shared_lookup_identity_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase64_source_phase62_claim_commitment",
+            claim
+                .source_phase62_state_continuity_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase64_shared_lookup_identity_commitment",
+            claim.shared_lookup_identity_commitment.as_str(),
+        ),
+        (
+            "phase64_relation_template_commitment",
+            claim.relation_template_commitment.as_str(),
+        ),
+        (
+            "phase64_chain_start_typed_boundary_commitment",
+            claim.chain_start_typed_boundary_commitment.as_str(),
+        ),
+        (
+            "phase64_chain_end_typed_boundary_commitment",
+            claim.chain_end_typed_boundary_commitment.as_str(),
+        ),
+        (
+            "phase64_typed_steps_commitment",
+            claim.typed_steps_commitment.as_str(),
+        ),
+        (
+            "phase64_typed_carried_state_claim_commitment",
+            claim.typed_carried_state_claim_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if claim.step_count < 2 || claim.typed_steps.len() != claim.step_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state claim requires a multi-step chain".to_string(),
+        ));
+    }
+    let expected_boundary_count = claim.step_count.checked_mul(2).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 64 typed boundary accounting overflow".to_string())
+    })?;
+    let expected_link_count = claim.step_count.checked_sub(1).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 64 continuity link accounting underflow".to_string())
+    })?;
+    let expected_surface = phase64_typed_carried_state_surface_unit_count(claim.step_count)?;
+    let expected_combined_surface = claim
+        .phase63_combined_verifier_surface_unit_count
+        .checked_add(expected_surface)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 64 typed carried-state combined surface accounting overflow".to_string(),
+            )
+        })?;
+    if claim.typed_boundary_count != expected_boundary_count
+        || claim.continuity_link_count != expected_link_count
+        || claim.typed_carried_state_surface_unit_count != expected_surface
+        || claim.surface_delta_from_phase63 != expected_surface
+        || claim.combined_verifier_surface_unit_count != expected_combined_surface
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state surface accounting drift".to_string(),
+        ));
+    }
+    if claim.typed_steps_commitment != phase64_commit_typed_steps(&claim.typed_steps)? {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state step commitment drift".to_string(),
+        ));
+    }
+    if claim.verifier_side_complexity != STWO_TYPED_CARRIED_STATE_COMPLEXITY_PHASE64
+        || claim.verifier_status != STWO_TYPED_CARRIED_STATE_STATUS_PHASE64
+        || claim.transcript_order != phase64_typed_carried_state_transcript_order()
+        || claim.required_next_step != STWO_TYPED_CARRIED_STATE_NEXT_STEP_PHASE64
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state transcript, status, or next-step drift".to_string(),
+        ));
+    }
+    if !claim.phase63_shared_lookup_identity_available
+        || !claim.typed_carried_state_available
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+        || claim.breakthrough_claimed
+        || claim.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state claim must not claim recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let mut previous_output: Option<&Phase64TypedCarriedStateBoundary> = None;
+    let mut seen_steps = HashSet::with_capacity(claim.typed_steps.len());
+    for (expected_index, step) in claim.typed_steps.iter().enumerate() {
+        verify_phase64_typed_carried_state_step(step)?;
+        if step.step_index != expected_index {
+            return Err(VmError::InvalidConfig(
+                "Phase 64 typed carried-state step index drift".to_string(),
+            ));
+        }
+        if !seen_steps.insert(step.typed_step_commitment.as_str()) {
+            return Err(VmError::InvalidConfig(
+                "Phase 64 typed carried-state duplicate step".to_string(),
+            ));
+        }
+        if step.input_boundary.shared_lookup_identity_commitment
+            != claim.shared_lookup_identity_commitment
+            || step.output_boundary.shared_lookup_identity_commitment
+                != claim.shared_lookup_identity_commitment
+            || step.input_boundary.relation_template_commitment
+                != claim.relation_template_commitment
+            || step.output_boundary.relation_template_commitment
+                != claim.relation_template_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 64 typed carried-state claim shared field drift".to_string(),
+            ));
+        }
+        if expected_index == 0 {
+            if step.input_boundary.typed_boundary_commitment
+                != claim.chain_start_typed_boundary_commitment
+            {
+                return Err(VmError::InvalidConfig(
+                    "Phase 64 typed carried-state chain start drift".to_string(),
+                ));
+            }
+        } else if let Some(previous) = previous_output {
+            if previous.phase62_state_commitment != step.input_boundary.phase62_state_commitment
+                || previous.position != step.input_boundary.position
+                || previous.shared_lookup_identity_commitment
+                    != step.input_boundary.shared_lookup_identity_commitment
+            {
+                return Err(VmError::InvalidConfig(
+                    "Phase 64 typed carried-state continuity link drift".to_string(),
+                ));
+            }
+        }
+        previous_output = Some(&step.output_boundary);
+    }
+    let last = previous_output
+        .ok_or_else(|| VmError::InvalidConfig("Phase 64 empty typed step chain".to_string()))?;
+    if last.typed_boundary_commitment != claim.chain_end_typed_boundary_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state chain end drift".to_string(),
+        ));
+    }
+    let expected = commit_phase64_typed_carried_state_claim(claim)?;
+    if claim.typed_carried_state_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state claim commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase64_typed_carried_state_claim_against_phase63(
+    claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+    phase62_claim: &Phase62ProofCarryingStateContinuityClaim,
+) -> Result<()> {
+    verify_phase63_shared_lookup_identity_claim_against_phase62(phase63_claim, phase62_claim)?;
+    verify_phase64_typed_carried_state_claim(claim)?;
+    if claim.step_count != phase63_claim.step_count
+        || claim.typed_steps.len() != phase62_claim.step_envelopes.len()
+        || claim.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
+        || claim.source_phase62_state_continuity_claim_commitment
+            != phase62_claim.proof_carrying_state_continuity_claim_commitment
+        || claim.shared_lookup_identity_commitment
+            != phase63_claim.shared_lookup_identity_commitment
+        || claim.relation_template_commitment != phase62_claim.relation_template_commitment
+        || claim.phase63_shared_lookup_identity_surface_unit_count
+            != phase63_claim.shared_lookup_identity_surface_unit_count
+        || claim.phase63_combined_verifier_surface_unit_count
+            != phase63_claim.combined_verifier_surface_unit_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 64 typed carried-state source drift against Phase63".to_string(),
+        ));
+    }
+    for ((typed_step, phase62_step), phase63_binding) in claim
+        .typed_steps
+        .iter()
+        .zip(phase62_claim.step_envelopes.iter())
+        .zip(phase63_claim.step_lookup_bindings.iter())
+    {
+        if typed_step.source_phase62_step_envelope_commitment
+            != phase62_step.step_envelope_commitment
+            || typed_step.source_phase63_lookup_step_binding_commitment
+                != phase63_binding.lookup_step_binding_commitment
+            || typed_step.input_boundary.phase62_state_commitment
+                != phase62_step.input_state_commitment
+            || typed_step.output_boundary.phase62_state_commitment
+                != phase62_step.output_state_commitment
+            || typed_step.input_boundary.tensor_witness_commitment
+                != phase62_step.source_phase60_input_tensor_witness_commitment
+            || typed_step.output_boundary.tensor_witness_commitment
+                != phase62_step.source_phase60_output_tensor_witness_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 64 typed carried-state step source drift against Phase62/63".to_string(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase65_prepare_transformer_transition_artifact(
+    phase64_claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+    phase62_claim: &Phase62ProofCarryingStateContinuityClaim,
+    phase61_claim: &Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+    phase60_claim: &Phase60FirstLayerRuntimeRelationWitnessClaim,
+    phase59_claim: &Phase59FirstLayerRelationWitnessBindingClaim,
+    phase58_claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
+    phase57_claim: &Phase57FirstLayerMleOpeningVerifierClaim,
+    phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<Phase65TransformerTransitionArtifact> {
+    verify_phase64_typed_carried_state_claim_against_phase63(
+        phase64_claim,
+        phase63_claim,
+        phase62_claim,
+    )?;
+    verify_phase62_proof_carrying_state_continuity_claim_against_phase61(
+        phase62_claim,
+        phase61_claim,
+        phase60_claim,
+        phase59_claim,
+        phase58_claim,
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
+    verify_phase61_first_layer_runtime_witness_pcs_replacement_claim_against_phase60(
+        phase61_claim,
+        phase60_claim,
+        phase59_claim,
+        phase58_claim,
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
+    let tensor_relation_commitment = phase65_tensor_relation_commitment(phase60_claim)?;
+    let transition_steps = phase64_claim
+        .typed_steps
+        .iter()
+        .map(|typed_step| {
+            let mut step = Phase65TransformerTransitionStepArtifact {
+                proof_backend: StarkProofBackend::Stwo,
+                step_index: typed_step.step_index,
+                relation_kind: STWO_TRANSFORMER_TRANSITION_RELATION_KIND_PHASE65.to_string(),
+                source_phase64_typed_step_commitment: typed_step.typed_step_commitment.clone(),
+                source_phase60_runtime_relation_witness_claim_commitment: phase60_claim
+                    .runtime_relation_witness_claim_commitment
+                    .clone(),
+                input_boundary_commitment: typed_step
+                    .input_boundary
+                    .typed_boundary_commitment
+                    .clone(),
+                output_boundary_commitment: typed_step
+                    .output_boundary
+                    .typed_boundary_commitment
+                    .clone(),
+                shared_lookup_identity_commitment: phase64_claim
+                    .shared_lookup_identity_commitment
+                    .clone(),
+                input_tensor_witness_commitment: phase60_claim
+                    .input_tensor
+                    .tensor_witness_commitment
+                    .clone(),
+                gate_tensor_witness_commitment: phase60_claim
+                    .gate_tensor
+                    .tensor_witness_commitment
+                    .clone(),
+                value_tensor_witness_commitment: phase60_claim
+                    .value_tensor
+                    .tensor_witness_commitment
+                    .clone(),
+                hidden_tensor_witness_commitment: phase60_claim
+                    .hidden_tensor
+                    .tensor_witness_commitment
+                    .clone(),
+                output_tensor_witness_commitment: phase60_claim
+                    .output_tensor
+                    .tensor_witness_commitment
+                    .clone(),
+                tensor_relation_commitment: tensor_relation_commitment.clone(),
+                transition_step_commitment: String::new(),
+            };
+            step.transition_step_commitment =
+                commit_phase65_transformer_transition_step_artifact(&step)?;
+            verify_phase65_transformer_transition_step_artifact(&step)?;
+            Ok(step)
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let transformer_transition_surface_unit_count =
+        phase65_transformer_transition_surface_unit_count(
+            phase64_claim.step_count,
+            phase60_claim.relation_check_count,
+        )?;
+    let combined_verifier_surface_unit_count = phase64_claim
+        .combined_verifier_surface_unit_count
+        .checked_add(transformer_transition_surface_unit_count)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 65 combined verifier surface accounting overflow".to_string(),
+            )
+        })?;
+    let mut artifact = Phase65TransformerTransitionArtifact {
+        proof_backend: StarkProofBackend::Stwo,
+        artifact_version: STWO_TRANSFORMER_TRANSITION_ARTIFACT_VERSION_PHASE65.to_string(),
+        semantic_scope: STWO_TRANSFORMER_TRANSITION_ARTIFACT_SCOPE_PHASE65.to_string(),
+        source_phase64_typed_carried_state_claim_commitment: phase64_claim
+            .typed_carried_state_claim_commitment
+            .clone(),
+        source_phase63_shared_lookup_identity_claim_commitment: phase63_claim
+            .shared_lookup_identity_claim_commitment
+            .clone(),
+        source_phase62_state_continuity_claim_commitment: phase62_claim
+            .proof_carrying_state_continuity_claim_commitment
+            .clone(),
+        source_phase61_runtime_witness_pcs_replacement_claim_commitment: phase61_claim
+            .runtime_witness_pcs_replacement_claim_commitment
+            .clone(),
+        source_phase60_runtime_relation_witness_claim_commitment: phase60_claim
+            .runtime_relation_witness_claim_commitment
+            .clone(),
+        relation_kind: STWO_TRANSFORMER_TRANSITION_RELATION_KIND_PHASE65.to_string(),
+        shared_lookup_identity_commitment: phase64_claim.shared_lookup_identity_commitment.clone(),
+        relation_template_commitment: phase64_claim.relation_template_commitment.clone(),
+        tensor_relation_commitment,
+        transition_steps_commitment: String::new(),
+        transition_steps,
+        step_count: phase64_claim.step_count,
+        phase64_typed_carried_state_surface_unit_count: phase64_claim
+            .typed_carried_state_surface_unit_count,
+        phase64_combined_verifier_surface_unit_count: phase64_claim
+            .combined_verifier_surface_unit_count,
+        transformer_transition_surface_unit_count,
+        phase60_relation_check_count: phase60_claim.relation_check_count,
+        combined_verifier_surface_unit_count,
+        surface_delta_from_phase64: transformer_transition_surface_unit_count,
+        verifier_side_complexity: STWO_TRANSFORMER_TRANSITION_COMPLEXITY_PHASE65.to_string(),
+        verifier_status: STWO_TRANSFORMER_TRANSITION_STATUS_PHASE65.to_string(),
+        transcript_order: phase65_transformer_transition_transcript_order(),
+        phase64_typed_carried_state_available: true,
+        shared_lookup_identity_available: true,
+        actual_runtime_model_witness_available: true,
+        relation_equation_evaluation_available: true,
+        transformer_transition_artifact_available: true,
+        full_standard_softmax_inference_claimed: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_TRANSFORMER_TRANSITION_NEXT_STEP_PHASE65.to_string(),
+        transformer_transition_artifact_commitment: String::new(),
+    };
+    artifact.transition_steps_commitment =
+        phase65_commit_transition_steps(&artifact.transition_steps)?;
+    artifact.transformer_transition_artifact_commitment =
+        commit_phase65_transformer_transition_artifact(&artifact)?;
+    verify_phase65_transformer_transition_artifact(&artifact)?;
+    Ok(artifact)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase65_transformer_transition_step_artifact(
+    step: &Phase65TransformerTransitionStepArtifact,
+) -> Result<()> {
+    if step.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 65 transformer transition step requires `stwo` backend".to_string(),
+        ));
+    }
+    if step.relation_kind != STWO_TRANSFORMER_TRANSITION_RELATION_KIND_PHASE65 {
+        return Err(VmError::InvalidConfig(
+            "Phase 65 transformer transition step relation-kind drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase65_source_phase64_typed_step_commitment",
+            step.source_phase64_typed_step_commitment.as_str(),
+        ),
+        (
+            "phase65_source_phase60_claim_commitment",
+            step.source_phase60_runtime_relation_witness_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase65_input_boundary_commitment",
+            step.input_boundary_commitment.as_str(),
+        ),
+        (
+            "phase65_output_boundary_commitment",
+            step.output_boundary_commitment.as_str(),
+        ),
+        (
+            "phase65_shared_lookup_identity_commitment",
+            step.shared_lookup_identity_commitment.as_str(),
+        ),
+        (
+            "phase65_input_tensor_witness_commitment",
+            step.input_tensor_witness_commitment.as_str(),
+        ),
+        (
+            "phase65_gate_tensor_witness_commitment",
+            step.gate_tensor_witness_commitment.as_str(),
+        ),
+        (
+            "phase65_value_tensor_witness_commitment",
+            step.value_tensor_witness_commitment.as_str(),
+        ),
+        (
+            "phase65_hidden_tensor_witness_commitment",
+            step.hidden_tensor_witness_commitment.as_str(),
+        ),
+        (
+            "phase65_output_tensor_witness_commitment",
+            step.output_tensor_witness_commitment.as_str(),
+        ),
+        (
+            "phase65_tensor_relation_commitment",
+            step.tensor_relation_commitment.as_str(),
+        ),
+        (
+            "phase65_transition_step_commitment",
+            step.transition_step_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let expected = commit_phase65_transformer_transition_step_artifact(step)?;
+    if step.transition_step_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 65 transformer transition step commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase65_transformer_transition_artifact(
+    artifact: &Phase65TransformerTransitionArtifact,
+) -> Result<()> {
+    if artifact.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 65 transformer transition artifact requires `stwo` backend".to_string(),
+        ));
+    }
+    if artifact.artifact_version != STWO_TRANSFORMER_TRANSITION_ARTIFACT_VERSION_PHASE65
+        || artifact.semantic_scope != STWO_TRANSFORMER_TRANSITION_ARTIFACT_SCOPE_PHASE65
+        || artifact.relation_kind != STWO_TRANSFORMER_TRANSITION_RELATION_KIND_PHASE65
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 65 transformer transition artifact version, scope, or relation-kind drift"
+                .to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase65_source_phase64_claim_commitment",
+            artifact
+                .source_phase64_typed_carried_state_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase65_source_phase63_claim_commitment",
+            artifact
+                .source_phase63_shared_lookup_identity_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase65_source_phase62_claim_commitment",
+            artifact
+                .source_phase62_state_continuity_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase65_source_phase61_claim_commitment",
+            artifact
+                .source_phase61_runtime_witness_pcs_replacement_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase65_source_phase60_claim_commitment",
+            artifact
+                .source_phase60_runtime_relation_witness_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase65_shared_lookup_identity_commitment",
+            artifact.shared_lookup_identity_commitment.as_str(),
+        ),
+        (
+            "phase65_relation_template_commitment",
+            artifact.relation_template_commitment.as_str(),
+        ),
+        (
+            "phase65_tensor_relation_commitment",
+            artifact.tensor_relation_commitment.as_str(),
+        ),
+        (
+            "phase65_transition_steps_commitment",
+            artifact.transition_steps_commitment.as_str(),
+        ),
+        (
+            "phase65_transition_artifact_commitment",
+            artifact.transformer_transition_artifact_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if artifact.step_count < 2 || artifact.transition_steps.len() != artifact.step_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 65 transformer transition artifact requires a multi-step chain".to_string(),
+        ));
+    }
+    let expected_surface = phase65_transformer_transition_surface_unit_count(
+        artifact.step_count,
+        artifact.phase60_relation_check_count,
+    )?;
+    let expected_combined_surface = artifact
+        .phase64_combined_verifier_surface_unit_count
+        .checked_add(expected_surface)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 65 transformer transition combined surface accounting overflow".to_string(),
+            )
+        })?;
+    if artifact.transformer_transition_surface_unit_count != expected_surface
+        || artifact.surface_delta_from_phase64 != expected_surface
+        || artifact.combined_verifier_surface_unit_count != expected_combined_surface
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 65 transformer transition surface accounting drift".to_string(),
+        ));
+    }
+    if artifact.transition_steps_commitment
+        != phase65_commit_transition_steps(&artifact.transition_steps)?
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 65 transformer transition step-list commitment drift".to_string(),
+        ));
+    }
+    if artifact.verifier_side_complexity != STWO_TRANSFORMER_TRANSITION_COMPLEXITY_PHASE65
+        || artifact.verifier_status != STWO_TRANSFORMER_TRANSITION_STATUS_PHASE65
+        || artifact.transcript_order != phase65_transformer_transition_transcript_order()
+        || artifact.required_next_step != STWO_TRANSFORMER_TRANSITION_NEXT_STEP_PHASE65
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 65 transformer transition transcript, status, or next-step drift".to_string(),
+        ));
+    }
+    if !artifact.phase64_typed_carried_state_available
+        || !artifact.shared_lookup_identity_available
+        || !artifact.actual_runtime_model_witness_available
+        || !artifact.relation_equation_evaluation_available
+        || !artifact.transformer_transition_artifact_available
+        || artifact.full_standard_softmax_inference_claimed
+        || artifact.recursive_verification_claimed
+        || artifact.cryptographic_compression_claimed
+        || artifact.breakthrough_claimed
+        || artifact.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 65 transformer transition artifact must not claim full softmax inference, recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let mut seen_steps = HashSet::with_capacity(artifact.transition_steps.len());
+    for (expected_index, step) in artifact.transition_steps.iter().enumerate() {
+        verify_phase65_transformer_transition_step_artifact(step)?;
+        if step.step_index != expected_index {
+            return Err(VmError::InvalidConfig(
+                "Phase 65 transformer transition step index drift".to_string(),
+            ));
+        }
+        if !seen_steps.insert(step.transition_step_commitment.as_str()) {
+            return Err(VmError::InvalidConfig(
+                "Phase 65 transformer transition duplicate step".to_string(),
+            ));
+        }
+        if step.relation_kind != artifact.relation_kind
+            || step.source_phase60_runtime_relation_witness_claim_commitment
+                != artifact.source_phase60_runtime_relation_witness_claim_commitment
+            || step.shared_lookup_identity_commitment != artifact.shared_lookup_identity_commitment
+            || step.tensor_relation_commitment != artifact.tensor_relation_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 65 transformer transition shared field drift".to_string(),
+            ));
+        }
+    }
+    let expected = commit_phase65_transformer_transition_artifact(artifact)?;
+    if artifact.transformer_transition_artifact_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 65 transformer transition artifact commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase65_transformer_transition_artifact_against_sources(
+    artifact: &Phase65TransformerTransitionArtifact,
+    phase64_claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+    phase62_claim: &Phase62ProofCarryingStateContinuityClaim,
+    phase61_claim: &Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+    phase60_claim: &Phase60FirstLayerRuntimeRelationWitnessClaim,
+    phase59_claim: &Phase59FirstLayerRelationWitnessBindingClaim,
+    phase58_claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
+    phase57_claim: &Phase57FirstLayerMleOpeningVerifierClaim,
+    phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<()> {
+    verify_phase64_typed_carried_state_claim_against_phase63(
+        phase64_claim,
+        phase63_claim,
+        phase62_claim,
+    )?;
+    verify_phase62_proof_carrying_state_continuity_claim_against_phase61(
+        phase62_claim,
+        phase61_claim,
+        phase60_claim,
+        phase59_claim,
+        phase58_claim,
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
+    verify_phase61_first_layer_runtime_witness_pcs_replacement_claim_against_phase60(
+        phase61_claim,
+        phase60_claim,
+        phase59_claim,
+        phase58_claim,
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
+    verify_phase65_transformer_transition_artifact(artifact)?;
+    let expected_tensor_relation = phase65_tensor_relation_commitment(phase60_claim)?;
+    if artifact.step_count != phase64_claim.step_count
+        || artifact.transition_steps.len() != phase64_claim.typed_steps.len()
+        || artifact.source_phase64_typed_carried_state_claim_commitment
+            != phase64_claim.typed_carried_state_claim_commitment
+        || artifact.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
+        || artifact.source_phase62_state_continuity_claim_commitment
+            != phase62_claim.proof_carrying_state_continuity_claim_commitment
+        || artifact.source_phase61_runtime_witness_pcs_replacement_claim_commitment
+            != phase61_claim.runtime_witness_pcs_replacement_claim_commitment
+        || artifact.source_phase60_runtime_relation_witness_claim_commitment
+            != phase60_claim.runtime_relation_witness_claim_commitment
+        || artifact.shared_lookup_identity_commitment
+            != phase64_claim.shared_lookup_identity_commitment
+        || artifact.relation_template_commitment != phase64_claim.relation_template_commitment
+        || artifact.tensor_relation_commitment != expected_tensor_relation
+        || artifact.phase64_typed_carried_state_surface_unit_count
+            != phase64_claim.typed_carried_state_surface_unit_count
+        || artifact.phase64_combined_verifier_surface_unit_count
+            != phase64_claim.combined_verifier_surface_unit_count
+        || artifact.phase60_relation_check_count != phase60_claim.relation_check_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 65 transformer transition source drift against Phase64/60".to_string(),
+        ));
+    }
+    for (transition_step, typed_step) in artifact
+        .transition_steps
+        .iter()
+        .zip(phase64_claim.typed_steps.iter())
+    {
+        if transition_step.source_phase64_typed_step_commitment != typed_step.typed_step_commitment
+            || transition_step.input_boundary_commitment
+                != typed_step.input_boundary.typed_boundary_commitment
+            || transition_step.output_boundary_commitment
+                != typed_step.output_boundary.typed_boundary_commitment
+            || transition_step.input_tensor_witness_commitment
+                != phase60_claim.input_tensor.tensor_witness_commitment
+            || transition_step.gate_tensor_witness_commitment
+                != phase60_claim.gate_tensor.tensor_witness_commitment
+            || transition_step.value_tensor_witness_commitment
+                != phase60_claim.value_tensor.tensor_witness_commitment
+            || transition_step.hidden_tensor_witness_commitment
+                != phase60_claim.hidden_tensor.tensor_witness_commitment
+            || transition_step.output_tensor_witness_commitment
+                != phase60_claim.output_tensor.tensor_witness_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 65 transformer transition step source drift against typed state or Phase60 tensors"
+                    .to_string(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone)]
+struct Phase63LookupIdentityCommitments {
+    shared_lookup_identity_commitment: String,
+    lookup_table_registry_commitment: String,
+    normalization_table_commitment: String,
+    activation_table_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase63_derive_lookup_identity_commitments(
+    phase62_claim: &Phase62ProofCarryingStateContinuityClaim,
+) -> Result<Phase63LookupIdentityCommitments> {
+    let normalization_table_commitment = phase63_hash_lookup_identity_part(
+        "phase63-normalization-table",
+        phase62_claim,
+        STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12,
+    )?;
+    let activation_table_commitment = phase63_hash_lookup_identity_part(
+        "phase63-activation-table",
+        phase62_claim,
+        STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12,
+    )?;
+    let lookup_table_registry_commitment = phase63_static_lookup_registry_commitment_from_parts(
+        &normalization_table_commitment,
+        &activation_table_commitment,
+    )?;
+    let shared_lookup_identity_commitment = phase63_shared_lookup_identity_commitment_from_parts(
+        &phase62_claim.proof_carrying_state_continuity_claim_commitment,
+        &phase62_claim.relation_template_commitment,
+        &phase62_claim.source_phase61_runtime_witness_pcs_replacement_claim_commitment,
+        &phase62_claim.source_phase60_runtime_relation_witness_claim_commitment,
+        &lookup_table_registry_commitment,
+        phase62_claim.step_count,
+    )?;
+    Ok(Phase63LookupIdentityCommitments {
+        shared_lookup_identity_commitment,
+        lookup_table_registry_commitment,
+        normalization_table_commitment,
+        activation_table_commitment,
+    })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase63_shared_lookup_identity_commitment_from_parts(
+    source_phase62_state_continuity_claim_commitment: &str,
+    relation_template_commitment: &str,
+    source_phase61_runtime_witness_pcs_replacement_claim_commitment: &str,
+    source_phase60_runtime_relation_witness_claim_commitment: &str,
+    lookup_table_registry_commitment: &str,
+    step_count: usize,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 63 shared lookup identity hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase63-shared-lookup-identity");
+    for part in [
+        source_phase62_state_continuity_claim_commitment.as_bytes(),
+        relation_template_commitment.as_bytes(),
+        source_phase61_runtime_witness_pcs_replacement_claim_commitment.as_bytes(),
+        source_phase60_runtime_relation_witness_claim_commitment.as_bytes(),
+        lookup_table_registry_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, step_count);
+    phase44d_finalize_hash(hasher, "Phase 63 shared lookup identity")
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+pub(crate) fn phase63_shared_lookup_identity_commitment_from_parts_for_tests(
+    source_phase62_state_continuity_claim_commitment: &str,
+    relation_template_commitment: &str,
+    source_phase61_runtime_witness_pcs_replacement_claim_commitment: &str,
+    source_phase60_runtime_relation_witness_claim_commitment: &str,
+    lookup_table_registry_commitment: &str,
+    step_count: usize,
+) -> Result<String> {
+    phase63_shared_lookup_identity_commitment_from_parts(
+        source_phase62_state_continuity_claim_commitment,
+        relation_template_commitment,
+        source_phase61_runtime_witness_pcs_replacement_claim_commitment,
+        source_phase60_runtime_relation_witness_claim_commitment,
+        lookup_table_registry_commitment,
+        step_count,
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase63_hash_lookup_identity_part(
+    label: &str,
+    phase62_claim: &Phase62ProofCarryingStateContinuityClaim,
+    table_id: &str,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 63 lookup identity part hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, label.as_bytes());
+    for part in [
+        table_id.as_bytes(),
+        phase62_claim.relation_template_commitment.as_bytes(),
+        phase62_claim
+            .source_phase61_runtime_witness_pcs_replacement_claim_commitment
+            .as_bytes(),
+        phase62_claim
+            .source_phase60_runtime_relation_witness_claim_commitment
+            .as_bytes(),
+        phase62_claim.chain_start_state_commitment.as_bytes(),
+        phase62_claim.chain_end_state_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, phase62_claim.step_count);
+    phase44d_finalize_hash(hasher, "Phase 63 lookup identity part")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase63_static_lookup_registry_commitment_from_parts(
+    normalization_table_commitment: &str,
+    activation_table_commitment: &str,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 63 lookup registry hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase63-static-lookup-table-registry");
+    for part in [
+        STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12.as_bytes(),
+        STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12.as_bytes(),
+        STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12.as_bytes(),
+        normalization_table_commitment.as_bytes(),
+        STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12.as_bytes(),
+        activation_table_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 63 static lookup registry")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase63_commit_step_lookup_bindings(
+    bindings: &[Phase63SharedLookupStepBinding],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 63 step lookup binding list hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase63-step-lookup-bindings");
+    phase29_update_usize(&mut hasher, bindings.len());
+    for binding in bindings {
+        phase29_update_len_prefixed(
+            &mut hasher,
+            binding.lookup_step_binding_commitment.as_bytes(),
+        );
+    }
+    phase44d_finalize_hash(hasher, "Phase 63 step lookup bindings")
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+pub(crate) fn phase63_commit_step_lookup_bindings_for_tests(
+    bindings: &[Phase63SharedLookupStepBinding],
+) -> Result<String> {
+    phase63_commit_step_lookup_bindings(bindings)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase63_shared_lookup_identity_surface_unit_count(step_count: usize) -> Result<usize> {
+    step_count
+        .checked_mul(7)
+        .and_then(|value| value.checked_add(4))
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 63 shared lookup identity surface accounting overflow".to_string(),
+            )
+        })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase63_shared_lookup_identity_transcript_order() -> Vec<String> {
+    [
+        "phase63_claim_header",
+        "phase62_state_continuity_claim_commitment",
+        "shared_lookup_identity_commitment",
+        "static_lookup_registry_commitment",
+        "normalization_table_identity",
+        "activation_table_identity",
+        "ordered_step_lookup_bindings",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase64_prepare_typed_step(
+    phase62_step: &Phase62ProofCarryingStateStepEnvelope,
+    phase63_binding: &Phase63SharedLookupStepBinding,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<Phase64TypedCarriedStateStep> {
+    let input_boundary = phase64_prepare_typed_boundary(
+        "input",
+        phase62_step.step_index,
+        phase62_step.step_index,
+        &phase62_step.input_state_commitment,
+        &phase62_step.source_phase60_input_tensor_witness_commitment,
+        phase63_claim,
+    )?;
+    let output_position = phase62_step.step_index.checked_add(1).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 64 typed boundary position overflow".to_string())
+    })?;
+    let output_boundary = phase64_prepare_typed_boundary(
+        "output",
+        phase62_step.step_index,
+        output_position,
+        &phase62_step.output_state_commitment,
+        &phase62_step.source_phase60_output_tensor_witness_commitment,
+        phase63_claim,
+    )?;
+    let mut step = Phase64TypedCarriedStateStep {
+        proof_backend: StarkProofBackend::Stwo,
+        step_index: phase62_step.step_index,
+        source_phase62_step_envelope_commitment: phase62_step.step_envelope_commitment.clone(),
+        source_phase63_lookup_step_binding_commitment: phase63_binding
+            .lookup_step_binding_commitment
+            .clone(),
+        input_boundary,
+        output_boundary,
+        typed_step_commitment: String::new(),
+    };
+    step.typed_step_commitment = commit_phase64_typed_carried_state_step(&step)?;
+    verify_phase64_typed_carried_state_step(&step)?;
+    Ok(step)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase64_prepare_typed_boundary(
+    boundary_kind: &str,
+    step_index: usize,
+    position: usize,
+    phase62_state_commitment: &str,
+    tensor_witness_commitment: &str,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<Phase64TypedCarriedStateBoundary> {
+    let mut boundary = Phase64TypedCarriedStateBoundary {
+        proof_backend: StarkProofBackend::Stwo,
+        boundary_version: STWO_TYPED_CARRIED_STATE_BOUNDARY_VERSION_PHASE64.to_string(),
+        boundary_kind: boundary_kind.to_string(),
+        step_index,
+        position,
+        phase62_state_commitment: phase62_state_commitment.to_string(),
+        relation_template_commitment: phase63_claim.relation_template_commitment.clone(),
+        shared_lookup_identity_commitment: phase63_claim.shared_lookup_identity_commitment.clone(),
+        lookup_table_registry_commitment: phase63_claim.lookup_table_registry_commitment.clone(),
+        tensor_witness_commitment: tensor_witness_commitment.to_string(),
+        kv_cache_commitment: String::new(),
+        token_commitment: String::new(),
+        typed_boundary_commitment: String::new(),
+    };
+    boundary.kv_cache_commitment = phase64_derive_kv_cache_commitment(&boundary)?;
+    boundary.token_commitment = phase64_derive_token_commitment(&boundary)?;
+    boundary.typed_boundary_commitment = commit_phase64_typed_carried_state_boundary(&boundary)?;
+    verify_phase64_typed_carried_state_boundary(&boundary)?;
+    Ok(boundary)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase64_derive_kv_cache_commitment(
+    boundary: &Phase64TypedCarriedStateBoundary,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 64 KV-cache hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase64-typed-kv-cache");
+    phase29_update_usize(&mut hasher, boundary.step_index);
+    phase29_update_usize(&mut hasher, boundary.position);
+    for part in [
+        boundary.boundary_kind.as_bytes(),
+        boundary.phase62_state_commitment.as_bytes(),
+        boundary.shared_lookup_identity_commitment.as_bytes(),
+        boundary.lookup_table_registry_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 64 typed KV cache")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase64_derive_token_commitment(boundary: &Phase64TypedCarriedStateBoundary) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!("failed to initialize Phase 64 token hash: {err}"))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase64-typed-token");
+    phase29_update_usize(&mut hasher, boundary.step_index);
+    phase29_update_usize(&mut hasher, boundary.position);
+    for part in [
+        boundary.boundary_kind.as_bytes(),
+        boundary.tensor_witness_commitment.as_bytes(),
+        boundary.relation_template_commitment.as_bytes(),
+        boundary.phase62_state_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 64 typed token")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase64_commit_typed_steps(steps: &[Phase64TypedCarriedStateStep]) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 64 typed step list hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase64-typed-carried-state-steps");
+    phase29_update_usize(&mut hasher, steps.len());
+    for step in steps {
+        phase29_update_len_prefixed(&mut hasher, step.typed_step_commitment.as_bytes());
+    }
+    phase44d_finalize_hash(hasher, "Phase 64 typed steps")
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+pub(crate) fn phase64_commit_typed_steps_for_tests(
+    steps: &[Phase64TypedCarriedStateStep],
+) -> Result<String> {
+    phase64_commit_typed_steps(steps)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase64_typed_carried_state_surface_unit_count(step_count: usize) -> Result<usize> {
+    let boundary_count = step_count.checked_mul(2).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 64 typed boundary accounting overflow".to_string())
+    })?;
+    let link_count = step_count.checked_sub(1).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 64 continuity link accounting underflow".to_string())
+    })?;
+    boundary_count
+        .checked_mul(8)
+        .and_then(|value| value.checked_add(step_count.checked_mul(4)?))
+        .and_then(|value| value.checked_add(link_count))
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 64 typed carried-state surface accounting overflow".to_string(),
+            )
+        })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase64_typed_carried_state_transcript_order() -> Vec<String> {
+    [
+        "phase64_claim_header",
+        "phase63_shared_lookup_identity_claim_commitment",
+        "phase62_state_continuity_claim_commitment",
+        "typed_input_boundaries",
+        "typed_output_boundaries",
+        "adjacent_typed_boundary_links",
+        "ordered_typed_step_commitments",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase65_tensor_relation_commitment(
+    phase60_claim: &Phase60FirstLayerRuntimeRelationWitnessClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 65 tensor relation hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase65-transformer-tensor-relation");
+    for part in [
+        STWO_TRANSFORMER_TRANSITION_RELATION_KIND_PHASE65.as_bytes(),
+        phase60_claim
+            .runtime_relation_witness_claim_commitment
+            .as_bytes(),
+        phase60_claim
+            .input_tensor
+            .tensor_witness_commitment
+            .as_bytes(),
+        phase60_claim
+            .gate_tensor
+            .tensor_witness_commitment
+            .as_bytes(),
+        phase60_claim
+            .value_tensor
+            .tensor_witness_commitment
+            .as_bytes(),
+        phase60_claim
+            .hidden_tensor
+            .tensor_witness_commitment
+            .as_bytes(),
+        phase60_claim
+            .output_tensor
+            .tensor_witness_commitment
+            .as_bytes(),
+        phase60_claim
+            .gate_weight_tensor
+            .tensor_witness_commitment
+            .as_bytes(),
+        phase60_claim
+            .value_weight_tensor
+            .tensor_witness_commitment
+            .as_bytes(),
+        phase60_claim
+            .output_weight_tensor
+            .tensor_witness_commitment
+            .as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, phase60_claim.relation_check_count);
+    phase29_update_usize(&mut hasher, phase60_claim.gate_affine_check_count);
+    phase29_update_usize(&mut hasher, phase60_claim.value_affine_check_count);
+    phase29_update_usize(&mut hasher, phase60_claim.hidden_product_check_count);
+    phase29_update_usize(&mut hasher, phase60_claim.output_affine_check_count);
+    phase44d_finalize_hash(hasher, "Phase 65 tensor relation")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase65_commit_transition_steps(
+    steps: &[Phase65TransformerTransitionStepArtifact],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 65 transition step list hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase65-transformer-transition-steps");
+    phase29_update_usize(&mut hasher, steps.len());
+    for step in steps {
+        phase29_update_len_prefixed(&mut hasher, step.transition_step_commitment.as_bytes());
+    }
+    phase44d_finalize_hash(hasher, "Phase 65 transition steps")
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+pub(crate) fn phase65_commit_transition_steps_for_tests(
+    steps: &[Phase65TransformerTransitionStepArtifact],
+) -> Result<String> {
+    phase65_commit_transition_steps(steps)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase65_transformer_transition_surface_unit_count(
+    step_count: usize,
+    relation_check_count: usize,
+) -> Result<usize> {
+    step_count
+        .checked_mul(12)
+        .and_then(|value| value.checked_add(relation_check_count))
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 65 transformer transition surface accounting overflow".to_string(),
+            )
+        })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase65_transformer_transition_transcript_order() -> Vec<String> {
+    [
+        "phase65_artifact_header",
+        "phase64_typed_carried_state_claim_commitment",
+        "phase60_runtime_relation_witness_claim_commitment",
+        "shared_lookup_identity_commitment",
+        "tensor_relation_commitment",
+        "ordered_transformer_transition_steps",
+        "negative_claim_flags",
     ]
     .into_iter()
     .map(str::to_string)

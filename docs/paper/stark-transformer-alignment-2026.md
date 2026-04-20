@@ -419,6 +419,17 @@ identity into a static lookup-table registry commitment inside the shared lookup
 artifact; this is table-identity and provenance binding, not recursive cross-step
 shared-table accumulation.
 
+On the current proof-carrying state line, this boundary is made more explicit by three
+test-covered verifier surfaces. Phase 63 binds one shared lookup-table identity across
+the Phase 62 step envelopes, the proof-carrying steps on this line; Phase 64 introduces
+a small typed carried-state boundary
+that exposes the state, lookup identity, tensor handle, KV-cache handle, and token handle
+checked at each step; and Phase 65 binds those typed boundaries to a relation-kind-bound
+transformer-shaped transition artifact backed by the Phase 60 runtime relation witness.
+This is stronger systems evidence for the proof surface, but it is still not a claim of
+standard-softmax transformer inference, recursive verification, or compressed shared-table
+accumulation.
+
 ### 5.2 Carried-state relation
 
 The carried-state claim can be stated as a compact relation.
@@ -489,9 +500,11 @@ reproducibility tier and primary transformer relation still live on the vanilla 
 while the `stwo` path remains a bounded experimental tier rather than a broad production
 zkML surface. Second, the main proved transformer relation still uses `average-hard`
 rather than full standard softmax. Third, the current repository already binds shared
-lookup-table identity inside public artifacts, but it does not yet expose recursive
-cross-step shared-table accumulation as a compressed proof object. Fourth, the decode
-overlays, semantic-agreement artifacts, and pre-recursive aggregation boundaries are
+lookup-table identity inside public artifacts and across those Phase 62 proof-carrying
+step envelopes, but it does not yet expose recursive cross-step shared-table accumulation
+as a compressed proof object. Fourth, the decode overlays, semantic-agreement artifacts,
+and pre-recursive
+aggregation boundaries are
 statement-preserving packaging layers, not recursive cryptographic wrappers, SMT-backed
 implementation-equivalence proofs, or production-scale learned-model zkML claims.
 
@@ -552,8 +565,8 @@ This artifact narrows the gap between analytic and systems claims by showing:
 2. bounded semantic-equivalence evidence can be checked across runtimes before
    proving and exposed as transition-relation hashes rather than prose-only
    assertions,
-3. one parameterized decode relation preserves carried state across layouts and
-   packaging layers,
+3. one parameterized decode relation preserves carried state and shared lookup identity
+   across layouts, Phase 62 proof-carrying step envelopes, and packaging layers,
 4. carried-state packages can be aggregated as pre-recursive statements without changing
    the underlying decode relation,
 5. reproducibility can be anchored in immutable bundles and commit-pinned artifacts.

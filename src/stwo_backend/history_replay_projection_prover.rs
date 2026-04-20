@@ -4563,6 +4563,10 @@ mod tests {
         commit_phase61_runtime_witness_pcs_replacement_opening,
         commit_phase62_proof_carrying_state_continuity_claim,
         commit_phase62_proof_carrying_state_step_envelope,
+        commit_phase63_shared_lookup_identity_claim, commit_phase63_shared_lookup_step_binding,
+        commit_phase64_typed_carried_state_boundary, commit_phase64_typed_carried_state_claim,
+        commit_phase64_typed_carried_state_step, commit_phase65_transformer_transition_artifact,
+        commit_phase65_transformer_transition_step_artifact,
         phase44d_prepare_recursive_verifier_public_output_aggregation,
         phase44d_prepare_recursive_verifier_public_output_handoff,
         phase45_prepare_recursive_verifier_public_input_bridge,
@@ -4587,6 +4591,8 @@ mod tests {
         phase61_prepare_first_layer_runtime_witness_pcs_replacement_claim,
         phase61_recompute_runtime_witness_pcs_replacement_opening_for_test,
         phase62_prepare_proof_carrying_state_continuity_claim,
+        phase63_prepare_shared_lookup_identity_claim, phase64_prepare_typed_carried_state_claim,
+        phase65_prepare_transformer_transition_artifact,
         verify_phase44d_recursive_verifier_public_output_aggregation,
         verify_phase44d_recursive_verifier_public_output_handoff,
         verify_phase44d_recursive_verifier_public_output_handoff_against_boundary,
@@ -4631,7 +4637,15 @@ mod tests {
         verify_phase61_runtime_witness_pcs_replacement_opening,
         verify_phase62_proof_carrying_state_continuity_claim,
         verify_phase62_proof_carrying_state_continuity_claim_against_phase61,
-        verify_phase62_proof_carrying_state_step_envelope, Phase48RecursiveProofWrapperAttempt,
+        verify_phase62_proof_carrying_state_step_envelope,
+        verify_phase63_shared_lookup_identity_claim,
+        verify_phase63_shared_lookup_identity_claim_against_phase62,
+        verify_phase63_shared_lookup_step_binding, verify_phase64_typed_carried_state_boundary,
+        verify_phase64_typed_carried_state_claim,
+        verify_phase64_typed_carried_state_claim_against_phase63,
+        verify_phase64_typed_carried_state_step, verify_phase65_transformer_transition_artifact,
+        verify_phase65_transformer_transition_artifact_against_sources,
+        verify_phase65_transformer_transition_step_artifact, Phase48RecursiveProofWrapperAttempt,
         Phase49LayerwiseTensorClaimPropagationContract, Phase50LayerIoClaim,
         Phase51FirstLayerRelationClaim, Phase52LayerEndpointAnchoringClaim,
         Phase53FirstLayerRelationBenchmarkClaim, Phase54FirstLayerSumcheckSkeletonClaim,
@@ -4640,6 +4654,10 @@ mod tests {
         Phase59FirstLayerRelationWitnessBindingClaim, Phase60FirstLayerRuntimeRelationWitnessClaim,
         Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
         Phase62ProofCarryingStateContinuityClaim, Phase62ProofCarryingStateStepEnvelope,
+        Phase63SharedLookupIdentityClaim, Phase63SharedLookupStepBinding,
+        Phase64TypedCarriedStateBoundary, Phase64TypedCarriedStateClaim,
+        Phase64TypedCarriedStateStep, Phase65TransformerTransitionArtifact,
+        Phase65TransformerTransitionStepArtifact,
     };
     use super::super::STWO_BACKEND_VERSION_PHASE12;
     use super::*;
@@ -8588,6 +8606,186 @@ mod tests {
                 .expect("recommit Phase62 claim");
     }
 
+    fn sample_phase63_shared_lookup_identity_claim() -> (
+        Phase53FirstLayerRelationBenchmarkClaim,
+        Phase54FirstLayerSumcheckSkeletonClaim,
+        Phase56FirstLayerExecutableSumcheckClaim,
+        Phase57FirstLayerMleOpeningVerifierClaim,
+        Phase58FirstLayerWitnessPcsOpeningClaim,
+        Phase59FirstLayerRelationWitnessBindingClaim,
+        Phase60FirstLayerRuntimeRelationWitnessClaim,
+        Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+        Phase62ProofCarryingStateContinuityClaim,
+        Phase63SharedLookupIdentityClaim,
+    ) {
+        let (phase53, phase54, phase56, phase57, phase58, phase59, phase60, phase61, phase62) =
+            sample_phase62_proof_carrying_state_continuity_claim();
+        let phase63 = phase63_prepare_shared_lookup_identity_claim(&phase62)
+            .expect("prepare Phase63 shared lookup identity claim");
+        (
+            phase53, phase54, phase56, phase57, phase58, phase59, phase60, phase61, phase62,
+            phase63,
+        )
+    }
+
+    fn recommit_phase63_binding(binding: &mut Phase63SharedLookupStepBinding) {
+        binding.lookup_step_binding_commitment = commit_phase63_shared_lookup_step_binding(binding)
+            .expect("recommit Phase63 lookup binding");
+    }
+
+    fn recompute_phase63_shared_lookup_identity_for_test(
+        claim: &Phase63SharedLookupIdentityClaim,
+    ) -> Result<String> {
+        super::super::recursion::phase63_shared_lookup_identity_commitment_from_parts_for_tests(
+            &claim.source_phase62_state_continuity_claim_commitment,
+            &claim.relation_template_commitment,
+            &claim.source_phase61_runtime_witness_pcs_replacement_claim_commitment,
+            &claim.source_phase60_runtime_relation_witness_claim_commitment,
+            &claim.lookup_table_registry_commitment,
+            claim.step_count,
+        )
+    }
+
+    fn recommit_phase63_claim_preserving_step_bindings(
+        claim: &mut Phase63SharedLookupIdentityClaim,
+    ) {
+        claim.step_lookup_bindings_commitment =
+            super::super::recursion::phase63_commit_step_lookup_bindings_for_tests(
+                &claim.step_lookup_bindings,
+            )
+            .expect("recommit Phase63 lookup binding list");
+        claim.shared_lookup_identity_claim_commitment =
+            commit_phase63_shared_lookup_identity_claim(claim)
+                .expect("recommit Phase63 shared lookup identity claim");
+    }
+
+    fn recommit_phase63_claim(claim: &mut Phase63SharedLookupIdentityClaim) {
+        claim.shared_lookup_identity_commitment =
+            recompute_phase63_shared_lookup_identity_for_test(claim)
+                .expect("recompute Phase63 shared lookup identity");
+        for binding in &mut claim.step_lookup_bindings {
+            binding.shared_lookup_identity_commitment =
+                claim.shared_lookup_identity_commitment.clone();
+            binding.lookup_table_registry_commitment =
+                claim.lookup_table_registry_commitment.clone();
+            recommit_phase63_binding(binding);
+        }
+        claim.step_lookup_bindings_commitment =
+            super::super::recursion::phase63_commit_step_lookup_bindings_for_tests(
+                &claim.step_lookup_bindings,
+            )
+            .expect("recommit Phase63 lookup binding list");
+        claim.shared_lookup_identity_claim_commitment =
+            commit_phase63_shared_lookup_identity_claim(claim)
+                .expect("recommit Phase63 shared lookup identity claim");
+    }
+
+    fn sample_phase64_typed_carried_state_claim() -> (
+        Phase53FirstLayerRelationBenchmarkClaim,
+        Phase54FirstLayerSumcheckSkeletonClaim,
+        Phase56FirstLayerExecutableSumcheckClaim,
+        Phase57FirstLayerMleOpeningVerifierClaim,
+        Phase58FirstLayerWitnessPcsOpeningClaim,
+        Phase59FirstLayerRelationWitnessBindingClaim,
+        Phase60FirstLayerRuntimeRelationWitnessClaim,
+        Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+        Phase62ProofCarryingStateContinuityClaim,
+        Phase63SharedLookupIdentityClaim,
+        Phase64TypedCarriedStateClaim,
+    ) {
+        let (
+            phase53,
+            phase54,
+            phase56,
+            phase57,
+            phase58,
+            phase59,
+            phase60,
+            phase61,
+            phase62,
+            phase63,
+        ) = sample_phase63_shared_lookup_identity_claim();
+        let phase64 = phase64_prepare_typed_carried_state_claim(&phase63, &phase62)
+            .expect("prepare Phase64 typed carried-state claim");
+        (
+            phase53, phase54, phase56, phase57, phase58, phase59, phase60, phase61, phase62,
+            phase63, phase64,
+        )
+    }
+
+    fn recommit_phase64_boundary(boundary: &mut Phase64TypedCarriedStateBoundary) {
+        boundary.typed_boundary_commitment = commit_phase64_typed_carried_state_boundary(boundary)
+            .expect("recommit Phase64 typed boundary");
+    }
+
+    fn recommit_phase64_step(step: &mut Phase64TypedCarriedStateStep) {
+        step.typed_step_commitment =
+            commit_phase64_typed_carried_state_step(step).expect("recommit Phase64 typed step");
+    }
+
+    fn recommit_phase64_claim(claim: &mut Phase64TypedCarriedStateClaim) {
+        claim.typed_steps_commitment =
+            super::super::recursion::phase64_commit_typed_steps_for_tests(&claim.typed_steps)
+                .expect("recommit Phase64 typed step list");
+        claim.typed_carried_state_claim_commitment =
+            commit_phase64_typed_carried_state_claim(claim)
+                .expect("recommit Phase64 typed carried-state claim");
+    }
+
+    fn sample_phase65_transformer_transition_artifact() -> (
+        Phase53FirstLayerRelationBenchmarkClaim,
+        Phase54FirstLayerSumcheckSkeletonClaim,
+        Phase56FirstLayerExecutableSumcheckClaim,
+        Phase57FirstLayerMleOpeningVerifierClaim,
+        Phase58FirstLayerWitnessPcsOpeningClaim,
+        Phase59FirstLayerRelationWitnessBindingClaim,
+        Phase60FirstLayerRuntimeRelationWitnessClaim,
+        Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+        Phase62ProofCarryingStateContinuityClaim,
+        Phase63SharedLookupIdentityClaim,
+        Phase64TypedCarriedStateClaim,
+        Phase65TransformerTransitionArtifact,
+    ) {
+        let (
+            phase53,
+            phase54,
+            phase56,
+            phase57,
+            phase58,
+            phase59,
+            phase60,
+            phase61,
+            phase62,
+            phase63,
+            phase64,
+        ) = sample_phase64_typed_carried_state_claim();
+        let phase65 = phase65_prepare_transformer_transition_artifact(
+            &phase64, &phase63, &phase62, &phase61, &phase60, &phase59, &phase58, &phase57,
+            &phase56, &phase54,
+        )
+        .expect("prepare Phase65 transformer transition artifact");
+        (
+            phase53, phase54, phase56, phase57, phase58, phase59, phase60, phase61, phase62,
+            phase63, phase64, phase65,
+        )
+    }
+
+    fn recommit_phase65_step(step: &mut Phase65TransformerTransitionStepArtifact) {
+        step.transition_step_commitment = commit_phase65_transformer_transition_step_artifact(step)
+            .expect("recommit Phase65 transition step");
+    }
+
+    fn recommit_phase65_artifact(artifact: &mut Phase65TransformerTransitionArtifact) {
+        artifact.transition_steps_commitment =
+            super::super::recursion::phase65_commit_transition_steps_for_tests(
+                &artifact.transition_steps,
+            )
+            .expect("recommit Phase65 transition step list");
+        artifact.transformer_transition_artifact_commitment =
+            commit_phase65_transformer_transition_artifact(artifact)
+                .expect("recommit Phase65 transformer transition artifact");
+    }
+
     #[test]
     fn phase60_runtime_relation_witness_claim_accepts_actual_first_layer_witness() {
         let (_, phase54, phase56, phase57, phase58, phase59, phase60) =
@@ -9116,6 +9314,379 @@ mod tests {
         assert!(error
             .to_string()
             .contains("must not claim recursion, compression"));
+    }
+
+    #[test]
+    fn phase63_shared_lookup_identity_accepts_phase62_backed_steps() {
+        let (_, _, _, _, _, _, _, _, phase62, phase63) =
+            sample_phase63_shared_lookup_identity_claim();
+
+        verify_phase63_shared_lookup_identity_claim(&phase63)
+            .expect("verify standalone Phase63 shared lookup identity claim");
+        verify_phase63_shared_lookup_identity_claim_against_phase62(&phase63, &phase62)
+            .expect("verify Phase63 against Phase62 source");
+
+        assert_eq!(phase63.step_count, phase62.step_count);
+        assert_eq!(
+            phase63.source_phase62_state_continuity_claim_commitment,
+            phase62.proof_carrying_state_continuity_claim_commitment
+        );
+        assert_eq!(phase63.step_lookup_bindings.len(), phase63.step_count);
+        for binding in &phase63.step_lookup_bindings {
+            verify_phase63_shared_lookup_step_binding(binding)
+                .expect("verify Phase63 lookup step binding");
+            assert_eq!(
+                binding.shared_lookup_identity_commitment,
+                phase63.shared_lookup_identity_commitment
+            );
+            assert_eq!(
+                binding.lookup_table_registry_commitment,
+                phase63.lookup_table_registry_commitment
+            );
+        }
+        assert!(phase63.phase62_state_continuity_available);
+        assert!(phase63.shared_lookup_identity_available);
+        assert!(!phase63.recursive_verification_claimed);
+        assert!(!phase63.cryptographic_compression_claimed);
+        assert!(!phase63.breakthrough_claimed);
+        assert!(!phase63.paper_ready);
+    }
+
+    #[test]
+    fn phase63_shared_lookup_identity_rejects_cross_step_identity_drift() {
+        let (_, _, _, _, _, _, _, _, _, mut phase63) =
+            sample_phase63_shared_lookup_identity_claim();
+
+        phase63.step_lookup_bindings[1].shared_lookup_identity_commitment = hash32('a');
+        recommit_phase63_binding(&mut phase63.step_lookup_bindings[1]);
+        recommit_phase63_claim_preserving_step_bindings(&mut phase63);
+
+        let error = verify_phase63_shared_lookup_identity_claim(&phase63)
+            .expect_err("Phase63 must reject per-step lookup identity drift");
+        assert!(error.to_string().contains("identity drift across steps"));
+    }
+
+    #[test]
+    fn phase63_shared_lookup_identity_rejects_recommitted_registry_drift() {
+        let (_, _, _, _, _, _, _, _, _, mut phase63) =
+            sample_phase63_shared_lookup_identity_claim();
+
+        phase63.lookup_table_registry_commitment = hash32('f');
+        for binding in &mut phase63.step_lookup_bindings {
+            binding.lookup_table_registry_commitment =
+                phase63.lookup_table_registry_commitment.clone();
+            recommit_phase63_binding(binding);
+        }
+        recommit_phase63_claim(&mut phase63);
+
+        let error = verify_phase63_shared_lookup_identity_claim(&phase63)
+            .expect_err("Phase63 must reject registry drift even when bindings are recommitted");
+        assert!(error.to_string().contains("registry commitment drift"));
+    }
+
+    #[test]
+    fn phase63_shared_lookup_identity_rejects_recommitted_step_table_drift() {
+        let (_, _, _, _, _, _, _, _, _, mut phase63) =
+            sample_phase63_shared_lookup_identity_claim();
+
+        phase63.step_lookup_bindings[0].normalization_table_commitment = hash32('9');
+        recommit_phase63_binding(&mut phase63.step_lookup_bindings[0]);
+        recommit_phase63_claim(&mut phase63);
+
+        let error = verify_phase63_shared_lookup_identity_claim(&phase63)
+            .expect_err("Phase63 must reject per-step table commitment drift");
+        assert!(error
+            .to_string()
+            .contains("Phase 63 shared lookup identity drift across steps"));
+    }
+
+    #[test]
+    fn phase63_shared_lookup_identity_rejects_phase62_source_drift() {
+        let (_, _, _, _, _, _, _, _, phase62, mut phase63) =
+            sample_phase63_shared_lookup_identity_claim();
+
+        phase63.source_phase62_state_continuity_claim_commitment = hash32('b');
+        recommit_phase63_claim(&mut phase63);
+
+        verify_phase63_shared_lookup_identity_claim(&phase63)
+            .expect("standalone Phase63 accepts internally committed source handle");
+        let error = verify_phase63_shared_lookup_identity_claim_against_phase62(&phase63, &phase62)
+            .expect_err("Phase63 must reject wrong Phase62 source");
+        assert!(error.to_string().contains("source drift against Phase62"));
+    }
+
+    #[test]
+    fn phase63_shared_lookup_identity_rejects_false_recursion_and_paper_flags() {
+        let (_, _, _, _, _, _, _, _, _, mut phase63) =
+            sample_phase63_shared_lookup_identity_claim();
+
+        phase63.recursive_verification_claimed = true;
+        phase63.cryptographic_compression_claimed = true;
+        phase63.breakthrough_claimed = true;
+        phase63.paper_ready = true;
+        recommit_phase63_claim(&mut phase63);
+
+        let error = verify_phase63_shared_lookup_identity_claim(&phase63)
+            .expect_err("Phase63 must reject false recursion/compression claims");
+        assert!(error
+            .to_string()
+            .contains("must not claim recursion, compression"));
+    }
+
+    #[test]
+    fn phase64_typed_carried_state_accepts_phase63_and_phase62_sources() {
+        let (_, _, _, _, _, _, _, _, phase62, phase63, phase64) =
+            sample_phase64_typed_carried_state_claim();
+
+        verify_phase64_typed_carried_state_claim(&phase64)
+            .expect("verify standalone Phase64 typed carried-state claim");
+        verify_phase64_typed_carried_state_claim_against_phase63(&phase64, &phase63, &phase62)
+            .expect("verify Phase64 against Phase63 and Phase62");
+
+        assert_eq!(phase64.step_count, phase63.step_count);
+        assert_eq!(phase64.typed_boundary_count, phase64.step_count * 2);
+        assert_eq!(
+            phase64.chain_start_typed_boundary_commitment,
+            phase64.typed_steps[0]
+                .input_boundary
+                .typed_boundary_commitment
+        );
+        assert_eq!(
+            phase64.chain_end_typed_boundary_commitment,
+            phase64
+                .typed_steps
+                .last()
+                .expect("typed step")
+                .output_boundary
+                .typed_boundary_commitment
+        );
+        for step in &phase64.typed_steps {
+            verify_phase64_typed_carried_state_step(step)
+                .expect("verify Phase64 typed carried-state step");
+            verify_phase64_typed_carried_state_boundary(&step.input_boundary)
+                .expect("verify Phase64 input boundary");
+            verify_phase64_typed_carried_state_boundary(&step.output_boundary)
+                .expect("verify Phase64 output boundary");
+        }
+        for window in phase64.typed_steps.windows(2) {
+            assert_eq!(
+                window[0].output_boundary.phase62_state_commitment,
+                window[1].input_boundary.phase62_state_commitment
+            );
+            assert_eq!(
+                window[0].output_boundary.position,
+                window[1].input_boundary.position
+            );
+        }
+        assert!(phase64.phase63_shared_lookup_identity_available);
+        assert!(phase64.typed_carried_state_available);
+        assert!(!phase64.recursive_verification_claimed);
+        assert!(!phase64.cryptographic_compression_claimed);
+        assert!(!phase64.breakthrough_claimed);
+        assert!(!phase64.paper_ready);
+    }
+
+    #[test]
+    fn phase64_typed_carried_state_rejects_stale_derived_boundary_fields() {
+        let (_, _, _, _, _, _, _, _, _, _, mut phase64) =
+            sample_phase64_typed_carried_state_claim();
+
+        phase64.typed_steps[0]
+            .input_boundary
+            .phase62_state_commitment = hash32('c');
+        recommit_phase64_boundary(&mut phase64.typed_steps[0].input_boundary);
+        recommit_phase64_step(&mut phase64.typed_steps[0]);
+        phase64.chain_start_typed_boundary_commitment = phase64.typed_steps[0]
+            .input_boundary
+            .typed_boundary_commitment
+            .clone();
+        recommit_phase64_claim(&mut phase64);
+
+        let error = verify_phase64_typed_carried_state_claim(&phase64)
+            .expect_err("Phase64 must reject stale derived typed boundary fields");
+        assert!(error.to_string().contains("derived field drift"));
+    }
+
+    #[test]
+    fn phase64_typed_carried_state_rejects_typed_handle_derived_field_drift() {
+        let (_, _, _, _, _, _, _, _, _, _, mut phase64) =
+            sample_phase64_typed_carried_state_claim();
+
+        phase64.typed_steps[0]
+            .input_boundary
+            .tensor_witness_commitment = hash32('8');
+        recommit_phase64_boundary(&mut phase64.typed_steps[0].input_boundary);
+        recommit_phase64_step(&mut phase64.typed_steps[0]);
+        phase64.chain_start_typed_boundary_commitment = phase64.typed_steps[0]
+            .input_boundary
+            .typed_boundary_commitment
+            .clone();
+        recommit_phase64_claim(&mut phase64);
+
+        let error = verify_phase64_typed_carried_state_claim(&phase64)
+            .expect_err("Phase64 must reject typed handle drift with stale derived fields");
+        assert!(error.to_string().contains("derived field drift"));
+    }
+
+    #[test]
+    fn phase64_typed_carried_state_rejects_phase63_source_drift() {
+        let (_, _, _, _, _, _, _, _, phase62, phase63, mut phase64) =
+            sample_phase64_typed_carried_state_claim();
+
+        phase64.source_phase63_shared_lookup_identity_claim_commitment = hash32('d');
+        recommit_phase64_claim(&mut phase64);
+
+        verify_phase64_typed_carried_state_claim(&phase64)
+            .expect("standalone Phase64 accepts internally committed source handle");
+        let error =
+            verify_phase64_typed_carried_state_claim_against_phase63(&phase64, &phase63, &phase62)
+                .expect_err("Phase64 must reject wrong Phase63 source");
+        assert!(error.to_string().contains("source drift against Phase63"));
+    }
+
+    #[test]
+    fn phase64_typed_carried_state_rejects_false_recursion_and_paper_flags() {
+        let (_, _, _, _, _, _, _, _, _, _, mut phase64) =
+            sample_phase64_typed_carried_state_claim();
+
+        phase64.recursive_verification_claimed = true;
+        phase64.cryptographic_compression_claimed = true;
+        phase64.breakthrough_claimed = true;
+        phase64.paper_ready = true;
+        recommit_phase64_claim(&mut phase64);
+
+        let error = verify_phase64_typed_carried_state_claim(&phase64)
+            .expect_err("Phase64 must reject false recursion/compression claims");
+        assert!(error
+            .to_string()
+            .contains("must not claim recursion, compression"));
+    }
+
+    #[test]
+    fn phase65_transformer_transition_artifact_accepts_typed_carried_state_and_phase60_relation() {
+        let (
+            _,
+            phase54,
+            phase56,
+            phase57,
+            phase58,
+            phase59,
+            phase60,
+            phase61,
+            phase62,
+            phase63,
+            phase64,
+            phase65,
+        ) = sample_phase65_transformer_transition_artifact();
+
+        verify_phase65_transformer_transition_artifact(&phase65)
+            .expect("verify standalone Phase65 transformer transition artifact");
+        verify_phase65_transformer_transition_artifact_against_sources(
+            &phase65, &phase64, &phase63, &phase62, &phase61, &phase60, &phase59, &phase58,
+            &phase57, &phase56, &phase54,
+        )
+        .expect("verify Phase65 against typed state and Phase60 source relation");
+
+        assert_eq!(phase65.step_count, phase64.step_count);
+        assert_eq!(
+            phase65.phase60_relation_check_count,
+            phase60.relation_check_count
+        );
+        for step in &phase65.transition_steps {
+            verify_phase65_transformer_transition_step_artifact(step)
+                .expect("verify Phase65 transition step");
+        }
+        assert!(phase65.phase64_typed_carried_state_available);
+        assert!(phase65.shared_lookup_identity_available);
+        assert!(phase65.actual_runtime_model_witness_available);
+        assert!(phase65.relation_equation_evaluation_available);
+        assert!(phase65.transformer_transition_artifact_available);
+        assert!(!phase65.full_standard_softmax_inference_claimed);
+        assert!(!phase65.recursive_verification_claimed);
+        assert!(!phase65.cryptographic_compression_claimed);
+        assert!(!phase65.breakthrough_claimed);
+        assert!(!phase65.paper_ready);
+    }
+
+    #[test]
+    fn phase65_transformer_transition_artifact_rejects_phase60_tensor_source_drift() {
+        let (
+            _,
+            phase54,
+            phase56,
+            phase57,
+            phase58,
+            phase59,
+            phase60,
+            phase61,
+            phase62,
+            phase63,
+            phase64,
+            mut phase65,
+        ) = sample_phase65_transformer_transition_artifact();
+
+        phase65.transition_steps[0].input_tensor_witness_commitment = hash32('e');
+        recommit_phase65_step(&mut phase65.transition_steps[0]);
+        recommit_phase65_artifact(&mut phase65);
+
+        verify_phase65_transformer_transition_artifact(&phase65)
+            .expect("standalone Phase65 accepts internally committed tensor handle");
+        let error = verify_phase65_transformer_transition_artifact_against_sources(
+            &phase65, &phase64, &phase63, &phase62, &phase61, &phase60, &phase59, &phase58,
+            &phase57, &phase56, &phase54,
+        )
+        .expect_err("Phase65 must reject wrong Phase60 tensor source");
+        assert!(error.to_string().contains("step source drift"));
+    }
+
+    #[test]
+    fn phase65_transformer_transition_artifact_rejects_phase64_step_source_drift() {
+        let (
+            _,
+            phase54,
+            phase56,
+            phase57,
+            phase58,
+            phase59,
+            phase60,
+            phase61,
+            phase62,
+            phase63,
+            phase64,
+            mut phase65,
+        ) = sample_phase65_transformer_transition_artifact();
+
+        phase65.transition_steps[0].source_phase64_typed_step_commitment = hash32('7');
+        recommit_phase65_step(&mut phase65.transition_steps[0]);
+        recommit_phase65_artifact(&mut phase65);
+
+        verify_phase65_transformer_transition_artifact(&phase65)
+            .expect("standalone Phase65 accepts internally committed typed-step handle");
+        let error = verify_phase65_transformer_transition_artifact_against_sources(
+            &phase65, &phase64, &phase63, &phase62, &phase61, &phase60, &phase59, &phase58,
+            &phase57, &phase56, &phase54,
+        )
+        .expect_err("Phase65 must reject wrong Phase64 typed-step source");
+        assert!(error.to_string().contains("step source drift"));
+    }
+
+    #[test]
+    fn phase65_transformer_transition_artifact_rejects_false_softmax_recursion_and_paper_flags() {
+        let (_, _, _, _, _, _, _, _, _, _, _, mut phase65) =
+            sample_phase65_transformer_transition_artifact();
+
+        phase65.full_standard_softmax_inference_claimed = true;
+        phase65.recursive_verification_claimed = true;
+        phase65.cryptographic_compression_claimed = true;
+        phase65.breakthrough_claimed = true;
+        phase65.paper_ready = true;
+        recommit_phase65_artifact(&mut phase65);
+
+        let error = verify_phase65_transformer_transition_artifact(&phase65)
+            .expect_err("Phase65 must reject overclaiming flags");
+        assert!(error
+            .to_string()
+            .contains("must not claim full softmax inference"));
     }
 
     #[test]
