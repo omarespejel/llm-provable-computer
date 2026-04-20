@@ -10,7 +10,7 @@ run_cargo_filtered() {
   local output
   output="$(cargo +nightly-2025-07-14 test -q --features stwo-backend --lib "$filter" -- --nocapture 2>&1)"
   printf '%s\n' "$output"
-  if ! grep -Eq 'running [1-9][0-9]* tests' <<<"$output"; then
+  if ! grep -Eq 'running [1-9][0-9]* test(s)?' <<<"$output"; then
     echo "cargo test filter '$filter' matched zero tests" >&2
     exit 1
   fi

@@ -28,6 +28,7 @@ class Phase44CProjectionRootProbeTests(unittest.TestCase):
         self.assertEqual(manifest["source_surface_version"], PHASE44C.PHASE43_SURFACE_VERSION)
         self.assertEqual(manifest["projection_row_count"], 8)
         self.assertEqual(manifest["projection_log_size"], 3)
+        self.assertEqual(manifest["kill_labels"], PHASE44C.EXPECTED_KILL_LABELS)
         self.assertEqual(len(manifest["canonical_source_root_preimage"]["row_labels"]), 8)
 
     def test_probe_accepts_canonical_manifest_and_writes_evidence(self) -> None:
@@ -57,18 +58,26 @@ class Phase44CProjectionRootProbeTests(unittest.TestCase):
         with self.assertRaisesRegex(PHASE44C.Phase44CError, "kill_labels\\[0\\]"):
             PHASE44C.probe_manifest(manifest)
 
+    def test_probe_rejects_weakened_kill_label_suite(self) -> None:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        manifest["kill_labels"] = manifest["kill_labels"][:-1]
+        manifest["mutation_checks"] = manifest["mutation_checks"][:-1]
+        with self.assertRaisesRegex(PHASE44C.Phase44CError, "expected kill label suite"):
+            PHASE44C.probe_manifest(manifest)
+
+    def test_probe_rejects_top_level_manifest_metadata_drift(self) -> None:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        manifest["projection_log_size"] = 4
+        with self.assertRaisesRegex(PHASE44C.Phase44CError, "projection_log_size"):
+            PHASE44C.probe_manifest(manifest)
+
     def test_each_kill_label_rejects(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         for mutation in manifest["mutation_checks"]:
             with self.subTest(label=mutation["label"]):
                 mutated = PHASE44C.apply_mutation(manifest, mutation["label"])
-                trimmed = {
-                    **mutated,
-                    "kill_labels": [mutation["label"]],
-                    "mutation_checks": [mutation],
-                }
                 with self.assertRaises(PHASE44C.Phase44CError):
-                    PHASE44C.probe_manifest(trimmed)
+                    PHASE44C.probe_manifest(mutated)
 
     def test_stwo_source_mechanics_are_verified(self) -> None:
         if (

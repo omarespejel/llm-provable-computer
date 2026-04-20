@@ -93,6 +93,10 @@ class Phase44BPublicProjectionLogUpProbeTests(unittest.TestCase):
             evidence["public_projection_logup_relation_shape"]["row_count"],
             trace["total_steps"],
         )
+        self.assertEqual(
+            evidence["public_projection_logup_relation_shape"]["domain_separator"],
+            PROBE.PHASE44B_LOGUP_BINDING_DOMAIN,
+        )
 
     def test_probe_rejects_row_order_drift(self) -> None:
         trace = PROBE.build_demo_trace()
@@ -111,6 +115,20 @@ class Phase44BPublicProjectionLogUpProbeTests(unittest.TestCase):
         trace["lookup_rows_commitments_commitment"] = PROBE.hash32("tampered")
         with self.assertRaisesRegex(ValueError, "lookup-row commitment drift"):
             PROBE.build_probe_evidence(trace, PROBE.build_projection(trace))
+
+    def test_probe_rejects_top_level_trace_boundary_drift(self) -> None:
+        trace = PROBE.build_demo_trace()
+        trace["phase12_end_public_state_commitment"] = PROBE.hash32("tampered")
+        with self.assertRaisesRegex(ValueError, "phase12_end_public_state_commitment"):
+            PROBE.build_probe_evidence(trace, PROBE.build_projection(trace))
+
+    def test_probe_rejects_duplicated_evidence_boundary_drift(self) -> None:
+        trace = PROBE.build_demo_trace()
+        projection = PROBE.build_projection(trace)
+        evidence = PROBE.build_probe_evidence(trace, projection)
+        evidence["initial_kv_cache_commitment"] = PROBE.hash32("tampered")
+        with self.assertRaisesRegex(ValueError, "initial_kv_cache_commitment drift"):
+            PROBE.validate_public_projection_logup_evidence(trace, projection, evidence)
 
     def test_probe_rejects_embedded_state_step_drift(self) -> None:
         trace = PROBE.build_demo_trace()
@@ -182,6 +200,13 @@ class Phase44BPublicProjectionLogUpProbeTests(unittest.TestCase):
             self.assertIn("public_projection_logup_relation_shape", evidence)
             self.assertTrue((output.parent / "phase43-trace.json").exists())
             self.assertTrue((output.parent / "phase43-projection.json").exists())
+
+            trace_json = output.parent / "phase43-trace.json"
+            round_trip_output = pathlib.Path(tmpdir) / "round-trip-evidence.json"
+            rc = PROBE.main(["--trace-json", str(trace_json), "--output", str(round_trip_output)])
+            self.assertEqual(rc, 0)
+            round_trip = json.loads(round_trip_output.read_text(encoding="utf-8"))
+            self.assertEqual(round_trip["trace_commitment"], evidence["trace_commitment"])
 
 
 if __name__ == "__main__":

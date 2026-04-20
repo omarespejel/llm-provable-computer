@@ -58,6 +58,37 @@ def hash32(label: str) -> str:
     return hashlib.blake2b(label.encode("utf-8"), digest_size=32).hexdigest()
 
 
+def commit_phase44b_phase14_boundary_state(state: dict[str, Any]) -> str:
+    hasher = hashlib.blake2b(digest_size=32)
+    phase29_update_len_prefixed(hasher, "phase44b-phase14-boundary-state-v1")
+    phase29_update_len_prefixed(hasher, state["state_version"])
+    phase29_update_usize(hasher, state["step_index"])
+    phase29_update_usize(hasher, state["position"])
+    for field in (
+        "layout_commitment",
+        "persistent_state_commitment",
+        "kv_history_commitment",
+        "kv_history_sealed_commitment",
+        "kv_history_open_chunk_commitment",
+        "kv_history_frontier_commitment",
+        "lookup_transcript_commitment",
+        "lookup_frontier_commitment",
+        "kv_cache_commitment",
+    ):
+        phase29_update_len_prefixed(hasher, state[field])
+    for field in (
+        "kv_history_length",
+        "kv_history_chunk_size",
+        "kv_history_sealed_chunks",
+        "kv_history_open_chunk_pairs",
+        "kv_history_frontier_pairs",
+        "lookup_transcript_entries",
+        "lookup_frontier_entries",
+    ):
+        phase29_update_usize(hasher, state[field])
+    return hasher.hexdigest()
+
+
 def require_hash32(label: str, value: str) -> None:
     if not isinstance(value, str) or len(value) != 64:
         raise ValueError(f"{label} must be a 32-byte lowercase hex commitment")
@@ -635,7 +666,7 @@ def build_public_projection_logup_relation_bundle(
     )
     return {
         "schema_version": PHASE44B_LOGUP_RELATION_SCHEMA,
-        "domain_separator": PHASE44B_LOGUP_RELATION_SCHEMA,
+        "domain_separator": PHASE44B_LOGUP_BINDING_DOMAIN,
         "row_count": len(row_terms),
         "row_order": [row_term["row_index"] for row_term in row_terms],
         "lookup_z": challenge_bundle["lookup_z"],
@@ -748,8 +779,12 @@ def build_demo_trace() -> dict[str, Any]:
         "pair_width": 2,
         "phase12_start_public_state_commitment": start_state["public_state_commitment"],
         "phase12_end_public_state_commitment": end_state["public_state_commitment"],
-        "phase14_start_boundary_commitment": hash32("phase44b/p14-boundary/start"),
-        "phase14_end_boundary_commitment": hash32("phase44b/p14-boundary/end"),
+        "phase14_start_boundary_commitment": commit_phase44b_phase14_boundary_state(
+            start_state_phase14
+        ),
+        "phase14_end_boundary_commitment": commit_phase44b_phase14_boundary_state(
+            end_state_phase14
+        ),
         "phase12_start_history_commitment": start_state["kv_history_commitment"],
         "phase12_end_history_commitment": end_state["kv_history_commitment"],
         "phase14_start_history_commitment": start_state_phase14["kv_history_commitment"],
@@ -843,6 +878,43 @@ def verify_demo_phase14_state(
         usize_base(f"{label}.{field}", state[field])
 
 
+def verify_demo_trace_boundaries(trace: dict[str, Any]) -> None:
+    first_row = trace["rows"][0]
+    last_row = trace["rows"][-1]
+    expected = {
+        "phase12_start_public_state_commitment": first_row["phase12_from_state"][
+            "public_state_commitment"
+        ],
+        "phase12_end_public_state_commitment": last_row["phase12_to_state"][
+            "public_state_commitment"
+        ],
+        "phase14_start_boundary_commitment": commit_phase44b_phase14_boundary_state(
+            first_row["phase14_from_state"]
+        ),
+        "phase14_end_boundary_commitment": commit_phase44b_phase14_boundary_state(
+            last_row["phase14_to_state"]
+        ),
+        "phase12_start_history_commitment": first_row["phase12_from_state"][
+            "kv_history_commitment"
+        ],
+        "phase12_end_history_commitment": last_row["phase12_to_state"][
+            "kv_history_commitment"
+        ],
+        "phase14_start_history_commitment": first_row["phase14_from_state"][
+            "kv_history_commitment"
+        ],
+        "phase14_end_history_commitment": last_row["phase14_to_state"][
+            "kv_history_commitment"
+        ],
+        "initial_kv_cache_commitment": first_row["phase12_from_state"][
+            "kv_cache_commitment"
+        ],
+    }
+    for key, value in expected.items():
+        if trace[key] != value:
+            raise ValueError(f"{key} does not match trace boundary state")
+
+
 def verify_demo_trace(trace: dict[str, Any]) -> None:
     if trace["issue"] != 180:
         raise ValueError("Phase44B probe must reference issue #180")
@@ -884,6 +956,8 @@ def verify_demo_trace(trace: dict[str, Any]) -> None:
             raise ValueError(f"row {index} shared public-state mismatch on from-state")
         if row["phase12_to_state"]["public_state_commitment"] != row["phase14_to_state"]["public_state_commitment"]:
             raise ValueError(f"row {index} shared public-state mismatch on to-state")
+
+    verify_demo_trace_boundaries(trace)
 
     if trace["phase30_source_chain_commitment"] != commit_phase43_trace_source_chain(trace):
         raise ValueError("source-chain commitment drift")
@@ -960,6 +1034,19 @@ def validate_public_projection_logup_evidence(
         != trace["phase30_step_envelopes_commitment"]
     ):
         raise ValueError("phase30 step-envelope commitment drift")
+    for key in (
+        "phase12_start_public_state_commitment",
+        "phase12_end_public_state_commitment",
+        "phase14_start_boundary_commitment",
+        "phase14_end_boundary_commitment",
+        "phase12_start_history_commitment",
+        "phase12_end_history_commitment",
+        "phase14_start_history_commitment",
+        "phase14_end_history_commitment",
+        "initial_kv_cache_commitment",
+    ):
+        if evidence[key] != trace[key]:
+            raise ValueError(f"{key} drift")
     if evidence["total_steps"] != trace["total_steps"]:
         raise ValueError("total_steps drift")
     if evidence["pair_width"] != trace["pair_width"]:

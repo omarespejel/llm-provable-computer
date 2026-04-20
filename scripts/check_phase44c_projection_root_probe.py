@@ -19,6 +19,15 @@ PHASE43_SURFACE_VERSION = "phase43-history-replay-field-projection-v1"
 HASH32_RE = re.compile(r"^[0-9a-f]{64}$")
 DEFAULT_MANIFEST = pathlib.Path("docs/engineering/design/phase44c-projection-root-manifest.json")
 DEFAULT_EVIDENCE = pathlib.Path("target/phase44c-projection-root-probe/evidence.json")
+EXPECTED_KILL_LABELS = [
+    "row_count_drift",
+    "log_size_drift",
+    "row_order_drift",
+    "row_replacement",
+    "source_surface_version_drift",
+    "canonical_preimage_truncation",
+    "binding_alias_drift",
+]
 
 
 class Phase44CError(Exception):
@@ -108,6 +117,10 @@ def validate_manifest_kill_labels(manifest: dict[str, Any]) -> None:
         manifest_labels == check_labels,
         "kill_labels must match mutation_checks labels in order",
     )
+    require(
+        manifest_labels == EXPECTED_KILL_LABELS,
+        "kill_labels must match the Phase44C expected kill label suite",
+    )
 
 
 def load_stwo_source_mechanics(stwo_root: pathlib.Path) -> dict[str, Any]:
@@ -178,6 +191,7 @@ def validate_preimage(preimage: dict[str, Any]) -> dict[str, Any]:
     }
     canonical_root = hash32_json("phase44c-projection-root-binding-v1", canonical_payload)
     return {
+        "source_surface_version": source_version,
         "projection_row_count": row_count,
         "projection_log_size": log_size,
         "row_labels": row_labels,
@@ -216,6 +230,11 @@ def probe_manifest(manifest: dict[str, Any], stwo_root: pathlib.Path | None = No
     source_mechanics = load_stwo_source_mechanics(stwo_root) if stwo_root is not None else None
     preimage = manifest.get("canonical_source_root_preimage")
     result = validate_preimage(preimage)
+    for field in ("source_surface_version", "projection_row_count", "projection_log_size"):
+        require(
+            manifest.get(field) == result[field],
+            f"{field} must match the canonical source-root preimage",
+        )
     source_emitted_projection_root = require_hash32(
         manifest.get("source_emitted_projection_root"),
         "source_emitted_projection_root",
@@ -266,8 +285,11 @@ def probe_manifest(manifest: dict[str, Any], stwo_root: pathlib.Path | None = No
 
 
 def write_json(path: pathlib.Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(canonical_json(value) + "\n", encoding="utf-8")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(canonical_json(value) + "\n", encoding="utf-8")
+    except OSError as exc:
+        raise Phase44CError(f"failed to write evidence {path}: {exc}") from exc
 
 
 def main(argv: Iterable[str] | None = None) -> int:
