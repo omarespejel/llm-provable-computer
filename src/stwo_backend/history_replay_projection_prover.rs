@@ -4561,6 +4561,8 @@ mod tests {
         commit_phase60_runtime_tensor_witness,
         commit_phase61_first_layer_runtime_witness_pcs_replacement_claim,
         commit_phase61_runtime_witness_pcs_replacement_opening,
+        commit_phase62_proof_carrying_state_continuity_claim,
+        commit_phase62_proof_carrying_state_step_envelope,
         phase44d_prepare_recursive_verifier_public_output_aggregation,
         phase44d_prepare_recursive_verifier_public_output_handoff,
         phase45_prepare_recursive_verifier_public_input_bridge,
@@ -4584,6 +4586,7 @@ mod tests {
         phase60_recommit_runtime_tensor_for_tests,
         phase61_prepare_first_layer_runtime_witness_pcs_replacement_claim,
         phase61_recompute_runtime_witness_pcs_replacement_opening_for_test,
+        phase62_prepare_proof_carrying_state_continuity_claim,
         verify_phase44d_recursive_verifier_public_output_aggregation,
         verify_phase44d_recursive_verifier_public_output_handoff,
         verify_phase44d_recursive_verifier_public_output_handoff_against_boundary,
@@ -4626,13 +4629,17 @@ mod tests {
         verify_phase61_first_layer_runtime_witness_pcs_replacement_claim,
         verify_phase61_first_layer_runtime_witness_pcs_replacement_claim_against_phase60,
         verify_phase61_runtime_witness_pcs_replacement_opening,
-        Phase48RecursiveProofWrapperAttempt, Phase49LayerwiseTensorClaimPropagationContract,
-        Phase50LayerIoClaim, Phase51FirstLayerRelationClaim, Phase52LayerEndpointAnchoringClaim,
+        verify_phase62_proof_carrying_state_continuity_claim,
+        verify_phase62_proof_carrying_state_continuity_claim_against_phase61,
+        verify_phase62_proof_carrying_state_step_envelope, Phase48RecursiveProofWrapperAttempt,
+        Phase49LayerwiseTensorClaimPropagationContract, Phase50LayerIoClaim,
+        Phase51FirstLayerRelationClaim, Phase52LayerEndpointAnchoringClaim,
         Phase53FirstLayerRelationBenchmarkClaim, Phase54FirstLayerSumcheckSkeletonClaim,
         Phase55FirstLayerCompressionEffectivenessClaim, Phase56FirstLayerExecutableSumcheckClaim,
         Phase57FirstLayerMleOpeningVerifierClaim, Phase58FirstLayerWitnessPcsOpeningClaim,
         Phase59FirstLayerRelationWitnessBindingClaim, Phase60FirstLayerRuntimeRelationWitnessClaim,
         Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+        Phase62ProofCarryingStateContinuityClaim, Phase62ProofCarryingStateStepEnvelope,
     };
     use super::super::STWO_BACKEND_VERSION_PHASE12;
     use super::*;
@@ -8543,6 +8550,44 @@ mod tests {
                 .expect("recommit Phase61 claim");
     }
 
+    fn sample_phase62_proof_carrying_state_continuity_claim() -> (
+        Phase53FirstLayerRelationBenchmarkClaim,
+        Phase54FirstLayerSumcheckSkeletonClaim,
+        Phase56FirstLayerExecutableSumcheckClaim,
+        Phase57FirstLayerMleOpeningVerifierClaim,
+        Phase58FirstLayerWitnessPcsOpeningClaim,
+        Phase59FirstLayerRelationWitnessBindingClaim,
+        Phase60FirstLayerRuntimeRelationWitnessClaim,
+        Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+        Phase62ProofCarryingStateContinuityClaim,
+    ) {
+        let (phase53, phase54, phase56, phase57, phase58, phase59, phase60, phase61) =
+            sample_phase61_runtime_witness_pcs_replacement_claim();
+        let phase62 = phase62_prepare_proof_carrying_state_continuity_claim(
+            &phase61, &phase60, &phase59, &phase58, &phase57, &phase56, &phase54, 3,
+        )
+        .expect("prepare Phase62 proof-carrying state-continuity claim");
+        (
+            phase53, phase54, phase56, phase57, phase58, phase59, phase60, phase61, phase62,
+        )
+    }
+
+    fn recommit_phase62_step(step: &mut Phase62ProofCarryingStateStepEnvelope) {
+        step.step_envelope_commitment = commit_phase62_proof_carrying_state_step_envelope(step)
+            .expect("recommit Phase62 step envelope");
+    }
+
+    fn recommit_phase62_claim(claim: &mut Phase62ProofCarryingStateContinuityClaim) {
+        claim.step_envelopes_commitment =
+            super::super::recursion::phase62_commit_step_envelope_commitments_for_tests(
+                &claim.step_envelopes,
+            )
+            .expect("recommit Phase62 step-envelope list");
+        claim.proof_carrying_state_continuity_claim_commitment =
+            commit_phase62_proof_carrying_state_continuity_claim(claim)
+                .expect("recommit Phase62 claim");
+    }
+
     #[test]
     fn phase60_runtime_relation_witness_claim_accepts_actual_first_layer_witness() {
         let (_, phase54, phase56, phase57, phase58, phase59, phase60) =
@@ -8859,6 +8904,215 @@ mod tests {
 
         let error = verify_phase61_first_layer_runtime_witness_pcs_replacement_claim(&phase61)
             .expect_err("Phase61 must reject false recursion/compression claims");
+        assert!(error
+            .to_string()
+            .contains("must not claim recursion, compression"));
+    }
+
+    #[test]
+    fn phase62_proof_carrying_state_continuity_accepts_phase61_backed_chain() {
+        let (_, phase54, phase56, phase57, phase58, phase59, phase60, phase61, phase62) =
+            sample_phase62_proof_carrying_state_continuity_claim();
+
+        verify_phase62_proof_carrying_state_continuity_claim(&phase62)
+            .expect("verify standalone Phase62 state-continuity claim");
+        verify_phase62_proof_carrying_state_continuity_claim_against_phase61(
+            &phase62, &phase61, &phase60, &phase59, &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect("verify Phase62 against Phase61 source chain");
+
+        assert_eq!(phase62.step_count, 3);
+        assert_eq!(phase62.continuity_link_count, 2);
+        assert_eq!(phase62.step_envelopes.len(), 3);
+        assert_eq!(
+            phase62.chain_start_state_commitment,
+            phase62.step_envelopes[0].input_state_commitment
+        );
+        assert_eq!(
+            phase62.chain_end_state_commitment,
+            phase62.step_envelopes[2].output_state_commitment
+        );
+        for step in &phase62.step_envelopes {
+            verify_phase62_proof_carrying_state_step_envelope(step)
+                .expect("verify individual Phase62 step envelope");
+        }
+        for window in phase62.step_envelopes.windows(2) {
+            assert_eq!(
+                window[0].output_state_commitment,
+                window[1].input_state_commitment
+            );
+        }
+        assert!(phase62.phase61_runtime_witness_pcs_replacement_available);
+        assert!(phase62.proof_carrying_state_continuity_available);
+        assert!(phase62.actual_runtime_model_witness_available);
+        assert!(!phase62.recursive_verification_claimed);
+        assert!(!phase62.cryptographic_compression_claimed);
+        assert!(!phase62.breakthrough_claimed);
+        assert!(!phase62.paper_ready);
+    }
+
+    #[test]
+    fn phase62_proof_carrying_state_continuity_rejects_empty_chain_without_panicking() {
+        let (_, _, _, _, _, _, _, _, mut phase62) =
+            sample_phase62_proof_carrying_state_continuity_claim();
+
+        phase62.step_envelopes.clear();
+        phase62.step_count = 0;
+        phase62.continuity_link_count = 0;
+        recommit_phase62_claim(&mut phase62);
+
+        let result = std::panic::catch_unwind(|| {
+            verify_phase62_proof_carrying_state_continuity_claim(&phase62)
+        });
+        match result {
+            Ok(Err(error)) => assert!(
+                error.to_string().contains("multi-step envelope chain"),
+                "{error}"
+            ),
+            Ok(Ok(())) => panic!("empty Phase62 chain must be rejected"),
+            Err(_) => panic!("empty Phase62 chain must return Err, not panic"),
+        }
+    }
+
+    #[test]
+    fn phase62_proof_carrying_state_continuity_rejects_broken_link_even_when_recommitted() {
+        let (_, _, _, _, _, _, _, _, mut phase62) =
+            sample_phase62_proof_carrying_state_continuity_claim();
+
+        phase62.step_envelopes[1].input_state_commitment = hash32('d');
+        recommit_phase62_step(&mut phase62.step_envelopes[1]);
+        recommit_phase62_claim(&mut phase62);
+
+        let error = verify_phase62_proof_carrying_state_continuity_claim(&phase62)
+            .expect_err("Phase62 must reject broken adjacent state continuity");
+        let message = error.to_string();
+        assert!(
+            message.contains("output state drift") || message.contains("link drift"),
+            "{message}"
+        );
+    }
+
+    #[test]
+    fn phase62_proof_carrying_state_continuity_rejects_output_state_drift_even_when_recommitted() {
+        let (_, _, _, _, _, _, _, _, mut phase62) =
+            sample_phase62_proof_carrying_state_continuity_claim();
+
+        phase62.step_envelopes[0].output_state_commitment = hash32('e');
+        recommit_phase62_step(&mut phase62.step_envelopes[0]);
+        phase62.step_envelopes[1].input_state_commitment =
+            phase62.step_envelopes[0].output_state_commitment.clone();
+        recommit_phase62_step(&mut phase62.step_envelopes[1]);
+        recommit_phase62_claim(&mut phase62);
+
+        let error = verify_phase62_proof_carrying_state_continuity_claim(&phase62)
+            .expect_err("Phase62 must reject stale deterministic output state");
+        assert!(error.to_string().contains("output state drift"));
+    }
+
+    #[test]
+    fn phase62_proof_carrying_state_continuity_rejects_step_index_drift() {
+        let (_, _, _, _, _, _, _, _, mut phase62) =
+            sample_phase62_proof_carrying_state_continuity_claim();
+
+        phase62.step_envelopes[1].step_index = 7;
+        recommit_phase62_step(&mut phase62.step_envelopes[1]);
+        recommit_phase62_claim(&mut phase62);
+
+        let error = verify_phase62_proof_carrying_state_continuity_claim(&phase62)
+            .expect_err("Phase62 must reject non-canonical step ordering");
+        let message = error.to_string();
+        assert!(
+            message.contains("output state drift") || message.contains("step index drift"),
+            "{message}"
+        );
+    }
+
+    #[test]
+    fn phase62_proof_carrying_state_continuity_rejects_duplicate_step_envelope() {
+        let (_, _, _, _, _, _, _, _, mut phase62) =
+            sample_phase62_proof_carrying_state_continuity_claim();
+
+        phase62.step_envelopes[1] = phase62.step_envelopes[0].clone();
+        recommit_phase62_claim(&mut phase62);
+
+        let error = verify_phase62_proof_carrying_state_continuity_claim(&phase62)
+            .expect_err("Phase62 must reject duplicate step envelope reuse");
+        let message = error.to_string();
+        assert!(
+            message.contains("duplicate step envelope")
+                || message.contains("step index drift")
+                || message.contains("link drift"),
+            "{message}"
+        );
+    }
+
+    #[test]
+    fn phase62_proof_carrying_state_continuity_rejects_surface_accounting_drift() {
+        let (_, _, _, _, _, _, _, _, mut phase62) =
+            sample_phase62_proof_carrying_state_continuity_claim();
+
+        phase62.combined_verifier_surface_unit_count += 1;
+        recommit_phase62_claim(&mut phase62);
+
+        let error = verify_phase62_proof_carrying_state_continuity_claim(&phase62)
+            .expect_err("Phase62 must reject inflated combined surface accounting");
+        assert!(error.to_string().contains("surface accounting drift"));
+    }
+
+    #[test]
+    fn phase62_proof_carrying_state_continuity_rejects_unbound_chain_start_source() {
+        let (_, _, _, _, _, _, _, _, mut phase62) =
+            sample_phase62_proof_carrying_state_continuity_claim();
+
+        for step in &mut phase62.step_envelopes {
+            step.source_phase60_input_tensor_witness_commitment = hash32('a');
+            recommit_phase62_step(step);
+        }
+        recommit_phase62_claim(&mut phase62);
+
+        let error = verify_phase62_proof_carrying_state_continuity_claim(&phase62)
+            .expect_err("Phase62 must reject input tensor drift not reflected in chain start");
+        assert!(error
+            .to_string()
+            .contains("chain start does not match derived source commitments"));
+    }
+
+    #[test]
+    fn phase62_proof_carrying_state_continuity_rejects_phase61_source_drift() {
+        let (_, phase54, phase56, phase57, phase58, phase59, phase60, phase61, mut phase62) =
+            sample_phase62_proof_carrying_state_continuity_claim();
+
+        phase62.source_phase61_runtime_witness_pcs_replacement_claim_commitment = hash32('f');
+        for step in &mut phase62.step_envelopes {
+            step.source_phase61_runtime_witness_pcs_replacement_claim_commitment = phase62
+                .source_phase61_runtime_witness_pcs_replacement_claim_commitment
+                .clone();
+        }
+        super::super::recursion::phase62_recompute_state_continuity_chain_for_tests(&mut phase62)
+            .expect("recompute Phase62 source-drift chain");
+
+        verify_phase62_proof_carrying_state_continuity_claim(&phase62)
+            .expect("standalone Phase62 accepts internally bound source hash");
+        let error = verify_phase62_proof_carrying_state_continuity_claim_against_phase61(
+            &phase62, &phase61, &phase60, &phase59, &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect_err("Phase62 must reject wrong Phase61 source");
+        assert!(error.to_string().contains("source drift against Phase61"));
+    }
+
+    #[test]
+    fn phase62_proof_carrying_state_continuity_rejects_false_recursion_and_paper_flags() {
+        let (_, _, _, _, _, _, _, _, mut phase62) =
+            sample_phase62_proof_carrying_state_continuity_claim();
+
+        phase62.recursive_verification_claimed = true;
+        phase62.cryptographic_compression_claimed = true;
+        phase62.breakthrough_claimed = true;
+        phase62.paper_ready = true;
+        recommit_phase62_claim(&mut phase62);
+
+        let error = verify_phase62_proof_carrying_state_continuity_claim(&phase62)
+            .expect_err("Phase62 must reject false recursion/compression claims");
         assert!(error
             .to_string()
             .contains("must not claim recursion, compression"));
