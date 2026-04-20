@@ -17498,6 +17498,15 @@ pub fn verify_phase63_shared_lookup_identity_claim(
             "Phase 63 shared lookup step binding commitment drift".to_string(),
         ));
     }
+    let expected_registry = phase63_static_lookup_registry_commitment_from_parts(
+        &claim.normalization_table_commitment,
+        &claim.activation_table_commitment,
+    )?;
+    if claim.lookup_table_registry_commitment != expected_registry {
+        return Err(VmError::InvalidConfig(
+            "Phase 63 shared lookup table registry commitment drift".to_string(),
+        ));
+    }
     if claim.verifier_side_complexity != STWO_SHARED_LOOKUP_IDENTITY_COMPLEXITY_PHASE63
         || claim.verifier_status != STWO_SHARED_LOOKUP_IDENTITY_STATUS_PHASE63
         || claim.transcript_order != phase63_shared_lookup_identity_transcript_order()
@@ -17559,8 +17568,10 @@ pub fn verify_phase63_shared_lookup_identity_claim_against_phase62(
     verify_phase62_proof_carrying_state_continuity_claim(phase62_claim)?;
     verify_phase63_shared_lookup_identity_claim(claim)?;
     let identity = phase63_derive_lookup_identity_commitments(phase62_claim)?;
-    if claim.source_phase62_state_continuity_claim_commitment
-        != phase62_claim.proof_carrying_state_continuity_claim_commitment
+    if claim.step_count != phase62_claim.step_count
+        || claim.step_lookup_bindings.len() != phase62_claim.step_envelopes.len()
+        || claim.source_phase62_state_continuity_claim_commitment
+            != phase62_claim.proof_carrying_state_continuity_claim_commitment
         || claim.source_phase61_runtime_witness_pcs_replacement_claim_commitment
             != phase62_claim.source_phase61_runtime_witness_pcs_replacement_claim_commitment
         || claim.source_phase60_runtime_relation_witness_claim_commitment
@@ -17989,8 +18000,10 @@ pub fn verify_phase64_typed_carried_state_claim_against_phase63(
 ) -> Result<()> {
     verify_phase63_shared_lookup_identity_claim_against_phase62(phase63_claim, phase62_claim)?;
     verify_phase64_typed_carried_state_claim(claim)?;
-    if claim.source_phase63_shared_lookup_identity_claim_commitment
-        != phase63_claim.shared_lookup_identity_claim_commitment
+    if claim.step_count != phase63_claim.step_count
+        || claim.typed_steps.len() != phase62_claim.step_envelopes.len()
+        || claim.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
         || claim.source_phase62_state_continuity_claim_commitment
             != phase62_claim.proof_carrying_state_continuity_claim_commitment
         || claim.shared_lookup_identity_commitment
@@ -18049,6 +18062,16 @@ pub fn phase65_prepare_transformer_transition_artifact(
         phase64_claim,
         phase63_claim,
         phase62_claim,
+    )?;
+    verify_phase62_proof_carrying_state_continuity_claim_against_phase61(
+        phase62_claim,
+        phase61_claim,
+        phase60_claim,
+        phase59_claim,
+        phase58_claim,
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
     )?;
     verify_phase61_first_layer_runtime_witness_pcs_replacement_claim_against_phase60(
         phase61_claim,
@@ -18440,6 +18463,16 @@ pub fn verify_phase65_transformer_transition_artifact_against_sources(
         phase63_claim,
         phase62_claim,
     )?;
+    verify_phase62_proof_carrying_state_continuity_claim_against_phase61(
+        phase62_claim,
+        phase61_claim,
+        phase60_claim,
+        phase59_claim,
+        phase58_claim,
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
     verify_phase61_first_layer_runtime_witness_pcs_replacement_claim_against_phase60(
         phase61_claim,
         phase60_claim,
@@ -18451,8 +18484,10 @@ pub fn verify_phase65_transformer_transition_artifact_against_sources(
     )?;
     verify_phase65_transformer_transition_artifact(artifact)?;
     let expected_tensor_relation = phase65_tensor_relation_commitment(phase60_claim)?;
-    if artifact.source_phase64_typed_carried_state_claim_commitment
-        != phase64_claim.typed_carried_state_claim_commitment
+    if artifact.step_count != phase64_claim.step_count
+        || artifact.transition_steps.len() != phase64_claim.typed_steps.len()
+        || artifact.source_phase64_typed_carried_state_claim_commitment
+            != phase64_claim.typed_carried_state_claim_commitment
         || artifact.source_phase63_shared_lookup_identity_claim_commitment
             != phase63_claim.shared_lookup_identity_claim_commitment
         || artifact.source_phase62_state_continuity_claim_commitment
@@ -18528,25 +18563,10 @@ fn phase63_derive_lookup_identity_commitments(
         phase62_claim,
         STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12,
     )?;
-    let lookup_table_registry_commitment = {
-        let mut hasher = Blake2bVar::new(32).map_err(|err| {
-            VmError::InvalidConfig(format!(
-                "failed to initialize Phase 63 lookup registry hash: {err}"
-            ))
-        })?;
-        phase29_update_len_prefixed(&mut hasher, b"phase63-static-lookup-table-registry");
-        for part in [
-            STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12.as_bytes(),
-            STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12.as_bytes(),
-            STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12.as_bytes(),
-            normalization_table_commitment.as_bytes(),
-            STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12.as_bytes(),
-            activation_table_commitment.as_bytes(),
-        ] {
-            phase29_update_len_prefixed(&mut hasher, part);
-        }
-        phase44d_finalize_hash(hasher, "Phase 63 static lookup registry")?
-    };
+    let lookup_table_registry_commitment = phase63_static_lookup_registry_commitment_from_parts(
+        &normalization_table_commitment,
+        &activation_table_commitment,
+    )?;
     let shared_lookup_identity_commitment = {
         let mut hasher = Blake2bVar::new(32).map_err(|err| {
             VmError::InvalidConfig(format!(
@@ -18608,6 +18628,30 @@ fn phase63_hash_lookup_identity_part(
     }
     phase29_update_usize(&mut hasher, phase62_claim.step_count);
     phase44d_finalize_hash(hasher, "Phase 63 lookup identity part")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase63_static_lookup_registry_commitment_from_parts(
+    normalization_table_commitment: &str,
+    activation_table_commitment: &str,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 63 lookup registry hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase63-static-lookup-table-registry");
+    for part in [
+        STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12.as_bytes(),
+        STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12.as_bytes(),
+        STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12.as_bytes(),
+        normalization_table_commitment.as_bytes(),
+        STWO_SHARED_STATIC_ACTIVATION_TABLE_ID_PHASE12.as_bytes(),
+        activation_table_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 63 static lookup registry")
 }
 
 #[cfg(feature = "stwo-backend")]

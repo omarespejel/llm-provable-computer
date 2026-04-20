@@ -9331,6 +9331,24 @@ mod tests {
     }
 
     #[test]
+    fn phase63_shared_lookup_identity_rejects_recommitted_registry_drift() {
+        let (_, _, _, _, _, _, _, _, _, mut phase63) =
+            sample_phase63_shared_lookup_identity_claim();
+
+        phase63.lookup_table_registry_commitment = hash32('f');
+        for binding in &mut phase63.step_lookup_bindings {
+            binding.lookup_table_registry_commitment =
+                phase63.lookup_table_registry_commitment.clone();
+            recommit_phase63_binding(binding);
+        }
+        recommit_phase63_claim(&mut phase63);
+
+        let error = verify_phase63_shared_lookup_identity_claim(&phase63)
+            .expect_err("Phase63 must reject registry drift even when bindings are recommitted");
+        assert!(error.to_string().contains("registry commitment drift"));
+    }
+
+    #[test]
     fn phase63_shared_lookup_identity_rejects_phase62_source_drift() {
         let (_, _, _, _, _, _, _, _, phase62, mut phase63) =
             sample_phase63_shared_lookup_identity_claim();
