@@ -495,6 +495,8 @@ const STWO_FIRST_LAYER_WITNESS_PCS_OPENING_STATUS_PHASE58: &str =
 const STWO_FIRST_LAYER_WITNESS_PCS_OPENING_NEXT_STEP_PHASE58: &str =
     "integrate_phase58_openings_into_full_first_layer_relation_witness_and_recursive_aggregation";
 #[cfg(feature = "stwo-backend")]
+const PHASE58_MAX_PCS_LIFTING_LOG_SIZE: u32 = 64;
+#[cfg(feature = "stwo-backend")]
 const PHASE44D_M31_MODULUS: u32 = (1u32 << 31) - 1;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -13743,6 +13745,11 @@ fn phase58_lifted_circle_point(
                 .to_string(),
         ));
     }
+    if lifting_log_size > PHASE58_MAX_PCS_LIFTING_LOG_SIZE {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS lifting log size exceeds bounded verifier limit".to_string(),
+        ));
+    }
     Ok(phase58_circle_point_from_index(point_index)?
         .repeated_double(lifting_log_size - extended_log_size))
 }
@@ -13782,13 +13789,14 @@ fn phase58_circle_sample_value(
 }
 
 #[cfg(feature = "stwo-backend")]
-fn phase58_stwo_pcs_api_sample_point(
+fn phase58_unlifted_stwo_pcs_api_sample_point(
     opening: &Phase58WitnessBoundPcsOpening,
 ) -> Result<Vec<CirclePoint<SecureField>>> {
-    // S-two's PCS API expects the unlifted OODS point here. `prove_values` and
-    // `verify_values` internally evaluate each column at
-    // `point.repeated_double(lifting_log_size - column_log_size)`, which is the
-    // lifted point used by `phase58_circle_sample_value`.
+    // S-two's PCS API expects the unlifted OODS point here. Its prover/verifier
+    // path lifts each column relative to the committed domain, equivalent to
+    // `lifting_log_size - (pcs_column_log_size + fri_log_blowup)`. Phase58 uses
+    // that same lifted point only when recomputing the sampled value; pre-lifting
+    // this API argument would double-lift it.
     phase58_circle_point_from_index(opening.pcs_opening_point_index).map(|point| vec![point])
 }
 
@@ -13964,7 +13972,7 @@ fn phase58_build_pcs_opening_proof(openings: &[Phase58WitnessBoundPcsOpening]) -
     tree_builder.commit(channel);
     let sampled_points = TreeVec(vec![openings
         .iter()
-        .map(phase58_stwo_pcs_api_sample_point)
+        .map(phase58_unlifted_stwo_pcs_api_sample_point)
         .collect::<Result<Vec<_>>>()?]);
     let proof = commitment_scheme.prove_values(sampled_points, channel);
     let bytes = serde_json::to_vec(&Phase58PcsOpeningProofPayload { proof: proof.proof })
@@ -14017,7 +14025,7 @@ fn phase58_verify_pcs_opening_proof_bytes(
     }
     let sampled_points = TreeVec(vec![openings
         .iter()
-        .map(phase58_stwo_pcs_api_sample_point)
+        .map(phase58_unlifted_stwo_pcs_api_sample_point)
         .collect::<Result<Vec<_>>>()?]);
     let log_sizes = openings
         .iter()

@@ -8020,6 +8020,18 @@ mod tests {
     }
 
     #[test]
+    fn phase58_witness_pcs_opening_claim_rejects_unbounded_lifting_log_size() {
+        let (_, _, _, _, mut phase58) = sample_phase58_witness_pcs_opening_claim();
+
+        phase58.opening_proofs[0].pcs_lifting_log_size = 65;
+        let error = verify_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+            .expect_err("Phase58 must reject oversized PCS lifting log size");
+        assert!(error
+            .to_string()
+            .contains("lifting log size exceeds bounded verifier limit"));
+    }
+
+    #[test]
     fn phase58_witness_pcs_opening_claim_rejects_pcs_proof_tamper_even_when_recommitted() {
         let (_, _, _, _, mut phase58) = sample_phase58_witness_pcs_opening_claim();
 
