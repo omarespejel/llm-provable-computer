@@ -19306,7 +19306,7 @@ pub fn verify_phase66_transformer_chain_link(link: &Phase66TransformerChainLink)
     if let Some(previous) = &link.previous_output_carried_state_commitment {
         phase43_require_hash32("phase66_previous_output_carried_state_commitment", previous)?;
     }
-    if link.output_position != link.input_position.saturating_add(1) {
+    if link.input_position.checked_add(1) != Some(link.output_position) {
         return Err(VmError::InvalidConfig(
             "Phase 66 transformer chain link position drift".to_string(),
         ));

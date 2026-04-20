@@ -9024,6 +9024,15 @@ mod tests {
                 "Phase68 oracle: invalid chain length".to_string(),
             ));
         }
+        let expected_continuity_link_count =
+            artifact.chain_links.len().checked_sub(1).ok_or_else(|| {
+                VmError::InvalidConfig("Phase68 oracle: invalid chain length".to_string())
+            })?;
+        if artifact.continuity_link_count != expected_continuity_link_count {
+            return Err(VmError::InvalidConfig(
+                "Phase68 oracle: continuity count drift".to_string(),
+            ));
+        }
         let mut previous_state = None::<String>;
         let mut previous_position = None::<usize>;
         for (expected_index, link) in artifact.chain_links.iter().enumerate() {
@@ -9060,7 +9069,7 @@ mod tests {
                     ));
                 }
             }
-            if link.output_position != link.input_position + 1 {
+            if link.input_position.checked_add(1) != Some(link.output_position) {
                 return Err(VmError::InvalidConfig(
                     "Phase68 oracle: local position drift".to_string(),
                 ));
@@ -9076,6 +9085,13 @@ mod tests {
                     .last()
                     .expect("last link")
                     .output_carried_state_commitment
+            || artifact.chain_start_position != artifact.chain_links[0].input_position
+            || artifact.chain_end_position
+                != artifact
+                    .chain_links
+                    .last()
+                    .expect("last link")
+                    .output_position
         {
             return Err(VmError::InvalidConfig(
                 "Phase68 oracle: chain summary drift".to_string(),
@@ -10036,6 +10052,39 @@ mod tests {
         let oracle_error = phase68_slow_chain_replay_oracle(&phase66)
             .expect_err("Phase68 oracle must reject carried-state continuity drift");
         assert!(oracle_error.to_string().contains("continuity drift"));
+    }
+
+    #[test]
+    fn phase68_slow_chain_replay_oracle_rejects_position_summary_and_overflow_drift() {
+        let (_, _, _, _, _, _, _, _, _, _, _, _, mut phase66) =
+            sample_phase66_transformer_chain_artifact();
+
+        phase66.continuity_link_count = 0;
+        recommit_phase66_artifact(&mut phase66);
+        let error = phase68_slow_chain_replay_oracle(&phase66)
+            .expect_err("Phase68 oracle must reject continuity count drift");
+        assert!(error.to_string().contains("continuity count drift"));
+
+        let (_, _, _, _, _, _, _, _, _, _, _, _, mut phase66) =
+            sample_phase66_transformer_chain_artifact();
+        phase66.chain_start_position += 1;
+        recommit_phase66_artifact(&mut phase66);
+        let error = phase68_slow_chain_replay_oracle(&phase66)
+            .expect_err("Phase68 oracle must reject chain summary position drift");
+        assert!(error.to_string().contains("chain summary drift"));
+
+        let (_, _, _, _, _, _, _, _, _, _, _, _, mut phase66) =
+            sample_phase66_transformer_chain_artifact();
+        phase66.chain_links[0].input_position = usize::MAX;
+        phase66.chain_links[0].output_position = usize::MAX;
+        recommit_phase66_link(&mut phase66.chain_links[0]);
+        recommit_phase66_artifact(&mut phase66);
+        let production_error = verify_phase66_transformer_chain_artifact(&phase66)
+            .expect_err("Phase66 must reject overflowing link position");
+        assert!(production_error.to_string().contains("position drift"));
+        let oracle_error = phase68_slow_chain_replay_oracle(&phase66)
+            .expect_err("Phase68 oracle must reject overflowing link position");
+        assert!(oracle_error.to_string().contains("local position drift"));
     }
 
     #[test]
