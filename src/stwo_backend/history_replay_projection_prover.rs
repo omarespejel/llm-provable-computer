@@ -8636,29 +8636,14 @@ mod tests {
     fn recompute_phase63_shared_lookup_identity_for_test(
         claim: &Phase63SharedLookupIdentityClaim,
     ) -> Result<String> {
-        let mut hasher = Blake2bVar::new(32).map_err(|err| {
-            VmError::InvalidConfig(format!(
-                "failed to initialize Phase63 test shared lookup identity hash: {err}"
-            ))
-        })?;
-        update_len_prefixed(&mut hasher, b"phase63-shared-lookup-identity");
-        for part in [
-            claim
-                .source_phase62_state_continuity_claim_commitment
-                .as_bytes(),
-            claim.relation_template_commitment.as_bytes(),
-            claim
-                .source_phase61_runtime_witness_pcs_replacement_claim_commitment
-                .as_bytes(),
-            claim
-                .source_phase60_runtime_relation_witness_claim_commitment
-                .as_bytes(),
-            claim.lookup_table_registry_commitment.as_bytes(),
-        ] {
-            update_len_prefixed(&mut hasher, part);
-        }
-        update_usize(&mut hasher, claim.step_count);
-        finalize_hash32(hasher, "Phase63 test shared lookup identity")
+        super::super::recursion::phase63_shared_lookup_identity_commitment_from_parts_for_tests(
+            &claim.source_phase62_state_continuity_claim_commitment,
+            &claim.relation_template_commitment,
+            &claim.source_phase61_runtime_witness_pcs_replacement_claim_commitment,
+            &claim.source_phase60_runtime_relation_witness_claim_commitment,
+            &claim.lookup_table_registry_commitment,
+            claim.step_count,
+        )
     }
 
     fn recommit_phase63_claim_preserving_step_bindings(

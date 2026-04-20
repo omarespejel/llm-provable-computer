@@ -18567,37 +18567,67 @@ fn phase63_derive_lookup_identity_commitments(
         &normalization_table_commitment,
         &activation_table_commitment,
     )?;
-    let shared_lookup_identity_commitment = {
-        let mut hasher = Blake2bVar::new(32).map_err(|err| {
-            VmError::InvalidConfig(format!(
-                "failed to initialize Phase 63 shared lookup identity hash: {err}"
-            ))
-        })?;
-        phase29_update_len_prefixed(&mut hasher, b"phase63-shared-lookup-identity");
-        for part in [
-            phase62_claim
-                .proof_carrying_state_continuity_claim_commitment
-                .as_bytes(),
-            phase62_claim.relation_template_commitment.as_bytes(),
-            phase62_claim
-                .source_phase61_runtime_witness_pcs_replacement_claim_commitment
-                .as_bytes(),
-            phase62_claim
-                .source_phase60_runtime_relation_witness_claim_commitment
-                .as_bytes(),
-            lookup_table_registry_commitment.as_bytes(),
-        ] {
-            phase29_update_len_prefixed(&mut hasher, part);
-        }
-        phase29_update_usize(&mut hasher, phase62_claim.step_count);
-        phase44d_finalize_hash(hasher, "Phase 63 shared lookup identity")?
-    };
+    let shared_lookup_identity_commitment = phase63_shared_lookup_identity_commitment_from_parts(
+        &phase62_claim.proof_carrying_state_continuity_claim_commitment,
+        &phase62_claim.relation_template_commitment,
+        &phase62_claim.source_phase61_runtime_witness_pcs_replacement_claim_commitment,
+        &phase62_claim.source_phase60_runtime_relation_witness_claim_commitment,
+        &lookup_table_registry_commitment,
+        phase62_claim.step_count,
+    )?;
     Ok(Phase63LookupIdentityCommitments {
         shared_lookup_identity_commitment,
         lookup_table_registry_commitment,
         normalization_table_commitment,
         activation_table_commitment,
     })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase63_shared_lookup_identity_commitment_from_parts(
+    source_phase62_state_continuity_claim_commitment: &str,
+    relation_template_commitment: &str,
+    source_phase61_runtime_witness_pcs_replacement_claim_commitment: &str,
+    source_phase60_runtime_relation_witness_claim_commitment: &str,
+    lookup_table_registry_commitment: &str,
+    step_count: usize,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 63 shared lookup identity hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase63-shared-lookup-identity");
+    for part in [
+        source_phase62_state_continuity_claim_commitment.as_bytes(),
+        relation_template_commitment.as_bytes(),
+        source_phase61_runtime_witness_pcs_replacement_claim_commitment.as_bytes(),
+        source_phase60_runtime_relation_witness_claim_commitment.as_bytes(),
+        lookup_table_registry_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, step_count);
+    phase44d_finalize_hash(hasher, "Phase 63 shared lookup identity")
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+pub(crate) fn phase63_shared_lookup_identity_commitment_from_parts_for_tests(
+    source_phase62_state_continuity_claim_commitment: &str,
+    relation_template_commitment: &str,
+    source_phase61_runtime_witness_pcs_replacement_claim_commitment: &str,
+    source_phase60_runtime_relation_witness_claim_commitment: &str,
+    lookup_table_registry_commitment: &str,
+    step_count: usize,
+) -> Result<String> {
+    phase63_shared_lookup_identity_commitment_from_parts(
+        source_phase62_state_continuity_claim_commitment,
+        relation_template_commitment,
+        source_phase61_runtime_witness_pcs_replacement_claim_commitment,
+        source_phase60_runtime_relation_witness_claim_commitment,
+        lookup_table_registry_commitment,
+        step_count,
+    )
 }
 
 #[cfg(feature = "stwo-backend")]
