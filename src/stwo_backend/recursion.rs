@@ -15466,6 +15466,30 @@ pub fn verify_phase61_runtime_witness_pcs_replacement_opening(
     Ok(())
 }
 
+#[cfg(all(test, feature = "stwo-backend"))]
+pub(crate) fn phase61_recompute_runtime_witness_pcs_replacement_opening_for_test(
+    opening: &mut Phase58WitnessBoundPcsOpening,
+) -> Result<()> {
+    opening.raw_witness_commitment = phase52_commit_raw_tensor_values(&opening.raw_witness_values)?;
+    let expected_mle_value =
+        phase52_evaluate_padded_mle(&opening.raw_witness_values, &opening.opening_point)?;
+    opening.opened_value = expected_mle_value;
+    opening.recomputed_mle_value = expected_mle_value;
+    opening.pcs_opening_point_index = phase61_derive_pcs_opening_point_index(opening)?;
+    opening.pcs_sampled_value_limbs = phase58_secure_field_limbs(phase58_circle_sample_value(
+        &opening.raw_witness_values,
+        opening.pcs_column_log_size,
+        opening.pcs_lifting_log_size,
+        opening.pcs_opening_point_index,
+    )?);
+    opening.pcs_sampled_value_commitment =
+        phase58_commit_pcs_sampled_value_limbs(&opening.pcs_sampled_value_limbs)?;
+    opening.measured_witness_bytes = phase58_witness_opening_payload_bytes(opening)?;
+    opening.opening_proof_commitment =
+        commit_phase61_runtime_witness_pcs_replacement_opening(opening)?;
+    Ok(())
+}
+
 #[cfg(feature = "stwo-backend")]
 pub fn verify_phase61_first_layer_runtime_witness_pcs_replacement_claim(
     claim: &Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
@@ -15541,12 +15565,38 @@ pub fn verify_phase61_first_layer_runtime_witness_pcs_replacement_claim(
             "Phase 61 runtime witness PCS replacement claim opening count drift".to_string(),
         ));
     }
+    // Phase54 opening commitments are per component/parameter, so the
+    // standalone verifier rejects duplicate source reuse here and the
+    // source-bound verifier below checks exact Phase58 provenance membership.
+    let mut seen_source_phase57_receipts = Vec::with_capacity(claim.replacement_openings.len());
+    let mut seen_source_bindings = Vec::with_capacity(claim.replacement_openings.len());
     for (opening, (expected_name, expected_kind, expected_shape)) in claim
         .replacement_openings
         .iter()
         .zip(expected_opening_specs.iter())
     {
         verify_phase61_runtime_witness_pcs_replacement_opening(opening)?;
+        if seen_source_phase57_receipts.contains(&opening.source_phase57_opening_receipt_commitment)
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 61 runtime witness PCS replacement opening mixed Phase57/Phase54 provenance"
+                    .to_string(),
+            ));
+        }
+        seen_source_phase57_receipts
+            .push(opening.source_phase57_opening_receipt_commitment.clone());
+        let source_binding = (
+            opening.source_phase54_opening_claim_commitment.clone(),
+            opening.opening_kind.clone(),
+            opening.opening_name.clone(),
+        );
+        if seen_source_bindings.contains(&source_binding) {
+            return Err(VmError::InvalidConfig(
+                "Phase 61 runtime witness PCS replacement opening mixed Phase57/Phase54 provenance"
+                    .to_string(),
+            ));
+        }
+        seen_source_bindings.push(source_binding);
         if opening.source_phase56_executable_claim_commitment
             != claim.source_phase56_executable_claim_commitment
         {
@@ -15602,10 +15652,26 @@ pub fn verify_phase61_first_layer_runtime_witness_pcs_replacement_claim(
         .map(|opening| opening.pcs_lifting_log_size)
         .max()
         .unwrap_or(0);
+    let expected_pcs_lifting_log_size = claim
+        .replacement_openings
+        .iter()
+        .map(|opening| {
+            opening
+                .pcs_column_log_size
+                .checked_add(phase58_pcs_config().fri_config.log_blowup_factor)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig("Phase 61 PCS lifting log-size overflow".to_string())
+                })
+        })
+        .collect::<Result<Vec<_>>>()?
+        .into_iter()
+        .max()
+        .unwrap_or(0);
     if claim
         .replacement_openings
         .iter()
         .any(|opening| opening.pcs_lifting_log_size != pcs_lifting_log_size)
+        || pcs_lifting_log_size != expected_pcs_lifting_log_size
     {
         return Err(VmError::InvalidConfig(
             "Phase 61 runtime witness PCS replacement claim mixed lifting log sizes".to_string(),

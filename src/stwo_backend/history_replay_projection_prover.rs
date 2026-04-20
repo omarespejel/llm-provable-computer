@@ -4583,6 +4583,7 @@ mod tests {
         phase60_prepare_first_layer_runtime_relation_witness_claim,
         phase60_recommit_runtime_tensor_for_tests,
         phase61_prepare_first_layer_runtime_witness_pcs_replacement_claim,
+        phase61_recompute_runtime_witness_pcs_replacement_opening_for_test,
         verify_phase44d_recursive_verifier_public_output_aggregation,
         verify_phase44d_recursive_verifier_public_output_handoff,
         verify_phase44d_recursive_verifier_public_output_handoff_against_boundary,
@@ -8711,10 +8712,23 @@ mod tests {
         assert!(!phase61.cryptographic_compression_claimed);
         assert!(!phase61.breakthrough_claimed);
         assert!(!phase61.paper_ready);
-        assert_ne!(
-            phase61.replacement_openings[0].raw_witness_values,
-            phase58.opening_proofs[0].raw_witness_values
-        );
+        for replacement in phase61
+            .replacement_openings
+            .iter()
+            .filter(|opening| opening.opening_kind == "runtime_tensor_mle_opening")
+        {
+            let synthetic = phase58
+                .opening_proofs
+                .iter()
+                .find(|opening| {
+                    opening.opening_name == replacement.opening_name
+                        && opening.opening_kind == replacement.opening_kind
+                        && opening.tensor_shape == replacement.tensor_shape
+                        && opening.opening_point == replacement.opening_point
+                })
+                .expect("matching Phase58 synthetic opening");
+            assert_ne!(replacement.raw_witness_values, synthetic.raw_witness_values);
+        }
     }
 
     #[test]
@@ -8735,6 +8749,52 @@ mod tests {
         )
         .expect_err("Phase61 opening must reject stale actual MLE recomputation");
         assert!(error.to_string().contains("actual MLE recomputation drift"));
+        let error = verify_phase61_first_layer_runtime_witness_pcs_replacement_claim(&phase61)
+            .expect_err("Phase61 claim must reject stale actual MLE recomputation drift");
+        assert!(error.to_string().contains("actual MLE recomputation drift"));
+    }
+
+    #[test]
+    fn phase61_runtime_witness_pcs_replacement_rejects_duplicate_source_provenance() {
+        let (_, _, _, _, _, _, _, mut phase61) =
+            sample_phase61_runtime_witness_pcs_replacement_claim();
+
+        phase61.replacement_openings[0].source_phase57_opening_receipt_commitment = phase61
+            .replacement_openings[1]
+            .source_phase57_opening_receipt_commitment
+            .clone();
+        phase61_recompute_runtime_witness_pcs_replacement_opening_for_test(
+            &mut phase61.replacement_openings[0],
+        )
+        .expect("recompute mutated Phase61 opening");
+        recommit_phase61_claim(&mut phase61);
+
+        let error = verify_phase61_first_layer_runtime_witness_pcs_replacement_claim(&phase61)
+            .expect_err("Phase61 must reject duplicated Phase57/Phase54 provenance");
+        let message = error.to_string();
+        assert!(
+            message.contains("mixed Phase57/Phase54 provenance"),
+            "{message}"
+        );
+    }
+
+    #[test]
+    fn phase61_runtime_witness_pcs_replacement_rejects_inflated_lifting_log_size() {
+        let (_, _, _, _, _, _, _, mut phase61) =
+            sample_phase61_runtime_witness_pcs_replacement_claim();
+
+        phase61.pcs_lifting_log_size += 1;
+        for opening in &mut phase61.replacement_openings {
+            opening.pcs_lifting_log_size = phase61.pcs_lifting_log_size;
+            phase61_recompute_runtime_witness_pcs_replacement_opening_for_test(opening)
+                .expect("recompute inflated Phase61 opening");
+        }
+        recommit_phase61_claim(&mut phase61);
+
+        let error = verify_phase61_first_layer_runtime_witness_pcs_replacement_claim(&phase61)
+            .expect_err("Phase61 must reject non-canonical PCS lifting log size");
+        let message = error.to_string();
+        assert!(message.contains("mixed lifting log sizes"), "{message}");
     }
 
     #[test]
