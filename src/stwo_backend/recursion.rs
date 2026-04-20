@@ -497,6 +497,8 @@ const STWO_FIRST_LAYER_WITNESS_PCS_OPENING_NEXT_STEP_PHASE58: &str =
 #[cfg(feature = "stwo-backend")]
 const PHASE58_MAX_PCS_LIFTING_LOG_SIZE: u32 = 64;
 #[cfg(feature = "stwo-backend")]
+const MAX_PHASE58_PCS_PROOF_JSON_BYTES: usize = 4 * 1024 * 1024;
+#[cfg(feature = "stwo-backend")]
 const PHASE44D_M31_MODULUS: u32 = (1u32 << 31) - 1;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -13627,12 +13629,15 @@ fn phase58_derive_opening_witness_values(
             break;
         }
     }
-    let (adjusted_index, adjusted_weight) = adjusted_index.ok_or_else(|| {
-        VmError::InvalidConfig(
-            "Phase 58 could not find a non-zero MLE basis weight inside the logical witness"
-                .to_string(),
-        )
-    })?;
+    let Some((adjusted_index, adjusted_weight)) = adjusted_index else {
+        if opening.opened_value != 0 {
+            return Err(VmError::InvalidConfig(
+                "Phase 58 opening evaluates only on padded coordinates but opened_value is non-zero"
+                    .to_string(),
+            ));
+        }
+        return Ok((values, 0, 0));
+    };
     let mut partial_sum = 0u32;
     for (index, value) in values.iter().copied().enumerate() {
         if index == adjusted_index {
@@ -13645,6 +13650,13 @@ fn phase58_derive_opening_witness_values(
     let numerator = phase52_m31_sub(opening.opened_value, partial_sum);
     values[adjusted_index] = phase52_m31_mul(numerator, phase58_m31_inverse(adjusted_weight)?);
     Ok((values, adjusted_index, adjusted_weight))
+}
+
+#[cfg(all(feature = "stwo-backend", test))]
+pub(crate) fn phase58_derive_opening_witness_values_for_tests(
+    opening: &Phase58WitnessBoundPcsOpening,
+) -> Result<(Vec<u32>, usize, u32)> {
+    phase58_derive_opening_witness_values(opening)
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -13842,6 +13854,11 @@ fn phase58_commit_pcs_sampled_value_limbs(limbs: &[u32]) -> Result<String> {
 
 #[cfg(feature = "stwo-backend")]
 fn phase58_commit_pcs_proof_bytes(bytes: &[u8]) -> Result<String> {
+    if bytes.len() > MAX_PHASE58_PCS_PROOF_JSON_BYTES {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS proof bytes exceed bounded verifier limit".to_string(),
+        ));
+    }
     let mut hasher = Blake2bVar::new(32).map_err(|err| {
         VmError::InvalidConfig(format!(
             "failed to initialize Phase 58 PCS proof-byte hash: {err}"
@@ -13936,7 +13953,53 @@ fn phase58_witness_pcs_opening_transcript_order() -> Vec<String> {
 }
 
 #[cfg(feature = "stwo-backend")]
-fn phase58_build_pcs_opening_proof(openings: &[Phase58WitnessBoundPcsOpening]) -> Result<Vec<u8>> {
+fn phase58_canonical_pcs_commitment_bytes(
+    openings: &[Phase58WitnessBoundPcsOpening],
+) -> Result<Vec<u8>> {
+    if openings.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS commitment binding requires at least one opening".to_string(),
+        ));
+    }
+    let config = PcsConfig::default();
+    let max_log_size = openings
+        .iter()
+        .map(|opening| opening.pcs_column_log_size)
+        .max()
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 58 PCS opening proof has no columns".to_string())
+        })?;
+    let twiddle_log_size = max_log_size
+        .checked_add(config.fri_config.log_blowup_factor)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 58 PCS twiddle log-size overflow".to_string())
+        })?;
+    let twiddles =
+        CpuBackend::precompute_twiddles(CanonicCoset::new(twiddle_log_size).half_coset());
+    let channel = &mut Blake2sM31Channel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<CpuBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
+    commitment_scheme.set_store_polynomials_coefficients();
+    let evaluations = openings
+        .iter()
+        .map(|opening| {
+            phase58_circle_evaluation_for_witness(
+                &opening.raw_witness_values,
+                opening.pcs_column_log_size,
+            )
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(evaluations);
+    tree_builder.commit(channel);
+    serde_json::to_vec(&commitment_scheme.roots())
+        .map_err(|err| VmError::Serialization(err.to_string()))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_build_pcs_opening_proof_unchecked(
+    openings: &[Phase58WitnessBoundPcsOpening],
+) -> Result<Vec<u8>> {
     if openings.is_empty() {
         return Err(VmError::InvalidConfig(
             "Phase 58 PCS opening proof requires at least one opening".to_string(),
@@ -13978,10 +14041,22 @@ fn phase58_build_pcs_opening_proof(openings: &[Phase58WitnessBoundPcsOpening]) -
         .map(phase58_unlifted_stwo_pcs_api_sample_point)
         .collect::<Result<Vec<_>>>()?]);
     let proof = commitment_scheme.prove_values(sampled_points, channel);
-    let bytes = serde_json::to_vec(&Phase58PcsOpeningProofPayload { proof: proof.proof })
-        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    serde_json::to_vec(&Phase58PcsOpeningProofPayload { proof: proof.proof })
+        .map_err(|err| VmError::Serialization(err.to_string()))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_build_pcs_opening_proof(openings: &[Phase58WitnessBoundPcsOpening]) -> Result<Vec<u8>> {
+    let bytes = phase58_build_pcs_opening_proof_unchecked(openings)?;
     phase58_verify_pcs_opening_proof_bytes(openings, &bytes)?;
     Ok(bytes)
+}
+
+#[cfg(all(feature = "stwo-backend", test))]
+pub(crate) fn phase58_build_pcs_opening_proof_for_tests(
+    openings: &[Phase58WitnessBoundPcsOpening],
+) -> Result<Vec<u8>> {
+    phase58_build_pcs_opening_proof_unchecked(openings)
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -13994,6 +14069,11 @@ fn phase58_verify_pcs_opening_proof_bytes(
             "Phase 58 PCS opening verification requires at least one opening".to_string(),
         ));
     }
+    if proof_bytes.len() > MAX_PHASE58_PCS_PROOF_JSON_BYTES {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS proof bytes exceed bounded verifier limit".to_string(),
+        ));
+    }
     let payload: Phase58PcsOpeningProofPayload = serde_json::from_slice(proof_bytes)
         .map_err(|err| VmError::Serialization(err.to_string()))?;
     let proof = payload.proof;
@@ -14003,6 +14083,19 @@ fn phase58_verify_pcs_opening_proof_bytes(
     {
         return Err(VmError::InvalidConfig(
             "Phase 58 PCS proof sampled-value shape drift".to_string(),
+        ));
+    }
+    let config = PcsConfig::default();
+    if proof.config != config {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS proof config drift".to_string(),
+        ));
+    }
+    let proof_commitment_bytes = serde_json::to_vec(&proof.commitments)
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    if proof_commitment_bytes != phase58_canonical_pcs_commitment_bytes(openings)? {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 canonical witness PCS commitment drift".to_string(),
         ));
     }
     for (opening, sampled_values) in openings.iter().zip(proof.sampled_values.0[0].iter()) {
@@ -14034,12 +14127,6 @@ fn phase58_verify_pcs_opening_proof_bytes(
         .iter()
         .map(|opening| opening.pcs_column_log_size)
         .collect::<Vec<_>>();
-    let config = PcsConfig::default();
-    if proof.config != config {
-        return Err(VmError::InvalidConfig(
-            "Phase 58 PCS proof config drift".to_string(),
-        ));
-    }
     let channel = &mut Blake2sM31Channel::default();
     let mut verifier = CommitmentSchemeVerifier::<Blake2sM31MerkleChannel>::new(config);
     verifier.commit(proof.commitments[0], &log_sizes, channel);
