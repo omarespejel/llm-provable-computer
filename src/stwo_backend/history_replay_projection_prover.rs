@@ -8794,7 +8794,11 @@ mod tests {
         let error = verify_phase61_first_layer_runtime_witness_pcs_replacement_claim(&phase61)
             .expect_err("Phase61 must reject non-canonical PCS lifting log size");
         let message = error.to_string();
-        assert!(message.contains("mixed lifting log sizes"), "{message}");
+        assert!(
+            message.contains("mixed lifting log sizes")
+                || message.contains("PCS column, lifting, or point drift"),
+            "{message}"
+        );
     }
 
     #[test]

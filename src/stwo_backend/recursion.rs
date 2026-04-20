@@ -15413,6 +15413,8 @@ pub fn verify_phase61_runtime_witness_pcs_replacement_opening(
         .ok_or_else(|| {
             VmError::InvalidConfig("Phase 61 PCS extended log-size overflow".to_string())
         })?;
+    // Individual openings may use the claim-wide canonical max lifting domain;
+    // the Phase61 claim verifier pins that shared value to avoid malleability.
     if opening.pcs_column_log_size != expected_log_size
         || opening.pcs_lifting_log_size < expected_extended_log_size
         || opening.pcs_opening_point_index != expected_point_index
@@ -16200,7 +16202,7 @@ fn phase61_actual_raw_values_for_opening(
     let hidden_width = TransformerVmConfig::percepta_reference().ff_dim;
     match (opening_kind, opening_name) {
         ("runtime_tensor_mle_opening", "gate_affine_sumcheck_runtime_tensor_opening_0") => {
-            phase61_outer_product_values(
+            phase61_scale_weight_rows(
                 &claim.input_tensor.values,
                 &claim.gate_weight_tensor.values,
                 INPUT_DIM,
@@ -16208,7 +16210,7 @@ fn phase61_actual_raw_values_for_opening(
             )
         }
         ("runtime_tensor_mle_opening", "value_affine_sumcheck_runtime_tensor_opening_0") => {
-            phase61_outer_product_values(
+            phase61_scale_weight_rows(
                 &claim.input_tensor.values,
                 &claim.value_weight_tensor.values,
                 INPUT_DIM,
@@ -16222,7 +16224,7 @@ fn phase61_actual_raw_values_for_opening(
             Ok(claim.value_tensor.values.clone())
         }
         ("runtime_tensor_mle_opening", "output_affine_sumcheck_runtime_tensor_opening_0") => {
-            phase61_outer_product_values(
+            phase61_scale_weight_rows(
                 &claim.hidden_tensor.values,
                 &claim.output_weight_tensor.values,
                 hidden_width,
@@ -16254,23 +16256,32 @@ fn phase61_actual_raw_values_for_opening(
 }
 
 #[cfg(feature = "stwo-backend")]
-fn phase61_outer_product_values(
+fn phase61_scale_weight_rows(
     left: &[u32],
     right_matrix: &[u32],
     input_width: usize,
     output_width: usize,
 ) -> Result<Vec<u32>> {
-    if left.len() != input_width || right_matrix.len() != input_width * output_width {
+    let matrix_element_count = input_width.checked_mul(output_width).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 61 row-scaled weight shape overflow".to_string())
+    })?;
+    if left.len() != input_width || right_matrix.len() != matrix_element_count {
         return Err(VmError::InvalidConfig(
-            "Phase 61 outer-product witness shape mismatch".to_string(),
+            "Phase 61 row-scaled weight witness shape mismatch".to_string(),
         ));
     }
-    let mut values = Vec::with_capacity(input_width * output_width);
+    let mut values = Vec::with_capacity(matrix_element_count);
     for input_index in 0..input_width {
         for output_index in 0..output_width {
+            let row_offset = input_index.checked_mul(output_width).ok_or_else(|| {
+                VmError::InvalidConfig("Phase 61 row-scaled weight index overflow".to_string())
+            })?;
+            let value_index = row_offset.checked_add(output_index).ok_or_else(|| {
+                VmError::InvalidConfig("Phase 61 row-scaled weight index overflow".to_string())
+            })?;
             values.push(phase52_m31_mul(
                 left[input_index],
-                right_matrix[input_index * output_width + output_index],
+                right_matrix[value_index],
             ));
         }
     }
@@ -20898,6 +20909,22 @@ mod tests {
             phase58_nonzero_circle_index_from_hash_prefix(41u64.to_le_bytes()),
             42
         );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase61_scale_weight_rows_rejects_shape_overflow() {
+        let error = phase61_scale_weight_rows(&[], &[], usize::MAX, 2)
+            .expect_err("Phase61 row scaling must reject overflowing dimensions");
+        assert!(error.to_string().contains("shape overflow"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase61_scale_weight_rows_scales_each_weight_row() {
+        let values = phase61_scale_weight_rows(&[2, 3], &[5, 7, 11, 13], 2, 2)
+            .expect("scale two weight rows");
+        assert_eq!(values, vec![10, 14, 33, 39]);
     }
 
     fn sample_proof(program_source: &str, program_hash: &str) -> VanillaStarkExecutionProof {
