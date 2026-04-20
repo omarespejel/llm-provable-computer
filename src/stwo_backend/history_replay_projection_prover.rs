@@ -9349,6 +9349,20 @@ mod tests {
     }
 
     #[test]
+    fn phase63_shared_lookup_identity_rejects_recommitted_step_table_drift() {
+        let (_, _, _, _, _, _, _, _, _, mut phase63) =
+            sample_phase63_shared_lookup_identity_claim();
+
+        phase63.step_lookup_bindings[0].normalization_table_commitment = hash32('9');
+        recommit_phase63_binding(&mut phase63.step_lookup_bindings[0]);
+        recommit_phase63_claim(&mut phase63);
+
+        let error = verify_phase63_shared_lookup_identity_claim(&phase63)
+            .expect_err("Phase63 must reject per-step table commitment drift");
+        assert!(error.to_string().contains("drift"));
+    }
+
+    #[test]
     fn phase63_shared_lookup_identity_rejects_phase62_source_drift() {
         let (_, _, _, _, _, _, _, _, phase62, mut phase63) =
             sample_phase63_shared_lookup_identity_claim();
@@ -9452,6 +9466,27 @@ mod tests {
 
         let error = verify_phase64_typed_carried_state_claim(&phase64)
             .expect_err("Phase64 must reject stale derived typed boundary fields");
+        assert!(error.to_string().contains("derived field drift"));
+    }
+
+    #[test]
+    fn phase64_typed_carried_state_rejects_typed_handle_derived_field_drift() {
+        let (_, _, _, _, _, _, _, _, _, _, mut phase64) =
+            sample_phase64_typed_carried_state_claim();
+
+        phase64.typed_steps[0]
+            .input_boundary
+            .tensor_witness_commitment = hash32('8');
+        recommit_phase64_boundary(&mut phase64.typed_steps[0].input_boundary);
+        recommit_phase64_step(&mut phase64.typed_steps[0]);
+        phase64.chain_start_typed_boundary_commitment = phase64.typed_steps[0]
+            .input_boundary
+            .typed_boundary_commitment
+            .clone();
+        recommit_phase64_claim(&mut phase64);
+
+        let error = verify_phase64_typed_carried_state_claim(&phase64)
+            .expect_err("Phase64 must reject typed handle drift with stale derived fields");
         assert!(error.to_string().contains("derived field drift"));
     }
 
@@ -9563,6 +9598,37 @@ mod tests {
             &phase57, &phase56, &phase54,
         )
         .expect_err("Phase65 must reject wrong Phase60 tensor source");
+        assert!(error.to_string().contains("step source drift"));
+    }
+
+    #[test]
+    fn phase65_transformer_transition_artifact_rejects_phase64_step_source_drift() {
+        let (
+            _,
+            phase54,
+            phase56,
+            phase57,
+            phase58,
+            phase59,
+            phase60,
+            phase61,
+            phase62,
+            phase63,
+            phase64,
+            mut phase65,
+        ) = sample_phase65_transformer_transition_artifact();
+
+        phase65.transition_steps[0].source_phase64_typed_step_commitment = hash32('7');
+        recommit_phase65_step(&mut phase65.transition_steps[0]);
+        recommit_phase65_artifact(&mut phase65);
+
+        verify_phase65_transformer_transition_artifact(&phase65)
+            .expect("standalone Phase65 accepts internally committed typed-step handle");
+        let error = verify_phase65_transformer_transition_artifact_against_sources(
+            &phase65, &phase64, &phase63, &phase62, &phase61, &phase60, &phase59, &phase58,
+            &phase57, &phase56, &phase54,
+        )
+        .expect_err("Phase65 must reject wrong Phase64 typed-step source");
         assert!(error.to_string().contains("step source drift"));
     }
 
