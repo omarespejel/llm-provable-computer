@@ -5,7 +5,7 @@ export LANG=C
 
 cd "$(dirname "$0")/.."
 
-python3 -B -m unittest scripts/tests/test_phase42_boundary_correspondence.py -q
+python3 -B -m unittest scripts.tests.test_phase42_boundary_correspondence -q
 python3 -B -m unittest scripts.tests.test_phase44b_public_projection_logup_probe -q
 python3 -B -m unittest scripts.tests.test_phase44c_projection_root_probe -q
 python3 -B -m unittest scripts.tests.test_phase44d_final_boundary_acceptance -q

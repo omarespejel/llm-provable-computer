@@ -19,7 +19,6 @@ PHASE43_SURFACE_VERSION = "phase43-history-replay-field-projection-v1"
 HASH32_RE = re.compile(r"^[0-9a-f]{64}$")
 DEFAULT_MANIFEST = pathlib.Path("docs/engineering/design/phase44c-projection-root-manifest.json")
 DEFAULT_EVIDENCE = pathlib.Path("target/phase44c-projection-root-probe/evidence.json")
-DEFAULT_STWO_ROOT = pathlib.Path("/tmp/zkai-research/repos/stwo")
 
 
 class Phase44CError(Exception):
@@ -98,6 +97,12 @@ def load_manifest(path: pathlib.Path) -> dict[str, Any]:
 
 
 def load_stwo_source_mechanics(stwo_root: pathlib.Path) -> dict[str, Any]:
+    stwo_root = stwo_root.resolve()
+    require(stwo_root.is_dir(), f"Stwo source root must be a directory: {stwo_root}")
+    require(
+        (stwo_root / "crates/stwo/Cargo.toml").exists(),
+        f"Stwo source root does not contain crates/stwo/Cargo.toml: {stwo_root}",
+    )
     checks = {
         "pcs_mix_root": (
             stwo_root / "crates/stwo/src/prover/pcs/mod.rs",
@@ -186,10 +191,10 @@ def apply_mutation(manifest: dict[str, Any], label: str) -> dict[str, Any]:
     return mutated
 
 
-def probe_manifest(manifest: dict[str, Any], stwo_root: pathlib.Path) -> dict[str, Any]:
+def probe_manifest(manifest: dict[str, Any], stwo_root: pathlib.Path | None = None) -> dict[str, Any]:
     require(manifest.get("schema") == SCHEMA, f"unexpected schema: {manifest.get('schema')!r}")
     require(manifest.get("probe") == PROBE, f"unexpected probe id: {manifest.get('probe')!r}")
-    source_mechanics = load_stwo_source_mechanics(stwo_root)
+    source_mechanics = load_stwo_source_mechanics(stwo_root) if stwo_root is not None else None
     preimage = manifest.get("canonical_source_root_preimage")
     result = validate_preimage(preimage)
     source_emitted_projection_root = require_hash32(
@@ -263,16 +268,19 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument(
         "--stwo-root",
         type=pathlib.Path,
-        default=DEFAULT_STWO_ROOT,
-        help="path to the cloned upstream Stwo source tree",
+        help="optional path to the cloned upstream Stwo source tree; when omitted, source mechanics evidence is absent",
     )
     args = parser.parse_args(list(argv) if argv is not None else None)
 
-    manifest = load_manifest(args.manifest)
-    evidence = probe_manifest(manifest, args.stwo_root)
-    write_json(args.output, evidence)
-    print(f"Phase44C probe evidence written: {args.output}")
-    return 0
+    try:
+        manifest = load_manifest(args.manifest)
+        evidence = probe_manifest(manifest, args.stwo_root)
+        write_json(args.output, evidence)
+        print(f"Phase44C probe evidence written: {args.output}")
+        return 0
+    except Phase44CError as exc:
+        print(f"Phase44C probe failed: {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
