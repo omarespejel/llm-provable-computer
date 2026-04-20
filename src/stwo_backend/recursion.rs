@@ -338,6 +338,12 @@ pub const STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_CLAIM_VERSION_PHASE61
 pub const STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_CLAIM_SCOPE_PHASE61: &str =
     "phase61_phase60_runtime_witness_columns_stwo_pcs_opening_proofs";
 #[cfg(feature = "stwo-backend")]
+pub const STWO_PROOF_CARRYING_STATE_CONTINUITY_CLAIM_VERSION_PHASE62: &str =
+    "phase62-proof-carrying-state-continuity-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PROOF_CARRYING_STATE_CONTINUITY_CLAIM_SCOPE_PHASE62: &str =
+    "phase62_phase61_backed_state_continuity_envelope_chain";
+#[cfg(feature = "stwo-backend")]
 const STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_KIND_PHASE44D: &str =
     "source-chain-public-output-boundary-verifier-v1";
 #[cfg(feature = "stwo-backend")]
@@ -558,6 +564,18 @@ const STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_NEXT_STEP_PHASE61: &str =
 #[cfg(feature = "stwo-backend")]
 const STWO_FIRST_LAYER_RUNTIME_WITNESS_PCS_REPLACEMENT_SCHEME_PHASE61: &str =
     "phase61_actual_runtime_witness_mle_recomputation_plus_stwo_pcs_opening";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CARRYING_STATE_CONTINUITY_COMPLEXITY_PHASE62: &str =
+    "O(phase61_source_surface + step_envelopes + continuity_links)";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CARRYING_STATE_CONTINUITY_STATUS_PHASE62: &str =
+    "phase61_backed_state_continuity_enforced_pending_shared_lookup_identity";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CARRYING_STATE_CONTINUITY_NEXT_STEP_PHASE62: &str =
+    "bind_shared_lookup_table_identity_across_proof_carrying_steps";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CARRYING_STATE_TRANSITION_RULE_PHASE62: &str =
+    "phase62_phase61_template_carried_state_commitment_transition";
 #[cfg(feature = "stwo-backend")]
 const PHASE44D_M31_MODULUS: u32 = (1u32 << 31) - 1;
 
@@ -1929,6 +1947,57 @@ pub struct Phase61FirstLayerRuntimeWitnessPcsReplacementClaim {
     pub paper_ready: bool,
     pub required_next_step: String,
     pub runtime_witness_pcs_replacement_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase62ProofCarryingStateStepEnvelope {
+    pub proof_backend: StarkProofBackend,
+    pub step_index: usize,
+    pub transition_rule: String,
+    pub relation_template_commitment: String,
+    pub input_state_commitment: String,
+    pub output_state_commitment: String,
+    pub source_phase61_runtime_witness_pcs_replacement_claim_commitment: String,
+    pub source_phase60_runtime_relation_witness_claim_commitment: String,
+    pub source_phase60_input_tensor_witness_commitment: String,
+    pub source_phase60_output_tensor_witness_commitment: String,
+    pub step_envelope_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase62ProofCarryingStateContinuityClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub source_phase61_runtime_witness_pcs_replacement_claim_commitment: String,
+    pub source_phase60_runtime_relation_witness_claim_commitment: String,
+    pub relation_template_commitment: String,
+    pub chain_start_state_commitment: String,
+    pub chain_end_state_commitment: String,
+    pub step_envelopes_commitment: String,
+    pub step_envelopes: Vec<Phase62ProofCarryingStateStepEnvelope>,
+    pub step_count: usize,
+    pub continuity_link_count: usize,
+    pub phase61_runtime_witness_pcs_replacement_surface_unit_count: usize,
+    pub proof_carrying_state_continuity_surface_unit_count: usize,
+    pub combined_verifier_surface_unit_count: usize,
+    pub surface_delta_from_phase61: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub phase61_runtime_witness_pcs_replacement_available: bool,
+    pub proof_carrying_state_continuity_available: bool,
+    pub actual_runtime_model_witness_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub proof_carrying_state_continuity_claim_commitment: String,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -13577,6 +13646,99 @@ pub fn commit_phase61_first_layer_runtime_witness_pcs_replacement_claim(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn commit_phase62_proof_carrying_state_step_envelope(
+    step: &Phase62ProofCarryingStateStepEnvelope,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 62 state step envelope hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase62-proof-carrying-state-step-envelope");
+    phase29_update_len_prefixed(&mut hasher, step.proof_backend.to_string().as_bytes());
+    phase29_update_usize(&mut hasher, step.step_index);
+    for part in [
+        step.transition_rule.as_bytes(),
+        step.relation_template_commitment.as_bytes(),
+        step.input_state_commitment.as_bytes(),
+        step.output_state_commitment.as_bytes(),
+        step.source_phase61_runtime_witness_pcs_replacement_claim_commitment
+            .as_bytes(),
+        step.source_phase60_runtime_relation_witness_claim_commitment
+            .as_bytes(),
+        step.source_phase60_input_tensor_witness_commitment
+            .as_bytes(),
+        step.source_phase60_output_tensor_witness_commitment
+            .as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 62 proof-carrying state step envelope")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase62_proof_carrying_state_continuity_claim(
+    claim: &Phase62ProofCarryingStateContinuityClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 62 state-continuity claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase62-proof-carrying-state-continuity-claim",
+    );
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim
+            .source_phase61_runtime_witness_pcs_replacement_claim_commitment
+            .as_bytes(),
+        claim
+            .source_phase60_runtime_relation_witness_claim_commitment
+            .as_bytes(),
+        claim.relation_template_commitment.as_bytes(),
+        claim.chain_start_state_commitment.as_bytes(),
+        claim.chain_end_state_commitment.as_bytes(),
+        claim.step_envelopes_commitment.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.verifier_status.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for step in &claim.step_envelopes {
+        phase29_update_len_prefixed(&mut hasher, step.step_envelope_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, claim.step_count);
+    phase29_update_usize(&mut hasher, claim.continuity_link_count);
+    phase29_update_usize(
+        &mut hasher,
+        claim.phase61_runtime_witness_pcs_replacement_surface_unit_count,
+    );
+    phase29_update_usize(
+        &mut hasher,
+        claim.proof_carrying_state_continuity_surface_unit_count,
+    );
+    phase29_update_usize(&mut hasher, claim.combined_verifier_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.surface_delta_from_phase61);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(
+        &mut hasher,
+        claim.phase61_runtime_witness_pcs_replacement_available,
+    );
+    phase29_update_bool(&mut hasher, claim.proof_carrying_state_continuity_available);
+    phase29_update_bool(&mut hasher, claim.actual_runtime_model_witness_available);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, claim.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, claim.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 62 proof-carrying state continuity claim")
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase58_pcs_config() -> PcsConfig {
     PcsConfig {
         pow_bits: 10,
@@ -15864,6 +16026,635 @@ pub fn verify_phase61_first_layer_runtime_witness_pcs_replacement_claim_against_
         ));
     }
     Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase62_prepare_proof_carrying_state_continuity_claim(
+    phase61_claim: &Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+    phase60_claim: &Phase60FirstLayerRuntimeRelationWitnessClaim,
+    phase59_claim: &Phase59FirstLayerRelationWitnessBindingClaim,
+    phase58_claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
+    phase57_claim: &Phase57FirstLayerMleOpeningVerifierClaim,
+    phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+    step_count: usize,
+) -> Result<Phase62ProofCarryingStateContinuityClaim> {
+    if step_count < 2 {
+        return Err(VmError::InvalidConfig(
+            "Phase 62 requires at least two step envelopes".to_string(),
+        ));
+    }
+    verify_phase61_first_layer_runtime_witness_pcs_replacement_claim_against_phase60(
+        phase61_claim,
+        phase60_claim,
+        phase59_claim,
+        phase58_claim,
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
+    let relation_template_commitment =
+        phase62_relation_template_commitment(phase61_claim, phase60_claim)?;
+    let mut input_state_commitment = phase62_derive_chain_start_state_commitment_from_parts(
+        &relation_template_commitment,
+        &phase61_claim.runtime_witness_pcs_replacement_claim_commitment,
+        &phase60_claim.runtime_relation_witness_claim_commitment,
+        &phase60_claim.input_tensor.tensor_witness_commitment,
+    )?;
+    let mut step_envelopes = Vec::with_capacity(step_count);
+    for step_index in 0..step_count {
+        let output_state_commitment = phase62_derive_step_output_state_commitment_from_parts(
+            step_index,
+            &relation_template_commitment,
+            &input_state_commitment,
+            &phase61_claim.runtime_witness_pcs_replacement_claim_commitment,
+            &phase60_claim.runtime_relation_witness_claim_commitment,
+            &phase60_claim.output_tensor.tensor_witness_commitment,
+        )?;
+        let mut step = Phase62ProofCarryingStateStepEnvelope {
+            proof_backend: StarkProofBackend::Stwo,
+            step_index,
+            transition_rule: STWO_PROOF_CARRYING_STATE_TRANSITION_RULE_PHASE62.to_string(),
+            relation_template_commitment: relation_template_commitment.clone(),
+            input_state_commitment: input_state_commitment.clone(),
+            output_state_commitment: output_state_commitment.clone(),
+            source_phase61_runtime_witness_pcs_replacement_claim_commitment: phase61_claim
+                .runtime_witness_pcs_replacement_claim_commitment
+                .clone(),
+            source_phase60_runtime_relation_witness_claim_commitment: phase60_claim
+                .runtime_relation_witness_claim_commitment
+                .clone(),
+            source_phase60_input_tensor_witness_commitment: phase60_claim
+                .input_tensor
+                .tensor_witness_commitment
+                .clone(),
+            source_phase60_output_tensor_witness_commitment: phase60_claim
+                .output_tensor
+                .tensor_witness_commitment
+                .clone(),
+            step_envelope_commitment: String::new(),
+        };
+        step.step_envelope_commitment = commit_phase62_proof_carrying_state_step_envelope(&step)?;
+        verify_phase62_proof_carrying_state_step_envelope(&step)?;
+        input_state_commitment = output_state_commitment;
+        step_envelopes.push(step);
+    }
+    let chain_start_state_commitment = step_envelopes
+        .first()
+        .map(|step| step.input_state_commitment.clone())
+        .ok_or_else(|| VmError::InvalidConfig("Phase 62 empty step chain".to_string()))?;
+    let chain_end_state_commitment = step_envelopes
+        .last()
+        .map(|step| step.output_state_commitment.clone())
+        .ok_or_else(|| VmError::InvalidConfig("Phase 62 empty step chain".to_string()))?;
+    let continuity_link_count = step_count.checked_sub(1).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 62 continuity link accounting underflow".to_string())
+    })?;
+    let proof_carrying_state_continuity_surface_unit_count =
+        phase62_state_continuity_surface_unit_count(step_count)?;
+    let combined_verifier_surface_unit_count = phase61_claim
+        .combined_verifier_surface_unit_count
+        .checked_add(proof_carrying_state_continuity_surface_unit_count)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 62 combined verifier surface accounting overflow".to_string(),
+            )
+        })?;
+    let mut claim = Phase62ProofCarryingStateContinuityClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_PROOF_CARRYING_STATE_CONTINUITY_CLAIM_VERSION_PHASE62.to_string(),
+        semantic_scope: STWO_PROOF_CARRYING_STATE_CONTINUITY_CLAIM_SCOPE_PHASE62.to_string(),
+        source_phase61_runtime_witness_pcs_replacement_claim_commitment: phase61_claim
+            .runtime_witness_pcs_replacement_claim_commitment
+            .clone(),
+        source_phase60_runtime_relation_witness_claim_commitment: phase60_claim
+            .runtime_relation_witness_claim_commitment
+            .clone(),
+        relation_template_commitment,
+        chain_start_state_commitment,
+        chain_end_state_commitment,
+        step_envelopes_commitment: String::new(),
+        step_envelopes,
+        step_count,
+        continuity_link_count,
+        phase61_runtime_witness_pcs_replacement_surface_unit_count: phase61_claim
+            .runtime_witness_pcs_replacement_surface_unit_count,
+        proof_carrying_state_continuity_surface_unit_count,
+        combined_verifier_surface_unit_count,
+        surface_delta_from_phase61: proof_carrying_state_continuity_surface_unit_count,
+        verifier_side_complexity: STWO_PROOF_CARRYING_STATE_CONTINUITY_COMPLEXITY_PHASE62
+            .to_string(),
+        verifier_status: STWO_PROOF_CARRYING_STATE_CONTINUITY_STATUS_PHASE62.to_string(),
+        transcript_order: phase62_proof_carrying_state_continuity_transcript_order(),
+        phase61_runtime_witness_pcs_replacement_available: true,
+        proof_carrying_state_continuity_available: true,
+        actual_runtime_model_witness_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_PROOF_CARRYING_STATE_CONTINUITY_NEXT_STEP_PHASE62.to_string(),
+        proof_carrying_state_continuity_claim_commitment: String::new(),
+    };
+    claim.step_envelopes_commitment =
+        phase62_commit_step_envelope_commitments(&claim.step_envelopes)?;
+    claim.proof_carrying_state_continuity_claim_commitment =
+        commit_phase62_proof_carrying_state_continuity_claim(&claim)?;
+    verify_phase62_proof_carrying_state_continuity_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase62_proof_carrying_state_step_envelope(
+    step: &Phase62ProofCarryingStateStepEnvelope,
+) -> Result<()> {
+    if step.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 62 state step envelope requires `stwo` backend".to_string(),
+        ));
+    }
+    if step.transition_rule != STWO_PROOF_CARRYING_STATE_TRANSITION_RULE_PHASE62 {
+        return Err(VmError::InvalidConfig(
+            "Phase 62 state step envelope transition rule drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase62_step_relation_template_commitment",
+            step.relation_template_commitment.as_str(),
+        ),
+        (
+            "phase62_step_input_state_commitment",
+            step.input_state_commitment.as_str(),
+        ),
+        (
+            "phase62_step_output_state_commitment",
+            step.output_state_commitment.as_str(),
+        ),
+        (
+            "phase62_step_source_phase61_claim_commitment",
+            step.source_phase61_runtime_witness_pcs_replacement_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase62_step_source_phase60_claim_commitment",
+            step.source_phase60_runtime_relation_witness_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase62_step_source_phase60_input_tensor_commitment",
+            step.source_phase60_input_tensor_witness_commitment.as_str(),
+        ),
+        (
+            "phase62_step_source_phase60_output_tensor_commitment",
+            step.source_phase60_output_tensor_witness_commitment
+                .as_str(),
+        ),
+        (
+            "phase62_step_envelope_commitment",
+            step.step_envelope_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let expected_output = phase62_derive_step_output_state_commitment_from_parts(
+        step.step_index,
+        &step.relation_template_commitment,
+        &step.input_state_commitment,
+        &step.source_phase61_runtime_witness_pcs_replacement_claim_commitment,
+        &step.source_phase60_runtime_relation_witness_claim_commitment,
+        &step.source_phase60_output_tensor_witness_commitment,
+    )?;
+    if step.output_state_commitment != expected_output {
+        return Err(VmError::InvalidConfig(
+            "Phase 62 state step envelope output state drift".to_string(),
+        ));
+    }
+    let expected = commit_phase62_proof_carrying_state_step_envelope(step)?;
+    if step.step_envelope_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 62 state step envelope commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase62_proof_carrying_state_continuity_claim(
+    claim: &Phase62ProofCarryingStateContinuityClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 62 state-continuity claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_PROOF_CARRYING_STATE_CONTINUITY_CLAIM_VERSION_PHASE62
+        || claim.semantic_scope != STWO_PROOF_CARRYING_STATE_CONTINUITY_CLAIM_SCOPE_PHASE62
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 62 state-continuity claim version or semantic scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase62_source_phase61_claim_commitment",
+            claim
+                .source_phase61_runtime_witness_pcs_replacement_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase62_source_phase60_claim_commitment",
+            claim
+                .source_phase60_runtime_relation_witness_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase62_relation_template_commitment",
+            claim.relation_template_commitment.as_str(),
+        ),
+        (
+            "phase62_chain_start_state_commitment",
+            claim.chain_start_state_commitment.as_str(),
+        ),
+        (
+            "phase62_chain_end_state_commitment",
+            claim.chain_end_state_commitment.as_str(),
+        ),
+        (
+            "phase62_step_envelopes_commitment",
+            claim.step_envelopes_commitment.as_str(),
+        ),
+        (
+            "phase62_claim_commitment",
+            claim
+                .proof_carrying_state_continuity_claim_commitment
+                .as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if claim.step_count < 2 || claim.step_envelopes.len() != claim.step_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 62 state-continuity claim requires a multi-step envelope chain".to_string(),
+        ));
+    }
+    let expected_link_count = claim.step_count.checked_sub(1).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 62 continuity link accounting underflow".to_string())
+    })?;
+    let expected_surface = phase62_state_continuity_surface_unit_count(claim.step_count)?;
+    if claim.continuity_link_count != expected_link_count
+        || claim.proof_carrying_state_continuity_surface_unit_count != expected_surface
+        || claim.surface_delta_from_phase61 != expected_surface
+        || claim.combined_verifier_surface_unit_count < expected_surface
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 62 state-continuity surface accounting drift".to_string(),
+        ));
+    }
+    if claim.step_envelopes_commitment
+        != phase62_commit_step_envelope_commitments(&claim.step_envelopes)?
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 62 step-envelope commitment drift".to_string(),
+        ));
+    }
+    if claim.verifier_side_complexity != STWO_PROOF_CARRYING_STATE_CONTINUITY_COMPLEXITY_PHASE62
+        || claim.verifier_status != STWO_PROOF_CARRYING_STATE_CONTINUITY_STATUS_PHASE62
+        || claim.transcript_order != phase62_proof_carrying_state_continuity_transcript_order()
+        || claim.required_next_step != STWO_PROOF_CARRYING_STATE_CONTINUITY_NEXT_STEP_PHASE62
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 62 state-continuity transcript, status, or next-step drift".to_string(),
+        ));
+    }
+    if !claim.phase61_runtime_witness_pcs_replacement_available
+        || !claim.proof_carrying_state_continuity_available
+        || !claim.actual_runtime_model_witness_available
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+        || claim.breakthrough_claimed
+        || claim.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 62 state-continuity claim must not claim recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let expected_source_input_tensor = claim
+        .step_envelopes
+        .first()
+        .map(|step| step.source_phase60_input_tensor_witness_commitment.as_str())
+        .ok_or_else(|| VmError::InvalidConfig("Phase 62 empty step chain".to_string()))?;
+    let expected_source_output_tensor = claim
+        .step_envelopes
+        .first()
+        .map(|step| {
+            step.source_phase60_output_tensor_witness_commitment
+                .as_str()
+        })
+        .ok_or_else(|| VmError::InvalidConfig("Phase 62 empty step chain".to_string()))?;
+    let mut seen_step_commitments = Vec::with_capacity(claim.step_envelopes.len());
+    let mut previous_output_state: Option<String> = None;
+    for (expected_index, step) in claim.step_envelopes.iter().enumerate() {
+        verify_phase62_proof_carrying_state_step_envelope(step)?;
+        if seen_step_commitments.contains(&step.step_envelope_commitment) {
+            return Err(VmError::InvalidConfig(
+                "Phase 62 state-continuity claim duplicate step envelope".to_string(),
+            ));
+        }
+        seen_step_commitments.push(step.step_envelope_commitment.clone());
+        if step.step_index != expected_index {
+            return Err(VmError::InvalidConfig(
+                "Phase 62 state-continuity claim step index drift".to_string(),
+            ));
+        }
+        if step.relation_template_commitment != claim.relation_template_commitment
+            || step.source_phase61_runtime_witness_pcs_replacement_claim_commitment
+                != claim.source_phase61_runtime_witness_pcs_replacement_claim_commitment
+            || step.source_phase60_runtime_relation_witness_claim_commitment
+                != claim.source_phase60_runtime_relation_witness_claim_commitment
+            || step.source_phase60_input_tensor_witness_commitment != expected_source_input_tensor
+            || step.source_phase60_output_tensor_witness_commitment != expected_source_output_tensor
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 62 state-continuity step source or relation-template drift".to_string(),
+            ));
+        }
+        if expected_index == 0 {
+            if step.input_state_commitment != claim.chain_start_state_commitment {
+                return Err(VmError::InvalidConfig(
+                    "Phase 62 state-continuity chain start drift".to_string(),
+                ));
+            }
+        } else if Some(&step.input_state_commitment) != previous_output_state.as_ref() {
+            return Err(VmError::InvalidConfig(
+                "Phase 62 state-continuity link drift".to_string(),
+            ));
+        }
+        previous_output_state = Some(step.output_state_commitment.clone());
+    }
+    if previous_output_state.as_deref() != Some(claim.chain_end_state_commitment.as_str()) {
+        return Err(VmError::InvalidConfig(
+            "Phase 62 state-continuity chain end drift".to_string(),
+        ));
+    }
+    let expected = commit_phase62_proof_carrying_state_continuity_claim(claim)?;
+    if claim.proof_carrying_state_continuity_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 62 state-continuity claim commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase62_proof_carrying_state_continuity_claim_against_phase61(
+    claim: &Phase62ProofCarryingStateContinuityClaim,
+    phase61_claim: &Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+    phase60_claim: &Phase60FirstLayerRuntimeRelationWitnessClaim,
+    phase59_claim: &Phase59FirstLayerRelationWitnessBindingClaim,
+    phase58_claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
+    phase57_claim: &Phase57FirstLayerMleOpeningVerifierClaim,
+    phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<()> {
+    verify_phase61_first_layer_runtime_witness_pcs_replacement_claim_against_phase60(
+        phase61_claim,
+        phase60_claim,
+        phase59_claim,
+        phase58_claim,
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
+    verify_phase62_proof_carrying_state_continuity_claim(claim)?;
+    let expected_relation_template =
+        phase62_relation_template_commitment(phase61_claim, phase60_claim)?;
+    let expected_chain_start = phase62_derive_chain_start_state_commitment_from_parts(
+        &expected_relation_template,
+        &phase61_claim.runtime_witness_pcs_replacement_claim_commitment,
+        &phase60_claim.runtime_relation_witness_claim_commitment,
+        &phase60_claim.input_tensor.tensor_witness_commitment,
+    )?;
+    let expected_combined_surface = phase61_claim
+        .combined_verifier_surface_unit_count
+        .checked_add(claim.proof_carrying_state_continuity_surface_unit_count)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 62 source-bound combined surface accounting overflow".to_string(),
+            )
+        })?;
+    if claim.source_phase61_runtime_witness_pcs_replacement_claim_commitment
+        != phase61_claim.runtime_witness_pcs_replacement_claim_commitment
+        || claim.source_phase60_runtime_relation_witness_claim_commitment
+            != phase60_claim.runtime_relation_witness_claim_commitment
+        || claim.relation_template_commitment != expected_relation_template
+        || claim.chain_start_state_commitment != expected_chain_start
+        || claim.phase61_runtime_witness_pcs_replacement_surface_unit_count
+            != phase61_claim.runtime_witness_pcs_replacement_surface_unit_count
+        || claim.combined_verifier_surface_unit_count != expected_combined_surface
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 62 state-continuity source drift against Phase61".to_string(),
+        ));
+    }
+    for step in &claim.step_envelopes {
+        if step.source_phase60_input_tensor_witness_commitment
+            != phase60_claim.input_tensor.tensor_witness_commitment
+            || step.source_phase60_output_tensor_witness_commitment
+                != phase60_claim.output_tensor.tensor_witness_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 62 state-continuity step tensor source drift against Phase60".to_string(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase62_relation_template_commitment(
+    phase61_claim: &Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+    phase60_claim: &Phase60FirstLayerRuntimeRelationWitnessClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 62 relation-template hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase62-relation-template");
+    for part in [
+        STWO_PROOF_CARRYING_STATE_TRANSITION_RULE_PHASE62.as_bytes(),
+        phase61_claim
+            .runtime_witness_pcs_replacement_claim_commitment
+            .as_bytes(),
+        phase60_claim
+            .runtime_relation_witness_claim_commitment
+            .as_bytes(),
+        phase60_claim
+            .input_tensor
+            .tensor_witness_commitment
+            .as_bytes(),
+        phase60_claim
+            .output_tensor
+            .tensor_witness_commitment
+            .as_bytes(),
+        phase61_claim.pcs_config_profile.as_bytes(),
+        phase61_claim.pcs_proof_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, phase61_claim.replacement_opening_count);
+    phase29_update_usize(&mut hasher, phase61_claim.runtime_replacement_opening_count);
+    phase29_update_usize(
+        &mut hasher,
+        phase61_claim.parameter_replacement_opening_count,
+    );
+    phase44d_finalize_hash(hasher, "Phase 62 relation template")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase62_derive_chain_start_state_commitment_from_parts(
+    relation_template_commitment: &str,
+    source_phase61_claim_commitment: &str,
+    source_phase60_claim_commitment: &str,
+    source_phase60_input_tensor_commitment: &str,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 62 chain-start state hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase62-chain-start-state");
+    for part in [
+        relation_template_commitment.as_bytes(),
+        source_phase61_claim_commitment.as_bytes(),
+        source_phase60_claim_commitment.as_bytes(),
+        source_phase60_input_tensor_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 62 chain-start state")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase62_derive_step_output_state_commitment_from_parts(
+    step_index: usize,
+    relation_template_commitment: &str,
+    input_state_commitment: &str,
+    source_phase61_claim_commitment: &str,
+    source_phase60_claim_commitment: &str,
+    source_phase60_output_tensor_commitment: &str,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 62 step-output state hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase62-step-output-state");
+    phase29_update_usize(&mut hasher, step_index);
+    for part in [
+        relation_template_commitment.as_bytes(),
+        input_state_commitment.as_bytes(),
+        source_phase61_claim_commitment.as_bytes(),
+        source_phase60_claim_commitment.as_bytes(),
+        source_phase60_output_tensor_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 62 step-output state")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase62_commit_step_envelope_commitments(
+    steps: &[Phase62ProofCarryingStateStepEnvelope],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 62 step-envelope list hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase62-step-envelope-commitments");
+    phase29_update_usize(&mut hasher, steps.len());
+    for step in steps {
+        phase29_update_len_prefixed(&mut hasher, step.step_envelope_commitment.as_bytes());
+    }
+    phase44d_finalize_hash(hasher, "Phase 62 step-envelope commitments")
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+pub(crate) fn phase62_commit_step_envelope_commitments_for_tests(
+    steps: &[Phase62ProofCarryingStateStepEnvelope],
+) -> Result<String> {
+    phase62_commit_step_envelope_commitments(steps)
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+pub(crate) fn phase62_recompute_state_continuity_chain_for_tests(
+    claim: &mut Phase62ProofCarryingStateContinuityClaim,
+) -> Result<()> {
+    let first_step = claim
+        .step_envelopes
+        .first()
+        .ok_or_else(|| VmError::InvalidConfig("Phase 62 empty step chain".to_string()))?;
+    let mut input_state_commitment = phase62_derive_chain_start_state_commitment_from_parts(
+        &claim.relation_template_commitment,
+        &claim.source_phase61_runtime_witness_pcs_replacement_claim_commitment,
+        &claim.source_phase60_runtime_relation_witness_claim_commitment,
+        &first_step.source_phase60_input_tensor_witness_commitment,
+    )?;
+    claim.chain_start_state_commitment = input_state_commitment.clone();
+    for step in &mut claim.step_envelopes {
+        step.input_state_commitment = input_state_commitment.clone();
+        step.output_state_commitment = phase62_derive_step_output_state_commitment_from_parts(
+            step.step_index,
+            &step.relation_template_commitment,
+            &step.input_state_commitment,
+            &step.source_phase61_runtime_witness_pcs_replacement_claim_commitment,
+            &step.source_phase60_runtime_relation_witness_claim_commitment,
+            &step.source_phase60_output_tensor_witness_commitment,
+        )?;
+        step.step_envelope_commitment = commit_phase62_proof_carrying_state_step_envelope(step)?;
+        input_state_commitment = step.output_state_commitment.clone();
+    }
+    claim.chain_end_state_commitment = input_state_commitment;
+    claim.step_envelopes_commitment =
+        phase62_commit_step_envelope_commitments(&claim.step_envelopes)?;
+    claim.proof_carrying_state_continuity_claim_commitment =
+        commit_phase62_proof_carrying_state_continuity_claim(claim)?;
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase62_state_continuity_surface_unit_count(step_count: usize) -> Result<usize> {
+    let continuity_link_count = step_count.checked_sub(1).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 62 continuity link accounting underflow".to_string())
+    })?;
+    step_count
+        .checked_mul(8)
+        .and_then(|value| value.checked_add(continuity_link_count))
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 62 state-continuity surface accounting overflow".to_string(),
+            )
+        })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase62_proof_carrying_state_continuity_transcript_order() -> Vec<String> {
+    [
+        "phase62_claim_header",
+        "phase61_runtime_witness_pcs_replacement_claim_commitment",
+        "phase60_runtime_relation_witness_claim_commitment",
+        "relation_template_commitment",
+        "chain_start_state_commitment",
+        "ordered_step_envelope_commitments",
+        "adjacent_state_continuity_links",
+        "chain_end_state_commitment",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
 }
 
 #[cfg(feature = "stwo-backend")]
