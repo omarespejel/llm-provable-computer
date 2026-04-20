@@ -9042,7 +9042,7 @@ mod tests {
             sample_phase62_proof_carrying_state_continuity_claim();
 
         for step in &mut phase62.step_envelopes {
-            step.source_phase60_input_tensor_witness_commitment = hash32('g');
+            step.source_phase60_input_tensor_witness_commitment = hash32('a');
             recommit_phase62_step(step);
         }
         recommit_phase62_claim(&mut phase62);
