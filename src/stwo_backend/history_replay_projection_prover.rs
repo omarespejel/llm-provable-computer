@@ -8162,6 +8162,32 @@ mod tests {
     }
 
     #[test]
+    fn phase58_witness_pcs_opening_claim_rejects_config_profile_drift_even_when_recommitted() {
+        let (_, _, _, _, mut phase58) = sample_phase58_witness_pcs_opening_claim();
+
+        phase58.pcs_config_profile = "phase58-forged-pcs-config-profile".to_string();
+        phase58.witness_pcs_opening_claim_commitment =
+            commit_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+                .expect("recommit forged Phase58 PCS profile claim");
+        let error = verify_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+            .expect_err("Phase58 must reject claim-level PCS config profile drift");
+        assert!(error.to_string().contains("claim config profile drift"));
+
+        let (_, _, _, _, mut phase58) = sample_phase58_witness_pcs_opening_claim();
+        phase58.opening_proofs[0].pcs_config_profile =
+            "phase58-forged-pcs-config-profile".to_string();
+        phase58.opening_proofs[0].opening_proof_commitment =
+            commit_phase58_witness_bound_pcs_opening(&phase58.opening_proofs[0])
+                .expect("recommit forged Phase58 opening profile");
+        phase58.witness_pcs_opening_claim_commitment =
+            commit_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+                .expect("recommit forged Phase58 opening-profile claim");
+        let error = verify_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+            .expect_err("Phase58 must reject opening-level PCS config profile drift");
+        assert!(error.to_string().contains("opening config profile drift"));
+    }
+
+    #[test]
     fn phase58_witness_pcs_opening_claim_rejects_false_full_relation_and_paper_flags() {
         let (_, _, _, _, mut phase58) = sample_phase58_witness_pcs_opening_claim();
 
