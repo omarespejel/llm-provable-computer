@@ -369,6 +369,30 @@ pub const STWO_TRANSFORMER_TRANSITION_ARTIFACT_VERSION_PHASE65: &str =
 pub const STWO_TRANSFORMER_TRANSITION_ARTIFACT_SCOPE_PHASE65: &str =
     "phase65_phase64_first_layer_transformer_transition_artifact";
 #[cfg(feature = "stwo-backend")]
+pub const STWO_TRANSFORMER_CHAIN_ARTIFACT_VERSION_PHASE66: &str =
+    "phase66-transformer-chain-artifact-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_TRANSFORMER_CHAIN_ARTIFACT_SCOPE_PHASE66: &str =
+    "phase66_phase65_transition_steps_chained_by_typed_carried_state";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PUBLICATION_ARTIFACT_TABLE_VERSION_PHASE67: &str =
+    "phase67-publication-artifact-table-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PUBLICATION_ARTIFACT_TABLE_SCOPE_PHASE67: &str =
+    "phase67_phase63_to_phase66_publication_artifact_table";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_INDEPENDENT_REPLAY_AUDIT_VERSION_PHASE68: &str =
+    "phase68-independent-replay-audit-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_INDEPENDENT_REPLAY_AUDIT_SCOPE_PHASE68: &str =
+    "phase68_phase66_chain_independent_replay_audit_manifest";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_SYMBOLIC_ARTIFACT_MAPPING_VERSION_PHASE69: &str =
+    "phase69-symbolic-artifact-mapping-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_SYMBOLIC_ARTIFACT_MAPPING_SCOPE_PHASE69: &str =
+    "phase69_symbolic_model_to_verifier_artifact_mapping";
+#[cfg(feature = "stwo-backend")]
 const STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_KIND_PHASE44D: &str =
     "source-chain-public-output-boundary-verifier-v1";
 #[cfg(feature = "stwo-backend")]
@@ -633,6 +657,41 @@ const STWO_TRANSFORMER_TRANSITION_NEXT_STEP_PHASE65: &str =
 #[cfg(feature = "stwo-backend")]
 const STWO_TRANSFORMER_TRANSITION_RELATION_KIND_PHASE65: &str =
     "phase65_first_layer_gated_feed_forward_transition";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSFORMER_CHAIN_COMPLEXITY_PHASE66: &str =
+    "O(phase65_steps + carried_state_handoff_links)";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSFORMER_CHAIN_STATUS_PHASE66: &str =
+    "phase65_transition_steps_chained_by_typed_carried_state";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSFORMER_CHAIN_NEXT_STEP_PHASE66: &str =
+    "publish_artifact_table_and_independent_replay_audit_before_more_features";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_ARTIFACT_TABLE_COMPLEXITY_PHASE67: &str = "O(publication_artifact_rows)";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_ARTIFACT_TABLE_STATUS_PHASE67: &str =
+    "phase63_to_phase66_artifact_rows_source_bound";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_ARTIFACT_TABLE_NEXT_STEP_PHASE67: &str =
+    "independently_replay_phase66_chain_before_public_claim_expansion";
+#[cfg(feature = "stwo-backend")]
+const STWO_INDEPENDENT_REPLAY_AUDIT_COMPLEXITY_PHASE68: &str =
+    "O(phase66_chain_links + audit_tamper_cases)";
+#[cfg(feature = "stwo-backend")]
+const STWO_INDEPENDENT_REPLAY_AUDIT_STATUS_PHASE68: &str =
+    "phase66_chain_has_independent_replay_oracle_manifest";
+#[cfg(feature = "stwo-backend")]
+const STWO_INDEPENDENT_REPLAY_AUDIT_NEXT_STEP_PHASE68: &str =
+    "bind_symbolic_model_terms_to_checked_artifact_surfaces";
+#[cfg(feature = "stwo-backend")]
+const STWO_SYMBOLIC_ARTIFACT_MAPPING_COMPLEXITY_PHASE69: &str =
+    "O(symbolic_terms + artifact_surface_rows)";
+#[cfg(feature = "stwo-backend")]
+const STWO_SYMBOLIC_ARTIFACT_MAPPING_STATUS_PHASE69: &str =
+    "symbolic_terms_mapped_to_phase63_to_phase68_artifact_surfaces";
+#[cfg(feature = "stwo-backend")]
+const STWO_SYMBOLIC_ARTIFACT_MAPPING_NEXT_STEP_PHASE69: &str =
+    "stop_and_update_paper_artifact_section_before_phase70_feature_expansion";
 #[cfg(feature = "stwo-backend")]
 const PHASE44D_M31_MODULUS: u32 = (1u32 << 31) - 1;
 
@@ -2243,6 +2302,201 @@ pub struct Phase65TransformerTransitionArtifact {
     pub paper_ready: bool,
     pub required_next_step: String,
     pub transformer_transition_artifact_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase66TransformerChainLink {
+    pub proof_backend: StarkProofBackend,
+    pub step_index: usize,
+    pub source_phase65_transition_step_commitment: String,
+    pub source_phase64_typed_step_commitment: String,
+    pub input_boundary_commitment: String,
+    pub output_boundary_commitment: String,
+    pub input_carried_state_commitment: String,
+    pub output_carried_state_commitment: String,
+    pub previous_output_carried_state_commitment: Option<String>,
+    pub input_position: usize,
+    pub output_position: usize,
+    pub shared_lookup_identity_commitment: String,
+    pub chain_link_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase66TransformerChainArtifact {
+    pub proof_backend: StarkProofBackend,
+    pub artifact_version: String,
+    pub semantic_scope: String,
+    pub source_phase65_transformer_transition_artifact_commitment: String,
+    pub source_phase64_typed_carried_state_claim_commitment: String,
+    pub source_phase63_shared_lookup_identity_claim_commitment: String,
+    pub relation_kind: String,
+    pub relation_template_commitment: String,
+    pub tensor_relation_commitment: String,
+    pub shared_lookup_identity_commitment: String,
+    pub chain_start_typed_boundary_commitment: String,
+    pub chain_end_typed_boundary_commitment: String,
+    pub chain_start_carried_state_commitment: String,
+    pub chain_end_carried_state_commitment: String,
+    pub chain_start_position: usize,
+    pub chain_end_position: usize,
+    pub chain_links_commitment: String,
+    pub chain_links: Vec<Phase66TransformerChainLink>,
+    pub step_count: usize,
+    pub continuity_link_count: usize,
+    pub phase65_transformer_transition_surface_unit_count: usize,
+    pub phase65_combined_verifier_surface_unit_count: usize,
+    pub chained_transition_surface_unit_count: usize,
+    pub combined_verifier_surface_unit_count: usize,
+    pub surface_delta_from_phase65: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub phase65_transition_artifact_available: bool,
+    pub typed_carried_state_handoffs_available: bool,
+    pub shared_lookup_identity_available: bool,
+    pub actual_runtime_model_witness_available: bool,
+    pub proof_carrying_decoding_surface_available: bool,
+    pub full_standard_softmax_inference_claimed: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub transformer_chain_artifact_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase67PublicationArtifactRow {
+    pub proof_backend: StarkProofBackend,
+    pub row_index: usize,
+    pub phase_label: String,
+    pub artifact_name: String,
+    pub artifact_commitment: String,
+    pub semantic_scope: String,
+    pub verifier_function: String,
+    pub source_bound_verifier_function: String,
+    pub evidence_tier: String,
+    pub claim_boundary: String,
+    pub limitation: String,
+    pub row_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase67PublicationArtifactTable {
+    pub proof_backend: StarkProofBackend,
+    pub table_version: String,
+    pub semantic_scope: String,
+    pub source_phase66_transformer_chain_artifact_commitment: String,
+    pub source_phase65_transformer_transition_artifact_commitment: String,
+    pub source_phase64_typed_carried_state_claim_commitment: String,
+    pub source_phase63_shared_lookup_identity_claim_commitment: String,
+    pub artifact_rows_commitment: String,
+    pub artifact_rows: Vec<Phase67PublicationArtifactRow>,
+    pub row_count: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub frozen_evidence_bundle_available: bool,
+    pub source_bound_verifiers_available: bool,
+    pub performance_benchmark_claimed: bool,
+    pub full_standard_softmax_inference_claimed: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub publication_artifact_table_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase68IndependentReplayAuditClaim {
+    pub proof_backend: StarkProofBackend,
+    pub audit_version: String,
+    pub semantic_scope: String,
+    pub source_phase66_transformer_chain_artifact_commitment: String,
+    pub source_phase67_publication_artifact_table_commitment: String,
+    pub audited_chain_start_carried_state_commitment: String,
+    pub audited_chain_end_carried_state_commitment: String,
+    pub audited_step_count: usize,
+    pub audited_continuity_link_count: usize,
+    pub required_tamper_case_count: usize,
+    pub independent_oracle_name: String,
+    pub production_verifier_function: String,
+    pub source_bound_verifier_function: String,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub phase66_chain_available: bool,
+    pub publication_table_available: bool,
+    pub independent_replay_oracle_available: bool,
+    pub production_verifier_cross_check_available: bool,
+    pub mutation_style_tamper_cases_available: bool,
+    pub formal_verification_claimed: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub independent_replay_audit_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase69SymbolicArtifactMappingRow {
+    pub proof_backend: StarkProofBackend,
+    pub row_index: usize,
+    pub symbolic_term: String,
+    pub model_component: String,
+    pub artifact_phase: String,
+    pub artifact_commitment: String,
+    pub verifier_surface: String,
+    pub source_bound_check: String,
+    pub limitation: String,
+    pub row_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase69SymbolicArtifactMappingClaim {
+    pub proof_backend: StarkProofBackend,
+    pub mapping_version: String,
+    pub semantic_scope: String,
+    pub formula_family: String,
+    pub source_phase68_independent_replay_audit_commitment: String,
+    pub source_phase67_publication_artifact_table_commitment: String,
+    pub source_phase66_transformer_chain_artifact_commitment: String,
+    pub source_phase65_transformer_transition_artifact_commitment: String,
+    pub source_phase64_typed_carried_state_claim_commitment: String,
+    pub source_phase63_shared_lookup_identity_claim_commitment: String,
+    pub mapping_rows_commitment: String,
+    pub mapping_rows: Vec<Phase69SymbolicArtifactMappingRow>,
+    pub row_count: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub symbolic_model_available: bool,
+    pub artifact_surfaces_available: bool,
+    pub source_bound_verifiers_available: bool,
+    pub runtime_benchmark_claimed: bool,
+    pub full_standard_softmax_inference_claimed: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub symbolic_artifact_mapping_commitment: String,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -14303,6 +14557,328 @@ pub fn commit_phase65_transformer_transition_artifact(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn commit_phase66_transformer_chain_link(link: &Phase66TransformerChainLink) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 66 transformer chain link hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase66-transformer-chain-link");
+    phase29_update_len_prefixed(&mut hasher, link.proof_backend.to_string().as_bytes());
+    phase29_update_usize(&mut hasher, link.step_index);
+    for part in [
+        link.source_phase65_transition_step_commitment.as_bytes(),
+        link.source_phase64_typed_step_commitment.as_bytes(),
+        link.input_boundary_commitment.as_bytes(),
+        link.output_boundary_commitment.as_bytes(),
+        link.input_carried_state_commitment.as_bytes(),
+        link.output_carried_state_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    match &link.previous_output_carried_state_commitment {
+        Some(value) => {
+            phase29_update_bool(&mut hasher, true);
+            phase29_update_len_prefixed(&mut hasher, value.as_bytes());
+        }
+        None => phase29_update_bool(&mut hasher, false),
+    }
+    phase29_update_usize(&mut hasher, link.input_position);
+    phase29_update_usize(&mut hasher, link.output_position);
+    phase29_update_len_prefixed(
+        &mut hasher,
+        link.shared_lookup_identity_commitment.as_bytes(),
+    );
+    phase44d_finalize_hash(hasher, "Phase 66 transformer chain link")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase66_transformer_chain_artifact(
+    artifact: &Phase66TransformerChainArtifact,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 66 transformer chain artifact hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase66-transformer-chain-artifact");
+    phase29_update_len_prefixed(&mut hasher, artifact.proof_backend.to_string().as_bytes());
+    for part in [
+        artifact.artifact_version.as_bytes(),
+        artifact.semantic_scope.as_bytes(),
+        artifact
+            .source_phase65_transformer_transition_artifact_commitment
+            .as_bytes(),
+        artifact
+            .source_phase64_typed_carried_state_claim_commitment
+            .as_bytes(),
+        artifact
+            .source_phase63_shared_lookup_identity_claim_commitment
+            .as_bytes(),
+        artifact.relation_kind.as_bytes(),
+        artifact.relation_template_commitment.as_bytes(),
+        artifact.tensor_relation_commitment.as_bytes(),
+        artifact.shared_lookup_identity_commitment.as_bytes(),
+        artifact.chain_start_typed_boundary_commitment.as_bytes(),
+        artifact.chain_end_typed_boundary_commitment.as_bytes(),
+        artifact.chain_start_carried_state_commitment.as_bytes(),
+        artifact.chain_end_carried_state_commitment.as_bytes(),
+        artifact.chain_links_commitment.as_bytes(),
+        artifact.verifier_side_complexity.as_bytes(),
+        artifact.verifier_status.as_bytes(),
+        artifact.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for link in &artifact.chain_links {
+        phase29_update_len_prefixed(&mut hasher, link.chain_link_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, artifact.chain_start_position);
+    phase29_update_usize(&mut hasher, artifact.chain_end_position);
+    phase29_update_usize(&mut hasher, artifact.step_count);
+    phase29_update_usize(&mut hasher, artifact.continuity_link_count);
+    phase29_update_usize(
+        &mut hasher,
+        artifact.phase65_transformer_transition_surface_unit_count,
+    );
+    phase29_update_usize(
+        &mut hasher,
+        artifact.phase65_combined_verifier_surface_unit_count,
+    );
+    phase29_update_usize(&mut hasher, artifact.chained_transition_surface_unit_count);
+    phase29_update_usize(&mut hasher, artifact.combined_verifier_surface_unit_count);
+    phase29_update_usize(&mut hasher, artifact.surface_delta_from_phase65);
+    phase44d_update_hash_vec(&mut hasher, &artifact.transcript_order);
+    phase29_update_bool(&mut hasher, artifact.phase65_transition_artifact_available);
+    phase29_update_bool(&mut hasher, artifact.typed_carried_state_handoffs_available);
+    phase29_update_bool(&mut hasher, artifact.shared_lookup_identity_available);
+    phase29_update_bool(&mut hasher, artifact.actual_runtime_model_witness_available);
+    phase29_update_bool(
+        &mut hasher,
+        artifact.proof_carrying_decoding_surface_available,
+    );
+    phase29_update_bool(
+        &mut hasher,
+        artifact.full_standard_softmax_inference_claimed,
+    );
+    phase29_update_bool(&mut hasher, artifact.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, artifact.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, artifact.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, artifact.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 66 transformer chain artifact")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase67_publication_artifact_row(
+    row: &Phase67PublicationArtifactRow,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 67 publication artifact row hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase67-publication-artifact-row");
+    phase29_update_len_prefixed(&mut hasher, row.proof_backend.to_string().as_bytes());
+    phase29_update_usize(&mut hasher, row.row_index);
+    for part in [
+        row.phase_label.as_bytes(),
+        row.artifact_name.as_bytes(),
+        row.artifact_commitment.as_bytes(),
+        row.semantic_scope.as_bytes(),
+        row.verifier_function.as_bytes(),
+        row.source_bound_verifier_function.as_bytes(),
+        row.evidence_tier.as_bytes(),
+        row.claim_boundary.as_bytes(),
+        row.limitation.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 67 publication artifact row")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase67_publication_artifact_table(
+    table: &Phase67PublicationArtifactTable,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 67 publication artifact table hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase67-publication-artifact-table");
+    phase29_update_len_prefixed(&mut hasher, table.proof_backend.to_string().as_bytes());
+    for part in [
+        table.table_version.as_bytes(),
+        table.semantic_scope.as_bytes(),
+        table
+            .source_phase66_transformer_chain_artifact_commitment
+            .as_bytes(),
+        table
+            .source_phase65_transformer_transition_artifact_commitment
+            .as_bytes(),
+        table
+            .source_phase64_typed_carried_state_claim_commitment
+            .as_bytes(),
+        table
+            .source_phase63_shared_lookup_identity_claim_commitment
+            .as_bytes(),
+        table.artifact_rows_commitment.as_bytes(),
+        table.verifier_side_complexity.as_bytes(),
+        table.verifier_status.as_bytes(),
+        table.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for row in &table.artifact_rows {
+        phase29_update_len_prefixed(&mut hasher, row.row_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, table.row_count);
+    phase44d_update_hash_vec(&mut hasher, &table.transcript_order);
+    phase29_update_bool(&mut hasher, table.frozen_evidence_bundle_available);
+    phase29_update_bool(&mut hasher, table.source_bound_verifiers_available);
+    phase29_update_bool(&mut hasher, table.performance_benchmark_claimed);
+    phase29_update_bool(&mut hasher, table.full_standard_softmax_inference_claimed);
+    phase29_update_bool(&mut hasher, table.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, table.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, table.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, table.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 67 publication artifact table")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase68_independent_replay_audit_claim(
+    claim: &Phase68IndependentReplayAuditClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 68 independent replay audit hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase68-independent-replay-audit");
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.audit_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim
+            .source_phase66_transformer_chain_artifact_commitment
+            .as_bytes(),
+        claim
+            .source_phase67_publication_artifact_table_commitment
+            .as_bytes(),
+        claim
+            .audited_chain_start_carried_state_commitment
+            .as_bytes(),
+        claim.audited_chain_end_carried_state_commitment.as_bytes(),
+        claim.independent_oracle_name.as_bytes(),
+        claim.production_verifier_function.as_bytes(),
+        claim.source_bound_verifier_function.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.verifier_status.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, claim.audited_step_count);
+    phase29_update_usize(&mut hasher, claim.audited_continuity_link_count);
+    phase29_update_usize(&mut hasher, claim.required_tamper_case_count);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.phase66_chain_available);
+    phase29_update_bool(&mut hasher, claim.publication_table_available);
+    phase29_update_bool(&mut hasher, claim.independent_replay_oracle_available);
+    phase29_update_bool(&mut hasher, claim.production_verifier_cross_check_available);
+    phase29_update_bool(&mut hasher, claim.mutation_style_tamper_cases_available);
+    phase29_update_bool(&mut hasher, claim.formal_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, claim.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, claim.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 68 independent replay audit")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase69_symbolic_artifact_mapping_row(
+    row: &Phase69SymbolicArtifactMappingRow,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 69 symbolic mapping row hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase69-symbolic-artifact-mapping-row");
+    phase29_update_len_prefixed(&mut hasher, row.proof_backend.to_string().as_bytes());
+    phase29_update_usize(&mut hasher, row.row_index);
+    for part in [
+        row.symbolic_term.as_bytes(),
+        row.model_component.as_bytes(),
+        row.artifact_phase.as_bytes(),
+        row.artifact_commitment.as_bytes(),
+        row.verifier_surface.as_bytes(),
+        row.source_bound_check.as_bytes(),
+        row.limitation.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 69 symbolic artifact mapping row")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase69_symbolic_artifact_mapping_claim(
+    claim: &Phase69SymbolicArtifactMappingClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 69 symbolic mapping claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase69-symbolic-artifact-mapping-claim");
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.mapping_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim.formula_family.as_bytes(),
+        claim
+            .source_phase68_independent_replay_audit_commitment
+            .as_bytes(),
+        claim
+            .source_phase67_publication_artifact_table_commitment
+            .as_bytes(),
+        claim
+            .source_phase66_transformer_chain_artifact_commitment
+            .as_bytes(),
+        claim
+            .source_phase65_transformer_transition_artifact_commitment
+            .as_bytes(),
+        claim
+            .source_phase64_typed_carried_state_claim_commitment
+            .as_bytes(),
+        claim
+            .source_phase63_shared_lookup_identity_claim_commitment
+            .as_bytes(),
+        claim.mapping_rows_commitment.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.verifier_status.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for row in &claim.mapping_rows {
+        phase29_update_len_prefixed(&mut hasher, row.row_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, claim.row_count);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.symbolic_model_available);
+    phase29_update_bool(&mut hasher, claim.artifact_surfaces_available);
+    phase29_update_bool(&mut hasher, claim.source_bound_verifiers_available);
+    phase29_update_bool(&mut hasher, claim.runtime_benchmark_claimed);
+    phase29_update_bool(&mut hasher, claim.full_standard_softmax_inference_claimed);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, claim.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, claim.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 69 symbolic artifact mapping claim")
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase58_pcs_config() -> PcsConfig {
     PcsConfig {
         pow_bits: 10,
@@ -18541,6 +19117,1303 @@ pub fn verify_phase65_transformer_transition_artifact_against_sources(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn phase66_prepare_transformer_chain_artifact(
+    phase65_artifact: &Phase65TransformerTransitionArtifact,
+    phase64_claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<Phase66TransformerChainArtifact> {
+    verify_phase65_transformer_transition_artifact(phase65_artifact)?;
+    verify_phase64_typed_carried_state_claim(phase64_claim)?;
+    verify_phase63_shared_lookup_identity_claim(phase63_claim)?;
+    if phase65_artifact.step_count != phase64_claim.step_count
+        || phase65_artifact.transition_steps.len() != phase64_claim.typed_steps.len()
+        || phase65_artifact.source_phase64_typed_carried_state_claim_commitment
+            != phase64_claim.typed_carried_state_claim_commitment
+        || phase65_artifact.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain source drift against Phase65/64/63".to_string(),
+        ));
+    }
+    let mut previous_output_carried_state_commitment = None;
+    let chain_links = phase65_artifact
+        .transition_steps
+        .iter()
+        .zip(phase64_claim.typed_steps.iter())
+        .map(|(transition_step, typed_step)| {
+            let mut link = Phase66TransformerChainLink {
+                proof_backend: StarkProofBackend::Stwo,
+                step_index: transition_step.step_index,
+                source_phase65_transition_step_commitment: transition_step
+                    .transition_step_commitment
+                    .clone(),
+                source_phase64_typed_step_commitment: typed_step.typed_step_commitment.clone(),
+                input_boundary_commitment: typed_step
+                    .input_boundary
+                    .typed_boundary_commitment
+                    .clone(),
+                output_boundary_commitment: typed_step
+                    .output_boundary
+                    .typed_boundary_commitment
+                    .clone(),
+                input_carried_state_commitment: typed_step
+                    .input_boundary
+                    .phase62_state_commitment
+                    .clone(),
+                output_carried_state_commitment: typed_step
+                    .output_boundary
+                    .phase62_state_commitment
+                    .clone(),
+                previous_output_carried_state_commitment: previous_output_carried_state_commitment
+                    .clone(),
+                input_position: typed_step.input_boundary.position,
+                output_position: typed_step.output_boundary.position,
+                shared_lookup_identity_commitment: phase65_artifact
+                    .shared_lookup_identity_commitment
+                    .clone(),
+                chain_link_commitment: String::new(),
+            };
+            link.chain_link_commitment = commit_phase66_transformer_chain_link(&link)?;
+            verify_phase66_transformer_chain_link(&link)?;
+            previous_output_carried_state_commitment =
+                Some(link.output_carried_state_commitment.clone());
+            Ok(link)
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let first_link = chain_links.first().ok_or_else(|| {
+        VmError::InvalidConfig("Phase 66 transformer chain requires at least one link".to_string())
+    })?;
+    let last_link = chain_links.last().ok_or_else(|| {
+        VmError::InvalidConfig("Phase 66 transformer chain requires at least one link".to_string())
+    })?;
+    let chained_transition_surface_unit_count =
+        phase66_transformer_chain_surface_unit_count(phase65_artifact.step_count)?;
+    let combined_verifier_surface_unit_count = phase65_artifact
+        .combined_verifier_surface_unit_count
+        .checked_add(chained_transition_surface_unit_count)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 66 transformer chain combined surface accounting overflow".to_string(),
+            )
+        })?;
+    let mut artifact = Phase66TransformerChainArtifact {
+        proof_backend: StarkProofBackend::Stwo,
+        artifact_version: STWO_TRANSFORMER_CHAIN_ARTIFACT_VERSION_PHASE66.to_string(),
+        semantic_scope: STWO_TRANSFORMER_CHAIN_ARTIFACT_SCOPE_PHASE66.to_string(),
+        source_phase65_transformer_transition_artifact_commitment: phase65_artifact
+            .transformer_transition_artifact_commitment
+            .clone(),
+        source_phase64_typed_carried_state_claim_commitment: phase64_claim
+            .typed_carried_state_claim_commitment
+            .clone(),
+        source_phase63_shared_lookup_identity_claim_commitment: phase63_claim
+            .shared_lookup_identity_claim_commitment
+            .clone(),
+        relation_kind: phase65_artifact.relation_kind.clone(),
+        relation_template_commitment: phase65_artifact.relation_template_commitment.clone(),
+        tensor_relation_commitment: phase65_artifact.tensor_relation_commitment.clone(),
+        shared_lookup_identity_commitment: phase65_artifact
+            .shared_lookup_identity_commitment
+            .clone(),
+        chain_start_typed_boundary_commitment: phase64_claim
+            .chain_start_typed_boundary_commitment
+            .clone(),
+        chain_end_typed_boundary_commitment: phase64_claim
+            .chain_end_typed_boundary_commitment
+            .clone(),
+        chain_start_carried_state_commitment: first_link.input_carried_state_commitment.clone(),
+        chain_end_carried_state_commitment: last_link.output_carried_state_commitment.clone(),
+        chain_start_position: first_link.input_position,
+        chain_end_position: last_link.output_position,
+        chain_links_commitment: String::new(),
+        chain_links,
+        step_count: phase65_artifact.step_count,
+        continuity_link_count: phase65_artifact.step_count.saturating_sub(1),
+        phase65_transformer_transition_surface_unit_count: phase65_artifact
+            .transformer_transition_surface_unit_count,
+        phase65_combined_verifier_surface_unit_count: phase65_artifact
+            .combined_verifier_surface_unit_count,
+        chained_transition_surface_unit_count,
+        combined_verifier_surface_unit_count,
+        surface_delta_from_phase65: chained_transition_surface_unit_count,
+        verifier_side_complexity: STWO_TRANSFORMER_CHAIN_COMPLEXITY_PHASE66.to_string(),
+        verifier_status: STWO_TRANSFORMER_CHAIN_STATUS_PHASE66.to_string(),
+        transcript_order: phase66_transformer_chain_transcript_order(),
+        phase65_transition_artifact_available: true,
+        typed_carried_state_handoffs_available: true,
+        shared_lookup_identity_available: true,
+        actual_runtime_model_witness_available: true,
+        proof_carrying_decoding_surface_available: true,
+        full_standard_softmax_inference_claimed: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_TRANSFORMER_CHAIN_NEXT_STEP_PHASE66.to_string(),
+        transformer_chain_artifact_commitment: String::new(),
+    };
+    artifact.chain_links_commitment = phase66_commit_chain_links(&artifact.chain_links)?;
+    artifact.transformer_chain_artifact_commitment =
+        commit_phase66_transformer_chain_artifact(&artifact)?;
+    verify_phase66_transformer_chain_artifact(&artifact)?;
+    Ok(artifact)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase66_transformer_chain_link(link: &Phase66TransformerChainLink) -> Result<()> {
+    if link.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain link requires `stwo` backend".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase66_source_phase65_transition_step_commitment",
+            link.source_phase65_transition_step_commitment.as_str(),
+        ),
+        (
+            "phase66_source_phase64_typed_step_commitment",
+            link.source_phase64_typed_step_commitment.as_str(),
+        ),
+        (
+            "phase66_input_boundary_commitment",
+            link.input_boundary_commitment.as_str(),
+        ),
+        (
+            "phase66_output_boundary_commitment",
+            link.output_boundary_commitment.as_str(),
+        ),
+        (
+            "phase66_input_carried_state_commitment",
+            link.input_carried_state_commitment.as_str(),
+        ),
+        (
+            "phase66_output_carried_state_commitment",
+            link.output_carried_state_commitment.as_str(),
+        ),
+        (
+            "phase66_shared_lookup_identity_commitment",
+            link.shared_lookup_identity_commitment.as_str(),
+        ),
+        (
+            "phase66_chain_link_commitment",
+            link.chain_link_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if let Some(previous) = &link.previous_output_carried_state_commitment {
+        phase43_require_hash32("phase66_previous_output_carried_state_commitment", previous)?;
+    }
+    if link.output_position != link.input_position.saturating_add(1) {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain link position drift".to_string(),
+        ));
+    }
+    let expected = commit_phase66_transformer_chain_link(link)?;
+    if link.chain_link_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain link commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase66_transformer_chain_artifact(
+    artifact: &Phase66TransformerChainArtifact,
+) -> Result<()> {
+    if artifact.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain artifact requires `stwo` backend".to_string(),
+        ));
+    }
+    if artifact.artifact_version != STWO_TRANSFORMER_CHAIN_ARTIFACT_VERSION_PHASE66
+        || artifact.semantic_scope != STWO_TRANSFORMER_CHAIN_ARTIFACT_SCOPE_PHASE66
+        || artifact.relation_kind != STWO_TRANSFORMER_TRANSITION_RELATION_KIND_PHASE65
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain version, scope, or relation-kind drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase66_source_phase65_artifact_commitment",
+            artifact
+                .source_phase65_transformer_transition_artifact_commitment
+                .as_str(),
+        ),
+        (
+            "phase66_source_phase64_claim_commitment",
+            artifact
+                .source_phase64_typed_carried_state_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase66_source_phase63_claim_commitment",
+            artifact
+                .source_phase63_shared_lookup_identity_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase66_relation_template_commitment",
+            artifact.relation_template_commitment.as_str(),
+        ),
+        (
+            "phase66_tensor_relation_commitment",
+            artifact.tensor_relation_commitment.as_str(),
+        ),
+        (
+            "phase66_shared_lookup_identity_commitment",
+            artifact.shared_lookup_identity_commitment.as_str(),
+        ),
+        (
+            "phase66_chain_start_typed_boundary_commitment",
+            artifact.chain_start_typed_boundary_commitment.as_str(),
+        ),
+        (
+            "phase66_chain_end_typed_boundary_commitment",
+            artifact.chain_end_typed_boundary_commitment.as_str(),
+        ),
+        (
+            "phase66_chain_start_carried_state_commitment",
+            artifact.chain_start_carried_state_commitment.as_str(),
+        ),
+        (
+            "phase66_chain_end_carried_state_commitment",
+            artifact.chain_end_carried_state_commitment.as_str(),
+        ),
+        (
+            "phase66_chain_links_commitment",
+            artifact.chain_links_commitment.as_str(),
+        ),
+        (
+            "phase66_transformer_chain_artifact_commitment",
+            artifact.transformer_chain_artifact_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if artifact.step_count < 2
+        || artifact.chain_links.len() != artifact.step_count
+        || artifact.continuity_link_count != artifact.step_count - 1
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain requires a multi-step linked chain".to_string(),
+        ));
+    }
+    let expected_surface = phase66_transformer_chain_surface_unit_count(artifact.step_count)?;
+    let expected_combined_surface = artifact
+        .phase65_combined_verifier_surface_unit_count
+        .checked_add(expected_surface)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 66 transformer chain combined surface accounting overflow".to_string(),
+            )
+        })?;
+    if artifact.chained_transition_surface_unit_count != expected_surface
+        || artifact.surface_delta_from_phase65 != expected_surface
+        || artifact.combined_verifier_surface_unit_count != expected_combined_surface
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain surface accounting drift".to_string(),
+        ));
+    }
+    if artifact.chain_links_commitment != phase66_commit_chain_links(&artifact.chain_links)? {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain link-list commitment drift".to_string(),
+        ));
+    }
+    if artifact.verifier_side_complexity != STWO_TRANSFORMER_CHAIN_COMPLEXITY_PHASE66
+        || artifact.verifier_status != STWO_TRANSFORMER_CHAIN_STATUS_PHASE66
+        || artifact.transcript_order != phase66_transformer_chain_transcript_order()
+        || artifact.required_next_step != STWO_TRANSFORMER_CHAIN_NEXT_STEP_PHASE66
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain transcript, status, or next-step drift".to_string(),
+        ));
+    }
+    if !artifact.phase65_transition_artifact_available
+        || !artifact.typed_carried_state_handoffs_available
+        || !artifact.shared_lookup_identity_available
+        || !artifact.actual_runtime_model_witness_available
+        || !artifact.proof_carrying_decoding_surface_available
+        || artifact.full_standard_softmax_inference_claimed
+        || artifact.recursive_verification_claimed
+        || artifact.cryptographic_compression_claimed
+        || artifact.breakthrough_claimed
+        || artifact.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain must not claim full softmax inference, recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let mut seen_links = HashSet::with_capacity(artifact.chain_links.len());
+    let mut previous_output = None::<String>;
+    let mut previous_position = None::<usize>;
+    for (expected_index, link) in artifact.chain_links.iter().enumerate() {
+        verify_phase66_transformer_chain_link(link)?;
+        if link.step_index != expected_index {
+            return Err(VmError::InvalidConfig(
+                "Phase 66 transformer chain link index drift".to_string(),
+            ));
+        }
+        if !seen_links.insert(link.chain_link_commitment.as_str()) {
+            return Err(VmError::InvalidConfig(
+                "Phase 66 transformer chain duplicate link".to_string(),
+            ));
+        }
+        if link.shared_lookup_identity_commitment != artifact.shared_lookup_identity_commitment {
+            return Err(VmError::InvalidConfig(
+                "Phase 66 transformer chain shared lookup identity drift".to_string(),
+            ));
+        }
+        match (
+            &previous_output,
+            &link.previous_output_carried_state_commitment,
+        ) {
+            (None, None) => {}
+            (Some(previous), Some(advertised_previous))
+                if previous == advertised_previous
+                    && previous == &link.input_carried_state_commitment => {}
+            _ => {
+                return Err(VmError::InvalidConfig(
+                    "Phase 66 transformer chain carried-state continuity drift".to_string(),
+                ));
+            }
+        }
+        if let Some(position) = previous_position {
+            if link.input_position != position {
+                return Err(VmError::InvalidConfig(
+                    "Phase 66 transformer chain position continuity drift".to_string(),
+                ));
+            }
+        }
+        previous_output = Some(link.output_carried_state_commitment.clone());
+        previous_position = Some(link.output_position);
+    }
+    let first = artifact.chain_links.first().ok_or_else(|| {
+        VmError::InvalidConfig("Phase 66 transformer chain requires first link".to_string())
+    })?;
+    let last = artifact.chain_links.last().ok_or_else(|| {
+        VmError::InvalidConfig("Phase 66 transformer chain requires last link".to_string())
+    })?;
+    if artifact.chain_start_carried_state_commitment != first.input_carried_state_commitment
+        || artifact.chain_end_carried_state_commitment != last.output_carried_state_commitment
+        || artifact.chain_start_position != first.input_position
+        || artifact.chain_end_position != last.output_position
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain boundary summary drift".to_string(),
+        ));
+    }
+    let expected = commit_phase66_transformer_chain_artifact(artifact)?;
+    if artifact.transformer_chain_artifact_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain artifact commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase66_transformer_chain_artifact_against_sources(
+    artifact: &Phase66TransformerChainArtifact,
+    phase65_artifact: &Phase65TransformerTransitionArtifact,
+    phase64_claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<()> {
+    verify_phase66_transformer_chain_artifact(artifact)?;
+    verify_phase65_transformer_transition_artifact(phase65_artifact)?;
+    verify_phase64_typed_carried_state_claim(phase64_claim)?;
+    verify_phase63_shared_lookup_identity_claim(phase63_claim)?;
+    if artifact.source_phase65_transformer_transition_artifact_commitment
+        != phase65_artifact.transformer_transition_artifact_commitment
+        || artifact.source_phase64_typed_carried_state_claim_commitment
+            != phase64_claim.typed_carried_state_claim_commitment
+        || artifact.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
+        || artifact.step_count != phase65_artifact.step_count
+        || artifact.step_count != phase64_claim.step_count
+        || artifact.relation_kind != phase65_artifact.relation_kind
+        || artifact.relation_template_commitment != phase65_artifact.relation_template_commitment
+        || artifact.tensor_relation_commitment != phase65_artifact.tensor_relation_commitment
+        || artifact.shared_lookup_identity_commitment
+            != phase65_artifact.shared_lookup_identity_commitment
+        || artifact.shared_lookup_identity_commitment
+            != phase64_claim.shared_lookup_identity_commitment
+        || artifact.chain_start_typed_boundary_commitment
+            != phase64_claim.chain_start_typed_boundary_commitment
+        || artifact.chain_end_typed_boundary_commitment
+            != phase64_claim.chain_end_typed_boundary_commitment
+        || artifact.phase65_transformer_transition_surface_unit_count
+            != phase65_artifact.transformer_transition_surface_unit_count
+        || artifact.phase65_combined_verifier_surface_unit_count
+            != phase65_artifact.combined_verifier_surface_unit_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain source drift against Phase65/64/63".to_string(),
+        ));
+    }
+    for ((link, transition_step), typed_step) in artifact
+        .chain_links
+        .iter()
+        .zip(phase65_artifact.transition_steps.iter())
+        .zip(phase64_claim.typed_steps.iter())
+    {
+        if link.source_phase65_transition_step_commitment
+            != transition_step.transition_step_commitment
+            || link.source_phase64_typed_step_commitment != typed_step.typed_step_commitment
+            || link.input_boundary_commitment != typed_step.input_boundary.typed_boundary_commitment
+            || link.output_boundary_commitment
+                != typed_step.output_boundary.typed_boundary_commitment
+            || link.input_carried_state_commitment
+                != typed_step.input_boundary.phase62_state_commitment
+            || link.output_carried_state_commitment
+                != typed_step.output_boundary.phase62_state_commitment
+            || link.input_position != typed_step.input_boundary.position
+            || link.output_position != typed_step.output_boundary.position
+            || link.input_boundary_commitment != transition_step.input_boundary_commitment
+            || link.output_boundary_commitment != transition_step.output_boundary_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 66 transformer chain link source drift".to_string(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase67_prepare_publication_artifact_table(
+    phase66_artifact: &Phase66TransformerChainArtifact,
+    phase65_artifact: &Phase65TransformerTransitionArtifact,
+    phase64_claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<Phase67PublicationArtifactTable> {
+    verify_phase66_transformer_chain_artifact_against_sources(
+        phase66_artifact,
+        phase65_artifact,
+        phase64_claim,
+        phase63_claim,
+    )?;
+    let mut rows = vec![
+        phase67_publication_row(
+            0,
+            "Phase63",
+            "shared lookup identity",
+            &phase63_claim.shared_lookup_identity_claim_commitment,
+            &phase63_claim.semantic_scope,
+            "verify_phase63_shared_lookup_identity_claim",
+            "verify_phase63_shared_lookup_identity_claim_against_phase62",
+            "source_bound_verifier_surface",
+            "one shared normalization/activation lookup identity across proof-carrying steps",
+            "does not prove standard softmax or recursive compression",
+        )?,
+        phase67_publication_row(
+            1,
+            "Phase64",
+            "typed carried state",
+            &phase64_claim.typed_carried_state_claim_commitment,
+            &phase64_claim.semantic_scope,
+            "verify_phase64_typed_carried_state_claim",
+            "verify_phase64_typed_carried_state_claim_against_phase63",
+            "source_bound_verifier_surface",
+            "typed input/output state, tensor, KV-cache, token, and lookup handles",
+            "does not prove full transformer inference",
+        )?,
+        phase67_publication_row(
+            2,
+            "Phase65",
+            "transformer transition artifact",
+            &phase65_artifact.transformer_transition_artifact_commitment,
+            &phase65_artifact.semantic_scope,
+            "verify_phase65_transformer_transition_artifact",
+            "verify_phase65_transformer_transition_artifact_against_sources",
+            "source_bound_verifier_surface",
+            "first-layer transformer-shaped transition artifact backed by runtime relation witnesses",
+            "standard softmax remains future work",
+        )?,
+        phase67_publication_row(
+            3,
+            "Phase66",
+            "proof-carrying decode chain",
+            &phase66_artifact.transformer_chain_artifact_commitment,
+            &phase66_artifact.semantic_scope,
+            "verify_phase66_transformer_chain_artifact",
+            "verify_phase66_transformer_chain_artifact_against_sources",
+            "source_bound_verifier_surface",
+            "ordered transition steps chained by typed carried-state handoffs",
+            "not recursive compression and not a production-scale benchmark",
+        )?,
+    ];
+    for row in &mut rows {
+        row.row_commitment = commit_phase67_publication_artifact_row(row)?;
+        verify_phase67_publication_artifact_row(row)?;
+    }
+    let mut table = Phase67PublicationArtifactTable {
+        proof_backend: StarkProofBackend::Stwo,
+        table_version: STWO_PUBLICATION_ARTIFACT_TABLE_VERSION_PHASE67.to_string(),
+        semantic_scope: STWO_PUBLICATION_ARTIFACT_TABLE_SCOPE_PHASE67.to_string(),
+        source_phase66_transformer_chain_artifact_commitment: phase66_artifact
+            .transformer_chain_artifact_commitment
+            .clone(),
+        source_phase65_transformer_transition_artifact_commitment: phase65_artifact
+            .transformer_transition_artifact_commitment
+            .clone(),
+        source_phase64_typed_carried_state_claim_commitment: phase64_claim
+            .typed_carried_state_claim_commitment
+            .clone(),
+        source_phase63_shared_lookup_identity_claim_commitment: phase63_claim
+            .shared_lookup_identity_claim_commitment
+            .clone(),
+        artifact_rows_commitment: String::new(),
+        artifact_rows: rows,
+        row_count: 4,
+        verifier_side_complexity: STWO_PUBLICATION_ARTIFACT_TABLE_COMPLEXITY_PHASE67.to_string(),
+        verifier_status: STWO_PUBLICATION_ARTIFACT_TABLE_STATUS_PHASE67.to_string(),
+        transcript_order: phase67_publication_artifact_table_transcript_order(),
+        frozen_evidence_bundle_available: true,
+        source_bound_verifiers_available: true,
+        performance_benchmark_claimed: false,
+        full_standard_softmax_inference_claimed: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_PUBLICATION_ARTIFACT_TABLE_NEXT_STEP_PHASE67.to_string(),
+        publication_artifact_table_commitment: String::new(),
+    };
+    table.artifact_rows_commitment = phase67_commit_publication_rows(&table.artifact_rows)?;
+    table.publication_artifact_table_commitment =
+        commit_phase67_publication_artifact_table(&table)?;
+    verify_phase67_publication_artifact_table(&table)?;
+    Ok(table)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase67_publication_artifact_row(row: &Phase67PublicationArtifactRow) -> Result<()> {
+    if row.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact row requires `stwo` backend".to_string(),
+        ));
+    }
+    phase43_require_hash32("phase67_artifact_commitment", &row.artifact_commitment)?;
+    phase43_require_hash32("phase67_row_commitment", &row.row_commitment)?;
+    if row.phase_label.is_empty()
+        || row.artifact_name.is_empty()
+        || row.semantic_scope.is_empty()
+        || row.verifier_function.is_empty()
+        || row.source_bound_verifier_function.is_empty()
+        || row.evidence_tier != "source_bound_verifier_surface"
+        || row.claim_boundary.is_empty()
+        || row.limitation.is_empty()
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact row has an empty or unsupported field".to_string(),
+        ));
+    }
+    let expected = commit_phase67_publication_artifact_row(row)?;
+    if row.row_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact row commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase67_publication_artifact_table(
+    table: &Phase67PublicationArtifactTable,
+) -> Result<()> {
+    if table.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact table requires `stwo` backend".to_string(),
+        ));
+    }
+    if table.table_version != STWO_PUBLICATION_ARTIFACT_TABLE_VERSION_PHASE67
+        || table.semantic_scope != STWO_PUBLICATION_ARTIFACT_TABLE_SCOPE_PHASE67
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact table version or scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase67_source_phase66_chain_artifact_commitment",
+            table
+                .source_phase66_transformer_chain_artifact_commitment
+                .as_str(),
+        ),
+        (
+            "phase67_source_phase65_transition_artifact_commitment",
+            table
+                .source_phase65_transformer_transition_artifact_commitment
+                .as_str(),
+        ),
+        (
+            "phase67_source_phase64_claim_commitment",
+            table
+                .source_phase64_typed_carried_state_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase67_source_phase63_claim_commitment",
+            table
+                .source_phase63_shared_lookup_identity_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase67_artifact_rows_commitment",
+            table.artifact_rows_commitment.as_str(),
+        ),
+        (
+            "phase67_publication_artifact_table_commitment",
+            table.publication_artifact_table_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if table.row_count != 4 || table.artifact_rows.len() != table.row_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact table row count drift".to_string(),
+        ));
+    }
+    if table.artifact_rows_commitment != phase67_commit_publication_rows(&table.artifact_rows)? {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact row-list commitment drift".to_string(),
+        ));
+    }
+    let expected_phases = ["Phase63", "Phase64", "Phase65", "Phase66"];
+    for (expected_index, (row, expected_phase)) in table
+        .artifact_rows
+        .iter()
+        .zip(expected_phases.iter())
+        .enumerate()
+    {
+        verify_phase67_publication_artifact_row(row)?;
+        if row.row_index != expected_index || row.phase_label != *expected_phase {
+            return Err(VmError::InvalidConfig(
+                "Phase 67 publication artifact row order drift".to_string(),
+            ));
+        }
+    }
+    if table.verifier_side_complexity != STWO_PUBLICATION_ARTIFACT_TABLE_COMPLEXITY_PHASE67
+        || table.verifier_status != STWO_PUBLICATION_ARTIFACT_TABLE_STATUS_PHASE67
+        || table.transcript_order != phase67_publication_artifact_table_transcript_order()
+        || table.required_next_step != STWO_PUBLICATION_ARTIFACT_TABLE_NEXT_STEP_PHASE67
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact table transcript, status, or next-step drift"
+                .to_string(),
+        ));
+    }
+    if !table.frozen_evidence_bundle_available
+        || !table.source_bound_verifiers_available
+        || table.performance_benchmark_claimed
+        || table.full_standard_softmax_inference_claimed
+        || table.recursive_verification_claimed
+        || table.cryptographic_compression_claimed
+        || table.breakthrough_claimed
+        || table.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact table must not claim benchmarks, full softmax, recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase67_publication_artifact_table(table)?;
+    if table.publication_artifact_table_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact table commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase67_publication_artifact_table_against_sources(
+    table: &Phase67PublicationArtifactTable,
+    phase66_artifact: &Phase66TransformerChainArtifact,
+    phase65_artifact: &Phase65TransformerTransitionArtifact,
+    phase64_claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<()> {
+    verify_phase67_publication_artifact_table(table)?;
+    verify_phase66_transformer_chain_artifact_against_sources(
+        phase66_artifact,
+        phase65_artifact,
+        phase64_claim,
+        phase63_claim,
+    )?;
+    let expected = [
+        (
+            phase63_claim
+                .shared_lookup_identity_claim_commitment
+                .as_str(),
+            phase63_claim.semantic_scope.as_str(),
+        ),
+        (
+            phase64_claim.typed_carried_state_claim_commitment.as_str(),
+            phase64_claim.semantic_scope.as_str(),
+        ),
+        (
+            phase65_artifact
+                .transformer_transition_artifact_commitment
+                .as_str(),
+            phase65_artifact.semantic_scope.as_str(),
+        ),
+        (
+            phase66_artifact
+                .transformer_chain_artifact_commitment
+                .as_str(),
+            phase66_artifact.semantic_scope.as_str(),
+        ),
+    ];
+    if table.source_phase66_transformer_chain_artifact_commitment
+        != phase66_artifact.transformer_chain_artifact_commitment
+        || table.source_phase65_transformer_transition_artifact_commitment
+            != phase65_artifact.transformer_transition_artifact_commitment
+        || table.source_phase64_typed_carried_state_claim_commitment
+            != phase64_claim.typed_carried_state_claim_commitment
+        || table.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact table source drift".to_string(),
+        ));
+    }
+    for (row, (expected_commitment, expected_scope)) in table.artifact_rows.iter().zip(expected) {
+        if row.artifact_commitment != expected_commitment || row.semantic_scope != expected_scope {
+            return Err(VmError::InvalidConfig(
+                "Phase 67 publication artifact row source drift".to_string(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase68_prepare_independent_replay_audit_claim(
+    phase66_artifact: &Phase66TransformerChainArtifact,
+    phase67_table: &Phase67PublicationArtifactTable,
+) -> Result<Phase68IndependentReplayAuditClaim> {
+    verify_phase66_transformer_chain_artifact(phase66_artifact)?;
+    verify_phase67_publication_artifact_table(phase67_table)?;
+    if phase67_table.source_phase66_transformer_chain_artifact_commitment
+        != phase66_artifact.transformer_chain_artifact_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 68 independent replay audit source drift against Phase67".to_string(),
+        ));
+    }
+    let mut claim = Phase68IndependentReplayAuditClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        audit_version: STWO_INDEPENDENT_REPLAY_AUDIT_VERSION_PHASE68.to_string(),
+        semantic_scope: STWO_INDEPENDENT_REPLAY_AUDIT_SCOPE_PHASE68.to_string(),
+        source_phase66_transformer_chain_artifact_commitment: phase66_artifact
+            .transformer_chain_artifact_commitment
+            .clone(),
+        source_phase67_publication_artifact_table_commitment: phase67_table
+            .publication_artifact_table_commitment
+            .clone(),
+        audited_chain_start_carried_state_commitment: phase66_artifact
+            .chain_start_carried_state_commitment
+            .clone(),
+        audited_chain_end_carried_state_commitment: phase66_artifact
+            .chain_end_carried_state_commitment
+            .clone(),
+        audited_step_count: phase66_artifact.step_count,
+        audited_continuity_link_count: phase66_artifact.continuity_link_count,
+        required_tamper_case_count: 5,
+        independent_oracle_name: "phase68_slow_chain_replay_oracle_for_phase66_links".to_string(),
+        production_verifier_function: "verify_phase66_transformer_chain_artifact".to_string(),
+        source_bound_verifier_function: "verify_phase66_transformer_chain_artifact_against_sources"
+            .to_string(),
+        verifier_side_complexity: STWO_INDEPENDENT_REPLAY_AUDIT_COMPLEXITY_PHASE68.to_string(),
+        verifier_status: STWO_INDEPENDENT_REPLAY_AUDIT_STATUS_PHASE68.to_string(),
+        transcript_order: phase68_independent_replay_audit_transcript_order(),
+        phase66_chain_available: true,
+        publication_table_available: true,
+        independent_replay_oracle_available: true,
+        production_verifier_cross_check_available: true,
+        mutation_style_tamper_cases_available: true,
+        formal_verification_claimed: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_INDEPENDENT_REPLAY_AUDIT_NEXT_STEP_PHASE68.to_string(),
+        independent_replay_audit_commitment: String::new(),
+    };
+    claim.independent_replay_audit_commitment =
+        commit_phase68_independent_replay_audit_claim(&claim)?;
+    verify_phase68_independent_replay_audit_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase68_independent_replay_audit_claim(
+    claim: &Phase68IndependentReplayAuditClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 68 independent replay audit requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.audit_version != STWO_INDEPENDENT_REPLAY_AUDIT_VERSION_PHASE68
+        || claim.semantic_scope != STWO_INDEPENDENT_REPLAY_AUDIT_SCOPE_PHASE68
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 68 independent replay audit version or scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase68_source_phase66_chain_artifact_commitment",
+            claim
+                .source_phase66_transformer_chain_artifact_commitment
+                .as_str(),
+        ),
+        (
+            "phase68_source_phase67_publication_table_commitment",
+            claim
+                .source_phase67_publication_artifact_table_commitment
+                .as_str(),
+        ),
+        (
+            "phase68_audited_chain_start_state",
+            claim.audited_chain_start_carried_state_commitment.as_str(),
+        ),
+        (
+            "phase68_audited_chain_end_state",
+            claim.audited_chain_end_carried_state_commitment.as_str(),
+        ),
+        (
+            "phase68_independent_replay_audit_commitment",
+            claim.independent_replay_audit_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if claim.audited_step_count < 2
+        || claim.audited_continuity_link_count != claim.audited_step_count - 1
+        || claim.required_tamper_case_count < 5
+        || claim.independent_oracle_name != "phase68_slow_chain_replay_oracle_for_phase66_links"
+        || claim.production_verifier_function != "verify_phase66_transformer_chain_artifact"
+        || claim.source_bound_verifier_function
+            != "verify_phase66_transformer_chain_artifact_against_sources"
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 68 independent replay audit shape drift".to_string(),
+        ));
+    }
+    if claim.verifier_side_complexity != STWO_INDEPENDENT_REPLAY_AUDIT_COMPLEXITY_PHASE68
+        || claim.verifier_status != STWO_INDEPENDENT_REPLAY_AUDIT_STATUS_PHASE68
+        || claim.transcript_order != phase68_independent_replay_audit_transcript_order()
+        || claim.required_next_step != STWO_INDEPENDENT_REPLAY_AUDIT_NEXT_STEP_PHASE68
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 68 independent replay audit transcript, status, or next-step drift".to_string(),
+        ));
+    }
+    if !claim.phase66_chain_available
+        || !claim.publication_table_available
+        || !claim.independent_replay_oracle_available
+        || !claim.production_verifier_cross_check_available
+        || !claim.mutation_style_tamper_cases_available
+        || claim.formal_verification_claimed
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+        || claim.breakthrough_claimed
+        || claim.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 68 independent replay audit must not claim formal verification, recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase68_independent_replay_audit_claim(claim)?;
+    if claim.independent_replay_audit_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 68 independent replay audit commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase68_independent_replay_audit_claim_against_sources(
+    claim: &Phase68IndependentReplayAuditClaim,
+    phase66_artifact: &Phase66TransformerChainArtifact,
+    phase67_table: &Phase67PublicationArtifactTable,
+) -> Result<()> {
+    verify_phase68_independent_replay_audit_claim(claim)?;
+    verify_phase66_transformer_chain_artifact(phase66_artifact)?;
+    verify_phase67_publication_artifact_table(phase67_table)?;
+    if claim.source_phase66_transformer_chain_artifact_commitment
+        != phase66_artifact.transformer_chain_artifact_commitment
+        || claim.source_phase67_publication_artifact_table_commitment
+            != phase67_table.publication_artifact_table_commitment
+        || phase67_table.source_phase66_transformer_chain_artifact_commitment
+            != phase66_artifact.transformer_chain_artifact_commitment
+        || claim.audited_chain_start_carried_state_commitment
+            != phase66_artifact.chain_start_carried_state_commitment
+        || claim.audited_chain_end_carried_state_commitment
+            != phase66_artifact.chain_end_carried_state_commitment
+        || claim.audited_step_count != phase66_artifact.step_count
+        || claim.audited_continuity_link_count != phase66_artifact.continuity_link_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 68 independent replay audit source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase69_prepare_symbolic_artifact_mapping_claim(
+    phase68_claim: &Phase68IndependentReplayAuditClaim,
+    phase67_table: &Phase67PublicationArtifactTable,
+    phase66_artifact: &Phase66TransformerChainArtifact,
+    phase65_artifact: &Phase65TransformerTransitionArtifact,
+    phase64_claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<Phase69SymbolicArtifactMappingClaim> {
+    verify_phase68_independent_replay_audit_claim_against_sources(
+        phase68_claim,
+        phase66_artifact,
+        phase67_table,
+    )?;
+    let mut rows = vec![
+        phase69_symbolic_mapping_row(
+            0,
+            "A(T,d)=12Td^2+2T^2d+2Td",
+            "arithmetic transformer block work",
+            "Phase65",
+            &phase65_artifact.transformer_transition_artifact_commitment,
+            "runtime relation witness plus transition-step verifier surface",
+            "verify_phase65_transformer_transition_artifact_against_sources",
+            "symbolic model term, not a runtime benchmark",
+        )?,
+        phase69_symbolic_mapping_row(
+            1,
+            "N(T,d,H)=T^2H+6Td",
+            "lookup-like normalization and activation pressure",
+            "Phase63",
+            &phase63_claim.shared_lookup_identity_claim_commitment,
+            "shared lookup identity across proof-carrying steps",
+            "verify_phase63_shared_lookup_identity_claim_against_phase62",
+            "does not implement full lookup-backed softmax",
+        )?,
+        phase69_symbolic_mapping_row(
+            2,
+            "state_t -> state_{t+1}",
+            "typed carried-state handoff",
+            "Phase64",
+            &phase64_claim.typed_carried_state_claim_commitment,
+            "typed boundary and continuity verifier surface",
+            "verify_phase64_typed_carried_state_claim_against_phase63",
+            "small carried state, not full KV-cache equivalence",
+        )?,
+        phase69_symbolic_mapping_row(
+            3,
+            "decode_chain(state_0,state_n)",
+            "proof-carrying decode surface",
+            "Phase66",
+            &phase66_artifact.transformer_chain_artifact_commitment,
+            "ordered transition chain with source-bound handoff links",
+            "verify_phase66_transformer_chain_artifact_against_sources",
+            "not recursive compression",
+        )?,
+        phase69_symbolic_mapping_row(
+            4,
+            "artifact_evidence_table",
+            "publication-facing evidence boundary",
+            "Phase67",
+            &phase67_table.publication_artifact_table_commitment,
+            "source-bound artifact row table",
+            "verify_phase67_publication_artifact_table_against_sources",
+            "not a performance table",
+        )?,
+        phase69_symbolic_mapping_row(
+            5,
+            "independent_replay_oracle",
+            "anti-self-deception audit boundary",
+            "Phase68",
+            &phase68_claim.independent_replay_audit_commitment,
+            "slow independent replay oracle manifest and tamper-case contract",
+            "verify_phase68_independent_replay_audit_claim_against_sources",
+            "not a formal proof",
+        )?,
+    ];
+    for row in &mut rows {
+        row.row_commitment = commit_phase69_symbolic_artifact_mapping_row(row)?;
+        verify_phase69_symbolic_artifact_mapping_row(row)?;
+    }
+    let mut claim = Phase69SymbolicArtifactMappingClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        mapping_version: STWO_SYMBOLIC_ARTIFACT_MAPPING_VERSION_PHASE69.to_string(),
+        semantic_scope: STWO_SYMBOLIC_ARTIFACT_MAPPING_SCOPE_PHASE69.to_string(),
+        formula_family: "dense_gpt_style_symbolic_model_to_checked_artifact_surface_v1".to_string(),
+        source_phase68_independent_replay_audit_commitment: phase68_claim
+            .independent_replay_audit_commitment
+            .clone(),
+        source_phase67_publication_artifact_table_commitment: phase67_table
+            .publication_artifact_table_commitment
+            .clone(),
+        source_phase66_transformer_chain_artifact_commitment: phase66_artifact
+            .transformer_chain_artifact_commitment
+            .clone(),
+        source_phase65_transformer_transition_artifact_commitment: phase65_artifact
+            .transformer_transition_artifact_commitment
+            .clone(),
+        source_phase64_typed_carried_state_claim_commitment: phase64_claim
+            .typed_carried_state_claim_commitment
+            .clone(),
+        source_phase63_shared_lookup_identity_claim_commitment: phase63_claim
+            .shared_lookup_identity_claim_commitment
+            .clone(),
+        mapping_rows_commitment: String::new(),
+        mapping_rows: rows,
+        row_count: 6,
+        verifier_side_complexity: STWO_SYMBOLIC_ARTIFACT_MAPPING_COMPLEXITY_PHASE69.to_string(),
+        verifier_status: STWO_SYMBOLIC_ARTIFACT_MAPPING_STATUS_PHASE69.to_string(),
+        transcript_order: phase69_symbolic_artifact_mapping_transcript_order(),
+        symbolic_model_available: true,
+        artifact_surfaces_available: true,
+        source_bound_verifiers_available: true,
+        runtime_benchmark_claimed: false,
+        full_standard_softmax_inference_claimed: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_SYMBOLIC_ARTIFACT_MAPPING_NEXT_STEP_PHASE69.to_string(),
+        symbolic_artifact_mapping_commitment: String::new(),
+    };
+    claim.mapping_rows_commitment = phase69_commit_symbolic_mapping_rows(&claim.mapping_rows)?;
+    claim.symbolic_artifact_mapping_commitment =
+        commit_phase69_symbolic_artifact_mapping_claim(&claim)?;
+    verify_phase69_symbolic_artifact_mapping_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase69_symbolic_artifact_mapping_row(
+    row: &Phase69SymbolicArtifactMappingRow,
+) -> Result<()> {
+    if row.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping row requires `stwo` backend".to_string(),
+        ));
+    }
+    phase43_require_hash32("phase69_artifact_commitment", &row.artifact_commitment)?;
+    phase43_require_hash32("phase69_row_commitment", &row.row_commitment)?;
+    if row.symbolic_term.is_empty()
+        || row.model_component.is_empty()
+        || row.artifact_phase.is_empty()
+        || row.verifier_surface.is_empty()
+        || row.source_bound_check.is_empty()
+        || row.limitation.is_empty()
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping row has an empty field".to_string(),
+        ));
+    }
+    let expected = commit_phase69_symbolic_artifact_mapping_row(row)?;
+    if row.row_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping row commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase69_symbolic_artifact_mapping_claim(
+    claim: &Phase69SymbolicArtifactMappingClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.mapping_version != STWO_SYMBOLIC_ARTIFACT_MAPPING_VERSION_PHASE69
+        || claim.semantic_scope != STWO_SYMBOLIC_ARTIFACT_MAPPING_SCOPE_PHASE69
+        || claim.formula_family != "dense_gpt_style_symbolic_model_to_checked_artifact_surface_v1"
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping version, scope, or formula-family drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase69_source_phase68_audit_commitment",
+            claim
+                .source_phase68_independent_replay_audit_commitment
+                .as_str(),
+        ),
+        (
+            "phase69_source_phase67_table_commitment",
+            claim
+                .source_phase67_publication_artifact_table_commitment
+                .as_str(),
+        ),
+        (
+            "phase69_source_phase66_chain_commitment",
+            claim
+                .source_phase66_transformer_chain_artifact_commitment
+                .as_str(),
+        ),
+        (
+            "phase69_source_phase65_artifact_commitment",
+            claim
+                .source_phase65_transformer_transition_artifact_commitment
+                .as_str(),
+        ),
+        (
+            "phase69_source_phase64_claim_commitment",
+            claim
+                .source_phase64_typed_carried_state_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase69_source_phase63_claim_commitment",
+            claim
+                .source_phase63_shared_lookup_identity_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase69_mapping_rows_commitment",
+            claim.mapping_rows_commitment.as_str(),
+        ),
+        (
+            "phase69_symbolic_artifact_mapping_commitment",
+            claim.symbolic_artifact_mapping_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if claim.row_count != 6 || claim.mapping_rows.len() != claim.row_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping row count drift".to_string(),
+        ));
+    }
+    if claim.mapping_rows_commitment != phase69_commit_symbolic_mapping_rows(&claim.mapping_rows)? {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping row-list commitment drift".to_string(),
+        ));
+    }
+    let expected_phases = [
+        "Phase65", "Phase63", "Phase64", "Phase66", "Phase67", "Phase68",
+    ];
+    for (expected_index, (row, expected_phase)) in claim
+        .mapping_rows
+        .iter()
+        .zip(expected_phases.iter())
+        .enumerate()
+    {
+        verify_phase69_symbolic_artifact_mapping_row(row)?;
+        if row.row_index != expected_index || row.artifact_phase != *expected_phase {
+            return Err(VmError::InvalidConfig(
+                "Phase 69 symbolic mapping row order drift".to_string(),
+            ));
+        }
+    }
+    if claim.verifier_side_complexity != STWO_SYMBOLIC_ARTIFACT_MAPPING_COMPLEXITY_PHASE69
+        || claim.verifier_status != STWO_SYMBOLIC_ARTIFACT_MAPPING_STATUS_PHASE69
+        || claim.transcript_order != phase69_symbolic_artifact_mapping_transcript_order()
+        || claim.required_next_step != STWO_SYMBOLIC_ARTIFACT_MAPPING_NEXT_STEP_PHASE69
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping transcript, status, or next-step drift".to_string(),
+        ));
+    }
+    if !claim.symbolic_model_available
+        || !claim.artifact_surfaces_available
+        || !claim.source_bound_verifiers_available
+        || claim.runtime_benchmark_claimed
+        || claim.full_standard_softmax_inference_claimed
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+        || claim.breakthrough_claimed
+        || claim.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping must not claim benchmarks, full softmax, recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase69_symbolic_artifact_mapping_claim(claim)?;
+    if claim.symbolic_artifact_mapping_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase69_symbolic_artifact_mapping_claim_against_sources(
+    claim: &Phase69SymbolicArtifactMappingClaim,
+    phase68_claim: &Phase68IndependentReplayAuditClaim,
+    phase67_table: &Phase67PublicationArtifactTable,
+    phase66_artifact: &Phase66TransformerChainArtifact,
+    phase65_artifact: &Phase65TransformerTransitionArtifact,
+    phase64_claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<()> {
+    verify_phase69_symbolic_artifact_mapping_claim(claim)?;
+    verify_phase68_independent_replay_audit_claim_against_sources(
+        phase68_claim,
+        phase66_artifact,
+        phase67_table,
+    )?;
+    let expected = [
+        phase65_artifact
+            .transformer_transition_artifact_commitment
+            .as_str(),
+        phase63_claim
+            .shared_lookup_identity_claim_commitment
+            .as_str(),
+        phase64_claim.typed_carried_state_claim_commitment.as_str(),
+        phase66_artifact
+            .transformer_chain_artifact_commitment
+            .as_str(),
+        phase67_table.publication_artifact_table_commitment.as_str(),
+        phase68_claim.independent_replay_audit_commitment.as_str(),
+    ];
+    if claim.source_phase68_independent_replay_audit_commitment
+        != phase68_claim.independent_replay_audit_commitment
+        || claim.source_phase67_publication_artifact_table_commitment
+            != phase67_table.publication_artifact_table_commitment
+        || claim.source_phase66_transformer_chain_artifact_commitment
+            != phase66_artifact.transformer_chain_artifact_commitment
+        || claim.source_phase65_transformer_transition_artifact_commitment
+            != phase65_artifact.transformer_transition_artifact_commitment
+        || claim.source_phase64_typed_carried_state_claim_commitment
+            != phase64_claim.typed_carried_state_claim_commitment
+        || claim.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping source drift".to_string(),
+        ));
+    }
+    for (row, expected_commitment) in claim.mapping_rows.iter().zip(expected) {
+        if row.artifact_commitment != expected_commitment {
+            return Err(VmError::InvalidConfig(
+                "Phase 69 symbolic mapping row source drift".to_string(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
 #[derive(Debug, Clone)]
 struct Phase63LookupIdentityCommitments {
     shared_lookup_identity_commitment: String,
@@ -19016,6 +20889,206 @@ fn phase65_transformer_transition_transcript_order() -> Vec<String> {
         "shared_lookup_identity_commitment",
         "tensor_relation_commitment",
         "ordered_transformer_transition_steps",
+        "negative_claim_flags",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase66_commit_chain_links(links: &[Phase66TransformerChainLink]) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 66 chain link list hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase66-transformer-chain-links");
+    phase29_update_usize(&mut hasher, links.len());
+    for link in links {
+        phase29_update_len_prefixed(&mut hasher, link.chain_link_commitment.as_bytes());
+    }
+    phase44d_finalize_hash(hasher, "Phase 66 chain links")
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+pub(crate) fn phase66_commit_chain_links_for_tests(
+    links: &[Phase66TransformerChainLink],
+) -> Result<String> {
+    phase66_commit_chain_links(links)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase66_transformer_chain_surface_unit_count(step_count: usize) -> Result<usize> {
+    step_count
+        .checked_mul(9)
+        .and_then(|value| value.checked_add(step_count.saturating_sub(1)))
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 66 transformer chain surface accounting overflow".to_string(),
+            )
+        })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase66_transformer_chain_transcript_order() -> Vec<String> {
+    [
+        "phase66_artifact_header",
+        "phase65_transformer_transition_artifact_commitment",
+        "phase64_typed_carried_state_claim_commitment",
+        "ordered_chain_links",
+        "carried_state_handoff_links",
+        "negative_claim_flags",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase67_publication_row(
+    row_index: usize,
+    phase_label: &str,
+    artifact_name: &str,
+    artifact_commitment: &str,
+    semantic_scope: &str,
+    verifier_function: &str,
+    source_bound_verifier_function: &str,
+    evidence_tier: &str,
+    claim_boundary: &str,
+    limitation: &str,
+) -> Result<Phase67PublicationArtifactRow> {
+    let mut row = Phase67PublicationArtifactRow {
+        proof_backend: StarkProofBackend::Stwo,
+        row_index,
+        phase_label: phase_label.to_string(),
+        artifact_name: artifact_name.to_string(),
+        artifact_commitment: artifact_commitment.to_string(),
+        semantic_scope: semantic_scope.to_string(),
+        verifier_function: verifier_function.to_string(),
+        source_bound_verifier_function: source_bound_verifier_function.to_string(),
+        evidence_tier: evidence_tier.to_string(),
+        claim_boundary: claim_boundary.to_string(),
+        limitation: limitation.to_string(),
+        row_commitment: String::new(),
+    };
+    row.row_commitment = commit_phase67_publication_artifact_row(&row)?;
+    Ok(row)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase67_commit_publication_rows(rows: &[Phase67PublicationArtifactRow]) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 67 publication row list hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase67-publication-artifact-rows");
+    phase29_update_usize(&mut hasher, rows.len());
+    for row in rows {
+        phase29_update_len_prefixed(&mut hasher, row.row_commitment.as_bytes());
+    }
+    phase44d_finalize_hash(hasher, "Phase 67 publication rows")
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+pub(crate) fn phase67_commit_publication_rows_for_tests(
+    rows: &[Phase67PublicationArtifactRow],
+) -> Result<String> {
+    phase67_commit_publication_rows(rows)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase67_publication_artifact_table_transcript_order() -> Vec<String> {
+    [
+        "phase67_table_header",
+        "phase66_chain_artifact_commitment",
+        "phase65_transition_artifact_commitment",
+        "phase64_typed_carried_state_claim_commitment",
+        "phase63_shared_lookup_identity_claim_commitment",
+        "ordered_publication_rows",
+        "negative_claim_flags",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase68_independent_replay_audit_transcript_order() -> Vec<String> {
+    [
+        "phase68_audit_header",
+        "phase66_chain_artifact_commitment",
+        "phase67_publication_table_commitment",
+        "audited_start_and_end_state",
+        "oracle_and_tamper_case_contract",
+        "negative_claim_flags",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase69_symbolic_mapping_row(
+    row_index: usize,
+    symbolic_term: &str,
+    model_component: &str,
+    artifact_phase: &str,
+    artifact_commitment: &str,
+    verifier_surface: &str,
+    source_bound_check: &str,
+    limitation: &str,
+) -> Result<Phase69SymbolicArtifactMappingRow> {
+    let mut row = Phase69SymbolicArtifactMappingRow {
+        proof_backend: StarkProofBackend::Stwo,
+        row_index,
+        symbolic_term: symbolic_term.to_string(),
+        model_component: model_component.to_string(),
+        artifact_phase: artifact_phase.to_string(),
+        artifact_commitment: artifact_commitment.to_string(),
+        verifier_surface: verifier_surface.to_string(),
+        source_bound_check: source_bound_check.to_string(),
+        limitation: limitation.to_string(),
+        row_commitment: String::new(),
+    };
+    row.row_commitment = commit_phase69_symbolic_artifact_mapping_row(&row)?;
+    Ok(row)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase69_commit_symbolic_mapping_rows(
+    rows: &[Phase69SymbolicArtifactMappingRow],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 69 symbolic mapping row list hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase69-symbolic-artifact-mapping-rows");
+    phase29_update_usize(&mut hasher, rows.len());
+    for row in rows {
+        phase29_update_len_prefixed(&mut hasher, row.row_commitment.as_bytes());
+    }
+    phase44d_finalize_hash(hasher, "Phase 69 symbolic mapping rows")
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+pub(crate) fn phase69_commit_symbolic_mapping_rows_for_tests(
+    rows: &[Phase69SymbolicArtifactMappingRow],
+) -> Result<String> {
+    phase69_commit_symbolic_mapping_rows(rows)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase69_symbolic_artifact_mapping_transcript_order() -> Vec<String> {
+    [
+        "phase69_mapping_header",
+        "phase68_audit_commitment",
+        "phase67_publication_table_commitment",
+        "phase66_chain_artifact_commitment",
+        "phase65_to_phase63_artifact_commitments",
+        "ordered_symbolic_mapping_rows",
         "negative_claim_flags",
     ]
     .into_iter()
