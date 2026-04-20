@@ -12432,6 +12432,9 @@ pub fn verify_phase57_mle_opening_verification_receipt(
 }
 
 #[cfg(feature = "stwo-backend")]
+// Source-free Phase57 verification is crate-private on purpose: it checks
+// internal receipt consistency, while the public API must bind back to the
+// verified Phase56/Phase54 sources.
 pub(crate) fn verify_phase57_first_layer_mle_opening_verifier_claim(
     claim: &Phase57FirstLayerMleOpeningVerifierClaim,
 ) -> Result<()> {
