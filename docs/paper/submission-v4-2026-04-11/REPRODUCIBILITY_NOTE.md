@@ -8,6 +8,13 @@ to the proof-carrying aggregation checkpoint commit
 `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`, with the dedicated bundle index cited at
 commit `6bb8cab99092203217d64951c3af61488aa2c58e`.
 
+April 20 addendum: the current paper-freeze pass additionally pins the Phase63-65
+proof-carrying verifier surface at implementation checkpoint
+`03cc77f371275c8d9ef5f4244a23d3e35c98a41b`, indexed in
+`docs/paper/artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/`. This addendum
+does not replace the frozen proof-output bundles; it records the newer verifier-facing
+bridge used by Section 5.
+
 ## 1) Scope and Intended Reproduction Target
 
 The target is reproducibility of:
@@ -94,6 +101,10 @@ Frozen experimental `stwo` bundle index:
 Proof-carrying aggregation bundle index:
 
 - `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/APPENDIX_ARTIFACT_INDEX.md`
+
+Phase63-65 verifier-surface addendum:
+
+- `docs/paper/artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/APPENDIX_ARTIFACT_INDEX.md`
 
 These indexes contain commit anchors, command logs, hashes, and artifact paths.
 

@@ -1,16 +1,19 @@
 # Publication Release Package
 
-Snapshot date: **April 11, 2026**
+Snapshot date: **April 20, 2026**
 
-Planned publication tag after repository transfer: `paper-publication-v4-2026-04-11`
+Planned publication tag after repository transfer: `paper-publication-v5-2026-04-20`
 
-Canonical publication snapshot after transfer: The canonical v4 publication snapshot is
-the release tag `paper-publication-v4-2026-04-11` once cut in the final publication
+Canonical publication snapshot after transfer: The canonical v5 publication snapshot is
+the release tag `paper-publication-v5-2026-04-20` once cut in the final publication
 repository. Until that transfer and tag cut happen, the paper keeps Reference `[30]`
 pointed at the staging commit-pinned snapshot below. The final publication tag
 intentionally need not match the pinned carried-state evidence commit used by the
 aggregation bundle. Before upload, that tag still needs to be cut in the final
 publication repository and Reference `[30]` needs to be retargeted to it.
+
+Pinned Phase63-65 proof-carrying artifact checkpoint:
+`03cc77f371275c8d9ef5f4244a23d3e35c98a41b`
 
 Pinned carried-state aggregation provenance checkpoint:
 `6ff972ddda4051d73dc65c92a88c0d00683ec8c7`
@@ -45,6 +48,7 @@ one monolithic benchmark claim.
   - `docs/paper/artifacts/production-v1-2026-04-04/`
   - `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/`
   - `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/`
+  - `docs/paper/artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/`
 - Figure sources:
   - `docs/paper/figures/section4-ratio-vs-context.tsv`
   - `docs/paper/figures/section4-decomposition-vs-context.tsv`
@@ -62,6 +66,9 @@ one monolithic benchmark claim.
   path.
 - Post-freeze commit-pinned evidence now includes the merged pre-recursive carried-state
   aggregation bundle, including proof-carrying outer aggregation over chained artifacts.
+- The April 20 Phase63-65 verifier-surface index pins the current paper's stronger
+  proof-carrying bridge: shared lookup identity and typed carried state are now
+  verifier-visible across a transformer-shaped artifact line.
 - Older carried-state artifact bundles are retained as archival provenance; see
   `docs/paper/artifacts/README.md`. The proof-carrying aggregation bundle is the
   publication-facing artifact bundle for the carried-state aggregation line.
@@ -78,6 +85,10 @@ one monolithic benchmark claim.
   - `./scripts/paper/generate_stwo_publication_bundle.sh`
 - Proof-carrying aggregation bundle:
   - `./scripts/paper/generate_stwo_proof_carrying_aggregation_bundle.sh`
+- Phase63-65 verifier-surface checkpoint:
+  - validate with `cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase63 -- --nocapture`
+  - validate with `cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase64 -- --nocapture`
+  - validate with `cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase65 -- --nocapture`
 - Archived web evidence:
   - `python3 scripts/paper/archive_supporting_web_evidence.py`
 - Gemma config extracts:
@@ -94,9 +105,9 @@ Before cutting a release tag, verify:
 2. the main paper and appendices refer to the same repo state and evidence tiers,
 3. the design note matches the current experimental `stwo` status,
 4. no stale top-level README language still describes S-two as merely prospective,
-5. Reference `[30]` remains commit-pinned until the repository transfer and v4
+5. Reference `[30]` remains commit-pinned until the repository transfer and v5
    publication tag exist; after that tag is cut in the final publication repository,
-   update `[30]` to the v4 publication tag while keeping the aggregation bundle directly
+   update `[30]` to the v5 publication tag while keeping the aggregation bundle directly
    pinned by Reference `[46]`,
 6. the formal author line and affiliation text are confirmed before public release,
 7. `paper preflight` passes (citation integrity, immutable local repo links, figure/link

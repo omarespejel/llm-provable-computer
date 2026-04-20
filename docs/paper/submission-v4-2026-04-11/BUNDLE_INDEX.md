@@ -1,5 +1,11 @@
 # Submission Bundle Index (v4, 2026-04-11)
 
+Status: superseded for the current paper-freeze pass by the April 20 Phase63-65
+verifier-surface addendum recorded in
+`docs/paper/artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/` and
+`docs/paper/PUBLICATION_RELEASE.md`. This directory remains as the v4 reproducibility
+base because it contains the frozen bundle pointers used by the current paper.
+
 Planned publication tag after repository transfer:
 
 - `paper-publication-v4-2026-04-11`
@@ -44,6 +50,9 @@ Paper title:
 - Proof-carrying aggregation bundle index:
   - `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/APPENDIX_ARTIFACT_INDEX.md`
   - Citation commit: `6bb8cab99092203217d64951c3af61488aa2c58e`
+- Phase63-65 verifier-surface addendum:
+  - `docs/paper/artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/APPENDIX_ARTIFACT_INDEX.md`
+  - Implementation checkpoint: `03cc77f371275c8d9ef5f4244a23d3e35c98a41b`
 
 Older carried-state artifact directories remain archival provenance; see
 `docs/paper/artifacts/README.md`. The bundle above is the publication-facing artifact

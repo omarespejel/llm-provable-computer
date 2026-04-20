@@ -1,6 +1,6 @@
 # Paper Artifact Bundles
 
-This directory contains two kinds of frozen artifact bundles.
+This directory contains frozen artifact bundles plus verifier-surface indexes.
 
 ## Publication-facing cited bundles
 
@@ -9,8 +9,14 @@ These are the bundles directly used by the current paper package:
 - `production-v1-2026-04-04/`
 - `stwo-experimental-v1-2026-04-06/`
 - `stwo-proof-carrying-aggregation-v1-2026-04-11/`
+- `phase63-65-proof-carrying-artifact-v1-2026-04-20/`
 
 These are the bundles that should be treated as the paper's primary reproducibility and systems-evidence surfaces.
+
+The Phase63-65 directory is a code-and-validation verifier-surface index rather than a
+new proof-output bundle. It pins the April 20 checkpoint where shared lookup identity
+and typed carried state became verifier-visible across the transformer-shaped
+proof-carrying artifact line.
 
 ## Archival provenance bundles
 

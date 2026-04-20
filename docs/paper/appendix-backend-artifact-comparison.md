@@ -19,6 +19,12 @@ The repository also contains
 aggregation bundle. It is systems evidence for pre-recursive carried-state aggregation,
 not a normalized backend-performance row in Table C1.
 
+The newer
+`docs/paper/artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/` index pins a
+verifier-surface checkpoint rather than a proof-output timing bundle. It records the
+Phase 63-65 bridge in which shared lookup identity and typed carried state are
+source-bound across a transformer-shaped proof-carrying artifact line.
+
 ## Table C1. Frozen artifact comparison by backend and scope
 
 | Artifact | Backend | Bundle | Prove | Verify | Proof size | Semantic scope |
