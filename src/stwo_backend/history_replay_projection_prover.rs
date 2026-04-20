@@ -8313,6 +8313,23 @@ mod tests {
     }
 
     #[test]
+    fn phase59_prepare_preserves_phase58_source_validation_precedence() {
+        let (_, phase54, phase56, phase57, mut phase58) =
+            sample_phase58_witness_pcs_opening_claim();
+
+        phase58.source_phase57_opening_verifier_claim_commitment = hash32('e');
+        phase58.witness_pcs_opening_claim_commitment =
+            commit_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+                .expect("recommit internally consistent Phase58 source drift");
+
+        let error = phase59_prepare_first_layer_relation_witness_binding_claim(
+            &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect_err("Phase59 prepare must preserve Phase58 source-validation precedence");
+        assert!(error.to_string().contains("source drift against Phase57"));
+    }
+
+    #[test]
     fn phase59_relation_witness_binding_rejects_terminal_drift_against_phase56() {
         let (_, phase54, phase56, phase57, phase58, mut phase59) =
             sample_phase59_relation_witness_binding_claim();
@@ -8389,6 +8406,20 @@ mod tests {
         let error = verify_phase59_first_layer_relation_witness_binding_claim(&phase59)
             .expect_err("Phase59 must reject reordered runtime opening assignment");
         assert!(error.to_string().contains("runtime opening order drift"));
+    }
+
+    #[test]
+    fn phase59_relation_witness_binding_rejects_component_assignment_drift() {
+        let (_, _, _, _, _, mut phase59) = sample_phase59_relation_witness_binding_claim();
+
+        phase59.component_bindings.swap(0, 1);
+        phase59.relation_witness_binding_claim_commitment =
+            commit_phase59_first_layer_relation_witness_binding_claim(&phase59)
+                .expect("recommit forged Phase59 component-assignment-drift claim");
+
+        let error = verify_phase59_first_layer_relation_witness_binding_claim(&phase59)
+            .expect_err("Phase59 must reject reordered component bindings");
+        assert!(error.to_string().contains("component order drift"));
     }
 
     #[test]
