@@ -8712,11 +8712,7 @@ mod tests {
         assert!(!phase61.cryptographic_compression_claimed);
         assert!(!phase61.breakthrough_claimed);
         assert!(!phase61.paper_ready);
-        for replacement in phase61
-            .replacement_openings
-            .iter()
-            .filter(|opening| opening.opening_kind == "runtime_tensor_mle_opening")
-        {
+        for replacement in &phase61.replacement_openings {
             let synthetic = phase58
                 .opening_proofs
                 .iter()
@@ -8762,6 +8758,10 @@ mod tests {
         phase61.replacement_openings[0].source_phase57_opening_receipt_commitment = phase61
             .replacement_openings[1]
             .source_phase57_opening_receipt_commitment
+            .clone();
+        phase61.replacement_openings[0].source_phase54_opening_claim_commitment = phase61
+            .replacement_openings[1]
+            .source_phase54_opening_claim_commitment
             .clone();
         phase61_recompute_runtime_witness_pcs_replacement_opening_for_test(
             &mut phase61.replacement_openings[0],

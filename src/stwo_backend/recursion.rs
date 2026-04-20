@@ -15406,7 +15406,6 @@ pub fn verify_phase61_runtime_witness_pcs_replacement_opening(
         ));
     }
     let expected_log_size = phase58_pcs_column_log_size(opening.logical_element_count)?;
-    let expected_point_index = phase61_derive_pcs_opening_point_index(opening)?;
     let expected_extended_log_size = opening
         .pcs_column_log_size
         .checked_add(phase58_pcs_config().fri_config.log_blowup_factor)
@@ -15417,7 +15416,6 @@ pub fn verify_phase61_runtime_witness_pcs_replacement_opening(
     // the Phase61 claim verifier pins that shared value to avoid malleability.
     if opening.pcs_column_log_size != expected_log_size
         || opening.pcs_lifting_log_size < expected_extended_log_size
-        || opening.pcs_opening_point_index != expected_point_index
     {
         return Err(VmError::InvalidConfig(
             "Phase 61 runtime witness PCS replacement opening PCS column, lifting, or point drift"
@@ -15477,7 +15475,6 @@ pub(crate) fn phase61_recompute_runtime_witness_pcs_replacement_opening_for_test
         phase52_evaluate_padded_mle(&opening.raw_witness_values, &opening.opening_point)?;
     opening.opened_value = expected_mle_value;
     opening.recomputed_mle_value = expected_mle_value;
-    opening.pcs_opening_point_index = phase61_derive_pcs_opening_point_index(opening)?;
     opening.pcs_sampled_value_limbs = phase58_secure_field_limbs(phase58_circle_sample_value(
         &opening.raw_witness_values,
         opening.pcs_column_log_size,
@@ -15838,6 +15835,7 @@ pub fn verify_phase61_first_layer_runtime_witness_pcs_replacement_claim_against_
             || replacement.opening_kind != synthetic.opening_kind
             || replacement.tensor_shape != synthetic.tensor_shape
             || replacement.opening_point != synthetic.opening_point
+            || replacement.pcs_opening_point_index != synthetic.pcs_opening_point_index
         {
             return Err(VmError::InvalidConfig(
                 "Phase 61 runtime witness PCS replacement does not preserve Phase58 opening coordinates"
@@ -16162,7 +16160,7 @@ fn phase61_prepare_runtime_witness_pcs_replacement_opening(
         recomputed_mle_value: 0,
         pcs_column_log_size: phase58_pcs_column_log_size(source.logical_element_count)?,
         pcs_lifting_log_size,
-        pcs_opening_point_index: 0,
+        pcs_opening_point_index: source.pcs_opening_point_index,
         pcs_sampled_value_limbs: Vec::new(),
         pcs_sampled_value_commitment: String::new(),
         measured_witness_bytes: 0,
@@ -16176,7 +16174,6 @@ fn phase61_prepare_runtime_witness_pcs_replacement_opening(
     opening.recomputed_mle_value =
         phase52_evaluate_padded_mle(&opening.raw_witness_values, &opening.opening_point)?;
     opening.opened_value = opening.recomputed_mle_value;
-    opening.pcs_opening_point_index = phase61_derive_pcs_opening_point_index(&opening)?;
     opening.pcs_sampled_value_limbs = phase58_secure_field_limbs(phase58_circle_sample_value(
         &opening.raw_witness_values,
         opening.pcs_column_log_size,
@@ -16286,29 +16283,6 @@ fn phase61_scale_weight_rows(
         }
     }
     Ok(values)
-}
-
-#[cfg(feature = "stwo-backend")]
-fn phase61_derive_pcs_opening_point_index(opening: &Phase58WitnessBoundPcsOpening) -> Result<u64> {
-    let mut hasher = Blake2bVar::new(8).map_err(|err| {
-        VmError::InvalidConfig(format!(
-            "failed to initialize Phase 61 PCS point hash: {err}"
-        ))
-    })?;
-    phase29_update_len_prefixed(&mut hasher, b"phase61-pcs-opening-point-index");
-    phase29_update_len_prefixed(
-        &mut hasher,
-        opening.source_phase57_opening_receipt_commitment.as_bytes(),
-    );
-    phase29_update_len_prefixed(&mut hasher, opening.opening_name.as_bytes());
-    phase29_update_len_prefixed(&mut hasher, opening.opening_kind.as_bytes());
-    phase29_update_len_prefixed(&mut hasher, opening.raw_witness_commitment.as_bytes());
-    phase44d_update_usize_vec(&mut hasher, &opening.tensor_shape);
-    let mut index_bytes = [0u8; 8];
-    hasher
-        .finalize_variable(&mut index_bytes)
-        .map_err(|err| VmError::InvalidConfig(format!("Phase 61 PCS point hash failed: {err}")))?;
-    Ok(phase58_nonzero_circle_index_from_hash_prefix(index_bytes))
 }
 
 #[cfg(feature = "stwo-backend")]
