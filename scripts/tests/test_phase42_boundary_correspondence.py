@@ -216,7 +216,7 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
         self.assertEqual(result["issue"], 180)
         self.assertFalse(result["accepted"])
         self.assertEqual(result["relation_outcome"], "impossible")
-        self.assertEqual(result["decision"], "patch_required")
+        self.assertEqual(result["decision"], "patch_once_then_stay")
         self.assertTrue(result["phase41_source_bound"])
         self.assertIn("Phase12 public-state boundary preimage", result["missing_evidence"])
 
@@ -245,7 +245,7 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
 
         self.assertTrue(result["accepted"])
         self.assertEqual(result["relation_outcome"], "equality")
-        self.assertEqual(result["decision"], "stay_current_path_direct_binding")
+        self.assertEqual(result["decision"], "stay_current_path")
 
     def test_rejects_stale_phase29_commitment(self) -> None:
         phase29 = sample_phase29_contract(hash32("d"), hash32("e"))
@@ -322,7 +322,7 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
         with self.assertRaisesRegex(PHASE42.Phase42Error, "shared carried-state field"):
             PHASE42.evaluate(phase29, phase30, phase41, evidence)
 
-    def test_cli_reports_issue_and_patch_required_decision(self) -> None:
+    def test_cli_reports_issue_and_patch_once_decision(self) -> None:
         phase29 = sample_phase29_contract(hash32("d"), hash32("e"))
         phase30 = sample_phase30_manifest(hash32("7"), hash32("8"))
         phase41 = PHASE42.prepare_phase41_expected(phase29, phase30)
@@ -352,7 +352,7 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
             )
             result = json.loads(completed.stdout)
         self.assertEqual(result["issue"], 180)
-        self.assertEqual(result["decision"], "patch_required")
+        self.assertEqual(result["decision"], "patch_once_then_stay")
 
     def test_cli_accepts_boundary_preimage_evidence(self) -> None:
         phase29, phase30, phase41, evidence = sample_boundary_preimage_bundle()

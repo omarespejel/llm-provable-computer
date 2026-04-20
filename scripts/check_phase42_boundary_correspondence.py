@@ -972,7 +972,7 @@ def evaluate(
             **base,
             "accepted": True,
             "relation_outcome": "equality",
-            "decision": "stay_current_path_direct_binding",
+            "decision": "stay_current_path",
             "reason": "Phase29 and Phase30 boundaries already match; Phase31 direct binding is the clean path.",
             "required_next_step": "Use direct Phase31/37 binding; no Phase41 translation is needed.",
         }
@@ -982,7 +982,7 @@ def evaluate(
             **base,
             "accepted": False,
             "relation_outcome": "impossible",
-            "decision": "patch_required",
+            "decision": "patch_once_then_stay",
             "reason": "Phase29/30 boundaries differ and no source-bound Phase41 witness was supplied.",
             "required_next_step": "Supply Phase41 plus Phase12 and Phase14/23 boundary preimage evidence, or pivot per Issue #180.",
         }
@@ -1016,7 +1016,7 @@ def evaluate(
         **base,
         "accepted": False,
         "relation_outcome": "impossible",
-        "decision": "patch_required",
+        "decision": "patch_once_then_stay",
         "phase41_witness_commitment": phase41["boundary_translation_witness_commitment"],
         "phase41_source_bound": True,
         "missing_evidence": [

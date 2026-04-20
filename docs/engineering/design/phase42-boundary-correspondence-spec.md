@@ -74,13 +74,22 @@ The only acceptable Phase42 relation outcomes are:
 
 Any other wording is not a Phase42 success condition.
 
+The checker emits only these decision labels:
+
+| Decision | Meaning |
+|---|---|
+| `stay_current_path` | The exposed relation is clean enough to keep building the current route. |
+| `patch_once_then_stay` | One bounded source-exposure patch is required before continuing. |
+| `pivot` | The current route should move to the layerwise/tensor path. |
+| `stop_and_reassess` | The evidence is inconsistent enough that no automatic route decision is safe. |
+
 ## Current Decision State
 
 For the Phase29/30/41-only artifact surface, the executable decision gate is:
 
 ```text
 relation_outcome = impossible
-decision = patch_required
+decision = patch_once_then_stay
 ```
 
 This does not mean the full route is globally impossible. It means the current
@@ -174,7 +183,7 @@ The Phase42 checker must:
 - reject Phase12/Phase14 shared carried-state-core mismatches;
 - reject real source stacks where Phase12 linear history and Phase14 chunked
   history are not bridged by an explicit equivalence witness;
-- report Phase41-only compatibility as `patch_required`, not success.
+- report Phase41-only compatibility as `patch_once_then_stay`, not success.
 
 The checker is intentionally stricter than a descriptive manifest. It is a
 decision tool: either the boundary relation is clean, or the route is blocked.
@@ -209,7 +218,7 @@ Pivot if Phase42 remains at:
   "issue": 180,
   "accepted": false,
   "relation_outcome": "impossible",
-  "decision": "patch_required"
+  "decision": "patch_once_then_stay"
 }
 ```
 
