@@ -1,10 +1,10 @@
 # Submission Bundle Index (v4, 2026-04-11)
 
-Status: superseded for the current paper-freeze pass by the April 20 Phase63-65
-verifier-surface addendum recorded in
-`docs/paper/artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/` and
-`docs/paper/PUBLICATION_RELEASE.md`. This directory remains as the v4 reproducibility
-base because it contains the frozen bundle pointers used by the current paper.
+Status: this directory remains the frozen v4 reproducibility base because it contains
+the proof-output bundle pointers used by the current paper. The April 20 Phase63-65
+verifier-surface addendum supersedes only the current paper-freeze checkpoint and is
+recorded in `docs/paper/artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/`
+and `docs/paper/PUBLICATION_RELEASE.md`.
 
 Planned publication tag after repository transfer:
 
