@@ -4553,6 +4553,8 @@ mod tests {
         commit_phase56_first_layer_executable_sumcheck_claim, commit_phase56_round_polynomial,
         commit_phase57_first_layer_mle_opening_verifier_claim,
         commit_phase57_mle_opening_verification_receipt,
+        commit_phase58_first_layer_witness_pcs_opening_claim,
+        commit_phase58_witness_bound_pcs_opening,
         phase44d_prepare_recursive_verifier_public_output_aggregation,
         phase44d_prepare_recursive_verifier_public_output_handoff,
         phase45_prepare_recursive_verifier_public_input_bridge,
@@ -4568,6 +4570,7 @@ mod tests {
         phase55_prepare_first_layer_compression_effectiveness_claim,
         phase56_prepare_first_layer_executable_sumcheck_claim,
         phase57_prepare_first_layer_mle_opening_verifier_claim,
+        phase58_prepare_first_layer_witness_pcs_opening_claim,
         verify_phase44d_recursive_verifier_public_output_aggregation,
         verify_phase44d_recursive_verifier_public_output_handoff,
         verify_phase44d_recursive_verifier_public_output_handoff_against_boundary,
@@ -4598,12 +4601,15 @@ mod tests {
         verify_phase56_first_layer_executable_sumcheck_claim_against_phase54,
         verify_phase57_first_layer_mle_opening_verifier_claim,
         verify_phase57_first_layer_mle_opening_verifier_claim_against_phase56,
-        verify_phase57_mle_opening_verification_receipt, Phase48RecursiveProofWrapperAttempt,
+        verify_phase57_mle_opening_verification_receipt,
+        verify_phase58_first_layer_witness_pcs_opening_claim,
+        verify_phase58_first_layer_witness_pcs_opening_claim_against_phase57,
+        verify_phase58_witness_bound_pcs_opening, Phase48RecursiveProofWrapperAttempt,
         Phase49LayerwiseTensorClaimPropagationContract, Phase50LayerIoClaim,
         Phase51FirstLayerRelationClaim, Phase52LayerEndpointAnchoringClaim,
         Phase53FirstLayerRelationBenchmarkClaim, Phase54FirstLayerSumcheckSkeletonClaim,
         Phase55FirstLayerCompressionEffectivenessClaim, Phase56FirstLayerExecutableSumcheckClaim,
-        Phase57FirstLayerMleOpeningVerifierClaim,
+        Phase57FirstLayerMleOpeningVerifierClaim, Phase58FirstLayerWitnessPcsOpeningClaim,
     };
     use super::super::STWO_BACKEND_VERSION_PHASE12;
     use super::*;
@@ -7852,6 +7858,157 @@ mod tests {
         let error = verify_phase57_first_layer_mle_opening_verifier_claim(&phase57)
             .expect_err("Phase57 must reject extra opening receipts");
         assert!(error.to_string().contains("opening count drift"));
+    }
+
+    fn sample_phase58_witness_pcs_opening_claim() -> (
+        Phase53FirstLayerRelationBenchmarkClaim,
+        Phase54FirstLayerSumcheckSkeletonClaim,
+        Phase56FirstLayerExecutableSumcheckClaim,
+        Phase57FirstLayerMleOpeningVerifierClaim,
+        Phase58FirstLayerWitnessPcsOpeningClaim,
+    ) {
+        let (phase53, phase54, phase56, phase57) = sample_phase57_mle_opening_verifier_claim();
+        let phase58 =
+            phase58_prepare_first_layer_witness_pcs_opening_claim(&phase57, &phase56, &phase54)
+                .expect("prepare Phase58 witness PCS opening claim");
+        (phase53, phase54, phase56, phase57, phase58)
+    }
+
+    #[test]
+    fn phase58_witness_pcs_opening_claim_accepts_phase57_openings() {
+        let (_, phase54, phase56, phase57, phase58) = sample_phase58_witness_pcs_opening_claim();
+
+        verify_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+            .expect("verify standalone Phase58 witness PCS opening claim");
+        verify_phase58_first_layer_witness_pcs_opening_claim_against_phase57(
+            &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect("verify Phase58 witness PCS opening claim against Phase57");
+
+        assert_eq!(phase58.opening_proof_count, 11);
+        assert_eq!(phase58.runtime_tensor_opening_count, 5);
+        assert_eq!(phase58.parameter_opening_count, 6);
+        assert_eq!(
+            phase58.total_raw_witness_element_count,
+            phase58
+                .opening_proofs
+                .iter()
+                .map(|opening| opening.logical_element_count)
+                .sum::<usize>()
+        );
+        assert!(phase58.measured_pcs_proof_bytes > 0);
+        assert!(phase58.opening_witness_binding_available);
+        assert!(phase58.pcs_opening_proof_available);
+        assert!(phase58.relation_witness_binding_available);
+        assert!(!phase58.full_layer_relation_witness_available);
+        assert!(!phase58.recursive_verification_claimed);
+        assert!(!phase58.cryptographic_compression_claimed);
+        assert!(!phase58.paper_ready);
+        assert_eq!(phase58.opening_proofs[0].pcs_sampled_value_limbs.len(), 4);
+        assert_eq!(
+            phase58.opening_proofs[0].opened_value,
+            phase58.opening_proofs[0].recomputed_mle_value
+        );
+    }
+
+    #[test]
+    fn phase58_witness_pcs_opening_rejects_raw_witness_drift_even_when_recommitted() {
+        let (_, _, _, _, mut phase58) = sample_phase58_witness_pcs_opening_claim();
+
+        phase58.opening_proofs[0].raw_witness_values[0] =
+            (phase58.opening_proofs[0].raw_witness_values[0] + 1) % ((1u32 << 31) - 1);
+        phase58.opening_proofs[0].opening_proof_commitment =
+            commit_phase58_witness_bound_pcs_opening(&phase58.opening_proofs[0])
+                .expect("recommit forged Phase58 opening");
+        phase58.witness_pcs_opening_claim_commitment =
+            commit_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+                .expect("recommit forged Phase58 claim");
+
+        let error = verify_phase58_witness_bound_pcs_opening(&phase58.opening_proofs[0])
+            .expect_err("Phase58 must reject raw witness drift");
+        assert!(error.to_string().contains("canonical witness drift"));
+    }
+
+    #[test]
+    fn phase58_witness_pcs_opening_claim_rejects_pcs_proof_tamper_even_when_recommitted() {
+        let (_, _, _, _, mut phase58) = sample_phase58_witness_pcs_opening_claim();
+
+        let last = phase58
+            .pcs_proof
+            .last_mut()
+            .expect("Phase58 PCS proof must be non-empty");
+        *last ^= 1;
+        phase58.witness_pcs_opening_claim_commitment =
+            commit_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+                .expect("recommit forged Phase58 claim");
+
+        let error = verify_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+            .expect_err("Phase58 must reject PCS proof-byte tamper");
+        assert!(error.to_string().contains("PCS proof commitment drift"));
+    }
+
+    #[test]
+    fn phase58_witness_pcs_opening_claim_rejects_false_full_relation_and_paper_flags() {
+        let (_, _, _, _, mut phase58) = sample_phase58_witness_pcs_opening_claim();
+
+        phase58.full_layer_relation_witness_available = true;
+        phase58.recursive_verification_claimed = true;
+        phase58.cryptographic_compression_claimed = true;
+        phase58.breakthrough_claimed = true;
+        phase58.paper_ready = true;
+        phase58.witness_pcs_opening_claim_commitment =
+            commit_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+                .expect("recommit forged Phase58 claim");
+
+        let error = verify_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+            .expect_err("Phase58 must reject false full-relation/compression/paper claims");
+        assert!(error.to_string().contains("must not claim full relation"));
+    }
+
+    #[test]
+    fn phase58_witness_pcs_opening_claim_rejects_opening_order_drift_even_when_recommitted() {
+        let (_, _, _, _, mut phase58) = sample_phase58_witness_pcs_opening_claim();
+
+        phase58.opening_proofs.swap(0, 1);
+        phase58.pcs_column_log_sizes = phase58
+            .opening_proofs
+            .iter()
+            .map(|opening| opening.pcs_column_log_size)
+            .collect();
+        phase58.pcs_opening_point_indices = phase58
+            .opening_proofs
+            .iter()
+            .map(|opening| opening.pcs_opening_point_index)
+            .collect();
+        phase58.witness_pcs_opening_claim_commitment =
+            commit_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+                .expect("recommit forged Phase58 reordered claim");
+
+        let error = verify_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+            .expect_err("Phase58 must reject reordered openings");
+        assert!(error
+            .to_string()
+            .contains("opening order, kind, or shape drift"));
+    }
+
+    #[test]
+    fn phase58_witness_pcs_opening_claim_rejects_source_drift_against_phase57() {
+        let (_, phase54, phase56, phase57, mut phase58) =
+            sample_phase58_witness_pcs_opening_claim();
+
+        phase58.source_phase57_opening_verifier_claim_commitment =
+            "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd".to_string();
+        phase58.witness_pcs_opening_claim_commitment =
+            commit_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+                .expect("recommit forged Phase58 source-drift claim");
+        verify_phase58_first_layer_witness_pcs_opening_claim(&phase58)
+            .expect("standalone Phase58 claim remains internally consistent");
+
+        let error = verify_phase58_first_layer_witness_pcs_opening_claim_against_phase57(
+            &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect_err("Phase58 must reject source drift against Phase57");
+        assert!(error.to_string().contains("source drift against Phase57"));
     }
 
     #[test]
