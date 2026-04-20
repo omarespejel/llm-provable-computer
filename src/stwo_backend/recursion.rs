@@ -12731,6 +12731,26 @@ struct Phase57MleOpeningReceiptPayloadView<'a> {
 }
 
 #[cfg(feature = "stwo-backend")]
+#[derive(Default)]
+struct Phase57JsonByteCounter {
+    bytes: usize,
+}
+
+#[cfg(feature = "stwo-backend")]
+impl std::io::Write for Phase57JsonByteCounter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.bytes = self.bytes.checked_add(buf.len()).ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::Other, "json byte count overflow")
+        })?;
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase57_mle_opening_receipt_payload_bytes(
     receipt: &Phase57MleOpeningVerificationReceipt,
 ) -> Result<usize> {
@@ -12755,9 +12775,10 @@ fn phase57_mle_opening_receipt_payload_bytes(
         relation_witness_binding_available: receipt.relation_witness_binding_available,
         cryptographic_soundness_claimed: receipt.cryptographic_soundness_claimed,
     };
-    serde_json::to_vec(&payload)
-        .map(|bytes| bytes.len())
-        .map_err(|err| VmError::Serialization(err.to_string()))
+    let mut counter = Phase57JsonByteCounter::default();
+    serde_json::to_writer(&mut counter, &payload)
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    Ok(counter.bytes)
 }
 
 #[cfg(feature = "stwo-backend")]

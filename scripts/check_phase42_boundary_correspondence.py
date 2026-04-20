@@ -219,17 +219,12 @@ PHASE42_EVIDENCE_FIELDS = (
 )
 
 SHARED_STATE_FIELDS = (
-    "step_index",
     "position",
     "layout_commitment",
     "persistent_state_commitment",
     "kv_history_commitment",
     "kv_history_length",
     "kv_cache_commitment",
-    "incoming_token_commitment",
-    "query_commitment",
-    "output_commitment",
-    "lookup_rows_commitment",
 )
 
 
@@ -1004,6 +999,10 @@ def evaluate(
         verify_phase41_against_sources(phase41, phase29, phase30)
 
     if boundary_preimage_evidence is not None:
+        if phase41 is None:
+            raise Phase42Error(
+                "Phase42 boundary preimage evidence requires a source-bound Phase41 witness"
+            )
         evidence_commitments = verify_boundary_preimage_evidence(
             boundary_preimage_evidence, phase29, phase30
         )

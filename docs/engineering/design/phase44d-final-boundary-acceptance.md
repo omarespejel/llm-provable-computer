@@ -110,6 +110,7 @@ without an externally emitted canonical source root:
 |---|---|
 | `missing_source_root` | The checker can only prove that its own local serialization is self-consistent. |
 | `mismatched_source_root` | The compact path may bind a root that is not the canonical source artifact. |
+| `mismatched_source_layout` | The claimed source root may be recomputed from a non-canonical row layout. |
 | `stale_source_claim` | A prior source surface, claim epoch, or row layout can be replayed as if it were current. |
 | `compact_proof_mismatch` | A proof or transcript commitment can be detached from the source root it is supposed to compress. |
 
@@ -160,6 +161,7 @@ The Phase44D standalone tests must fail closed for these adversarial cases:
 |---|---|
 | `missing_source_root` | Reject any attempt to set `useful_compression_boundary = true` without an externally emitted canonical source root. |
 | `mismatched_source_root` | Reject even if the source claim and compact proof are internally self-consistent around the wrong root. |
+| `mismatched_source_layout` | Reject a source-root preimage with non-canonical projection shape or row labels, even if its root, source claim, and compact proof are recomputed. |
 | `stale_source_claim` | Reject a source claim that binds an old source-surface version or claim epoch, even if its own commitment is recomputed. |
 | `compact_proof_mismatch` | Reject a compact proof whose source root or payload commitment does not match the accepted source root. |
 
