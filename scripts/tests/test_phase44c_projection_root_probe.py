@@ -43,11 +43,16 @@ class Phase44CProjectionRootProbeTests(unittest.TestCase):
             self.assertEqual(round_tripped["source_emitted_projection_root"], round_tripped["canonical_source_root"])
             self.assertEqual(len(round_tripped["kill_results"]), len(manifest["mutation_checks"]))
 
-
     def test_probe_rejects_tampered_source_emitted_root(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         manifest["source_emitted_projection_root"] = "0" * 64
         with self.assertRaises(PHASE44C.Phase44CError):
+            PHASE44C.probe_manifest(manifest)
+
+    def test_probe_rejects_non_string_kill_label(self) -> None:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        manifest["kill_labels"][0] = {"not": "a string"}
+        with self.assertRaisesRegex(PHASE44C.Phase44CError, "kill_labels\\[0\\]"):
             PHASE44C.probe_manifest(manifest)
 
     def test_each_kill_label_rejects(self) -> None:
@@ -74,6 +79,8 @@ class Phase44CProjectionRootProbeTests(unittest.TestCase):
         self.assertIn("pcs_mix_root", mechanics)
         self.assertIn("twiddle_root_coset", mechanics)
         self.assertIn("accumulation_root_coset", mechanics)
+        for item in mechanics.values():
+            self.assertFalse(pathlib.Path(item["path"]).is_absolute())
         self.assertTrue((STWO_ROOT / "crates/stwo/src/prover/pcs/mod.rs").exists())
 
 

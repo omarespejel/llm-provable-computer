@@ -41,6 +41,8 @@ def hash32_json(tag: str, value: Any) -> str:
 def load_json(path: pathlib.Path) -> dict[str, Any]:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise Phase44CError(f"{path} could not be read: {exc}") from exc
     except json.JSONDecodeError as exc:
         raise Phase44CError(f"{path} is not valid JSON: {exc}") from exc
     if not isinstance(data, dict):
@@ -77,23 +79,35 @@ def load_manifest(path: pathlib.Path) -> dict[str, Any]:
         f"unexpected source_surface_version: {manifest.get('source_surface_version')!r}",
     )
     require("canonical_source_root_preimage" in manifest, "missing canonical_source_root_preimage")
+    validate_manifest_kill_labels(manifest)
+    return manifest
+
+
+def validate_manifest_kill_labels(manifest: dict[str, Any]) -> None:
     require("kill_labels" in manifest, "missing kill_labels")
     require("mutation_checks" in manifest, "missing mutation_checks")
-    require(isinstance(manifest["kill_labels"], list) and manifest["kill_labels"], "kill_labels must be a non-empty list")
+    require(
+        isinstance(manifest["kill_labels"], list) and manifest["kill_labels"],
+        "kill_labels must be a non-empty list",
+    )
     require(
         isinstance(manifest["mutation_checks"], list) and manifest["mutation_checks"],
         "mutation_checks must be a non-empty list",
     )
-    manifest_labels = [label for label in manifest["kill_labels"] if isinstance(label, str)]
+    manifest_labels = []
+    for index, label in enumerate(manifest["kill_labels"]):
+        require(isinstance(label, str), f"kill_labels[{index}] must be a string")
+        manifest_labels.append(label)
     check_labels = []
-    for item in manifest["mutation_checks"]:
+    for index, item in enumerate(manifest["mutation_checks"]):
         require(isinstance(item, dict), "mutation_checks entries must be objects")
-        check_labels.append(item.get("label"))
+        label = item.get("label")
+        require(isinstance(label, str), f"mutation_checks[{index}].label must be a string")
+        check_labels.append(label)
     require(
         manifest_labels == check_labels,
         "kill_labels must match mutation_checks labels in order",
     )
-    return manifest
 
 
 def load_stwo_source_mechanics(stwo_root: pathlib.Path) -> dict[str, Any]:
@@ -123,12 +137,16 @@ def load_stwo_source_mechanics(stwo_root: pathlib.Path) -> dict[str, Any]:
     }
     evidence: dict[str, Any] = {}
     for name, (path, markers) in checks.items():
+        path = path.resolve()
         require(path.exists(), f"missing cloned Stwo source file: {path}")
-        text = path.read_text(encoding="utf-8")
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            raise Phase44CError(f"failed to read cloned Stwo source file {path}: {exc}") from exc
         missing = [marker for marker in markers if marker not in text]
         require(not missing, f"{path} is missing required Stwo mechanics markers: {missing}")
         evidence[name] = {
-            "path": str(path),
+            "path": str(path.relative_to(stwo_root)),
             "markers": list(markers),
         }
     return evidence
@@ -194,6 +212,7 @@ def apply_mutation(manifest: dict[str, Any], label: str) -> dict[str, Any]:
 def probe_manifest(manifest: dict[str, Any], stwo_root: pathlib.Path | None = None) -> dict[str, Any]:
     require(manifest.get("schema") == SCHEMA, f"unexpected schema: {manifest.get('schema')!r}")
     require(manifest.get("probe") == PROBE, f"unexpected probe id: {manifest.get('probe')!r}")
+    validate_manifest_kill_labels(manifest)
     source_mechanics = load_stwo_source_mechanics(stwo_root) if stwo_root is not None else None
     preimage = manifest.get("canonical_source_root_preimage")
     result = validate_preimage(preimage)

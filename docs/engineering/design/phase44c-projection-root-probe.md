@@ -109,7 +109,7 @@ The local mutation checks are simple, bounded, and deterministic:
 1. Load the canonical manifest.
 2. Recompute the projection root from the canonical preimage.
 3. Recompute the canonical source-root from the same preimage.
-4. Verify the Stwo source mechanics from the cloned upstream tree.
+4. Verify the Stwo source mechanics when a cloned upstream tree is supplied.
 5. Apply each kill-label mutation and require rejection.
 
 Acceptance requires all of the following:
@@ -117,7 +117,8 @@ Acceptance requires all of the following:
 - the manifest schema is correct,
 - the projection row count is a power of two,
 - the log size matches the row count,
-- the Stwo source mechanics are present in the cloned source tree,
+- if `STWO_ROOT`/`--stwo-root` is supplied, the Stwo source mechanics are
+  present in that cloned source tree,
 - every kill label fails closed.
 
 ## Local Runner

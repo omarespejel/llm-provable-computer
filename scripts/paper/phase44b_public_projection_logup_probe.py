@@ -771,6 +771,78 @@ def build_demo_trace() -> dict[str, Any]:
     return trace
 
 
+def verify_demo_phase12_state(
+    label: str, state: dict[str, Any], trace: dict[str, Any], expected_step: int
+) -> None:
+    if not isinstance(state, dict):
+        raise ValueError(f"{label} must be an object")
+    if state.get("state_version") != STWO_DECODING_STATE_VERSION_PHASE12:
+        raise ValueError(f"{label} Phase12 state version drift")
+    if state.get("step_index") != expected_step:
+        raise ValueError(f"{label} step_index drift")
+    if state.get("position") != expected_step:
+        raise ValueError(f"{label} position drift")
+    if state.get("kv_history_length") != expected_step:
+        raise ValueError(f"{label} kv_history_length drift")
+    if state.get("layout_commitment") != trace["layout_commitment"]:
+        raise ValueError(f"{label} layout mismatch")
+    for field in (
+        "layout_commitment",
+        "persistent_state_commitment",
+        "kv_history_commitment",
+        "kv_cache_commitment",
+        "incoming_token_commitment",
+        "query_commitment",
+        "output_commitment",
+        "lookup_rows_commitment",
+        "public_state_commitment",
+    ):
+        require_hash32(f"{label}.{field}", state[field])
+
+
+def verify_demo_phase14_state(
+    label: str, state: dict[str, Any], trace: dict[str, Any], expected_step: int
+) -> None:
+    if not isinstance(state, dict):
+        raise ValueError(f"{label} must be an object")
+    if state.get("state_version") != STWO_DECODING_STATE_VERSION_PHASE14:
+        raise ValueError(f"{label} Phase14 state version drift")
+    if state.get("step_index") != expected_step:
+        raise ValueError(f"{label} step_index drift")
+    if state.get("position") != expected_step:
+        raise ValueError(f"{label} position drift")
+    if state.get("kv_history_length") != expected_step:
+        raise ValueError(f"{label} kv_history_length drift")
+    if state.get("layout_commitment") != trace["layout_commitment"]:
+        raise ValueError(f"{label} layout mismatch")
+    for field in (
+        "layout_commitment",
+        "persistent_state_commitment",
+        "kv_history_commitment",
+        "kv_history_sealed_commitment",
+        "kv_history_open_chunk_commitment",
+        "kv_history_frontier_commitment",
+        "lookup_transcript_commitment",
+        "lookup_frontier_commitment",
+        "kv_cache_commitment",
+        "incoming_token_commitment",
+        "query_commitment",
+        "output_commitment",
+        "lookup_rows_commitment",
+        "public_state_commitment",
+    ):
+        require_hash32(f"{label}.{field}", state[field])
+    for field in (
+        "kv_history_chunk_size",
+        "kv_history_sealed_chunks",
+        "kv_history_open_chunk_pairs",
+        "kv_history_frontier_pairs",
+        "lookup_transcript_entries",
+        "lookup_frontier_entries",
+    ):
+        usize_base(f"{label}.{field}", state[field])
+
+
 def verify_demo_trace(trace: dict[str, Any]) -> None:
     if trace["issue"] != 180:
         raise ValueError("Phase44B probe must reference issue #180")
@@ -790,6 +862,10 @@ def verify_demo_trace(trace: dict[str, Any]) -> None:
             raise ValueError(f"row {index} step_index drift")
         if len(row["appended_pair"]) != trace["pair_width"]:
             raise ValueError(f"row {index} appended_pair length mismatch")
+        verify_demo_phase12_state(f"row {index} Phase12 from-state", row["phase12_from_state"], trace, index)
+        verify_demo_phase12_state(f"row {index} Phase12 to-state", row["phase12_to_state"], trace, index + 1)
+        verify_demo_phase14_state(f"row {index} Phase14 from-state", row["phase14_from_state"], trace, index)
+        verify_demo_phase14_state(f"row {index} Phase14 to-state", row["phase14_to_state"], trace, index + 1)
         for field in (
             "input_lookup_rows_commitment",
             "output_lookup_rows_commitment",
@@ -808,8 +884,6 @@ def verify_demo_trace(trace: dict[str, Any]) -> None:
             raise ValueError(f"row {index} shared public-state mismatch on from-state")
         if row["phase12_to_state"]["public_state_commitment"] != row["phase14_to_state"]["public_state_commitment"]:
             raise ValueError(f"row {index} shared public-state mismatch on to-state")
-        if row["phase12_from_state"]["layout_commitment"] != trace["layout_commitment"]:
-            raise ValueError(f"row {index} Phase12 from-state layout mismatch")
 
     if trace["phase30_source_chain_commitment"] != commit_phase43_trace_source_chain(trace):
         raise ValueError("source-chain commitment drift")

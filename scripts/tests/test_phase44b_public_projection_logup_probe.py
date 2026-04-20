@@ -112,6 +112,18 @@ class Phase44BPublicProjectionLogUpProbeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "lookup-row commitment drift"):
             PROBE.build_probe_evidence(trace, PROBE.build_projection(trace))
 
+    def test_probe_rejects_embedded_state_step_drift(self) -> None:
+        trace = PROBE.build_demo_trace()
+        trace["rows"][0]["phase12_to_state"]["kv_history_length"] = 999
+        with self.assertRaisesRegex(ValueError, "kv_history_length drift"):
+            PROBE.build_probe_evidence(trace, PROBE.build_projection(trace))
+
+    def test_probe_rejects_embedded_state_commitment_shape_drift(self) -> None:
+        trace = PROBE.build_demo_trace()
+        trace["rows"][0]["phase14_from_state"]["kv_history_frontier_commitment"] = "not-a-hash"
+        with self.assertRaisesRegex(ValueError, "kv_history_frontier_commitment"):
+            PROBE.build_probe_evidence(trace, PROBE.build_projection(trace))
+
     def test_probe_rejects_transcript_field_omission(self) -> None:
         trace = PROBE.build_demo_trace()
         projection = PROBE.build_projection(trace)

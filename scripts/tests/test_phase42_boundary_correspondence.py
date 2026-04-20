@@ -373,6 +373,7 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
                 check=True,
                 capture_output=True,
                 text=True,
+                timeout=10,
             )
             result = json.loads(completed.stdout)
         self.assertEqual(result["issue"], 180)
@@ -408,6 +409,7 @@ class Phase42BoundaryCorrespondenceTests(unittest.TestCase):
                 check=True,
                 capture_output=True,
                 text=True,
+                timeout=10,
             )
             result = json.loads(completed.stdout)
         self.assertTrue(result["accepted"])
