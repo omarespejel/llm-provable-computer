@@ -7792,7 +7792,7 @@ mod tests {
 
     #[test]
     fn phase57_mle_opening_receipt_rejects_opened_value_drift_even_when_recommitted() {
-        let (_, _, _, mut phase57) = sample_phase57_mle_opening_verifier_claim();
+        let (_, phase54, phase56, mut phase57) = sample_phase57_mle_opening_verifier_claim();
 
         phase57.opening_receipts[0].opened_value =
             (phase57.opening_receipts[0].opened_value + 1) % ((1u32 << 31) - 1);
@@ -7811,11 +7811,18 @@ mod tests {
         assert!(error
             .to_string()
             .contains("deterministic opening evaluation drift"));
+        let error = verify_phase57_first_layer_mle_opening_verifier_claim_against_phase56(
+            &phase57, &phase56, &phase54,
+        )
+        .expect_err("Phase57 source-bound verifier must reject deterministic value drift");
+        assert!(error
+            .to_string()
+            .contains("does not match verified Phase56"));
     }
 
     #[test]
     fn phase57_mle_opening_receipt_rejects_payload_byte_drift_even_when_recommitted() {
-        let (_, _, _, mut phase57) = sample_phase57_mle_opening_verifier_claim();
+        let (_, phase54, phase56, mut phase57) = sample_phase57_mle_opening_verifier_claim();
 
         phase57.opening_receipts[0].measured_payload_bytes += 1;
         phase57.opening_receipts[0].opening_receipt_commitment =
@@ -7830,6 +7837,13 @@ mod tests {
         let error = verify_phase57_first_layer_mle_opening_verifier_claim(&phase57)
             .expect_err("Phase57 claim must reject payload byte drift");
         assert!(error.to_string().contains("measured byte count drift"));
+        let error = verify_phase57_first_layer_mle_opening_verifier_claim_against_phase56(
+            &phase57, &phase56, &phase54,
+        )
+        .expect_err("Phase57 source-bound verifier must reject payload byte drift");
+        assert!(error
+            .to_string()
+            .contains("does not match verified Phase56"));
     }
 
     #[test]
