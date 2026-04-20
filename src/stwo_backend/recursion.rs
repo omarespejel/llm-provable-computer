@@ -59,9 +59,33 @@ use blake2::{
     Blake2bVar,
 };
 #[cfg(feature = "stwo-backend")]
+use stwo::core::channel::Blake2sM31Channel;
+#[cfg(feature = "stwo-backend")]
+use stwo::core::circle::{CirclePoint, SECURE_FIELD_CIRCLE_ORDER};
+#[cfg(feature = "stwo-backend")]
 use stwo::core::fields::m31::BaseField;
 #[cfg(feature = "stwo-backend")]
 use stwo::core::fields::qm31::SecureField;
+#[cfg(feature = "stwo-backend")]
+use stwo::core::fri::FriConfig;
+#[cfg(feature = "stwo-backend")]
+use stwo::core::pcs::quotients::CommitmentSchemeProof;
+#[cfg(feature = "stwo-backend")]
+use stwo::core::pcs::{CommitmentSchemeVerifier, PcsConfig, TreeVec};
+#[cfg(feature = "stwo-backend")]
+use stwo::core::poly::circle::CanonicCoset;
+#[cfg(feature = "stwo-backend")]
+use stwo::core::vcs_lifted::blake2_merkle::{Blake2sM31MerkleChannel, Blake2sM31MerkleHasher};
+#[cfg(feature = "stwo-backend")]
+use stwo::prover::backend::cpu::CpuBackend;
+#[cfg(feature = "stwo-backend")]
+use stwo::prover::backend::{Col, Column};
+#[cfg(feature = "stwo-backend")]
+use stwo::prover::poly::circle::{CircleEvaluation, PolyOps};
+#[cfg(feature = "stwo-backend")]
+use stwo::prover::poly::{BitReversedOrder, NaturalOrder};
+#[cfg(feature = "stwo-backend")]
+use stwo::prover::CommitmentSchemeProver;
 
 pub const STWO_RECURSION_BATCH_VERSION_PHASE6: &str = "stwo-phase6-recursion-batch-v1";
 pub const STWO_RECURSION_BATCH_SCOPE_PHASE6: &str =
@@ -286,6 +310,12 @@ pub const STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_CLAIM_VERSION_PHASE57: &str =
 pub const STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_CLAIM_SCOPE_PHASE57: &str =
     "phase57_phase56_mle_opening_receipt_verifier_and_bytes";
 #[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_WITNESS_PCS_OPENING_CLAIM_VERSION_PHASE58: &str =
+    "phase58-first-layer-witness-pcs-opening-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_WITNESS_PCS_OPENING_CLAIM_SCOPE_PHASE58: &str =
+    "phase58_phase57_witness_bound_stwo_pcs_opening_proofs";
+#[cfg(feature = "stwo-backend")]
 const STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_KIND_PHASE44D: &str =
     "source-chain-public-output-boundary-verifier-v1";
 #[cfg(feature = "stwo-backend")]
@@ -454,6 +484,25 @@ const STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_STATUS_PHASE57: &str =
 #[cfg(feature = "stwo-backend")]
 const STWO_FIRST_LAYER_MLE_OPENING_VERIFIER_NEXT_STEP_PHASE57: &str =
     "implement_phase58_relation_witness_binding_and_real_pcs_opening_proofs";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_WITNESS_PCS_OPENING_SCHEME_PHASE58: &str =
+    "phase58_raw_witness_mle_recomputation_plus_stwo_pcs_opening";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_WITNESS_PCS_OPENING_COMPLEXITY_PHASE58: &str =
+    "O(raw_opening_witness_width + stwo_pcs_opening_verifier)";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_WITNESS_PCS_OPENING_STATUS_PHASE58: &str =
+    "witness_bound_pcs_opening_proofs_available_pending_relation_witness_integration";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_WITNESS_PCS_OPENING_NEXT_STEP_PHASE58: &str =
+    "integrate_phase58_openings_into_full_first_layer_relation_witness_and_recursive_aggregation";
+#[cfg(feature = "stwo-backend")]
+const PHASE58_MAX_PCS_LIFTING_LOG_SIZE: u32 = 64;
+#[cfg(feature = "stwo-backend")]
+const MAX_PHASE58_PCS_PROOF_JSON_BYTES: usize = 4 * 1024 * 1024;
+#[cfg(feature = "stwo-backend")]
+const PHASE58_PCS_CONFIG_PROFILE: &str =
+    "phase58-stwo-2.2.0-pcs-pow10-fri-lb1-last0-queries3-fold1-no-lift-v1";
 #[cfg(feature = "stwo-backend")]
 const PHASE44D_M31_MODULUS: u32 = (1u32 << 31) - 1;
 
@@ -1551,6 +1600,95 @@ pub struct Phase57FirstLayerMleOpeningVerifierClaim {
     pub paper_ready: bool,
     pub required_next_step: String,
     pub opening_verifier_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase58WitnessBoundPcsOpening {
+    pub proof_backend: StarkProofBackend,
+    pub source_phase57_opening_receipt_commitment: String,
+    pub source_phase56_executable_claim_commitment: String,
+    pub source_phase54_opening_claim_commitment: String,
+    pub opening_name: String,
+    pub opening_kind: String,
+    pub opening_scheme: String,
+    pub pcs_config_profile: String,
+    pub tensor_shape: Vec<usize>,
+    pub logical_element_count: usize,
+    pub padded_element_count: usize,
+    pub opening_point_dimension: usize,
+    pub opening_point: Vec<u32>,
+    pub opened_value: u32,
+    pub raw_witness_values: Vec<u32>,
+    pub raw_witness_commitment: String,
+    pub adjusted_witness_index: usize,
+    pub adjusted_witness_basis_weight: u32,
+    pub recomputed_mle_value: u32,
+    pub pcs_column_log_size: u32,
+    pub pcs_lifting_log_size: u32,
+    pub pcs_opening_point_index: u64,
+    pub pcs_sampled_value_limbs: Vec<u32>,
+    pub pcs_sampled_value_commitment: String,
+    pub measured_witness_bytes: usize,
+    pub opening_witness_binding_available: bool,
+    pub pcs_opening_proof_available: bool,
+    pub cryptographic_opening_soundness_claimed: bool,
+    pub full_relation_soundness_claimed: bool,
+    pub opening_proof_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase58FirstLayerWitnessPcsOpeningClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub pcs_config_profile: String,
+    pub source_phase57_opening_verifier_claim_commitment: String,
+    pub source_phase56_executable_claim_commitment: String,
+    pub source_phase54_skeleton_claim_commitment: String,
+    pub opening_proofs: Vec<Phase58WitnessBoundPcsOpening>,
+    pub opening_proof_count: usize,
+    pub runtime_tensor_opening_count: usize,
+    pub parameter_opening_count: usize,
+    pub total_raw_witness_element_count: usize,
+    pub total_padded_witness_element_count: usize,
+    pub total_opening_point_dimension: usize,
+    pub max_pcs_column_log_size: u32,
+    pub pcs_lifting_log_size: u32,
+    pub pcs_column_log_sizes: Vec<u32>,
+    pub pcs_opening_point_indices: Vec<u64>,
+    pub pcs_proof: Vec<u8>,
+    pub pcs_proof_commitment: String,
+    pub measured_opening_witness_bytes: usize,
+    pub measured_pcs_proof_bytes: usize,
+    pub phase57_opening_verifier_surface_unit_count: usize,
+    pub witness_binding_surface_unit_count: usize,
+    pub combined_verifier_surface_unit_count: usize,
+    pub surface_delta_from_phase57: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub executable_mle_opening_verifier_available: bool,
+    pub opening_witness_binding_available: bool,
+    pub pcs_opening_proof_available: bool,
+    pub relation_witness_binding_available: bool,
+    pub full_layer_relation_witness_available: bool,
+    pub actual_proof_byte_benchmark_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub witness_pcs_opening_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Serialize, Deserialize)]
+struct Phase58PcsOpeningProofPayload {
+    proof: CommitmentSchemeProof<Blake2sM31MerkleHasher>,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -12366,11 +12504,10 @@ pub(crate) fn verify_phase57_first_layer_mle_opening_verifier_claim(
                     .to_string(),
             ));
         }
-        let binding = format!(
-            "{}:{}:{}",
-            receipt.source_phase54_opening_claim_commitment,
-            receipt.opening_kind,
-            receipt.opening_name
+        let binding = (
+            receipt.source_phase54_opening_claim_commitment.clone(),
+            receipt.opening_kind.clone(),
+            receipt.opening_name.clone(),
         );
         if seen_receipt_bindings.contains(&binding) {
             return Err(VmError::InvalidConfig(
@@ -12702,6 +12839,1345 @@ fn phase57_expected_first_layer_opening_specs() -> Result<Vec<(String, String, V
         ));
     }
     Ok(specs)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase58_witness_bound_pcs_opening(
+    opening: &Phase58WitnessBoundPcsOpening,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 58 witness PCS opening hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase58-witness-bound-pcs-opening");
+    phase29_update_len_prefixed(&mut hasher, opening.proof_backend.to_string().as_bytes());
+    for part in [
+        opening.source_phase57_opening_receipt_commitment.as_bytes(),
+        opening
+            .source_phase56_executable_claim_commitment
+            .as_bytes(),
+        opening.source_phase54_opening_claim_commitment.as_bytes(),
+        opening.opening_name.as_bytes(),
+        opening.opening_kind.as_bytes(),
+        opening.opening_scheme.as_bytes(),
+        opening.pcs_config_profile.as_bytes(),
+        opening.raw_witness_commitment.as_bytes(),
+        opening.pcs_sampled_value_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_update_usize_vec(&mut hasher, &opening.tensor_shape);
+    phase29_update_usize(&mut hasher, opening.logical_element_count);
+    phase29_update_usize(&mut hasher, opening.padded_element_count);
+    phase29_update_usize(&mut hasher, opening.opening_point_dimension);
+    phase44d_update_u32_vec(&mut hasher, &opening.opening_point);
+    hasher.update(&opening.opened_value.to_le_bytes());
+    phase29_update_usize(&mut hasher, opening.adjusted_witness_index);
+    hasher.update(&opening.adjusted_witness_basis_weight.to_le_bytes());
+    hasher.update(&opening.recomputed_mle_value.to_le_bytes());
+    hasher.update(&opening.pcs_column_log_size.to_le_bytes());
+    hasher.update(&opening.pcs_lifting_log_size.to_le_bytes());
+    hasher.update(&opening.pcs_opening_point_index.to_le_bytes());
+    phase44d_update_u32_vec(&mut hasher, &opening.pcs_sampled_value_limbs);
+    phase29_update_usize(&mut hasher, opening.measured_witness_bytes);
+    phase29_update_bool(&mut hasher, opening.opening_witness_binding_available);
+    phase29_update_bool(&mut hasher, opening.pcs_opening_proof_available);
+    phase29_update_bool(&mut hasher, opening.cryptographic_opening_soundness_claimed);
+    phase29_update_bool(&mut hasher, opening.full_relation_soundness_claimed);
+    phase44d_finalize_hash(hasher, "Phase 58 witness PCS opening")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase58_first_layer_witness_pcs_opening_claim(
+    claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 58 first-layer witness PCS opening claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase58-first-layer-witness-pcs-opening-claim",
+    );
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim.pcs_config_profile.as_bytes(),
+        claim
+            .source_phase57_opening_verifier_claim_commitment
+            .as_bytes(),
+        claim.source_phase56_executable_claim_commitment.as_bytes(),
+        claim.source_phase54_skeleton_claim_commitment.as_bytes(),
+        claim.pcs_proof_commitment.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.verifier_status.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for opening in &claim.opening_proofs {
+        phase29_update_len_prefixed(&mut hasher, opening.opening_proof_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, claim.opening_proof_count);
+    phase29_update_usize(&mut hasher, claim.runtime_tensor_opening_count);
+    phase29_update_usize(&mut hasher, claim.parameter_opening_count);
+    phase29_update_usize(&mut hasher, claim.total_raw_witness_element_count);
+    phase29_update_usize(&mut hasher, claim.total_padded_witness_element_count);
+    phase29_update_usize(&mut hasher, claim.total_opening_point_dimension);
+    hasher.update(&claim.max_pcs_column_log_size.to_le_bytes());
+    hasher.update(&claim.pcs_lifting_log_size.to_le_bytes());
+    for log_size in &claim.pcs_column_log_sizes {
+        hasher.update(&log_size.to_le_bytes());
+    }
+    for point_index in &claim.pcs_opening_point_indices {
+        hasher.update(&point_index.to_le_bytes());
+    }
+    phase29_update_usize(&mut hasher, claim.measured_opening_witness_bytes);
+    phase29_update_usize(&mut hasher, claim.measured_pcs_proof_bytes);
+    phase29_update_usize(
+        &mut hasher,
+        claim.phase57_opening_verifier_surface_unit_count,
+    );
+    phase29_update_usize(&mut hasher, claim.witness_binding_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.combined_verifier_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.surface_delta_from_phase57);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.executable_mle_opening_verifier_available);
+    phase29_update_bool(&mut hasher, claim.opening_witness_binding_available);
+    phase29_update_bool(&mut hasher, claim.pcs_opening_proof_available);
+    phase29_update_bool(&mut hasher, claim.relation_witness_binding_available);
+    phase29_update_bool(&mut hasher, claim.full_layer_relation_witness_available);
+    phase29_update_bool(&mut hasher, claim.actual_proof_byte_benchmark_available);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, claim.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, claim.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 58 first-layer witness PCS opening claim")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_pcs_config() -> PcsConfig {
+    PcsConfig {
+        pow_bits: 10,
+        fri_config: FriConfig::new(0, 1, 3, 1),
+        lifting_log_size: None,
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase58_prepare_first_layer_witness_pcs_opening_claim(
+    phase57_claim: &Phase57FirstLayerMleOpeningVerifierClaim,
+    phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<Phase58FirstLayerWitnessPcsOpeningClaim> {
+    verify_phase57_first_layer_mle_opening_verifier_claim_against_phase56(
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
+    let pcs_config = phase58_pcs_config();
+    let pcs_lifting_log_size = phase57_claim
+        .opening_receipts
+        .iter()
+        .map(|receipt| {
+            phase58_pcs_column_log_size(receipt.logical_element_count).map(|log_size| {
+                log_size
+                    .checked_add(pcs_config.fri_config.log_blowup_factor)
+                    .ok_or_else(|| {
+                        VmError::InvalidConfig("Phase 58 PCS lifting log-size overflow".to_string())
+                    })
+            })?
+        })
+        .collect::<Result<Vec<_>>>()?
+        .into_iter()
+        .max()
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 58 requires at least one opening receipt".to_string())
+        })?;
+    let mut opening_proofs = Vec::with_capacity(phase57_claim.opening_receipts.len());
+    for receipt in &phase57_claim.opening_receipts {
+        opening_proofs.push(phase58_prepare_witness_bound_pcs_opening(
+            receipt,
+            pcs_lifting_log_size,
+        )?);
+    }
+    let pcs_proof = phase58_build_pcs_opening_proof(&opening_proofs)?;
+    let pcs_proof_commitment = phase58_commit_pcs_proof_bytes(&pcs_proof)?;
+    let opening_proof_count = opening_proofs.len();
+    let runtime_tensor_opening_count = opening_proofs
+        .iter()
+        .filter(|opening| opening.opening_kind == "runtime_tensor_mle_opening")
+        .count();
+    let parameter_opening_count = opening_proofs
+        .iter()
+        .filter(|opening| opening.opening_kind == "parameter_mle_opening")
+        .count();
+    let total_raw_witness_element_count: usize = opening_proofs
+        .iter()
+        .map(|opening| opening.logical_element_count)
+        .sum();
+    let total_padded_witness_element_count: usize = opening_proofs
+        .iter()
+        .map(|opening| opening.padded_element_count)
+        .sum();
+    let total_opening_point_dimension: usize = opening_proofs
+        .iter()
+        .map(|opening| opening.opening_point_dimension)
+        .sum();
+    let max_pcs_column_log_size = opening_proofs
+        .iter()
+        .map(|opening| opening.pcs_column_log_size)
+        .max()
+        .unwrap_or(0);
+    let pcs_column_log_sizes = opening_proofs
+        .iter()
+        .map(|opening| opening.pcs_column_log_size)
+        .collect::<Vec<_>>();
+    let pcs_opening_point_indices = opening_proofs
+        .iter()
+        .map(|opening| opening.pcs_opening_point_index)
+        .collect::<Vec<_>>();
+    let measured_opening_witness_bytes: usize = opening_proofs
+        .iter()
+        .map(|opening| opening.measured_witness_bytes)
+        .sum();
+    let witness_binding_surface_unit_count = phase58_witness_binding_surface_unit_count(
+        opening_proof_count,
+        total_raw_witness_element_count,
+        total_opening_point_dimension,
+    )?;
+    let combined_verifier_surface_unit_count = phase57_claim
+        .opening_verifier_surface_unit_count
+        .checked_add(witness_binding_surface_unit_count)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 58 combined verifier surface accounting overflow".to_string(),
+            )
+        })?;
+    let mut claim = Phase58FirstLayerWitnessPcsOpeningClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_FIRST_LAYER_WITNESS_PCS_OPENING_CLAIM_VERSION_PHASE58.to_string(),
+        semantic_scope: STWO_FIRST_LAYER_WITNESS_PCS_OPENING_CLAIM_SCOPE_PHASE58.to_string(),
+        pcs_config_profile: PHASE58_PCS_CONFIG_PROFILE.to_string(),
+        source_phase57_opening_verifier_claim_commitment: phase57_claim
+            .opening_verifier_claim_commitment
+            .clone(),
+        source_phase56_executable_claim_commitment: phase57_claim
+            .source_phase56_executable_claim_commitment
+            .clone(),
+        source_phase54_skeleton_claim_commitment: phase57_claim
+            .source_phase54_skeleton_claim_commitment
+            .clone(),
+        opening_proofs,
+        opening_proof_count,
+        runtime_tensor_opening_count,
+        parameter_opening_count,
+        total_raw_witness_element_count,
+        total_padded_witness_element_count,
+        total_opening_point_dimension,
+        max_pcs_column_log_size,
+        pcs_lifting_log_size,
+        pcs_column_log_sizes,
+        pcs_opening_point_indices,
+        pcs_proof,
+        pcs_proof_commitment,
+        measured_opening_witness_bytes,
+        measured_pcs_proof_bytes: 0,
+        phase57_opening_verifier_surface_unit_count: phase57_claim
+            .opening_verifier_surface_unit_count,
+        witness_binding_surface_unit_count,
+        combined_verifier_surface_unit_count,
+        surface_delta_from_phase57: witness_binding_surface_unit_count,
+        verifier_side_complexity: STWO_FIRST_LAYER_WITNESS_PCS_OPENING_COMPLEXITY_PHASE58
+            .to_string(),
+        verifier_status: STWO_FIRST_LAYER_WITNESS_PCS_OPENING_STATUS_PHASE58.to_string(),
+        transcript_order: phase58_witness_pcs_opening_transcript_order(),
+        executable_mle_opening_verifier_available: true,
+        opening_witness_binding_available: true,
+        pcs_opening_proof_available: true,
+        relation_witness_binding_available: true,
+        full_layer_relation_witness_available: false,
+        actual_proof_byte_benchmark_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_FIRST_LAYER_WITNESS_PCS_OPENING_NEXT_STEP_PHASE58.to_string(),
+        witness_pcs_opening_claim_commitment: String::new(),
+    };
+    claim.measured_pcs_proof_bytes = claim.pcs_proof.len();
+    claim.witness_pcs_opening_claim_commitment =
+        commit_phase58_first_layer_witness_pcs_opening_claim(&claim)?;
+    verify_phase58_first_layer_witness_pcs_opening_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase58_witness_bound_pcs_opening(
+    opening: &Phase58WitnessBoundPcsOpening,
+) -> Result<()> {
+    if opening.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening requires `stwo` backend".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase58_source_phase57_opening_receipt_commitment",
+            opening.source_phase57_opening_receipt_commitment.as_str(),
+        ),
+        (
+            "phase58_source_phase56_executable_claim_commitment",
+            opening.source_phase56_executable_claim_commitment.as_str(),
+        ),
+        (
+            "phase58_source_phase54_opening_claim_commitment",
+            opening.source_phase54_opening_claim_commitment.as_str(),
+        ),
+        (
+            "phase58_raw_witness_commitment",
+            opening.raw_witness_commitment.as_str(),
+        ),
+        (
+            "phase58_pcs_sampled_value_commitment",
+            opening.pcs_sampled_value_commitment.as_str(),
+        ),
+        (
+            "phase58_opening_proof_commitment",
+            opening.opening_proof_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if opening.opening_kind != "runtime_tensor_mle_opening"
+        && opening.opening_kind != "parameter_mle_opening"
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening kind drift".to_string(),
+        ));
+    }
+    if opening.opening_scheme != STWO_FIRST_LAYER_WITNESS_PCS_OPENING_SCHEME_PHASE58 {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening scheme drift".to_string(),
+        ));
+    }
+    if opening.pcs_config_profile != PHASE58_PCS_CONFIG_PROFILE {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening config profile drift".to_string(),
+        ));
+    }
+    let logical_element_count = phase50_tensor_element_count(&opening.tensor_shape)?;
+    let padded_element_count = phase50_next_power_of_two(logical_element_count)?;
+    let opening_point_dimension = phase53_padded_log2(logical_element_count)?;
+    if opening.logical_element_count != logical_element_count
+        || opening.padded_element_count != padded_element_count
+        || opening.opening_point_dimension != opening_point_dimension
+        || opening.opening_point.len() != opening_point_dimension
+        || opening.raw_witness_values.len() != logical_element_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening shape, point, or witness length drift".to_string(),
+        ));
+    }
+    phase52_validate_m31_values("phase58_opening_point", &opening.opening_point)?;
+    phase52_validate_m31_values("phase58_raw_witness_values", &opening.raw_witness_values)?;
+    phase52_validate_m31_values(
+        "phase58_pcs_sampled_value_limbs",
+        &opening.pcs_sampled_value_limbs,
+    )?;
+    if opening.opened_value >= PHASE44D_M31_MODULUS
+        || opening.recomputed_mle_value >= PHASE44D_M31_MODULUS
+        || opening.adjusted_witness_basis_weight >= PHASE44D_M31_MODULUS
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening contains an out-of-field M31 value".to_string(),
+        ));
+    }
+    let (expected_values, adjusted_index, adjusted_weight) =
+        phase58_derive_opening_witness_values(opening)?;
+    if opening.raw_witness_values != expected_values
+        || opening.adjusted_witness_index != adjusted_index
+        || opening.adjusted_witness_basis_weight != adjusted_weight
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening canonical witness drift".to_string(),
+        ));
+    }
+    let expected_raw_commitment = phase52_commit_raw_tensor_values(&opening.raw_witness_values)?;
+    if opening.raw_witness_commitment != expected_raw_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening raw witness commitment drift".to_string(),
+        ));
+    }
+    let expected_mle_value =
+        phase52_evaluate_padded_mle(&opening.raw_witness_values, &opening.opening_point)?;
+    if opening.recomputed_mle_value != expected_mle_value
+        || opening.recomputed_mle_value != opening.opened_value
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening MLE recomputation drift".to_string(),
+        ));
+    }
+    let expected_log_size = phase58_pcs_column_log_size(opening.logical_element_count)?;
+    let expected_point_index = phase58_derive_pcs_opening_point_index(opening)?;
+    let expected_extended_log_size = opening
+        .pcs_column_log_size
+        .checked_add(phase58_pcs_config().fri_config.log_blowup_factor)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 58 PCS extended log-size overflow".to_string())
+        })?;
+    if opening.pcs_column_log_size != expected_log_size
+        || opening.pcs_lifting_log_size < expected_extended_log_size
+        || opening.pcs_opening_point_index != expected_point_index
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening PCS column, lifting, or point drift".to_string(),
+        ));
+    }
+    let expected_sample = phase58_circle_sample_value(
+        &opening.raw_witness_values,
+        opening.pcs_column_log_size,
+        opening.pcs_lifting_log_size,
+        opening.pcs_opening_point_index,
+    )?;
+    let expected_sample_limbs = phase58_secure_field_limbs(expected_sample);
+    if opening.pcs_sampled_value_limbs != expected_sample_limbs {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening sampled value drift".to_string(),
+        ));
+    }
+    let expected_sample_commitment =
+        phase58_commit_pcs_sampled_value_limbs(&opening.pcs_sampled_value_limbs)?;
+    if opening.pcs_sampled_value_commitment != expected_sample_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening sampled value commitment drift".to_string(),
+        ));
+    }
+    let expected_bytes = phase58_witness_opening_payload_bytes(opening)?;
+    if opening.measured_witness_bytes != expected_bytes {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening measured byte count drift".to_string(),
+        ));
+    }
+    if !opening.opening_witness_binding_available
+        || !opening.pcs_opening_proof_available
+        || !opening.cryptographic_opening_soundness_claimed
+        || opening.full_relation_soundness_claimed
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening must claim only witness-bound PCS opening soundness"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase58_witness_bound_pcs_opening(opening)?;
+    if opening.opening_proof_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase58_first_layer_witness_pcs_opening_claim(
+    claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_FIRST_LAYER_WITNESS_PCS_OPENING_CLAIM_VERSION_PHASE58
+        || claim.semantic_scope != STWO_FIRST_LAYER_WITNESS_PCS_OPENING_CLAIM_SCOPE_PHASE58
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening claim version or semantic scope drift".to_string(),
+        ));
+    }
+    if claim.pcs_config_profile != PHASE58_PCS_CONFIG_PROFILE {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening claim config profile drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase58_source_phase57_opening_verifier_claim_commitment",
+            claim
+                .source_phase57_opening_verifier_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase58_source_phase56_executable_claim_commitment",
+            claim.source_phase56_executable_claim_commitment.as_str(),
+        ),
+        (
+            "phase58_source_phase54_skeleton_claim_commitment",
+            claim.source_phase54_skeleton_claim_commitment.as_str(),
+        ),
+        (
+            "phase58_pcs_proof_commitment",
+            claim.pcs_proof_commitment.as_str(),
+        ),
+        (
+            "phase58_witness_pcs_opening_claim_commitment",
+            claim.witness_pcs_opening_claim_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let expected_opening_specs = phase57_expected_first_layer_opening_specs()?;
+    if claim.opening_proofs.len() != expected_opening_specs.len() {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening claim opening count drift".to_string(),
+        ));
+    }
+    let mut seen_receipt_bindings = Vec::with_capacity(claim.opening_proofs.len());
+    for (opening, (expected_name, expected_kind, expected_shape)) in claim
+        .opening_proofs
+        .iter()
+        .zip(expected_opening_specs.iter())
+    {
+        verify_phase58_witness_bound_pcs_opening(opening)?;
+        if opening.source_phase56_executable_claim_commitment
+            != claim.source_phase56_executable_claim_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 58 witness PCS opening claim Phase56 source drift".to_string(),
+            ));
+        }
+        if opening.opening_name != *expected_name
+            || opening.opening_kind != *expected_kind
+            || opening.tensor_shape != *expected_shape
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 58 witness PCS opening claim opening order, kind, or shape drift"
+                    .to_string(),
+            ));
+        }
+        let binding = (
+            opening.source_phase57_opening_receipt_commitment.clone(),
+            opening.opening_kind.clone(),
+            opening.opening_name.clone(),
+        );
+        if seen_receipt_bindings.contains(&binding) {
+            return Err(VmError::InvalidConfig(
+                "Phase 58 witness PCS opening claim duplicate opening binding".to_string(),
+            ));
+        }
+        seen_receipt_bindings.push(binding);
+    }
+    let opening_proof_count = claim.opening_proofs.len();
+    let runtime_tensor_opening_count = claim
+        .opening_proofs
+        .iter()
+        .filter(|opening| opening.opening_kind == "runtime_tensor_mle_opening")
+        .count();
+    let parameter_opening_count = claim
+        .opening_proofs
+        .iter()
+        .filter(|opening| opening.opening_kind == "parameter_mle_opening")
+        .count();
+    let total_raw_witness_element_count: usize = claim
+        .opening_proofs
+        .iter()
+        .map(|opening| opening.logical_element_count)
+        .sum();
+    let total_padded_witness_element_count: usize = claim
+        .opening_proofs
+        .iter()
+        .map(|opening| opening.padded_element_count)
+        .sum();
+    let total_opening_point_dimension: usize = claim
+        .opening_proofs
+        .iter()
+        .map(|opening| opening.opening_point_dimension)
+        .sum();
+    let max_pcs_column_log_size = claim
+        .opening_proofs
+        .iter()
+        .map(|opening| opening.pcs_column_log_size)
+        .max()
+        .unwrap_or(0);
+    let pcs_lifting_log_size = claim
+        .opening_proofs
+        .iter()
+        .map(|opening| opening.pcs_lifting_log_size)
+        .max()
+        .unwrap_or(0);
+    if claim
+        .opening_proofs
+        .iter()
+        .any(|opening| opening.pcs_lifting_log_size != pcs_lifting_log_size)
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening claim mixed PCS lifting log sizes".to_string(),
+        ));
+    }
+    let pcs_column_log_sizes = claim
+        .opening_proofs
+        .iter()
+        .map(|opening| opening.pcs_column_log_size)
+        .collect::<Vec<_>>();
+    let pcs_opening_point_indices = claim
+        .opening_proofs
+        .iter()
+        .map(|opening| opening.pcs_opening_point_index)
+        .collect::<Vec<_>>();
+    let measured_opening_witness_bytes: usize = claim
+        .opening_proofs
+        .iter()
+        .map(|opening| opening.measured_witness_bytes)
+        .sum();
+    let phase57_surface = opening_proof_count
+        .checked_mul(2)
+        .and_then(|value| value.checked_add(total_opening_point_dimension))
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 58 Phase57 surface accounting overflow".to_string())
+        })?;
+    let witness_binding_surface = phase58_witness_binding_surface_unit_count(
+        opening_proof_count,
+        total_raw_witness_element_count,
+        total_opening_point_dimension,
+    )?;
+    let combined_surface = phase57_surface
+        .checked_add(witness_binding_surface)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 58 combined verifier surface accounting overflow".to_string(),
+            )
+        })?;
+    if claim.opening_proof_count != opening_proof_count
+        || claim.runtime_tensor_opening_count != runtime_tensor_opening_count
+        || claim.parameter_opening_count != parameter_opening_count
+        || claim.total_raw_witness_element_count != total_raw_witness_element_count
+        || claim.total_padded_witness_element_count != total_padded_witness_element_count
+        || claim.total_opening_point_dimension != total_opening_point_dimension
+        || claim.max_pcs_column_log_size != max_pcs_column_log_size
+        || claim.pcs_lifting_log_size != pcs_lifting_log_size
+        || claim.pcs_column_log_sizes != pcs_column_log_sizes
+        || claim.pcs_opening_point_indices != pcs_opening_point_indices
+        || claim.measured_opening_witness_bytes != measured_opening_witness_bytes
+        || claim.measured_pcs_proof_bytes != claim.pcs_proof.len()
+        || claim.phase57_opening_verifier_surface_unit_count != phase57_surface
+        || claim.witness_binding_surface_unit_count != witness_binding_surface
+        || claim.combined_verifier_surface_unit_count != combined_surface
+        || claim.surface_delta_from_phase57 != witness_binding_surface
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening claim surface, proof, or byte accounting drift"
+                .to_string(),
+        ));
+    }
+    let expected_pcs_proof_commitment = phase58_commit_pcs_proof_bytes(&claim.pcs_proof)?;
+    if claim.pcs_proof_commitment != expected_pcs_proof_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening claim PCS proof commitment drift".to_string(),
+        ));
+    }
+    if claim.verifier_side_complexity != STWO_FIRST_LAYER_WITNESS_PCS_OPENING_COMPLEXITY_PHASE58
+        || claim.verifier_status != STWO_FIRST_LAYER_WITNESS_PCS_OPENING_STATUS_PHASE58
+        || claim.transcript_order != phase58_witness_pcs_opening_transcript_order()
+        || claim.required_next_step != STWO_FIRST_LAYER_WITNESS_PCS_OPENING_NEXT_STEP_PHASE58
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening claim transcript, status, or next-step drift".to_string(),
+        ));
+    }
+    if !claim.executable_mle_opening_verifier_available
+        || !claim.opening_witness_binding_available
+        || !claim.pcs_opening_proof_available
+        || !claim.relation_witness_binding_available
+        || claim.full_layer_relation_witness_available
+        || !claim.actual_proof_byte_benchmark_available
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+        || claim.breakthrough_claimed
+        || claim.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening claim must not claim full relation, recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    phase58_verify_pcs_opening_proof_bytes(&claim.opening_proofs, &claim.pcs_proof)?;
+    let expected = commit_phase58_first_layer_witness_pcs_opening_claim(claim)?;
+    if claim.witness_pcs_opening_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening claim commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase58_first_layer_witness_pcs_opening_claim_against_phase57(
+    claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
+    phase57_claim: &Phase57FirstLayerMleOpeningVerifierClaim,
+    phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<()> {
+    verify_phase57_first_layer_mle_opening_verifier_claim_against_phase56(
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
+    verify_phase58_first_layer_witness_pcs_opening_claim(claim)?;
+    if claim.source_phase57_opening_verifier_claim_commitment
+        != phase57_claim.opening_verifier_claim_commitment
+        || claim.source_phase56_executable_claim_commitment
+            != phase57_claim.source_phase56_executable_claim_commitment
+        || claim.source_phase54_skeleton_claim_commitment
+            != phase57_claim.source_phase54_skeleton_claim_commitment
+        || claim.opening_proofs.len() != phase57_claim.opening_receipts.len()
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness PCS opening claim source drift against Phase57".to_string(),
+        ));
+    }
+    for (opening, receipt) in claim
+        .opening_proofs
+        .iter()
+        .zip(phase57_claim.opening_receipts.iter())
+    {
+        if opening.source_phase57_opening_receipt_commitment != receipt.opening_receipt_commitment
+            || opening.source_phase56_executable_claim_commitment
+                != receipt.source_phase56_executable_claim_commitment
+            || opening.source_phase54_opening_claim_commitment
+                != receipt.source_phase54_opening_claim_commitment
+            || opening.opening_name != receipt.opening_name
+            || opening.opening_kind != receipt.opening_kind
+            || opening.tensor_shape != receipt.tensor_shape
+            || opening.opening_point != receipt.opening_point
+            || opening.opened_value != receipt.opened_value
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 58 witness PCS opening does not match Phase57 receipt".to_string(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_prepare_witness_bound_pcs_opening(
+    receipt: &Phase57MleOpeningVerificationReceipt,
+    pcs_lifting_log_size: u32,
+) -> Result<Phase58WitnessBoundPcsOpening> {
+    verify_phase57_mle_opening_verification_receipt(receipt)?;
+    let mut opening = Phase58WitnessBoundPcsOpening {
+        proof_backend: StarkProofBackend::Stwo,
+        source_phase57_opening_receipt_commitment: receipt.opening_receipt_commitment.clone(),
+        source_phase56_executable_claim_commitment: receipt
+            .source_phase56_executable_claim_commitment
+            .clone(),
+        source_phase54_opening_claim_commitment: receipt
+            .source_phase54_opening_claim_commitment
+            .clone(),
+        opening_name: receipt.opening_name.clone(),
+        opening_kind: receipt.opening_kind.clone(),
+        opening_scheme: STWO_FIRST_LAYER_WITNESS_PCS_OPENING_SCHEME_PHASE58.to_string(),
+        pcs_config_profile: PHASE58_PCS_CONFIG_PROFILE.to_string(),
+        tensor_shape: receipt.tensor_shape.clone(),
+        logical_element_count: receipt.logical_element_count,
+        padded_element_count: receipt.padded_element_count,
+        opening_point_dimension: receipt.opening_point_dimension,
+        opening_point: receipt.opening_point.clone(),
+        opened_value: receipt.opened_value,
+        raw_witness_values: Vec::new(),
+        raw_witness_commitment: String::new(),
+        adjusted_witness_index: 0,
+        adjusted_witness_basis_weight: 0,
+        recomputed_mle_value: 0,
+        pcs_column_log_size: phase58_pcs_column_log_size(receipt.logical_element_count)?,
+        pcs_lifting_log_size,
+        pcs_opening_point_index: 0,
+        pcs_sampled_value_limbs: Vec::new(),
+        pcs_sampled_value_commitment: String::new(),
+        measured_witness_bytes: 0,
+        opening_witness_binding_available: true,
+        pcs_opening_proof_available: true,
+        cryptographic_opening_soundness_claimed: true,
+        full_relation_soundness_claimed: false,
+        opening_proof_commitment: String::new(),
+    };
+    let (raw_values, adjusted_index, adjusted_weight) =
+        phase58_derive_opening_witness_values(&opening)?;
+    opening.raw_witness_values = raw_values;
+    opening.raw_witness_commitment = phase52_commit_raw_tensor_values(&opening.raw_witness_values)?;
+    opening.adjusted_witness_index = adjusted_index;
+    opening.adjusted_witness_basis_weight = adjusted_weight;
+    opening.recomputed_mle_value =
+        phase52_evaluate_padded_mle(&opening.raw_witness_values, &opening.opening_point)?;
+    opening.pcs_opening_point_index = phase58_derive_pcs_opening_point_index(&opening)?;
+    opening.pcs_sampled_value_limbs = phase58_secure_field_limbs(phase58_circle_sample_value(
+        &opening.raw_witness_values,
+        opening.pcs_column_log_size,
+        opening.pcs_lifting_log_size,
+        opening.pcs_opening_point_index,
+    )?);
+    opening.pcs_sampled_value_commitment =
+        phase58_commit_pcs_sampled_value_limbs(&opening.pcs_sampled_value_limbs)?;
+    opening.measured_witness_bytes = phase58_witness_opening_payload_bytes(&opening)?;
+    opening.opening_proof_commitment = commit_phase58_witness_bound_pcs_opening(&opening)?;
+    verify_phase58_witness_bound_pcs_opening(&opening)?;
+    Ok(opening)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_derive_opening_witness_values(
+    opening: &Phase58WitnessBoundPcsOpening,
+) -> Result<(Vec<u32>, usize, u32)> {
+    let logical_element_count = phase50_tensor_element_count(&opening.tensor_shape)?;
+    let opening_point_dimension = phase53_padded_log2(logical_element_count)?;
+    if opening.logical_element_count != logical_element_count
+        || opening.opening_point.len() != opening_point_dimension
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 witness derivation received inconsistent opening shape".to_string(),
+        ));
+    }
+    let mut values = Vec::with_capacity(logical_element_count);
+    for index in 0..logical_element_count {
+        values.push(phase56_derive_m31(
+            &opening.source_phase57_opening_receipt_commitment,
+            &opening.opening_name,
+            "phase58_raw_witness_value",
+            index,
+        )?);
+    }
+    let mut adjusted_index = None;
+    for index in 0..logical_element_count {
+        let weight =
+            phase58_mle_basis_weight(index, opening_point_dimension, &opening.opening_point)?;
+        if weight != 0 {
+            adjusted_index = Some((index, weight));
+            break;
+        }
+    }
+    let Some((adjusted_index, adjusted_weight)) = adjusted_index else {
+        if opening.opened_value != 0 {
+            return Err(VmError::InvalidConfig(
+                "Phase 58 opening evaluates only on padded coordinates but opened_value is non-zero"
+                    .to_string(),
+            ));
+        }
+        return Ok((values, 0, 0));
+    };
+    let mut partial_sum = 0u32;
+    for (index, value) in values.iter().copied().enumerate() {
+        if index == adjusted_index {
+            continue;
+        }
+        let weight =
+            phase58_mle_basis_weight(index, opening_point_dimension, &opening.opening_point)?;
+        partial_sum = phase52_m31_add(partial_sum, phase52_m31_mul(value, weight));
+    }
+    let numerator = phase52_m31_sub(opening.opened_value, partial_sum);
+    values[adjusted_index] = phase52_m31_mul(numerator, phase58_m31_inverse(adjusted_weight)?);
+    Ok((values, adjusted_index, adjusted_weight))
+}
+
+#[cfg(all(feature = "stwo-backend", test))]
+pub(crate) fn phase58_derive_opening_witness_values_for_tests(
+    opening: &Phase58WitnessBoundPcsOpening,
+) -> Result<(Vec<u32>, usize, u32)> {
+    phase58_derive_opening_witness_values(opening)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_mle_basis_weight(index: usize, dimension: usize, point: &[u32]) -> Result<u32> {
+    if point.len() != dimension {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 MLE basis weight point dimension drift".to_string(),
+        ));
+    }
+    let mut weight = 1u32;
+    for (bit_index, challenge) in point.iter().copied().enumerate() {
+        let factor = if ((index >> bit_index) & 1) == 1 {
+            challenge
+        } else {
+            phase52_m31_sub(1, challenge)
+        };
+        weight = phase52_m31_mul(weight, factor);
+    }
+    Ok(weight)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_pcs_column_log_size(logical_element_count: usize) -> Result<u32> {
+    u32::try_from(phase53_padded_log2(logical_element_count)?)
+        .map_err(|_| VmError::InvalidConfig("Phase 58 PCS column log size exceeds u32".to_string()))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_m31_inverse(value: u32) -> Result<u32> {
+    if value == 0 || value >= PHASE44D_M31_MODULUS {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 M31 inverse requires a non-zero field element".to_string(),
+        ));
+    }
+    let mut base = value;
+    let mut exp = u64::from(PHASE44D_M31_MODULUS - 2);
+    let mut acc = 1u32;
+    while exp > 0 {
+        if exp & 1 == 1 {
+            acc = phase52_m31_mul(acc, base);
+        }
+        base = phase52_m31_mul(base, base);
+        exp >>= 1;
+    }
+    Ok(acc)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_derive_pcs_opening_point_index(opening: &Phase58WitnessBoundPcsOpening) -> Result<u64> {
+    phase43_require_hash32(
+        "phase58_pcs_point_source_receipt",
+        &opening.source_phase57_opening_receipt_commitment,
+    )?;
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 58 PCS point hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase58-pcs-opening-point-index");
+    for part in [
+        opening.source_phase57_opening_receipt_commitment.as_bytes(),
+        opening.opening_name.as_bytes(),
+        opening.opening_kind.as_bytes(),
+        opening.raw_witness_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!("failed to finalize Phase 58 PCS point hash: {err}"))
+    })?;
+    let mut index_bytes = [0u8; 8];
+    index_bytes.copy_from_slice(&out[..8]);
+    Ok(phase58_nonzero_circle_index_from_hash_prefix(index_bytes))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_nonzero_circle_index_from_hash_prefix(index_bytes: [u8; 8]) -> u64 {
+    let raw = u64::from_le_bytes(index_bytes);
+    if raw == u64::MAX {
+        1
+    } else {
+        raw + 1
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_circle_point_from_index(index: u64) -> Result<CirclePoint<SecureField>> {
+    if index == 0 || u128::from(index) >= SECURE_FIELD_CIRCLE_ORDER {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS opening point index outside the secure circle group".to_string(),
+        ));
+    }
+    Ok(CirclePoint::<SecureField>::get_point(u128::from(index)))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_lifted_circle_point(
+    log_size: u32,
+    lifting_log_size: u32,
+    point_index: u64,
+) -> Result<CirclePoint<SecureField>> {
+    let extended_log_size = log_size
+        .checked_add(phase58_pcs_config().fri_config.log_blowup_factor)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 58 PCS extended log-size overflow".to_string())
+        })?;
+    if lifting_log_size < extended_log_size {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS lifting log size is smaller than the extended column log size"
+                .to_string(),
+        ));
+    }
+    if lifting_log_size > PHASE58_MAX_PCS_LIFTING_LOG_SIZE {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS lifting log size exceeds bounded verifier limit".to_string(),
+        ));
+    }
+    Ok(phase58_circle_point_from_index(point_index)?
+        .repeated_double(lifting_log_size - extended_log_size))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_circle_evaluation_for_witness(
+    raw_values: &[u32],
+    log_size: u32,
+) -> Result<CircleEvaluation<CpuBackend, BaseField, BitReversedOrder>> {
+    phase52_validate_m31_values("phase58_pcs_raw_values", raw_values)?;
+    let row_count = 1usize.checked_shl(log_size).ok_or_else(|| {
+        VmError::InvalidConfig("Phase 58 PCS column log size overflow".to_string())
+    })?;
+    if raw_values.len() > row_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 raw witness exceeds PCS column domain".to_string(),
+        ));
+    }
+    let domain = CanonicCoset::new(log_size).circle_domain();
+    let mut column = Col::<CpuBackend, BaseField>::zeros(row_count);
+    for (index, value) in raw_values.iter().copied().enumerate() {
+        column.set(index, BaseField::from(value));
+    }
+    Ok(CircleEvaluation::<CpuBackend, BaseField, NaturalOrder>::new(domain, column).bit_reverse())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_circle_sample_value(
+    raw_values: &[u32],
+    log_size: u32,
+    lifting_log_size: u32,
+    point_index: u64,
+) -> Result<SecureField> {
+    let point = phase58_lifted_circle_point(log_size, lifting_log_size, point_index)?;
+    let evaluation = phase58_circle_evaluation_for_witness(raw_values, log_size)?;
+    Ok(evaluation.interpolate().eval_at_point(point))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_unlifted_stwo_pcs_api_sample_point(
+    opening: &Phase58WitnessBoundPcsOpening,
+) -> Result<Vec<CirclePoint<SecureField>>> {
+    // S-two's PCS API expects the unlifted OODS point here. Its prover/verifier
+    // path lifts each column relative to the committed domain, equivalent to
+    // `lifting_log_size - (pcs_column_log_size + fri_log_blowup)`. Phase58 uses
+    // that same lifted point only when recomputing the sampled value; pre-lifting
+    // this API argument would double-lift it.
+    phase58_circle_point_from_index(opening.pcs_opening_point_index).map(|point| vec![point])
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_secure_field_limbs(value: SecureField) -> Vec<u32> {
+    value
+        .to_m31_array()
+        .into_iter()
+        .map(|limb| limb.0)
+        .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_secure_field_from_limbs(limbs: &[u32]) -> Result<SecureField> {
+    if limbs.len() != 4 {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 secure-field sampled value must have four M31 limbs".to_string(),
+        ));
+    }
+    phase52_validate_m31_values("phase58_secure_field_limbs", limbs)?;
+    Ok(SecureField::from_m31_array([
+        BaseField::from(limbs[0]),
+        BaseField::from(limbs[1]),
+        BaseField::from(limbs[2]),
+        BaseField::from(limbs[3]),
+    ]))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_commit_pcs_sampled_value_limbs(limbs: &[u32]) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 58 sampled value hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase58-pcs-sampled-value-limbs");
+    phase44d_update_u32_vec(&mut hasher, limbs);
+    phase44d_finalize_hash(hasher, "Phase 58 PCS sampled value")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_commit_pcs_proof_bytes(bytes: &[u8]) -> Result<String> {
+    if bytes.len() > MAX_PHASE58_PCS_PROOF_JSON_BYTES {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS proof bytes exceed bounded verifier limit".to_string(),
+        ));
+    }
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 58 PCS proof-byte hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase58-stwo-pcs-opening-proof-bytes");
+    phase29_update_usize(&mut hasher, bytes.len());
+    phase29_update_len_prefixed(&mut hasher, bytes);
+    phase44d_finalize_hash(hasher, "Phase 58 PCS proof bytes")
+}
+
+#[cfg(all(feature = "stwo-backend", test))]
+pub(crate) fn phase58_commit_pcs_proof_bytes_for_tests(bytes: &[u8]) -> Result<String> {
+    phase58_commit_pcs_proof_bytes(bytes)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_witness_opening_payload_bytes(opening: &Phase58WitnessBoundPcsOpening) -> Result<usize> {
+    let payload = serde_json::json!({
+        "proof_backend": opening.proof_backend.to_string(),
+        "source_phase57_opening_receipt_commitment": &opening.source_phase57_opening_receipt_commitment,
+        "source_phase56_executable_claim_commitment": &opening.source_phase56_executable_claim_commitment,
+        "source_phase54_opening_claim_commitment": &opening.source_phase54_opening_claim_commitment,
+        "opening_name": &opening.opening_name,
+        "opening_kind": &opening.opening_kind,
+        "opening_scheme": &opening.opening_scheme,
+        "pcs_config_profile": &opening.pcs_config_profile,
+        "tensor_shape": &opening.tensor_shape,
+        "logical_element_count": opening.logical_element_count,
+        "padded_element_count": opening.padded_element_count,
+        "opening_point_dimension": opening.opening_point_dimension,
+        "opening_point": &opening.opening_point,
+        "opened_value": opening.opened_value,
+        "raw_witness_values": &opening.raw_witness_values,
+        "raw_witness_commitment": &opening.raw_witness_commitment,
+        "adjusted_witness_index": opening.adjusted_witness_index,
+        "adjusted_witness_basis_weight": opening.adjusted_witness_basis_weight,
+        "recomputed_mle_value": opening.recomputed_mle_value,
+        "pcs_column_log_size": opening.pcs_column_log_size,
+        "pcs_lifting_log_size": opening.pcs_lifting_log_size,
+        "pcs_opening_point_index": opening.pcs_opening_point_index,
+        "pcs_sampled_value_limbs": &opening.pcs_sampled_value_limbs,
+        "pcs_sampled_value_commitment": &opening.pcs_sampled_value_commitment,
+        "opening_witness_binding_available": opening.opening_witness_binding_available,
+        "pcs_opening_proof_available": opening.pcs_opening_proof_available,
+        "cryptographic_opening_soundness_claimed": opening.cryptographic_opening_soundness_claimed,
+        "full_relation_soundness_claimed": opening.full_relation_soundness_claimed,
+    });
+    serde_json::to_vec(&payload)
+        .map(|bytes| bytes.len())
+        .map_err(|err| VmError::Serialization(err.to_string()))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_witness_binding_surface_unit_count(
+    opening_count: usize,
+    total_raw_witness_element_count: usize,
+    total_opening_point_dimension: usize,
+) -> Result<usize> {
+    opening_count
+        .checked_mul(3)
+        .and_then(|value| value.checked_add(total_opening_point_dimension))
+        .and_then(|value| value.checked_add(total_raw_witness_element_count))
+        .and_then(|value| value.checked_add(1))
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 58 witness-binding surface accounting overflow".to_string(),
+            )
+        })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_witness_pcs_opening_transcript_order() -> Vec<String> {
+    [
+        "phase58_witness_pcs_opening_domain_tag",
+        "claim_version",
+        "semantic_scope",
+        "pcs_config_profile",
+        "source_phase57_opening_verifier_claim_commitment",
+        "ordered_phase57_opening_receipts",
+        "canonical_raw_witness_commitments",
+        "mle_points_and_recomputed_values",
+        "pcs_column_log_sizes",
+        "pcs_opening_point_indices",
+        "pcs_sampled_values",
+        "stwo_pcs_opening_proof_bytes",
+        "surface_and_byte_accounting",
+        "availability_flags",
+        "required_next_step",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_canonical_pcs_commitment_bytes(
+    openings: &[Phase58WitnessBoundPcsOpening],
+) -> Result<Vec<u8>> {
+    if openings.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS commitment binding requires at least one opening".to_string(),
+        ));
+    }
+    let config = phase58_pcs_config();
+    let max_log_size = openings
+        .iter()
+        .map(|opening| opening.pcs_column_log_size)
+        .max()
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 58 PCS opening proof has no columns".to_string())
+        })?;
+    let twiddle_log_size = max_log_size
+        .checked_add(config.fri_config.log_blowup_factor)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 58 PCS twiddle log-size overflow".to_string())
+        })?;
+    let twiddles =
+        CpuBackend::precompute_twiddles(CanonicCoset::new(twiddle_log_size).half_coset());
+    let channel = &mut Blake2sM31Channel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<CpuBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
+    commitment_scheme.set_store_polynomials_coefficients();
+    let evaluations = openings
+        .iter()
+        .map(|opening| {
+            phase58_circle_evaluation_for_witness(
+                &opening.raw_witness_values,
+                opening.pcs_column_log_size,
+            )
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(evaluations);
+    tree_builder.commit(channel);
+    serde_json::to_vec(&commitment_scheme.roots())
+        .map_err(|err| VmError::Serialization(err.to_string()))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_build_pcs_opening_proof_unchecked(
+    openings: &[Phase58WitnessBoundPcsOpening],
+) -> Result<Vec<u8>> {
+    if openings.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS opening proof requires at least one opening".to_string(),
+        ));
+    }
+    let config = phase58_pcs_config();
+    let max_log_size = openings
+        .iter()
+        .map(|opening| opening.pcs_column_log_size)
+        .max()
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 58 PCS opening proof has no columns".to_string())
+        })?;
+    let twiddle_log_size = max_log_size
+        .checked_add(config.fri_config.log_blowup_factor)
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 58 PCS twiddle log-size overflow".to_string())
+        })?;
+    let twiddles =
+        CpuBackend::precompute_twiddles(CanonicCoset::new(twiddle_log_size).half_coset());
+    let channel = &mut Blake2sM31Channel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<CpuBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
+    commitment_scheme.set_store_polynomials_coefficients();
+    let evaluations = openings
+        .iter()
+        .map(|opening| {
+            phase58_circle_evaluation_for_witness(
+                &opening.raw_witness_values,
+                opening.pcs_column_log_size,
+            )
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(evaluations);
+    tree_builder.commit(channel);
+    let sampled_points = TreeVec(vec![openings
+        .iter()
+        .map(phase58_unlifted_stwo_pcs_api_sample_point)
+        .collect::<Result<Vec<_>>>()?]);
+    let proof = commitment_scheme.prove_values(sampled_points, channel);
+    serde_json::to_vec(&Phase58PcsOpeningProofPayload { proof: proof.proof })
+        .map_err(|err| VmError::Serialization(err.to_string()))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_build_pcs_opening_proof(openings: &[Phase58WitnessBoundPcsOpening]) -> Result<Vec<u8>> {
+    let bytes = phase58_build_pcs_opening_proof_unchecked(openings)?;
+    phase58_verify_pcs_opening_proof_bytes(openings, &bytes)?;
+    Ok(bytes)
+}
+
+#[cfg(all(feature = "stwo-backend", test))]
+pub(crate) fn phase58_build_pcs_opening_proof_for_tests(
+    openings: &[Phase58WitnessBoundPcsOpening],
+) -> Result<Vec<u8>> {
+    phase58_build_pcs_opening_proof_unchecked(openings)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase58_verify_pcs_opening_proof_bytes(
+    openings: &[Phase58WitnessBoundPcsOpening],
+    proof_bytes: &[u8],
+) -> Result<()> {
+    if openings.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS opening verification requires at least one opening".to_string(),
+        ));
+    }
+    if proof_bytes.len() > MAX_PHASE58_PCS_PROOF_JSON_BYTES {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS proof bytes exceed bounded verifier limit".to_string(),
+        ));
+    }
+    let payload: Phase58PcsOpeningProofPayload = serde_json::from_slice(proof_bytes)
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    let proof = payload.proof;
+    if proof.commitments.len() != 1
+        || proof.sampled_values.0.len() != 1
+        || proof.sampled_values.0[0].len() != openings.len()
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS proof sampled-value shape drift".to_string(),
+        ));
+    }
+    let config = phase58_pcs_config();
+    if proof.config != config {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 PCS proof config drift".to_string(),
+        ));
+    }
+    let proof_commitment_bytes = serde_json::to_vec(&proof.commitments)
+        .map_err(|err| VmError::Serialization(err.to_string()))?;
+    if proof_commitment_bytes != phase58_canonical_pcs_commitment_bytes(openings)? {
+        return Err(VmError::InvalidConfig(
+            "Phase 58 canonical witness PCS commitment drift".to_string(),
+        ));
+    }
+    for (opening, sampled_values) in openings.iter().zip(proof.sampled_values.0[0].iter()) {
+        if sampled_values.len() != 1 {
+            return Err(VmError::InvalidConfig(
+                "Phase 58 PCS proof must contain exactly one sampled value per opening".to_string(),
+            ));
+        }
+        let expected_sample = phase58_circle_sample_value(
+            &opening.raw_witness_values,
+            opening.pcs_column_log_size,
+            opening.pcs_lifting_log_size,
+            opening.pcs_opening_point_index,
+        )?;
+        if sampled_values[0] != expected_sample
+            || phase58_secure_field_limbs(sampled_values[0]) != opening.pcs_sampled_value_limbs
+            || phase58_secure_field_from_limbs(&opening.pcs_sampled_value_limbs)? != expected_sample
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 58 PCS proof sampled value does not match witness column".to_string(),
+            ));
+        }
+    }
+    let sampled_points = TreeVec(vec![openings
+        .iter()
+        .map(phase58_unlifted_stwo_pcs_api_sample_point)
+        .collect::<Result<Vec<_>>>()?]);
+    let log_sizes = openings
+        .iter()
+        .map(|opening| opening.pcs_column_log_size)
+        .collect::<Vec<_>>();
+    let channel = &mut Blake2sM31Channel::default();
+    let mut verifier = CommitmentSchemeVerifier::<Blake2sM31MerkleChannel>::new(config);
+    verifier.commit(proof.commitments[0], &log_sizes, channel);
+    verifier
+        .verify_values(sampled_points, proof, channel)
+        .map_err(|err| {
+            VmError::UnsupportedProof(format!(
+                "Phase 58 S-two PCS opening verification failed: {err:?}"
+            ))
+        })?;
+    Ok(())
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -16277,6 +17753,20 @@ mod tests {
         STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_VERSION_PHASE31,
     };
     use crate::Attention2DMode;
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase58_nonzero_circle_index_wraps_max_hash_prefix_to_one() {
+        assert_eq!(phase58_nonzero_circle_index_from_hash_prefix([0u8; 8]), 1);
+        assert_eq!(
+            phase58_nonzero_circle_index_from_hash_prefix(u64::MAX.to_le_bytes()),
+            1
+        );
+        assert_eq!(
+            phase58_nonzero_circle_index_from_hash_prefix(41u64.to_le_bytes()),
+            42
+        );
+    }
 
     fn sample_proof(program_source: &str, program_hash: &str) -> VanillaStarkExecutionProof {
         let program = parse_program(program_source).expect("parse");
