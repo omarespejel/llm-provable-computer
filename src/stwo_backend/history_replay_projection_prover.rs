@@ -8976,12 +8976,9 @@ mod tests {
 
         phase62.step_envelopes[0].output_state_commitment = hash32('e');
         recommit_phase62_step(&mut phase62.step_envelopes[0]);
-        phase62.chain_end_state_commitment = phase62
-            .step_envelopes
-            .last()
-            .unwrap()
-            .output_state_commitment
-            .clone();
+        phase62.step_envelopes[1].input_state_commitment =
+            phase62.step_envelopes[0].output_state_commitment.clone();
+        recommit_phase62_step(&mut phase62.step_envelopes[1]);
         recommit_phase62_claim(&mut phase62);
 
         let error = verify_phase62_proof_carrying_state_continuity_claim(&phase62)
@@ -9024,6 +9021,19 @@ mod tests {
                 || message.contains("link drift"),
             "{message}"
         );
+    }
+
+    #[test]
+    fn phase62_proof_carrying_state_continuity_rejects_surface_accounting_drift() {
+        let (_, _, _, _, _, _, _, _, mut phase62) =
+            sample_phase62_proof_carrying_state_continuity_claim();
+
+        phase62.combined_verifier_surface_unit_count += 1;
+        recommit_phase62_claim(&mut phase62);
+
+        let error = verify_phase62_proof_carrying_state_continuity_claim(&phase62)
+            .expect_err("Phase62 must reject inflated combined surface accounting");
+        assert!(error.to_string().contains("surface accounting drift"));
     }
 
     #[test]

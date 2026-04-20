@@ -1983,6 +1983,7 @@ pub struct Phase62ProofCarryingStateContinuityClaim {
     pub step_count: usize,
     pub continuity_link_count: usize,
     pub phase61_runtime_witness_pcs_replacement_surface_unit_count: usize,
+    pub phase61_combined_verifier_surface_unit_count: usize,
     pub proof_carrying_state_continuity_surface_unit_count: usize,
     pub combined_verifier_surface_unit_count: usize,
     pub surface_delta_from_phase61: usize,
@@ -13720,6 +13721,10 @@ pub fn commit_phase62_proof_carrying_state_continuity_claim(
     );
     phase29_update_usize(
         &mut hasher,
+        claim.phase61_combined_verifier_surface_unit_count,
+    );
+    phase29_update_usize(
+        &mut hasher,
         claim.proof_carrying_state_continuity_surface_unit_count,
     );
     phase29_update_usize(&mut hasher, claim.combined_verifier_surface_unit_count);
@@ -16139,6 +16144,8 @@ pub fn phase62_prepare_proof_carrying_state_continuity_claim(
         continuity_link_count,
         phase61_runtime_witness_pcs_replacement_surface_unit_count: phase61_claim
             .runtime_witness_pcs_replacement_surface_unit_count,
+        phase61_combined_verifier_surface_unit_count: phase61_claim
+            .combined_verifier_surface_unit_count,
         proof_carrying_state_continuity_surface_unit_count,
         combined_verifier_surface_unit_count,
         surface_delta_from_phase61: proof_carrying_state_continuity_surface_unit_count,
@@ -16302,10 +16309,18 @@ pub fn verify_phase62_proof_carrying_state_continuity_claim(
         VmError::InvalidConfig("Phase 62 continuity link accounting underflow".to_string())
     })?;
     let expected_surface = phase62_state_continuity_surface_unit_count(claim.step_count)?;
+    let expected_combined_surface = claim
+        .phase61_combined_verifier_surface_unit_count
+        .checked_add(expected_surface)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 62 state-continuity combined surface accounting overflow".to_string(),
+            )
+        })?;
     if claim.continuity_link_count != expected_link_count
         || claim.proof_carrying_state_continuity_surface_unit_count != expected_surface
         || claim.surface_delta_from_phase61 != expected_surface
-        || claim.combined_verifier_surface_unit_count < expected_surface
+        || claim.combined_verifier_surface_unit_count != expected_combined_surface
     {
         return Err(VmError::InvalidConfig(
             "Phase 62 state-continuity surface accounting drift".to_string(),
@@ -16452,6 +16467,8 @@ pub fn verify_phase62_proof_carrying_state_continuity_claim_against_phase61(
         || claim.chain_start_state_commitment != expected_chain_start
         || claim.phase61_runtime_witness_pcs_replacement_surface_unit_count
             != phase61_claim.runtime_witness_pcs_replacement_surface_unit_count
+        || claim.phase61_combined_verifier_surface_unit_count
+            != phase61_claim.combined_verifier_surface_unit_count
         || claim.combined_verifier_surface_unit_count != expected_combined_surface
     {
         return Err(VmError::InvalidConfig(
