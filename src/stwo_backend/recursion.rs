@@ -13783,12 +13783,33 @@ pub fn phase59_prepare_first_layer_relation_witness_binding_claim(
     phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
     phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
 ) -> Result<Phase59FirstLayerRelationWitnessBindingClaim> {
+    if !phase58_claim.actual_proof_byte_benchmark_available {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 requires Phase58 actual PCS proof byte benchmark availability".to_string(),
+        ));
+    }
     verify_phase58_first_layer_witness_pcs_opening_claim_against_phase57(
         phase58_claim,
         phase57_claim,
         phase56_claim,
         phase54_claim,
     )?;
+    phase59_prepare_first_layer_relation_witness_binding_claim_from_verified_phase58(
+        phase58_claim,
+        phase56_claim,
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase59_prepare_first_layer_relation_witness_binding_claim_from_verified_phase58(
+    phase58_claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
+    phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
+) -> Result<Phase59FirstLayerRelationWitnessBindingClaim> {
+    if !phase58_claim.actual_proof_byte_benchmark_available {
+        return Err(VmError::InvalidConfig(
+            "Phase 59 requires Phase58 actual PCS proof byte benchmark availability".to_string(),
+        ));
+    }
     let component_bindings = phase56_claim
         .component_proofs
         .iter()
@@ -14250,12 +14271,11 @@ pub fn verify_phase59_first_layer_relation_witness_binding_claim_against_phase58
             "Phase 59 relation witness binding claim source drift against Phase58".to_string(),
         ));
     }
-    let expected = phase59_prepare_first_layer_relation_witness_binding_claim(
-        phase58_claim,
-        phase57_claim,
-        phase56_claim,
-        phase54_claim,
-    )?;
+    let expected =
+        phase59_prepare_first_layer_relation_witness_binding_claim_from_verified_phase58(
+            phase58_claim,
+            phase56_claim,
+        )?;
     if claim != &expected {
         return Err(VmError::InvalidConfig(
             "Phase 59 relation witness binding claim does not match verified Phase58 openings"

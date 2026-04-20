@@ -8359,6 +8359,40 @@ mod tests {
     }
 
     #[test]
+    fn phase59_relation_witness_binding_rejects_runtime_assignment_drift() {
+        let (_, _, _, _, _, mut phase59) = sample_phase59_relation_witness_binding_claim();
+
+        phase59.component_bindings[2]
+            .runtime_opening_bindings
+            .swap(0, 1);
+        phase59.component_bindings[2].relation_binding_commitment =
+            commit_phase59_relation_witness_component_binding(&phase59.component_bindings[2])
+                .expect("recommit forged Phase59 component binding");
+        phase59.relation_witness_binding_claim_commitment =
+            commit_phase59_first_layer_relation_witness_binding_claim(&phase59)
+                .expect("recommit forged Phase59 runtime-assignment-drift claim");
+
+        let error = verify_phase59_first_layer_relation_witness_binding_claim(&phase59)
+            .expect_err("Phase59 must reject reordered runtime opening assignment");
+        assert!(error.to_string().contains("runtime opening order drift"));
+    }
+
+    #[test]
+    fn phase59_prepare_rejects_missing_phase58_proof_byte_benchmark_early() {
+        let (_, phase54, phase56, phase57, mut phase58) =
+            sample_phase58_witness_pcs_opening_claim();
+
+        phase58.actual_proof_byte_benchmark_available = false;
+        let error = phase59_prepare_first_layer_relation_witness_binding_claim(
+            &phase58, &phase57, &phase56, &phase54,
+        )
+        .expect_err("Phase59 prepare must fail fast without Phase58 PCS proof byte benchmark");
+        assert!(error
+            .to_string()
+            .contains("Phase58 actual PCS proof byte benchmark availability"));
+    }
+
+    #[test]
     fn phase59_relation_witness_binding_rejects_false_full_relation_and_paper_flags() {
         let (_, _, _, _, _, mut phase59) = sample_phase59_relation_witness_binding_claim();
 
