@@ -48,9 +48,13 @@ use super::STWO_BACKEND_VERSION_PHASE12;
 #[cfg(feature = "stwo-backend")]
 use crate::config::TransformerVmConfig;
 #[cfg(feature = "stwo-backend")]
-use crate::model::{INPUT_DIM, OUTPUT_DIM};
+use crate::instruction::Instruction;
+#[cfg(feature = "stwo-backend")]
+use crate::model::{build_input_vector, InstructionCompiler, INPUT_DIM, OUTPUT_DIM};
 #[cfg(feature = "stwo-backend")]
 use crate::proof::CLAIM_STATEMENT_VERSION_V1;
+#[cfg(feature = "stwo-backend")]
+use crate::state::MachineState;
 #[cfg(feature = "stwo-backend")]
 use ark_ff::Zero;
 #[cfg(feature = "stwo-backend")]
@@ -322,6 +326,12 @@ pub const STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_CLAIM_VERSION_PHASE59: &str 
 pub const STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_CLAIM_SCOPE_PHASE59: &str =
     "phase59_phase58_relation_witness_binding_contract";
 #[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_CLAIM_VERSION_PHASE60: &str =
+    "phase60-first-layer-runtime-relation-witness-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_CLAIM_SCOPE_PHASE60: &str =
+    "phase60_actual_first_layer_runtime_relation_witness";
+#[cfg(feature = "stwo-backend")]
 const STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_KIND_PHASE44D: &str =
     "source-chain-public-output-boundary-verifier-v1";
 #[cfg(feature = "stwo-backend")]
@@ -518,6 +528,18 @@ const STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_STATUS_PHASE59: &str =
 #[cfg(feature = "stwo-backend")]
 const STWO_FIRST_LAYER_RELATION_WITNESS_BINDING_NEXT_STEP_PHASE59: &str =
     "replace_phase58_synthetic_opening_witnesses_with_runtime_relation_witness_and_recursive_aggregation";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_COMPLEXITY_PHASE60: &str =
+    "O(parameter_values + activation_values + relation_equations)";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_STATUS_PHASE60: &str =
+    "actual_runtime_relation_witness_available_pending_pcs_replacement";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_NEXT_STEP_PHASE60: &str =
+    "replace_phase58_synthetic_opening_columns_with_phase60_runtime_witness_columns_and_prove_pcs";
+#[cfg(feature = "stwo-backend")]
+const STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_INSTRUCTION_PHASE60: &str =
+    "percepta_reference_instruction_nop_pc0_default_state_operand0";
 #[cfg(feature = "stwo-backend")]
 const PHASE44D_M31_MODULUS: u32 = (1u32 << 31) - 1;
 
@@ -1772,6 +1794,74 @@ pub struct Phase59FirstLayerRelationWitnessBindingClaim {
     pub paper_ready: bool,
     pub required_next_step: String,
     pub relation_witness_binding_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase60RuntimeTensorWitness {
+    pub proof_backend: StarkProofBackend,
+    pub tensor_name: String,
+    pub tensor_role: String,
+    pub tensor_shape: Vec<usize>,
+    pub logical_element_count: usize,
+    pub values: Vec<u32>,
+    pub values_commitment: String,
+    pub tensor_witness_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase60FirstLayerRuntimeRelationWitnessClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub source_phase59_relation_witness_binding_claim_commitment: String,
+    pub source_phase58_witness_pcs_opening_claim_commitment: String,
+    pub source_phase57_opening_verifier_claim_commitment: String,
+    pub source_phase56_executable_claim_commitment: String,
+    pub source_phase54_skeleton_claim_commitment: String,
+    pub witness_instruction: String,
+    pub witness_state_commitment: String,
+    pub operand_value: u32,
+    pub input_tensor: Phase60RuntimeTensorWitness,
+    pub gate_tensor: Phase60RuntimeTensorWitness,
+    pub value_tensor: Phase60RuntimeTensorWitness,
+    pub hidden_tensor: Phase60RuntimeTensorWitness,
+    pub output_tensor: Phase60RuntimeTensorWitness,
+    pub gate_weight_tensor: Phase60RuntimeTensorWitness,
+    pub gate_bias_tensor: Phase60RuntimeTensorWitness,
+    pub value_weight_tensor: Phase60RuntimeTensorWitness,
+    pub value_bias_tensor: Phase60RuntimeTensorWitness,
+    pub output_weight_tensor: Phase60RuntimeTensorWitness,
+    pub output_bias_tensor: Phase60RuntimeTensorWitness,
+    pub activation_tensor_witness_count: usize,
+    pub parameter_tensor_witness_count: usize,
+    pub tensor_witness_count: usize,
+    pub gate_affine_check_count: usize,
+    pub value_affine_check_count: usize,
+    pub hidden_product_check_count: usize,
+    pub output_affine_check_count: usize,
+    pub relation_check_count: usize,
+    pub phase59_combined_verifier_surface_unit_count: usize,
+    pub runtime_relation_witness_surface_unit_count: usize,
+    pub combined_verifier_surface_unit_count: usize,
+    pub surface_delta_from_phase59: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub actual_runtime_model_witness_available: bool,
+    pub relation_equation_evaluation_available: bool,
+    pub full_layer_relation_witness_available: bool,
+    pub witness_pcs_replacement_available: bool,
+    pub actual_proof_byte_benchmark_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub runtime_relation_witness_claim_commitment: String,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -13174,6 +13264,119 @@ pub fn commit_phase59_first_layer_relation_witness_binding_claim(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn commit_phase60_runtime_tensor_witness(
+    tensor: &Phase60RuntimeTensorWitness,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 60 runtime tensor witness hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase60-runtime-tensor-witness");
+    phase29_update_len_prefixed(&mut hasher, tensor.proof_backend.to_string().as_bytes());
+    for part in [
+        tensor.tensor_name.as_bytes(),
+        tensor.tensor_role.as_bytes(),
+        tensor.values_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_update_usize_vec(&mut hasher, &tensor.tensor_shape);
+    phase29_update_usize(&mut hasher, tensor.logical_element_count);
+    phase44d_update_u32_vec(&mut hasher, &tensor.values);
+    phase44d_finalize_hash(hasher, "Phase 60 runtime tensor witness")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase60_first_layer_runtime_relation_witness_claim(
+    claim: &Phase60FirstLayerRuntimeRelationWitnessClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 60 first-layer runtime relation witness claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase60-first-layer-runtime-relation-witness-claim",
+    );
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim
+            .source_phase59_relation_witness_binding_claim_commitment
+            .as_bytes(),
+        claim
+            .source_phase58_witness_pcs_opening_claim_commitment
+            .as_bytes(),
+        claim
+            .source_phase57_opening_verifier_claim_commitment
+            .as_bytes(),
+        claim.source_phase56_executable_claim_commitment.as_bytes(),
+        claim.source_phase54_skeleton_claim_commitment.as_bytes(),
+        claim.witness_instruction.as_bytes(),
+        claim.witness_state_commitment.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.verifier_status.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    hasher.update(&claim.operand_value.to_le_bytes());
+    for commitment in [
+        claim.input_tensor.tensor_witness_commitment.as_str(),
+        claim.gate_tensor.tensor_witness_commitment.as_str(),
+        claim.value_tensor.tensor_witness_commitment.as_str(),
+        claim.hidden_tensor.tensor_witness_commitment.as_str(),
+        claim.output_tensor.tensor_witness_commitment.as_str(),
+        claim.gate_weight_tensor.tensor_witness_commitment.as_str(),
+        claim.gate_bias_tensor.tensor_witness_commitment.as_str(),
+        claim.value_weight_tensor.tensor_witness_commitment.as_str(),
+        claim.value_bias_tensor.tensor_witness_commitment.as_str(),
+        claim
+            .output_weight_tensor
+            .tensor_witness_commitment
+            .as_str(),
+        claim.output_bias_tensor.tensor_witness_commitment.as_str(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, claim.activation_tensor_witness_count);
+    phase29_update_usize(&mut hasher, claim.parameter_tensor_witness_count);
+    phase29_update_usize(&mut hasher, claim.tensor_witness_count);
+    phase29_update_usize(&mut hasher, claim.gate_affine_check_count);
+    phase29_update_usize(&mut hasher, claim.value_affine_check_count);
+    phase29_update_usize(&mut hasher, claim.hidden_product_check_count);
+    phase29_update_usize(&mut hasher, claim.output_affine_check_count);
+    phase29_update_usize(&mut hasher, claim.relation_check_count);
+    phase29_update_usize(
+        &mut hasher,
+        claim.phase59_combined_verifier_surface_unit_count,
+    );
+    phase29_update_usize(
+        &mut hasher,
+        claim.runtime_relation_witness_surface_unit_count,
+    );
+    phase29_update_usize(&mut hasher, claim.combined_verifier_surface_unit_count);
+    phase29_update_usize(&mut hasher, claim.surface_delta_from_phase59);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.actual_runtime_model_witness_available);
+    phase29_update_bool(&mut hasher, claim.relation_equation_evaluation_available);
+    phase29_update_bool(&mut hasher, claim.full_layer_relation_witness_available);
+    phase29_update_bool(&mut hasher, claim.witness_pcs_replacement_available);
+    phase29_update_bool(&mut hasher, claim.actual_proof_byte_benchmark_available);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, claim.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, claim.paper_ready);
+    phase44d_finalize_hash(
+        hasher,
+        "Phase 60 first-layer runtime relation witness claim",
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase58_pcs_config() -> PcsConfig {
     PcsConfig {
         pow_bits: 10,
@@ -14281,6 +14484,448 @@ pub fn verify_phase59_first_layer_relation_witness_binding_claim_against_phase58
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn phase60_prepare_first_layer_runtime_relation_witness_claim(
+    phase59_claim: &Phase59FirstLayerRelationWitnessBindingClaim,
+    phase58_claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
+    phase57_claim: &Phase57FirstLayerMleOpeningVerifierClaim,
+    phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<Phase60FirstLayerRuntimeRelationWitnessClaim> {
+    verify_phase59_first_layer_relation_witness_binding_claim_against_phase58(
+        phase59_claim,
+        phase58_claim,
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
+    phase60_prepare_first_layer_runtime_relation_witness_claim_from_verified_phase59(phase59_claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase60_prepare_first_layer_runtime_relation_witness_claim_from_verified_phase59(
+    phase59_claim: &Phase59FirstLayerRelationWitnessBindingClaim,
+) -> Result<Phase60FirstLayerRuntimeRelationWitnessClaim> {
+    let runtime = phase60_build_first_layer_runtime_witness()?;
+    let hidden_width = TransformerVmConfig::percepta_reference().ff_dim;
+    let gate_affine_check_count = hidden_width;
+    let value_affine_check_count = hidden_width;
+    let hidden_product_check_count = hidden_width;
+    let output_affine_check_count = OUTPUT_DIM;
+    let relation_check_count = gate_affine_check_count
+        .checked_add(value_affine_check_count)
+        .and_then(|count| count.checked_add(hidden_product_check_count))
+        .and_then(|count| count.checked_add(output_affine_check_count))
+        .ok_or_else(|| {
+            VmError::InvalidConfig("Phase 60 relation check accounting overflow".to_string())
+        })?;
+    let activation_tensor_witness_count = 5;
+    let parameter_tensor_witness_count = 6;
+    let tensor_witness_count = activation_tensor_witness_count + parameter_tensor_witness_count;
+    let runtime_relation_witness_surface_unit_count =
+        phase60_runtime_relation_surface_unit_count_from_tensors(
+            &[
+                &runtime.input_tensor,
+                &runtime.gate_tensor,
+                &runtime.value_tensor,
+                &runtime.hidden_tensor,
+                &runtime.output_tensor,
+                &runtime.gate_weight_tensor,
+                &runtime.gate_bias_tensor,
+                &runtime.value_weight_tensor,
+                &runtime.value_bias_tensor,
+                &runtime.output_weight_tensor,
+                &runtime.output_bias_tensor,
+            ],
+            relation_check_count,
+        )?;
+    let combined_verifier_surface_unit_count = phase59_claim
+        .combined_verifier_surface_unit_count
+        .checked_add(runtime_relation_witness_surface_unit_count)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 60 combined verifier surface accounting overflow".to_string(),
+            )
+        })?;
+    let mut claim = Phase60FirstLayerRuntimeRelationWitnessClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_CLAIM_VERSION_PHASE60.to_string(),
+        semantic_scope: STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_CLAIM_SCOPE_PHASE60.to_string(),
+        source_phase59_relation_witness_binding_claim_commitment: phase59_claim
+            .relation_witness_binding_claim_commitment
+            .clone(),
+        source_phase58_witness_pcs_opening_claim_commitment: phase59_claim
+            .source_phase58_witness_pcs_opening_claim_commitment
+            .clone(),
+        source_phase57_opening_verifier_claim_commitment: phase59_claim
+            .source_phase57_opening_verifier_claim_commitment
+            .clone(),
+        source_phase56_executable_claim_commitment: phase59_claim
+            .source_phase56_executable_claim_commitment
+            .clone(),
+        source_phase54_skeleton_claim_commitment: phase59_claim
+            .source_phase54_skeleton_claim_commitment
+            .clone(),
+        witness_instruction: STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_INSTRUCTION_PHASE60
+            .to_string(),
+        witness_state_commitment: runtime.witness_state_commitment,
+        operand_value: 0,
+        input_tensor: runtime.input_tensor,
+        gate_tensor: runtime.gate_tensor,
+        value_tensor: runtime.value_tensor,
+        hidden_tensor: runtime.hidden_tensor,
+        output_tensor: runtime.output_tensor,
+        gate_weight_tensor: runtime.gate_weight_tensor,
+        gate_bias_tensor: runtime.gate_bias_tensor,
+        value_weight_tensor: runtime.value_weight_tensor,
+        value_bias_tensor: runtime.value_bias_tensor,
+        output_weight_tensor: runtime.output_weight_tensor,
+        output_bias_tensor: runtime.output_bias_tensor,
+        activation_tensor_witness_count,
+        parameter_tensor_witness_count,
+        tensor_witness_count,
+        gate_affine_check_count,
+        value_affine_check_count,
+        hidden_product_check_count,
+        output_affine_check_count,
+        relation_check_count,
+        phase59_combined_verifier_surface_unit_count: phase59_claim
+            .combined_verifier_surface_unit_count,
+        runtime_relation_witness_surface_unit_count,
+        combined_verifier_surface_unit_count,
+        surface_delta_from_phase59: runtime_relation_witness_surface_unit_count,
+        verifier_side_complexity: STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_COMPLEXITY_PHASE60
+            .to_string(),
+        verifier_status: STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_STATUS_PHASE60.to_string(),
+        transcript_order: phase60_runtime_relation_witness_transcript_order(),
+        actual_runtime_model_witness_available: true,
+        relation_equation_evaluation_available: true,
+        full_layer_relation_witness_available: true,
+        witness_pcs_replacement_available: false,
+        actual_proof_byte_benchmark_available: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_NEXT_STEP_PHASE60.to_string(),
+        runtime_relation_witness_claim_commitment: String::new(),
+    };
+    claim.runtime_relation_witness_claim_commitment =
+        commit_phase60_first_layer_runtime_relation_witness_claim(&claim)?;
+    verify_phase60_first_layer_runtime_relation_witness_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase60_runtime_tensor_witness(tensor: &Phase60RuntimeTensorWitness) -> Result<()> {
+    if tensor.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 runtime tensor witness requires `stwo` backend".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase60_tensor_values_commitment",
+            tensor.values_commitment.as_str(),
+        ),
+        (
+            "phase60_tensor_witness_commitment",
+            tensor.tensor_witness_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let logical_element_count = phase50_tensor_element_count(&tensor.tensor_shape)?;
+    if tensor.logical_element_count != logical_element_count
+        || tensor.values.len() != logical_element_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 runtime tensor witness shape or value count drift".to_string(),
+        ));
+    }
+    phase52_validate_m31_values("phase60_runtime_tensor_values", &tensor.values)?;
+    let expected_values_commitment = phase52_commit_raw_tensor_values(&tensor.values)?;
+    if tensor.values_commitment != expected_values_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 runtime tensor values commitment drift".to_string(),
+        ));
+    }
+    let expected = commit_phase60_runtime_tensor_witness(tensor)?;
+    if tensor.tensor_witness_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 runtime tensor witness commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase60_first_layer_runtime_relation_witness_claim(
+    claim: &Phase60FirstLayerRuntimeRelationWitnessClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 runtime relation witness claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_CLAIM_VERSION_PHASE60
+        || claim.semantic_scope != STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_CLAIM_SCOPE_PHASE60
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 runtime relation witness claim version or semantic scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase60_source_phase59_relation_witness_binding_claim_commitment",
+            claim
+                .source_phase59_relation_witness_binding_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase60_source_phase58_witness_pcs_opening_claim_commitment",
+            claim
+                .source_phase58_witness_pcs_opening_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase60_source_phase57_opening_verifier_claim_commitment",
+            claim
+                .source_phase57_opening_verifier_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase60_source_phase56_executable_claim_commitment",
+            claim.source_phase56_executable_claim_commitment.as_str(),
+        ),
+        (
+            "phase60_source_phase54_skeleton_claim_commitment",
+            claim.source_phase54_skeleton_claim_commitment.as_str(),
+        ),
+        (
+            "phase60_witness_state_commitment",
+            claim.witness_state_commitment.as_str(),
+        ),
+        (
+            "phase60_runtime_relation_witness_claim_commitment",
+            claim.runtime_relation_witness_claim_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if claim.witness_instruction != STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_INSTRUCTION_PHASE60
+        || claim.operand_value != 0
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 runtime witness instruction or operand drift".to_string(),
+        ));
+    }
+    phase60_verify_tensor_shape(
+        &claim.input_tensor,
+        "phase60_layer_input",
+        "activation_input",
+        &[INPUT_DIM],
+    )?;
+    let hidden_width = TransformerVmConfig::percepta_reference().ff_dim;
+    phase60_verify_tensor_shape(
+        &claim.gate_tensor,
+        "phase60_gate_affine_output",
+        "activation_gate",
+        &[hidden_width],
+    )?;
+    phase60_verify_tensor_shape(
+        &claim.value_tensor,
+        "phase60_value_affine_output",
+        "activation_value",
+        &[hidden_width],
+    )?;
+    phase60_verify_tensor_shape(
+        &claim.hidden_tensor,
+        "phase60_hidden_hadamard_product",
+        "activation_hidden",
+        &[hidden_width],
+    )?;
+    phase60_verify_tensor_shape(
+        &claim.output_tensor,
+        "phase60_layer_output",
+        "activation_output",
+        &[OUTPUT_DIM],
+    )?;
+    phase60_verify_tensor_shape(
+        &claim.gate_weight_tensor,
+        "phase60_gate_weight",
+        "parameter_weight",
+        &[INPUT_DIM, hidden_width],
+    )?;
+    phase60_verify_tensor_shape(
+        &claim.gate_bias_tensor,
+        "phase60_gate_bias",
+        "parameter_bias",
+        &[hidden_width],
+    )?;
+    phase60_verify_tensor_shape(
+        &claim.value_weight_tensor,
+        "phase60_value_weight",
+        "parameter_weight",
+        &[INPUT_DIM, hidden_width],
+    )?;
+    phase60_verify_tensor_shape(
+        &claim.value_bias_tensor,
+        "phase60_value_bias",
+        "parameter_bias",
+        &[hidden_width],
+    )?;
+    phase60_verify_tensor_shape(
+        &claim.output_weight_tensor,
+        "phase60_output_weight",
+        "parameter_weight",
+        &[hidden_width, OUTPUT_DIM],
+    )?;
+    phase60_verify_tensor_shape(
+        &claim.output_bias_tensor,
+        "phase60_output_bias",
+        "parameter_bias",
+        &[OUTPUT_DIM],
+    )?;
+    let expected_state_commitment = phase60_commit_witness_state(
+        &claim.witness_instruction,
+        claim.operand_value,
+        &claim.input_tensor.values,
+    )?;
+    if claim.witness_state_commitment != expected_state_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 runtime witness state commitment drift".to_string(),
+        ));
+    }
+    phase60_verify_canonical_runtime_witness_payload(claim)?;
+    phase60_verify_first_layer_relation_equations(claim)?;
+    let expected_gate_checks = hidden_width;
+    let expected_value_checks = hidden_width;
+    let expected_hidden_checks = hidden_width;
+    let expected_output_checks = OUTPUT_DIM;
+    let expected_relation_checks = expected_gate_checks
+        + expected_value_checks
+        + expected_hidden_checks
+        + expected_output_checks;
+    let runtime_surface = phase60_runtime_relation_surface_unit_count_from_tensors(
+        &[
+            &claim.input_tensor,
+            &claim.gate_tensor,
+            &claim.value_tensor,
+            &claim.hidden_tensor,
+            &claim.output_tensor,
+            &claim.gate_weight_tensor,
+            &claim.gate_bias_tensor,
+            &claim.value_weight_tensor,
+            &claim.value_bias_tensor,
+            &claim.output_weight_tensor,
+            &claim.output_bias_tensor,
+        ],
+        expected_relation_checks,
+    )?;
+    let combined_surface = claim
+        .phase59_combined_verifier_surface_unit_count
+        .checked_add(runtime_surface)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 60 combined verifier surface accounting overflow".to_string(),
+            )
+        })?;
+    if claim.activation_tensor_witness_count != 5
+        || claim.parameter_tensor_witness_count != 6
+        || claim.tensor_witness_count != 11
+        || claim.gate_affine_check_count != expected_gate_checks
+        || claim.value_affine_check_count != expected_value_checks
+        || claim.hidden_product_check_count != expected_hidden_checks
+        || claim.output_affine_check_count != expected_output_checks
+        || claim.relation_check_count != expected_relation_checks
+        || claim.runtime_relation_witness_surface_unit_count != runtime_surface
+        || claim.combined_verifier_surface_unit_count != combined_surface
+        || claim.surface_delta_from_phase59 != runtime_surface
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 runtime relation witness surface accounting drift".to_string(),
+        ));
+    }
+    if claim.verifier_side_complexity
+        != STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_COMPLEXITY_PHASE60
+        || claim.verifier_status != STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_STATUS_PHASE60
+        || claim.transcript_order != phase60_runtime_relation_witness_transcript_order()
+        || claim.required_next_step != STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_NEXT_STEP_PHASE60
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 runtime relation witness transcript, status, or next-step drift".to_string(),
+        ));
+    }
+    if !claim.actual_runtime_model_witness_available
+        || !claim.relation_equation_evaluation_available
+        || !claim.full_layer_relation_witness_available
+        || claim.witness_pcs_replacement_available
+        || claim.actual_proof_byte_benchmark_available
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+        || claim.breakthrough_claimed
+        || claim.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 runtime relation witness must not claim PCS replacement, recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase60_first_layer_runtime_relation_witness_claim(claim)?;
+    if claim.runtime_relation_witness_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 runtime relation witness claim commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase60_first_layer_runtime_relation_witness_claim_against_phase59(
+    claim: &Phase60FirstLayerRuntimeRelationWitnessClaim,
+    phase59_claim: &Phase59FirstLayerRelationWitnessBindingClaim,
+    phase58_claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
+    phase57_claim: &Phase57FirstLayerMleOpeningVerifierClaim,
+    phase56_claim: &Phase56FirstLayerExecutableSumcheckClaim,
+    phase54_claim: &Phase54FirstLayerSumcheckSkeletonClaim,
+) -> Result<()> {
+    verify_phase59_first_layer_relation_witness_binding_claim_against_phase58(
+        phase59_claim,
+        phase58_claim,
+        phase57_claim,
+        phase56_claim,
+        phase54_claim,
+    )?;
+    verify_phase60_first_layer_runtime_relation_witness_claim(claim)?;
+    if claim.source_phase59_relation_witness_binding_claim_commitment
+        != phase59_claim.relation_witness_binding_claim_commitment
+        || claim.source_phase58_witness_pcs_opening_claim_commitment
+            != phase59_claim.source_phase58_witness_pcs_opening_claim_commitment
+        || claim.source_phase57_opening_verifier_claim_commitment
+            != phase59_claim.source_phase57_opening_verifier_claim_commitment
+        || claim.source_phase56_executable_claim_commitment
+            != phase59_claim.source_phase56_executable_claim_commitment
+        || claim.source_phase54_skeleton_claim_commitment
+            != phase59_claim.source_phase54_skeleton_claim_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 runtime relation witness source drift against Phase59".to_string(),
+        ));
+    }
+    let expected =
+        phase60_prepare_first_layer_runtime_relation_witness_claim_from_verified_phase59(
+            phase59_claim,
+        )?;
+    if claim != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 runtime relation witness claim does not match verified Phase59 source"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase59_prepare_relation_witness_component_binding(
     component_proof: &Phase56ExecutableSumcheckComponentProof,
     phase58_claim: &Phase58FirstLayerWitnessPcsOpeningClaim,
@@ -14458,6 +15103,440 @@ fn phase59_relation_witness_binding_transcript_order() -> Vec<String> {
     .into_iter()
     .map(str::to_string)
     .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone)]
+struct Phase60PreparedRuntimeWitness {
+    witness_state_commitment: String,
+    input_tensor: Phase60RuntimeTensorWitness,
+    gate_tensor: Phase60RuntimeTensorWitness,
+    value_tensor: Phase60RuntimeTensorWitness,
+    hidden_tensor: Phase60RuntimeTensorWitness,
+    output_tensor: Phase60RuntimeTensorWitness,
+    gate_weight_tensor: Phase60RuntimeTensorWitness,
+    gate_bias_tensor: Phase60RuntimeTensorWitness,
+    value_weight_tensor: Phase60RuntimeTensorWitness,
+    value_bias_tensor: Phase60RuntimeTensorWitness,
+    output_weight_tensor: Phase60RuntimeTensorWitness,
+    output_bias_tensor: Phase60RuntimeTensorWitness,
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase60_runtime_relation_witness_transcript_order() -> Vec<String> {
+    [
+        "phase60_runtime_relation_witness_domain_tag",
+        "claim_version",
+        "semantic_scope",
+        "source_phase59_relation_witness_binding_claim_commitment",
+        "source_phase58_witness_pcs_opening_claim_commitment",
+        "source_phase57_opening_verifier_claim_commitment",
+        "source_phase56_executable_claim_commitment",
+        "source_phase54_skeleton_claim_commitment",
+        "witness_instruction_and_state",
+        "ordered_activation_tensor_witnesses",
+        "ordered_parameter_tensor_witnesses",
+        "gated_feed_forward_relation_checks",
+        "surface_accounting",
+        "availability_flags",
+        "required_next_step",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase60_build_first_layer_runtime_witness() -> Result<Phase60PreparedRuntimeWitness> {
+    let config = TransformerVmConfig::percepta_reference();
+    config.validate()?;
+    let hidden_width = config.ff_dim;
+    let compiler = InstructionCompiler::new(&config)?;
+    let compiled = compiler.compile_instruction(Instruction::Nop)?;
+    let state = MachineState::new(8);
+    let input_scalars = build_input_vector(&state, 0);
+    phase60_validate_exact_integer_scalars("phase60_input_scalars", &input_scalars)?;
+    let gate_scalars = compiled
+        .ff_weights
+        .gate
+        .mul_vec(&input_scalars)
+        .into_iter()
+        .zip(compiled.ff_weights.gate_bias.iter().copied())
+        .map(|(value, bias)| value + bias)
+        .collect::<Vec<_>>();
+    phase60_validate_exact_integer_scalars("phase60_gate_scalars", &gate_scalars)?;
+    let value_scalars = compiled
+        .ff_weights
+        .value
+        .mul_vec(&input_scalars)
+        .into_iter()
+        .zip(compiled.ff_weights.value_bias.iter().copied())
+        .map(|(value, bias)| value + bias)
+        .collect::<Vec<_>>();
+    phase60_validate_exact_integer_scalars("phase60_value_scalars", &value_scalars)?;
+    let hidden_scalars = gate_scalars
+        .iter()
+        .copied()
+        .zip(value_scalars.iter().copied())
+        .map(|(left, right)| left * right)
+        .collect::<Vec<_>>();
+    phase60_validate_exact_integer_scalars("phase60_hidden_scalars", &hidden_scalars)?;
+    let output_scalars = compiled
+        .ff_weights
+        .out
+        .mul_vec(&hidden_scalars)
+        .into_iter()
+        .zip(compiled.ff_weights.out_bias.iter().copied())
+        .map(|(value, bias)| value + bias)
+        .collect::<Vec<_>>();
+    phase60_validate_exact_integer_scalars("phase60_output_scalars", &output_scalars)?;
+
+    let input_values = phase60_scalars_to_m31(&input_scalars)?;
+    let witness_state_commitment = phase60_commit_witness_state(
+        STWO_FIRST_LAYER_RUNTIME_RELATION_WITNESS_INSTRUCTION_PHASE60,
+        0,
+        &input_values,
+    )?;
+    Ok(Phase60PreparedRuntimeWitness {
+        witness_state_commitment,
+        input_tensor: phase60_prepare_runtime_tensor_witness(
+            "phase60_layer_input",
+            "activation_input",
+            vec![INPUT_DIM],
+            input_values,
+        )?,
+        gate_tensor: phase60_prepare_runtime_tensor_witness(
+            "phase60_gate_affine_output",
+            "activation_gate",
+            vec![hidden_width],
+            phase60_scalars_to_m31(&gate_scalars)?,
+        )?,
+        value_tensor: phase60_prepare_runtime_tensor_witness(
+            "phase60_value_affine_output",
+            "activation_value",
+            vec![hidden_width],
+            phase60_scalars_to_m31(&value_scalars)?,
+        )?,
+        hidden_tensor: phase60_prepare_runtime_tensor_witness(
+            "phase60_hidden_hadamard_product",
+            "activation_hidden",
+            vec![hidden_width],
+            phase60_scalars_to_m31(&hidden_scalars)?,
+        )?,
+        output_tensor: phase60_prepare_runtime_tensor_witness(
+            "phase60_layer_output",
+            "activation_output",
+            vec![OUTPUT_DIM],
+            phase60_scalars_to_m31(&output_scalars)?,
+        )?,
+        gate_weight_tensor: phase60_prepare_runtime_tensor_witness(
+            "phase60_gate_weight",
+            "parameter_weight",
+            vec![INPUT_DIM, hidden_width],
+            phase60_transposed_matrix_values(
+                &compiled.ff_weights.gate.data,
+                compiled.ff_weights.gate.rows,
+                compiled.ff_weights.gate.cols,
+            )?,
+        )?,
+        gate_bias_tensor: phase60_prepare_runtime_tensor_witness(
+            "phase60_gate_bias",
+            "parameter_bias",
+            vec![hidden_width],
+            phase60_scalars_to_m31(&compiled.ff_weights.gate_bias)?,
+        )?,
+        value_weight_tensor: phase60_prepare_runtime_tensor_witness(
+            "phase60_value_weight",
+            "parameter_weight",
+            vec![INPUT_DIM, hidden_width],
+            phase60_transposed_matrix_values(
+                &compiled.ff_weights.value.data,
+                compiled.ff_weights.value.rows,
+                compiled.ff_weights.value.cols,
+            )?,
+        )?,
+        value_bias_tensor: phase60_prepare_runtime_tensor_witness(
+            "phase60_value_bias",
+            "parameter_bias",
+            vec![hidden_width],
+            phase60_scalars_to_m31(&compiled.ff_weights.value_bias)?,
+        )?,
+        output_weight_tensor: phase60_prepare_runtime_tensor_witness(
+            "phase60_output_weight",
+            "parameter_weight",
+            vec![hidden_width, OUTPUT_DIM],
+            phase60_transposed_matrix_values(
+                &compiled.ff_weights.out.data,
+                compiled.ff_weights.out.rows,
+                compiled.ff_weights.out.cols,
+            )?,
+        )?,
+        output_bias_tensor: phase60_prepare_runtime_tensor_witness(
+            "phase60_output_bias",
+            "parameter_bias",
+            vec![OUTPUT_DIM],
+            phase60_scalars_to_m31(&compiled.ff_weights.out_bias)?,
+        )?,
+    })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase60_prepare_runtime_tensor_witness(
+    tensor_name: &str,
+    tensor_role: &str,
+    tensor_shape: Vec<usize>,
+    values: Vec<u32>,
+) -> Result<Phase60RuntimeTensorWitness> {
+    let logical_element_count = phase50_tensor_element_count(&tensor_shape)?;
+    if values.len() != logical_element_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 runtime tensor witness value count does not match shape".to_string(),
+        ));
+    }
+    let mut tensor = Phase60RuntimeTensorWitness {
+        proof_backend: StarkProofBackend::Stwo,
+        tensor_name: tensor_name.to_string(),
+        tensor_role: tensor_role.to_string(),
+        tensor_shape,
+        logical_element_count,
+        values_commitment: phase52_commit_raw_tensor_values(&values)?,
+        values,
+        tensor_witness_commitment: String::new(),
+    };
+    tensor.tensor_witness_commitment = commit_phase60_runtime_tensor_witness(&tensor)?;
+    verify_phase60_runtime_tensor_witness(&tensor)?;
+    Ok(tensor)
+}
+
+#[cfg(all(feature = "stwo-backend", test))]
+pub(crate) fn phase60_recommit_runtime_tensor_for_tests(
+    tensor: &mut Phase60RuntimeTensorWitness,
+) -> Result<()> {
+    tensor.values_commitment = phase52_commit_raw_tensor_values(&tensor.values)?;
+    tensor.tensor_witness_commitment = commit_phase60_runtime_tensor_witness(tensor)?;
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase60_verify_tensor_shape(
+    tensor: &Phase60RuntimeTensorWitness,
+    expected_name: &str,
+    expected_role: &str,
+    expected_shape: &[usize],
+) -> Result<()> {
+    verify_phase60_runtime_tensor_witness(tensor)?;
+    if tensor.tensor_name != expected_name
+        || tensor.tensor_role != expected_role
+        || tensor.tensor_shape != expected_shape
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 runtime tensor witness name, role, or shape drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase60_verify_first_layer_relation_equations(
+    claim: &Phase60FirstLayerRuntimeRelationWitnessClaim,
+) -> Result<()> {
+    let hidden_width = TransformerVmConfig::percepta_reference().ff_dim;
+    phase60_verify_affine_relation(
+        "Phase 60 gate affine relation",
+        &claim.input_tensor.values,
+        &claim.gate_weight_tensor.values,
+        &claim.gate_bias_tensor.values,
+        &claim.gate_tensor.values,
+        INPUT_DIM,
+        hidden_width,
+    )?;
+    phase60_verify_affine_relation(
+        "Phase 60 value affine relation",
+        &claim.input_tensor.values,
+        &claim.value_weight_tensor.values,
+        &claim.value_bias_tensor.values,
+        &claim.value_tensor.values,
+        INPUT_DIM,
+        hidden_width,
+    )?;
+    for hidden_index in 0..hidden_width {
+        let expected = phase52_m31_mul(
+            claim.gate_tensor.values[hidden_index],
+            claim.value_tensor.values[hidden_index],
+        );
+        if claim.hidden_tensor.values[hidden_index] != expected {
+            return Err(VmError::InvalidConfig(
+                "Phase 60 hidden Hadamard product relation failed".to_string(),
+            ));
+        }
+    }
+    phase60_verify_affine_relation(
+        "Phase 60 output affine relation",
+        &claim.hidden_tensor.values,
+        &claim.output_weight_tensor.values,
+        &claim.output_bias_tensor.values,
+        &claim.output_tensor.values,
+        hidden_width,
+        OUTPUT_DIM,
+    )?;
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase60_verify_canonical_runtime_witness_payload(
+    claim: &Phase60FirstLayerRuntimeRelationWitnessClaim,
+) -> Result<()> {
+    let expected = phase60_build_first_layer_runtime_witness()?;
+    if claim.witness_state_commitment != expected.witness_state_commitment
+        || claim.input_tensor != expected.input_tensor
+        || claim.gate_tensor != expected.gate_tensor
+        || claim.value_tensor != expected.value_tensor
+        || claim.hidden_tensor != expected.hidden_tensor
+        || claim.output_tensor != expected.output_tensor
+        || claim.gate_weight_tensor != expected.gate_weight_tensor
+        || claim.gate_bias_tensor != expected.gate_bias_tensor
+        || claim.value_weight_tensor != expected.value_weight_tensor
+        || claim.value_bias_tensor != expected.value_bias_tensor
+        || claim.output_weight_tensor != expected.output_weight_tensor
+        || claim.output_bias_tensor != expected.output_bias_tensor
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 canonical Percepta/Nop/default-state runtime witness drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase60_verify_affine_relation(
+    label: &str,
+    input: &[u32],
+    weight: &[u32],
+    bias: &[u32],
+    output: &[u32],
+    input_width: usize,
+    output_width: usize,
+) -> Result<()> {
+    if input.len() != input_width
+        || weight.len() != input_width * output_width
+        || bias.len() != output_width
+        || output.len() != output_width
+    {
+        return Err(VmError::InvalidConfig(format!("{label} shape mismatch")));
+    }
+    for output_index in 0..output_width {
+        let mut expected = bias[output_index];
+        for input_index in 0..input_width {
+            let weight_index = input_index
+                .checked_mul(output_width)
+                .and_then(|offset| offset.checked_add(output_index))
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(format!("{label} index accounting overflow"))
+                })?;
+            expected = phase52_m31_add(
+                expected,
+                phase52_m31_mul(input[input_index], weight[weight_index]),
+            );
+        }
+        if output[output_index] != expected {
+            return Err(VmError::InvalidConfig(format!("{label} failed")));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase60_runtime_relation_surface_unit_count_from_tensors(
+    tensors: &[&Phase60RuntimeTensorWitness],
+    relation_check_count: usize,
+) -> Result<usize> {
+    tensors
+        .iter()
+        .try_fold(relation_check_count, |acc, tensor| {
+            acc.checked_add(tensor.logical_element_count)
+                .and_then(|value| value.checked_add(2))
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(
+                        "Phase 60 runtime relation surface accounting overflow".to_string(),
+                    )
+                })
+        })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase60_commit_witness_state(
+    witness_instruction: &str,
+    operand_value: u32,
+    input_values: &[u32],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 60 witness state hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase60-runtime-witness-state");
+    phase29_update_len_prefixed(&mut hasher, witness_instruction.as_bytes());
+    hasher.update(&operand_value.to_le_bytes());
+    phase44d_update_u32_vec(&mut hasher, input_values);
+    phase44d_finalize_hash(hasher, "Phase 60 runtime witness state")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase60_transposed_matrix_values(
+    row_major_values: &[f64],
+    rows: usize,
+    cols: usize,
+) -> Result<Vec<u32>> {
+    if row_major_values.len() != rows.saturating_mul(cols) {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 matrix witness shape mismatch".to_string(),
+        ));
+    }
+    let mut values = Vec::with_capacity(row_major_values.len());
+    for col in 0..cols {
+        for row in 0..rows {
+            values.push(phase60_scalar_to_m31(row_major_values[row * cols + col])?);
+        }
+    }
+    Ok(values)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase60_scalars_to_m31(values: &[f64]) -> Result<Vec<u32>> {
+    values.iter().copied().map(phase60_scalar_to_m31).collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase60_validate_exact_integer_scalars(label: &str, values: &[f64]) -> Result<()> {
+    for value in values {
+        phase60_scalar_to_m31(*value).map_err(|err| {
+            VmError::InvalidConfig(format!("{label} contains non-exact scalar: {err}"))
+        })?;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase60_scalar_to_m31(value: f64) -> Result<u32> {
+    if !value.is_finite() {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 scalar witness value must be finite".to_string(),
+        ));
+    }
+    if value.abs() > ((1u64 << 53) as f64) {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 scalar witness value exceeds exact f64 integer range".to_string(),
+        ));
+    }
+    if value.trunc() != value {
+        return Err(VmError::InvalidConfig(
+            "Phase 60 scalar witness value must be exactly integral before M31 encoding"
+                .to_string(),
+        ));
+    }
+    let modulus = i128::from(PHASE44D_M31_MODULUS);
+    let integer = value as i64 as i128;
+    Ok(integer.rem_euclid(modulus) as u32)
 }
 
 #[cfg(feature = "stwo-backend")]
