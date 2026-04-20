@@ -9120,6 +9120,13 @@ mod tests {
                 "Phase68 oracle: chain summary drift".to_string(),
             ));
         }
+        if artifact.chain_start_typed_boundary_commitment != first_link.input_boundary_commitment
+            || artifact.chain_end_typed_boundary_commitment != last_link.output_boundary_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase68 oracle: typed-boundary summary drift".to_string(),
+            ));
+        }
         Ok(())
     }
 
@@ -10160,6 +10167,27 @@ mod tests {
         let error = phase68_slow_chain_replay_oracle(&phase66)
             .expect_err("Phase68 oracle must reject stale artifact commitment");
         assert!(error.to_string().contains("artifact commitment drift"));
+    }
+
+    #[test]
+    fn phase68_slow_chain_replay_oracle_rejects_typed_boundary_summary_drift() {
+        let (_, _, _, _, _, _, _, _, _, _, _, _, mut phase66) =
+            sample_phase66_transformer_chain_artifact();
+
+        phase66.chain_links[0].input_boundary_commitment = hash32('c');
+        recommit_phase66_link(&mut phase66.chain_links[0]);
+        recommit_phase66_artifact(&mut phase66);
+        let error = phase68_slow_chain_replay_oracle(&phase66)
+            .expect_err("Phase68 oracle must reject typed-boundary start summary drift");
+        assert!(error.to_string().contains("typed-boundary summary drift"));
+
+        let (_, _, _, _, _, _, _, _, _, _, _, _, mut phase66) =
+            sample_phase66_transformer_chain_artifact();
+        phase66.chain_end_typed_boundary_commitment = hash32('d');
+        recommit_phase66_artifact(&mut phase66);
+        let error = phase68_slow_chain_replay_oracle(&phase66)
+            .expect_err("Phase68 oracle must reject typed-boundary end summary drift");
+        assert!(error.to_string().contains("typed-boundary summary drift"));
     }
 
     #[test]
