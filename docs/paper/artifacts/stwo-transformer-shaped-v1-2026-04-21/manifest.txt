@@ -1,0 +1,12 @@
+generated_at_utc: 2026-04-21T11:18:09Z
+repo_root: .
+git_commit: b9365dc13ff8bf6756dc46e0b1bfadf01eaf5e25
+git_commit_short: b9365dc
+git_branch: codex/phase85-88-translated-composition-prototype
+rustc: rustc 1.90.0-nightly (e9182f195 2025-07-13)
+cargo: cargo 1.90.0-nightly (eabb4cd92 2025-07-09)
+host_platform: Darwin 23.6.0 arm64
+nightly_toolchain: +nightly-2025-07-14
+bundle_dir: docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21
+artifact: transformer_shaped.stwo.bundle.json
+scope: transformer-shaped source-bound translated composition bundle

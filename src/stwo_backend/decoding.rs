@@ -11791,7 +11791,7 @@ fn build_phase30_decoding_step_proof_envelope(
     Ok(envelope)
 }
 
-fn commit_phase12_decoding_chain_for_step_envelopes(
+pub(crate) fn commit_phase12_decoding_chain_for_step_envelopes(
     chain: &Phase12DecodingChainManifest,
 ) -> Result<String> {
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");

@@ -1,6 +1,6 @@
 # Appendix: Public System Comparison Snapshot
 
-Snapshot date: **April 20, 2026**
+Snapshot date: **April 21, 2026**
 
 This appendix is a compact comparison table for the three systems most relevant to the
 argument in the main paper. It inherits its source posture from Sections 6 and 7:
@@ -9,7 +9,7 @@ artifacts are used for different claim types and should not be read as a single 
 benchmark class.
 
 Sources: rows inherit the main paper’s source set from Sections 6 and 7, especially
-References 24-31, 35-40, and 46.
+References 24-31, 35-40, 46, and 49.
 
 It should be read with one rule in mind: these are **not** matched end-to-end benchmarks
 on identical workloads. They are a structured comparison of public claims, committed
@@ -22,7 +22,7 @@ artifacts, and implementation scope.
 | Primary role              | Production-oriented zkML system                                                                  | Public STARK-native zkML stack                                                                                                                                                      | Semantics-and-proof research artifact                                                                                                                                          |
 | Proof family              | SNARK / SNARK-hybrid                                                                             | STARK-native on S-two / STWO                                                                                                                                                        | Vanilla STARK by default; frozen narrow `stwo` artifact tier plus a pre-recursive carried-state aggregation line                                                               |
 | Public transformer scope  | Public claims of full GPT-2 inference and later Gemma-class progress                             | Public repo/verifier claims transformer-block support, recursive verifier milestones, and aggressive single-block benchmarks                                                        | Deterministic transformer-shaped VM, not full learned transformer inference                                                                                                    |
-| Strongest public evidence | Official Lagrange product/blog materials                                                         | Public repo, verifier docs, audit notes, Starknet verification path                                                                                                                 | Two frozen artifact bundles, a proof-carrying aggregation bundle, the April 20 Phase63-65 verifier-surface checkpoint, and statement-versioned repo outputs                    |
+| Strongest public evidence | Official Lagrange product/blog materials                                                         | Public repo, verifier docs, audit notes, Starknet verification path                                                                                                                 | Two frozen artifact bundles, a proof-carrying aggregation bundle, the April 20 Phase63-65 verifier-surface checkpoint, the April 21 transformer-shaped `stwo` bundle, and statement-versioned repo outputs |
 | Non-arithmetic handling   | Custom circuits and lookup-oriented techniques                                                   | LogUp-style lookup machinery on STWO                                                                                                                                                | `average-hard` proof path only; `softmax` not yet in proved relation                                                                                                           |
 | Backend maturity          | Strongest public deployment maturity of the three                                                | Strongest public STARK-native zkML signal                                                                                                                                           | Strongest semantics-portability story among the three                                                                                                                          |
 | Public onchain posture    | Production/prover maturity emphasized more than public Starknet verification demos               | Starknet verification path and public demos emphasized                                                                                                                              | No onchain verifier integration yet                                                                                                                                            |

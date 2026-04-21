@@ -13,6 +13,7 @@ For paper readers, start with:
 For trusted-core engineering work, start with:
 
 - [`docs/engineering/README.md`](engineering/README.md)
+- [`docs/engineering/ai-review-security-setup.md`](engineering/ai-review-security-setup.md)
 
 For security and red-team review, start with:
 

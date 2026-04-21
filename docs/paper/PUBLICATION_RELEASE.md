@@ -49,6 +49,7 @@ one monolithic benchmark claim.
   - `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/`
   - `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/`
   - `docs/paper/artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/`
+  - `docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/`
 - Figure sources:
   - `docs/paper/figures/section4-ratio-vs-context.tsv`
   - `docs/paper/figures/section4-decomposition-vs-context.tsv`
@@ -69,6 +70,9 @@ one monolithic benchmark claim.
 - The April 20 Phase63-65 verifier-surface index pins the current paper's stronger
   proof-carrying bridge: shared lookup identity and typed carried state are now
   verifier-visible across a transformer-shaped artifact line.
+- The April 21 `stwo-transformer-shaped-v1` bundle freezes one reproducible
+  transformer-shaped `stwo` artifact with `28s` prepare, `9s` verify, `9,348,044`
+  artifact bytes, a five-step source chain, and two translated segment manifests.
 - Older carried-state artifact bundles are retained as archival provenance; see
   `docs/paper/artifacts/README.md`. The proof-carrying aggregation bundle is the
   publication-facing artifact bundle for the carried-state aggregation line.
@@ -89,6 +93,8 @@ one monolithic benchmark claim.
   - validate with `cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase63 -- --nocapture`
   - validate with `cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase64 -- --nocapture`
   - validate with `cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase65 -- --nocapture`
+- Transformer-shaped `stwo` bundle:
+  - `./scripts/paper/generate_stwo_transformer_shaped_bundle.sh`
 - Archived web evidence:
   - `python3 scripts/paper/archive_supporting_web_evidence.py`
 - Gemma config extracts:

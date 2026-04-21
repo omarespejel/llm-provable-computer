@@ -9,6 +9,13 @@ scripts/node_modules/
 .claude/
 .codex/
 CLAUDE.md
+!.claude/
+.claude/*
+!.claude/settings.json
+!.codex/
+.codex/*
+!.codex/config.toml
+!CLAUDE.md
 AI_REVIEW_BOTS_BEST_PRACTICES_*.md
 **/.claude/tsc-cache/
 **/.claude/cache/

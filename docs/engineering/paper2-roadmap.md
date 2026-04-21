@@ -202,3 +202,14 @@ So the next work on this line should not relabel the decode bridge as recursion
 or cryptographic compression. The next unfrozen layer is Phase81+ translated
 boundary-history and composition work, not more narrative inflation around
 Phase70-80.
+
+## Post-freeze handoff
+
+The bounded decode line is now strong enough to serve as supporting evidence.
+The main breakthrough route should move to the tensor-native roadmap recorded in:
+
+- `docs/engineering/tensor-native-phase89-95-roadmap.md`
+
+That roadmap keeps the decode/carry machine as a semantics and continuity
+substrate, but it stops extending VM-manifest composition as though it were the
+main cost breakthrough path for transformer proving.

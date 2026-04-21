@@ -10,9 +10,11 @@ use crate::proof::{ExecutionClaimCommitments, StarkProofBackend, VanillaStarkExe
 
 #[cfg(feature = "stwo-backend")]
 use super::decoding::{
-    commit_phase12_layout, commit_phase12_public_state, commit_phase14_public_state,
-    commit_phase23_boundary_state, phase14_prepare_decoding_chain,
-    phase28_global_boundary_preimage_states, read_json_bytes_with_limit,
+    commit_phase12_decoding_chain_for_step_envelopes, commit_phase12_layout,
+    commit_phase12_public_state, commit_phase14_public_state, commit_phase23_boundary_state,
+    phase14_prepare_decoding_chain, phase28_global_boundary_preimage_states,
+    phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range,
+    prove_phase12_decoding_demo_for_layout_steps, read_json_bytes_with_limit,
     verify_phase12_decoding_chain, verify_phase12_decoding_chain_with_proof_checks,
     verify_phase14_decoding_chain,
     verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation,
@@ -20,8 +22,9 @@ use super::decoding::{
     verify_phase30_decoding_step_proof_envelope_manifest,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range,
-    Phase12DecodingChainManifest, Phase12DecodingState, Phase14DecodingChainManifest,
-    Phase14DecodingState, Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    write_json_with_limit, Phase12DecodingChainManifest, Phase12DecodingLayout,
+    Phase12DecodingState, Phase14DecodingChainManifest, Phase14DecodingState,
+    Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
     Phase30DecodingStepProofEnvelopeManifest,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE28,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
@@ -921,6 +924,17 @@ const STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_STATUS_PHASE88: &str 
 #[cfg(feature = "stwo-backend")]
 const STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_NEXT_STEP_PHASE88: &str =
     "freeze_translated_paper3_composition_section_before_recursive_composition_work";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_TRANSFORMER_SHAPED_ARTIFACT_BUNDLE_VERSION_V1: &str =
+    "stwo_transformer_shaped_artifact_bundle_v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_TRANSFORMER_SHAPED_ARTIFACT_BUNDLE_SCOPE_V1: &str =
+    "stwo_transformer_shaped_translated_composition_bundle";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSFORMER_SHAPED_ARTIFACT_BUNDLE_NEXT_STEP_V1: &str =
+    "freeze_bundle_metrics_and cite_one_source_backed_transformer_shaped_artifact";
+#[cfg(feature = "stwo-backend")]
+const MAX_STWO_TRANSFORMER_SHAPED_ARTIFACT_BUNDLE_JSON_BYTES: usize = 64 * 1024 * 1024;
 #[cfg(feature = "stwo-backend")]
 const PHASE44D_M31_MODULUS: u32 = (1u32 << 31) - 1;
 
@@ -3313,7 +3327,8 @@ pub struct Phase84PublicationPaper3SeamTable {
 }
 
 #[cfg(feature = "stwo-backend")]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Phase85TranslatedPaper3CompositionSource {
     pub phase81_receipt: Phase81ProofCheckedBoundaryHistoryBridgeReceipt,
     pub phase82_receipt: Phase82TranslatedPaper3SegmentSourceReceipt,
@@ -3462,6 +3477,37 @@ pub struct Phase88PublicationTranslatedPaper3CompositionTable {
     pub paper_ready: bool,
     pub required_next_step: String,
     pub publication_translated_paper3_composition_table_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct StwoTransformerShapedArtifactBundle {
+    pub proof_backend: StarkProofBackend,
+    pub bundle_version: String,
+    pub semantic_scope: String,
+    pub source_chain: Phase12DecodingChainManifest,
+    pub translated_segment_manifests: Vec<Phase30DecodingStepProofEnvelopeManifest>,
+    pub translated_segment_sources: Vec<Phase85TranslatedPaper3CompositionSource>,
+    pub phase86_prototype: Phase86TranslatedPaper3CompositionPrototype,
+    pub phase87_assessment: Phase87TranslatedPaper3CompositionAssessment,
+    pub source_chain_commitment: String,
+    pub source_layout_commitment: String,
+    pub translated_lookup_identity_commitment: String,
+    pub total_steps: usize,
+    pub translated_segment_count: usize,
+    pub naive_per_step_package_count: usize,
+    pub composed_segment_package_count: usize,
+    pub package_count_delta: usize,
+    pub source_bound_verifier_available: bool,
+    pub full_history_replay_required: bool,
+    pub full_standard_softmax_inference_claimed: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub artifact_bundle_commitment: String,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -22947,6 +22993,17 @@ pub fn phase71_prepare_actual_stwo_step_envelope_handoff_receipt(
     phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
 ) -> Result<Phase71ActualStwoStepEnvelopeHandoffReceipt> {
     verify_phase12_decoding_chain(phase12_chain)?;
+    phase71_prepare_actual_stwo_step_envelope_handoff_receipt_from_verified_chain(
+        phase12_chain,
+        phase30_manifest,
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase71_prepare_actual_stwo_step_envelope_handoff_receipt_from_verified_chain(
+    phase12_chain: &Phase12DecodingChainManifest,
+    phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase71ActualStwoStepEnvelopeHandoffReceipt> {
     let (_, _, chain_start_position, chain_end_position) =
         phase71_manifest_step_range_and_positions(phase12_chain, phase30_manifest)?;
     let proof_commitments_commitment =
@@ -23932,6 +23989,17 @@ pub fn phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt(
     phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
 ) -> Result<Phase76ProofCheckedActualStwoDecodeChainReceipt> {
     verify_phase12_decoding_chain_with_proof_checks(phase12_chain)?;
+    phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt_from_verified_chain(
+        phase12_chain,
+        phase30_manifest,
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt_from_verified_chain(
+    phase12_chain: &Phase12DecodingChainManifest,
+    phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase76ProofCheckedActualStwoDecodeChainReceipt> {
     let (_, _, chain_start_position, chain_end_position) =
         phase71_manifest_step_range_and_positions(phase12_chain, phase30_manifest)?;
     let proof_commitments_commitment =
@@ -27525,6 +27593,747 @@ pub fn verify_phase88_publication_translated_paper3_composition_table_against_so
         ));
     }
     Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn stwo_transformer_shaped_bundle_hash32(domain: &str, parts: &[&[u8]]) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize transformer-shaped S-two artifact hash `{domain}`: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"stwo-transformer-shaped-artifact-bundle");
+    phase29_update_len_prefixed(&mut hasher, domain.as_bytes());
+    for part in parts {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "transformer-shaped S-two artifact bundle")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase85_prepare_history_replay_trace_from_sources_with_phase14(
+    chain: &Phase12DecodingChainManifest,
+    replayed_phase14: &Phase14DecodingChainManifest,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase43HistoryReplayTrace> {
+    let (start_index, end_index, _, _) = phase71_manifest_step_range_and_positions(chain, phase30)?;
+    let latest_cached_pair_range = chain.layout.latest_cached_pair_range()?;
+    let phase12_segment_steps = &chain.steps[start_index..end_index];
+    let phase14_segment_steps = &replayed_phase14.steps[start_index..end_index];
+    if phase12_segment_steps.len() != phase30.envelopes.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 85 translated composition source expected {} Phase30 envelopes for range {start_index}..{end_index}, got {}",
+            phase12_segment_steps.len(),
+            phase30.envelopes.len()
+        )));
+    }
+    let Some(last_phase12_step) = phase12_segment_steps.last() else {
+        return Err(VmError::InvalidConfig(
+            "Phase 85 translated composition source requires at least one Phase12 segment step"
+                .to_string(),
+        ));
+    };
+    if last_phase12_step.to_state.public_state_commitment != phase30.chain_end_boundary_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 85 translated composition source Phase30 end boundary drift".to_string(),
+        ));
+    }
+
+    let rows = phase12_segment_steps
+        .iter()
+        .zip(phase14_segment_steps.iter())
+        .zip(phase30.envelopes.iter())
+        .enumerate()
+        .map(
+            |(step_index, ((phase12_step, phase14_step), phase30_envelope))| {
+                Phase43HistoryReplayTraceRow {
+                    step_index,
+                    appended_pair: phase12_step.proof.claim.final_state.memory
+                        [latest_cached_pair_range.clone()]
+                    .to_vec(),
+                    input_lookup_rows_commitment: phase12_step
+                        .from_state
+                        .lookup_rows_commitment
+                        .clone(),
+                    output_lookup_rows_commitment: phase12_step
+                        .to_state
+                        .lookup_rows_commitment
+                        .clone(),
+                    phase30_step_envelope_commitment: phase30_envelope.envelope_commitment.clone(),
+                    phase12_from_state: phase12_step.from_state.clone(),
+                    phase12_to_state: phase12_step.to_state.clone(),
+                    phase14_from_state: phase14_step.from_state.clone(),
+                    phase14_to_state: phase14_step.to_state.clone(),
+                }
+            },
+        )
+        .collect::<Vec<_>>();
+
+    let (appended_pairs_commitment, appended_pair_count) = {
+        let mut hasher = Blake2bVar::new(32).map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to initialize Phase 85 appended-pairs hash: {err}"
+            ))
+        })?;
+        phase29_update_len_prefixed(&mut hasher, b"phase42-source-appended-pairs");
+        phase29_update_len_prefixed(
+            &mut hasher,
+            phase12_segment_steps
+                .first()
+                .expect("non-empty segment checked above")
+                .from_state
+                .layout_commitment
+                .as_bytes(),
+        );
+        phase29_update_usize(&mut hasher, chain.layout.pair_width);
+        phase29_update_usize(&mut hasher, phase12_segment_steps.len());
+        for (step_index, step) in phase12_segment_steps.iter().enumerate() {
+            let pair = &step.proof.claim.final_state.memory[latest_cached_pair_range.clone()];
+            if pair.len() != chain.layout.pair_width {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 85 translated composition source appended-pair width drift at segment row {step_index}: expected {}, got {}",
+                    chain.layout.pair_width,
+                    pair.len()
+                )));
+            }
+            phase29_update_usize(&mut hasher, step_index);
+            for value in pair {
+                hasher.update(&value.to_le_bytes());
+            }
+        }
+        let mut out = [0u8; 32];
+        hasher.finalize_variable(&mut out).map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to finalize Phase 85 appended-pairs hash: {err}"
+            ))
+        })?;
+        (phase29_lower_hex(&out), phase12_segment_steps.len())
+    };
+
+    let (lookup_rows_commitments_commitment, lookup_row_count) = {
+        let mut commitments = Vec::with_capacity(phase12_segment_steps.len() + 1);
+        commitments.push(
+            phase12_segment_steps
+                .first()
+                .expect("non-empty segment checked above")
+                .from_state
+                .lookup_rows_commitment
+                .as_str(),
+        );
+        for step in phase12_segment_steps {
+            commitments.push(step.to_state.lookup_rows_commitment.as_str());
+        }
+        let mut hasher = Blake2bVar::new(32).map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to initialize Phase 85 lookup-row commitment hash: {err}"
+            ))
+        })?;
+        phase29_update_len_prefixed(&mut hasher, b"phase42-source-lookup-rows");
+        phase29_update_len_prefixed(
+            &mut hasher,
+            phase12_segment_steps
+                .first()
+                .expect("non-empty segment checked above")
+                .from_state
+                .layout_commitment
+                .as_bytes(),
+        );
+        phase29_update_usize(&mut hasher, commitments.len());
+        for (index, commitment) in commitments.iter().enumerate() {
+            phase42_require_hash32(
+                &format!("history_equivalence.lookup_rows[{index}]"),
+                commitment,
+            )?;
+            phase29_update_usize(&mut hasher, index);
+            phase29_update_len_prefixed(&mut hasher, commitment.as_bytes());
+        }
+        let mut out = [0u8; 32];
+        hasher.finalize_variable(&mut out).map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to finalize Phase 85 lookup-row commitment hash: {err}"
+            ))
+        })?;
+        (phase29_lower_hex(&out), commitments.len())
+    };
+
+    if appended_pair_count != rows.len() || lookup_row_count != rows.len() + 1 {
+        return Err(VmError::InvalidConfig(
+            "Phase 85 translated composition source history row accounting drift".to_string(),
+        ));
+    }
+
+    let first = rows.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 85 translated composition source requires at least one trace row".to_string(),
+        )
+    })?;
+    let last = rows.last().expect("non-empty rows checked above");
+    let segment_start_string = start_index.to_string();
+    let segment_end_string = end_index.to_string();
+    let total_steps_string = phase30.total_steps.to_string();
+    let mut trace = Phase43HistoryReplayTrace {
+        issue: STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
+        trace_version: STWO_HISTORY_REPLAY_TRACE_VERSION_PHASE43.to_string(),
+        relation_outcome: STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43.to_string(),
+        transform_rule: STWO_HISTORY_REPLAY_TRACE_RULE_PHASE43.to_string(),
+        proof_backend: StarkProofBackend::Stwo,
+        proof_backend_version: STWO_BACKEND_VERSION_PHASE12.to_string(),
+        statement_version: CLAIM_STATEMENT_VERSION_V1.to_string(),
+        phase42_witness_commitment: stwo_transformer_shaped_bundle_hash32(
+            "phase85-phase42-witness-placeholder",
+            &[
+                phase30.source_chain_commitment.as_bytes(),
+                phase30.step_envelopes_commitment.as_bytes(),
+                segment_start_string.as_bytes(),
+                segment_end_string.as_bytes(),
+            ],
+        )?,
+        phase29_contract_commitment: stwo_transformer_shaped_bundle_hash32(
+            "phase85-phase29-contract-placeholder",
+            &[
+                phase30.source_chain_commitment.as_bytes(),
+                phase30.chain_start_boundary_commitment.as_bytes(),
+                phase30.chain_end_boundary_commitment.as_bytes(),
+            ],
+        )?,
+        phase28_aggregate_commitment: stwo_transformer_shaped_bundle_hash32(
+            "phase85-phase28-aggregate-placeholder",
+            &[
+                phase30.source_chain_commitment.as_bytes(),
+                phase30.step_envelopes_commitment.as_bytes(),
+                total_steps_string.as_bytes(),
+            ],
+        )?,
+        phase30_source_chain_commitment: phase30.source_chain_commitment.clone(),
+        phase30_step_envelopes_commitment: phase30.step_envelopes_commitment.clone(),
+        total_steps: rows.len(),
+        layout_commitment: first.phase12_from_state.layout_commitment.clone(),
+        rolling_kv_pairs: chain.layout.rolling_kv_pairs,
+        pair_width: chain.layout.pair_width,
+        phase12_start_public_state_commitment: first
+            .phase12_from_state
+            .public_state_commitment
+            .clone(),
+        phase12_end_public_state_commitment: last.phase12_to_state.public_state_commitment.clone(),
+        phase14_start_boundary_commitment: commit_phase23_boundary_state(&first.phase14_from_state),
+        phase14_end_boundary_commitment: commit_phase23_boundary_state(&last.phase14_to_state),
+        phase12_start_history_commitment: first.phase12_from_state.kv_history_commitment.clone(),
+        phase12_end_history_commitment: last.phase12_to_state.kv_history_commitment.clone(),
+        phase14_start_history_commitment: first.phase14_from_state.kv_history_commitment.clone(),
+        phase14_end_history_commitment: last.phase14_to_state.kv_history_commitment.clone(),
+        initial_kv_cache_commitment: first.phase12_from_state.kv_cache_commitment.clone(),
+        appended_pairs_commitment,
+        lookup_rows_commitments_commitment,
+        rows,
+        full_history_replay_required: true,
+        cryptographic_compression_claimed: false,
+        stwo_air_proof_claimed: false,
+        trace_commitment: String::new(),
+    };
+    trace.trace_commitment = commit_phase43_history_replay_trace(&trace)?;
+    verify_phase43_history_replay_trace(&trace)?;
+    Ok(trace)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase85_prepare_synthetic_phase29_contract(
+    chain: &Phase12DecodingChainManifest,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+    trace: &Phase43HistoryReplayTrace,
+) -> Result<Phase29RecursiveCompressionInputContract> {
+    let layout_commitment = commit_phase12_layout(&chain.layout);
+    let source_template_commitment = stwo_transformer_shaped_bundle_hash32(
+        "phase85-source-template",
+        &[
+            layout_commitment.as_bytes(),
+            phase30.source_chain_commitment.as_bytes(),
+        ],
+    )?;
+    let aggregation_template_commitment = stwo_transformer_shaped_bundle_hash32(
+        "phase85-aggregation-template",
+        &[
+            source_template_commitment.as_bytes(),
+            phase30.source_chain_commitment.as_bytes(),
+        ],
+    )?;
+    let aggregated_chained_folded_interval_accumulator_commitment =
+        stwo_transformer_shaped_bundle_hash32(
+            "phase85-phase28-aggregate",
+            &[
+                source_template_commitment.as_bytes(),
+                aggregation_template_commitment.as_bytes(),
+                trace.phase14_start_boundary_commitment.as_bytes(),
+                trace.phase14_end_boundary_commitment.as_bytes(),
+            ],
+        )?;
+
+    let mut contract = Phase29RecursiveCompressionInputContract {
+        proof_backend: StarkProofBackend::Stwo,
+        contract_version: STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_VERSION_PHASE29.to_string(),
+        semantic_scope: STWO_RECURSIVE_COMPRESSION_INPUT_CONTRACT_SCOPE_PHASE29.to_string(),
+        phase28_artifact_version:
+            STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28
+                .to_string(),
+        phase28_semantic_scope:
+            STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE28
+                .to_string(),
+        phase28_proof_backend_version: phase30.proof_backend_version.clone(),
+        statement_version: phase30.statement_version.clone(),
+        required_recursion_posture: STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE.to_string(),
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        phase28_bounded_aggregation_arity: 2,
+        phase28_member_count: 2,
+        phase28_member_summaries: 2,
+        phase28_nested_members: 2,
+        total_phase26_members: 4,
+        total_phase25_members: 8,
+        max_nested_chain_arity: 2,
+        max_nested_fold_arity: 2,
+        total_matrices: 16,
+        total_layouts: 16,
+        total_rollups: 8,
+        total_segments: 8,
+        total_steps: phase30.total_steps,
+        lookup_delta_entries: 12,
+        max_lookup_frontier_entries: 4,
+        source_template_commitment,
+        global_start_state_commitment: trace.phase14_start_boundary_commitment.clone(),
+        global_end_state_commitment: trace.phase14_end_boundary_commitment.clone(),
+        aggregation_template_commitment,
+        aggregated_chained_folded_interval_accumulator_commitment,
+        input_contract_commitment: String::new(),
+    };
+    contract.input_contract_commitment =
+        commit_phase29_recursive_compression_input_contract(&contract)?;
+    verify_phase29_recursive_compression_input_contract(&contract)?;
+    Ok(contract)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase85_prepare_synthetic_phase42_witness(
+    phase41: &Phase41BoundaryTranslationWitness,
+    trace: &Phase43HistoryReplayTrace,
+    phase76: &Phase76ProofCheckedActualStwoDecodeChainReceipt,
+    phase78: &Phase78ProofCheckedActualStwoSharedLookupRegistryBridgeReceipt,
+) -> Result<Phase42BoundaryHistoryEquivalenceWitness> {
+    let mut witness = Phase42BoundaryHistoryEquivalenceWitness {
+        issue: STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
+        witness_version: STWO_BOUNDARY_HISTORY_EQUIVALENCE_WITNESS_VERSION_PHASE42.to_string(),
+        relation_outcome: STWO_BOUNDARY_HISTORY_EQUIVALENCE_RELATION_PHASE42.to_string(),
+        transform_rule: STWO_BOUNDARY_HISTORY_EQUIVALENCE_RULE_PHASE42.to_string(),
+        proof_backend: StarkProofBackend::Stwo,
+        proof_backend_version: trace.proof_backend_version.clone(),
+        statement_version: trace.statement_version.clone(),
+        phase29_contract_commitment: phase41.phase29_contract_commitment.clone(),
+        phase28_aggregate_commitment: trace.phase28_aggregate_commitment.clone(),
+        phase30_source_chain_commitment: phase76.source_phase30_source_chain_commitment.clone(),
+        phase30_step_envelopes_commitment: phase76.source_phase30_step_envelopes_commitment.clone(),
+        total_steps: trace.total_steps,
+        layout_commitment: phase76.source_phase12_layout_commitment.clone(),
+        rolling_kv_pairs: trace.rolling_kv_pairs,
+        pair_width: trace.pair_width,
+        phase12_start_public_state_commitment: trace.phase12_start_public_state_commitment.clone(),
+        phase12_end_public_state_commitment: trace.phase12_end_public_state_commitment.clone(),
+        phase14_start_boundary_commitment: phase41.phase29_global_start_state_commitment.clone(),
+        phase14_end_boundary_commitment: phase41.phase29_global_end_state_commitment.clone(),
+        phase12_start_history_commitment: trace.phase12_start_history_commitment.clone(),
+        phase12_end_history_commitment: trace.phase12_end_history_commitment.clone(),
+        phase14_start_history_commitment: trace.phase14_start_history_commitment.clone(),
+        phase14_end_history_commitment: trace.phase14_end_history_commitment.clone(),
+        initial_kv_cache_commitment: trace.initial_kv_cache_commitment.clone(),
+        appended_pairs_commitment: trace.appended_pairs_commitment.clone(),
+        appended_pair_count: trace.total_steps,
+        lookup_rows_commitments_commitment: trace.lookup_rows_commitments_commitment.clone(),
+        lookup_rows_commitment_count: trace.total_steps + 1,
+        full_history_replay_required: true,
+        cryptographic_compression_claimed: false,
+        witness_commitment: String::new(),
+    };
+    witness.witness_commitment = commit_phase42_boundary_history_equivalence_witness(&witness)?;
+    verify_phase42_boundary_history_equivalence_witness(&witness)?;
+    if phase78.source_phase30_source_chain_commitment != witness.phase30_source_chain_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 85 translated composition source shared lookup bridge source-chain drift"
+                .to_string(),
+        ));
+    }
+    Ok(witness)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase85_prepare_translated_paper3_composition_source_from_chain_and_manifest(
+    chain: &Phase12DecodingChainManifest,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase85TranslatedPaper3CompositionSource> {
+    verify_phase12_decoding_chain_with_proof_checks(chain)?;
+    let phase14 = phase14_prepare_decoding_chain(chain)?;
+    verify_phase14_decoding_chain(&phase14)?;
+    phase85_prepare_translated_paper3_composition_source_from_verified_chain_and_manifest(
+        chain, &phase14, phase30,
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase85_prepare_translated_paper3_composition_source_from_verified_chain_and_manifest(
+    chain: &Phase12DecodingChainManifest,
+    phase14: &Phase14DecodingChainManifest,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase85TranslatedPaper3CompositionSource> {
+    let (step_start, step_end, _, _) = phase71_manifest_step_range_and_positions(chain, phase30)?;
+    let mut trace =
+        phase85_prepare_history_replay_trace_from_sources_with_phase14(chain, phase14, phase30)?;
+    let phase29 = phase85_prepare_synthetic_phase29_contract(chain, phase30, &trace)?;
+    trace.phase29_contract_commitment = phase29.input_contract_commitment.clone();
+    trace.phase28_aggregate_commitment = phase29
+        .aggregated_chained_folded_interval_accumulator_commitment
+        .clone();
+    trace.phase42_witness_commitment = stwo_transformer_shaped_bundle_hash32(
+        "phase85-phase42-witness",
+        &[
+            trace.phase29_contract_commitment.as_bytes(),
+            trace.phase28_aggregate_commitment.as_bytes(),
+            phase30.source_chain_commitment.as_bytes(),
+            phase30.step_envelopes_commitment.as_bytes(),
+        ],
+    )?;
+    trace.trace_commitment = commit_phase43_history_replay_trace(&trace)?;
+    verify_phase43_history_replay_trace(&trace)?;
+
+    let phase41 = phase41_prepare_boundary_translation_witness(&phase29, phase30)?;
+    let phase71 = phase71_prepare_actual_stwo_step_envelope_handoff_receipt_from_verified_chain(
+        chain, phase30,
+    )?;
+    let phase72 =
+        phase72_prepare_actual_stwo_shared_lookup_registry_receipt(&phase71, chain, phase30)?;
+    let phase74 = phase74_prepare_chunked_history_carry_receipt_for_step_range(
+        chain, phase14, step_start, step_end,
+    )?;
+    let phase76 =
+        phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt_from_verified_chain(
+            chain, phase30,
+        )?;
+    let phase78 = phase78_prepare_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(
+        &phase76, &phase72, &phase71, chain, phase30,
+    )?;
+    let phase42 = phase85_prepare_synthetic_phase42_witness(&phase41, &trace, &phase76, &phase78)?;
+    let phase81 = phase81_prepare_proof_checked_boundary_history_bridge_receipt(
+        &phase41, &phase42, &trace, &phase74, &phase76, &phase78,
+    )?;
+    let phase82 = phase82_prepare_translated_paper3_segment_source_receipt(&phase81)?;
+    let phase83 = phase83_prepare_translated_paper3_blocker_assessment(&phase82)?;
+    Ok(Phase85TranslatedPaper3CompositionSource {
+        phase81_receipt: phase81,
+        phase82_receipt: phase82,
+        phase83_assessment: phase83,
+    })
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_stwo_transformer_shaped_artifact_bundle(
+    bundle: &StwoTransformerShapedArtifactBundle,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize transformer-shaped S-two artifact bundle hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"stwo-transformer-shaped-artifact-bundle-v1");
+    phase29_update_len_prefixed(&mut hasher, bundle.proof_backend.to_string().as_bytes());
+    for part in [
+        bundle.bundle_version.as_bytes(),
+        bundle.semantic_scope.as_bytes(),
+        bundle.source_chain_commitment.as_bytes(),
+        bundle.source_layout_commitment.as_bytes(),
+        bundle.translated_lookup_identity_commitment.as_bytes(),
+        bundle
+            .phase86_prototype
+            .translated_composition_prototype_commitment
+            .as_bytes(),
+        bundle
+            .phase87_assessment
+            .translated_paper3_composition_assessment_commitment
+            .as_bytes(),
+        bundle.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, bundle.total_steps);
+    phase29_update_usize(&mut hasher, bundle.translated_segment_count);
+    phase29_update_usize(&mut hasher, bundle.naive_per_step_package_count);
+    phase29_update_usize(&mut hasher, bundle.composed_segment_package_count);
+    phase29_update_usize(&mut hasher, bundle.package_count_delta);
+    phase29_update_usize(&mut hasher, bundle.translated_segment_manifests.len());
+    for manifest in &bundle.translated_segment_manifests {
+        phase29_update_len_prefixed(&mut hasher, manifest.source_chain_commitment.as_bytes());
+        phase29_update_usize(&mut hasher, manifest.total_steps);
+        phase29_update_len_prefixed(
+            &mut hasher,
+            manifest.chain_start_boundary_commitment.as_bytes(),
+        );
+        phase29_update_len_prefixed(
+            &mut hasher,
+            manifest.chain_end_boundary_commitment.as_bytes(),
+        );
+        phase29_update_len_prefixed(&mut hasher, manifest.step_envelopes_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, bundle.translated_segment_sources.len());
+    for source in &bundle.translated_segment_sources {
+        phase29_update_len_prefixed(
+            &mut hasher,
+            source
+                .phase81_receipt
+                .proof_checked_boundary_history_bridge_receipt_commitment
+                .as_bytes(),
+        );
+        phase29_update_len_prefixed(
+            &mut hasher,
+            source
+                .phase82_receipt
+                .translated_paper3_segment_source_receipt_commitment
+                .as_bytes(),
+        );
+        phase29_update_len_prefixed(
+            &mut hasher,
+            source
+                .phase83_assessment
+                .translated_paper3_blocker_assessment_commitment
+                .as_bytes(),
+        );
+    }
+    phase29_update_bool(&mut hasher, bundle.source_bound_verifier_available);
+    phase29_update_bool(&mut hasher, bundle.full_history_replay_required);
+    phase29_update_bool(&mut hasher, bundle.full_standard_softmax_inference_claimed);
+    phase29_update_bool(&mut hasher, bundle.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, bundle.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, bundle.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, bundle.paper_ready);
+    phase44d_finalize_hash(hasher, "transformer-shaped S-two artifact bundle")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn prepare_stwo_transformer_shaped_artifact_bundle(
+) -> Result<StwoTransformerShapedArtifactBundle> {
+    let layout = Phase12DecodingLayout::new(2, 2)?;
+    let source_chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 5)?;
+    verify_phase12_decoding_chain_with_proof_checks(&source_chain)?;
+    let replayed_phase14 = phase14_prepare_decoding_chain(&source_chain)?;
+    verify_phase14_decoding_chain(&replayed_phase14)?;
+    let source_layout_commitment = commit_phase12_layout(&source_chain.layout);
+    let source_chain_commitment = commit_phase12_decoding_chain_for_step_envelopes(&source_chain)?;
+    let translated_segment_manifests = vec![
+        phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(&source_chain, 0, 2)?,
+        phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(&source_chain, 2, 5)?,
+    ];
+    let translated_segment_sources = translated_segment_manifests
+        .iter()
+        .map(|manifest| {
+            phase85_prepare_translated_paper3_composition_source_from_verified_chain_and_manifest(
+                &source_chain,
+                &replayed_phase14,
+                manifest,
+            )
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let phase86_prototype =
+        phase86_prepare_translated_paper3_composition_prototype(&translated_segment_sources)?;
+    let phase87_assessment =
+        phase87_prepare_translated_paper3_composition_assessment(&phase86_prototype)?;
+    let mut bundle = StwoTransformerShapedArtifactBundle {
+        proof_backend: StarkProofBackend::Stwo,
+        bundle_version: STWO_TRANSFORMER_SHAPED_ARTIFACT_BUNDLE_VERSION_V1.to_string(),
+        semantic_scope: STWO_TRANSFORMER_SHAPED_ARTIFACT_BUNDLE_SCOPE_V1.to_string(),
+        source_chain_commitment,
+        source_layout_commitment,
+        translated_lookup_identity_commitment: phase86_prototype
+            .translated_lookup_identity_commitment
+            .clone(),
+        total_steps: source_chain.total_steps,
+        translated_segment_count: translated_segment_sources.len(),
+        naive_per_step_package_count: phase86_prototype.naive_per_step_package_count,
+        composed_segment_package_count: phase86_prototype.composed_segment_package_count,
+        package_count_delta: phase86_prototype.package_count_delta,
+        source_bound_verifier_available: true,
+        full_history_replay_required: true,
+        full_standard_softmax_inference_claimed: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: true,
+        required_next_step: STWO_TRANSFORMER_SHAPED_ARTIFACT_BUNDLE_NEXT_STEP_V1.to_string(),
+        source_chain,
+        translated_segment_manifests,
+        translated_segment_sources,
+        phase86_prototype,
+        phase87_assessment,
+        artifact_bundle_commitment: String::new(),
+    };
+    bundle.artifact_bundle_commitment = commit_stwo_transformer_shaped_artifact_bundle(&bundle)?;
+    verify_stwo_transformer_shaped_artifact_bundle(&bundle)?;
+    Ok(bundle)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_stwo_transformer_shaped_artifact_bundle(
+    bundle: &StwoTransformerShapedArtifactBundle,
+) -> Result<()> {
+    if bundle.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "transformer-shaped S-two artifact bundle requires `stwo` backend".to_string(),
+        ));
+    }
+    if bundle.bundle_version != STWO_TRANSFORMER_SHAPED_ARTIFACT_BUNDLE_VERSION_V1
+        || bundle.semantic_scope != STWO_TRANSFORMER_SHAPED_ARTIFACT_BUNDLE_SCOPE_V1
+    {
+        return Err(VmError::InvalidConfig(
+            "transformer-shaped S-two artifact bundle version or scope drift".to_string(),
+        ));
+    }
+    if bundle.translated_segment_manifests.len() < 2
+        || bundle.translated_segment_manifests.len() != bundle.translated_segment_sources.len()
+    {
+        return Err(VmError::InvalidConfig(
+            "transformer-shaped S-two artifact bundle requires matching manifest/source pairs"
+                .to_string(),
+        ));
+    }
+    verify_phase12_decoding_chain_with_proof_checks(&bundle.source_chain)?;
+    let expected_source_chain_commitment =
+        commit_phase12_decoding_chain_for_step_envelopes(&bundle.source_chain)?;
+    if bundle.source_chain_commitment != expected_source_chain_commitment {
+        return Err(VmError::InvalidConfig(
+            "transformer-shaped S-two artifact bundle source-chain commitment drift".to_string(),
+        ));
+    }
+    let expected_layout_commitment = commit_phase12_layout(&bundle.source_chain.layout);
+    if bundle.source_layout_commitment != expected_layout_commitment {
+        return Err(VmError::InvalidConfig(
+            "transformer-shaped S-two artifact bundle source-layout commitment drift".to_string(),
+        ));
+    }
+    let replayed_phase14 = phase14_prepare_decoding_chain(&bundle.source_chain)?;
+    verify_phase14_decoding_chain(&replayed_phase14)?;
+
+    let mut cursor = 0usize;
+    let mut expected_sources = Vec::with_capacity(bundle.translated_segment_sources.len());
+    for (segment_index, (manifest, source)) in bundle
+        .translated_segment_manifests
+        .iter()
+        .zip(bundle.translated_segment_sources.iter())
+        .enumerate()
+    {
+        if manifest.source_chain_commitment != bundle.source_chain_commitment {
+            return Err(VmError::InvalidConfig(format!(
+                "transformer-shaped S-two artifact bundle manifest source-chain drift at segment {segment_index}"
+            )));
+        }
+        let (step_start, step_end, _, _) =
+            phase71_manifest_step_range_and_positions(&bundle.source_chain, manifest)?;
+        if step_start != cursor {
+            return Err(VmError::InvalidConfig(format!(
+                "transformer-shaped S-two artifact bundle manifest gap before segment {segment_index}: expected start {cursor}, got {step_start}"
+            )));
+        }
+        cursor = step_end;
+        let expected_source =
+            phase85_prepare_translated_paper3_composition_source_from_verified_chain_and_manifest(
+                &bundle.source_chain,
+                &replayed_phase14,
+                manifest,
+            )?;
+        if source != &expected_source {
+            return Err(VmError::InvalidConfig(format!(
+                "transformer-shaped S-two artifact bundle translated source drift at segment {segment_index}"
+            )));
+        }
+        expected_sources.push(expected_source);
+    }
+    if cursor != bundle.source_chain.total_steps
+        || bundle.total_steps != bundle.source_chain.total_steps
+    {
+        return Err(VmError::InvalidConfig(
+            "transformer-shaped S-two artifact bundle total-step coverage drift".to_string(),
+        ));
+    }
+    if bundle.translated_segment_count != expected_sources.len() {
+        return Err(VmError::InvalidConfig(
+            "transformer-shaped S-two artifact bundle translated segment count drift".to_string(),
+        ));
+    }
+
+    verify_phase86_translated_paper3_composition_prototype_against_sources(
+        &bundle.phase86_prototype,
+        &expected_sources,
+    )?;
+    verify_phase87_translated_paper3_composition_assessment_against_sources(
+        &bundle.phase87_assessment,
+        &bundle.phase86_prototype,
+    )?;
+    if bundle.translated_lookup_identity_commitment
+        != bundle
+            .phase86_prototype
+            .translated_lookup_identity_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "transformer-shaped S-two artifact bundle translated lookup identity drift".to_string(),
+        ));
+    }
+    if bundle.naive_per_step_package_count != bundle.phase86_prototype.naive_per_step_package_count
+        || bundle.composed_segment_package_count
+            != bundle.phase86_prototype.composed_segment_package_count
+        || bundle.package_count_delta != bundle.phase86_prototype.package_count_delta
+    {
+        return Err(VmError::InvalidConfig(
+            "transformer-shaped S-two artifact bundle packaging summary drift".to_string(),
+        ));
+    }
+    if !bundle.source_bound_verifier_available
+        || !bundle.full_history_replay_required
+        || bundle.full_standard_softmax_inference_claimed
+        || bundle.recursive_verification_claimed
+        || bundle.cryptographic_compression_claimed
+        || bundle.breakthrough_claimed
+        || !bundle.paper_ready
+        || bundle.required_next_step != STWO_TRANSFORMER_SHAPED_ARTIFACT_BUNDLE_NEXT_STEP_V1
+    {
+        return Err(VmError::InvalidConfig(
+            "transformer-shaped S-two artifact bundle claim drift".to_string(),
+        ));
+    }
+    let expected = commit_stwo_transformer_shaped_artifact_bundle(bundle)?;
+    if bundle.artifact_bundle_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "transformer-shaped S-two artifact bundle commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn save_stwo_transformer_shaped_artifact_bundle(
+    bundle: &StwoTransformerShapedArtifactBundle,
+    path: &Path,
+) -> Result<()> {
+    write_json_with_limit(
+        bundle,
+        path,
+        MAX_STWO_TRANSFORMER_SHAPED_ARTIFACT_BUNDLE_JSON_BYTES,
+        "transformer-shaped S-two artifact bundle",
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn load_stwo_transformer_shaped_artifact_bundle(
+    path: &Path,
+) -> Result<StwoTransformerShapedArtifactBundle> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_STWO_TRANSFORMER_SHAPED_ARTIFACT_BUNDLE_JSON_BYTES,
+        "transformer-shaped S-two artifact bundle",
+    )?;
+    let bundle = serde_json::from_slice(&bytes).map_err(phase29_json_error)?;
+    verify_stwo_transformer_shaped_artifact_bundle(&bundle)?;
+    Ok(bundle)
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -36667,6 +37476,163 @@ mod tests {
 
         verify_phase84_publication_paper3_seam_table(&phase84)
             .expect("phase84 source table remains valid");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase85_public_source_builder_is_deterministic_and_preserves_generated_surface() {
+        let layout =
+            crate::stwo_backend::Phase12DecodingLayout::new(2, 2).expect("valid Phase 12 layout");
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 5)
+            .expect("generate five-step Phase 12 decoding chain");
+        let phase14 = phase14_prepare_decoding_chain(&chain).expect("phase14 chain");
+        let segment =
+            phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(&chain, 2, 5)
+                .expect("prepare translated segment");
+        let expected = phase85_source_from_generated_translated_segment_harness(
+            &chain,
+            &phase14,
+            segment.clone(),
+        );
+        let actual = phase85_prepare_translated_paper3_composition_source_from_chain_and_manifest(
+            &chain, &segment,
+        )
+        .expect("build public Phase85 source");
+        let repeated =
+            phase85_prepare_translated_paper3_composition_source_from_chain_and_manifest(
+                &chain, &segment,
+            )
+            .expect("rebuild public Phase85 source");
+
+        assert_eq!(actual, repeated);
+        verify_phase82_translated_paper3_segment_source_receipt_against_sources(
+            &actual.phase82_receipt,
+            &actual.phase81_receipt,
+        )
+        .expect("verify public Phase82 receipt against public Phase81 source");
+        verify_phase83_translated_paper3_blocker_assessment_against_sources(
+            &actual.phase83_assessment,
+            &actual.phase82_receipt,
+        )
+        .expect("verify public Phase83 assessment against public Phase82 source");
+        assert_eq!(
+            actual
+                .phase82_receipt
+                .source_phase30_source_chain_commitment,
+            expected
+                .phase82_receipt
+                .source_phase30_source_chain_commitment
+        );
+        assert_eq!(
+            actual
+                .phase82_receipt
+                .source_phase30_step_envelopes_commitment,
+            expected
+                .phase82_receipt
+                .source_phase30_step_envelopes_commitment
+        );
+        assert_eq!(
+            actual
+                .phase82_receipt
+                .phase30_chain_start_boundary_commitment,
+            expected
+                .phase82_receipt
+                .phase30_chain_start_boundary_commitment
+        );
+        assert_eq!(
+            actual.phase82_receipt.phase30_chain_end_boundary_commitment,
+            expected
+                .phase82_receipt
+                .phase30_chain_end_boundary_commitment
+        );
+        assert_eq!(
+            actual.phase82_receipt.phase14_start_boundary_commitment,
+            expected.phase82_receipt.phase14_start_boundary_commitment
+        );
+        assert_eq!(
+            actual.phase82_receipt.phase14_end_boundary_commitment,
+            expected.phase82_receipt.phase14_end_boundary_commitment
+        );
+        assert_eq!(
+            actual.phase82_receipt.total_steps,
+            expected.phase82_receipt.total_steps
+        );
+        assert_ne!(
+            actual.phase82_receipt.source_phase29_contract_commitment,
+            expected.phase82_receipt.source_phase29_contract_commitment
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn transformer_shaped_stwo_artifact_bundle_round_trip_verifies() {
+        let bundle = prepare_stwo_transformer_shaped_artifact_bundle()
+            .expect("prepare transformer-shaped S-two artifact bundle");
+        verify_stwo_transformer_shaped_artifact_bundle(&bundle)
+            .expect("verify transformer-shaped S-two artifact bundle");
+        assert_eq!(bundle.total_steps, 5);
+        assert_eq!(bundle.translated_segment_count, 2);
+        assert_eq!(bundle.naive_per_step_package_count, 5);
+        assert_eq!(bundle.composed_segment_package_count, 2);
+        assert_eq!(bundle.package_count_delta, 3);
+        assert!(bundle.source_bound_verifier_available);
+        assert!(bundle.full_history_replay_required);
+        assert!(!bundle.full_standard_softmax_inference_claimed);
+        assert!(bundle.paper_ready);
+
+        let temp = tempfile::NamedTempFile::new().expect("create temp bundle file");
+        save_stwo_transformer_shaped_artifact_bundle(&bundle, temp.path())
+            .expect("save transformer-shaped bundle");
+        let loaded = load_stwo_transformer_shaped_artifact_bundle(temp.path())
+            .expect("load transformer-shaped bundle");
+        assert_eq!(loaded, bundle);
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn transformer_shaped_stwo_artifact_bundle_rejects_recommitted_package_delta_drift() {
+        let mut bundle = prepare_stwo_transformer_shaped_artifact_bundle()
+            .expect("prepare transformer-shaped S-two artifact bundle");
+        bundle.package_count_delta += 1;
+        bundle.artifact_bundle_commitment = commit_stwo_transformer_shaped_artifact_bundle(&bundle)
+            .expect("recommit tampered transformer-shaped bundle");
+
+        let err = verify_stwo_transformer_shaped_artifact_bundle(&bundle)
+            .expect_err("bundle must reject recommitted packaging drift");
+        assert!(err.to_string().contains("packaging summary drift"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn transformer_shaped_stwo_artifact_bundle_commitment_changes_when_source_layout_changes() {
+        let bundle = prepare_stwo_transformer_shaped_artifact_bundle()
+            .expect("prepare transformer-shaped S-two artifact bundle");
+        let original_commitment = commit_stwo_transformer_shaped_artifact_bundle(&bundle)
+            .expect("commit original bundle");
+
+        let mut tampered = bundle.clone();
+        tampered.source_layout_commitment = phase42_hash('z');
+        let tampered_commitment = commit_stwo_transformer_shaped_artifact_bundle(&tampered)
+            .expect("commit tampered bundle");
+
+        assert_ne!(original_commitment, tampered_commitment);
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn load_transformer_shaped_stwo_artifact_bundle_rejects_unverified_json() {
+        let mut bundle = prepare_stwo_transformer_shaped_artifact_bundle()
+            .expect("prepare transformer-shaped S-two artifact bundle");
+        bundle.package_count_delta += 1;
+        bundle.artifact_bundle_commitment = commit_stwo_transformer_shaped_artifact_bundle(&bundle)
+            .expect("recommit tampered transformer-shaped bundle");
+
+        let temp = tempfile::NamedTempFile::new().expect("create temp bundle file");
+        save_stwo_transformer_shaped_artifact_bundle(&bundle, temp.path())
+            .expect("save tampered transformer-shaped bundle");
+        let err = load_stwo_transformer_shaped_artifact_bundle(temp.path())
+            .expect_err("tampered transformer-shaped bundle must fail during load");
+        assert!(err.to_string().contains("packaging summary drift"));
     }
 
     #[cfg(feature = "stwo-backend")]
