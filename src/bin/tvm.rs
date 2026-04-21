@@ -4102,12 +4102,14 @@ fn print_phase105_repeated_multi_interval_gemma_richer_family_report(
         "shared_execution_proof_bytes: {}",
         artifact.shared_execution_proof.proof.len()
     );
-    let naive_window_interval_repeated_proof_bytes = artifact.shared_execution_proof.proof.len()
-        * artifact.total_windows
-        * artifact.intervals_per_window;
-    println!(
-        "naive_window_interval_repeated_proof_bytes: {naive_window_interval_repeated_proof_bytes}"
-    );
+    let naive_window_interval_repeated_proof_bytes = (artifact.shared_execution_proof.proof.len()
+        as u128)
+        .checked_mul(artifact.total_windows as u128)
+        .and_then(|value| value.checked_mul(artifact.intervals_per_window as u128));
+    match naive_window_interval_repeated_proof_bytes {
+        Some(bytes) => println!("naive_window_interval_repeated_proof_bytes: {bytes}"),
+        None => println!("naive_window_interval_repeated_proof_bytes: overflow"),
+    }
     println!("token_position_start: {}", artifact.token_position_start);
     println!("token_position_stride: {}", artifact.token_position_stride);
     println!(

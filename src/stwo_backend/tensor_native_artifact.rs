@@ -4571,13 +4571,12 @@ pub fn load_phase102_folded_multi_interval_gemma_richer_family_artifact(
 fn validate_phase105_total_windows(total_windows: usize) -> Result<u64> {
     if total_windows < 2 {
         return Err(VmError::InvalidConfig(
-            "Phase 105 repeated multi-interval richer-family accumulation requires at least two windows"
-                .to_string(),
+            "Phase 105 total_windows requires at least two repeated windows".to_string(),
         ));
     }
     if total_windows > MAX_PHASE105_REPEATED_MULTI_INTERVAL_TOTAL_WINDOWS {
         return Err(VmError::InvalidConfig(format!(
-            "Phase 105 repeated multi-interval richer-family accumulation supports at most {} windows",
+            "Phase 105 total_windows supports at most {} repeated windows",
             MAX_PHASE105_REPEATED_MULTI_INTERVAL_TOTAL_WINDOWS
         )));
     }
@@ -8341,6 +8340,62 @@ mod tests {
         assert!(error
             .to_string()
             .contains("accumulation_handoff_commitment_sequence_commitment"));
+    }
+
+    #[test]
+    fn phase105_repeated_multi_interval_gemma_richer_family_rejects_total_window_cap_drift() {
+        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 primitive artifact");
+        let execution_proof = prove_gemma_block_v4_execution();
+        let mut artifact =
+            prepare_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
+                &primitive_artifact,
+                &execution_proof,
+                2,
+                2,
+                2,
+                0,
+                1,
+                0,
+            )
+            .expect("prepare phase105 repeated multi-interval artifact");
+        artifact.total_windows = MAX_PHASE105_REPEATED_MULTI_INTERVAL_TOTAL_WINDOWS + 1;
+        let error =
+            verify_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
+                &artifact,
+            )
+            .expect_err("total_windows drift should fail");
+        assert!(error.to_string().contains("total_windows"));
+    }
+
+    #[test]
+    fn phase105_repeated_multi_interval_gemma_richer_family_rejects_token_position_overflow_drift()
+    {
+        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 primitive artifact");
+        let execution_proof = prove_gemma_block_v4_execution();
+        let mut artifact =
+            prepare_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
+                &primitive_artifact,
+                &execution_proof,
+                2,
+                2,
+                2,
+                0,
+                1,
+                0,
+            )
+            .expect("prepare phase105 repeated multi-interval artifact");
+        artifact.token_position_start = u64::MAX;
+        let error =
+            verify_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
+                &artifact,
+            )
+            .expect_err("token-position overflow drift should fail");
+        assert!(
+            error.to_string().contains("token_position")
+                || error.to_string().contains("token-position")
+        );
     }
 
     #[test]
