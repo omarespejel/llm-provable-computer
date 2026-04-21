@@ -7,8 +7,8 @@ Phase70-80 proof-checked decode bridge was frozen.
 
 ## Repository pin status
 
-The repository currently pins the Rust proving crates in
-`/Users/espejelomar/StarkNet/zk-ai/llm-provable-computer-codex/Cargo.toml` to:
+The repository currently pins the Rust proving crates in the repo-root
+`Cargo.toml` to:
 
 - `stwo = 2.2.0`
 - `stwo-constraint-framework = 2.2.0`
