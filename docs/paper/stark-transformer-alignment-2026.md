@@ -550,7 +550,7 @@ source chain, two translated segment manifests, `67s` prepare, `12s` verify,
 `9,348,044` artifact bytes, and a package-count reduction from `5` naive per-step
 packages to `2` composed translated segments. This is narrower than a recursive or full
 standard-softmax claim, but it does convert the translated composition line from prose
-only into one reproducible, source-bound `stwo` artifact with concrete metrics.
+only into one reproducible, source-bound `stwo` artifact with concrete metrics [49].
 
 ### 5.5 Pre-recursive aggregation boundary
 
@@ -911,3 +911,8 @@ ______________________________________________________________________
     <https://arxiv.org/abs/2603.21851>
 48. Lagrange. “Engineering Update: July 2025.” *Lagrange Engineering Update*, published
     July 24, 2025. <https://www.lagrange.dev/engineering-updates/july-2025>
+49. `omarespejel/provable-transformer-vm`. “Appendix Artifact Index (S-two
+    Transformer-Shaped V1).” GitHub artifact snapshot, commit
+    `08a8e51eb277ba6b69c12db3d0aea5f467480493`, at
+    `docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md`.
+    <https://github.com/omarespejel/provable-transformer-vm/blob/08a8e51eb277ba6b69c12db3d0aea5f467480493/docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md>

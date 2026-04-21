@@ -27,9 +27,9 @@ source-bound across a transformer-shaped proof-carrying artifact line.
 
 The newer
 `docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/` directory freezes one
-measured transformer-shaped `stwo` bundle built from a five-step source chain, two real
-translated segment manifests, and a source-bound translated composition surface. It is
-systems evidence for one reproducible transformer-shaped `stwo` artifact with concrete
+reproducible transformer-shaped `stwo` bundle built from a five-step source chain, two
+real translated segment manifests, and a source-bound translated composition surface.
+It is systems evidence for one reproducible transformer-shaped `stwo` artifact with concrete
 metrics, not a normalized backend benchmark row.
 
 ## Table C1. Frozen artifact comparison by backend and scope

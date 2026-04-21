@@ -1,6 +1,6 @@
 # Appendix: Public System Comparison Snapshot
 
-Snapshot date: **April 20, 2026**
+Snapshot date: **April 21, 2026**
 
 This appendix is a compact comparison table for the three systems most relevant to the
 argument in the main paper. It inherits its source posture from Sections 6 and 7:
@@ -9,7 +9,7 @@ artifacts are used for different claim types and should not be read as a single 
 benchmark class.
 
 Sources: rows inherit the main paper’s source set from Sections 6 and 7, especially
-References 24-31, 35-40, and 46.
+References 24-31, 35-40, 46, and 49.
 
 It should be read with one rule in mind: these are **not** matched end-to-end benchmarks
 on identical workloads. They are a structured comparison of public claims, committed
