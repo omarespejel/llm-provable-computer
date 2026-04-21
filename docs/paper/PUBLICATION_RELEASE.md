@@ -70,8 +70,8 @@ one monolithic benchmark claim.
 - The April 20 Phase63-65 verifier-surface index pins the current paper's stronger
   proof-carrying bridge: shared lookup identity and typed carried state are now
   verifier-visible across a transformer-shaped artifact line.
-- The April 21 `stwo-transformer-shaped-v1` bundle freezes one measured
-  transformer-shaped `stwo` artifact with `67s` prepare, `12s` verify, `9,348,044`
+- The April 21 `stwo-transformer-shaped-v1` bundle freezes one reproducible
+  transformer-shaped `stwo` artifact with `28s` prepare, `9s` verify, `9,348,044`
   artifact bytes, a five-step source chain, and two translated segment manifests.
 - Older carried-state artifact bundles are retained as archival provenance; see
   `docs/paper/artifacts/README.md`. The proof-carrying aggregation bundle is the

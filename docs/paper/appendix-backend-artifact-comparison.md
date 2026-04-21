@@ -64,11 +64,11 @@ numeric values unambiguously.
 
 | Bundle | Backend | Prepare | Verify | Artifact size | Structural metrics | Semantic scope |
 |---|---|---:|---:|---:|---|---|
-| `stwo-transformer-shaped-v1` | `stwo` | `67s` | `12s` | `9,348,044` bytes | `5` total steps; `2` translated segments; package count `5 -> 2` (`Δ = 3`) | source-bound translated composition bundle with verifier-enforced carried-state continuity and shared lookup identity |
+| `stwo-transformer-shaped-v1` | `stwo` | `28s` | `9s` | `9,348,044` bytes | `5` total steps; `2` translated segments; package count `5 -> 2` (`Δ = 3`) | source-bound translated composition bundle with verifier-enforced carried-state continuity and shared lookup identity |
 
 Table C2 is drawn from the frozen index under
 `docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/`. The bundle is
 deliberately narrow: it does **not** claim full standard-softmax inference, recursive
 verification, or cryptographic compression. Its value is that one transformer-shaped
-`stwo` artifact now exists as a reproducible, measured, source-bound object rather than
-as prose only.
+`stwo` artifact now exists as a reproducible, source-bound object rather than as prose
+only.

@@ -33,9 +33,9 @@ publication decode-bridge table. It is still a code-and-validation verifier-surf
 index rather than a new proof-output bundle.
 
 The `stwo-transformer-shaped-v1-2026-04-21` directory is the first frozen
-publication-facing transformer-shaped `stwo` bundle with measured artifact metrics. It
-pins a five-step source chain, two translated segment manifests, a `67s` prepare run, a
-`12s` verify run, `9,348,044` artifact bytes, and a package-count reduction from `5`
+publication-facing transformer-shaped `stwo` bundle with reproducible artifact metrics.
+It pins a five-step source chain, two translated segment manifests, a `28s` prepare
+run, a `9s` verify run, `9,348,044` artifact bytes, and a package-count reduction from `5`
 naive per-step packages to `2` composed translated segments. It remains a narrow
 source-bound artifact, not a recursion or full-softmax claim.
 

@@ -1155,7 +1155,7 @@ engineering comparison, but the current paper package cites the frozen experimen
 Phase63-65 verifier-surface checkpoint, and the April 21 Phase66-69 hardening
 checkpoint, plus the April 21 Phase70-80 proof-checked decode-bridge checkpoint and
 the April 21 transformer-shaped `stwo` bundle. That transformer-shaped `stwo` bundle
-freezes one measured source-bound artifact with `67s` prepare, `12s` verify,
+freezes one reproducible source-bound artifact with `28s` prepare, `9s` verify,
 `9,348,044` artifact bytes, `5` source steps, `2` translated segments, and a package
 count reduction from `5` naive per-step packages to `2` composed translated segments.
 Later Phase81-84 translated seam surfaces are implemented in-repo, but they are not
