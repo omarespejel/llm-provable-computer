@@ -1,0 +1,18 @@
+bundle_version: stwo-folded-gemma-slice-family-v1
+repo_root: .
+nightly_toolchain: +nightly-2025-07-14
+bundle_dir: docs/paper/artifacts/stwo-folded-gemma-slice-family-v1-2026-04-21
+chain_artifact: tensor-native-chain.stwo.json
+gemma_proof: gemma-block-v4.stark.json
+gemma_core_slice_artifact: gemma-block-core-slice.stwo.json
+gemma_richer_slice_artifact: gemma-block-richer-slice.stwo.json
+explicit_accumulation_artifact: repeated-gemma-slice-accumulation.stwo.json
+folded_accumulation_artifact: folded-gemma-slice-accumulation.stwo.json
+folded_richer_family_artifact: folded-gemma-richer-slice-family.stwo.json
+canonical_sha256_file: sha256sums.txt
+auxiliary_benchmarks_file: benchmarks.tsv
+auxiliary_commands_log: commands.log
+total_slices: 4
+token_position: 0
+start_block_index: 2
+scope: explicit repeated Gemma-slice accumulation plus folded derivatives over one shared S-two proof surface

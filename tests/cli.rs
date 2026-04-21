@@ -2304,6 +2304,578 @@ fn cli_prepare_stwo_repeated_gemma_slice_accumulation_artifact_rejects_oversized
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_can_prepare_and_verify_stwo_folded_gemma_slice_accumulation_artifact() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase965-proof").with_extension("json");
+    let source_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase965-source").with_extension("json");
+    let artifact_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase965-artifact").with_extension("json");
+
+    tvm_command()
+        .arg("prove-stark")
+        .arg("programs/gemma_block_v4.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-repeated-gemma-slice-accumulation-artifact")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("--total-slices")
+        .arg("4")
+        .arg("--start-block-index")
+        .arg("2")
+        .arg("-o")
+        .arg(&source_path)
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-folded-gemma-slice-accumulation-artifact")
+        .arg("--source")
+        .arg(&source_path)
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "artifact_version: stwo-phase96-5-folded-gemma-slice-accumulation-artifact-v1",
+        ))
+        .stdout(predicate::str::contains("bounded_fold_arity: 2"))
+        .stdout(predicate::str::contains("total_folded_groups: 2"))
+        .stdout(predicate::str::contains("local_score_sum: 8"));
+
+    let artifact_json = std::fs::read_to_string(&artifact_path).expect("artifact json");
+    assert!(artifact_json.contains("stwo-phase96-5-folded-gemma-slice-accumulation-artifact-v1"));
+
+    tvm_command()
+        .arg("verify-stwo-folded-gemma-slice-accumulation-artifact")
+        .arg(&artifact_path)
+        .arg("--source")
+        .arg(&source_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_artifact: true"))
+        .stdout(predicate::str::contains(
+            "folded_slice_accumulator_commitment:",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(source_path);
+    let _ = std::fs::remove_file(artifact_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_folded_gemma_slice_accumulation_artifact_rejects_tampered_accumulator() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase965-proof-bad").with_extension("json");
+    let source_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase965-source-bad").with_extension("json");
+    let artifact_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase965-artifact-bad").with_extension("json");
+
+    tvm_command()
+        .arg("prove-stark")
+        .arg("programs/gemma_block_v4.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-repeated-gemma-slice-accumulation-artifact")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("--total-slices")
+        .arg("4")
+        .arg("-o")
+        .arg(&source_path)
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-folded-gemma-slice-accumulation-artifact")
+        .arg("--source")
+        .arg(&source_path)
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .success();
+
+    let mut artifact: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&artifact_path).expect("artifact json"))
+            .expect("parse artifact json");
+    artifact["folded_slice_accumulator_commitment"] = serde_json::json!("bad-accumulator");
+    std::fs::write(
+        &artifact_path,
+        serde_json::to_string_pretty(&artifact).expect("serialize tampered artifact"),
+    )
+    .expect("write tampered artifact");
+
+    tvm_command()
+        .arg("verify-stwo-folded-gemma-slice-accumulation-artifact")
+        .arg(&artifact_path)
+        .arg("--source")
+        .arg(&source_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "folded_slice_accumulator_commitment",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(source_path);
+    let _ = std::fs::remove_file(artifact_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_can_prepare_and_verify_stwo_folded_gemma_richer_slice_family_artifact() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase98-proof").with_extension("json");
+    let source_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase98-source").with_extension("json");
+    let folded_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase98-folded").with_extension("json");
+    let artifact_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase98-artifact").with_extension("json");
+
+    tvm_command()
+        .arg("prove-stark")
+        .arg("programs/gemma_block_v4.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-repeated-gemma-slice-accumulation-artifact")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("--total-slices")
+        .arg("4")
+        .arg("-o")
+        .arg(&source_path)
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-folded-gemma-slice-accumulation-artifact")
+        .arg("--source")
+        .arg(&source_path)
+        .arg("-o")
+        .arg(&folded_path)
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-folded-gemma-richer-slice-family-artifact")
+        .arg("--source")
+        .arg(&source_path)
+        .arg("--folded")
+        .arg(&folded_path)
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "artifact_version: stwo-phase98-folded-gemma-richer-slice-family-artifact-v1",
+        ))
+        .stdout(predicate::str::contains(
+            "selected_memory_window_family_commitment:",
+        ))
+        .stdout(predicate::str::contains("primary_norm_sq_min: 16"))
+        .stdout(predicate::str::contains("primary_activation_output_sum: 4"));
+
+    let artifact_json = std::fs::read_to_string(&artifact_path).expect("artifact json");
+    assert!(artifact_json.contains("stwo-phase98-folded-gemma-richer-slice-family-artifact-v1"));
+
+    tvm_command()
+        .arg("verify-stwo-folded-gemma-richer-slice-family-artifact")
+        .arg(&artifact_path)
+        .arg("--source")
+        .arg(&source_path)
+        .arg("--folded")
+        .arg(&folded_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_artifact: true"))
+        .stdout(predicate::str::contains(
+            "folded_richer_family_accumulator_commitment:",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(source_path);
+    let _ = std::fs::remove_file(folded_path);
+    let _ = std::fs::remove_file(artifact_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_folded_gemma_richer_slice_family_artifact_rejects_tampered_family_commitment() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase98-proof-bad").with_extension("json");
+    let source_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase98-source-bad").with_extension("json");
+    let folded_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase98-folded-bad").with_extension("json");
+    let artifact_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase98-artifact-bad").with_extension("json");
+
+    tvm_command()
+        .arg("prove-stark")
+        .arg("programs/gemma_block_v4.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-repeated-gemma-slice-accumulation-artifact")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("--total-slices")
+        .arg("4")
+        .arg("-o")
+        .arg(&source_path)
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-folded-gemma-slice-accumulation-artifact")
+        .arg("--source")
+        .arg(&source_path)
+        .arg("-o")
+        .arg(&folded_path)
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-folded-gemma-richer-slice-family-artifact")
+        .arg("--source")
+        .arg(&source_path)
+        .arg("--folded")
+        .arg(&folded_path)
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .success();
+
+    let mut artifact: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&artifact_path).expect("artifact json"))
+            .expect("parse artifact json");
+    artifact["selected_memory_window_family_commitment"] = serde_json::json!("bad-family");
+    std::fs::write(
+        &artifact_path,
+        serde_json::to_string_pretty(&artifact).expect("serialize tampered artifact"),
+    )
+    .expect("write tampered artifact");
+
+    tvm_command()
+        .arg("verify-stwo-folded-gemma-richer-slice-family-artifact")
+        .arg(&artifact_path)
+        .arg("--source")
+        .arg(&source_path)
+        .arg("--folded")
+        .arg(&folded_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "selected_memory_window_family_commitment",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(source_path);
+    let _ = std::fs::remove_file(folded_path);
+    let _ = std::fs::remove_file(artifact_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_can_prepare_and_verify_stwo_multi_interval_gemma_richer_family_accumulation_artifact() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase99-proof").with_extension("json");
+    let artifact_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase99-artifact").with_extension("json");
+
+    tvm_command()
+        .arg("prove-stark")
+        .arg("programs/gemma_block_v4.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-multi-interval-gemma-richer-family-accumulation-artifact")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("--total-intervals")
+        .arg("4")
+        .arg("--interval-total-slices")
+        .arg("4")
+        .arg("--token-position-start")
+        .arg("1")
+        .arg("--token-position-stride")
+        .arg("2")
+        .arg("--start-block-index")
+        .arg("2")
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "artifact_version: stwo-phase99-multi-interval-gemma-richer-family-accumulation-artifact-v1",
+        ))
+        .stdout(predicate::str::contains("total_intervals: 4"))
+        .stdout(predicate::str::contains("terminal_token_position: 7"))
+        .stdout(predicate::str::contains("interval_members_commitment:"));
+
+    let artifact_json = std::fs::read_to_string(&artifact_path).expect("artifact json");
+    assert!(artifact_json
+        .contains("stwo-phase99-multi-interval-gemma-richer-family-accumulation-artifact-v1",));
+    assert!(artifact_json.contains("\"repeated_token_position\": 7"));
+
+    tvm_command()
+        .arg("verify-stwo-multi-interval-gemma-richer-family-accumulation-artifact")
+        .arg(&artifact_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_artifact: true"))
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(
+            "naive_interval_repeated_proof_bytes:",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(artifact_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_multi_interval_gemma_richer_family_accumulation_artifact_rejects_member_drift() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase99-proof-bad").with_extension("json");
+    let artifact_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase99-artifact-bad").with_extension("json");
+
+    tvm_command()
+        .arg("prove-stark")
+        .arg("programs/gemma_block_v4.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-multi-interval-gemma-richer-family-accumulation-artifact")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("--total-intervals")
+        .arg("3")
+        .arg("--interval-total-slices")
+        .arg("4")
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .success();
+
+    let mut artifact: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&artifact_path).expect("artifact json"))
+            .expect("parse artifact json");
+    artifact["members"][1]["repeated_token_position"] = serde_json::json!(99);
+    std::fs::write(
+        &artifact_path,
+        serde_json::to_string_pretty(&artifact).expect("serialize tampered artifact"),
+    )
+    .expect("write tampered artifact");
+
+    tvm_command()
+        .arg("verify-stwo-multi-interval-gemma-richer-family-accumulation-artifact")
+        .arg(&artifact_path)
+        .assert()
+        .failure()
+        .stderr(
+            predicate::str::contains("interval member 1").or(predicate::str::contains(
+                "canonical reconstructed richer-family interval",
+            )),
+        );
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(artifact_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_can_prepare_and_verify_stwo_folded_multi_interval_gemma_accumulation_prototype_artifact() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase1015-proof").with_extension("json");
+    let source_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase1015-source").with_extension("json");
+    let artifact_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase1015-artifact").with_extension("json");
+
+    tvm_command()
+        .arg("prove-stark")
+        .arg("programs/gemma_block_v4.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-multi-interval-gemma-richer-family-accumulation-artifact")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("--total-intervals")
+        .arg("4")
+        .arg("--interval-total-slices")
+        .arg("4")
+        .arg("-o")
+        .arg(&source_path)
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact")
+        .arg("--source")
+        .arg(&source_path)
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "artifact_version: stwo-phase101-5-folded-multi-interval-gemma-accumulation-prototype-artifact-v1",
+        ))
+        .stdout(predicate::str::contains("bounded_fold_arity: 2"))
+        .stdout(predicate::str::contains("total_folded_interval_groups: 2"))
+        .stdout(predicate::str::contains("accumulation_handoff_commitment:"));
+
+    let artifact_json = std::fs::read_to_string(&artifact_path).expect("artifact json");
+    assert!(artifact_json.contains(
+        "stwo-phase101-5-folded-multi-interval-gemma-accumulation-prototype-artifact-v1",
+    ));
+
+    tvm_command()
+        .arg("verify-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact")
+        .arg(&artifact_path)
+        .arg("--source")
+        .arg(&source_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_artifact: true"))
+        .stdout(predicate::str::contains(
+            "folded_interval_prototype_accumulator_commitment:",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(source_path);
+    let _ = std::fs::remove_file(artifact_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_folded_multi_interval_gemma_accumulation_prototype_artifact_rejects_handoff_drift(
+) {
+    let proof_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase1015-proof-bad").with_extension("json");
+    let source_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase1015-source-bad").with_extension("json");
+    let artifact_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase1015-artifact-bad").with_extension("json");
+
+    tvm_command()
+        .arg("prove-stark")
+        .arg("programs/gemma_block_v4.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-multi-interval-gemma-richer-family-accumulation-artifact")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("--total-intervals")
+        .arg("4")
+        .arg("--interval-total-slices")
+        .arg("4")
+        .arg("-o")
+        .arg(&source_path)
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact")
+        .arg("--source")
+        .arg(&source_path)
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .success();
+
+    let mut artifact: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&artifact_path).expect("artifact json"))
+            .expect("parse artifact json");
+    artifact["accumulation_handoff_commitment"] = serde_json::json!("bad-handoff");
+    std::fs::write(
+        &artifact_path,
+        serde_json::to_string_pretty(&artifact).expect("serialize tampered artifact"),
+    )
+    .expect("write tampered artifact");
+
+    tvm_command()
+        .arg("verify-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact")
+        .arg(&artifact_path)
+        .arg("--source")
+        .arg(&source_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("accumulation_handoff_commitment"));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(source_path);
+    let _ = std::fs::remove_file(artifact_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_can_prove_and_verify_stwo_decoding_demo() {
     let proof_path = unique_temp_dir("cli-stwo-decoding-demo-proof").with_extension("json");
 
