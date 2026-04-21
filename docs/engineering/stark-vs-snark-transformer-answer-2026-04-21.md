@@ -118,34 +118,70 @@ Current limitation:
 
 ### Current tensor-native S-two artifact checkpoint
 
-The repository now also has one frozen tensor-native `stwo` primitive bundle:
+The repository now has two concrete tensor-native `stwo` checkpoints:
 
-- bundle:
+- primitive bundle:
   `docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/`
-- scope:
+- primitive scope:
   direct shared-normalization primitive with verifier-enforced shared-table
   identity
-- prepare time:
+- primitive prepare time:
   `1s`
-- verify time:
+- primitive verify time:
   `0s`
-- artifact bytes:
+- primitive artifact bytes:
   `93,819`
-- shared proof bytes:
+- primitive shared proof bytes:
   `9,136`
-- fixed primitive steps:
+- primitive fixed steps:
   `2`
-- canonical table rows:
+- primitive canonical table rows:
   `5`
+- transformer-shaped bundle:
+  `docs/paper/artifacts/stwo-tensor-native-transformer-shaped-v1-2026-04-21/`
+- transformer-shaped scope:
+  four-step typed carried-state chain plus one Gemma block core slice
+- chain artifact bytes:
+  `119,566`
+- chain total steps:
+  `4`
+- Gemma proof bytes:
+  `90,432`
+- Gemma proof JSON bytes:
+  `734,065`
+- Gemma proof steps:
+  `43`
+- Gemma core-slice bytes:
+  `1,055,612`
+- Gemma shared normalization rows:
+  `2`
+- Gemma shared activation rows:
+  `2`
+- chain prepare time:
+  `1.142s`
+- chain verify time:
+  `0.688s`
+- Gemma prove time:
+  `0.716s`
+- Gemma verify time:
+  `0.713s`
+- core-slice prepare time:
+  `0.766s`
+- core-slice verify time:
+  `0.780s`
 
 What this strengthens:
 
 - the repository can now point to one real tensor-native `stwo` primitive rather
   than only VM/decode composition surfaces,
-- shared lookup-table identity is enforced by the verifier on that primitive
-  artifact line,
-- the next result-bearing step is to chain a short typed carried-state sequence
-  on top of this primitive line rather than adding more wrapper layers.
+- shared lookup-table identity is enforced by the verifier on both the direct
+  primitive artifact line and the transformer-shaped chain that reuses it,
+- the repository now has one reproducible transformer-shaped tensor-native
+  artifact line rather than only an isolated primitive,
+- that line already binds to one real `gemma_block_v4` S-two proof through a
+  verifier-checked core-slice artifact, and
+- the next result-bearing step is accumulation or folding on top of this direct
+  tensor-native line rather than more VM wrapper layers.
 
 ### zkLLM
 

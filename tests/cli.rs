@@ -1816,6 +1816,211 @@ fn cli_verify_stwo_shared_normalization_primitive_artifact_rejects_tampered_step
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_can_prepare_and_verify_stwo_tensor_native_chain_artifact() {
+    let artifact_path = unique_temp_dir("cli-stwo-tensor-native-chain").with_extension("json");
+
+    tvm_command()
+        .arg("prepare-stwo-tensor-native-chain-artifact")
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "artifact_version: stwo-phase93-tensor-native-chain-artifact-v1",
+        ))
+        .stdout(predicate::str::contains(
+            "semantic_scope: stwo_tensor_native_transformer_shaped_chain_artifact",
+        ))
+        .stdout(predicate::str::contains("total_steps: 4"));
+
+    let artifact_json = std::fs::read_to_string(&artifact_path).expect("artifact json");
+    assert!(artifact_json.contains("stwo-phase93-tensor-native-chain-artifact-v1"));
+    assert!(artifact_json.contains("\"step_label\": \"attention.pre_norm\""));
+
+    tvm_command()
+        .arg("verify-stwo-tensor-native-chain-artifact")
+        .arg(&artifact_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_artifact: true"))
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(
+            "shared_table_registry_commitment:",
+        ));
+
+    let _ = std::fs::remove_file(artifact_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_tensor_native_chain_artifact_rejects_tampered_boundary() {
+    let artifact_path = unique_temp_dir("cli-stwo-tensor-native-chain-bad").with_extension("json");
+
+    tvm_command()
+        .arg("prepare-stwo-tensor-native-chain-artifact")
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .success();
+
+    let mut artifact: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&artifact_path).expect("artifact json"))
+            .expect("parse artifact json");
+    artifact["steps"][1]["carried_state_in"]["hidden_state_commitment"] = serde_json::json!("bad");
+    std::fs::write(
+        &artifact_path,
+        serde_json::to_string_pretty(&artifact).expect("serialize tampered artifact"),
+    )
+    .expect("write tampered artifact");
+
+    tvm_command()
+        .arg("verify-stwo-tensor-native-chain-artifact")
+        .arg(&artifact_path)
+        .assert()
+        .failure()
+        .stderr(
+            predicate::str::contains("continuity mismatch")
+                .or(predicate::str::contains("carried_state_in commitment")),
+        );
+
+    let _ = std::fs::remove_file(artifact_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_can_prepare_and_verify_stwo_gemma_block_core_slice_artifact() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase945-proof").with_extension("json");
+    let chain_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase945-chain").with_extension("json");
+    let artifact_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase945-artifact").with_extension("json");
+
+    tvm_command()
+        .arg("prove-stark")
+        .arg("programs/gemma_block_v4.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-tensor-native-chain-artifact")
+        .arg("-o")
+        .arg(&chain_path)
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-gemma-block-core-slice-artifact")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("--chain")
+        .arg(&chain_path)
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "artifact_version: stwo-phase94-5-gemma-block-core-slice-artifact-v1",
+        ))
+        .stdout(predicate::str::contains("program_label: gemma_block_v4"))
+        .stdout(predicate::str::contains(
+            "total_shared_normalization_rows: 2",
+        ))
+        .stdout(predicate::str::contains("total_shared_activation_rows: 2"));
+
+    let artifact_json = std::fs::read_to_string(&artifact_path).expect("artifact json");
+    assert!(artifact_json.contains("stwo-phase94-5-gemma-block-core-slice-artifact-v1"));
+    assert!(artifact_json.contains("\"program_label\": \"gemma_block_v4\""));
+
+    tvm_command()
+        .arg("verify-stwo-gemma-block-core-slice-artifact")
+        .arg(&artifact_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_artifact: true"))
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(
+            "normalization_row_set_commitment:",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(chain_path);
+    let _ = std::fs::remove_file(artifact_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_gemma_block_core_slice_artifact_rejects_tampered_normalization_rows() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase945-proof").with_extension("json");
+    let chain_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase945-chain").with_extension("json");
+    let artifact_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase945-artifact-bad").with_extension("json");
+
+    tvm_command()
+        .arg("prove-stark")
+        .arg("programs/gemma_block_v4.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-tensor-native-chain-artifact")
+        .arg("-o")
+        .arg(&chain_path)
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-gemma-block-core-slice-artifact")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("--chain")
+        .arg(&chain_path)
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .success();
+
+    let mut artifact: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&artifact_path).expect("artifact json"))
+            .expect("parse artifact json");
+    artifact["shared_normalization_rows"][1]["inv_sqrt_q8"] = serde_json::json!(65);
+    std::fs::write(
+        &artifact_path,
+        serde_json::to_string_pretty(&artifact).expect("serialize tampered artifact"),
+    )
+    .expect("write tampered artifact");
+
+    tvm_command()
+        .arg("verify-stwo-gemma-block-core-slice-artifact")
+        .arg(&artifact_path)
+        .assert()
+        .failure()
+        .stderr(
+            predicate::str::contains("shared_normalization_rows")
+                .or(predicate::str::contains("normalization_row_set_commitment")),
+        );
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(chain_path);
+    let _ = std::fs::remove_file(artifact_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_can_prove_and_verify_stwo_decoding_demo() {
     let proof_path = unique_temp_dir("cli-stwo-decoding-demo-proof").with_extension("json");
 

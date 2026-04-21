@@ -19,6 +19,8 @@ mod normalization_prover;
 mod recursion;
 #[cfg(feature = "stwo-backend")]
 mod shared_lookup_artifact;
+#[cfg(feature = "stwo-backend")]
+mod tensor_native_artifact;
 
 use crate::config::Attention2DMode;
 use crate::error::{Result, VmError};
@@ -723,6 +725,22 @@ pub use shared_lookup_artifact::{
     STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12,
     STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12,
     STWO_SHARED_STATIC_NORMALIZATION_TABLE_ID_PHASE12,
+};
+#[cfg(feature = "stwo-backend")]
+pub use tensor_native_artifact::{
+    load_phase93_tensor_native_chain_artifact, load_phase945_gemma_block_core_slice_artifact,
+    prepare_phase93_tensor_native_chain_artifact,
+    prepare_phase93_tensor_native_chain_demo_artifact,
+    prepare_phase945_gemma_block_core_slice_artifact, save_phase93_tensor_native_chain_artifact,
+    save_phase945_gemma_block_core_slice_artifact, verify_phase93_tensor_native_chain_artifact,
+    verify_phase945_gemma_block_core_slice_artifact, Phase93TensorNativeChainArtifact,
+    Phase93TensorNativeChainStep, Phase93TypedCarriedStateBoundary,
+    Phase945GemmaActivationRowSummary, Phase945GemmaBlockCoreSliceArtifact,
+    Phase945GemmaNormalizationRowSummary, STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_SCOPE_PHASE945,
+    STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_VERSION_PHASE945,
+    STWO_TENSOR_NATIVE_CARRIED_STATE_VERSION_PHASE93,
+    STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_SCOPE_PHASE93,
+    STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_VERSION_PHASE93,
 };
 
 /// Backend version label used by the experimental Phase 2 S-two seam.

@@ -50,6 +50,7 @@ use llm_provable_computer::{
     load_phase36_recursive_verifier_harness_receipt,
     load_phase37_recursive_artifact_chain_harness_receipt, load_phase3_binary_step_lookup_proof,
     load_phase5_normalization_lookup_proof, load_phase92_shared_normalization_primitive_artifact,
+    load_phase93_tensor_native_chain_artifact, load_phase945_gemma_block_core_slice_artifact,
     load_stwo_transformer_shaped_artifact_bundle,
     phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28,
     phase30_prepare_decoding_step_proof_envelope_manifest,
@@ -61,6 +62,8 @@ use llm_provable_computer::{
     phase36_prepare_recursive_verifier_harness_receipt,
     phase37_prepare_recursive_artifact_chain_harness_receipt,
     prepare_phase92_shared_normalization_demo_artifact,
+    prepare_phase93_tensor_native_chain_demo_artifact,
+    prepare_phase945_gemma_block_core_slice_artifact,
     prepare_stwo_transformer_shaped_artifact_bundle,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
@@ -88,6 +91,7 @@ use llm_provable_computer::{
     save_phase28_aggregated_chained_folded_intervalized_decoding_state_relation,
     save_phase30_decoding_step_proof_envelope_manifest, save_phase3_binary_step_lookup_proof,
     save_phase5_normalization_lookup_proof, save_phase92_shared_normalization_primitive_artifact,
+    save_phase93_tensor_native_chain_artifact, save_phase945_gemma_block_core_slice_artifact,
     save_stwo_transformer_shaped_artifact_bundle, stwo_backend_enabled,
     verify_phase10_shared_binary_step_lookup_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
@@ -122,12 +126,14 @@ use llm_provable_computer::{
     verify_phase3_binary_step_lookup_demo_envelope,
     verify_phase5_normalization_lookup_demo_envelope,
     verify_phase92_shared_normalization_primitive_artifact,
+    verify_phase93_tensor_native_chain_artifact, verify_phase945_gemma_block_core_slice_artifact,
     Phase29RecursiveCompressionInputContract, Phase30DecodingStepProofEnvelopeManifest,
     Phase31RecursiveCompressionDecodeBoundaryManifest,
     Phase32RecursiveCompressionStatementContract, Phase33RecursiveCompressionPublicInputManifest,
     Phase34RecursiveCompressionSharedLookupManifest, Phase35RecursiveCompressionTargetManifest,
     Phase36RecursiveVerifierHarnessReceipt, Phase37RecursiveArtifactChainHarnessReceipt,
-    Phase92SharedNormalizationPrimitiveArtifact, StwoTransformerShapedArtifactBundle,
+    Phase92SharedNormalizationPrimitiveArtifact, Phase93TensorNativeChainArtifact,
+    Phase945GemmaBlockCoreSliceArtifact, StwoTransformerShapedArtifactBundle,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
     STWO_BACKEND_VERSION_PHASE12,
     STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
@@ -147,6 +153,8 @@ use llm_provable_computer::{
     STWO_DECODING_STATE_RELATION_ACCUMULATOR_SCOPE_PHASE24,
     STWO_DECODING_STATE_RELATION_ACCUMULATOR_VERSION_PHASE24,
     STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26,
+    STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_SCOPE_PHASE945,
+    STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_VERSION_PHASE945,
     STWO_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE25, STWO_LOOKUP_PROOF_VERSION_PHASE3,
     STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
     STWO_NORMALIZATION_PROOF_VERSION_PHASE5, STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5,
@@ -169,6 +177,8 @@ use llm_provable_computer::{
     STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_VERSION_PHASE36,
     STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_SCOPE_PHASE92,
     STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_VERSION_PHASE92,
+    STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_SCOPE_PHASE93,
+    STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_VERSION_PHASE93,
 };
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
@@ -383,6 +393,34 @@ enum Command {
     },
     /// Verify a source-bound tensor-native shared-normalization primitive artifact.
     VerifyStwoSharedNormalizationPrimitiveArtifact {
+        /// Path to the serialized artifact JSON file.
+        artifact: PathBuf,
+    },
+    /// Prepare a transformer-shaped tensor-native chain artifact over fixed primitive templates.
+    PrepareStwoTensorNativeChainArtifact {
+        /// File where the serialized artifact JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a transformer-shaped tensor-native chain artifact.
+    VerifyStwoTensorNativeChainArtifact {
+        /// Path to the serialized artifact JSON file.
+        artifact: PathBuf,
+    },
+    /// Prepare a Gemma block core-slice artifact bound to a real S-two execution proof.
+    PrepareStwoGemmaBlockCoreSliceArtifact {
+        /// Path to the serialized S-two execution proof JSON file.
+        #[arg(long = "proof")]
+        proof: PathBuf,
+        /// Path to the serialized Phase93 tensor-native chain artifact JSON file.
+        #[arg(long = "chain")]
+        chain: PathBuf,
+        /// File where the serialized artifact JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a Gemma block core-slice artifact.
+    VerifyStwoGemmaBlockCoreSliceArtifact {
         /// Path to the serialized artifact JSON file.
         artifact: PathBuf,
     },
@@ -1812,6 +1850,20 @@ fn run() -> llm_provable_computer::Result<()> {
         Command::VerifyStwoSharedNormalizationPrimitiveArtifact { artifact } => {
             verify_stwo_shared_normalization_primitive_artifact_command(&artifact)?
         }
+        Command::PrepareStwoTensorNativeChainArtifact { output } => {
+            prepare_stwo_tensor_native_chain_artifact_command(&output)?
+        }
+        Command::VerifyStwoTensorNativeChainArtifact { artifact } => {
+            verify_stwo_tensor_native_chain_artifact_command(&artifact)?
+        }
+        Command::PrepareStwoGemmaBlockCoreSliceArtifact {
+            proof,
+            chain,
+            output,
+        } => prepare_stwo_gemma_block_core_slice_artifact_command(&proof, &chain, &output)?,
+        Command::VerifyStwoGemmaBlockCoreSliceArtifact { artifact } => {
+            verify_stwo_gemma_block_core_slice_artifact_command(&artifact)?
+        }
         Command::ProveStwoDecodingDemo { output } => prove_stwo_decoding_demo_command(&output)?,
         Command::VerifyStwoDecodingDemo { proof } => verify_stwo_decoding_demo_command(&proof)?,
         Command::ProveStwoDecodingFamilyDemo { output } => {
@@ -2887,6 +2939,199 @@ fn verify_stwo_shared_normalization_primitive_artifact_command(
             "expected_semantic_scope: {STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_SCOPE_PHASE92}"
         );
         print_phase92_shared_normalization_primitive_report(&artifact);
+        Ok(())
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn print_phase93_tensor_native_chain_report(artifact: &Phase93TensorNativeChainArtifact) {
+    println!("artifact_version: {}", artifact.artifact_version);
+    println!("semantic_scope: {}", artifact.semantic_scope);
+    println!("artifact_commitment: {}", artifact.artifact_commitment);
+    println!(
+        "primitive_artifact_commitment: {}",
+        artifact.primitive_artifact_commitment
+    );
+    println!(
+        "shared_table_registry_commitment: {}",
+        artifact.shared_table_registry_commitment
+    );
+    println!(
+        "carried_state_type_version: {}",
+        artifact.carried_state_type_version
+    );
+    println!("total_steps: {}", artifact.total_steps);
+    println!(
+        "initial_boundary_commitment: {}",
+        artifact.initial_boundary_commitment
+    );
+    println!(
+        "terminal_boundary_commitment: {}",
+        artifact.terminal_boundary_commitment
+    );
+    println!("steps_commitment: {}", artifact.steps_commitment);
+    println!(
+        "shared_proof_bytes: {}",
+        artifact.primitive_artifact.proof_envelope.proof.len()
+    );
+}
+
+fn prepare_stwo_tensor_native_chain_artifact_command(
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output;
+        return Err(VmError::UnsupportedProof(
+            "S-two tensor-native chain artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two tensor-native chain artifact")?;
+        let artifact = prepare_phase93_tensor_native_chain_demo_artifact()?;
+        save_phase93_tensor_native_chain_artifact(&artifact, output)?;
+
+        println!("output: {}", output.display());
+        println!("verified_stark: true");
+        print_phase93_tensor_native_chain_report(&artifact);
+        Ok(())
+    }
+}
+
+fn verify_stwo_tensor_native_chain_artifact_command(
+    artifact_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = artifact_path;
+        return Err(VmError::UnsupportedProof(
+            "S-two tensor-native chain artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two tensor-native chain artifact")?;
+        let artifact = load_phase93_tensor_native_chain_artifact(artifact_path)?;
+        verify_phase93_tensor_native_chain_artifact(&artifact)?;
+
+        println!("artifact: {}", artifact_path.display());
+        println!("verified_artifact: true");
+        println!("verified_stark: true");
+        println!("expected_artifact_version: {STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_VERSION_PHASE93}");
+        println!("expected_semantic_scope: {STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_SCOPE_PHASE93}");
+        print_phase93_tensor_native_chain_report(&artifact);
+        Ok(())
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn print_phase945_gemma_block_core_slice_report(artifact: &Phase945GemmaBlockCoreSliceArtifact) {
+    println!("artifact_version: {}", artifact.artifact_version);
+    println!("semantic_scope: {}", artifact.semantic_scope);
+    println!("artifact_commitment: {}", artifact.artifact_commitment);
+    println!("program_label: {}", artifact.program_label);
+    println!(
+        "chain_artifact_commitment: {}",
+        artifact.chain_artifact_commitment
+    );
+    println!(
+        "execution_proof_commitment: {}",
+        artifact.execution_proof_commitment
+    );
+    println!(
+        "execution_proof_backend_version: {}",
+        artifact.execution_proof_backend_version
+    );
+    println!(
+        "execution_statement_version: {}",
+        artifact.execution_statement_version
+    );
+    println!(
+        "normalization_row_set_commitment: {}",
+        artifact.normalization_row_set_commitment
+    );
+    println!(
+        "activation_row_set_commitment: {}",
+        artifact.activation_row_set_commitment
+    );
+    println!(
+        "total_shared_normalization_rows: {}",
+        artifact.total_shared_normalization_rows
+    );
+    println!(
+        "total_shared_activation_rows: {}",
+        artifact.total_shared_activation_rows
+    );
+    println!(
+        "execution_proof_bytes: {}",
+        artifact.execution_proof.proof.len()
+    );
+    println!("final_acc: {}", artifact.final_acc);
+}
+
+fn prepare_stwo_gemma_block_core_slice_artifact_command(
+    proof_path: &Path,
+    chain_path: &Path,
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = (proof_path, chain_path, output);
+        return Err(VmError::UnsupportedProof(
+            "S-two Gemma block core-slice artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two Gemma block core-slice artifact")?;
+        let execution_proof = load_execution_stark_proof(proof_path)?;
+        let chain_artifact = load_phase93_tensor_native_chain_artifact(chain_path)?;
+        let artifact =
+            prepare_phase945_gemma_block_core_slice_artifact(&chain_artifact, &execution_proof)?;
+        save_phase945_gemma_block_core_slice_artifact(&artifact, output)?;
+
+        println!("output: {}", output.display());
+        println!("proof: {}", proof_path.display());
+        println!("chain: {}", chain_path.display());
+        println!("verified_stark: true");
+        print_phase945_gemma_block_core_slice_report(&artifact);
+        Ok(())
+    }
+}
+
+fn verify_stwo_gemma_block_core_slice_artifact_command(
+    artifact_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = artifact_path;
+        return Err(VmError::UnsupportedProof(
+            "S-two Gemma block core-slice artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two Gemma block core-slice artifact")?;
+        let artifact = load_phase945_gemma_block_core_slice_artifact(artifact_path)?;
+        verify_phase945_gemma_block_core_slice_artifact(&artifact)?;
+
+        println!("artifact: {}", artifact_path.display());
+        println!("verified_artifact: true");
+        println!("verified_stark: true");
+        println!(
+            "expected_artifact_version: {STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_VERSION_PHASE945}"
+        );
+        println!("expected_semantic_scope: {STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_SCOPE_PHASE945}");
+        print_phase945_gemma_block_core_slice_report(&artifact);
         Ok(())
     }
 }
@@ -12706,6 +12951,10 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-shared-normalization-demo"
                 | "prepare-stwo-shared-normalization-primitive-artifact"
                 | "verify-stwo-shared-normalization-primitive-artifact"
+                | "prepare-stwo-tensor-native-chain-artifact"
+                | "verify-stwo-tensor-native-chain-artifact"
+                | "prepare-stwo-gemma-block-core-slice-artifact"
+                | "verify-stwo-gemma-block-core-slice-artifact"
                 | "prove-stwo-decoding-demo"
                 | "verify-stwo-decoding-demo"
                 | "prove-stwo-decoding-family-demo"
