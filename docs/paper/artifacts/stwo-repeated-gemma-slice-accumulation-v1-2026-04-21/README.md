@@ -9,4 +9,4 @@ This directory freezes a publication-facing repeated-slice tensor-native `stwo` 
 
 The public claim remains narrow and defensible: repeated transformer-shaped structure can already be packaged as verifier-bound repeated slices with explicit continuity and shared lookup identity on the S-two path. This is not yet recursive compression or full standard-softmax transformer inference.
 
-See `APPENDIX_ARTIFACT_INDEX.md` for exact hashes, timings, and byte-level reuse metrics.
+See `APPENDIX_ARTIFACT_INDEX.md` for exact hashes, canonical bundle parameters, and byte-level reuse metrics. Environment-specific timings are recorded separately in `benchmarks.tsv`.

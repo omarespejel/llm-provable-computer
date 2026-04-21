@@ -170,8 +170,6 @@ use llm_provable_computer::{
     STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
     STWO_NORMALIZATION_PROOF_VERSION_PHASE5, STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5,
     STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5,
-    STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_SCOPE_PHASE95,
-    STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_VERSION_PHASE95,
     STWO_RECURSIVE_ARTIFACT_CHAIN_HARNESS_RECEIPT_SCOPE_PHASE37,
     STWO_RECURSIVE_ARTIFACT_CHAIN_HARNESS_RECEIPT_VERSION_PHASE37,
     STWO_RECURSIVE_COMPRESSION_DECODE_BOUNDARY_MANIFEST_SCOPE_PHASE31,
@@ -188,6 +186,8 @@ use llm_provable_computer::{
     STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_VERSION_PHASE35,
     STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_SCOPE_PHASE36,
     STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_VERSION_PHASE36,
+    STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_SCOPE_PHASE95,
+    STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_VERSION_PHASE95,
     STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_SCOPE_PHASE92,
     STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_VERSION_PHASE92,
     STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_SCOPE_PHASE93,
@@ -3237,15 +3237,24 @@ fn print_phase9475_gemma_block_richer_slice_report(
         "selected_memory_window_commitment: {}",
         artifact.selected_memory_window_commitment
     );
-    println!("selected_memory_window_entries: {}", artifact.selected_memory_window.len());
+    println!(
+        "selected_memory_window_entries: {}",
+        artifact.selected_memory_window.len()
+    );
     println!("local_score: {}", artifact.local_score);
     println!("global_score: {}", artifact.global_score);
     println!("grouped_value_mix: {}", artifact.grouped_value_mix);
     println!("residual_output: {}", artifact.residual_output);
     println!("primary_norm_sq: {}", artifact.primary_norm_sq);
     println!("primary_inv_sqrt_q8: {}", artifact.primary_inv_sqrt_q8);
-    println!("primary_activation_input: {}", artifact.primary_activation_input);
-    println!("primary_activation_output: {}", artifact.primary_activation_output);
+    println!(
+        "primary_activation_input: {}",
+        artifact.primary_activation_input
+    );
+    println!(
+        "primary_activation_output: {}",
+        artifact.primary_activation_output
+    );
     println!("secondary_norm_sq: {}", artifact.secondary_norm_sq);
     println!("secondary_inv_sqrt_q8: {}", artifact.secondary_inv_sqrt_q8);
     println!(
@@ -3356,11 +3365,17 @@ fn print_phase95_repeated_gemma_slice_accumulation_report(
         artifact.shared_execution_statement_version
     );
     println!("total_slices: {}", artifact.total_slices);
-    println!("repeated_token_position: {}", artifact.repeated_token_position);
+    println!(
+        "repeated_token_position: {}",
+        artifact.repeated_token_position
+    );
     println!("start_block_index: {}", artifact.start_block_index);
     println!("terminal_block_index: {}", artifact.terminal_block_index);
     println!("members_commitment: {}", artifact.members_commitment);
-    println!("shared_execution_proof_bytes: {}", artifact.shared_execution_proof.proof.len());
+    println!(
+        "shared_execution_proof_bytes: {}",
+        artifact.shared_execution_proof.proof.len()
+    );
     let naive_repeated_proof_bytes =
         artifact.shared_execution_proof.proof.len() * artifact.total_slices;
     println!("naive_repeated_proof_bytes: {naive_repeated_proof_bytes}");
@@ -3375,7 +3390,13 @@ fn prepare_stwo_repeated_gemma_slice_accumulation_artifact_command(
 ) -> llm_provable_computer::Result<()> {
     #[cfg(not(feature = "stwo-backend"))]
     {
-        let _ = (proof_path, total_slices, token_position, start_block_index, output);
+        let _ = (
+            proof_path,
+            total_slices,
+            token_position,
+            start_block_index,
+            output,
+        );
         return Err(VmError::UnsupportedProof(
             "S-two repeated Gemma slice accumulation artifact requires building with `--features stwo-backend`"
                 .to_string(),
@@ -3385,6 +3406,12 @@ fn prepare_stwo_repeated_gemma_slice_accumulation_artifact_command(
     #[cfg(feature = "stwo-backend")]
     {
         require_stwo_backend("S-two repeated Gemma slice accumulation artifact")?;
+        if total_slices > llm_provable_computer::MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES {
+            return Err(VmError::InvalidConfig(format!(
+                "S-two repeated Gemma slice accumulation supports at most {} slices",
+                llm_provable_computer::MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES
+            )));
+        }
         let execution_proof = load_execution_stark_proof(proof_path)?;
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()?;
         let artifact = prepare_phase95_repeated_gemma_slice_accumulation_artifact(

@@ -69,10 +69,9 @@ printf 'label\tseconds\n' > "$BENCHMARKS"
 run_timed() {
   local label="$1"
   shift
-  local started_iso started_ns ended_ns elapsed
-  started_iso="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  local started_ns ended_ns elapsed
   started_ns="$(python3 -c 'import time; print(time.time_ns())')"
-  printf '[%s] %s\n' "$started_iso" "$*" | tee -a "$COMMANDS_LOG"
+  printf '%s\n' "$*" | tee -a "$COMMANDS_LOG"
   "$@"
   ended_ns="$(python3 -c 'import time; print(time.time_ns())')"
   elapsed="$(python3 - "$started_ns" "$ended_ns" <<'PY'
@@ -86,14 +85,8 @@ PY
 }
 
 cat > "$MANIFEST" <<MANIFEST
-generated_at_utc: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+bundle_version: stwo-repeated-gemma-slice-accumulation-v1
 repo_root: .
-git_commit: $(git rev-parse HEAD)
-git_commit_short: $(git rev-parse --short HEAD)
-git_branch: $(git rev-parse --abbrev-ref HEAD)
-rustc: $(rustup run "${NIGHTLY_TOOLCHAIN#+}" rustc --version)
-cargo: $(cargo "$NIGHTLY_TOOLCHAIN" --version)
-host_platform: $(uname -srm)
 nightly_toolchain: $NIGHTLY_TOOLCHAIN
 bundle_dir: docs/paper/artifacts/$(basename "$BUNDLE_DIR")
 chain_artifact: tensor-native-chain.stwo.json
@@ -101,6 +94,9 @@ gemma_proof: gemma-block-v4.stark.json
 gemma_core_slice_artifact: gemma-block-core-slice.stwo.json
 gemma_richer_slice_artifact: gemma-block-richer-slice.stwo.json
 repeated_accumulation_artifact: repeated-gemma-slice-accumulation.stwo.json
+canonical_sha256_file: sha256sums.txt
+auxiliary_benchmarks_file: benchmarks.tsv
+auxiliary_commands_log: commands.log
 total_slices: $TOTAL_SLICES
 token_position: $TOKEN_POSITION
 start_block_index: $START_BLOCK_INDEX
@@ -169,7 +165,7 @@ run_timed verify_repeated_gemma_slice_accumulation \
   verify-stwo-repeated-gemma-slice-accumulation-artifact \
   "$GEMMA_ACCUM_JSON"
 
-python3 - "$CHAIN_JSON" "$GEMMA_PROOF_JSON" "$GEMMA_CORE_JSON" "$GEMMA_RICHER_JSON" "$GEMMA_ACCUM_JSON" "$INDEX_MD" "$README_MD" "$BENCHMARKS" "$MANIFEST" "$SUMMARY_TSV" <<'PY'
+python3 - "$CHAIN_JSON" "$GEMMA_PROOF_JSON" "$GEMMA_CORE_JSON" "$GEMMA_RICHER_JSON" "$GEMMA_ACCUM_JSON" "$INDEX_MD" "$README_MD" "$MANIFEST" "$SUMMARY_TSV" <<'PY'
 import hashlib
 import json
 import sys
@@ -182,9 +178,8 @@ richer_path = Path(sys.argv[4])
 accum_path = Path(sys.argv[5])
 index_md = Path(sys.argv[6])
 readme_md = Path(sys.argv[7])
-bench_path = Path(sys.argv[8])
-manifest_path = Path(sys.argv[9])
-summary_path = Path(sys.argv[10])
+manifest_path = Path(sys.argv[8])
+summary_path = Path(sys.argv[9])
 
 with chain_path.open() as f:
     chain = json.load(f)
@@ -203,13 +198,6 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: f.read(1 << 20), b''):
             h.update(chunk)
     return h.hexdigest()
-
-benchmarks = {}
-with bench_path.open() as f:
-    next(f)
-    for line in f:
-        label, seconds = line.rstrip("\n").split("\t")
-        benchmarks[label] = seconds
 
 shared_execution_proof_bytes = len(proof["proof"])
 naive_repeated_proof_bytes = shared_execution_proof_bytes * accum["total_slices"]
@@ -243,7 +231,7 @@ summary_path.write_text(
 index_lines = [
     "# Appendix Artifact Index (S-two Repeated Gemma-Slice Accumulation Bundle V1)",
     "",
-    "## Run Metadata",
+    "## Canonical Bundle Parameters",
 ]
 for line in manifest_lines:
     if ": " in line:
@@ -293,19 +281,11 @@ index_lines.extend([
     f"| Members commitment | `{accum['members_commitment']}` |",
     f"| Shared table registry commitment | `{accum['shared_table_registry_commitment']}` |",
     "",
-    "## Timing Summary (seconds)",
-    "",
-    "| Label | Seconds |",
-    "|---|---:|",
-])
-for label, seconds in benchmarks.items():
-    index_lines.append(f"| {label} | {seconds} |")
-index_lines.extend([
-    "",
     "## Notes",
     "- This bundle does not claim recursive cryptographic compression. It freezes verifier-bound repeated-slice accumulation over one shared S-two proof and one repeated Gemma-like slice template.",
     "- The richer slice strengthens the earlier core slice by binding selected memory-window rows plus score, grouped-value, residual, normalization, and activation invariants.",
     "- The accumulation artifact shows the repository's intended benchmark shape: repeated transformer structure reuses one shared proof surface and one canonical lookup registry instead of duplicating full slice artifacts blindly.",
+    "- `benchmarks.tsv` and `commands.log` are auxiliary run records. They are intentionally excluded from `sha256sums.txt` because wall-clock timings are environment-dependent.",
 ])
 index_md.write_text("\n".join(index_lines) + "\n")
 
@@ -321,14 +301,14 @@ readme_lines = [
     "",
     "The public claim remains narrow and defensible: repeated transformer-shaped structure can already be packaged as verifier-bound repeated slices with explicit continuity and shared lookup identity on the S-two path. This is not yet recursive compression or full standard-softmax transformer inference.",
     "",
-    "See `APPENDIX_ARTIFACT_INDEX.md` for exact hashes, timings, and byte-level reuse metrics.",
+    "See `APPENDIX_ARTIFACT_INDEX.md` for exact hashes, canonical bundle parameters, and byte-level reuse metrics. Environment-specific timings are recorded separately in `benchmarks.tsv`.",
 ]
 readme_md.write_text("\n".join(readme_lines) + "\n")
 PY
 
 (
   cd "$BUNDLE_DIR"
-  shasum -a 256 -- *.json benchmarks.tsv artifact_summary.tsv manifest.txt commands.log APPENDIX_ARTIFACT_INDEX.md README.md > "$SHA256S"
+  shasum -a 256 -- *.json artifact_summary.tsv manifest.txt APPENDIX_ARTIFACT_INDEX.md README.md > "$SHA256S"
 )
 
 chmod 644 \

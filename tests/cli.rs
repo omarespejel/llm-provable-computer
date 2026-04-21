@@ -2064,7 +2064,9 @@ fn cli_can_prepare_and_verify_stwo_gemma_block_richer_slice_artifact() {
         .stdout(predicate::str::contains("local_score: 2"))
         .stdout(predicate::str::contains("grouped_value_mix: 8"))
         .stdout(predicate::str::contains("residual_output: 4"))
-        .stdout(predicate::str::contains("selected_memory_window_entries: 12"));
+        .stdout(predicate::str::contains(
+            "selected_memory_window_entries: 12",
+        ));
 
     let artifact_json = std::fs::read_to_string(&artifact_path).expect("artifact json");
     assert!(artifact_json.contains("stwo-phase94-75-gemma-block-richer-slice-artifact-v1"));
@@ -2191,7 +2193,9 @@ fn cli_can_prepare_and_verify_stwo_repeated_gemma_slice_accumulation_artifact() 
         .stdout(predicate::str::contains("total_slices: 4"))
         .stdout(predicate::str::contains("start_block_index: 2"))
         .stdout(predicate::str::contains("terminal_block_index: 5"))
-        .stdout(predicate::str::contains("naive_repeated_proof_bytes: 361728"));
+        .stdout(predicate::str::contains(
+            "naive_repeated_proof_bytes: 361728",
+        ));
 
     let artifact_json = std::fs::read_to_string(&artifact_path).expect("artifact json");
     assert!(artifact_json.contains("stwo-phase95-repeated-gemma-slice-accumulation-artifact-v1"));
@@ -2256,10 +2260,43 @@ fn cli_verify_stwo_repeated_gemma_slice_accumulation_artifact_rejects_tampered_m
         .arg(&artifact_path)
         .assert()
         .failure()
-        .stderr(
-            predicate::str::contains("block_index")
-                .or(predicate::str::contains("member 1")),
-        );
+        .stderr(predicate::str::contains("block_index").or(predicate::str::contains("member 1")));
+
+    let _ = std::fs::remove_file(proof_path);
+    let _ = std::fs::remove_file(artifact_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_prepare_stwo_repeated_gemma_slice_accumulation_artifact_rejects_oversized_total_slices() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-gemma-block-v4-phase95-proof-oversized").with_extension("json");
+    let artifact_path = unique_temp_dir("cli-stwo-gemma-block-v4-phase95-artifact-oversized")
+        .with_extension("json");
+
+    tvm_command()
+        .arg("prove-stark")
+        .arg("programs/gemma_block_v4.tvm")
+        .arg("-o")
+        .arg(&proof_path)
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--max-steps")
+        .arg("256")
+        .assert()
+        .success();
+
+    tvm_command()
+        .arg("prepare-stwo-repeated-gemma-slice-accumulation-artifact")
+        .arg("--proof")
+        .arg(&proof_path)
+        .arg("--total-slices")
+        .arg("17")
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("at most 16 slices"));
 
     let _ = std::fs::remove_file(proof_path);
     let _ = std::fs::remove_file(artifact_path);

@@ -39,6 +39,7 @@ pub const STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_VERSION_PHASE95: &str 
     "stwo-phase95-repeated-gemma-slice-accumulation-artifact-v1";
 pub const STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_SCOPE_PHASE95: &str =
     "stwo_tensor_native_repeated_gemma_slice_accumulation_artifact";
+pub const MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES: usize = 16;
 
 const MAX_PHASE93_TENSOR_NATIVE_CHAIN_JSON_BYTES: usize = 8 * 1024 * 1024;
 const MAX_PHASE945_GEMMA_BLOCK_CORE_SLICE_JSON_BYTES: usize = 32 * 1024 * 1024;
@@ -233,11 +234,8 @@ pub fn prepare_phase93_tensor_native_chain_artifact_at(
     block_index: u64,
 ) -> Result<Phase93TensorNativeChainArtifact> {
     verify_phase92_shared_normalization_primitive_artifact(primitive_artifact)?;
-    let steps = phase93_default_tensor_native_chain_steps(
-        primitive_artifact,
-        token_position,
-        block_index,
-    )?;
+    let steps =
+        phase93_default_tensor_native_chain_steps(primitive_artifact, token_position, block_index)?;
     build_phase93_tensor_native_chain_artifact(primitive_artifact.clone(), steps)
 }
 
@@ -730,8 +728,9 @@ pub fn prepare_phase9475_gemma_block_richer_slice_artifact(
     core_slice_artifact: &Phase945GemmaBlockCoreSliceArtifact,
 ) -> Result<Phase9475GemmaBlockRicherSliceArtifact> {
     verify_phase945_gemma_block_core_slice_artifact(core_slice_artifact)?;
-    let selected_memory_window =
-        phase9475_selected_memory_window(&core_slice_artifact.execution_proof.claim.final_state.memory)?;
+    let selected_memory_window = phase9475_selected_memory_window(
+        &core_slice_artifact.execution_proof.claim.final_state.memory,
+    )?;
     let selected_memory_window_commitment =
         commit_phase9475_selected_memory_window(&selected_memory_window)?;
     let invariant_summary =
@@ -802,7 +801,8 @@ pub fn verify_phase9475_gemma_block_richer_slice_artifact(
                 .to_string(),
         ));
     }
-    if artifact.chain_artifact_commitment != artifact.core_slice_artifact.chain_artifact_commitment {
+    if artifact.chain_artifact_commitment != artifact.core_slice_artifact.chain_artifact_commitment
+    {
         return Err(VmError::InvalidConfig(
             "Phase 94.75 Gemma richer slice chain_artifact_commitment does not match the nested core slice"
                 .to_string(),
@@ -820,8 +820,14 @@ pub fn verify_phase9475_gemma_block_richer_slice_artifact(
         ));
     }
 
-    let expected_memory_window =
-        phase9475_selected_memory_window(&artifact.core_slice_artifact.execution_proof.claim.final_state.memory)?;
+    let expected_memory_window = phase9475_selected_memory_window(
+        &artifact
+            .core_slice_artifact
+            .execution_proof
+            .claim
+            .final_state
+            .memory,
+    )?;
     if artifact.selected_memory_window != expected_memory_window {
         return Err(VmError::InvalidConfig(
             "Phase 94.75 Gemma richer slice selected_memory_window does not match the nested execution proof"
@@ -837,8 +843,14 @@ pub fn verify_phase9475_gemma_block_richer_slice_artifact(
         ));
     }
 
-    let expected_invariant_summary =
-        phase9475_invariant_summary(&artifact.core_slice_artifact.execution_proof.claim.final_state.memory)?;
+    let expected_invariant_summary = phase9475_invariant_summary(
+        &artifact
+            .core_slice_artifact
+            .execution_proof
+            .claim
+            .final_state
+            .memory,
+    )?;
     phase9475_validate_summary_fields(artifact, &expected_invariant_summary)?;
 
     let expected_artifact_commitment = commit_phase9475_gemma_block_richer_slice_artifact(
@@ -883,6 +895,45 @@ pub fn load_phase9475_gemma_block_richer_slice_artifact(
     Ok(artifact)
 }
 
+fn validate_phase95_total_slices(total_slices: usize) -> Result<u64> {
+    if total_slices < 2 {
+        return Err(VmError::InvalidConfig(
+            "Phase 95 repeated Gemma slice accumulation requires at least two slices".to_string(),
+        ));
+    }
+    if total_slices > MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 95 repeated Gemma slice accumulation supports at most {} slices",
+            MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES
+        )));
+    }
+    Ok(total_slices as u64)
+}
+
+fn checked_phase95_block_index(start_block_index: u64, slice_index: usize) -> Result<u64> {
+    start_block_index
+        .checked_add(slice_index as u64)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 95 block_index overflow while deriving repeated slice members".to_string(),
+            )
+        })
+}
+
+fn checked_phase95_terminal_block_index(start_block_index: u64, total_slices: u64) -> Result<u64> {
+    let last_offset = total_slices.checked_sub(1).ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 95 repeated Gemma slice accumulation requires at least two slices".to_string(),
+        )
+    })?;
+    start_block_index.checked_add(last_offset).ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 95 terminal_block_index overflow while deriving the repeated slice interval"
+                .to_string(),
+        )
+    })
+}
+
 pub fn prepare_phase95_repeated_gemma_slice_accumulation_artifact(
     shared_primitive_artifact: &Phase92SharedNormalizationPrimitiveArtifact,
     shared_execution_proof: &VanillaStarkExecutionProof,
@@ -892,16 +943,13 @@ pub fn prepare_phase95_repeated_gemma_slice_accumulation_artifact(
 ) -> Result<Phase95RepeatedGemmaSliceAccumulationArtifact> {
     verify_phase92_shared_normalization_primitive_artifact(shared_primitive_artifact)?;
     validate_phase945_gemma_execution_proof(shared_execution_proof)?;
-    if total_slices < 2 {
-        return Err(VmError::InvalidConfig(
-            "Phase 95 repeated Gemma slice accumulation requires at least two slices".to_string(),
-        ));
-    }
+    let total_slices_u64 = validate_phase95_total_slices(total_slices)?;
 
-    let shared_execution_proof_commitment = commit_phase945_execution_proof(shared_execution_proof)?;
+    let shared_execution_proof_commitment =
+        commit_phase945_execution_proof(shared_execution_proof)?;
     let mut members = Vec::with_capacity(total_slices);
     for slice_index in 0..total_slices {
-        let block_index = start_block_index + slice_index as u64;
+        let block_index = checked_phase95_block_index(start_block_index, slice_index)?;
         let chain_artifact = prepare_phase93_tensor_native_chain_artifact_at(
             shared_primitive_artifact,
             repeated_token_position,
@@ -933,7 +981,8 @@ pub fn prepare_phase95_repeated_gemma_slice_accumulation_artifact(
     }
 
     let members_commitment = commit_phase95_repeated_gemma_members(&members)?;
-    let terminal_block_index = start_block_index + total_slices as u64 - 1;
+    let terminal_block_index =
+        checked_phase95_terminal_block_index(start_block_index, total_slices_u64)?;
     let artifact_commitment = commit_phase95_repeated_gemma_slice_accumulation_artifact(
         shared_primitive_artifact,
         shared_execution_proof,
@@ -1039,17 +1088,14 @@ pub fn verify_phase95_repeated_gemma_slice_accumulation_artifact(
         ));
     }
 
+    let total_slices_u64 = validate_phase95_total_slices(artifact.total_slices)?;
     if artifact.total_slices != artifact.members.len() {
         return Err(VmError::InvalidConfig(
             "Phase 95 total_slices does not match the member count".to_string(),
         ));
     }
-    if artifact.total_slices < 2 {
-        return Err(VmError::InvalidConfig(
-            "Phase 95 repeated Gemma slice accumulation requires at least two slices".to_string(),
-        ));
-    }
-    let expected_terminal_block_index = artifact.start_block_index + artifact.total_slices as u64 - 1;
+    let expected_terminal_block_index =
+        checked_phase95_terminal_block_index(artifact.start_block_index, total_slices_u64)?;
     if artifact.terminal_block_index != expected_terminal_block_index {
         return Err(VmError::InvalidConfig(
             "Phase 95 terminal_block_index does not match start_block_index + total_slices - 1"
@@ -1069,7 +1115,8 @@ pub fn verify_phase95_repeated_gemma_slice_accumulation_artifact(
                 "Phase 95 member token_position does not match repeated_token_position".to_string(),
             ));
         }
-        let expected_block_index = artifact.start_block_index + expected_slice_index as u64;
+        let expected_block_index =
+            checked_phase95_block_index(artifact.start_block_index, expected_slice_index)?;
         if member.block_index != expected_block_index {
             return Err(VmError::InvalidConfig(format!(
                 "Phase 95 expected contiguous block_index {}, got {}",
@@ -1583,7 +1630,9 @@ struct Phase9475InvariantSummary {
     secondary_activation_output: i16,
 }
 
-fn phase9475_selected_memory_window(memory: &[i16]) -> Result<Vec<Phase9475GemmaMemoryWindowEntry>> {
+fn phase9475_selected_memory_window(
+    memory: &[i16],
+) -> Result<Vec<Phase9475GemmaMemoryWindowEntry>> {
     let selected_indices = [8usize, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
     selected_indices
         .into_iter()
@@ -1654,11 +1703,9 @@ fn phase9475_invariant_summary(memory: &[i16]) -> Result<Phase9475InvariantSumma
     let primary_norm_sq = phase9475_memory_i16(memory, 13, "primary_norm_sq")?;
     let primary_inv_sqrt_q8 = phase9475_memory_i16(memory, 14, "primary_inv_sqrt_q8")?;
     let primary_activation_input = phase9475_memory_i16(memory, 15, "primary_activation_input")?;
-    let primary_activation_output =
-        phase9475_memory_i16(memory, 16, "primary_activation_output")?;
+    let primary_activation_output = phase9475_memory_i16(memory, 16, "primary_activation_output")?;
     let secondary_norm_sq = phase9475_memory_i16(memory, 17, "secondary_norm_sq")?;
-    let secondary_inv_sqrt_q8 =
-        phase9475_memory_i16(memory, 18, "secondary_inv_sqrt_q8")?;
+    let secondary_inv_sqrt_q8 = phase9475_memory_i16(memory, 18, "secondary_inv_sqrt_q8")?;
     let secondary_activation_input =
         phase9475_memory_i16(memory, 19, "secondary_activation_input")?;
     let secondary_activation_output =
@@ -2003,7 +2050,11 @@ fn commit_phase95_repeated_gemma_slice_accumulation_artifact(
     hasher.update(STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_VERSION_PHASE95.as_bytes());
     hasher.update(STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_SCOPE_PHASE95.as_bytes());
     hasher.update(shared_primitive_artifact.artifact_commitment.as_bytes());
-    hasher.update(shared_primitive_artifact.static_table_registry_commitment.as_bytes());
+    hasher.update(
+        shared_primitive_artifact
+            .static_table_registry_commitment
+            .as_bytes(),
+    );
     hasher.update(shared_execution_proof_commitment.as_bytes());
     hasher.update(&repeated_token_position.to_le_bytes());
     hasher.update(&start_block_index.to_le_bytes());
@@ -2179,10 +2230,10 @@ mod tests {
         let error = verify_phase9475_gemma_block_richer_slice_artifact(&artifact)
             .expect_err("tampered memory window should fail");
         assert!(
-            error
-                .to_string()
-                .contains("selected_memory_window")
-                || error.to_string().contains("selected_memory_window_commitment")
+            error.to_string().contains("selected_memory_window")
+                || error
+                    .to_string()
+                    .contains("selected_memory_window_commitment")
         );
     }
 
@@ -2224,9 +2275,60 @@ mod tests {
         let error = verify_phase95_repeated_gemma_slice_accumulation_artifact(&artifact)
             .expect_err("tampered member block index should fail");
         assert!(
-            error.to_string().contains("block_index")
-                || error.to_string().contains("member 1")
+            error.to_string().contains("block_index") || error.to_string().contains("member 1")
         );
+    }
+
+    #[test]
+    fn phase95_repeated_gemma_slice_accumulation_rejects_oversized_total_slices() {
+        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 primitive artifact");
+        let execution_proof = prove_gemma_block_v4_execution();
+        let error = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
+            &primitive_artifact,
+            &execution_proof,
+            MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES + 1,
+            0,
+            0,
+        )
+        .expect_err("oversized total_slices should fail");
+        assert!(error.to_string().contains("at most"));
+    }
+
+    #[test]
+    fn phase95_repeated_gemma_slice_accumulation_rejects_block_index_overflow() {
+        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 primitive artifact");
+        let execution_proof = prove_gemma_block_v4_execution();
+        let error = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
+            &primitive_artifact,
+            &execution_proof,
+            2,
+            0,
+            u64::MAX,
+        )
+        .expect_err("overflowing start_block_index should fail");
+        assert!(error.to_string().contains("overflow"));
+    }
+
+    #[test]
+    fn phase95_repeated_gemma_slice_accumulation_verify_rejects_terminal_overflow() {
+        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 primitive artifact");
+        let execution_proof = prove_gemma_block_v4_execution();
+        let mut artifact = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
+            &primitive_artifact,
+            &execution_proof,
+            2,
+            0,
+            0,
+        )
+        .expect("prepare phase95 accumulation artifact");
+        artifact.start_block_index = u64::MAX;
+        artifact.terminal_block_index = u64::MAX;
+        let error = verify_phase95_repeated_gemma_slice_accumulation_artifact(&artifact)
+            .expect_err("overflowing terminal interval should fail");
+        assert!(error.to_string().contains("overflow"));
     }
 
     #[test]
