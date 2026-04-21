@@ -1,0 +1,12 @@
+generated_at_utc: 2026-04-21T00:00:00Z
+artifact_label: phase70-80-proof-checked-decode-bridge-v1-2026-04-21
+implementation_checkpoint: e26d1a835f1f87658d054959d826514b62675f76
+freeze_pr: https://github.com/omarespejel/provable-transformer-vm/pull/193
+freeze_branch: codex/phase85-88-translated-composition-prototype
+artifact_type: code-and-validation verifier-surface index
+proof_output_bundle: false
+performance_benchmark_bundle: false
+recursive_compression_claimed: false
+standard_softmax_inference_claimed: false
+formal_verification_claimed: false
+translated_paper3_composition_claimed: false

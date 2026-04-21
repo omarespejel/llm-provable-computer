@@ -11,6 +11,7 @@ These are the bundles directly used by the current paper package:
 - `stwo-proof-carrying-aggregation-v1-2026-04-11/`
 - `phase63-65-proof-carrying-artifact-v1-2026-04-20/`
 - `phase66-69-proof-carrying-hardening-v1-2026-04-21/`
+- `phase70-80-proof-checked-decode-bridge-v1-2026-04-21/`
 
 These are the bundles that should be treated as the paper's primary reproducibility and systems-evidence surfaces.
 
@@ -24,9 +25,14 @@ transition handoffs, a publication-facing artifact table, an independent replay 
 manifest, and a symbolic-model-to-artifact mapping. It is still not a new proof-output
 bundle and not a runtime benchmark.
 
-Later Phase70-75 proof-bridge surfaces and Phase76-80 proof-checked decode surfaces
-are implemented in-repo, but they are not yet cut as frozen publication-facing
-artifact directories.
+The Phase70-80 directory freezes the bounded decode-bridge stop condition. It pins
+the role-neutral handoff layer, the actual S-two step-envelope and shared-lookup
+registry receipts, the chunked-history carry receipt, and the proof-checked
+publication decode-bridge table. It is still a code-and-validation verifier-surface
+index rather than a new proof-output bundle.
+
+Later Phase81-88 translated seam and composition surfaces remain implemented in-repo,
+but they are not yet cut as frozen publication-facing artifact directories.
 
 ## Archival provenance bundles
 

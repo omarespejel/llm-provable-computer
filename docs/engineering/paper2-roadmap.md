@@ -190,6 +190,15 @@ The decode-bridge line now has a stronger pre-recursive publication layer:
 5. `Phase80ProofCheckedPublicationDecodeBridgeTable` packages only the
    proof-checked bridge artifacts for publication-facing artifact accounting.
 
-That is the stop condition before more feature expansion on this line: freeze
-the paper artifact section around the proof-checked bridge and avoid relabeling
-it as recursion or cryptographic compression.
+That stop condition is now frozen as:
+
+- `docs/paper/artifacts/phase70-80-proof-checked-decode-bridge-v1-2026-04-21/`
+
+The upstream pinning note for the same freeze lives at:
+
+- `docs/engineering/design/stwo-upstream-sync-audit-2026-04-21.md`
+
+So the next work on this line should not relabel the decode bridge as recursion
+or cryptographic compression. The next unfrozen layer is Phase81+ translated
+boundary-history and composition work, not more narrative inflation around
+Phase70-80.

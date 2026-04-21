@@ -1,0 +1,34 @@
+Phase70-80 proof-checked decode-bridge validation summary.
+
+Implementation checkpoint:
+e26d1a835f1f87658d054959d826514b62675f76
+
+Commands and results:
+- cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase70_role_neutral_handoff -- --nocapture
+  result: 2 passed
+- cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase70_to_phase75_bridge_accepts_real_phase12_phase30_phase14_sources -- --nocapture
+  result: 1 passed
+- cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase72_shared_lookup_registry_receipt_rejects_recommitted_registry_failure_flag -- --nocapture
+  result: 1 passed
+- cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase74_chunked_history_carry_accepts_generated_segment_range -- --nocapture
+  result: 1 passed
+- cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase76_to_phase80_proof_checked_bridge_accepts_real_phase12_phase30_phase14_sources -- --nocapture
+  result: 1 passed
+- cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase76_proof_checked_decode_chain_receipt_rejects_recommitted_proof_check_drift -- --nocapture
+  result: 1 passed
+- cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase77_proof_checked_step_envelope_bridge_rejects_recommitted_proof_count_drift -- --nocapture
+  result: 1 passed
+- cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase79_proof_checked_decode_carry_bridge_rejects_recommitted_history_step_drift -- --nocapture
+  result: 1 passed
+- cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase80_proof_checked_publication_table_rejects_recommitted_row_order_drift -- --nocapture
+  result: 1 passed
+- cargo +nightly-2025-07-14 check --features stwo-backend --lib
+  result: passed with the pre-existing phase12_demo_initial_memories dead-code warning
+- cargo +nightly-2025-07-14 fmt --check
+  result: passed
+- python3 scripts/paper/paper_preflight.py
+  result: paper preflight: PASS
+- cargo +nightly-2025-07-14 test -q --features stwo-backend --lib
+  result: 860 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 715.60s
+- git diff --check
+  result: passed
