@@ -827,6 +827,49 @@ const STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_STATUS_PHASE80: &str =
 const STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_NEXT_STEP_PHASE80: &str =
     "freeze_phase81_proof_checked_artifact_section_before_feature_expansion";
 #[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CHECKED_BOUNDARY_HISTORY_BRIDGE_RECEIPT_VERSION_PHASE81: &str =
+    "stwo_proof_checked_boundary_history_bridge_receipt_v1";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CHECKED_BOUNDARY_HISTORY_BRIDGE_RECEIPT_SCOPE_PHASE81: &str =
+    "proof_checked_boundary_history_bridge_receipt";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CHECKED_BOUNDARY_HISTORY_BRIDGE_NEXT_STEP_PHASE81: &str =
+    "derive_translation_aware_paper3_segment_source_from_boundary_history_bridge";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_SEGMENT_SOURCE_RECEIPT_VERSION_PHASE82: &str =
+    "stwo_translated_paper3_segment_source_receipt_v1";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_SEGMENT_SOURCE_RECEIPT_SCOPE_PHASE82: &str =
+    "translated_paper3_segment_source_receipt";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_SEGMENT_SOURCE_NEXT_STEP_PHASE82: &str =
+    "record_phase37_phase38_translation_adapter_blocker_against_translated_segment_source";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_BLOCKER_ASSESSMENT_VERSION_PHASE83: &str =
+    "stwo_translated_paper3_blocker_assessment_v1";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_BLOCKER_ASSESSMENT_SCOPE_PHASE83: &str =
+    "translated_paper3_blocker_assessment";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_BLOCKER_KIND_PHASE83: &str = "boundary_translation_adapter_missing";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_BLOCKER_NEXT_STEP_PHASE83: &str =
+    "thread_translated_segment_source_into_phase38_composition_prototype";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_PAPER3_SEAM_TABLE_VERSION_PHASE84: &str =
+    "stwo_publication_paper3_seam_table_v1";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_PAPER3_SEAM_TABLE_SCOPE_PHASE84: &str = "publication_paper3_seam_table";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_PAPER3_SEAM_TABLE_COMPLEXITY_PHASE84: &str =
+    "O(publication_paper3_seam_rows)";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_PAPER3_SEAM_TABLE_STATUS_PHASE84: &str =
+    "phase80_to_phase83_publication_paper3_seam_rows_source_bound";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_PAPER3_SEAM_TABLE_NEXT_STEP_PHASE84: &str =
+    "freeze_paper3_seam_artifact_section_before_translation_aware_composition_work";
+#[cfg(feature = "stwo-backend")]
 const PHASE44D_M31_MODULUS: u32 = (1u32 << 31) - 1;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -3047,6 +3090,174 @@ pub struct Phase80ProofCheckedPublicationDecodeBridgeTable {
     pub paper_ready: bool,
     pub required_next_step: String,
     pub proof_checked_publication_decode_bridge_table_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase81ProofCheckedBoundaryHistoryBridgeReceipt {
+    pub proof_backend: StarkProofBackend,
+    pub receipt_version: String,
+    pub semantic_scope: String,
+    pub source_phase41_boundary_translation_witness_commitment: String,
+    pub source_phase42_boundary_history_equivalence_witness_commitment: String,
+    pub source_phase43_history_replay_trace_commitment: String,
+    pub source_phase74_chunked_history_carry_receipt_commitment: String,
+    pub source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment: String,
+    pub source_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment:
+        String,
+    pub source_phase29_contract_commitment: String,
+    pub source_phase28_aggregate_commitment: String,
+    pub source_phase30_source_chain_commitment: String,
+    pub source_phase30_step_envelopes_commitment: String,
+    pub source_template_commitment: String,
+    pub aggregation_template_commitment: String,
+    pub source_phase12_layout_commitment: String,
+    pub phase30_chain_start_boundary_commitment: String,
+    pub phase30_chain_end_boundary_commitment: String,
+    pub phase14_start_boundary_commitment: String,
+    pub phase14_end_boundary_commitment: String,
+    pub phase12_start_public_state_commitment: String,
+    pub phase12_end_public_state_commitment: String,
+    pub phase12_start_history_commitment: String,
+    pub phase12_end_history_commitment: String,
+    pub phase14_start_history_commitment: String,
+    pub phase14_end_history_commitment: String,
+    pub lookup_rows_commitments_commitment: String,
+    pub lookup_rows_commitment_count: usize,
+    pub total_steps: usize,
+    pub shared_lookup_artifact_commitments_commitment: String,
+    pub static_lookup_registry_commitments_commitment: String,
+    pub unique_shared_lookup_artifact_count: usize,
+    pub unique_static_lookup_registry_commitment_count: usize,
+    pub proof_checked_chain_available: bool,
+    pub boundary_translation_available: bool,
+    pub full_history_replay_required: bool,
+    pub proof_checked_chunked_history_available: bool,
+    pub shared_lookup_registry_available: bool,
+    pub source_bound_verifier_available: bool,
+    pub actual_proof_verification_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub proof_checked_boundary_history_bridge_receipt_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase82TranslatedPaper3SegmentSourceReceipt {
+    pub proof_backend: StarkProofBackend,
+    pub receipt_version: String,
+    pub semantic_scope: String,
+    pub source_phase81_proof_checked_boundary_history_bridge_receipt_commitment: String,
+    pub source_phase29_contract_commitment: String,
+    pub source_phase28_aggregate_commitment: String,
+    pub source_phase30_source_chain_commitment: String,
+    pub source_phase30_step_envelopes_commitment: String,
+    pub source_template_commitment: String,
+    pub aggregation_template_commitment: String,
+    pub source_phase12_layout_commitment: String,
+    pub phase30_chain_start_boundary_commitment: String,
+    pub phase30_chain_end_boundary_commitment: String,
+    pub phase14_start_boundary_commitment: String,
+    pub phase14_end_boundary_commitment: String,
+    pub phase12_start_public_state_commitment: String,
+    pub phase12_end_public_state_commitment: String,
+    pub phase12_start_history_commitment: String,
+    pub phase12_end_history_commitment: String,
+    pub phase14_start_history_commitment: String,
+    pub phase14_end_history_commitment: String,
+    pub lookup_rows_commitments_commitment: String,
+    pub lookup_rows_commitment_count: usize,
+    pub total_steps: usize,
+    pub shared_lookup_artifact_commitments_commitment: String,
+    pub static_lookup_registry_commitments_commitment: String,
+    pub unique_shared_lookup_artifact_count: usize,
+    pub unique_static_lookup_registry_commitment_count: usize,
+    pub translated_boundary_domains: bool,
+    pub proof_checked_decode_chain_available: bool,
+    pub shared_lookup_registry_available: bool,
+    pub full_history_replay_required: bool,
+    pub source_bound_verifier_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub translated_paper3_segment_source_receipt_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase83TranslatedPaper3BlockerAssessment {
+    pub proof_backend: StarkProofBackend,
+    pub assessment_version: String,
+    pub semantic_scope: String,
+    pub source_phase82_translated_paper3_segment_source_receipt_commitment: String,
+    pub blocked_legacy_phase: String,
+    pub blocker_kind: String,
+    pub boundary_translation_required: bool,
+    pub direct_phase30_to_phase29_equality_available: bool,
+    pub translated_segment_source_available: bool,
+    pub proof_checked_decode_chain_available: bool,
+    pub shared_lookup_registry_available: bool,
+    pub full_history_replay_required: bool,
+    pub source_bound_verifier_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub translated_paper3_blocker_assessment_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase84PublicationPaper3SeamRow {
+    pub proof_backend: StarkProofBackend,
+    pub row_index: usize,
+    pub phase_label: String,
+    pub artifact_name: String,
+    pub artifact_commitment: String,
+    pub semantic_scope: String,
+    pub verifier_function: String,
+    pub source_bound_verifier_function: String,
+    pub evidence_tier: String,
+    pub claim_boundary: String,
+    pub limitation: String,
+    pub row_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase84PublicationPaper3SeamTable {
+    pub proof_backend: StarkProofBackend,
+    pub table_version: String,
+    pub semantic_scope: String,
+    pub source_phase80_proof_checked_publication_decode_bridge_table_commitment: String,
+    pub source_phase81_proof_checked_boundary_history_bridge_receipt_commitment: String,
+    pub source_phase82_translated_paper3_segment_source_receipt_commitment: String,
+    pub source_phase83_translated_paper3_blocker_assessment_commitment: String,
+    pub artifact_rows_commitment: String,
+    pub artifact_rows: Vec<Phase84PublicationPaper3SeamRow>,
+    pub row_count: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub translated_segment_source_available: bool,
+    pub source_bound_verifiers_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub publication_paper3_seam_table_commitment: String,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -16150,6 +16361,288 @@ pub fn commit_phase80_proof_checked_publication_decode_bridge_table(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn commit_phase81_proof_checked_boundary_history_bridge_receipt(
+    receipt: &Phase81ProofCheckedBoundaryHistoryBridgeReceipt,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 81 proof-checked boundary-history bridge receipt hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase81-proof-checked-boundary-history-bridge-receipt",
+    );
+    phase29_update_len_prefixed(&mut hasher, receipt.proof_backend.to_string().as_bytes());
+    for part in [
+        receipt.receipt_version.as_bytes(),
+        receipt.semantic_scope.as_bytes(),
+        receipt
+            .source_phase41_boundary_translation_witness_commitment
+            .as_bytes(),
+        receipt
+            .source_phase42_boundary_history_equivalence_witness_commitment
+            .as_bytes(),
+        receipt.source_phase43_history_replay_trace_commitment.as_bytes(),
+        receipt
+            .source_phase74_chunked_history_carry_receipt_commitment
+            .as_bytes(),
+        receipt
+            .source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment
+            .as_bytes(),
+        receipt
+            .source_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment
+            .as_bytes(),
+        receipt.source_phase29_contract_commitment.as_bytes(),
+        receipt.source_phase28_aggregate_commitment.as_bytes(),
+        receipt.source_phase30_source_chain_commitment.as_bytes(),
+        receipt.source_phase30_step_envelopes_commitment.as_bytes(),
+        receipt.source_template_commitment.as_bytes(),
+        receipt.aggregation_template_commitment.as_bytes(),
+        receipt.source_phase12_layout_commitment.as_bytes(),
+        receipt.phase30_chain_start_boundary_commitment.as_bytes(),
+        receipt.phase30_chain_end_boundary_commitment.as_bytes(),
+        receipt.phase14_start_boundary_commitment.as_bytes(),
+        receipt.phase14_end_boundary_commitment.as_bytes(),
+        receipt.phase12_start_public_state_commitment.as_bytes(),
+        receipt.phase12_end_public_state_commitment.as_bytes(),
+        receipt.phase12_start_history_commitment.as_bytes(),
+        receipt.phase12_end_history_commitment.as_bytes(),
+        receipt.phase14_start_history_commitment.as_bytes(),
+        receipt.phase14_end_history_commitment.as_bytes(),
+        receipt.lookup_rows_commitments_commitment.as_bytes(),
+        receipt
+            .shared_lookup_artifact_commitments_commitment
+            .as_bytes(),
+        receipt
+            .static_lookup_registry_commitments_commitment
+            .as_bytes(),
+        receipt.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for value in [
+        receipt.lookup_rows_commitment_count,
+        receipt.total_steps,
+        receipt.unique_shared_lookup_artifact_count,
+        receipt.unique_static_lookup_registry_commitment_count,
+    ] {
+        phase29_update_usize(&mut hasher, value);
+    }
+    for value in [
+        receipt.proof_checked_chain_available,
+        receipt.boundary_translation_available,
+        receipt.full_history_replay_required,
+        receipt.proof_checked_chunked_history_available,
+        receipt.shared_lookup_registry_available,
+        receipt.source_bound_verifier_available,
+        receipt.actual_proof_verification_available,
+        receipt.recursive_verification_claimed,
+        receipt.cryptographic_compression_claimed,
+        receipt.breakthrough_claimed,
+        receipt.paper_ready,
+    ] {
+        phase29_update_bool(&mut hasher, value);
+    }
+    phase44d_finalize_hash(
+        hasher,
+        "Phase 81 proof-checked boundary-history bridge receipt",
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase82_translated_paper3_segment_source_receipt(
+    receipt: &Phase82TranslatedPaper3SegmentSourceReceipt,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 82 translated Paper 3 segment-source receipt hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase82-translated-paper3-segment-source-receipt",
+    );
+    phase29_update_len_prefixed(&mut hasher, receipt.proof_backend.to_string().as_bytes());
+    for part in [
+        receipt.receipt_version.as_bytes(),
+        receipt.semantic_scope.as_bytes(),
+        receipt
+            .source_phase81_proof_checked_boundary_history_bridge_receipt_commitment
+            .as_bytes(),
+        receipt.source_phase29_contract_commitment.as_bytes(),
+        receipt.source_phase28_aggregate_commitment.as_bytes(),
+        receipt.source_phase30_source_chain_commitment.as_bytes(),
+        receipt.source_phase30_step_envelopes_commitment.as_bytes(),
+        receipt.source_template_commitment.as_bytes(),
+        receipt.aggregation_template_commitment.as_bytes(),
+        receipt.source_phase12_layout_commitment.as_bytes(),
+        receipt.phase30_chain_start_boundary_commitment.as_bytes(),
+        receipt.phase30_chain_end_boundary_commitment.as_bytes(),
+        receipt.phase14_start_boundary_commitment.as_bytes(),
+        receipt.phase14_end_boundary_commitment.as_bytes(),
+        receipt.phase12_start_public_state_commitment.as_bytes(),
+        receipt.phase12_end_public_state_commitment.as_bytes(),
+        receipt.phase12_start_history_commitment.as_bytes(),
+        receipt.phase12_end_history_commitment.as_bytes(),
+        receipt.phase14_start_history_commitment.as_bytes(),
+        receipt.phase14_end_history_commitment.as_bytes(),
+        receipt.lookup_rows_commitments_commitment.as_bytes(),
+        receipt
+            .shared_lookup_artifact_commitments_commitment
+            .as_bytes(),
+        receipt
+            .static_lookup_registry_commitments_commitment
+            .as_bytes(),
+        receipt.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for value in [
+        receipt.lookup_rows_commitment_count,
+        receipt.total_steps,
+        receipt.unique_shared_lookup_artifact_count,
+        receipt.unique_static_lookup_registry_commitment_count,
+    ] {
+        phase29_update_usize(&mut hasher, value);
+    }
+    for value in [
+        receipt.translated_boundary_domains,
+        receipt.proof_checked_decode_chain_available,
+        receipt.shared_lookup_registry_available,
+        receipt.full_history_replay_required,
+        receipt.source_bound_verifier_available,
+        receipt.recursive_verification_claimed,
+        receipt.cryptographic_compression_claimed,
+        receipt.breakthrough_claimed,
+        receipt.paper_ready,
+    ] {
+        phase29_update_bool(&mut hasher, value);
+    }
+    phase44d_finalize_hash(hasher, "Phase 82 translated Paper 3 segment-source receipt")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase83_translated_paper3_blocker_assessment(
+    assessment: &Phase83TranslatedPaper3BlockerAssessment,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 83 translated Paper 3 blocker-assessment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase83-translated-paper3-blocker-assessment");
+    phase29_update_len_prefixed(&mut hasher, assessment.proof_backend.to_string().as_bytes());
+    for part in [
+        assessment.assessment_version.as_bytes(),
+        assessment.semantic_scope.as_bytes(),
+        assessment
+            .source_phase82_translated_paper3_segment_source_receipt_commitment
+            .as_bytes(),
+        assessment.blocked_legacy_phase.as_bytes(),
+        assessment.blocker_kind.as_bytes(),
+        assessment.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for value in [
+        assessment.boundary_translation_required,
+        assessment.direct_phase30_to_phase29_equality_available,
+        assessment.translated_segment_source_available,
+        assessment.proof_checked_decode_chain_available,
+        assessment.shared_lookup_registry_available,
+        assessment.full_history_replay_required,
+        assessment.source_bound_verifier_available,
+        assessment.recursive_verification_claimed,
+        assessment.cryptographic_compression_claimed,
+        assessment.breakthrough_claimed,
+        assessment.paper_ready,
+    ] {
+        phase29_update_bool(&mut hasher, value);
+    }
+    phase44d_finalize_hash(hasher, "Phase 83 translated Paper 3 blocker assessment")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase84_publication_paper3_seam_row(
+    row: &Phase84PublicationPaper3SeamRow,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 84 publication Paper 3 seam row hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase84-publication-paper3-seam-row");
+    phase29_update_len_prefixed(&mut hasher, row.proof_backend.to_string().as_bytes());
+    phase29_update_usize(&mut hasher, row.row_index);
+    for part in [
+        row.phase_label.as_bytes(),
+        row.artifact_name.as_bytes(),
+        row.artifact_commitment.as_bytes(),
+        row.semantic_scope.as_bytes(),
+        row.verifier_function.as_bytes(),
+        row.source_bound_verifier_function.as_bytes(),
+        row.evidence_tier.as_bytes(),
+        row.claim_boundary.as_bytes(),
+        row.limitation.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 84 publication Paper 3 seam row")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase84_publication_paper3_seam_table(
+    table: &Phase84PublicationPaper3SeamTable,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 84 publication Paper 3 seam table hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase84-publication-paper3-seam-table");
+    phase29_update_len_prefixed(&mut hasher, table.proof_backend.to_string().as_bytes());
+    for part in [
+        table.table_version.as_bytes(),
+        table.semantic_scope.as_bytes(),
+        table
+            .source_phase80_proof_checked_publication_decode_bridge_table_commitment
+            .as_bytes(),
+        table
+            .source_phase81_proof_checked_boundary_history_bridge_receipt_commitment
+            .as_bytes(),
+        table
+            .source_phase82_translated_paper3_segment_source_receipt_commitment
+            .as_bytes(),
+        table
+            .source_phase83_translated_paper3_blocker_assessment_commitment
+            .as_bytes(),
+        table.artifact_rows_commitment.as_bytes(),
+        table.verifier_side_complexity.as_bytes(),
+        table.verifier_status.as_bytes(),
+        table.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for row in &table.artifact_rows {
+        phase29_update_len_prefixed(&mut hasher, row.row_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, table.row_count);
+    phase44d_update_hash_vec(&mut hasher, &table.transcript_order);
+    for value in [
+        table.translated_segment_source_available,
+        table.source_bound_verifiers_available,
+        table.recursive_verification_claimed,
+        table.cryptographic_compression_claimed,
+        table.breakthrough_claimed,
+        table.paper_ready,
+    ] {
+        phase29_update_bool(&mut hasher, value);
+    }
+    phase44d_finalize_hash(hasher, "Phase 84 publication Paper 3 seam table")
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase58_pcs_config() -> PcsConfig {
     PcsConfig {
         pow_bits: 10,
@@ -22215,6 +22708,19 @@ pub fn verify_phase70_role_neutral_boundary_handoff_artifact_against_sources(
 }
 
 #[cfg(feature = "stwo-backend")]
+fn phase71_76_commit_ordered_step_envelope_proof_commitments(
+    phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<String> {
+    phase34_commit_ordered_commitment_list(
+        b"phase71-76-step-envelope-proof-commitments",
+        phase30_manifest
+            .envelopes
+            .iter()
+            .map(|envelope| envelope.proof_commitment.as_str()),
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
 pub fn phase71_prepare_actual_stwo_step_envelope_handoff_receipt(
     phase12_chain: &Phase12DecodingChainManifest,
     phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
@@ -22225,13 +22731,8 @@ pub fn phase71_prepare_actual_stwo_step_envelope_handoff_receipt(
         phase12_chain,
     )?;
     let (chain_start_position, chain_end_position) = phase71_chain_step_positions(phase12_chain)?;
-    let proof_commitments_commitment = phase34_commit_ordered_commitment_list(
-        b"phase71-step-envelope-proof-commitments",
-        phase30_manifest
-            .envelopes
-            .iter()
-            .map(|envelope| envelope.proof_commitment.as_str()),
-    )?;
+    let proof_commitments_commitment =
+        phase71_76_commit_ordered_step_envelope_proof_commitments(phase30_manifest)?;
     let mut receipt = Phase71ActualStwoStepEnvelopeHandoffReceipt {
         proof_backend: StarkProofBackend::Stwo,
         receipt_version: STWO_ACTUAL_STWO_STEP_ENVELOPE_HANDOFF_RECEIPT_VERSION_PHASE71.to_string(),
@@ -23204,13 +23705,8 @@ pub fn phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt(
         phase12_chain,
     )?;
     let (chain_start_position, chain_end_position) = phase71_chain_step_positions(phase12_chain)?;
-    let proof_commitments_commitment = phase34_commit_ordered_commitment_list(
-        b"phase76-proof-checked-step-envelope-proof-commitments",
-        phase30_manifest
-            .envelopes
-            .iter()
-            .map(|envelope| envelope.proof_commitment.as_str()),
-    )?;
+    let proof_commitments_commitment =
+        phase71_76_commit_ordered_step_envelope_proof_commitments(phase30_manifest)?;
     let mut receipt = Phase76ProofCheckedActualStwoDecodeChainReceipt {
         proof_backend: StarkProofBackend::Stwo,
         receipt_version: STWO_PROOF_CHECKED_ACTUAL_STWO_DECODE_CHAIN_RECEIPT_VERSION_PHASE76
@@ -24339,6 +24835,1152 @@ pub fn verify_phase80_proof_checked_publication_decode_bridge_table_against_sour
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn phase81_prepare_proof_checked_boundary_history_bridge_receipt(
+    phase41_witness: &Phase41BoundaryTranslationWitness,
+    phase42_witness: &Phase42BoundaryHistoryEquivalenceWitness,
+    phase43_trace: &Phase43HistoryReplayTrace,
+    phase74_receipt: &Phase74ChunkedHistoryCarryReceipt,
+    phase76_receipt: &Phase76ProofCheckedActualStwoDecodeChainReceipt,
+    phase78_receipt: &Phase78ProofCheckedActualStwoSharedLookupRegistryBridgeReceipt,
+) -> Result<Phase81ProofCheckedBoundaryHistoryBridgeReceipt> {
+    verify_phase41_boundary_translation_witness(phase41_witness)?;
+    verify_phase42_boundary_history_equivalence_witness(phase42_witness)?;
+    verify_phase43_history_replay_trace(phase43_trace)?;
+    verify_phase74_chunked_history_carry_receipt(phase74_receipt)?;
+    verify_phase76_proof_checked_actual_stwo_decode_chain_receipt(phase76_receipt)?;
+    verify_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(
+        phase78_receipt,
+    )?;
+
+    if phase41_witness.phase29_contract_commitment != phase42_witness.phase29_contract_commitment
+        || phase42_witness.phase29_contract_commitment != phase43_trace.phase29_contract_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge Phase29 contract drift".to_string(),
+        ));
+    }
+    if phase42_witness.phase28_aggregate_commitment != phase43_trace.phase28_aggregate_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge Phase28 aggregate drift".to_string(),
+        ));
+    }
+    if phase41_witness.phase30_source_chain_commitment
+        != phase42_witness.phase30_source_chain_commitment
+        || phase42_witness.phase30_source_chain_commitment
+            != phase43_trace.phase30_source_chain_commitment
+        || phase43_trace.phase30_source_chain_commitment
+            != phase76_receipt.source_phase30_source_chain_commitment
+        || phase76_receipt.source_phase30_source_chain_commitment
+            != phase78_receipt.source_phase30_source_chain_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge Phase30 source-chain drift".to_string(),
+        ));
+    }
+    if phase41_witness.phase30_step_envelopes_commitment
+        != phase42_witness.phase30_step_envelopes_commitment
+        || phase42_witness.phase30_step_envelopes_commitment
+            != phase43_trace.phase30_step_envelopes_commitment
+        || phase43_trace.phase30_step_envelopes_commitment
+            != phase76_receipt.source_phase30_step_envelopes_commitment
+        || phase76_receipt.source_phase30_step_envelopes_commitment
+            != phase78_receipt.source_phase30_step_envelopes_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge Phase30 step-envelope drift"
+                .to_string(),
+        ));
+    }
+    if phase42_witness.layout_commitment != phase43_trace.layout_commitment
+        || phase43_trace.layout_commitment != phase74_receipt.source_phase12_layout_commitment
+        || phase74_receipt.source_phase12_layout_commitment
+            != phase76_receipt.source_phase12_layout_commitment
+        || phase76_receipt.source_phase12_layout_commitment
+            != phase78_receipt.source_phase12_layout_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge layout drift".to_string(),
+        ));
+    }
+    if phase41_witness.phase30_chain_start_boundary_commitment
+        != phase76_receipt.chain_start_boundary_commitment
+        || phase41_witness.phase30_chain_end_boundary_commitment
+            != phase76_receipt.chain_end_boundary_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge Phase30 boundary drift".to_string(),
+        ));
+    }
+    if phase41_witness.phase29_global_start_state_commitment
+        != phase42_witness.phase14_start_boundary_commitment
+        || phase42_witness.phase14_start_boundary_commitment
+            != phase43_trace.phase14_start_boundary_commitment
+        || phase41_witness.phase29_global_end_state_commitment
+            != phase42_witness.phase14_end_boundary_commitment
+        || phase42_witness.phase14_end_boundary_commitment
+            != phase43_trace.phase14_end_boundary_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge translated replay-boundary drift"
+                .to_string(),
+        ));
+    }
+    if phase41_witness.phase30_chain_start_boundary_commitment
+        == phase42_witness.phase14_start_boundary_commitment
+        && phase41_witness.phase30_chain_end_boundary_commitment
+            == phase42_witness.phase14_end_boundary_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge requires translated boundary domains, but Phase30 and replay boundaries are identical".to_string(),
+        ));
+    }
+    if phase42_witness.phase12_start_public_state_commitment
+        != phase43_trace.phase12_start_public_state_commitment
+        || phase43_trace.phase12_start_public_state_commitment
+            != phase41_witness.phase30_chain_start_boundary_commitment
+        || phase41_witness.phase30_chain_start_boundary_commitment
+            != phase76_receipt.chain_start_boundary_commitment
+        || phase42_witness.phase12_end_public_state_commitment
+            != phase43_trace.phase12_end_public_state_commitment
+        || phase43_trace.phase12_end_public_state_commitment
+            != phase41_witness.phase30_chain_end_boundary_commitment
+        || phase41_witness.phase30_chain_end_boundary_commitment
+            != phase76_receipt.chain_end_boundary_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge Phase12 public-state drift".to_string(),
+        ));
+    }
+    if phase42_witness.phase12_start_history_commitment
+        != phase43_trace.phase12_start_history_commitment
+        || phase42_witness.phase12_end_history_commitment
+            != phase43_trace.phase12_end_history_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge Phase12 history drift".to_string(),
+        ));
+    }
+    if phase42_witness.phase14_start_history_commitment
+        != phase43_trace.phase14_start_history_commitment
+        || phase43_trace.phase14_start_history_commitment
+            != phase74_receipt.chain_start_history_commitment
+        || phase42_witness.phase14_end_history_commitment
+            != phase43_trace.phase14_end_history_commitment
+        || phase43_trace.phase14_end_history_commitment
+            != phase74_receipt.chain_end_history_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge replay history drift".to_string(),
+        ));
+    }
+    if phase42_witness.lookup_rows_commitments_commitment
+        != phase43_trace.lookup_rows_commitments_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge lookup-row replay drift".to_string(),
+        ));
+    }
+    if phase42_witness.total_steps != phase43_trace.total_steps
+        || phase43_trace.total_steps != phase74_receipt.total_steps
+        || phase74_receipt.total_steps != phase76_receipt.total_steps
+        || phase76_receipt.total_steps != phase78_receipt.total_steps
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge total-step drift".to_string(),
+        ));
+    }
+    let expected_lookup_count = phase42_witness.total_steps.checked_add(1).ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge lookup count overflowed".to_string(),
+        )
+    })?;
+    if phase42_witness.lookup_rows_commitment_count != expected_lookup_count
+        || phase42_witness.lookup_rows_commitment_count != phase43_trace.rows.len() + 1
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge lookup count drift".to_string(),
+        ));
+    }
+
+    let mut receipt = Phase81ProofCheckedBoundaryHistoryBridgeReceipt {
+        proof_backend: StarkProofBackend::Stwo,
+        receipt_version: STWO_PROOF_CHECKED_BOUNDARY_HISTORY_BRIDGE_RECEIPT_VERSION_PHASE81
+            .to_string(),
+        semantic_scope: STWO_PROOF_CHECKED_BOUNDARY_HISTORY_BRIDGE_RECEIPT_SCOPE_PHASE81
+            .to_string(),
+        source_phase41_boundary_translation_witness_commitment: phase41_witness
+            .boundary_translation_witness_commitment
+            .clone(),
+        source_phase42_boundary_history_equivalence_witness_commitment: phase42_witness
+            .witness_commitment
+            .clone(),
+        source_phase43_history_replay_trace_commitment: phase43_trace.trace_commitment.clone(),
+        source_phase74_chunked_history_carry_receipt_commitment: phase74_receipt
+            .chunked_history_carry_receipt_commitment
+            .clone(),
+        source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment: phase76_receipt
+            .proof_checked_actual_stwo_decode_chain_receipt_commitment
+            .clone(),
+        source_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment:
+            phase78_receipt
+                .proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment
+                .clone(),
+        source_phase29_contract_commitment: phase42_witness.phase29_contract_commitment.clone(),
+        source_phase28_aggregate_commitment: phase42_witness.phase28_aggregate_commitment.clone(),
+        source_phase30_source_chain_commitment: phase42_witness
+            .phase30_source_chain_commitment
+            .clone(),
+        source_phase30_step_envelopes_commitment: phase42_witness
+            .phase30_step_envelopes_commitment
+            .clone(),
+        source_template_commitment: phase41_witness.source_template_commitment.clone(),
+        aggregation_template_commitment: phase41_witness.aggregation_template_commitment.clone(),
+        source_phase12_layout_commitment: phase42_witness.layout_commitment.clone(),
+        phase30_chain_start_boundary_commitment: phase41_witness
+            .phase30_chain_start_boundary_commitment
+            .clone(),
+        phase30_chain_end_boundary_commitment: phase41_witness
+            .phase30_chain_end_boundary_commitment
+            .clone(),
+        phase14_start_boundary_commitment: phase42_witness
+            .phase14_start_boundary_commitment
+            .clone(),
+        phase14_end_boundary_commitment: phase42_witness.phase14_end_boundary_commitment.clone(),
+        phase12_start_public_state_commitment: phase42_witness
+            .phase12_start_public_state_commitment
+            .clone(),
+        phase12_end_public_state_commitment: phase42_witness
+            .phase12_end_public_state_commitment
+            .clone(),
+        phase12_start_history_commitment: phase42_witness.phase12_start_history_commitment.clone(),
+        phase12_end_history_commitment: phase42_witness.phase12_end_history_commitment.clone(),
+        phase14_start_history_commitment: phase42_witness.phase14_start_history_commitment.clone(),
+        phase14_end_history_commitment: phase42_witness.phase14_end_history_commitment.clone(),
+        lookup_rows_commitments_commitment: phase42_witness
+            .lookup_rows_commitments_commitment
+            .clone(),
+        lookup_rows_commitment_count: phase42_witness.lookup_rows_commitment_count,
+        total_steps: phase42_witness.total_steps,
+        shared_lookup_artifact_commitments_commitment: phase78_receipt
+            .shared_lookup_artifact_commitments_commitment
+            .clone(),
+        static_lookup_registry_commitments_commitment: phase78_receipt
+            .static_lookup_registry_commitments_commitment
+            .clone(),
+        unique_shared_lookup_artifact_count: phase78_receipt.unique_shared_lookup_artifact_count,
+        unique_static_lookup_registry_commitment_count: phase78_receipt
+            .unique_static_lookup_registry_commitment_count,
+        proof_checked_chain_available: phase76_receipt.proof_checked_chain_available
+            && phase78_receipt.proof_checked_chain_available,
+        boundary_translation_available: phase41_witness.boundary_domains_differ,
+        full_history_replay_required: phase42_witness.full_history_replay_required
+            && phase43_trace.full_history_replay_required,
+        proof_checked_chunked_history_available: phase74_receipt.chunked_history_available,
+        shared_lookup_registry_available: phase78_receipt.actual_shared_lookup_registry_available,
+        source_bound_verifier_available: true,
+        actual_proof_verification_available: phase74_receipt.actual_proof_verification_available
+            && phase76_receipt.actual_proof_verifier_available
+            && phase78_receipt.actual_proof_verification_available,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_PROOF_CHECKED_BOUNDARY_HISTORY_BRIDGE_NEXT_STEP_PHASE81
+            .to_string(),
+        proof_checked_boundary_history_bridge_receipt_commitment: String::new(),
+    };
+    receipt.proof_checked_boundary_history_bridge_receipt_commitment =
+        commit_phase81_proof_checked_boundary_history_bridge_receipt(&receipt)?;
+    verify_phase81_proof_checked_boundary_history_bridge_receipt(&receipt)?;
+    Ok(receipt)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase81_proof_checked_boundary_history_bridge_receipt(
+    receipt: &Phase81ProofCheckedBoundaryHistoryBridgeReceipt,
+) -> Result<()> {
+    if receipt.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge receipt requires `stwo` backend"
+                .to_string(),
+        ));
+    }
+    if receipt.receipt_version != STWO_PROOF_CHECKED_BOUNDARY_HISTORY_BRIDGE_RECEIPT_VERSION_PHASE81
+        || receipt.semantic_scope
+            != STWO_PROOF_CHECKED_BOUNDARY_HISTORY_BRIDGE_RECEIPT_SCOPE_PHASE81
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge receipt version or scope drift"
+                .to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase81_source_phase41_witness_commitment",
+            receipt
+                .source_phase41_boundary_translation_witness_commitment
+                .as_str(),
+        ),
+        (
+            "phase81_source_phase42_witness_commitment",
+            receipt
+                .source_phase42_boundary_history_equivalence_witness_commitment
+                .as_str(),
+        ),
+        (
+            "phase81_source_phase43_trace_commitment",
+            receipt.source_phase43_history_replay_trace_commitment.as_str(),
+        ),
+        (
+            "phase81_source_phase74_receipt_commitment",
+            receipt
+                .source_phase74_chunked_history_carry_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase81_source_phase76_receipt_commitment",
+            receipt
+                .source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase81_source_phase78_receipt_commitment",
+            receipt
+                .source_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase81_source_phase29_contract_commitment",
+            receipt.source_phase29_contract_commitment.as_str(),
+        ),
+        (
+            "phase81_source_phase28_aggregate_commitment",
+            receipt.source_phase28_aggregate_commitment.as_str(),
+        ),
+        (
+            "phase81_source_phase30_source_chain_commitment",
+            receipt.source_phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase81_source_phase30_step_envelopes_commitment",
+            receipt.source_phase30_step_envelopes_commitment.as_str(),
+        ),
+        ("phase81_source_template_commitment", receipt.source_template_commitment.as_str()),
+        (
+            "phase81_aggregation_template_commitment",
+            receipt.aggregation_template_commitment.as_str(),
+        ),
+        (
+            "phase81_source_phase12_layout_commitment",
+            receipt.source_phase12_layout_commitment.as_str(),
+        ),
+        (
+            "phase81_phase30_chain_start_boundary_commitment",
+            receipt.phase30_chain_start_boundary_commitment.as_str(),
+        ),
+        (
+            "phase81_phase30_chain_end_boundary_commitment",
+            receipt.phase30_chain_end_boundary_commitment.as_str(),
+        ),
+        (
+            "phase81_phase14_start_boundary_commitment",
+            receipt.phase14_start_boundary_commitment.as_str(),
+        ),
+        (
+            "phase81_phase14_end_boundary_commitment",
+            receipt.phase14_end_boundary_commitment.as_str(),
+        ),
+        (
+            "phase81_phase12_start_public_state_commitment",
+            receipt.phase12_start_public_state_commitment.as_str(),
+        ),
+        (
+            "phase81_phase12_end_public_state_commitment",
+            receipt.phase12_end_public_state_commitment.as_str(),
+        ),
+        (
+            "phase81_phase12_start_history_commitment",
+            receipt.phase12_start_history_commitment.as_str(),
+        ),
+        (
+            "phase81_phase12_end_history_commitment",
+            receipt.phase12_end_history_commitment.as_str(),
+        ),
+        (
+            "phase81_phase14_start_history_commitment",
+            receipt.phase14_start_history_commitment.as_str(),
+        ),
+        (
+            "phase81_phase14_end_history_commitment",
+            receipt.phase14_end_history_commitment.as_str(),
+        ),
+        (
+            "phase81_lookup_rows_commitments_commitment",
+            receipt.lookup_rows_commitments_commitment.as_str(),
+        ),
+        (
+            "phase81_shared_lookup_artifact_commitments_commitment",
+            receipt
+                .shared_lookup_artifact_commitments_commitment
+                .as_str(),
+        ),
+        (
+            "phase81_static_lookup_registry_commitments_commitment",
+            receipt
+                .static_lookup_registry_commitments_commitment
+                .as_str(),
+        ),
+        (
+            "phase81_proof_checked_boundary_history_bridge_receipt_commitment",
+            receipt
+                .proof_checked_boundary_history_bridge_receipt_commitment
+                .as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if receipt.total_steps == 0
+        || receipt.lookup_rows_commitment_count != receipt.total_steps.saturating_add(1)
+        || receipt.unique_shared_lookup_artifact_count == 0
+        || receipt.unique_static_lookup_registry_commitment_count == 0
+        || receipt.phase30_chain_start_boundary_commitment
+            == receipt.phase14_start_boundary_commitment
+            && receipt.phase30_chain_end_boundary_commitment
+                == receipt.phase14_end_boundary_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge receipt shape drift".to_string(),
+        ));
+    }
+    if !receipt.proof_checked_chain_available
+        || !receipt.boundary_translation_available
+        || !receipt.full_history_replay_required
+        || !receipt.proof_checked_chunked_history_available
+        || !receipt.shared_lookup_registry_available
+        || !receipt.source_bound_verifier_available
+        || !receipt.actual_proof_verification_available
+        || receipt.recursive_verification_claimed
+        || receipt.cryptographic_compression_claimed
+        || receipt.breakthrough_claimed
+        || receipt.paper_ready
+        || receipt.required_next_step
+            != STWO_PROOF_CHECKED_BOUNDARY_HISTORY_BRIDGE_NEXT_STEP_PHASE81
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge receipt claim drift".to_string(),
+        ));
+    }
+    let expected = commit_phase81_proof_checked_boundary_history_bridge_receipt(receipt)?;
+    if receipt.proof_checked_boundary_history_bridge_receipt_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge receipt commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase81_proof_checked_boundary_history_bridge_receipt_against_sources(
+    receipt: &Phase81ProofCheckedBoundaryHistoryBridgeReceipt,
+    phase41_witness: &Phase41BoundaryTranslationWitness,
+    phase42_witness: &Phase42BoundaryHistoryEquivalenceWitness,
+    phase43_trace: &Phase43HistoryReplayTrace,
+    phase74_receipt: &Phase74ChunkedHistoryCarryReceipt,
+    phase76_receipt: &Phase76ProofCheckedActualStwoDecodeChainReceipt,
+    phase78_receipt: &Phase78ProofCheckedActualStwoSharedLookupRegistryBridgeReceipt,
+) -> Result<()> {
+    let expected = phase81_prepare_proof_checked_boundary_history_bridge_receipt(
+        phase41_witness,
+        phase42_witness,
+        phase43_trace,
+        phase74_receipt,
+        phase76_receipt,
+        phase78_receipt,
+    )?;
+    if receipt != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 81 proof-checked boundary-history bridge receipt source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase82_prepare_translated_paper3_segment_source_receipt(
+    phase81_receipt: &Phase81ProofCheckedBoundaryHistoryBridgeReceipt,
+) -> Result<Phase82TranslatedPaper3SegmentSourceReceipt> {
+    verify_phase81_proof_checked_boundary_history_bridge_receipt(phase81_receipt)?;
+    if phase81_receipt.phase30_chain_start_boundary_commitment
+        == phase81_receipt.phase14_start_boundary_commitment
+        && phase81_receipt.phase30_chain_end_boundary_commitment
+            == phase81_receipt.phase14_end_boundary_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 82 translated Paper 3 segment-source receipt requires translated boundary domains"
+                .to_string(),
+        ));
+    }
+    let mut receipt = Phase82TranslatedPaper3SegmentSourceReceipt {
+        proof_backend: StarkProofBackend::Stwo,
+        receipt_version: STWO_TRANSLATED_PAPER3_SEGMENT_SOURCE_RECEIPT_VERSION_PHASE82.to_string(),
+        semantic_scope: STWO_TRANSLATED_PAPER3_SEGMENT_SOURCE_RECEIPT_SCOPE_PHASE82.to_string(),
+        source_phase81_proof_checked_boundary_history_bridge_receipt_commitment: phase81_receipt
+            .proof_checked_boundary_history_bridge_receipt_commitment
+            .clone(),
+        source_phase29_contract_commitment: phase81_receipt
+            .source_phase29_contract_commitment
+            .clone(),
+        source_phase28_aggregate_commitment: phase81_receipt
+            .source_phase28_aggregate_commitment
+            .clone(),
+        source_phase30_source_chain_commitment: phase81_receipt
+            .source_phase30_source_chain_commitment
+            .clone(),
+        source_phase30_step_envelopes_commitment: phase81_receipt
+            .source_phase30_step_envelopes_commitment
+            .clone(),
+        source_template_commitment: phase81_receipt.source_template_commitment.clone(),
+        aggregation_template_commitment: phase81_receipt.aggregation_template_commitment.clone(),
+        source_phase12_layout_commitment: phase81_receipt.source_phase12_layout_commitment.clone(),
+        phase30_chain_start_boundary_commitment: phase81_receipt
+            .phase30_chain_start_boundary_commitment
+            .clone(),
+        phase30_chain_end_boundary_commitment: phase81_receipt
+            .phase30_chain_end_boundary_commitment
+            .clone(),
+        phase14_start_boundary_commitment: phase81_receipt
+            .phase14_start_boundary_commitment
+            .clone(),
+        phase14_end_boundary_commitment: phase81_receipt.phase14_end_boundary_commitment.clone(),
+        phase12_start_public_state_commitment: phase81_receipt
+            .phase12_start_public_state_commitment
+            .clone(),
+        phase12_end_public_state_commitment: phase81_receipt
+            .phase12_end_public_state_commitment
+            .clone(),
+        phase12_start_history_commitment: phase81_receipt.phase12_start_history_commitment.clone(),
+        phase12_end_history_commitment: phase81_receipt.phase12_end_history_commitment.clone(),
+        phase14_start_history_commitment: phase81_receipt.phase14_start_history_commitment.clone(),
+        phase14_end_history_commitment: phase81_receipt.phase14_end_history_commitment.clone(),
+        lookup_rows_commitments_commitment: phase81_receipt
+            .lookup_rows_commitments_commitment
+            .clone(),
+        lookup_rows_commitment_count: phase81_receipt.lookup_rows_commitment_count,
+        total_steps: phase81_receipt.total_steps,
+        shared_lookup_artifact_commitments_commitment: phase81_receipt
+            .shared_lookup_artifact_commitments_commitment
+            .clone(),
+        static_lookup_registry_commitments_commitment: phase81_receipt
+            .static_lookup_registry_commitments_commitment
+            .clone(),
+        unique_shared_lookup_artifact_count: phase81_receipt.unique_shared_lookup_artifact_count,
+        unique_static_lookup_registry_commitment_count: phase81_receipt
+            .unique_static_lookup_registry_commitment_count,
+        translated_boundary_domains: true,
+        proof_checked_decode_chain_available: phase81_receipt.proof_checked_chain_available,
+        shared_lookup_registry_available: phase81_receipt.shared_lookup_registry_available,
+        full_history_replay_required: phase81_receipt.full_history_replay_required,
+        source_bound_verifier_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_TRANSLATED_PAPER3_SEGMENT_SOURCE_NEXT_STEP_PHASE82.to_string(),
+        translated_paper3_segment_source_receipt_commitment: String::new(),
+    };
+    receipt.translated_paper3_segment_source_receipt_commitment =
+        commit_phase82_translated_paper3_segment_source_receipt(&receipt)?;
+    verify_phase82_translated_paper3_segment_source_receipt(&receipt)?;
+    Ok(receipt)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase82_translated_paper3_segment_source_receipt(
+    receipt: &Phase82TranslatedPaper3SegmentSourceReceipt,
+) -> Result<()> {
+    if receipt.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 82 translated Paper 3 segment-source receipt requires `stwo` backend"
+                .to_string(),
+        ));
+    }
+    if receipt.receipt_version != STWO_TRANSLATED_PAPER3_SEGMENT_SOURCE_RECEIPT_VERSION_PHASE82
+        || receipt.semantic_scope != STWO_TRANSLATED_PAPER3_SEGMENT_SOURCE_RECEIPT_SCOPE_PHASE82
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 82 translated Paper 3 segment-source receipt version or scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase82_source_phase81_receipt_commitment",
+            receipt
+                .source_phase81_proof_checked_boundary_history_bridge_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase82_source_phase29_contract_commitment",
+            receipt.source_phase29_contract_commitment.as_str(),
+        ),
+        (
+            "phase82_source_phase28_aggregate_commitment",
+            receipt.source_phase28_aggregate_commitment.as_str(),
+        ),
+        (
+            "phase82_source_phase30_source_chain_commitment",
+            receipt.source_phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase82_source_phase30_step_envelopes_commitment",
+            receipt.source_phase30_step_envelopes_commitment.as_str(),
+        ),
+        (
+            "phase82_source_template_commitment",
+            receipt.source_template_commitment.as_str(),
+        ),
+        (
+            "phase82_aggregation_template_commitment",
+            receipt.aggregation_template_commitment.as_str(),
+        ),
+        (
+            "phase82_source_phase12_layout_commitment",
+            receipt.source_phase12_layout_commitment.as_str(),
+        ),
+        (
+            "phase82_phase30_chain_start_boundary_commitment",
+            receipt.phase30_chain_start_boundary_commitment.as_str(),
+        ),
+        (
+            "phase82_phase30_chain_end_boundary_commitment",
+            receipt.phase30_chain_end_boundary_commitment.as_str(),
+        ),
+        (
+            "phase82_phase14_start_boundary_commitment",
+            receipt.phase14_start_boundary_commitment.as_str(),
+        ),
+        (
+            "phase82_phase14_end_boundary_commitment",
+            receipt.phase14_end_boundary_commitment.as_str(),
+        ),
+        (
+            "phase82_phase12_start_public_state_commitment",
+            receipt.phase12_start_public_state_commitment.as_str(),
+        ),
+        (
+            "phase82_phase12_end_public_state_commitment",
+            receipt.phase12_end_public_state_commitment.as_str(),
+        ),
+        (
+            "phase82_phase12_start_history_commitment",
+            receipt.phase12_start_history_commitment.as_str(),
+        ),
+        (
+            "phase82_phase12_end_history_commitment",
+            receipt.phase12_end_history_commitment.as_str(),
+        ),
+        (
+            "phase82_phase14_start_history_commitment",
+            receipt.phase14_start_history_commitment.as_str(),
+        ),
+        (
+            "phase82_phase14_end_history_commitment",
+            receipt.phase14_end_history_commitment.as_str(),
+        ),
+        (
+            "phase82_lookup_rows_commitments_commitment",
+            receipt.lookup_rows_commitments_commitment.as_str(),
+        ),
+        (
+            "phase82_shared_lookup_artifact_commitments_commitment",
+            receipt
+                .shared_lookup_artifact_commitments_commitment
+                .as_str(),
+        ),
+        (
+            "phase82_static_lookup_registry_commitments_commitment",
+            receipt
+                .static_lookup_registry_commitments_commitment
+                .as_str(),
+        ),
+        (
+            "phase82_translated_paper3_segment_source_receipt_commitment",
+            receipt
+                .translated_paper3_segment_source_receipt_commitment
+                .as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if receipt.total_steps == 0
+        || receipt.lookup_rows_commitment_count != receipt.total_steps.saturating_add(1)
+        || receipt.unique_shared_lookup_artifact_count == 0
+        || receipt.unique_static_lookup_registry_commitment_count == 0
+        || !receipt.translated_boundary_domains
+        || receipt.phase30_chain_start_boundary_commitment
+            == receipt.phase14_start_boundary_commitment
+            && receipt.phase30_chain_end_boundary_commitment
+                == receipt.phase14_end_boundary_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 82 translated Paper 3 segment-source receipt shape drift".to_string(),
+        ));
+    }
+    if !receipt.proof_checked_decode_chain_available
+        || !receipt.shared_lookup_registry_available
+        || !receipt.full_history_replay_required
+        || !receipt.source_bound_verifier_available
+        || receipt.recursive_verification_claimed
+        || receipt.cryptographic_compression_claimed
+        || receipt.breakthrough_claimed
+        || receipt.paper_ready
+        || receipt.required_next_step != STWO_TRANSLATED_PAPER3_SEGMENT_SOURCE_NEXT_STEP_PHASE82
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 82 translated Paper 3 segment-source receipt claim drift".to_string(),
+        ));
+    }
+    let expected = commit_phase82_translated_paper3_segment_source_receipt(receipt)?;
+    if receipt.translated_paper3_segment_source_receipt_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 82 translated Paper 3 segment-source receipt commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase82_translated_paper3_segment_source_receipt_against_sources(
+    receipt: &Phase82TranslatedPaper3SegmentSourceReceipt,
+    phase81_receipt: &Phase81ProofCheckedBoundaryHistoryBridgeReceipt,
+) -> Result<()> {
+    let expected = phase82_prepare_translated_paper3_segment_source_receipt(phase81_receipt)?;
+    if receipt != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 82 translated Paper 3 segment-source receipt source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase83_prepare_translated_paper3_blocker_assessment(
+    phase82_receipt: &Phase82TranslatedPaper3SegmentSourceReceipt,
+) -> Result<Phase83TranslatedPaper3BlockerAssessment> {
+    verify_phase82_translated_paper3_segment_source_receipt(phase82_receipt)?;
+    if phase82_receipt.phase30_chain_start_boundary_commitment
+        == phase82_receipt.phase14_start_boundary_commitment
+        && phase82_receipt.phase30_chain_end_boundary_commitment
+            == phase82_receipt.phase14_end_boundary_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 83 translated Paper 3 blocker assessment requires translated boundaries to remain unresolved in the legacy Phase37 path".to_string(),
+        ));
+    }
+    let mut assessment = Phase83TranslatedPaper3BlockerAssessment {
+        proof_backend: StarkProofBackend::Stwo,
+        assessment_version: STWO_TRANSLATED_PAPER3_BLOCKER_ASSESSMENT_VERSION_PHASE83.to_string(),
+        semantic_scope: STWO_TRANSLATED_PAPER3_BLOCKER_ASSESSMENT_SCOPE_PHASE83.to_string(),
+        source_phase82_translated_paper3_segment_source_receipt_commitment: phase82_receipt
+            .translated_paper3_segment_source_receipt_commitment
+            .clone(),
+        blocked_legacy_phase: "Phase37".to_string(),
+        blocker_kind: STWO_TRANSLATED_PAPER3_BLOCKER_KIND_PHASE83.to_string(),
+        boundary_translation_required: true,
+        direct_phase30_to_phase29_equality_available: false,
+        translated_segment_source_available: true,
+        proof_checked_decode_chain_available: phase82_receipt.proof_checked_decode_chain_available,
+        shared_lookup_registry_available: phase82_receipt.shared_lookup_registry_available,
+        full_history_replay_required: phase82_receipt.full_history_replay_required,
+        source_bound_verifier_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_TRANSLATED_PAPER3_BLOCKER_NEXT_STEP_PHASE83.to_string(),
+        translated_paper3_blocker_assessment_commitment: String::new(),
+    };
+    assessment.translated_paper3_blocker_assessment_commitment =
+        commit_phase83_translated_paper3_blocker_assessment(&assessment)?;
+    verify_phase83_translated_paper3_blocker_assessment(&assessment)?;
+    Ok(assessment)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase83_translated_paper3_blocker_assessment(
+    assessment: &Phase83TranslatedPaper3BlockerAssessment,
+) -> Result<()> {
+    if assessment.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 83 translated Paper 3 blocker assessment requires `stwo` backend".to_string(),
+        ));
+    }
+    if assessment.assessment_version != STWO_TRANSLATED_PAPER3_BLOCKER_ASSESSMENT_VERSION_PHASE83
+        || assessment.semantic_scope != STWO_TRANSLATED_PAPER3_BLOCKER_ASSESSMENT_SCOPE_PHASE83
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 83 translated Paper 3 blocker assessment version or scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase83_source_phase82_receipt_commitment",
+            assessment
+                .source_phase82_translated_paper3_segment_source_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase83_translated_paper3_blocker_assessment_commitment",
+            assessment
+                .translated_paper3_blocker_assessment_commitment
+                .as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if assessment.blocked_legacy_phase != "Phase37"
+        || assessment.blocker_kind != STWO_TRANSLATED_PAPER3_BLOCKER_KIND_PHASE83
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 83 translated Paper 3 blocker assessment legacy-phase or blocker-kind drift"
+                .to_string(),
+        ));
+    }
+    if !assessment.boundary_translation_required
+        || assessment.direct_phase30_to_phase29_equality_available
+        || !assessment.translated_segment_source_available
+        || !assessment.proof_checked_decode_chain_available
+        || !assessment.shared_lookup_registry_available
+        || !assessment.full_history_replay_required
+        || !assessment.source_bound_verifier_available
+        || assessment.recursive_verification_claimed
+        || assessment.cryptographic_compression_claimed
+        || assessment.breakthrough_claimed
+        || assessment.paper_ready
+        || assessment.required_next_step != STWO_TRANSLATED_PAPER3_BLOCKER_NEXT_STEP_PHASE83
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 83 translated Paper 3 blocker assessment claim drift".to_string(),
+        ));
+    }
+    let expected = commit_phase83_translated_paper3_blocker_assessment(assessment)?;
+    if assessment.translated_paper3_blocker_assessment_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 83 translated Paper 3 blocker assessment commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase83_translated_paper3_blocker_assessment_against_sources(
+    assessment: &Phase83TranslatedPaper3BlockerAssessment,
+    phase82_receipt: &Phase82TranslatedPaper3SegmentSourceReceipt,
+) -> Result<()> {
+    let expected = phase83_prepare_translated_paper3_blocker_assessment(phase82_receipt)?;
+    if assessment != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 83 translated Paper 3 blocker assessment source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase84_prepare_publication_paper3_seam_table(
+    phase80_table: &Phase80ProofCheckedPublicationDecodeBridgeTable,
+    phase81_receipt: &Phase81ProofCheckedBoundaryHistoryBridgeReceipt,
+    phase82_receipt: &Phase82TranslatedPaper3SegmentSourceReceipt,
+    phase83_assessment: &Phase83TranslatedPaper3BlockerAssessment,
+) -> Result<Phase84PublicationPaper3SeamTable> {
+    verify_phase80_proof_checked_publication_decode_bridge_table(phase80_table)?;
+    verify_phase81_proof_checked_boundary_history_bridge_receipt(phase81_receipt)?;
+    verify_phase82_translated_paper3_segment_source_receipt(phase82_receipt)?;
+    verify_phase83_translated_paper3_blocker_assessment(phase83_assessment)?;
+    if phase80_table
+        .source_phase74_chunked_history_carry_receipt_commitment
+        != phase81_receipt.source_phase74_chunked_history_carry_receipt_commitment
+        || phase80_table
+            .source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment
+            != phase81_receipt
+                .source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment
+        || phase80_table
+            .source_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment
+            != phase81_receipt
+                .source_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 84 publication Paper 3 seam table Phase80/Phase81 source drift".to_string(),
+        ));
+    }
+    if phase82_receipt.source_phase81_proof_checked_boundary_history_bridge_receipt_commitment
+        != phase81_receipt.proof_checked_boundary_history_bridge_receipt_commitment
+        || phase83_assessment.source_phase82_translated_paper3_segment_source_receipt_commitment
+            != phase82_receipt.translated_paper3_segment_source_receipt_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 84 publication Paper 3 seam table Phase81/Phase82/Phase83 source drift"
+                .to_string(),
+        ));
+    }
+    let mut artifact_rows = vec![
+        phase84_publication_paper3_seam_row(
+            0,
+            "Phase80",
+            "proof-checked publication decode-bridge table",
+            &phase80_table.proof_checked_publication_decode_bridge_table_commitment,
+            &phase80_table.semantic_scope,
+            "verify_phase80_proof_checked_publication_decode_bridge_table",
+            "verify_phase80_proof_checked_publication_decode_bridge_table_against_sources",
+            "artifact",
+            "proof-checked actual decode-chain, step-envelope, shared-lookup, and chunked-history evidence is frozen in one publication table",
+            "stops at the decode-bridge layer; no translated Paper 3 segment source yet",
+        )?,
+        phase84_publication_paper3_seam_row(
+            1,
+            "Phase81",
+            "proof-checked boundary-history bridge receipt",
+            &phase81_receipt.proof_checked_boundary_history_bridge_receipt_commitment,
+            &phase81_receipt.semantic_scope,
+            "verify_phase81_proof_checked_boundary_history_bridge_receipt",
+            "verify_phase81_proof_checked_boundary_history_bridge_receipt_against_sources",
+            "artifact",
+            "proof-checked actual decode-chain and shared-lookup registry agree with translated replay boundaries and full-history carry on the same Phase30 surface",
+            "still replay-bound and non-recursive",
+        )?,
+        phase84_publication_paper3_seam_row(
+            2,
+            "Phase82",
+            "translated Paper 3 segment-source receipt",
+            &phase82_receipt.translated_paper3_segment_source_receipt_commitment,
+            &phase82_receipt.semantic_scope,
+            "verify_phase82_translated_paper3_segment_source_receipt",
+            "verify_phase82_translated_paper3_segment_source_receipt_against_sources",
+            "artifact",
+            "the boundary-history bridge is re-expressed as a future single-segment Paper 3 composition source with translated boundary domains preserved",
+            "not yet wired into the legacy Phase37/38 composition harness",
+        )?,
+        phase84_publication_paper3_seam_row(
+            3,
+            "Phase83",
+            "translated Paper 3 blocker assessment",
+            &phase83_assessment.translated_paper3_blocker_assessment_commitment,
+            &phase83_assessment.semantic_scope,
+            "verify_phase83_translated_paper3_blocker_assessment",
+            "verify_phase83_translated_paper3_blocker_assessment_against_sources",
+            "analysis",
+            "the remaining blocker is explicit: Phase37 still assumes direct Phase30-to-Phase29 boundary equality, so a translation-aware adapter is still required",
+            "records the blocker; does not solve the legacy harness yet",
+        )?,
+    ];
+    for row in &mut artifact_rows {
+        row.row_commitment = commit_phase84_publication_paper3_seam_row(row)?;
+        verify_phase84_publication_paper3_seam_row(row)?;
+    }
+    let mut table = Phase84PublicationPaper3SeamTable {
+        proof_backend: StarkProofBackend::Stwo,
+        table_version: STWO_PUBLICATION_PAPER3_SEAM_TABLE_VERSION_PHASE84.to_string(),
+        semantic_scope: STWO_PUBLICATION_PAPER3_SEAM_TABLE_SCOPE_PHASE84.to_string(),
+        source_phase80_proof_checked_publication_decode_bridge_table_commitment: phase80_table
+            .proof_checked_publication_decode_bridge_table_commitment
+            .clone(),
+        source_phase81_proof_checked_boundary_history_bridge_receipt_commitment: phase81_receipt
+            .proof_checked_boundary_history_bridge_receipt_commitment
+            .clone(),
+        source_phase82_translated_paper3_segment_source_receipt_commitment: phase82_receipt
+            .translated_paper3_segment_source_receipt_commitment
+            .clone(),
+        source_phase83_translated_paper3_blocker_assessment_commitment: phase83_assessment
+            .translated_paper3_blocker_assessment_commitment
+            .clone(),
+        artifact_rows_commitment: String::new(),
+        artifact_rows,
+        row_count: 4,
+        verifier_side_complexity: STWO_PUBLICATION_PAPER3_SEAM_TABLE_COMPLEXITY_PHASE84.to_string(),
+        verifier_status: STWO_PUBLICATION_PAPER3_SEAM_TABLE_STATUS_PHASE84.to_string(),
+        transcript_order: phase84_publication_paper3_seam_table_transcript_order(),
+        translated_segment_source_available: true,
+        source_bound_verifiers_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_PUBLICATION_PAPER3_SEAM_TABLE_NEXT_STEP_PHASE84.to_string(),
+        publication_paper3_seam_table_commitment: String::new(),
+    };
+    table.artifact_rows_commitment =
+        phase84_commit_publication_paper3_seam_rows(&table.artifact_rows)?;
+    table.publication_paper3_seam_table_commitment =
+        commit_phase84_publication_paper3_seam_table(&table)?;
+    verify_phase84_publication_paper3_seam_table(&table)?;
+    Ok(table)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase84_publication_paper3_seam_row(
+    row: &Phase84PublicationPaper3SeamRow,
+) -> Result<()> {
+    if row.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 84 publication Paper 3 seam row requires `stwo` backend".to_string(),
+        ));
+    }
+    phase43_require_hash32("phase84_artifact_commitment", &row.artifact_commitment)?;
+    phase43_require_hash32("phase84_row_commitment", &row.row_commitment)?;
+    if row.phase_label.is_empty()
+        || row.artifact_name.is_empty()
+        || row.semantic_scope.is_empty()
+        || row.verifier_function.is_empty()
+        || row.source_bound_verifier_function.is_empty()
+        || row.evidence_tier.is_empty()
+        || row.claim_boundary.is_empty()
+        || row.limitation.is_empty()
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 84 publication Paper 3 seam row has an empty field".to_string(),
+        ));
+    }
+    let expected = commit_phase84_publication_paper3_seam_row(row)?;
+    if row.row_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 84 publication Paper 3 seam row commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase84_publication_paper3_seam_table(
+    table: &Phase84PublicationPaper3SeamTable,
+) -> Result<()> {
+    if table.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 84 publication Paper 3 seam table requires `stwo` backend".to_string(),
+        ));
+    }
+    if table.table_version != STWO_PUBLICATION_PAPER3_SEAM_TABLE_VERSION_PHASE84
+        || table.semantic_scope != STWO_PUBLICATION_PAPER3_SEAM_TABLE_SCOPE_PHASE84
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 84 publication Paper 3 seam table version or scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase84_source_phase80_table_commitment",
+            table
+                .source_phase80_proof_checked_publication_decode_bridge_table_commitment
+                .as_str(),
+        ),
+        (
+            "phase84_source_phase81_receipt_commitment",
+            table
+                .source_phase81_proof_checked_boundary_history_bridge_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase84_source_phase82_receipt_commitment",
+            table
+                .source_phase82_translated_paper3_segment_source_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase84_source_phase83_assessment_commitment",
+            table
+                .source_phase83_translated_paper3_blocker_assessment_commitment
+                .as_str(),
+        ),
+        (
+            "phase84_artifact_rows_commitment",
+            table.artifact_rows_commitment.as_str(),
+        ),
+        (
+            "phase84_publication_paper3_seam_table_commitment",
+            table.publication_paper3_seam_table_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if table.row_count != 4 || table.artifact_rows.len() != table.row_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 84 publication Paper 3 seam row count drift".to_string(),
+        ));
+    }
+    if table.artifact_rows_commitment
+        != phase84_commit_publication_paper3_seam_rows(&table.artifact_rows)?
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 84 publication Paper 3 seam row-list commitment drift".to_string(),
+        ));
+    }
+    let expected_phases = ["Phase80", "Phase81", "Phase82", "Phase83"];
+    for (expected_index, (row, expected_phase)) in table
+        .artifact_rows
+        .iter()
+        .zip(expected_phases.iter())
+        .enumerate()
+    {
+        verify_phase84_publication_paper3_seam_row(row)?;
+        if row.row_index != expected_index || row.phase_label != *expected_phase {
+            return Err(VmError::InvalidConfig(
+                "Phase 84 publication Paper 3 seam row order drift".to_string(),
+            ));
+        }
+    }
+    if table.verifier_side_complexity != STWO_PUBLICATION_PAPER3_SEAM_TABLE_COMPLEXITY_PHASE84
+        || table.verifier_status != STWO_PUBLICATION_PAPER3_SEAM_TABLE_STATUS_PHASE84
+        || table.transcript_order != phase84_publication_paper3_seam_table_transcript_order()
+        || table.required_next_step != STWO_PUBLICATION_PAPER3_SEAM_TABLE_NEXT_STEP_PHASE84
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 84 publication Paper 3 seam transcript, status, or next-step drift".to_string(),
+        ));
+    }
+    if !table.translated_segment_source_available
+        || !table.source_bound_verifiers_available
+        || table.recursive_verification_claimed
+        || table.cryptographic_compression_claimed
+        || table.breakthrough_claimed
+        || table.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 84 publication Paper 3 seam table must not claim recursion, compression, breakthrough, or paper readiness".to_string(),
+        ));
+    }
+    let expected = commit_phase84_publication_paper3_seam_table(table)?;
+    if table.publication_paper3_seam_table_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 84 publication Paper 3 seam table commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase84_publication_paper3_seam_table_against_sources(
+    table: &Phase84PublicationPaper3SeamTable,
+    phase80_table: &Phase80ProofCheckedPublicationDecodeBridgeTable,
+    phase81_receipt: &Phase81ProofCheckedBoundaryHistoryBridgeReceipt,
+    phase82_receipt: &Phase82TranslatedPaper3SegmentSourceReceipt,
+    phase83_assessment: &Phase83TranslatedPaper3BlockerAssessment,
+) -> Result<()> {
+    let expected = phase84_prepare_publication_paper3_seam_table(
+        phase80_table,
+        phase81_receipt,
+        phase82_receipt,
+        phase83_assessment,
+    )?;
+    if table != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 84 publication Paper 3 seam table source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
 #[derive(Debug, Clone)]
 struct Phase63LookupIdentityCommitments {
     shared_lookup_identity_commitment: String,
@@ -25271,6 +26913,68 @@ fn phase80_proof_checked_publication_decode_bridge_table_transcript_order() -> V
         "phase74_receipt_commitment",
         "phase76_to_phase79_bridge_commitments",
         "ordered_proof_checked_publication_decode_bridge_rows",
+        "negative_claim_flags",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase84_publication_paper3_seam_row(
+    row_index: usize,
+    phase_label: &str,
+    artifact_name: &str,
+    artifact_commitment: &str,
+    semantic_scope: &str,
+    verifier_function: &str,
+    source_bound_verifier_function: &str,
+    evidence_tier: &str,
+    claim_boundary: &str,
+    limitation: &str,
+) -> Result<Phase84PublicationPaper3SeamRow> {
+    let mut row = Phase84PublicationPaper3SeamRow {
+        proof_backend: StarkProofBackend::Stwo,
+        row_index,
+        phase_label: phase_label.to_string(),
+        artifact_name: artifact_name.to_string(),
+        artifact_commitment: artifact_commitment.to_string(),
+        semantic_scope: semantic_scope.to_string(),
+        verifier_function: verifier_function.to_string(),
+        source_bound_verifier_function: source_bound_verifier_function.to_string(),
+        evidence_tier: evidence_tier.to_string(),
+        claim_boundary: claim_boundary.to_string(),
+        limitation: limitation.to_string(),
+        row_commitment: String::new(),
+    };
+    row.row_commitment = commit_phase84_publication_paper3_seam_row(&row)?;
+    Ok(row)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase84_commit_publication_paper3_seam_rows(
+    rows: &[Phase84PublicationPaper3SeamRow],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 84 publication Paper 3 seam row-list hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase84-publication-paper3-seam-rows");
+    phase29_update_usize(&mut hasher, rows.len());
+    for row in rows {
+        phase29_update_len_prefixed(&mut hasher, row.row_commitment.as_bytes());
+    }
+    phase44d_finalize_hash(hasher, "Phase 84 publication Paper 3 seam rows")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase84_publication_paper3_seam_table_transcript_order() -> Vec<String> {
+    [
+        "phase84_table_header",
+        "phase80_publication_decode_bridge_table_commitment",
+        "phase81_to_phase83_paper3_seam_commitments",
+        "ordered_publication_paper3_seam_rows",
         "negative_claim_flags",
     ]
     .into_iter()
@@ -32565,6 +34269,469 @@ mod tests {
         let err = verify_phase80_proof_checked_publication_decode_bridge_table(&phase80)
             .expect_err("phase80 table must reject row order drift");
         assert!(err.to_string().contains("row order drift"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn phase81_sample_history_replay_trace_from_sources(
+        chain: &Phase12DecodingChainManifest,
+        phase30: &Phase30DecodingStepProofEnvelopeManifest,
+    ) -> Phase43HistoryReplayTrace {
+        let replayed_phase14 =
+            phase14_prepare_decoding_chain(chain).expect("derive Phase14 replay chain");
+        let latest_cached_pair_range = chain
+            .layout
+            .latest_cached_pair_range()
+            .expect("latest cached pair range");
+        let rows = chain
+            .steps
+            .iter()
+            .zip(replayed_phase14.steps.iter())
+            .zip(phase30.envelopes.iter())
+            .enumerate()
+            .map(
+                |(step_index, ((phase12_step, phase14_step), phase30_envelope))| {
+                    Phase43HistoryReplayTraceRow {
+                        step_index,
+                        appended_pair: phase12_step.proof.claim.final_state.memory
+                            [latest_cached_pair_range.clone()]
+                        .to_vec(),
+                        input_lookup_rows_commitment: phase12_step
+                            .from_state
+                            .lookup_rows_commitment
+                            .clone(),
+                        output_lookup_rows_commitment: phase12_step
+                            .to_state
+                            .lookup_rows_commitment
+                            .clone(),
+                        phase30_step_envelope_commitment: phase30_envelope
+                            .envelope_commitment
+                            .clone(),
+                        phase12_from_state: phase12_step.from_state.clone(),
+                        phase12_to_state: phase12_step.to_state.clone(),
+                        phase14_from_state: phase14_step.from_state.clone(),
+                        phase14_to_state: phase14_step.to_state.clone(),
+                    }
+                },
+            )
+            .collect::<Vec<_>>();
+        let (appended_pairs_commitment, appended_pair_count) =
+            phase42_commit_source_appended_pairs(chain).expect("commit Phase81 sample pairs");
+        let (lookup_rows_commitments_commitment, lookup_row_count) =
+            phase42_commit_source_lookup_rows_commitments(chain)
+                .expect("commit Phase81 sample lookup rows");
+        assert_eq!(appended_pair_count, rows.len());
+        assert_eq!(lookup_row_count, rows.len() + 1);
+        let first = rows.first().expect("sample trace has first row");
+        let last = rows.last().expect("sample trace has last row");
+        let mut trace = Phase43HistoryReplayTrace {
+            issue: STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
+            trace_version: STWO_HISTORY_REPLAY_TRACE_VERSION_PHASE43.to_string(),
+            relation_outcome: STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43.to_string(),
+            transform_rule: STWO_HISTORY_REPLAY_TRACE_RULE_PHASE43.to_string(),
+            proof_backend: StarkProofBackend::Stwo,
+            proof_backend_version: STWO_BACKEND_VERSION_PHASE12.to_string(),
+            statement_version: CLAIM_STATEMENT_VERSION_V1.to_string(),
+            phase42_witness_commitment: phase42_hash('1'),
+            phase29_contract_commitment: phase42_hash('2'),
+            phase28_aggregate_commitment: phase42_hash('3'),
+            phase30_source_chain_commitment: phase30.source_chain_commitment.clone(),
+            phase30_step_envelopes_commitment: phase30.step_envelopes_commitment.clone(),
+            total_steps: rows.len(),
+            layout_commitment: first.phase12_from_state.layout_commitment.clone(),
+            rolling_kv_pairs: chain.layout.rolling_kv_pairs,
+            pair_width: chain.layout.pair_width,
+            phase12_start_public_state_commitment: first
+                .phase12_from_state
+                .public_state_commitment
+                .clone(),
+            phase12_end_public_state_commitment: last
+                .phase12_to_state
+                .public_state_commitment
+                .clone(),
+            phase14_start_boundary_commitment: commit_phase23_boundary_state(
+                &first.phase14_from_state,
+            ),
+            phase14_end_boundary_commitment: commit_phase23_boundary_state(&last.phase14_to_state),
+            phase12_start_history_commitment: first
+                .phase12_from_state
+                .kv_history_commitment
+                .clone(),
+            phase12_end_history_commitment: last.phase12_to_state.kv_history_commitment.clone(),
+            phase14_start_history_commitment: first
+                .phase14_from_state
+                .kv_history_commitment
+                .clone(),
+            phase14_end_history_commitment: last.phase14_to_state.kv_history_commitment.clone(),
+            initial_kv_cache_commitment: first.phase12_from_state.kv_cache_commitment.clone(),
+            appended_pairs_commitment,
+            lookup_rows_commitments_commitment,
+            rows,
+            full_history_replay_required: true,
+            cryptographic_compression_claimed: false,
+            stwo_air_proof_claimed: false,
+            trace_commitment: String::new(),
+        };
+        trace.trace_commitment =
+            commit_phase43_history_replay_trace(&trace).expect("commit Phase81 sample trace");
+        verify_phase43_history_replay_trace(&trace).expect("verify Phase81 sample trace");
+        trace
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn phase81_sample_phase41_witness_for_trace(
+        phase30: &Phase30DecodingStepProofEnvelopeManifest,
+        trace: &Phase43HistoryReplayTrace,
+    ) -> Phase41BoundaryTranslationWitness {
+        let mut phase29 = sample_phase29_contract();
+        phase29.phase28_proof_backend_version = phase30.proof_backend_version.clone();
+        phase29.statement_version = phase30.statement_version.clone();
+        phase29.total_steps = phase30.total_steps;
+        phase29.global_start_state_commitment = trace.phase14_start_boundary_commitment.clone();
+        phase29.global_end_state_commitment = trace.phase14_end_boundary_commitment.clone();
+        phase29.input_contract_commitment =
+            commit_phase29_recursive_compression_input_contract(&phase29)
+                .expect("commit Phase81 synthetic Phase29 contract");
+        assert_ne!(
+            phase29.global_start_state_commitment,
+            phase30.chain_start_boundary_commitment
+        );
+        assert_ne!(
+            phase29.global_end_state_commitment,
+            phase30.chain_end_boundary_commitment
+        );
+        phase41_prepare_boundary_translation_witness(&phase29, phase30)
+            .expect("prepare Phase81 synthetic Phase41 witness")
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn phase81_sample_phase42_witness(
+        phase41: &Phase41BoundaryTranslationWitness,
+        trace: &Phase43HistoryReplayTrace,
+        _phase74: &Phase74ChunkedHistoryCarryReceipt,
+        phase76: &Phase76ProofCheckedActualStwoDecodeChainReceipt,
+        phase78: &Phase78ProofCheckedActualStwoSharedLookupRegistryBridgeReceipt,
+    ) -> Phase42BoundaryHistoryEquivalenceWitness {
+        let mut witness = phase42_sample_history_equivalence_witness();
+        witness.proof_backend_version = trace.proof_backend_version.clone();
+        witness.statement_version = trace.statement_version.clone();
+        witness.phase29_contract_commitment = phase41.phase29_contract_commitment.clone();
+        witness.phase28_aggregate_commitment = trace.phase28_aggregate_commitment.clone();
+        witness.phase30_source_chain_commitment =
+            phase76.source_phase30_source_chain_commitment.clone();
+        witness.phase30_step_envelopes_commitment =
+            phase76.source_phase30_step_envelopes_commitment.clone();
+        witness.total_steps = trace.total_steps;
+        witness.layout_commitment = phase76.source_phase12_layout_commitment.clone();
+        witness.rolling_kv_pairs = trace.rolling_kv_pairs;
+        witness.pair_width = trace.pair_width;
+        witness.phase12_start_public_state_commitment =
+            trace.phase12_start_public_state_commitment.clone();
+        witness.phase12_end_public_state_commitment =
+            trace.phase12_end_public_state_commitment.clone();
+        witness.phase14_start_boundary_commitment =
+            phase41.phase29_global_start_state_commitment.clone();
+        witness.phase14_end_boundary_commitment =
+            phase41.phase29_global_end_state_commitment.clone();
+        witness.phase12_start_history_commitment = trace.phase12_start_history_commitment.clone();
+        witness.phase12_end_history_commitment = trace.phase12_end_history_commitment.clone();
+        witness.phase14_start_history_commitment = trace.phase14_start_history_commitment.clone();
+        witness.phase14_end_history_commitment = trace.phase14_end_history_commitment.clone();
+        witness.initial_kv_cache_commitment = trace.initial_kv_cache_commitment.clone();
+        witness.appended_pairs_commitment = trace.appended_pairs_commitment.clone();
+        witness.appended_pair_count = trace.total_steps;
+        witness.lookup_rows_commitments_commitment =
+            trace.lookup_rows_commitments_commitment.clone();
+        witness.lookup_rows_commitment_count = trace.total_steps + 1;
+        witness.witness_commitment = commit_phase42_boundary_history_equivalence_witness(&witness)
+            .expect("commit Phase81 synthetic Phase42 witness");
+        verify_phase42_boundary_history_equivalence_witness(&witness)
+            .expect("verify Phase81 synthetic Phase42 witness");
+        assert_eq!(
+            phase78.source_phase30_source_chain_commitment,
+            witness.phase30_source_chain_commitment
+        );
+        witness
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[allow(clippy::type_complexity)]
+    fn sample_phase81_to_phase84_source_stack() -> (
+        Phase41BoundaryTranslationWitness,
+        Phase42BoundaryHistoryEquivalenceWitness,
+        Phase43HistoryReplayTrace,
+        Phase74ChunkedHistoryCarryReceipt,
+        Phase76ProofCheckedActualStwoDecodeChainReceipt,
+        Phase77ProofCheckedActualStwoStepEnvelopeBridgeReceipt,
+        Phase78ProofCheckedActualStwoSharedLookupRegistryBridgeReceipt,
+        Phase79ProofCheckedDecodeCarryBridgeClaim,
+        Phase80ProofCheckedPublicationDecodeBridgeTable,
+        Phase81ProofCheckedBoundaryHistoryBridgeReceipt,
+        Phase82TranslatedPaper3SegmentSourceReceipt,
+        Phase83TranslatedPaper3BlockerAssessment,
+        Phase84PublicationPaper3SeamTable,
+    ) {
+        let (phase12, phase30) = sample_phase12_chain_and_phase30_manifest();
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let mut trace = phase81_sample_history_replay_trace_from_sources(&phase12, &phase30);
+        let phase41 = phase81_sample_phase41_witness_for_trace(&phase30, &trace);
+        trace.phase29_contract_commitment = phase41.phase29_contract_commitment.clone();
+        trace.trace_commitment =
+            commit_phase43_history_replay_trace(&trace).expect("recommit Phase81 sample trace");
+        verify_phase43_history_replay_trace(&trace)
+            .expect("reverify Phase81 sample trace after Phase29 alignment");
+        let phase70 = sample_phase70_role_neutral_handoff_artifact_for_three_steps();
+        assert_eq!(phase12.total_steps, phase70.step_count);
+        let phase71 = phase71_prepare_actual_stwo_step_envelope_handoff_receipt(&phase12, &phase30)
+            .expect("phase71 receipt");
+        let phase72 = phase72_prepare_actual_stwo_shared_lookup_registry_receipt(
+            &phase71, &phase12, &phase30,
+        )
+        .expect("phase72 receipt");
+        let phase74 =
+            phase74_prepare_chunked_history_carry_receipt(&phase12, &phase14).expect("phase74");
+        let phase76 =
+            phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt(&phase12, &phase30)
+                .expect("phase76 receipt");
+        let phase77 = phase77_prepare_proof_checked_actual_stwo_step_envelope_bridge_receipt(
+            &phase76, &phase71, &phase12, &phase30,
+        )
+        .expect("phase77 receipt");
+        let phase78 =
+            phase78_prepare_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(
+                &phase76, &phase72, &phase71, &phase12, &phase30,
+            )
+            .expect("phase78 receipt");
+        let phase42 =
+            phase81_sample_phase42_witness(&phase41, &trace, &phase74, &phase76, &phase78);
+        let phase79 = phase79_prepare_proof_checked_decode_carry_bridge_claim(
+            &phase70, &phase74, &phase77, &phase78,
+        )
+        .expect("phase79 claim");
+        let phase80 = phase80_prepare_proof_checked_publication_decode_bridge_table(
+            &phase74, &phase76, &phase77, &phase78, &phase79,
+        )
+        .expect("phase80 table");
+        let phase81 = phase81_prepare_proof_checked_boundary_history_bridge_receipt(
+            &phase41, &phase42, &trace, &phase74, &phase76, &phase78,
+        )
+        .expect("phase81 receipt");
+        let phase82 = phase82_prepare_translated_paper3_segment_source_receipt(&phase81)
+            .expect("phase82 receipt");
+        let phase83 = phase83_prepare_translated_paper3_blocker_assessment(&phase82)
+            .expect("phase83 assessment");
+        let phase84 =
+            phase84_prepare_publication_paper3_seam_table(&phase80, &phase81, &phase82, &phase83)
+                .expect("phase84 table");
+        (
+            phase41, phase42, trace, phase74, phase76, phase77, phase78, phase79, phase80, phase81,
+            phase82, phase83, phase84,
+        )
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase81_to_phase84_publication_paper3_seam_accepts_translated_bridge_stack() {
+        let (
+            phase41,
+            phase42,
+            trace,
+            phase74,
+            phase76,
+            _phase77,
+            phase78,
+            _phase79,
+            phase80,
+            phase81,
+            phase82,
+            phase83,
+            phase84,
+        ) = sample_phase81_to_phase84_source_stack();
+
+        assert_eq!(phase81.total_steps, 3);
+        assert_eq!(phase82.total_steps, 3);
+        assert!(phase83.boundary_translation_required);
+        assert_eq!(phase84.row_count, 4);
+
+        verify_phase81_proof_checked_boundary_history_bridge_receipt_against_sources(
+            &phase81, &phase41, &phase42, &trace, &phase74, &phase76, &phase78,
+        )
+        .expect("phase81 against sources");
+        verify_phase82_translated_paper3_segment_source_receipt_against_sources(&phase82, &phase81)
+            .expect("phase82 against sources");
+        verify_phase83_translated_paper3_blocker_assessment_against_sources(&phase83, &phase82)
+            .expect("phase83 against sources");
+        verify_phase84_publication_paper3_seam_table_against_sources(
+            &phase84, &phase80, &phase81, &phase82, &phase83,
+        )
+        .expect("phase84 against sources");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase81_boundary_history_bridge_against_sources_rejects_recommitted_phase30_drift() {
+        let (
+            phase41,
+            phase42,
+            trace,
+            phase74,
+            phase76,
+            _phase77,
+            phase78,
+            _phase79,
+            _phase80,
+            mut phase81,
+            _phase82,
+            _phase83,
+            _phase84,
+        ) = sample_phase81_to_phase84_source_stack();
+
+        phase81.source_phase30_source_chain_commitment = phase42_hash('e');
+        phase81.proof_checked_boundary_history_bridge_receipt_commitment =
+            commit_phase81_proof_checked_boundary_history_bridge_receipt(&phase81)
+                .expect("recommit tampered phase81 receipt");
+        verify_phase81_proof_checked_boundary_history_bridge_receipt(&phase81)
+            .expect("standalone phase81 verification only checks internal structure");
+        let err = verify_phase81_proof_checked_boundary_history_bridge_receipt_against_sources(
+            &phase81, &phase41, &phase42, &trace, &phase74, &phase76, &phase78,
+        )
+        .expect_err("phase81 source-bound verifier must reject Phase30 source drift");
+        assert!(err.to_string().contains("source drift"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase82_translated_segment_source_rejects_recommitted_translation_flag_drift() {
+        let (
+            _phase41,
+            _phase42,
+            _trace,
+            _phase74,
+            _phase76,
+            _phase77,
+            _phase78,
+            _phase79,
+            _phase80,
+            _phase81,
+            mut phase82,
+            _phase83,
+            _phase84,
+        ) = sample_phase81_to_phase84_source_stack();
+
+        phase82.translated_boundary_domains = false;
+        phase82.translated_paper3_segment_source_receipt_commitment =
+            commit_phase82_translated_paper3_segment_source_receipt(&phase82)
+                .expect("recommit tampered phase82 receipt");
+        let err = verify_phase82_translated_paper3_segment_source_receipt(&phase82)
+            .expect_err("phase82 receipt must reject cleared translation flag");
+        assert!(err.to_string().contains("shape drift"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase83_blocker_assessment_rejects_recommitted_legacy_equality_claim() {
+        let (
+            _phase41,
+            _phase42,
+            _trace,
+            _phase74,
+            _phase76,
+            _phase77,
+            _phase78,
+            _phase79,
+            _phase80,
+            _phase81,
+            _phase82,
+            mut phase83,
+            _phase84,
+        ) = sample_phase81_to_phase84_source_stack();
+
+        phase83.direct_phase30_to_phase29_equality_available = true;
+        phase83.translated_paper3_blocker_assessment_commitment =
+            commit_phase83_translated_paper3_blocker_assessment(&phase83)
+                .expect("recommit tampered phase83 assessment");
+        let err = verify_phase83_translated_paper3_blocker_assessment(&phase83)
+            .expect_err("phase83 assessment must reject legacy equality claim");
+        assert!(err.to_string().contains("claim drift"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase84_publication_paper3_seam_table_rejects_recommitted_row_order_drift() {
+        let (
+            _phase41,
+            _phase42,
+            _trace,
+            _phase74,
+            _phase76,
+            _phase77,
+            _phase78,
+            _phase79,
+            _phase80,
+            _phase81,
+            _phase82,
+            _phase83,
+            mut phase84,
+        ) = sample_phase81_to_phase84_source_stack();
+
+        phase84.artifact_rows[1].phase_label = "Phase83".to_string();
+        phase84.artifact_rows[1].row_commitment =
+            commit_phase84_publication_paper3_seam_row(&phase84.artifact_rows[1])
+                .expect("recommit tampered phase84 row");
+        phase84.artifact_rows_commitment =
+            phase84_commit_publication_paper3_seam_rows(&phase84.artifact_rows)
+                .expect("recommit tampered phase84 rows");
+        phase84.publication_paper3_seam_table_commitment =
+            commit_phase84_publication_paper3_seam_table(&phase84)
+                .expect("recommit tampered phase84 table");
+
+        let err = verify_phase84_publication_paper3_seam_table(&phase84)
+            .expect_err("phase84 table must reject row order drift");
+        assert!(err.to_string().contains("row order drift"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    #[ignore = "generates and checks a live shared-proof Phase42 source stack plus proof-checked actual decode bridge"]
+    fn phase81_live_shared_sources_accept_boundary_history_bridge_receipt() {
+        let (chain, phase28, phase30) = prove_phase42_boundary_preimage_shared_proof_demo()
+            .expect("derive shared Phase12/28/30 source stack");
+        let phase29 =
+            phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28(
+                &phase28,
+            )
+            .expect("derive Phase29 from live Phase28 source");
+        let phase14 = phase14_prepare_decoding_chain(&chain).expect("derive Phase14 replay chain");
+        let phase41 = phase41_prepare_boundary_translation_witness(&phase29, &phase30)
+            .expect("prepare live Phase41 witness");
+        let phase42 = phase42_prepare_boundary_history_equivalence_witness(
+            &chain, &phase28, &phase29, &phase30,
+        )
+        .expect("prepare live Phase42 witness");
+        let phase43 = phase43_prepare_history_replay_trace(&chain, &phase28, &phase29, &phase30)
+            .expect("prepare live Phase43 trace");
+        let phase71 = phase71_prepare_actual_stwo_step_envelope_handoff_receipt(&chain, &phase30)
+            .expect("prepare live Phase71 receipt");
+        let phase72 =
+            phase72_prepare_actual_stwo_shared_lookup_registry_receipt(&phase71, &chain, &phase30)
+                .expect("prepare live Phase72 receipt");
+        let phase74 =
+            phase74_prepare_chunked_history_carry_receipt(&chain, &phase14).expect("phase74");
+        let phase76 =
+            phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt(&chain, &phase30)
+                .expect("phase76");
+        let phase78 =
+            phase78_prepare_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(
+                &phase76, &phase72, &phase71, &chain, &phase30,
+            )
+            .expect("phase78");
+        let phase81 = phase81_prepare_proof_checked_boundary_history_bridge_receipt(
+            &phase41, &phase42, &phase43, &phase74, &phase76, &phase78,
+        )
+        .expect("prepare live Phase81 receipt");
+        verify_phase81_proof_checked_boundary_history_bridge_receipt_against_sources(
+            &phase81, &phase41, &phase42, &phase43, &phase74, &phase76, &phase78,
+        )
+        .expect("verify live Phase81 receipt against sources");
     }
 
     #[cfg(feature = "stwo-backend")]
