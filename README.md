@@ -444,8 +444,31 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-gemma-block-core-slice-artifact \
   gemma-block-core-slice.stwo.json
 
-# Freeze the publication-facing transformer-shaped tensor-native bundle
+# Strengthen that Gemma-shaped line with a richer slice artifact
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-gemma-block-richer-slice-artifact \
+  --proof gemma-block-v4.stark.json \
+  --chain tensor-native-chain.stwo.json \
+  -o gemma-block-richer-slice.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-gemma-block-richer-slice-artifact \
+  gemma-block-richer-slice.stwo.json
+
+# Accumulate repeated Gemma-like slices over one shared S-two proof
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-repeated-gemma-slice-accumulation-artifact \
+  --proof gemma-block-v4.stark.json \
+  --total-slices 4 \
+  --token-position 0 \
+  --start-block-index 2 \
+  -o repeated-gemma-slice-accumulation.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-repeated-gemma-slice-accumulation-artifact \
+  repeated-gemma-slice-accumulation.stwo.json
+
+# Freeze the publication-facing transformer-shaped tensor-native bundles
 bash scripts/paper/generate_stwo_tensor_native_transformer_bundle.sh
+bash scripts/paper/generate_stwo_repeated_gemma_slice_accumulation_bundle.sh
 
 # Run the minimal shared-lookup identity example
 cargo +nightly-2025-07-14 run --features stwo-backend --example shared_lookup_identity
