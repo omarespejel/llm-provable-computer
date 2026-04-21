@@ -15,7 +15,7 @@
   - `folded_multi_interval_artifact: folded-multi-interval-gemma-accumulation-prototype.stwo.json`
   - `folded_richer_multi_interval_artifact: folded-multi-interval-gemma-richer-family.stwo.json`
   - `canonical_sha256_file: sha256sums.txt`
-  - `canonical_sha256_excludes: benchmarks.tsv`
+  - `provenance_sha256_file: provenance_sha256sums.txt`
   - `auxiliary_benchmarks_file: benchmarks.tsv`
   - `auxiliary_commands_log: commands.log`
   - `auxiliary_comparison_file: comparison.tsv`

@@ -4,7 +4,7 @@ set -euo pipefail
 export LANG=C
 export LC_ALL=C
 
-REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 cd "$REPO_ROOT"
 
 BUNDLE_DIR="${BUNDLE_DIR:-$REPO_ROOT/docs/paper/artifacts/stwo-richer-multi-interval-gemma-v1-2026-04-21}"
@@ -66,6 +66,7 @@ SUMMARY_TSV="$BUNDLE_DIR/artifact_summary.tsv"
 COMPARISON_TSV="$BUNDLE_DIR/comparison.tsv"
 COMMANDS_LOG="$BUNDLE_DIR/commands.log"
 SHA256S="$BUNDLE_DIR/sha256sums.txt"
+PROVENANCE_SHA256S="$BUNDLE_DIR/provenance_sha256sums.txt"
 INDEX_MD="$BUNDLE_DIR/APPENDIX_ARTIFACT_INDEX.md"
 README_MD="$BUNDLE_DIR/README.md"
 PUBLIC_NOTES_MD="$BUNDLE_DIR/PUBLIC_COMPARISON_NOTES.md"
@@ -119,7 +120,7 @@ multi_interval_artifact: multi-interval-gemma-richer-family-accumulation.stwo.js
 folded_multi_interval_artifact: folded-multi-interval-gemma-accumulation-prototype.stwo.json
 folded_richer_multi_interval_artifact: folded-multi-interval-gemma-richer-family.stwo.json
 canonical_sha256_file: sha256sums.txt
-canonical_sha256_excludes: benchmarks.tsv
+provenance_sha256_file: provenance_sha256sums.txt
 auxiliary_benchmarks_file: benchmarks.tsv
 auxiliary_commands_log: commands.log
 auxiliary_comparison_file: comparison.tsv
@@ -358,7 +359,7 @@ readme_md.write_text(
     f"- richer-family / explicit ratio: `{summary_lookup['folded_richer_multi_interval_ratio']}`\n"
     f"- richer-family overhead above folded prototype: `{summary_lookup['folded_richer_multi_interval_over_folded_bytes']}` bytes\n"
     f"- explicit multi-interval savings vs naive single-interval duplication: `{summary_lookup['explicit_vs_naive_duplication_bytes_saved']}` bytes\n\n"
-    f"`benchmarks.tsv` is kept as an auxiliary timing log and is intentionally excluded from `sha256sums.txt` because wall-clock timings vary across runs.\n\n"
+    f"`sha256sums.txt` covers the deterministic canonical artifact surface. `provenance_sha256sums.txt` covers the full emitted bundle, including the auxiliary `benchmarks.tsv` timing log.\n\n"
     f"This remains a verifier-bound, pre-recursive artifact line. It does not claim recursive aggregation or final cryptographic compression.\n"
 )
 
@@ -412,8 +413,30 @@ PY
     "$(basename "$COMMANDS_LOG")" > "$SHA256S"
 )
 
+(
+  cd "$BUNDLE_DIR"
+  shasum -a 256 \
+    "$(basename "$GEMMA_PROOF_JSON")" \
+    "$(basename "$SINGLE_INTERVAL_EXPLICIT_JSON")" \
+    "$(basename "$SINGLE_INTERVAL_FOLDED_JSON")" \
+    "$(basename "$SINGLE_INTERVAL_FAMILY_JSON")" \
+    "$(basename "$MULTI_INTERVAL_JSON")" \
+    "$(basename "$FOLDED_MULTI_INTERVAL_JSON")" \
+    "$(basename "$RICHER_MULTI_INTERVAL_JSON")" \
+    "$(basename "$MANIFEST")" \
+    "$(basename "$SUMMARY_TSV")" \
+    "$(basename "$COMPARISON_TSV")" \
+    "$(basename "$PUBLIC_NOTES_MD")" \
+    "$(basename "$INDEX_MD")" \
+    "$(basename "$README_MD")" \
+    "$(basename "$BENCHMARKS")" \
+    "$(basename "$COMMANDS_LOG")" \
+    "$(basename "$SHA256S")" > "$PROVENANCE_SHA256S"
+)
+
 echo "bundle_dir=$BUNDLE_DIR"
 echo "manifest=$MANIFEST"
 echo "summary=$SUMMARY_TSV"
 echo "comparison=$COMPARISON_TSV"
 echo "sha256s=$SHA256S"
+echo "provenance_sha256s=$PROVENANCE_SHA256S"

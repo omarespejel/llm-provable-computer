@@ -20,6 +20,6 @@ Key frozen metrics:
 - richer-family overhead above folded prototype: `1886` bytes
 - explicit multi-interval savings vs naive single-interval duplication: `3090402` bytes
 
-`benchmarks.tsv` is kept as an auxiliary timing log and is intentionally excluded from `sha256sums.txt` because wall-clock timings vary across runs.
+`sha256sums.txt` covers the deterministic canonical artifact surface. `provenance_sha256sums.txt` covers the full emitted bundle, including the auxiliary `benchmarks.tsv` timing log.
 
 This remains a verifier-bound, pre-recursive artifact line. It does not claim recursive aggregation or final cryptographic compression.
