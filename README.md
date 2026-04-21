@@ -466,9 +466,32 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-repeated-gemma-slice-accumulation-artifact \
   repeated-gemma-slice-accumulation.stwo.json
 
+# Derive the first compact folded repeated-slice artifact from that explicit source
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-folded-gemma-slice-accumulation-artifact \
+  --source repeated-gemma-slice-accumulation.stwo.json \
+  -o folded-gemma-slice-accumulation.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-folded-gemma-slice-accumulation-artifact \
+  folded-gemma-slice-accumulation.stwo.json \
+  --source repeated-gemma-slice-accumulation.stwo.json
+
+# Extend the folded line to a richer Gemma-like family summary
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-folded-gemma-richer-slice-family-artifact \
+  --source repeated-gemma-slice-accumulation.stwo.json \
+  --folded folded-gemma-slice-accumulation.stwo.json \
+  -o folded-gemma-richer-slice-family.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-folded-gemma-richer-slice-family-artifact \
+  folded-gemma-richer-slice-family.stwo.json \
+  --source repeated-gemma-slice-accumulation.stwo.json \
+  --folded folded-gemma-slice-accumulation.stwo.json
+
 # Freeze the publication-facing transformer-shaped tensor-native bundles
 bash scripts/paper/generate_stwo_tensor_native_transformer_bundle.sh
 bash scripts/paper/generate_stwo_repeated_gemma_slice_accumulation_bundle.sh
+bash scripts/paper/generate_stwo_folded_gemma_slice_bundle.sh
 
 # Run the minimal shared-lookup identity example
 cargo +nightly-2025-07-14 run --features stwo-backend --example shared_lookup_identity

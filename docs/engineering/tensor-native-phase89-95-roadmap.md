@@ -305,6 +305,68 @@ Stop condition:
 - the design starts from the real Phase95 repeated-slice artifact and does not
   speculate about savings that the repository cannot already ground.
 
+## Phase96.5: first folded repeated-slice prototype
+
+Goal:
+
+- derive the first compact folded repeated-slice artifact directly from the
+  explicit Phase95 repeated Gemma-slice accumulation surface.
+
+Deliverables:
+
+- one `Phase965FoldedGemmaSliceAccumulationArtifact`,
+- bounded contiguous folded groups over the explicit Phase95 members,
+- verifier checks that recompute those folded groups from the Phase95 source,
+- negative mutations for source-binding drift, group drift, and accumulator
+  drift.
+
+Stop condition:
+
+- the repository can point to one smaller folded repeated-slice derivative that
+  stays explicitly bound to the Phase95 source artifact and still makes no
+  recursion claim.
+
+## Phase97: frozen explicit-vs-folded benchmark bundle
+
+Goal:
+
+- freeze one publication-facing benchmark bundle that compares explicit repeated
+  accumulation against the first folded derivative over the same Gemma-like
+  slice interval.
+
+Deliverables:
+
+- one frozen artifact directory under `docs/paper/artifacts/`,
+- exact JSON-byte deltas for explicit vs folded accumulation,
+- exact timings and SHA-256 hashes,
+- one appendix-ready index explaining the claim boundary.
+
+Stop condition:
+
+- the repository can point to one reproducible explicit-vs-folded benchmark
+  bundle with exact hashes and byte deltas, not only in-memory structs.
+
+## Phase98: richer folded Gemma slice family
+
+Goal:
+
+- extend the folded line from repeated-slice totals to a richer family summary
+  that still stays source-bound and pre-recursive.
+
+Deliverables:
+
+- one `Phase98FoldedGemmaRicherSliceFamilyArtifact`,
+- selected-memory-window family commitment,
+- richer invariant-summary family commitment,
+- family-level score / residual / normalization / activation summaries, and
+- verifier checks for family-commitment and summary drift.
+
+Stop condition:
+
+- the repository can point to one compact richer-family derivative that is
+  anchored to both the explicit Phase95 source artifact and the Phase96.5
+  folded artifact.
+
 ## Research answer this roadmap aims to produce
 
 If the roadmap succeeds, the repository should be able to support the following

@@ -16,6 +16,7 @@ These are the bundles directly used by the current paper package:
 - `stwo-shared-normalization-primitive-v1-2026-04-21/`
 - `stwo-tensor-native-transformer-shaped-v1-2026-04-21/`
 - `stwo-repeated-gemma-slice-accumulation-v1-2026-04-21/`
+- `stwo-folded-gemma-slice-family-v1-2026-04-21/`
 
 These are the bundles that should be treated as the paper's primary reproducibility and systems-evidence surfaces.
 
@@ -73,6 +74,15 @@ accumulation-artifact bytes against `5,029,980` naive repeated richer-slice
 JSON bytes, saving `3,998,305` JSON bytes versus blind richer-slice
 duplication. It remains a verifier-bound repeated-slice artifact, not a
 recursive cryptographic compression claim.
+
+The `stwo-folded-gemma-slice-family-v1-2026-04-21` directory extends that line
+one step further. It freezes the explicit Phase95 repeated-slice accumulation
+artifact together with a smaller Phase96.5 folded repeated-slice derivative and
+one Phase98 richer-family derivative. The main benchmark question is narrow and
+artifact-facing: how much smaller the first folded derivative is than the
+explicit repeated accumulation over the same Gemma-like interval, while both
+remain verifier-bound to the same shared proof surface. It is still explicitly
+pre-recursive and does not claim standalone recursive compression.
 
 Later Phase81-84 translated seam surfaces remain implemented in-repo, but they are not
 yet cut as frozen publication-facing artifact directories.
