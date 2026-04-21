@@ -38,7 +38,16 @@ esac
 BUNDLE_FINAL_DIR="$CANON_BUNDLE_DIR"
 BUNDLE_FINAL_NAME="$(basename "$BUNDLE_FINAL_DIR")"
 STAGING_DIR="$(mktemp -d "$CANON_EXPECTED_PREFIX/.tmp.${BUNDLE_FINAL_NAME}.XXXXXX")"
-trap 'rm -rf -- "$STAGING_DIR"' EXIT
+BACKUP_DIR=""
+cleanup_bundle_publish() {
+  if [ -n "${STAGING_DIR:-}" ] && [ -d "$STAGING_DIR" ]; then
+    rm -rf -- "$STAGING_DIR"
+  fi
+  if [ -n "${BACKUP_DIR:-}" ] && [ -e "$BACKUP_DIR" ] && [ ! -e "$BUNDLE_FINAL_DIR" ]; then
+    mv -- "$BACKUP_DIR" "$BUNDLE_FINAL_DIR"
+  fi
+}
+trap cleanup_bundle_publish EXIT
 BUNDLE_DIR="$STAGING_DIR"
 
 GENERATOR_SCRIPT_REL="scripts/paper/generate_stwo_richer_multi_interval_gemma_bundle.sh"
@@ -468,8 +477,16 @@ PY
     "$(basename "$SHA256S")" > "$PROVENANCE_SHA256S"
 )
 
-rm -rf -- "$BUNDLE_FINAL_DIR"
+if [ -e "$BUNDLE_FINAL_DIR" ]; then
+  BACKUP_DIR="$CANON_EXPECTED_PREFIX/.bak.${BUNDLE_FINAL_NAME}.$(python3 -c 'import time; print(time.time_ns())')"
+  mv -- "$BUNDLE_FINAL_DIR" "$BACKUP_DIR"
+fi
 mv -- "$BUNDLE_DIR" "$BUNDLE_FINAL_DIR"
+STAGING_DIR=""
+if [ -n "$BACKUP_DIR" ] && [ -e "$BACKUP_DIR" ]; then
+  rm -rf -- "$BACKUP_DIR"
+  BACKUP_DIR=""
+fi
 trap - EXIT
 
 echo "bundle_dir=$BUNDLE_FINAL_DIR"
