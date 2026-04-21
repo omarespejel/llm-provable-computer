@@ -82,7 +82,7 @@ run_timed() {
   for arg in "$@"; do
     case "$arg" in
       "$REPO_ROOT"/*)
-        rendered_args+=(".${arg#$REPO_ROOT}")
+        rendered_args+=(".${arg#"$REPO_ROOT"}")
         ;;
       "$REPO_ROOT")
         rendered_args+=(".")
@@ -119,6 +119,7 @@ multi_interval_artifact: multi-interval-gemma-richer-family-accumulation.stwo.js
 folded_multi_interval_artifact: folded-multi-interval-gemma-accumulation-prototype.stwo.json
 folded_richer_multi_interval_artifact: folded-multi-interval-gemma-richer-family.stwo.json
 canonical_sha256_file: sha256sums.txt
+canonical_sha256_excludes: benchmarks.tsv
 auxiliary_benchmarks_file: benchmarks.tsv
 auxiliary_commands_log: commands.log
 auxiliary_comparison_file: comparison.tsv
@@ -357,6 +358,7 @@ readme_md.write_text(
     f"- richer-family / explicit ratio: `{summary_lookup['folded_richer_multi_interval_ratio']}`\n"
     f"- richer-family overhead above folded prototype: `{summary_lookup['folded_richer_multi_interval_over_folded_bytes']}` bytes\n"
     f"- explicit multi-interval savings vs naive single-interval duplication: `{summary_lookup['explicit_vs_naive_duplication_bytes_saved']}` bytes\n\n"
+    f"`benchmarks.tsv` is kept as an auxiliary timing log and is intentionally excluded from `sha256sums.txt` because wall-clock timings vary across runs.\n\n"
     f"This remains a verifier-bound, pre-recursive artifact line. It does not claim recursive aggregation or final cryptographic compression.\n"
 )
 
@@ -407,7 +409,6 @@ PY
     "$(basename "$PUBLIC_NOTES_MD")" \
     "$(basename "$INDEX_MD")" \
     "$(basename "$README_MD")" \
-    "$(basename "$BENCHMARKS")" \
     "$(basename "$COMMANDS_LOG")" > "$SHA256S"
 )
 
