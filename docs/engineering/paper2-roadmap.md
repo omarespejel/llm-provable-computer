@@ -172,3 +172,24 @@ The next concrete engineering slice should be:
    needs the full Phase 29 + Phase 30 to Phase 36 source chain,
 4. then recurse over that existing decode boundary and public-input ordering
    rather than inventing a new statement surface.
+
+## Current proof-checked bridge status
+
+The decode-bridge line now has a stronger pre-recursive publication layer:
+
+1. `Phase76ProofCheckedActualStwoDecodeChainReceipt` rechecks the real Phase 12
+   execution proofs before accepting the Phase 30 envelope manifest as a source,
+2. `Phase77ProofCheckedActualStwoStepEnvelopeBridgeReceipt` binds the existing
+   actual step-envelope receipt back to that proof-checked source,
+3. `Phase78ProofCheckedActualStwoSharedLookupRegistryBridgeReceipt` binds the
+   existing shared-lookup registry receipt back to that same proof-checked
+   source,
+4. `Phase79ProofCheckedDecodeCarryBridgeClaim` ties the abstract carry surface
+   to those proof-checked actual receipts plus the chunked-history carry
+   receipt,
+5. `Phase80ProofCheckedPublicationDecodeBridgeTable` packages only the
+   proof-checked bridge artifacts for publication-facing artifact accounting.
+
+That is the stop condition before more feature expansion on this line: freeze
+the paper artifact section around the proof-checked bridge and avoid relabeling
+it as recursion or cryptographic compression.
