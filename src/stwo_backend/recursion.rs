@@ -23472,15 +23472,6 @@ pub fn phase74_prepare_chunked_history_carry_receipt(
     phase12_chain: &Phase12DecodingChainManifest,
     phase14_chain: &Phase14DecodingChainManifest,
 ) -> Result<Phase74ChunkedHistoryCarryReceipt> {
-    verify_phase12_decoding_chain(phase12_chain)?;
-    let expected_phase14 = phase14_prepare_decoding_chain(phase12_chain)?;
-    if phase14_chain != &expected_phase14 {
-        return Err(VmError::InvalidConfig(
-            "Phase 74 chunked-history carry requires the Phase14 chain to be the exact source-bound replay of Phase12"
-                .to_string(),
-        ));
-    }
-    verify_phase14_decoding_chain(phase14_chain)?;
     phase74_prepare_chunked_history_carry_receipt_for_step_range(
         phase12_chain,
         phase14_chain,
@@ -28303,13 +28294,32 @@ fn phase71_chain_step_positions(chain: &Phase12DecodingChainManifest) -> Result<
 }
 
 #[cfg(feature = "stwo-backend")]
+fn phase71_manifest_matches_full_chain_boundaries(
+    chain: &Phase12DecodingChainManifest,
+    manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> bool {
+    let Some(first) = chain.steps.first() else {
+        return false;
+    };
+    let Some(last) = chain.steps.last() else {
+        return false;
+    };
+    manifest.total_steps == chain.total_steps
+        && manifest.chain_start_boundary_commitment == first.from_state.public_state_commitment
+        && manifest.chain_end_boundary_commitment == last.to_state.public_state_commitment
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase71_manifest_step_range_and_positions(
     chain: &Phase12DecodingChainManifest,
     manifest: &Phase30DecodingStepProofEnvelopeManifest,
 ) -> Result<(usize, usize, usize, usize)> {
     verify_phase30_decoding_step_proof_envelope_manifest(manifest)?;
-    if let Ok(()) =
-        verify_phase30_decoding_step_proof_envelope_manifest_against_chain(manifest, chain)
+    // Whole-chain validation rebuilds the complete expected Phase30 manifest from the
+    // full Phase12 chain. Segment manifests can skip straight to the range-aware path.
+    if phase71_manifest_matches_full_chain_boundaries(chain, manifest)
+        && verify_phase30_decoding_step_proof_envelope_manifest_against_chain(manifest, chain)
+            .is_ok()
     {
         let (chain_start_position, chain_end_position) = phase71_chain_step_positions(chain)?;
         return Ok((
