@@ -51,6 +51,8 @@ use llm_provable_computer::{
     load_phase37_recursive_artifact_chain_harness_receipt, load_phase3_binary_step_lookup_proof,
     load_phase5_normalization_lookup_proof, load_phase92_shared_normalization_primitive_artifact,
     load_phase93_tensor_native_chain_artifact, load_phase945_gemma_block_core_slice_artifact,
+    load_phase9475_gemma_block_richer_slice_artifact,
+    load_phase95_repeated_gemma_slice_accumulation_artifact,
     load_stwo_transformer_shaped_artifact_bundle,
     phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28,
     phase30_prepare_decoding_step_proof_envelope_manifest,
@@ -64,6 +66,8 @@ use llm_provable_computer::{
     prepare_phase92_shared_normalization_demo_artifact,
     prepare_phase93_tensor_native_chain_demo_artifact,
     prepare_phase945_gemma_block_core_slice_artifact,
+    prepare_phase9475_gemma_block_richer_slice_artifact,
+    prepare_phase95_repeated_gemma_slice_accumulation_artifact,
     prepare_stwo_transformer_shaped_artifact_bundle,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
@@ -92,6 +96,8 @@ use llm_provable_computer::{
     save_phase30_decoding_step_proof_envelope_manifest, save_phase3_binary_step_lookup_proof,
     save_phase5_normalization_lookup_proof, save_phase92_shared_normalization_primitive_artifact,
     save_phase93_tensor_native_chain_artifact, save_phase945_gemma_block_core_slice_artifact,
+    save_phase9475_gemma_block_richer_slice_artifact,
+    save_phase95_repeated_gemma_slice_accumulation_artifact,
     save_stwo_transformer_shaped_artifact_bundle, stwo_backend_enabled,
     verify_phase10_shared_binary_step_lookup_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
@@ -127,13 +133,16 @@ use llm_provable_computer::{
     verify_phase5_normalization_lookup_demo_envelope,
     verify_phase92_shared_normalization_primitive_artifact,
     verify_phase93_tensor_native_chain_artifact, verify_phase945_gemma_block_core_slice_artifact,
+    verify_phase9475_gemma_block_richer_slice_artifact,
+    verify_phase95_repeated_gemma_slice_accumulation_artifact,
     Phase29RecursiveCompressionInputContract, Phase30DecodingStepProofEnvelopeManifest,
     Phase31RecursiveCompressionDecodeBoundaryManifest,
     Phase32RecursiveCompressionStatementContract, Phase33RecursiveCompressionPublicInputManifest,
     Phase34RecursiveCompressionSharedLookupManifest, Phase35RecursiveCompressionTargetManifest,
     Phase36RecursiveVerifierHarnessReceipt, Phase37RecursiveArtifactChainHarnessReceipt,
     Phase92SharedNormalizationPrimitiveArtifact, Phase93TensorNativeChainArtifact,
-    Phase945GemmaBlockCoreSliceArtifact, StwoTransformerShapedArtifactBundle,
+    Phase945GemmaBlockCoreSliceArtifact, Phase9475GemmaBlockRicherSliceArtifact,
+    Phase95RepeatedGemmaSliceAccumulationArtifact, StwoTransformerShapedArtifactBundle,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
     STWO_BACKEND_VERSION_PHASE12,
     STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
@@ -155,6 +164,8 @@ use llm_provable_computer::{
     STWO_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE26,
     STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_SCOPE_PHASE945,
     STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_VERSION_PHASE945,
+    STWO_GEMMA_BLOCK_RICHER_SLICE_ARTIFACT_SCOPE_PHASE9475,
+    STWO_GEMMA_BLOCK_RICHER_SLICE_ARTIFACT_VERSION_PHASE9475,
     STWO_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE25, STWO_LOOKUP_PROOF_VERSION_PHASE3,
     STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
     STWO_NORMALIZATION_PROOF_VERSION_PHASE5, STWO_NORMALIZATION_SEMANTIC_SCOPE_PHASE5,
@@ -175,6 +186,8 @@ use llm_provable_computer::{
     STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_VERSION_PHASE35,
     STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_SCOPE_PHASE36,
     STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_VERSION_PHASE36,
+    STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_SCOPE_PHASE95,
+    STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_VERSION_PHASE95,
     STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_SCOPE_PHASE92,
     STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_VERSION_PHASE92,
     STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_SCOPE_PHASE93,
@@ -421,6 +434,46 @@ enum Command {
     },
     /// Verify a Gemma block core-slice artifact.
     VerifyStwoGemmaBlockCoreSliceArtifact {
+        /// Path to the serialized artifact JSON file.
+        artifact: PathBuf,
+    },
+    /// Prepare a richer Gemma block slice artifact with fixed memory-window and score/mix invariants.
+    PrepareStwoGemmaBlockRicherSliceArtifact {
+        /// Path to the serialized S-two execution proof JSON file.
+        #[arg(long = "proof")]
+        proof: PathBuf,
+        /// Path to the serialized Phase93 tensor-native chain artifact JSON file.
+        #[arg(long = "chain")]
+        chain: PathBuf,
+        /// File where the serialized artifact JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a richer Gemma block slice artifact.
+    VerifyStwoGemmaBlockRicherSliceArtifact {
+        /// Path to the serialized artifact JSON file.
+        artifact: PathBuf,
+    },
+    /// Prepare a repeated Gemma-slice accumulation artifact with shared proof reuse.
+    PrepareStwoRepeatedGemmaSliceAccumulationArtifact {
+        /// Path to the serialized S-two execution proof JSON file.
+        #[arg(long = "proof")]
+        proof: PathBuf,
+        /// Number of repeated slices to accumulate.
+        #[arg(long = "total-slices", default_value_t = 4)]
+        total_slices: usize,
+        /// Token position reused across the repeated slice family.
+        #[arg(long = "token-position", default_value_t = 0)]
+        token_position: u64,
+        /// First block index in the repeated slice family.
+        #[arg(long = "start-block-index", default_value_t = 0)]
+        start_block_index: u64,
+        /// File where the serialized artifact JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a repeated Gemma-slice accumulation artifact.
+    VerifyStwoRepeatedGemmaSliceAccumulationArtifact {
         /// Path to the serialized artifact JSON file.
         artifact: PathBuf,
     },
@@ -1864,6 +1917,30 @@ fn run() -> llm_provable_computer::Result<()> {
         Command::VerifyStwoGemmaBlockCoreSliceArtifact { artifact } => {
             verify_stwo_gemma_block_core_slice_artifact_command(&artifact)?
         }
+        Command::PrepareStwoGemmaBlockRicherSliceArtifact {
+            proof,
+            chain,
+            output,
+        } => prepare_stwo_gemma_block_richer_slice_artifact_command(&proof, &chain, &output)?,
+        Command::VerifyStwoGemmaBlockRicherSliceArtifact { artifact } => {
+            verify_stwo_gemma_block_richer_slice_artifact_command(&artifact)?
+        }
+        Command::PrepareStwoRepeatedGemmaSliceAccumulationArtifact {
+            proof,
+            total_slices,
+            token_position,
+            start_block_index,
+            output,
+        } => prepare_stwo_repeated_gemma_slice_accumulation_artifact_command(
+            &proof,
+            total_slices,
+            token_position,
+            start_block_index,
+            &output,
+        )?,
+        Command::VerifyStwoRepeatedGemmaSliceAccumulationArtifact { artifact } => {
+            verify_stwo_repeated_gemma_slice_accumulation_artifact_command(&artifact)?
+        }
         Command::ProveStwoDecodingDemo { output } => prove_stwo_decoding_demo_command(&output)?,
         Command::VerifyStwoDecodingDemo { proof } => verify_stwo_decoding_demo_command(&proof)?,
         Command::ProveStwoDecodingFamilyDemo { output } => {
@@ -3132,6 +3209,256 @@ fn verify_stwo_gemma_block_core_slice_artifact_command(
         );
         println!("expected_semantic_scope: {STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_SCOPE_PHASE945}");
         print_phase945_gemma_block_core_slice_report(&artifact);
+        Ok(())
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn print_phase9475_gemma_block_richer_slice_report(
+    artifact: &Phase9475GemmaBlockRicherSliceArtifact,
+) {
+    println!("artifact_version: {}", artifact.artifact_version);
+    println!("semantic_scope: {}", artifact.semantic_scope);
+    println!("artifact_commitment: {}", artifact.artifact_commitment);
+    println!("program_label: {}", artifact.program_label);
+    println!(
+        "core_slice_artifact_commitment: {}",
+        artifact.core_slice_artifact_commitment
+    );
+    println!(
+        "chain_artifact_commitment: {}",
+        artifact.chain_artifact_commitment
+    );
+    println!(
+        "shared_table_registry_commitment: {}",
+        artifact.shared_table_registry_commitment
+    );
+    println!(
+        "selected_memory_window_commitment: {}",
+        artifact.selected_memory_window_commitment
+    );
+    println!(
+        "selected_memory_window_entries: {}",
+        artifact.selected_memory_window.len()
+    );
+    println!("local_score: {}", artifact.local_score);
+    println!("global_score: {}", artifact.global_score);
+    println!("grouped_value_mix: {}", artifact.grouped_value_mix);
+    println!("residual_output: {}", artifact.residual_output);
+    println!("primary_norm_sq: {}", artifact.primary_norm_sq);
+    println!("primary_inv_sqrt_q8: {}", artifact.primary_inv_sqrt_q8);
+    println!(
+        "primary_activation_input: {}",
+        artifact.primary_activation_input
+    );
+    println!(
+        "primary_activation_output: {}",
+        artifact.primary_activation_output
+    );
+    println!("secondary_norm_sq: {}", artifact.secondary_norm_sq);
+    println!("secondary_inv_sqrt_q8: {}", artifact.secondary_inv_sqrt_q8);
+    println!(
+        "secondary_activation_input: {}",
+        artifact.secondary_activation_input
+    );
+    println!(
+        "secondary_activation_output: {}",
+        artifact.secondary_activation_output
+    );
+    println!(
+        "execution_proof_bytes: {}",
+        artifact.core_slice_artifact.execution_proof.proof.len()
+    );
+}
+
+fn prepare_stwo_gemma_block_richer_slice_artifact_command(
+    proof_path: &Path,
+    chain_path: &Path,
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = (proof_path, chain_path, output);
+        return Err(VmError::UnsupportedProof(
+            "S-two Gemma block richer slice artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two Gemma block richer slice artifact")?;
+        let execution_proof = load_execution_stark_proof(proof_path)?;
+        let chain_artifact = load_phase93_tensor_native_chain_artifact(chain_path)?;
+        let core_slice_artifact =
+            prepare_phase945_gemma_block_core_slice_artifact(&chain_artifact, &execution_proof)?;
+        let artifact = prepare_phase9475_gemma_block_richer_slice_artifact(&core_slice_artifact)?;
+        save_phase9475_gemma_block_richer_slice_artifact(&artifact, output)?;
+
+        println!("output: {}", output.display());
+        println!("proof: {}", proof_path.display());
+        println!("chain: {}", chain_path.display());
+        println!("verified_stark: true");
+        print_phase9475_gemma_block_richer_slice_report(&artifact);
+        Ok(())
+    }
+}
+
+fn verify_stwo_gemma_block_richer_slice_artifact_command(
+    artifact_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = artifact_path;
+        return Err(VmError::UnsupportedProof(
+            "S-two Gemma block richer slice artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two Gemma block richer slice artifact")?;
+        let artifact = load_phase9475_gemma_block_richer_slice_artifact(artifact_path)?;
+        verify_phase9475_gemma_block_richer_slice_artifact(&artifact)?;
+
+        println!("artifact: {}", artifact_path.display());
+        println!("verified_artifact: true");
+        println!("verified_stark: true");
+        println!(
+            "expected_artifact_version: {STWO_GEMMA_BLOCK_RICHER_SLICE_ARTIFACT_VERSION_PHASE9475}"
+        );
+        println!(
+            "expected_semantic_scope: {STWO_GEMMA_BLOCK_RICHER_SLICE_ARTIFACT_SCOPE_PHASE9475}"
+        );
+        print_phase9475_gemma_block_richer_slice_report(&artifact);
+        Ok(())
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn print_phase95_repeated_gemma_slice_accumulation_report(
+    artifact: &Phase95RepeatedGemmaSliceAccumulationArtifact,
+) {
+    println!("artifact_version: {}", artifact.artifact_version);
+    println!("semantic_scope: {}", artifact.semantic_scope);
+    println!("artifact_commitment: {}", artifact.artifact_commitment);
+    println!("program_label: {}", artifact.program_label);
+    println!(
+        "shared_primitive_artifact_commitment: {}",
+        artifact.shared_primitive_artifact_commitment
+    );
+    println!(
+        "shared_table_registry_commitment: {}",
+        artifact.shared_table_registry_commitment
+    );
+    println!(
+        "shared_execution_proof_commitment: {}",
+        artifact.shared_execution_proof_commitment
+    );
+    println!(
+        "shared_execution_proof_backend_version: {}",
+        artifact.shared_execution_proof_backend_version
+    );
+    println!(
+        "shared_execution_statement_version: {}",
+        artifact.shared_execution_statement_version
+    );
+    println!("total_slices: {}", artifact.total_slices);
+    println!(
+        "repeated_token_position: {}",
+        artifact.repeated_token_position
+    );
+    println!("start_block_index: {}", artifact.start_block_index);
+    println!("terminal_block_index: {}", artifact.terminal_block_index);
+    println!("members_commitment: {}", artifact.members_commitment);
+    println!(
+        "shared_execution_proof_bytes: {}",
+        artifact.shared_execution_proof.proof.len()
+    );
+    let naive_repeated_proof_bytes =
+        artifact.shared_execution_proof.proof.len() * artifact.total_slices;
+    println!("naive_repeated_proof_bytes: {naive_repeated_proof_bytes}");
+}
+
+fn prepare_stwo_repeated_gemma_slice_accumulation_artifact_command(
+    proof_path: &Path,
+    total_slices: usize,
+    token_position: u64,
+    start_block_index: u64,
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = (
+            proof_path,
+            total_slices,
+            token_position,
+            start_block_index,
+            output,
+        );
+        return Err(VmError::UnsupportedProof(
+            "S-two repeated Gemma slice accumulation artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two repeated Gemma slice accumulation artifact")?;
+        if total_slices > llm_provable_computer::MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES {
+            return Err(VmError::InvalidConfig(format!(
+                "S-two repeated Gemma slice accumulation supports at most {} slices",
+                llm_provable_computer::MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES
+            )));
+        }
+        let execution_proof = load_execution_stark_proof(proof_path)?;
+        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()?;
+        let artifact = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
+            &primitive_artifact,
+            &execution_proof,
+            total_slices,
+            token_position,
+            start_block_index,
+        )?;
+        save_phase95_repeated_gemma_slice_accumulation_artifact(&artifact, output)?;
+
+        println!("output: {}", output.display());
+        println!("proof: {}", proof_path.display());
+        println!("verified_stark: true");
+        print_phase95_repeated_gemma_slice_accumulation_report(&artifact);
+        Ok(())
+    }
+}
+
+fn verify_stwo_repeated_gemma_slice_accumulation_artifact_command(
+    artifact_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = artifact_path;
+        return Err(VmError::UnsupportedProof(
+            "S-two repeated Gemma slice accumulation artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two repeated Gemma slice accumulation artifact")?;
+        let artifact = load_phase95_repeated_gemma_slice_accumulation_artifact(artifact_path)?;
+        verify_phase95_repeated_gemma_slice_accumulation_artifact(&artifact)?;
+
+        println!("artifact: {}", artifact_path.display());
+        println!("verified_artifact: true");
+        println!("verified_stark: true");
+        println!(
+            "expected_artifact_version: {STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_VERSION_PHASE95}"
+        );
+        println!(
+            "expected_semantic_scope: {STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_SCOPE_PHASE95}"
+        );
+        print_phase95_repeated_gemma_slice_accumulation_report(&artifact);
         Ok(())
     }
 }
@@ -12955,6 +13282,10 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-tensor-native-chain-artifact"
                 | "prepare-stwo-gemma-block-core-slice-artifact"
                 | "verify-stwo-gemma-block-core-slice-artifact"
+                | "prepare-stwo-gemma-block-richer-slice-artifact"
+                | "verify-stwo-gemma-block-richer-slice-artifact"
+                | "prepare-stwo-repeated-gemma-slice-accumulation-artifact"
+                | "verify-stwo-repeated-gemma-slice-accumulation-artifact"
                 | "prove-stwo-decoding-demo"
                 | "verify-stwo-decoding-demo"
                 | "prove-stwo-decoding-family-demo"

@@ -40,14 +40,22 @@ The first result-bearing step on this line now exists:
 - one direct shared-normalization proof reused across `2` fixed primitive steps,
 - one frozen transformer-shaped tensor-native bundle under
   `docs/paper/artifacts/stwo-tensor-native-transformer-shaped-v1-2026-04-21/`,
-- one `4`-step typed carried-state chain over the primitive template, and
+- one `4`-step typed carried-state chain over the primitive template,
 - one Gemma-shaped core-slice artifact binding that chain to a real
   `gemma_block_v4` S-two proof plus shared-normalization and shared-activation
-  receipts.
+  receipts,
+- one frozen repeated-slice bundle under
+  `docs/paper/artifacts/stwo-repeated-gemma-slice-accumulation-v1-2026-04-21/`,
+- one Phase94.75 richer slice binding selected memory-window rows plus score,
+  grouped-value, residual, normalization, and activation invariants, and
+- one Phase95 repeated-slice accumulation artifact over `4` Gemma-like slices
+  that reuses `90,432` shared proof bytes instead of `361,728` naive repeated
+  proof bytes and saves `3,998,305` JSON bytes versus duplicating the richer
+  slice `4` times.
 
-That means Phase91 through Phase94.5 are no longer only roadmap items. The next
-meaningful work is Phase95: accumulation or folding only after these
-transformer-shaped tensor-native artifacts already exist.
+That means Phase91 through Phase95 are no longer only roadmap items. The next
+meaningful work is Phase96: transformer-specific accumulation or folding on top
+of this frozen repeated-slice line, not more wrapper layers.
 
 ## Phase89: upstream sync audit
 
@@ -230,23 +238,72 @@ Stop condition:
 - the repository can point to one real Gemma-shaped tensor-native artifact line
   without claiming full-block tensor-native proving or recursive aggregation.
 
-## Phase95: transformer-specific folding / accumulation design
+## Phase94.75: richer Gemma slice
 
 Goal:
 
-- move to accumulation only after a real tensor-native artifact exists.
+- strengthen the Gemma-shaped artifact line without jumping to a full Gemma
+  block.
+
+Primary code surfaces:
+
+- `src/stwo_backend/tensor_native_artifact.rs`
+- `src/bin/tvm.rs`
+- `tests/cli.rs`
+- `scripts/paper/generate_stwo_repeated_gemma_slice_accumulation_bundle.sh`
 
 Deliverables:
 
-- a design note, not a premature proof claim,
-- explicit novelty boundary:
-  transformer-specific accumulation with shared lookup tables and carried state,
-  not generic AIR or CCS folding.
+- one richer-slice artifact over `gemma_block_v4`,
+- one selected-memory-window commitment,
+- bound local/global score, grouped-value, residual, normalization, and
+  activation summaries, and
+- negative mutations for summary drift and commitment drift.
 
 Stop condition:
 
-- the design starts from a real Phase92-94 artifact and does not speculate about
-  savings that current artifacts do not justify.
+- the repository can point to one Gemma-shaped slice artifact that says more
+  than "this proof existed" and less than "we proved the whole block directly."
+
+## Phase95: repeated Gemma-slice accumulation
+
+Goal:
+
+- turn repeated Gemma-like structure into a benchmarkable repeated-slice
+  artifact surface.
+
+Deliverables:
+
+- one repeated-slice accumulation artifact over multiple block-indexed members,
+- one frozen bundle with exact timings, hashes, and byte-level reuse metrics,
+- explicit comparison against naive repeated proof duplication and naive repeated
+  richer-slice duplication, and
+- verifier checks that reject member drift, block-index drift, and shared proof
+  substitution.
+
+Stop condition:
+
+- the repository can point to one honest repeated-structure result without
+  pretending that repeated-slice reuse is already recursive cryptographic
+  compression.
+
+## Phase96: transformer-specific folding / accumulation design
+
+Goal:
+
+- design the real compression step only after the repository already has a
+  frozen repeated-slice benchmark surface.
+
+Deliverables:
+
+- a design note or first prototype with an explicit novelty boundary:
+  transformer-specific accumulation or folding with shared lookup tables and
+  carried state, not generic AIR or CCS folding.
+
+Stop condition:
+
+- the design starts from the real Phase95 repeated-slice artifact and does not
+  speculate about savings that the repository cannot already ground.
 
 ## Research answer this roadmap aims to produce
 
@@ -256,7 +313,8 @@ claim cleanly:
 > STARK-native proving is structurally attractive for transformer workloads not
 > because "a VM can be wrapped in a STARK," but because repeated
 > lookup-heavy, tensor-shaped, state-carrying relations can be expressed
-> directly and packaged with verifier-enforced continuity.
+> directly, packaged with verifier-enforced continuity, and then benchmarked in
+> repeated-slice form before any recursive compression claims are made.
 
 That is a stronger and more defensible result than another layer of VM-manifest
 composition.
