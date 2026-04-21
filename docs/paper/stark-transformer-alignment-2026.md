@@ -544,6 +544,14 @@ implementation checkpoint for the claim that shared lookup identity and typed ca
 state are now verifier-visible across a transformer-shaped proof-carrying artifact line
 [30].
 
+A later April 21 `stwo` bundle now freezes one measured transformer-shaped artifact at
+`docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/`. It records a five-step
+source chain, two translated segment manifests, `67s` prepare, `12s` verify,
+`9,348,044` artifact bytes, and a package-count reduction from `5` naive per-step
+packages to `2` composed translated segments. This is narrower than a recursive or full
+standard-softmax claim, but it does convert the translated composition line from prose
+only into one reproducible, source-bound `stwo` artifact with concrete metrics.
+
 ### 5.5 Pre-recursive aggregation boundary
 
 The present aggregation layer is statement-preserving and pre-recursive: it packages

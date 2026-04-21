@@ -12,6 +12,7 @@ These are the bundles directly used by the current paper package:
 - `phase63-65-proof-carrying-artifact-v1-2026-04-20/`
 - `phase66-69-proof-carrying-hardening-v1-2026-04-21/`
 - `phase70-80-proof-checked-decode-bridge-v1-2026-04-21/`
+- `stwo-transformer-shaped-v1-2026-04-21/`
 
 These are the bundles that should be treated as the paper's primary reproducibility and systems-evidence surfaces.
 
@@ -31,8 +32,15 @@ registry receipts, the chunked-history carry receipt, and the proof-checked
 publication decode-bridge table. It is still a code-and-validation verifier-surface
 index rather than a new proof-output bundle.
 
-Later Phase81-88 translated seam and composition surfaces remain implemented in-repo,
-but they are not yet cut as frozen publication-facing artifact directories.
+The `stwo-transformer-shaped-v1-2026-04-21` directory is the first frozen
+publication-facing transformer-shaped `stwo` bundle with measured artifact metrics. It
+pins a five-step source chain, two translated segment manifests, a `67s` prepare run, a
+`12s` verify run, `9,348,044` artifact bytes, and a package-count reduction from `5`
+naive per-step packages to `2` composed translated segments. It remains a narrow
+source-bound artifact, not a recursion or full-softmax claim.
+
+Later Phase81-84 translated seam surfaces remain implemented in-repo, but they are not
+yet cut as frozen publication-facing artifact directories.
 
 ## Archival provenance bundles
 

@@ -1139,19 +1139,27 @@ is well past the old “dependency seam only” stage.
   `docs/paper/artifacts/phase66-69-proof-carrying-hardening-v1-2026-04-21/`
 - Phase70-80 proof-checked decode-bridge checkpoint:
   `docs/paper/artifacts/phase70-80-proof-checked-decode-bridge-v1-2026-04-21/`
+- Frozen transformer-shaped `stwo` bundle with concrete metrics:
+  `docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/`
 - Publication-facing artifact index: `docs/paper/artifacts/README.md`
 - Proof-carrying aggregation `stwo` bundle regeneration script:
   `scripts/paper/generate_stwo_proof_carrying_aggregation_bundle.sh`
 - `stwo` publication bundle regeneration script:
   `scripts/paper/generate_stwo_publication_bundle.sh`
+- Transformer-shaped `stwo` bundle regeneration script:
+  `scripts/paper/generate_stwo_transformer_shaped_bundle.sh`
 
 Older carried-state bundle generators remain available for archival provenance and
 engineering comparison, but the current paper package cites the frozen experimental
 `stwo` bundle, the frozen proof-carrying aggregation bundle, the April 20
 Phase63-65 verifier-surface checkpoint, and the April 21 Phase66-69 hardening
-checkpoint, plus the April 21 Phase70-80 proof-checked decode-bridge checkpoint.
-Later Phase81-88 translated seam and composition surfaces are implemented in-repo,
-but they are not yet frozen as a publication citation bundle.
+checkpoint, plus the April 21 Phase70-80 proof-checked decode-bridge checkpoint and
+the April 21 transformer-shaped `stwo` bundle. That transformer-shaped `stwo` bundle
+freezes one measured source-bound artifact with `67s` prepare, `12s` verify,
+`9,348,044` artifact bytes, `5` source steps, `2` translated segments, and a package
+count reduction from `5` naive per-step packages to `2` composed translated segments.
+Later Phase81-84 translated seam surfaces are implemented in-repo, but they are not
+yet frozen as publication citation bundles.
 
 Archival provenance generators:
 

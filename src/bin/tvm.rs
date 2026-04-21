@@ -49,7 +49,7 @@ use llm_provable_computer::{
     load_phase35_recursive_compression_target_manifest,
     load_phase36_recursive_verifier_harness_receipt,
     load_phase37_recursive_artifact_chain_harness_receipt, load_phase3_binary_step_lookup_proof,
-    load_phase5_normalization_lookup_proof,
+    load_phase5_normalization_lookup_proof, load_stwo_transformer_shaped_artifact_bundle,
     phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28,
     phase30_prepare_decoding_step_proof_envelope_manifest,
     phase31_prepare_recursive_compression_decode_boundary_manifest,
@@ -59,6 +59,7 @@ use llm_provable_computer::{
     phase35_prepare_recursive_compression_target_manifest,
     phase36_prepare_recursive_verifier_harness_receipt,
     phase37_prepare_recursive_artifact_chain_harness_receipt,
+    prepare_stwo_transformer_shaped_artifact_bundle,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
     prove_phase12_decoding_demo, prove_phase13_decoding_layout_matrix_demo,
@@ -84,8 +85,8 @@ use llm_provable_computer::{
     save_phase27_chained_folded_intervalized_decoding_state_relation,
     save_phase28_aggregated_chained_folded_intervalized_decoding_state_relation,
     save_phase30_decoding_step_proof_envelope_manifest, save_phase3_binary_step_lookup_proof,
-    save_phase5_normalization_lookup_proof, stwo_backend_enabled,
-    verify_phase10_shared_binary_step_lookup_envelope,
+    save_phase5_normalization_lookup_proof, save_stwo_transformer_shaped_artifact_bundle,
+    stwo_backend_enabled, verify_phase10_shared_binary_step_lookup_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
     verify_phase11_decoding_chain_with_proof_checks,
     verify_phase12_decoding_chain_with_proof_checks,
@@ -116,11 +117,13 @@ use llm_provable_computer::{
     verify_phase37_recursive_artifact_chain_harness_receipt,
     verify_phase37_recursive_artifact_chain_harness_receipt_against_sources,
     verify_phase3_binary_step_lookup_demo_envelope,
-    verify_phase5_normalization_lookup_demo_envelope, Phase29RecursiveCompressionInputContract,
+    verify_phase5_normalization_lookup_demo_envelope,
+    verify_stwo_transformer_shaped_artifact_bundle, Phase29RecursiveCompressionInputContract,
     Phase30DecodingStepProofEnvelopeManifest, Phase31RecursiveCompressionDecodeBoundaryManifest,
     Phase32RecursiveCompressionStatementContract, Phase33RecursiveCompressionPublicInputManifest,
     Phase34RecursiveCompressionSharedLookupManifest, Phase35RecursiveCompressionTargetManifest,
     Phase36RecursiveVerifierHarnessReceipt, Phase37RecursiveArtifactChainHarnessReceipt,
+    StwoTransformerShapedArtifactBundle,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
     STWO_BACKEND_VERSION_PHASE12,
     STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
@@ -780,6 +783,20 @@ enum Command {
         /// Optional Phase 30 step-envelope manifest JSON or JSON.gz file for exact source binding.
         #[arg(long = "manifest")]
         manifest: Option<PathBuf>,
+    },
+    /// Prepare a reproducible transformer-shaped S-two artifact bundle with source-bound translated segment composition.
+    #[cfg(feature = "stwo-backend")]
+    PrepareStwoTransformerShapedArtifact {
+        /// File where the serialized transformer-shaped artifact bundle JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a serialized transformer-shaped S-two artifact bundle.
+    #[cfg(feature = "stwo-backend")]
+    VerifyStwoTransformerShapedArtifact {
+        /// Path to the serialized transformer-shaped artifact bundle JSON file.
+        #[arg(long = "input")]
+        input: PathBuf,
     },
     /// Prepare a canonical multi-proof batch manifest for future S-two recursion.
     PrepareStwoRecursionBatch {
@@ -2028,6 +2045,14 @@ fn run() -> llm_provable_computer::Result<()> {
             contract.as_deref(),
             manifest.as_deref(),
         )?,
+        #[cfg(feature = "stwo-backend")]
+        Command::PrepareStwoTransformerShapedArtifact { output } => {
+            prepare_stwo_transformer_shaped_artifact_command(&output)?
+        }
+        #[cfg(feature = "stwo-backend")]
+        Command::VerifyStwoTransformerShapedArtifact { input } => {
+            verify_stwo_transformer_shaped_artifact_command(&input)?
+        }
         Command::PrepareStwoRecursionBatch { proofs, output } => {
             prepare_stwo_recursion_batch_command(&proofs, &output)?
         }
@@ -5706,6 +5731,120 @@ fn prepare_stwo_recursion_batch_command(
     println!("expected_semantic_scope: {STWO_RECURSION_BATCH_SCOPE_PHASE6}");
 
     Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn prepare_stwo_transformer_shaped_artifact_command(
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    require_stwo_backend("transformer-shaped S-two artifact bundle")?;
+    reject_stwo_transformer_shaped_artifact_plain_json_gzip_output(output)?;
+    let bundle = prepare_stwo_transformer_shaped_artifact_bundle()?;
+    save_stwo_transformer_shaped_artifact_bundle(&bundle, output)?;
+
+    println!("output: {}", output.display());
+    println!("verified_bundle: true");
+    print_stwo_transformer_shaped_artifact_report(&bundle);
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn verify_stwo_transformer_shaped_artifact_command(
+    input: &Path,
+) -> llm_provable_computer::Result<()> {
+    require_stwo_backend("transformer-shaped S-two artifact bundle")?;
+    let bundle = load_stwo_transformer_shaped_artifact_bundle(input)?;
+    verify_stwo_transformer_shaped_artifact_bundle(&bundle)?;
+
+    println!("input: {}", input.display());
+    println!("verified_bundle: true");
+    print_stwo_transformer_shaped_artifact_report(&bundle);
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn reject_stwo_transformer_shaped_artifact_plain_json_gzip_output(
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    if output.extension().and_then(|extension| extension.to_str()) == Some("gz") {
+        return Err(VmError::InvalidConfig(
+            "prepare-stwo-transformer-shaped-artifact writes plain JSON; use a `.json` output path"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn print_stwo_transformer_shaped_artifact_report(bundle: &StwoTransformerShapedArtifactBundle) {
+    println!("proof_backend: {}", bundle.proof_backend);
+    println!("bundle_version: {}", bundle.bundle_version);
+    println!("semantic_scope: {}", bundle.semantic_scope);
+    println!(
+        "source_chain_commitment: {}",
+        bundle.source_chain_commitment
+    );
+    println!(
+        "source_layout_commitment: {}",
+        bundle.source_layout_commitment
+    );
+    println!(
+        "translated_lookup_identity_commitment: {}",
+        bundle.translated_lookup_identity_commitment
+    );
+    println!("total_steps: {}", bundle.total_steps);
+    println!(
+        "translated_segment_count: {}",
+        bundle.translated_segment_count
+    );
+    println!(
+        "naive_per_step_package_count: {}",
+        bundle.naive_per_step_package_count
+    );
+    println!(
+        "composed_segment_package_count: {}",
+        bundle.composed_segment_package_count
+    );
+    println!("package_count_delta: {}", bundle.package_count_delta);
+    println!(
+        "source_bound_verifier_available: {}",
+        bundle.source_bound_verifier_available
+    );
+    println!(
+        "full_history_replay_required: {}",
+        bundle.full_history_replay_required
+    );
+    println!(
+        "full_standard_softmax_inference_claimed: {}",
+        bundle.full_standard_softmax_inference_claimed
+    );
+    println!(
+        "recursive_verification_claimed: {}",
+        bundle.recursive_verification_claimed
+    );
+    println!(
+        "cryptographic_compression_claimed: {}",
+        bundle.cryptographic_compression_claimed
+    );
+    println!("breakthrough_claimed: {}", bundle.breakthrough_claimed);
+    println!("paper_ready: {}", bundle.paper_ready);
+    println!("required_next_step: {}", bundle.required_next_step);
+    println!(
+        "phase86_commitment: {}",
+        bundle
+            .phase86_prototype
+            .translated_composition_prototype_commitment
+    );
+    println!(
+        "phase87_commitment: {}",
+        bundle
+            .phase87_assessment
+            .translated_paper3_composition_assessment_commitment
+    );
+    println!(
+        "artifact_bundle_commitment: {}",
+        bundle.artifact_bundle_commitment
+    );
 }
 
 fn research_v2_step_command(
@@ -12083,6 +12222,12 @@ mod cli_dispatch_tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-recursive-artifact-chain-harness-receipt"
         ));
+        assert!(!needs_run_subcommand(
+            "prepare-stwo-transformer-shaped-artifact"
+        ));
+        assert!(!needs_run_subcommand(
+            "verify-stwo-transformer-shaped-artifact"
+        ));
     }
 }
 
@@ -12487,6 +12632,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-recursive-verifier-harness-receipt"
                 | "prepare-stwo-recursive-artifact-chain-harness-receipt"
                 | "verify-stwo-recursive-artifact-chain-harness-receipt"
+                | "prepare-stwo-transformer-shaped-artifact"
+                | "verify-stwo-transformer-shaped-artifact"
                 | "prepare-stwo-recursion-batch"
                 | "research-v2-step"
                 | "research-v2-trace"

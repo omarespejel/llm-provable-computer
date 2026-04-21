@@ -25,6 +25,13 @@ verifier-surface checkpoint rather than a proof-output timing bundle. It records
 Phase 63-65 bridge in which shared lookup identity and typed carried state are
 source-bound across a transformer-shaped proof-carrying artifact line.
 
+The newer
+`docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/` directory freezes one
+measured transformer-shaped `stwo` bundle built from a five-step source chain, two real
+translated segment manifests, and a source-bound translated composition surface. It is
+systems evidence for one reproducible transformer-shaped `stwo` artifact with concrete
+metrics, not a normalized backend benchmark row.
+
 ## Table C1. Frozen artifact comparison by backend and scope
 
 | Artifact | Backend | Bundle | Prove | Verify | Proof size | Semantic scope |
@@ -52,3 +59,16 @@ numeric values unambiguously.
 - The table is useful as artifact evidence, not as a normalized backend-performance
   study. In particular, the `stwo-experimental-v1` timing rows come from warmed local
   bundle runs rather than a cold-build or matched-hardware benchmark harness.
+
+## Table C2. Frozen transformer-shaped `stwo` bundle
+
+| Bundle | Backend | Prepare | Verify | Artifact size | Structural metrics | Semantic scope |
+|---|---|---:|---:|---:|---|---|
+| `stwo-transformer-shaped-v1` | `stwo` | `67s` | `12s` | `9,348,044` bytes | `5` total steps; `2` translated segments; package count `5 -> 2` (`Δ = 3`) | source-bound translated composition bundle with verifier-enforced carried-state continuity and shared lookup identity |
+
+Table C2 is drawn from the frozen index under
+`docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/`. The bundle is
+deliberately narrow: it does **not** claim full standard-softmax inference, recursive
+verification, or cryptographic compression. Its value is that one transformer-shaped
+`stwo` artifact now exists as a reproducible, measured, source-bound object rather than
+as prose only.

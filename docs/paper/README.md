@@ -25,12 +25,12 @@ Current paper-freeze addendum:
 - `artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/`
 - `artifacts/phase66-69-proof-carrying-hardening-v1-2026-04-21/`
 - `artifacts/phase70-80-proof-checked-decode-bridge-v1-2026-04-21/`
+- `artifacts/stwo-transformer-shaped-v1-2026-04-21/`
 
 Later bridge work remains implemented in-repo but is not yet part of the frozen
 publication-facing artifact bundle:
 
 - Phase81-84 translated Paper 3 seam surfaces
-- Phase85-88 translated Paper 3 composition surfaces
 
 Draft next-paper package:
 
