@@ -1,6 +1,9 @@
 use ark_ff::Zero;
+use blake2::digest::{Update, VariableOutput};
+use blake2::Blake2bVar;
 use serde::{Deserialize, Serialize};
 use serde_json;
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 use stwo::core::air::Component;
@@ -26,6 +29,7 @@ use stwo_constraint_framework::{
     RelationEntry, TraceLocationAllocator,
 };
 
+use super::decoding::{read_json_bytes_with_limit, write_json_with_limit};
 use super::normalization_component::{
     phase5_normalization_component, phase5_normalization_table_rows,
     Phase5NormalizationLookupElements,
@@ -43,6 +47,16 @@ pub const STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10: &str =
     "stwo-shared-normalization-lookup-v1";
 pub const STWO_SHARED_NORMALIZATION_SEMANTIC_SCOPE_PHASE10: &str =
     "stwo_shared_normalization_lookup_with_canonical_table";
+pub const STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_VERSION_PHASE92: &str =
+    "stwo-phase92-shared-normalization-primitive-artifact-v1";
+pub const STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_SCOPE_PHASE92: &str =
+    "stwo_tensor_native_shared_normalization_primitive_artifact";
+pub const STWO_SHARED_NORMALIZATION_PRIMITIVE_TABLE_REGISTRY_VERSION_PHASE92: &str =
+    "stwo-phase92-shared-normalization-table-registry-v1";
+pub const STWO_SHARED_NORMALIZATION_PRIMITIVE_TABLE_REGISTRY_SCOPE_PHASE92: &str =
+    "stwo_tensor_native_shared_normalization_table_registry";
+pub const STWO_SHARED_NORMALIZATION_PRIMITIVE_TABLE_ID_PHASE92: &str = "phase5-normalization-q8-v1";
+const MAX_PHASE92_SHARED_NORMALIZATION_PRIMITIVE_JSON_BYTES: usize = 8 * 1024 * 1024;
 
 relation!(Phase10SharedNormalizationLookupRelation, 2);
 type Phase10SharedNormalizationLookupElements = Phase10SharedNormalizationLookupRelation;
@@ -116,6 +130,39 @@ pub struct Phase10SharedNormalizationLookupProofEnvelope {
     pub canonical_table_rows: Vec<(u16, u16)>,
     pub claimed_rows: Vec<(u16, u16)>,
     pub proof: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase92SharedNormalizationPrimitiveStep {
+    pub step_index: usize,
+    pub step_label: String,
+    pub claimed_rows: Vec<(u16, u16)>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase92SharedNormalizationTableCommitment {
+    pub table_id: String,
+    pub statement_version: String,
+    pub semantic_scope: String,
+    pub table_commitment: String,
+    pub row_count: u64,
+    pub row_width: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase92SharedNormalizationPrimitiveArtifact {
+    pub artifact_version: String,
+    pub semantic_scope: String,
+    pub artifact_commitment: String,
+    pub step_claims_commitment: String,
+    pub static_table_registry_version: String,
+    pub static_table_registry_scope: String,
+    pub static_table_registry_commitment: String,
+    pub static_table_commitment: Phase92SharedNormalizationTableCommitment,
+    pub total_steps: usize,
+    pub total_claimed_rows: usize,
+    pub steps: Vec<Phase92SharedNormalizationPrimitiveStep>,
+    pub proof_envelope: Phase10SharedNormalizationLookupProofEnvelope,
 }
 
 pub fn prove_phase5_normalization_lookup_demo_envelope(
@@ -253,6 +300,175 @@ pub fn load_phase10_shared_normalization_lookup_proof(
 ) -> Result<Phase10SharedNormalizationLookupProofEnvelope> {
     let json = fs::read_to_string(path)?;
     serde_json::from_str(&json).map_err(|error| VmError::Serialization(error.to_string()))
+}
+
+pub fn phase92_default_shared_normalization_primitive_steps(
+) -> Vec<Phase92SharedNormalizationPrimitiveStep> {
+    vec![
+        Phase92SharedNormalizationPrimitiveStep {
+            step_index: 0,
+            step_label: "token-step-0.norm".to_string(),
+            claimed_rows: vec![(4, 128)],
+        },
+        Phase92SharedNormalizationPrimitiveStep {
+            step_index: 1,
+            step_label: "token-step-1.norm".to_string(),
+            claimed_rows: vec![(16, 64)],
+        },
+    ]
+}
+
+pub fn prepare_phase92_shared_normalization_primitive_artifact(
+    steps: &[Phase92SharedNormalizationPrimitiveStep],
+) -> Result<Phase92SharedNormalizationPrimitiveArtifact> {
+    let steps = canonicalize_phase92_shared_normalization_steps(steps)?;
+    let claimed_rows = flatten_phase92_shared_normalization_rows(&steps)?;
+    let proof_envelope = prove_phase10_shared_normalization_lookup_envelope(&claimed_rows)?;
+    build_phase92_shared_normalization_primitive_artifact(steps, proof_envelope)
+}
+
+pub fn prepare_phase92_shared_normalization_demo_artifact(
+) -> Result<Phase92SharedNormalizationPrimitiveArtifact> {
+    prepare_phase92_shared_normalization_primitive_artifact(
+        &phase92_default_shared_normalization_primitive_steps(),
+    )
+}
+
+pub fn verify_phase92_shared_normalization_primitive_artifact(
+    artifact: &Phase92SharedNormalizationPrimitiveArtifact,
+) -> Result<()> {
+    if artifact.artifact_version != STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_VERSION_PHASE92 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 92 shared normalization primitive artifact version `{}`",
+            artifact.artifact_version
+        )));
+    }
+    if artifact.semantic_scope != STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_SCOPE_PHASE92 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 92 shared normalization primitive artifact scope `{}`",
+            artifact.semantic_scope
+        )));
+    }
+    if artifact.static_table_registry_version
+        != STWO_SHARED_NORMALIZATION_PRIMITIVE_TABLE_REGISTRY_VERSION_PHASE92
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 92 shared normalization table registry version `{}`",
+            artifact.static_table_registry_version
+        )));
+    }
+    if artifact.static_table_registry_scope
+        != STWO_SHARED_NORMALIZATION_PRIMITIVE_TABLE_REGISTRY_SCOPE_PHASE92
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 92 shared normalization table registry scope `{}`",
+            artifact.static_table_registry_scope
+        )));
+    }
+
+    let canonical_steps = canonicalize_phase92_shared_normalization_steps(&artifact.steps)?;
+    if canonical_steps != artifact.steps {
+        return Err(VmError::InvalidConfig(
+            "Phase 92 shared normalization primitive steps are not in canonical step_index order"
+                .to_string(),
+        ));
+    }
+    if artifact.total_steps != artifact.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 92 shared normalization primitive total_steps {} does not match the artifact step count {}",
+            artifact.total_steps,
+            artifact.steps.len()
+        )));
+    }
+    let flattened_rows = flatten_phase92_shared_normalization_rows(&artifact.steps)?;
+    if artifact.total_claimed_rows != flattened_rows.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 92 shared normalization primitive total_claimed_rows {} does not match the flattened step-row count {}; this indicates multiplicity drift",
+            artifact.total_claimed_rows,
+            flattened_rows.len()
+        )));
+    }
+    if artifact.proof_envelope.claimed_rows != flattened_rows {
+        return Err(VmError::InvalidConfig(
+            "Phase 92 shared normalization primitive step rows do not match the shared normalization proof envelope"
+                .to_string(),
+        ));
+    }
+
+    let expected_step_claims_commitment =
+        commit_phase92_shared_normalization_step_claims(&artifact.steps)?;
+    if artifact.step_claims_commitment != expected_step_claims_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 92 shared normalization primitive step_claims_commitment does not match the serialized step claims"
+                .to_string(),
+        ));
+    }
+
+    let expected_table_commitment =
+        phase92_static_normalization_table_commitment(&artifact.proof_envelope)?;
+    if artifact.static_table_commitment != expected_table_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 92 shared normalization primitive static table commitment does not match the canonical normalization table bound by the proof envelope"
+                .to_string(),
+        ));
+    }
+    let expected_registry_commitment =
+        commit_phase92_shared_normalization_table_registry(&expected_table_commitment)?;
+    if artifact.static_table_registry_commitment != expected_registry_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 92 shared normalization primitive static table registry commitment does not match its table descriptor"
+                .to_string(),
+        ));
+    }
+    if !verify_phase10_shared_normalization_lookup_envelope(&artifact.proof_envelope)? {
+        return Err(VmError::UnsupportedProof(
+            "Phase 92 shared normalization primitive proof envelope did not verify".to_string(),
+        ));
+    }
+
+    let expected_artifact_commitment = commit_phase92_shared_normalization_primitive_artifact(
+        &artifact.steps,
+        &artifact.proof_envelope,
+        &artifact.step_claims_commitment,
+        &artifact.static_table_commitment,
+        &artifact.static_table_registry_commitment,
+        artifact.total_steps,
+        artifact.total_claimed_rows,
+    )?;
+    if artifact.artifact_commitment != expected_artifact_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 92 shared normalization primitive artifact commitment does not match its serialized contents"
+                .to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+pub fn save_phase92_shared_normalization_primitive_artifact(
+    artifact: &Phase92SharedNormalizationPrimitiveArtifact,
+    path: &Path,
+) -> Result<()> {
+    write_json_with_limit(
+        artifact,
+        path,
+        MAX_PHASE92_SHARED_NORMALIZATION_PRIMITIVE_JSON_BYTES,
+        "Phase 92 shared normalization primitive artifact",
+    )
+}
+
+pub fn load_phase92_shared_normalization_primitive_artifact(
+    path: &Path,
+) -> Result<Phase92SharedNormalizationPrimitiveArtifact> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE92_SHARED_NORMALIZATION_PRIMITIVE_JSON_BYTES,
+        "Phase 92 shared normalization primitive artifact",
+    )?;
+    let artifact: Phase92SharedNormalizationPrimitiveArtifact = serde_json::from_slice(&bytes)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    verify_phase92_shared_normalization_primitive_artifact(&artifact)?;
+    Ok(artifact)
 }
 
 pub fn prove_phase5_normalization_lookup_demo() -> Result<Vec<u8>> {
@@ -484,6 +700,227 @@ fn build_shared_normalization_bundle(
     })
 }
 
+fn canonicalize_phase92_shared_normalization_steps(
+    steps: &[Phase92SharedNormalizationPrimitiveStep],
+) -> Result<Vec<Phase92SharedNormalizationPrimitiveStep>> {
+    if steps.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 92 shared normalization primitive requires at least one step".to_string(),
+        ));
+    }
+
+    let mut canonical_steps = steps.to_vec();
+    canonical_steps.sort_by_key(|step| step.step_index);
+    let mut seen_labels = BTreeSet::new();
+    for (expected_step_index, step) in canonical_steps.iter().enumerate() {
+        if step.step_index != expected_step_index {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 92 shared normalization primitive expected contiguous step_index {}, got {}",
+                expected_step_index, step.step_index
+            )));
+        }
+        if step.step_label.trim().is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 92 shared normalization primitive step {} has an empty step_label",
+                step.step_index
+            )));
+        }
+        if !seen_labels.insert(step.step_label.clone()) {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 92 shared normalization primitive reuses step_label `{}`",
+                step.step_label
+            )));
+        }
+        if step.claimed_rows.is_empty() {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 92 shared normalization primitive step {} must claim at least one normalization row",
+                step.step_index
+            )));
+        }
+    }
+
+    Ok(canonical_steps)
+}
+
+fn flatten_phase92_shared_normalization_rows(
+    steps: &[Phase92SharedNormalizationPrimitiveStep],
+) -> Result<Vec<(u16, u16)>> {
+    let mut rows = Vec::new();
+    let mut seen_rows = BTreeSet::new();
+    for step in steps {
+        for row in &step.claimed_rows {
+            if !seen_rows.insert(*row) {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 92 shared normalization primitive row ({}, {}) is reused across steps; multiplicity-aware reuse is not implemented yet",
+                    row.0, row.1
+                )));
+            }
+            rows.push(*row);
+        }
+    }
+    Ok(rows)
+}
+
+fn build_phase92_shared_normalization_primitive_artifact(
+    steps: Vec<Phase92SharedNormalizationPrimitiveStep>,
+    proof_envelope: Phase10SharedNormalizationLookupProofEnvelope,
+) -> Result<Phase92SharedNormalizationPrimitiveArtifact> {
+    let total_steps = steps.len();
+    let total_claimed_rows = flatten_phase92_shared_normalization_rows(&steps)?.len();
+    let step_claims_commitment = commit_phase92_shared_normalization_step_claims(&steps)?;
+    let static_table_commitment = phase92_static_normalization_table_commitment(&proof_envelope)?;
+    let static_table_registry_commitment =
+        commit_phase92_shared_normalization_table_registry(&static_table_commitment)?;
+    let artifact_commitment = commit_phase92_shared_normalization_primitive_artifact(
+        &steps,
+        &proof_envelope,
+        &step_claims_commitment,
+        &static_table_commitment,
+        &static_table_registry_commitment,
+        total_steps,
+        total_claimed_rows,
+    )?;
+    Ok(Phase92SharedNormalizationPrimitiveArtifact {
+        artifact_version: STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_VERSION_PHASE92.to_string(),
+        semantic_scope: STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_SCOPE_PHASE92.to_string(),
+        artifact_commitment,
+        step_claims_commitment,
+        static_table_registry_version:
+            STWO_SHARED_NORMALIZATION_PRIMITIVE_TABLE_REGISTRY_VERSION_PHASE92.to_string(),
+        static_table_registry_scope:
+            STWO_SHARED_NORMALIZATION_PRIMITIVE_TABLE_REGISTRY_SCOPE_PHASE92.to_string(),
+        static_table_registry_commitment,
+        static_table_commitment,
+        total_steps,
+        total_claimed_rows,
+        steps,
+        proof_envelope,
+    })
+}
+
+fn phase92_static_normalization_table_commitment(
+    proof_envelope: &Phase10SharedNormalizationLookupProofEnvelope,
+) -> Result<Phase92SharedNormalizationTableCommitment> {
+    let rows: Vec<[u64; 2]> = proof_envelope
+        .canonical_table_rows
+        .iter()
+        .map(|(norm_sq, inv_sqrt_q8)| [u64::from(*norm_sq), u64::from(*inv_sqrt_q8)])
+        .collect();
+    Ok(Phase92SharedNormalizationTableCommitment {
+        table_id: STWO_SHARED_NORMALIZATION_PRIMITIVE_TABLE_ID_PHASE92.to_string(),
+        statement_version: proof_envelope.statement_version.clone(),
+        semantic_scope: proof_envelope.semantic_scope.clone(),
+        table_commitment: commit_phase92_shared_normalization_table(
+            STWO_SHARED_NORMALIZATION_PRIMITIVE_TABLE_ID_PHASE92,
+            &proof_envelope.statement_version,
+            &proof_envelope.semantic_scope,
+            &rows,
+        )?,
+        row_count: u64::try_from(rows.len()).map_err(|_| {
+            VmError::InvalidConfig(
+                "Phase 92 shared normalization canonical table row count does not fit in u64"
+                    .to_string(),
+            )
+        })?,
+        row_width: 2,
+    })
+}
+
+fn commit_phase92_shared_normalization_step_claims(
+    steps: &[Phase92SharedNormalizationPrimitiveStep],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_VERSION_PHASE92.as_bytes());
+    hasher.update(STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_SCOPE_PHASE92.as_bytes());
+    let steps_json =
+        serde_json::to_vec(steps).map_err(|error| VmError::Serialization(error.to_string()))?;
+    hasher.update(&(steps_json.len() as u64).to_le_bytes());
+    hasher.update(&steps_json);
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase92_shared_normalization_table(
+    table_id: &str,
+    statement_version: &str,
+    semantic_scope: &str,
+    rows: &[[u64; 2]],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_SHARED_NORMALIZATION_PRIMITIVE_TABLE_REGISTRY_VERSION_PHASE92.as_bytes());
+    hasher.update(table_id.as_bytes());
+    hasher.update(statement_version.as_bytes());
+    hasher.update(semantic_scope.as_bytes());
+    hasher.update(&(rows.len() as u64).to_le_bytes());
+    hasher.update(&2u64.to_le_bytes());
+    let rows_json =
+        serde_json::to_vec(rows).map_err(|error| VmError::Serialization(error.to_string()))?;
+    hasher.update(&(rows_json.len() as u64).to_le_bytes());
+    hasher.update(&rows_json);
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase92_shared_normalization_table_registry(
+    table_commitment: &Phase92SharedNormalizationTableCommitment,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_SHARED_NORMALIZATION_PRIMITIVE_TABLE_REGISTRY_VERSION_PHASE92.as_bytes());
+    hasher.update(STWO_SHARED_NORMALIZATION_PRIMITIVE_TABLE_REGISTRY_SCOPE_PHASE92.as_bytes());
+    let descriptor_json = serde_json::to_vec(table_commitment)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    hasher.update(&(descriptor_json.len() as u64).to_le_bytes());
+    hasher.update(&descriptor_json);
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase92_shared_normalization_primitive_artifact(
+    steps: &[Phase92SharedNormalizationPrimitiveStep],
+    proof_envelope: &Phase10SharedNormalizationLookupProofEnvelope,
+    step_claims_commitment: &str,
+    static_table_commitment: &Phase92SharedNormalizationTableCommitment,
+    static_table_registry_commitment: &str,
+    total_steps: usize,
+    total_claimed_rows: usize,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_VERSION_PHASE92.as_bytes());
+    hasher.update(STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_SCOPE_PHASE92.as_bytes());
+    hasher.update(step_claims_commitment.as_bytes());
+    hasher.update(STWO_SHARED_NORMALIZATION_PRIMITIVE_TABLE_REGISTRY_VERSION_PHASE92.as_bytes());
+    hasher.update(STWO_SHARED_NORMALIZATION_PRIMITIVE_TABLE_REGISTRY_SCOPE_PHASE92.as_bytes());
+    hasher.update(static_table_registry_commitment.as_bytes());
+    hasher.update(&(total_steps as u64).to_le_bytes());
+    hasher.update(&(total_claimed_rows as u64).to_le_bytes());
+    let steps_json =
+        serde_json::to_vec(steps).map_err(|error| VmError::Serialization(error.to_string()))?;
+    hasher.update(&(steps_json.len() as u64).to_le_bytes());
+    hasher.update(&steps_json);
+    let table_json = serde_json::to_vec(static_table_commitment)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    hasher.update(&(table_json.len() as u64).to_le_bytes());
+    hasher.update(&table_json);
+    let proof_json = serde_json::to_vec(proof_envelope)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    hasher.update(&(proof_json.len() as u64).to_le_bytes());
+    hasher.update(&proof_json);
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
 fn shared_normalization_base_trace(
     log_size: u32,
     canonical_rows: &[(u16, u16)],
@@ -678,6 +1115,15 @@ fn column_id(id: &str) -> stwo_constraint_framework::preprocessed_columns::PrePr
     stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId { id: id.to_string() }
 }
 
+fn lower_hex(bytes: &[u8]) -> String {
+    let mut hex = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        use std::fmt::Write as _;
+        let _ = write!(&mut hex, "{byte:02x}");
+    }
+    hex
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -758,5 +1204,53 @@ mod tests {
         let error = verify_phase10_shared_normalization_lookup_envelope(&envelope)
             .expect_err("tampered claimed rows should fail");
         assert!(error.to_string().contains("claimed row"));
+    }
+
+    #[test]
+    fn phase92_shared_normalization_primitive_round_trips() {
+        let artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 shared normalization artifact");
+        assert_eq!(
+            artifact.artifact_version,
+            STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_VERSION_PHASE92
+        );
+        assert_eq!(
+            artifact.semantic_scope,
+            STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_SCOPE_PHASE92
+        );
+        assert_eq!(artifact.total_steps, 2);
+        assert_eq!(artifact.total_claimed_rows, 2);
+        verify_phase92_shared_normalization_primitive_artifact(&artifact)
+            .expect("verify phase92 shared normalization artifact");
+    }
+
+    #[test]
+    fn phase92_shared_normalization_primitive_rejects_step_row_drift() {
+        let mut artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 shared normalization artifact");
+        artifact.steps[1].claimed_rows[0].1 = 65;
+        let error = verify_phase92_shared_normalization_primitive_artifact(&artifact)
+            .expect_err("row drift should fail");
+        assert!(error.to_string().contains("step rows"));
+    }
+
+    #[test]
+    fn phase92_shared_normalization_primitive_rejects_swapped_table_identity() {
+        let mut artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 shared normalization artifact");
+        artifact.static_table_commitment.table_id = "wrong-table".to_string();
+        let error = verify_phase92_shared_normalization_primitive_artifact(&artifact)
+            .expect_err("table identity drift should fail");
+        assert!(error.to_string().contains("static table commitment"));
+    }
+
+    #[test]
+    fn phase92_shared_normalization_primitive_rejects_multiplicity_drift() {
+        let mut artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 shared normalization artifact");
+        artifact.total_claimed_rows += 1;
+        let error = verify_phase92_shared_normalization_primitive_artifact(&artifact)
+            .expect_err("multiplicity drift should fail");
+        assert!(error.to_string().contains("multiplicity drift"));
     }
 }
