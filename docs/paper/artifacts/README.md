@@ -18,6 +18,7 @@ These are the bundles directly used by the current paper package:
 - `stwo-repeated-gemma-slice-accumulation-v1-2026-04-21/`
 - `stwo-folded-gemma-slice-family-v1-2026-04-21/`
 - `stwo-multi-interval-folded-gemma-v1-2026-04-21/`
+- `stwo-richer-multi-interval-gemma-v1-2026-04-21/`
 
 These are the bundles that should be treated as the paper's primary reproducibility and systems-evidence surfaces.
 
@@ -97,6 +98,16 @@ explicit accumulation artifact, so the explicit multi-interval artifact already
 saves `3,090,402` bytes before any folded derivative is applied. This remains
 a verifier-bound, pre-recursive artifact line rather than a cryptographic
 recursion claim.
+
+The `stwo-richer-multi-interval-gemma-v1-2026-04-21` directory extends that
+same line by freezing the first Phase102 richer multi-interval derivative on
+top of the Phase99 explicit source and the Phase101.5 folded handoff. The
+bundle records `1,036,298` explicit multi-interval JSON bytes, `5,214` folded
+multi-interval JSON bytes, and `7,100` folded richer multi-interval JSON
+bytes. So the richer-family derivative is about `0.6851%` of the explicit
+source JSON size while remaining only `1,886` bytes larger than the thinner
+Phase101.5 folded prototype. This remains a verifier-bound, pre-recursive
+artifact line rather than a cryptographic accumulation claim.
 
 Later Phase81-84 translated seam surfaces remain implemented in-repo, but they are not
 yet cut as frozen publication-facing artifact directories.

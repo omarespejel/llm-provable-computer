@@ -55,6 +55,10 @@ pub const STWO_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_VERSI
     "stwo-phase101-5-folded-multi-interval-gemma-accumulation-prototype-artifact-v1";
 pub const STWO_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_SCOPE_PHASE1015: &str =
     "stwo_tensor_native_folded_multi_interval_gemma_accumulation_prototype_artifact";
+pub const STWO_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE102: &str =
+    "stwo-phase102-folded-multi-interval-gemma-richer-family-artifact-v1";
+pub const STWO_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_SCOPE_PHASE102: &str =
+    "stwo_tensor_native_folded_multi_interval_gemma_richer_family_artifact";
 pub const MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES: usize = 16;
 pub const MAX_PHASE99_MULTI_INTERVAL_TOTAL_INTERVALS: usize = 8;
 pub const PHASE965_DEFAULT_BOUNDED_FOLD_ARITY: usize = 2;
@@ -70,6 +74,7 @@ const MAX_PHASE99_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ACCUMULATION_JSON_BYTES: us
     128 * 1024 * 1024;
 const MAX_PHASE1015_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_JSON_BYTES: usize =
     16 * 1024 * 1024;
+const MAX_PHASE102_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_JSON_BYTES: usize = 16 * 1024 * 1024;
 const PHASE93_DEFAULT_BLOCK_INDEX: u64 = 0;
 const PHASE93_DEFAULT_TOKEN_POSITION: u64 = 0;
 const PHASE93_DEFAULT_CHAIN_TEMPLATE_SEQUENCE: [usize; 4] = [0, 1, 0, 1];
@@ -463,6 +468,88 @@ pub struct Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeArtifact {
     pub accumulation_handoff_commitment: String,
     pub folded_interval_prototype_accumulator_commitment: String,
     pub folded_groups: Vec<Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeGroup>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase102FoldedMultiIntervalGemmaRicherFamilyGroup {
+    pub folded_group_index: usize,
+    pub start_interval_index: usize,
+    pub terminal_interval_index: usize,
+    pub start_token_position: u64,
+    pub terminal_token_position: u64,
+    pub first_phase98_artifact_commitment: String,
+    pub terminal_phase98_artifact_commitment: String,
+    pub global_start_boundary_commitment: String,
+    pub global_end_boundary_commitment: String,
+    pub interval_member_commitment_sequence_commitment: String,
+    pub interval_phase98_commitment_sequence_commitment: String,
+    pub interval_token_position_sequence_commitment: String,
+    pub richer_slice_family_commitment_sequence_commitment: String,
+    pub selected_memory_window_family_commitment_sequence_commitment: String,
+    pub invariant_summary_family_commitment_sequence_commitment: String,
+    pub local_score_sum: i64,
+    pub global_score_sum: i64,
+    pub grouped_value_mix_sum: i64,
+    pub residual_output_sum: i64,
+    pub final_acc_sum: i64,
+    pub primary_norm_sq_min: i16,
+    pub primary_norm_sq_max: i16,
+    pub secondary_norm_sq_min: i16,
+    pub secondary_norm_sq_max: i16,
+    pub primary_activation_output_sum: i64,
+    pub secondary_activation_output_sum: i64,
+    pub folded_richer_group_commitment: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase102FoldedMultiIntervalGemmaRicherFamilyArtifact {
+    pub artifact_version: String,
+    pub semantic_scope: String,
+    pub artifact_commitment: String,
+    pub program_label: String,
+    pub source_phase99_artifact_commitment: String,
+    pub source_phase1015_artifact_commitment: String,
+    pub source_interval_members_commitment: String,
+    pub shared_primitive_artifact_commitment: String,
+    pub shared_table_registry_commitment: String,
+    pub shared_execution_proof_commitment: String,
+    pub shared_execution_proof_backend_version: String,
+    pub shared_execution_statement_version: String,
+    pub total_intervals: usize,
+    pub interval_total_slices: usize,
+    pub token_position_start: u64,
+    pub token_position_stride: u64,
+    pub start_block_index: u64,
+    pub terminal_token_position: u64,
+    pub terminal_block_index: u64,
+    pub bounded_fold_arity: usize,
+    pub total_folded_richer_groups: usize,
+    pub global_interval_start_boundary_commitment: String,
+    pub global_interval_end_boundary_commitment: String,
+    pub first_phase98_artifact_commitment: String,
+    pub terminal_phase98_artifact_commitment: String,
+    pub richer_fold_template_commitment: String,
+    pub folded_richer_group_sequence_commitment: String,
+    pub phase98_commitment_sequence_commitment: String,
+    pub token_position_sequence_commitment: String,
+    pub richer_slice_family_commitment_sequence_commitment: String,
+    pub selected_memory_window_family_commitment_sequence_commitment: String,
+    pub invariant_summary_family_commitment_sequence_commitment: String,
+    pub local_score_sum: i64,
+    pub global_score_sum: i64,
+    pub grouped_value_mix_sum: i64,
+    pub residual_output_sum: i64,
+    pub final_acc_sum: i64,
+    pub primary_norm_sq_min: i16,
+    pub primary_norm_sq_max: i16,
+    pub secondary_norm_sq_min: i16,
+    pub secondary_norm_sq_max: i16,
+    pub primary_activation_output_sum: i64,
+    pub secondary_activation_output_sum: i64,
+    pub accumulation_handoff_commitment: String,
+    pub folded_interval_prototype_accumulator_commitment: String,
+    pub folded_richer_multi_interval_family_accumulator_commitment: String,
+    pub folded_groups: Vec<Phase102FoldedMultiIntervalGemmaRicherFamilyGroup>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -3690,6 +3777,691 @@ pub fn load_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifac
     Ok(artifact)
 }
 
+fn canonical_phase102_folded_richer_groups(
+    source: &Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact,
+    bounded_fold_arity: usize,
+) -> Result<Vec<Phase102FoldedMultiIntervalGemmaRicherFamilyGroup>> {
+    validate_phase1015_bounded_fold_arity(bounded_fold_arity)?;
+    let mut folded_groups = Vec::new();
+    for (folded_group_index, chunk) in source.members.chunks(bounded_fold_arity).enumerate() {
+        let first = chunk.first().ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 102 folded richer family encountered an empty interval chunk".to_string(),
+            )
+        })?;
+        let last = chunk
+            .last()
+            .expect("non-empty interval chunk has a last member");
+        let interval_member_commitments = chunk
+            .iter()
+            .map(|member| member.interval_member_commitment.clone())
+            .collect::<Vec<_>>();
+        let interval_phase98_commitments = chunk
+            .iter()
+            .map(|member| member.phase98_artifact_commitment.clone())
+            .collect::<Vec<_>>();
+        let interval_token_positions = chunk
+            .iter()
+            .map(|member| member.repeated_token_position)
+            .collect::<Vec<_>>();
+        let richer_slice_family_commitments = chunk
+            .iter()
+            .map(|member| member.richer_slice_commitment_sequence_commitment.clone())
+            .collect::<Vec<_>>();
+        let selected_memory_window_family_commitments = chunk
+            .iter()
+            .map(|member| member.selected_memory_window_family_commitment.clone())
+            .collect::<Vec<_>>();
+        let invariant_summary_family_commitments = chunk
+            .iter()
+            .map(|member| member.invariant_summary_family_commitment.clone())
+            .collect::<Vec<_>>();
+        let interval_member_commitment_sequence_commitment = commit_namespace_strings(
+            "phase102/interval-member-commitment-sequence",
+            &interval_member_commitments,
+        )?;
+        let interval_phase98_commitment_sequence_commitment = commit_namespace_strings(
+            "phase102/interval-phase98-commitment-sequence",
+            &interval_phase98_commitments,
+        )?;
+        let interval_token_position_sequence_commitment = commit_namespace_u64s(
+            "phase102/interval-token-position-sequence",
+            &interval_token_positions,
+        )?;
+        let richer_slice_family_commitment_sequence_commitment = commit_namespace_strings(
+            "phase102/richer-slice-family-commitment-sequence",
+            &richer_slice_family_commitments,
+        )?;
+        let selected_memory_window_family_commitment_sequence_commitment =
+            commit_namespace_strings(
+                "phase102/selected-memory-window-family-commitment-sequence",
+                &selected_memory_window_family_commitments,
+            )?;
+        let invariant_summary_family_commitment_sequence_commitment = commit_namespace_strings(
+            "phase102/invariant-summary-family-commitment-sequence",
+            &invariant_summary_family_commitments,
+        )?;
+        let local_score_sum = chunk
+            .iter()
+            .map(|member| member.local_score_sum)
+            .sum::<i64>();
+        let global_score_sum = chunk
+            .iter()
+            .map(|member| member.global_score_sum)
+            .sum::<i64>();
+        let grouped_value_mix_sum = chunk
+            .iter()
+            .map(|member| member.grouped_value_mix_sum)
+            .sum::<i64>();
+        let residual_output_sum = chunk
+            .iter()
+            .map(|member| member.residual_output_sum)
+            .sum::<i64>();
+        let final_acc_sum = chunk.iter().map(|member| member.final_acc_sum).sum::<i64>();
+        let primary_norm_sq_min = chunk
+            .iter()
+            .map(|member| member.primary_norm_sq_min)
+            .min()
+            .expect("non-empty chunk");
+        let primary_norm_sq_max = chunk
+            .iter()
+            .map(|member| member.primary_norm_sq_max)
+            .max()
+            .expect("non-empty chunk");
+        let secondary_norm_sq_min = chunk
+            .iter()
+            .map(|member| member.secondary_norm_sq_min)
+            .min()
+            .expect("non-empty chunk");
+        let secondary_norm_sq_max = chunk
+            .iter()
+            .map(|member| member.secondary_norm_sq_max)
+            .max()
+            .expect("non-empty chunk");
+        let primary_activation_output_sum = chunk
+            .iter()
+            .map(|member| member.primary_activation_output_sum)
+            .sum::<i64>();
+        let secondary_activation_output_sum = chunk
+            .iter()
+            .map(|member| member.secondary_activation_output_sum)
+            .sum::<i64>();
+        let mut group = Phase102FoldedMultiIntervalGemmaRicherFamilyGroup {
+            folded_group_index,
+            start_interval_index: first.interval_index,
+            terminal_interval_index: last.interval_index,
+            start_token_position: first.repeated_token_position,
+            terminal_token_position: last.repeated_token_position,
+            first_phase98_artifact_commitment: first.phase98_artifact_commitment.clone(),
+            terminal_phase98_artifact_commitment: last.phase98_artifact_commitment.clone(),
+            global_start_boundary_commitment: first.global_start_boundary_commitment.clone(),
+            global_end_boundary_commitment: last.global_end_boundary_commitment.clone(),
+            interval_member_commitment_sequence_commitment,
+            interval_phase98_commitment_sequence_commitment,
+            interval_token_position_sequence_commitment,
+            richer_slice_family_commitment_sequence_commitment,
+            selected_memory_window_family_commitment_sequence_commitment,
+            invariant_summary_family_commitment_sequence_commitment,
+            local_score_sum,
+            global_score_sum,
+            grouped_value_mix_sum,
+            residual_output_sum,
+            final_acc_sum,
+            primary_norm_sq_min,
+            primary_norm_sq_max,
+            secondary_norm_sq_min,
+            secondary_norm_sq_max,
+            primary_activation_output_sum,
+            secondary_activation_output_sum,
+            folded_richer_group_commitment: String::new(),
+        };
+        group.folded_richer_group_commitment =
+            commit_phase102_folded_multi_interval_richer_group(&group)?;
+        folded_groups.push(group);
+    }
+    Ok(folded_groups)
+}
+
+fn validate_phase102_folded_multi_interval_gemma_richer_family_artifact_shallow(
+    artifact: &Phase102FoldedMultiIntervalGemmaRicherFamilyArtifact,
+) -> Result<()> {
+    if artifact.artifact_version
+        != STWO_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE102
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 102 folded richer-family artifact version `{}`",
+            artifact.artifact_version
+        )));
+    }
+    if artifact.semantic_scope
+        != STWO_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_SCOPE_PHASE102
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 102 folded richer-family artifact scope `{}`",
+            artifact.semantic_scope
+        )));
+    }
+    if artifact.program_label != "gemma_block_v4" {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 102 program label `{}`",
+            artifact.program_label
+        )));
+    }
+    validate_phase99_total_intervals(artifact.total_intervals)?;
+    validate_phase95_total_slices(artifact.interval_total_slices)?;
+    validate_phase99_token_position_stride(artifact.token_position_stride)?;
+    validate_phase1015_bounded_fold_arity(artifact.bounded_fold_arity)?;
+    if artifact.total_folded_richer_groups != artifact.folded_groups.len() {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 total_folded_richer_groups does not match the folded group count"
+                .to_string(),
+        ));
+    }
+    if artifact.folded_groups.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 folded richer-family artifact requires at least one folded group"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+pub fn prepare_phase102_folded_multi_interval_gemma_richer_family_artifact(
+    source: &Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact,
+    folded: &Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeArtifact,
+) -> Result<Phase102FoldedMultiIntervalGemmaRicherFamilyArtifact> {
+    verify_phase99_multi_interval_gemma_richer_family_accumulation_artifact(source)?;
+    verify_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(folded, source)?;
+    let bounded_fold_arity = folded.bounded_fold_arity;
+    let folded_groups = canonical_phase102_folded_richer_groups(source, bounded_fold_arity)?;
+    let total_folded_richer_groups = folded_groups.len();
+    let first_member = source.members.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 102 folded richer-family artifact requires at least one interval member"
+                .to_string(),
+        )
+    })?;
+    let last_member = source
+        .members
+        .last()
+        .expect("members are non-empty after first check");
+    let phase98_commitments = source
+        .members
+        .iter()
+        .map(|member| member.phase98_artifact_commitment.clone())
+        .collect::<Vec<_>>();
+    let token_positions = source
+        .members
+        .iter()
+        .map(|member| member.repeated_token_position)
+        .collect::<Vec<_>>();
+    let richer_slice_family_commitments = source
+        .members
+        .iter()
+        .map(|member| member.richer_slice_commitment_sequence_commitment.clone())
+        .collect::<Vec<_>>();
+    let selected_memory_window_family_commitments = source
+        .members
+        .iter()
+        .map(|member| member.selected_memory_window_family_commitment.clone())
+        .collect::<Vec<_>>();
+    let invariant_summary_family_commitments = source
+        .members
+        .iter()
+        .map(|member| member.invariant_summary_family_commitment.clone())
+        .collect::<Vec<_>>();
+    let phase98_commitment_sequence_commitment =
+        commit_namespace_strings("phase102/phase98-commitment-sequence", &phase98_commitments)?;
+    let token_position_sequence_commitment =
+        commit_namespace_u64s("phase102/token-position-sequence", &token_positions)?;
+    let richer_slice_family_commitment_sequence_commitment = commit_namespace_strings(
+        "phase102/richer-slice-family-commitment-sequence",
+        &richer_slice_family_commitments,
+    )?;
+    let selected_memory_window_family_commitment_sequence_commitment = commit_namespace_strings(
+        "phase102/selected-memory-window-family-commitment-sequence",
+        &selected_memory_window_family_commitments,
+    )?;
+    let invariant_summary_family_commitment_sequence_commitment = commit_namespace_strings(
+        "phase102/invariant-summary-family-commitment-sequence",
+        &invariant_summary_family_commitments,
+    )?;
+    let richer_fold_template_commitment = commit_phase102_richer_fold_template(
+        &source.artifact_commitment,
+        &folded.artifact_commitment,
+        &source.interval_members_commitment,
+        &source.shared_primitive_artifact_commitment,
+        &source.shared_table_registry_commitment,
+        &source.shared_execution_proof_commitment,
+        bounded_fold_arity,
+        source.total_intervals,
+        source.interval_total_slices,
+        source.token_position_start,
+        source.token_position_stride,
+        source.start_block_index,
+        source.terminal_token_position,
+        source.terminal_block_index,
+    )?;
+    let folded_richer_group_sequence_commitment =
+        commit_phase102_folded_richer_group_sequence(&folded_groups)?;
+    let folded_richer_multi_interval_family_accumulator_commitment =
+        commit_phase102_folded_richer_multi_interval_family_accumulator(
+            &folded.accumulation_handoff_commitment,
+            &folded.folded_interval_prototype_accumulator_commitment,
+            &richer_fold_template_commitment,
+            &folded_richer_group_sequence_commitment,
+            &phase98_commitment_sequence_commitment,
+            &token_position_sequence_commitment,
+            &richer_slice_family_commitment_sequence_commitment,
+            &selected_memory_window_family_commitment_sequence_commitment,
+            &invariant_summary_family_commitment_sequence_commitment,
+            &first_member.global_start_boundary_commitment,
+            &last_member.global_end_boundary_commitment,
+            source.local_score_sum,
+            source.global_score_sum,
+            source.grouped_value_mix_sum,
+            source.residual_output_sum,
+            source.final_acc_sum,
+            source.primary_norm_sq_min,
+            source.primary_norm_sq_max,
+            source.secondary_norm_sq_min,
+            source.secondary_norm_sq_max,
+            source.primary_activation_output_sum,
+            source.secondary_activation_output_sum,
+            total_folded_richer_groups,
+        )?;
+    let artifact_commitment = commit_phase102_folded_multi_interval_gemma_richer_family_artifact(
+        source,
+        folded,
+        &folded_groups,
+        &richer_fold_template_commitment,
+        &folded_richer_group_sequence_commitment,
+        &phase98_commitment_sequence_commitment,
+        &token_position_sequence_commitment,
+        &richer_slice_family_commitment_sequence_commitment,
+        &selected_memory_window_family_commitment_sequence_commitment,
+        &invariant_summary_family_commitment_sequence_commitment,
+        &folded_richer_multi_interval_family_accumulator_commitment,
+    )?;
+
+    Ok(Phase102FoldedMultiIntervalGemmaRicherFamilyArtifact {
+        artifact_version: STWO_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE102
+            .to_string(),
+        semantic_scope: STWO_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_SCOPE_PHASE102
+            .to_string(),
+        artifact_commitment,
+        program_label: source.program_label.clone(),
+        source_phase99_artifact_commitment: source.artifact_commitment.clone(),
+        source_phase1015_artifact_commitment: folded.artifact_commitment.clone(),
+        source_interval_members_commitment: source.interval_members_commitment.clone(),
+        shared_primitive_artifact_commitment: source.shared_primitive_artifact_commitment.clone(),
+        shared_table_registry_commitment: source.shared_table_registry_commitment.clone(),
+        shared_execution_proof_commitment: source.shared_execution_proof_commitment.clone(),
+        shared_execution_proof_backend_version: source
+            .shared_execution_proof_backend_version
+            .clone(),
+        shared_execution_statement_version: source.shared_execution_statement_version.clone(),
+        total_intervals: source.total_intervals,
+        interval_total_slices: source.interval_total_slices,
+        token_position_start: source.token_position_start,
+        token_position_stride: source.token_position_stride,
+        start_block_index: source.start_block_index,
+        terminal_token_position: source.terminal_token_position,
+        terminal_block_index: source.terminal_block_index,
+        bounded_fold_arity,
+        total_folded_richer_groups,
+        global_interval_start_boundary_commitment: first_member
+            .global_start_boundary_commitment
+            .clone(),
+        global_interval_end_boundary_commitment: last_member.global_end_boundary_commitment.clone(),
+        first_phase98_artifact_commitment: first_member.phase98_artifact_commitment.clone(),
+        terminal_phase98_artifact_commitment: last_member.phase98_artifact_commitment.clone(),
+        richer_fold_template_commitment,
+        folded_richer_group_sequence_commitment,
+        phase98_commitment_sequence_commitment,
+        token_position_sequence_commitment,
+        richer_slice_family_commitment_sequence_commitment,
+        selected_memory_window_family_commitment_sequence_commitment,
+        invariant_summary_family_commitment_sequence_commitment,
+        local_score_sum: source.local_score_sum,
+        global_score_sum: source.global_score_sum,
+        grouped_value_mix_sum: source.grouped_value_mix_sum,
+        residual_output_sum: source.residual_output_sum,
+        final_acc_sum: source.final_acc_sum,
+        primary_norm_sq_min: source.primary_norm_sq_min,
+        primary_norm_sq_max: source.primary_norm_sq_max,
+        secondary_norm_sq_min: source.secondary_norm_sq_min,
+        secondary_norm_sq_max: source.secondary_norm_sq_max,
+        primary_activation_output_sum: source.primary_activation_output_sum,
+        secondary_activation_output_sum: source.secondary_activation_output_sum,
+        accumulation_handoff_commitment: folded.accumulation_handoff_commitment.clone(),
+        folded_interval_prototype_accumulator_commitment: folded
+            .folded_interval_prototype_accumulator_commitment
+            .clone(),
+        folded_richer_multi_interval_family_accumulator_commitment,
+        folded_groups,
+    })
+}
+
+pub fn verify_phase102_folded_multi_interval_gemma_richer_family_artifact(
+    artifact: &Phase102FoldedMultiIntervalGemmaRicherFamilyArtifact,
+    source: &Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact,
+    folded: &Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeArtifact,
+) -> Result<()> {
+    validate_phase102_folded_multi_interval_gemma_richer_family_artifact_shallow(artifact)?;
+    verify_phase99_multi_interval_gemma_richer_family_accumulation_artifact(source)?;
+    verify_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(folded, source)?;
+
+    if artifact.program_label != source.program_label
+        || artifact.program_label != folded.program_label
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 program_label does not match the source artifacts".to_string(),
+        ));
+    }
+    if artifact.source_phase99_artifact_commitment != source.artifact_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 source_phase99_artifact_commitment does not match the source Phase 99 artifact"
+                .to_string(),
+        ));
+    }
+    if artifact.source_phase1015_artifact_commitment != folded.artifact_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 source_phase1015_artifact_commitment does not match the source Phase 101.5 artifact"
+                .to_string(),
+        ));
+    }
+    if artifact.source_interval_members_commitment != source.interval_members_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 source_interval_members_commitment does not match the source Phase 99 artifact"
+                .to_string(),
+        ));
+    }
+    if artifact.shared_primitive_artifact_commitment != source.shared_primitive_artifact_commitment
+        || artifact.shared_table_registry_commitment != source.shared_table_registry_commitment
+        || artifact.shared_execution_proof_commitment != source.shared_execution_proof_commitment
+        || artifact.shared_execution_proof_backend_version
+            != source.shared_execution_proof_backend_version
+        || artifact.shared_execution_statement_version != source.shared_execution_statement_version
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 shared commitments do not match the source Phase 99 artifact".to_string(),
+        ));
+    }
+    if artifact.total_intervals != source.total_intervals
+        || artifact.interval_total_slices != source.interval_total_slices
+        || artifact.token_position_start != source.token_position_start
+        || artifact.token_position_stride != source.token_position_stride
+        || artifact.start_block_index != source.start_block_index
+        || artifact.terminal_token_position != source.terminal_token_position
+        || artifact.terminal_block_index != source.terminal_block_index
+        || artifact.bounded_fold_arity != folded.bounded_fold_arity
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 interval metadata does not match the source artifacts".to_string(),
+        ));
+    }
+
+    let first_member = source.members.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 102 folded richer-family artifact requires at least one interval member"
+                .to_string(),
+        )
+    })?;
+    let last_member = source
+        .members
+        .last()
+        .expect("members are non-empty after first check");
+    if artifact.global_interval_start_boundary_commitment
+        != first_member.global_start_boundary_commitment
+        || artifact.global_interval_end_boundary_commitment
+            != last_member.global_end_boundary_commitment
+        || artifact.first_phase98_artifact_commitment != first_member.phase98_artifact_commitment
+        || artifact.terminal_phase98_artifact_commitment != last_member.phase98_artifact_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 boundary or Phase 98 edge commitments do not match the source artifact"
+                .to_string(),
+        ));
+    }
+    if artifact.accumulation_handoff_commitment != folded.accumulation_handoff_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 accumulation_handoff_commitment does not match the source Phase 101.5 artifact"
+                .to_string(),
+        ));
+    }
+    if artifact.folded_interval_prototype_accumulator_commitment
+        != folded.folded_interval_prototype_accumulator_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 folded_interval_prototype_accumulator_commitment does not match the source Phase 101.5 artifact"
+                .to_string(),
+        ));
+    }
+
+    let expected_folded_groups =
+        canonical_phase102_folded_richer_groups(source, artifact.bounded_fold_arity)?;
+    if artifact.folded_groups != expected_folded_groups {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 folded_groups do not match the canonical richer-family groups".to_string(),
+        ));
+    }
+
+    let phase98_commitments = source
+        .members
+        .iter()
+        .map(|member| member.phase98_artifact_commitment.clone())
+        .collect::<Vec<_>>();
+    let token_positions = source
+        .members
+        .iter()
+        .map(|member| member.repeated_token_position)
+        .collect::<Vec<_>>();
+    let richer_slice_family_commitments = source
+        .members
+        .iter()
+        .map(|member| member.richer_slice_commitment_sequence_commitment.clone())
+        .collect::<Vec<_>>();
+    let selected_memory_window_family_commitments = source
+        .members
+        .iter()
+        .map(|member| member.selected_memory_window_family_commitment.clone())
+        .collect::<Vec<_>>();
+    let invariant_summary_family_commitments = source
+        .members
+        .iter()
+        .map(|member| member.invariant_summary_family_commitment.clone())
+        .collect::<Vec<_>>();
+    let expected_phase98_commitment_sequence_commitment =
+        commit_namespace_strings("phase102/phase98-commitment-sequence", &phase98_commitments)?;
+    if artifact.phase98_commitment_sequence_commitment
+        != expected_phase98_commitment_sequence_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 phase98_commitment_sequence_commitment does not match the source artifact"
+                .to_string(),
+        ));
+    }
+    let expected_token_position_sequence_commitment =
+        commit_namespace_u64s("phase102/token-position-sequence", &token_positions)?;
+    if artifact.token_position_sequence_commitment != expected_token_position_sequence_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 token_position_sequence_commitment does not match the source artifact"
+                .to_string(),
+        ));
+    }
+    let expected_richer_slice_family_commitment_sequence_commitment = commit_namespace_strings(
+        "phase102/richer-slice-family-commitment-sequence",
+        &richer_slice_family_commitments,
+    )?;
+    if artifact.richer_slice_family_commitment_sequence_commitment
+        != expected_richer_slice_family_commitment_sequence_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 richer_slice_family_commitment_sequence_commitment does not match the source artifact"
+                .to_string(),
+        ));
+    }
+    let expected_selected_memory_window_family_commitment_sequence_commitment =
+        commit_namespace_strings(
+            "phase102/selected-memory-window-family-commitment-sequence",
+            &selected_memory_window_family_commitments,
+        )?;
+    if artifact.selected_memory_window_family_commitment_sequence_commitment
+        != expected_selected_memory_window_family_commitment_sequence_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 selected_memory_window_family_commitment_sequence_commitment does not match the source artifact"
+                .to_string(),
+        ));
+    }
+    let expected_invariant_summary_family_commitment_sequence_commitment =
+        commit_namespace_strings(
+            "phase102/invariant-summary-family-commitment-sequence",
+            &invariant_summary_family_commitments,
+        )?;
+    if artifact.invariant_summary_family_commitment_sequence_commitment
+        != expected_invariant_summary_family_commitment_sequence_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 invariant_summary_family_commitment_sequence_commitment does not match the source artifact"
+                .to_string(),
+        ));
+    }
+
+    if artifact.local_score_sum != source.local_score_sum
+        || artifact.global_score_sum != source.global_score_sum
+        || artifact.grouped_value_mix_sum != source.grouped_value_mix_sum
+        || artifact.residual_output_sum != source.residual_output_sum
+        || artifact.final_acc_sum != source.final_acc_sum
+        || artifact.primary_norm_sq_min != source.primary_norm_sq_min
+        || artifact.primary_norm_sq_max != source.primary_norm_sq_max
+        || artifact.secondary_norm_sq_min != source.secondary_norm_sq_min
+        || artifact.secondary_norm_sq_max != source.secondary_norm_sq_max
+        || artifact.primary_activation_output_sum != source.primary_activation_output_sum
+        || artifact.secondary_activation_output_sum != source.secondary_activation_output_sum
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 accumulated summaries do not match the source Phase 99 artifact".to_string(),
+        ));
+    }
+
+    let expected_richer_fold_template_commitment = commit_phase102_richer_fold_template(
+        &source.artifact_commitment,
+        &folded.artifact_commitment,
+        &source.interval_members_commitment,
+        &source.shared_primitive_artifact_commitment,
+        &source.shared_table_registry_commitment,
+        &source.shared_execution_proof_commitment,
+        artifact.bounded_fold_arity,
+        source.total_intervals,
+        source.interval_total_slices,
+        source.token_position_start,
+        source.token_position_stride,
+        source.start_block_index,
+        source.terminal_token_position,
+        source.terminal_block_index,
+    )?;
+    if artifact.richer_fold_template_commitment != expected_richer_fold_template_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 richer_fold_template_commitment does not match the canonical template"
+                .to_string(),
+        ));
+    }
+    let expected_folded_richer_group_sequence_commitment =
+        commit_phase102_folded_richer_group_sequence(&artifact.folded_groups)?;
+    if artifact.folded_richer_group_sequence_commitment
+        != expected_folded_richer_group_sequence_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 folded_richer_group_sequence_commitment does not match the serialized folded groups"
+                .to_string(),
+        ));
+    }
+    let expected_folded_richer_multi_interval_family_accumulator_commitment =
+        commit_phase102_folded_richer_multi_interval_family_accumulator(
+            &artifact.accumulation_handoff_commitment,
+            &artifact.folded_interval_prototype_accumulator_commitment,
+            &artifact.richer_fold_template_commitment,
+            &artifact.folded_richer_group_sequence_commitment,
+            &artifact.phase98_commitment_sequence_commitment,
+            &artifact.token_position_sequence_commitment,
+            &artifact.richer_slice_family_commitment_sequence_commitment,
+            &artifact.selected_memory_window_family_commitment_sequence_commitment,
+            &artifact.invariant_summary_family_commitment_sequence_commitment,
+            &artifact.global_interval_start_boundary_commitment,
+            &artifact.global_interval_end_boundary_commitment,
+            artifact.local_score_sum,
+            artifact.global_score_sum,
+            artifact.grouped_value_mix_sum,
+            artifact.residual_output_sum,
+            artifact.final_acc_sum,
+            artifact.primary_norm_sq_min,
+            artifact.primary_norm_sq_max,
+            artifact.secondary_norm_sq_min,
+            artifact.secondary_norm_sq_max,
+            artifact.primary_activation_output_sum,
+            artifact.secondary_activation_output_sum,
+            artifact.total_folded_richer_groups,
+        )?;
+    if artifact.folded_richer_multi_interval_family_accumulator_commitment
+        != expected_folded_richer_multi_interval_family_accumulator_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 folded_richer_multi_interval_family_accumulator_commitment does not match the serialized richer-family surface"
+                .to_string(),
+        ));
+    }
+    let expected_artifact_commitment =
+        commit_phase102_folded_multi_interval_gemma_richer_family_artifact(
+            source,
+            folded,
+            &artifact.folded_groups,
+            &artifact.richer_fold_template_commitment,
+            &artifact.folded_richer_group_sequence_commitment,
+            &artifact.phase98_commitment_sequence_commitment,
+            &artifact.token_position_sequence_commitment,
+            &artifact.richer_slice_family_commitment_sequence_commitment,
+            &artifact.selected_memory_window_family_commitment_sequence_commitment,
+            &artifact.invariant_summary_family_commitment_sequence_commitment,
+            &artifact.folded_richer_multi_interval_family_accumulator_commitment,
+        )?;
+    if artifact.artifact_commitment != expected_artifact_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 102 folded richer-family artifact commitment does not match its serialized contents"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+pub fn save_phase102_folded_multi_interval_gemma_richer_family_artifact(
+    artifact: &Phase102FoldedMultiIntervalGemmaRicherFamilyArtifact,
+    path: &Path,
+) -> Result<()> {
+    write_json_with_limit(
+        artifact,
+        path,
+        MAX_PHASE102_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_JSON_BYTES,
+        "Phase 102 folded multi-interval Gemma richer-family artifact",
+    )
+}
+
+pub fn load_phase102_folded_multi_interval_gemma_richer_family_artifact(
+    path: &Path,
+) -> Result<Phase102FoldedMultiIntervalGemmaRicherFamilyArtifact> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE102_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_JSON_BYTES,
+        "Phase 102 folded multi-interval Gemma richer-family artifact",
+    )?;
+    let artifact: Phase102FoldedMultiIntervalGemmaRicherFamilyArtifact =
+        serde_json::from_slice(&bytes)
+            .map_err(|error| VmError::Serialization(error.to_string()))?;
+    validate_phase102_folded_multi_interval_gemma_richer_family_artifact_shallow(&artifact)?;
+    Ok(artifact)
+}
+
 fn build_phase93_tensor_native_chain_artifact(
     primitive_artifact: Phase92SharedNormalizationPrimitiveArtifact,
     steps: Vec<Phase93TensorNativeChainStep>,
@@ -5379,6 +6151,295 @@ fn commit_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(
     Ok(lower_hex(&out))
 }
 
+fn commit_phase102_folded_multi_interval_richer_group(
+    group: &Phase102FoldedMultiIntervalGemmaRicherFamilyGroup,
+) -> Result<String> {
+    #[derive(Serialize)]
+    struct FoldedRicherGroupPayload<'a> {
+        folded_group_index: usize,
+        start_interval_index: usize,
+        terminal_interval_index: usize,
+        start_token_position: u64,
+        terminal_token_position: u64,
+        first_phase98_artifact_commitment: &'a str,
+        terminal_phase98_artifact_commitment: &'a str,
+        global_start_boundary_commitment: &'a str,
+        global_end_boundary_commitment: &'a str,
+        interval_member_commitment_sequence_commitment: &'a str,
+        interval_phase98_commitment_sequence_commitment: &'a str,
+        interval_token_position_sequence_commitment: &'a str,
+        richer_slice_family_commitment_sequence_commitment: &'a str,
+        selected_memory_window_family_commitment_sequence_commitment: &'a str,
+        invariant_summary_family_commitment_sequence_commitment: &'a str,
+        local_score_sum: i64,
+        global_score_sum: i64,
+        grouped_value_mix_sum: i64,
+        residual_output_sum: i64,
+        final_acc_sum: i64,
+        primary_norm_sq_min: i16,
+        primary_norm_sq_max: i16,
+        secondary_norm_sq_min: i16,
+        secondary_norm_sq_max: i16,
+        primary_activation_output_sum: i64,
+        secondary_activation_output_sum: i64,
+    }
+    let payload = FoldedRicherGroupPayload {
+        folded_group_index: group.folded_group_index,
+        start_interval_index: group.start_interval_index,
+        terminal_interval_index: group.terminal_interval_index,
+        start_token_position: group.start_token_position,
+        terminal_token_position: group.terminal_token_position,
+        first_phase98_artifact_commitment: &group.first_phase98_artifact_commitment,
+        terminal_phase98_artifact_commitment: &group.terminal_phase98_artifact_commitment,
+        global_start_boundary_commitment: &group.global_start_boundary_commitment,
+        global_end_boundary_commitment: &group.global_end_boundary_commitment,
+        interval_member_commitment_sequence_commitment: &group
+            .interval_member_commitment_sequence_commitment,
+        interval_phase98_commitment_sequence_commitment: &group
+            .interval_phase98_commitment_sequence_commitment,
+        interval_token_position_sequence_commitment: &group
+            .interval_token_position_sequence_commitment,
+        richer_slice_family_commitment_sequence_commitment: &group
+            .richer_slice_family_commitment_sequence_commitment,
+        selected_memory_window_family_commitment_sequence_commitment: &group
+            .selected_memory_window_family_commitment_sequence_commitment,
+        invariant_summary_family_commitment_sequence_commitment: &group
+            .invariant_summary_family_commitment_sequence_commitment,
+        local_score_sum: group.local_score_sum,
+        global_score_sum: group.global_score_sum,
+        grouped_value_mix_sum: group.grouped_value_mix_sum,
+        residual_output_sum: group.residual_output_sum,
+        final_acc_sum: group.final_acc_sum,
+        primary_norm_sq_min: group.primary_norm_sq_min,
+        primary_norm_sq_max: group.primary_norm_sq_max,
+        secondary_norm_sq_min: group.secondary_norm_sq_min,
+        secondary_norm_sq_max: group.secondary_norm_sq_max,
+        primary_activation_output_sum: group.primary_activation_output_sum,
+        secondary_activation_output_sum: group.secondary_activation_output_sum,
+    };
+    let json =
+        serde_json::to_vec(&payload).map_err(|error| VmError::Serialization(error.to_string()))?;
+    commit_namespace_bytes("phase102/folded-multi-interval-richer-group", &json)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn commit_phase102_richer_fold_template(
+    source_phase99_artifact_commitment: &str,
+    source_phase1015_artifact_commitment: &str,
+    source_interval_members_commitment: &str,
+    shared_primitive_artifact_commitment: &str,
+    shared_table_registry_commitment: &str,
+    shared_execution_proof_commitment: &str,
+    bounded_fold_arity: usize,
+    total_intervals: usize,
+    interval_total_slices: usize,
+    token_position_start: u64,
+    token_position_stride: u64,
+    start_block_index: u64,
+    terminal_token_position: u64,
+    terminal_block_index: u64,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(
+        STWO_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE102.as_bytes(),
+    );
+    hasher
+        .update(STWO_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_SCOPE_PHASE102.as_bytes());
+    hasher.update(source_phase99_artifact_commitment.as_bytes());
+    hasher.update(source_phase1015_artifact_commitment.as_bytes());
+    hasher.update(source_interval_members_commitment.as_bytes());
+    hasher.update(shared_primitive_artifact_commitment.as_bytes());
+    hasher.update(shared_table_registry_commitment.as_bytes());
+    hasher.update(shared_execution_proof_commitment.as_bytes());
+    hasher.update(&(bounded_fold_arity as u64).to_le_bytes());
+    hasher.update(&(total_intervals as u64).to_le_bytes());
+    hasher.update(&(interval_total_slices as u64).to_le_bytes());
+    hasher.update(&token_position_start.to_le_bytes());
+    hasher.update(&token_position_stride.to_le_bytes());
+    hasher.update(&start_block_index.to_le_bytes());
+    hasher.update(&terminal_token_position.to_le_bytes());
+    hasher.update(&terminal_block_index.to_le_bytes());
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase102_folded_richer_group_sequence(
+    groups: &[Phase102FoldedMultiIntervalGemmaRicherFamilyGroup],
+) -> Result<String> {
+    let json =
+        serde_json::to_vec(groups).map_err(|error| VmError::Serialization(error.to_string()))?;
+    commit_namespace_bytes("phase102/folded-richer-group-sequence", &json)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn commit_phase102_folded_richer_multi_interval_family_accumulator(
+    accumulation_handoff_commitment: &str,
+    folded_interval_prototype_accumulator_commitment: &str,
+    richer_fold_template_commitment: &str,
+    folded_richer_group_sequence_commitment: &str,
+    phase98_commitment_sequence_commitment: &str,
+    token_position_sequence_commitment: &str,
+    richer_slice_family_commitment_sequence_commitment: &str,
+    selected_memory_window_family_commitment_sequence_commitment: &str,
+    invariant_summary_family_commitment_sequence_commitment: &str,
+    global_interval_start_boundary_commitment: &str,
+    global_interval_end_boundary_commitment: &str,
+    local_score_sum: i64,
+    global_score_sum: i64,
+    grouped_value_mix_sum: i64,
+    residual_output_sum: i64,
+    final_acc_sum: i64,
+    primary_norm_sq_min: i16,
+    primary_norm_sq_max: i16,
+    secondary_norm_sq_min: i16,
+    secondary_norm_sq_max: i16,
+    primary_activation_output_sum: i64,
+    secondary_activation_output_sum: i64,
+    total_folded_richer_groups: usize,
+) -> Result<String> {
+    #[derive(Serialize)]
+    struct FoldedRicherFamilyAccumulatorPayload<'a> {
+        accumulation_handoff_commitment: &'a str,
+        folded_interval_prototype_accumulator_commitment: &'a str,
+        richer_fold_template_commitment: &'a str,
+        folded_richer_group_sequence_commitment: &'a str,
+        phase98_commitment_sequence_commitment: &'a str,
+        token_position_sequence_commitment: &'a str,
+        richer_slice_family_commitment_sequence_commitment: &'a str,
+        selected_memory_window_family_commitment_sequence_commitment: &'a str,
+        invariant_summary_family_commitment_sequence_commitment: &'a str,
+        global_interval_start_boundary_commitment: &'a str,
+        global_interval_end_boundary_commitment: &'a str,
+        local_score_sum: i64,
+        global_score_sum: i64,
+        grouped_value_mix_sum: i64,
+        residual_output_sum: i64,
+        final_acc_sum: i64,
+        primary_norm_sq_min: i16,
+        primary_norm_sq_max: i16,
+        secondary_norm_sq_min: i16,
+        secondary_norm_sq_max: i16,
+        primary_activation_output_sum: i64,
+        secondary_activation_output_sum: i64,
+        total_folded_richer_groups: usize,
+    }
+    let payload = FoldedRicherFamilyAccumulatorPayload {
+        accumulation_handoff_commitment,
+        folded_interval_prototype_accumulator_commitment,
+        richer_fold_template_commitment,
+        folded_richer_group_sequence_commitment,
+        phase98_commitment_sequence_commitment,
+        token_position_sequence_commitment,
+        richer_slice_family_commitment_sequence_commitment,
+        selected_memory_window_family_commitment_sequence_commitment,
+        invariant_summary_family_commitment_sequence_commitment,
+        global_interval_start_boundary_commitment,
+        global_interval_end_boundary_commitment,
+        local_score_sum,
+        global_score_sum,
+        grouped_value_mix_sum,
+        residual_output_sum,
+        final_acc_sum,
+        primary_norm_sq_min,
+        primary_norm_sq_max,
+        secondary_norm_sq_min,
+        secondary_norm_sq_max,
+        primary_activation_output_sum,
+        secondary_activation_output_sum,
+        total_folded_richer_groups,
+    };
+    let json =
+        serde_json::to_vec(&payload).map_err(|error| VmError::Serialization(error.to_string()))?;
+    commit_namespace_bytes("phase102/folded-richer-family-accumulator", &json)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn commit_phase102_folded_multi_interval_gemma_richer_family_artifact(
+    source: &Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact,
+    folded: &Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeArtifact,
+    folded_groups: &[Phase102FoldedMultiIntervalGemmaRicherFamilyGroup],
+    richer_fold_template_commitment: &str,
+    folded_richer_group_sequence_commitment: &str,
+    phase98_commitment_sequence_commitment: &str,
+    token_position_sequence_commitment: &str,
+    richer_slice_family_commitment_sequence_commitment: &str,
+    selected_memory_window_family_commitment_sequence_commitment: &str,
+    invariant_summary_family_commitment_sequence_commitment: &str,
+    folded_richer_multi_interval_family_accumulator_commitment: &str,
+) -> Result<String> {
+    let first_member = source.members.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 102 folded richer-family artifact requires at least one interval member"
+                .to_string(),
+        )
+    })?;
+    let last_member = source
+        .members
+        .last()
+        .expect("source members are non-empty after first check");
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(
+        STWO_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE102.as_bytes(),
+    );
+    hasher
+        .update(STWO_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_SCOPE_PHASE102.as_bytes());
+    hasher.update(source.program_label.as_bytes());
+    hasher.update(source.artifact_commitment.as_bytes());
+    hasher.update(folded.artifact_commitment.as_bytes());
+    hasher.update(source.interval_members_commitment.as_bytes());
+    hasher.update(source.shared_primitive_artifact_commitment.as_bytes());
+    hasher.update(source.shared_table_registry_commitment.as_bytes());
+    hasher.update(source.shared_execution_proof_commitment.as_bytes());
+    hasher.update(source.shared_execution_proof_backend_version.as_bytes());
+    hasher.update(source.shared_execution_statement_version.as_bytes());
+    hasher.update(&(source.total_intervals as u64).to_le_bytes());
+    hasher.update(&(source.interval_total_slices as u64).to_le_bytes());
+    hasher.update(&source.token_position_start.to_le_bytes());
+    hasher.update(&source.token_position_stride.to_le_bytes());
+    hasher.update(&source.start_block_index.to_le_bytes());
+    hasher.update(&source.terminal_token_position.to_le_bytes());
+    hasher.update(&source.terminal_block_index.to_le_bytes());
+    hasher.update(&(folded.bounded_fold_arity as u64).to_le_bytes());
+    hasher.update(&(folded_groups.len() as u64).to_le_bytes());
+    hasher.update(first_member.global_start_boundary_commitment.as_bytes());
+    hasher.update(last_member.global_end_boundary_commitment.as_bytes());
+    hasher.update(first_member.phase98_artifact_commitment.as_bytes());
+    hasher.update(last_member.phase98_artifact_commitment.as_bytes());
+    hasher.update(richer_fold_template_commitment.as_bytes());
+    hasher.update(folded_richer_group_sequence_commitment.as_bytes());
+    hasher.update(phase98_commitment_sequence_commitment.as_bytes());
+    hasher.update(token_position_sequence_commitment.as_bytes());
+    hasher.update(richer_slice_family_commitment_sequence_commitment.as_bytes());
+    hasher.update(selected_memory_window_family_commitment_sequence_commitment.as_bytes());
+    hasher.update(invariant_summary_family_commitment_sequence_commitment.as_bytes());
+    hasher.update(&source.local_score_sum.to_le_bytes());
+    hasher.update(&source.global_score_sum.to_le_bytes());
+    hasher.update(&source.grouped_value_mix_sum.to_le_bytes());
+    hasher.update(&source.residual_output_sum.to_le_bytes());
+    hasher.update(&source.final_acc_sum.to_le_bytes());
+    hasher.update(&source.primary_norm_sq_min.to_le_bytes());
+    hasher.update(&source.primary_norm_sq_max.to_le_bytes());
+    hasher.update(&source.secondary_norm_sq_min.to_le_bytes());
+    hasher.update(&source.secondary_norm_sq_max.to_le_bytes());
+    hasher.update(&source.primary_activation_output_sum.to_le_bytes());
+    hasher.update(&source.secondary_activation_output_sum.to_le_bytes());
+    hasher.update(folded.accumulation_handoff_commitment.as_bytes());
+    hasher.update(
+        folded
+            .folded_interval_prototype_accumulator_commitment
+            .as_bytes(),
+    );
+    hasher.update(folded_richer_multi_interval_family_accumulator_commitment.as_bytes());
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
 fn commit_namespace_u64s(namespace: &str, values: &[u64]) -> Result<String> {
     let json =
         serde_json::to_vec(values).map_err(|error| VmError::Serialization(error.to_string()))?;
@@ -5939,6 +7000,84 @@ mod tests {
         assert!(error
             .to_string()
             .contains("accumulation_handoff_commitment"));
+    }
+
+    #[test]
+    fn phase102_folded_multi_interval_gemma_richer_family_round_trips() {
+        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 primitive artifact");
+        let execution_proof = prove_gemma_block_v4_execution();
+        let source = prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
+            &primitive_artifact,
+            &execution_proof,
+            4,
+            4,
+            1,
+            2,
+            2,
+        )
+        .expect("prepare phase99 source artifact");
+        let folded =
+            prepare_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(&source)
+                .expect("prepare phase101.5 folded prototype");
+        let artifact =
+            prepare_phase102_folded_multi_interval_gemma_richer_family_artifact(&source, &folded)
+                .expect("prepare phase102 richer family artifact");
+        assert_eq!(artifact.total_intervals, 4);
+        assert_eq!(artifact.interval_total_slices, 4);
+        assert_eq!(artifact.token_position_start, 1);
+        assert_eq!(artifact.token_position_stride, 2);
+        assert_eq!(artifact.terminal_token_position, 7);
+        assert_eq!(
+            artifact.bounded_fold_arity,
+            PHASE1015_DEFAULT_BOUNDED_FOLD_ARITY
+        );
+        assert_eq!(artifact.total_folded_richer_groups, 2);
+        assert_eq!(artifact.folded_groups.len(), 2);
+        assert_eq!(artifact.local_score_sum, source.local_score_sum);
+        assert_eq!(
+            artifact
+                .folded_richer_multi_interval_family_accumulator_commitment
+                .len(),
+            64,
+            "blake2b-256 hex"
+        );
+        verify_phase102_folded_multi_interval_gemma_richer_family_artifact(
+            &artifact, &source, &folded,
+        )
+        .expect("verify phase102 richer family artifact");
+    }
+
+    #[test]
+    fn phase102_folded_multi_interval_gemma_richer_family_rejects_sequence_drift() {
+        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 primitive artifact");
+        let execution_proof = prove_gemma_block_v4_execution();
+        let source = prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
+            &primitive_artifact,
+            &execution_proof,
+            4,
+            4,
+            0,
+            1,
+            2,
+        )
+        .expect("prepare phase99 source artifact");
+        let folded =
+            prepare_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(&source)
+                .expect("prepare phase101.5 folded prototype");
+        let mut artifact =
+            prepare_phase102_folded_multi_interval_gemma_richer_family_artifact(&source, &folded)
+                .expect("prepare phase102 richer family artifact");
+        artifact.selected_memory_window_family_commitment_sequence_commitment =
+            "bad-sequence".to_string();
+        let error = verify_phase102_folded_multi_interval_gemma_richer_family_artifact(
+            &artifact, &source, &folded,
+        )
+        .expect_err("tampered richer family sequence should fail");
+        assert!(error
+            .to_string()
+            .contains("selected_memory_window_family_commitment_sequence_commitment"));
     }
 
     #[test]

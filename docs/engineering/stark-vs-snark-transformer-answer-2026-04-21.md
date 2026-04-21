@@ -202,6 +202,25 @@ The repository now has three concrete tensor-native `stwo` checkpoints:
   `1.573s`
 - repeated accumulation verify time:
   `3.007s`
+- richer multi-interval bundle:
+  `docs/paper/artifacts/stwo-richer-multi-interval-gemma-v1-2026-04-21/`
+- richer multi-interval scope:
+  explicit Phase99 source plus Phase101.5 folded prototype plus Phase102 richer
+  verifier-bound family derivative across `4` token-position-indexed intervals
+- explicit multi-interval bytes:
+  `1,036,298`
+- folded multi-interval bytes:
+  `5,214`
+- folded richer multi-interval bytes:
+  `7,100`
+- folded prototype / explicit ratio:
+  `0.5031%`
+- richer-family / explicit ratio:
+  `0.6851%`
+- richer-family overhead above folded prototype:
+  `1,886`
+- explicit-vs-naive duplication savings:
+  `3,090,402`
 
 What this strengthens:
 
@@ -219,7 +238,14 @@ What this strengthens:
 - the repository now has one honest repeated-structure benchmark surface:
   `4` Gemma-like slices can be packaged with one shared proof and one shared
   lookup registry instead of duplicating the full proof or the full richer-slice
-  JSON blindly.
+  JSON blindly, and
+- the repository now has one honest multi-interval richer-family benchmark
+  surface:
+  an explicit `1,036,298`-byte Phase99 source can be reduced to a
+  verifier-bound `5,214`-byte folded prototype or a `7,100`-byte richer-family
+  derivative, so the richer transformer-shaped metadata can be carried forward
+  at about `0.6851%` of the explicit source size on this frozen artifact
+  surface.
 
 ### zkLLM
 
@@ -287,7 +313,7 @@ The best current repository-backed answer is:
 
 That is why the next phases move toward:
 
-- transformer-specific accumulation or folding on top of the repeated
-  Gemma-slice line,
+- transformer-specific accumulation or folding on top of the repeated and
+  multi-interval Gemma-slice line,
 - not more VM wrapper layers, and
 - not more one-off Gemma numbers that do not exploit repeated structure.
