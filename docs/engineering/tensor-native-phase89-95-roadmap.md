@@ -51,11 +51,22 @@ The first result-bearing step on this line now exists:
 - one Phase95 repeated-slice accumulation artifact over `4` Gemma-like slices
   that reuses `90,432` shared proof bytes instead of `361,728` naive repeated
   proof bytes and saves `3,998,305` JSON bytes versus duplicating the richer
-  slice `4` times.
+  slice `4` times,
+- one frozen richer multi-interval bundle under
+  `docs/paper/artifacts/stwo-richer-multi-interval-gemma-v1-2026-04-21/`,
+- one explicit Phase99 multi-interval source artifact at `1,036,298` JSON
+  bytes,
+- one Phase101.5 folded multi-interval prototype at `5,214` JSON bytes, about
+  `0.5031%` of the explicit surface, and
+- one Phase102 richer verifier-bound derivative at `7,100` JSON bytes, about
+  `0.6851%` of the explicit surface and only `1,886` bytes above the thinner
+  folded prototype.
 
 That means Phase91 through Phase95 are no longer only roadmap items. The next
-meaningful work is Phase96: transformer-specific accumulation or folding on top
-of this frozen repeated-slice line, not more wrapper layers.
+meaningful work is no longer "can we derive one multi-interval folded object at
+all?" The repository can already do that. The next meaningful work is
+transformer-specific accumulation or folding on top of this frozen repeated and
+multi-interval line, not more wrapper layers.
 
 ## Phase89: upstream sync audit
 
@@ -462,6 +473,88 @@ Stop condition:
 - the repository can point to one explicit multi-interval source and one
   smaller folded multi-interval derivative that stays verifier-bound and
   pre-recursive.
+
+## Phase102: richer multi-interval family derivative
+
+Goal:
+
+- reintroduce more transformer-shaped family structure on top of the folded
+  multi-interval handoff without pretending that this is already recursive
+  compression.
+
+Deliverables:
+
+- one `Phase102FoldedMultiIntervalGemmaRicherFamilyArtifact`,
+- explicit bindings to the Phase99 source and Phase101.5 folded commitments,
+- verifier-enforced sequence commitments for token positions, Phase98 members,
+  selected memory-window families, and invariant-summary families, and
+- negative mutations that reject richer-family sequence drift.
+
+Frozen result:
+
+- bundle:
+  `docs/paper/artifacts/stwo-richer-multi-interval-gemma-v1-2026-04-21/`
+- explicit Phase99 multi-interval JSON bytes: `1,036,298`
+- Phase101.5 folded prototype JSON bytes: `5,214`
+- Phase102 richer-family JSON bytes: `7,100`
+- Phase101.5 folded ratio vs explicit: `0.005031`
+- Phase102 richer-family ratio vs explicit: `0.006851`
+- richer-family overhead above folded prototype: `1,886` bytes
+
+Stop condition:
+
+- the repository can point to one richer verifier-bound multi-interval
+  derivative that remains much smaller than the explicit source while carrying
+  more transformer-shaped family structure than the bare folded prototype.
+
+## Phase103: frozen richer multi-interval benchmark bundle
+
+Goal:
+
+- freeze the new richer multi-interval line into a publication-facing artifact
+  bundle with exact commands, timings, hashes, and comparison notes.
+
+Deliverables:
+
+- bundle generator:
+  `scripts/paper/generate_stwo_richer_multi_interval_gemma_bundle.sh`
+- frozen bundle:
+  `docs/paper/artifacts/stwo-richer-multi-interval-gemma-v1-2026-04-21/`
+- appendix artifact index, artifact summary TSV, comparison TSV, and hashes.
+
+Frozen result:
+
+- shared execution proof bytes: `90,432`
+- explicit multi-interval JSON bytes: `1,036,298`
+- folded multi-interval JSON bytes: `5,214`
+- folded richer multi-interval JSON bytes: `7,100`
+- folded prototype / explicit ratio: `0.5031%`
+- richer-family / explicit ratio: `0.6851%`
+- explicit vs naive single-interval duplication savings: `3,090,402` bytes
+
+Stop condition:
+
+- the repository has one citation-grade richer multi-interval bundle rather
+  than only local JSON outputs.
+
+## Phase104: richer multi-interval accumulation design
+
+Goal:
+
+- state clearly what the richer multi-interval derivative means and what later
+  accumulation work must consume from it.
+
+Deliverables:
+
+- design note:
+  `docs/engineering/design/phase104-richer-multi-interval-accumulation-spec.md`
+- explicit non-claims separating this surface from recursion, IVC, or final
+  cryptographic compression.
+
+Stop condition:
+
+- later accumulation work can start from a stable handoff object instead of
+  redefining the richer multi-interval surface ad hoc.
 
 ## Research answer this roadmap aims to produce
 
