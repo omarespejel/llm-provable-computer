@@ -12,6 +12,8 @@ use blake2::Blake2bVar;
 #[cfg(feature = "burn-model")]
 use burn::backend::NdArray;
 use clap::{Parser, Subcommand, ValueEnum};
+#[cfg(feature = "stwo-backend")]
+use llm_provable_computer::proof::load_execution_stark_proof_with_limit;
 #[cfg(any(feature = "burn-model", feature = "onnx-export"))]
 use llm_provable_computer::verify_engines;
 use llm_provable_computer::{
@@ -31,6 +33,7 @@ use llm_provable_computer::{export_program_onnx, OnnxExecutionRuntime};
 use llm_provable_computer::{
     load_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact,
     load_phase102_folded_multi_interval_gemma_richer_family_artifact,
+    load_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact,
     load_phase10_shared_binary_step_lookup_proof, load_phase10_shared_normalization_lookup_proof,
     load_phase11_decoding_chain, load_phase12_decoding_chain, load_phase12_shared_lookup_artifact,
     load_phase13_decoding_layout_matrix, load_phase14_decoding_chain,
@@ -70,6 +73,7 @@ use llm_provable_computer::{
     phase37_prepare_recursive_artifact_chain_harness_receipt,
     prepare_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact,
     prepare_phase102_folded_multi_interval_gemma_richer_family_artifact,
+    prepare_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact,
     prepare_phase92_shared_normalization_demo_artifact,
     prepare_phase93_tensor_native_chain_demo_artifact,
     prepare_phase945_gemma_block_core_slice_artifact,
@@ -94,6 +98,7 @@ use llm_provable_computer::{
     prove_phase3_binary_step_lookup_demo_envelope, prove_phase5_normalization_lookup_demo_envelope,
     save_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact,
     save_phase102_folded_multi_interval_gemma_richer_family_artifact,
+    save_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact,
     save_phase10_shared_binary_step_lookup_proof, save_phase10_shared_normalization_lookup_proof,
     save_phase11_decoding_chain, save_phase12_decoding_chain, save_phase12_shared_lookup_artifact,
     save_phase13_decoding_layout_matrix, save_phase14_decoding_chain,
@@ -116,6 +121,7 @@ use llm_provable_computer::{
     save_stwo_transformer_shaped_artifact_bundle, stwo_backend_enabled,
     verify_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact,
     verify_phase102_folded_multi_interval_gemma_richer_family_artifact,
+    verify_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact,
     verify_phase10_shared_binary_step_lookup_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
     verify_phase11_decoding_chain_with_proof_checks,
@@ -156,8 +162,10 @@ use llm_provable_computer::{
     verify_phase98_folded_gemma_richer_slice_family_artifact,
     verify_phase99_multi_interval_gemma_richer_family_accumulation_artifact,
     Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeArtifact,
-    Phase102FoldedMultiIntervalGemmaRicherFamilyArtifact, Phase29RecursiveCompressionInputContract,
-    Phase30DecodingStepProofEnvelopeManifest, Phase31RecursiveCompressionDecodeBoundaryManifest,
+    Phase102FoldedMultiIntervalGemmaRicherFamilyArtifact,
+    Phase105RepeatedMultiIntervalGemmaRicherFamilyAccumulationArtifact,
+    Phase29RecursiveCompressionInputContract, Phase30DecodingStepProofEnvelopeManifest,
+    Phase31RecursiveCompressionDecodeBoundaryManifest,
     Phase32RecursiveCompressionStatementContract, Phase33RecursiveCompressionPublicInputManifest,
     Phase34RecursiveCompressionSharedLookupManifest, Phase35RecursiveCompressionTargetManifest,
     Phase36RecursiveVerifierHarnessReceipt, Phase37RecursiveArtifactChainHarnessReceipt,
@@ -166,7 +174,7 @@ use llm_provable_computer::{
     Phase95RepeatedGemmaSliceAccumulationArtifact, Phase965FoldedGemmaSliceAccumulationArtifact,
     Phase98FoldedGemmaRicherSliceFamilyArtifact,
     Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact, StwoTransformerShapedArtifactBundle,
-    MAX_PHASE99_MULTI_INTERVAL_TOTAL_INTERVALS,
+    MAX_PHASE105_REPEATED_MULTI_INTERVAL_TOTAL_WINDOWS, MAX_PHASE99_MULTI_INTERVAL_TOTAL_INTERVALS,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
     STWO_BACKEND_VERSION_PHASE12,
     STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
@@ -222,11 +230,16 @@ use llm_provable_computer::{
     STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_VERSION_PHASE36,
     STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_SCOPE_PHASE95,
     STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_VERSION_PHASE95,
+    STWO_REPEATED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_SCOPE_PHASE105,
+    STWO_REPEATED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE105,
     STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_SCOPE_PHASE92,
     STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_VERSION_PHASE92,
     STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_SCOPE_PHASE93,
     STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_VERSION_PHASE93,
 };
+
+#[cfg(feature = "stwo-backend")]
+const MAX_PHASE105_SHARED_EXECUTION_PROOF_JSON_BYTES: usize = 64 * 1024 * 1024;
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
 use serde::{Deserialize, Serialize};
@@ -619,6 +632,40 @@ enum Command {
         /// Path to the serialized Phase101.5 folded multi-interval prototype artifact JSON file.
         #[arg(long = "folded")]
         folded: PathBuf,
+    },
+    #[cfg(feature = "stwo-backend")]
+    /// Prepare a repeated multi-window accumulation artifact over canonical Phase102 richer-family windows.
+    PrepareStwoRepeatedMultiIntervalGemmaRicherFamilyAccumulationArtifact {
+        /// Path to the serialized shared execution proof JSON file.
+        #[arg(long = "proof")]
+        proof: PathBuf,
+        /// Number of repeated Phase102 windows.
+        #[arg(long = "total-windows", default_value_t = 3)]
+        total_windows: usize,
+        /// Number of intervals inside each repeated Phase102 window.
+        #[arg(long = "intervals-per-window", default_value_t = 4)]
+        intervals_per_window: usize,
+        /// Number of repeated slices inside each interval.
+        #[arg(long = "interval-total-slices", default_value_t = 4)]
+        interval_total_slices: usize,
+        /// Initial token position for the repeated window family.
+        #[arg(long = "token-position-start", default_value_t = 0)]
+        token_position_start: u64,
+        /// Token-position stride between consecutive intervals.
+        #[arg(long = "token-position-stride", default_value_t = 1)]
+        token_position_stride: u64,
+        /// First block index reused by every repeated window.
+        #[arg(long = "start-block-index", default_value_t = 0)]
+        start_block_index: u64,
+        /// File where the serialized artifact JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    #[cfg(feature = "stwo-backend")]
+    /// Verify a repeated multi-window accumulation artifact over canonical Phase102 richer-family windows.
+    VerifyStwoRepeatedMultiIntervalGemmaRicherFamilyAccumulationArtifact {
+        /// Path to the serialized Phase105 repeated multi-interval richer-family artifact JSON file.
+        artifact: PathBuf,
     },
     /// Produce a serialized proof-carrying decoding chain over three fixed-shape S-two steps.
     ProveStwoDecodingDemo {
@@ -2149,6 +2196,34 @@ fn run() -> llm_provable_computer::Result<()> {
             folded,
         } => verify_stwo_folded_multi_interval_gemma_richer_family_artifact_command(
             &artifact, &source, &folded,
+        )?,
+        #[cfg(feature = "stwo-backend")]
+        Command::PrepareStwoRepeatedMultiIntervalGemmaRicherFamilyAccumulationArtifact {
+            proof,
+            total_windows,
+            intervals_per_window,
+            interval_total_slices,
+            token_position_start,
+            token_position_stride,
+            start_block_index,
+            output,
+        } => {
+            prepare_stwo_repeated_multi_interval_gemma_richer_family_accumulation_artifact_command(
+                &proof,
+                total_windows,
+                intervals_per_window,
+                interval_total_slices,
+                token_position_start,
+                token_position_stride,
+                start_block_index,
+                &output,
+            )?
+        }
+        #[cfg(feature = "stwo-backend")]
+        Command::VerifyStwoRepeatedMultiIntervalGemmaRicherFamilyAccumulationArtifact {
+            artifact,
+        } => verify_stwo_repeated_multi_interval_gemma_richer_family_accumulation_artifact_command(
+            &artifact,
         )?,
         Command::ProveStwoDecodingDemo { output } => prove_stwo_decoding_demo_command(&output)?,
         Command::VerifyStwoDecodingDemo { proof } => verify_stwo_decoding_demo_command(&proof)?,
@@ -3992,6 +4067,108 @@ fn print_phase102_folded_multi_interval_gemma_richer_family_report(
     );
 }
 
+#[cfg(feature = "stwo-backend")]
+fn print_phase105_repeated_multi_interval_gemma_richer_family_report(
+    artifact: &Phase105RepeatedMultiIntervalGemmaRicherFamilyAccumulationArtifact,
+) {
+    println!("artifact_version: {}", artifact.artifact_version);
+    println!("semantic_scope: {}", artifact.semantic_scope);
+    println!("artifact_commitment: {}", artifact.artifact_commitment);
+    println!("program_label: {}", artifact.program_label);
+    println!(
+        "shared_primitive_artifact_commitment: {}",
+        artifact.shared_primitive_artifact_commitment
+    );
+    println!(
+        "shared_table_registry_commitment: {}",
+        artifact.shared_table_registry_commitment
+    );
+    println!(
+        "shared_execution_proof_commitment: {}",
+        artifact.shared_execution_proof_commitment
+    );
+    println!(
+        "shared_execution_proof_backend_version: {}",
+        artifact.shared_execution_proof_backend_version
+    );
+    println!(
+        "shared_execution_statement_version: {}",
+        artifact.shared_execution_statement_version
+    );
+    println!("total_windows: {}", artifact.total_windows);
+    println!("intervals_per_window: {}", artifact.intervals_per_window);
+    println!("interval_total_slices: {}", artifact.interval_total_slices);
+    println!(
+        "shared_execution_proof_bytes: {}",
+        artifact.shared_execution_proof.proof.len()
+    );
+    let naive_window_interval_repeated_proof_bytes = (artifact.shared_execution_proof.proof.len()
+        as u128)
+        .checked_mul(artifact.total_windows as u128)
+        .and_then(|value| value.checked_mul(artifact.intervals_per_window as u128));
+    match naive_window_interval_repeated_proof_bytes {
+        Some(bytes) => println!("naive_window_interval_repeated_proof_bytes: {bytes}"),
+        None => println!("naive_window_interval_repeated_proof_bytes: overflow"),
+    }
+    println!("token_position_start: {}", artifact.token_position_start);
+    println!("token_position_stride: {}", artifact.token_position_stride);
+    println!(
+        "window_token_position_stride: {}",
+        artifact.window_token_position_stride
+    );
+    println!("start_block_index: {}", artifact.start_block_index);
+    println!(
+        "terminal_token_position: {}",
+        artifact.terminal_token_position
+    );
+    println!("terminal_block_index: {}", artifact.terminal_block_index);
+    println!(
+        "window_members_commitment: {}",
+        artifact.window_members_commitment
+    );
+    println!(
+        "phase102_artifact_commitment_sequence_commitment: {}",
+        artifact.phase102_artifact_commitment_sequence_commitment
+    );
+    println!(
+        "accumulation_handoff_commitment_sequence_commitment: {}",
+        artifact.accumulation_handoff_commitment_sequence_commitment
+    );
+    println!(
+        "folded_richer_multi_interval_family_accumulator_sequence_commitment: {}",
+        artifact.folded_richer_multi_interval_family_accumulator_sequence_commitment
+    );
+    println!(
+        "global_window_start_boundary_commitment: {}",
+        artifact.global_window_start_boundary_commitment
+    );
+    println!(
+        "global_window_end_boundary_commitment: {}",
+        artifact.global_window_end_boundary_commitment
+    );
+    println!("local_score_sum: {}", artifact.local_score_sum);
+    println!("global_score_sum: {}", artifact.global_score_sum);
+    println!("grouped_value_mix_sum: {}", artifact.grouped_value_mix_sum);
+    println!("residual_output_sum: {}", artifact.residual_output_sum);
+    println!("final_acc_sum: {}", artifact.final_acc_sum);
+    println!("primary_norm_sq_min: {}", artifact.primary_norm_sq_min);
+    println!("primary_norm_sq_max: {}", artifact.primary_norm_sq_max);
+    println!("secondary_norm_sq_min: {}", artifact.secondary_norm_sq_min);
+    println!("secondary_norm_sq_max: {}", artifact.secondary_norm_sq_max);
+    println!(
+        "primary_activation_output_sum: {}",
+        artifact.primary_activation_output_sum
+    );
+    println!(
+        "secondary_activation_output_sum: {}",
+        artifact.secondary_activation_output_sum
+    );
+    println!(
+        "repeated_multi_interval_family_accumulator_commitment: {}",
+        artifact.repeated_multi_interval_family_accumulator_commitment
+    );
+}
+
 fn prepare_stwo_repeated_gemma_slice_accumulation_artifact_command(
     proof_path: &Path,
     total_slices: usize,
@@ -4438,6 +4615,138 @@ fn verify_stwo_folded_multi_interval_gemma_richer_family_artifact_command(
             "expected_semantic_scope: {STWO_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_SCOPE_PHASE102}"
         );
         print_phase102_folded_multi_interval_gemma_richer_family_report(&artifact);
+        Ok(())
+    }
+}
+
+fn prepare_stwo_repeated_multi_interval_gemma_richer_family_accumulation_artifact_command(
+    proof_path: &Path,
+    total_windows: usize,
+    intervals_per_window: usize,
+    interval_total_slices: usize,
+    token_position_start: u64,
+    token_position_stride: u64,
+    start_block_index: u64,
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = (
+            proof_path,
+            total_windows,
+            intervals_per_window,
+            interval_total_slices,
+            token_position_start,
+            token_position_stride,
+            start_block_index,
+            output,
+        );
+        return Err(VmError::UnsupportedProof(
+            "S-two repeated multi-interval richer-family accumulation artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two repeated multi-interval richer-family accumulation artifact")?;
+        if total_windows < 2 {
+            return Err(VmError::InvalidConfig(
+                "S-two repeated multi-interval richer-family accumulation requires total_windows >= 2"
+                    .to_string(),
+            ));
+        }
+        if total_windows > MAX_PHASE105_REPEATED_MULTI_INTERVAL_TOTAL_WINDOWS {
+            return Err(VmError::InvalidConfig(format!(
+                "S-two repeated multi-interval richer-family accumulation supports at most {} windows",
+                MAX_PHASE105_REPEATED_MULTI_INTERVAL_TOTAL_WINDOWS
+            )));
+        }
+        if intervals_per_window < 2 {
+            return Err(VmError::InvalidConfig(
+                "S-two repeated multi-interval richer-family accumulation requires intervals_per_window >= 2"
+                    .to_string(),
+            ));
+        }
+        if intervals_per_window > MAX_PHASE99_MULTI_INTERVAL_TOTAL_INTERVALS {
+            return Err(VmError::InvalidConfig(format!(
+                "S-two repeated multi-interval richer-family accumulation supports at most {} intervals per window",
+                MAX_PHASE99_MULTI_INTERVAL_TOTAL_INTERVALS
+            )));
+        }
+        if interval_total_slices < 2 {
+            return Err(VmError::InvalidConfig(
+                "S-two repeated multi-interval richer-family accumulation requires interval_total_slices >= 2"
+                    .to_string(),
+            ));
+        }
+        if interval_total_slices > llm_provable_computer::MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES {
+            return Err(VmError::InvalidConfig(format!(
+                "S-two repeated multi-interval richer-family accumulation supports at most {} repeated slices per interval",
+                llm_provable_computer::MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES
+            )));
+        }
+        let execution_proof = load_execution_stark_proof_with_limit(
+            proof_path,
+            MAX_PHASE105_SHARED_EXECUTION_PROOF_JSON_BYTES,
+        )?;
+        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()?;
+        let artifact =
+            prepare_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
+                &primitive_artifact,
+                &execution_proof,
+                total_windows,
+                intervals_per_window,
+                interval_total_slices,
+                token_position_start,
+                token_position_stride,
+                start_block_index,
+            )?;
+        save_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
+            &artifact, output,
+        )?;
+
+        println!("output: {}", output.display());
+        println!("proof: {}", proof_path.display());
+        println!("loaded_stark_proof: true");
+        print_phase105_repeated_multi_interval_gemma_richer_family_report(&artifact);
+        Ok(())
+    }
+}
+
+fn verify_stwo_repeated_multi_interval_gemma_richer_family_accumulation_artifact_command(
+    artifact_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = artifact_path;
+        return Err(VmError::UnsupportedProof(
+            "S-two repeated multi-interval richer-family accumulation artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two repeated multi-interval richer-family accumulation artifact")?;
+        let artifact =
+            load_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
+                artifact_path,
+            )?;
+        verify_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
+            &artifact,
+        )?;
+
+        println!("artifact: {}", artifact_path.display());
+        println!("verified_artifact: true");
+        println!("verified_stark: true");
+        println!(
+            "expected_artifact_version: {STWO_REPEATED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE105}"
+        );
+        println!(
+            "expected_semantic_scope: {STWO_REPEATED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_SCOPE_PHASE105}"
+        );
+        print_phase105_repeated_multi_interval_gemma_richer_family_report(&artifact);
         Ok(())
     }
 }
@@ -13907,6 +14216,12 @@ mod cli_dispatch_tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-folded-multi-interval-gemma-richer-family-artifact"
         ));
+        assert!(!needs_run_subcommand(
+            "prepare-stwo-repeated-multi-interval-gemma-richer-family-accumulation-artifact"
+        ));
+        assert!(!needs_run_subcommand(
+            "verify-stwo-repeated-multi-interval-gemma-richer-family-accumulation-artifact"
+        ));
     }
 }
 
@@ -14281,6 +14596,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact"
                 | "prepare-stwo-folded-multi-interval-gemma-richer-family-artifact"
                 | "verify-stwo-folded-multi-interval-gemma-richer-family-artifact"
+                | "prepare-stwo-repeated-multi-interval-gemma-richer-family-accumulation-artifact"
+                | "verify-stwo-repeated-multi-interval-gemma-richer-family-accumulation-artifact"
                 | "prove-stwo-decoding-demo"
                 | "verify-stwo-decoding-demo"
                 | "prove-stwo-decoding-family-demo"

@@ -1,4 +1,5 @@
 use std::fs;
+use std::io::Read;
 use std::path::Path;
 
 use blake2::digest::{Update, VariableOutput};
@@ -900,6 +901,35 @@ pub fn save_execution_stark_proof(proof: &VanillaStarkExecutionProof, path: &Pat
 
 pub fn load_execution_stark_proof(path: &Path) -> Result<VanillaStarkExecutionProof> {
     let bytes = fs::read(path)?;
+    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+}
+
+pub fn load_execution_stark_proof_with_limit(
+    path: &Path,
+    max_bytes: usize,
+) -> Result<VanillaStarkExecutionProof> {
+    let max_bytes_u64 = u64::try_from(max_bytes).map_err(|_| {
+        VmError::InvalidConfig("execution proof byte limit does not fit in u64".to_string())
+    })?;
+    let file = fs::File::open(path)?;
+    let metadata_len = file.metadata()?.len();
+    if metadata_len > max_bytes_u64 {
+        return Err(VmError::InvalidConfig(format!(
+            "execution proof file `{}` exceeds the {} byte limit",
+            path.display(),
+            max_bytes
+        )));
+    }
+    let mut bytes = Vec::with_capacity((metadata_len.min(max_bytes_u64)) as usize);
+    let mut limited_reader = file.take(max_bytes_u64.saturating_add(1));
+    limited_reader.read_to_end(&mut bytes)?;
+    if bytes.len() > max_bytes {
+        return Err(VmError::InvalidConfig(format!(
+            "execution proof file `{}` exceeds the {} byte limit while reading",
+            path.display(),
+            max_bytes
+        )));
+    }
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
