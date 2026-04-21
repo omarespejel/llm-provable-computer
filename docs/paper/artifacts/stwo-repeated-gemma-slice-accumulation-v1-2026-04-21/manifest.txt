@@ -1,0 +1,19 @@
+generated_at_utc: 2026-04-21T14:11:14Z
+repo_root: .
+git_commit: 4e4fa56e76c2ee368f18c08c9ac32b72b4cfab93
+git_commit_short: 4e4fa56
+git_branch: codex/phase9475-95-gemma-accumulation
+rustc: rustc 1.90.0-nightly (e9182f195 2025-07-13)
+cargo: cargo 1.90.0-nightly (eabb4cd92 2025-07-09)
+host_platform: Darwin 23.6.0 arm64
+nightly_toolchain: +nightly-2025-07-14
+bundle_dir: docs/paper/artifacts/stwo-repeated-gemma-slice-accumulation-v1-2026-04-21
+chain_artifact: tensor-native-chain.stwo.json
+gemma_proof: gemma-block-v4.stark.json
+gemma_core_slice_artifact: gemma-block-core-slice.stwo.json
+gemma_richer_slice_artifact: gemma-block-richer-slice.stwo.json
+repeated_accumulation_artifact: repeated-gemma-slice-accumulation.stwo.json
+total_slices: 4
+token_position: 0
+start_block_index: 2
+scope: repeated Gemma-like tensor-native slice accumulation over one shared S-two proof

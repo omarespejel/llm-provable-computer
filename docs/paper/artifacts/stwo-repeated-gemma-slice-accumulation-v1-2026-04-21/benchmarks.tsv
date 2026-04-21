@@ -1,0 +1,11 @@
+label	seconds
+prepare_tensor_native_chain	1.347
+verify_tensor_native_chain	0.768
+prove_gemma_block_v4	0.958
+verify_gemma_block_v4	0.828
+prepare_gemma_block_core_slice	1.061
+verify_gemma_block_core_slice	1.068
+prepare_gemma_block_richer_slice	1.052
+verify_gemma_block_richer_slice	1.038
+prepare_repeated_gemma_slice_accumulation	1.573
+verify_repeated_gemma_slice_accumulation	3.007

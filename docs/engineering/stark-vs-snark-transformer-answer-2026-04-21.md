@@ -118,7 +118,7 @@ Current limitation:
 
 ### Current tensor-native S-two artifact checkpoint
 
-The repository now has two concrete tensor-native `stwo` checkpoints:
+The repository now has three concrete tensor-native `stwo` checkpoints:
 
 - primitive bundle:
   `docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/`
@@ -169,6 +169,39 @@ The repository now has two concrete tensor-native `stwo` checkpoints:
   `0.766s`
 - core-slice verify time:
   `0.780s`
+- repeated-slice bundle:
+  `docs/paper/artifacts/stwo-repeated-gemma-slice-accumulation-v1-2026-04-21/`
+- repeated-slice scope:
+  one Gemma richer slice plus one repeated `4`-slice accumulation artifact over
+  shared proof reuse
+- richer-slice bytes:
+  `1,257,495`
+- repeated accumulation bytes:
+  `1,031,675`
+- repeated total slices:
+  `4`
+- repeated token position:
+  `0`
+- repeated block index interval:
+  `2 -> 5`
+- repeated shared execution proof bytes:
+  `90,432`
+- naive repeated proof bytes:
+  `361,728`
+- proof bytes saved vs naive duplication:
+  `271,296`
+- naive repeated richer-slice JSON bytes:
+  `5,029,980`
+- accumulation JSON bytes saved vs richer-slice duplication:
+  `3,998,305`
+- richer-slice prepare time:
+  `1.052s`
+- richer-slice verify time:
+  `1.038s`
+- repeated accumulation prepare time:
+  `1.573s`
+- repeated accumulation verify time:
+  `3.007s`
 
 What this strengthens:
 
@@ -179,9 +212,14 @@ What this strengthens:
 - the repository now has one reproducible transformer-shaped tensor-native
   artifact line rather than only an isolated primitive,
 - that line already binds to one real `gemma_block_v4` S-two proof through a
-  verifier-checked core-slice artifact, and
-- the next result-bearing step is accumulation or folding on top of this direct
-  tensor-native line rather than more VM wrapper layers.
+  verifier-checked core-slice artifact,
+- the richer-slice artifact now binds actual score, grouped-value, residual,
+  normalization, activation, and selected-memory-window invariants rather than
+  stopping at the core slice, and
+- the repository now has one honest repeated-structure benchmark surface:
+  `4` Gemma-like slices can be packaged with one shared proof and one shared
+  lookup registry instead of duplicating the full proof or the full richer-slice
+  JSON blindly.
 
 ### zkLLM
 
@@ -249,6 +287,7 @@ The best current repository-backed answer is:
 
 That is why the next phases move toward:
 
-- short typed carried-state chains on top of the direct primitive line,
-- one frozen transformer-shaped tensor-native bundle,
-- and only then transformer-specific accumulation.
+- transformer-specific accumulation or folding on top of the repeated
+  Gemma-slice line,
+- not more VM wrapper layers, and
+- not more one-off Gemma numbers that do not exploit repeated structure.
