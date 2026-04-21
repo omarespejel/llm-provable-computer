@@ -19,6 +19,7 @@ use super::decoding::{
     verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase30_decoding_step_proof_envelope_manifest,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
+    verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range,
     Phase12DecodingChainManifest, Phase12DecodingState, Phase14DecodingChainManifest,
     Phase14DecodingState, Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
     Phase30DecodingStepProofEnvelopeManifest,
@@ -869,6 +870,57 @@ const STWO_PUBLICATION_PAPER3_SEAM_TABLE_STATUS_PHASE84: &str =
 #[cfg(feature = "stwo-backend")]
 const STWO_PUBLICATION_PAPER3_SEAM_TABLE_NEXT_STEP_PHASE84: &str =
     "freeze_paper3_seam_artifact_section_before_translation_aware_composition_work";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_COMPOSITION_SEGMENT_VERSION_PHASE85: &str =
+    "stwo_translated_paper3_composition_segment_v1";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_COMPOSITION_SEGMENT_SCOPE_PHASE85: &str =
+    "translated_paper3_composition_segment";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_COMPOSITION_SEGMENT_NEXT_STEP_PHASE85: &str =
+    "compose_multiple_translated_segments_into_paper3_prototype";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_COMPOSITION_PROTOTYPE_VERSION_PHASE86: &str =
+    "stwo_translated_paper3_composition_prototype_v1";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_COMPOSITION_PROTOTYPE_SCOPE_PHASE86: &str =
+    "translated_paper3_composition_prototype";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_COMPOSITION_PROTOTYPE_COMPLEXITY_PHASE86: &str =
+    "O(translated_paper3_composition_segments)";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_COMPOSITION_PROTOTYPE_STATUS_PHASE86: &str =
+    "translated_phase81_to_phase83_segments_source_bound_and_contiguous";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_COMPOSITION_PROTOTYPE_NEXT_STEP_PHASE86: &str =
+    "assess_translated_paper3_composition_prototype_as_pre_recursive_boundary";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_COMPOSITION_ASSESSMENT_VERSION_PHASE87: &str =
+    "stwo_translated_paper3_composition_assessment_v1";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_COMPOSITION_ASSESSMENT_SCOPE_PHASE87: &str =
+    "translated_paper3_composition_assessment";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_COMPOSITION_ASSESSMENT_STATUS_PHASE87: &str =
+    "translation_aware_composition_available_but_pre_recursive_only";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSLATED_PAPER3_COMPOSITION_ASSESSMENT_NEXT_STEP_PHASE87: &str =
+    "freeze_translated_composition_artifact_section_before_recursive_work";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_VERSION_PHASE88: &str =
+    "stwo_publication_translated_paper3_composition_table_v1";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_SCOPE_PHASE88: &str =
+    "publication_translated_paper3_composition_table";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_COMPLEXITY_PHASE88: &str =
+    "O(publication_translated_paper3_composition_rows)";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_STATUS_PHASE88: &str =
+    "phase84_to_phase87_translated_paper3_composition_rows_source_bound";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_NEXT_STEP_PHASE88: &str =
+    "freeze_translated_paper3_composition_section_before_recursive_composition_work";
 #[cfg(feature = "stwo-backend")]
 const PHASE44D_M31_MODULUS: u32 = (1u32 << 31) - 1;
 
@@ -3258,6 +3310,158 @@ pub struct Phase84PublicationPaper3SeamTable {
     pub paper_ready: bool,
     pub required_next_step: String,
     pub publication_paper3_seam_table_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone)]
+pub struct Phase85TranslatedPaper3CompositionSource {
+    pub phase81_receipt: Phase81ProofCheckedBoundaryHistoryBridgeReceipt,
+    pub phase82_receipt: Phase82TranslatedPaper3SegmentSourceReceipt,
+    pub phase83_assessment: Phase83TranslatedPaper3BlockerAssessment,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase85TranslatedPaper3CompositionSegment {
+    pub proof_backend: StarkProofBackend,
+    pub segment_version: String,
+    pub semantic_scope: String,
+    pub segment_index: usize,
+    pub step_start: usize,
+    pub step_end: usize,
+    pub total_steps: usize,
+    pub phase81_receipt: Phase81ProofCheckedBoundaryHistoryBridgeReceipt,
+    pub phase82_receipt: Phase82TranslatedPaper3SegmentSourceReceipt,
+    pub phase83_assessment: Phase83TranslatedPaper3BlockerAssessment,
+    pub phase81_receipt_commitment: String,
+    pub phase82_receipt_commitment: String,
+    pub phase83_assessment_commitment: String,
+    pub translated_lookup_identity_commitment: String,
+    pub source_phase30_source_chain_commitment: String,
+    pub source_phase30_step_envelopes_commitment: String,
+    pub translated_chain_start_boundary_commitment: String,
+    pub translated_chain_end_boundary_commitment: String,
+    pub legacy_phase30_chain_start_boundary_commitment: String,
+    pub legacy_phase30_chain_end_boundary_commitment: String,
+    pub source_template_commitment: String,
+    pub aggregation_template_commitment: String,
+    pub source_phase12_layout_commitment: String,
+    pub lookup_rows_commitments_commitment: String,
+    pub shared_lookup_artifact_commitments_commitment: String,
+    pub static_lookup_registry_commitments_commitment: String,
+    pub proof_checked_decode_chain_available: bool,
+    pub shared_lookup_registry_available: bool,
+    pub full_history_replay_required: bool,
+    pub boundary_translation_required: bool,
+    pub source_bound_verifier_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub translated_composition_segment_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase86TranslatedPaper3CompositionPrototype {
+    pub proof_backend: StarkProofBackend,
+    pub prototype_version: String,
+    pub semantic_scope: String,
+    pub boundary_domain: String,
+    pub segment_count: usize,
+    pub total_steps: usize,
+    pub translated_chain_start_boundary_commitment: String,
+    pub translated_chain_end_boundary_commitment: String,
+    pub translated_lookup_identity_commitment: String,
+    pub segment_list_commitment: String,
+    pub naive_per_step_package_count: usize,
+    pub composed_segment_package_count: usize,
+    pub package_count_delta: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub translated_segment_source_available: bool,
+    pub source_bound_verifier_available: bool,
+    pub full_history_replay_required: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub segments: Vec<Phase85TranslatedPaper3CompositionSegment>,
+    pub translated_composition_prototype_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase87TranslatedPaper3CompositionAssessment {
+    pub proof_backend: StarkProofBackend,
+    pub assessment_version: String,
+    pub semantic_scope: String,
+    pub source_phase86_translated_composition_prototype_commitment: String,
+    pub assessment_status: String,
+    pub translated_segment_source_available: bool,
+    pub translation_adapter_consumed: bool,
+    pub shared_lookup_identity_preserved: bool,
+    pub source_chain_identity_preserved: bool,
+    pub execution_template_identity_preserved: bool,
+    pub legacy_phase37_direct_equality_required: bool,
+    pub full_history_replay_required: bool,
+    pub source_bound_verifier_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub translated_paper3_composition_assessment_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase88PublicationTranslatedPaper3CompositionRow {
+    pub proof_backend: StarkProofBackend,
+    pub row_index: usize,
+    pub phase_label: String,
+    pub artifact_name: String,
+    pub artifact_commitment: String,
+    pub semantic_scope: String,
+    pub verifier_function: String,
+    pub source_bound_verifier_function: String,
+    pub evidence_tier: String,
+    pub claim_boundary: String,
+    pub limitation: String,
+    pub row_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase88PublicationTranslatedPaper3CompositionTable {
+    pub proof_backend: StarkProofBackend,
+    pub table_version: String,
+    pub semantic_scope: String,
+    pub source_phase84_publication_paper3_seam_table_commitment: String,
+    pub source_phase86_translated_composition_prototype_commitment: String,
+    pub source_phase87_translated_paper3_composition_assessment_commitment: String,
+    pub artifact_rows_commitment: String,
+    pub artifact_rows: Vec<Phase88PublicationTranslatedPaper3CompositionRow>,
+    pub row_count: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub translated_composition_available: bool,
+    pub source_bound_verifiers_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub publication_translated_paper3_composition_table_commitment: String,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -8296,8 +8500,18 @@ pub fn verify_phase43_history_replay_trace(trace: &Phase43HistoryReplayTrace) ->
         )));
     }
 
+    let first = trace.rows.first().expect("checked non-empty trace");
+    let step_index_offset = first
+        .phase12_from_state
+        .step_index
+        .checked_sub(first.step_index)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 43 history replay trace first row step_index offset underflowed".to_string(),
+            )
+        })?;
     for (expected_step, row) in trace.rows.iter().enumerate() {
-        phase43_verify_row(trace, expected_step, row)?;
+        phase43_verify_row(trace, expected_step, step_index_offset, row)?;
         if let Some(next) = trace.rows.get(expected_step + 1) {
             phase43_require_phase12_link(
                 expected_step,
@@ -8312,7 +8526,6 @@ pub fn verify_phase43_history_replay_trace(trace: &Phase43HistoryReplayTrace) ->
         }
     }
 
-    let first = trace.rows.first().expect("checked non-empty trace");
     let last = trace.rows.last().expect("checked non-empty trace");
     if trace.phase12_start_public_state_commitment
         != first.phase12_from_state.public_state_commitment
@@ -8538,6 +8751,7 @@ fn phase43_verify_header(trace: &Phase43HistoryReplayTrace) -> Result<()> {
 fn phase43_verify_row(
     trace: &Phase43HistoryReplayTrace,
     expected_step: usize,
+    step_index_offset: usize,
     row: &Phase43HistoryReplayTraceRow,
 ) -> Result<()> {
     if row.step_index != expected_step {
@@ -8588,14 +8802,21 @@ fn phase43_verify_row(
         &format!("phase43.rows[{expected_step}].phase14_to_state"),
         &row.phase14_to_state,
     )?;
-    if row.phase12_from_state.step_index != expected_step
-        || row.phase14_from_state.step_index != expected_step
+    let expected_from_step = expected_step
+        .checked_add(step_index_offset)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 43 history replay trace step_index overflowed".to_string(),
+            )
+        })?;
+    if row.phase12_from_state.step_index != expected_from_step
+        || row.phase14_from_state.step_index != expected_from_step
     {
         return Err(VmError::InvalidConfig(format!(
             "Phase 43 history replay trace row {expected_step} from_state step_index mismatch"
         )));
     }
-    let expected_to_step = expected_step.checked_add(1).ok_or_else(|| {
+    let expected_to_step = expected_from_step.checked_add(1).ok_or_else(|| {
         VmError::InvalidConfig("Phase 43 history replay trace step_index overflowed".to_string())
     })?;
     if row.phase12_to_state.step_index != expected_to_step
@@ -22726,11 +22947,8 @@ pub fn phase71_prepare_actual_stwo_step_envelope_handoff_receipt(
     phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
 ) -> Result<Phase71ActualStwoStepEnvelopeHandoffReceipt> {
     verify_phase12_decoding_chain(phase12_chain)?;
-    verify_phase30_decoding_step_proof_envelope_manifest_against_chain(
-        phase30_manifest,
-        phase12_chain,
-    )?;
-    let (chain_start_position, chain_end_position) = phase71_chain_step_positions(phase12_chain)?;
+    let (_, _, chain_start_position, chain_end_position) =
+        phase71_manifest_step_range_and_positions(phase12_chain, phase30_manifest)?;
     let proof_commitments_commitment =
         phase71_76_commit_ordered_step_envelope_proof_commitments(phase30_manifest)?;
     let mut receipt = Phase71ActualStwoStepEnvelopeHandoffReceipt {
@@ -22748,8 +22966,8 @@ pub fn phase71_prepare_actual_stwo_step_envelope_handoff_receipt(
         chain_end_boundary_commitment: phase30_manifest.chain_end_boundary_commitment.clone(),
         chain_start_position,
         chain_end_position,
-        total_steps: phase12_chain.total_steps,
-        continuity_link_count: phase12_chain.total_steps.saturating_sub(1),
+        total_steps: phase30_manifest.total_steps,
+        continuity_link_count: phase30_manifest.total_steps.saturating_sub(1),
         proof_commitments_commitment,
         actual_proof_commitment_count: phase30_manifest.envelopes.len(),
         source_bound_manifest_verifier_available: true,
@@ -22946,7 +23164,7 @@ pub fn phase72_prepare_actual_stwo_shared_lookup_registry_receipt(
             .step_envelopes_commitment
             .clone(),
         source_phase12_layout_commitment: commit_phase12_layout(&phase12_chain.layout),
-        total_steps: phase12_chain.total_steps,
+        total_steps: phase30_manifest.total_steps,
         unique_shared_lookup_artifact_count: unique_shared_lookup_artifact_commitments.len(),
         unique_static_lookup_registry_commitment_count: unique_static_lookup_registry_commitments
             .len(),
@@ -23263,20 +23481,42 @@ pub fn phase74_prepare_chunked_history_carry_receipt(
         ));
     }
     verify_phase14_decoding_chain(phase14_chain)?;
-    let first = phase14_chain.steps.first().ok_or_else(|| {
-        VmError::InvalidConfig(
-            "Phase 74 chunked-history carry requires at least one step".to_string(),
-        )
-    })?;
-    let last = phase14_chain.steps.last().ok_or_else(|| {
-        VmError::InvalidConfig(
-            "Phase 74 chunked-history carry requires at least one step".to_string(),
-        )
-    })?;
+    phase74_prepare_chunked_history_carry_receipt_for_step_range(
+        phase12_chain,
+        phase14_chain,
+        0,
+        phase14_chain.total_steps,
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase74_prepare_chunked_history_carry_receipt_for_step_range(
+    phase12_chain: &Phase12DecodingChainManifest,
+    phase14_chain: &Phase14DecodingChainManifest,
+    step_start: usize,
+    step_end: usize,
+) -> Result<Phase74ChunkedHistoryCarryReceipt> {
+    verify_phase12_decoding_chain(phase12_chain)?;
+    let expected_phase14 = phase14_prepare_decoding_chain(phase12_chain)?;
+    if phase14_chain != &expected_phase14 {
+        return Err(VmError::InvalidConfig(
+            "Phase 74 chunked-history carry requires the Phase14 chain to be the exact source-bound replay of Phase12"
+                .to_string(),
+        ));
+    }
+    verify_phase14_decoding_chain(phase14_chain)?;
+    if step_start >= step_end || step_end > phase14_chain.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 74 chunked-history carry range {step_start}..{step_end} is invalid for a Phase14 chain with {} steps",
+            phase14_chain.steps.len()
+        )));
+    }
+    let first = &phase14_chain.steps[step_start];
+    let last = &phase14_chain.steps[step_end - 1];
     let mut max_kv_history_length = 0usize;
     let mut max_lookup_transcript_entries = 0usize;
     let mut max_lookup_frontier_entries = 0usize;
-    for step in &phase14_chain.steps {
+    for step in &phase14_chain.steps[step_start..step_end] {
         for state in [&step.from_state, &step.to_state] {
             max_kv_history_length = max_kv_history_length.max(state.kv_history_length);
             max_lookup_transcript_entries =
@@ -23285,6 +23525,7 @@ pub fn phase74_prepare_chunked_history_carry_receipt(
                 max_lookup_frontier_entries.max(state.lookup_frontier_entries);
         }
     }
+    let total_steps = step_end - step_start;
     let mut receipt = Phase74ChunkedHistoryCarryReceipt {
         proof_backend: StarkProofBackend::Stwo,
         receipt_version: STWO_CHUNKED_HISTORY_CARRY_RECEIPT_VERSION_PHASE74.to_string(),
@@ -23295,7 +23536,7 @@ pub fn phase74_prepare_chunked_history_carry_receipt(
         chain_end_public_state_commitment: last.to_state.public_state_commitment.clone(),
         chain_start_history_commitment: first.from_state.kv_history_commitment.clone(),
         chain_end_history_commitment: last.to_state.kv_history_commitment.clone(),
-        total_steps: phase14_chain.total_steps,
+        total_steps,
         max_kv_history_length,
         max_lookup_transcript_entries,
         max_lookup_frontier_entries,
@@ -23700,11 +23941,8 @@ pub fn phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt(
     phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
 ) -> Result<Phase76ProofCheckedActualStwoDecodeChainReceipt> {
     verify_phase12_decoding_chain_with_proof_checks(phase12_chain)?;
-    verify_phase30_decoding_step_proof_envelope_manifest_against_chain(
-        phase30_manifest,
-        phase12_chain,
-    )?;
-    let (chain_start_position, chain_end_position) = phase71_chain_step_positions(phase12_chain)?;
+    let (_, _, chain_start_position, chain_end_position) =
+        phase71_manifest_step_range_and_positions(phase12_chain, phase30_manifest)?;
     let proof_commitments_commitment =
         phase71_76_commit_ordered_step_envelope_proof_commitments(phase30_manifest)?;
     let mut receipt = Phase76ProofCheckedActualStwoDecodeChainReceipt {
@@ -23725,8 +23963,8 @@ pub fn phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt(
         chain_end_boundary_commitment: phase30_manifest.chain_end_boundary_commitment.clone(),
         chain_start_position,
         chain_end_position,
-        total_steps: phase12_chain.total_steps,
-        continuity_link_count: phase12_chain.total_steps.saturating_sub(1),
+        total_steps: phase30_manifest.total_steps,
+        continuity_link_count: phase30_manifest.total_steps.saturating_sub(1),
         proof_commitments_commitment,
         actual_proof_commitment_count: phase30_manifest.envelopes.len(),
         proof_checked_chain_available: true,
@@ -25981,6 +26219,1324 @@ pub fn verify_phase84_publication_paper3_seam_table_against_sources(
 }
 
 #[cfg(feature = "stwo-backend")]
+fn phase85_commit_translated_lookup_identity(
+    source_phase12_layout_commitment: &str,
+    shared_lookup_artifact_commitments_commitment: &str,
+    static_lookup_registry_commitments_commitment: &str,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 85 translated lookup identity hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase85-translated-lookup-identity");
+    for part in [
+        source_phase12_layout_commitment.as_bytes(),
+        shared_lookup_artifact_commitments_commitment.as_bytes(),
+        static_lookup_registry_commitments_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 85 translated lookup identity")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase85_translated_paper3_composition_segment(
+    segment: &Phase85TranslatedPaper3CompositionSegment,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 85 translated composition segment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase85-translated-paper3-composition-segment",
+    );
+    phase29_update_len_prefixed(&mut hasher, segment.proof_backend.to_string().as_bytes());
+    for part in [
+        segment.segment_version.as_bytes(),
+        segment.semantic_scope.as_bytes(),
+        segment.phase81_receipt_commitment.as_bytes(),
+        segment.phase82_receipt_commitment.as_bytes(),
+        segment.phase83_assessment_commitment.as_bytes(),
+        segment.translated_lookup_identity_commitment.as_bytes(),
+        segment.source_phase30_source_chain_commitment.as_bytes(),
+        segment.source_phase30_step_envelopes_commitment.as_bytes(),
+        segment
+            .translated_chain_start_boundary_commitment
+            .as_bytes(),
+        segment.translated_chain_end_boundary_commitment.as_bytes(),
+        segment
+            .legacy_phase30_chain_start_boundary_commitment
+            .as_bytes(),
+        segment
+            .legacy_phase30_chain_end_boundary_commitment
+            .as_bytes(),
+        segment.source_template_commitment.as_bytes(),
+        segment.aggregation_template_commitment.as_bytes(),
+        segment.source_phase12_layout_commitment.as_bytes(),
+        segment.lookup_rows_commitments_commitment.as_bytes(),
+        segment
+            .shared_lookup_artifact_commitments_commitment
+            .as_bytes(),
+        segment
+            .static_lookup_registry_commitments_commitment
+            .as_bytes(),
+        segment.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, segment.segment_index);
+    phase29_update_usize(&mut hasher, segment.step_start);
+    phase29_update_usize(&mut hasher, segment.step_end);
+    phase29_update_usize(&mut hasher, segment.total_steps);
+    phase29_update_bool(&mut hasher, segment.proof_checked_decode_chain_available);
+    phase29_update_bool(&mut hasher, segment.shared_lookup_registry_available);
+    phase29_update_bool(&mut hasher, segment.full_history_replay_required);
+    phase29_update_bool(&mut hasher, segment.boundary_translation_required);
+    phase29_update_bool(&mut hasher, segment.source_bound_verifier_available);
+    phase29_update_bool(&mut hasher, segment.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, segment.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, segment.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, segment.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 85 translated composition segment")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase86_commit_translated_segment_list(
+    segments: &[Phase85TranslatedPaper3CompositionSegment],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 86 translated segment list hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase86-translated-paper3-segment-list");
+    for segment in segments {
+        phase29_update_len_prefixed(
+            &mut hasher,
+            segment.translated_composition_segment_commitment.as_bytes(),
+        );
+    }
+    phase44d_finalize_hash(hasher, "Phase 86 translated segment list")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase86_translated_paper3_composition_prototype(
+    prototype: &Phase86TranslatedPaper3CompositionPrototype,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 86 translated composition prototype hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase86-translated-paper3-composition-prototype",
+    );
+    phase29_update_len_prefixed(&mut hasher, prototype.proof_backend.to_string().as_bytes());
+    for part in [
+        prototype.prototype_version.as_bytes(),
+        prototype.semantic_scope.as_bytes(),
+        prototype.boundary_domain.as_bytes(),
+        prototype
+            .translated_chain_start_boundary_commitment
+            .as_bytes(),
+        prototype
+            .translated_chain_end_boundary_commitment
+            .as_bytes(),
+        prototype.translated_lookup_identity_commitment.as_bytes(),
+        prototype.segment_list_commitment.as_bytes(),
+        prototype.verifier_side_complexity.as_bytes(),
+        prototype.verifier_status.as_bytes(),
+        prototype.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for segment in &prototype.segments {
+        phase29_update_len_prefixed(
+            &mut hasher,
+            segment.translated_composition_segment_commitment.as_bytes(),
+        );
+    }
+    phase29_update_usize(&mut hasher, prototype.segment_count);
+    phase29_update_usize(&mut hasher, prototype.total_steps);
+    phase29_update_usize(&mut hasher, prototype.naive_per_step_package_count);
+    phase29_update_usize(&mut hasher, prototype.composed_segment_package_count);
+    phase29_update_usize(&mut hasher, prototype.package_count_delta);
+    phase44d_update_hash_vec(&mut hasher, &prototype.transcript_order);
+    phase29_update_bool(&mut hasher, prototype.translated_segment_source_available);
+    phase29_update_bool(&mut hasher, prototype.source_bound_verifier_available);
+    phase29_update_bool(&mut hasher, prototype.full_history_replay_required);
+    phase29_update_bool(&mut hasher, prototype.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, prototype.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, prototype.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, prototype.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 86 translated composition prototype")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase87_translated_paper3_composition_assessment(
+    assessment: &Phase87TranslatedPaper3CompositionAssessment,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 87 translated composition assessment hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase87-translated-paper3-composition-assessment",
+    );
+    phase29_update_len_prefixed(&mut hasher, assessment.proof_backend.to_string().as_bytes());
+    for part in [
+        assessment.assessment_version.as_bytes(),
+        assessment.semantic_scope.as_bytes(),
+        assessment
+            .source_phase86_translated_composition_prototype_commitment
+            .as_bytes(),
+        assessment.assessment_status.as_bytes(),
+        assessment.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_bool(&mut hasher, assessment.translated_segment_source_available);
+    phase29_update_bool(&mut hasher, assessment.translation_adapter_consumed);
+    phase29_update_bool(&mut hasher, assessment.shared_lookup_identity_preserved);
+    phase29_update_bool(&mut hasher, assessment.source_chain_identity_preserved);
+    phase29_update_bool(
+        &mut hasher,
+        assessment.execution_template_identity_preserved,
+    );
+    phase29_update_bool(
+        &mut hasher,
+        assessment.legacy_phase37_direct_equality_required,
+    );
+    phase29_update_bool(&mut hasher, assessment.full_history_replay_required);
+    phase29_update_bool(&mut hasher, assessment.source_bound_verifier_available);
+    phase29_update_bool(&mut hasher, assessment.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, assessment.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, assessment.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, assessment.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 87 translated composition assessment")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase88_publication_translated_paper3_composition_row(
+    row: &Phase88PublicationTranslatedPaper3CompositionRow,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 88 translated composition row hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase88-publication-translated-paper3-composition-row",
+    );
+    phase29_update_len_prefixed(&mut hasher, row.proof_backend.to_string().as_bytes());
+    phase29_update_usize(&mut hasher, row.row_index);
+    for part in [
+        row.phase_label.as_bytes(),
+        row.artifact_name.as_bytes(),
+        row.artifact_commitment.as_bytes(),
+        row.semantic_scope.as_bytes(),
+        row.verifier_function.as_bytes(),
+        row.source_bound_verifier_function.as_bytes(),
+        row.evidence_tier.as_bytes(),
+        row.claim_boundary.as_bytes(),
+        row.limitation.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 88 translated composition row")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase88_commit_publication_translated_rows(
+    rows: &[Phase88PublicationTranslatedPaper3CompositionRow],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 88 translated composition rows hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase88-publication-translated-paper3-composition-rows",
+    );
+    for row in rows {
+        phase29_update_len_prefixed(&mut hasher, row.row_commitment.as_bytes());
+    }
+    phase44d_finalize_hash(hasher, "Phase 88 translated composition rows")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase88_publication_translated_paper3_composition_table(
+    table: &Phase88PublicationTranslatedPaper3CompositionTable,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 88 translated composition table hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase88-publication-translated-paper3-composition-table",
+    );
+    phase29_update_len_prefixed(&mut hasher, table.proof_backend.to_string().as_bytes());
+    for part in [
+        table.table_version.as_bytes(),
+        table.semantic_scope.as_bytes(),
+        table
+            .source_phase84_publication_paper3_seam_table_commitment
+            .as_bytes(),
+        table
+            .source_phase86_translated_composition_prototype_commitment
+            .as_bytes(),
+        table
+            .source_phase87_translated_paper3_composition_assessment_commitment
+            .as_bytes(),
+        table.artifact_rows_commitment.as_bytes(),
+        table.verifier_side_complexity.as_bytes(),
+        table.verifier_status.as_bytes(),
+        table.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for row in &table.artifact_rows {
+        phase29_update_len_prefixed(&mut hasher, row.row_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, table.row_count);
+    phase44d_update_hash_vec(&mut hasher, &table.transcript_order);
+    phase29_update_bool(&mut hasher, table.translated_composition_available);
+    phase29_update_bool(&mut hasher, table.source_bound_verifiers_available);
+    phase29_update_bool(&mut hasher, table.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, table.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, table.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, table.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 88 translated composition table")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase85_prepare_translated_paper3_composition_segment(
+    segment_index: usize,
+    step_start: usize,
+    source: &Phase85TranslatedPaper3CompositionSource,
+) -> Result<Phase85TranslatedPaper3CompositionSegment> {
+    verify_phase82_translated_paper3_segment_source_receipt_against_sources(
+        &source.phase82_receipt,
+        &source.phase81_receipt,
+    )?;
+    verify_phase83_translated_paper3_blocker_assessment_against_sources(
+        &source.phase83_assessment,
+        &source.phase82_receipt,
+    )?;
+    let step_end = step_start
+        .checked_add(source.phase82_receipt.total_steps)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 85 translated composition segment step interval overflowed usize"
+                    .to_string(),
+            )
+        })?;
+    let translated_lookup_identity_commitment = phase85_commit_translated_lookup_identity(
+        &source.phase82_receipt.source_phase12_layout_commitment,
+        &source
+            .phase82_receipt
+            .shared_lookup_artifact_commitments_commitment,
+        &source
+            .phase82_receipt
+            .static_lookup_registry_commitments_commitment,
+    )?;
+    let mut segment = Phase85TranslatedPaper3CompositionSegment {
+        proof_backend: StarkProofBackend::Stwo,
+        segment_version: STWO_TRANSLATED_PAPER3_COMPOSITION_SEGMENT_VERSION_PHASE85.to_string(),
+        semantic_scope: STWO_TRANSLATED_PAPER3_COMPOSITION_SEGMENT_SCOPE_PHASE85.to_string(),
+        segment_index,
+        step_start,
+        step_end,
+        total_steps: source.phase82_receipt.total_steps,
+        phase81_receipt: source.phase81_receipt.clone(),
+        phase82_receipt: source.phase82_receipt.clone(),
+        phase83_assessment: source.phase83_assessment.clone(),
+        phase81_receipt_commitment: source
+            .phase81_receipt
+            .proof_checked_boundary_history_bridge_receipt_commitment
+            .clone(),
+        phase82_receipt_commitment: source
+            .phase82_receipt
+            .translated_paper3_segment_source_receipt_commitment
+            .clone(),
+        phase83_assessment_commitment: source
+            .phase83_assessment
+            .translated_paper3_blocker_assessment_commitment
+            .clone(),
+        translated_lookup_identity_commitment,
+        source_phase30_source_chain_commitment: source
+            .phase82_receipt
+            .source_phase30_source_chain_commitment
+            .clone(),
+        source_phase30_step_envelopes_commitment: source
+            .phase82_receipt
+            .source_phase30_step_envelopes_commitment
+            .clone(),
+        translated_chain_start_boundary_commitment: source
+            .phase82_receipt
+            .phase14_start_boundary_commitment
+            .clone(),
+        translated_chain_end_boundary_commitment: source
+            .phase82_receipt
+            .phase14_end_boundary_commitment
+            .clone(),
+        legacy_phase30_chain_start_boundary_commitment: source
+            .phase82_receipt
+            .phase30_chain_start_boundary_commitment
+            .clone(),
+        legacy_phase30_chain_end_boundary_commitment: source
+            .phase82_receipt
+            .phase30_chain_end_boundary_commitment
+            .clone(),
+        source_template_commitment: source.phase82_receipt.source_template_commitment.clone(),
+        aggregation_template_commitment: source
+            .phase82_receipt
+            .aggregation_template_commitment
+            .clone(),
+        source_phase12_layout_commitment: source
+            .phase82_receipt
+            .source_phase12_layout_commitment
+            .clone(),
+        lookup_rows_commitments_commitment: source
+            .phase82_receipt
+            .lookup_rows_commitments_commitment
+            .clone(),
+        shared_lookup_artifact_commitments_commitment: source
+            .phase82_receipt
+            .shared_lookup_artifact_commitments_commitment
+            .clone(),
+        static_lookup_registry_commitments_commitment: source
+            .phase82_receipt
+            .static_lookup_registry_commitments_commitment
+            .clone(),
+        proof_checked_decode_chain_available: source
+            .phase82_receipt
+            .proof_checked_decode_chain_available,
+        shared_lookup_registry_available: source.phase82_receipt.shared_lookup_registry_available,
+        full_history_replay_required: source.phase82_receipt.full_history_replay_required,
+        boundary_translation_required: source.phase83_assessment.boundary_translation_required,
+        source_bound_verifier_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_TRANSLATED_PAPER3_COMPOSITION_SEGMENT_NEXT_STEP_PHASE85
+            .to_string(),
+        translated_composition_segment_commitment: String::new(),
+    };
+    segment.translated_composition_segment_commitment =
+        commit_phase85_translated_paper3_composition_segment(&segment)?;
+    verify_phase85_translated_paper3_composition_segment(&segment)?;
+    Ok(segment)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase85_translated_paper3_composition_segment(
+    segment: &Phase85TranslatedPaper3CompositionSegment,
+) -> Result<()> {
+    if segment.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 85 translated composition segment requires `stwo` backend".to_string(),
+        ));
+    }
+    if segment.segment_version != STWO_TRANSLATED_PAPER3_COMPOSITION_SEGMENT_VERSION_PHASE85
+        || segment.semantic_scope != STWO_TRANSLATED_PAPER3_COMPOSITION_SEGMENT_SCOPE_PHASE85
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 85 translated composition segment version or scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase85_phase81_receipt_commitment",
+            segment.phase81_receipt_commitment.as_str(),
+        ),
+        (
+            "phase85_phase82_receipt_commitment",
+            segment.phase82_receipt_commitment.as_str(),
+        ),
+        (
+            "phase85_phase83_assessment_commitment",
+            segment.phase83_assessment_commitment.as_str(),
+        ),
+        (
+            "phase85_translated_lookup_identity_commitment",
+            segment.translated_lookup_identity_commitment.as_str(),
+        ),
+        (
+            "phase85_source_phase30_source_chain_commitment",
+            segment.source_phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase85_source_phase30_step_envelopes_commitment",
+            segment.source_phase30_step_envelopes_commitment.as_str(),
+        ),
+        (
+            "phase85_translated_chain_start_boundary_commitment",
+            segment.translated_chain_start_boundary_commitment.as_str(),
+        ),
+        (
+            "phase85_translated_chain_end_boundary_commitment",
+            segment.translated_chain_end_boundary_commitment.as_str(),
+        ),
+        (
+            "phase85_legacy_phase30_chain_start_boundary_commitment",
+            segment
+                .legacy_phase30_chain_start_boundary_commitment
+                .as_str(),
+        ),
+        (
+            "phase85_legacy_phase30_chain_end_boundary_commitment",
+            segment
+                .legacy_phase30_chain_end_boundary_commitment
+                .as_str(),
+        ),
+        (
+            "phase85_source_template_commitment",
+            segment.source_template_commitment.as_str(),
+        ),
+        (
+            "phase85_aggregation_template_commitment",
+            segment.aggregation_template_commitment.as_str(),
+        ),
+        (
+            "phase85_source_phase12_layout_commitment",
+            segment.source_phase12_layout_commitment.as_str(),
+        ),
+        (
+            "phase85_lookup_rows_commitments_commitment",
+            segment.lookup_rows_commitments_commitment.as_str(),
+        ),
+        (
+            "phase85_shared_lookup_artifact_commitments_commitment",
+            segment
+                .shared_lookup_artifact_commitments_commitment
+                .as_str(),
+        ),
+        (
+            "phase85_static_lookup_registry_commitments_commitment",
+            segment
+                .static_lookup_registry_commitments_commitment
+                .as_str(),
+        ),
+        (
+            "phase85_translated_composition_segment_commitment",
+            segment.translated_composition_segment_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    verify_phase82_translated_paper3_segment_source_receipt_against_sources(
+        &segment.phase82_receipt,
+        &segment.phase81_receipt,
+    )?;
+    verify_phase83_translated_paper3_blocker_assessment_against_sources(
+        &segment.phase83_assessment,
+        &segment.phase82_receipt,
+    )?;
+    if segment.phase81_receipt_commitment
+        != segment
+            .phase81_receipt
+            .proof_checked_boundary_history_bridge_receipt_commitment
+        || segment.phase82_receipt_commitment
+            != segment
+                .phase82_receipt
+                .translated_paper3_segment_source_receipt_commitment
+        || segment.phase83_assessment_commitment
+            != segment
+                .phase83_assessment
+                .translated_paper3_blocker_assessment_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 85 translated composition segment embedded commitment drift".to_string(),
+        ));
+    }
+    if segment.total_steps == 0
+        || segment.step_end
+            != segment
+                .step_start
+                .checked_add(segment.total_steps)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(
+                        "Phase 85 translated composition segment step interval overflowed usize"
+                            .to_string(),
+                    )
+                })?
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 85 translated composition segment step interval drift".to_string(),
+        ));
+    }
+    if segment.source_phase30_source_chain_commitment
+        != segment
+            .phase82_receipt
+            .source_phase30_source_chain_commitment
+        || segment.source_phase30_step_envelopes_commitment
+            != segment
+                .phase82_receipt
+                .source_phase30_step_envelopes_commitment
+        || segment.translated_chain_start_boundary_commitment
+            != segment.phase82_receipt.phase14_start_boundary_commitment
+        || segment.translated_chain_end_boundary_commitment
+            != segment.phase82_receipt.phase14_end_boundary_commitment
+        || segment.legacy_phase30_chain_start_boundary_commitment
+            != segment
+                .phase82_receipt
+                .phase30_chain_start_boundary_commitment
+        || segment.legacy_phase30_chain_end_boundary_commitment
+            != segment
+                .phase82_receipt
+                .phase30_chain_end_boundary_commitment
+        || segment.source_template_commitment != segment.phase82_receipt.source_template_commitment
+        || segment.aggregation_template_commitment
+            != segment.phase82_receipt.aggregation_template_commitment
+        || segment.source_phase12_layout_commitment
+            != segment.phase82_receipt.source_phase12_layout_commitment
+        || segment.lookup_rows_commitments_commitment
+            != segment.phase82_receipt.lookup_rows_commitments_commitment
+        || segment.shared_lookup_artifact_commitments_commitment
+            != segment
+                .phase82_receipt
+                .shared_lookup_artifact_commitments_commitment
+        || segment.static_lookup_registry_commitments_commitment
+            != segment
+                .phase82_receipt
+                .static_lookup_registry_commitments_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 85 translated composition segment receipt field drift".to_string(),
+        ));
+    }
+    let expected_lookup_identity = phase85_commit_translated_lookup_identity(
+        &segment.source_phase12_layout_commitment,
+        &segment.shared_lookup_artifact_commitments_commitment,
+        &segment.static_lookup_registry_commitments_commitment,
+    )?;
+    if segment.translated_lookup_identity_commitment != expected_lookup_identity {
+        return Err(VmError::InvalidConfig(
+            "Phase 85 translated composition segment translated lookup identity drift".to_string(),
+        ));
+    }
+    if !segment.proof_checked_decode_chain_available
+        || !segment.shared_lookup_registry_available
+        || !segment.full_history_replay_required
+        || !segment.boundary_translation_required
+        || !segment.source_bound_verifier_available
+        || segment.recursive_verification_claimed
+        || segment.cryptographic_compression_claimed
+        || segment.breakthrough_claimed
+        || segment.paper_ready
+        || segment.required_next_step
+            != STWO_TRANSLATED_PAPER3_COMPOSITION_SEGMENT_NEXT_STEP_PHASE85
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 85 translated composition segment claim drift".to_string(),
+        ));
+    }
+    let expected = commit_phase85_translated_paper3_composition_segment(segment)?;
+    if segment.translated_composition_segment_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 85 translated composition segment commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase85_translated_paper3_composition_segment_against_source(
+    segment: &Phase85TranslatedPaper3CompositionSegment,
+    source: &Phase85TranslatedPaper3CompositionSource,
+) -> Result<()> {
+    let expected = phase85_prepare_translated_paper3_composition_segment(
+        segment.segment_index,
+        segment.step_start,
+        source,
+    )?;
+    if segment != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 85 translated composition segment source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase86_prepare_translated_paper3_composition_prototype(
+    sources: &[Phase85TranslatedPaper3CompositionSource],
+) -> Result<Phase86TranslatedPaper3CompositionPrototype> {
+    if sources.len() < 2 {
+        return Err(VmError::InvalidConfig(
+            "Phase 86 translated composition prototype requires at least two translated segment sources"
+                .to_string(),
+        ));
+    }
+    let mut segments: Vec<Phase85TranslatedPaper3CompositionSegment> =
+        Vec::with_capacity(sources.len());
+    let mut cursor = 0usize;
+    for (index, source) in sources.iter().enumerate() {
+        let segment = phase85_prepare_translated_paper3_composition_segment(index, cursor, source)?;
+        if let Some(previous) = segments.last() {
+            if previous.translated_chain_end_boundary_commitment
+                != segment.translated_chain_start_boundary_commitment
+            {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 86 translated composition prototype boundary gap between segment {} end `{}` and segment {} start `{}`",
+                    previous.segment_index,
+                    previous.translated_chain_end_boundary_commitment,
+                    segment.segment_index,
+                    segment.translated_chain_start_boundary_commitment
+                )));
+            }
+            if previous.translated_lookup_identity_commitment
+                != segment.translated_lookup_identity_commitment
+            {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 86 translated composition prototype translated lookup identity drift at segment {}",
+                    segment.segment_index
+                )));
+            }
+            if previous.source_phase30_source_chain_commitment
+                != segment.source_phase30_source_chain_commitment
+            {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 86 translated composition prototype source-chain identity drift at segment {}",
+                    segment.segment_index
+                )));
+            }
+            if previous.source_template_commitment != segment.source_template_commitment
+                || previous.aggregation_template_commitment
+                    != segment.aggregation_template_commitment
+            {
+                return Err(VmError::InvalidConfig(format!(
+                    "Phase 86 translated composition prototype execution template drift at segment {}",
+                    segment.segment_index
+                )));
+            }
+        }
+        cursor = segment.step_end;
+        segments.push(segment);
+    }
+
+    let naive_per_step_package_count = cursor;
+    let composed_segment_package_count = segments.len();
+    let package_count_delta = naive_per_step_package_count
+        .checked_sub(composed_segment_package_count)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 86 translated composition prototype package-count baseline underflowed"
+                    .to_string(),
+            )
+        })?;
+    let segment_list_commitment = phase86_commit_translated_segment_list(&segments)?;
+    let mut prototype = Phase86TranslatedPaper3CompositionPrototype {
+        proof_backend: StarkProofBackend::Stwo,
+        prototype_version: STWO_TRANSLATED_PAPER3_COMPOSITION_PROTOTYPE_VERSION_PHASE86.to_string(),
+        semantic_scope: STWO_TRANSLATED_PAPER3_COMPOSITION_PROTOTYPE_SCOPE_PHASE86.to_string(),
+        boundary_domain: "phase14_translated_history_boundary".to_string(),
+        segment_count: composed_segment_package_count,
+        total_steps: cursor,
+        translated_chain_start_boundary_commitment: segments[0]
+            .translated_chain_start_boundary_commitment
+            .clone(),
+        translated_chain_end_boundary_commitment: segments
+            .last()
+            .expect("non-empty translated segments")
+            .translated_chain_end_boundary_commitment
+            .clone(),
+        translated_lookup_identity_commitment: segments[0]
+            .translated_lookup_identity_commitment
+            .clone(),
+        segment_list_commitment,
+        naive_per_step_package_count,
+        composed_segment_package_count,
+        package_count_delta,
+        verifier_side_complexity: STWO_TRANSLATED_PAPER3_COMPOSITION_PROTOTYPE_COMPLEXITY_PHASE86
+            .to_string(),
+        verifier_status: STWO_TRANSLATED_PAPER3_COMPOSITION_PROTOTYPE_STATUS_PHASE86.to_string(),
+        transcript_order: vec![
+            "phase86_prototype_header".to_string(),
+            "phase85_translated_segment_list".to_string(),
+            "phase86_prototype_footer".to_string(),
+        ],
+        translated_segment_source_available: true,
+        source_bound_verifier_available: true,
+        full_history_replay_required: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_TRANSLATED_PAPER3_COMPOSITION_PROTOTYPE_NEXT_STEP_PHASE86
+            .to_string(),
+        segments,
+        translated_composition_prototype_commitment: String::new(),
+    };
+    prototype.translated_composition_prototype_commitment =
+        commit_phase86_translated_paper3_composition_prototype(&prototype)?;
+    verify_phase86_translated_paper3_composition_prototype(&prototype)?;
+    Ok(prototype)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase86_translated_paper3_composition_prototype(
+    prototype: &Phase86TranslatedPaper3CompositionPrototype,
+) -> Result<()> {
+    if prototype.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 86 translated composition prototype requires `stwo` backend".to_string(),
+        ));
+    }
+    if prototype.prototype_version != STWO_TRANSLATED_PAPER3_COMPOSITION_PROTOTYPE_VERSION_PHASE86
+        || prototype.semantic_scope != STWO_TRANSLATED_PAPER3_COMPOSITION_PROTOTYPE_SCOPE_PHASE86
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 86 translated composition prototype version or scope drift".to_string(),
+        ));
+    }
+    if prototype.boundary_domain != "phase14_translated_history_boundary" {
+        return Err(VmError::InvalidConfig(
+            "Phase 86 translated composition prototype boundary-domain drift".to_string(),
+        ));
+    }
+    if prototype.segment_count != prototype.segments.len() || prototype.segment_count < 2 {
+        return Err(VmError::InvalidConfig(
+            "Phase 86 translated composition prototype must contain at least two segments"
+                .to_string(),
+        ));
+    }
+    let mut cursor = 0usize;
+    let first = prototype
+        .segments
+        .first()
+        .expect("segment_count already checked as non-zero");
+    for (index, segment) in prototype.segments.iter().enumerate() {
+        verify_phase85_translated_paper3_composition_segment(segment)?;
+        if segment.segment_index != index || segment.step_start != cursor {
+            return Err(VmError::InvalidConfig(
+                "Phase 86 translated composition prototype segment ordering drift".to_string(),
+            ));
+        }
+        if segment.translated_lookup_identity_commitment
+            != first.translated_lookup_identity_commitment
+            || segment.source_phase30_source_chain_commitment
+                != first.source_phase30_source_chain_commitment
+            || segment.source_template_commitment != first.source_template_commitment
+            || segment.aggregation_template_commitment != first.aggregation_template_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 86 translated composition prototype shared identity drift".to_string(),
+            ));
+        }
+        if index > 0
+            && prototype.segments[index - 1].translated_chain_end_boundary_commitment
+                != segment.translated_chain_start_boundary_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 86 translated composition prototype translated boundary continuity drift"
+                    .to_string(),
+            ));
+        }
+        cursor = segment.step_end;
+    }
+    if prototype.total_steps != cursor
+        || prototype.naive_per_step_package_count != prototype.total_steps
+        || prototype.composed_segment_package_count != prototype.segment_count
+        || prototype.package_count_delta
+            != prototype
+                .naive_per_step_package_count
+                .checked_sub(prototype.composed_segment_package_count)
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(
+                        "Phase 86 translated composition prototype package-count baseline underflowed"
+                            .to_string(),
+                    )
+                })?
+        || prototype.translated_chain_start_boundary_commitment
+            != first.translated_chain_start_boundary_commitment
+        || prototype.translated_chain_end_boundary_commitment
+            != prototype
+                .segments
+                .last()
+                .expect("non-empty translated segments")
+                .translated_chain_end_boundary_commitment
+        || prototype.translated_lookup_identity_commitment
+            != first.translated_lookup_identity_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 86 translated composition prototype boundary or packaging drift".to_string(),
+        ));
+    }
+    if prototype.segment_list_commitment
+        != phase86_commit_translated_segment_list(&prototype.segments)?
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 86 translated composition prototype segment-list commitment drift".to_string(),
+        ));
+    }
+    if prototype.verifier_side_complexity
+        != STWO_TRANSLATED_PAPER3_COMPOSITION_PROTOTYPE_COMPLEXITY_PHASE86
+        || prototype.verifier_status != STWO_TRANSLATED_PAPER3_COMPOSITION_PROTOTYPE_STATUS_PHASE86
+        || prototype.transcript_order
+            != vec![
+                "phase86_prototype_header".to_string(),
+                "phase85_translated_segment_list".to_string(),
+                "phase86_prototype_footer".to_string(),
+            ]
+        || !prototype.translated_segment_source_available
+        || !prototype.source_bound_verifier_available
+        || !prototype.full_history_replay_required
+        || prototype.recursive_verification_claimed
+        || prototype.cryptographic_compression_claimed
+        || prototype.breakthrough_claimed
+        || prototype.paper_ready
+        || prototype.required_next_step
+            != STWO_TRANSLATED_PAPER3_COMPOSITION_PROTOTYPE_NEXT_STEP_PHASE86
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 86 translated composition prototype claim drift".to_string(),
+        ));
+    }
+    let expected = commit_phase86_translated_paper3_composition_prototype(prototype)?;
+    if prototype.translated_composition_prototype_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 86 translated composition prototype commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase86_translated_paper3_composition_prototype_against_sources(
+    prototype: &Phase86TranslatedPaper3CompositionPrototype,
+    sources: &[Phase85TranslatedPaper3CompositionSource],
+) -> Result<()> {
+    let expected = phase86_prepare_translated_paper3_composition_prototype(sources)?;
+    if prototype != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 86 translated composition prototype source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase87_prepare_translated_paper3_composition_assessment(
+    prototype: &Phase86TranslatedPaper3CompositionPrototype,
+) -> Result<Phase87TranslatedPaper3CompositionAssessment> {
+    verify_phase86_translated_paper3_composition_prototype(prototype)?;
+    let mut assessment = Phase87TranslatedPaper3CompositionAssessment {
+        proof_backend: StarkProofBackend::Stwo,
+        assessment_version: STWO_TRANSLATED_PAPER3_COMPOSITION_ASSESSMENT_VERSION_PHASE87
+            .to_string(),
+        semantic_scope: STWO_TRANSLATED_PAPER3_COMPOSITION_ASSESSMENT_SCOPE_PHASE87.to_string(),
+        source_phase86_translated_composition_prototype_commitment: prototype
+            .translated_composition_prototype_commitment
+            .clone(),
+        assessment_status: STWO_TRANSLATED_PAPER3_COMPOSITION_ASSESSMENT_STATUS_PHASE87.to_string(),
+        translated_segment_source_available: prototype.translated_segment_source_available,
+        translation_adapter_consumed: true,
+        shared_lookup_identity_preserved: true,
+        source_chain_identity_preserved: true,
+        execution_template_identity_preserved: true,
+        legacy_phase37_direct_equality_required: false,
+        full_history_replay_required: prototype.full_history_replay_required,
+        source_bound_verifier_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_TRANSLATED_PAPER3_COMPOSITION_ASSESSMENT_NEXT_STEP_PHASE87
+            .to_string(),
+        translated_paper3_composition_assessment_commitment: String::new(),
+    };
+    assessment.translated_paper3_composition_assessment_commitment =
+        commit_phase87_translated_paper3_composition_assessment(&assessment)?;
+    verify_phase87_translated_paper3_composition_assessment(&assessment)?;
+    Ok(assessment)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase87_translated_paper3_composition_assessment(
+    assessment: &Phase87TranslatedPaper3CompositionAssessment,
+) -> Result<()> {
+    if assessment.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 87 translated composition assessment requires `stwo` backend".to_string(),
+        ));
+    }
+    if assessment.assessment_version
+        != STWO_TRANSLATED_PAPER3_COMPOSITION_ASSESSMENT_VERSION_PHASE87
+        || assessment.semantic_scope != STWO_TRANSLATED_PAPER3_COMPOSITION_ASSESSMENT_SCOPE_PHASE87
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 87 translated composition assessment version or scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase87_source_phase86_translated_composition_prototype_commitment",
+            assessment
+                .source_phase86_translated_composition_prototype_commitment
+                .as_str(),
+        ),
+        (
+            "phase87_translated_paper3_composition_assessment_commitment",
+            assessment
+                .translated_paper3_composition_assessment_commitment
+                .as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if assessment.assessment_status != STWO_TRANSLATED_PAPER3_COMPOSITION_ASSESSMENT_STATUS_PHASE87
+        || !assessment.translated_segment_source_available
+        || !assessment.translation_adapter_consumed
+        || !assessment.shared_lookup_identity_preserved
+        || !assessment.source_chain_identity_preserved
+        || !assessment.execution_template_identity_preserved
+        || assessment.legacy_phase37_direct_equality_required
+        || !assessment.full_history_replay_required
+        || !assessment.source_bound_verifier_available
+        || assessment.recursive_verification_claimed
+        || assessment.cryptographic_compression_claimed
+        || assessment.breakthrough_claimed
+        || assessment.paper_ready
+        || assessment.required_next_step
+            != STWO_TRANSLATED_PAPER3_COMPOSITION_ASSESSMENT_NEXT_STEP_PHASE87
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 87 translated composition assessment claim drift".to_string(),
+        ));
+    }
+    let expected = commit_phase87_translated_paper3_composition_assessment(assessment)?;
+    if assessment.translated_paper3_composition_assessment_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 87 translated composition assessment commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase87_translated_paper3_composition_assessment_against_sources(
+    assessment: &Phase87TranslatedPaper3CompositionAssessment,
+    prototype: &Phase86TranslatedPaper3CompositionPrototype,
+) -> Result<()> {
+    let expected = phase87_prepare_translated_paper3_composition_assessment(prototype)?;
+    if assessment != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 87 translated composition assessment source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase88_publication_translated_row(
+    row_index: usize,
+    phase_label: &str,
+    artifact_name: &str,
+    artifact_commitment: &str,
+    semantic_scope: &str,
+    verifier_function: &str,
+    source_bound_verifier_function: &str,
+    evidence_tier: &str,
+    claim_boundary: &str,
+    limitation: &str,
+) -> Result<Phase88PublicationTranslatedPaper3CompositionRow> {
+    let mut row = Phase88PublicationTranslatedPaper3CompositionRow {
+        proof_backend: StarkProofBackend::Stwo,
+        row_index,
+        phase_label: phase_label.to_string(),
+        artifact_name: artifact_name.to_string(),
+        artifact_commitment: artifact_commitment.to_string(),
+        semantic_scope: semantic_scope.to_string(),
+        verifier_function: verifier_function.to_string(),
+        source_bound_verifier_function: source_bound_verifier_function.to_string(),
+        evidence_tier: evidence_tier.to_string(),
+        claim_boundary: claim_boundary.to_string(),
+        limitation: limitation.to_string(),
+        row_commitment: String::new(),
+    };
+    row.row_commitment = commit_phase88_publication_translated_paper3_composition_row(&row)?;
+    verify_phase88_publication_translated_paper3_composition_row(&row)?;
+    Ok(row)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase88_prepare_publication_translated_paper3_composition_table(
+    phase84_table: &Phase84PublicationPaper3SeamTable,
+    phase86_prototype: &Phase86TranslatedPaper3CompositionPrototype,
+    phase87_assessment: &Phase87TranslatedPaper3CompositionAssessment,
+) -> Result<Phase88PublicationTranslatedPaper3CompositionTable> {
+    verify_phase84_publication_paper3_seam_table(phase84_table)?;
+    verify_phase86_translated_paper3_composition_prototype(phase86_prototype)?;
+    verify_phase87_translated_paper3_composition_assessment_against_sources(
+        phase87_assessment,
+        phase86_prototype,
+    )?;
+    let mut artifact_rows = vec![
+        phase88_publication_translated_row(
+            0,
+            "Phase84",
+            "publication Paper3 seam table",
+            &phase84_table.publication_paper3_seam_table_commitment,
+            &phase84_table.semantic_scope,
+            "verify_phase84_publication_paper3_seam_table",
+            "verify_phase84_publication_paper3_seam_table_against_sources",
+            "artifact",
+            "the proof-checked decode bridge has been frozen as the translation seam into Paper 3",
+            "still a seam table, not a composition object",
+        )?,
+        phase88_publication_translated_row(
+            1,
+            "Phase85",
+            "translated composition segment family",
+            &phase86_prototype.segment_list_commitment,
+            STWO_TRANSLATED_PAPER3_COMPOSITION_SEGMENT_SCOPE_PHASE85,
+            "verify_phase85_translated_paper3_composition_segment",
+            "verify_phase85_translated_paper3_composition_segment_against_source",
+            "artifact",
+            "translated segment surfaces expose translated boundaries, lookup identity, and template identity for composition",
+            "segment surfaces remain pre-recursive and history-replay dependent",
+        )?,
+        phase88_publication_translated_row(
+            2,
+            "Phase86",
+            "translated composition prototype",
+            &phase86_prototype.translated_composition_prototype_commitment,
+            &phase86_prototype.semantic_scope,
+            "verify_phase86_translated_paper3_composition_prototype",
+            "verify_phase86_translated_paper3_composition_prototype_against_sources",
+            "artifact",
+            "multiple translated segments now compose under verifier-enforced continuity and shared lookup identity",
+            "still no recursive verification or cryptographic compression",
+        )?,
+        phase88_publication_translated_row(
+            3,
+            "Phase87",
+            "translated composition assessment",
+            &phase87_assessment.translated_paper3_composition_assessment_commitment,
+            &phase87_assessment.semantic_scope,
+            "verify_phase87_translated_paper3_composition_assessment",
+            "verify_phase87_translated_paper3_composition_assessment_against_sources",
+            "assessment",
+            "the translation adapter is consumed and the composition surface is now pre-recursive rather than legacy-blocked",
+            "the next blocker is recursive composition work, not boundary translation",
+        )?,
+    ];
+    for row in &mut artifact_rows {
+        row.row_commitment = commit_phase88_publication_translated_paper3_composition_row(row)?;
+        verify_phase88_publication_translated_paper3_composition_row(row)?;
+    }
+    let mut table = Phase88PublicationTranslatedPaper3CompositionTable {
+        proof_backend: StarkProofBackend::Stwo,
+        table_version: STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_VERSION_PHASE88
+            .to_string(),
+        semantic_scope: STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_SCOPE_PHASE88
+            .to_string(),
+        source_phase84_publication_paper3_seam_table_commitment: phase84_table
+            .publication_paper3_seam_table_commitment
+            .clone(),
+        source_phase86_translated_composition_prototype_commitment: phase86_prototype
+            .translated_composition_prototype_commitment
+            .clone(),
+        source_phase87_translated_paper3_composition_assessment_commitment: phase87_assessment
+            .translated_paper3_composition_assessment_commitment
+            .clone(),
+        artifact_rows_commitment: String::new(),
+        row_count: artifact_rows.len(),
+        verifier_side_complexity:
+            STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_COMPLEXITY_PHASE88.to_string(),
+        verifier_status: STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_STATUS_PHASE88
+            .to_string(),
+        transcript_order: vec![
+            "phase88_table_header".to_string(),
+            "phase88_artifact_rows".to_string(),
+            "phase88_table_footer".to_string(),
+        ],
+        translated_composition_available: true,
+        source_bound_verifiers_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_NEXT_STEP_PHASE88
+            .to_string(),
+        artifact_rows,
+        publication_translated_paper3_composition_table_commitment: String::new(),
+    };
+    table.artifact_rows_commitment =
+        phase88_commit_publication_translated_rows(&table.artifact_rows)?;
+    table.publication_translated_paper3_composition_table_commitment =
+        commit_phase88_publication_translated_paper3_composition_table(&table)?;
+    verify_phase88_publication_translated_paper3_composition_table(&table)?;
+    Ok(table)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase88_publication_translated_paper3_composition_row(
+    row: &Phase88PublicationTranslatedPaper3CompositionRow,
+) -> Result<()> {
+    if row.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 88 translated composition row requires `stwo` backend".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase88_artifact_commitment",
+            row.artifact_commitment.as_str(),
+        ),
+        ("phase88_row_commitment", row.row_commitment.as_str()),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    let expected = commit_phase88_publication_translated_paper3_composition_row(row)?;
+    if row.row_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 88 translated composition row commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase88_publication_translated_paper3_composition_table(
+    table: &Phase88PublicationTranslatedPaper3CompositionTable,
+) -> Result<()> {
+    if table.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 88 translated composition table requires `stwo` backend".to_string(),
+        ));
+    }
+    if table.table_version != STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_VERSION_PHASE88
+        || table.semantic_scope
+            != STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_SCOPE_PHASE88
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 88 translated composition table version or scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase88_source_phase84_publication_paper3_seam_table_commitment",
+            table
+                .source_phase84_publication_paper3_seam_table_commitment
+                .as_str(),
+        ),
+        (
+            "phase88_source_phase86_translated_composition_prototype_commitment",
+            table
+                .source_phase86_translated_composition_prototype_commitment
+                .as_str(),
+        ),
+        (
+            "phase88_source_phase87_translated_paper3_composition_assessment_commitment",
+            table
+                .source_phase87_translated_paper3_composition_assessment_commitment
+                .as_str(),
+        ),
+        (
+            "phase88_artifact_rows_commitment",
+            table.artifact_rows_commitment.as_str(),
+        ),
+        (
+            "phase88_publication_translated_paper3_composition_table_commitment",
+            table
+                .publication_translated_paper3_composition_table_commitment
+                .as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if table.row_count != table.artifact_rows.len()
+        || table.row_count != 4
+        || table.artifact_rows_commitment
+            != phase88_commit_publication_translated_rows(&table.artifact_rows)?
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 88 translated composition table row accounting drift".to_string(),
+        ));
+    }
+    let expected_phases = ["Phase84", "Phase85", "Phase86", "Phase87"];
+    for (expected_index, (row, expected_phase)) in table
+        .artifact_rows
+        .iter()
+        .zip(expected_phases.iter())
+        .enumerate()
+    {
+        verify_phase88_publication_translated_paper3_composition_row(row)?;
+        if row.row_index != expected_index || row.phase_label != *expected_phase {
+            return Err(VmError::InvalidConfig(
+                "Phase 88 translated composition table row order drift".to_string(),
+            ));
+        }
+    }
+    if table.verifier_side_complexity
+        != STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_COMPLEXITY_PHASE88
+        || table.verifier_status
+            != STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_STATUS_PHASE88
+        || table.transcript_order
+            != vec![
+                "phase88_table_header".to_string(),
+                "phase88_artifact_rows".to_string(),
+                "phase88_table_footer".to_string(),
+            ]
+        || !table.translated_composition_available
+        || !table.source_bound_verifiers_available
+        || table.recursive_verification_claimed
+        || table.cryptographic_compression_claimed
+        || table.breakthrough_claimed
+        || table.paper_ready
+        || table.required_next_step
+            != STWO_PUBLICATION_TRANSLATED_PAPER3_COMPOSITION_TABLE_NEXT_STEP_PHASE88
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 88 translated composition table claim drift".to_string(),
+        ));
+    }
+    let expected = commit_phase88_publication_translated_paper3_composition_table(table)?;
+    if table.publication_translated_paper3_composition_table_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 88 translated composition table commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase88_publication_translated_paper3_composition_table_against_sources(
+    table: &Phase88PublicationTranslatedPaper3CompositionTable,
+    phase84_table: &Phase84PublicationPaper3SeamTable,
+    phase86_prototype: &Phase86TranslatedPaper3CompositionPrototype,
+    phase87_assessment: &Phase87TranslatedPaper3CompositionAssessment,
+) -> Result<()> {
+    let expected = phase88_prepare_publication_translated_paper3_composition_table(
+        phase84_table,
+        phase86_prototype,
+        phase87_assessment,
+    )?;
+    if table != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 88 translated composition table source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
 #[derive(Debug, Clone)]
 struct Phase63LookupIdentityCommitments {
     shared_lookup_identity_commitment: String,
@@ -26744,6 +28300,61 @@ fn phase71_chain_step_positions(chain: &Phase12DecodingChainManifest) -> Result<
         VmError::InvalidConfig("Phase 71 requires a non-empty Phase12 chain".to_string())
     })?;
     Ok((first.from_state.step_index, last.to_state.step_index))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase71_manifest_step_range_and_positions(
+    chain: &Phase12DecodingChainManifest,
+    manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<(usize, usize, usize, usize)> {
+    verify_phase30_decoding_step_proof_envelope_manifest(manifest)?;
+    if let Ok(()) =
+        verify_phase30_decoding_step_proof_envelope_manifest_against_chain(manifest, chain)
+    {
+        let (chain_start_position, chain_end_position) = phase71_chain_step_positions(chain)?;
+        return Ok((
+            0,
+            chain.steps.len(),
+            chain_start_position,
+            chain_end_position,
+        ));
+    }
+    let step_start = chain
+        .steps
+        .iter()
+        .position(|step| {
+            step.from_state.public_state_commitment == manifest.chain_start_boundary_commitment
+        })
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 71 could not locate the Phase30 start boundary inside the Phase12 chain"
+                    .to_string(),
+            )
+        })?;
+    let step_end = step_start
+        .checked_add(manifest.total_steps)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 71 manifest step range overflowed the Phase12 chain bounds".to_string(),
+            )
+        })?;
+    if step_end > chain.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 71 manifest range {step_start}..{step_end} exceeds the Phase12 chain length {}",
+            chain.steps.len()
+        )));
+    }
+    verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range(
+        manifest, chain, step_start, step_end,
+    )?;
+    let first = &chain.steps[step_start];
+    let last = &chain.steps[step_end - 1];
+    Ok((
+        step_start,
+        step_end,
+        first.from_state.step_index,
+        last.to_state.step_index,
+    ))
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -34282,10 +35893,34 @@ mod tests {
             .layout
             .latest_cached_pair_range()
             .expect("latest cached pair range");
-        let rows = chain
+        let start_index = chain
             .steps
             .iter()
-            .zip(replayed_phase14.steps.iter())
+            .position(|step| {
+                step.from_state.public_state_commitment == phase30.chain_start_boundary_commitment
+            })
+            .expect("phase30 segment start boundary exists in source chain");
+        let end_index = start_index
+            .checked_add(phase30.total_steps)
+            .expect("phase30 segment end index fits usize");
+        assert!(
+            end_index <= chain.steps.len(),
+            "phase30 segment must fit inside the source chain"
+        );
+        let phase12_segment_steps = &chain.steps[start_index..end_index];
+        let phase14_segment_steps = &replayed_phase14.steps[start_index..end_index];
+        assert_eq!(phase12_segment_steps.len(), phase30.envelopes.len());
+        assert_eq!(
+            phase12_segment_steps
+                .last()
+                .expect("segment has last step")
+                .to_state
+                .public_state_commitment,
+            phase30.chain_end_boundary_commitment
+        );
+        let rows = chain.steps[start_index..end_index]
+            .iter()
+            .zip(phase14_segment_steps.iter())
             .zip(phase30.envelopes.iter())
             .enumerate()
             .map(
@@ -34314,11 +35949,73 @@ mod tests {
                 },
             )
             .collect::<Vec<_>>();
-        let (appended_pairs_commitment, appended_pair_count) =
-            phase42_commit_source_appended_pairs(chain).expect("commit Phase81 sample pairs");
-        let (lookup_rows_commitments_commitment, lookup_row_count) =
-            phase42_commit_source_lookup_rows_commitments(chain)
-                .expect("commit Phase81 sample lookup rows");
+        let (appended_pairs_commitment, appended_pair_count) = {
+            let mut hasher = Blake2bVar::new(32).expect("init Phase81 sample appended-pairs hash");
+            phase29_update_len_prefixed(&mut hasher, b"phase42-source-appended-pairs");
+            phase29_update_len_prefixed(
+                &mut hasher,
+                phase12_segment_steps
+                    .first()
+                    .map(|step| step.from_state.layout_commitment.as_bytes())
+                    .unwrap_or_default(),
+            );
+            phase29_update_usize(&mut hasher, chain.layout.pair_width);
+            phase29_update_usize(&mut hasher, phase12_segment_steps.len());
+            for (step_index, step) in phase12_segment_steps.iter().enumerate() {
+                let pair = &step.proof.claim.final_state.memory[latest_cached_pair_range.clone()];
+                assert_eq!(pair.len(), chain.layout.pair_width);
+                phase29_update_usize(&mut hasher, step_index);
+                for value in pair {
+                    hasher.update(&value.to_le_bytes());
+                }
+            }
+            let mut out = [0u8; 32];
+            hasher
+                .finalize_variable(&mut out)
+                .expect("finalize Phase81 sample appended-pairs hash");
+            (phase29_lower_hex(&out), phase12_segment_steps.len())
+        };
+        let (lookup_rows_commitments_commitment, lookup_row_count) = {
+            let mut commitments = Vec::with_capacity(phase12_segment_steps.len() + 1);
+            commitments.push(
+                phase12_segment_steps
+                    .first()
+                    .expect("segment has first step")
+                    .from_state
+                    .lookup_rows_commitment
+                    .as_str(),
+            );
+            for step in phase12_segment_steps {
+                commitments.push(step.to_state.lookup_rows_commitment.as_str());
+            }
+            let mut hasher =
+                Blake2bVar::new(32).expect("init Phase81 sample lookup-row commitment hash");
+            phase29_update_len_prefixed(&mut hasher, b"phase42-source-lookup-rows");
+            phase29_update_len_prefixed(
+                &mut hasher,
+                phase12_segment_steps
+                    .first()
+                    .expect("segment has first step")
+                    .from_state
+                    .layout_commitment
+                    .as_bytes(),
+            );
+            phase29_update_usize(&mut hasher, commitments.len());
+            for (index, commitment) in commitments.iter().enumerate() {
+                phase42_require_hash32(
+                    &format!("history_equivalence.lookup_rows[{index}]"),
+                    commitment,
+                )
+                .expect("validate Phase81 sample lookup-row commitment");
+                phase29_update_usize(&mut hasher, index);
+                phase29_update_len_prefixed(&mut hasher, commitment.as_bytes());
+            }
+            let mut out = [0u8; 32];
+            hasher
+                .finalize_variable(&mut out)
+                .expect("finalize Phase81 sample lookup-row commitment hash");
+            (phase29_lower_hex(&out), commitments.len())
+        };
         assert_eq!(appended_pair_count, rows.len());
         assert_eq!(lookup_row_count, rows.len() + 1);
         let first = rows.first().expect("sample trace has first row");
@@ -34529,6 +36226,113 @@ mod tests {
     }
 
     #[cfg(feature = "stwo-backend")]
+    fn phase85_source_from_generated_translated_segment_harness(
+        chain: &crate::stwo_backend::Phase12DecodingChainManifest,
+        phase14: &crate::stwo_backend::Phase14DecodingChainManifest,
+        phase30: Phase30DecodingStepProofEnvelopeManifest,
+    ) -> Phase85TranslatedPaper3CompositionSource {
+        let (step_start, step_end, _, _) =
+            phase71_manifest_step_range_and_positions(chain, &phase30)
+                .expect("derive Phase85 translated segment range");
+        let mut trace = phase81_sample_history_replay_trace_from_sources(chain, &phase30);
+        let phase41 = phase81_sample_phase41_witness_for_trace(&phase30, &trace);
+        trace.phase29_contract_commitment = phase41.phase29_contract_commitment.clone();
+        trace.trace_commitment =
+            commit_phase43_history_replay_trace(&trace).expect("recommit Phase85 sample trace");
+        verify_phase43_history_replay_trace(&trace)
+            .expect("reverify Phase85 sample trace after Phase29 alignment");
+        let phase71 = phase71_prepare_actual_stwo_step_envelope_handoff_receipt(chain, &phase30)
+            .expect("phase71 receipt");
+        let phase72 =
+            phase72_prepare_actual_stwo_shared_lookup_registry_receipt(&phase71, chain, &phase30)
+                .expect("phase72 receipt");
+        let phase74 = phase74_prepare_chunked_history_carry_receipt_for_step_range(
+            chain, phase14, step_start, step_end,
+        )
+        .expect("phase74");
+        let phase76 =
+            phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt(chain, &phase30)
+                .expect("phase76 receipt");
+        let phase78 =
+            phase78_prepare_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(
+                &phase76, &phase72, &phase71, chain, &phase30,
+            )
+            .expect("phase78 receipt");
+        let phase42 =
+            phase81_sample_phase42_witness(&phase41, &trace, &phase74, &phase76, &phase78);
+        let phase81 = phase81_prepare_proof_checked_boundary_history_bridge_receipt(
+            &phase41, &phase42, &trace, &phase74, &phase76, &phase78,
+        )
+        .expect("phase81 receipt");
+        let phase82 = phase82_prepare_translated_paper3_segment_source_receipt(&phase81)
+            .expect("phase82 receipt");
+        let phase83 = phase83_prepare_translated_paper3_blocker_assessment(&phase82)
+            .expect("phase83 assessment");
+        Phase85TranslatedPaper3CompositionSource {
+            phase81_receipt: phase81,
+            phase82_receipt: phase82,
+            phase83_assessment: phase83,
+        }
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn sample_phase85_to_phase88_generated_source_stack() -> (
+        Vec<Phase85TranslatedPaper3CompositionSource>,
+        Phase86TranslatedPaper3CompositionPrototype,
+        Phase87TranslatedPaper3CompositionAssessment,
+        Phase84PublicationPaper3SeamTable,
+        Phase88PublicationTranslatedPaper3CompositionTable,
+    ) {
+        let layout =
+            crate::stwo_backend::Phase12DecodingLayout::new(2, 2).expect("valid Phase 12 layout");
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 5)
+            .expect("generate five-step Phase 12 decoding chain");
+        let phase14 = phase14_prepare_decoding_chain(&chain).expect("phase14 chain");
+        let first_segment =
+            phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(&chain, 0, 2)
+                .expect("prepare first translated segment");
+        let second_segment =
+            phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(&chain, 2, 5)
+                .expect("prepare second translated segment");
+        let sources = vec![
+            phase85_source_from_generated_translated_segment_harness(
+                &chain,
+                &phase14,
+                first_segment,
+            ),
+            phase85_source_from_generated_translated_segment_harness(
+                &chain,
+                &phase14,
+                second_segment,
+            ),
+        ];
+        let phase86 = phase86_prepare_translated_paper3_composition_prototype(&sources)
+            .expect("phase86 prototype");
+        let phase87 = phase87_prepare_translated_paper3_composition_assessment(&phase86)
+            .expect("phase87 assessment");
+        let (
+            _phase41,
+            _phase42,
+            _trace,
+            _phase74,
+            _phase76,
+            _phase77,
+            _phase78,
+            _phase79,
+            _phase80,
+            _phase81,
+            _phase82,
+            _phase83,
+            phase84,
+        ) = sample_phase81_to_phase84_source_stack();
+        let phase88 = phase88_prepare_publication_translated_paper3_composition_table(
+            &phase84, &phase86, &phase87,
+        )
+        .expect("phase88 table");
+        (sources, phase86, phase87, phase84, phase88)
+    }
+
+    #[cfg(feature = "stwo-backend")]
     #[test]
     fn phase81_to_phase84_publication_paper3_seam_accepts_translated_bridge_stack() {
         let (
@@ -34687,6 +36491,172 @@ mod tests {
         let err = verify_phase84_publication_paper3_seam_table(&phase84)
             .expect_err("phase84 table must reject row order drift");
         assert!(err.to_string().contains("row order drift"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase85_translated_composition_segment_accepts_generated_segment_source() {
+        let layout =
+            crate::stwo_backend::Phase12DecodingLayout::new(2, 2).expect("valid Phase 12 layout");
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 5)
+            .expect("generate five-step Phase 12 decoding chain");
+        let phase14 = phase14_prepare_decoding_chain(&chain).expect("phase14 chain");
+        let first_segment =
+            phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(&chain, 0, 2)
+                .expect("prepare first translated segment");
+        let source = phase85_source_from_generated_translated_segment_harness(
+            &chain,
+            &phase14,
+            first_segment,
+        );
+        let segment = phase85_prepare_translated_paper3_composition_segment(0, 0, &source)
+            .expect("phase85 translated segment");
+
+        verify_phase85_translated_paper3_composition_segment(&segment)
+            .expect("verify standalone phase85 segment");
+        verify_phase85_translated_paper3_composition_segment_against_source(&segment, &source)
+            .expect("verify phase85 segment against source");
+        assert_eq!(segment.step_start, 0);
+        assert_eq!(segment.step_end, 2);
+        assert!(segment.boundary_translation_required);
+        assert!(segment.full_history_replay_required);
+        assert_eq!(
+            segment.phase81_receipt_commitment,
+            source
+                .phase81_receipt
+                .proof_checked_boundary_history_bridge_receipt_commitment
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase74_chunked_history_carry_accepts_generated_segment_range() {
+        let layout =
+            crate::stwo_backend::Phase12DecodingLayout::new(2, 2).expect("valid Phase 12 layout");
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 5)
+            .expect("generate five-step Phase 12 decoding chain");
+        let phase14 = phase14_prepare_decoding_chain(&chain).expect("phase14 chain");
+        let segment =
+            phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range(&chain, 2, 5)
+                .expect("prepare translated segment");
+        let (step_start, step_end, _, _) =
+            phase71_manifest_step_range_and_positions(&chain, &segment)
+                .expect("derive translated segment range");
+        let phase74 = phase74_prepare_chunked_history_carry_receipt_for_step_range(
+            &chain, &phase14, step_start, step_end,
+        )
+        .expect("range-aware phase74 receipt");
+
+        assert_eq!(phase74.total_steps, 3);
+        assert_eq!(
+            phase74.chain_start_public_state_commitment,
+            phase14.steps[2].from_state.public_state_commitment
+        );
+        assert_eq!(
+            phase74.chain_end_public_state_commitment,
+            phase14.steps[4].to_state.public_state_commitment
+        );
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase86_translated_composition_prototype_accepts_generated_two_segment_chain() {
+        let (sources, phase86, phase87, _phase84, phase88) =
+            sample_phase85_to_phase88_generated_source_stack();
+
+        verify_phase86_translated_paper3_composition_prototype(&phase86)
+            .expect("verify standalone phase86 prototype");
+        verify_phase86_translated_paper3_composition_prototype_against_sources(&phase86, &sources)
+            .expect("verify phase86 prototype against sources");
+        verify_phase87_translated_paper3_composition_assessment_against_sources(&phase87, &phase86)
+            .expect("verify phase87 against phase86");
+        verify_phase88_publication_translated_paper3_composition_table(&phase88)
+            .expect("verify phase88 table");
+
+        assert_eq!(phase86.segment_count, 2);
+        assert_eq!(phase86.total_steps, 5);
+        assert_eq!(phase86.naive_per_step_package_count, 5);
+        assert_eq!(phase86.composed_segment_package_count, 2);
+        assert_eq!(phase86.package_count_delta, 3);
+        assert_eq!(phase86.segments[0].step_start, 0);
+        assert_eq!(phase86.segments[0].step_end, 2);
+        assert_eq!(phase86.segments[1].step_start, 2);
+        assert_eq!(phase86.segments[1].step_end, 5);
+        assert_eq!(
+            phase86.segments[0].translated_chain_end_boundary_commitment,
+            phase86.segments[1].translated_chain_start_boundary_commitment
+        );
+        assert_eq!(phase88.row_count, 4);
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase86_translated_composition_prototype_rejects_reordered_segments() {
+        let (_sources, mut phase86, _phase87, _phase84, _phase88) =
+            sample_phase85_to_phase88_generated_source_stack();
+
+        phase86.segments.swap(0, 1);
+        phase86.segment_list_commitment = phase86_commit_translated_segment_list(&phase86.segments)
+            .expect("recommit reordered phase86 segment list");
+        phase86.translated_composition_prototype_commitment =
+            commit_phase86_translated_paper3_composition_prototype(&phase86)
+                .expect("recommit reordered phase86 prototype");
+
+        let err = verify_phase86_translated_paper3_composition_prototype(&phase86)
+            .expect_err("phase86 prototype must reject reordered segments");
+        assert!(err.to_string().contains("segment ordering drift"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase87_translated_composition_assessment_rejects_false_recursive_claims() {
+        let (_sources, phase86, mut phase87, _phase84, _phase88) =
+            sample_phase85_to_phase88_generated_source_stack();
+
+        phase87.legacy_phase37_direct_equality_required = true;
+        phase87.recursive_verification_claimed = true;
+        phase87.cryptographic_compression_claimed = true;
+        phase87.breakthrough_claimed = true;
+        phase87.paper_ready = true;
+        phase87.translated_paper3_composition_assessment_commitment =
+            commit_phase87_translated_paper3_composition_assessment(&phase87)
+                .expect("recommit forged phase87 assessment");
+
+        let err = verify_phase87_translated_paper3_composition_assessment(&phase87)
+            .expect_err("phase87 assessment must reject false recursive/compression claims");
+        assert!(err.to_string().contains("claim drift"));
+        verify_phase87_translated_paper3_composition_assessment_against_sources(
+            &phase87_prepare_translated_paper3_composition_assessment(&phase86)
+                .expect("rebuild valid phase87 assessment"),
+            &phase86,
+        )
+        .expect("valid phase87 assessment still verifies against phase86");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase88_publication_translated_composition_table_rejects_recommitted_row_order_drift() {
+        let (_sources, _phase86, _phase87, phase84, mut phase88) =
+            sample_phase85_to_phase88_generated_source_stack();
+
+        phase88.artifact_rows.swap(1, 2);
+        for row in &mut phase88.artifact_rows {
+            row.row_commitment = commit_phase88_publication_translated_paper3_composition_row(row)
+                .expect("recommit tampered phase88 row");
+        }
+        phase88.artifact_rows_commitment =
+            phase88_commit_publication_translated_rows(&phase88.artifact_rows)
+                .expect("recommit tampered phase88 rows");
+        phase88.publication_translated_paper3_composition_table_commitment =
+            commit_phase88_publication_translated_paper3_composition_table(&phase88)
+                .expect("recommit tampered phase88 table");
+
+        let err = verify_phase88_publication_translated_paper3_composition_table(&phase88)
+            .expect_err("phase88 table must reject reordered rows");
+        assert!(err.to_string().contains("row order drift"));
+
+        verify_phase84_publication_paper3_seam_table(&phase84)
+            .expect("phase84 source table remains valid");
     }
 
     #[cfg(feature = "stwo-backend")]
