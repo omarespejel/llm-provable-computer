@@ -1,0 +1,12 @@
+generated_at_utc: 2026-04-21T12:56:29Z
+repo_root: .
+git_commit: 56ebe51f40095916522e7f04dc0e187f1e90f4b6
+git_commit_short: 56ebe51
+git_branch: codex/phase91-92-shared-normalization-primitive
+rustc: rustc 1.90.0-nightly (e9182f195 2025-07-13)
+cargo: cargo 1.90.0-nightly (eabb4cd92 2025-07-09)
+host_platform: Darwin 23.6.0 arm64
+nightly_toolchain: +nightly-2025-07-14
+bundle_dir: docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21
+artifact: shared-normalization-primitive.stwo.json
+scope: tensor-native shared-normalization primitive with verifier-enforced shared-table identity
