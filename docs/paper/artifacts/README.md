@@ -55,7 +55,8 @@ It pins a `4`-step typed carried-state chain over the shared-normalization
 primitive template, one real `gemma_block_v4` S-two execution proof, one Gemma
 core-slice artifact that binds the chain to embedded shared-normalization and
 shared-activation receipts, `119,566` chain-artifact bytes, `734,065` Gemma
-proof JSON bytes, `1,055,612` core-slice bytes, and one source-bound appendix
+proof JSON bytes, `1,055,612` core-slice bytes, a `1.142s` chain-prepare run,
+and a `0.716s` `gemma_block_v4` prove run, plus one source-bound appendix
 index with exact hashes and timings. It remains a narrow transformer-shaped
 artifact line rather than a full-softmax or recursive claim.
 

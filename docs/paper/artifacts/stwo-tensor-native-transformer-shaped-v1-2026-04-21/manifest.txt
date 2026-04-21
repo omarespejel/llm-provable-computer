@@ -1,0 +1,14 @@
+generated_at_utc: 2026-04-21T13:38:59Z
+repo_root: .
+git_commit: d355946b030d6151d48d064f0f719903cdfce006
+git_commit_short: d355946
+git_branch: codex/phase93-945-tensor-chain
+rustc: rustc 1.90.0-nightly (e9182f195 2025-07-13)
+cargo: cargo 1.90.0-nightly (eabb4cd92 2025-07-09)
+host_platform: Darwin 23.6.0 arm64
+nightly_toolchain: +nightly-2025-07-14
+bundle_dir: docs/paper/artifacts/stwo-tensor-native-transformer-shaped-v1-2026-04-21
+chain_artifact: tensor-native-chain.stwo.json
+gemma_proof: gemma-block-v4.stark.json
+gemma_core_slice_artifact: gemma-block-core-slice.stwo.json
+scope: tensor-native transformer-shaped S-two chain plus Gemma block core slice

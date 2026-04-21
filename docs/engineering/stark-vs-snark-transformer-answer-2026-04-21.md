@@ -157,9 +157,18 @@ The repository now has two concrete tensor-native `stwo` checkpoints:
   `2`
 - Gemma shared activation rows:
   `2`
-- bundle command timings:
-  all six recorded prepare, verify, prove, and core-slice steps completed in
-  about `1s` each under the current bundle script's timer
+- chain prepare time:
+  `1.142s`
+- chain verify time:
+  `0.688s`
+- Gemma prove time:
+  `0.716s`
+- Gemma verify time:
+  `0.713s`
+- core-slice prepare time:
+  `0.766s`
+- core-slice verify time:
+  `0.780s`
 
 What this strengthens:
 
