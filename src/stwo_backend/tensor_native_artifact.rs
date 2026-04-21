@@ -4626,14 +4626,14 @@ fn checked_phase105_terminal_token_position(
     )
 }
 
-fn build_phase105_repeated_multi_interval_member(
+// Callers are responsible for validating the shared primitive/proof inputs before
+// using this canonical builder inside repeated-window reconstruction loops.
+fn build_phase105_repeated_multi_interval_member_nonvalidating(
     window_index: usize,
     source: &Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact,
     folded: &Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeArtifact,
     richer: &Phase102FoldedMultiIntervalGemmaRicherFamilyArtifact,
 ) -> Result<Phase105RepeatedMultiIntervalGemmaRicherFamilyMember> {
-    verify_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(folded, source)?;
-    verify_phase102_folded_multi_interval_gemma_richer_family_artifact(richer, source, folded)?;
     let mut member = Phase105RepeatedMultiIntervalGemmaRicherFamilyMember {
         window_index,
         total_intervals: source.total_intervals,
@@ -4784,7 +4784,7 @@ pub fn prepare_phase105_repeated_multi_interval_gemma_richer_family_accumulation
             prepare_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(&source)?;
         let richer =
             prepare_phase102_folded_multi_interval_gemma_richer_family_artifact(&source, &folded)?;
-        members.push(build_phase105_repeated_multi_interval_member(
+        members.push(build_phase105_repeated_multi_interval_member_nonvalidating(
             window_index,
             &source,
             &folded,
@@ -5106,7 +5106,7 @@ pub fn verify_phase105_repeated_multi_interval_gemma_richer_family_accumulation_
             prepare_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(&source)?;
         let richer =
             prepare_phase102_folded_multi_interval_gemma_richer_family_artifact(&source, &folded)?;
-        let expected_member = build_phase105_repeated_multi_interval_member(
+        let expected_member = build_phase105_repeated_multi_interval_member_nonvalidating(
             expected_window_index,
             &source,
             &folded,

@@ -628,6 +628,7 @@ enum Command {
         #[arg(long = "folded")]
         folded: PathBuf,
     },
+    #[cfg(feature = "stwo-backend")]
     /// Prepare a repeated multi-window accumulation artifact over canonical Phase102 richer-family windows.
     PrepareStwoRepeatedMultiIntervalGemmaRicherFamilyAccumulationArtifact {
         /// Path to the serialized shared execution proof JSON file.
@@ -655,6 +656,7 @@ enum Command {
         #[arg(short = 'o', long = "output")]
         output: PathBuf,
     },
+    #[cfg(feature = "stwo-backend")]
     /// Verify a repeated multi-window accumulation artifact over canonical Phase102 richer-family windows.
     VerifyStwoRepeatedMultiIntervalGemmaRicherFamilyAccumulationArtifact {
         /// Path to the serialized Phase105 repeated multi-interval richer-family artifact JSON file.
@@ -2190,6 +2192,7 @@ fn run() -> llm_provable_computer::Result<()> {
         } => verify_stwo_folded_multi_interval_gemma_richer_family_artifact_command(
             &artifact, &source, &folded,
         )?,
+        #[cfg(feature = "stwo-backend")]
         Command::PrepareStwoRepeatedMultiIntervalGemmaRicherFamilyAccumulationArtifact {
             proof,
             total_windows,
@@ -2211,6 +2214,7 @@ fn run() -> llm_provable_computer::Result<()> {
                 &output,
             )?
         }
+        #[cfg(feature = "stwo-backend")]
         Command::VerifyStwoRepeatedMultiIntervalGemmaRicherFamilyAccumulationArtifact {
             artifact,
         } => verify_stwo_repeated_multi_interval_gemma_richer_family_accumulation_artifact_command(
@@ -4089,6 +4093,16 @@ fn print_phase105_repeated_multi_interval_gemma_richer_family_report(
     println!("total_windows: {}", artifact.total_windows);
     println!("intervals_per_window: {}", artifact.intervals_per_window);
     println!("interval_total_slices: {}", artifact.interval_total_slices);
+    println!(
+        "shared_execution_proof_bytes: {}",
+        artifact.shared_execution_proof.proof.len()
+    );
+    let naive_window_interval_repeated_proof_bytes = artifact.shared_execution_proof.proof.len()
+        * artifact.total_windows
+        * artifact.intervals_per_window;
+    println!(
+        "naive_window_interval_repeated_proof_bytes: {naive_window_interval_repeated_proof_bytes}"
+    );
     println!("token_position_start: {}", artifact.token_position_start);
     println!("token_position_stride: {}", artifact.token_position_stride);
     println!(
