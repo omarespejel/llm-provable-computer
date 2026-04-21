@@ -8393,8 +8393,9 @@ mod tests {
             )
             .expect_err("token-position overflow drift should fail");
         assert!(
-            error.to_string().contains("token_position")
-                || error.to_string().contains("token-position")
+            error.to_string().contains("overflow")
+                && (error.to_string().contains("token_position")
+                    || error.to_string().contains("token-position"))
         );
     }
 

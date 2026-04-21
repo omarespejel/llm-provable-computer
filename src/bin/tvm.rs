@@ -4650,16 +4650,40 @@ fn prepare_stwo_repeated_multi_interval_gemma_richer_family_accumulation_artifac
     #[cfg(feature = "stwo-backend")]
     {
         require_stwo_backend("S-two repeated multi-interval richer-family accumulation artifact")?;
+        if total_windows < 2 {
+            return Err(VmError::InvalidConfig(
+                "S-two repeated multi-interval richer-family accumulation requires total_windows >= 2"
+                    .to_string(),
+            ));
+        }
         if total_windows > MAX_PHASE105_REPEATED_MULTI_INTERVAL_TOTAL_WINDOWS {
             return Err(VmError::InvalidConfig(format!(
                 "S-two repeated multi-interval richer-family accumulation supports at most {} windows",
                 MAX_PHASE105_REPEATED_MULTI_INTERVAL_TOTAL_WINDOWS
             )));
         }
+        if intervals_per_window < 2 {
+            return Err(VmError::InvalidConfig(
+                "S-two repeated multi-interval richer-family accumulation requires intervals_per_window >= 2"
+                    .to_string(),
+            ));
+        }
         if intervals_per_window > MAX_PHASE99_MULTI_INTERVAL_TOTAL_INTERVALS {
             return Err(VmError::InvalidConfig(format!(
                 "S-two repeated multi-interval richer-family accumulation supports at most {} intervals per window",
                 MAX_PHASE99_MULTI_INTERVAL_TOTAL_INTERVALS
+            )));
+        }
+        if interval_total_slices < 2 {
+            return Err(VmError::InvalidConfig(
+                "S-two repeated multi-interval richer-family accumulation requires interval_total_slices >= 2"
+                    .to_string(),
+            ));
+        }
+        if interval_total_slices > llm_provable_computer::MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES {
+            return Err(VmError::InvalidConfig(format!(
+                "S-two repeated multi-interval richer-family accumulation supports at most {} repeated slices per interval",
+                llm_provable_computer::MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES
             )));
         }
         let execution_proof = load_execution_stark_proof_with_limit(
