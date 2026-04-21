@@ -36,8 +36,6 @@ esac
 [ "$CANON_BUNDLE_DIR" != "$REPO_ROOT" ] || { echo "Refusing to delete repo root" >&2; exit 1; }
 
 BUNDLE_DIR="$CANON_BUNDLE_DIR"
-rm -rf -- "$BUNDLE_DIR"
-mkdir -p "$BUNDLE_DIR"
 
 if [ "$ALLOW_DIRTY_BUNDLE_BUILD" != "1" ]; then
   if ! git diff --quiet --ignore-submodules -- || ! git diff --cached --quiet --ignore-submodules --; then
@@ -51,6 +49,9 @@ if [ "$ALLOW_DIRTY_BUNDLE_BUILD" != "1" ]; then
     exit 1
   fi
 fi
+
+rm -rf -- "$BUNDLE_DIR"
+mkdir -p "$BUNDLE_DIR"
 
 GEMMA_PROOF_JSON="$BUNDLE_DIR/gemma-block-v4.stark.json"
 SINGLE_INTERVAL_EXPLICIT_JSON="$BUNDLE_DIR/single-interval-repeated-gemma-slice-accumulation.stwo.json"
@@ -75,9 +76,24 @@ printf 'label\tseconds\n' > "$BENCHMARKS"
 run_timed() {
   local label="$1"
   shift
-  local started_ns ended_ns elapsed
+  local started_ns ended_ns elapsed rendered
+  local -a rendered_args=()
   started_ns="$(python3 -c 'import time; print(time.time_ns())')"
-  printf '%s\n' "$*" | tee -a "$COMMANDS_LOG"
+  for arg in "$@"; do
+    case "$arg" in
+      "$REPO_ROOT"/*)
+        rendered_args+=(".${arg#$REPO_ROOT}")
+        ;;
+      "$REPO_ROOT")
+        rendered_args+=(".")
+        ;;
+      *)
+        rendered_args+=("$arg")
+        ;;
+    esac
+  done
+  printf -v rendered '%q ' "${rendered_args[@]}"
+  printf '%s\n' "${rendered% }" | tee -a "$COMMANDS_LOG"
   "$@"
   ended_ns="$(python3 -c 'import time; print(time.time_ns())')"
   elapsed="$(python3 - "$started_ns" "$ended_ns" <<'PY'
