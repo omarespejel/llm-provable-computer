@@ -35,6 +35,7 @@ use llm_provable_computer::{
     load_phase102_folded_multi_interval_gemma_richer_family_artifact,
     load_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact,
     load_phase106_folded_repeated_multi_interval_gemma_accumulation_prototype_artifact,
+    load_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact,
     load_phase10_shared_binary_step_lookup_proof, load_phase10_shared_normalization_lookup_proof,
     load_phase11_decoding_chain, load_phase12_decoding_chain, load_phase12_shared_lookup_artifact,
     load_phase13_decoding_layout_matrix, load_phase14_decoding_chain,
@@ -76,6 +77,7 @@ use llm_provable_computer::{
     prepare_phase102_folded_multi_interval_gemma_richer_family_artifact,
     prepare_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact,
     prepare_phase106_folded_repeated_multi_interval_gemma_accumulation_prototype_artifact,
+    prepare_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact,
     prepare_phase92_shared_normalization_demo_artifact,
     prepare_phase93_tensor_native_chain_demo_artifact,
     prepare_phase945_gemma_block_core_slice_artifact,
@@ -102,6 +104,7 @@ use llm_provable_computer::{
     save_phase102_folded_multi_interval_gemma_richer_family_artifact,
     save_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact,
     save_phase106_folded_repeated_multi_interval_gemma_accumulation_prototype_artifact,
+    save_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact,
     save_phase10_shared_binary_step_lookup_proof, save_phase10_shared_normalization_lookup_proof,
     save_phase11_decoding_chain, save_phase12_decoding_chain, save_phase12_shared_lookup_artifact,
     save_phase13_decoding_layout_matrix, save_phase14_decoding_chain,
@@ -126,6 +129,7 @@ use llm_provable_computer::{
     verify_phase102_folded_multi_interval_gemma_richer_family_artifact,
     verify_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact,
     verify_phase106_folded_repeated_multi_interval_gemma_accumulation_prototype_artifact,
+    verify_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact,
     verify_phase10_shared_binary_step_lookup_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
     verify_phase11_decoding_chain_with_proof_checks,
@@ -169,6 +173,7 @@ use llm_provable_computer::{
     Phase102FoldedMultiIntervalGemmaRicherFamilyArtifact,
     Phase105RepeatedMultiIntervalGemmaRicherFamilyAccumulationArtifact,
     Phase106FoldedRepeatedMultiIntervalGemmaAccumulationPrototypeArtifact,
+    Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact,
     Phase29RecursiveCompressionInputContract, Phase30DecodingStepProofEnvelopeManifest,
     Phase31RecursiveCompressionDecodeBoundaryManifest,
     Phase32RecursiveCompressionStatementContract, Phase33RecursiveCompressionPublicInputManifest,
@@ -209,6 +214,8 @@ use llm_provable_computer::{
     STWO_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE102,
     STWO_FOLDED_REPEATED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_SCOPE_PHASE106,
     STWO_FOLDED_REPEATED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_VERSION_PHASE106,
+    STWO_FOLDED_REPEATED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_SCOPE_PHASE107,
+    STWO_FOLDED_REPEATED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE107,
     STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_SCOPE_PHASE945,
     STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_VERSION_PHASE945,
     STWO_GEMMA_BLOCK_RICHER_SLICE_ARTIFACT_SCOPE_PHASE9475,
@@ -692,6 +699,31 @@ enum Command {
         /// Path to the serialized Phase105 repeated multi-interval richer-family accumulation artifact JSON file.
         #[arg(long = "source")]
         source: PathBuf,
+    },
+    #[cfg(feature = "stwo-backend")]
+    /// Prepare a richer-family repeated-window artifact on top of a Phase105 source and Phase106 folded prototype.
+    PrepareStwoFoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact {
+        /// Path to the serialized Phase105 repeated multi-interval richer-family accumulation artifact JSON file.
+        #[arg(long = "source")]
+        source: PathBuf,
+        /// Path to the serialized Phase106 folded repeated multi-interval prototype artifact JSON file.
+        #[arg(long = "folded")]
+        folded: PathBuf,
+        /// File where the serialized artifact JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    #[cfg(feature = "stwo-backend")]
+    /// Verify a richer-family repeated-window artifact on top of a Phase105 source and Phase106 folded prototype.
+    VerifyStwoFoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact {
+        /// Path to the serialized Phase107 folded repeated multi-interval richer-family artifact JSON file.
+        artifact: PathBuf,
+        /// Path to the serialized Phase105 repeated multi-interval richer-family accumulation artifact JSON file.
+        #[arg(long = "source")]
+        source: PathBuf,
+        /// Path to the serialized Phase106 folded repeated multi-interval prototype artifact JSON file.
+        #[arg(long = "folded")]
+        folded: PathBuf,
     },
     /// Produce a serialized proof-carrying decoding chain over three fixed-shape S-two steps.
     ProveStwoDecodingDemo {
@@ -2264,6 +2296,22 @@ fn run() -> llm_provable_computer::Result<()> {
             source,
         } => verify_stwo_folded_repeated_multi_interval_gemma_accumulation_prototype_artifact_command(
             &artifact, &source,
+        )?,
+        #[cfg(feature = "stwo-backend")]
+        Command::PrepareStwoFoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact {
+            source,
+            folded,
+            output,
+        } => prepare_stwo_folded_repeated_multi_interval_gemma_richer_family_artifact_command(
+            &source, &folded, &output,
+        )?,
+        #[cfg(feature = "stwo-backend")]
+        Command::VerifyStwoFoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact {
+            artifact,
+            source,
+            folded,
+        } => verify_stwo_folded_repeated_multi_interval_gemma_richer_family_artifact_command(
+            &artifact, &source, &folded,
         )?,
         Command::ProveStwoDecodingDemo { output } => prove_stwo_decoding_demo_command(&output)?,
         Command::VerifyStwoDecodingDemo { proof } => verify_stwo_decoding_demo_command(&proof)?,
@@ -4316,6 +4364,129 @@ fn print_phase106_folded_repeated_multi_interval_gemma_accumulation_prototype_re
     );
 }
 
+#[cfg(feature = "stwo-backend")]
+fn print_phase107_folded_repeated_multi_interval_gemma_richer_family_report(
+    artifact: &Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact,
+) {
+    println!("artifact_version: {}", artifact.artifact_version);
+    println!("semantic_scope: {}", artifact.semantic_scope);
+    println!("artifact_commitment: {}", artifact.artifact_commitment);
+    println!("program_label: {}", artifact.program_label);
+    println!(
+        "source_phase105_artifact_commitment: {}",
+        artifact.source_phase105_artifact_commitment
+    );
+    println!(
+        "source_phase106_artifact_commitment: {}",
+        artifact.source_phase106_artifact_commitment
+    );
+    println!(
+        "source_window_members_commitment: {}",
+        artifact.source_window_members_commitment
+    );
+    println!(
+        "shared_primitive_artifact_commitment: {}",
+        artifact.shared_primitive_artifact_commitment
+    );
+    println!(
+        "shared_table_registry_commitment: {}",
+        artifact.shared_table_registry_commitment
+    );
+    println!(
+        "shared_execution_proof_commitment: {}",
+        artifact.shared_execution_proof_commitment
+    );
+    println!(
+        "shared_execution_proof_backend_version: {}",
+        artifact.shared_execution_proof_backend_version
+    );
+    println!(
+        "shared_execution_statement_version: {}",
+        artifact.shared_execution_statement_version
+    );
+    println!("total_windows: {}", artifact.total_windows);
+    println!("intervals_per_window: {}", artifact.intervals_per_window);
+    println!("interval_total_slices: {}", artifact.interval_total_slices);
+    println!("token_position_start: {}", artifact.token_position_start);
+    println!("token_position_stride: {}", artifact.token_position_stride);
+    println!(
+        "window_token_position_stride: {}",
+        artifact.window_token_position_stride
+    );
+    println!("start_block_index: {}", artifact.start_block_index);
+    println!(
+        "terminal_token_position: {}",
+        artifact.terminal_token_position
+    );
+    println!("terminal_block_index: {}", artifact.terminal_block_index);
+    println!("bounded_fold_arity: {}", artifact.bounded_fold_arity);
+    println!(
+        "total_folded_richer_window_groups: {}",
+        artifact.total_folded_richer_window_groups
+    );
+    println!(
+        "richer_fold_template_commitment: {}",
+        artifact.richer_fold_template_commitment
+    );
+    println!(
+        "folded_richer_window_group_sequence_commitment: {}",
+        artifact.folded_richer_window_group_sequence_commitment
+    );
+    println!(
+        "phase102_artifact_commitment_sequence_commitment: {}",
+        artifact.phase102_artifact_commitment_sequence_commitment
+    );
+    println!(
+        "token_position_sequence_commitment_sequence_commitment: {}",
+        artifact.token_position_sequence_commitment_sequence_commitment
+    );
+    println!(
+        "selected_memory_window_family_commitment_sequence_commitment: {}",
+        artifact.selected_memory_window_family_commitment_sequence_commitment
+    );
+    println!(
+        "invariant_summary_family_commitment_sequence_commitment: {}",
+        artifact.invariant_summary_family_commitment_sequence_commitment
+    );
+    println!(
+        "folded_richer_multi_interval_family_accumulator_sequence_commitment: {}",
+        artifact.folded_richer_multi_interval_family_accumulator_sequence_commitment
+    );
+    println!("local_score_sum: {}", artifact.local_score_sum);
+    println!("global_score_sum: {}", artifact.global_score_sum);
+    println!("grouped_value_mix_sum: {}", artifact.grouped_value_mix_sum);
+    println!("residual_output_sum: {}", artifact.residual_output_sum);
+    println!("final_acc_sum: {}", artifact.final_acc_sum);
+    println!("primary_norm_sq_min: {}", artifact.primary_norm_sq_min);
+    println!("primary_norm_sq_max: {}", artifact.primary_norm_sq_max);
+    println!("secondary_norm_sq_min: {}", artifact.secondary_norm_sq_min);
+    println!("secondary_norm_sq_max: {}", artifact.secondary_norm_sq_max);
+    println!(
+        "primary_activation_output_sum: {}",
+        artifact.primary_activation_output_sum
+    );
+    println!(
+        "secondary_activation_output_sum: {}",
+        artifact.secondary_activation_output_sum
+    );
+    println!(
+        "repeated_multi_interval_family_accumulator_commitment: {}",
+        artifact.repeated_multi_interval_family_accumulator_commitment
+    );
+    println!(
+        "accumulation_handoff_commitment: {}",
+        artifact.accumulation_handoff_commitment
+    );
+    println!(
+        "folded_repeated_window_prototype_accumulator_commitment: {}",
+        artifact.folded_repeated_window_prototype_accumulator_commitment
+    );
+    println!(
+        "folded_richer_repeated_multi_interval_family_accumulator_commitment: {}",
+        artifact.folded_richer_repeated_multi_interval_family_accumulator_commitment
+    );
+}
+
 fn prepare_stwo_repeated_gemma_slice_accumulation_artifact_command(
     proof_path: &Path,
     total_slices: usize,
@@ -4976,6 +5147,95 @@ fn verify_stwo_folded_repeated_multi_interval_gemma_accumulation_prototype_artif
         print_phase106_folded_repeated_multi_interval_gemma_accumulation_prototype_report(
             &artifact,
         );
+        Ok(())
+    }
+}
+
+fn prepare_stwo_folded_repeated_multi_interval_gemma_richer_family_artifact_command(
+    source_path: &Path,
+    folded_path: &Path,
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = (source_path, folded_path, output);
+        return Err(VmError::UnsupportedProof(
+            "S-two folded repeated multi-interval Gemma richer-family artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two folded repeated multi-interval Gemma richer-family artifact")?;
+        let source =
+            load_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
+                source_path,
+            )?;
+        let folded =
+            load_phase106_folded_repeated_multi_interval_gemma_accumulation_prototype_artifact(
+                folded_path,
+            )?;
+        let artifact =
+            prepare_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact(
+                &source, &folded,
+            )?;
+        save_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact(
+            &artifact, output,
+        )?;
+
+        println!("output: {}", output.display());
+        println!("source: {}", source_path.display());
+        println!("folded: {}", folded_path.display());
+        println!("verified_artifact: true");
+        print_phase107_folded_repeated_multi_interval_gemma_richer_family_report(&artifact);
+        Ok(())
+    }
+}
+
+fn verify_stwo_folded_repeated_multi_interval_gemma_richer_family_artifact_command(
+    artifact_path: &Path,
+    source_path: &Path,
+    folded_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = (artifact_path, source_path, folded_path);
+        return Err(VmError::UnsupportedProof(
+            "S-two folded repeated multi-interval Gemma richer-family artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two folded repeated multi-interval Gemma richer-family artifact")?;
+        let source =
+            load_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
+                source_path,
+            )?;
+        let folded =
+            load_phase106_folded_repeated_multi_interval_gemma_accumulation_prototype_artifact(
+                folded_path,
+            )?;
+        let artifact = load_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact(
+            artifact_path,
+        )?;
+        verify_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact(
+            &artifact, &source, &folded,
+        )?;
+
+        println!("artifact: {}", artifact_path.display());
+        println!("source: {}", source_path.display());
+        println!("folded: {}", folded_path.display());
+        println!("verified_artifact: true");
+        println!(
+            "expected_artifact_version: {STWO_FOLDED_REPEATED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE107}"
+        );
+        println!(
+            "expected_semantic_scope: {STWO_FOLDED_REPEATED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_SCOPE_PHASE107}"
+        );
+        print_phase107_folded_repeated_multi_interval_gemma_richer_family_report(&artifact);
         Ok(())
     }
 }
@@ -14457,6 +14717,12 @@ mod cli_dispatch_tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-folded-repeated-multi-interval-gemma-accumulation-prototype-artifact"
         ));
+        assert!(!needs_run_subcommand(
+            "prepare-stwo-folded-repeated-multi-interval-gemma-richer-family-artifact"
+        ));
+        assert!(!needs_run_subcommand(
+            "verify-stwo-folded-repeated-multi-interval-gemma-richer-family-artifact"
+        ));
     }
 }
 
@@ -14835,6 +15101,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-repeated-multi-interval-gemma-richer-family-accumulation-artifact"
                 | "prepare-stwo-folded-repeated-multi-interval-gemma-accumulation-prototype-artifact"
                 | "verify-stwo-folded-repeated-multi-interval-gemma-accumulation-prototype-artifact"
+                | "prepare-stwo-folded-repeated-multi-interval-gemma-richer-family-artifact"
+                | "verify-stwo-folded-repeated-multi-interval-gemma-richer-family-artifact"
                 | "prove-stwo-decoding-demo"
                 | "verify-stwo-decoding-demo"
                 | "prove-stwo-decoding-family-demo"
