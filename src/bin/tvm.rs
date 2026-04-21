@@ -49,7 +49,8 @@ use llm_provable_computer::{
     load_phase35_recursive_compression_target_manifest,
     load_phase36_recursive_verifier_harness_receipt,
     load_phase37_recursive_artifact_chain_harness_receipt, load_phase3_binary_step_lookup_proof,
-    load_phase5_normalization_lookup_proof, load_stwo_transformer_shaped_artifact_bundle,
+    load_phase5_normalization_lookup_proof, load_phase92_shared_normalization_primitive_artifact,
+    load_stwo_transformer_shaped_artifact_bundle,
     phase29_prepare_recursive_compression_input_contract_from_proof_checked_phase28,
     phase30_prepare_decoding_step_proof_envelope_manifest,
     phase31_prepare_recursive_compression_decode_boundary_manifest,
@@ -59,6 +60,7 @@ use llm_provable_computer::{
     phase35_prepare_recursive_compression_target_manifest,
     phase36_prepare_recursive_verifier_harness_receipt,
     phase37_prepare_recursive_artifact_chain_harness_receipt,
+    prepare_phase92_shared_normalization_demo_artifact,
     prepare_stwo_transformer_shaped_artifact_bundle,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
@@ -85,8 +87,9 @@ use llm_provable_computer::{
     save_phase27_chained_folded_intervalized_decoding_state_relation,
     save_phase28_aggregated_chained_folded_intervalized_decoding_state_relation,
     save_phase30_decoding_step_proof_envelope_manifest, save_phase3_binary_step_lookup_proof,
-    save_phase5_normalization_lookup_proof, save_stwo_transformer_shaped_artifact_bundle,
-    stwo_backend_enabled, verify_phase10_shared_binary_step_lookup_envelope,
+    save_phase5_normalization_lookup_proof, save_phase92_shared_normalization_primitive_artifact,
+    save_stwo_transformer_shaped_artifact_bundle, stwo_backend_enabled,
+    verify_phase10_shared_binary_step_lookup_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
     verify_phase11_decoding_chain_with_proof_checks,
     verify_phase12_decoding_chain_with_proof_checks,
@@ -117,12 +120,14 @@ use llm_provable_computer::{
     verify_phase37_recursive_artifact_chain_harness_receipt,
     verify_phase37_recursive_artifact_chain_harness_receipt_against_sources,
     verify_phase3_binary_step_lookup_demo_envelope,
-    verify_phase5_normalization_lookup_demo_envelope, Phase29RecursiveCompressionInputContract,
-    Phase30DecodingStepProofEnvelopeManifest, Phase31RecursiveCompressionDecodeBoundaryManifest,
+    verify_phase5_normalization_lookup_demo_envelope,
+    verify_phase92_shared_normalization_primitive_artifact,
+    Phase29RecursiveCompressionInputContract, Phase30DecodingStepProofEnvelopeManifest,
+    Phase31RecursiveCompressionDecodeBoundaryManifest,
     Phase32RecursiveCompressionStatementContract, Phase33RecursiveCompressionPublicInputManifest,
     Phase34RecursiveCompressionSharedLookupManifest, Phase35RecursiveCompressionTargetManifest,
     Phase36RecursiveVerifierHarnessReceipt, Phase37RecursiveArtifactChainHarnessReceipt,
-    StwoTransformerShapedArtifactBundle,
+    Phase92SharedNormalizationPrimitiveArtifact, StwoTransformerShapedArtifactBundle,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
     STWO_BACKEND_VERSION_PHASE12,
     STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
@@ -162,6 +167,8 @@ use llm_provable_computer::{
     STWO_RECURSIVE_COMPRESSION_TARGET_MANIFEST_VERSION_PHASE35,
     STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_SCOPE_PHASE36,
     STWO_RECURSIVE_VERIFIER_HARNESS_RECEIPT_VERSION_PHASE36,
+    STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_SCOPE_PHASE92,
+    STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_VERSION_PHASE92,
 };
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
@@ -367,6 +374,17 @@ enum Command {
     VerifyStwoSharedNormalizationDemo {
         /// Path to the serialized proof JSON file.
         proof: PathBuf,
+    },
+    /// Prepare a source-bound tensor-native shared-normalization primitive artifact.
+    PrepareStwoSharedNormalizationPrimitiveArtifact {
+        /// File where the serialized artifact JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    /// Verify a source-bound tensor-native shared-normalization primitive artifact.
+    VerifyStwoSharedNormalizationPrimitiveArtifact {
+        /// Path to the serialized artifact JSON file.
+        artifact: PathBuf,
     },
     /// Produce a serialized proof-carrying decoding chain over three fixed-shape S-two steps.
     ProveStwoDecodingDemo {
@@ -1788,6 +1806,12 @@ fn run() -> llm_provable_computer::Result<()> {
         Command::VerifyStwoSharedNormalizationDemo { proof } => {
             verify_stwo_shared_normalization_demo_command(&proof)?
         }
+        Command::PrepareStwoSharedNormalizationPrimitiveArtifact { output } => {
+            prepare_stwo_shared_normalization_primitive_artifact_command(&output)?
+        }
+        Command::VerifyStwoSharedNormalizationPrimitiveArtifact { artifact } => {
+            verify_stwo_shared_normalization_primitive_artifact_command(&artifact)?
+        }
         Command::ProveStwoDecodingDemo { output } => prove_stwo_decoding_demo_command(&output)?,
         Command::VerifyStwoDecodingDemo { proof } => verify_stwo_decoding_demo_command(&proof)?,
         Command::ProveStwoDecodingFamilyDemo { output } => {
@@ -2762,6 +2786,107 @@ fn verify_stwo_shared_normalization_demo_command(
         println!("claimed_rows: {}", proof.claimed_rows.len());
         println!("proof_bytes: {}", proof.proof.len());
 
+        Ok(())
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn print_phase92_shared_normalization_primitive_report(
+    artifact: &Phase92SharedNormalizationPrimitiveArtifact,
+) {
+    println!("artifact_version: {}", artifact.artifact_version);
+    println!("semantic_scope: {}", artifact.semantic_scope);
+    println!("artifact_commitment: {}", artifact.artifact_commitment);
+    println!(
+        "step_claims_commitment: {}",
+        artifact.step_claims_commitment
+    );
+    println!(
+        "static_table_registry_version: {}",
+        artifact.static_table_registry_version
+    );
+    println!(
+        "static_table_registry_scope: {}",
+        artifact.static_table_registry_scope
+    );
+    println!(
+        "static_table_registry_commitment: {}",
+        artifact.static_table_registry_commitment
+    );
+    println!(
+        "static_table_id: {}",
+        artifact.static_table_commitment.table_id
+    );
+    println!(
+        "canonical_table_rows: {}",
+        artifact.static_table_commitment.row_count
+    );
+    println!("total_steps: {}", artifact.total_steps);
+    println!("total_claimed_rows: {}", artifact.total_claimed_rows);
+    println!(
+        "proof_backend_version: {}",
+        artifact.proof_envelope.proof_backend_version
+    );
+    println!(
+        "statement_version: {}",
+        artifact.proof_envelope.statement_version
+    );
+    println!("proof_bytes: {}", artifact.proof_envelope.proof.len());
+}
+
+fn prepare_stwo_shared_normalization_primitive_artifact_command(
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output;
+        return Err(VmError::UnsupportedProof(
+            "S-two shared normalization primitive artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two shared normalization primitive artifact")?;
+        let artifact = prepare_phase92_shared_normalization_demo_artifact()?;
+        save_phase92_shared_normalization_primitive_artifact(&artifact, output)?;
+
+        println!("output: {}", output.display());
+        println!("verified_stark: true");
+        print_phase92_shared_normalization_primitive_report(&artifact);
+        Ok(())
+    }
+}
+
+fn verify_stwo_shared_normalization_primitive_artifact_command(
+    artifact_path: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = artifact_path;
+        return Err(VmError::UnsupportedProof(
+            "S-two shared normalization primitive artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two shared normalization primitive artifact")?;
+        let artifact = load_phase92_shared_normalization_primitive_artifact(artifact_path)?;
+        verify_phase92_shared_normalization_primitive_artifact(&artifact)?;
+
+        println!("artifact: {}", artifact_path.display());
+        println!("verified_artifact: true");
+        println!("verified_stark: true");
+        println!(
+            "expected_artifact_version: {STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_VERSION_PHASE92}"
+        );
+        println!(
+            "expected_semantic_scope: {STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_SCOPE_PHASE92}"
+        );
+        print_phase92_shared_normalization_primitive_report(&artifact);
         Ok(())
     }
 }
@@ -12579,6 +12704,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-shared-lookup-demo"
                 | "prove-stwo-shared-normalization-demo"
                 | "verify-stwo-shared-normalization-demo"
+                | "prepare-stwo-shared-normalization-primitive-artifact"
+                | "verify-stwo-shared-normalization-primitive-artifact"
                 | "prove-stwo-decoding-demo"
                 | "verify-stwo-decoding-demo"
                 | "prove-stwo-decoding-family-demo"

@@ -1742,6 +1742,80 @@ fn cli_can_prove_and_verify_stwo_shared_normalization_demo() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
+fn cli_can_prepare_and_verify_stwo_shared_normalization_primitive_artifact() {
+    let artifact_path =
+        unique_temp_dir("cli-stwo-shared-normalization-primitive").with_extension("json");
+
+    let mut prepare = tvm_command();
+    prepare
+        .arg("prepare-stwo-shared-normalization-primitive-artifact")
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "artifact_version: stwo-phase92-shared-normalization-primitive-artifact-v1",
+        ))
+        .stdout(predicate::str::contains(
+            "semantic_scope: stwo_tensor_native_shared_normalization_primitive_artifact",
+        ))
+        .stdout(predicate::str::contains("total_steps: 2"))
+        .stdout(predicate::str::contains("total_claimed_rows: 2"));
+
+    let artifact_json = std::fs::read_to_string(&artifact_path).expect("artifact json");
+    assert!(artifact_json.contains("stwo-phase92-shared-normalization-primitive-artifact-v1"));
+    assert!(artifact_json.contains("\"step_label\": \"token-step-0.norm\""));
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stwo-shared-normalization-primitive-artifact")
+        .arg(&artifact_path)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("verified_artifact: true"))
+        .stdout(predicate::str::contains("verified_stark: true"))
+        .stdout(predicate::str::contains(
+            "proof_backend_version: stwo-phase10-shared-normalization-lookup-v1",
+        ));
+
+    let _ = std::fs::remove_file(artifact_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stwo_shared_normalization_primitive_artifact_rejects_tampered_step_rows() {
+    let artifact_path =
+        unique_temp_dir("cli-stwo-shared-normalization-primitive-bad").with_extension("json");
+
+    tvm_command()
+        .arg("prepare-stwo-shared-normalization-primitive-artifact")
+        .arg("-o")
+        .arg(&artifact_path)
+        .assert()
+        .success();
+
+    let mut artifact: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&artifact_path).expect("artifact json"))
+            .expect("parse artifact json");
+    artifact["steps"][1]["claimed_rows"][0][1] = serde_json::json!(65);
+    std::fs::write(
+        &artifact_path,
+        serde_json::to_string_pretty(&artifact).expect("serialize tampered artifact"),
+    )
+    .expect("write tampered artifact");
+
+    tvm_command()
+        .arg("verify-stwo-shared-normalization-primitive-artifact")
+        .arg(&artifact_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("step rows"));
+
+    let _ = std::fs::remove_file(artifact_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
 fn cli_can_prove_and_verify_stwo_decoding_demo() {
     let proof_path = unique_temp_dir("cli-stwo-decoding-demo-proof").with_extension("json");
 

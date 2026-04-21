@@ -116,6 +116,37 @@ Current limitation:
 - no full standard-softmax transformer inference proof on S-two,
 - no matched end-to-end STARK-vs-SNARK benchmark.
 
+### Current tensor-native S-two artifact checkpoint
+
+The repository now also has one frozen tensor-native `stwo` primitive bundle:
+
+- bundle:
+  `docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/`
+- scope:
+  direct shared-normalization primitive with verifier-enforced shared-table
+  identity
+- prepare time:
+  `1s`
+- verify time:
+  `0s`
+- artifact bytes:
+  `93,819`
+- shared proof bytes:
+  `9,136`
+- fixed primitive steps:
+  `2`
+- canonical table rows:
+  `5`
+
+What this strengthens:
+
+- the repository can now point to one real tensor-native `stwo` primitive rather
+  than only VM/decode composition surfaces,
+- shared lookup-table identity is enforced by the verifier on that primitive
+  artifact line,
+- the next result-bearing step is to chain a short typed carried-state sequence
+  on top of this primitive line rather than adding more wrapper layers.
+
 ### zkLLM
 
 What it shows:
@@ -182,7 +213,6 @@ The best current repository-backed answer is:
 
 That is why the next phases move toward:
 
-- shared-table reuse,
-- direct transformer-native S-two primitives,
-- short typed carried-state chains,
+- short typed carried-state chains on top of the direct primitive line,
+- one frozen transformer-shaped tensor-native bundle,
 - and only then transformer-specific accumulation.

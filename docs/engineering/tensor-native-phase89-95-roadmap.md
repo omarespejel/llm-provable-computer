@@ -29,6 +29,21 @@ The second line is the one that can answer the stronger question:
 > are transformer workloads structurally better served by STARK-native proving
 > surfaces than by generic circuit lowering?
 
+## Current checkpoint
+
+The first result-bearing step on this line now exists:
+
+- one frozen tensor-native `stwo` primitive bundle under
+  `docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/`,
+- one verifier-enforced canonical normalization table identity,
+- one table-registry commitment,
+- one direct shared-normalization proof reused across `2` fixed primitive steps.
+
+That means Phase91 and Phase92 are no longer only roadmap items. The next
+meaningful work is Phase93 and Phase94: short typed carried-state chaining on
+top of a real primitive line, then a frozen transformer-shaped tensor-native
+bundle.
+
 ## Phase89: upstream sync audit
 
 Goal:

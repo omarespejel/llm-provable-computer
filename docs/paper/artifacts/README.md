@@ -13,6 +13,7 @@ These are the bundles directly used by the current paper package:
 - `phase66-69-proof-carrying-hardening-v1-2026-04-21/`
 - `phase70-80-proof-checked-decode-bridge-v1-2026-04-21/`
 - `stwo-transformer-shaped-v1-2026-04-21/`
+- `stwo-shared-normalization-primitive-v1-2026-04-21/`
 
 These are the bundles that should be treated as the paper's primary reproducibility and systems-evidence surfaces.
 
@@ -38,6 +39,14 @@ It pins a five-step source chain, two translated segment manifests, a `28s` prep
 run, a `9s` verify run, `9,348,044` artifact bytes, and a package-count reduction from `5`
 naive per-step packages to `2` composed translated segments. It remains a narrow
 source-bound artifact, not a recursion or full-softmax claim.
+
+The `stwo-shared-normalization-primitive-v1-2026-04-21` directory is the first
+frozen publication-facing tensor-native `stwo` primitive bundle with reproducible
+artifact metrics. It pins a direct shared-normalization proof reused across `2`
+fixed primitive steps, one verifier-enforced canonical table identity, one
+table-registry commitment, a `1s` prepare run, a `0s` verify run, `93,819`
+artifact bytes, and `9,136` shared proof bytes. It remains an intentionally
+narrow primitive artifact rather than a full-softmax or recursive claim.
 
 Later Phase81-84 translated seam surfaces remain implemented in-repo, but they are not
 yet cut as frozen publication-facing artifact directories.

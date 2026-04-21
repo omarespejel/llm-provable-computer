@@ -415,6 +415,14 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-shared-normalization-demo shared-normalization.stwo.proof.json
 
+# Prepare and verify the first tensor-native shared-normalization primitive artifact
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-shared-normalization-primitive-artifact \
+  -o shared-normalization-primitive.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-shared-normalization-primitive-artifact \
+  shared-normalization-primitive.stwo.json
+
 # Run the minimal shared-lookup identity example
 cargo +nightly-2025-07-14 run --features stwo-backend --example shared_lookup_identity
 
