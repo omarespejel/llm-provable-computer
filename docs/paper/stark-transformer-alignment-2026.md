@@ -913,6 +913,6 @@ ______________________________________________________________________
     July 24, 2025. <https://www.lagrange.dev/engineering-updates/july-2025>
 49. `omarespejel/provable-transformer-vm`. “Appendix Artifact Index (S-two
     Transformer-Shaped V1).” GitHub artifact snapshot, commit
-    `08a8e51eb277ba6b69c12db3d0aea5f467480493`, at
+    `4f89f0b607210e0cd42034d0e622696411f2a1c2`, at
     `docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md`.
-    <https://github.com/omarespejel/provable-transformer-vm/blob/08a8e51eb277ba6b69c12db3d0aea5f467480493/docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md>
+    <https://github.com/omarespejel/provable-transformer-vm/blob/4f89f0b607210e0cd42034d0e622696411f2a1c2/docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md>
