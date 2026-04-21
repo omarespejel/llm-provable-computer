@@ -35,7 +35,25 @@ esac
 [ "$CANON_BUNDLE_DIR" != "/" ] || { echo "Refusing to delete /" >&2; exit 1; }
 [ "$CANON_BUNDLE_DIR" != "$REPO_ROOT" ] || { echo "Refusing to delete repo root" >&2; exit 1; }
 
-BUNDLE_DIR="$CANON_BUNDLE_DIR"
+BUNDLE_FINAL_DIR="$CANON_BUNDLE_DIR"
+BUNDLE_FINAL_NAME="$(basename "$BUNDLE_FINAL_DIR")"
+STAGING_DIR="$(mktemp -d "$CANON_EXPECTED_PREFIX/.tmp.${BUNDLE_FINAL_NAME}.XXXXXX")"
+trap 'rm -rf -- "$STAGING_DIR"' EXIT
+BUNDLE_DIR="$STAGING_DIR"
+
+GENERATOR_SCRIPT_REL="scripts/paper/generate_stwo_richer_multi_interval_gemma_bundle.sh"
+GENERATOR_SCRIPT="$REPO_ROOT/$GENERATOR_SCRIPT_REL"
+GENERATOR_SCRIPT_SHA256="$(shasum -a 256 "$GENERATOR_SCRIPT" | awk '{print $1}')"
+GENERATOR_GIT_REVISION="$(git rev-parse HEAD)"
+GENERATOR_GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+GENERATOR_GIT_COMMIT_DATE="$(git show -s --format=%cI HEAD)"
+GENERATOR_WORKTREE_STATE="clean"
+if ! git diff --quiet --ignore-submodules -- || ! git diff --cached --quiet --ignore-submodules --; then
+  GENERATOR_WORKTREE_STATE="dirty"
+fi
+if [ -n "$(git ls-files --others --exclude-standard)" ]; then
+  GENERATOR_WORKTREE_STATE="dirty"
+fi
 
 if [ "$ALLOW_DIRTY_BUNDLE_BUILD" != "1" ]; then
   if ! git diff --quiet --ignore-submodules -- || ! git diff --cached --quiet --ignore-submodules --; then
@@ -50,7 +68,6 @@ if [ "$ALLOW_DIRTY_BUNDLE_BUILD" != "1" ]; then
   fi
 fi
 
-rm -rf -- "$BUNDLE_DIR"
 mkdir -p "$BUNDLE_DIR"
 
 GEMMA_PROOF_JSON="$BUNDLE_DIR/gemma-block-v4.stark.json"
@@ -81,15 +98,24 @@ run_timed() {
   local -a rendered_args=()
   started_ns="$(python3 -c 'import time; print(time.time_ns())')"
   for arg in "$@"; do
-    case "$arg" in
+    local rendered_arg="$arg"
+    case "$rendered_arg" in
+      "$BUNDLE_DIR"/*)
+        rendered_arg="$BUNDLE_FINAL_DIR${rendered_arg#"$BUNDLE_DIR"}"
+        ;;
+      "$BUNDLE_DIR")
+        rendered_arg="$BUNDLE_FINAL_DIR"
+        ;;
+    esac
+    case "$rendered_arg" in
       "$REPO_ROOT"/*)
-        rendered_args+=(".${arg#"$REPO_ROOT"}")
+        rendered_args+=(".${rendered_arg#"$REPO_ROOT"}")
         ;;
       "$REPO_ROOT")
         rendered_args+=(".")
         ;;
       *)
-        rendered_args+=("$arg")
+        rendered_args+=("$rendered_arg")
         ;;
     esac
   done
@@ -111,7 +137,14 @@ cat > "$MANIFEST" <<MANIFEST
 bundle_version: stwo-richer-multi-interval-gemma-v1
 repo_root: .
 nightly_toolchain: $NIGHTLY_TOOLCHAIN
-bundle_dir: docs/paper/artifacts/$(basename "$BUNDLE_DIR")
+bundle_dir: docs/paper/artifacts/$BUNDLE_FINAL_NAME
+generator_script: $GENERATOR_SCRIPT_REL
+generator_script_sha256: $GENERATOR_SCRIPT_SHA256
+generator_git_revision: $GENERATOR_GIT_REVISION
+generator_git_branch: $GENERATOR_GIT_BRANCH
+generator_git_commit_date: $GENERATOR_GIT_COMMIT_DATE
+generator_worktree_state: $GENERATOR_WORKTREE_STATE
+generator_allow_dirty_build: $ALLOW_DIRTY_BUNDLE_BUILD
 gemma_proof: gemma-block-v4.stark.json
 single_interval_explicit_artifact: single-interval-repeated-gemma-slice-accumulation.stwo.json
 single_interval_folded_artifact: single-interval-folded-gemma-slice-accumulation.stwo.json
@@ -228,7 +261,7 @@ run_timed verify_folded_multi_interval_gemma_richer_family \
   --source "$MULTI_INTERVAL_JSON" \
   --folded "$FOLDED_MULTI_INTERVAL_JSON"
 
-python3 - "$GEMMA_PROOF_JSON" "$SINGLE_INTERVAL_EXPLICIT_JSON" "$SINGLE_INTERVAL_FOLDED_JSON" "$SINGLE_INTERVAL_FAMILY_JSON" "$MULTI_INTERVAL_JSON" "$FOLDED_MULTI_INTERVAL_JSON" "$RICHER_MULTI_INTERVAL_JSON" "$INDEX_MD" "$README_MD" "$MANIFEST" "$SUMMARY_TSV" "$COMPARISON_TSV" "$PUBLIC_NOTES_MD" <<'PY'
+python3 - "$GEMMA_PROOF_JSON" "$SINGLE_INTERVAL_EXPLICIT_JSON" "$SINGLE_INTERVAL_FOLDED_JSON" "$SINGLE_INTERVAL_FAMILY_JSON" "$MULTI_INTERVAL_JSON" "$FOLDED_MULTI_INTERVAL_JSON" "$RICHER_MULTI_INTERVAL_JSON" "$INDEX_MD" "$README_MD" "$MANIFEST" "$SUMMARY_TSV" "$COMPARISON_TSV" "$PUBLIC_NOTES_MD" "$BUNDLE_FINAL_NAME" <<'PY'
 import hashlib
 import json
 import sys
@@ -247,6 +280,7 @@ manifest_path = Path(sys.argv[10])
 summary_path = Path(sys.argv[11])
 comparison_tsv = Path(sys.argv[12])
 public_notes_md = Path(sys.argv[13])
+bundle_final_name = sys.argv[14]
 
 with proof_path.open() as f:
     proof = json.load(f)
@@ -365,7 +399,7 @@ readme_md.write_text(
 
 index_md.write_text(
     f"# Appendix Artifact Index\n\n"
-    f"- Bundle dir: `docs/paper/artifacts/{manifest_path.parent.name}`\n"
+    f"- Bundle dir: `docs/paper/artifacts/{bundle_final_name}`\n"
     f"- Scope: explicit multi-interval accumulation plus folded prototype plus richer verifier-bound family artifact\n"
     f"- Frozen manifest entries:\n"
     + '\n'.join(f"  - `{line}`" for line in manifest_lines) +
@@ -434,9 +468,13 @@ PY
     "$(basename "$SHA256S")" > "$PROVENANCE_SHA256S"
 )
 
-echo "bundle_dir=$BUNDLE_DIR"
-echo "manifest=$MANIFEST"
-echo "summary=$SUMMARY_TSV"
-echo "comparison=$COMPARISON_TSV"
-echo "sha256s=$SHA256S"
-echo "provenance_sha256s=$PROVENANCE_SHA256S"
+rm -rf -- "$BUNDLE_FINAL_DIR"
+mv -- "$BUNDLE_DIR" "$BUNDLE_FINAL_DIR"
+trap - EXIT
+
+echo "bundle_dir=$BUNDLE_FINAL_DIR"
+echo "manifest=$BUNDLE_FINAL_DIR/$(basename "$MANIFEST")"
+echo "summary=$BUNDLE_FINAL_DIR/$(basename "$SUMMARY_TSV")"
+echo "comparison=$BUNDLE_FINAL_DIR/$(basename "$COMPARISON_TSV")"
+echo "sha256s=$BUNDLE_FINAL_DIR/$(basename "$SHA256S")"
+echo "provenance_sha256s=$BUNDLE_FINAL_DIR/$(basename "$PROVENANCE_SHA256S")"
