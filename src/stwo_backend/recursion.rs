@@ -1,26 +1,31 @@
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "stwo-backend")]
-use std::{collections::HashSet, path::Path};
+use std::{
+    collections::{HashMap, HashSet},
+    path::Path,
+};
 
 use crate::error::{Result, VmError};
 use crate::proof::{ExecutionClaimCommitments, StarkProofBackend, VanillaStarkExecutionProof};
 
 #[cfg(feature = "stwo-backend")]
 use super::decoding::{
-    commit_phase12_public_state, commit_phase14_public_state, commit_phase23_boundary_state,
-    phase14_prepare_decoding_chain, phase28_global_boundary_preimage_states,
-    read_json_bytes_with_limit, verify_phase12_decoding_chain, verify_phase14_decoding_chain,
+    commit_phase12_layout, commit_phase12_public_state, commit_phase14_public_state,
+    commit_phase23_boundary_state, phase14_prepare_decoding_chain,
+    phase28_global_boundary_preimage_states, read_json_bytes_with_limit,
+    verify_phase12_decoding_chain, verify_phase12_decoding_chain_with_proof_checks,
+    verify_phase14_decoding_chain,
     verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation,
     verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_with_proof_checks,
     verify_phase30_decoding_step_proof_envelope_manifest,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
-    Phase12DecodingChainManifest, Phase12DecodingState, Phase14DecodingState,
-    Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
+    Phase12DecodingChainManifest, Phase12DecodingState, Phase14DecodingChainManifest,
+    Phase14DecodingState, Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
     Phase30DecodingStepProofEnvelopeManifest,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_SCOPE_PHASE28,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
-    STWO_DECODING_STATE_VERSION_PHASE12, STWO_DECODING_STATE_VERSION_PHASE14,
-    STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30,
+    STWO_DECODING_CHAIN_VERSION_PHASE12, STWO_DECODING_STATE_VERSION_PHASE12,
+    STWO_DECODING_STATE_VERSION_PHASE14, STWO_DECODING_STEP_ENVELOPE_MANIFEST_SCOPE_PHASE30,
     STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30,
     STWO_DECODING_STEP_ENVELOPE_RELATION_PHASE30, STWO_PHASE28_RECURSION_POSTURE_PRE_RECURSIVE,
 };
@@ -369,6 +374,96 @@ pub const STWO_TRANSFORMER_TRANSITION_ARTIFACT_VERSION_PHASE65: &str =
 pub const STWO_TRANSFORMER_TRANSITION_ARTIFACT_SCOPE_PHASE65: &str =
     "phase65_phase64_first_layer_transformer_transition_artifact";
 #[cfg(feature = "stwo-backend")]
+pub const STWO_TRANSFORMER_CHAIN_ARTIFACT_VERSION_PHASE66: &str =
+    "phase66-transformer-chain-artifact-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_TRANSFORMER_CHAIN_ARTIFACT_SCOPE_PHASE66: &str =
+    "phase66_phase65_transition_steps_chained_by_typed_carried_state";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PUBLICATION_ARTIFACT_TABLE_VERSION_PHASE67: &str =
+    "phase67-publication-artifact-table-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PUBLICATION_ARTIFACT_TABLE_SCOPE_PHASE67: &str =
+    "phase67_phase63_to_phase66_publication_artifact_table";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_INDEPENDENT_REPLAY_AUDIT_VERSION_PHASE68: &str =
+    "phase68-independent-replay-audit-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_INDEPENDENT_REPLAY_AUDIT_SCOPE_PHASE68: &str =
+    "phase68_phase66_chain_independent_replay_audit_manifest";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_SYMBOLIC_ARTIFACT_MAPPING_VERSION_PHASE69: &str =
+    "phase69-symbolic-artifact-mapping-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_SYMBOLIC_ARTIFACT_MAPPING_SCOPE_PHASE69: &str =
+    "phase69_symbolic_model_to_verifier_artifact_mapping";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_ROLE_NEUTRAL_HANDOFF_ARTIFACT_VERSION_PHASE70: &str =
+    "phase70-role-neutral-boundary-handoff-artifact-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_ROLE_NEUTRAL_HANDOFF_ARTIFACT_SCOPE_PHASE70: &str =
+    "phase70_phase64_phase66_role_neutral_boundary_handoff_artifact";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_ACTUAL_STWO_STEP_ENVELOPE_HANDOFF_RECEIPT_VERSION_PHASE71: &str =
+    "phase71-actual-stwo-step-envelope-handoff-receipt-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_ACTUAL_STWO_STEP_ENVELOPE_HANDOFF_RECEIPT_SCOPE_PHASE71: &str =
+    "phase71_phase12_phase30_actual_stwo_step_envelope_handoff_receipt";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_RECEIPT_VERSION_PHASE72: &str =
+    "phase72-actual-stwo-shared-lookup-registry-receipt-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_RECEIPT_SCOPE_PHASE72: &str =
+    "phase72_phase12_phase30_actual_stwo_shared_lookup_registry_receipt";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PROOF_CARRYING_DECODE_BRIDGE_CLAIM_VERSION_PHASE73: &str =
+    "phase73-proof-carrying-decode-bridge-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PROOF_CARRYING_DECODE_BRIDGE_CLAIM_SCOPE_PHASE73: &str =
+    "phase73_phase70_to_phase72_proof_carrying_decode_bridge";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_CHUNKED_HISTORY_CARRY_RECEIPT_VERSION_PHASE74: &str =
+    "phase74-chunked-history-carry-receipt-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_CHUNKED_HISTORY_CARRY_RECEIPT_SCOPE_PHASE74: &str =
+    "phase74_phase12_phase14_chunked_history_carry_receipt";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PUBLICATION_PROOF_BRIDGE_TABLE_VERSION_PHASE75: &str =
+    "phase75-publication-proof-bridge-table-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PUBLICATION_PROOF_BRIDGE_TABLE_SCOPE_PHASE75: &str =
+    "phase75_phase70_to_phase74_publication_proof_bridge_table";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PROOF_CHECKED_ACTUAL_STWO_DECODE_CHAIN_RECEIPT_VERSION_PHASE76: &str =
+    "phase76-proof-checked-actual-stwo-decode-chain-receipt-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PROOF_CHECKED_ACTUAL_STWO_DECODE_CHAIN_RECEIPT_SCOPE_PHASE76: &str =
+    "phase76_phase12_phase30_proof_checked_actual_stwo_decode_chain_receipt";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PROOF_CHECKED_ACTUAL_STWO_STEP_ENVELOPE_BRIDGE_RECEIPT_VERSION_PHASE77: &str =
+    "phase77-proof-checked-actual-stwo-step-envelope-bridge-receipt-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PROOF_CHECKED_ACTUAL_STWO_STEP_ENVELOPE_BRIDGE_RECEIPT_SCOPE_PHASE77: &str =
+    "phase77_phase76_phase71_proof_checked_actual_stwo_step_envelope_bridge";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PROOF_CHECKED_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_BRIDGE_RECEIPT_VERSION_PHASE78:
+    &str = "phase78-proof-checked-actual-stwo-shared-lookup-registry-bridge-receipt-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PROOF_CHECKED_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_BRIDGE_RECEIPT_SCOPE_PHASE78: &str =
+    "phase78_phase76_phase72_proof_checked_actual_stwo_shared_lookup_registry_bridge";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PROOF_CHECKED_DECODE_CARRY_BRIDGE_CLAIM_VERSION_PHASE79: &str =
+    "phase79-proof-checked-decode-carry-bridge-claim-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PROOF_CHECKED_DECODE_CARRY_BRIDGE_CLAIM_SCOPE_PHASE79: &str =
+    "phase79_phase70_phase74_phase77_phase78_proof_checked_decode_carry_bridge";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_VERSION_PHASE80: &str =
+    "phase80-proof-checked-publication-decode-bridge-table-v1";
+#[cfg(feature = "stwo-backend")]
+pub const STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_SCOPE_PHASE80: &str =
+    "phase80_phase74_phase76_to_phase79_proof_checked_publication_decode_bridge_table";
+#[cfg(feature = "stwo-backend")]
 const STWO_RECURSIVE_VERIFIER_PUBLIC_OUTPUT_HANDOFF_KIND_PHASE44D: &str =
     "source-chain-public-output-boundary-verifier-v1";
 #[cfg(feature = "stwo-backend")]
@@ -633,6 +728,104 @@ const STWO_TRANSFORMER_TRANSITION_NEXT_STEP_PHASE65: &str =
 #[cfg(feature = "stwo-backend")]
 const STWO_TRANSFORMER_TRANSITION_RELATION_KIND_PHASE65: &str =
     "phase65_first_layer_gated_feed_forward_transition";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSFORMER_CHAIN_COMPLEXITY_PHASE66: &str =
+    "O(phase65_steps + carried_state_handoff_links)";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSFORMER_CHAIN_STATUS_PHASE66: &str =
+    "phase65_transition_steps_chained_by_typed_carried_state";
+#[cfg(feature = "stwo-backend")]
+const STWO_TRANSFORMER_CHAIN_NEXT_STEP_PHASE66: &str =
+    "publish_artifact_table_and_independent_replay_audit_before_more_features";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_ARTIFACT_TABLE_COMPLEXITY_PHASE67: &str = "O(publication_artifact_rows)";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_ARTIFACT_TABLE_STATUS_PHASE67: &str =
+    "phase63_to_phase66_artifact_rows_source_bound";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_ARTIFACT_TABLE_NEXT_STEP_PHASE67: &str =
+    "independently_replay_phase66_chain_before_public_claim_expansion";
+#[cfg(feature = "stwo-backend")]
+const STWO_INDEPENDENT_REPLAY_AUDIT_COMPLEXITY_PHASE68: &str =
+    "O(phase66_chain_links + audit_tamper_cases)";
+#[cfg(feature = "stwo-backend")]
+const STWO_INDEPENDENT_REPLAY_AUDIT_STATUS_PHASE68: &str =
+    "phase66_chain_has_independent_replay_oracle_manifest";
+#[cfg(feature = "stwo-backend")]
+const STWO_INDEPENDENT_REPLAY_AUDIT_NEXT_STEP_PHASE68: &str =
+    "bind_symbolic_model_terms_to_checked_artifact_surfaces";
+#[cfg(feature = "stwo-backend")]
+const STWO_SYMBOLIC_ARTIFACT_MAPPING_COMPLEXITY_PHASE69: &str =
+    "O(symbolic_terms + artifact_surface_rows)";
+#[cfg(feature = "stwo-backend")]
+const STWO_SYMBOLIC_ARTIFACT_MAPPING_STATUS_PHASE69: &str =
+    "symbolic_terms_mapped_to_phase63_to_phase68_artifact_surfaces";
+#[cfg(feature = "stwo-backend")]
+const STWO_SYMBOLIC_ARTIFACT_MAPPING_NEXT_STEP_PHASE69: &str =
+    "stop_and_update_paper_artifact_section_before_phase70_feature_expansion";
+#[cfg(feature = "stwo-backend")]
+const STWO_ROLE_NEUTRAL_HANDOFF_COMPLEXITY_PHASE70: &str =
+    "O(phase64_steps + role_neutral_handoff_links)";
+#[cfg(feature = "stwo-backend")]
+const STWO_ROLE_NEUTRAL_HANDOFF_STATUS_PHASE70: &str =
+    "role_neutral_carried_frontier_handoffs_enforced";
+#[cfg(feature = "stwo-backend")]
+const STWO_ROLE_NEUTRAL_HANDOFF_NEXT_STEP_PHASE70: &str =
+    "bind_role_neutral_handoffs_to_actual_stwo_step_envelopes";
+#[cfg(feature = "stwo-backend")]
+const STWO_ACTUAL_STWO_STEP_ENVELOPE_HANDOFF_NEXT_STEP_PHASE71: &str =
+    "bind_shared_lookup_registry_identity_across_actual_step_envelopes";
+#[cfg(feature = "stwo-backend")]
+const STWO_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_NEXT_STEP_PHASE72: &str =
+    "bridge_abstract_phase70_handoffs_to_actual_stwo_decode_receipts";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CARRYING_DECODE_BRIDGE_COMPLEXITY_PHASE73: &str =
+    "O(phase70_handoffs + phase71_receipt + phase72_receipt)";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CARRYING_DECODE_BRIDGE_STATUS_PHASE73: &str =
+    "abstract_phase70_and_actual_stwo_decode_surfaces_bridgeable";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CARRYING_DECODE_BRIDGE_NEXT_STEP_PHASE73: &str =
+    "bind_chunked_history_receipt_before_publication_table";
+#[cfg(feature = "stwo-backend")]
+const STWO_CHUNKED_HISTORY_CARRY_NEXT_STEP_PHASE74: &str =
+    "publish_phase70_to_phase74_proof_bridge_table";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_PROOF_BRIDGE_TABLE_COMPLEXITY_PHASE75: &str =
+    "O(publication_proof_bridge_rows)";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_PROOF_BRIDGE_TABLE_STATUS_PHASE75: &str =
+    "phase70_to_phase74_publication_bridge_rows_source_bound";
+#[cfg(feature = "stwo-backend")]
+const STWO_PUBLICATION_PROOF_BRIDGE_TABLE_NEXT_STEP_PHASE75: &str =
+    "freeze_paper_artifact_section_with_actual_stwo_bridge_receipts";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CHECKED_ACTUAL_STWO_DECODE_CHAIN_NEXT_STEP_PHASE76: &str =
+    "bind_proof_checked_actual_decode_chain_to_actual_step_envelope_handoffs";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CHECKED_ACTUAL_STWO_STEP_ENVELOPE_BRIDGE_NEXT_STEP_PHASE77: &str =
+    "bind_proof_checked_actual_decode_chain_to_shared_lookup_registry_identity";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CHECKED_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_BRIDGE_NEXT_STEP_PHASE78: &str =
+    "bridge_proof_checked_actual_decode_receipts_to_decode_carry_claim";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CHECKED_DECODE_CARRY_BRIDGE_COMPLEXITY_PHASE79: &str =
+    "O(phase70_artifact + phase74_receipt + phase77_receipt + phase78_receipt)";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CHECKED_DECODE_CARRY_BRIDGE_STATUS_PHASE79: &str =
+    "proof_checked_actual_decode_receipts_bridgeable_with_chunked_history_carry";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CHECKED_DECODE_CARRY_BRIDGE_NEXT_STEP_PHASE79: &str =
+    "publish_proof_checked_decode_bridge_table_and_freeze_artifact_section";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_COMPLEXITY_PHASE80: &str =
+    "O(proof_checked_publication_decode_bridge_rows)";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_STATUS_PHASE80: &str =
+    "phase74_phase76_to_phase79_proof_checked_publication_bridge_rows_source_bound";
+#[cfg(feature = "stwo-backend")]
+const STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_NEXT_STEP_PHASE80: &str =
+    "freeze_phase81_proof_checked_artifact_section_before_feature_expansion";
 #[cfg(feature = "stwo-backend")]
 const PHASE44D_M31_MODULUS: u32 = (1u32 << 31) - 1;
 
@@ -2243,6 +2436,617 @@ pub struct Phase65TransformerTransitionArtifact {
     pub paper_ready: bool,
     pub required_next_step: String,
     pub transformer_transition_artifact_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase66TransformerChainLink {
+    pub proof_backend: StarkProofBackend,
+    pub step_index: usize,
+    pub source_phase65_transition_step_commitment: String,
+    pub source_phase64_typed_step_commitment: String,
+    pub input_boundary_commitment: String,
+    pub output_boundary_commitment: String,
+    pub input_carried_state_commitment: String,
+    pub output_carried_state_commitment: String,
+    pub previous_output_carried_state_commitment: Option<String>,
+    pub input_position: usize,
+    pub output_position: usize,
+    pub shared_lookup_identity_commitment: String,
+    pub chain_link_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase66TransformerChainArtifact {
+    pub proof_backend: StarkProofBackend,
+    pub artifact_version: String,
+    pub semantic_scope: String,
+    pub source_phase65_transformer_transition_artifact_commitment: String,
+    pub source_phase64_typed_carried_state_claim_commitment: String,
+    pub source_phase63_shared_lookup_identity_claim_commitment: String,
+    pub relation_kind: String,
+    pub relation_template_commitment: String,
+    pub tensor_relation_commitment: String,
+    pub shared_lookup_identity_commitment: String,
+    pub chain_start_typed_boundary_commitment: String,
+    pub chain_end_typed_boundary_commitment: String,
+    pub chain_start_carried_state_commitment: String,
+    pub chain_end_carried_state_commitment: String,
+    pub chain_start_position: usize,
+    pub chain_end_position: usize,
+    pub chain_links_commitment: String,
+    pub chain_links: Vec<Phase66TransformerChainLink>,
+    pub step_count: usize,
+    pub continuity_link_count: usize,
+    pub phase65_transformer_transition_surface_unit_count: usize,
+    pub phase65_combined_verifier_surface_unit_count: usize,
+    pub chained_transition_surface_unit_count: usize,
+    pub combined_verifier_surface_unit_count: usize,
+    pub surface_delta_from_phase65: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub phase65_transition_artifact_available: bool,
+    pub typed_carried_state_handoffs_available: bool,
+    pub shared_lookup_identity_available: bool,
+    pub actual_runtime_model_witness_available: bool,
+    pub proof_carrying_decoding_surface_available: bool,
+    pub full_standard_softmax_inference_claimed: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub transformer_chain_artifact_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase67PublicationArtifactRow {
+    pub proof_backend: StarkProofBackend,
+    pub row_index: usize,
+    pub phase_label: String,
+    pub artifact_name: String,
+    pub artifact_commitment: String,
+    pub semantic_scope: String,
+    pub verifier_function: String,
+    pub source_bound_verifier_function: String,
+    pub evidence_tier: String,
+    pub claim_boundary: String,
+    pub limitation: String,
+    pub row_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase67PublicationArtifactTable {
+    pub proof_backend: StarkProofBackend,
+    pub table_version: String,
+    pub semantic_scope: String,
+    pub source_phase66_transformer_chain_artifact_commitment: String,
+    pub source_phase65_transformer_transition_artifact_commitment: String,
+    pub source_phase64_typed_carried_state_claim_commitment: String,
+    pub source_phase63_shared_lookup_identity_claim_commitment: String,
+    pub artifact_rows_commitment: String,
+    pub artifact_rows: Vec<Phase67PublicationArtifactRow>,
+    pub row_count: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub frozen_evidence_bundle_available: bool,
+    pub source_bound_verifiers_available: bool,
+    pub performance_benchmark_claimed: bool,
+    pub full_standard_softmax_inference_claimed: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub publication_artifact_table_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase68IndependentReplayAuditClaim {
+    pub proof_backend: StarkProofBackend,
+    pub audit_version: String,
+    pub semantic_scope: String,
+    pub source_phase66_transformer_chain_artifact_commitment: String,
+    pub source_phase67_publication_artifact_table_commitment: String,
+    pub audited_chain_start_carried_state_commitment: String,
+    pub audited_chain_end_carried_state_commitment: String,
+    pub audited_step_count: usize,
+    pub audited_continuity_link_count: usize,
+    pub required_tamper_case_count: usize,
+    pub independent_oracle_name: String,
+    pub production_verifier_function: String,
+    pub source_bound_verifier_function: String,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub phase66_chain_available: bool,
+    pub publication_table_available: bool,
+    pub independent_replay_oracle_available: bool,
+    pub production_verifier_cross_check_available: bool,
+    pub mutation_style_tamper_cases_available: bool,
+    pub formal_verification_claimed: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub independent_replay_audit_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase69SymbolicArtifactMappingRow {
+    pub proof_backend: StarkProofBackend,
+    pub row_index: usize,
+    pub symbolic_term: String,
+    pub model_component: String,
+    pub artifact_phase: String,
+    pub artifact_commitment: String,
+    pub verifier_surface: String,
+    pub source_bound_check: String,
+    pub limitation: String,
+    pub row_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase69SymbolicArtifactMappingClaim {
+    pub proof_backend: StarkProofBackend,
+    pub mapping_version: String,
+    pub semantic_scope: String,
+    pub formula_family: String,
+    pub source_phase68_independent_replay_audit_commitment: String,
+    pub source_phase67_publication_artifact_table_commitment: String,
+    pub source_phase66_transformer_chain_artifact_commitment: String,
+    pub source_phase65_transformer_transition_artifact_commitment: String,
+    pub source_phase64_typed_carried_state_claim_commitment: String,
+    pub source_phase63_shared_lookup_identity_claim_commitment: String,
+    pub mapping_rows_commitment: String,
+    pub mapping_rows: Vec<Phase69SymbolicArtifactMappingRow>,
+    pub row_count: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub symbolic_model_available: bool,
+    pub artifact_surfaces_available: bool,
+    pub source_bound_verifiers_available: bool,
+    pub runtime_benchmark_claimed: bool,
+    pub full_standard_softmax_inference_claimed: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub symbolic_artifact_mapping_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase70RoleNeutralBoundaryHandoffLink {
+    pub proof_backend: StarkProofBackend,
+    pub step_index: usize,
+    pub source_phase66_chain_link_commitment: String,
+    pub source_phase64_typed_step_commitment: String,
+    pub input_typed_boundary_commitment: String,
+    pub output_typed_boundary_commitment: String,
+    pub input_carried_state_commitment: String,
+    pub output_carried_state_commitment: String,
+    pub previous_output_handoff_commitment: Option<String>,
+    pub input_position: usize,
+    pub output_position: usize,
+    pub shared_lookup_identity_commitment: String,
+    pub input_handoff_commitment: String,
+    pub output_handoff_commitment: String,
+    pub handoff_link_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase70RoleNeutralBoundaryHandoffArtifact {
+    pub proof_backend: StarkProofBackend,
+    pub artifact_version: String,
+    pub semantic_scope: String,
+    pub source_phase66_transformer_chain_artifact_commitment: String,
+    pub source_phase64_typed_carried_state_claim_commitment: String,
+    pub source_phase63_shared_lookup_identity_claim_commitment: String,
+    pub relation_kind: String,
+    pub relation_template_commitment: String,
+    pub shared_lookup_identity_commitment: String,
+    pub lookup_table_registry_commitment: String,
+    pub chain_start_typed_boundary_commitment: String,
+    pub chain_end_typed_boundary_commitment: String,
+    pub chain_start_handoff_commitment: String,
+    pub chain_end_handoff_commitment: String,
+    pub chain_start_carried_state_commitment: String,
+    pub chain_end_carried_state_commitment: String,
+    pub chain_start_position: usize,
+    pub chain_end_position: usize,
+    pub handoff_links_commitment: String,
+    pub handoff_links: Vec<Phase70RoleNeutralBoundaryHandoffLink>,
+    pub step_count: usize,
+    pub continuity_link_count: usize,
+    pub phase66_chained_transition_surface_unit_count: usize,
+    pub phase66_combined_verifier_surface_unit_count: usize,
+    pub role_neutral_handoff_surface_unit_count: usize,
+    pub combined_verifier_surface_unit_count: usize,
+    pub surface_delta_from_phase66: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub phase66_chain_available: bool,
+    pub source_bound_verifier_available: bool,
+    pub role_neutral_handoffs_available: bool,
+    pub shared_lookup_identity_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub role_neutral_handoff_artifact_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase71ActualStwoStepEnvelopeHandoffReceipt {
+    pub proof_backend: StarkProofBackend,
+    pub receipt_version: String,
+    pub semantic_scope: String,
+    pub source_phase30_manifest_version: String,
+    pub source_phase30_source_chain_commitment: String,
+    pub source_phase30_step_envelopes_commitment: String,
+    pub source_phase12_statement_version: String,
+    pub source_phase12_layout_commitment: String,
+    pub chain_start_boundary_commitment: String,
+    pub chain_end_boundary_commitment: String,
+    pub chain_start_position: usize,
+    pub chain_end_position: usize,
+    pub total_steps: usize,
+    pub continuity_link_count: usize,
+    pub proof_commitments_commitment: String,
+    pub actual_proof_commitment_count: usize,
+    pub source_bound_manifest_verifier_available: bool,
+    pub actual_stwo_step_envelopes_available: bool,
+    pub proof_verification_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub actual_stwo_step_envelope_handoff_receipt_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase72ActualStwoSharedLookupRegistryReceipt {
+    pub proof_backend: StarkProofBackend,
+    pub receipt_version: String,
+    pub semantic_scope: String,
+    pub source_phase71_actual_stwo_step_envelope_handoff_receipt_commitment: String,
+    pub source_phase30_source_chain_commitment: String,
+    pub source_phase30_step_envelopes_commitment: String,
+    pub source_phase12_layout_commitment: String,
+    pub total_steps: usize,
+    pub unique_shared_lookup_artifact_count: usize,
+    pub unique_static_lookup_registry_commitment_count: usize,
+    pub shared_lookup_artifact_commitments_commitment: String,
+    pub static_lookup_registry_commitments_commitment: String,
+    pub every_step_references_registered_artifact: bool,
+    pub every_envelope_registry_matches_referenced_artifact: bool,
+    pub shared_lookup_registry_available: bool,
+    pub source_bound_manifest_verifier_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub actual_stwo_shared_lookup_registry_receipt_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase73ProofCarryingDecodeBridgeClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub source_phase70_role_neutral_handoff_artifact_commitment: String,
+    pub source_phase71_actual_stwo_step_envelope_handoff_receipt_commitment: String,
+    pub source_phase72_actual_stwo_shared_lookup_registry_receipt_commitment: String,
+    pub abstract_step_count: usize,
+    pub actual_step_count: usize,
+    pub abstract_continuity_link_count: usize,
+    pub actual_continuity_link_count: usize,
+    pub abstract_chain_start_position: usize,
+    pub abstract_chain_end_position: usize,
+    pub actual_chain_start_position: usize,
+    pub actual_chain_end_position: usize,
+    pub abstract_role_neutral_handoffs_available: bool,
+    pub actual_step_envelopes_available: bool,
+    pub abstract_shared_lookup_identity_available: bool,
+    pub actual_shared_lookup_registry_available: bool,
+    pub source_bound_verifier_available: bool,
+    pub actual_proof_verification_available: bool,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub proof_carrying_decode_bridge_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase74ChunkedHistoryCarryReceipt {
+    pub proof_backend: StarkProofBackend,
+    pub receipt_version: String,
+    pub semantic_scope: String,
+    pub source_phase12_statement_version: String,
+    pub source_phase12_layout_commitment: String,
+    pub chain_start_public_state_commitment: String,
+    pub chain_end_public_state_commitment: String,
+    pub chain_start_history_commitment: String,
+    pub chain_end_history_commitment: String,
+    pub total_steps: usize,
+    pub max_kv_history_length: usize,
+    pub max_lookup_transcript_entries: usize,
+    pub max_lookup_frontier_entries: usize,
+    pub chunked_history_available: bool,
+    pub source_bound_verifier_available: bool,
+    pub actual_proof_verification_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub chunked_history_carry_receipt_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase75PublicationProofBridgeRow {
+    pub proof_backend: StarkProofBackend,
+    pub row_index: usize,
+    pub phase_label: String,
+    pub artifact_name: String,
+    pub artifact_commitment: String,
+    pub semantic_scope: String,
+    pub verifier_function: String,
+    pub source_bound_verifier_function: String,
+    pub evidence_tier: String,
+    pub claim_boundary: String,
+    pub limitation: String,
+    pub row_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase75PublicationProofBridgeTable {
+    pub proof_backend: StarkProofBackend,
+    pub table_version: String,
+    pub semantic_scope: String,
+    pub source_phase70_role_neutral_handoff_artifact_commitment: String,
+    pub source_phase71_actual_stwo_step_envelope_handoff_receipt_commitment: String,
+    pub source_phase72_actual_stwo_shared_lookup_registry_receipt_commitment: String,
+    pub source_phase73_proof_carrying_decode_bridge_claim_commitment: String,
+    pub source_phase74_chunked_history_carry_receipt_commitment: String,
+    pub artifact_rows_commitment: String,
+    pub artifact_rows: Vec<Phase75PublicationProofBridgeRow>,
+    pub row_count: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub actual_stwo_bridge_receipts_available: bool,
+    pub source_bound_verifiers_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub publication_proof_bridge_table_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase76ProofCheckedActualStwoDecodeChainReceipt {
+    pub proof_backend: StarkProofBackend,
+    pub receipt_version: String,
+    pub semantic_scope: String,
+    pub source_phase12_chain_version: String,
+    pub source_phase12_statement_version: String,
+    pub source_phase12_layout_commitment: String,
+    pub source_phase30_manifest_version: String,
+    pub source_phase30_source_chain_commitment: String,
+    pub source_phase30_step_envelopes_commitment: String,
+    pub chain_start_boundary_commitment: String,
+    pub chain_end_boundary_commitment: String,
+    pub chain_start_position: usize,
+    pub chain_end_position: usize,
+    pub total_steps: usize,
+    pub continuity_link_count: usize,
+    pub proof_commitments_commitment: String,
+    pub actual_proof_commitment_count: usize,
+    pub proof_checked_chain_available: bool,
+    pub actual_proof_verifier_available: bool,
+    pub source_bound_manifest_verifier_available: bool,
+    pub actual_stwo_step_envelopes_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub proof_checked_actual_stwo_decode_chain_receipt_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase77ProofCheckedActualStwoStepEnvelopeBridgeReceipt {
+    pub proof_backend: StarkProofBackend,
+    pub receipt_version: String,
+    pub semantic_scope: String,
+    pub source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment: String,
+    pub source_phase71_actual_stwo_step_envelope_handoff_receipt_commitment: String,
+    pub source_phase30_source_chain_commitment: String,
+    pub source_phase30_step_envelopes_commitment: String,
+    pub source_phase12_layout_commitment: String,
+    pub chain_start_boundary_commitment: String,
+    pub chain_end_boundary_commitment: String,
+    pub chain_start_position: usize,
+    pub chain_end_position: usize,
+    pub total_steps: usize,
+    pub continuity_link_count: usize,
+    pub proof_commitments_commitment: String,
+    pub actual_proof_commitment_count: usize,
+    pub proof_checked_chain_available: bool,
+    pub actual_step_envelopes_available: bool,
+    pub actual_proof_verification_available: bool,
+    pub source_bound_manifest_verifier_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase78ProofCheckedActualStwoSharedLookupRegistryBridgeReceipt {
+    pub proof_backend: StarkProofBackend,
+    pub receipt_version: String,
+    pub semantic_scope: String,
+    pub source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment: String,
+    pub source_phase72_actual_stwo_shared_lookup_registry_receipt_commitment: String,
+    pub source_phase30_source_chain_commitment: String,
+    pub source_phase30_step_envelopes_commitment: String,
+    pub source_phase12_layout_commitment: String,
+    pub total_steps: usize,
+    pub unique_shared_lookup_artifact_count: usize,
+    pub unique_static_lookup_registry_commitment_count: usize,
+    pub shared_lookup_artifact_commitments_commitment: String,
+    pub static_lookup_registry_commitments_commitment: String,
+    pub proof_checked_chain_available: bool,
+    pub actual_shared_lookup_registry_available: bool,
+    pub actual_proof_verification_available: bool,
+    pub source_bound_manifest_verifier_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase79ProofCheckedDecodeCarryBridgeClaim {
+    pub proof_backend: StarkProofBackend,
+    pub claim_version: String,
+    pub semantic_scope: String,
+    pub source_phase70_role_neutral_handoff_artifact_commitment: String,
+    pub source_phase74_chunked_history_carry_receipt_commitment: String,
+    pub source_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment: String,
+    pub source_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment:
+        String,
+    pub abstract_step_count: usize,
+    pub actual_step_count: usize,
+    pub history_step_count: usize,
+    pub abstract_continuity_link_count: usize,
+    pub actual_continuity_link_count: usize,
+    pub abstract_chain_start_position: usize,
+    pub abstract_chain_end_position: usize,
+    pub actual_chain_start_position: usize,
+    pub actual_chain_end_position: usize,
+    pub proof_checked_chain_available: bool,
+    pub abstract_role_neutral_handoffs_available: bool,
+    pub proof_checked_actual_step_envelopes_available: bool,
+    pub abstract_shared_lookup_identity_available: bool,
+    pub proof_checked_actual_shared_lookup_registry_available: bool,
+    pub proof_checked_chunked_history_available: bool,
+    pub source_bound_verifier_available: bool,
+    pub actual_proof_verification_available: bool,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub proof_checked_decode_carry_bridge_claim_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase80ProofCheckedPublicationDecodeBridgeRow {
+    pub proof_backend: StarkProofBackend,
+    pub row_index: usize,
+    pub phase_label: String,
+    pub artifact_name: String,
+    pub artifact_commitment: String,
+    pub semantic_scope: String,
+    pub verifier_function: String,
+    pub source_bound_verifier_function: String,
+    pub evidence_tier: String,
+    pub claim_boundary: String,
+    pub limitation: String,
+    pub row_commitment: String,
+}
+
+#[cfg(feature = "stwo-backend")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase80ProofCheckedPublicationDecodeBridgeTable {
+    pub proof_backend: StarkProofBackend,
+    pub table_version: String,
+    pub semantic_scope: String,
+    pub source_phase74_chunked_history_carry_receipt_commitment: String,
+    pub source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment: String,
+    pub source_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment: String,
+    pub source_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment:
+        String,
+    pub source_phase79_proof_checked_decode_carry_bridge_claim_commitment: String,
+    pub artifact_rows_commitment: String,
+    pub artifact_rows: Vec<Phase80ProofCheckedPublicationDecodeBridgeRow>,
+    pub row_count: usize,
+    pub verifier_side_complexity: String,
+    pub verifier_status: String,
+    pub transcript_order: Vec<String>,
+    pub proof_checked_actual_stwo_bridge_receipts_available: bool,
+    pub source_bound_verifiers_available: bool,
+    pub recursive_verification_claimed: bool,
+    pub cryptographic_compression_claimed: bool,
+    pub breakthrough_claimed: bool,
+    pub paper_ready: bool,
+    pub required_next_step: String,
+    pub proof_checked_publication_decode_bridge_table_commitment: String,
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -14303,6 +15107,1049 @@ pub fn commit_phase65_transformer_transition_artifact(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn commit_phase66_transformer_chain_link(link: &Phase66TransformerChainLink) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 66 transformer chain link hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase66-transformer-chain-link");
+    phase29_update_len_prefixed(&mut hasher, link.proof_backend.to_string().as_bytes());
+    phase29_update_usize(&mut hasher, link.step_index);
+    for part in [
+        link.source_phase65_transition_step_commitment.as_bytes(),
+        link.source_phase64_typed_step_commitment.as_bytes(),
+        link.input_boundary_commitment.as_bytes(),
+        link.output_boundary_commitment.as_bytes(),
+        link.input_carried_state_commitment.as_bytes(),
+        link.output_carried_state_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    match &link.previous_output_carried_state_commitment {
+        Some(value) => {
+            phase29_update_bool(&mut hasher, true);
+            phase29_update_len_prefixed(&mut hasher, value.as_bytes());
+        }
+        None => phase29_update_bool(&mut hasher, false),
+    }
+    phase29_update_usize(&mut hasher, link.input_position);
+    phase29_update_usize(&mut hasher, link.output_position);
+    phase29_update_len_prefixed(
+        &mut hasher,
+        link.shared_lookup_identity_commitment.as_bytes(),
+    );
+    phase44d_finalize_hash(hasher, "Phase 66 transformer chain link")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase66_transformer_chain_artifact(
+    artifact: &Phase66TransformerChainArtifact,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 66 transformer chain artifact hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase66-transformer-chain-artifact");
+    phase29_update_len_prefixed(&mut hasher, artifact.proof_backend.to_string().as_bytes());
+    for part in [
+        artifact.artifact_version.as_bytes(),
+        artifact.semantic_scope.as_bytes(),
+        artifact
+            .source_phase65_transformer_transition_artifact_commitment
+            .as_bytes(),
+        artifact
+            .source_phase64_typed_carried_state_claim_commitment
+            .as_bytes(),
+        artifact
+            .source_phase63_shared_lookup_identity_claim_commitment
+            .as_bytes(),
+        artifact.relation_kind.as_bytes(),
+        artifact.relation_template_commitment.as_bytes(),
+        artifact.tensor_relation_commitment.as_bytes(),
+        artifact.shared_lookup_identity_commitment.as_bytes(),
+        artifact.chain_start_typed_boundary_commitment.as_bytes(),
+        artifact.chain_end_typed_boundary_commitment.as_bytes(),
+        artifact.chain_start_carried_state_commitment.as_bytes(),
+        artifact.chain_end_carried_state_commitment.as_bytes(),
+        artifact.chain_links_commitment.as_bytes(),
+        artifact.verifier_side_complexity.as_bytes(),
+        artifact.verifier_status.as_bytes(),
+        artifact.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for link in &artifact.chain_links {
+        phase29_update_len_prefixed(&mut hasher, link.chain_link_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, artifact.chain_start_position);
+    phase29_update_usize(&mut hasher, artifact.chain_end_position);
+    phase29_update_usize(&mut hasher, artifact.step_count);
+    phase29_update_usize(&mut hasher, artifact.continuity_link_count);
+    phase29_update_usize(
+        &mut hasher,
+        artifact.phase65_transformer_transition_surface_unit_count,
+    );
+    phase29_update_usize(
+        &mut hasher,
+        artifact.phase65_combined_verifier_surface_unit_count,
+    );
+    phase29_update_usize(&mut hasher, artifact.chained_transition_surface_unit_count);
+    phase29_update_usize(&mut hasher, artifact.combined_verifier_surface_unit_count);
+    phase29_update_usize(&mut hasher, artifact.surface_delta_from_phase65);
+    phase44d_update_hash_vec(&mut hasher, &artifact.transcript_order);
+    phase29_update_bool(&mut hasher, artifact.phase65_transition_artifact_available);
+    phase29_update_bool(&mut hasher, artifact.typed_carried_state_handoffs_available);
+    phase29_update_bool(&mut hasher, artifact.shared_lookup_identity_available);
+    phase29_update_bool(&mut hasher, artifact.actual_runtime_model_witness_available);
+    phase29_update_bool(
+        &mut hasher,
+        artifact.proof_carrying_decoding_surface_available,
+    );
+    phase29_update_bool(
+        &mut hasher,
+        artifact.full_standard_softmax_inference_claimed,
+    );
+    phase29_update_bool(&mut hasher, artifact.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, artifact.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, artifact.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, artifact.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 66 transformer chain artifact")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase67_publication_artifact_row(
+    row: &Phase67PublicationArtifactRow,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 67 publication artifact row hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase67-publication-artifact-row");
+    phase29_update_len_prefixed(&mut hasher, row.proof_backend.to_string().as_bytes());
+    phase29_update_usize(&mut hasher, row.row_index);
+    for part in [
+        row.phase_label.as_bytes(),
+        row.artifact_name.as_bytes(),
+        row.artifact_commitment.as_bytes(),
+        row.semantic_scope.as_bytes(),
+        row.verifier_function.as_bytes(),
+        row.source_bound_verifier_function.as_bytes(),
+        row.evidence_tier.as_bytes(),
+        row.claim_boundary.as_bytes(),
+        row.limitation.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 67 publication artifact row")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase67_publication_artifact_table(
+    table: &Phase67PublicationArtifactTable,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 67 publication artifact table hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase67-publication-artifact-table");
+    phase29_update_len_prefixed(&mut hasher, table.proof_backend.to_string().as_bytes());
+    for part in [
+        table.table_version.as_bytes(),
+        table.semantic_scope.as_bytes(),
+        table
+            .source_phase66_transformer_chain_artifact_commitment
+            .as_bytes(),
+        table
+            .source_phase65_transformer_transition_artifact_commitment
+            .as_bytes(),
+        table
+            .source_phase64_typed_carried_state_claim_commitment
+            .as_bytes(),
+        table
+            .source_phase63_shared_lookup_identity_claim_commitment
+            .as_bytes(),
+        table.artifact_rows_commitment.as_bytes(),
+        table.verifier_side_complexity.as_bytes(),
+        table.verifier_status.as_bytes(),
+        table.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for row in &table.artifact_rows {
+        phase29_update_len_prefixed(&mut hasher, row.row_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, table.row_count);
+    phase44d_update_hash_vec(&mut hasher, &table.transcript_order);
+    phase29_update_bool(&mut hasher, table.frozen_evidence_bundle_available);
+    phase29_update_bool(&mut hasher, table.source_bound_verifiers_available);
+    phase29_update_bool(&mut hasher, table.performance_benchmark_claimed);
+    phase29_update_bool(&mut hasher, table.full_standard_softmax_inference_claimed);
+    phase29_update_bool(&mut hasher, table.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, table.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, table.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, table.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 67 publication artifact table")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase68_independent_replay_audit_claim(
+    claim: &Phase68IndependentReplayAuditClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 68 independent replay audit hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase68-independent-replay-audit");
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.audit_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim
+            .source_phase66_transformer_chain_artifact_commitment
+            .as_bytes(),
+        claim
+            .source_phase67_publication_artifact_table_commitment
+            .as_bytes(),
+        claim
+            .audited_chain_start_carried_state_commitment
+            .as_bytes(),
+        claim.audited_chain_end_carried_state_commitment.as_bytes(),
+        claim.independent_oracle_name.as_bytes(),
+        claim.production_verifier_function.as_bytes(),
+        claim.source_bound_verifier_function.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.verifier_status.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, claim.audited_step_count);
+    phase29_update_usize(&mut hasher, claim.audited_continuity_link_count);
+    phase29_update_usize(&mut hasher, claim.required_tamper_case_count);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.phase66_chain_available);
+    phase29_update_bool(&mut hasher, claim.publication_table_available);
+    phase29_update_bool(&mut hasher, claim.independent_replay_oracle_available);
+    phase29_update_bool(&mut hasher, claim.production_verifier_cross_check_available);
+    phase29_update_bool(&mut hasher, claim.mutation_style_tamper_cases_available);
+    phase29_update_bool(&mut hasher, claim.formal_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, claim.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, claim.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 68 independent replay audit")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase69_symbolic_artifact_mapping_row(
+    row: &Phase69SymbolicArtifactMappingRow,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 69 symbolic mapping row hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase69-symbolic-artifact-mapping-row");
+    phase29_update_len_prefixed(&mut hasher, row.proof_backend.to_string().as_bytes());
+    phase29_update_usize(&mut hasher, row.row_index);
+    for part in [
+        row.symbolic_term.as_bytes(),
+        row.model_component.as_bytes(),
+        row.artifact_phase.as_bytes(),
+        row.artifact_commitment.as_bytes(),
+        row.verifier_surface.as_bytes(),
+        row.source_bound_check.as_bytes(),
+        row.limitation.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 69 symbolic artifact mapping row")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase69_symbolic_artifact_mapping_claim(
+    claim: &Phase69SymbolicArtifactMappingClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 69 symbolic mapping claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase69-symbolic-artifact-mapping-claim");
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.mapping_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim.formula_family.as_bytes(),
+        claim
+            .source_phase68_independent_replay_audit_commitment
+            .as_bytes(),
+        claim
+            .source_phase67_publication_artifact_table_commitment
+            .as_bytes(),
+        claim
+            .source_phase66_transformer_chain_artifact_commitment
+            .as_bytes(),
+        claim
+            .source_phase65_transformer_transition_artifact_commitment
+            .as_bytes(),
+        claim
+            .source_phase64_typed_carried_state_claim_commitment
+            .as_bytes(),
+        claim
+            .source_phase63_shared_lookup_identity_claim_commitment
+            .as_bytes(),
+        claim.mapping_rows_commitment.as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.verifier_status.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for row in &claim.mapping_rows {
+        phase29_update_len_prefixed(&mut hasher, row.row_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, claim.row_count);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.symbolic_model_available);
+    phase29_update_bool(&mut hasher, claim.artifact_surfaces_available);
+    phase29_update_bool(&mut hasher, claim.source_bound_verifiers_available);
+    phase29_update_bool(&mut hasher, claim.runtime_benchmark_claimed);
+    phase29_update_bool(&mut hasher, claim.full_standard_softmax_inference_claimed);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, claim.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, claim.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 69 symbolic artifact mapping claim")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase70_role_neutral_boundary_handoff_link(
+    link: &Phase70RoleNeutralBoundaryHandoffLink,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 70 role-neutral handoff link hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase70-role-neutral-boundary-handoff-link");
+    phase29_update_len_prefixed(&mut hasher, link.proof_backend.to_string().as_bytes());
+    phase29_update_usize(&mut hasher, link.step_index);
+    for part in [
+        link.source_phase66_chain_link_commitment.as_bytes(),
+        link.source_phase64_typed_step_commitment.as_bytes(),
+        link.input_typed_boundary_commitment.as_bytes(),
+        link.output_typed_boundary_commitment.as_bytes(),
+        link.input_carried_state_commitment.as_bytes(),
+        link.output_carried_state_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    match &link.previous_output_handoff_commitment {
+        Some(value) => {
+            phase29_update_bool(&mut hasher, true);
+            phase29_update_len_prefixed(&mut hasher, value.as_bytes());
+        }
+        None => phase29_update_bool(&mut hasher, false),
+    }
+    phase29_update_usize(&mut hasher, link.input_position);
+    phase29_update_usize(&mut hasher, link.output_position);
+    for part in [
+        link.shared_lookup_identity_commitment.as_bytes(),
+        link.input_handoff_commitment.as_bytes(),
+        link.output_handoff_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 70 role-neutral boundary handoff link")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase70_role_neutral_boundary_handoff_artifact(
+    artifact: &Phase70RoleNeutralBoundaryHandoffArtifact,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 70 role-neutral handoff artifact hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase70-role-neutral-boundary-handoff-artifact",
+    );
+    phase29_update_len_prefixed(&mut hasher, artifact.proof_backend.to_string().as_bytes());
+    for part in [
+        artifact.artifact_version.as_bytes(),
+        artifact.semantic_scope.as_bytes(),
+        artifact
+            .source_phase66_transformer_chain_artifact_commitment
+            .as_bytes(),
+        artifact
+            .source_phase64_typed_carried_state_claim_commitment
+            .as_bytes(),
+        artifact
+            .source_phase63_shared_lookup_identity_claim_commitment
+            .as_bytes(),
+        artifact.relation_kind.as_bytes(),
+        artifact.relation_template_commitment.as_bytes(),
+        artifact.shared_lookup_identity_commitment.as_bytes(),
+        artifact.lookup_table_registry_commitment.as_bytes(),
+        artifact.chain_start_typed_boundary_commitment.as_bytes(),
+        artifact.chain_end_typed_boundary_commitment.as_bytes(),
+        artifact.chain_start_handoff_commitment.as_bytes(),
+        artifact.chain_end_handoff_commitment.as_bytes(),
+        artifact.chain_start_carried_state_commitment.as_bytes(),
+        artifact.chain_end_carried_state_commitment.as_bytes(),
+        artifact.handoff_links_commitment.as_bytes(),
+        artifact.verifier_side_complexity.as_bytes(),
+        artifact.verifier_status.as_bytes(),
+        artifact.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for link in &artifact.handoff_links {
+        phase29_update_len_prefixed(&mut hasher, link.handoff_link_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, artifact.chain_start_position);
+    phase29_update_usize(&mut hasher, artifact.chain_end_position);
+    phase29_update_usize(&mut hasher, artifact.step_count);
+    phase29_update_usize(&mut hasher, artifact.continuity_link_count);
+    phase29_update_usize(
+        &mut hasher,
+        artifact.phase66_chained_transition_surface_unit_count,
+    );
+    phase29_update_usize(
+        &mut hasher,
+        artifact.phase66_combined_verifier_surface_unit_count,
+    );
+    phase29_update_usize(
+        &mut hasher,
+        artifact.role_neutral_handoff_surface_unit_count,
+    );
+    phase29_update_usize(&mut hasher, artifact.combined_verifier_surface_unit_count);
+    phase29_update_usize(&mut hasher, artifact.surface_delta_from_phase66);
+    phase44d_update_hash_vec(&mut hasher, &artifact.transcript_order);
+    phase29_update_bool(&mut hasher, artifact.phase66_chain_available);
+    phase29_update_bool(&mut hasher, artifact.source_bound_verifier_available);
+    phase29_update_bool(&mut hasher, artifact.role_neutral_handoffs_available);
+    phase29_update_bool(&mut hasher, artifact.shared_lookup_identity_available);
+    phase29_update_bool(&mut hasher, artifact.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, artifact.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, artifact.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, artifact.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 70 role-neutral boundary handoff artifact")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase71_actual_stwo_step_envelope_handoff_receipt(
+    receipt: &Phase71ActualStwoStepEnvelopeHandoffReceipt,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 71 actual S-two step-envelope handoff receipt hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase71-actual-stwo-step-envelope-handoff-receipt",
+    );
+    phase29_update_len_prefixed(&mut hasher, receipt.proof_backend.to_string().as_bytes());
+    for part in [
+        receipt.receipt_version.as_bytes(),
+        receipt.semantic_scope.as_bytes(),
+        receipt.source_phase30_manifest_version.as_bytes(),
+        receipt.source_phase30_source_chain_commitment.as_bytes(),
+        receipt.source_phase30_step_envelopes_commitment.as_bytes(),
+        receipt.source_phase12_statement_version.as_bytes(),
+        receipt.source_phase12_layout_commitment.as_bytes(),
+        receipt.chain_start_boundary_commitment.as_bytes(),
+        receipt.chain_end_boundary_commitment.as_bytes(),
+        receipt.proof_commitments_commitment.as_bytes(),
+        receipt.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, receipt.chain_start_position);
+    phase29_update_usize(&mut hasher, receipt.chain_end_position);
+    phase29_update_usize(&mut hasher, receipt.total_steps);
+    phase29_update_usize(&mut hasher, receipt.continuity_link_count);
+    phase29_update_usize(&mut hasher, receipt.actual_proof_commitment_count);
+    phase29_update_bool(
+        &mut hasher,
+        receipt.source_bound_manifest_verifier_available,
+    );
+    phase29_update_bool(&mut hasher, receipt.actual_stwo_step_envelopes_available);
+    phase29_update_bool(&mut hasher, receipt.proof_verification_available);
+    phase29_update_bool(&mut hasher, receipt.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, receipt.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, receipt.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, receipt.paper_ready);
+    phase44d_finalize_hash(
+        hasher,
+        "Phase 71 actual S-two step-envelope handoff receipt",
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase72_actual_stwo_shared_lookup_registry_receipt(
+    receipt: &Phase72ActualStwoSharedLookupRegistryReceipt,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 72 actual S-two shared-lookup registry receipt hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase72-actual-stwo-shared-lookup-registry-receipt",
+    );
+    phase29_update_len_prefixed(&mut hasher, receipt.proof_backend.to_string().as_bytes());
+    for part in [
+        receipt.receipt_version.as_bytes(),
+        receipt.semantic_scope.as_bytes(),
+        receipt
+            .source_phase71_actual_stwo_step_envelope_handoff_receipt_commitment
+            .as_bytes(),
+        receipt.source_phase30_source_chain_commitment.as_bytes(),
+        receipt.source_phase30_step_envelopes_commitment.as_bytes(),
+        receipt.source_phase12_layout_commitment.as_bytes(),
+        receipt
+            .shared_lookup_artifact_commitments_commitment
+            .as_bytes(),
+        receipt
+            .static_lookup_registry_commitments_commitment
+            .as_bytes(),
+        receipt.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, receipt.total_steps);
+    phase29_update_usize(&mut hasher, receipt.unique_shared_lookup_artifact_count);
+    phase29_update_usize(
+        &mut hasher,
+        receipt.unique_static_lookup_registry_commitment_count,
+    );
+    phase29_update_bool(
+        &mut hasher,
+        receipt.every_step_references_registered_artifact,
+    );
+    phase29_update_bool(
+        &mut hasher,
+        receipt.every_envelope_registry_matches_referenced_artifact,
+    );
+    phase29_update_bool(&mut hasher, receipt.shared_lookup_registry_available);
+    phase29_update_bool(
+        &mut hasher,
+        receipt.source_bound_manifest_verifier_available,
+    );
+    phase29_update_bool(&mut hasher, receipt.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, receipt.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, receipt.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, receipt.paper_ready);
+    phase44d_finalize_hash(
+        hasher,
+        "Phase 72 actual S-two shared-lookup registry receipt",
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase73_proof_carrying_decode_bridge_claim(
+    claim: &Phase73ProofCarryingDecodeBridgeClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 73 proof-carrying decode bridge claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase73-proof-carrying-decode-bridge-claim");
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim
+            .source_phase70_role_neutral_handoff_artifact_commitment
+            .as_bytes(),
+        claim
+            .source_phase71_actual_stwo_step_envelope_handoff_receipt_commitment
+            .as_bytes(),
+        claim
+            .source_phase72_actual_stwo_shared_lookup_registry_receipt_commitment
+            .as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.verifier_status.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, claim.abstract_step_count);
+    phase29_update_usize(&mut hasher, claim.actual_step_count);
+    phase29_update_usize(&mut hasher, claim.abstract_continuity_link_count);
+    phase29_update_usize(&mut hasher, claim.actual_continuity_link_count);
+    phase29_update_usize(&mut hasher, claim.abstract_chain_start_position);
+    phase29_update_usize(&mut hasher, claim.abstract_chain_end_position);
+    phase29_update_usize(&mut hasher, claim.actual_chain_start_position);
+    phase29_update_usize(&mut hasher, claim.actual_chain_end_position);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.abstract_role_neutral_handoffs_available);
+    phase29_update_bool(&mut hasher, claim.actual_step_envelopes_available);
+    phase29_update_bool(&mut hasher, claim.abstract_shared_lookup_identity_available);
+    phase29_update_bool(&mut hasher, claim.actual_shared_lookup_registry_available);
+    phase29_update_bool(&mut hasher, claim.source_bound_verifier_available);
+    phase29_update_bool(&mut hasher, claim.actual_proof_verification_available);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, claim.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, claim.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 73 proof-carrying decode bridge claim")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase74_chunked_history_carry_receipt(
+    receipt: &Phase74ChunkedHistoryCarryReceipt,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 74 chunked-history carry receipt hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase74-chunked-history-carry-receipt");
+    phase29_update_len_prefixed(&mut hasher, receipt.proof_backend.to_string().as_bytes());
+    for part in [
+        receipt.receipt_version.as_bytes(),
+        receipt.semantic_scope.as_bytes(),
+        receipt.source_phase12_statement_version.as_bytes(),
+        receipt.source_phase12_layout_commitment.as_bytes(),
+        receipt.chain_start_public_state_commitment.as_bytes(),
+        receipt.chain_end_public_state_commitment.as_bytes(),
+        receipt.chain_start_history_commitment.as_bytes(),
+        receipt.chain_end_history_commitment.as_bytes(),
+        receipt.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, receipt.total_steps);
+    phase29_update_usize(&mut hasher, receipt.max_kv_history_length);
+    phase29_update_usize(&mut hasher, receipt.max_lookup_transcript_entries);
+    phase29_update_usize(&mut hasher, receipt.max_lookup_frontier_entries);
+    phase29_update_bool(&mut hasher, receipt.chunked_history_available);
+    phase29_update_bool(&mut hasher, receipt.source_bound_verifier_available);
+    phase29_update_bool(&mut hasher, receipt.actual_proof_verification_available);
+    phase29_update_bool(&mut hasher, receipt.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, receipt.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, receipt.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, receipt.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 74 chunked-history carry receipt")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase75_publication_proof_bridge_row(
+    row: &Phase75PublicationProofBridgeRow,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 75 publication proof-bridge row hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase75-publication-proof-bridge-row");
+    phase29_update_len_prefixed(&mut hasher, row.proof_backend.to_string().as_bytes());
+    phase29_update_usize(&mut hasher, row.row_index);
+    for part in [
+        row.phase_label.as_bytes(),
+        row.artifact_name.as_bytes(),
+        row.artifact_commitment.as_bytes(),
+        row.semantic_scope.as_bytes(),
+        row.verifier_function.as_bytes(),
+        row.source_bound_verifier_function.as_bytes(),
+        row.evidence_tier.as_bytes(),
+        row.claim_boundary.as_bytes(),
+        row.limitation.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 75 publication proof-bridge row")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase75_publication_proof_bridge_table(
+    table: &Phase75PublicationProofBridgeTable,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 75 publication proof-bridge table hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase75-publication-proof-bridge-table");
+    phase29_update_len_prefixed(&mut hasher, table.proof_backend.to_string().as_bytes());
+    for part in [
+        table.table_version.as_bytes(),
+        table.semantic_scope.as_bytes(),
+        table
+            .source_phase70_role_neutral_handoff_artifact_commitment
+            .as_bytes(),
+        table
+            .source_phase71_actual_stwo_step_envelope_handoff_receipt_commitment
+            .as_bytes(),
+        table
+            .source_phase72_actual_stwo_shared_lookup_registry_receipt_commitment
+            .as_bytes(),
+        table
+            .source_phase73_proof_carrying_decode_bridge_claim_commitment
+            .as_bytes(),
+        table
+            .source_phase74_chunked_history_carry_receipt_commitment
+            .as_bytes(),
+        table.artifact_rows_commitment.as_bytes(),
+        table.verifier_side_complexity.as_bytes(),
+        table.verifier_status.as_bytes(),
+        table.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for row in &table.artifact_rows {
+        phase29_update_len_prefixed(&mut hasher, row.row_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, table.row_count);
+    phase44d_update_hash_vec(&mut hasher, &table.transcript_order);
+    phase29_update_bool(&mut hasher, table.actual_stwo_bridge_receipts_available);
+    phase29_update_bool(&mut hasher, table.source_bound_verifiers_available);
+    phase29_update_bool(&mut hasher, table.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, table.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, table.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, table.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 75 publication proof-bridge table")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase76_proof_checked_actual_stwo_decode_chain_receipt(
+    receipt: &Phase76ProofCheckedActualStwoDecodeChainReceipt,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 76 proof-checked actual S-two decode-chain receipt hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase76-proof-checked-actual-stwo-decode-chain-receipt",
+    );
+    phase29_update_len_prefixed(&mut hasher, receipt.proof_backend.to_string().as_bytes());
+    for part in [
+        receipt.receipt_version.as_bytes(),
+        receipt.semantic_scope.as_bytes(),
+        receipt.source_phase12_chain_version.as_bytes(),
+        receipt.source_phase12_statement_version.as_bytes(),
+        receipt.source_phase12_layout_commitment.as_bytes(),
+        receipt.source_phase30_manifest_version.as_bytes(),
+        receipt.source_phase30_source_chain_commitment.as_bytes(),
+        receipt.source_phase30_step_envelopes_commitment.as_bytes(),
+        receipt.chain_start_boundary_commitment.as_bytes(),
+        receipt.chain_end_boundary_commitment.as_bytes(),
+        receipt.proof_commitments_commitment.as_bytes(),
+        receipt.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, receipt.chain_start_position);
+    phase29_update_usize(&mut hasher, receipt.chain_end_position);
+    phase29_update_usize(&mut hasher, receipt.total_steps);
+    phase29_update_usize(&mut hasher, receipt.continuity_link_count);
+    phase29_update_usize(&mut hasher, receipt.actual_proof_commitment_count);
+    phase29_update_bool(&mut hasher, receipt.proof_checked_chain_available);
+    phase29_update_bool(&mut hasher, receipt.actual_proof_verifier_available);
+    phase29_update_bool(
+        &mut hasher,
+        receipt.source_bound_manifest_verifier_available,
+    );
+    phase29_update_bool(&mut hasher, receipt.actual_stwo_step_envelopes_available);
+    phase29_update_bool(&mut hasher, receipt.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, receipt.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, receipt.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, receipt.paper_ready);
+    phase44d_finalize_hash(
+        hasher,
+        "Phase 76 proof-checked actual S-two decode-chain receipt",
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt(
+    receipt: &Phase77ProofCheckedActualStwoStepEnvelopeBridgeReceipt,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 77 proof-checked actual S-two step-envelope bridge receipt hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase77-proof-checked-actual-stwo-step-envelope-bridge-receipt",
+    );
+    phase29_update_len_prefixed(&mut hasher, receipt.proof_backend.to_string().as_bytes());
+    for part in [
+        receipt.receipt_version.as_bytes(),
+        receipt.semantic_scope.as_bytes(),
+        receipt
+            .source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment
+            .as_bytes(),
+        receipt
+            .source_phase71_actual_stwo_step_envelope_handoff_receipt_commitment
+            .as_bytes(),
+        receipt.source_phase30_source_chain_commitment.as_bytes(),
+        receipt.source_phase30_step_envelopes_commitment.as_bytes(),
+        receipt.source_phase12_layout_commitment.as_bytes(),
+        receipt.chain_start_boundary_commitment.as_bytes(),
+        receipt.chain_end_boundary_commitment.as_bytes(),
+        receipt.proof_commitments_commitment.as_bytes(),
+        receipt.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, receipt.chain_start_position);
+    phase29_update_usize(&mut hasher, receipt.chain_end_position);
+    phase29_update_usize(&mut hasher, receipt.total_steps);
+    phase29_update_usize(&mut hasher, receipt.continuity_link_count);
+    phase29_update_usize(&mut hasher, receipt.actual_proof_commitment_count);
+    phase29_update_bool(&mut hasher, receipt.proof_checked_chain_available);
+    phase29_update_bool(&mut hasher, receipt.actual_step_envelopes_available);
+    phase29_update_bool(&mut hasher, receipt.actual_proof_verification_available);
+    phase29_update_bool(
+        &mut hasher,
+        receipt.source_bound_manifest_verifier_available,
+    );
+    phase29_update_bool(&mut hasher, receipt.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, receipt.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, receipt.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, receipt.paper_ready);
+    phase44d_finalize_hash(
+        hasher,
+        "Phase 77 proof-checked actual S-two step-envelope bridge receipt",
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(
+    receipt: &Phase78ProofCheckedActualStwoSharedLookupRegistryBridgeReceipt,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 78 proof-checked actual S-two shared-lookup registry bridge receipt hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase78-proof-checked-actual-stwo-shared-lookup-registry-bridge-receipt",
+    );
+    phase29_update_len_prefixed(&mut hasher, receipt.proof_backend.to_string().as_bytes());
+    for part in [
+        receipt.receipt_version.as_bytes(),
+        receipt.semantic_scope.as_bytes(),
+        receipt
+            .source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment
+            .as_bytes(),
+        receipt
+            .source_phase72_actual_stwo_shared_lookup_registry_receipt_commitment
+            .as_bytes(),
+        receipt.source_phase30_source_chain_commitment.as_bytes(),
+        receipt.source_phase30_step_envelopes_commitment.as_bytes(),
+        receipt.source_phase12_layout_commitment.as_bytes(),
+        receipt
+            .shared_lookup_artifact_commitments_commitment
+            .as_bytes(),
+        receipt
+            .static_lookup_registry_commitments_commitment
+            .as_bytes(),
+        receipt.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, receipt.total_steps);
+    phase29_update_usize(&mut hasher, receipt.unique_shared_lookup_artifact_count);
+    phase29_update_usize(
+        &mut hasher,
+        receipt.unique_static_lookup_registry_commitment_count,
+    );
+    phase29_update_bool(&mut hasher, receipt.proof_checked_chain_available);
+    phase29_update_bool(&mut hasher, receipt.actual_shared_lookup_registry_available);
+    phase29_update_bool(&mut hasher, receipt.actual_proof_verification_available);
+    phase29_update_bool(
+        &mut hasher,
+        receipt.source_bound_manifest_verifier_available,
+    );
+    phase29_update_bool(&mut hasher, receipt.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, receipt.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, receipt.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, receipt.paper_ready);
+    phase44d_finalize_hash(
+        hasher,
+        "Phase 78 proof-checked actual S-two shared-lookup registry bridge receipt",
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase79_proof_checked_decode_carry_bridge_claim(
+    claim: &Phase79ProofCheckedDecodeCarryBridgeClaim,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 79 proof-checked decode-carry bridge claim hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase79-proof-checked-decode-carry-bridge-claim",
+    );
+    phase29_update_len_prefixed(&mut hasher, claim.proof_backend.to_string().as_bytes());
+    for part in [
+        claim.claim_version.as_bytes(),
+        claim.semantic_scope.as_bytes(),
+        claim
+            .source_phase70_role_neutral_handoff_artifact_commitment
+            .as_bytes(),
+        claim
+            .source_phase74_chunked_history_carry_receipt_commitment
+            .as_bytes(),
+        claim
+            .source_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment
+            .as_bytes(),
+        claim
+            .source_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment
+            .as_bytes(),
+        claim.verifier_side_complexity.as_bytes(),
+        claim.verifier_status.as_bytes(),
+        claim.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase29_update_usize(&mut hasher, claim.abstract_step_count);
+    phase29_update_usize(&mut hasher, claim.actual_step_count);
+    phase29_update_usize(&mut hasher, claim.history_step_count);
+    phase29_update_usize(&mut hasher, claim.abstract_continuity_link_count);
+    phase29_update_usize(&mut hasher, claim.actual_continuity_link_count);
+    phase29_update_usize(&mut hasher, claim.abstract_chain_start_position);
+    phase29_update_usize(&mut hasher, claim.abstract_chain_end_position);
+    phase29_update_usize(&mut hasher, claim.actual_chain_start_position);
+    phase29_update_usize(&mut hasher, claim.actual_chain_end_position);
+    phase44d_update_hash_vec(&mut hasher, &claim.transcript_order);
+    phase29_update_bool(&mut hasher, claim.proof_checked_chain_available);
+    phase29_update_bool(&mut hasher, claim.abstract_role_neutral_handoffs_available);
+    phase29_update_bool(
+        &mut hasher,
+        claim.proof_checked_actual_step_envelopes_available,
+    );
+    phase29_update_bool(&mut hasher, claim.abstract_shared_lookup_identity_available);
+    phase29_update_bool(
+        &mut hasher,
+        claim.proof_checked_actual_shared_lookup_registry_available,
+    );
+    phase29_update_bool(&mut hasher, claim.proof_checked_chunked_history_available);
+    phase29_update_bool(&mut hasher, claim.source_bound_verifier_available);
+    phase29_update_bool(&mut hasher, claim.actual_proof_verification_available);
+    phase29_update_bool(&mut hasher, claim.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, claim.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, claim.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, claim.paper_ready);
+    phase44d_finalize_hash(hasher, "Phase 79 proof-checked decode-carry bridge claim")
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase80_proof_checked_publication_decode_bridge_row(
+    row: &Phase80ProofCheckedPublicationDecodeBridgeRow,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 80 proof-checked publication decode-bridge row hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase80-proof-checked-publication-decode-bridge-row",
+    );
+    phase29_update_len_prefixed(&mut hasher, row.proof_backend.to_string().as_bytes());
+    phase29_update_usize(&mut hasher, row.row_index);
+    for part in [
+        row.phase_label.as_bytes(),
+        row.artifact_name.as_bytes(),
+        row.artifact_commitment.as_bytes(),
+        row.semantic_scope.as_bytes(),
+        row.verifier_function.as_bytes(),
+        row.source_bound_verifier_function.as_bytes(),
+        row.evidence_tier.as_bytes(),
+        row.claim_boundary.as_bytes(),
+        row.limitation.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(
+        hasher,
+        "Phase 80 proof-checked publication decode-bridge row",
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn commit_phase80_proof_checked_publication_decode_bridge_table(
+    table: &Phase80ProofCheckedPublicationDecodeBridgeTable,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 80 proof-checked publication decode-bridge table hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase80-proof-checked-publication-decode-bridge-table",
+    );
+    phase29_update_len_prefixed(&mut hasher, table.proof_backend.to_string().as_bytes());
+    for part in [
+        table.table_version.as_bytes(),
+        table.semantic_scope.as_bytes(),
+        table
+            .source_phase74_chunked_history_carry_receipt_commitment
+            .as_bytes(),
+        table
+            .source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment
+            .as_bytes(),
+        table
+            .source_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment
+            .as_bytes(),
+        table
+            .source_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment
+            .as_bytes(),
+        table
+            .source_phase79_proof_checked_decode_carry_bridge_claim_commitment
+            .as_bytes(),
+        table.artifact_rows_commitment.as_bytes(),
+        table.verifier_side_complexity.as_bytes(),
+        table.verifier_status.as_bytes(),
+        table.required_next_step.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    for row in &table.artifact_rows {
+        phase29_update_len_prefixed(&mut hasher, row.row_commitment.as_bytes());
+    }
+    phase29_update_usize(&mut hasher, table.row_count);
+    phase44d_update_hash_vec(&mut hasher, &table.transcript_order);
+    phase29_update_bool(
+        &mut hasher,
+        table.proof_checked_actual_stwo_bridge_receipts_available,
+    );
+    phase29_update_bool(&mut hasher, table.source_bound_verifiers_available);
+    phase29_update_bool(&mut hasher, table.recursive_verification_claimed);
+    phase29_update_bool(&mut hasher, table.cryptographic_compression_claimed);
+    phase29_update_bool(&mut hasher, table.breakthrough_claimed);
+    phase29_update_bool(&mut hasher, table.paper_ready);
+    phase44d_finalize_hash(
+        hasher,
+        "Phase 80 proof-checked publication decode-bridge table",
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
 fn phase58_pcs_config() -> PcsConfig {
     PcsConfig {
         pow_bits: 10,
@@ -18541,6 +20388,3957 @@ pub fn verify_phase65_transformer_transition_artifact_against_sources(
 }
 
 #[cfg(feature = "stwo-backend")]
+pub fn phase66_prepare_transformer_chain_artifact(
+    phase65_artifact: &Phase65TransformerTransitionArtifact,
+    phase64_claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<Phase66TransformerChainArtifact> {
+    verify_phase65_transformer_transition_artifact(phase65_artifact)?;
+    verify_phase64_typed_carried_state_claim(phase64_claim)?;
+    verify_phase63_shared_lookup_identity_claim(phase63_claim)?;
+    if phase65_artifact.step_count != phase64_claim.step_count
+        || phase65_artifact.transition_steps.len() != phase64_claim.typed_steps.len()
+        || phase65_artifact.source_phase64_typed_carried_state_claim_commitment
+            != phase64_claim.typed_carried_state_claim_commitment
+        || phase65_artifact.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
+        || phase64_claim.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
+        || phase64_claim.shared_lookup_identity_commitment
+            != phase63_claim.shared_lookup_identity_commitment
+        || phase65_artifact.shared_lookup_identity_commitment
+            != phase64_claim.shared_lookup_identity_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain source drift against Phase65/64/63".to_string(),
+        ));
+    }
+    let mut previous_output_carried_state_commitment = None;
+    let chain_links = phase65_artifact
+        .transition_steps
+        .iter()
+        .zip(phase64_claim.typed_steps.iter())
+        .map(|(transition_step, typed_step)| {
+            if transition_step.source_phase64_typed_step_commitment
+                != typed_step.typed_step_commitment
+                || transition_step.input_boundary_commitment
+                    != typed_step.input_boundary.typed_boundary_commitment
+                || transition_step.output_boundary_commitment
+                    != typed_step.output_boundary.typed_boundary_commitment
+                || transition_step.shared_lookup_identity_commitment
+                    != phase64_claim.shared_lookup_identity_commitment
+            {
+                return Err(VmError::InvalidConfig(
+                    "Phase 66 transformer chain per-step source drift".to_string(),
+                ));
+            }
+            let mut link = Phase66TransformerChainLink {
+                proof_backend: StarkProofBackend::Stwo,
+                step_index: transition_step.step_index,
+                source_phase65_transition_step_commitment: transition_step
+                    .transition_step_commitment
+                    .clone(),
+                source_phase64_typed_step_commitment: typed_step.typed_step_commitment.clone(),
+                input_boundary_commitment: typed_step
+                    .input_boundary
+                    .typed_boundary_commitment
+                    .clone(),
+                output_boundary_commitment: typed_step
+                    .output_boundary
+                    .typed_boundary_commitment
+                    .clone(),
+                input_carried_state_commitment: typed_step
+                    .input_boundary
+                    .phase62_state_commitment
+                    .clone(),
+                output_carried_state_commitment: typed_step
+                    .output_boundary
+                    .phase62_state_commitment
+                    .clone(),
+                previous_output_carried_state_commitment: previous_output_carried_state_commitment
+                    .clone(),
+                input_position: typed_step.input_boundary.position,
+                output_position: typed_step.output_boundary.position,
+                shared_lookup_identity_commitment: phase65_artifact
+                    .shared_lookup_identity_commitment
+                    .clone(),
+                chain_link_commitment: String::new(),
+            };
+            link.chain_link_commitment = commit_phase66_transformer_chain_link(&link)?;
+            verify_phase66_transformer_chain_link(&link)?;
+            previous_output_carried_state_commitment =
+                Some(link.output_carried_state_commitment.clone());
+            Ok(link)
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let first_link = chain_links.first().ok_or_else(|| {
+        VmError::InvalidConfig("Phase 66 transformer chain requires at least one link".to_string())
+    })?;
+    let last_link = chain_links.last().ok_or_else(|| {
+        VmError::InvalidConfig("Phase 66 transformer chain requires at least one link".to_string())
+    })?;
+    let chained_transition_surface_unit_count =
+        phase66_transformer_chain_surface_unit_count(phase65_artifact.step_count)?;
+    let combined_verifier_surface_unit_count = phase65_artifact
+        .combined_verifier_surface_unit_count
+        .checked_add(chained_transition_surface_unit_count)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 66 transformer chain combined surface accounting overflow".to_string(),
+            )
+        })?;
+    let mut artifact = Phase66TransformerChainArtifact {
+        proof_backend: StarkProofBackend::Stwo,
+        artifact_version: STWO_TRANSFORMER_CHAIN_ARTIFACT_VERSION_PHASE66.to_string(),
+        semantic_scope: STWO_TRANSFORMER_CHAIN_ARTIFACT_SCOPE_PHASE66.to_string(),
+        source_phase65_transformer_transition_artifact_commitment: phase65_artifact
+            .transformer_transition_artifact_commitment
+            .clone(),
+        source_phase64_typed_carried_state_claim_commitment: phase64_claim
+            .typed_carried_state_claim_commitment
+            .clone(),
+        source_phase63_shared_lookup_identity_claim_commitment: phase63_claim
+            .shared_lookup_identity_claim_commitment
+            .clone(),
+        relation_kind: phase65_artifact.relation_kind.clone(),
+        relation_template_commitment: phase65_artifact.relation_template_commitment.clone(),
+        tensor_relation_commitment: phase65_artifact.tensor_relation_commitment.clone(),
+        shared_lookup_identity_commitment: phase65_artifact
+            .shared_lookup_identity_commitment
+            .clone(),
+        chain_start_typed_boundary_commitment: phase64_claim
+            .chain_start_typed_boundary_commitment
+            .clone(),
+        chain_end_typed_boundary_commitment: phase64_claim
+            .chain_end_typed_boundary_commitment
+            .clone(),
+        chain_start_carried_state_commitment: first_link.input_carried_state_commitment.clone(),
+        chain_end_carried_state_commitment: last_link.output_carried_state_commitment.clone(),
+        chain_start_position: first_link.input_position,
+        chain_end_position: last_link.output_position,
+        chain_links_commitment: String::new(),
+        chain_links,
+        step_count: phase65_artifact.step_count,
+        continuity_link_count: phase65_artifact.step_count.saturating_sub(1),
+        phase65_transformer_transition_surface_unit_count: phase65_artifact
+            .transformer_transition_surface_unit_count,
+        phase65_combined_verifier_surface_unit_count: phase65_artifact
+            .combined_verifier_surface_unit_count,
+        chained_transition_surface_unit_count,
+        combined_verifier_surface_unit_count,
+        surface_delta_from_phase65: chained_transition_surface_unit_count,
+        verifier_side_complexity: STWO_TRANSFORMER_CHAIN_COMPLEXITY_PHASE66.to_string(),
+        verifier_status: STWO_TRANSFORMER_CHAIN_STATUS_PHASE66.to_string(),
+        transcript_order: phase66_transformer_chain_transcript_order(),
+        phase65_transition_artifact_available: true,
+        typed_carried_state_handoffs_available: true,
+        shared_lookup_identity_available: true,
+        actual_runtime_model_witness_available: true,
+        proof_carrying_decoding_surface_available: true,
+        full_standard_softmax_inference_claimed: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_TRANSFORMER_CHAIN_NEXT_STEP_PHASE66.to_string(),
+        transformer_chain_artifact_commitment: String::new(),
+    };
+    artifact.chain_links_commitment = phase66_commit_chain_links(&artifact.chain_links)?;
+    artifact.transformer_chain_artifact_commitment =
+        commit_phase66_transformer_chain_artifact(&artifact)?;
+    verify_phase66_transformer_chain_artifact(&artifact)?;
+    Ok(artifact)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase66_transformer_chain_link(link: &Phase66TransformerChainLink) -> Result<()> {
+    if link.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain link requires `stwo` backend".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase66_source_phase65_transition_step_commitment",
+            link.source_phase65_transition_step_commitment.as_str(),
+        ),
+        (
+            "phase66_source_phase64_typed_step_commitment",
+            link.source_phase64_typed_step_commitment.as_str(),
+        ),
+        (
+            "phase66_input_boundary_commitment",
+            link.input_boundary_commitment.as_str(),
+        ),
+        (
+            "phase66_output_boundary_commitment",
+            link.output_boundary_commitment.as_str(),
+        ),
+        (
+            "phase66_input_carried_state_commitment",
+            link.input_carried_state_commitment.as_str(),
+        ),
+        (
+            "phase66_output_carried_state_commitment",
+            link.output_carried_state_commitment.as_str(),
+        ),
+        (
+            "phase66_shared_lookup_identity_commitment",
+            link.shared_lookup_identity_commitment.as_str(),
+        ),
+        (
+            "phase66_chain_link_commitment",
+            link.chain_link_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if let Some(previous) = &link.previous_output_carried_state_commitment {
+        phase43_require_hash32("phase66_previous_output_carried_state_commitment", previous)?;
+    }
+    if link.input_position.checked_add(1) != Some(link.output_position) {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain link position drift".to_string(),
+        ));
+    }
+    let expected = commit_phase66_transformer_chain_link(link)?;
+    if link.chain_link_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain link commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase66_transformer_chain_artifact(
+    artifact: &Phase66TransformerChainArtifact,
+) -> Result<()> {
+    if artifact.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain artifact requires `stwo` backend".to_string(),
+        ));
+    }
+    if artifact.artifact_version != STWO_TRANSFORMER_CHAIN_ARTIFACT_VERSION_PHASE66
+        || artifact.semantic_scope != STWO_TRANSFORMER_CHAIN_ARTIFACT_SCOPE_PHASE66
+        || artifact.relation_kind != STWO_TRANSFORMER_TRANSITION_RELATION_KIND_PHASE65
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain version, scope, or relation-kind drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase66_source_phase65_artifact_commitment",
+            artifact
+                .source_phase65_transformer_transition_artifact_commitment
+                .as_str(),
+        ),
+        (
+            "phase66_source_phase64_claim_commitment",
+            artifact
+                .source_phase64_typed_carried_state_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase66_source_phase63_claim_commitment",
+            artifact
+                .source_phase63_shared_lookup_identity_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase66_relation_template_commitment",
+            artifact.relation_template_commitment.as_str(),
+        ),
+        (
+            "phase66_tensor_relation_commitment",
+            artifact.tensor_relation_commitment.as_str(),
+        ),
+        (
+            "phase66_shared_lookup_identity_commitment",
+            artifact.shared_lookup_identity_commitment.as_str(),
+        ),
+        (
+            "phase66_chain_start_typed_boundary_commitment",
+            artifact.chain_start_typed_boundary_commitment.as_str(),
+        ),
+        (
+            "phase66_chain_end_typed_boundary_commitment",
+            artifact.chain_end_typed_boundary_commitment.as_str(),
+        ),
+        (
+            "phase66_chain_start_carried_state_commitment",
+            artifact.chain_start_carried_state_commitment.as_str(),
+        ),
+        (
+            "phase66_chain_end_carried_state_commitment",
+            artifact.chain_end_carried_state_commitment.as_str(),
+        ),
+        (
+            "phase66_chain_links_commitment",
+            artifact.chain_links_commitment.as_str(),
+        ),
+        (
+            "phase66_transformer_chain_artifact_commitment",
+            artifact.transformer_chain_artifact_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if artifact.step_count < 2
+        || artifact.chain_links.len() != artifact.step_count
+        || artifact.continuity_link_count != artifact.step_count - 1
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain requires a multi-step linked chain".to_string(),
+        ));
+    }
+    let expected_surface = phase66_transformer_chain_surface_unit_count(artifact.step_count)?;
+    let expected_combined_surface = artifact
+        .phase65_combined_verifier_surface_unit_count
+        .checked_add(expected_surface)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 66 transformer chain combined surface accounting overflow".to_string(),
+            )
+        })?;
+    if artifact.chained_transition_surface_unit_count != expected_surface
+        || artifact.surface_delta_from_phase65 != expected_surface
+        || artifact.combined_verifier_surface_unit_count != expected_combined_surface
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain surface accounting drift".to_string(),
+        ));
+    }
+    if artifact.chain_links_commitment != phase66_commit_chain_links(&artifact.chain_links)? {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain link-list commitment drift".to_string(),
+        ));
+    }
+    if artifact.verifier_side_complexity != STWO_TRANSFORMER_CHAIN_COMPLEXITY_PHASE66
+        || artifact.verifier_status != STWO_TRANSFORMER_CHAIN_STATUS_PHASE66
+        || artifact.transcript_order != phase66_transformer_chain_transcript_order()
+        || artifact.required_next_step != STWO_TRANSFORMER_CHAIN_NEXT_STEP_PHASE66
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain transcript, status, or next-step drift".to_string(),
+        ));
+    }
+    if !artifact.phase65_transition_artifact_available
+        || !artifact.typed_carried_state_handoffs_available
+        || !artifact.shared_lookup_identity_available
+        || !artifact.actual_runtime_model_witness_available
+        || !artifact.proof_carrying_decoding_surface_available
+        || artifact.full_standard_softmax_inference_claimed
+        || artifact.recursive_verification_claimed
+        || artifact.cryptographic_compression_claimed
+        || artifact.breakthrough_claimed
+        || artifact.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain must not claim full softmax inference, recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let mut seen_links = HashSet::with_capacity(artifact.chain_links.len());
+    let mut previous_output = None::<String>;
+    let mut previous_position = None::<usize>;
+    for (expected_index, link) in artifact.chain_links.iter().enumerate() {
+        verify_phase66_transformer_chain_link(link)?;
+        if link.step_index != expected_index {
+            return Err(VmError::InvalidConfig(
+                "Phase 66 transformer chain link index drift".to_string(),
+            ));
+        }
+        if !seen_links.insert(link.chain_link_commitment.as_str()) {
+            return Err(VmError::InvalidConfig(
+                "Phase 66 transformer chain duplicate link".to_string(),
+            ));
+        }
+        if link.shared_lookup_identity_commitment != artifact.shared_lookup_identity_commitment {
+            return Err(VmError::InvalidConfig(
+                "Phase 66 transformer chain shared lookup identity drift".to_string(),
+            ));
+        }
+        match (
+            &previous_output,
+            &link.previous_output_carried_state_commitment,
+        ) {
+            (None, None) => {}
+            (Some(previous), Some(advertised_previous))
+                if previous == advertised_previous
+                    && previous == &link.input_carried_state_commitment => {}
+            _ => {
+                return Err(VmError::InvalidConfig(
+                    "Phase 66 transformer chain carried-state continuity drift".to_string(),
+                ));
+            }
+        }
+        if let Some(position) = previous_position {
+            if link.input_position != position {
+                return Err(VmError::InvalidConfig(
+                    "Phase 66 transformer chain position continuity drift".to_string(),
+                ));
+            }
+        }
+        previous_output = Some(link.output_carried_state_commitment.clone());
+        previous_position = Some(link.output_position);
+    }
+    let first = artifact.chain_links.first().ok_or_else(|| {
+        VmError::InvalidConfig("Phase 66 transformer chain requires first link".to_string())
+    })?;
+    let last = artifact.chain_links.last().ok_or_else(|| {
+        VmError::InvalidConfig("Phase 66 transformer chain requires last link".to_string())
+    })?;
+    if artifact.chain_start_carried_state_commitment != first.input_carried_state_commitment
+        || artifact.chain_end_carried_state_commitment != last.output_carried_state_commitment
+        || artifact.chain_start_position != first.input_position
+        || artifact.chain_end_position != last.output_position
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain boundary summary drift".to_string(),
+        ));
+    }
+    let expected = commit_phase66_transformer_chain_artifact(artifact)?;
+    if artifact.transformer_chain_artifact_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain artifact commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase66_transformer_chain_artifact_against_sources(
+    artifact: &Phase66TransformerChainArtifact,
+    phase65_artifact: &Phase65TransformerTransitionArtifact,
+    phase64_claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<()> {
+    verify_phase66_transformer_chain_artifact(artifact)?;
+    verify_phase65_transformer_transition_artifact(phase65_artifact)?;
+    verify_phase64_typed_carried_state_claim(phase64_claim)?;
+    verify_phase63_shared_lookup_identity_claim(phase63_claim)?;
+    if artifact.source_phase65_transformer_transition_artifact_commitment
+        != phase65_artifact.transformer_transition_artifact_commitment
+        || artifact.source_phase64_typed_carried_state_claim_commitment
+            != phase64_claim.typed_carried_state_claim_commitment
+        || artifact.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
+        || phase64_claim.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
+        || artifact.step_count != phase65_artifact.step_count
+        || artifact.step_count != phase64_claim.step_count
+        || artifact.relation_kind != phase65_artifact.relation_kind
+        || artifact.relation_template_commitment != phase65_artifact.relation_template_commitment
+        || artifact.tensor_relation_commitment != phase65_artifact.tensor_relation_commitment
+        || artifact.shared_lookup_identity_commitment
+            != phase65_artifact.shared_lookup_identity_commitment
+        || artifact.shared_lookup_identity_commitment
+            != phase64_claim.shared_lookup_identity_commitment
+        || artifact.chain_start_typed_boundary_commitment
+            != phase64_claim.chain_start_typed_boundary_commitment
+        || artifact.chain_end_typed_boundary_commitment
+            != phase64_claim.chain_end_typed_boundary_commitment
+        || artifact.phase65_transformer_transition_surface_unit_count
+            != phase65_artifact.transformer_transition_surface_unit_count
+        || artifact.phase65_combined_verifier_surface_unit_count
+            != phase65_artifact.combined_verifier_surface_unit_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 66 transformer chain source drift against Phase65/64/63".to_string(),
+        ));
+    }
+    for ((link, transition_step), typed_step) in artifact
+        .chain_links
+        .iter()
+        .zip(phase65_artifact.transition_steps.iter())
+        .zip(phase64_claim.typed_steps.iter())
+    {
+        if link.source_phase65_transition_step_commitment
+            != transition_step.transition_step_commitment
+            || link.source_phase64_typed_step_commitment != typed_step.typed_step_commitment
+            || link.input_boundary_commitment != typed_step.input_boundary.typed_boundary_commitment
+            || link.output_boundary_commitment
+                != typed_step.output_boundary.typed_boundary_commitment
+            || link.input_carried_state_commitment
+                != typed_step.input_boundary.phase62_state_commitment
+            || link.output_carried_state_commitment
+                != typed_step.output_boundary.phase62_state_commitment
+            || link.input_position != typed_step.input_boundary.position
+            || link.output_position != typed_step.output_boundary.position
+            || link.input_boundary_commitment != transition_step.input_boundary_commitment
+            || link.output_boundary_commitment != transition_step.output_boundary_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 66 transformer chain link source drift".to_string(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase67_prepare_publication_artifact_table(
+    phase66_artifact: &Phase66TransformerChainArtifact,
+    phase65_artifact: &Phase65TransformerTransitionArtifact,
+    phase64_claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<Phase67PublicationArtifactTable> {
+    verify_phase66_transformer_chain_artifact_against_sources(
+        phase66_artifact,
+        phase65_artifact,
+        phase64_claim,
+        phase63_claim,
+    )?;
+    let mut rows = vec![
+        phase67_publication_row(
+            0,
+            "Phase63",
+            "shared lookup identity",
+            &phase63_claim.shared_lookup_identity_claim_commitment,
+            &phase63_claim.semantic_scope,
+            "verify_phase63_shared_lookup_identity_claim",
+            "verify_phase63_shared_lookup_identity_claim_against_phase62",
+            "source_bound_verifier_surface",
+            "one shared normalization/activation lookup identity across proof-carrying steps",
+            "does not prove standard softmax or recursive compression",
+        )?,
+        phase67_publication_row(
+            1,
+            "Phase64",
+            "typed carried state",
+            &phase64_claim.typed_carried_state_claim_commitment,
+            &phase64_claim.semantic_scope,
+            "verify_phase64_typed_carried_state_claim",
+            "verify_phase64_typed_carried_state_claim_against_phase63",
+            "source_bound_verifier_surface",
+            "typed input/output state, tensor, KV-cache, token, and lookup handles",
+            "does not prove full transformer inference",
+        )?,
+        phase67_publication_row(
+            2,
+            "Phase65",
+            "transformer transition artifact",
+            &phase65_artifact.transformer_transition_artifact_commitment,
+            &phase65_artifact.semantic_scope,
+            "verify_phase65_transformer_transition_artifact",
+            "verify_phase65_transformer_transition_artifact_against_sources",
+            "source_bound_verifier_surface",
+            "first-layer transformer-shaped transition artifact backed by runtime relation witnesses",
+            "standard softmax remains future work",
+        )?,
+        phase67_publication_row(
+            3,
+            "Phase66",
+            "proof-carrying decode chain",
+            &phase66_artifact.transformer_chain_artifact_commitment,
+            &phase66_artifact.semantic_scope,
+            "verify_phase66_transformer_chain_artifact",
+            "verify_phase66_transformer_chain_artifact_against_sources",
+            "source_bound_verifier_surface",
+            "ordered transition steps chained by typed carried-state handoffs",
+            "not recursive compression and not a production-scale benchmark",
+        )?,
+    ];
+    for row in &mut rows {
+        row.row_commitment = commit_phase67_publication_artifact_row(row)?;
+        verify_phase67_publication_artifact_row(row)?;
+    }
+    let mut table = Phase67PublicationArtifactTable {
+        proof_backend: StarkProofBackend::Stwo,
+        table_version: STWO_PUBLICATION_ARTIFACT_TABLE_VERSION_PHASE67.to_string(),
+        semantic_scope: STWO_PUBLICATION_ARTIFACT_TABLE_SCOPE_PHASE67.to_string(),
+        source_phase66_transformer_chain_artifact_commitment: phase66_artifact
+            .transformer_chain_artifact_commitment
+            .clone(),
+        source_phase65_transformer_transition_artifact_commitment: phase65_artifact
+            .transformer_transition_artifact_commitment
+            .clone(),
+        source_phase64_typed_carried_state_claim_commitment: phase64_claim
+            .typed_carried_state_claim_commitment
+            .clone(),
+        source_phase63_shared_lookup_identity_claim_commitment: phase63_claim
+            .shared_lookup_identity_claim_commitment
+            .clone(),
+        artifact_rows_commitment: String::new(),
+        artifact_rows: rows,
+        row_count: 4,
+        verifier_side_complexity: STWO_PUBLICATION_ARTIFACT_TABLE_COMPLEXITY_PHASE67.to_string(),
+        verifier_status: STWO_PUBLICATION_ARTIFACT_TABLE_STATUS_PHASE67.to_string(),
+        transcript_order: phase67_publication_artifact_table_transcript_order(),
+        frozen_evidence_bundle_available: true,
+        source_bound_verifiers_available: true,
+        performance_benchmark_claimed: false,
+        full_standard_softmax_inference_claimed: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_PUBLICATION_ARTIFACT_TABLE_NEXT_STEP_PHASE67.to_string(),
+        publication_artifact_table_commitment: String::new(),
+    };
+    table.artifact_rows_commitment = phase67_commit_publication_rows(&table.artifact_rows)?;
+    table.publication_artifact_table_commitment =
+        commit_phase67_publication_artifact_table(&table)?;
+    verify_phase67_publication_artifact_table(&table)?;
+    Ok(table)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase67_publication_artifact_row(row: &Phase67PublicationArtifactRow) -> Result<()> {
+    if row.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact row requires `stwo` backend".to_string(),
+        ));
+    }
+    phase43_require_hash32("phase67_artifact_commitment", &row.artifact_commitment)?;
+    phase43_require_hash32("phase67_row_commitment", &row.row_commitment)?;
+    if row.phase_label.is_empty()
+        || row.artifact_name.is_empty()
+        || row.semantic_scope.is_empty()
+        || row.verifier_function.is_empty()
+        || row.source_bound_verifier_function.is_empty()
+        || row.evidence_tier != "source_bound_verifier_surface"
+        || row.claim_boundary.is_empty()
+        || row.limitation.is_empty()
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact row has an empty or unsupported field".to_string(),
+        ));
+    }
+    let expected = commit_phase67_publication_artifact_row(row)?;
+    if row.row_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact row commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase67_publication_artifact_table(
+    table: &Phase67PublicationArtifactTable,
+) -> Result<()> {
+    if table.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact table requires `stwo` backend".to_string(),
+        ));
+    }
+    if table.table_version != STWO_PUBLICATION_ARTIFACT_TABLE_VERSION_PHASE67
+        || table.semantic_scope != STWO_PUBLICATION_ARTIFACT_TABLE_SCOPE_PHASE67
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact table version or scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase67_source_phase66_chain_artifact_commitment",
+            table
+                .source_phase66_transformer_chain_artifact_commitment
+                .as_str(),
+        ),
+        (
+            "phase67_source_phase65_transition_artifact_commitment",
+            table
+                .source_phase65_transformer_transition_artifact_commitment
+                .as_str(),
+        ),
+        (
+            "phase67_source_phase64_claim_commitment",
+            table
+                .source_phase64_typed_carried_state_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase67_source_phase63_claim_commitment",
+            table
+                .source_phase63_shared_lookup_identity_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase67_artifact_rows_commitment",
+            table.artifact_rows_commitment.as_str(),
+        ),
+        (
+            "phase67_publication_artifact_table_commitment",
+            table.publication_artifact_table_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if table.row_count != 4 || table.artifact_rows.len() != table.row_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact table row count drift".to_string(),
+        ));
+    }
+    if table.artifact_rows_commitment != phase67_commit_publication_rows(&table.artifact_rows)? {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact row-list commitment drift".to_string(),
+        ));
+    }
+    let expected_phases = ["Phase63", "Phase64", "Phase65", "Phase66"];
+    for (expected_index, (row, expected_phase)) in table
+        .artifact_rows
+        .iter()
+        .zip(expected_phases.iter())
+        .enumerate()
+    {
+        verify_phase67_publication_artifact_row(row)?;
+        if row.row_index != expected_index || row.phase_label != *expected_phase {
+            return Err(VmError::InvalidConfig(
+                "Phase 67 publication artifact row order drift".to_string(),
+            ));
+        }
+    }
+    if table.verifier_side_complexity != STWO_PUBLICATION_ARTIFACT_TABLE_COMPLEXITY_PHASE67
+        || table.verifier_status != STWO_PUBLICATION_ARTIFACT_TABLE_STATUS_PHASE67
+        || table.transcript_order != phase67_publication_artifact_table_transcript_order()
+        || table.required_next_step != STWO_PUBLICATION_ARTIFACT_TABLE_NEXT_STEP_PHASE67
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact table transcript, status, or next-step drift"
+                .to_string(),
+        ));
+    }
+    if !table.frozen_evidence_bundle_available
+        || !table.source_bound_verifiers_available
+        || table.performance_benchmark_claimed
+        || table.full_standard_softmax_inference_claimed
+        || table.recursive_verification_claimed
+        || table.cryptographic_compression_claimed
+        || table.breakthrough_claimed
+        || table.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact table must not claim benchmarks, full softmax, recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase67_publication_artifact_table(table)?;
+    if table.publication_artifact_table_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact table commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase67_publication_artifact_table_against_sources(
+    table: &Phase67PublicationArtifactTable,
+    phase66_artifact: &Phase66TransformerChainArtifact,
+    phase65_artifact: &Phase65TransformerTransitionArtifact,
+    phase64_claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<()> {
+    verify_phase67_publication_artifact_table(table)?;
+    verify_phase66_transformer_chain_artifact_against_sources(
+        phase66_artifact,
+        phase65_artifact,
+        phase64_claim,
+        phase63_claim,
+    )?;
+    let expected = [
+        (
+            phase63_claim
+                .shared_lookup_identity_claim_commitment
+                .as_str(),
+            phase63_claim.semantic_scope.as_str(),
+        ),
+        (
+            phase64_claim.typed_carried_state_claim_commitment.as_str(),
+            phase64_claim.semantic_scope.as_str(),
+        ),
+        (
+            phase65_artifact
+                .transformer_transition_artifact_commitment
+                .as_str(),
+            phase65_artifact.semantic_scope.as_str(),
+        ),
+        (
+            phase66_artifact
+                .transformer_chain_artifact_commitment
+                .as_str(),
+            phase66_artifact.semantic_scope.as_str(),
+        ),
+    ];
+    if table.source_phase66_transformer_chain_artifact_commitment
+        != phase66_artifact.transformer_chain_artifact_commitment
+        || table.source_phase65_transformer_transition_artifact_commitment
+            != phase65_artifact.transformer_transition_artifact_commitment
+        || table.source_phase64_typed_carried_state_claim_commitment
+            != phase64_claim.typed_carried_state_claim_commitment
+        || table.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 67 publication artifact table source drift".to_string(),
+        ));
+    }
+    for (row, (expected_commitment, expected_scope)) in table.artifact_rows.iter().zip(expected) {
+        if row.artifact_commitment != expected_commitment || row.semantic_scope != expected_scope {
+            return Err(VmError::InvalidConfig(
+                "Phase 67 publication artifact row source drift".to_string(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase68_prepare_independent_replay_audit_claim(
+    phase66_artifact: &Phase66TransformerChainArtifact,
+    phase67_table: &Phase67PublicationArtifactTable,
+) -> Result<Phase68IndependentReplayAuditClaim> {
+    verify_phase66_transformer_chain_artifact(phase66_artifact)?;
+    verify_phase67_publication_artifact_table(phase67_table)?;
+    if phase67_table.source_phase66_transformer_chain_artifact_commitment
+        != phase66_artifact.transformer_chain_artifact_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 68 independent replay audit source drift against Phase67".to_string(),
+        ));
+    }
+    let mut claim = Phase68IndependentReplayAuditClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        audit_version: STWO_INDEPENDENT_REPLAY_AUDIT_VERSION_PHASE68.to_string(),
+        semantic_scope: STWO_INDEPENDENT_REPLAY_AUDIT_SCOPE_PHASE68.to_string(),
+        source_phase66_transformer_chain_artifact_commitment: phase66_artifact
+            .transformer_chain_artifact_commitment
+            .clone(),
+        source_phase67_publication_artifact_table_commitment: phase67_table
+            .publication_artifact_table_commitment
+            .clone(),
+        audited_chain_start_carried_state_commitment: phase66_artifact
+            .chain_start_carried_state_commitment
+            .clone(),
+        audited_chain_end_carried_state_commitment: phase66_artifact
+            .chain_end_carried_state_commitment
+            .clone(),
+        audited_step_count: phase66_artifact.step_count,
+        audited_continuity_link_count: phase66_artifact.continuity_link_count,
+        required_tamper_case_count: 5,
+        independent_oracle_name: "phase68_slow_chain_replay_oracle_for_phase66_links".to_string(),
+        production_verifier_function: "verify_phase66_transformer_chain_artifact".to_string(),
+        source_bound_verifier_function: "verify_phase66_transformer_chain_artifact_against_sources"
+            .to_string(),
+        verifier_side_complexity: STWO_INDEPENDENT_REPLAY_AUDIT_COMPLEXITY_PHASE68.to_string(),
+        verifier_status: STWO_INDEPENDENT_REPLAY_AUDIT_STATUS_PHASE68.to_string(),
+        transcript_order: phase68_independent_replay_audit_transcript_order(),
+        phase66_chain_available: true,
+        publication_table_available: true,
+        independent_replay_oracle_available: true,
+        production_verifier_cross_check_available: true,
+        mutation_style_tamper_cases_available: true,
+        formal_verification_claimed: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_INDEPENDENT_REPLAY_AUDIT_NEXT_STEP_PHASE68.to_string(),
+        independent_replay_audit_commitment: String::new(),
+    };
+    claim.independent_replay_audit_commitment =
+        commit_phase68_independent_replay_audit_claim(&claim)?;
+    verify_phase68_independent_replay_audit_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase68_independent_replay_audit_claim(
+    claim: &Phase68IndependentReplayAuditClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 68 independent replay audit requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.audit_version != STWO_INDEPENDENT_REPLAY_AUDIT_VERSION_PHASE68
+        || claim.semantic_scope != STWO_INDEPENDENT_REPLAY_AUDIT_SCOPE_PHASE68
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 68 independent replay audit version or scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase68_source_phase66_chain_artifact_commitment",
+            claim
+                .source_phase66_transformer_chain_artifact_commitment
+                .as_str(),
+        ),
+        (
+            "phase68_source_phase67_publication_table_commitment",
+            claim
+                .source_phase67_publication_artifact_table_commitment
+                .as_str(),
+        ),
+        (
+            "phase68_audited_chain_start_state",
+            claim.audited_chain_start_carried_state_commitment.as_str(),
+        ),
+        (
+            "phase68_audited_chain_end_state",
+            claim.audited_chain_end_carried_state_commitment.as_str(),
+        ),
+        (
+            "phase68_independent_replay_audit_commitment",
+            claim.independent_replay_audit_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if claim.audited_step_count < 2
+        || claim.audited_continuity_link_count != claim.audited_step_count - 1
+        || claim.required_tamper_case_count < 5
+        || claim.independent_oracle_name != "phase68_slow_chain_replay_oracle_for_phase66_links"
+        || claim.production_verifier_function != "verify_phase66_transformer_chain_artifact"
+        || claim.source_bound_verifier_function
+            != "verify_phase66_transformer_chain_artifact_against_sources"
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 68 independent replay audit shape drift".to_string(),
+        ));
+    }
+    if claim.verifier_side_complexity != STWO_INDEPENDENT_REPLAY_AUDIT_COMPLEXITY_PHASE68
+        || claim.verifier_status != STWO_INDEPENDENT_REPLAY_AUDIT_STATUS_PHASE68
+        || claim.transcript_order != phase68_independent_replay_audit_transcript_order()
+        || claim.required_next_step != STWO_INDEPENDENT_REPLAY_AUDIT_NEXT_STEP_PHASE68
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 68 independent replay audit transcript, status, or next-step drift".to_string(),
+        ));
+    }
+    if !claim.phase66_chain_available
+        || !claim.publication_table_available
+        || !claim.independent_replay_oracle_available
+        || !claim.production_verifier_cross_check_available
+        || !claim.mutation_style_tamper_cases_available
+        || claim.formal_verification_claimed
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+        || claim.breakthrough_claimed
+        || claim.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 68 independent replay audit must not claim formal verification, recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase68_independent_replay_audit_claim(claim)?;
+    if claim.independent_replay_audit_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 68 independent replay audit commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase68_independent_replay_audit_claim_against_sources(
+    claim: &Phase68IndependentReplayAuditClaim,
+    phase66_artifact: &Phase66TransformerChainArtifact,
+    phase67_table: &Phase67PublicationArtifactTable,
+) -> Result<()> {
+    verify_phase68_independent_replay_audit_claim(claim)?;
+    verify_phase66_transformer_chain_artifact(phase66_artifact)?;
+    verify_phase67_publication_artifact_table(phase67_table)?;
+    if claim.source_phase66_transformer_chain_artifact_commitment
+        != phase66_artifact.transformer_chain_artifact_commitment
+        || claim.source_phase67_publication_artifact_table_commitment
+            != phase67_table.publication_artifact_table_commitment
+        || phase67_table.source_phase66_transformer_chain_artifact_commitment
+            != phase66_artifact.transformer_chain_artifact_commitment
+        || claim.audited_chain_start_carried_state_commitment
+            != phase66_artifact.chain_start_carried_state_commitment
+        || claim.audited_chain_end_carried_state_commitment
+            != phase66_artifact.chain_end_carried_state_commitment
+        || claim.audited_step_count != phase66_artifact.step_count
+        || claim.audited_continuity_link_count != phase66_artifact.continuity_link_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 68 independent replay audit source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase69_prepare_symbolic_artifact_mapping_claim(
+    phase68_claim: &Phase68IndependentReplayAuditClaim,
+    phase67_table: &Phase67PublicationArtifactTable,
+    phase66_artifact: &Phase66TransformerChainArtifact,
+    phase65_artifact: &Phase65TransformerTransitionArtifact,
+    phase64_claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<Phase69SymbolicArtifactMappingClaim> {
+    verify_phase68_independent_replay_audit_claim_against_sources(
+        phase68_claim,
+        phase66_artifact,
+        phase67_table,
+    )?;
+    let mut rows = vec![
+        phase69_symbolic_mapping_row(
+            0,
+            "A(T,d)=12Td^2+2T^2d+2Td",
+            "arithmetic transformer block work",
+            "Phase65",
+            &phase65_artifact.transformer_transition_artifact_commitment,
+            "runtime relation witness plus transition-step verifier surface",
+            "verify_phase65_transformer_transition_artifact_against_sources",
+            "symbolic model term, not a runtime benchmark",
+        )?,
+        phase69_symbolic_mapping_row(
+            1,
+            "N(T,d,H)=T^2H+6Td",
+            "lookup-like normalization and activation pressure",
+            "Phase63",
+            &phase63_claim.shared_lookup_identity_claim_commitment,
+            "shared lookup identity across proof-carrying steps",
+            "verify_phase63_shared_lookup_identity_claim_against_phase62",
+            "does not implement full lookup-backed softmax",
+        )?,
+        phase69_symbolic_mapping_row(
+            2,
+            "state_t -> state_{t+1}",
+            "typed carried-state handoff",
+            "Phase64",
+            &phase64_claim.typed_carried_state_claim_commitment,
+            "typed boundary and continuity verifier surface",
+            "verify_phase64_typed_carried_state_claim_against_phase63",
+            "small carried state, not full KV-cache equivalence",
+        )?,
+        phase69_symbolic_mapping_row(
+            3,
+            "decode_chain(state_0,state_n)",
+            "proof-carrying decode surface",
+            "Phase66",
+            &phase66_artifact.transformer_chain_artifact_commitment,
+            "ordered transition chain with source-bound handoff links",
+            "verify_phase66_transformer_chain_artifact_against_sources",
+            "not recursive compression",
+        )?,
+        phase69_symbolic_mapping_row(
+            4,
+            "artifact_evidence_table",
+            "publication-facing evidence boundary",
+            "Phase67",
+            &phase67_table.publication_artifact_table_commitment,
+            "source-bound artifact row table",
+            "verify_phase67_publication_artifact_table_against_sources",
+            "not a performance table",
+        )?,
+        phase69_symbolic_mapping_row(
+            5,
+            "independent_replay_oracle",
+            "anti-self-deception audit boundary",
+            "Phase68",
+            &phase68_claim.independent_replay_audit_commitment,
+            "slow independent replay oracle manifest and tamper-case contract",
+            "verify_phase68_independent_replay_audit_claim_against_sources",
+            "not a formal proof",
+        )?,
+    ];
+    for row in &mut rows {
+        row.row_commitment = commit_phase69_symbolic_artifact_mapping_row(row)?;
+        verify_phase69_symbolic_artifact_mapping_row(row)?;
+    }
+    let mut claim = Phase69SymbolicArtifactMappingClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        mapping_version: STWO_SYMBOLIC_ARTIFACT_MAPPING_VERSION_PHASE69.to_string(),
+        semantic_scope: STWO_SYMBOLIC_ARTIFACT_MAPPING_SCOPE_PHASE69.to_string(),
+        formula_family: "dense_gpt_style_symbolic_model_to_checked_artifact_surface_v1".to_string(),
+        source_phase68_independent_replay_audit_commitment: phase68_claim
+            .independent_replay_audit_commitment
+            .clone(),
+        source_phase67_publication_artifact_table_commitment: phase67_table
+            .publication_artifact_table_commitment
+            .clone(),
+        source_phase66_transformer_chain_artifact_commitment: phase66_artifact
+            .transformer_chain_artifact_commitment
+            .clone(),
+        source_phase65_transformer_transition_artifact_commitment: phase65_artifact
+            .transformer_transition_artifact_commitment
+            .clone(),
+        source_phase64_typed_carried_state_claim_commitment: phase64_claim
+            .typed_carried_state_claim_commitment
+            .clone(),
+        source_phase63_shared_lookup_identity_claim_commitment: phase63_claim
+            .shared_lookup_identity_claim_commitment
+            .clone(),
+        mapping_rows_commitment: String::new(),
+        mapping_rows: rows,
+        row_count: 6,
+        verifier_side_complexity: STWO_SYMBOLIC_ARTIFACT_MAPPING_COMPLEXITY_PHASE69.to_string(),
+        verifier_status: STWO_SYMBOLIC_ARTIFACT_MAPPING_STATUS_PHASE69.to_string(),
+        transcript_order: phase69_symbolic_artifact_mapping_transcript_order(),
+        symbolic_model_available: true,
+        artifact_surfaces_available: true,
+        source_bound_verifiers_available: true,
+        runtime_benchmark_claimed: false,
+        full_standard_softmax_inference_claimed: false,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_SYMBOLIC_ARTIFACT_MAPPING_NEXT_STEP_PHASE69.to_string(),
+        symbolic_artifact_mapping_commitment: String::new(),
+    };
+    claim.mapping_rows_commitment = phase69_commit_symbolic_mapping_rows(&claim.mapping_rows)?;
+    claim.symbolic_artifact_mapping_commitment =
+        commit_phase69_symbolic_artifact_mapping_claim(&claim)?;
+    verify_phase69_symbolic_artifact_mapping_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase69_symbolic_artifact_mapping_row(
+    row: &Phase69SymbolicArtifactMappingRow,
+) -> Result<()> {
+    if row.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping row requires `stwo` backend".to_string(),
+        ));
+    }
+    phase43_require_hash32("phase69_artifact_commitment", &row.artifact_commitment)?;
+    phase43_require_hash32("phase69_row_commitment", &row.row_commitment)?;
+    if row.symbolic_term.is_empty()
+        || row.model_component.is_empty()
+        || row.artifact_phase.is_empty()
+        || row.verifier_surface.is_empty()
+        || row.source_bound_check.is_empty()
+        || row.limitation.is_empty()
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping row has an empty field".to_string(),
+        ));
+    }
+    let expected = commit_phase69_symbolic_artifact_mapping_row(row)?;
+    if row.row_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping row commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase69_symbolic_artifact_mapping_claim(
+    claim: &Phase69SymbolicArtifactMappingClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.mapping_version != STWO_SYMBOLIC_ARTIFACT_MAPPING_VERSION_PHASE69
+        || claim.semantic_scope != STWO_SYMBOLIC_ARTIFACT_MAPPING_SCOPE_PHASE69
+        || claim.formula_family != "dense_gpt_style_symbolic_model_to_checked_artifact_surface_v1"
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping version, scope, or formula-family drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase69_source_phase68_audit_commitment",
+            claim
+                .source_phase68_independent_replay_audit_commitment
+                .as_str(),
+        ),
+        (
+            "phase69_source_phase67_table_commitment",
+            claim
+                .source_phase67_publication_artifact_table_commitment
+                .as_str(),
+        ),
+        (
+            "phase69_source_phase66_chain_commitment",
+            claim
+                .source_phase66_transformer_chain_artifact_commitment
+                .as_str(),
+        ),
+        (
+            "phase69_source_phase65_artifact_commitment",
+            claim
+                .source_phase65_transformer_transition_artifact_commitment
+                .as_str(),
+        ),
+        (
+            "phase69_source_phase64_claim_commitment",
+            claim
+                .source_phase64_typed_carried_state_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase69_source_phase63_claim_commitment",
+            claim
+                .source_phase63_shared_lookup_identity_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase69_mapping_rows_commitment",
+            claim.mapping_rows_commitment.as_str(),
+        ),
+        (
+            "phase69_symbolic_artifact_mapping_commitment",
+            claim.symbolic_artifact_mapping_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if claim.row_count != 6 || claim.mapping_rows.len() != claim.row_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping row count drift".to_string(),
+        ));
+    }
+    if claim.mapping_rows_commitment != phase69_commit_symbolic_mapping_rows(&claim.mapping_rows)? {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping row-list commitment drift".to_string(),
+        ));
+    }
+    let expected_phases = [
+        "Phase65", "Phase63", "Phase64", "Phase66", "Phase67", "Phase68",
+    ];
+    for (expected_index, (row, expected_phase)) in claim
+        .mapping_rows
+        .iter()
+        .zip(expected_phases.iter())
+        .enumerate()
+    {
+        verify_phase69_symbolic_artifact_mapping_row(row)?;
+        if row.row_index != expected_index || row.artifact_phase != *expected_phase {
+            return Err(VmError::InvalidConfig(
+                "Phase 69 symbolic mapping row order drift".to_string(),
+            ));
+        }
+    }
+    if claim.verifier_side_complexity != STWO_SYMBOLIC_ARTIFACT_MAPPING_COMPLEXITY_PHASE69
+        || claim.verifier_status != STWO_SYMBOLIC_ARTIFACT_MAPPING_STATUS_PHASE69
+        || claim.transcript_order != phase69_symbolic_artifact_mapping_transcript_order()
+        || claim.required_next_step != STWO_SYMBOLIC_ARTIFACT_MAPPING_NEXT_STEP_PHASE69
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping transcript, status, or next-step drift".to_string(),
+        ));
+    }
+    if !claim.symbolic_model_available
+        || !claim.artifact_surfaces_available
+        || !claim.source_bound_verifiers_available
+        || claim.runtime_benchmark_claimed
+        || claim.full_standard_softmax_inference_claimed
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+        || claim.breakthrough_claimed
+        || claim.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping must not claim benchmarks, full softmax, recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase69_symbolic_artifact_mapping_claim(claim)?;
+    if claim.symbolic_artifact_mapping_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase69_symbolic_artifact_mapping_claim_against_sources(
+    claim: &Phase69SymbolicArtifactMappingClaim,
+    phase68_claim: &Phase68IndependentReplayAuditClaim,
+    phase67_table: &Phase67PublicationArtifactTable,
+    phase66_artifact: &Phase66TransformerChainArtifact,
+    phase65_artifact: &Phase65TransformerTransitionArtifact,
+    phase64_claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<()> {
+    verify_phase69_symbolic_artifact_mapping_claim(claim)?;
+    verify_phase68_independent_replay_audit_claim_against_sources(
+        phase68_claim,
+        phase66_artifact,
+        phase67_table,
+    )?;
+    let expected = [
+        phase65_artifact
+            .transformer_transition_artifact_commitment
+            .as_str(),
+        phase63_claim
+            .shared_lookup_identity_claim_commitment
+            .as_str(),
+        phase64_claim.typed_carried_state_claim_commitment.as_str(),
+        phase66_artifact
+            .transformer_chain_artifact_commitment
+            .as_str(),
+        phase67_table.publication_artifact_table_commitment.as_str(),
+        phase68_claim.independent_replay_audit_commitment.as_str(),
+    ];
+    if claim.source_phase68_independent_replay_audit_commitment
+        != phase68_claim.independent_replay_audit_commitment
+        || claim.source_phase67_publication_artifact_table_commitment
+            != phase67_table.publication_artifact_table_commitment
+        || claim.source_phase66_transformer_chain_artifact_commitment
+            != phase66_artifact.transformer_chain_artifact_commitment
+        || claim.source_phase65_transformer_transition_artifact_commitment
+            != phase65_artifact.transformer_transition_artifact_commitment
+        || claim.source_phase64_typed_carried_state_claim_commitment
+            != phase64_claim.typed_carried_state_claim_commitment
+        || claim.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 69 symbolic mapping source drift".to_string(),
+        ));
+    }
+    for (row, expected_commitment) in claim.mapping_rows.iter().zip(expected) {
+        if row.artifact_commitment != expected_commitment {
+            return Err(VmError::InvalidConfig(
+                "Phase 69 symbolic mapping row source drift".to_string(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase70_prepare_role_neutral_boundary_handoff_artifact(
+    phase66_artifact: &Phase66TransformerChainArtifact,
+    phase64_claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<Phase70RoleNeutralBoundaryHandoffArtifact> {
+    verify_phase66_transformer_chain_artifact(phase66_artifact)?;
+    verify_phase64_typed_carried_state_claim(phase64_claim)?;
+    verify_phase63_shared_lookup_identity_claim(phase63_claim)?;
+    if phase66_artifact.step_count != phase64_claim.step_count
+        || phase66_artifact.chain_links.len() != phase64_claim.typed_steps.len()
+        || phase66_artifact.source_phase64_typed_carried_state_claim_commitment
+            != phase64_claim.typed_carried_state_claim_commitment
+        || phase66_artifact.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
+        || phase64_claim.source_phase63_shared_lookup_identity_claim_commitment
+            != phase63_claim.shared_lookup_identity_claim_commitment
+        || phase66_artifact.shared_lookup_identity_commitment
+            != phase64_claim.shared_lookup_identity_commitment
+        || phase66_artifact.shared_lookup_identity_commitment
+            != phase63_claim.shared_lookup_identity_commitment
+        || phase66_artifact.relation_template_commitment
+            != phase64_claim.relation_template_commitment
+        || phase64_claim.shared_lookup_identity_commitment
+            != phase63_claim.shared_lookup_identity_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 70 role-neutral handoff source drift against Phase66/64/63".to_string(),
+        ));
+    }
+    let mut previous_output_handoff_commitment = None;
+    let handoff_links = phase66_artifact
+        .chain_links
+        .iter()
+        .zip(phase64_claim.typed_steps.iter())
+        .map(|(chain_link, typed_step)| {
+            if chain_link.source_phase64_typed_step_commitment != typed_step.typed_step_commitment
+                || chain_link.input_boundary_commitment
+                    != typed_step.input_boundary.typed_boundary_commitment
+                || chain_link.output_boundary_commitment
+                    != typed_step.output_boundary.typed_boundary_commitment
+                || chain_link.input_carried_state_commitment
+                    != typed_step.input_boundary.phase62_state_commitment
+                || chain_link.output_carried_state_commitment
+                    != typed_step.output_boundary.phase62_state_commitment
+                || chain_link.input_position != typed_step.input_boundary.position
+                || chain_link.output_position != typed_step.output_boundary.position
+                || chain_link.shared_lookup_identity_commitment
+                    != phase66_artifact.shared_lookup_identity_commitment
+            {
+                return Err(VmError::InvalidConfig(
+                    "Phase 70 role-neutral handoff per-step source drift".to_string(),
+                ));
+            }
+            let input_handoff_commitment = phase70_commit_role_neutral_handoff_surface(
+                typed_step.input_boundary.position,
+                &typed_step.input_boundary.phase62_state_commitment,
+                &phase64_claim.relation_template_commitment,
+                &phase64_claim.shared_lookup_identity_commitment,
+                &phase63_claim.lookup_table_registry_commitment,
+            )?;
+            let output_handoff_commitment = phase70_commit_role_neutral_handoff_surface(
+                typed_step.output_boundary.position,
+                &typed_step.output_boundary.phase62_state_commitment,
+                &phase64_claim.relation_template_commitment,
+                &phase64_claim.shared_lookup_identity_commitment,
+                &phase63_claim.lookup_table_registry_commitment,
+            )?;
+            let mut link = Phase70RoleNeutralBoundaryHandoffLink {
+                proof_backend: StarkProofBackend::Stwo,
+                step_index: chain_link.step_index,
+                source_phase66_chain_link_commitment: chain_link.chain_link_commitment.clone(),
+                source_phase64_typed_step_commitment: typed_step.typed_step_commitment.clone(),
+                input_typed_boundary_commitment: typed_step
+                    .input_boundary
+                    .typed_boundary_commitment
+                    .clone(),
+                output_typed_boundary_commitment: typed_step
+                    .output_boundary
+                    .typed_boundary_commitment
+                    .clone(),
+                input_carried_state_commitment: typed_step
+                    .input_boundary
+                    .phase62_state_commitment
+                    .clone(),
+                output_carried_state_commitment: typed_step
+                    .output_boundary
+                    .phase62_state_commitment
+                    .clone(),
+                previous_output_handoff_commitment: previous_output_handoff_commitment.clone(),
+                input_position: typed_step.input_boundary.position,
+                output_position: typed_step.output_boundary.position,
+                shared_lookup_identity_commitment: phase64_claim
+                    .shared_lookup_identity_commitment
+                    .clone(),
+                input_handoff_commitment,
+                output_handoff_commitment,
+                handoff_link_commitment: String::new(),
+            };
+            link.handoff_link_commitment =
+                commit_phase70_role_neutral_boundary_handoff_link(&link)?;
+            verify_phase70_role_neutral_boundary_handoff_link(&link)?;
+            previous_output_handoff_commitment = Some(link.output_handoff_commitment.clone());
+            Ok(link)
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let first = handoff_links.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 70 role-neutral handoff requires at least one link".to_string(),
+        )
+    })?;
+    let last = handoff_links.last().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 70 role-neutral handoff requires at least one link".to_string(),
+        )
+    })?;
+    let role_neutral_handoff_surface_unit_count =
+        phase70_role_neutral_handoff_surface_unit_count(phase66_artifact.step_count)?;
+    let combined_verifier_surface_unit_count = phase66_artifact
+        .combined_verifier_surface_unit_count
+        .checked_add(role_neutral_handoff_surface_unit_count)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 70 role-neutral handoff combined surface accounting overflow".to_string(),
+            )
+        })?;
+    let mut artifact = Phase70RoleNeutralBoundaryHandoffArtifact {
+        proof_backend: StarkProofBackend::Stwo,
+        artifact_version: STWO_ROLE_NEUTRAL_HANDOFF_ARTIFACT_VERSION_PHASE70.to_string(),
+        semantic_scope: STWO_ROLE_NEUTRAL_HANDOFF_ARTIFACT_SCOPE_PHASE70.to_string(),
+        source_phase66_transformer_chain_artifact_commitment: phase66_artifact
+            .transformer_chain_artifact_commitment
+            .clone(),
+        source_phase64_typed_carried_state_claim_commitment: phase64_claim
+            .typed_carried_state_claim_commitment
+            .clone(),
+        source_phase63_shared_lookup_identity_claim_commitment: phase63_claim
+            .shared_lookup_identity_claim_commitment
+            .clone(),
+        relation_kind: phase66_artifact.relation_kind.clone(),
+        relation_template_commitment: phase64_claim.relation_template_commitment.clone(),
+        shared_lookup_identity_commitment: phase64_claim.shared_lookup_identity_commitment.clone(),
+        lookup_table_registry_commitment: phase63_claim.lookup_table_registry_commitment.clone(),
+        chain_start_typed_boundary_commitment: phase66_artifact
+            .chain_start_typed_boundary_commitment
+            .clone(),
+        chain_end_typed_boundary_commitment: phase66_artifact
+            .chain_end_typed_boundary_commitment
+            .clone(),
+        chain_start_handoff_commitment: first.input_handoff_commitment.clone(),
+        chain_end_handoff_commitment: last.output_handoff_commitment.clone(),
+        chain_start_carried_state_commitment: first.input_carried_state_commitment.clone(),
+        chain_end_carried_state_commitment: last.output_carried_state_commitment.clone(),
+        chain_start_position: first.input_position,
+        chain_end_position: last.output_position,
+        handoff_links_commitment: String::new(),
+        handoff_links,
+        step_count: phase66_artifact.step_count,
+        continuity_link_count: phase66_artifact.step_count.saturating_sub(1),
+        phase66_chained_transition_surface_unit_count: phase66_artifact
+            .chained_transition_surface_unit_count,
+        phase66_combined_verifier_surface_unit_count: phase66_artifact
+            .combined_verifier_surface_unit_count,
+        role_neutral_handoff_surface_unit_count,
+        combined_verifier_surface_unit_count,
+        surface_delta_from_phase66: role_neutral_handoff_surface_unit_count,
+        verifier_side_complexity: STWO_ROLE_NEUTRAL_HANDOFF_COMPLEXITY_PHASE70.to_string(),
+        verifier_status: STWO_ROLE_NEUTRAL_HANDOFF_STATUS_PHASE70.to_string(),
+        transcript_order: phase70_role_neutral_handoff_transcript_order(),
+        phase66_chain_available: true,
+        source_bound_verifier_available: true,
+        role_neutral_handoffs_available: true,
+        shared_lookup_identity_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_ROLE_NEUTRAL_HANDOFF_NEXT_STEP_PHASE70.to_string(),
+        role_neutral_handoff_artifact_commitment: String::new(),
+    };
+    artifact.handoff_links_commitment = phase70_commit_handoff_links(&artifact.handoff_links)?;
+    artifact.role_neutral_handoff_artifact_commitment =
+        commit_phase70_role_neutral_boundary_handoff_artifact(&artifact)?;
+    verify_phase70_role_neutral_boundary_handoff_artifact(&artifact)?;
+    Ok(artifact)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase70_role_neutral_boundary_handoff_link(
+    link: &Phase70RoleNeutralBoundaryHandoffLink,
+) -> Result<()> {
+    if link.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 70 role-neutral handoff link requires `stwo` backend".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase70_source_phase66_chain_link_commitment",
+            link.source_phase66_chain_link_commitment.as_str(),
+        ),
+        (
+            "phase70_source_phase64_typed_step_commitment",
+            link.source_phase64_typed_step_commitment.as_str(),
+        ),
+        (
+            "phase70_input_typed_boundary_commitment",
+            link.input_typed_boundary_commitment.as_str(),
+        ),
+        (
+            "phase70_output_typed_boundary_commitment",
+            link.output_typed_boundary_commitment.as_str(),
+        ),
+        (
+            "phase70_input_carried_state_commitment",
+            link.input_carried_state_commitment.as_str(),
+        ),
+        (
+            "phase70_output_carried_state_commitment",
+            link.output_carried_state_commitment.as_str(),
+        ),
+        (
+            "phase70_shared_lookup_identity_commitment",
+            link.shared_lookup_identity_commitment.as_str(),
+        ),
+        (
+            "phase70_input_handoff_commitment",
+            link.input_handoff_commitment.as_str(),
+        ),
+        (
+            "phase70_output_handoff_commitment",
+            link.output_handoff_commitment.as_str(),
+        ),
+        (
+            "phase70_handoff_link_commitment",
+            link.handoff_link_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if let Some(previous) = &link.previous_output_handoff_commitment {
+        phase43_require_hash32("phase70_previous_output_handoff_commitment", previous)?;
+    }
+    if link.input_position.checked_add(1) != Some(link.output_position) {
+        return Err(VmError::InvalidConfig(
+            "Phase 70 role-neutral handoff link position drift".to_string(),
+        ));
+    }
+    let expected = commit_phase70_role_neutral_boundary_handoff_link(link)?;
+    if link.handoff_link_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 70 role-neutral handoff link commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase70_role_neutral_boundary_handoff_artifact(
+    artifact: &Phase70RoleNeutralBoundaryHandoffArtifact,
+) -> Result<()> {
+    if artifact.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 70 role-neutral handoff artifact requires `stwo` backend".to_string(),
+        ));
+    }
+    if artifact.artifact_version != STWO_ROLE_NEUTRAL_HANDOFF_ARTIFACT_VERSION_PHASE70
+        || artifact.semantic_scope != STWO_ROLE_NEUTRAL_HANDOFF_ARTIFACT_SCOPE_PHASE70
+        || artifact.relation_kind != STWO_TRANSFORMER_TRANSITION_RELATION_KIND_PHASE65
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 70 role-neutral handoff version, scope, or relation-kind drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase70_source_phase66_chain_artifact_commitment",
+            artifact
+                .source_phase66_transformer_chain_artifact_commitment
+                .as_str(),
+        ),
+        (
+            "phase70_source_phase64_claim_commitment",
+            artifact
+                .source_phase64_typed_carried_state_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase70_source_phase63_claim_commitment",
+            artifact
+                .source_phase63_shared_lookup_identity_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase70_relation_template_commitment",
+            artifact.relation_template_commitment.as_str(),
+        ),
+        (
+            "phase70_shared_lookup_identity_commitment",
+            artifact.shared_lookup_identity_commitment.as_str(),
+        ),
+        (
+            "phase70_lookup_table_registry_commitment",
+            artifact.lookup_table_registry_commitment.as_str(),
+        ),
+        (
+            "phase70_chain_start_typed_boundary_commitment",
+            artifact.chain_start_typed_boundary_commitment.as_str(),
+        ),
+        (
+            "phase70_chain_end_typed_boundary_commitment",
+            artifact.chain_end_typed_boundary_commitment.as_str(),
+        ),
+        (
+            "phase70_chain_start_handoff_commitment",
+            artifact.chain_start_handoff_commitment.as_str(),
+        ),
+        (
+            "phase70_chain_end_handoff_commitment",
+            artifact.chain_end_handoff_commitment.as_str(),
+        ),
+        (
+            "phase70_chain_start_carried_state_commitment",
+            artifact.chain_start_carried_state_commitment.as_str(),
+        ),
+        (
+            "phase70_chain_end_carried_state_commitment",
+            artifact.chain_end_carried_state_commitment.as_str(),
+        ),
+        (
+            "phase70_handoff_links_commitment",
+            artifact.handoff_links_commitment.as_str(),
+        ),
+        (
+            "phase70_role_neutral_handoff_artifact_commitment",
+            artifact.role_neutral_handoff_artifact_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if artifact.step_count < 2
+        || artifact.handoff_links.len() != artifact.step_count
+        || artifact.continuity_link_count != artifact.step_count - 1
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 70 role-neutral handoff requires a multi-step linked chain".to_string(),
+        ));
+    }
+    let expected_surface = phase70_role_neutral_handoff_surface_unit_count(artifact.step_count)?;
+    let expected_combined_surface = artifact
+        .phase66_combined_verifier_surface_unit_count
+        .checked_add(expected_surface)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 70 role-neutral handoff combined surface accounting overflow".to_string(),
+            )
+        })?;
+    if artifact.role_neutral_handoff_surface_unit_count != expected_surface
+        || artifact.surface_delta_from_phase66 != expected_surface
+        || artifact.combined_verifier_surface_unit_count != expected_combined_surface
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 70 role-neutral handoff surface accounting drift".to_string(),
+        ));
+    }
+    if artifact.handoff_links_commitment != phase70_commit_handoff_links(&artifact.handoff_links)? {
+        return Err(VmError::InvalidConfig(
+            "Phase 70 role-neutral handoff link-list commitment drift".to_string(),
+        ));
+    }
+    if artifact.verifier_side_complexity != STWO_ROLE_NEUTRAL_HANDOFF_COMPLEXITY_PHASE70
+        || artifact.verifier_status != STWO_ROLE_NEUTRAL_HANDOFF_STATUS_PHASE70
+        || artifact.transcript_order != phase70_role_neutral_handoff_transcript_order()
+        || artifact.required_next_step != STWO_ROLE_NEUTRAL_HANDOFF_NEXT_STEP_PHASE70
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 70 role-neutral handoff transcript, status, or next-step drift".to_string(),
+        ));
+    }
+    if !artifact.phase66_chain_available
+        || !artifact.source_bound_verifier_available
+        || !artifact.role_neutral_handoffs_available
+        || !artifact.shared_lookup_identity_available
+        || artifact.recursive_verification_claimed
+        || artifact.cryptographic_compression_claimed
+        || artifact.breakthrough_claimed
+        || artifact.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 70 role-neutral handoff must not claim recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let mut seen_links = HashSet::with_capacity(artifact.handoff_links.len());
+    let mut previous_output_handoff = None::<String>;
+    let mut previous_output_state = None::<String>;
+    let mut previous_output_position = None::<usize>;
+    for (expected_index, link) in artifact.handoff_links.iter().enumerate() {
+        verify_phase70_role_neutral_boundary_handoff_link(link)?;
+        if link.step_index != expected_index {
+            return Err(VmError::InvalidConfig(
+                "Phase 70 role-neutral handoff link index drift".to_string(),
+            ));
+        }
+        if !seen_links.insert(link.handoff_link_commitment.as_str()) {
+            return Err(VmError::InvalidConfig(
+                "Phase 70 role-neutral handoff duplicate link".to_string(),
+            ));
+        }
+        if link.shared_lookup_identity_commitment != artifact.shared_lookup_identity_commitment {
+            return Err(VmError::InvalidConfig(
+                "Phase 70 role-neutral handoff shared lookup identity drift".to_string(),
+            ));
+        }
+        let expected_input_handoff = phase70_commit_role_neutral_handoff_surface(
+            link.input_position,
+            &link.input_carried_state_commitment,
+            &artifact.relation_template_commitment,
+            &artifact.shared_lookup_identity_commitment,
+            &artifact.lookup_table_registry_commitment,
+        )?;
+        let expected_output_handoff = phase70_commit_role_neutral_handoff_surface(
+            link.output_position,
+            &link.output_carried_state_commitment,
+            &artifact.relation_template_commitment,
+            &artifact.shared_lookup_identity_commitment,
+            &artifact.lookup_table_registry_commitment,
+        )?;
+        if link.input_handoff_commitment != expected_input_handoff
+            || link.output_handoff_commitment != expected_output_handoff
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase 70 role-neutral handoff derived commitment drift".to_string(),
+            ));
+        }
+        match (
+            &previous_output_handoff,
+            &previous_output_state,
+            previous_output_position,
+            &link.previous_output_handoff_commitment,
+        ) {
+            (None, None, None, None) => {}
+            (
+                Some(previous_handoff),
+                Some(previous_state),
+                Some(previous_position),
+                Some(advertised_previous),
+            ) if previous_handoff == advertised_previous
+                && previous_handoff == &link.input_handoff_commitment
+                && previous_state == &link.input_carried_state_commitment
+                && previous_position == link.input_position => {}
+            _ => {
+                return Err(VmError::InvalidConfig(
+                    "Phase 70 role-neutral handoff continuity drift".to_string(),
+                ));
+            }
+        }
+        previous_output_handoff = Some(link.output_handoff_commitment.clone());
+        previous_output_state = Some(link.output_carried_state_commitment.clone());
+        previous_output_position = Some(link.output_position);
+    }
+    let first = artifact.handoff_links.first().ok_or_else(|| {
+        VmError::InvalidConfig("Phase 70 role-neutral handoff requires first link".to_string())
+    })?;
+    let last = artifact.handoff_links.last().ok_or_else(|| {
+        VmError::InvalidConfig("Phase 70 role-neutral handoff requires last link".to_string())
+    })?;
+    if artifact.chain_start_typed_boundary_commitment != first.input_typed_boundary_commitment
+        || artifact.chain_end_typed_boundary_commitment != last.output_typed_boundary_commitment
+        || artifact.chain_start_handoff_commitment != first.input_handoff_commitment
+        || artifact.chain_end_handoff_commitment != last.output_handoff_commitment
+        || artifact.chain_start_carried_state_commitment != first.input_carried_state_commitment
+        || artifact.chain_end_carried_state_commitment != last.output_carried_state_commitment
+        || artifact.chain_start_position != first.input_position
+        || artifact.chain_end_position != last.output_position
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 70 role-neutral handoff boundary summary drift".to_string(),
+        ));
+    }
+    let expected = commit_phase70_role_neutral_boundary_handoff_artifact(artifact)?;
+    if artifact.role_neutral_handoff_artifact_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 70 role-neutral handoff artifact commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase70_role_neutral_boundary_handoff_artifact_against_sources(
+    artifact: &Phase70RoleNeutralBoundaryHandoffArtifact,
+    phase66_artifact: &Phase66TransformerChainArtifact,
+    phase64_claim: &Phase64TypedCarriedStateClaim,
+    phase63_claim: &Phase63SharedLookupIdentityClaim,
+) -> Result<()> {
+    let expected = phase70_prepare_role_neutral_boundary_handoff_artifact(
+        phase66_artifact,
+        phase64_claim,
+        phase63_claim,
+    )?;
+    if artifact != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 70 role-neutral handoff source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase71_prepare_actual_stwo_step_envelope_handoff_receipt(
+    phase12_chain: &Phase12DecodingChainManifest,
+    phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase71ActualStwoStepEnvelopeHandoffReceipt> {
+    verify_phase12_decoding_chain(phase12_chain)?;
+    verify_phase30_decoding_step_proof_envelope_manifest_against_chain(
+        phase30_manifest,
+        phase12_chain,
+    )?;
+    let (chain_start_position, chain_end_position) = phase71_chain_step_positions(phase12_chain)?;
+    let proof_commitments_commitment = phase34_commit_ordered_commitment_list(
+        b"phase71-step-envelope-proof-commitments",
+        phase30_manifest
+            .envelopes
+            .iter()
+            .map(|envelope| envelope.proof_commitment.as_str()),
+    )?;
+    let mut receipt = Phase71ActualStwoStepEnvelopeHandoffReceipt {
+        proof_backend: StarkProofBackend::Stwo,
+        receipt_version: STWO_ACTUAL_STWO_STEP_ENVELOPE_HANDOFF_RECEIPT_VERSION_PHASE71.to_string(),
+        semantic_scope: STWO_ACTUAL_STWO_STEP_ENVELOPE_HANDOFF_RECEIPT_SCOPE_PHASE71.to_string(),
+        source_phase30_manifest_version: phase30_manifest.manifest_version.clone(),
+        source_phase30_source_chain_commitment: phase30_manifest.source_chain_commitment.clone(),
+        source_phase30_step_envelopes_commitment: phase30_manifest
+            .step_envelopes_commitment
+            .clone(),
+        source_phase12_statement_version: phase12_chain.statement_version.clone(),
+        source_phase12_layout_commitment: commit_phase12_layout(&phase12_chain.layout),
+        chain_start_boundary_commitment: phase30_manifest.chain_start_boundary_commitment.clone(),
+        chain_end_boundary_commitment: phase30_manifest.chain_end_boundary_commitment.clone(),
+        chain_start_position,
+        chain_end_position,
+        total_steps: phase12_chain.total_steps,
+        continuity_link_count: phase12_chain.total_steps.saturating_sub(1),
+        proof_commitments_commitment,
+        actual_proof_commitment_count: phase30_manifest.envelopes.len(),
+        source_bound_manifest_verifier_available: true,
+        actual_stwo_step_envelopes_available: true,
+        proof_verification_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_ACTUAL_STWO_STEP_ENVELOPE_HANDOFF_NEXT_STEP_PHASE71.to_string(),
+        actual_stwo_step_envelope_handoff_receipt_commitment: String::new(),
+    };
+    receipt.actual_stwo_step_envelope_handoff_receipt_commitment =
+        commit_phase71_actual_stwo_step_envelope_handoff_receipt(&receipt)?;
+    verify_phase71_actual_stwo_step_envelope_handoff_receipt(&receipt)?;
+    Ok(receipt)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase71_actual_stwo_step_envelope_handoff_receipt(
+    receipt: &Phase71ActualStwoStepEnvelopeHandoffReceipt,
+) -> Result<()> {
+    if receipt.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 71 actual S-two step-envelope handoff receipt requires `stwo` backend"
+                .to_string(),
+        ));
+    }
+    if receipt.receipt_version != STWO_ACTUAL_STWO_STEP_ENVELOPE_HANDOFF_RECEIPT_VERSION_PHASE71
+        || receipt.semantic_scope != STWO_ACTUAL_STWO_STEP_ENVELOPE_HANDOFF_RECEIPT_SCOPE_PHASE71
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 71 actual S-two step-envelope handoff receipt version or scope drift"
+                .to_string(),
+        ));
+    }
+    if receipt.source_phase30_manifest_version
+        != STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30
+        || receipt.source_phase12_statement_version != CLAIM_STATEMENT_VERSION_V1
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 71 actual S-two step-envelope handoff receipt source version drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase71_source_phase30_source_chain_commitment",
+            receipt.source_phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase71_source_phase30_step_envelopes_commitment",
+            receipt.source_phase30_step_envelopes_commitment.as_str(),
+        ),
+        (
+            "phase71_source_phase12_layout_commitment",
+            receipt.source_phase12_layout_commitment.as_str(),
+        ),
+        (
+            "phase71_chain_start_boundary_commitment",
+            receipt.chain_start_boundary_commitment.as_str(),
+        ),
+        (
+            "phase71_chain_end_boundary_commitment",
+            receipt.chain_end_boundary_commitment.as_str(),
+        ),
+        (
+            "phase71_proof_commitments_commitment",
+            receipt.proof_commitments_commitment.as_str(),
+        ),
+        (
+            "phase71_actual_stwo_step_envelope_handoff_receipt_commitment",
+            receipt
+                .actual_stwo_step_envelope_handoff_receipt_commitment
+                .as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if receipt.total_steps == 0
+        || receipt.continuity_link_count != receipt.total_steps.saturating_sub(1)
+        || receipt.actual_proof_commitment_count != receipt.total_steps
+        || receipt.chain_start_position >= receipt.chain_end_position
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 71 actual S-two step-envelope handoff receipt shape drift".to_string(),
+        ));
+    }
+    if !receipt.source_bound_manifest_verifier_available
+        || !receipt.actual_stwo_step_envelopes_available
+        || !receipt.proof_verification_available
+        || receipt.recursive_verification_claimed
+        || receipt.cryptographic_compression_claimed
+        || receipt.breakthrough_claimed
+        || receipt.paper_ready
+        || receipt.required_next_step != STWO_ACTUAL_STWO_STEP_ENVELOPE_HANDOFF_NEXT_STEP_PHASE71
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 71 actual S-two step-envelope handoff receipt claim drift".to_string(),
+        ));
+    }
+    let expected = commit_phase71_actual_stwo_step_envelope_handoff_receipt(receipt)?;
+    if receipt.actual_stwo_step_envelope_handoff_receipt_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 71 actual S-two step-envelope handoff receipt commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase71_actual_stwo_step_envelope_handoff_receipt_against_sources(
+    receipt: &Phase71ActualStwoStepEnvelopeHandoffReceipt,
+    phase12_chain: &Phase12DecodingChainManifest,
+    phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<()> {
+    let expected =
+        phase71_prepare_actual_stwo_step_envelope_handoff_receipt(phase12_chain, phase30_manifest)?;
+    if receipt != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 71 actual S-two step-envelope handoff source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase72_prepare_actual_stwo_shared_lookup_registry_receipt(
+    phase71_receipt: &Phase71ActualStwoStepEnvelopeHandoffReceipt,
+    phase12_chain: &Phase12DecodingChainManifest,
+    phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase72ActualStwoSharedLookupRegistryReceipt> {
+    verify_phase71_actual_stwo_step_envelope_handoff_receipt_against_sources(
+        phase71_receipt,
+        phase12_chain,
+        phase30_manifest,
+    )?;
+    let artifact_index = phase12_chain
+        .shared_lookup_artifacts
+        .iter()
+        .map(|artifact| (artifact.artifact_commitment.clone(), artifact))
+        .collect::<HashMap<_, _>>();
+    let unique_shared_lookup_artifact_commitments = phase72_unique_commitments_in_order(
+        phase30_manifest
+            .envelopes
+            .iter()
+            .map(|envelope| envelope.shared_lookup_artifact_commitment.as_str()),
+    );
+    let unique_static_lookup_registry_commitments = phase72_unique_commitments_in_order(
+        phase30_manifest
+            .envelopes
+            .iter()
+            .map(|envelope| envelope.static_lookup_registry_commitment.as_str()),
+    );
+    let mut every_step_references_registered_artifact = true;
+    let mut every_envelope_registry_matches_referenced_artifact = true;
+    for envelope in &phase30_manifest.envelopes {
+        match artifact_index.get(&envelope.shared_lookup_artifact_commitment) {
+            Some(artifact) => {
+                if artifact.static_table_registry_commitment
+                    != envelope.static_lookup_registry_commitment
+                {
+                    every_envelope_registry_matches_referenced_artifact = false;
+                }
+            }
+            None => {
+                every_step_references_registered_artifact = false;
+                every_envelope_registry_matches_referenced_artifact = false;
+            }
+        }
+    }
+    let shared_lookup_artifact_commitments_commitment = phase34_commit_ordered_commitment_list(
+        b"phase72-unique-shared-lookup-artifact-commitments",
+        unique_shared_lookup_artifact_commitments
+            .iter()
+            .map(String::as_str),
+    )?;
+    let static_lookup_registry_commitments_commitment = phase34_commit_ordered_commitment_list(
+        b"phase72-unique-static-lookup-registry-commitments",
+        unique_static_lookup_registry_commitments
+            .iter()
+            .map(String::as_str),
+    )?;
+    let mut receipt = Phase72ActualStwoSharedLookupRegistryReceipt {
+        proof_backend: StarkProofBackend::Stwo,
+        receipt_version: STWO_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_RECEIPT_VERSION_PHASE72
+            .to_string(),
+        semantic_scope: STWO_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_RECEIPT_SCOPE_PHASE72.to_string(),
+        source_phase71_actual_stwo_step_envelope_handoff_receipt_commitment: phase71_receipt
+            .actual_stwo_step_envelope_handoff_receipt_commitment
+            .clone(),
+        source_phase30_source_chain_commitment: phase30_manifest.source_chain_commitment.clone(),
+        source_phase30_step_envelopes_commitment: phase30_manifest
+            .step_envelopes_commitment
+            .clone(),
+        source_phase12_layout_commitment: commit_phase12_layout(&phase12_chain.layout),
+        total_steps: phase12_chain.total_steps,
+        unique_shared_lookup_artifact_count: unique_shared_lookup_artifact_commitments.len(),
+        unique_static_lookup_registry_commitment_count: unique_static_lookup_registry_commitments
+            .len(),
+        shared_lookup_artifact_commitments_commitment,
+        static_lookup_registry_commitments_commitment,
+        every_step_references_registered_artifact,
+        every_envelope_registry_matches_referenced_artifact,
+        shared_lookup_registry_available: true,
+        source_bound_manifest_verifier_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_NEXT_STEP_PHASE72.to_string(),
+        actual_stwo_shared_lookup_registry_receipt_commitment: String::new(),
+    };
+    receipt.actual_stwo_shared_lookup_registry_receipt_commitment =
+        commit_phase72_actual_stwo_shared_lookup_registry_receipt(&receipt)?;
+    verify_phase72_actual_stwo_shared_lookup_registry_receipt(&receipt)?;
+    Ok(receipt)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase72_actual_stwo_shared_lookup_registry_receipt(
+    receipt: &Phase72ActualStwoSharedLookupRegistryReceipt,
+) -> Result<()> {
+    if receipt.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 72 actual S-two shared-lookup registry receipt requires `stwo` backend"
+                .to_string(),
+        ));
+    }
+    if receipt.receipt_version != STWO_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_RECEIPT_VERSION_PHASE72
+        || receipt.semantic_scope != STWO_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_RECEIPT_SCOPE_PHASE72
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 72 actual S-two shared-lookup registry receipt version or scope drift"
+                .to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase72_source_phase71_receipt_commitment",
+            receipt
+                .source_phase71_actual_stwo_step_envelope_handoff_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase72_source_phase30_source_chain_commitment",
+            receipt.source_phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase72_source_phase30_step_envelopes_commitment",
+            receipt.source_phase30_step_envelopes_commitment.as_str(),
+        ),
+        (
+            "phase72_source_phase12_layout_commitment",
+            receipt.source_phase12_layout_commitment.as_str(),
+        ),
+        (
+            "phase72_shared_lookup_artifact_commitments_commitment",
+            receipt
+                .shared_lookup_artifact_commitments_commitment
+                .as_str(),
+        ),
+        (
+            "phase72_static_lookup_registry_commitments_commitment",
+            receipt
+                .static_lookup_registry_commitments_commitment
+                .as_str(),
+        ),
+        (
+            "phase72_actual_stwo_shared_lookup_registry_receipt_commitment",
+            receipt
+                .actual_stwo_shared_lookup_registry_receipt_commitment
+                .as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if receipt.total_steps == 0
+        || receipt.unique_shared_lookup_artifact_count == 0
+        || receipt.unique_static_lookup_registry_commitment_count == 0
+        || !receipt.every_step_references_registered_artifact
+        || !receipt.every_envelope_registry_matches_referenced_artifact
+        || !receipt.shared_lookup_registry_available
+        || !receipt.source_bound_manifest_verifier_available
+        || receipt.recursive_verification_claimed
+        || receipt.cryptographic_compression_claimed
+        || receipt.breakthrough_claimed
+        || receipt.paper_ready
+        || receipt.required_next_step != STWO_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_NEXT_STEP_PHASE72
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 72 actual S-two shared-lookup registry receipt shape drift".to_string(),
+        ));
+    }
+    let expected = commit_phase72_actual_stwo_shared_lookup_registry_receipt(receipt)?;
+    if receipt.actual_stwo_shared_lookup_registry_receipt_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 72 actual S-two shared-lookup registry receipt commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase72_actual_stwo_shared_lookup_registry_receipt_against_sources(
+    receipt: &Phase72ActualStwoSharedLookupRegistryReceipt,
+    phase71_receipt: &Phase71ActualStwoStepEnvelopeHandoffReceipt,
+    phase12_chain: &Phase12DecodingChainManifest,
+    phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<()> {
+    let expected = phase72_prepare_actual_stwo_shared_lookup_registry_receipt(
+        phase71_receipt,
+        phase12_chain,
+        phase30_manifest,
+    )?;
+    if receipt != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 72 actual S-two shared-lookup registry source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase73_prepare_proof_carrying_decode_bridge_claim(
+    phase70_artifact: &Phase70RoleNeutralBoundaryHandoffArtifact,
+    phase71_receipt: &Phase71ActualStwoStepEnvelopeHandoffReceipt,
+    phase72_receipt: &Phase72ActualStwoSharedLookupRegistryReceipt,
+) -> Result<Phase73ProofCarryingDecodeBridgeClaim> {
+    verify_phase70_role_neutral_boundary_handoff_artifact(phase70_artifact)?;
+    verify_phase71_actual_stwo_step_envelope_handoff_receipt(phase71_receipt)?;
+    verify_phase72_actual_stwo_shared_lookup_registry_receipt(phase72_receipt)?;
+    if phase71_receipt.source_phase30_source_chain_commitment
+        != phase72_receipt.source_phase30_source_chain_commitment
+        || phase71_receipt.source_phase30_step_envelopes_commitment
+            != phase72_receipt.source_phase30_step_envelopes_commitment
+        || phase71_receipt.source_phase12_layout_commitment
+            != phase72_receipt.source_phase12_layout_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 73 proof-carrying decode bridge source drift between Phase71 and Phase72"
+                .to_string(),
+        ));
+    }
+    let mut claim = Phase73ProofCarryingDecodeBridgeClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_PROOF_CARRYING_DECODE_BRIDGE_CLAIM_VERSION_PHASE73.to_string(),
+        semantic_scope: STWO_PROOF_CARRYING_DECODE_BRIDGE_CLAIM_SCOPE_PHASE73.to_string(),
+        source_phase70_role_neutral_handoff_artifact_commitment: phase70_artifact
+            .role_neutral_handoff_artifact_commitment
+            .clone(),
+        source_phase71_actual_stwo_step_envelope_handoff_receipt_commitment: phase71_receipt
+            .actual_stwo_step_envelope_handoff_receipt_commitment
+            .clone(),
+        source_phase72_actual_stwo_shared_lookup_registry_receipt_commitment: phase72_receipt
+            .actual_stwo_shared_lookup_registry_receipt_commitment
+            .clone(),
+        abstract_step_count: phase70_artifact.step_count,
+        actual_step_count: phase71_receipt.total_steps,
+        abstract_continuity_link_count: phase70_artifact.continuity_link_count,
+        actual_continuity_link_count: phase71_receipt.continuity_link_count,
+        abstract_chain_start_position: phase70_artifact.chain_start_position,
+        abstract_chain_end_position: phase70_artifact.chain_end_position,
+        actual_chain_start_position: phase71_receipt.chain_start_position,
+        actual_chain_end_position: phase71_receipt.chain_end_position,
+        abstract_role_neutral_handoffs_available: phase70_artifact.role_neutral_handoffs_available,
+        actual_step_envelopes_available: phase71_receipt.actual_stwo_step_envelopes_available,
+        abstract_shared_lookup_identity_available: phase70_artifact
+            .shared_lookup_identity_available,
+        actual_shared_lookup_registry_available: phase72_receipt.shared_lookup_registry_available,
+        source_bound_verifier_available: true,
+        actual_proof_verification_available: phase71_receipt.proof_verification_available,
+        verifier_side_complexity: STWO_PROOF_CARRYING_DECODE_BRIDGE_COMPLEXITY_PHASE73.to_string(),
+        verifier_status: STWO_PROOF_CARRYING_DECODE_BRIDGE_STATUS_PHASE73.to_string(),
+        transcript_order: phase73_proof_carrying_decode_bridge_transcript_order(),
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_PROOF_CARRYING_DECODE_BRIDGE_NEXT_STEP_PHASE73.to_string(),
+        proof_carrying_decode_bridge_claim_commitment: String::new(),
+    };
+    claim.proof_carrying_decode_bridge_claim_commitment =
+        commit_phase73_proof_carrying_decode_bridge_claim(&claim)?;
+    verify_phase73_proof_carrying_decode_bridge_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase73_proof_carrying_decode_bridge_claim(
+    claim: &Phase73ProofCarryingDecodeBridgeClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 73 proof-carrying decode bridge claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_PROOF_CARRYING_DECODE_BRIDGE_CLAIM_VERSION_PHASE73
+        || claim.semantic_scope != STWO_PROOF_CARRYING_DECODE_BRIDGE_CLAIM_SCOPE_PHASE73
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 73 proof-carrying decode bridge claim version or scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase73_source_phase70_artifact_commitment",
+            claim
+                .source_phase70_role_neutral_handoff_artifact_commitment
+                .as_str(),
+        ),
+        (
+            "phase73_source_phase71_receipt_commitment",
+            claim
+                .source_phase71_actual_stwo_step_envelope_handoff_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase73_source_phase72_receipt_commitment",
+            claim
+                .source_phase72_actual_stwo_shared_lookup_registry_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase73_proof_carrying_decode_bridge_claim_commitment",
+            claim.proof_carrying_decode_bridge_claim_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if claim.abstract_step_count == 0
+        || claim.actual_step_count == 0
+        || claim.abstract_step_count != claim.actual_step_count
+        || claim.abstract_continuity_link_count != claim.actual_continuity_link_count
+        || claim.abstract_continuity_link_count != claim.abstract_step_count.saturating_sub(1)
+        || claim.abstract_chain_start_position != claim.actual_chain_start_position
+        || claim.abstract_chain_end_position != claim.actual_chain_end_position
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 73 proof-carrying decode bridge count or position drift".to_string(),
+        ));
+    }
+    if claim.verifier_side_complexity != STWO_PROOF_CARRYING_DECODE_BRIDGE_COMPLEXITY_PHASE73
+        || claim.verifier_status != STWO_PROOF_CARRYING_DECODE_BRIDGE_STATUS_PHASE73
+        || claim.transcript_order != phase73_proof_carrying_decode_bridge_transcript_order()
+        || claim.required_next_step != STWO_PROOF_CARRYING_DECODE_BRIDGE_NEXT_STEP_PHASE73
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 73 proof-carrying decode bridge transcript, status, or next-step drift"
+                .to_string(),
+        ));
+    }
+    if !claim.abstract_role_neutral_handoffs_available
+        || !claim.actual_step_envelopes_available
+        || !claim.abstract_shared_lookup_identity_available
+        || !claim.actual_shared_lookup_registry_available
+        || !claim.source_bound_verifier_available
+        || !claim.actual_proof_verification_available
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+        || claim.breakthrough_claimed
+        || claim.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 73 proof-carrying decode bridge claim must not overclaim recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase73_proof_carrying_decode_bridge_claim(claim)?;
+    if claim.proof_carrying_decode_bridge_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 73 proof-carrying decode bridge claim commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase73_proof_carrying_decode_bridge_claim_against_sources(
+    claim: &Phase73ProofCarryingDecodeBridgeClaim,
+    phase70_artifact: &Phase70RoleNeutralBoundaryHandoffArtifact,
+    phase71_receipt: &Phase71ActualStwoStepEnvelopeHandoffReceipt,
+    phase72_receipt: &Phase72ActualStwoSharedLookupRegistryReceipt,
+) -> Result<()> {
+    let expected = phase73_prepare_proof_carrying_decode_bridge_claim(
+        phase70_artifact,
+        phase71_receipt,
+        phase72_receipt,
+    )?;
+    if claim != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 73 proof-carrying decode bridge source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase74_prepare_chunked_history_carry_receipt(
+    phase12_chain: &Phase12DecodingChainManifest,
+    phase14_chain: &Phase14DecodingChainManifest,
+) -> Result<Phase74ChunkedHistoryCarryReceipt> {
+    verify_phase12_decoding_chain(phase12_chain)?;
+    let expected_phase14 = phase14_prepare_decoding_chain(phase12_chain)?;
+    if phase14_chain != &expected_phase14 {
+        return Err(VmError::InvalidConfig(
+            "Phase 74 chunked-history carry requires the Phase14 chain to be the exact source-bound replay of Phase12"
+                .to_string(),
+        ));
+    }
+    verify_phase14_decoding_chain(phase14_chain)?;
+    let first = phase14_chain.steps.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 74 chunked-history carry requires at least one step".to_string(),
+        )
+    })?;
+    let last = phase14_chain.steps.last().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 74 chunked-history carry requires at least one step".to_string(),
+        )
+    })?;
+    let mut max_kv_history_length = 0usize;
+    let mut max_lookup_transcript_entries = 0usize;
+    let mut max_lookup_frontier_entries = 0usize;
+    for step in &phase14_chain.steps {
+        for state in [&step.from_state, &step.to_state] {
+            max_kv_history_length = max_kv_history_length.max(state.kv_history_length);
+            max_lookup_transcript_entries =
+                max_lookup_transcript_entries.max(state.lookup_transcript_entries);
+            max_lookup_frontier_entries =
+                max_lookup_frontier_entries.max(state.lookup_frontier_entries);
+        }
+    }
+    let mut receipt = Phase74ChunkedHistoryCarryReceipt {
+        proof_backend: StarkProofBackend::Stwo,
+        receipt_version: STWO_CHUNKED_HISTORY_CARRY_RECEIPT_VERSION_PHASE74.to_string(),
+        semantic_scope: STWO_CHUNKED_HISTORY_CARRY_RECEIPT_SCOPE_PHASE74.to_string(),
+        source_phase12_statement_version: phase12_chain.statement_version.clone(),
+        source_phase12_layout_commitment: commit_phase12_layout(&phase12_chain.layout),
+        chain_start_public_state_commitment: first.from_state.public_state_commitment.clone(),
+        chain_end_public_state_commitment: last.to_state.public_state_commitment.clone(),
+        chain_start_history_commitment: first.from_state.kv_history_commitment.clone(),
+        chain_end_history_commitment: last.to_state.kv_history_commitment.clone(),
+        total_steps: phase14_chain.total_steps,
+        max_kv_history_length,
+        max_lookup_transcript_entries,
+        max_lookup_frontier_entries,
+        chunked_history_available: true,
+        source_bound_verifier_available: true,
+        actual_proof_verification_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_CHUNKED_HISTORY_CARRY_NEXT_STEP_PHASE74.to_string(),
+        chunked_history_carry_receipt_commitment: String::new(),
+    };
+    receipt.chunked_history_carry_receipt_commitment =
+        commit_phase74_chunked_history_carry_receipt(&receipt)?;
+    verify_phase74_chunked_history_carry_receipt(&receipt)?;
+    Ok(receipt)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase74_chunked_history_carry_receipt(
+    receipt: &Phase74ChunkedHistoryCarryReceipt,
+) -> Result<()> {
+    if receipt.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 74 chunked-history carry receipt requires `stwo` backend".to_string(),
+        ));
+    }
+    if receipt.receipt_version != STWO_CHUNKED_HISTORY_CARRY_RECEIPT_VERSION_PHASE74
+        || receipt.semantic_scope != STWO_CHUNKED_HISTORY_CARRY_RECEIPT_SCOPE_PHASE74
+        || receipt.source_phase12_statement_version != CLAIM_STATEMENT_VERSION_V1
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 74 chunked-history carry receipt version, scope, or statement drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase74_source_phase12_layout_commitment",
+            receipt.source_phase12_layout_commitment.as_str(),
+        ),
+        (
+            "phase74_chain_start_public_state_commitment",
+            receipt.chain_start_public_state_commitment.as_str(),
+        ),
+        (
+            "phase74_chain_end_public_state_commitment",
+            receipt.chain_end_public_state_commitment.as_str(),
+        ),
+        (
+            "phase74_chain_start_history_commitment",
+            receipt.chain_start_history_commitment.as_str(),
+        ),
+        (
+            "phase74_chain_end_history_commitment",
+            receipt.chain_end_history_commitment.as_str(),
+        ),
+        (
+            "phase74_chunked_history_carry_receipt_commitment",
+            receipt.chunked_history_carry_receipt_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if receipt.total_steps == 0
+        || receipt.max_kv_history_length == 0
+        || !receipt.chunked_history_available
+        || !receipt.source_bound_verifier_available
+        || !receipt.actual_proof_verification_available
+        || receipt.recursive_verification_claimed
+        || receipt.cryptographic_compression_claimed
+        || receipt.breakthrough_claimed
+        || receipt.paper_ready
+        || receipt.required_next_step != STWO_CHUNKED_HISTORY_CARRY_NEXT_STEP_PHASE74
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 74 chunked-history carry receipt shape drift".to_string(),
+        ));
+    }
+    let expected = commit_phase74_chunked_history_carry_receipt(receipt)?;
+    if receipt.chunked_history_carry_receipt_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 74 chunked-history carry receipt commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase74_chunked_history_carry_receipt_against_sources(
+    receipt: &Phase74ChunkedHistoryCarryReceipt,
+    phase12_chain: &Phase12DecodingChainManifest,
+    phase14_chain: &Phase14DecodingChainManifest,
+) -> Result<()> {
+    let expected = phase74_prepare_chunked_history_carry_receipt(phase12_chain, phase14_chain)?;
+    if receipt != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 74 chunked-history carry source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase75_prepare_publication_proof_bridge_table(
+    phase70_artifact: &Phase70RoleNeutralBoundaryHandoffArtifact,
+    phase71_receipt: &Phase71ActualStwoStepEnvelopeHandoffReceipt,
+    phase72_receipt: &Phase72ActualStwoSharedLookupRegistryReceipt,
+    phase73_claim: &Phase73ProofCarryingDecodeBridgeClaim,
+    phase74_receipt: &Phase74ChunkedHistoryCarryReceipt,
+) -> Result<Phase75PublicationProofBridgeTable> {
+    verify_phase73_proof_carrying_decode_bridge_claim_against_sources(
+        phase73_claim,
+        phase70_artifact,
+        phase71_receipt,
+        phase72_receipt,
+    )?;
+    verify_phase74_chunked_history_carry_receipt(phase74_receipt)?;
+    let mut artifact_rows = vec![
+        phase75_publication_proof_bridge_row(
+            0,
+            "Phase70",
+            "role-neutral handoff artifact",
+            &phase70_artifact.role_neutral_handoff_artifact_commitment,
+            &phase70_artifact.semantic_scope,
+            "verify_phase70_role_neutral_boundary_handoff_artifact",
+            "verify_phase70_role_neutral_boundary_handoff_artifact_against_sources",
+            "artifact",
+            "adjacent decode-step continuity uses a role-neutral handoff digest instead of typed-boundary equality",
+            "abstract bridge layer; not an actual S-two proof receipt",
+        )?,
+        phase75_publication_proof_bridge_row(
+            1,
+            "Phase71",
+            "actual step-envelope handoff receipt",
+            &phase71_receipt.actual_stwo_step_envelope_handoff_receipt_commitment,
+            &phase71_receipt.semantic_scope,
+            "verify_phase71_actual_stwo_step_envelope_handoff_receipt",
+            "verify_phase71_actual_stwo_step_envelope_handoff_receipt_against_sources",
+            "artifact",
+            "the carried handoff is bound to real Phase12/30 step-envelope proofs",
+            "still manifest-level evidence; not recursive aggregation",
+        )?,
+        phase75_publication_proof_bridge_row(
+            2,
+            "Phase72",
+            "actual shared-lookup registry receipt",
+            &phase72_receipt.actual_stwo_shared_lookup_registry_receipt_commitment,
+            &phase72_receipt.semantic_scope,
+            "verify_phase72_actual_stwo_shared_lookup_registry_receipt",
+            "verify_phase72_actual_stwo_shared_lookup_registry_receipt_against_sources",
+            "artifact",
+            "every actual step-envelope reference is tied back to a registered shared lookup artifact",
+            "shared lookup identity only; full lookup-backed softmax remains future work",
+        )?,
+        phase75_publication_proof_bridge_row(
+            3,
+            "Phase73",
+            "proof-carrying decode bridge claim",
+            &phase73_claim.proof_carrying_decode_bridge_claim_commitment,
+            &phase73_claim.semantic_scope,
+            "verify_phase73_proof_carrying_decode_bridge_claim",
+            "verify_phase73_proof_carrying_decode_bridge_claim_against_sources",
+            "analysis",
+            "the abstract proof-carrying surface and the actual Phase12/30 receipts now agree on ordered decode shape",
+            "counts and continuity align, but this is still not recursion or compression",
+        )?,
+        phase75_publication_proof_bridge_row(
+            4,
+            "Phase74",
+            "chunked-history carry receipt",
+            &phase74_receipt.chunked_history_carry_receipt_commitment,
+            &phase74_receipt.semantic_scope,
+            "verify_phase74_chunked_history_carry_receipt",
+            "verify_phase74_chunked_history_carry_receipt_against_sources",
+            "artifact",
+            "chunked carried history is bound to the exact Phase12 to Phase14 replay",
+            "history carrying is demonstrated, not yet recursively accumulated",
+        )?,
+    ];
+    for row in &mut artifact_rows {
+        row.row_commitment = commit_phase75_publication_proof_bridge_row(row)?;
+        verify_phase75_publication_proof_bridge_row(row)?;
+    }
+    let mut table = Phase75PublicationProofBridgeTable {
+        proof_backend: StarkProofBackend::Stwo,
+        table_version: STWO_PUBLICATION_PROOF_BRIDGE_TABLE_VERSION_PHASE75.to_string(),
+        semantic_scope: STWO_PUBLICATION_PROOF_BRIDGE_TABLE_SCOPE_PHASE75.to_string(),
+        source_phase70_role_neutral_handoff_artifact_commitment: phase70_artifact
+            .role_neutral_handoff_artifact_commitment
+            .clone(),
+        source_phase71_actual_stwo_step_envelope_handoff_receipt_commitment: phase71_receipt
+            .actual_stwo_step_envelope_handoff_receipt_commitment
+            .clone(),
+        source_phase72_actual_stwo_shared_lookup_registry_receipt_commitment: phase72_receipt
+            .actual_stwo_shared_lookup_registry_receipt_commitment
+            .clone(),
+        source_phase73_proof_carrying_decode_bridge_claim_commitment: phase73_claim
+            .proof_carrying_decode_bridge_claim_commitment
+            .clone(),
+        source_phase74_chunked_history_carry_receipt_commitment: phase74_receipt
+            .chunked_history_carry_receipt_commitment
+            .clone(),
+        artifact_rows_commitment: String::new(),
+        artifact_rows,
+        row_count: 5,
+        verifier_side_complexity: STWO_PUBLICATION_PROOF_BRIDGE_TABLE_COMPLEXITY_PHASE75
+            .to_string(),
+        verifier_status: STWO_PUBLICATION_PROOF_BRIDGE_TABLE_STATUS_PHASE75.to_string(),
+        transcript_order: phase75_publication_proof_bridge_table_transcript_order(),
+        actual_stwo_bridge_receipts_available: true,
+        source_bound_verifiers_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_PUBLICATION_PROOF_BRIDGE_TABLE_NEXT_STEP_PHASE75.to_string(),
+        publication_proof_bridge_table_commitment: String::new(),
+    };
+    table.artifact_rows_commitment =
+        phase75_commit_publication_proof_bridge_rows(&table.artifact_rows)?;
+    table.publication_proof_bridge_table_commitment =
+        commit_phase75_publication_proof_bridge_table(&table)?;
+    verify_phase75_publication_proof_bridge_table(&table)?;
+    Ok(table)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase75_publication_proof_bridge_row(
+    row: &Phase75PublicationProofBridgeRow,
+) -> Result<()> {
+    if row.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 75 publication proof-bridge row requires `stwo` backend".to_string(),
+        ));
+    }
+    phase43_require_hash32("phase75_artifact_commitment", &row.artifact_commitment)?;
+    phase43_require_hash32("phase75_row_commitment", &row.row_commitment)?;
+    if row.phase_label.is_empty()
+        || row.artifact_name.is_empty()
+        || row.semantic_scope.is_empty()
+        || row.verifier_function.is_empty()
+        || row.source_bound_verifier_function.is_empty()
+        || row.evidence_tier.is_empty()
+        || row.claim_boundary.is_empty()
+        || row.limitation.is_empty()
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 75 publication proof-bridge row has an empty field".to_string(),
+        ));
+    }
+    let expected = commit_phase75_publication_proof_bridge_row(row)?;
+    if row.row_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 75 publication proof-bridge row commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase75_publication_proof_bridge_table(
+    table: &Phase75PublicationProofBridgeTable,
+) -> Result<()> {
+    if table.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 75 publication proof-bridge table requires `stwo` backend".to_string(),
+        ));
+    }
+    if table.table_version != STWO_PUBLICATION_PROOF_BRIDGE_TABLE_VERSION_PHASE75
+        || table.semantic_scope != STWO_PUBLICATION_PROOF_BRIDGE_TABLE_SCOPE_PHASE75
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 75 publication proof-bridge table version or scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase75_source_phase70_artifact_commitment",
+            table
+                .source_phase70_role_neutral_handoff_artifact_commitment
+                .as_str(),
+        ),
+        (
+            "phase75_source_phase71_receipt_commitment",
+            table
+                .source_phase71_actual_stwo_step_envelope_handoff_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase75_source_phase72_receipt_commitment",
+            table
+                .source_phase72_actual_stwo_shared_lookup_registry_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase75_source_phase73_claim_commitment",
+            table
+                .source_phase73_proof_carrying_decode_bridge_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase75_source_phase74_receipt_commitment",
+            table
+                .source_phase74_chunked_history_carry_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase75_artifact_rows_commitment",
+            table.artifact_rows_commitment.as_str(),
+        ),
+        (
+            "phase75_publication_proof_bridge_table_commitment",
+            table.publication_proof_bridge_table_commitment.as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if table.row_count != 5 || table.artifact_rows.len() != table.row_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 75 publication proof-bridge row count drift".to_string(),
+        ));
+    }
+    if table.artifact_rows_commitment
+        != phase75_commit_publication_proof_bridge_rows(&table.artifact_rows)?
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 75 publication proof-bridge row-list commitment drift".to_string(),
+        ));
+    }
+    let expected_phases = ["Phase70", "Phase71", "Phase72", "Phase73", "Phase74"];
+    for (expected_index, (row, expected_phase)) in table
+        .artifact_rows
+        .iter()
+        .zip(expected_phases.iter())
+        .enumerate()
+    {
+        verify_phase75_publication_proof_bridge_row(row)?;
+        if row.row_index != expected_index || row.phase_label != *expected_phase {
+            return Err(VmError::InvalidConfig(
+                "Phase 75 publication proof-bridge row order drift".to_string(),
+            ));
+        }
+    }
+    if table.verifier_side_complexity != STWO_PUBLICATION_PROOF_BRIDGE_TABLE_COMPLEXITY_PHASE75
+        || table.verifier_status != STWO_PUBLICATION_PROOF_BRIDGE_TABLE_STATUS_PHASE75
+        || table.transcript_order != phase75_publication_proof_bridge_table_transcript_order()
+        || table.required_next_step != STWO_PUBLICATION_PROOF_BRIDGE_TABLE_NEXT_STEP_PHASE75
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 75 publication proof-bridge transcript, status, or next-step drift".to_string(),
+        ));
+    }
+    if !table.actual_stwo_bridge_receipts_available
+        || !table.source_bound_verifiers_available
+        || table.recursive_verification_claimed
+        || table.cryptographic_compression_claimed
+        || table.breakthrough_claimed
+        || table.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 75 publication proof-bridge table must not claim recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase75_publication_proof_bridge_table(table)?;
+    if table.publication_proof_bridge_table_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 75 publication proof-bridge table commitment does not match fields".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase75_publication_proof_bridge_table_against_sources(
+    table: &Phase75PublicationProofBridgeTable,
+    phase70_artifact: &Phase70RoleNeutralBoundaryHandoffArtifact,
+    phase71_receipt: &Phase71ActualStwoStepEnvelopeHandoffReceipt,
+    phase72_receipt: &Phase72ActualStwoSharedLookupRegistryReceipt,
+    phase73_claim: &Phase73ProofCarryingDecodeBridgeClaim,
+    phase74_receipt: &Phase74ChunkedHistoryCarryReceipt,
+) -> Result<()> {
+    let expected = phase75_prepare_publication_proof_bridge_table(
+        phase70_artifact,
+        phase71_receipt,
+        phase72_receipt,
+        phase73_claim,
+        phase74_receipt,
+    )?;
+    if table != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 75 publication proof-bridge table source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt(
+    phase12_chain: &Phase12DecodingChainManifest,
+    phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase76ProofCheckedActualStwoDecodeChainReceipt> {
+    verify_phase12_decoding_chain_with_proof_checks(phase12_chain)?;
+    verify_phase30_decoding_step_proof_envelope_manifest_against_chain(
+        phase30_manifest,
+        phase12_chain,
+    )?;
+    let (chain_start_position, chain_end_position) = phase71_chain_step_positions(phase12_chain)?;
+    let proof_commitments_commitment = phase34_commit_ordered_commitment_list(
+        b"phase76-proof-checked-step-envelope-proof-commitments",
+        phase30_manifest
+            .envelopes
+            .iter()
+            .map(|envelope| envelope.proof_commitment.as_str()),
+    )?;
+    let mut receipt = Phase76ProofCheckedActualStwoDecodeChainReceipt {
+        proof_backend: StarkProofBackend::Stwo,
+        receipt_version: STWO_PROOF_CHECKED_ACTUAL_STWO_DECODE_CHAIN_RECEIPT_VERSION_PHASE76
+            .to_string(),
+        semantic_scope: STWO_PROOF_CHECKED_ACTUAL_STWO_DECODE_CHAIN_RECEIPT_SCOPE_PHASE76
+            .to_string(),
+        source_phase12_chain_version: phase12_chain.chain_version.clone(),
+        source_phase12_statement_version: phase12_chain.statement_version.clone(),
+        source_phase12_layout_commitment: commit_phase12_layout(&phase12_chain.layout),
+        source_phase30_manifest_version: phase30_manifest.manifest_version.clone(),
+        source_phase30_source_chain_commitment: phase30_manifest.source_chain_commitment.clone(),
+        source_phase30_step_envelopes_commitment: phase30_manifest
+            .step_envelopes_commitment
+            .clone(),
+        chain_start_boundary_commitment: phase30_manifest.chain_start_boundary_commitment.clone(),
+        chain_end_boundary_commitment: phase30_manifest.chain_end_boundary_commitment.clone(),
+        chain_start_position,
+        chain_end_position,
+        total_steps: phase12_chain.total_steps,
+        continuity_link_count: phase12_chain.total_steps.saturating_sub(1),
+        proof_commitments_commitment,
+        actual_proof_commitment_count: phase30_manifest.envelopes.len(),
+        proof_checked_chain_available: true,
+        actual_proof_verifier_available: true,
+        source_bound_manifest_verifier_available: true,
+        actual_stwo_step_envelopes_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_PROOF_CHECKED_ACTUAL_STWO_DECODE_CHAIN_NEXT_STEP_PHASE76
+            .to_string(),
+        proof_checked_actual_stwo_decode_chain_receipt_commitment: String::new(),
+    };
+    receipt.proof_checked_actual_stwo_decode_chain_receipt_commitment =
+        commit_phase76_proof_checked_actual_stwo_decode_chain_receipt(&receipt)?;
+    verify_phase76_proof_checked_actual_stwo_decode_chain_receipt(&receipt)?;
+    Ok(receipt)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase76_proof_checked_actual_stwo_decode_chain_receipt(
+    receipt: &Phase76ProofCheckedActualStwoDecodeChainReceipt,
+) -> Result<()> {
+    if receipt.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 76 proof-checked actual S-two decode-chain receipt requires `stwo` backend"
+                .to_string(),
+        ));
+    }
+    if receipt.receipt_version
+        != STWO_PROOF_CHECKED_ACTUAL_STWO_DECODE_CHAIN_RECEIPT_VERSION_PHASE76
+        || receipt.semantic_scope
+            != STWO_PROOF_CHECKED_ACTUAL_STWO_DECODE_CHAIN_RECEIPT_SCOPE_PHASE76
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 76 proof-checked actual S-two decode-chain receipt version or scope drift"
+                .to_string(),
+        ));
+    }
+    if receipt.source_phase12_chain_version != STWO_DECODING_CHAIN_VERSION_PHASE12
+        || receipt.source_phase12_statement_version != CLAIM_STATEMENT_VERSION_V1
+        || receipt.source_phase30_manifest_version
+            != STWO_DECODING_STEP_ENVELOPE_MANIFEST_VERSION_PHASE30
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 76 proof-checked actual S-two decode-chain receipt source version drift"
+                .to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase76_source_phase12_layout_commitment",
+            receipt.source_phase12_layout_commitment.as_str(),
+        ),
+        (
+            "phase76_source_phase30_source_chain_commitment",
+            receipt.source_phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase76_source_phase30_step_envelopes_commitment",
+            receipt.source_phase30_step_envelopes_commitment.as_str(),
+        ),
+        (
+            "phase76_chain_start_boundary_commitment",
+            receipt.chain_start_boundary_commitment.as_str(),
+        ),
+        (
+            "phase76_chain_end_boundary_commitment",
+            receipt.chain_end_boundary_commitment.as_str(),
+        ),
+        (
+            "phase76_proof_commitments_commitment",
+            receipt.proof_commitments_commitment.as_str(),
+        ),
+        (
+            "phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment",
+            receipt
+                .proof_checked_actual_stwo_decode_chain_receipt_commitment
+                .as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if receipt.total_steps == 0
+        || receipt.continuity_link_count != receipt.total_steps.saturating_sub(1)
+        || receipt.actual_proof_commitment_count != receipt.total_steps
+        || receipt.chain_start_position >= receipt.chain_end_position
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 76 proof-checked actual S-two decode-chain receipt shape drift".to_string(),
+        ));
+    }
+    if !receipt.proof_checked_chain_available
+        || !receipt.actual_proof_verifier_available
+        || !receipt.source_bound_manifest_verifier_available
+        || !receipt.actual_stwo_step_envelopes_available
+        || receipt.recursive_verification_claimed
+        || receipt.cryptographic_compression_claimed
+        || receipt.breakthrough_claimed
+        || receipt.paper_ready
+        || receipt.required_next_step
+            != STWO_PROOF_CHECKED_ACTUAL_STWO_DECODE_CHAIN_NEXT_STEP_PHASE76
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 76 proof-checked actual S-two decode-chain receipt claim drift".to_string(),
+        ));
+    }
+    let expected = commit_phase76_proof_checked_actual_stwo_decode_chain_receipt(receipt)?;
+    if receipt.proof_checked_actual_stwo_decode_chain_receipt_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 76 proof-checked actual S-two decode-chain receipt commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase76_proof_checked_actual_stwo_decode_chain_receipt_against_sources(
+    receipt: &Phase76ProofCheckedActualStwoDecodeChainReceipt,
+    phase12_chain: &Phase12DecodingChainManifest,
+    phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<()> {
+    let expected = phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt(
+        phase12_chain,
+        phase30_manifest,
+    )?;
+    if receipt != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 76 proof-checked actual S-two decode-chain receipt source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase77_prepare_proof_checked_actual_stwo_step_envelope_bridge_receipt(
+    phase76_receipt: &Phase76ProofCheckedActualStwoDecodeChainReceipt,
+    phase71_receipt: &Phase71ActualStwoStepEnvelopeHandoffReceipt,
+    phase12_chain: &Phase12DecodingChainManifest,
+    phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase77ProofCheckedActualStwoStepEnvelopeBridgeReceipt> {
+    verify_phase76_proof_checked_actual_stwo_decode_chain_receipt_against_sources(
+        phase76_receipt,
+        phase12_chain,
+        phase30_manifest,
+    )?;
+    verify_phase71_actual_stwo_step_envelope_handoff_receipt_against_sources(
+        phase71_receipt,
+        phase12_chain,
+        phase30_manifest,
+    )?;
+    if phase76_receipt.source_phase30_source_chain_commitment
+        != phase71_receipt.source_phase30_source_chain_commitment
+        || phase76_receipt.source_phase30_step_envelopes_commitment
+            != phase71_receipt.source_phase30_step_envelopes_commitment
+        || phase76_receipt.source_phase12_layout_commitment
+            != phase71_receipt.source_phase12_layout_commitment
+        || phase76_receipt.proof_commitments_commitment
+            != phase71_receipt.proof_commitments_commitment
+        || phase76_receipt.actual_proof_commitment_count
+            != phase71_receipt.actual_proof_commitment_count
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 77 proof-checked actual S-two step-envelope bridge source drift".to_string(),
+        ));
+    }
+    let mut receipt = Phase77ProofCheckedActualStwoStepEnvelopeBridgeReceipt {
+        proof_backend: StarkProofBackend::Stwo,
+        receipt_version:
+            STWO_PROOF_CHECKED_ACTUAL_STWO_STEP_ENVELOPE_BRIDGE_RECEIPT_VERSION_PHASE77.to_string(),
+        semantic_scope: STWO_PROOF_CHECKED_ACTUAL_STWO_STEP_ENVELOPE_BRIDGE_RECEIPT_SCOPE_PHASE77
+            .to_string(),
+        source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment: phase76_receipt
+            .proof_checked_actual_stwo_decode_chain_receipt_commitment
+            .clone(),
+        source_phase71_actual_stwo_step_envelope_handoff_receipt_commitment: phase71_receipt
+            .actual_stwo_step_envelope_handoff_receipt_commitment
+            .clone(),
+        source_phase30_source_chain_commitment: phase71_receipt
+            .source_phase30_source_chain_commitment
+            .clone(),
+        source_phase30_step_envelopes_commitment: phase71_receipt
+            .source_phase30_step_envelopes_commitment
+            .clone(),
+        source_phase12_layout_commitment: phase71_receipt.source_phase12_layout_commitment.clone(),
+        chain_start_boundary_commitment: phase71_receipt.chain_start_boundary_commitment.clone(),
+        chain_end_boundary_commitment: phase71_receipt.chain_end_boundary_commitment.clone(),
+        chain_start_position: phase71_receipt.chain_start_position,
+        chain_end_position: phase71_receipt.chain_end_position,
+        total_steps: phase71_receipt.total_steps,
+        continuity_link_count: phase71_receipt.continuity_link_count,
+        proof_commitments_commitment: phase71_receipt.proof_commitments_commitment.clone(),
+        actual_proof_commitment_count: phase71_receipt.actual_proof_commitment_count,
+        proof_checked_chain_available: phase76_receipt.proof_checked_chain_available,
+        actual_step_envelopes_available: phase71_receipt.actual_stwo_step_envelopes_available,
+        actual_proof_verification_available: phase76_receipt.actual_proof_verifier_available
+            && phase71_receipt.proof_verification_available,
+        source_bound_manifest_verifier_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_PROOF_CHECKED_ACTUAL_STWO_STEP_ENVELOPE_BRIDGE_NEXT_STEP_PHASE77
+            .to_string(),
+        proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment: String::new(),
+    };
+    receipt.proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment =
+        commit_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt(&receipt)?;
+    verify_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt(&receipt)?;
+    Ok(receipt)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt(
+    receipt: &Phase77ProofCheckedActualStwoStepEnvelopeBridgeReceipt,
+) -> Result<()> {
+    if receipt.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 77 proof-checked actual S-two step-envelope bridge receipt requires `stwo` backend"
+                .to_string(),
+        ));
+    }
+    if receipt.receipt_version
+        != STWO_PROOF_CHECKED_ACTUAL_STWO_STEP_ENVELOPE_BRIDGE_RECEIPT_VERSION_PHASE77
+        || receipt.semantic_scope
+            != STWO_PROOF_CHECKED_ACTUAL_STWO_STEP_ENVELOPE_BRIDGE_RECEIPT_SCOPE_PHASE77
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 77 proof-checked actual S-two step-envelope bridge receipt version or scope drift"
+                .to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase77_source_phase76_receipt_commitment",
+            receipt
+                .source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase77_source_phase71_receipt_commitment",
+            receipt
+                .source_phase71_actual_stwo_step_envelope_handoff_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase77_source_phase30_source_chain_commitment",
+            receipt.source_phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase77_source_phase30_step_envelopes_commitment",
+            receipt.source_phase30_step_envelopes_commitment.as_str(),
+        ),
+        (
+            "phase77_source_phase12_layout_commitment",
+            receipt.source_phase12_layout_commitment.as_str(),
+        ),
+        (
+            "phase77_chain_start_boundary_commitment",
+            receipt.chain_start_boundary_commitment.as_str(),
+        ),
+        (
+            "phase77_chain_end_boundary_commitment",
+            receipt.chain_end_boundary_commitment.as_str(),
+        ),
+        (
+            "phase77_proof_commitments_commitment",
+            receipt.proof_commitments_commitment.as_str(),
+        ),
+        (
+            "phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment",
+            receipt
+                .proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment
+                .as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if receipt.total_steps == 0
+        || receipt.continuity_link_count != receipt.total_steps.saturating_sub(1)
+        || receipt.actual_proof_commitment_count != receipt.total_steps
+        || receipt.chain_start_position >= receipt.chain_end_position
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 77 proof-checked actual S-two step-envelope bridge receipt shape drift"
+                .to_string(),
+        ));
+    }
+    if !receipt.proof_checked_chain_available
+        || !receipt.actual_step_envelopes_available
+        || !receipt.actual_proof_verification_available
+        || !receipt.source_bound_manifest_verifier_available
+        || receipt.recursive_verification_claimed
+        || receipt.cryptographic_compression_claimed
+        || receipt.breakthrough_claimed
+        || receipt.paper_ready
+        || receipt.required_next_step
+            != STWO_PROOF_CHECKED_ACTUAL_STWO_STEP_ENVELOPE_BRIDGE_NEXT_STEP_PHASE77
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 77 proof-checked actual S-two step-envelope bridge receipt claim drift"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt(receipt)?;
+    if receipt.proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 77 proof-checked actual S-two step-envelope bridge receipt commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt_against_sources(
+    receipt: &Phase77ProofCheckedActualStwoStepEnvelopeBridgeReceipt,
+    phase76_receipt: &Phase76ProofCheckedActualStwoDecodeChainReceipt,
+    phase71_receipt: &Phase71ActualStwoStepEnvelopeHandoffReceipt,
+    phase12_chain: &Phase12DecodingChainManifest,
+    phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<()> {
+    let expected = phase77_prepare_proof_checked_actual_stwo_step_envelope_bridge_receipt(
+        phase76_receipt,
+        phase71_receipt,
+        phase12_chain,
+        phase30_manifest,
+    )?;
+    if receipt != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 77 proof-checked actual S-two step-envelope bridge receipt source drift"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase78_prepare_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(
+    phase76_receipt: &Phase76ProofCheckedActualStwoDecodeChainReceipt,
+    phase72_receipt: &Phase72ActualStwoSharedLookupRegistryReceipt,
+    phase71_receipt: &Phase71ActualStwoStepEnvelopeHandoffReceipt,
+    phase12_chain: &Phase12DecodingChainManifest,
+    phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase78ProofCheckedActualStwoSharedLookupRegistryBridgeReceipt> {
+    verify_phase76_proof_checked_actual_stwo_decode_chain_receipt_against_sources(
+        phase76_receipt,
+        phase12_chain,
+        phase30_manifest,
+    )?;
+    verify_phase72_actual_stwo_shared_lookup_registry_receipt_against_sources(
+        phase72_receipt,
+        phase71_receipt,
+        phase12_chain,
+        phase30_manifest,
+    )?;
+    if phase76_receipt.source_phase30_source_chain_commitment
+        != phase72_receipt.source_phase30_source_chain_commitment
+        || phase76_receipt.source_phase30_step_envelopes_commitment
+            != phase72_receipt.source_phase30_step_envelopes_commitment
+        || phase76_receipt.source_phase12_layout_commitment
+            != phase72_receipt.source_phase12_layout_commitment
+        || phase76_receipt.total_steps != phase72_receipt.total_steps
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 78 proof-checked actual S-two shared-lookup registry bridge source drift"
+                .to_string(),
+        ));
+    }
+    let mut receipt = Phase78ProofCheckedActualStwoSharedLookupRegistryBridgeReceipt {
+        proof_backend: StarkProofBackend::Stwo,
+        receipt_version:
+            STWO_PROOF_CHECKED_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_BRIDGE_RECEIPT_VERSION_PHASE78
+                .to_string(),
+        semantic_scope:
+            STWO_PROOF_CHECKED_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_BRIDGE_RECEIPT_SCOPE_PHASE78
+                .to_string(),
+        source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment: phase76_receipt
+            .proof_checked_actual_stwo_decode_chain_receipt_commitment
+            .clone(),
+        source_phase72_actual_stwo_shared_lookup_registry_receipt_commitment: phase72_receipt
+            .actual_stwo_shared_lookup_registry_receipt_commitment
+            .clone(),
+        source_phase30_source_chain_commitment: phase72_receipt
+            .source_phase30_source_chain_commitment
+            .clone(),
+        source_phase30_step_envelopes_commitment: phase72_receipt
+            .source_phase30_step_envelopes_commitment
+            .clone(),
+        source_phase12_layout_commitment: phase72_receipt.source_phase12_layout_commitment.clone(),
+        total_steps: phase72_receipt.total_steps,
+        unique_shared_lookup_artifact_count: phase72_receipt.unique_shared_lookup_artifact_count,
+        unique_static_lookup_registry_commitment_count: phase72_receipt
+            .unique_static_lookup_registry_commitment_count,
+        shared_lookup_artifact_commitments_commitment: phase72_receipt
+            .shared_lookup_artifact_commitments_commitment
+            .clone(),
+        static_lookup_registry_commitments_commitment: phase72_receipt
+            .static_lookup_registry_commitments_commitment
+            .clone(),
+        proof_checked_chain_available: phase76_receipt.proof_checked_chain_available,
+        actual_shared_lookup_registry_available: phase72_receipt.shared_lookup_registry_available,
+        actual_proof_verification_available: phase76_receipt.actual_proof_verifier_available,
+        source_bound_manifest_verifier_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step:
+            STWO_PROOF_CHECKED_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_BRIDGE_NEXT_STEP_PHASE78
+                .to_string(),
+        proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment: String::new(),
+    };
+    receipt.proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment =
+        commit_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(&receipt)?;
+    verify_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(&receipt)?;
+    Ok(receipt)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(
+    receipt: &Phase78ProofCheckedActualStwoSharedLookupRegistryBridgeReceipt,
+) -> Result<()> {
+    if receipt.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 78 proof-checked actual S-two shared-lookup registry bridge receipt requires `stwo` backend"
+                .to_string(),
+        ));
+    }
+    if receipt.receipt_version
+        != STWO_PROOF_CHECKED_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_BRIDGE_RECEIPT_VERSION_PHASE78
+        || receipt.semantic_scope
+            != STWO_PROOF_CHECKED_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_BRIDGE_RECEIPT_SCOPE_PHASE78
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 78 proof-checked actual S-two shared-lookup registry bridge receipt version or scope drift"
+                .to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase78_source_phase76_receipt_commitment",
+            receipt
+                .source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase78_source_phase72_receipt_commitment",
+            receipt
+                .source_phase72_actual_stwo_shared_lookup_registry_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase78_source_phase30_source_chain_commitment",
+            receipt.source_phase30_source_chain_commitment.as_str(),
+        ),
+        (
+            "phase78_source_phase30_step_envelopes_commitment",
+            receipt.source_phase30_step_envelopes_commitment.as_str(),
+        ),
+        (
+            "phase78_source_phase12_layout_commitment",
+            receipt.source_phase12_layout_commitment.as_str(),
+        ),
+        (
+            "phase78_shared_lookup_artifact_commitments_commitment",
+            receipt
+                .shared_lookup_artifact_commitments_commitment
+                .as_str(),
+        ),
+        (
+            "phase78_static_lookup_registry_commitments_commitment",
+            receipt
+                .static_lookup_registry_commitments_commitment
+                .as_str(),
+        ),
+        (
+            "phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment",
+            receipt
+                .proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment
+                .as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if receipt.total_steps == 0
+        || receipt.unique_shared_lookup_artifact_count == 0
+        || receipt.unique_static_lookup_registry_commitment_count == 0
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 78 proof-checked actual S-two shared-lookup registry bridge receipt shape drift"
+                .to_string(),
+        ));
+    }
+    if !receipt.proof_checked_chain_available
+        || !receipt.actual_shared_lookup_registry_available
+        || !receipt.actual_proof_verification_available
+        || !receipt.source_bound_manifest_verifier_available
+        || receipt.recursive_verification_claimed
+        || receipt.cryptographic_compression_claimed
+        || receipt.breakthrough_claimed
+        || receipt.paper_ready
+        || receipt.required_next_step
+            != STWO_PROOF_CHECKED_ACTUAL_STWO_SHARED_LOOKUP_REGISTRY_BRIDGE_NEXT_STEP_PHASE78
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 78 proof-checked actual S-two shared-lookup registry bridge receipt claim drift"
+                .to_string(),
+        ));
+    }
+    let expected =
+        commit_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(receipt)?;
+    if receipt.proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment
+        != expected
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 78 proof-checked actual S-two shared-lookup registry bridge receipt commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_against_sources(
+    receipt: &Phase78ProofCheckedActualStwoSharedLookupRegistryBridgeReceipt,
+    phase76_receipt: &Phase76ProofCheckedActualStwoDecodeChainReceipt,
+    phase72_receipt: &Phase72ActualStwoSharedLookupRegistryReceipt,
+    phase71_receipt: &Phase71ActualStwoStepEnvelopeHandoffReceipt,
+    phase12_chain: &Phase12DecodingChainManifest,
+    phase30_manifest: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<()> {
+    let expected = phase78_prepare_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(
+        phase76_receipt,
+        phase72_receipt,
+        phase71_receipt,
+        phase12_chain,
+        phase30_manifest,
+    )?;
+    if receipt != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 78 proof-checked actual S-two shared-lookup registry bridge receipt source drift"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase79_prepare_proof_checked_decode_carry_bridge_claim(
+    phase70_artifact: &Phase70RoleNeutralBoundaryHandoffArtifact,
+    phase74_receipt: &Phase74ChunkedHistoryCarryReceipt,
+    phase77_receipt: &Phase77ProofCheckedActualStwoStepEnvelopeBridgeReceipt,
+    phase78_receipt: &Phase78ProofCheckedActualStwoSharedLookupRegistryBridgeReceipt,
+) -> Result<Phase79ProofCheckedDecodeCarryBridgeClaim> {
+    verify_phase70_role_neutral_boundary_handoff_artifact(phase70_artifact)?;
+    verify_phase74_chunked_history_carry_receipt(phase74_receipt)?;
+    verify_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt(phase77_receipt)?;
+    verify_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(
+        phase78_receipt,
+    )?;
+    if phase77_receipt.source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment
+        != phase78_receipt.source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment
+        || phase77_receipt.source_phase30_source_chain_commitment
+            != phase78_receipt.source_phase30_source_chain_commitment
+        || phase77_receipt.source_phase30_step_envelopes_commitment
+            != phase78_receipt.source_phase30_step_envelopes_commitment
+        || phase77_receipt.source_phase12_layout_commitment
+            != phase78_receipt.source_phase12_layout_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 79 proof-checked decode-carry bridge source drift between Phase77 and Phase78"
+                .to_string(),
+        ));
+    }
+    if phase70_artifact.step_count != phase77_receipt.total_steps
+        || phase70_artifact.continuity_link_count != phase77_receipt.continuity_link_count
+        || phase70_artifact.chain_start_position != phase77_receipt.chain_start_position
+        || phase70_artifact.chain_end_position != phase77_receipt.chain_end_position
+        || phase74_receipt.total_steps != phase77_receipt.total_steps
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 79 proof-checked decode-carry bridge source drift across abstract, actual, and history step counts"
+                .to_string(),
+        ));
+    }
+    let mut claim = Phase79ProofCheckedDecodeCarryBridgeClaim {
+        proof_backend: StarkProofBackend::Stwo,
+        claim_version: STWO_PROOF_CHECKED_DECODE_CARRY_BRIDGE_CLAIM_VERSION_PHASE79.to_string(),
+        semantic_scope: STWO_PROOF_CHECKED_DECODE_CARRY_BRIDGE_CLAIM_SCOPE_PHASE79.to_string(),
+        source_phase70_role_neutral_handoff_artifact_commitment: phase70_artifact
+            .role_neutral_handoff_artifact_commitment
+            .clone(),
+        source_phase74_chunked_history_carry_receipt_commitment: phase74_receipt
+            .chunked_history_carry_receipt_commitment
+            .clone(),
+        source_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment:
+            phase77_receipt
+                .proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment
+                .clone(),
+        source_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment:
+            phase78_receipt
+                .proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment
+                .clone(),
+        abstract_step_count: phase70_artifact.step_count,
+        actual_step_count: phase77_receipt.total_steps,
+        history_step_count: phase74_receipt.total_steps,
+        abstract_continuity_link_count: phase70_artifact.continuity_link_count,
+        actual_continuity_link_count: phase77_receipt.continuity_link_count,
+        abstract_chain_start_position: phase70_artifact.chain_start_position,
+        abstract_chain_end_position: phase70_artifact.chain_end_position,
+        actual_chain_start_position: phase77_receipt.chain_start_position,
+        actual_chain_end_position: phase77_receipt.chain_end_position,
+        proof_checked_chain_available: phase77_receipt.proof_checked_chain_available
+            && phase78_receipt.proof_checked_chain_available,
+        abstract_role_neutral_handoffs_available: phase70_artifact.role_neutral_handoffs_available,
+        proof_checked_actual_step_envelopes_available: phase77_receipt
+            .actual_step_envelopes_available,
+        abstract_shared_lookup_identity_available: phase70_artifact
+            .shared_lookup_identity_available,
+        proof_checked_actual_shared_lookup_registry_available: phase78_receipt
+            .actual_shared_lookup_registry_available,
+        proof_checked_chunked_history_available: phase74_receipt.chunked_history_available,
+        source_bound_verifier_available: true,
+        actual_proof_verification_available: phase77_receipt.actual_proof_verification_available
+            && phase78_receipt.actual_proof_verification_available
+            && phase74_receipt.actual_proof_verification_available,
+        verifier_side_complexity: STWO_PROOF_CHECKED_DECODE_CARRY_BRIDGE_COMPLEXITY_PHASE79
+            .to_string(),
+        verifier_status: STWO_PROOF_CHECKED_DECODE_CARRY_BRIDGE_STATUS_PHASE79.to_string(),
+        transcript_order: phase79_proof_checked_decode_carry_bridge_transcript_order(),
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_PROOF_CHECKED_DECODE_CARRY_BRIDGE_NEXT_STEP_PHASE79.to_string(),
+        proof_checked_decode_carry_bridge_claim_commitment: String::new(),
+    };
+    claim.proof_checked_decode_carry_bridge_claim_commitment =
+        commit_phase79_proof_checked_decode_carry_bridge_claim(&claim)?;
+    verify_phase79_proof_checked_decode_carry_bridge_claim(&claim)?;
+    Ok(claim)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase79_proof_checked_decode_carry_bridge_claim(
+    claim: &Phase79ProofCheckedDecodeCarryBridgeClaim,
+) -> Result<()> {
+    if claim.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 79 proof-checked decode-carry bridge claim requires `stwo` backend".to_string(),
+        ));
+    }
+    if claim.claim_version != STWO_PROOF_CHECKED_DECODE_CARRY_BRIDGE_CLAIM_VERSION_PHASE79
+        || claim.semantic_scope != STWO_PROOF_CHECKED_DECODE_CARRY_BRIDGE_CLAIM_SCOPE_PHASE79
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 79 proof-checked decode-carry bridge claim version or scope drift".to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase79_source_phase70_artifact_commitment",
+            claim
+                .source_phase70_role_neutral_handoff_artifact_commitment
+                .as_str(),
+        ),
+        (
+            "phase79_source_phase74_receipt_commitment",
+            claim
+                .source_phase74_chunked_history_carry_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase79_source_phase77_receipt_commitment",
+            claim
+                .source_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase79_source_phase78_receipt_commitment",
+            claim
+                .source_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase79_proof_checked_decode_carry_bridge_claim_commitment",
+            claim
+                .proof_checked_decode_carry_bridge_claim_commitment
+                .as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if claim.abstract_step_count == 0
+        || claim.actual_step_count == 0
+        || claim.history_step_count == 0
+        || claim.abstract_step_count != claim.actual_step_count
+        || claim.actual_step_count != claim.history_step_count
+        || claim.abstract_continuity_link_count != claim.actual_continuity_link_count
+        || claim.abstract_continuity_link_count != claim.abstract_step_count.saturating_sub(1)
+        || claim.abstract_chain_start_position != claim.actual_chain_start_position
+        || claim.abstract_chain_end_position != claim.actual_chain_end_position
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 79 proof-checked decode-carry bridge count or position drift".to_string(),
+        ));
+    }
+    if claim.verifier_side_complexity != STWO_PROOF_CHECKED_DECODE_CARRY_BRIDGE_COMPLEXITY_PHASE79
+        || claim.verifier_status != STWO_PROOF_CHECKED_DECODE_CARRY_BRIDGE_STATUS_PHASE79
+        || claim.transcript_order != phase79_proof_checked_decode_carry_bridge_transcript_order()
+        || claim.required_next_step != STWO_PROOF_CHECKED_DECODE_CARRY_BRIDGE_NEXT_STEP_PHASE79
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 79 proof-checked decode-carry bridge transcript, status, or next-step drift"
+                .to_string(),
+        ));
+    }
+    if !claim.proof_checked_chain_available
+        || !claim.abstract_role_neutral_handoffs_available
+        || !claim.proof_checked_actual_step_envelopes_available
+        || !claim.abstract_shared_lookup_identity_available
+        || !claim.proof_checked_actual_shared_lookup_registry_available
+        || !claim.proof_checked_chunked_history_available
+        || !claim.source_bound_verifier_available
+        || !claim.actual_proof_verification_available
+        || claim.recursive_verification_claimed
+        || claim.cryptographic_compression_claimed
+        || claim.breakthrough_claimed
+        || claim.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 79 proof-checked decode-carry bridge claim must not overclaim recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase79_proof_checked_decode_carry_bridge_claim(claim)?;
+    if claim.proof_checked_decode_carry_bridge_claim_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 79 proof-checked decode-carry bridge claim commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase79_proof_checked_decode_carry_bridge_claim_against_sources(
+    claim: &Phase79ProofCheckedDecodeCarryBridgeClaim,
+    phase70_artifact: &Phase70RoleNeutralBoundaryHandoffArtifact,
+    phase74_receipt: &Phase74ChunkedHistoryCarryReceipt,
+    phase77_receipt: &Phase77ProofCheckedActualStwoStepEnvelopeBridgeReceipt,
+    phase78_receipt: &Phase78ProofCheckedActualStwoSharedLookupRegistryBridgeReceipt,
+) -> Result<()> {
+    let expected = phase79_prepare_proof_checked_decode_carry_bridge_claim(
+        phase70_artifact,
+        phase74_receipt,
+        phase77_receipt,
+        phase78_receipt,
+    )?;
+    if claim != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 79 proof-checked decode-carry bridge claim source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn phase80_prepare_proof_checked_publication_decode_bridge_table(
+    phase74_receipt: &Phase74ChunkedHistoryCarryReceipt,
+    phase76_receipt: &Phase76ProofCheckedActualStwoDecodeChainReceipt,
+    phase77_receipt: &Phase77ProofCheckedActualStwoStepEnvelopeBridgeReceipt,
+    phase78_receipt: &Phase78ProofCheckedActualStwoSharedLookupRegistryBridgeReceipt,
+    phase79_claim: &Phase79ProofCheckedDecodeCarryBridgeClaim,
+) -> Result<Phase80ProofCheckedPublicationDecodeBridgeTable> {
+    verify_phase74_chunked_history_carry_receipt(phase74_receipt)?;
+    verify_phase76_proof_checked_actual_stwo_decode_chain_receipt(phase76_receipt)?;
+    verify_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt(phase77_receipt)?;
+    verify_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(
+        phase78_receipt,
+    )?;
+    verify_phase79_proof_checked_decode_carry_bridge_claim(phase79_claim)?;
+    if phase77_receipt
+        .source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment
+        != phase76_receipt.proof_checked_actual_stwo_decode_chain_receipt_commitment
+        || phase78_receipt
+            .source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment
+            != phase76_receipt.proof_checked_actual_stwo_decode_chain_receipt_commitment
+        || phase79_claim.source_phase74_chunked_history_carry_receipt_commitment
+            != phase74_receipt.chunked_history_carry_receipt_commitment
+        || phase79_claim
+            .source_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment
+            != phase77_receipt
+                .proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment
+        || phase79_claim
+            .source_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment
+            != phase78_receipt
+                .proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 80 proof-checked publication decode-bridge source drift".to_string(),
+        ));
+    }
+    let mut artifact_rows = vec![
+        phase80_proof_checked_publication_decode_bridge_row(
+            0,
+            "Phase76",
+            "proof-checked actual decode-chain receipt",
+            &phase76_receipt.proof_checked_actual_stwo_decode_chain_receipt_commitment,
+            &phase76_receipt.semantic_scope,
+            "verify_phase76_proof_checked_actual_stwo_decode_chain_receipt",
+            "verify_phase76_proof_checked_actual_stwo_decode_chain_receipt_against_sources",
+            "artifact",
+            "the verifier rechecks every source Phase12 execution proof before accepting the decode-chain source",
+            "still flat per-step proof checking; not recursive aggregation",
+        )?,
+        phase80_proof_checked_publication_decode_bridge_row(
+            1,
+            "Phase77",
+            "proof-checked actual step-envelope bridge receipt",
+            &phase77_receipt
+                .proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment,
+            &phase77_receipt.semantic_scope,
+            "verify_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt",
+            "verify_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt_against_sources",
+            "artifact",
+            "actual step-envelope continuity is anchored to a proof-checked decode-chain source",
+            "bridge receipt only; no recursive compression",
+        )?,
+        phase80_proof_checked_publication_decode_bridge_row(
+            2,
+            "Phase78",
+            "proof-checked shared-lookup registry bridge receipt",
+            &phase78_receipt
+                .proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment,
+            &phase78_receipt.semantic_scope,
+            "verify_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt",
+            "verify_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_against_sources",
+            "artifact",
+            "shared lookup identity across actual step envelopes is anchored to a proof-checked decode-chain source",
+            "shared lookup registry identity only; full lookup-backed softmax remains future work",
+        )?,
+        phase80_proof_checked_publication_decode_bridge_row(
+            3,
+            "Phase74",
+            "chunked-history carry receipt",
+            &phase74_receipt.chunked_history_carry_receipt_commitment,
+            &phase74_receipt.semantic_scope,
+            "verify_phase74_chunked_history_carry_receipt",
+            "verify_phase74_chunked_history_carry_receipt_against_sources",
+            "artifact",
+            "chunked carry state is bound to the exact Phase12 to Phase14 replay",
+            "history carrying is demonstrated, not recursively accumulated",
+        )?,
+        phase80_proof_checked_publication_decode_bridge_row(
+            4,
+            "Phase79",
+            "proof-checked decode-carry bridge claim",
+            &phase79_claim.proof_checked_decode_carry_bridge_claim_commitment,
+            &phase79_claim.semantic_scope,
+            "verify_phase79_proof_checked_decode_carry_bridge_claim",
+            "verify_phase79_proof_checked_decode_carry_bridge_claim_against_sources",
+            "analysis",
+            "abstract carry surfaces now agree with proof-checked actual decode receipts and chunked history counts",
+            "bridge claim only; recursion and cryptographic compression remain future work",
+        )?,
+    ];
+    for row in &mut artifact_rows {
+        row.row_commitment = commit_phase80_proof_checked_publication_decode_bridge_row(row)?;
+        verify_phase80_proof_checked_publication_decode_bridge_row(row)?;
+    }
+    let mut table = Phase80ProofCheckedPublicationDecodeBridgeTable {
+        proof_backend: StarkProofBackend::Stwo,
+        table_version: STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_VERSION_PHASE80
+            .to_string(),
+        semantic_scope: STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_SCOPE_PHASE80
+            .to_string(),
+        source_phase74_chunked_history_carry_receipt_commitment: phase74_receipt
+            .chunked_history_carry_receipt_commitment
+            .clone(),
+        source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment: phase76_receipt
+            .proof_checked_actual_stwo_decode_chain_receipt_commitment
+            .clone(),
+        source_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment:
+            phase77_receipt
+                .proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment
+                .clone(),
+        source_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment:
+            phase78_receipt
+                .proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment
+                .clone(),
+        source_phase79_proof_checked_decode_carry_bridge_claim_commitment: phase79_claim
+            .proof_checked_decode_carry_bridge_claim_commitment
+            .clone(),
+        artifact_rows_commitment: String::new(),
+        artifact_rows,
+        row_count: 5,
+        verifier_side_complexity:
+            STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_COMPLEXITY_PHASE80.to_string(),
+        verifier_status: STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_STATUS_PHASE80
+            .to_string(),
+        transcript_order: phase80_proof_checked_publication_decode_bridge_table_transcript_order(),
+        proof_checked_actual_stwo_bridge_receipts_available: true,
+        source_bound_verifiers_available: true,
+        recursive_verification_claimed: false,
+        cryptographic_compression_claimed: false,
+        breakthrough_claimed: false,
+        paper_ready: false,
+        required_next_step: STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_NEXT_STEP_PHASE80
+            .to_string(),
+        proof_checked_publication_decode_bridge_table_commitment: String::new(),
+    };
+    table.artifact_rows_commitment =
+        phase80_commit_proof_checked_publication_decode_bridge_rows(&table.artifact_rows)?;
+    table.proof_checked_publication_decode_bridge_table_commitment =
+        commit_phase80_proof_checked_publication_decode_bridge_table(&table)?;
+    verify_phase80_proof_checked_publication_decode_bridge_table(&table)?;
+    Ok(table)
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase80_proof_checked_publication_decode_bridge_row(
+    row: &Phase80ProofCheckedPublicationDecodeBridgeRow,
+) -> Result<()> {
+    if row.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 80 proof-checked publication decode-bridge row requires `stwo` backend"
+                .to_string(),
+        ));
+    }
+    phase43_require_hash32("phase80_artifact_commitment", &row.artifact_commitment)?;
+    phase43_require_hash32("phase80_row_commitment", &row.row_commitment)?;
+    if row.phase_label.is_empty()
+        || row.artifact_name.is_empty()
+        || row.semantic_scope.is_empty()
+        || row.verifier_function.is_empty()
+        || row.source_bound_verifier_function.is_empty()
+        || row.evidence_tier.is_empty()
+        || row.claim_boundary.is_empty()
+        || row.limitation.is_empty()
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 80 proof-checked publication decode-bridge row has an empty field".to_string(),
+        ));
+    }
+    let expected = commit_phase80_proof_checked_publication_decode_bridge_row(row)?;
+    if row.row_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 80 proof-checked publication decode-bridge row commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase80_proof_checked_publication_decode_bridge_table(
+    table: &Phase80ProofCheckedPublicationDecodeBridgeTable,
+) -> Result<()> {
+    if table.proof_backend != StarkProofBackend::Stwo {
+        return Err(VmError::InvalidConfig(
+            "Phase 80 proof-checked publication decode-bridge table requires `stwo` backend"
+                .to_string(),
+        ));
+    }
+    if table.table_version != STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_VERSION_PHASE80
+        || table.semantic_scope != STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_SCOPE_PHASE80
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 80 proof-checked publication decode-bridge table version or scope drift"
+                .to_string(),
+        ));
+    }
+    for (label, value) in [
+        (
+            "phase80_source_phase74_receipt_commitment",
+            table
+                .source_phase74_chunked_history_carry_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase80_source_phase76_receipt_commitment",
+            table
+                .source_phase76_proof_checked_actual_stwo_decode_chain_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase80_source_phase77_receipt_commitment",
+            table
+                .source_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase80_source_phase78_receipt_commitment",
+            table
+                .source_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_commitment
+                .as_str(),
+        ),
+        (
+            "phase80_source_phase79_claim_commitment",
+            table
+                .source_phase79_proof_checked_decode_carry_bridge_claim_commitment
+                .as_str(),
+        ),
+        (
+            "phase80_artifact_rows_commitment",
+            table.artifact_rows_commitment.as_str(),
+        ),
+        (
+            "phase80_proof_checked_publication_decode_bridge_table_commitment",
+            table
+                .proof_checked_publication_decode_bridge_table_commitment
+                .as_str(),
+        ),
+    ] {
+        phase43_require_hash32(label, value)?;
+    }
+    if table.row_count != 5 || table.artifact_rows.len() != table.row_count {
+        return Err(VmError::InvalidConfig(
+            "Phase 80 proof-checked publication decode-bridge row count drift".to_string(),
+        ));
+    }
+    if table.artifact_rows_commitment
+        != phase80_commit_proof_checked_publication_decode_bridge_rows(&table.artifact_rows)?
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 80 proof-checked publication decode-bridge row-list commitment drift"
+                .to_string(),
+        ));
+    }
+    let expected_phases = ["Phase76", "Phase77", "Phase78", "Phase74", "Phase79"];
+    for (expected_index, (row, expected_phase)) in table
+        .artifact_rows
+        .iter()
+        .zip(expected_phases.iter())
+        .enumerate()
+    {
+        verify_phase80_proof_checked_publication_decode_bridge_row(row)?;
+        if row.row_index != expected_index || row.phase_label != *expected_phase {
+            return Err(VmError::InvalidConfig(
+                "Phase 80 proof-checked publication decode-bridge row order drift".to_string(),
+            ));
+        }
+    }
+    if table.verifier_side_complexity
+        != STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_COMPLEXITY_PHASE80
+        || table.verifier_status
+            != STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_STATUS_PHASE80
+        || table.transcript_order
+            != phase80_proof_checked_publication_decode_bridge_table_transcript_order()
+        || table.required_next_step
+            != STWO_PROOF_CHECKED_PUBLICATION_DECODE_BRIDGE_TABLE_NEXT_STEP_PHASE80
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 80 proof-checked publication decode-bridge transcript, status, or next-step drift"
+                .to_string(),
+        ));
+    }
+    if !table.proof_checked_actual_stwo_bridge_receipts_available
+        || !table.source_bound_verifiers_available
+        || table.recursive_verification_claimed
+        || table.cryptographic_compression_claimed
+        || table.breakthrough_claimed
+        || table.paper_ready
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 80 proof-checked publication decode-bridge table must not claim recursion, compression, breakthrough, or paper readiness"
+                .to_string(),
+        ));
+    }
+    let expected = commit_phase80_proof_checked_publication_decode_bridge_table(table)?;
+    if table.proof_checked_publication_decode_bridge_table_commitment != expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 80 proof-checked publication decode-bridge table commitment does not match fields"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+pub fn verify_phase80_proof_checked_publication_decode_bridge_table_against_sources(
+    table: &Phase80ProofCheckedPublicationDecodeBridgeTable,
+    phase74_receipt: &Phase74ChunkedHistoryCarryReceipt,
+    phase76_receipt: &Phase76ProofCheckedActualStwoDecodeChainReceipt,
+    phase77_receipt: &Phase77ProofCheckedActualStwoStepEnvelopeBridgeReceipt,
+    phase78_receipt: &Phase78ProofCheckedActualStwoSharedLookupRegistryBridgeReceipt,
+    phase79_claim: &Phase79ProofCheckedDecodeCarryBridgeClaim,
+) -> Result<()> {
+    let expected = phase80_prepare_proof_checked_publication_decode_bridge_table(
+        phase74_receipt,
+        phase76_receipt,
+        phase77_receipt,
+        phase78_receipt,
+        phase79_claim,
+    )?;
+    if table != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 80 proof-checked publication decode-bridge table source drift".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
 #[derive(Debug, Clone)]
 struct Phase63LookupIdentityCommitments {
     shared_lookup_identity_commitment: String,
@@ -19016,6 +24814,463 @@ fn phase65_transformer_transition_transcript_order() -> Vec<String> {
         "shared_lookup_identity_commitment",
         "tensor_relation_commitment",
         "ordered_transformer_transition_steps",
+        "negative_claim_flags",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase66_commit_chain_links(links: &[Phase66TransformerChainLink]) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 66 chain link list hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase66-transformer-chain-links");
+    phase29_update_usize(&mut hasher, links.len());
+    for link in links {
+        phase29_update_len_prefixed(&mut hasher, link.chain_link_commitment.as_bytes());
+    }
+    phase44d_finalize_hash(hasher, "Phase 66 chain links")
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+pub(crate) fn phase66_commit_chain_links_for_tests(
+    links: &[Phase66TransformerChainLink],
+) -> Result<String> {
+    phase66_commit_chain_links(links)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase66_transformer_chain_surface_unit_count(step_count: usize) -> Result<usize> {
+    step_count
+        .checked_mul(9)
+        .and_then(|value| value.checked_add(step_count.saturating_sub(1)))
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 66 transformer chain surface accounting overflow".to_string(),
+            )
+        })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase66_transformer_chain_transcript_order() -> Vec<String> {
+    [
+        "phase66_artifact_header",
+        "phase65_transformer_transition_artifact_commitment",
+        "phase64_typed_carried_state_claim_commitment",
+        "ordered_chain_links",
+        "carried_state_handoff_links",
+        "negative_claim_flags",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase67_publication_row(
+    row_index: usize,
+    phase_label: &str,
+    artifact_name: &str,
+    artifact_commitment: &str,
+    semantic_scope: &str,
+    verifier_function: &str,
+    source_bound_verifier_function: &str,
+    evidence_tier: &str,
+    claim_boundary: &str,
+    limitation: &str,
+) -> Result<Phase67PublicationArtifactRow> {
+    let mut row = Phase67PublicationArtifactRow {
+        proof_backend: StarkProofBackend::Stwo,
+        row_index,
+        phase_label: phase_label.to_string(),
+        artifact_name: artifact_name.to_string(),
+        artifact_commitment: artifact_commitment.to_string(),
+        semantic_scope: semantic_scope.to_string(),
+        verifier_function: verifier_function.to_string(),
+        source_bound_verifier_function: source_bound_verifier_function.to_string(),
+        evidence_tier: evidence_tier.to_string(),
+        claim_boundary: claim_boundary.to_string(),
+        limitation: limitation.to_string(),
+        row_commitment: String::new(),
+    };
+    row.row_commitment = commit_phase67_publication_artifact_row(&row)?;
+    Ok(row)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase67_commit_publication_rows(rows: &[Phase67PublicationArtifactRow]) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 67 publication row list hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase67-publication-artifact-rows");
+    phase29_update_usize(&mut hasher, rows.len());
+    for row in rows {
+        phase29_update_len_prefixed(&mut hasher, row.row_commitment.as_bytes());
+    }
+    phase44d_finalize_hash(hasher, "Phase 67 publication rows")
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+pub(crate) fn phase67_commit_publication_rows_for_tests(
+    rows: &[Phase67PublicationArtifactRow],
+) -> Result<String> {
+    phase67_commit_publication_rows(rows)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase67_publication_artifact_table_transcript_order() -> Vec<String> {
+    [
+        "phase67_table_header",
+        "phase66_chain_artifact_commitment",
+        "phase65_transition_artifact_commitment",
+        "phase64_typed_carried_state_claim_commitment",
+        "phase63_shared_lookup_identity_claim_commitment",
+        "ordered_publication_rows",
+        "negative_claim_flags",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase68_independent_replay_audit_transcript_order() -> Vec<String> {
+    [
+        "phase68_audit_header",
+        "phase66_chain_artifact_commitment",
+        "phase67_publication_table_commitment",
+        "audited_start_and_end_state",
+        "oracle_and_tamper_case_contract",
+        "negative_claim_flags",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase69_symbolic_mapping_row(
+    row_index: usize,
+    symbolic_term: &str,
+    model_component: &str,
+    artifact_phase: &str,
+    artifact_commitment: &str,
+    verifier_surface: &str,
+    source_bound_check: &str,
+    limitation: &str,
+) -> Result<Phase69SymbolicArtifactMappingRow> {
+    let mut row = Phase69SymbolicArtifactMappingRow {
+        proof_backend: StarkProofBackend::Stwo,
+        row_index,
+        symbolic_term: symbolic_term.to_string(),
+        model_component: model_component.to_string(),
+        artifact_phase: artifact_phase.to_string(),
+        artifact_commitment: artifact_commitment.to_string(),
+        verifier_surface: verifier_surface.to_string(),
+        source_bound_check: source_bound_check.to_string(),
+        limitation: limitation.to_string(),
+        row_commitment: String::new(),
+    };
+    row.row_commitment = commit_phase69_symbolic_artifact_mapping_row(&row)?;
+    Ok(row)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase69_commit_symbolic_mapping_rows(
+    rows: &[Phase69SymbolicArtifactMappingRow],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 69 symbolic mapping row list hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase69-symbolic-artifact-mapping-rows");
+    phase29_update_usize(&mut hasher, rows.len());
+    for row in rows {
+        phase29_update_len_prefixed(&mut hasher, row.row_commitment.as_bytes());
+    }
+    phase44d_finalize_hash(hasher, "Phase 69 symbolic mapping rows")
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+pub(crate) fn phase69_commit_symbolic_mapping_rows_for_tests(
+    rows: &[Phase69SymbolicArtifactMappingRow],
+) -> Result<String> {
+    phase69_commit_symbolic_mapping_rows(rows)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase69_symbolic_artifact_mapping_transcript_order() -> Vec<String> {
+    [
+        "phase69_mapping_header",
+        "phase68_audit_commitment",
+        "phase67_publication_table_commitment",
+        "phase66_chain_artifact_commitment",
+        "phase65_to_phase63_artifact_commitments",
+        "ordered_symbolic_mapping_rows",
+        "negative_claim_flags",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase70_commit_role_neutral_handoff_surface(
+    position: usize,
+    carried_state_commitment: &str,
+    relation_template_commitment: &str,
+    shared_lookup_identity_commitment: &str,
+    lookup_table_registry_commitment: &str,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 70 role-neutral handoff surface hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase70-role-neutral-boundary-handoff-surface",
+    );
+    phase29_update_usize(&mut hasher, position);
+    for part in [
+        carried_state_commitment.as_bytes(),
+        relation_template_commitment.as_bytes(),
+        shared_lookup_identity_commitment.as_bytes(),
+        lookup_table_registry_commitment.as_bytes(),
+    ] {
+        phase29_update_len_prefixed(&mut hasher, part);
+    }
+    phase44d_finalize_hash(hasher, "Phase 70 role-neutral handoff surface")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase70_commit_handoff_links(links: &[Phase70RoleNeutralBoundaryHandoffLink]) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 70 handoff link list hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase70-role-neutral-boundary-handoff-links");
+    phase29_update_usize(&mut hasher, links.len());
+    for link in links {
+        phase29_update_len_prefixed(&mut hasher, link.handoff_link_commitment.as_bytes());
+    }
+    phase44d_finalize_hash(hasher, "Phase 70 role-neutral handoff links")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase70_role_neutral_handoff_surface_unit_count(step_count: usize) -> Result<usize> {
+    step_count
+        .checked_mul(7)
+        .and_then(|value| value.checked_add(step_count.saturating_sub(1)))
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 70 role-neutral handoff surface accounting overflow".to_string(),
+            )
+        })
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase70_role_neutral_handoff_transcript_order() -> Vec<String> {
+    [
+        "phase70_artifact_header",
+        "phase66_chain_artifact_commitment",
+        "phase64_typed_carried_state_claim_commitment",
+        "phase63_shared_lookup_identity_claim_commitment",
+        "ordered_role_neutral_handoff_links",
+        "role_neutral_continuity_links",
+        "negative_claim_flags",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase71_chain_step_positions(chain: &Phase12DecodingChainManifest) -> Result<(usize, usize)> {
+    let first = chain.steps.first().ok_or_else(|| {
+        VmError::InvalidConfig("Phase 71 requires a non-empty Phase12 chain".to_string())
+    })?;
+    let last = chain.steps.last().ok_or_else(|| {
+        VmError::InvalidConfig("Phase 71 requires a non-empty Phase12 chain".to_string())
+    })?;
+    Ok((first.from_state.step_index, last.to_state.step_index))
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase72_unique_commitments_in_order<'a>(
+    commitments: impl IntoIterator<Item = &'a str>,
+) -> Vec<String> {
+    let mut seen = HashSet::new();
+    let mut ordered = Vec::new();
+    for commitment in commitments {
+        if seen.insert(commitment.to_string()) {
+            ordered.push(commitment.to_string());
+        }
+    }
+    ordered
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase73_proof_carrying_decode_bridge_transcript_order() -> Vec<String> {
+    [
+        "phase73_claim_header",
+        "phase70_role_neutral_handoff_artifact_commitment",
+        "phase71_actual_step_envelope_handoff_receipt_commitment",
+        "phase72_actual_shared_lookup_registry_receipt_commitment",
+        "shape_alignment_surface",
+        "negative_claim_flags",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase75_publication_proof_bridge_row(
+    row_index: usize,
+    phase_label: &str,
+    artifact_name: &str,
+    artifact_commitment: &str,
+    semantic_scope: &str,
+    verifier_function: &str,
+    source_bound_verifier_function: &str,
+    evidence_tier: &str,
+    claim_boundary: &str,
+    limitation: &str,
+) -> Result<Phase75PublicationProofBridgeRow> {
+    let mut row = Phase75PublicationProofBridgeRow {
+        proof_backend: StarkProofBackend::Stwo,
+        row_index,
+        phase_label: phase_label.to_string(),
+        artifact_name: artifact_name.to_string(),
+        artifact_commitment: artifact_commitment.to_string(),
+        semantic_scope: semantic_scope.to_string(),
+        verifier_function: verifier_function.to_string(),
+        source_bound_verifier_function: source_bound_verifier_function.to_string(),
+        evidence_tier: evidence_tier.to_string(),
+        claim_boundary: claim_boundary.to_string(),
+        limitation: limitation.to_string(),
+        row_commitment: String::new(),
+    };
+    row.row_commitment = commit_phase75_publication_proof_bridge_row(&row)?;
+    Ok(row)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase75_commit_publication_proof_bridge_rows(
+    rows: &[Phase75PublicationProofBridgeRow],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 75 publication proof-bridge row list hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(&mut hasher, b"phase75-publication-proof-bridge-rows");
+    phase29_update_usize(&mut hasher, rows.len());
+    for row in rows {
+        phase29_update_len_prefixed(&mut hasher, row.row_commitment.as_bytes());
+    }
+    phase44d_finalize_hash(hasher, "Phase 75 publication proof-bridge rows")
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase75_publication_proof_bridge_table_transcript_order() -> Vec<String> {
+    [
+        "phase75_table_header",
+        "phase70_role_neutral_handoff_artifact_commitment",
+        "phase71_to_phase74_bridge_commitments",
+        "ordered_publication_proof_bridge_rows",
+        "negative_claim_flags",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase79_proof_checked_decode_carry_bridge_transcript_order() -> Vec<String> {
+    [
+        "phase79_claim_header",
+        "phase70_role_neutral_handoff_artifact_commitment",
+        "phase74_chunked_history_carry_receipt_commitment",
+        "phase77_proof_checked_actual_step_envelope_bridge_receipt_commitment",
+        "phase78_proof_checked_actual_shared_lookup_registry_bridge_receipt_commitment",
+        "negative_claim_flags",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase80_proof_checked_publication_decode_bridge_row(
+    row_index: usize,
+    phase_label: &str,
+    artifact_name: &str,
+    artifact_commitment: &str,
+    semantic_scope: &str,
+    verifier_function: &str,
+    source_bound_verifier_function: &str,
+    evidence_tier: &str,
+    claim_boundary: &str,
+    limitation: &str,
+) -> Result<Phase80ProofCheckedPublicationDecodeBridgeRow> {
+    let mut row = Phase80ProofCheckedPublicationDecodeBridgeRow {
+        proof_backend: StarkProofBackend::Stwo,
+        row_index,
+        phase_label: phase_label.to_string(),
+        artifact_name: artifact_name.to_string(),
+        artifact_commitment: artifact_commitment.to_string(),
+        semantic_scope: semantic_scope.to_string(),
+        verifier_function: verifier_function.to_string(),
+        source_bound_verifier_function: source_bound_verifier_function.to_string(),
+        evidence_tier: evidence_tier.to_string(),
+        claim_boundary: claim_boundary.to_string(),
+        limitation: limitation.to_string(),
+        row_commitment: String::new(),
+    };
+    row.row_commitment = commit_phase80_proof_checked_publication_decode_bridge_row(&row)?;
+    Ok(row)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase80_commit_proof_checked_publication_decode_bridge_rows(
+    rows: &[Phase80ProofCheckedPublicationDecodeBridgeRow],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize Phase 80 proof-checked publication decode-bridge row list hash: {err}"
+        ))
+    })?;
+    phase29_update_len_prefixed(
+        &mut hasher,
+        b"phase80-proof-checked-publication-decode-bridge-rows",
+    );
+    phase29_update_usize(&mut hasher, rows.len());
+    for row in rows {
+        phase29_update_len_prefixed(&mut hasher, row.row_commitment.as_bytes());
+    }
+    phase44d_finalize_hash(
+        hasher,
+        "Phase 80 proof-checked publication decode-bridge rows",
+    )
+}
+
+#[cfg(feature = "stwo-backend")]
+fn phase80_proof_checked_publication_decode_bridge_table_transcript_order() -> Vec<String> {
+    [
+        "phase80_table_header",
+        "phase74_receipt_commitment",
+        "phase76_to_phase79_bridge_commitments",
+        "ordered_proof_checked_publication_decode_bridge_rows",
         "negative_claim_flags",
     ]
     .into_iter()
@@ -24222,6 +30477,151 @@ mod tests {
     }
 
     #[cfg(feature = "stwo-backend")]
+    fn sample_phase12_chain_and_phase30_manifest() -> (
+        Phase12DecodingChainManifest,
+        Phase30DecodingStepProofEnvelopeManifest,
+    ) {
+        let layout = phase12_default_decoding_layout();
+        let phase12 = prove_phase12_decoding_demo_for_layout(&layout).expect("phase12 demo");
+        let phase30 =
+            phase30_prepare_decoding_step_proof_envelope_manifest(&phase12).expect("phase30");
+        (phase12, phase30)
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    fn sample_phase70_role_neutral_handoff_artifact_for_three_steps(
+    ) -> Phase70RoleNeutralBoundaryHandoffArtifact {
+        let relation_template_commitment = phase38_test_hash32('1');
+        let shared_lookup_identity_commitment = phase38_test_hash32('2');
+        let lookup_table_registry_commitment = phase38_test_hash32('3');
+        let source_phase66_transformer_chain_artifact_commitment = phase38_test_hash32('4');
+        let source_phase64_typed_carried_state_claim_commitment = phase38_test_hash32('5');
+        let source_phase63_shared_lookup_identity_claim_commitment = phase38_test_hash32('6');
+        let carried_states = [
+            phase38_test_hash32('7'),
+            phase38_test_hash32('8'),
+            phase38_test_hash32('9'),
+            phase38_test_hash32('a'),
+        ];
+        let input_boundaries = [
+            phase38_test_hash32('b'),
+            phase38_test_hash32('c'),
+            phase38_test_hash32('d'),
+        ];
+        let output_boundaries = [
+            phase38_test_hash32('e'),
+            phase38_test_hash32('f'),
+            phase38_test_hash32('0'),
+        ];
+        let source_phase66_links = [
+            phase38_test_hash32('1'),
+            phase38_test_hash32('2'),
+            phase38_test_hash32('3'),
+        ];
+        let source_phase64_steps = [
+            phase38_test_hash32('4'),
+            phase38_test_hash32('5'),
+            phase38_test_hash32('6'),
+        ];
+        let mut previous_output_handoff_commitment = None;
+        let mut handoff_links = Vec::new();
+        for step_index in 0..3 {
+            let input_position = step_index;
+            let output_position = step_index + 1;
+            let input_handoff_commitment = phase70_commit_role_neutral_handoff_surface(
+                input_position,
+                &carried_states[step_index],
+                &relation_template_commitment,
+                &shared_lookup_identity_commitment,
+                &lookup_table_registry_commitment,
+            )
+            .expect("input handoff");
+            let output_handoff_commitment = phase70_commit_role_neutral_handoff_surface(
+                output_position,
+                &carried_states[step_index + 1],
+                &relation_template_commitment,
+                &shared_lookup_identity_commitment,
+                &lookup_table_registry_commitment,
+            )
+            .expect("output handoff");
+            let mut link = Phase70RoleNeutralBoundaryHandoffLink {
+                proof_backend: StarkProofBackend::Stwo,
+                step_index,
+                source_phase66_chain_link_commitment: source_phase66_links[step_index].clone(),
+                source_phase64_typed_step_commitment: source_phase64_steps[step_index].clone(),
+                input_typed_boundary_commitment: input_boundaries[step_index].clone(),
+                output_typed_boundary_commitment: output_boundaries[step_index].clone(),
+                input_carried_state_commitment: carried_states[step_index].clone(),
+                output_carried_state_commitment: carried_states[step_index + 1].clone(),
+                previous_output_handoff_commitment: previous_output_handoff_commitment.clone(),
+                input_position,
+                output_position,
+                shared_lookup_identity_commitment: shared_lookup_identity_commitment.clone(),
+                input_handoff_commitment,
+                output_handoff_commitment,
+                handoff_link_commitment: String::new(),
+            };
+            link.handoff_link_commitment =
+                commit_phase70_role_neutral_boundary_handoff_link(&link).expect("commit link");
+            previous_output_handoff_commitment = Some(link.output_handoff_commitment.clone());
+            handoff_links.push(link);
+        }
+        let role_neutral_handoff_surface_unit_count =
+            phase70_role_neutral_handoff_surface_unit_count(handoff_links.len())
+                .expect("phase70 surface count");
+        let phase66_combined_verifier_surface_unit_count = 80usize;
+        let mut artifact = Phase70RoleNeutralBoundaryHandoffArtifact {
+            proof_backend: StarkProofBackend::Stwo,
+            artifact_version: STWO_ROLE_NEUTRAL_HANDOFF_ARTIFACT_VERSION_PHASE70.to_string(),
+            semantic_scope: STWO_ROLE_NEUTRAL_HANDOFF_ARTIFACT_SCOPE_PHASE70.to_string(),
+            source_phase66_transformer_chain_artifact_commitment,
+            source_phase64_typed_carried_state_claim_commitment,
+            source_phase63_shared_lookup_identity_claim_commitment,
+            relation_kind: STWO_TRANSFORMER_TRANSITION_RELATION_KIND_PHASE65.to_string(),
+            relation_template_commitment,
+            shared_lookup_identity_commitment,
+            lookup_table_registry_commitment,
+            chain_start_typed_boundary_commitment: input_boundaries[0].clone(),
+            chain_end_typed_boundary_commitment: output_boundaries[2].clone(),
+            chain_start_handoff_commitment: handoff_links[0].input_handoff_commitment.clone(),
+            chain_end_handoff_commitment: handoff_links[2].output_handoff_commitment.clone(),
+            chain_start_carried_state_commitment: carried_states[0].clone(),
+            chain_end_carried_state_commitment: carried_states[3].clone(),
+            chain_start_position: 0,
+            chain_end_position: 3,
+            handoff_links_commitment: String::new(),
+            handoff_links,
+            step_count: 3,
+            continuity_link_count: 2,
+            phase66_chained_transition_surface_unit_count: 27,
+            phase66_combined_verifier_surface_unit_count,
+            role_neutral_handoff_surface_unit_count,
+            combined_verifier_surface_unit_count: phase66_combined_verifier_surface_unit_count
+                + role_neutral_handoff_surface_unit_count,
+            surface_delta_from_phase66: role_neutral_handoff_surface_unit_count,
+            verifier_side_complexity: STWO_ROLE_NEUTRAL_HANDOFF_COMPLEXITY_PHASE70.to_string(),
+            verifier_status: STWO_ROLE_NEUTRAL_HANDOFF_STATUS_PHASE70.to_string(),
+            transcript_order: phase70_role_neutral_handoff_transcript_order(),
+            phase66_chain_available: true,
+            source_bound_verifier_available: true,
+            role_neutral_handoffs_available: true,
+            shared_lookup_identity_available: true,
+            recursive_verification_claimed: false,
+            cryptographic_compression_claimed: false,
+            breakthrough_claimed: false,
+            paper_ready: false,
+            required_next_step: STWO_ROLE_NEUTRAL_HANDOFF_NEXT_STEP_PHASE70.to_string(),
+            role_neutral_handoff_artifact_commitment: String::new(),
+        };
+        artifact.handoff_links_commitment =
+            phase70_commit_handoff_links(&artifact.handoff_links).expect("commit handoff links");
+        artifact.role_neutral_handoff_artifact_commitment =
+            commit_phase70_role_neutral_boundary_handoff_artifact(&artifact)
+                .expect("commit phase70 artifact");
+        artifact
+    }
+
+    #[cfg(feature = "stwo-backend")]
     fn sample_phase38_segment_source(
         start: &str,
         end: &str,
@@ -25868,6 +32268,303 @@ mod tests {
         let err = verify_phase41_boundary_translation_witness(&witness)
             .expect_err("Phase41 must reject proof-level derivation claims");
         assert!(err.to_string().contains("proof-level derivation"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase70_role_neutral_handoff_accepts_adjacent_typed_boundary_mismatch() {
+        let artifact = sample_phase70_role_neutral_handoff_artifact_for_three_steps();
+        assert_ne!(
+            artifact.handoff_links[0].output_typed_boundary_commitment,
+            artifact.handoff_links[1].input_typed_boundary_commitment
+        );
+        assert_eq!(
+            artifact.handoff_links[0].output_handoff_commitment,
+            artifact.handoff_links[1].input_handoff_commitment
+        );
+        verify_phase70_role_neutral_boundary_handoff_artifact(&artifact)
+            .expect("phase70 artifact should accept role-neutral continuity");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase70_role_neutral_handoff_rejects_broken_previous_output_binding() {
+        let mut artifact = sample_phase70_role_neutral_handoff_artifact_for_three_steps();
+        artifact.handoff_links[1].previous_output_handoff_commitment =
+            Some(phase38_test_hash32('d'));
+        artifact.handoff_links[1].handoff_link_commitment =
+            commit_phase70_role_neutral_boundary_handoff_link(&artifact.handoff_links[1])
+                .expect("recommit tampered phase70 link");
+        artifact.handoff_links_commitment =
+            phase70_commit_handoff_links(&artifact.handoff_links).expect("recommit tampered links");
+        artifact.role_neutral_handoff_artifact_commitment =
+            commit_phase70_role_neutral_boundary_handoff_artifact(&artifact)
+                .expect("recommit tampered phase70 artifact");
+
+        let err = verify_phase70_role_neutral_boundary_handoff_artifact(&artifact)
+            .expect_err("tampered previous-output handoff must fail");
+        assert!(err.to_string().contains("continuity drift"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase70_to_phase75_bridge_accepts_real_phase12_phase30_phase14_sources() {
+        let (phase12, phase30) = sample_phase12_chain_and_phase30_manifest();
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let phase70 = sample_phase70_role_neutral_handoff_artifact_for_three_steps();
+        let phase71 = phase71_prepare_actual_stwo_step_envelope_handoff_receipt(&phase12, &phase30)
+            .expect("phase71 receipt");
+        let phase72 = phase72_prepare_actual_stwo_shared_lookup_registry_receipt(
+            &phase71, &phase12, &phase30,
+        )
+        .expect("phase72 receipt");
+        let phase73 =
+            phase73_prepare_proof_carrying_decode_bridge_claim(&phase70, &phase71, &phase72)
+                .expect("phase73 claim");
+        let phase74 =
+            phase74_prepare_chunked_history_carry_receipt(&phase12, &phase14).expect("phase74");
+        let phase75 = phase75_prepare_publication_proof_bridge_table(
+            &phase70, &phase71, &phase72, &phase73, &phase74,
+        )
+        .expect("phase75 table");
+
+        assert_eq!(phase71.total_steps, 3);
+        assert_eq!(phase72.total_steps, 3);
+        assert_eq!(phase73.abstract_step_count, 3);
+        assert_eq!(phase74.total_steps, 3);
+        assert_eq!(phase75.row_count, 5);
+
+        verify_phase71_actual_stwo_step_envelope_handoff_receipt_against_sources(
+            &phase71, &phase12, &phase30,
+        )
+        .expect("phase71 against sources");
+        verify_phase72_actual_stwo_shared_lookup_registry_receipt_against_sources(
+            &phase72, &phase71, &phase12, &phase30,
+        )
+        .expect("phase72 against sources");
+        verify_phase73_proof_carrying_decode_bridge_claim_against_sources(
+            &phase73, &phase70, &phase71, &phase72,
+        )
+        .expect("phase73 against sources");
+        verify_phase74_chunked_history_carry_receipt_against_sources(&phase74, &phase12, &phase14)
+            .expect("phase74 against sources");
+        verify_phase75_publication_proof_bridge_table_against_sources(
+            &phase75, &phase70, &phase71, &phase72, &phase73, &phase74,
+        )
+        .expect("phase75 against sources");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase72_shared_lookup_registry_receipt_rejects_recommitted_registry_failure_flag() {
+        let (phase12, phase30) = sample_phase12_chain_and_phase30_manifest();
+        let phase71 = phase71_prepare_actual_stwo_step_envelope_handoff_receipt(&phase12, &phase30)
+            .expect("phase71 receipt");
+        let mut phase72 = phase72_prepare_actual_stwo_shared_lookup_registry_receipt(
+            &phase71, &phase12, &phase30,
+        )
+        .expect("phase72 receipt");
+        phase72.every_envelope_registry_matches_referenced_artifact = false;
+        phase72.actual_stwo_shared_lookup_registry_receipt_commitment =
+            commit_phase72_actual_stwo_shared_lookup_registry_receipt(&phase72)
+                .expect("recommit tampered phase72 receipt");
+
+        let err = verify_phase72_actual_stwo_shared_lookup_registry_receipt(&phase72)
+            .expect_err("phase72 receipt must reject missing registry agreement");
+        assert!(err.to_string().contains("shape drift"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase76_to_phase80_proof_checked_bridge_accepts_real_phase12_phase30_phase14_sources() {
+        let (phase12, phase30) = sample_phase12_chain_and_phase30_manifest();
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let phase70 = sample_phase70_role_neutral_handoff_artifact_for_three_steps();
+        let phase71 = phase71_prepare_actual_stwo_step_envelope_handoff_receipt(&phase12, &phase30)
+            .expect("phase71 receipt");
+        let phase72 = phase72_prepare_actual_stwo_shared_lookup_registry_receipt(
+            &phase71, &phase12, &phase30,
+        )
+        .expect("phase72 receipt");
+        let phase74 =
+            phase74_prepare_chunked_history_carry_receipt(&phase12, &phase14).expect("phase74");
+        let phase76 =
+            phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt(&phase12, &phase30)
+                .expect("phase76 receipt");
+        let phase77 = phase77_prepare_proof_checked_actual_stwo_step_envelope_bridge_receipt(
+            &phase76, &phase71, &phase12, &phase30,
+        )
+        .expect("phase77 receipt");
+        let phase78 =
+            phase78_prepare_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(
+                &phase76, &phase72, &phase71, &phase12, &phase30,
+            )
+            .expect("phase78 receipt");
+        let phase79 = phase79_prepare_proof_checked_decode_carry_bridge_claim(
+            &phase70, &phase74, &phase77, &phase78,
+        )
+        .expect("phase79 claim");
+        let phase80 = phase80_prepare_proof_checked_publication_decode_bridge_table(
+            &phase74, &phase76, &phase77, &phase78, &phase79,
+        )
+        .expect("phase80 table");
+
+        assert_eq!(phase76.total_steps, 3);
+        assert_eq!(phase77.total_steps, 3);
+        assert_eq!(phase78.total_steps, 3);
+        assert_eq!(phase79.actual_step_count, 3);
+        assert_eq!(phase80.row_count, 5);
+
+        verify_phase76_proof_checked_actual_stwo_decode_chain_receipt_against_sources(
+            &phase76, &phase12, &phase30,
+        )
+        .expect("phase76 against sources");
+        verify_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt_against_sources(
+            &phase77, &phase76, &phase71, &phase12, &phase30,
+        )
+        .expect("phase77 against sources");
+        verify_phase78_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt_against_sources(
+            &phase78, &phase76, &phase72, &phase71, &phase12, &phase30,
+        )
+        .expect("phase78 against sources");
+        verify_phase79_proof_checked_decode_carry_bridge_claim_against_sources(
+            &phase79, &phase70, &phase74, &phase77, &phase78,
+        )
+        .expect("phase79 against sources");
+        verify_phase80_proof_checked_publication_decode_bridge_table_against_sources(
+            &phase80, &phase74, &phase76, &phase77, &phase78, &phase79,
+        )
+        .expect("phase80 against sources");
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase76_proof_checked_decode_chain_receipt_rejects_recommitted_proof_check_drift() {
+        let (phase12, phase30) = sample_phase12_chain_and_phase30_manifest();
+        let mut phase76 =
+            phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt(&phase12, &phase30)
+                .expect("phase76 receipt");
+        phase76.actual_proof_verifier_available = false;
+        phase76.proof_checked_actual_stwo_decode_chain_receipt_commitment =
+            commit_phase76_proof_checked_actual_stwo_decode_chain_receipt(&phase76)
+                .expect("recommit tampered phase76 receipt");
+
+        let err = verify_phase76_proof_checked_actual_stwo_decode_chain_receipt(&phase76)
+            .expect_err("phase76 receipt must reject disabled proof verification");
+        assert!(err.to_string().contains("claim drift"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase77_proof_checked_step_envelope_bridge_rejects_recommitted_proof_count_drift() {
+        let (phase12, phase30) = sample_phase12_chain_and_phase30_manifest();
+        let phase71 = phase71_prepare_actual_stwo_step_envelope_handoff_receipt(&phase12, &phase30)
+            .expect("phase71 receipt");
+        let phase76 =
+            phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt(&phase12, &phase30)
+                .expect("phase76 receipt");
+        let mut phase77 = phase77_prepare_proof_checked_actual_stwo_step_envelope_bridge_receipt(
+            &phase76, &phase71, &phase12, &phase30,
+        )
+        .expect("phase77 receipt");
+        phase77.actual_proof_commitment_count = phase77.actual_proof_commitment_count - 1;
+        phase77.proof_checked_actual_stwo_step_envelope_bridge_receipt_commitment =
+            commit_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt(&phase77)
+                .expect("recommit tampered phase77 receipt");
+
+        let err = verify_phase77_proof_checked_actual_stwo_step_envelope_bridge_receipt(&phase77)
+            .expect_err("phase77 receipt must reject proof count drift");
+        assert!(err.to_string().contains("shape drift"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase79_proof_checked_decode_carry_bridge_rejects_recommitted_history_step_drift() {
+        let (phase12, phase30) = sample_phase12_chain_and_phase30_manifest();
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let phase70 = sample_phase70_role_neutral_handoff_artifact_for_three_steps();
+        let phase71 = phase71_prepare_actual_stwo_step_envelope_handoff_receipt(&phase12, &phase30)
+            .expect("phase71 receipt");
+        let phase72 = phase72_prepare_actual_stwo_shared_lookup_registry_receipt(
+            &phase71, &phase12, &phase30,
+        )
+        .expect("phase72 receipt");
+        let phase74 =
+            phase74_prepare_chunked_history_carry_receipt(&phase12, &phase14).expect("phase74");
+        let phase76 =
+            phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt(&phase12, &phase30)
+                .expect("phase76 receipt");
+        let phase77 = phase77_prepare_proof_checked_actual_stwo_step_envelope_bridge_receipt(
+            &phase76, &phase71, &phase12, &phase30,
+        )
+        .expect("phase77 receipt");
+        let phase78 =
+            phase78_prepare_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(
+                &phase76, &phase72, &phase71, &phase12, &phase30,
+            )
+            .expect("phase78 receipt");
+        let mut phase79 = phase79_prepare_proof_checked_decode_carry_bridge_claim(
+            &phase70, &phase74, &phase77, &phase78,
+        )
+        .expect("phase79 claim");
+        phase79.history_step_count += 1;
+        phase79.proof_checked_decode_carry_bridge_claim_commitment =
+            commit_phase79_proof_checked_decode_carry_bridge_claim(&phase79)
+                .expect("recommit tampered phase79 claim");
+
+        let err = verify_phase79_proof_checked_decode_carry_bridge_claim(&phase79)
+            .expect_err("phase79 claim must reject history step drift");
+        assert!(err.to_string().contains("count or position drift"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase80_proof_checked_publication_table_rejects_recommitted_row_order_drift() {
+        let (phase12, phase30) = sample_phase12_chain_and_phase30_manifest();
+        let phase14 = phase14_prepare_decoding_chain(&phase12).expect("phase14 manifest");
+        let phase70 = sample_phase70_role_neutral_handoff_artifact_for_three_steps();
+        let phase71 = phase71_prepare_actual_stwo_step_envelope_handoff_receipt(&phase12, &phase30)
+            .expect("phase71 receipt");
+        let phase72 = phase72_prepare_actual_stwo_shared_lookup_registry_receipt(
+            &phase71, &phase12, &phase30,
+        )
+        .expect("phase72 receipt");
+        let phase74 =
+            phase74_prepare_chunked_history_carry_receipt(&phase12, &phase14).expect("phase74");
+        let phase76 =
+            phase76_prepare_proof_checked_actual_stwo_decode_chain_receipt(&phase12, &phase30)
+                .expect("phase76 receipt");
+        let phase77 = phase77_prepare_proof_checked_actual_stwo_step_envelope_bridge_receipt(
+            &phase76, &phase71, &phase12, &phase30,
+        )
+        .expect("phase77 receipt");
+        let phase78 =
+            phase78_prepare_proof_checked_actual_stwo_shared_lookup_registry_bridge_receipt(
+                &phase76, &phase72, &phase71, &phase12, &phase30,
+            )
+            .expect("phase78 receipt");
+        let phase79 = phase79_prepare_proof_checked_decode_carry_bridge_claim(
+            &phase70, &phase74, &phase77, &phase78,
+        )
+        .expect("phase79 claim");
+        let mut phase80 = phase80_prepare_proof_checked_publication_decode_bridge_table(
+            &phase74, &phase76, &phase77, &phase78, &phase79,
+        )
+        .expect("phase80 table");
+        phase80.artifact_rows[1].phase_label = "Phase74".to_string();
+        phase80.artifact_rows[1].row_commitment =
+            commit_phase80_proof_checked_publication_decode_bridge_row(&phase80.artifact_rows[1])
+                .expect("recommit tampered phase80 row");
+        phase80.artifact_rows_commitment =
+            phase80_commit_proof_checked_publication_decode_bridge_rows(&phase80.artifact_rows)
+                .expect("recommit tampered phase80 rows");
+        phase80.proof_checked_publication_decode_bridge_table_commitment =
+            commit_phase80_proof_checked_publication_decode_bridge_table(&phase80)
+                .expect("recommit tampered phase80 table");
+
+        let err = verify_phase80_proof_checked_publication_decode_bridge_table(&phase80)
+            .expect_err("phase80 table must reject row order drift");
+        assert!(err.to_string().contains("row order drift"));
     }
 
     #[cfg(feature = "stwo-backend")]

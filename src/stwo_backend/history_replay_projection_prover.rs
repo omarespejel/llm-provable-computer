@@ -4567,6 +4567,11 @@ mod tests {
         commit_phase64_typed_carried_state_boundary, commit_phase64_typed_carried_state_claim,
         commit_phase64_typed_carried_state_step, commit_phase65_transformer_transition_artifact,
         commit_phase65_transformer_transition_step_artifact,
+        commit_phase66_transformer_chain_artifact, commit_phase66_transformer_chain_link,
+        commit_phase67_publication_artifact_row, commit_phase67_publication_artifact_table,
+        commit_phase68_independent_replay_audit_claim,
+        commit_phase69_symbolic_artifact_mapping_claim,
+        commit_phase69_symbolic_artifact_mapping_row,
         phase44d_prepare_recursive_verifier_public_output_aggregation,
         phase44d_prepare_recursive_verifier_public_output_handoff,
         phase45_prepare_recursive_verifier_public_input_bridge,
@@ -4593,6 +4598,9 @@ mod tests {
         phase62_prepare_proof_carrying_state_continuity_claim,
         phase63_prepare_shared_lookup_identity_claim, phase64_prepare_typed_carried_state_claim,
         phase65_prepare_transformer_transition_artifact,
+        phase66_prepare_transformer_chain_artifact, phase67_prepare_publication_artifact_table,
+        phase68_prepare_independent_replay_audit_claim,
+        phase69_prepare_symbolic_artifact_mapping_claim,
         verify_phase44d_recursive_verifier_public_output_aggregation,
         verify_phase44d_recursive_verifier_public_output_handoff,
         verify_phase44d_recursive_verifier_public_output_handoff_against_boundary,
@@ -4645,7 +4653,16 @@ mod tests {
         verify_phase64_typed_carried_state_claim_against_phase63,
         verify_phase64_typed_carried_state_step, verify_phase65_transformer_transition_artifact,
         verify_phase65_transformer_transition_artifact_against_sources,
-        verify_phase65_transformer_transition_step_artifact, Phase48RecursiveProofWrapperAttempt,
+        verify_phase65_transformer_transition_step_artifact,
+        verify_phase66_transformer_chain_artifact,
+        verify_phase66_transformer_chain_artifact_against_sources,
+        verify_phase66_transformer_chain_link, verify_phase67_publication_artifact_table,
+        verify_phase67_publication_artifact_table_against_sources,
+        verify_phase68_independent_replay_audit_claim,
+        verify_phase68_independent_replay_audit_claim_against_sources,
+        verify_phase69_symbolic_artifact_mapping_claim,
+        verify_phase69_symbolic_artifact_mapping_claim_against_sources,
+        verify_phase69_symbolic_artifact_mapping_row, Phase48RecursiveProofWrapperAttempt,
         Phase49LayerwiseTensorClaimPropagationContract, Phase50LayerIoClaim,
         Phase51FirstLayerRelationClaim, Phase52LayerEndpointAnchoringClaim,
         Phase53FirstLayerRelationBenchmarkClaim, Phase54FirstLayerSumcheckSkeletonClaim,
@@ -4657,7 +4674,9 @@ mod tests {
         Phase63SharedLookupIdentityClaim, Phase63SharedLookupStepBinding,
         Phase64TypedCarriedStateBoundary, Phase64TypedCarriedStateClaim,
         Phase64TypedCarriedStateStep, Phase65TransformerTransitionArtifact,
-        Phase65TransformerTransitionStepArtifact,
+        Phase65TransformerTransitionStepArtifact, Phase66TransformerChainArtifact,
+        Phase66TransformerChainLink, Phase67PublicationArtifactTable,
+        Phase68IndependentReplayAuditClaim, Phase69SymbolicArtifactMappingClaim,
     };
     use super::super::STWO_BACKEND_VERSION_PHASE12;
     use super::*;
@@ -8786,6 +8805,331 @@ mod tests {
                 .expect("recommit Phase65 transformer transition artifact");
     }
 
+    fn sample_phase66_transformer_chain_artifact() -> (
+        Phase53FirstLayerRelationBenchmarkClaim,
+        Phase54FirstLayerSumcheckSkeletonClaim,
+        Phase56FirstLayerExecutableSumcheckClaim,
+        Phase57FirstLayerMleOpeningVerifierClaim,
+        Phase58FirstLayerWitnessPcsOpeningClaim,
+        Phase59FirstLayerRelationWitnessBindingClaim,
+        Phase60FirstLayerRuntimeRelationWitnessClaim,
+        Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+        Phase62ProofCarryingStateContinuityClaim,
+        Phase63SharedLookupIdentityClaim,
+        Phase64TypedCarriedStateClaim,
+        Phase65TransformerTransitionArtifact,
+        Phase66TransformerChainArtifact,
+    ) {
+        let (
+            phase53,
+            phase54,
+            phase56,
+            phase57,
+            phase58,
+            phase59,
+            phase60,
+            phase61,
+            phase62,
+            phase63,
+            phase64,
+            phase65,
+        ) = sample_phase65_transformer_transition_artifact();
+        let phase66 = phase66_prepare_transformer_chain_artifact(&phase65, &phase64, &phase63)
+            .expect("prepare Phase66 transformer chain artifact");
+        (
+            phase53, phase54, phase56, phase57, phase58, phase59, phase60, phase61, phase62,
+            phase63, phase64, phase65, phase66,
+        )
+    }
+
+    fn recommit_phase66_link(link: &mut Phase66TransformerChainLink) {
+        link.chain_link_commitment =
+            commit_phase66_transformer_chain_link(link).expect("recommit Phase66 chain link");
+    }
+
+    fn recommit_phase66_artifact(artifact: &mut Phase66TransformerChainArtifact) {
+        artifact.chain_links_commitment =
+            super::super::recursion::phase66_commit_chain_links_for_tests(&artifact.chain_links)
+                .expect("recommit Phase66 chain link list");
+        artifact.transformer_chain_artifact_commitment =
+            commit_phase66_transformer_chain_artifact(artifact)
+                .expect("recommit Phase66 transformer chain artifact");
+    }
+
+    fn sample_phase67_publication_artifact_table() -> (
+        Phase53FirstLayerRelationBenchmarkClaim,
+        Phase54FirstLayerSumcheckSkeletonClaim,
+        Phase56FirstLayerExecutableSumcheckClaim,
+        Phase57FirstLayerMleOpeningVerifierClaim,
+        Phase58FirstLayerWitnessPcsOpeningClaim,
+        Phase59FirstLayerRelationWitnessBindingClaim,
+        Phase60FirstLayerRuntimeRelationWitnessClaim,
+        Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+        Phase62ProofCarryingStateContinuityClaim,
+        Phase63SharedLookupIdentityClaim,
+        Phase64TypedCarriedStateClaim,
+        Phase65TransformerTransitionArtifact,
+        Phase66TransformerChainArtifact,
+        Phase67PublicationArtifactTable,
+    ) {
+        let (
+            phase53,
+            phase54,
+            phase56,
+            phase57,
+            phase58,
+            phase59,
+            phase60,
+            phase61,
+            phase62,
+            phase63,
+            phase64,
+            phase65,
+            phase66,
+        ) = sample_phase66_transformer_chain_artifact();
+        let phase67 =
+            phase67_prepare_publication_artifact_table(&phase66, &phase65, &phase64, &phase63)
+                .expect("prepare Phase67 publication artifact table");
+        (
+            phase53, phase54, phase56, phase57, phase58, phase59, phase60, phase61, phase62,
+            phase63, phase64, phase65, phase66, phase67,
+        )
+    }
+
+    fn recommit_phase67_table(table: &mut Phase67PublicationArtifactTable) {
+        for row in &mut table.artifact_rows {
+            row.row_commitment =
+                commit_phase67_publication_artifact_row(row).expect("recommit Phase67 row");
+        }
+        table.artifact_rows_commitment =
+            super::super::recursion::phase67_commit_publication_rows_for_tests(
+                &table.artifact_rows,
+            )
+            .expect("recommit Phase67 rows");
+        table.publication_artifact_table_commitment =
+            commit_phase67_publication_artifact_table(table)
+                .expect("recommit Phase67 publication table");
+    }
+
+    fn sample_phase68_independent_replay_audit_claim() -> (
+        Phase53FirstLayerRelationBenchmarkClaim,
+        Phase54FirstLayerSumcheckSkeletonClaim,
+        Phase56FirstLayerExecutableSumcheckClaim,
+        Phase57FirstLayerMleOpeningVerifierClaim,
+        Phase58FirstLayerWitnessPcsOpeningClaim,
+        Phase59FirstLayerRelationWitnessBindingClaim,
+        Phase60FirstLayerRuntimeRelationWitnessClaim,
+        Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+        Phase62ProofCarryingStateContinuityClaim,
+        Phase63SharedLookupIdentityClaim,
+        Phase64TypedCarriedStateClaim,
+        Phase65TransformerTransitionArtifact,
+        Phase66TransformerChainArtifact,
+        Phase67PublicationArtifactTable,
+        Phase68IndependentReplayAuditClaim,
+    ) {
+        let (
+            phase53,
+            phase54,
+            phase56,
+            phase57,
+            phase58,
+            phase59,
+            phase60,
+            phase61,
+            phase62,
+            phase63,
+            phase64,
+            phase65,
+            phase66,
+            phase67,
+        ) = sample_phase67_publication_artifact_table();
+        let phase68 = phase68_prepare_independent_replay_audit_claim(&phase66, &phase67)
+            .expect("prepare Phase68 independent replay audit");
+        (
+            phase53, phase54, phase56, phase57, phase58, phase59, phase60, phase61, phase62,
+            phase63, phase64, phase65, phase66, phase67, phase68,
+        )
+    }
+
+    fn recommit_phase68_claim(claim: &mut Phase68IndependentReplayAuditClaim) {
+        claim.independent_replay_audit_commitment =
+            commit_phase68_independent_replay_audit_claim(claim)
+                .expect("recommit Phase68 independent replay audit");
+    }
+
+    fn sample_phase69_symbolic_artifact_mapping_claim() -> (
+        Phase53FirstLayerRelationBenchmarkClaim,
+        Phase54FirstLayerSumcheckSkeletonClaim,
+        Phase56FirstLayerExecutableSumcheckClaim,
+        Phase57FirstLayerMleOpeningVerifierClaim,
+        Phase58FirstLayerWitnessPcsOpeningClaim,
+        Phase59FirstLayerRelationWitnessBindingClaim,
+        Phase60FirstLayerRuntimeRelationWitnessClaim,
+        Phase61FirstLayerRuntimeWitnessPcsReplacementClaim,
+        Phase62ProofCarryingStateContinuityClaim,
+        Phase63SharedLookupIdentityClaim,
+        Phase64TypedCarriedStateClaim,
+        Phase65TransformerTransitionArtifact,
+        Phase66TransformerChainArtifact,
+        Phase67PublicationArtifactTable,
+        Phase68IndependentReplayAuditClaim,
+        Phase69SymbolicArtifactMappingClaim,
+    ) {
+        let (
+            phase53,
+            phase54,
+            phase56,
+            phase57,
+            phase58,
+            phase59,
+            phase60,
+            phase61,
+            phase62,
+            phase63,
+            phase64,
+            phase65,
+            phase66,
+            phase67,
+            phase68,
+        ) = sample_phase68_independent_replay_audit_claim();
+        let phase69 = phase69_prepare_symbolic_artifact_mapping_claim(
+            &phase68, &phase67, &phase66, &phase65, &phase64, &phase63,
+        )
+        .expect("prepare Phase69 symbolic mapping claim");
+        (
+            phase53, phase54, phase56, phase57, phase58, phase59, phase60, phase61, phase62,
+            phase63, phase64, phase65, phase66, phase67, phase68, phase69,
+        )
+    }
+
+    fn recommit_phase69_claim(claim: &mut Phase69SymbolicArtifactMappingClaim) {
+        for row in &mut claim.mapping_rows {
+            row.row_commitment =
+                commit_phase69_symbolic_artifact_mapping_row(row).expect("recommit Phase69 row");
+        }
+        claim.mapping_rows_commitment =
+            super::super::recursion::phase69_commit_symbolic_mapping_rows_for_tests(
+                &claim.mapping_rows,
+            )
+            .expect("recommit Phase69 rows");
+        claim.symbolic_artifact_mapping_commitment =
+            commit_phase69_symbolic_artifact_mapping_claim(claim)
+                .expect("recommit Phase69 symbolic mapping");
+    }
+
+    fn phase68_slow_chain_replay_oracle(artifact: &Phase66TransformerChainArtifact) -> Result<()> {
+        if artifact.chain_links.len() != artifact.step_count || artifact.step_count < 2 {
+            return Err(VmError::InvalidConfig(
+                "Phase68 oracle: invalid chain length".to_string(),
+            ));
+        }
+        let expected_continuity_link_count =
+            artifact.chain_links.len().checked_sub(1).ok_or_else(|| {
+                VmError::InvalidConfig("Phase68 oracle: invalid chain length".to_string())
+            })?;
+        if artifact.continuity_link_count != expected_continuity_link_count {
+            return Err(VmError::InvalidConfig(
+                "Phase68 oracle: continuity count drift".to_string(),
+            ));
+        }
+        let expected_chain_links_commitment =
+            super::super::recursion::phase66_commit_chain_links_for_tests(&artifact.chain_links)
+                .map_err(|err| {
+                    VmError::InvalidConfig(format!(
+                        "Phase68 oracle: chain links commitment recompute failed: {err}"
+                    ))
+                })?;
+        if artifact.chain_links_commitment != expected_chain_links_commitment {
+            return Err(VmError::InvalidConfig(
+                "Phase68 oracle: chain links commitment drift".to_string(),
+            ));
+        }
+        let expected_artifact_commitment = commit_phase66_transformer_chain_artifact(artifact)
+            .map_err(|err| {
+                VmError::InvalidConfig(format!(
+                    "Phase68 oracle: artifact commitment recompute failed: {err}"
+                ))
+            })?;
+        if artifact.transformer_chain_artifact_commitment != expected_artifact_commitment {
+            return Err(VmError::InvalidConfig(
+                "Phase68 oracle: artifact commitment drift".to_string(),
+            ));
+        }
+        let mut previous_state = None::<String>;
+        let mut previous_position = None::<usize>;
+        for (expected_index, link) in artifact.chain_links.iter().enumerate() {
+            if link.step_index != expected_index {
+                return Err(VmError::InvalidConfig(
+                    "Phase68 oracle: step index drift".to_string(),
+                ));
+            }
+            let expected_link_commitment =
+                commit_phase66_transformer_chain_link(link).map_err(|err| {
+                    VmError::InvalidConfig(format!(
+                        "Phase68 oracle: link commitment recompute failed: {err}"
+                    ))
+                })?;
+            if link.chain_link_commitment != expected_link_commitment {
+                return Err(VmError::InvalidConfig(
+                    "Phase68 oracle: link commitment drift".to_string(),
+                ));
+            }
+            match (
+                &previous_state,
+                &link.previous_output_carried_state_commitment,
+            ) {
+                (None, None) => {}
+                (Some(state), Some(advertised))
+                    if state == advertised && state == &link.input_carried_state_commitment => {}
+                _ => {
+                    return Err(VmError::InvalidConfig(
+                        "Phase68 oracle: carried-state continuity drift".to_string(),
+                    ));
+                }
+            }
+            if let Some(position) = previous_position {
+                if link.input_position != position {
+                    return Err(VmError::InvalidConfig(
+                        "Phase68 oracle: position continuity drift".to_string(),
+                    ));
+                }
+            }
+            if link.input_position.checked_add(1) != Some(link.output_position) {
+                return Err(VmError::InvalidConfig(
+                    "Phase68 oracle: local position drift".to_string(),
+                ));
+            }
+            previous_state = Some(link.output_carried_state_commitment.clone());
+            previous_position = Some(link.output_position);
+        }
+        let first_link = artifact.chain_links.first().ok_or_else(|| {
+            VmError::InvalidConfig("Phase68 oracle: invalid chain length".to_string())
+        })?;
+        let last_link = artifact.chain_links.last().ok_or_else(|| {
+            VmError::InvalidConfig("Phase68 oracle: invalid chain length".to_string())
+        })?;
+        if artifact.chain_start_carried_state_commitment
+            != first_link.input_carried_state_commitment
+            || artifact.chain_end_carried_state_commitment
+                != last_link.output_carried_state_commitment
+            || artifact.chain_start_position != first_link.input_position
+            || artifact.chain_end_position != last_link.output_position
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase68 oracle: chain summary drift".to_string(),
+            ));
+        }
+        if artifact.chain_start_typed_boundary_commitment != first_link.input_boundary_commitment
+            || artifact.chain_end_typed_boundary_commitment != last_link.output_boundary_commitment
+        {
+            return Err(VmError::InvalidConfig(
+                "Phase68 oracle: typed-boundary summary drift".to_string(),
+            ));
+        }
+        Ok(())
+    }
+
     #[test]
     fn phase60_runtime_relation_witness_claim_accepts_actual_first_layer_witness() {
         let (_, phase54, phase56, phase57, phase58, phase59, phase60) =
@@ -9687,6 +10031,366 @@ mod tests {
         assert!(error
             .to_string()
             .contains("must not claim full softmax inference"));
+    }
+
+    #[test]
+    fn phase66_transformer_chain_artifact_accepts_phase65_steps_with_carried_state_handoffs() {
+        let (_, _, _, _, _, _, _, _, _, phase63, phase64, phase65, phase66) =
+            sample_phase66_transformer_chain_artifact();
+
+        verify_phase66_transformer_chain_artifact(&phase66)
+            .expect("verify standalone Phase66 transformer chain");
+        verify_phase66_transformer_chain_artifact_against_sources(
+            &phase66, &phase65, &phase64, &phase63,
+        )
+        .expect("verify Phase66 against Phase65/64/63 sources");
+        phase68_slow_chain_replay_oracle(&phase66).expect("oracle accepts valid Phase66 chain");
+
+        assert_eq!(phase66.step_count, phase65.step_count);
+        assert_eq!(phase66.continuity_link_count, phase66.step_count - 1);
+        assert_eq!(
+            phase66.chain_start_typed_boundary_commitment,
+            phase64.chain_start_typed_boundary_commitment
+        );
+        assert_eq!(
+            phase66.chain_end_typed_boundary_commitment,
+            phase64.chain_end_typed_boundary_commitment
+        );
+        for link in &phase66.chain_links {
+            verify_phase66_transformer_chain_link(link).expect("verify Phase66 chain link");
+        }
+        assert!(phase66.proof_carrying_decoding_surface_available);
+        assert!(!phase66.full_standard_softmax_inference_claimed);
+        assert!(!phase66.recursive_verification_claimed);
+        assert!(!phase66.cryptographic_compression_claimed);
+        assert!(!phase66.breakthrough_claimed);
+        assert!(!phase66.paper_ready);
+    }
+
+    #[test]
+    fn phase66_prepare_transformer_chain_artifact_rejects_source_drift_before_linking() {
+        let (_, _, _, _, _, _, _, _, _, phase63, phase64, mut phase65, _) =
+            sample_phase66_transformer_chain_artifact();
+
+        phase65.transition_steps[0].source_phase64_typed_step_commitment = hash32('7');
+        recommit_phase65_step(&mut phase65.transition_steps[0]);
+        recommit_phase65_artifact(&mut phase65);
+
+        verify_phase65_transformer_transition_artifact(&phase65)
+            .expect("standalone Phase65 accepts internally committed typed-step handle");
+        let error = phase66_prepare_transformer_chain_artifact(&phase65, &phase64, &phase63)
+            .expect_err("Phase66 prepare must reject stale Phase65 typed-step source");
+        assert!(error.to_string().contains("per-step source drift"));
+
+        let (_, _, _, _, _, _, _, _, _, phase63, mut phase64, mut phase65, _) =
+            sample_phase66_transformer_chain_artifact();
+        phase64.source_phase63_shared_lookup_identity_claim_commitment = hash32('8');
+        recommit_phase64_claim(&mut phase64);
+        phase65.source_phase64_typed_carried_state_claim_commitment =
+            phase64.typed_carried_state_claim_commitment.clone();
+        recommit_phase65_artifact(&mut phase65);
+
+        verify_phase64_typed_carried_state_claim(&phase64)
+            .expect("standalone Phase64 accepts internally committed source handle");
+        verify_phase65_transformer_transition_artifact(&phase65)
+            .expect("standalone Phase65 accepts updated Phase64 source handle");
+        let error = phase66_prepare_transformer_chain_artifact(&phase65, &phase64, &phase63)
+            .expect_err("Phase66 prepare must reject Phase64-to-Phase63 source drift");
+        assert!(error
+            .to_string()
+            .contains("source drift against Phase65/64/63"));
+    }
+
+    #[test]
+    fn phase66_transformer_chain_artifact_rejects_recommitted_continuity_drift() {
+        let (_, _, _, _, _, _, _, _, _, _, _, _, mut phase66) =
+            sample_phase66_transformer_chain_artifact();
+
+        phase66.chain_links[1].previous_output_carried_state_commitment = Some(hash32('6'));
+        recommit_phase66_link(&mut phase66.chain_links[1]);
+        recommit_phase66_artifact(&mut phase66);
+
+        let production_error = verify_phase66_transformer_chain_artifact(&phase66)
+            .expect_err("Phase66 must reject carried-state continuity drift");
+        assert!(production_error.to_string().contains("continuity drift"));
+        let oracle_error = phase68_slow_chain_replay_oracle(&phase66)
+            .expect_err("Phase68 oracle must reject carried-state continuity drift");
+        assert!(oracle_error.to_string().contains("continuity drift"));
+    }
+
+    #[test]
+    fn phase68_slow_chain_replay_oracle_rejects_position_summary_and_overflow_drift() {
+        let (_, _, _, _, _, _, _, _, _, _, _, _, mut phase66) =
+            sample_phase66_transformer_chain_artifact();
+
+        phase66.continuity_link_count = 0;
+        recommit_phase66_artifact(&mut phase66);
+        let error = phase68_slow_chain_replay_oracle(&phase66)
+            .expect_err("Phase68 oracle must reject continuity count drift");
+        assert!(error.to_string().contains("continuity count drift"));
+
+        let (_, _, _, _, _, _, _, _, _, _, _, _, mut phase66) =
+            sample_phase66_transformer_chain_artifact();
+        phase66.chain_start_position += 1;
+        recommit_phase66_artifact(&mut phase66);
+        let error = phase68_slow_chain_replay_oracle(&phase66)
+            .expect_err("Phase68 oracle must reject chain summary position drift");
+        assert!(error.to_string().contains("chain summary drift"));
+
+        let (_, _, _, _, _, _, _, _, _, _, _, _, mut phase66) =
+            sample_phase66_transformer_chain_artifact();
+        phase66.chain_links[0].input_position = usize::MAX;
+        phase66.chain_links[0].output_position = usize::MAX;
+        recommit_phase66_link(&mut phase66.chain_links[0]);
+        recommit_phase66_artifact(&mut phase66);
+        let production_error = verify_phase66_transformer_chain_artifact(&phase66)
+            .expect_err("Phase66 must reject overflowing link position");
+        assert!(production_error.to_string().contains("position drift"));
+        let oracle_error = phase68_slow_chain_replay_oracle(&phase66)
+            .expect_err("Phase68 oracle must reject overflowing link position");
+        assert!(oracle_error.to_string().contains("local position drift"));
+    }
+
+    #[test]
+    fn phase68_slow_chain_replay_oracle_rejects_stale_top_level_commitments() {
+        let (_, _, _, _, _, _, _, _, _, _, _, _, mut phase66) =
+            sample_phase66_transformer_chain_artifact();
+
+        phase66.chain_links_commitment = hash32('9');
+        let error = phase68_slow_chain_replay_oracle(&phase66)
+            .expect_err("Phase68 oracle must reject stale chain-list commitment");
+        assert!(error.to_string().contains("chain links commitment drift"));
+
+        let (_, _, _, _, _, _, _, _, _, _, _, _, mut phase66) =
+            sample_phase66_transformer_chain_artifact();
+        phase66.transformer_chain_artifact_commitment = hash32('b');
+        let error = phase68_slow_chain_replay_oracle(&phase66)
+            .expect_err("Phase68 oracle must reject stale artifact commitment");
+        assert!(error.to_string().contains("artifact commitment drift"));
+    }
+
+    #[test]
+    fn phase68_slow_chain_replay_oracle_rejects_typed_boundary_summary_drift() {
+        let (_, _, _, _, _, _, _, _, _, _, _, _, mut phase66) =
+            sample_phase66_transformer_chain_artifact();
+
+        phase66.chain_links[0].input_boundary_commitment = hash32('c');
+        recommit_phase66_link(&mut phase66.chain_links[0]);
+        recommit_phase66_artifact(&mut phase66);
+        let error = phase68_slow_chain_replay_oracle(&phase66)
+            .expect_err("Phase68 oracle must reject typed-boundary start summary drift");
+        assert!(error.to_string().contains("typed-boundary summary drift"));
+
+        let (_, _, _, _, _, _, _, _, _, _, _, _, mut phase66) =
+            sample_phase66_transformer_chain_artifact();
+        phase66.chain_end_typed_boundary_commitment = hash32('d');
+        recommit_phase66_artifact(&mut phase66);
+        let error = phase68_slow_chain_replay_oracle(&phase66)
+            .expect_err("Phase68 oracle must reject typed-boundary end summary drift");
+        assert!(error.to_string().contains("typed-boundary summary drift"));
+    }
+
+    #[test]
+    fn phase66_transformer_chain_artifact_rejects_phase65_step_source_drift() {
+        let (_, _, _, _, _, _, _, _, _, phase63, phase64, phase65, mut phase66) =
+            sample_phase66_transformer_chain_artifact();
+
+        phase66.chain_links[0].source_phase65_transition_step_commitment = hash32('1');
+        recommit_phase66_link(&mut phase66.chain_links[0]);
+        recommit_phase66_artifact(&mut phase66);
+
+        verify_phase66_transformer_chain_artifact(&phase66)
+            .expect("standalone Phase66 accepts internally committed source handle");
+        let error = verify_phase66_transformer_chain_artifact_against_sources(
+            &phase66, &phase65, &phase64, &phase63,
+        )
+        .expect_err("Phase66 must reject stale Phase65 transition step source");
+        assert!(error.to_string().contains("link source drift"));
+    }
+
+    #[test]
+    fn phase67_publication_artifact_table_accepts_source_bound_rows() {
+        let (_, _, _, _, _, _, _, _, _, phase63, phase64, phase65, phase66, phase67) =
+            sample_phase67_publication_artifact_table();
+
+        verify_phase67_publication_artifact_table(&phase67)
+            .expect("verify standalone Phase67 publication table");
+        verify_phase67_publication_artifact_table_against_sources(
+            &phase67, &phase66, &phase65, &phase64, &phase63,
+        )
+        .expect("verify Phase67 against source artifacts");
+
+        assert_eq!(phase67.row_count, 4);
+        assert!(phase67.frozen_evidence_bundle_available);
+        assert!(phase67.source_bound_verifiers_available);
+        assert!(!phase67.performance_benchmark_claimed);
+        assert!(!phase67.full_standard_softmax_inference_claimed);
+        assert!(!phase67.recursive_verification_claimed);
+        assert!(!phase67.paper_ready);
+    }
+
+    #[test]
+    fn phase67_publication_artifact_table_rejects_row_source_drift_and_overclaims() {
+        let (_, _, _, _, _, _, _, _, _, phase63, phase64, phase65, phase66, mut phase67) =
+            sample_phase67_publication_artifact_table();
+
+        phase67.artifact_rows[2].artifact_commitment = hash32('2');
+        recommit_phase67_table(&mut phase67);
+
+        verify_phase67_publication_artifact_table(&phase67)
+            .expect("standalone Phase67 accepts internally committed row source handle");
+        let error = verify_phase67_publication_artifact_table_against_sources(
+            &phase67, &phase66, &phase65, &phase64, &phase63,
+        )
+        .expect_err("Phase67 must reject publication row source drift");
+        assert!(error.to_string().contains("row source drift"));
+
+        let (_, _, _, _, _, _, _, _, _, _, _, _, _, mut phase67) =
+            sample_phase67_publication_artifact_table();
+        phase67.performance_benchmark_claimed = true;
+        phase67.recursive_verification_claimed = true;
+        phase67.paper_ready = true;
+        recommit_phase67_table(&mut phase67);
+        let error = verify_phase67_publication_artifact_table(&phase67)
+            .expect_err("Phase67 must reject publication overclaims");
+        assert!(error.to_string().contains("must not claim benchmarks"));
+    }
+
+    #[test]
+    fn phase68_independent_replay_audit_accepts_and_binds_phase66_chain() {
+        let (_, _, _, _, _, _, _, _, _, _, _, _, phase66, phase67, phase68) =
+            sample_phase68_independent_replay_audit_claim();
+
+        verify_phase68_independent_replay_audit_claim(&phase68)
+            .expect("verify standalone Phase68 audit");
+        verify_phase68_independent_replay_audit_claim_against_sources(&phase68, &phase66, &phase67)
+            .expect("verify Phase68 against Phase66/67 sources");
+        phase68_slow_chain_replay_oracle(&phase66).expect("independent oracle accepts Phase66");
+
+        assert_eq!(phase68.audited_step_count, phase66.step_count);
+        assert_eq!(
+            phase68.audited_continuity_link_count,
+            phase66.continuity_link_count
+        );
+        assert!(phase68.independent_replay_oracle_available);
+        assert!(phase68.mutation_style_tamper_cases_available);
+        assert!(!phase68.formal_verification_claimed);
+        assert!(!phase68.recursive_verification_claimed);
+        assert!(!phase68.paper_ready);
+    }
+
+    #[test]
+    fn phase68_independent_replay_audit_rejects_source_drift_and_false_formal_claims() {
+        let (_, _, _, _, _, _, _, _, _, _, _, _, phase66, phase67, mut phase68) =
+            sample_phase68_independent_replay_audit_claim();
+
+        phase68.audited_chain_end_carried_state_commitment = hash32('3');
+        recommit_phase68_claim(&mut phase68);
+
+        verify_phase68_independent_replay_audit_claim(&phase68)
+            .expect("standalone Phase68 accepts internally committed audited handle");
+        let error = verify_phase68_independent_replay_audit_claim_against_sources(
+            &phase68, &phase66, &phase67,
+        )
+        .expect_err("Phase68 must reject stale audited chain end");
+        assert!(error.to_string().contains("source drift"));
+
+        let (_, _, _, _, _, _, _, _, _, _, _, _, _, _, mut phase68) =
+            sample_phase68_independent_replay_audit_claim();
+        phase68.formal_verification_claimed = true;
+        phase68.recursive_verification_claimed = true;
+        phase68.paper_ready = true;
+        recommit_phase68_claim(&mut phase68);
+        let error = verify_phase68_independent_replay_audit_claim(&phase68)
+            .expect_err("Phase68 must reject false formal/recursive claims");
+        assert!(error
+            .to_string()
+            .contains("must not claim formal verification"));
+    }
+
+    #[test]
+    fn phase69_symbolic_artifact_mapping_accepts_checked_artifact_surfaces() {
+        let (
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            phase63,
+            phase64,
+            phase65,
+            phase66,
+            phase67,
+            phase68,
+            phase69,
+        ) = sample_phase69_symbolic_artifact_mapping_claim();
+
+        verify_phase69_symbolic_artifact_mapping_claim(&phase69)
+            .expect("verify standalone Phase69 symbolic mapping");
+        verify_phase69_symbolic_artifact_mapping_claim_against_sources(
+            &phase69, &phase68, &phase67, &phase66, &phase65, &phase64, &phase63,
+        )
+        .expect("verify Phase69 against source artifacts");
+
+        assert_eq!(phase69.row_count, 6);
+        assert!(phase69.symbolic_model_available);
+        assert!(phase69.artifact_surfaces_available);
+        assert!(phase69.source_bound_verifiers_available);
+        for row in &phase69.mapping_rows {
+            verify_phase69_symbolic_artifact_mapping_row(row).expect("verify Phase69 row");
+        }
+        assert!(!phase69.runtime_benchmark_claimed);
+        assert!(!phase69.full_standard_softmax_inference_claimed);
+        assert!(!phase69.recursive_verification_claimed);
+        assert!(!phase69.paper_ready);
+    }
+
+    #[test]
+    fn phase69_symbolic_artifact_mapping_rejects_source_drift_and_runtime_overclaims() {
+        let (
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            phase63,
+            phase64,
+            phase65,
+            phase66,
+            phase67,
+            phase68,
+            mut phase69,
+        ) = sample_phase69_symbolic_artifact_mapping_claim();
+
+        phase69.mapping_rows[0].artifact_commitment = hash32('4');
+        recommit_phase69_claim(&mut phase69);
+
+        verify_phase69_symbolic_artifact_mapping_claim(&phase69)
+            .expect("standalone Phase69 accepts internally committed symbolic row handle");
+        let error = verify_phase69_symbolic_artifact_mapping_claim_against_sources(
+            &phase69, &phase68, &phase67, &phase66, &phase65, &phase64, &phase63,
+        )
+        .expect_err("Phase69 must reject symbolic row source drift");
+        assert!(error.to_string().contains("row source drift"));
+
+        let (_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, mut phase69) =
+            sample_phase69_symbolic_artifact_mapping_claim();
+        phase69.runtime_benchmark_claimed = true;
+        phase69.full_standard_softmax_inference_claimed = true;
+        phase69.recursive_verification_claimed = true;
+        phase69.paper_ready = true;
+        recommit_phase69_claim(&mut phase69);
+        let error = verify_phase69_symbolic_artifact_mapping_claim(&phase69)
+            .expect_err("Phase69 must reject runtime/full-softmax overclaims");
+        assert!(error.to_string().contains("must not claim benchmarks"));
     }
 
     #[test]

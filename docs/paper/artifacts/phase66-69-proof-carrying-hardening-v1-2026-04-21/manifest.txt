@@ -1,0 +1,9 @@
+generated_at_utc: 2026-04-21T00:00:00Z
+artifact_label: phase66-69-proof-carrying-hardening-v1-2026-04-21
+source_branch: codex/phase66-69-proof-carrying-hardening
+artifact_type: code-and-validation verifier-surface index
+proof_output_bundle: false
+performance_benchmark_bundle: false
+recursive_compression_claimed: false
+standard_softmax_inference_claimed: false
+formal_verification_claimed: false

@@ -23,6 +23,13 @@ Supporting publication assets:
 Current paper-freeze addendum:
 
 - `artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/`
+- `artifacts/phase66-69-proof-carrying-hardening-v1-2026-04-21/`
+
+Later bridge work remains implemented in-repo but is not yet part of the frozen
+publication-facing artifact bundle:
+
+- Phase70-75 proof-bridge surfaces
+- Phase76-80 proof-checked decode surfaces
 
 Draft next-paper package:
 

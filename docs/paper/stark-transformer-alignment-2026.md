@@ -513,7 +513,10 @@ implementation-equivalence proofs, or production-scale learned-model zkML claims
 
 These limits are intentional scope discipline: the artifact supports structural systems
 evidence, pre-recursive carried-state claims, and narrow experimental packaging
-artifacts, but not full softmax-plus-recursion closure.
+artifacts, but not full softmax-plus-recursion closure. This boundary also matches the
+current zkML landscape: systems such as zkLLM introduce dedicated lookup-heavy
+machinery for non-arithmetic tensor operations and attention (`tlookup`, `zkAttn`)
+rather than treating those kernels as an incidental detail [10].
 
 ### 5.4 Reproducibility tiers
 
@@ -646,8 +649,16 @@ handling remains a central systems concern even when benchmark setups differ [9,
 ### 7.3 NANOZK and zkLLM on layerwise and attention-specific specialization
 
 NANOZK and zkLLM reinforce the same trend: layerwise decomposition and
-attention/nonlinearity specialization with lookup-heavy machinery [10, 39]. Here they
-are architectural evidence, not matched benchmarks.
+attention/nonlinearity specialization with lookup-heavy machinery [10, 39]. In
+particular, zkLLM introduces `tlookup`, a parallelized lookup argument for
+non-arithmetic tensor operations in deep learning, and builds `zkAttn` as a dedicated
+attention proof component [10]. That does not make zkLLM a direct implementation
+ancestor of this repository, and it is not evidence that one proof family has already
+"won." It is useful here for a narrower reason: it independently identifies the same
+pressure points emphasized by the symbolic model in this paper, namely that transformer
+proving stress concentrates in repeated non-arithmetic machinery such as softmax,
+normalization, and attention-specific lookup structure. Here they are architectural
+evidence, not matched benchmarks.
 
 ### 7.4 BitSage obelyzk.rs (formerly stwo-ml) as the closest public STARK-native comparator
 

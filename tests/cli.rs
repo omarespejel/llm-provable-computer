@@ -3781,7 +3781,7 @@ fn cli_verify_stwo_intervalized_decoding_state_relation_demo_rejects_tampered_lo
         .failure()
         .stderr(predicate::str::contains("lookup_delta_entries="))
         .stderr(predicate::str::contains(
-            "does not match derived lookup_delta_entries",
+            "exceed the final nested cumulative total",
         ));
 
     let _ = std::fs::remove_file(proof_path);

@@ -10,6 +10,7 @@ These are the bundles directly used by the current paper package:
 - `stwo-experimental-v1-2026-04-06/`
 - `stwo-proof-carrying-aggregation-v1-2026-04-11/`
 - `phase63-65-proof-carrying-artifact-v1-2026-04-20/`
+- `phase66-69-proof-carrying-hardening-v1-2026-04-21/`
 
 These are the bundles that should be treated as the paper's primary reproducibility and systems-evidence surfaces.
 
@@ -17,6 +18,15 @@ The Phase63-65 directory is a code-and-validation verifier-surface index rather 
 new proof-output bundle. It pins the April 20 checkpoint where shared lookup identity
 and typed carried state became verifier-visible across the transformer-shaped
 proof-carrying artifact line.
+
+The Phase66-69 directory continues that verifier-surface line. It pins chained
+transition handoffs, a publication-facing artifact table, an independent replay audit
+manifest, and a symbolic-model-to-artifact mapping. It is still not a new proof-output
+bundle and not a runtime benchmark.
+
+Later Phase70-75 proof-bridge surfaces and Phase76-80 proof-checked decode surfaces
+are implemented in-repo, but they are not yet cut as frozen publication-facing
+artifact directories.
 
 ## Archival provenance bundles
 
