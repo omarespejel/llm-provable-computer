@@ -1,0 +1,19 @@
+bundle_version: stwo-multi-interval-folded-gemma-v1
+repo_root: .
+nightly_toolchain: +nightly-2025-07-14
+bundle_dir: docs/paper/artifacts/stwo-multi-interval-folded-gemma-v1-2026-04-21
+gemma_proof: gemma-block-v4.stark.json
+single_interval_explicit_artifact: single-interval-repeated-gemma-slice-accumulation.stwo.json
+single_interval_folded_artifact: single-interval-folded-gemma-slice-accumulation.stwo.json
+single_interval_richer_family_artifact: single-interval-folded-gemma-richer-slice-family.stwo.json
+multi_interval_artifact: multi-interval-gemma-richer-family-accumulation.stwo.json
+folded_multi_interval_artifact: folded-multi-interval-gemma-accumulation-prototype.stwo.json
+canonical_sha256_file: sha256sums.txt
+auxiliary_benchmarks_file: benchmarks.tsv
+auxiliary_commands_log: commands.log
+total_intervals: 4
+interval_total_slices: 4
+token_position_start: 0
+token_position_stride: 1
+start_block_index: 2
+scope: explicit multi-interval richer-family accumulation plus a folded pre-recursive prototype over one shared S-two proof surface

@@ -17,6 +17,7 @@ These are the bundles directly used by the current paper package:
 - `stwo-tensor-native-transformer-shaped-v1-2026-04-21/`
 - `stwo-repeated-gemma-slice-accumulation-v1-2026-04-21/`
 - `stwo-folded-gemma-slice-family-v1-2026-04-21/`
+- `stwo-multi-interval-folded-gemma-v1-2026-04-21/`
 
 These are the bundles that should be treated as the paper's primary reproducibility and systems-evidence surfaces.
 
@@ -83,6 +84,19 @@ artifact-facing: how much smaller the first folded derivative is than the
 explicit repeated accumulation over the same Gemma-like interval, while both
 remain verifier-bound to the same shared proof surface. It is still explicitly
 pre-recursive and does not claim standalone recursive compression.
+
+The `stwo-multi-interval-folded-gemma-v1-2026-04-21` directory extends that
+line across several token-position-indexed interval families. It freezes one
+explicit Phase99 multi-interval artifact, one Phase101.5 folded multi-interval
+prototype, and the corresponding handoff commitments and appendix index. The
+bundle records `1,036,298` explicit multi-interval JSON bytes versus `5,214`
+folded multi-interval JSON bytes, so the first folded prototype is about
+`0.5031%` of the explicit source JSON size on this frozen surface. It also
+records `4,126,700` bytes for blind duplication of the single-interval
+explicit accumulation artifact, so the explicit multi-interval artifact already
+saves `3,090,402` bytes before any folded derivative is applied. This remains
+a verifier-bound, pre-recursive artifact line rather than a cryptographic
+recursion claim.
 
 Later Phase81-84 translated seam surfaces remain implemented in-repo, but they are not
 yet cut as frozen publication-facing artifact directories.

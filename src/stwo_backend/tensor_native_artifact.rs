@@ -47,8 +47,18 @@ pub const STWO_FOLDED_GEMMA_RICHER_SLICE_FAMILY_ARTIFACT_VERSION_PHASE98: &str =
     "stwo-phase98-folded-gemma-richer-slice-family-artifact-v1";
 pub const STWO_FOLDED_GEMMA_RICHER_SLICE_FAMILY_ARTIFACT_SCOPE_PHASE98: &str =
     "stwo_tensor_native_folded_gemma_richer_slice_family_artifact";
+pub const STWO_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ACCUMULATION_ARTIFACT_VERSION_PHASE99: &str =
+    "stwo-phase99-multi-interval-gemma-richer-family-accumulation-artifact-v1";
+pub const STWO_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ACCUMULATION_ARTIFACT_SCOPE_PHASE99: &str =
+    "stwo_tensor_native_multi_interval_gemma_richer_family_accumulation_artifact";
+pub const STWO_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_VERSION_PHASE1015: &str =
+    "stwo-phase101-5-folded-multi-interval-gemma-accumulation-prototype-artifact-v1";
+pub const STWO_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_SCOPE_PHASE1015: &str =
+    "stwo_tensor_native_folded_multi_interval_gemma_accumulation_prototype_artifact";
 pub const MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES: usize = 16;
+pub const MAX_PHASE99_MULTI_INTERVAL_TOTAL_INTERVALS: usize = 8;
 pub const PHASE965_DEFAULT_BOUNDED_FOLD_ARITY: usize = 2;
+pub const PHASE1015_DEFAULT_BOUNDED_FOLD_ARITY: usize = 2;
 
 const MAX_PHASE93_TENSOR_NATIVE_CHAIN_JSON_BYTES: usize = 8 * 1024 * 1024;
 const MAX_PHASE945_GEMMA_BLOCK_CORE_SLICE_JSON_BYTES: usize = 32 * 1024 * 1024;
@@ -56,6 +66,10 @@ const MAX_PHASE9475_GEMMA_BLOCK_RICHER_SLICE_JSON_BYTES: usize = 32 * 1024 * 102
 const MAX_PHASE95_REPEATED_GEMMA_SLICE_ACCUMULATION_JSON_BYTES: usize = 64 * 1024 * 1024;
 const MAX_PHASE965_FOLDED_GEMMA_SLICE_ACCUMULATION_JSON_BYTES: usize = 16 * 1024 * 1024;
 const MAX_PHASE98_FOLDED_GEMMA_RICHER_SLICE_FAMILY_JSON_BYTES: usize = 16 * 1024 * 1024;
+const MAX_PHASE99_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ACCUMULATION_JSON_BYTES: usize =
+    128 * 1024 * 1024;
+const MAX_PHASE1015_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_JSON_BYTES: usize =
+    16 * 1024 * 1024;
 const PHASE93_DEFAULT_BLOCK_INDEX: u64 = 0;
 const PHASE93_DEFAULT_TOKEN_POSITION: u64 = 0;
 const PHASE93_DEFAULT_CHAIN_TEMPLATE_SEQUENCE: [usize; 4] = [0, 1, 0, 1];
@@ -311,6 +325,144 @@ pub struct Phase98FoldedGemmaRicherSliceFamilyArtifact {
     pub primary_activation_output_sum: i64,
     pub secondary_activation_output_sum: i64,
     pub folded_richer_family_accumulator_commitment: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase99MultiIntervalGemmaRicherFamilyMember {
+    pub interval_index: usize,
+    pub repeated_token_position: u64,
+    pub start_block_index: u64,
+    pub terminal_block_index: u64,
+    pub phase95_artifact_commitment: String,
+    pub phase965_artifact_commitment: String,
+    pub phase98_artifact_commitment: String,
+    pub global_start_boundary_commitment: String,
+    pub global_end_boundary_commitment: String,
+    pub first_richer_slice_artifact_commitment: String,
+    pub terminal_richer_slice_artifact_commitment: String,
+    pub richer_slice_commitment_sequence_commitment: String,
+    pub selected_memory_window_family_commitment: String,
+    pub invariant_summary_family_commitment: String,
+    pub local_score_sum: i64,
+    pub global_score_sum: i64,
+    pub grouped_value_mix_sum: i64,
+    pub residual_output_sum: i64,
+    pub final_acc_sum: i64,
+    pub primary_norm_sq_min: i16,
+    pub primary_norm_sq_max: i16,
+    pub secondary_norm_sq_min: i16,
+    pub secondary_norm_sq_max: i16,
+    pub primary_activation_output_sum: i64,
+    pub secondary_activation_output_sum: i64,
+    pub interval_member_commitment: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact {
+    pub artifact_version: String,
+    pub semantic_scope: String,
+    pub artifact_commitment: String,
+    pub program_label: String,
+    pub shared_primitive_artifact_commitment: String,
+    pub shared_table_registry_commitment: String,
+    pub shared_execution_proof_commitment: String,
+    pub shared_execution_proof_backend_version: String,
+    pub shared_execution_statement_version: String,
+    pub total_intervals: usize,
+    pub interval_total_slices: usize,
+    pub token_position_start: u64,
+    pub token_position_stride: u64,
+    pub start_block_index: u64,
+    pub terminal_token_position: u64,
+    pub terminal_block_index: u64,
+    pub interval_members_commitment: String,
+    pub global_interval_start_boundary_commitment: String,
+    pub global_interval_end_boundary_commitment: String,
+    pub local_score_sum: i64,
+    pub global_score_sum: i64,
+    pub grouped_value_mix_sum: i64,
+    pub residual_output_sum: i64,
+    pub final_acc_sum: i64,
+    pub primary_norm_sq_min: i16,
+    pub primary_norm_sq_max: i16,
+    pub secondary_norm_sq_min: i16,
+    pub secondary_norm_sq_max: i16,
+    pub primary_activation_output_sum: i64,
+    pub secondary_activation_output_sum: i64,
+    pub shared_primitive_artifact: Phase92SharedNormalizationPrimitiveArtifact,
+    pub shared_execution_proof: VanillaStarkExecutionProof,
+    pub members: Vec<Phase99MultiIntervalGemmaRicherFamilyMember>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeGroup {
+    pub folded_group_index: usize,
+    pub start_interval_index: usize,
+    pub terminal_interval_index: usize,
+    pub start_token_position: u64,
+    pub terminal_token_position: u64,
+    pub first_phase98_artifact_commitment: String,
+    pub terminal_phase98_artifact_commitment: String,
+    pub global_start_boundary_commitment: String,
+    pub global_end_boundary_commitment: String,
+    pub interval_member_commitment_sequence_commitment: String,
+    pub interval_phase98_commitment_sequence_commitment: String,
+    pub local_score_sum: i64,
+    pub global_score_sum: i64,
+    pub grouped_value_mix_sum: i64,
+    pub residual_output_sum: i64,
+    pub final_acc_sum: i64,
+    pub primary_norm_sq_min: i16,
+    pub primary_norm_sq_max: i16,
+    pub secondary_norm_sq_min: i16,
+    pub secondary_norm_sq_max: i16,
+    pub primary_activation_output_sum: i64,
+    pub secondary_activation_output_sum: i64,
+    pub folded_group_commitment: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeArtifact {
+    pub artifact_version: String,
+    pub semantic_scope: String,
+    pub artifact_commitment: String,
+    pub program_label: String,
+    pub source_phase99_artifact_commitment: String,
+    pub source_interval_members_commitment: String,
+    pub shared_primitive_artifact_commitment: String,
+    pub shared_table_registry_commitment: String,
+    pub shared_execution_proof_commitment: String,
+    pub shared_execution_proof_backend_version: String,
+    pub shared_execution_statement_version: String,
+    pub total_intervals: usize,
+    pub interval_total_slices: usize,
+    pub token_position_start: u64,
+    pub token_position_stride: u64,
+    pub start_block_index: u64,
+    pub terminal_token_position: u64,
+    pub terminal_block_index: u64,
+    pub bounded_fold_arity: usize,
+    pub total_folded_interval_groups: usize,
+    pub global_interval_start_boundary_commitment: String,
+    pub global_interval_end_boundary_commitment: String,
+    pub first_phase98_artifact_commitment: String,
+    pub terminal_phase98_artifact_commitment: String,
+    pub fold_template_commitment: String,
+    pub folded_interval_group_sequence_commitment: String,
+    pub local_score_sum: i64,
+    pub global_score_sum: i64,
+    pub grouped_value_mix_sum: i64,
+    pub residual_output_sum: i64,
+    pub final_acc_sum: i64,
+    pub primary_norm_sq_min: i16,
+    pub primary_norm_sq_max: i16,
+    pub secondary_norm_sq_min: i16,
+    pub secondary_norm_sq_max: i16,
+    pub primary_activation_output_sum: i64,
+    pub secondary_activation_output_sum: i64,
+    pub accumulation_handoff_commitment: String,
+    pub folded_interval_prototype_accumulator_commitment: String,
+    pub folded_groups: Vec<Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeGroup>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -2358,6 +2510,1186 @@ pub fn load_phase98_folded_gemma_richer_slice_family_artifact(
     Ok(artifact)
 }
 
+fn validate_phase99_total_intervals(total_intervals: usize) -> Result<u64> {
+    if total_intervals < 2 {
+        return Err(VmError::InvalidConfig(
+            "Phase 99 multi-interval richer-family accumulation requires at least two intervals"
+                .to_string(),
+        ));
+    }
+    if total_intervals > MAX_PHASE99_MULTI_INTERVAL_TOTAL_INTERVALS {
+        return Err(VmError::InvalidConfig(format!(
+            "Phase 99 multi-interval richer-family accumulation supports at most {} intervals",
+            MAX_PHASE99_MULTI_INTERVAL_TOTAL_INTERVALS
+        )));
+    }
+    Ok(total_intervals as u64)
+}
+
+fn validate_phase99_token_position_stride(token_position_stride: u64) -> Result<()> {
+    if token_position_stride == 0 {
+        return Err(VmError::InvalidConfig(
+            "Phase 99 multi-interval richer-family accumulation requires token_position_stride >= 1"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn checked_phase99_interval_token_position(
+    token_position_start: u64,
+    token_position_stride: u64,
+    interval_index: usize,
+) -> Result<u64> {
+    validate_phase99_token_position_stride(token_position_stride)?;
+    let offset = (interval_index as u64)
+        .checked_mul(token_position_stride)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 99 token_position overflow while deriving interval members".to_string(),
+            )
+        })?;
+    token_position_start.checked_add(offset).ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 99 token_position overflow while deriving interval members".to_string(),
+        )
+    })
+}
+
+fn checked_phase99_terminal_token_position(
+    token_position_start: u64,
+    token_position_stride: u64,
+    total_intervals_u64: u64,
+) -> Result<u64> {
+    validate_phase99_token_position_stride(token_position_stride)?;
+    let last_offset = total_intervals_u64.checked_sub(1).ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 99 multi-interval richer-family accumulation requires at least two intervals"
+                .to_string(),
+        )
+    })?;
+    let token_offset = last_offset
+        .checked_mul(token_position_stride)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 99 terminal_token_position overflow while deriving the interval family"
+                    .to_string(),
+            )
+        })?;
+    token_position_start
+        .checked_add(token_offset)
+        .ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 99 terminal_token_position overflow while deriving the interval family"
+                    .to_string(),
+            )
+        })
+}
+
+fn build_phase99_multi_interval_member(
+    interval_index: usize,
+    phase95: &Phase95RepeatedGemmaSliceAccumulationArtifact,
+    phase965: &Phase965FoldedGemmaSliceAccumulationArtifact,
+    phase98: &Phase98FoldedGemmaRicherSliceFamilyArtifact,
+) -> Result<Phase99MultiIntervalGemmaRicherFamilyMember> {
+    verify_phase965_folded_gemma_slice_accumulation_artifact(phase965, phase95)?;
+    verify_phase98_folded_gemma_richer_slice_family_artifact(phase98, phase95, phase965)?;
+    let mut member = Phase99MultiIntervalGemmaRicherFamilyMember {
+        interval_index,
+        repeated_token_position: phase95.repeated_token_position,
+        start_block_index: phase95.start_block_index,
+        terminal_block_index: phase95.terminal_block_index,
+        phase95_artifact_commitment: phase95.artifact_commitment.clone(),
+        phase965_artifact_commitment: phase965.artifact_commitment.clone(),
+        phase98_artifact_commitment: phase98.artifact_commitment.clone(),
+        global_start_boundary_commitment: phase98.global_start_boundary_commitment.clone(),
+        global_end_boundary_commitment: phase98.global_end_boundary_commitment.clone(),
+        first_richer_slice_artifact_commitment: phase98
+            .first_richer_slice_artifact_commitment
+            .clone(),
+        terminal_richer_slice_artifact_commitment: phase98
+            .terminal_richer_slice_artifact_commitment
+            .clone(),
+        richer_slice_commitment_sequence_commitment: phase98
+            .richer_slice_commitment_sequence_commitment
+            .clone(),
+        selected_memory_window_family_commitment: phase98
+            .selected_memory_window_family_commitment
+            .clone(),
+        invariant_summary_family_commitment: phase98.invariant_summary_family_commitment.clone(),
+        local_score_sum: phase98.local_score_sum,
+        global_score_sum: phase98.global_score_sum,
+        grouped_value_mix_sum: phase98.grouped_value_mix_sum,
+        residual_output_sum: phase98.residual_output_sum,
+        final_acc_sum: phase98.final_acc_sum,
+        primary_norm_sq_min: phase98.primary_norm_sq_min,
+        primary_norm_sq_max: phase98.primary_norm_sq_max,
+        secondary_norm_sq_min: phase98.secondary_norm_sq_min,
+        secondary_norm_sq_max: phase98.secondary_norm_sq_max,
+        primary_activation_output_sum: phase98.primary_activation_output_sum,
+        secondary_activation_output_sum: phase98.secondary_activation_output_sum,
+        interval_member_commitment: String::new(),
+    };
+    member.interval_member_commitment = commit_phase99_multi_interval_member(&member)?;
+    Ok(member)
+}
+
+fn validate_phase99_multi_interval_gemma_richer_family_accumulation_artifact_shallow(
+    artifact: &Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact,
+) -> Result<()> {
+    if artifact.artifact_version
+        != STWO_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ACCUMULATION_ARTIFACT_VERSION_PHASE99
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 99 multi-interval richer-family accumulation artifact version `{}`",
+            artifact.artifact_version
+        )));
+    }
+    if artifact.semantic_scope
+        != STWO_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ACCUMULATION_ARTIFACT_SCOPE_PHASE99
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 99 multi-interval richer-family accumulation artifact scope `{}`",
+            artifact.semantic_scope
+        )));
+    }
+    if artifact.program_label != "gemma_block_v4" {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 99 program label `{}`",
+            artifact.program_label
+        )));
+    }
+    validate_phase99_total_intervals(artifact.total_intervals)?;
+    validate_phase95_total_slices(artifact.interval_total_slices)?;
+    validate_phase99_token_position_stride(artifact.token_position_stride)?;
+    if artifact.total_intervals != artifact.members.len() {
+        return Err(VmError::InvalidConfig(
+            "Phase 99 total_intervals does not match the interval member count".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+pub fn prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
+    shared_primitive_artifact: &Phase92SharedNormalizationPrimitiveArtifact,
+    shared_execution_proof: &VanillaStarkExecutionProof,
+    total_intervals: usize,
+    interval_total_slices: usize,
+    token_position_start: u64,
+    token_position_stride: u64,
+    start_block_index: u64,
+) -> Result<Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact> {
+    verify_phase92_shared_normalization_primitive_artifact(shared_primitive_artifact)?;
+    validate_phase945_gemma_execution_proof(shared_execution_proof)?;
+    let total_intervals_u64 = validate_phase99_total_intervals(total_intervals)?;
+    validate_phase95_total_slices(interval_total_slices)?;
+    validate_phase99_token_position_stride(token_position_stride)?;
+    let terminal_token_position = checked_phase99_terminal_token_position(
+        token_position_start,
+        token_position_stride,
+        total_intervals_u64,
+    )?;
+    let terminal_block_index =
+        checked_phase95_terminal_block_index(start_block_index, interval_total_slices as u64)?;
+    let shared_execution_proof_commitment =
+        commit_phase945_execution_proof(shared_execution_proof)?;
+
+    let mut members = Vec::with_capacity(total_intervals);
+    for interval_index in 0..total_intervals {
+        let repeated_token_position = checked_phase99_interval_token_position(
+            token_position_start,
+            token_position_stride,
+            interval_index,
+        )?;
+        let phase95 = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
+            shared_primitive_artifact,
+            shared_execution_proof,
+            interval_total_slices,
+            repeated_token_position,
+            start_block_index,
+        )?;
+        let phase965 = prepare_phase965_folded_gemma_slice_accumulation_artifact(&phase95)?;
+        let phase98 =
+            prepare_phase98_folded_gemma_richer_slice_family_artifact(&phase95, &phase965)?;
+        members.push(build_phase99_multi_interval_member(
+            interval_index,
+            &phase95,
+            &phase965,
+            &phase98,
+        )?);
+    }
+
+    let interval_members_commitment = commit_phase99_multi_interval_members(&members)?;
+    let first_member = members.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 99 multi-interval richer-family accumulation requires at least one interval member"
+                .to_string(),
+        )
+    })?;
+    let last_member = members
+        .last()
+        .expect("members are non-empty after first check");
+    let local_score_sum = members
+        .iter()
+        .map(|member| member.local_score_sum)
+        .sum::<i64>();
+    let global_score_sum = members
+        .iter()
+        .map(|member| member.global_score_sum)
+        .sum::<i64>();
+    let grouped_value_mix_sum = members
+        .iter()
+        .map(|member| member.grouped_value_mix_sum)
+        .sum::<i64>();
+    let residual_output_sum = members
+        .iter()
+        .map(|member| member.residual_output_sum)
+        .sum::<i64>();
+    let final_acc_sum = members
+        .iter()
+        .map(|member| member.final_acc_sum)
+        .sum::<i64>();
+    let primary_norm_sq_min = members
+        .iter()
+        .map(|member| member.primary_norm_sq_min)
+        .min()
+        .expect("members are non-empty");
+    let primary_norm_sq_max = members
+        .iter()
+        .map(|member| member.primary_norm_sq_max)
+        .max()
+        .expect("members are non-empty");
+    let secondary_norm_sq_min = members
+        .iter()
+        .map(|member| member.secondary_norm_sq_min)
+        .min()
+        .expect("members are non-empty");
+    let secondary_norm_sq_max = members
+        .iter()
+        .map(|member| member.secondary_norm_sq_max)
+        .max()
+        .expect("members are non-empty");
+    let primary_activation_output_sum = members
+        .iter()
+        .map(|member| member.primary_activation_output_sum)
+        .sum::<i64>();
+    let secondary_activation_output_sum = members
+        .iter()
+        .map(|member| member.secondary_activation_output_sum)
+        .sum::<i64>();
+    let artifact_commitment =
+        commit_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
+            shared_primitive_artifact,
+            shared_execution_proof,
+            &shared_execution_proof_commitment,
+            &interval_members_commitment,
+            total_intervals,
+            interval_total_slices,
+            token_position_start,
+            token_position_stride,
+            start_block_index,
+            terminal_token_position,
+            terminal_block_index,
+            &first_member.global_start_boundary_commitment,
+            &last_member.global_end_boundary_commitment,
+            local_score_sum,
+            global_score_sum,
+            grouped_value_mix_sum,
+            residual_output_sum,
+            final_acc_sum,
+            primary_norm_sq_min,
+            primary_norm_sq_max,
+            secondary_norm_sq_min,
+            secondary_norm_sq_max,
+            primary_activation_output_sum,
+            secondary_activation_output_sum,
+        )?;
+
+    Ok(Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact {
+        artifact_version:
+            STWO_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ACCUMULATION_ARTIFACT_VERSION_PHASE99
+                .to_string(),
+        semantic_scope: STWO_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ACCUMULATION_ARTIFACT_SCOPE_PHASE99
+            .to_string(),
+        artifact_commitment,
+        program_label: "gemma_block_v4".to_string(),
+        shared_primitive_artifact_commitment: shared_primitive_artifact.artifact_commitment.clone(),
+        shared_table_registry_commitment: shared_primitive_artifact
+            .static_table_registry_commitment
+            .clone(),
+        shared_execution_proof_commitment,
+        shared_execution_proof_backend_version: shared_execution_proof
+            .proof_backend_version
+            .clone(),
+        shared_execution_statement_version: shared_execution_proof.claim.statement_version.clone(),
+        total_intervals,
+        interval_total_slices,
+        token_position_start,
+        token_position_stride,
+        start_block_index,
+        terminal_token_position,
+        terminal_block_index,
+        interval_members_commitment,
+        global_interval_start_boundary_commitment: first_member
+            .global_start_boundary_commitment
+            .clone(),
+        global_interval_end_boundary_commitment: last_member.global_end_boundary_commitment.clone(),
+        local_score_sum,
+        global_score_sum,
+        grouped_value_mix_sum,
+        residual_output_sum,
+        final_acc_sum,
+        primary_norm_sq_min,
+        primary_norm_sq_max,
+        secondary_norm_sq_min,
+        secondary_norm_sq_max,
+        primary_activation_output_sum,
+        secondary_activation_output_sum,
+        shared_primitive_artifact: shared_primitive_artifact.clone(),
+        shared_execution_proof: shared_execution_proof.clone(),
+        members,
+    })
+}
+
+pub fn verify_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
+    artifact: &Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact,
+) -> Result<()> {
+    validate_phase99_multi_interval_gemma_richer_family_accumulation_artifact_shallow(artifact)?;
+    verify_phase92_shared_normalization_primitive_artifact(&artifact.shared_primitive_artifact)?;
+    if artifact.shared_primitive_artifact_commitment
+        != artifact.shared_primitive_artifact.artifact_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 99 shared_primitive_artifact_commitment does not match the nested primitive artifact"
+                .to_string(),
+        ));
+    }
+    if artifact.shared_table_registry_commitment
+        != artifact
+            .shared_primitive_artifact
+            .static_table_registry_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 99 shared_table_registry_commitment does not match the nested primitive artifact"
+                .to_string(),
+        ));
+    }
+    validate_phase945_gemma_execution_proof(&artifact.shared_execution_proof)?;
+    let expected_execution_proof_commitment =
+        commit_phase945_execution_proof(&artifact.shared_execution_proof)?;
+    if artifact.shared_execution_proof_commitment != expected_execution_proof_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 99 shared_execution_proof_commitment does not match the nested execution proof"
+                .to_string(),
+        ));
+    }
+    if artifact.shared_execution_proof_backend_version
+        != artifact.shared_execution_proof.proof_backend_version
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 99 shared_execution_proof_backend_version does not match the nested execution proof"
+                .to_string(),
+        ));
+    }
+    if artifact.shared_execution_statement_version
+        != artifact.shared_execution_proof.claim.statement_version
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 99 shared_execution_statement_version does not match the nested execution proof"
+                .to_string(),
+        ));
+    }
+
+    let total_intervals_u64 = validate_phase99_total_intervals(artifact.total_intervals)?;
+    validate_phase95_total_slices(artifact.interval_total_slices)?;
+    validate_phase99_token_position_stride(artifact.token_position_stride)?;
+    let expected_terminal_token_position = checked_phase99_terminal_token_position(
+        artifact.token_position_start,
+        artifact.token_position_stride,
+        total_intervals_u64,
+    )?;
+    if artifact.terminal_token_position != expected_terminal_token_position {
+        return Err(VmError::InvalidConfig(
+            "Phase 99 terminal_token_position does not match token_position_start + stride * (total_intervals - 1)"
+                .to_string(),
+        ));
+    }
+    let expected_terminal_block_index = checked_phase95_terminal_block_index(
+        artifact.start_block_index,
+        artifact.interval_total_slices as u64,
+    )?;
+    if artifact.terminal_block_index != expected_terminal_block_index {
+        return Err(VmError::InvalidConfig(
+            "Phase 99 terminal_block_index does not match start_block_index + interval_total_slices - 1"
+                .to_string(),
+        ));
+    }
+
+    for (expected_interval_index, member) in artifact.members.iter().enumerate() {
+        if member.interval_index != expected_interval_index {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 99 expected contiguous interval_index {}, got {}",
+                expected_interval_index, member.interval_index
+            )));
+        }
+        let expected_token_position = checked_phase99_interval_token_position(
+            artifact.token_position_start,
+            artifact.token_position_stride,
+            expected_interval_index,
+        )?;
+        let phase95 = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
+            &artifact.shared_primitive_artifact,
+            &artifact.shared_execution_proof,
+            artifact.interval_total_slices,
+            expected_token_position,
+            artifact.start_block_index,
+        )?;
+        let phase965 = prepare_phase965_folded_gemma_slice_accumulation_artifact(&phase95)?;
+        let phase98 =
+            prepare_phase98_folded_gemma_richer_slice_family_artifact(&phase95, &phase965)?;
+        let expected_member = build_phase99_multi_interval_member(
+            expected_interval_index,
+            &phase95,
+            &phase965,
+            &phase98,
+        )?;
+        if member != &expected_member {
+            return Err(VmError::InvalidConfig(format!(
+                "Phase 99 interval member {} does not match the canonical reconstructed richer-family interval",
+                expected_interval_index
+            )));
+        }
+    }
+
+    let expected_interval_members_commitment =
+        commit_phase99_multi_interval_members(&artifact.members)?;
+    if artifact.interval_members_commitment != expected_interval_members_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 99 interval_members_commitment does not match the serialized interval members"
+                .to_string(),
+        ));
+    }
+    let first_member = artifact.members.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 99 multi-interval richer-family accumulation requires at least one interval member"
+                .to_string(),
+        )
+    })?;
+    let last_member = artifact
+        .members
+        .last()
+        .expect("members are non-empty after first check");
+    if artifact.global_interval_start_boundary_commitment
+        != first_member.global_start_boundary_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 99 global_interval_start_boundary_commitment does not match the first interval member"
+                .to_string(),
+        ));
+    }
+    if artifact.global_interval_end_boundary_commitment
+        != last_member.global_end_boundary_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 99 global_interval_end_boundary_commitment does not match the terminal interval member"
+                .to_string(),
+        ));
+    }
+
+    let expected_local_score_sum = artifact
+        .members
+        .iter()
+        .map(|member| member.local_score_sum)
+        .sum::<i64>();
+    let expected_global_score_sum = artifact
+        .members
+        .iter()
+        .map(|member| member.global_score_sum)
+        .sum::<i64>();
+    let expected_grouped_value_mix_sum = artifact
+        .members
+        .iter()
+        .map(|member| member.grouped_value_mix_sum)
+        .sum::<i64>();
+    let expected_residual_output_sum = artifact
+        .members
+        .iter()
+        .map(|member| member.residual_output_sum)
+        .sum::<i64>();
+    let expected_final_acc_sum = artifact
+        .members
+        .iter()
+        .map(|member| member.final_acc_sum)
+        .sum::<i64>();
+    let expected_primary_norm_sq_min = artifact
+        .members
+        .iter()
+        .map(|member| member.primary_norm_sq_min)
+        .min()
+        .expect("members are non-empty");
+    let expected_primary_norm_sq_max = artifact
+        .members
+        .iter()
+        .map(|member| member.primary_norm_sq_max)
+        .max()
+        .expect("members are non-empty");
+    let expected_secondary_norm_sq_min = artifact
+        .members
+        .iter()
+        .map(|member| member.secondary_norm_sq_min)
+        .min()
+        .expect("members are non-empty");
+    let expected_secondary_norm_sq_max = artifact
+        .members
+        .iter()
+        .map(|member| member.secondary_norm_sq_max)
+        .max()
+        .expect("members are non-empty");
+    let expected_primary_activation_output_sum = artifact
+        .members
+        .iter()
+        .map(|member| member.primary_activation_output_sum)
+        .sum::<i64>();
+    let expected_secondary_activation_output_sum = artifact
+        .members
+        .iter()
+        .map(|member| member.secondary_activation_output_sum)
+        .sum::<i64>();
+    if artifact.local_score_sum != expected_local_score_sum
+        || artifact.global_score_sum != expected_global_score_sum
+        || artifact.grouped_value_mix_sum != expected_grouped_value_mix_sum
+        || artifact.residual_output_sum != expected_residual_output_sum
+        || artifact.final_acc_sum != expected_final_acc_sum
+        || artifact.primary_norm_sq_min != expected_primary_norm_sq_min
+        || artifact.primary_norm_sq_max != expected_primary_norm_sq_max
+        || artifact.secondary_norm_sq_min != expected_secondary_norm_sq_min
+        || artifact.secondary_norm_sq_max != expected_secondary_norm_sq_max
+        || artifact.primary_activation_output_sum != expected_primary_activation_output_sum
+        || artifact.secondary_activation_output_sum != expected_secondary_activation_output_sum
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 99 interval summaries do not match the serialized interval members".to_string(),
+        ));
+    }
+
+    let expected_artifact_commitment =
+        commit_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
+            &artifact.shared_primitive_artifact,
+            &artifact.shared_execution_proof,
+            &artifact.shared_execution_proof_commitment,
+            &artifact.interval_members_commitment,
+            artifact.total_intervals,
+            artifact.interval_total_slices,
+            artifact.token_position_start,
+            artifact.token_position_stride,
+            artifact.start_block_index,
+            artifact.terminal_token_position,
+            artifact.terminal_block_index,
+            &artifact.global_interval_start_boundary_commitment,
+            &artifact.global_interval_end_boundary_commitment,
+            artifact.local_score_sum,
+            artifact.global_score_sum,
+            artifact.grouped_value_mix_sum,
+            artifact.residual_output_sum,
+            artifact.final_acc_sum,
+            artifact.primary_norm_sq_min,
+            artifact.primary_norm_sq_max,
+            artifact.secondary_norm_sq_min,
+            artifact.secondary_norm_sq_max,
+            artifact.primary_activation_output_sum,
+            artifact.secondary_activation_output_sum,
+        )?;
+    if artifact.artifact_commitment != expected_artifact_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 99 multi-interval richer-family accumulation artifact commitment does not match its serialized contents"
+                .to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+pub fn save_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
+    artifact: &Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact,
+    path: &Path,
+) -> Result<()> {
+    write_json_with_limit(
+        artifact,
+        path,
+        MAX_PHASE99_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ACCUMULATION_JSON_BYTES,
+        "Phase 99 multi-interval richer-family accumulation artifact",
+    )
+}
+
+pub fn load_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
+    path: &Path,
+) -> Result<Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE99_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ACCUMULATION_JSON_BYTES,
+        "Phase 99 multi-interval richer-family accumulation artifact",
+    )?;
+    let artifact: Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact =
+        serde_json::from_slice(&bytes)
+            .map_err(|error| VmError::Serialization(error.to_string()))?;
+    verify_phase99_multi_interval_gemma_richer_family_accumulation_artifact(&artifact)?;
+    Ok(artifact)
+}
+
+fn validate_phase1015_bounded_fold_arity(bounded_fold_arity: usize) -> Result<()> {
+    if bounded_fold_arity < 2 {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 folded multi-interval prototype requires bounded_fold_arity >= 2"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn canonical_phase1015_folded_groups(
+    source: &Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact,
+    bounded_fold_arity: usize,
+) -> Result<Vec<Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeGroup>> {
+    validate_phase1015_bounded_fold_arity(bounded_fold_arity)?;
+    let mut folded_groups = Vec::new();
+    for (folded_group_index, chunk) in source.members.chunks(bounded_fold_arity).enumerate() {
+        let first = chunk.first().ok_or_else(|| {
+            VmError::InvalidConfig(
+                "Phase 101.5 folded multi-interval prototype encountered an empty interval chunk"
+                    .to_string(),
+            )
+        })?;
+        let last = chunk
+            .last()
+            .expect("non-empty interval chunk has a last member");
+        let interval_member_commitments = chunk
+            .iter()
+            .map(|member| member.interval_member_commitment.clone())
+            .collect::<Vec<_>>();
+        let interval_phase98_commitments = chunk
+            .iter()
+            .map(|member| member.phase98_artifact_commitment.clone())
+            .collect::<Vec<_>>();
+        let interval_member_commitment_sequence_commitment = commit_namespace_strings(
+            "phase1015/interval-member-commitment-sequence",
+            &interval_member_commitments,
+        )?;
+        let interval_phase98_commitment_sequence_commitment = commit_namespace_strings(
+            "phase1015/interval-phase98-commitment-sequence",
+            &interval_phase98_commitments,
+        )?;
+        let local_score_sum = chunk
+            .iter()
+            .map(|member| member.local_score_sum)
+            .sum::<i64>();
+        let global_score_sum = chunk
+            .iter()
+            .map(|member| member.global_score_sum)
+            .sum::<i64>();
+        let grouped_value_mix_sum = chunk
+            .iter()
+            .map(|member| member.grouped_value_mix_sum)
+            .sum::<i64>();
+        let residual_output_sum = chunk
+            .iter()
+            .map(|member| member.residual_output_sum)
+            .sum::<i64>();
+        let final_acc_sum = chunk.iter().map(|member| member.final_acc_sum).sum::<i64>();
+        let primary_norm_sq_min = chunk
+            .iter()
+            .map(|member| member.primary_norm_sq_min)
+            .min()
+            .expect("non-empty chunk");
+        let primary_norm_sq_max = chunk
+            .iter()
+            .map(|member| member.primary_norm_sq_max)
+            .max()
+            .expect("non-empty chunk");
+        let secondary_norm_sq_min = chunk
+            .iter()
+            .map(|member| member.secondary_norm_sq_min)
+            .min()
+            .expect("non-empty chunk");
+        let secondary_norm_sq_max = chunk
+            .iter()
+            .map(|member| member.secondary_norm_sq_max)
+            .max()
+            .expect("non-empty chunk");
+        let primary_activation_output_sum = chunk
+            .iter()
+            .map(|member| member.primary_activation_output_sum)
+            .sum::<i64>();
+        let secondary_activation_output_sum = chunk
+            .iter()
+            .map(|member| member.secondary_activation_output_sum)
+            .sum::<i64>();
+        let mut group = Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeGroup {
+            folded_group_index,
+            start_interval_index: first.interval_index,
+            terminal_interval_index: last.interval_index,
+            start_token_position: first.repeated_token_position,
+            terminal_token_position: last.repeated_token_position,
+            first_phase98_artifact_commitment: first.phase98_artifact_commitment.clone(),
+            terminal_phase98_artifact_commitment: last.phase98_artifact_commitment.clone(),
+            global_start_boundary_commitment: first.global_start_boundary_commitment.clone(),
+            global_end_boundary_commitment: last.global_end_boundary_commitment.clone(),
+            interval_member_commitment_sequence_commitment,
+            interval_phase98_commitment_sequence_commitment,
+            local_score_sum,
+            global_score_sum,
+            grouped_value_mix_sum,
+            residual_output_sum,
+            final_acc_sum,
+            primary_norm_sq_min,
+            primary_norm_sq_max,
+            secondary_norm_sq_min,
+            secondary_norm_sq_max,
+            primary_activation_output_sum,
+            secondary_activation_output_sum,
+            folded_group_commitment: String::new(),
+        };
+        group.folded_group_commitment = commit_phase1015_folded_multi_interval_group(&group)?;
+        folded_groups.push(group);
+    }
+    Ok(folded_groups)
+}
+
+fn validate_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact_shallow(
+    artifact: &Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeArtifact,
+) -> Result<()> {
+    if artifact.artifact_version
+        != STWO_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_VERSION_PHASE1015
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 101.5 folded multi-interval prototype artifact version `{}`",
+            artifact.artifact_version
+        )));
+    }
+    if artifact.semantic_scope
+        != STWO_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_SCOPE_PHASE1015
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 101.5 folded multi-interval prototype artifact scope `{}`",
+            artifact.semantic_scope
+        )));
+    }
+    if artifact.program_label != "gemma_block_v4" {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 101.5 program label `{}`",
+            artifact.program_label
+        )));
+    }
+    validate_phase99_total_intervals(artifact.total_intervals)?;
+    validate_phase95_total_slices(artifact.interval_total_slices)?;
+    validate_phase99_token_position_stride(artifact.token_position_stride)?;
+    validate_phase1015_bounded_fold_arity(artifact.bounded_fold_arity)?;
+    if artifact.total_folded_interval_groups != artifact.folded_groups.len() {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 total_folded_interval_groups does not match the folded group count"
+                .to_string(),
+        ));
+    }
+    if artifact.folded_groups.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 folded multi-interval prototype requires at least one folded group"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+pub fn prepare_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(
+    source: &Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact,
+) -> Result<Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeArtifact> {
+    verify_phase99_multi_interval_gemma_richer_family_accumulation_artifact(source)?;
+    let bounded_fold_arity = PHASE1015_DEFAULT_BOUNDED_FOLD_ARITY;
+    let folded_groups = canonical_phase1015_folded_groups(source, bounded_fold_arity)?;
+    let total_folded_interval_groups = folded_groups.len();
+    let first_member = source.members.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 101.5 folded multi-interval prototype requires at least one interval member"
+                .to_string(),
+        )
+    })?;
+    let last_member = source
+        .members
+        .last()
+        .expect("members are non-empty after first check");
+    let fold_template_commitment = commit_phase1015_fold_template(
+        &source.artifact_commitment,
+        &source.interval_members_commitment,
+        &source.shared_primitive_artifact_commitment,
+        &source.shared_table_registry_commitment,
+        &source.shared_execution_proof_commitment,
+        bounded_fold_arity,
+        source.total_intervals,
+        source.interval_total_slices,
+        source.token_position_start,
+        source.token_position_stride,
+        source.start_block_index,
+        source.terminal_token_position,
+        source.terminal_block_index,
+    )?;
+    let folded_interval_group_sequence_commitment =
+        commit_phase1015_folded_interval_group_sequence(&folded_groups)?;
+    let accumulation_handoff_commitment = commit_phase1015_accumulation_handoff(
+        source,
+        &fold_template_commitment,
+        &folded_interval_group_sequence_commitment,
+        total_folded_interval_groups,
+        bounded_fold_arity,
+    )?;
+    let folded_interval_prototype_accumulator_commitment =
+        commit_phase1015_folded_interval_prototype_accumulator(
+            &accumulation_handoff_commitment,
+            &fold_template_commitment,
+            &folded_interval_group_sequence_commitment,
+            &first_member.global_start_boundary_commitment,
+            &last_member.global_end_boundary_commitment,
+            source.local_score_sum,
+            source.global_score_sum,
+            source.grouped_value_mix_sum,
+            source.residual_output_sum,
+            source.final_acc_sum,
+            source.primary_norm_sq_min,
+            source.primary_norm_sq_max,
+            source.secondary_norm_sq_min,
+            source.secondary_norm_sq_max,
+            source.primary_activation_output_sum,
+            source.secondary_activation_output_sum,
+            total_folded_interval_groups,
+        )?;
+    let artifact_commitment =
+        commit_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(
+            source,
+            &folded_groups,
+            &fold_template_commitment,
+            &folded_interval_group_sequence_commitment,
+            &accumulation_handoff_commitment,
+            &folded_interval_prototype_accumulator_commitment,
+            bounded_fold_arity,
+        )?;
+
+    Ok(
+        Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeArtifact {
+            artifact_version:
+                STWO_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_VERSION_PHASE1015
+                    .to_string(),
+            semantic_scope:
+                STWO_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_SCOPE_PHASE1015
+                    .to_string(),
+            artifact_commitment,
+            program_label: source.program_label.clone(),
+            source_phase99_artifact_commitment: source.artifact_commitment.clone(),
+            source_interval_members_commitment: source.interval_members_commitment.clone(),
+            shared_primitive_artifact_commitment: source
+                .shared_primitive_artifact_commitment
+                .clone(),
+            shared_table_registry_commitment: source.shared_table_registry_commitment.clone(),
+            shared_execution_proof_commitment: source.shared_execution_proof_commitment.clone(),
+            shared_execution_proof_backend_version: source
+                .shared_execution_proof_backend_version
+                .clone(),
+            shared_execution_statement_version: source.shared_execution_statement_version.clone(),
+            total_intervals: source.total_intervals,
+            interval_total_slices: source.interval_total_slices,
+            token_position_start: source.token_position_start,
+            token_position_stride: source.token_position_stride,
+            start_block_index: source.start_block_index,
+            terminal_token_position: source.terminal_token_position,
+            terminal_block_index: source.terminal_block_index,
+            bounded_fold_arity,
+            total_folded_interval_groups,
+            global_interval_start_boundary_commitment: first_member
+                .global_start_boundary_commitment
+                .clone(),
+            global_interval_end_boundary_commitment: last_member
+                .global_end_boundary_commitment
+                .clone(),
+            first_phase98_artifact_commitment: first_member.phase98_artifact_commitment.clone(),
+            terminal_phase98_artifact_commitment: last_member.phase98_artifact_commitment.clone(),
+            fold_template_commitment,
+            folded_interval_group_sequence_commitment,
+            local_score_sum: source.local_score_sum,
+            global_score_sum: source.global_score_sum,
+            grouped_value_mix_sum: source.grouped_value_mix_sum,
+            residual_output_sum: source.residual_output_sum,
+            final_acc_sum: source.final_acc_sum,
+            primary_norm_sq_min: source.primary_norm_sq_min,
+            primary_norm_sq_max: source.primary_norm_sq_max,
+            secondary_norm_sq_min: source.secondary_norm_sq_min,
+            secondary_norm_sq_max: source.secondary_norm_sq_max,
+            primary_activation_output_sum: source.primary_activation_output_sum,
+            secondary_activation_output_sum: source.secondary_activation_output_sum,
+            accumulation_handoff_commitment,
+            folded_interval_prototype_accumulator_commitment,
+            folded_groups,
+        },
+    )
+}
+
+pub fn verify_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(
+    artifact: &Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeArtifact,
+    source: &Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact,
+) -> Result<()> {
+    validate_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact_shallow(
+        artifact,
+    )?;
+    verify_phase99_multi_interval_gemma_richer_family_accumulation_artifact(source)?;
+
+    if artifact.program_label != source.program_label {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 program_label does not match the source Phase 99 artifact".to_string(),
+        ));
+    }
+    if artifact.source_phase99_artifact_commitment != source.artifact_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 source_phase99_artifact_commitment does not match the source artifact"
+                .to_string(),
+        ));
+    }
+    if artifact.source_interval_members_commitment != source.interval_members_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 source_interval_members_commitment does not match the source artifact"
+                .to_string(),
+        ));
+    }
+    if artifact.shared_primitive_artifact_commitment != source.shared_primitive_artifact_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 shared_primitive_artifact_commitment does not match the source artifact"
+                .to_string(),
+        ));
+    }
+    if artifact.shared_table_registry_commitment != source.shared_table_registry_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 shared_table_registry_commitment does not match the source artifact"
+                .to_string(),
+        ));
+    }
+    if artifact.shared_execution_proof_commitment != source.shared_execution_proof_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 shared_execution_proof_commitment does not match the source artifact"
+                .to_string(),
+        ));
+    }
+    if artifact.shared_execution_proof_backend_version
+        != source.shared_execution_proof_backend_version
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 shared_execution_proof_backend_version does not match the source artifact"
+                .to_string(),
+        ));
+    }
+    if artifact.shared_execution_statement_version != source.shared_execution_statement_version {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 shared_execution_statement_version does not match the source artifact"
+                .to_string(),
+        ));
+    }
+    if artifact.total_intervals != source.total_intervals
+        || artifact.interval_total_slices != source.interval_total_slices
+        || artifact.token_position_start != source.token_position_start
+        || artifact.token_position_stride != source.token_position_stride
+        || artifact.start_block_index != source.start_block_index
+        || artifact.terminal_token_position != source.terminal_token_position
+        || artifact.terminal_block_index != source.terminal_block_index
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 interval metadata does not match the source Phase 99 artifact".to_string(),
+        ));
+    }
+
+    let first_member = source.members.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 101.5 folded multi-interval prototype requires at least one interval member"
+                .to_string(),
+        )
+    })?;
+    let last_member = source
+        .members
+        .last()
+        .expect("members are non-empty after first check");
+    if artifact.global_interval_start_boundary_commitment
+        != first_member.global_start_boundary_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 global_interval_start_boundary_commitment does not match the source artifact"
+                .to_string(),
+        ));
+    }
+    if artifact.global_interval_end_boundary_commitment
+        != last_member.global_end_boundary_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 global_interval_end_boundary_commitment does not match the source artifact"
+                .to_string(),
+        ));
+    }
+    if artifact.first_phase98_artifact_commitment != first_member.phase98_artifact_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 first_phase98_artifact_commitment does not match the source artifact"
+                .to_string(),
+        ));
+    }
+    if artifact.terminal_phase98_artifact_commitment != last_member.phase98_artifact_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 terminal_phase98_artifact_commitment does not match the source artifact"
+                .to_string(),
+        ));
+    }
+
+    let expected_folded_groups =
+        canonical_phase1015_folded_groups(source, artifact.bounded_fold_arity)?;
+    if artifact.folded_groups != expected_folded_groups {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 folded_groups do not match the canonical source-derived interval groups"
+                .to_string(),
+        ));
+    }
+
+    let expected_fold_template_commitment = commit_phase1015_fold_template(
+        &source.artifact_commitment,
+        &source.interval_members_commitment,
+        &source.shared_primitive_artifact_commitment,
+        &source.shared_table_registry_commitment,
+        &source.shared_execution_proof_commitment,
+        artifact.bounded_fold_arity,
+        source.total_intervals,
+        source.interval_total_slices,
+        source.token_position_start,
+        source.token_position_stride,
+        source.start_block_index,
+        source.terminal_token_position,
+        source.terminal_block_index,
+    )?;
+    if artifact.fold_template_commitment != expected_fold_template_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 fold_template_commitment does not match the canonical source-derived template"
+                .to_string(),
+        ));
+    }
+
+    let expected_folded_interval_group_sequence_commitment =
+        commit_phase1015_folded_interval_group_sequence(&artifact.folded_groups)?;
+    if artifact.folded_interval_group_sequence_commitment
+        != expected_folded_interval_group_sequence_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 folded_interval_group_sequence_commitment does not match the serialized folded interval groups"
+                .to_string(),
+        ));
+    }
+    if artifact.local_score_sum != source.local_score_sum
+        || artifact.global_score_sum != source.global_score_sum
+        || artifact.grouped_value_mix_sum != source.grouped_value_mix_sum
+        || artifact.residual_output_sum != source.residual_output_sum
+        || artifact.final_acc_sum != source.final_acc_sum
+        || artifact.primary_norm_sq_min != source.primary_norm_sq_min
+        || artifact.primary_norm_sq_max != source.primary_norm_sq_max
+        || artifact.secondary_norm_sq_min != source.secondary_norm_sq_min
+        || artifact.secondary_norm_sq_max != source.secondary_norm_sq_max
+        || artifact.primary_activation_output_sum != source.primary_activation_output_sum
+        || artifact.secondary_activation_output_sum != source.secondary_activation_output_sum
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 accumulated summaries do not match the source Phase 99 artifact"
+                .to_string(),
+        ));
+    }
+
+    let expected_accumulation_handoff_commitment = commit_phase1015_accumulation_handoff(
+        source,
+        &artifact.fold_template_commitment,
+        &artifact.folded_interval_group_sequence_commitment,
+        artifact.total_folded_interval_groups,
+        artifact.bounded_fold_arity,
+    )?;
+    if artifact.accumulation_handoff_commitment != expected_accumulation_handoff_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 accumulation_handoff_commitment does not match the canonical folded interval handoff"
+                .to_string(),
+        ));
+    }
+
+    let expected_folded_interval_prototype_accumulator_commitment =
+        commit_phase1015_folded_interval_prototype_accumulator(
+            &artifact.accumulation_handoff_commitment,
+            &artifact.fold_template_commitment,
+            &artifact.folded_interval_group_sequence_commitment,
+            &artifact.global_interval_start_boundary_commitment,
+            &artifact.global_interval_end_boundary_commitment,
+            artifact.local_score_sum,
+            artifact.global_score_sum,
+            artifact.grouped_value_mix_sum,
+            artifact.residual_output_sum,
+            artifact.final_acc_sum,
+            artifact.primary_norm_sq_min,
+            artifact.primary_norm_sq_max,
+            artifact.secondary_norm_sq_min,
+            artifact.secondary_norm_sq_max,
+            artifact.primary_activation_output_sum,
+            artifact.secondary_activation_output_sum,
+            artifact.total_folded_interval_groups,
+        )?;
+    if artifact.folded_interval_prototype_accumulator_commitment
+        != expected_folded_interval_prototype_accumulator_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 folded_interval_prototype_accumulator_commitment does not match the serialized folded interval groups"
+                .to_string(),
+        ));
+    }
+
+    let expected_artifact_commitment =
+        commit_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(
+            source,
+            &artifact.folded_groups,
+            &artifact.fold_template_commitment,
+            &artifact.folded_interval_group_sequence_commitment,
+            &artifact.accumulation_handoff_commitment,
+            &artifact.folded_interval_prototype_accumulator_commitment,
+            artifact.bounded_fold_arity,
+        )?;
+    if artifact.artifact_commitment != expected_artifact_commitment {
+        return Err(VmError::InvalidConfig(
+            "Phase 101.5 folded multi-interval prototype artifact commitment does not match its serialized contents"
+                .to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+pub fn save_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(
+    artifact: &Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeArtifact,
+    path: &Path,
+) -> Result<()> {
+    write_json_with_limit(
+        artifact,
+        path,
+        MAX_PHASE1015_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_JSON_BYTES,
+        "Phase 101.5 folded multi-interval Gemma accumulation prototype artifact",
+    )
+}
+
+pub fn load_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(
+    path: &Path,
+) -> Result<Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeArtifact> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE1015_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_JSON_BYTES,
+        "Phase 101.5 folded multi-interval Gemma accumulation prototype artifact",
+    )?;
+    let artifact: Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeArtifact =
+        serde_json::from_slice(&bytes)
+            .map_err(|error| VmError::Serialization(error.to_string()))?;
+    validate_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact_shallow(
+        &artifact,
+    )?;
+    Ok(artifact)
+}
+
 fn build_phase93_tensor_native_chain_artifact(
     primitive_artifact: Phase92SharedNormalizationPrimitiveArtifact,
     steps: Vec<Phase93TensorNativeChainStep>,
@@ -3590,6 +4922,463 @@ fn commit_phase98_folded_gemma_richer_slice_family_artifact(
     Ok(lower_hex(&out))
 }
 
+fn commit_phase99_multi_interval_member(
+    member: &Phase99MultiIntervalGemmaRicherFamilyMember,
+) -> Result<String> {
+    #[derive(Serialize)]
+    struct IntervalMemberPayload<'a> {
+        interval_index: usize,
+        repeated_token_position: u64,
+        start_block_index: u64,
+        terminal_block_index: u64,
+        phase95_artifact_commitment: &'a str,
+        phase965_artifact_commitment: &'a str,
+        phase98_artifact_commitment: &'a str,
+        global_start_boundary_commitment: &'a str,
+        global_end_boundary_commitment: &'a str,
+        first_richer_slice_artifact_commitment: &'a str,
+        terminal_richer_slice_artifact_commitment: &'a str,
+        richer_slice_commitment_sequence_commitment: &'a str,
+        selected_memory_window_family_commitment: &'a str,
+        invariant_summary_family_commitment: &'a str,
+        local_score_sum: i64,
+        global_score_sum: i64,
+        grouped_value_mix_sum: i64,
+        residual_output_sum: i64,
+        final_acc_sum: i64,
+        primary_norm_sq_min: i16,
+        primary_norm_sq_max: i16,
+        secondary_norm_sq_min: i16,
+        secondary_norm_sq_max: i16,
+        primary_activation_output_sum: i64,
+        secondary_activation_output_sum: i64,
+    }
+    let payload = IntervalMemberPayload {
+        interval_index: member.interval_index,
+        repeated_token_position: member.repeated_token_position,
+        start_block_index: member.start_block_index,
+        terminal_block_index: member.terminal_block_index,
+        phase95_artifact_commitment: &member.phase95_artifact_commitment,
+        phase965_artifact_commitment: &member.phase965_artifact_commitment,
+        phase98_artifact_commitment: &member.phase98_artifact_commitment,
+        global_start_boundary_commitment: &member.global_start_boundary_commitment,
+        global_end_boundary_commitment: &member.global_end_boundary_commitment,
+        first_richer_slice_artifact_commitment: &member.first_richer_slice_artifact_commitment,
+        terminal_richer_slice_artifact_commitment: &member
+            .terminal_richer_slice_artifact_commitment,
+        richer_slice_commitment_sequence_commitment: &member
+            .richer_slice_commitment_sequence_commitment,
+        selected_memory_window_family_commitment: &member.selected_memory_window_family_commitment,
+        invariant_summary_family_commitment: &member.invariant_summary_family_commitment,
+        local_score_sum: member.local_score_sum,
+        global_score_sum: member.global_score_sum,
+        grouped_value_mix_sum: member.grouped_value_mix_sum,
+        residual_output_sum: member.residual_output_sum,
+        final_acc_sum: member.final_acc_sum,
+        primary_norm_sq_min: member.primary_norm_sq_min,
+        primary_norm_sq_max: member.primary_norm_sq_max,
+        secondary_norm_sq_min: member.secondary_norm_sq_min,
+        secondary_norm_sq_max: member.secondary_norm_sq_max,
+        primary_activation_output_sum: member.primary_activation_output_sum,
+        secondary_activation_output_sum: member.secondary_activation_output_sum,
+    };
+    let json =
+        serde_json::to_vec(&payload).map_err(|error| VmError::Serialization(error.to_string()))?;
+    commit_namespace_bytes("phase99/multi-interval-member", &json)
+}
+
+fn commit_phase99_multi_interval_members(
+    members: &[Phase99MultiIntervalGemmaRicherFamilyMember],
+) -> Result<String> {
+    let commitments = members
+        .iter()
+        .map(|member| member.interval_member_commitment.clone())
+        .collect::<Vec<_>>();
+    commit_namespace_strings("phase99/multi-interval-member-sequence", &commitments)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn commit_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
+    shared_primitive_artifact: &Phase92SharedNormalizationPrimitiveArtifact,
+    shared_execution_proof: &VanillaStarkExecutionProof,
+    shared_execution_proof_commitment: &str,
+    interval_members_commitment: &str,
+    total_intervals: usize,
+    interval_total_slices: usize,
+    token_position_start: u64,
+    token_position_stride: u64,
+    start_block_index: u64,
+    terminal_token_position: u64,
+    terminal_block_index: u64,
+    global_interval_start_boundary_commitment: &str,
+    global_interval_end_boundary_commitment: &str,
+    local_score_sum: i64,
+    global_score_sum: i64,
+    grouped_value_mix_sum: i64,
+    residual_output_sum: i64,
+    final_acc_sum: i64,
+    primary_norm_sq_min: i16,
+    primary_norm_sq_max: i16,
+    secondary_norm_sq_min: i16,
+    secondary_norm_sq_max: i16,
+    primary_activation_output_sum: i64,
+    secondary_activation_output_sum: i64,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(
+        STWO_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ACCUMULATION_ARTIFACT_VERSION_PHASE99.as_bytes(),
+    );
+    hasher.update(
+        STWO_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ACCUMULATION_ARTIFACT_SCOPE_PHASE99.as_bytes(),
+    );
+    hasher.update(shared_primitive_artifact.artifact_commitment.as_bytes());
+    hasher.update(
+        shared_primitive_artifact
+            .static_table_registry_commitment
+            .as_bytes(),
+    );
+    hasher.update(shared_execution_proof_commitment.as_bytes());
+    hasher.update(shared_execution_proof.proof_backend_version.as_bytes());
+    hasher.update(shared_execution_proof.claim.statement_version.as_bytes());
+    hasher.update(&(total_intervals as u64).to_le_bytes());
+    hasher.update(&(interval_total_slices as u64).to_le_bytes());
+    hasher.update(&token_position_start.to_le_bytes());
+    hasher.update(&token_position_stride.to_le_bytes());
+    hasher.update(&start_block_index.to_le_bytes());
+    hasher.update(&terminal_token_position.to_le_bytes());
+    hasher.update(&terminal_block_index.to_le_bytes());
+    hasher.update(interval_members_commitment.as_bytes());
+    hasher.update(global_interval_start_boundary_commitment.as_bytes());
+    hasher.update(global_interval_end_boundary_commitment.as_bytes());
+    hasher.update(&local_score_sum.to_le_bytes());
+    hasher.update(&global_score_sum.to_le_bytes());
+    hasher.update(&grouped_value_mix_sum.to_le_bytes());
+    hasher.update(&residual_output_sum.to_le_bytes());
+    hasher.update(&final_acc_sum.to_le_bytes());
+    hasher.update(&primary_norm_sq_min.to_le_bytes());
+    hasher.update(&primary_norm_sq_max.to_le_bytes());
+    hasher.update(&secondary_norm_sq_min.to_le_bytes());
+    hasher.update(&secondary_norm_sq_max.to_le_bytes());
+    hasher.update(&primary_activation_output_sum.to_le_bytes());
+    hasher.update(&secondary_activation_output_sum.to_le_bytes());
+    let primitive_json = serde_json::to_vec(shared_primitive_artifact)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    hasher.update(&(primitive_json.len() as u64).to_le_bytes());
+    hasher.update(&primitive_json);
+    let proof_json = serde_json::to_vec(shared_execution_proof)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    hasher.update(&(proof_json.len() as u64).to_le_bytes());
+    hasher.update(&proof_json);
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase1015_folded_multi_interval_group(
+    group: &Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeGroup,
+) -> Result<String> {
+    #[derive(Serialize)]
+    struct FoldedIntervalGroupPayload<'a> {
+        folded_group_index: usize,
+        start_interval_index: usize,
+        terminal_interval_index: usize,
+        start_token_position: u64,
+        terminal_token_position: u64,
+        first_phase98_artifact_commitment: &'a str,
+        terminal_phase98_artifact_commitment: &'a str,
+        global_start_boundary_commitment: &'a str,
+        global_end_boundary_commitment: &'a str,
+        interval_member_commitment_sequence_commitment: &'a str,
+        interval_phase98_commitment_sequence_commitment: &'a str,
+        local_score_sum: i64,
+        global_score_sum: i64,
+        grouped_value_mix_sum: i64,
+        residual_output_sum: i64,
+        final_acc_sum: i64,
+        primary_norm_sq_min: i16,
+        primary_norm_sq_max: i16,
+        secondary_norm_sq_min: i16,
+        secondary_norm_sq_max: i16,
+        primary_activation_output_sum: i64,
+        secondary_activation_output_sum: i64,
+    }
+    let payload = FoldedIntervalGroupPayload {
+        folded_group_index: group.folded_group_index,
+        start_interval_index: group.start_interval_index,
+        terminal_interval_index: group.terminal_interval_index,
+        start_token_position: group.start_token_position,
+        terminal_token_position: group.terminal_token_position,
+        first_phase98_artifact_commitment: &group.first_phase98_artifact_commitment,
+        terminal_phase98_artifact_commitment: &group.terminal_phase98_artifact_commitment,
+        global_start_boundary_commitment: &group.global_start_boundary_commitment,
+        global_end_boundary_commitment: &group.global_end_boundary_commitment,
+        interval_member_commitment_sequence_commitment: &group
+            .interval_member_commitment_sequence_commitment,
+        interval_phase98_commitment_sequence_commitment: &group
+            .interval_phase98_commitment_sequence_commitment,
+        local_score_sum: group.local_score_sum,
+        global_score_sum: group.global_score_sum,
+        grouped_value_mix_sum: group.grouped_value_mix_sum,
+        residual_output_sum: group.residual_output_sum,
+        final_acc_sum: group.final_acc_sum,
+        primary_norm_sq_min: group.primary_norm_sq_min,
+        primary_norm_sq_max: group.primary_norm_sq_max,
+        secondary_norm_sq_min: group.secondary_norm_sq_min,
+        secondary_norm_sq_max: group.secondary_norm_sq_max,
+        primary_activation_output_sum: group.primary_activation_output_sum,
+        secondary_activation_output_sum: group.secondary_activation_output_sum,
+    };
+    let json =
+        serde_json::to_vec(&payload).map_err(|error| VmError::Serialization(error.to_string()))?;
+    commit_namespace_bytes("phase1015/folded-multi-interval-group", &json)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn commit_phase1015_fold_template(
+    source_phase99_artifact_commitment: &str,
+    source_interval_members_commitment: &str,
+    shared_primitive_artifact_commitment: &str,
+    shared_table_registry_commitment: &str,
+    shared_execution_proof_commitment: &str,
+    bounded_fold_arity: usize,
+    total_intervals: usize,
+    interval_total_slices: usize,
+    token_position_start: u64,
+    token_position_stride: u64,
+    start_block_index: u64,
+    terminal_token_position: u64,
+    terminal_block_index: u64,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(
+        STWO_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_VERSION_PHASE1015
+            .as_bytes(),
+    );
+    hasher.update(
+        STWO_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_SCOPE_PHASE1015.as_bytes(),
+    );
+    hasher.update(source_phase99_artifact_commitment.as_bytes());
+    hasher.update(source_interval_members_commitment.as_bytes());
+    hasher.update(shared_primitive_artifact_commitment.as_bytes());
+    hasher.update(shared_table_registry_commitment.as_bytes());
+    hasher.update(shared_execution_proof_commitment.as_bytes());
+    hasher.update(&(bounded_fold_arity as u64).to_le_bytes());
+    hasher.update(&(total_intervals as u64).to_le_bytes());
+    hasher.update(&(interval_total_slices as u64).to_le_bytes());
+    hasher.update(&token_position_start.to_le_bytes());
+    hasher.update(&token_position_stride.to_le_bytes());
+    hasher.update(&start_block_index.to_le_bytes());
+    hasher.update(&terminal_token_position.to_le_bytes());
+    hasher.update(&terminal_block_index.to_le_bytes());
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase1015_folded_interval_group_sequence(
+    groups: &[Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeGroup],
+) -> Result<String> {
+    let json =
+        serde_json::to_vec(groups).map_err(|error| VmError::Serialization(error.to_string()))?;
+    commit_namespace_bytes("phase1015/folded-interval-group-sequence", &json)
+}
+
+fn commit_phase1015_accumulation_handoff(
+    source: &Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact,
+    fold_template_commitment: &str,
+    folded_interval_group_sequence_commitment: &str,
+    total_folded_interval_groups: usize,
+    bounded_fold_arity: usize,
+) -> Result<String> {
+    #[derive(Serialize)]
+    struct AccumulationHandoffPayload<'a> {
+        source_phase99_artifact_commitment: &'a str,
+        source_interval_members_commitment: &'a str,
+        shared_primitive_artifact_commitment: &'a str,
+        shared_table_registry_commitment: &'a str,
+        shared_execution_proof_commitment: &'a str,
+        total_intervals: usize,
+        interval_total_slices: usize,
+        token_position_start: u64,
+        token_position_stride: u64,
+        start_block_index: u64,
+        terminal_token_position: u64,
+        terminal_block_index: u64,
+        bounded_fold_arity: usize,
+        total_folded_interval_groups: usize,
+        fold_template_commitment: &'a str,
+        folded_interval_group_sequence_commitment: &'a str,
+        global_interval_start_boundary_commitment: &'a str,
+        global_interval_end_boundary_commitment: &'a str,
+    }
+    let payload = AccumulationHandoffPayload {
+        source_phase99_artifact_commitment: &source.artifact_commitment,
+        source_interval_members_commitment: &source.interval_members_commitment,
+        shared_primitive_artifact_commitment: &source.shared_primitive_artifact_commitment,
+        shared_table_registry_commitment: &source.shared_table_registry_commitment,
+        shared_execution_proof_commitment: &source.shared_execution_proof_commitment,
+        total_intervals: source.total_intervals,
+        interval_total_slices: source.interval_total_slices,
+        token_position_start: source.token_position_start,
+        token_position_stride: source.token_position_stride,
+        start_block_index: source.start_block_index,
+        terminal_token_position: source.terminal_token_position,
+        terminal_block_index: source.terminal_block_index,
+        bounded_fold_arity,
+        total_folded_interval_groups,
+        fold_template_commitment,
+        folded_interval_group_sequence_commitment,
+        global_interval_start_boundary_commitment: &source
+            .global_interval_start_boundary_commitment,
+        global_interval_end_boundary_commitment: &source.global_interval_end_boundary_commitment,
+    };
+    let json =
+        serde_json::to_vec(&payload).map_err(|error| VmError::Serialization(error.to_string()))?;
+    commit_namespace_bytes("phase1015/accumulation-handoff", &json)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn commit_phase1015_folded_interval_prototype_accumulator(
+    accumulation_handoff_commitment: &str,
+    fold_template_commitment: &str,
+    folded_interval_group_sequence_commitment: &str,
+    global_interval_start_boundary_commitment: &str,
+    global_interval_end_boundary_commitment: &str,
+    local_score_sum: i64,
+    global_score_sum: i64,
+    grouped_value_mix_sum: i64,
+    residual_output_sum: i64,
+    final_acc_sum: i64,
+    primary_norm_sq_min: i16,
+    primary_norm_sq_max: i16,
+    secondary_norm_sq_min: i16,
+    secondary_norm_sq_max: i16,
+    primary_activation_output_sum: i64,
+    secondary_activation_output_sum: i64,
+    total_folded_interval_groups: usize,
+) -> Result<String> {
+    #[derive(Serialize)]
+    struct FoldedIntervalPrototypeAccumulatorPayload<'a> {
+        accumulation_handoff_commitment: &'a str,
+        fold_template_commitment: &'a str,
+        folded_interval_group_sequence_commitment: &'a str,
+        global_interval_start_boundary_commitment: &'a str,
+        global_interval_end_boundary_commitment: &'a str,
+        local_score_sum: i64,
+        global_score_sum: i64,
+        grouped_value_mix_sum: i64,
+        residual_output_sum: i64,
+        final_acc_sum: i64,
+        primary_norm_sq_min: i16,
+        primary_norm_sq_max: i16,
+        secondary_norm_sq_min: i16,
+        secondary_norm_sq_max: i16,
+        primary_activation_output_sum: i64,
+        secondary_activation_output_sum: i64,
+        total_folded_interval_groups: usize,
+    }
+    let payload = FoldedIntervalPrototypeAccumulatorPayload {
+        accumulation_handoff_commitment,
+        fold_template_commitment,
+        folded_interval_group_sequence_commitment,
+        global_interval_start_boundary_commitment,
+        global_interval_end_boundary_commitment,
+        local_score_sum,
+        global_score_sum,
+        grouped_value_mix_sum,
+        residual_output_sum,
+        final_acc_sum,
+        primary_norm_sq_min,
+        primary_norm_sq_max,
+        secondary_norm_sq_min,
+        secondary_norm_sq_max,
+        primary_activation_output_sum,
+        secondary_activation_output_sum,
+        total_folded_interval_groups,
+    };
+    let json =
+        serde_json::to_vec(&payload).map_err(|error| VmError::Serialization(error.to_string()))?;
+    commit_namespace_bytes("phase1015/folded-interval-prototype-accumulator", &json)
+}
+
+fn commit_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(
+    source: &Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact,
+    folded_groups: &[Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeGroup],
+    fold_template_commitment: &str,
+    folded_interval_group_sequence_commitment: &str,
+    accumulation_handoff_commitment: &str,
+    folded_interval_prototype_accumulator_commitment: &str,
+    bounded_fold_arity: usize,
+) -> Result<String> {
+    let first_member = source.members.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "Phase 101.5 folded multi-interval prototype requires at least one interval member"
+                .to_string(),
+        )
+    })?;
+    let last_member = source
+        .members
+        .last()
+        .expect("source members are non-empty after first check");
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(
+        STWO_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_VERSION_PHASE1015
+            .as_bytes(),
+    );
+    hasher.update(
+        STWO_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_SCOPE_PHASE1015.as_bytes(),
+    );
+    hasher.update(source.program_label.as_bytes());
+    hasher.update(source.artifact_commitment.as_bytes());
+    hasher.update(source.interval_members_commitment.as_bytes());
+    hasher.update(source.shared_primitive_artifact_commitment.as_bytes());
+    hasher.update(source.shared_table_registry_commitment.as_bytes());
+    hasher.update(source.shared_execution_proof_commitment.as_bytes());
+    hasher.update(source.shared_execution_proof_backend_version.as_bytes());
+    hasher.update(source.shared_execution_statement_version.as_bytes());
+    hasher.update(&(source.total_intervals as u64).to_le_bytes());
+    hasher.update(&(source.interval_total_slices as u64).to_le_bytes());
+    hasher.update(&source.token_position_start.to_le_bytes());
+    hasher.update(&source.token_position_stride.to_le_bytes());
+    hasher.update(&source.start_block_index.to_le_bytes());
+    hasher.update(&source.terminal_token_position.to_le_bytes());
+    hasher.update(&source.terminal_block_index.to_le_bytes());
+    hasher.update(&(bounded_fold_arity as u64).to_le_bytes());
+    hasher.update(&(folded_groups.len() as u64).to_le_bytes());
+    hasher.update(first_member.global_start_boundary_commitment.as_bytes());
+    hasher.update(last_member.global_end_boundary_commitment.as_bytes());
+    hasher.update(first_member.phase98_artifact_commitment.as_bytes());
+    hasher.update(last_member.phase98_artifact_commitment.as_bytes());
+    hasher.update(fold_template_commitment.as_bytes());
+    hasher.update(folded_interval_group_sequence_commitment.as_bytes());
+    hasher.update(&source.local_score_sum.to_le_bytes());
+    hasher.update(&source.global_score_sum.to_le_bytes());
+    hasher.update(&source.grouped_value_mix_sum.to_le_bytes());
+    hasher.update(&source.residual_output_sum.to_le_bytes());
+    hasher.update(&source.final_acc_sum.to_le_bytes());
+    hasher.update(&source.primary_norm_sq_min.to_le_bytes());
+    hasher.update(&source.primary_norm_sq_max.to_le_bytes());
+    hasher.update(&source.secondary_norm_sq_min.to_le_bytes());
+    hasher.update(&source.secondary_norm_sq_max.to_le_bytes());
+    hasher.update(&source.primary_activation_output_sum.to_le_bytes());
+    hasher.update(&source.secondary_activation_output_sum.to_le_bytes());
+    hasher.update(accumulation_handoff_commitment.as_bytes());
+    hasher.update(folded_interval_prototype_accumulator_commitment.as_bytes());
+    let folded_groups_json = serde_json::to_vec(folded_groups)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    hasher.update(&(folded_groups_json.len() as u64).to_le_bytes());
+    hasher.update(&folded_groups_json);
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
 fn commit_namespace_u64s(namespace: &str, values: &[u64]) -> Result<String> {
     let json =
         serde_json::to_vec(values).map_err(|error| VmError::Serialization(error.to_string()))?;
@@ -4027,6 +5816,129 @@ mod tests {
             verify_phase98_folded_gemma_richer_slice_family_artifact(&artifact, &source, &folded)
                 .expect_err("tampered richer-family summary should fail");
         assert!(error.to_string().contains("richer-family summaries"));
+    }
+
+    #[test]
+    fn phase99_multi_interval_gemma_richer_family_accumulation_round_trips() {
+        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 primitive artifact");
+        let execution_proof = prove_gemma_block_v4_execution();
+        let artifact = prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
+            &primitive_artifact,
+            &execution_proof,
+            4,
+            4,
+            1,
+            2,
+            2,
+        )
+        .expect("prepare phase99 multi-interval artifact");
+        assert_eq!(artifact.total_intervals, 4);
+        assert_eq!(artifact.interval_total_slices, 4);
+        assert_eq!(artifact.token_position_start, 1);
+        assert_eq!(artifact.token_position_stride, 2);
+        assert_eq!(artifact.terminal_token_position, 7);
+        assert_eq!(artifact.terminal_block_index, 5);
+        assert_eq!(artifact.members.len(), 4);
+        assert_eq!(artifact.local_score_sum, 32);
+        assert_eq!(artifact.global_score_sum, 32);
+        assert_eq!(artifact.grouped_value_mix_sum, 128);
+        assert_eq!(artifact.residual_output_sum, 64);
+        assert_eq!(artifact.primary_activation_output_sum, 16);
+        assert_eq!(artifact.secondary_activation_output_sum, 16);
+        verify_phase99_multi_interval_gemma_richer_family_accumulation_artifact(&artifact)
+            .expect("verify phase99 multi-interval artifact");
+    }
+
+    #[test]
+    fn phase99_multi_interval_gemma_richer_family_accumulation_rejects_interval_member_drift() {
+        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 primitive artifact");
+        let execution_proof = prove_gemma_block_v4_execution();
+        let mut artifact =
+            prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
+                &primitive_artifact,
+                &execution_proof,
+                3,
+                4,
+                0,
+                1,
+                2,
+            )
+            .expect("prepare phase99 multi-interval artifact");
+        artifact.members[1].repeated_token_position = 99;
+        let error =
+            verify_phase99_multi_interval_gemma_richer_family_accumulation_artifact(&artifact)
+                .expect_err("tampered interval member should fail");
+        assert!(
+            error.to_string().contains("interval member 1")
+                || error.to_string().contains("canonical reconstructed")
+        );
+    }
+
+    #[test]
+    fn phase1015_folded_multi_interval_gemma_accumulation_prototype_round_trips() {
+        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 primitive artifact");
+        let execution_proof = prove_gemma_block_v4_execution();
+        let source = prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
+            &primitive_artifact,
+            &execution_proof,
+            4,
+            4,
+            0,
+            1,
+            2,
+        )
+        .expect("prepare phase99 source artifact");
+        let artifact =
+            prepare_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(&source)
+                .expect("prepare phase101.5 folded prototype");
+        assert_eq!(artifact.total_intervals, 4);
+        assert_eq!(
+            artifact.bounded_fold_arity,
+            PHASE1015_DEFAULT_BOUNDED_FOLD_ARITY
+        );
+        assert_eq!(artifact.total_folded_interval_groups, 2);
+        assert_eq!(artifact.folded_groups.len(), 2);
+        assert_eq!(artifact.local_score_sum, source.local_score_sum);
+        assert_eq!(
+            artifact.accumulation_handoff_commitment.len(),
+            64,
+            "blake2b-256 hex"
+        );
+        verify_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(
+            &artifact, &source,
+        )
+        .expect("verify phase101.5 folded prototype");
+    }
+
+    #[test]
+    fn phase1015_folded_multi_interval_gemma_accumulation_prototype_rejects_handoff_drift() {
+        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 primitive artifact");
+        let execution_proof = prove_gemma_block_v4_execution();
+        let source = prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
+            &primitive_artifact,
+            &execution_proof,
+            4,
+            4,
+            0,
+            1,
+            2,
+        )
+        .expect("prepare phase99 source artifact");
+        let mut artifact =
+            prepare_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(&source)
+                .expect("prepare phase101.5 folded prototype");
+        artifact.accumulation_handoff_commitment = "bad-handoff".to_string();
+        let error = verify_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(
+            &artifact, &source,
+        )
+        .expect_err("tampered handoff commitment should fail");
+        assert!(error
+            .to_string()
+            .contains("accumulation_handoff_commitment"));
     }
 
     #[test]

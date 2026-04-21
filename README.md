@@ -488,10 +488,35 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   --source repeated-gemma-slice-accumulation.stwo.json \
   --folded folded-gemma-slice-accumulation.stwo.json
 
+# Accumulate several Gemma-like interval families across token positions
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-multi-interval-gemma-richer-family-accumulation-artifact \
+  --proof gemma-block-v4.stark.json \
+  --total-intervals 4 \
+  --interval-total-slices 4 \
+  --token-position-start 0 \
+  --token-position-stride 1 \
+  --start-block-index 2 \
+  -o multi-interval-gemma-richer-family-accumulation.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-multi-interval-gemma-richer-family-accumulation-artifact \
+  multi-interval-gemma-richer-family-accumulation.stwo.json
+
+# Derive the first folded multi-interval prototype and its accumulation handoff
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact \
+  --source multi-interval-gemma-richer-family-accumulation.stwo.json \
+  -o folded-multi-interval-gemma-accumulation-prototype.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact \
+  folded-multi-interval-gemma-accumulation-prototype.stwo.json \
+  --source multi-interval-gemma-richer-family-accumulation.stwo.json
+
 # Freeze the publication-facing transformer-shaped tensor-native bundles
 bash scripts/paper/generate_stwo_tensor_native_transformer_bundle.sh
 bash scripts/paper/generate_stwo_repeated_gemma_slice_accumulation_bundle.sh
 bash scripts/paper/generate_stwo_folded_gemma_slice_bundle.sh
+bash scripts/paper/generate_stwo_multi_interval_folded_gemma_bundle.sh
 
 # Run the minimal shared-lookup identity example
 cargo +nightly-2025-07-14 run --features stwo-backend --example shared_lookup_identity

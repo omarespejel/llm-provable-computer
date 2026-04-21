@@ -367,6 +367,102 @@ Stop condition:
   anchored to both the explicit Phase95 source artifact and the Phase96.5
   folded artifact.
 
+## Phase99: multi-interval richer-family accumulation
+
+Goal:
+
+- move from one repeated Gemma-like interval to several token-position-indexed
+  interval families over the same shared proof surface.
+
+Deliverables:
+
+- one explicit multi-interval richer-family accumulation artifact,
+- interval members indexed by token position and bound to canonical Phase95,
+  Phase96.5, and Phase98 reconstructions,
+- verifier checks for interval-member drift and token-position-stride drift,
+- and explicit aggregate score / residual / normalization / activation
+  summaries across intervals.
+
+Stop condition:
+
+- the repository can point to one honest explicit accumulation surface over
+  multiple interval families instead of one folded interval only.
+
+## Phase100: frozen multi-interval benchmark bundle
+
+Goal:
+
+- freeze the first publication-facing benchmark directory that compares
+  explicit multi-interval accumulation against the folded multi-interval
+  prototype.
+
+Deliverables:
+
+- one frozen artifact directory under `docs/paper/artifacts/`,
+- exact byte deltas for:
+  - naive single-interval explicit accumulation duplication vs explicit
+    multi-interval
+    accumulation,
+  - explicit multi-interval accumulation vs folded multi-interval prototype,
+- exact timings and SHA-256 hashes,
+- and one appendix-ready index explaining the claim boundary.
+
+Stop condition:
+
+- the repository can point to one reproducible multi-interval benchmark bundle
+  with exact hashes, byte deltas, and handoff commitments.
+
+Current checkpoint:
+
+- `docs/paper/artifacts/stwo-multi-interval-folded-gemma-v1-2026-04-21/`
+  now freezes the first Phase99/101.5 benchmark bundle.
+- It records `1,036,298` explicit multi-interval JSON bytes versus `5,214`
+  folded multi-interval prototype bytes.
+- It also records `4,126,700` bytes for blind duplication of the
+  single-interval explicit accumulation artifact, so the Phase99 artifact saves
+  `3,090,402` bytes before the first folded derivative is even applied.
+- The folded prototype then saves a further `1,031,084` bytes relative to the
+  explicit multi-interval source artifact while remaining pre-recursive.
+
+## Phase101: accumulation handoff design
+
+Goal:
+
+- define the smallest honest handoff object that a later recursive or
+  cryptographic accumulation layer would consume.
+
+Deliverables:
+
+- one design note capturing the handoff boundary,
+- one stable accumulation handoff commitment in the folded prototype line, and
+- explicit non-claims distinguishing the handoff surface from actual recursion.
+
+Stop condition:
+
+- the repository can point to a stable handoff object rather than skipping from
+  explicit interval members straight to vague future recursion claims.
+
+## Phase101.5: first folded multi-interval prototype
+
+Goal:
+
+- derive the first compact folded prototype over several explicit interval
+  families.
+
+Deliverables:
+
+- one folded multi-interval prototype artifact,
+- bounded folded groups over Phase99 interval members,
+- one accumulation handoff commitment,
+- one folded prototype accumulator commitment, and
+- verifier checks for group drift and handoff drift.
+
+Stop condition:
+
+- the repository can point to one explicit multi-interval source and one
+  smaller folded multi-interval derivative that stays verifier-bound and
+  pre-recursive.
+
 ## Research answer this roadmap aims to produce
 
 If the roadmap succeeds, the repository should be able to support the following
