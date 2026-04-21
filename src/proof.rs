@@ -903,6 +903,32 @@ pub fn load_execution_stark_proof(path: &Path) -> Result<VanillaStarkExecutionPr
     serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
 }
 
+pub fn load_execution_stark_proof_with_limit(
+    path: &Path,
+    max_bytes: usize,
+) -> Result<VanillaStarkExecutionProof> {
+    let max_bytes_u64 = u64::try_from(max_bytes).map_err(|_| {
+        VmError::InvalidConfig("execution proof byte limit does not fit in u64".to_string())
+    })?;
+    let metadata_len = fs::metadata(path)?.len();
+    if metadata_len > max_bytes_u64 {
+        return Err(VmError::InvalidConfig(format!(
+            "execution proof file `{}` exceeds the {} byte limit",
+            path.display(),
+            max_bytes
+        )));
+    }
+    let bytes = fs::read(path)?;
+    if bytes.len() > max_bytes {
+        return Err(VmError::InvalidConfig(format!(
+            "execution proof file `{}` exceeds the {} byte limit after read",
+            path.display(),
+            max_bytes
+        )));
+    }
+    serde_json::from_slice(&bytes).map_err(|err| VmError::Serialization(err.to_string()))
+}
+
 pub fn conjectured_security_bits(options: &VanillaStarkProofOptions) -> u32 {
     if options.expansion_factor == 0 || options.num_colinearity_checks == 0 {
         return 0;

@@ -524,6 +524,21 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   --source multi-interval-gemma-richer-family-accumulation.stwo.json \
   --folded folded-multi-interval-gemma-accumulation-prototype.stwo.json
 
+# Lift that richer multi-interval line into repeated canonical windows
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-repeated-multi-interval-gemma-richer-family-accumulation-artifact \
+  --proof gemma-block-v4.stark.json \
+  --total-windows 3 \
+  --intervals-per-window 4 \
+  --interval-total-slices 4 \
+  --token-position-start 0 \
+  --token-position-stride 1 \
+  --start-block-index 2 \
+  -o repeated-multi-interval-gemma-richer-family-accumulation.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-repeated-multi-interval-gemma-richer-family-accumulation-artifact \
+  repeated-multi-interval-gemma-richer-family-accumulation.stwo.json
+
 # Freeze the publication-facing transformer-shaped tensor-native bundles
 bash scripts/paper/generate_stwo_tensor_native_transformer_bundle.sh
 bash scripts/paper/generate_stwo_repeated_gemma_slice_accumulation_bundle.sh

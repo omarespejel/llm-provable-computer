@@ -12,6 +12,8 @@ use blake2::Blake2bVar;
 #[cfg(feature = "burn-model")]
 use burn::backend::NdArray;
 use clap::{Parser, Subcommand, ValueEnum};
+#[cfg(feature = "stwo-backend")]
+use llm_provable_computer::proof::load_execution_stark_proof_with_limit;
 #[cfg(any(feature = "burn-model", feature = "onnx-export"))]
 use llm_provable_computer::verify_engines;
 use llm_provable_computer::{
@@ -235,6 +237,9 @@ use llm_provable_computer::{
     STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_SCOPE_PHASE93,
     STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_VERSION_PHASE93,
 };
+
+#[cfg(feature = "stwo-backend")]
+const MAX_PHASE105_SHARED_EXECUTION_PROOF_JSON_BYTES: usize = 64 * 1024 * 1024;
 #[cfg(feature = "burn-model")]
 use llm_provable_computer::{BurnExecutionRuntime, BurnTransformerVm};
 use serde::{Deserialize, Serialize};
@@ -4655,7 +4660,10 @@ fn prepare_stwo_repeated_multi_interval_gemma_richer_family_accumulation_artifac
                 MAX_PHASE99_MULTI_INTERVAL_TOTAL_INTERVALS
             )));
         }
-        let execution_proof = load_execution_stark_proof(proof_path)?;
+        let execution_proof = load_execution_stark_proof_with_limit(
+            proof_path,
+            MAX_PHASE105_SHARED_EXECUTION_PROOF_JSON_BYTES,
+        )?;
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()?;
         let artifact =
             prepare_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(

@@ -2854,6 +2854,26 @@ pub fn prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
 ) -> Result<Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact> {
     verify_phase92_shared_normalization_primitive_artifact(shared_primitive_artifact)?;
     validate_phase945_gemma_execution_proof(shared_execution_proof)?;
+    prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact_with_validated_inputs(
+        shared_primitive_artifact,
+        shared_execution_proof,
+        total_intervals,
+        interval_total_slices,
+        token_position_start,
+        token_position_stride,
+        start_block_index,
+    )
+}
+
+fn prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact_with_validated_inputs(
+    shared_primitive_artifact: &Phase92SharedNormalizationPrimitiveArtifact,
+    shared_execution_proof: &VanillaStarkExecutionProof,
+    total_intervals: usize,
+    interval_total_slices: usize,
+    token_position_start: u64,
+    token_position_stride: u64,
+    start_block_index: u64,
+) -> Result<Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact> {
     let total_intervals_u64 = validate_phase99_total_intervals(total_intervals)?;
     validate_phase95_total_slices(interval_total_slices)?;
     validate_phase99_token_position_stride(token_position_stride)?;
@@ -4771,15 +4791,16 @@ pub fn prepare_phase105_repeated_multi_interval_gemma_richer_family_accumulation
             intervals_per_window,
             window_index,
         )?;
-        let source = prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
-            shared_primitive_artifact,
-            shared_execution_proof,
-            intervals_per_window,
-            interval_total_slices,
-            window_token_position_start,
-            token_position_stride,
-            start_block_index,
-        )?;
+        let source =
+            prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact_with_validated_inputs(
+                shared_primitive_artifact,
+                shared_execution_proof,
+                intervals_per_window,
+                interval_total_slices,
+                window_token_position_start,
+                token_position_stride,
+                start_block_index,
+            )?;
         let folded =
             prepare_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(&source)?;
         let richer =
@@ -5093,15 +5114,16 @@ pub fn verify_phase105_repeated_multi_interval_gemma_richer_family_accumulation_
             artifact.intervals_per_window,
             expected_window_index,
         )?;
-        let source = prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
-            &artifact.shared_primitive_artifact,
-            &artifact.shared_execution_proof,
-            artifact.intervals_per_window,
-            artifact.interval_total_slices,
-            window_token_position_start,
-            artifact.token_position_stride,
-            artifact.start_block_index,
-        )?;
+        let source =
+            prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact_with_validated_inputs(
+                &artifact.shared_primitive_artifact,
+                &artifact.shared_execution_proof,
+                artifact.intervals_per_window,
+                artifact.interval_total_slices,
+                window_token_position_start,
+                artifact.token_position_stride,
+                artifact.start_block_index,
+            )?;
         let folded =
             prepare_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(&source)?;
         let richer =
