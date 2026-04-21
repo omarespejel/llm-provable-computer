@@ -4708,7 +4708,7 @@ fn prepare_stwo_repeated_multi_interval_gemma_richer_family_accumulation_artifac
 
         println!("output: {}", output.display());
         println!("proof: {}", proof_path.display());
-        println!("verified_stark: true");
+        println!("loaded_stark_proof: true");
         print_phase105_repeated_multi_interval_gemma_richer_family_report(&artifact);
         Ok(())
     }
