@@ -20,7 +20,7 @@ feature in this repository.
 
 Local clone audited:
 
-- `/Users/espejelomar/StarkNet/zk-ai/stwo-cairo`
+- `<local-stwo-cairo-clone>` (outside this repository)
 
 Observed on April 21, 2026:
 
