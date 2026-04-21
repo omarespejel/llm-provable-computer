@@ -423,6 +423,30 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-shared-normalization-primitive-artifact \
   shared-normalization-primitive.stwo.json
 
+# Prepare and verify the first transformer-shaped tensor-native chain artifact
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-tensor-native-chain-artifact \
+  -o tensor-native-chain.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-tensor-native-chain-artifact \
+  tensor-native-chain.stwo.json
+
+# Bind that chain to a real Gemma-shaped S-two proof via the core-slice artifact
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prove-stark programs/gemma_block_v4.tvm -o gemma-block-v4.stark.json \
+  --backend stwo --max-steps 256
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-gemma-block-core-slice-artifact \
+  --proof gemma-block-v4.stark.json \
+  --chain tensor-native-chain.stwo.json \
+  -o gemma-block-core-slice.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-gemma-block-core-slice-artifact \
+  gemma-block-core-slice.stwo.json
+
+# Freeze the publication-facing transformer-shaped tensor-native bundle
+bash scripts/paper/generate_stwo_tensor_native_transformer_bundle.sh
+
 # Run the minimal shared-lookup identity example
 cargo +nightly-2025-07-14 run --features stwo-backend --example shared_lookup_identity
 

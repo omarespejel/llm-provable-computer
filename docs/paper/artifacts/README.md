@@ -14,6 +14,7 @@ These are the bundles directly used by the current paper package:
 - `phase70-80-proof-checked-decode-bridge-v1-2026-04-21/`
 - `stwo-transformer-shaped-v1-2026-04-21/`
 - `stwo-shared-normalization-primitive-v1-2026-04-21/`
+- `stwo-tensor-native-transformer-shaped-v1-2026-04-21/`
 
 These are the bundles that should be treated as the paper's primary reproducibility and systems-evidence surfaces.
 
@@ -47,6 +48,16 @@ fixed primitive steps, one verifier-enforced canonical table identity, one
 table-registry commitment, a `1s` prepare run, a `0s` verify run, `93,819`
 artifact bytes, and `9,136` shared proof bytes. It remains an intentionally
 narrow primitive artifact rather than a full-softmax or recursive claim.
+
+The `stwo-tensor-native-transformer-shaped-v1-2026-04-21` directory is the
+first frozen publication-facing transformer-shaped tensor-native `stwo` bundle.
+It pins a `4`-step typed carried-state chain over the shared-normalization
+primitive template, one real `gemma_block_v4` S-two execution proof, one Gemma
+core-slice artifact that binds the chain to embedded shared-normalization and
+shared-activation receipts, `119,566` chain-artifact bytes, `734,065` Gemma
+proof JSON bytes, `1,055,612` core-slice bytes, and one source-bound appendix
+index with exact hashes and timings. It remains a narrow transformer-shaped
+artifact line rather than a full-softmax or recursive claim.
 
 Later Phase81-84 translated seam surfaces remain implemented in-repo, but they are not
 yet cut as frozen publication-facing artifact directories.

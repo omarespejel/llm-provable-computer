@@ -37,12 +37,17 @@ The first result-bearing step on this line now exists:
   `docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/`,
 - one verifier-enforced canonical normalization table identity,
 - one table-registry commitment,
-- one direct shared-normalization proof reused across `2` fixed primitive steps.
+- one direct shared-normalization proof reused across `2` fixed primitive steps,
+- one frozen transformer-shaped tensor-native bundle under
+  `docs/paper/artifacts/stwo-tensor-native-transformer-shaped-v1-2026-04-21/`,
+- one `4`-step typed carried-state chain over the primitive template, and
+- one Gemma-shaped core-slice artifact binding that chain to a real
+  `gemma_block_v4` S-two proof plus shared-normalization and shared-activation
+  receipts.
 
-That means Phase91 and Phase92 are no longer only roadmap items. The next
-meaningful work is Phase93 and Phase94: short typed carried-state chaining on
-top of a real primitive line, then a frozen transformer-shaped tensor-native
-bundle.
+That means Phase91 through Phase94.5 are no longer only roadmap items. The next
+meaningful work is Phase95: accumulation or folding only after these
+transformer-shaped tensor-native artifacts already exist.
 
 ## Phase89: upstream sync audit
 
@@ -197,6 +202,33 @@ Stop condition:
 
 - the artifact line is citeable and reproducible without implying full
   standard-softmax closure.
+
+## Phase94.5: Gemma block core slice
+
+Goal:
+
+- prove that the transformer-shaped tensor-native line can bind to one real
+  Gemma-like execution proof instead of stopping at a synthetic chain alone.
+
+Primary code surfaces:
+
+- `src/stwo_backend/tensor_native_artifact.rs`
+- `src/bin/tvm.rs`
+- `scripts/paper/generate_stwo_tensor_native_transformer_bundle.sh`
+
+Deliverables:
+
+- one verifier-checked core-slice artifact over `gemma_block_v4`,
+- one nested proof binding between the `4`-step chain artifact and the
+  underlying S-two execution proof,
+- one shared-normalization row-set commitment,
+- one shared-activation row-set commitment, and
+- one frozen bundle that records the end-to-end artifact hashes and timings.
+
+Stop condition:
+
+- the repository can point to one real Gemma-shaped tensor-native artifact line
+  without claiming full-block tensor-native proving or recursive aggregation.
 
 ## Phase95: transformer-specific folding / accumulation design
 
