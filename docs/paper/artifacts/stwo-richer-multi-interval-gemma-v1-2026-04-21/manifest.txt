@@ -3,10 +3,10 @@ repo_root: .
 nightly_toolchain: +nightly-2025-07-14
 bundle_dir: docs/paper/artifacts/stwo-richer-multi-interval-gemma-v1-2026-04-21
 generator_script: scripts/paper/generate_stwo_richer_multi_interval_gemma_bundle.sh
-generator_script_sha256: 5b3669682815d907beb2e9b78f6e7548699482febce80f502ee82c516b177219
-generator_git_revision: 0f29208aed5d8de9e6f219093929fa3ed6fece9d
+generator_script_sha256: d29ecb38b0dc33a390be0023c13480b9016eca726502119ad7f2fbef59e159ab
+generator_git_revision: 4057ca1455ce9a9084bd488bf6df07332c3204cd
 generator_git_branch: codex/phase102-104-gemma-accumulation
-generator_git_commit_date: 2026-04-21T20:59:34+03:00
+generator_git_commit_date: 2026-04-21T22:08:31+03:00
 generator_worktree_state: clean
 generator_allow_dirty_build: 0
 gemma_proof: gemma-block-v4.stark.json
