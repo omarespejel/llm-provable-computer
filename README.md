@@ -1137,6 +1137,8 @@ is well past the old “dependency seam only” stage.
   `docs/paper/artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/`
 - Phase66-69 proof-carrying hardening checkpoint:
   `docs/paper/artifacts/phase66-69-proof-carrying-hardening-v1-2026-04-21/`
+- Phase70-80 proof-checked decode-bridge checkpoint:
+  `docs/paper/artifacts/phase70-80-proof-checked-decode-bridge-v1-2026-04-21/`
 - Publication-facing artifact index: `docs/paper/artifacts/README.md`
 - Proof-carrying aggregation `stwo` bundle regeneration script:
   `scripts/paper/generate_stwo_proof_carrying_aggregation_bundle.sh`
@@ -1147,9 +1149,9 @@ Older carried-state bundle generators remain available for archival provenance a
 engineering comparison, but the current paper package cites the frozen experimental
 `stwo` bundle, the frozen proof-carrying aggregation bundle, the April 20
 Phase63-65 verifier-surface checkpoint, and the April 21 Phase66-69 hardening
-checkpoint. Phase70-75 proof-bridge surfaces and Phase76-80 proof-checked decode
-surfaces are implemented in-repo, but they are not yet frozen as a publication
-citation bundle.
+checkpoint, plus the April 21 Phase70-80 proof-checked decode-bridge checkpoint.
+Later Phase81-88 translated seam and composition surfaces are implemented in-repo,
+but they are not yet frozen as a publication citation bundle.
 
 Archival provenance generators:
 
