@@ -28,7 +28,8 @@ Current paper-freeze addendum:
 Later bridge work remains implemented in-repo but is not yet part of the frozen
 publication-facing artifact bundle:
 
-- Phase70-80 proof-bridge and proof-checked decode surfaces
+- Phase70-75 proof-bridge surfaces
+- Phase76-80 proof-checked decode surfaces
 
 Draft next-paper package:
 

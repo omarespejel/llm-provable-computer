@@ -1147,8 +1147,9 @@ Older carried-state bundle generators remain available for archival provenance a
 engineering comparison, but the current paper package cites the frozen experimental
 `stwo` bundle, the frozen proof-carrying aggregation bundle, the April 20
 Phase63-65 verifier-surface checkpoint, and the April 21 Phase66-69 hardening
-checkpoint. Phase70-80 proof-bridge and proof-checked decode surfaces are
-implemented in-repo, but they are not yet frozen as a publication citation bundle.
+checkpoint. Phase70-75 proof-bridge surfaces and Phase76-80 proof-checked decode
+surfaces are implemented in-repo, but they are not yet frozen as a publication
+citation bundle.
 
 Archival provenance generators:
 

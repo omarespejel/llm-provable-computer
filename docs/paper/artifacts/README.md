@@ -24,6 +24,10 @@ transition handoffs, a publication-facing artifact table, an independent replay 
 manifest, and a symbolic-model-to-artifact mapping. It is still not a new proof-output
 bundle and not a runtime benchmark.
 
+Later Phase70-75 proof-bridge surfaces and Phase76-80 proof-checked decode surfaces
+are implemented in-repo, but they are not yet cut as frozen publication-facing
+artifact directories.
+
 ## Archival provenance bundles
 
 These older carried-state bundles are retained as provenance for the development of the aggregation line:
