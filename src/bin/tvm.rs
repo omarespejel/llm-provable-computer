@@ -206,7 +206,9 @@ use llm_provable_computer::{
     Phase95RepeatedGemmaSliceAccumulationArtifact, Phase965FoldedGemmaSliceAccumulationArtifact,
     Phase98FoldedGemmaRicherSliceFamilyArtifact,
     Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact, StwoTransformerShapedArtifactBundle,
-    MAX_PHASE105_REPEATED_MULTI_INTERVAL_TOTAL_WINDOWS, MAX_PHASE99_MULTI_INTERVAL_TOTAL_INTERVALS,
+    MAX_PHASE105_REPEATED_MULTI_INTERVAL_TOTAL_WINDOWS,
+    MAX_PHASE110_REPEATED_WINDOW_FOLD_TREE_TOTAL_LEAVES,
+    MAX_PHASE99_MULTI_INTERVAL_TOTAL_INTERVALS,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
     STWO_BACKEND_VERSION_PHASE12,
     STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
@@ -4946,6 +4948,12 @@ fn load_phase107_leaf_family(
     leaves: &[PathBuf],
 ) -> llm_provable_computer::Result<Vec<Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact>>
 {
+    if leaves.len() > MAX_PHASE110_REPEATED_WINDOW_FOLD_TREE_TOTAL_LEAVES {
+        return Err(VmError::InvalidConfig(format!(
+            "S-two repeated-window leaf families support at most {} Phase107 artifacts",
+            MAX_PHASE110_REPEATED_WINDOW_FOLD_TREE_TOTAL_LEAVES
+        )));
+    }
     leaves
         .iter()
         .map(|leaf| load_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact(leaf))
@@ -15301,9 +15309,12 @@ mod tests {
 #[cfg(test)]
 mod cli_dispatch_tests {
     use super::{
-        needs_run_subcommand, CliStarkProfile, PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS,
-        PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS, PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
+        load_phase107_leaf_family, needs_run_subcommand, CliStarkProfile,
+        MAX_PHASE110_REPEATED_WINDOW_FOLD_TREE_TOTAL_LEAVES,
+        PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS, PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS,
+        PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
     };
+    use std::path::PathBuf;
 
     #[test]
     fn intervalized_phase25_commands_do_not_fall_back_to_run_shorthand() {
@@ -15451,6 +15462,16 @@ mod cli_dispatch_tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-gemma-block-core-slice-artifact"
         ));
+    }
+
+    #[test]
+    #[cfg(feature = "stwo-backend")]
+    fn phase107_leaf_family_rejects_excessive_leaf_count_before_deserializing() {
+        let leaves = (0..=MAX_PHASE110_REPEATED_WINDOW_FOLD_TREE_TOTAL_LEAVES)
+            .map(|index| PathBuf::from(format!("leaf-{index}.stwo.json")))
+            .collect::<Vec<_>>();
+        let err = load_phase107_leaf_family(&leaves).expect_err("leaf count above cap should fail");
+        assert!(err.to_string().contains("support at most"));
     }
 
     #[test]

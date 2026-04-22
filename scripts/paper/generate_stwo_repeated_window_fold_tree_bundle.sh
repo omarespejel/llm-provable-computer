@@ -120,9 +120,8 @@ printf 'label\tseconds\n' > "$BENCHMARKS"
 run_timed() {
   local label="$1"
   shift
-  local started_ns ended_ns elapsed rendered
+  local rendered
   local -a rendered_args=()
-  started_ns="$(python3 -c 'import time; print(time.time_ns())')"
   for arg in "$@"; do
     local rendered_arg="$arg"
     case "$rendered_arg" in
@@ -148,15 +147,9 @@ run_timed() {
   printf -v rendered '%q ' "${rendered_args[@]}"
   printf '%s\n' "${rendered% }" | tee -a "$COMMANDS_LOG"
   "$@"
-  ended_ns="$(python3 -c 'import time; print(time.time_ns())')"
-  elapsed="$(python3 - "$started_ns" "$ended_ns" <<'PY'
-import sys
-started = int(sys.argv[1])
-ended = int(sys.argv[2])
-print(f"{(ended - started) / 1_000_000_000:.3f}")
-PY
-)"
-  printf '%s\t%s\n' "$label" "$elapsed" >> "$BENCHMARKS"
+  # Keep the frozen bundle deterministic: benchmark rows record stage labels,
+  # not wall-clock timings.
+  printf '%s\t%s\n' "$label" "N/A" >> "$BENCHMARKS"
 }
 
 build_phase107_triplet() {

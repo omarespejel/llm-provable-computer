@@ -50,7 +50,7 @@ cleanup_bundle_publish() {
 }
 trap cleanup_bundle_publish EXIT
 
-GENERATOR_SCRIPT_REL="scripts/paper/generate_stwo_repeated_richer_multi_interval_linear-block_bundle.sh"
+GENERATOR_SCRIPT_REL="scripts/paper/generate_stwo_repeated_richer_multi_interval_linear_block_bundle.sh"
 GENERATOR_SCRIPT="$REPO_ROOT/$GENERATOR_SCRIPT_REL"
 GENERATOR_SCRIPT_SHA256="$(shasum -a 256 "$GENERATOR_SCRIPT" | awk '{print $1}')"
 GENERATOR_GIT_REVISION="$(git rev-parse HEAD)"
@@ -102,9 +102,8 @@ printf 'label\tseconds\n' > "$BENCHMARKS"
 run_timed() {
   local label="$1"
   shift
-  local started_ns ended_ns elapsed rendered
+  local rendered
   local -a rendered_args=()
-  started_ns="$(python3 -c 'import time; print(time.time_ns())')"
   for arg in "$@"; do
     local rendered_arg="$arg"
     case "$rendered_arg" in
@@ -130,15 +129,9 @@ run_timed() {
   printf -v rendered '%q ' "${rendered_args[@]}"
   printf '%s\n' "${rendered% }" | tee -a "$COMMANDS_LOG"
   "$@"
-  ended_ns="$(python3 -c 'import time; print(time.time_ns())')"
-  elapsed="$(python3 - "$started_ns" "$ended_ns" <<'PY'
-import sys
-started = int(sys.argv[1])
-ended = int(sys.argv[2])
-print(f"{(ended - started) / 1_000_000_000:.3f}")
-PY
-)"
-  printf '%s\t%s\n' "$label" "$elapsed" >> "$BENCHMARKS"
+  # Keep the frozen bundle deterministic: benchmark rows record stage labels,
+  # not wall-clock timings.
+  printf '%s\t%s\n' "$label" "N/A" >> "$BENCHMARKS"
 }
 
 cat > "$MANIFEST" <<MANIFEST
@@ -274,7 +267,7 @@ with richer_path.open() as f:
     richer = json.load(f)
 
 shared_execution_proof_bytes = len(proof["proof"])
-linear-block_proof_json_bytes = proof_path.stat().st_size
+linear_block_proof_json_bytes = proof_path.stat().st_size
 single_window_bytes = single_window_path.stat().st_size
 repeated_bytes = repeated_path.stat().st_size
 folded_bytes = folded_path.stat().st_size
@@ -291,7 +284,7 @@ manifest_lines = manifest_path.read_text().splitlines()
 
 summary_rows = [
     ("shared_execution_proof_bytes", str(shared_execution_proof_bytes)),
-    ("linear-block_proof_json_bytes", str(linear-block_proof_json_bytes)),
+    ("linear_block_proof_json_bytes", str(linear_block_proof_json_bytes)),
     ("single_window_multi_interval_json_bytes", str(single_window_bytes)),
     ("explicit_repeated_multi_interval_json_bytes", str(repeated_bytes)),
     ("folded_repeated_multi_interval_json_bytes", str(folded_bytes)),
@@ -425,7 +418,7 @@ readme_md.write_text(
     f"- richer-family / explicit ratio: `{summary_lookup['folded_richer_repeated_multi_interval_ratio']}`\n"
     f"- richer-family overhead above folded prototype: `{summary_lookup['folded_richer_repeated_multi_interval_over_folded_bytes']}` bytes\n"
     f"- explicit repeated-window savings vs naive single-window duplication: `{summary_lookup['explicit_vs_naive_duplication_bytes_saved']}` bytes\n\n"
-    f"`sha256sums.txt` covers the deterministic canonical artifact surface. `provenance_sha256sums.txt` covers the full emitted bundle, including the auxiliary `benchmarks.tsv` timing log.\n\n"
+    f"`sha256sums.txt` covers the deterministic canonical artifact surface. `provenance_sha256sums.txt` covers the full emitted bundle, including the auxiliary deterministic `benchmarks.tsv` stage log.\n\n"
     f"This remains a verifier-bound, pre-recursive artifact line. It does not claim recursive aggregation or final cryptographic compression.\n"
 )
 
@@ -507,7 +500,6 @@ if [ -n "$BACKUP_DIR" ] && [ -e "$BACKUP_DIR" ]; then
   rm -rf -- "$BACKUP_DIR"
   BACKUP_DIR=""
 fi
-trap - EXIT
 
 echo "bundle_dir=$BUNDLE_FINAL_DIR"
 echo "manifest=$BUNDLE_FINAL_DIR/$(basename "$MANIFEST")"

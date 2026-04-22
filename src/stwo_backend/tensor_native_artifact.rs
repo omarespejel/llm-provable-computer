@@ -120,7 +120,23 @@ const PHASE93_DEFAULT_TOKEN_POSITION: u64 = 0;
 const PHASE93_DEFAULT_CHAIN_TEMPLATE_SEQUENCE: [usize; 4] = [0, 1, 0, 1];
 
 fn matches_linear_block_scope_alias(actual: &str, canonical: &str) -> bool {
-    actual == canonical || actual == canonical.replace("linear-block", "linear_block")
+    let underscore_alias = canonical.replace("linear-block", "linear_block");
+    let gemma_block_alias = underscore_alias.replace("linear_block", "gemma_block");
+    let gemma_alias = underscore_alias.replace("linear_block", "gemma");
+    actual == canonical
+        || actual == underscore_alias
+        || actual == gemma_block_alias
+        || actual == gemma_alias
+}
+
+fn matches_linear_block_artifact_version_alias(actual: &str, canonical: &str) -> bool {
+    actual == canonical
+        || actual == canonical.replace("linear-block", "gemma-block")
+        || actual == canonical.replace("linear-block", "gemma")
+}
+
+fn matches_linear_block_program_label_alias(actual: &str) -> bool {
+    matches!(actual, "linear_block_v4_with_lookup" | "gemma_block_v4")
 }
 const PHASE93_DEFAULT_CHAIN_LABELS: [&str; 4] = [
     "attention.pre_norm",
@@ -1328,6 +1344,8 @@ pub fn prepare_phase945_gemma_block_core_slice_artifact(
     let total_shared_normalization_rows = shared_normalization_rows.len();
     let total_shared_activation_rows = shared_activation_rows.len();
     let artifact_commitment = commit_phase945_gemma_block_core_slice_artifact(
+        STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_VERSION_PHASE945,
+        STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_SCOPE_PHASE945,
         chain_artifact,
         execution_proof,
         &execution_proof_commitment,
@@ -1370,19 +1388,25 @@ pub fn prepare_phase945_gemma_block_core_slice_artifact(
 pub fn verify_phase945_gemma_block_core_slice_artifact(
     artifact: &Phase945GemmaBlockCoreSliceArtifact,
 ) -> Result<()> {
-    if artifact.artifact_version != STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_VERSION_PHASE945 {
+    if !matches_linear_block_artifact_version_alias(
+        &artifact.artifact_version,
+        STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_VERSION_PHASE945,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 94.5 Gemma core slice artifact version `{}`",
             artifact.artifact_version
         )));
     }
-    if artifact.semantic_scope != STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_SCOPE_PHASE945 {
+    if !matches_linear_block_scope_alias(
+        &artifact.semantic_scope,
+        STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_SCOPE_PHASE945,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 94.5 Gemma core slice artifact scope `{}`",
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !matches_linear_block_program_label_alias(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 94.5 program label `{}`",
             artifact.program_label
@@ -1540,6 +1564,8 @@ pub fn verify_phase945_gemma_block_core_slice_artifact(
     }
 
     let expected_artifact_commitment = commit_phase945_gemma_block_core_slice_artifact(
+        &artifact.artifact_version,
+        &artifact.semantic_scope,
         &artifact.chain_artifact,
         &artifact.execution_proof,
         &artifact.execution_proof_commitment,
@@ -1639,13 +1665,19 @@ pub fn prepare_phase9475_gemma_block_richer_slice_artifact(
 pub fn verify_phase9475_gemma_block_richer_slice_artifact(
     artifact: &Phase9475GemmaBlockRicherSliceArtifact,
 ) -> Result<()> {
-    if artifact.artifact_version != STWO_GEMMA_BLOCK_RICHER_SLICE_ARTIFACT_VERSION_PHASE9475 {
+    if !matches_linear_block_artifact_version_alias(
+        &artifact.artifact_version,
+        STWO_GEMMA_BLOCK_RICHER_SLICE_ARTIFACT_VERSION_PHASE9475,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 94.75 Gemma richer slice artifact version `{}`",
             artifact.artifact_version
         )));
     }
-    if artifact.semantic_scope != STWO_GEMMA_BLOCK_RICHER_SLICE_ARTIFACT_SCOPE_PHASE9475 {
+    if !matches_linear_block_scope_alias(
+        &artifact.semantic_scope,
+        STWO_GEMMA_BLOCK_RICHER_SLICE_ARTIFACT_SCOPE_PHASE9475,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 94.75 Gemma richer slice artifact scope `{}`",
             artifact.semantic_scope
@@ -1887,20 +1919,25 @@ pub fn prepare_phase95_repeated_gemma_slice_accumulation_artifact(
 pub fn verify_phase95_repeated_gemma_slice_accumulation_artifact(
     artifact: &Phase95RepeatedGemmaSliceAccumulationArtifact,
 ) -> Result<()> {
-    if artifact.artifact_version != STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_VERSION_PHASE95
-    {
+    if !matches_linear_block_artifact_version_alias(
+        &artifact.artifact_version,
+        STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_VERSION_PHASE95,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 95 repeated Gemma slice accumulation artifact version `{}`",
             artifact.artifact_version
         )));
     }
-    if artifact.semantic_scope != STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_SCOPE_PHASE95 {
+    if !matches_linear_block_scope_alias(
+        &artifact.semantic_scope,
+        STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_SCOPE_PHASE95,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 95 repeated Gemma slice accumulation artifact scope `{}`",
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !matches_linear_block_program_label_alias(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 95 program label `{}`",
             artifact.program_label
@@ -2188,19 +2225,25 @@ fn canonical_phase965_folded_groups(
 fn validate_phase965_folded_gemma_slice_accumulation_artifact_shallow(
     artifact: &Phase965FoldedGemmaSliceAccumulationArtifact,
 ) -> Result<()> {
-    if artifact.artifact_version != STWO_FOLDED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_VERSION_PHASE965 {
+    if !matches_linear_block_artifact_version_alias(
+        &artifact.artifact_version,
+        STWO_FOLDED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_VERSION_PHASE965,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 96.5 folded Gemma slice accumulation artifact version `{}`",
             artifact.artifact_version
         )));
     }
-    if artifact.semantic_scope != STWO_FOLDED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_SCOPE_PHASE965 {
+    if !matches_linear_block_scope_alias(
+        &artifact.semantic_scope,
+        STWO_FOLDED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_SCOPE_PHASE965,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 96.5 folded Gemma slice accumulation artifact scope `{}`",
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !matches_linear_block_program_label_alias(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 96.5 program label `{}`",
             artifact.program_label
@@ -2659,19 +2702,25 @@ fn canonical_phase98_richer_slice_family(
 fn validate_phase98_folded_gemma_richer_slice_family_artifact_shallow(
     artifact: &Phase98FoldedGemmaRicherSliceFamilyArtifact,
 ) -> Result<()> {
-    if artifact.artifact_version != STWO_FOLDED_GEMMA_RICHER_SLICE_FAMILY_ARTIFACT_VERSION_PHASE98 {
+    if !matches_linear_block_artifact_version_alias(
+        &artifact.artifact_version,
+        STWO_FOLDED_GEMMA_RICHER_SLICE_FAMILY_ARTIFACT_VERSION_PHASE98,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 98 folded Gemma richer slice family artifact version `{}`",
             artifact.artifact_version
         )));
     }
-    if artifact.semantic_scope != STWO_FOLDED_GEMMA_RICHER_SLICE_FAMILY_ARTIFACT_SCOPE_PHASE98 {
+    if !matches_linear_block_scope_alias(
+        &artifact.semantic_scope,
+        STWO_FOLDED_GEMMA_RICHER_SLICE_FAMILY_ARTIFACT_SCOPE_PHASE98,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 98 folded Gemma richer slice family artifact scope `{}`",
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !matches_linear_block_program_label_alias(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 98 program label `{}`",
             artifact.program_label
@@ -3246,9 +3295,10 @@ fn build_phase99_multi_interval_member(
 fn validate_phase99_multi_interval_gemma_richer_family_accumulation_artifact_shallow(
     artifact: &Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact,
 ) -> Result<()> {
-    if artifact.artifact_version
-        != STWO_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ACCUMULATION_ARTIFACT_VERSION_PHASE99
-    {
+    if !matches_linear_block_artifact_version_alias(
+        &artifact.artifact_version,
+        STWO_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ACCUMULATION_ARTIFACT_VERSION_PHASE99,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 99 multi-interval richer-family accumulation artifact version `{}`",
             artifact.artifact_version
@@ -3263,7 +3313,7 @@ fn validate_phase99_multi_interval_gemma_richer_family_accumulation_artifact_sha
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !matches_linear_block_program_label_alias(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 99 program label `{}`",
             artifact.program_label
@@ -3887,9 +3937,10 @@ fn canonical_phase1015_folded_groups(
 fn validate_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact_shallow(
     artifact: &Phase1015FoldedMultiIntervalGemmaAccumulationPrototypeArtifact,
 ) -> Result<()> {
-    if artifact.artifact_version
-        != STWO_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_VERSION_PHASE1015
-    {
+    if !matches_linear_block_artifact_version_alias(
+        &artifact.artifact_version,
+        STWO_FOLDED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_VERSION_PHASE1015,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 101.5 folded multi-interval prototype artifact version `{}`",
             artifact.artifact_version
@@ -3904,7 +3955,7 @@ fn validate_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifac
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !matches_linear_block_program_label_alias(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 101.5 program label `{}`",
             artifact.program_label
@@ -4469,9 +4520,10 @@ fn canonical_phase102_folded_richer_groups(
 fn validate_phase102_folded_multi_interval_gemma_richer_family_artifact_shallow(
     artifact: &Phase102FoldedMultiIntervalGemmaRicherFamilyArtifact,
 ) -> Result<()> {
-    if artifact.artifact_version
-        != STWO_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE102
-    {
+    if !matches_linear_block_artifact_version_alias(
+        &artifact.artifact_version,
+        STWO_FOLDED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE102,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 102 folded richer-family artifact version `{}`",
             artifact.artifact_version
@@ -4486,7 +4538,7 @@ fn validate_phase102_folded_multi_interval_gemma_richer_family_artifact_shallow(
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !matches_linear_block_program_label_alias(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 102 program label `{}`",
             artifact.program_label
@@ -5148,9 +5200,10 @@ fn build_phase105_repeated_multi_interval_member_nonvalidating(
 fn validate_phase105_repeated_multi_interval_gemma_richer_family_artifact_shallow(
     artifact: &Phase105RepeatedMultiIntervalGemmaRicherFamilyAccumulationArtifact,
 ) -> Result<()> {
-    if artifact.artifact_version
-        != STWO_REPEATED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE105
-    {
+    if !matches_linear_block_artifact_version_alias(
+        &artifact.artifact_version,
+        STWO_REPEATED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE105,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 105 repeated multi-interval richer-family artifact version `{}`",
             artifact.artifact_version
@@ -5165,7 +5218,7 @@ fn validate_phase105_repeated_multi_interval_gemma_richer_family_artifact_shallo
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !matches_linear_block_program_label_alias(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 105 program label `{}`",
             artifact.program_label
@@ -5994,9 +6047,10 @@ fn canonical_phase106_folded_groups(
 fn validate_phase106_folded_repeated_multi_interval_gemma_accumulation_prototype_artifact_shallow(
     artifact: &Phase106FoldedRepeatedMultiIntervalGemmaAccumulationPrototypeArtifact,
 ) -> Result<()> {
-    if artifact.artifact_version
-        != STWO_FOLDED_REPEATED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_VERSION_PHASE106
-    {
+    if !matches_linear_block_artifact_version_alias(
+        &artifact.artifact_version,
+        STWO_FOLDED_REPEATED_MULTI_INTERVAL_GEMMA_ACCUMULATION_PROTOTYPE_ARTIFACT_VERSION_PHASE106,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 106 folded repeated multi-interval prototype artifact version `{}`",
             artifact.artifact_version
@@ -6011,7 +6065,7 @@ fn validate_phase106_folded_repeated_multi_interval_gemma_accumulation_prototype
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !matches_linear_block_program_label_alias(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 106 program label `{}`",
             artifact.program_label
@@ -6617,9 +6671,10 @@ fn canonical_phase107_folded_richer_groups(
 fn validate_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact_shallow(
     artifact: &Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact,
 ) -> Result<()> {
-    if artifact.artifact_version
-        != STWO_FOLDED_REPEATED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE107
-    {
+    if !matches_linear_block_artifact_version_alias(
+        &artifact.artifact_version,
+        STWO_FOLDED_REPEATED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE107,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 107 folded repeated multi-interval richer-family artifact version `{}`",
             artifact.artifact_version
@@ -6634,7 +6689,7 @@ fn validate_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !matches_linear_block_program_label_alias(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 107 program label `{}`",
             artifact.program_label
@@ -7244,21 +7299,25 @@ fn checked_phase109_expected_right_token_position_start(
 fn validate_phase109_transformer_specific_fold_operator_artifact_shallow(
     artifact: &Phase109TransformerSpecificFoldOperatorArtifact,
 ) -> Result<()> {
-    if artifact.artifact_version
-        != STWO_TRANSFORMER_SPECIFIC_FOLD_OPERATOR_ARTIFACT_VERSION_PHASE109
-    {
+    if !matches_linear_block_artifact_version_alias(
+        &artifact.artifact_version,
+        STWO_TRANSFORMER_SPECIFIC_FOLD_OPERATOR_ARTIFACT_VERSION_PHASE109,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 109 transformer-specific fold operator artifact version `{}`",
             artifact.artifact_version
         )));
     }
-    if artifact.semantic_scope != STWO_TRANSFORMER_SPECIFIC_FOLD_OPERATOR_ARTIFACT_SCOPE_PHASE109 {
+    if !matches_linear_block_scope_alias(
+        &artifact.semantic_scope,
+        STWO_TRANSFORMER_SPECIFIC_FOLD_OPERATOR_ARTIFACT_SCOPE_PHASE109,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 109 transformer-specific fold operator artifact scope `{}`",
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !matches_linear_block_program_label_alias(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 109 program label `{}`",
             artifact.program_label
@@ -7751,19 +7810,25 @@ fn canonical_phase110_repeated_window_fold_tree_nodes(
 fn validate_phase110_repeated_window_fold_tree_artifact_shallow(
     artifact: &Phase110RepeatedWindowFoldTreeArtifact,
 ) -> Result<()> {
-    if artifact.artifact_version != STWO_REPEATED_WINDOW_FOLD_TREE_ARTIFACT_VERSION_PHASE110 {
+    if !matches_linear_block_artifact_version_alias(
+        &artifact.artifact_version,
+        STWO_REPEATED_WINDOW_FOLD_TREE_ARTIFACT_VERSION_PHASE110,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 110 repeated-window fold tree artifact version `{}`",
             artifact.artifact_version
         )));
     }
-    if artifact.semantic_scope != STWO_REPEATED_WINDOW_FOLD_TREE_ARTIFACT_SCOPE_PHASE110 {
+    if !matches_linear_block_scope_alias(
+        &artifact.semantic_scope,
+        STWO_REPEATED_WINDOW_FOLD_TREE_ARTIFACT_SCOPE_PHASE110,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 110 repeated-window fold tree artifact scope `{}`",
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !matches_linear_block_program_label_alias(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 110 program label `{}`",
             artifact.program_label
@@ -7795,21 +7860,25 @@ fn validate_phase110_repeated_window_fold_tree_artifact_shallow(
 fn validate_phase112_transformer_accumulation_semantics_artifact_shallow(
     artifact: &Phase112TransformerAccumulationSemanticsArtifact,
 ) -> Result<()> {
-    if artifact.artifact_version
-        != STWO_TRANSFORMER_ACCUMULATION_SEMANTICS_ARTIFACT_VERSION_PHASE112
-    {
+    if !matches_linear_block_artifact_version_alias(
+        &artifact.artifact_version,
+        STWO_TRANSFORMER_ACCUMULATION_SEMANTICS_ARTIFACT_VERSION_PHASE112,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 112 transformer accumulation semantics artifact version `{}`",
             artifact.artifact_version
         )));
     }
-    if artifact.semantic_scope != STWO_TRANSFORMER_ACCUMULATION_SEMANTICS_ARTIFACT_SCOPE_PHASE112 {
+    if !matches_linear_block_scope_alias(
+        &artifact.semantic_scope,
+        STWO_TRANSFORMER_ACCUMULATION_SEMANTICS_ARTIFACT_SCOPE_PHASE112,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 112 transformer accumulation semantics artifact scope `{}`",
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !matches_linear_block_program_label_alias(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 112 program label `{}`",
             artifact.program_label
@@ -7827,7 +7896,10 @@ fn validate_phase112_transformer_accumulation_semantics_artifact_shallow(
 fn validate_phase113_richer_gemma_window_family_artifact_shallow(
     artifact: &Phase113RicherGemmaWindowFamilyArtifact,
 ) -> Result<()> {
-    if artifact.artifact_version != STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_VERSION_PHASE113 {
+    if !matches_linear_block_artifact_version_alias(
+        &artifact.artifact_version,
+        STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_VERSION_PHASE113,
+    ) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 113 richer Gemma window family artifact version `{}`",
             artifact.artifact_version
@@ -7842,7 +7914,7 @@ fn validate_phase113_richer_gemma_window_family_artifact_shallow(
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !matches_linear_block_program_label_alias(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 113 program label `{}`",
             artifact.program_label
@@ -9229,6 +9301,8 @@ fn commit_phase945_activation_row_set(
 }
 
 fn commit_phase945_gemma_block_core_slice_artifact(
+    artifact_version: &str,
+    semantic_scope: &str,
     chain_artifact: &Phase93TensorNativeChainArtifact,
     execution_proof: &VanillaStarkExecutionProof,
     execution_proof_commitment: &str,
@@ -9242,8 +9316,8 @@ fn commit_phase945_gemma_block_core_slice_artifact(
     activation_row_set_commitment: &str,
 ) -> Result<String> {
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
-    hasher.update(STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_VERSION_PHASE945.as_bytes());
-    hasher.update(STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_SCOPE_PHASE945.as_bytes());
+    hasher.update(artifact_version.as_bytes());
+    hasher.update(semantic_scope.as_bytes());
     hasher.update(chain_artifact.artifact_commitment.as_bytes());
     hasher.update(execution_proof_commitment.as_bytes());
     hasher.update(shared_normalization_statement_version.as_bytes());
@@ -12363,6 +12437,34 @@ mod tests {
         assert_eq!(
             artifact.semantic_scope,
             STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_SCOPE_PHASE113
+        );
+    }
+
+    #[test]
+    fn frozen_phase102_legacy_gemma_bundle_loads_from_disk() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(
+            "docs/paper/artifacts/stwo-richer-multi-interval-gemma-v1-2026-04-21/folded-multi-interval-gemma-richer-family.stwo.json",
+        );
+        let artifact = load_phase102_folded_multi_interval_gemma_richer_family_artifact(&path)
+            .expect("load frozen legacy phase102");
+        assert_eq!(artifact.program_label, "gemma_block_v4");
+        assert_eq!(
+            artifact.artifact_version,
+            "stwo-phase102-folded-multi-interval-gemma-richer-family-artifact-v1"
+        );
+    }
+
+    #[test]
+    fn frozen_phase945_legacy_gemma_bundle_loads_from_disk() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(
+            "docs/paper/artifacts/stwo-folded-gemma-slice-family-v1-2026-04-21/gemma-block-core-slice.stwo.json",
+        );
+        let artifact = load_phase945_gemma_block_core_slice_artifact(&path)
+            .expect("load frozen legacy phase94.5");
+        assert_eq!(artifact.program_label, "gemma_block_v4");
+        assert_eq!(
+            artifact.artifact_version,
+            "stwo-phase94-5-gemma-block-core-slice-artifact-v1"
         );
     }
 

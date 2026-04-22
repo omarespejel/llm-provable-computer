@@ -26,19 +26,21 @@ frozen bundles with manifests, commands, hashes, and verifier paths.
 
 Required columns:
 
-- system
-- evidence_class
-- surface
-- backend_family
-- workload_shape
-- shared-proof reuse
-- repeated-structure handling
-- proof bytes
-- artifact bytes
-- explicit-source bytes
-- ratio versus explicit source
-- verify path status
-- note
+- `system`
+- `evidence_class`
+- `surface`
+- `backend_family`
+- `workload_shape`
+- `shared_proof_reuse`
+- `repeated_structure_handling`
+- `proof_bytes`
+- `artifact_bytes`
+- `explicit_source_bytes`
+- `ratio_vs_explicit_source`
+- `verify_path_status`
+- `pinned_digest`
+- `provenance`
+- `note`
 
 Expected first internal rows:
 
@@ -60,16 +62,16 @@ and proof statement are actually aligned.
 
 Required columns:
 
-- system
-- evidence_class
-- backend_family
-- proving_surface
-- repeated-structure handling
-- lookup specialization
-- public workload claim
-- public metric claim
-- comparability_to_repo
-- source
+- `system`
+- `evidence_class`
+- `backend_family`
+- `proving_surface`
+- `repeated_structure_handling`
+- `lookup_or_specialization`
+- `public_workload_claim`
+- `public_metric_claim`
+- `comparability_to_repo`
+- `source`
 
 Recommended first public rows:
 
@@ -171,6 +173,7 @@ Phase114 is complete when the repository has:
 
 - one checked table with clearly separated internal and public rows,
 - source links for every public row,
-- exact frozen-bundle hashes for every internal row,
+- one pinned digest for every internal row,
+- exact frozen-bundle provenance references for every internal row,
 - and wording that survives hostile reading without collapsing into a fake
   cross-paper benchmark claim.
