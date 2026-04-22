@@ -4950,7 +4950,7 @@ fn load_phase107_leaf_family(
 {
     if leaves.len() > MAX_PHASE110_REPEATED_WINDOW_FOLD_TREE_TOTAL_LEAVES {
         return Err(VmError::InvalidConfig(format!(
-            "S-two repeated-window leaf families support at most {} Phase107 artifacts",
+            "S-two leaf families support at most {} artifacts",
             MAX_PHASE110_REPEATED_WINDOW_FOLD_TREE_TOTAL_LEAVES
         )));
     }

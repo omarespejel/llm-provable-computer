@@ -261,6 +261,26 @@ export PHASE113_W8_BYTES
 SHARED_PROOF_BYTES="$(wc -c < "$SHARED_PROOF" | tr -d ' ')"
 export SHARED_PROOF_BYTES
 
+require_positive_integer_env() {
+  local name="$1"
+  local value="${!name:-}"
+  case "$value" in
+    ''|*[!0-9]*)
+      echo "Expected $name to be a non-negative integer byte count, got \`${value:-<empty>}\`." >&2
+      exit 1
+      ;;
+  esac
+  [ "$value" -gt 0 ] || {
+    echo "Expected $name to be greater than zero before ratio computation." >&2
+    exit 1
+  }
+}
+
+require_positive_integer_env EXPLICIT_W4_BYTES
+require_positive_integer_env EXPLICIT_W8_BYTES
+require_positive_integer_env PHASE112_W4_BYTES
+require_positive_integer_env PHASE112_W8_BYTES
+
 PHASE113_W4_RATIO="$(python3 - <<'PY'
 import os
 print(f"{int(os.environ['PHASE113_W4_BYTES'])/int(os.environ['EXPLICIT_W4_BYTES']):.6f}")
@@ -340,6 +360,8 @@ Included artifacts:
 - benchmarks.tsv
 - commands.log
 - manifest.txt
+- sha256sums.txt
+- provenance_sha256sums.txt
 - PUBLIC_COMPARISON_NOTES.md
 - README.md
 

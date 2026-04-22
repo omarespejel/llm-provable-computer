@@ -132,12 +132,14 @@ The artifact should not embed:
 
 Verification remains explicit:
 
-1. verify every source Phase107 leaf artifact,
-2. check canonical ordering and contiguity,
-3. derive the canonical repeated-window schedule,
-4. recompute the semantic totals and extrema,
-5. recompute the semantic accumulator commitment,
-6. compare the compact artifact against the recomputed expected artifact.
+1. verify `semantic_scope` and `artifact_version`, and stop immediately on any
+   mismatch to reject cross-phase replay before semantic reconstruction begins,
+2. verify every source Phase107 leaf artifact,
+3. check canonical ordering and contiguity,
+4. derive the canonical repeated-window schedule,
+5. recompute the semantic totals and extrema,
+6. recompute the semantic accumulator commitment,
+7. compare the compact artifact against the recomputed expected artifact.
 
 This keeps the trust boundary narrow:
 
