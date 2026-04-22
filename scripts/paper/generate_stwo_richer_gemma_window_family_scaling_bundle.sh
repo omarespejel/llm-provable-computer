@@ -293,7 +293,7 @@ This bundle is a verifier-bound scaling sweep over the supported frozen richer-w
 Narrow claim only:
 
 - the richer-family handoff stays below the explicit repeated-window source at both supported scaling points,
-- the richer-family overhead above the thinner semantics layer stays effectively stable from `w4` to `w8`, and
+- the richer-family overhead above the thinner semantics layer stays effectively stable from w4 to w8, and
 - the richer-family bytes grow much more slowly than the explicit source bytes on the same frozen family.
 
 This bundle should not be described as recursion, cryptographic accumulation, or a like-for-like speed or proof-size win against public papers.
@@ -306,22 +306,22 @@ This bundle freezes the first richer-family scaling sweep over the supported fro
 
 Included artifacts:
 
-- `phase112-transformer-accumulation-semantics-w4.stwo.json`
-- `phase113-richer-gemma-window-family-w4.stwo.json`
-- `phase112-transformer-accumulation-semantics-w8.stwo.json`
-- `phase113-richer-gemma-window-family-w8.stwo.json`
-- `richer_window_family_scaling.tsv`
-- `comparison.tsv`
-- `artifact_summary.tsv`
-- `benchmarks.tsv`
-- `commands.log`
-- `manifest.txt`
-- `PUBLIC_COMPARISON_NOTES.md`
-- `README.md`
+- phase112-transformer-accumulation-semantics-w4.stwo.json
+- phase113-richer-gemma-window-family-w4.stwo.json
+- phase112-transformer-accumulation-semantics-w8.stwo.json
+- phase113-richer-gemma-window-family-w8.stwo.json
+- richer_window_family_scaling.tsv
+- comparison.tsv
+- artifact_summary.tsv
+- benchmarks.tsv
+- commands.log
+- manifest.txt
+- PUBLIC_COMPARISON_NOTES.md
+- README.md
 
 The source leaves remain frozen in:
 
-- `docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/`
+- docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/
 EOF2
 
 cat > "$README_MD" <<EOF2
@@ -331,23 +331,23 @@ This bundle freezes the first scaling sweep for the compact richer-family handof
 
 ## Headline metrics
 
-- explicit Phase107 `w4` bytes: $EXPLICIT_W4_BYTES
-- richer-family Phase113 `w4` bytes: $PHASE113_W4_BYTES
-- explicit Phase107 `w8` bytes: $EXPLICIT_W8_BYTES
-- richer-family Phase113 `w8` bytes: $PHASE113_W8_BYTES
-- Phase113 `w4` / explicit `w4`: $(python3 - <<'PY'
+- explicit Phase107 w4 bytes: $EXPLICIT_W4_BYTES
+- richer-family Phase113 w4 bytes: $PHASE113_W4_BYTES
+- explicit Phase107 w8 bytes: $EXPLICIT_W8_BYTES
+- richer-family Phase113 w8 bytes: $PHASE113_W8_BYTES
+- Phase113 w4 / explicit w4: $(python3 - <<'PY'
 import os
 print(f"{100*int(os.environ['PHASE113_W4_BYTES'])/int(os.environ['EXPLICIT_W4_BYTES']):.4f}%")
 PY
 )
-- Phase113 `w8` / explicit `w8`: $(python3 - <<'PY'
+- Phase113 w8 / explicit w8: $(python3 - <<'PY'
 import os
 print(f"{100*int(os.environ['PHASE113_W8_BYTES'])/int(os.environ['EXPLICIT_W8_BYTES']):.4f}%")
 PY
 )
-- Phase113 overhead above Phase112 at `w4`: $PHASE113_W4_OVERHEAD bytes
-- Phase113 overhead above Phase112 at `w8`: $PHASE113_W8_OVERHEAD bytes
-- Phase113 absolute growth from `w4` to `w8`: $PHASE113_W8_MINUS_W4 bytes
+- Phase113 overhead above Phase112 at w4: $PHASE113_W4_OVERHEAD bytes
+- Phase113 overhead above Phase112 at w8: $PHASE113_W8_OVERHEAD bytes
+- Phase113 absolute growth from w4 to w8: $PHASE113_W8_MINUS_W4 bytes
 - shared execution proof bytes: $SHARED_PROOF_BYTES
 
 The key result is structural: the richer-family handoff stays compact at both supported scaling points, and its size changes by only $PHASE113_W8_MINUS_W4 bytes while the explicit repeated-window source grows from $EXPLICIT_W4_BYTES bytes to $EXPLICIT_W8_BYTES bytes.
