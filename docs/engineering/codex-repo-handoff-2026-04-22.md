@@ -67,14 +67,20 @@ Read these from older to newer if you need the narrative:
 
 ## What the current line means
 
-The active tensor-native line is no longer at the early Phase89-95 bootstrap
-point. It already includes:
+The active tensor-native line is no longer at the early Phase 89-95 bootstrap
+point.
+
+On this branch's tracked citation surface, it already includes:
 
 - the first tensor-native primitive,
 - the transformer-shaped chain,
 - repeated-slice accumulation,
-- folded multi-interval derivatives, and
-- richer repeated multi-interval packaging.
+- folded multi-interval derivatives.
+
+Local notes may mention richer repeated multi-interval packaging and
+window-family derivatives that were explored on machine-local branches. Do not
+treat those as tracked citation targets on this branch unless the corresponding
+directories are checked in under `docs/paper/artifacts/`.
 
 If you resume as though the repository still only needs a first primitive, you
 are starting from stale state.

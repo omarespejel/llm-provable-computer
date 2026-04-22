@@ -30,6 +30,18 @@ For the surfaces treated as cryptographic or verifier-bound, the repository aims
 
 The repository exposes four distinct claim classes.
 
+Crosswalk to `docs/engineering/public-artifact-taxonomy.md`:
+
+- `Execution proof` and `Lookup proof` usually map to `Cryptographic proof`
+  claims.
+- `Decoding-step artifact`, `Accumulation manifest`, and `Recursion contract`
+  usually map to `Verifier-bound artifact` claims unless a document explicitly
+  states a narrower or stronger contract.
+- `--verify-all`, `--verify-native`, `research-v2`, and `research-v3` remain
+  `Differential-testing artifact` claims.
+- Frozen directories under `docs/paper/artifacts/` remain `Publication evidence
+  bundle` containers whose contents inherit the narrower underlying claim class.
+
 ### 1. Cryptographic proof
 
 Examples:

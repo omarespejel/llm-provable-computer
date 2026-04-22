@@ -84,26 +84,24 @@ class DecodingFuzzCorpusGeneratorTests(unittest.TestCase):
             root = pathlib.Path(tmp)
             raw = b"{not-json"
             self.write_phase113_source(root, raw)
-            original = GEN.PHASE113_SOURCE_SHA256
-            GEN.PHASE113_SOURCE_SHA256 = hashlib.sha256(raw).hexdigest()
-            try:
-                with self.assertRaises(ValueError):
-                    GEN.load_phase113_fixture(root)
-            finally:
-                GEN.PHASE113_SOURCE_SHA256 = original
+            with self.assertRaises(ValueError):
+                GEN.load_phase113_fixture(root)
 
     def test_load_phase113_fixture_non_object_raises(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
             raw = b"[1,2,3]\n"
             self.write_phase113_source(root, raw)
-            original = GEN.PHASE113_SOURCE_SHA256
-            GEN.PHASE113_SOURCE_SHA256 = hashlib.sha256(raw).hexdigest()
-            try:
-                with self.assertRaises(TypeError):
-                    GEN.load_phase113_fixture(root)
-            finally:
-                GEN.PHASE113_SOURCE_SHA256 = original
+            with self.assertRaises(TypeError):
+                GEN.load_phase113_fixture(root)
+
+    def test_load_phase113_fixture_invalid_utf8_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            raw = b"\xff\xfe\xfd"
+            self.write_phase113_source(root, raw)
+            with self.assertRaises(ValueError):
+                GEN.load_phase113_fixture(root)
 
 
 if __name__ == "__main__":

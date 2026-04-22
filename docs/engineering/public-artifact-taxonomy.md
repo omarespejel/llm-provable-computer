@@ -25,7 +25,7 @@ Examples:
 - `docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/`
 - `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/` (lookup rows only, narrower surface)
 
-## 3. Decoding-step proof
+## 3. Decoding-step artifact
 
 Meaning:
 
