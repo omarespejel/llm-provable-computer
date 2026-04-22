@@ -40,6 +40,7 @@ use llm_provable_computer::{
     load_phase10_shared_binary_step_lookup_proof, load_phase10_shared_normalization_lookup_proof,
     load_phase110_repeated_window_fold_tree_artifact,
     load_phase112_transformer_accumulation_semantics_artifact, load_phase11_decoding_chain,
+    load_phase113_richer_gemma_window_family_artifact,
     load_phase12_decoding_chain, load_phase12_shared_lookup_artifact,
     load_phase13_decoding_layout_matrix, load_phase14_decoding_chain,
     load_phase15_decoding_segment_bundle, load_phase16_decoding_segment_rollup,
@@ -84,6 +85,7 @@ use llm_provable_computer::{
     prepare_phase109_transformer_specific_fold_operator_artifact,
     prepare_phase110_repeated_window_fold_tree_artifact,
     prepare_phase112_transformer_accumulation_semantics_artifact,
+    prepare_phase113_richer_gemma_window_family_artifact,
     prepare_phase92_shared_normalization_demo_artifact,
     prepare_phase93_tensor_native_chain_demo_artifact,
     prepare_phase945_gemma_block_core_slice_artifact,
@@ -115,6 +117,7 @@ use llm_provable_computer::{
     save_phase10_shared_binary_step_lookup_proof, save_phase10_shared_normalization_lookup_proof,
     save_phase110_repeated_window_fold_tree_artifact,
     save_phase112_transformer_accumulation_semantics_artifact, save_phase11_decoding_chain,
+    save_phase113_richer_gemma_window_family_artifact,
     save_phase12_decoding_chain, save_phase12_shared_lookup_artifact,
     save_phase13_decoding_layout_matrix, save_phase14_decoding_chain,
     save_phase15_decoding_segment_bundle, save_phase16_decoding_segment_rollup,
@@ -144,6 +147,7 @@ use llm_provable_computer::{
     verify_phase10_shared_normalization_lookup_envelope,
     verify_phase110_repeated_window_fold_tree_artifact,
     verify_phase112_transformer_accumulation_semantics_artifact,
+    verify_phase113_richer_gemma_window_family_artifact,
     verify_phase11_decoding_chain_with_proof_checks,
     verify_phase12_decoding_chain_with_proof_checks,
     verify_phase13_decoding_layout_matrix_with_proof_checks,
@@ -187,7 +191,8 @@ use llm_provable_computer::{
     Phase106FoldedRepeatedMultiIntervalGemmaAccumulationPrototypeArtifact,
     Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact,
     Phase109TransformerSpecificFoldOperatorArtifact, Phase110RepeatedWindowFoldTreeArtifact,
-    Phase112TransformerAccumulationSemanticsArtifact, Phase29RecursiveCompressionInputContract,
+    Phase112TransformerAccumulationSemanticsArtifact, Phase113RicherGemmaWindowFamilyArtifact,
+    Phase29RecursiveCompressionInputContract,
     Phase30DecodingStepProofEnvelopeManifest, Phase31RecursiveCompressionDecodeBoundaryManifest,
     Phase32RecursiveCompressionStatementContract, Phase33RecursiveCompressionPublicInputManifest,
     Phase34RecursiveCompressionSharedLookupManifest, Phase35RecursiveCompressionTargetManifest,
@@ -267,6 +272,8 @@ use llm_provable_computer::{
     STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_VERSION_PHASE93,
     STWO_TRANSFORMER_ACCUMULATION_SEMANTICS_ARTIFACT_SCOPE_PHASE112,
     STWO_TRANSFORMER_ACCUMULATION_SEMANTICS_ARTIFACT_VERSION_PHASE112,
+    STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_SCOPE_PHASE113,
+    STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_VERSION_PHASE113,
     STWO_TRANSFORMER_SPECIFIC_FOLD_OPERATOR_ARTIFACT_SCOPE_PHASE109,
     STWO_TRANSFORMER_SPECIFIC_FOLD_OPERATOR_ARTIFACT_VERSION_PHASE109,
 };
@@ -803,6 +810,31 @@ enum Command {
     VerifyStwoTransformerAccumulationSemanticsArtifact {
         /// Path to the serialized Phase112 transformer accumulation semantics artifact JSON file.
         artifact: PathBuf,
+        /// Paths to the serialized Phase107 repeated-window artifact JSON files, in token order.
+        #[arg(long = "leaf", required = true)]
+        leaves: Vec<PathBuf>,
+    },
+    #[cfg(feature = "stwo-backend")]
+    /// Prepare a richer repeated-window family artifact on top of a verified Phase112 accumulation semantics artifact.
+    PrepareStwoRicherGemmaWindowFamilyArtifact {
+        /// Path to the serialized Phase112 transformer accumulation semantics artifact JSON file.
+        #[arg(long = "semantics")]
+        semantics: PathBuf,
+        /// Paths to the serialized Phase107 repeated-window artifact JSON files, in token order.
+        #[arg(long = "leaf", required = true)]
+        leaves: Vec<PathBuf>,
+        /// File where the serialized artifact JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    #[cfg(feature = "stwo-backend")]
+    /// Verify a richer repeated-window family artifact on top of a verified Phase112 accumulation semantics artifact.
+    VerifyStwoRicherGemmaWindowFamilyArtifact {
+        /// Path to the serialized Phase113 richer Gemma window family artifact JSON file.
+        artifact: PathBuf,
+        /// Path to the serialized Phase112 transformer accumulation semantics artifact JSON file.
+        #[arg(long = "semantics")]
+        semantics: PathBuf,
         /// Paths to the serialized Phase107 repeated-window artifact JSON files, in token order.
         #[arg(long = "leaf", required = true)]
         leaves: Vec<PathBuf>,
@@ -2427,6 +2459,26 @@ fn run() -> llm_provable_computer::Result<()> {
         Command::VerifyStwoTransformerAccumulationSemanticsArtifact { artifact, leaves } => {
             verify_stwo_transformer_accumulation_semantics_artifact_command(&artifact, &leaves)?
         }
+        #[cfg(feature = "stwo-backend")]
+        Command::PrepareStwoRicherGemmaWindowFamilyArtifact {
+            semantics,
+            leaves,
+            output,
+        } => prepare_stwo_richer_gemma_window_family_artifact_command(
+            &semantics,
+            &leaves,
+            &output,
+        )?,
+        #[cfg(feature = "stwo-backend")]
+        Command::VerifyStwoRicherGemmaWindowFamilyArtifact {
+            artifact,
+            semantics,
+            leaves,
+        } => verify_stwo_richer_gemma_window_family_artifact_command(
+            &artifact,
+            &semantics,
+            &leaves,
+        )?,
         Command::ProveStwoDecodingDemo { output } => prove_stwo_decoding_demo_command(&output)?,
         Command::VerifyStwoDecodingDemo { proof } => verify_stwo_decoding_demo_command(&proof)?,
         Command::ProveStwoDecodingFamilyDemo { output } => {
@@ -4781,6 +4833,59 @@ fn print_phase112_transformer_accumulation_semantics_report(
     println!("final_acc_sum: {}", artifact.final_acc_sum);
 }
 
+#[cfg(feature = "stwo-backend")]
+fn print_phase113_richer_gemma_window_family_report(
+    artifact: &Phase113RicherGemmaWindowFamilyArtifact,
+) {
+    println!("artifact_version: {}", artifact.artifact_version);
+    println!("semantic_scope: {}", artifact.semantic_scope);
+    println!("artifact_commitment: {}", artifact.artifact_commitment);
+    println!(
+        "source_phase112_artifact_commitment: {}",
+        artifact.source_phase112_artifact_commitment
+    );
+    println!("program_label: {}", artifact.program_label);
+    println!("total_leaf_artifacts: {}", artifact.total_leaf_artifacts);
+    println!("total_windows: {}", artifact.total_windows);
+    println!("intervals_per_window: {}", artifact.intervals_per_window);
+    println!("interval_total_slices: {}", artifact.interval_total_slices);
+    println!("token_position_start: {}", artifact.token_position_start);
+    println!(
+        "terminal_token_position: {}",
+        artifact.terminal_token_position
+    );
+    println!("bounded_fold_arity: {}", artifact.bounded_fold_arity);
+    println!(
+        "token_position_family_commitment_sequence_commitment: {}",
+        artifact.token_position_family_commitment_sequence_commitment
+    );
+    println!(
+        "selected_memory_window_family_commitment_sequence_commitment: {}",
+        artifact.selected_memory_window_family_commitment_sequence_commitment
+    );
+    println!(
+        "invariant_summary_family_commitment_sequence_commitment: {}",
+        artifact.invariant_summary_family_commitment_sequence_commitment
+    );
+    println!(
+        "normalization_summary_family_commitment_sequence_commitment: {}",
+        artifact.normalization_summary_family_commitment_sequence_commitment
+    );
+    println!(
+        "activation_summary_family_commitment_sequence_commitment: {}",
+        artifact.activation_summary_family_commitment_sequence_commitment
+    );
+    println!(
+        "richer_family_accumulator_commitment: {}",
+        artifact.richer_family_accumulator_commitment
+    );
+    println!("local_score_sum: {}", artifact.local_score_sum);
+    println!("global_score_sum: {}", artifact.global_score_sum);
+    println!("grouped_value_mix_sum: {}", artifact.grouped_value_mix_sum);
+    println!("residual_output_sum: {}", artifact.residual_output_sum);
+    println!("final_acc_sum: {}", artifact.final_acc_sum);
+}
+
 fn prepare_stwo_repeated_gemma_slice_accumulation_artifact_command(
     proof_path: &Path,
     total_slices: usize,
@@ -5747,6 +5852,93 @@ fn verify_stwo_transformer_accumulation_semantics_artifact_command(
             "expected_semantic_scope: {STWO_TRANSFORMER_ACCUMULATION_SEMANTICS_ARTIFACT_SCOPE_PHASE112}"
         );
         print_phase112_transformer_accumulation_semantics_report(&artifact);
+        Ok(())
+    }
+}
+
+fn prepare_stwo_richer_gemma_window_family_artifact_command(
+    semantics_path: &Path,
+    leaves: &[PathBuf],
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = (semantics_path, leaves, output);
+        return Err(VmError::UnsupportedProof(
+            "S-two richer Gemma window family artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two richer Gemma window family artifact")?;
+        let semantics =
+            load_phase112_transformer_accumulation_semantics_artifact(semantics_path)?;
+        let leaf_artifacts = leaves
+            .iter()
+            .map(|path| {
+                load_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact(path)
+            })
+            .collect::<llm_provable_computer::Result<Vec<_>>>()?;
+        let artifact = prepare_phase113_richer_gemma_window_family_artifact(
+            &leaf_artifacts,
+            &semantics,
+        )?;
+        save_phase113_richer_gemma_window_family_artifact(&artifact, output)?;
+
+        println!("output: {}", output.display());
+        println!("semantics: {}", semantics_path.display());
+        println!("leaf_count: {}", leaves.len());
+        println!("verified_artifact: true");
+        print_phase113_richer_gemma_window_family_report(&artifact);
+        Ok(())
+    }
+}
+
+fn verify_stwo_richer_gemma_window_family_artifact_command(
+    artifact_path: &Path,
+    semantics_path: &Path,
+    leaves: &[PathBuf],
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = (artifact_path, semantics_path, leaves);
+        return Err(VmError::UnsupportedProof(
+            "S-two richer Gemma window family artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two richer Gemma window family artifact")?;
+        let semantics =
+            load_phase112_transformer_accumulation_semantics_artifact(semantics_path)?;
+        let leaf_artifacts = leaves
+            .iter()
+            .map(|path| {
+                load_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact(path)
+            })
+            .collect::<llm_provable_computer::Result<Vec<_>>>()?;
+        let artifact = load_phase113_richer_gemma_window_family_artifact(artifact_path)?;
+        verify_phase113_richer_gemma_window_family_artifact(
+            &artifact,
+            &leaf_artifacts,
+            &semantics,
+        )?;
+
+        println!("artifact: {}", artifact_path.display());
+        println!("semantics: {}", semantics_path.display());
+        println!("leaf_count: {}", leaves.len());
+        println!("verified_artifact: true");
+        println!(
+            "expected_artifact_version: {STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_VERSION_PHASE113}"
+        );
+        println!(
+            "expected_semantic_scope: {STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_SCOPE_PHASE113}"
+        );
+        print_phase113_richer_gemma_window_family_report(&artifact);
         Ok(())
     }
 }
@@ -15252,6 +15444,12 @@ mod cli_dispatch_tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-transformer-accumulation-semantics-artifact"
         ));
+        assert!(!needs_run_subcommand(
+            "prepare-stwo-richer-gemma-window-family-artifact"
+        ));
+        assert!(!needs_run_subcommand(
+            "verify-stwo-richer-gemma-window-family-artifact"
+        ));
     }
 }
 
@@ -15638,6 +15836,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-repeated-window-fold-tree-artifact"
                 | "prepare-stwo-transformer-accumulation-semantics-artifact"
                 | "verify-stwo-transformer-accumulation-semantics-artifact"
+                | "prepare-stwo-richer-gemma-window-family-artifact"
+                | "verify-stwo-richer-gemma-window-family-artifact"
                 | "prove-stwo-decoding-demo"
                 | "verify-stwo-decoding-demo"
                 | "prove-stwo-decoding-family-demo"

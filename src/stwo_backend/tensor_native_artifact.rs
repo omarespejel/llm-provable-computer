@@ -83,6 +83,10 @@ pub const STWO_TRANSFORMER_ACCUMULATION_SEMANTICS_ARTIFACT_VERSION_PHASE112: &st
     "stwo-phase112-transformer-accumulation-semantics-artifact-v1";
 pub const STWO_TRANSFORMER_ACCUMULATION_SEMANTICS_ARTIFACT_SCOPE_PHASE112: &str =
     "stwo_tensor_native_transformer_accumulation_semantics_artifact";
+pub const STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_VERSION_PHASE113: &str =
+    "stwo-phase113-richer-gemma-window-family-artifact-v1";
+pub const STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_SCOPE_PHASE113: &str =
+    "stwo_tensor_native_richer_gemma_window_family_artifact";
 pub const MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES: usize = 16;
 pub const MAX_PHASE99_MULTI_INTERVAL_TOTAL_INTERVALS: usize = 8;
 pub const MAX_PHASE105_REPEATED_MULTI_INTERVAL_TOTAL_WINDOWS: usize = 8;
@@ -110,6 +114,7 @@ const MAX_PHASE107_FOLDED_REPEATED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_JSON_BYTES
 const MAX_PHASE109_TRANSFORMER_SPECIFIC_FOLD_OPERATOR_JSON_BYTES: usize = 16 * 1024 * 1024;
 const MAX_PHASE110_REPEATED_WINDOW_FOLD_TREE_JSON_BYTES: usize = 32 * 1024 * 1024;
 const MAX_PHASE112_TRANSFORMER_ACCUMULATION_SEMANTICS_JSON_BYTES: usize = 8 * 1024 * 1024;
+const MAX_PHASE113_RICHER_GEMMA_WINDOW_FAMILY_JSON_BYTES: usize = 8 * 1024 * 1024;
 const PHASE93_DEFAULT_BLOCK_INDEX: u64 = 0;
 const PHASE93_DEFAULT_TOKEN_POSITION: u64 = 0;
 const PHASE93_DEFAULT_CHAIN_TEMPLATE_SEQUENCE: [usize; 4] = [0, 1, 0, 1];
@@ -973,6 +978,55 @@ pub struct Phase112TransformerAccumulationSemanticsArtifact {
     pub primary_activation_output_sum: i64,
     pub secondary_activation_output_sum: i64,
     pub accumulation_semantics_commitment: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Phase113RicherGemmaWindowFamilyArtifact {
+    pub artifact_version: String,
+    pub semantic_scope: String,
+    pub artifact_commitment: String,
+    pub program_label: String,
+    pub source_phase112_artifact_commitment: String,
+    pub total_leaf_artifacts: usize,
+    pub total_windows: usize,
+    pub intervals_per_window: usize,
+    pub interval_total_slices: usize,
+    pub token_position_start: u64,
+    pub token_position_stride: u64,
+    pub window_token_position_stride: u64,
+    pub start_block_index: u64,
+    pub terminal_token_position: u64,
+    pub terminal_block_index: u64,
+    pub bounded_fold_arity: usize,
+    pub shared_primitive_artifact_commitment: String,
+    pub shared_table_registry_commitment: String,
+    pub shared_execution_proof_commitment: String,
+    pub shared_execution_proof_backend_version: String,
+    pub shared_execution_statement_version: String,
+    pub leaf_artifact_commitment_sequence_commitment: String,
+    pub leaf_artifact_subtree_commitment: String,
+    pub repeated_window_schedule_commitment: String,
+    pub token_position_family_commitment_sequence_commitment: String,
+    pub selected_memory_window_family_commitment_sequence_commitment: String,
+    pub invariant_summary_family_commitment_sequence_commitment: String,
+    pub normalization_summary_family_commitment_sequence_commitment: String,
+    pub activation_summary_family_commitment_sequence_commitment: String,
+    pub global_start_boundary_commitment: String,
+    pub global_end_boundary_commitment: String,
+    pub first_phase102_artifact_commitment: String,
+    pub terminal_phase102_artifact_commitment: String,
+    pub local_score_sum: i64,
+    pub global_score_sum: i64,
+    pub grouped_value_mix_sum: i64,
+    pub residual_output_sum: i64,
+    pub final_acc_sum: i64,
+    pub primary_norm_sq_min: i16,
+    pub primary_norm_sq_max: i16,
+    pub secondary_norm_sq_min: i16,
+    pub secondary_norm_sq_max: i16,
+    pub primary_activation_output_sum: i64,
+    pub secondary_activation_output_sum: i64,
+    pub richer_family_accumulator_commitment: String,
 }
 
 #[derive(Debug, Clone)]
@@ -7758,6 +7812,78 @@ fn validate_phase112_transformer_accumulation_semantics_artifact_shallow(
     Ok(())
 }
 
+fn validate_phase113_richer_gemma_window_family_artifact_shallow(
+    artifact: &Phase113RicherGemmaWindowFamilyArtifact,
+) -> Result<()> {
+    if artifact.artifact_version != STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_VERSION_PHASE113 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 113 richer Gemma window family artifact version `{}`",
+            artifact.artifact_version
+        )));
+    }
+    if artifact.semantic_scope != STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_SCOPE_PHASE113 {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 113 richer Gemma window family artifact scope `{}`",
+            artifact.semantic_scope
+        )));
+    }
+    if artifact.program_label != "gemma_block_v4" {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported Phase 113 program label `{}`",
+            artifact.program_label
+        )));
+    }
+    validate_phase110_total_leaves(artifact.total_leaf_artifacts)?;
+    validate_phase105_total_windows(artifact.total_windows)?;
+    validate_phase99_total_intervals(artifact.intervals_per_window)?;
+    validate_phase95_total_slices(artifact.interval_total_slices)?;
+    validate_phase99_token_position_stride(artifact.token_position_stride)?;
+    validate_phase107_bounded_fold_arity(artifact.bounded_fold_arity)?;
+    Ok(())
+}
+
+fn phase113_normalization_summary_commitment(
+    leaf: &Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact,
+) -> Result<String> {
+    #[derive(Serialize)]
+    struct Payload<'a> {
+        artifact_commitment: &'a str,
+        primary_norm_sq_min: i16,
+        primary_norm_sq_max: i16,
+        secondary_norm_sq_min: i16,
+        secondary_norm_sq_max: i16,
+    }
+    let payload = Payload {
+        artifact_commitment: &leaf.artifact_commitment,
+        primary_norm_sq_min: leaf.primary_norm_sq_min,
+        primary_norm_sq_max: leaf.primary_norm_sq_max,
+        secondary_norm_sq_min: leaf.secondary_norm_sq_min,
+        secondary_norm_sq_max: leaf.secondary_norm_sq_max,
+    };
+    let json =
+        serde_json::to_vec(&payload).map_err(|error| VmError::Serialization(error.to_string()))?;
+    commit_namespace_bytes("phase113/normalization-summary", &json)
+}
+
+fn phase113_activation_summary_commitment(
+    leaf: &Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact,
+) -> Result<String> {
+    #[derive(Serialize)]
+    struct Payload<'a> {
+        artifact_commitment: &'a str,
+        primary_activation_output_sum: i64,
+        secondary_activation_output_sum: i64,
+    }
+    let payload = Payload {
+        artifact_commitment: &leaf.artifact_commitment,
+        primary_activation_output_sum: leaf.primary_activation_output_sum,
+        secondary_activation_output_sum: leaf.secondary_activation_output_sum,
+    };
+    let json =
+        serde_json::to_vec(&payload).map_err(|error| VmError::Serialization(error.to_string()))?;
+    commit_namespace_bytes("phase113/activation-summary", &json)
+}
+
 fn phase112_root_fold_surface_summary(
     leaves: &[Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact],
 ) -> Result<Phase109FoldSurfaceSummary> {
@@ -8146,6 +8272,232 @@ pub fn load_phase112_transformer_accumulation_semantics_artifact(
     let artifact: Phase112TransformerAccumulationSemanticsArtifact = serde_json::from_slice(&bytes)
         .map_err(|error| VmError::Serialization(error.to_string()))?;
     validate_phase112_transformer_accumulation_semantics_artifact_shallow(&artifact)?;
+    Ok(artifact)
+}
+
+pub fn prepare_phase113_richer_gemma_window_family_artifact(
+    leaves: &[Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact],
+    semantics: &Phase112TransformerAccumulationSemanticsArtifact,
+) -> Result<Phase113RicherGemmaWindowFamilyArtifact> {
+    verify_phase112_transformer_accumulation_semantics_artifact(semantics, leaves)?;
+    let token_position_family_commitment_sequence_commitment = commit_namespace_strings(
+        "phase113/token-position-family-sequence",
+        &leaves
+            .iter()
+            .map(|leaf| leaf.token_position_sequence_commitment_sequence_commitment.clone())
+            .collect::<Vec<_>>(),
+    )?;
+    let selected_memory_window_family_commitment_sequence_commitment = commit_namespace_strings(
+        "phase113/selected-memory-window-family-sequence",
+        &leaves
+            .iter()
+            .map(|leaf| leaf.selected_memory_window_family_commitment_sequence_commitment.clone())
+            .collect::<Vec<_>>(),
+    )?;
+    let invariant_summary_family_commitment_sequence_commitment = commit_namespace_strings(
+        "phase113/invariant-summary-family-sequence",
+        &leaves
+            .iter()
+            .map(|leaf| leaf.invariant_summary_family_commitment_sequence_commitment.clone())
+            .collect::<Vec<_>>(),
+    )?;
+    let normalization_summary_family_commitment_sequence_commitment = commit_namespace_strings(
+        "phase113/normalization-summary-family-sequence",
+        &leaves
+            .iter()
+            .map(phase113_normalization_summary_commitment)
+            .collect::<Result<Vec<_>>>()?,
+    )?;
+    let activation_summary_family_commitment_sequence_commitment = commit_namespace_strings(
+        "phase113/activation-summary-family-sequence",
+        &leaves
+            .iter()
+            .map(phase113_activation_summary_commitment)
+            .collect::<Result<Vec<_>>>()?,
+    )?;
+    let richer_family_accumulator_commitment = commit_phase113_richer_family_accumulator(
+        &semantics.artifact_commitment,
+        &semantics.leaf_artifact_commitment_sequence_commitment,
+        &semantics.leaf_artifact_subtree_commitment,
+        &semantics.repeated_window_schedule_commitment,
+        &token_position_family_commitment_sequence_commitment,
+        &selected_memory_window_family_commitment_sequence_commitment,
+        &invariant_summary_family_commitment_sequence_commitment,
+        &normalization_summary_family_commitment_sequence_commitment,
+        &activation_summary_family_commitment_sequence_commitment,
+        &semantics.shared_primitive_artifact_commitment,
+        &semantics.shared_table_registry_commitment,
+        &semantics.shared_execution_proof_commitment,
+        &semantics.shared_execution_proof_backend_version,
+        &semantics.shared_execution_statement_version,
+        &semantics.global_start_boundary_commitment,
+        &semantics.global_end_boundary_commitment,
+        &semantics.first_phase102_artifact_commitment,
+        &semantics.terminal_phase102_artifact_commitment,
+        semantics.total_leaf_artifacts,
+        semantics.total_windows,
+        semantics.intervals_per_window,
+        semantics.interval_total_slices,
+        semantics.token_position_start,
+        semantics.token_position_stride,
+        semantics.window_token_position_stride,
+        semantics.start_block_index,
+        semantics.terminal_token_position,
+        semantics.terminal_block_index,
+        semantics.bounded_fold_arity,
+        semantics.local_score_sum,
+        semantics.global_score_sum,
+        semantics.grouped_value_mix_sum,
+        semantics.residual_output_sum,
+        semantics.final_acc_sum,
+        semantics.primary_norm_sq_min,
+        semantics.primary_norm_sq_max,
+        semantics.secondary_norm_sq_min,
+        semantics.secondary_norm_sq_max,
+        semantics.primary_activation_output_sum,
+        semantics.secondary_activation_output_sum,
+    )?;
+    let artifact_commitment = commit_phase113_richer_gemma_window_family_artifact(
+        &semantics.program_label,
+        &semantics.artifact_commitment,
+        semantics.total_leaf_artifacts,
+        semantics.total_windows,
+        semantics.intervals_per_window,
+        semantics.interval_total_slices,
+        semantics.token_position_start,
+        semantics.token_position_stride,
+        semantics.window_token_position_stride,
+        semantics.start_block_index,
+        semantics.terminal_token_position,
+        semantics.terminal_block_index,
+        semantics.bounded_fold_arity,
+        &semantics.shared_primitive_artifact_commitment,
+        &semantics.shared_table_registry_commitment,
+        &semantics.shared_execution_proof_commitment,
+        &semantics.shared_execution_proof_backend_version,
+        &semantics.shared_execution_statement_version,
+        &semantics.leaf_artifact_commitment_sequence_commitment,
+        &semantics.leaf_artifact_subtree_commitment,
+        &semantics.repeated_window_schedule_commitment,
+        &token_position_family_commitment_sequence_commitment,
+        &selected_memory_window_family_commitment_sequence_commitment,
+        &invariant_summary_family_commitment_sequence_commitment,
+        &normalization_summary_family_commitment_sequence_commitment,
+        &activation_summary_family_commitment_sequence_commitment,
+        &semantics.global_start_boundary_commitment,
+        &semantics.global_end_boundary_commitment,
+        &semantics.first_phase102_artifact_commitment,
+        &semantics.terminal_phase102_artifact_commitment,
+        semantics.local_score_sum,
+        semantics.global_score_sum,
+        semantics.grouped_value_mix_sum,
+        semantics.residual_output_sum,
+        semantics.final_acc_sum,
+        semantics.primary_norm_sq_min,
+        semantics.primary_norm_sq_max,
+        semantics.secondary_norm_sq_min,
+        semantics.secondary_norm_sq_max,
+        semantics.primary_activation_output_sum,
+        semantics.secondary_activation_output_sum,
+        &richer_family_accumulator_commitment,
+    )?;
+
+    Ok(Phase113RicherGemmaWindowFamilyArtifact {
+        artifact_version: STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_VERSION_PHASE113.to_string(),
+        semantic_scope: STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_SCOPE_PHASE113.to_string(),
+        artifact_commitment,
+        program_label: semantics.program_label.clone(),
+        source_phase112_artifact_commitment: semantics.artifact_commitment.clone(),
+        total_leaf_artifacts: semantics.total_leaf_artifacts,
+        total_windows: semantics.total_windows,
+        intervals_per_window: semantics.intervals_per_window,
+        interval_total_slices: semantics.interval_total_slices,
+        token_position_start: semantics.token_position_start,
+        token_position_stride: semantics.token_position_stride,
+        window_token_position_stride: semantics.window_token_position_stride,
+        start_block_index: semantics.start_block_index,
+        terminal_token_position: semantics.terminal_token_position,
+        terminal_block_index: semantics.terminal_block_index,
+        bounded_fold_arity: semantics.bounded_fold_arity,
+        shared_primitive_artifact_commitment: semantics.shared_primitive_artifact_commitment.clone(),
+        shared_table_registry_commitment: semantics.shared_table_registry_commitment.clone(),
+        shared_execution_proof_commitment: semantics.shared_execution_proof_commitment.clone(),
+        shared_execution_proof_backend_version: semantics
+            .shared_execution_proof_backend_version
+            .clone(),
+        shared_execution_statement_version: semantics
+            .shared_execution_statement_version
+            .clone(),
+        leaf_artifact_commitment_sequence_commitment: semantics
+            .leaf_artifact_commitment_sequence_commitment
+            .clone(),
+        leaf_artifact_subtree_commitment: semantics.leaf_artifact_subtree_commitment.clone(),
+        repeated_window_schedule_commitment: semantics.repeated_window_schedule_commitment.clone(),
+        token_position_family_commitment_sequence_commitment,
+        selected_memory_window_family_commitment_sequence_commitment,
+        invariant_summary_family_commitment_sequence_commitment,
+        normalization_summary_family_commitment_sequence_commitment,
+        activation_summary_family_commitment_sequence_commitment,
+        global_start_boundary_commitment: semantics.global_start_boundary_commitment.clone(),
+        global_end_boundary_commitment: semantics.global_end_boundary_commitment.clone(),
+        first_phase102_artifact_commitment: semantics.first_phase102_artifact_commitment.clone(),
+        terminal_phase102_artifact_commitment: semantics
+            .terminal_phase102_artifact_commitment
+            .clone(),
+        local_score_sum: semantics.local_score_sum,
+        global_score_sum: semantics.global_score_sum,
+        grouped_value_mix_sum: semantics.grouped_value_mix_sum,
+        residual_output_sum: semantics.residual_output_sum,
+        final_acc_sum: semantics.final_acc_sum,
+        primary_norm_sq_min: semantics.primary_norm_sq_min,
+        primary_norm_sq_max: semantics.primary_norm_sq_max,
+        secondary_norm_sq_min: semantics.secondary_norm_sq_min,
+        secondary_norm_sq_max: semantics.secondary_norm_sq_max,
+        primary_activation_output_sum: semantics.primary_activation_output_sum,
+        secondary_activation_output_sum: semantics.secondary_activation_output_sum,
+        richer_family_accumulator_commitment,
+    })
+}
+
+pub fn verify_phase113_richer_gemma_window_family_artifact(
+    artifact: &Phase113RicherGemmaWindowFamilyArtifact,
+    leaves: &[Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact],
+    semantics: &Phase112TransformerAccumulationSemanticsArtifact,
+) -> Result<()> {
+    validate_phase113_richer_gemma_window_family_artifact_shallow(artifact)?;
+    let expected = prepare_phase113_richer_gemma_window_family_artifact(leaves, semantics)?;
+    if artifact != &expected {
+        return Err(VmError::InvalidConfig(
+            "Phase 113 richer Gemma window family artifact does not match the canonical richer-family surface"
+                .to_string(),
+        ));
+    }
+    Ok(())
+}
+
+pub fn save_phase113_richer_gemma_window_family_artifact(
+    artifact: &Phase113RicherGemmaWindowFamilyArtifact,
+    path: &Path,
+) -> Result<()> {
+    write_json_with_limit(
+        artifact,
+        path,
+        MAX_PHASE113_RICHER_GEMMA_WINDOW_FAMILY_JSON_BYTES,
+        "Phase 113 richer Gemma window family artifact",
+    )
+}
+
+pub fn load_phase113_richer_gemma_window_family_artifact(
+    path: &Path,
+) -> Result<Phase113RicherGemmaWindowFamilyArtifact> {
+    let bytes = read_json_bytes_with_limit(
+        path,
+        MAX_PHASE113_RICHER_GEMMA_WINDOW_FAMILY_JSON_BYTES,
+        "Phase 113 richer Gemma window family artifact",
+    )?;
+    let artifact: Phase113RicherGemmaWindowFamilyArtifact = serde_json::from_slice(&bytes)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    validate_phase113_richer_gemma_window_family_artifact_shallow(&artifact)?;
     Ok(artifact)
 }
 
@@ -11638,6 +11990,194 @@ fn commit_phase112_transformer_accumulation_semantics_artifact(
     Ok(lower_hex(&out))
 }
 
+#[allow(clippy::too_many_arguments)]
+fn commit_phase113_richer_family_accumulator(
+    source_phase112_artifact_commitment: &str,
+    leaf_artifact_commitment_sequence_commitment: &str,
+    leaf_artifact_subtree_commitment: &str,
+    repeated_window_schedule_commitment: &str,
+    token_position_family_commitment_sequence_commitment: &str,
+    selected_memory_window_family_commitment_sequence_commitment: &str,
+    invariant_summary_family_commitment_sequence_commitment: &str,
+    normalization_summary_family_commitment_sequence_commitment: &str,
+    activation_summary_family_commitment_sequence_commitment: &str,
+    shared_primitive_artifact_commitment: &str,
+    shared_table_registry_commitment: &str,
+    shared_execution_proof_commitment: &str,
+    shared_execution_proof_backend_version: &str,
+    shared_execution_statement_version: &str,
+    global_start_boundary_commitment: &str,
+    global_end_boundary_commitment: &str,
+    first_phase102_artifact_commitment: &str,
+    terminal_phase102_artifact_commitment: &str,
+    total_leaf_artifacts: usize,
+    total_windows: usize,
+    intervals_per_window: usize,
+    interval_total_slices: usize,
+    token_position_start: u64,
+    token_position_stride: u64,
+    window_token_position_stride: u64,
+    start_block_index: u64,
+    terminal_token_position: u64,
+    terminal_block_index: u64,
+    bounded_fold_arity: usize,
+    local_score_sum: i64,
+    global_score_sum: i64,
+    grouped_value_mix_sum: i64,
+    residual_output_sum: i64,
+    final_acc_sum: i64,
+    primary_norm_sq_min: i16,
+    primary_norm_sq_max: i16,
+    secondary_norm_sq_min: i16,
+    secondary_norm_sq_max: i16,
+    primary_activation_output_sum: i64,
+    secondary_activation_output_sum: i64,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(source_phase112_artifact_commitment.as_bytes());
+    hasher.update(leaf_artifact_commitment_sequence_commitment.as_bytes());
+    hasher.update(leaf_artifact_subtree_commitment.as_bytes());
+    hasher.update(repeated_window_schedule_commitment.as_bytes());
+    hasher.update(token_position_family_commitment_sequence_commitment.as_bytes());
+    hasher.update(selected_memory_window_family_commitment_sequence_commitment.as_bytes());
+    hasher.update(invariant_summary_family_commitment_sequence_commitment.as_bytes());
+    hasher.update(normalization_summary_family_commitment_sequence_commitment.as_bytes());
+    hasher.update(activation_summary_family_commitment_sequence_commitment.as_bytes());
+    hasher.update(shared_primitive_artifact_commitment.as_bytes());
+    hasher.update(shared_table_registry_commitment.as_bytes());
+    hasher.update(shared_execution_proof_commitment.as_bytes());
+    hasher.update(shared_execution_proof_backend_version.as_bytes());
+    hasher.update(shared_execution_statement_version.as_bytes());
+    hasher.update(global_start_boundary_commitment.as_bytes());
+    hasher.update(global_end_boundary_commitment.as_bytes());
+    hasher.update(first_phase102_artifact_commitment.as_bytes());
+    hasher.update(terminal_phase102_artifact_commitment.as_bytes());
+    hasher.update(&(total_leaf_artifacts as u64).to_le_bytes());
+    hasher.update(&(total_windows as u64).to_le_bytes());
+    hasher.update(&(intervals_per_window as u64).to_le_bytes());
+    hasher.update(&(interval_total_slices as u64).to_le_bytes());
+    hasher.update(&token_position_start.to_le_bytes());
+    hasher.update(&token_position_stride.to_le_bytes());
+    hasher.update(&window_token_position_stride.to_le_bytes());
+    hasher.update(&start_block_index.to_le_bytes());
+    hasher.update(&terminal_token_position.to_le_bytes());
+    hasher.update(&terminal_block_index.to_le_bytes());
+    hasher.update(&(bounded_fold_arity as u64).to_le_bytes());
+    hasher.update(&local_score_sum.to_le_bytes());
+    hasher.update(&global_score_sum.to_le_bytes());
+    hasher.update(&grouped_value_mix_sum.to_le_bytes());
+    hasher.update(&residual_output_sum.to_le_bytes());
+    hasher.update(&final_acc_sum.to_le_bytes());
+    hasher.update(&primary_norm_sq_min.to_le_bytes());
+    hasher.update(&primary_norm_sq_max.to_le_bytes());
+    hasher.update(&secondary_norm_sq_min.to_le_bytes());
+    hasher.update(&secondary_norm_sq_max.to_le_bytes());
+    hasher.update(&primary_activation_output_sum.to_le_bytes());
+    hasher.update(&secondary_activation_output_sum.to_le_bytes());
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn commit_phase113_richer_gemma_window_family_artifact(
+    program_label: &str,
+    source_phase112_artifact_commitment: &str,
+    total_leaf_artifacts: usize,
+    total_windows: usize,
+    intervals_per_window: usize,
+    interval_total_slices: usize,
+    token_position_start: u64,
+    token_position_stride: u64,
+    window_token_position_stride: u64,
+    start_block_index: u64,
+    terminal_token_position: u64,
+    terminal_block_index: u64,
+    bounded_fold_arity: usize,
+    shared_primitive_artifact_commitment: &str,
+    shared_table_registry_commitment: &str,
+    shared_execution_proof_commitment: &str,
+    shared_execution_proof_backend_version: &str,
+    shared_execution_statement_version: &str,
+    leaf_artifact_commitment_sequence_commitment: &str,
+    leaf_artifact_subtree_commitment: &str,
+    repeated_window_schedule_commitment: &str,
+    token_position_family_commitment_sequence_commitment: &str,
+    selected_memory_window_family_commitment_sequence_commitment: &str,
+    invariant_summary_family_commitment_sequence_commitment: &str,
+    normalization_summary_family_commitment_sequence_commitment: &str,
+    activation_summary_family_commitment_sequence_commitment: &str,
+    global_start_boundary_commitment: &str,
+    global_end_boundary_commitment: &str,
+    first_phase102_artifact_commitment: &str,
+    terminal_phase102_artifact_commitment: &str,
+    local_score_sum: i64,
+    global_score_sum: i64,
+    grouped_value_mix_sum: i64,
+    residual_output_sum: i64,
+    final_acc_sum: i64,
+    primary_norm_sq_min: i16,
+    primary_norm_sq_max: i16,
+    secondary_norm_sq_min: i16,
+    secondary_norm_sq_max: i16,
+    primary_activation_output_sum: i64,
+    secondary_activation_output_sum: i64,
+    richer_family_accumulator_commitment: &str,
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_VERSION_PHASE113.as_bytes());
+    hasher.update(STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_SCOPE_PHASE113.as_bytes());
+    hasher.update(program_label.as_bytes());
+    hasher.update(source_phase112_artifact_commitment.as_bytes());
+    hasher.update(&(total_leaf_artifacts as u64).to_le_bytes());
+    hasher.update(&(total_windows as u64).to_le_bytes());
+    hasher.update(&(intervals_per_window as u64).to_le_bytes());
+    hasher.update(&(interval_total_slices as u64).to_le_bytes());
+    hasher.update(&token_position_start.to_le_bytes());
+    hasher.update(&token_position_stride.to_le_bytes());
+    hasher.update(&window_token_position_stride.to_le_bytes());
+    hasher.update(&start_block_index.to_le_bytes());
+    hasher.update(&terminal_token_position.to_le_bytes());
+    hasher.update(&terminal_block_index.to_le_bytes());
+    hasher.update(&(bounded_fold_arity as u64).to_le_bytes());
+    hasher.update(shared_primitive_artifact_commitment.as_bytes());
+    hasher.update(shared_table_registry_commitment.as_bytes());
+    hasher.update(shared_execution_proof_commitment.as_bytes());
+    hasher.update(shared_execution_proof_backend_version.as_bytes());
+    hasher.update(shared_execution_statement_version.as_bytes());
+    hasher.update(leaf_artifact_commitment_sequence_commitment.as_bytes());
+    hasher.update(leaf_artifact_subtree_commitment.as_bytes());
+    hasher.update(repeated_window_schedule_commitment.as_bytes());
+    hasher.update(token_position_family_commitment_sequence_commitment.as_bytes());
+    hasher.update(selected_memory_window_family_commitment_sequence_commitment.as_bytes());
+    hasher.update(invariant_summary_family_commitment_sequence_commitment.as_bytes());
+    hasher.update(normalization_summary_family_commitment_sequence_commitment.as_bytes());
+    hasher.update(activation_summary_family_commitment_sequence_commitment.as_bytes());
+    hasher.update(global_start_boundary_commitment.as_bytes());
+    hasher.update(global_end_boundary_commitment.as_bytes());
+    hasher.update(first_phase102_artifact_commitment.as_bytes());
+    hasher.update(terminal_phase102_artifact_commitment.as_bytes());
+    hasher.update(&local_score_sum.to_le_bytes());
+    hasher.update(&global_score_sum.to_le_bytes());
+    hasher.update(&grouped_value_mix_sum.to_le_bytes());
+    hasher.update(&residual_output_sum.to_le_bytes());
+    hasher.update(&final_acc_sum.to_le_bytes());
+    hasher.update(&primary_norm_sq_min.to_le_bytes());
+    hasher.update(&primary_norm_sq_max.to_le_bytes());
+    hasher.update(&secondary_norm_sq_min.to_le_bytes());
+    hasher.update(&secondary_norm_sq_max.to_le_bytes());
+    hasher.update(&primary_activation_output_sum.to_le_bytes());
+    hasher.update(&secondary_activation_output_sum.to_le_bytes());
+    hasher.update(richer_family_accumulator_commitment.as_bytes());
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
 fn commit_namespace_u64s(namespace: &str, values: &[u64]) -> Result<String> {
     let json =
         serde_json::to_vec(values).map_err(|error| VmError::Serialization(error.to_string()))?;
@@ -11674,24 +12214,30 @@ mod tests {
         production_v1_stark_options, prove_execution_stark_with_backend_and_options,
     };
     use crate::ProgramCompiler;
+    use std::sync::OnceLock;
 
     fn prove_gemma_block_v4_execution() -> VanillaStarkExecutionProof {
-        let model = ProgramCompiler
-            .compile_source(
-                include_str!("../../programs/gemma_block_v4.tvm"),
-                TransformerVmConfig {
-                    attention_mode: Attention2DMode::AverageHard,
-                    ..TransformerVmConfig::default()
-                },
-            )
-            .expect("compile gemma_block_v4");
-        prove_execution_stark_with_backend_and_options(
-            &model,
-            256,
-            StarkProofBackend::Stwo,
-            production_v1_stark_options(),
-        )
-        .expect("prove gemma_block_v4")
+        static PROOF: OnceLock<VanillaStarkExecutionProof> = OnceLock::new();
+        PROOF
+            .get_or_init(|| {
+                let model = ProgramCompiler
+                    .compile_source(
+                        include_str!("../../programs/gemma_block_v4.tvm"),
+                        TransformerVmConfig {
+                            attention_mode: Attention2DMode::AverageHard,
+                            ..TransformerVmConfig::default()
+                        },
+                    )
+                    .expect("compile gemma_block_v4");
+                prove_execution_stark_with_backend_and_options(
+                    &model,
+                    256,
+                    StarkProofBackend::Stwo,
+                    production_v1_stark_options(),
+                )
+                .expect("prove gemma_block_v4")
+            })
+            .clone()
     }
 
     fn prepare_phase107_leaf_for_token_position_start(
@@ -11720,6 +12266,40 @@ mod tests {
             &source, &folded,
         )
         .expect("prepare phase107 repeated window leaf")
+    }
+
+    fn cached_phase113_test_leaves() -> Vec<Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact> {
+        static LEAVES: OnceLock<Vec<Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact>> =
+            OnceLock::new();
+        LEAVES
+            .get_or_init(|| {
+                let root = Path::new(env!("CARGO_MANIFEST_DIR")).join(
+                    "docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22",
+                );
+                (0..4)
+                    .map(|index| {
+                        load_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact(
+                            &root.join(format!("phase107-leaf-{index}.stwo.json")),
+                        )
+                        .expect("load frozen phase107 test leaf")
+                    })
+                    .collect()
+            })
+            .clone()
+    }
+
+    fn cached_phase107_explicit_w8_artifact() -> Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact {
+        static ARTIFACT: OnceLock<Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact> =
+            OnceLock::new();
+        ARTIFACT
+            .get_or_init(|| {
+                let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(
+                    "docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-explicit-w8.stwo.json",
+                );
+                load_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact(&path)
+                    .expect("load frozen phase107 explicit w8 artifact")
+            })
+            .clone()
     }
 
     #[test]
@@ -12721,31 +13301,7 @@ mod tests {
 
     #[test]
     fn phase112_transformer_accumulation_semantics_round_trips_on_disk() {
-        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
-            .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
-        let leaves = vec![
-            prepare_phase107_leaf_for_token_position_start(
-                &primitive_artifact,
-                &execution_proof,
-                0,
-            ),
-            prepare_phase107_leaf_for_token_position_start(
-                &primitive_artifact,
-                &execution_proof,
-                4,
-            ),
-            prepare_phase107_leaf_for_token_position_start(
-                &primitive_artifact,
-                &execution_proof,
-                8,
-            ),
-            prepare_phase107_leaf_for_token_position_start(
-                &primitive_artifact,
-                &execution_proof,
-                12,
-            ),
-        ];
+        let leaves = cached_phase113_test_leaves();
         let artifact = prepare_phase112_transformer_accumulation_semantics_artifact(&leaves)
             .expect("prepare phase112 transformer accumulation semantics artifact");
         verify_phase112_transformer_accumulation_semantics_artifact(&artifact, &leaves)
@@ -12760,31 +13316,7 @@ mod tests {
 
     #[test]
     fn phase112_transformer_accumulation_semantics_is_smaller_than_phase110_surface() {
-        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
-            .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
-        let leaves = vec![
-            prepare_phase107_leaf_for_token_position_start(
-                &primitive_artifact,
-                &execution_proof,
-                0,
-            ),
-            prepare_phase107_leaf_for_token_position_start(
-                &primitive_artifact,
-                &execution_proof,
-                4,
-            ),
-            prepare_phase107_leaf_for_token_position_start(
-                &primitive_artifact,
-                &execution_proof,
-                8,
-            ),
-            prepare_phase107_leaf_for_token_position_start(
-                &primitive_artifact,
-                &execution_proof,
-                12,
-            ),
-        ];
+        let leaves = cached_phase113_test_leaves();
         let phase110 = prepare_phase110_repeated_window_fold_tree_artifact(&leaves)
             .expect("prepare phase110 fold tree artifact");
         let phase112 = prepare_phase112_transformer_accumulation_semantics_artifact(&leaves)
@@ -12803,31 +13335,7 @@ mod tests {
 
     #[test]
     fn phase112_transformer_accumulation_semantics_rejects_leaf_order_drift() {
-        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
-            .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
-        let leaves = vec![
-            prepare_phase107_leaf_for_token_position_start(
-                &primitive_artifact,
-                &execution_proof,
-                0,
-            ),
-            prepare_phase107_leaf_for_token_position_start(
-                &primitive_artifact,
-                &execution_proof,
-                4,
-            ),
-            prepare_phase107_leaf_for_token_position_start(
-                &primitive_artifact,
-                &execution_proof,
-                8,
-            ),
-            prepare_phase107_leaf_for_token_position_start(
-                &primitive_artifact,
-                &execution_proof,
-                12,
-            ),
-        ];
+        let leaves = cached_phase113_test_leaves();
         let artifact = prepare_phase112_transformer_accumulation_semantics_artifact(&leaves)
             .expect("prepare phase112 transformer accumulation semantics artifact");
         let drifted = vec![
@@ -12847,37 +13355,88 @@ mod tests {
 
     #[test]
     fn phase112_transformer_accumulation_semantics_rejects_accumulator_drift() {
-        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
-            .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
-        let leaves = vec![
-            prepare_phase107_leaf_for_token_position_start(
-                &primitive_artifact,
-                &execution_proof,
-                0,
-            ),
-            prepare_phase107_leaf_for_token_position_start(
-                &primitive_artifact,
-                &execution_proof,
-                4,
-            ),
-            prepare_phase107_leaf_for_token_position_start(
-                &primitive_artifact,
-                &execution_proof,
-                8,
-            ),
-            prepare_phase107_leaf_for_token_position_start(
-                &primitive_artifact,
-                &execution_proof,
-                12,
-            ),
-        ];
+        let leaves = cached_phase113_test_leaves();
         let mut artifact = prepare_phase112_transformer_accumulation_semantics_artifact(&leaves)
             .expect("prepare phase112 transformer accumulation semantics artifact");
         artifact.accumulation_semantics_commitment = "bad-accumulator".to_string();
         let error = verify_phase112_transformer_accumulation_semantics_artifact(&artifact, &leaves)
             .expect_err("accumulator drift should fail");
         assert!(error.to_string().contains("canonical semantic surface"));
+    }
+
+    #[test]
+    fn phase113_richer_gemma_window_family_round_trips_on_disk() {
+        let leaves = cached_phase113_test_leaves();
+        let semantics = prepare_phase112_transformer_accumulation_semantics_artifact(&leaves)
+            .expect("prepare phase112 semantics artifact");
+        let artifact = prepare_phase113_richer_gemma_window_family_artifact(&leaves, &semantics)
+            .expect("prepare phase113 richer family artifact");
+        verify_phase113_richer_gemma_window_family_artifact(&artifact, &leaves, &semantics)
+            .expect("verify phase113 richer family artifact");
+        let temp = tempfile::NamedTempFile::new().expect("temp phase113 artifact");
+        save_phase113_richer_gemma_window_family_artifact(&artifact, temp.path())
+            .expect("save phase113 richer family artifact");
+        let loaded = load_phase113_richer_gemma_window_family_artifact(temp.path())
+            .expect("load phase113 richer family artifact");
+        assert_eq!(loaded, artifact);
+    }
+
+    #[test]
+    fn phase113_richer_gemma_window_family_stays_below_explicit_w8_source() {
+        let leaves = cached_phase113_test_leaves();
+        let semantics = prepare_phase112_transformer_accumulation_semantics_artifact(&leaves)
+            .expect("prepare phase112 semantics artifact");
+        let artifact = prepare_phase113_richer_gemma_window_family_artifact(&leaves, &semantics)
+            .expect("prepare phase113 richer family artifact");
+        let explicit = cached_phase107_explicit_w8_artifact();
+        let artifact_bytes =
+            serde_json::to_vec(&artifact).expect("serialize phase113 richer family").len();
+        let explicit_bytes =
+            serde_json::to_vec(&explicit).expect("serialize phase107 explicit w8").len();
+        assert!(
+            artifact_bytes < explicit_bytes,
+            "phase113 bytes {} should stay below explicit phase107 bytes {}",
+            artifact_bytes,
+            explicit_bytes
+        );
+    }
+
+    #[test]
+    fn phase113_richer_gemma_window_family_rejects_phase112_source_drift() {
+        let leaves = cached_phase113_test_leaves();
+        let mut semantics = prepare_phase112_transformer_accumulation_semantics_artifact(&leaves)
+            .expect("prepare phase112 semantics artifact");
+        let artifact = prepare_phase113_richer_gemma_window_family_artifact(&leaves, &semantics)
+            .expect("prepare phase113 richer family artifact");
+        semantics.artifact_commitment = "bad-phase112".to_string();
+        let error =
+            verify_phase113_richer_gemma_window_family_artifact(&artifact, &leaves, &semantics)
+                .expect_err("phase112 source drift should fail");
+        assert!(
+            error
+                .to_string()
+                .contains("transformer accumulation semantics artifact does not match")
+                || error
+                    .to_string()
+                    .contains("richer Gemma window family artifact does not match")
+        );
+    }
+
+    #[test]
+    fn phase113_richer_gemma_window_family_rejects_activation_family_drift() {
+        let leaves = cached_phase113_test_leaves();
+        let semantics = prepare_phase112_transformer_accumulation_semantics_artifact(&leaves)
+            .expect("prepare phase112 semantics artifact");
+        let mut artifact = prepare_phase113_richer_gemma_window_family_artifact(&leaves, &semantics)
+            .expect("prepare phase113 richer family artifact");
+        artifact.activation_summary_family_commitment_sequence_commitment =
+            "bad-activation".to_string();
+        let error =
+            verify_phase113_richer_gemma_window_family_artifact(&artifact, &leaves, &semantics)
+                .expect_err("activation family drift should fail");
+        assert!(error
+            .to_string()
+            .contains("richer Gemma window family artifact does not match"));
     }
 
     #[test]
