@@ -1,5 +1,5 @@
 ---
-description: Local release gate, signed commits, and per-scope test invocations for provable-transformer-vm
+description: Local release gate and per-scope test invocations for provable-transformer-vm
 alwaysApply: true
 ---
 
@@ -7,8 +7,10 @@ alwaysApply: true
 
 GitHub Actions is **disabled** at the repository level for this project.
 The local release gate is the only gate. The canonical interfaces are
-`just <target>` (preferred) and `make <target>` (fallback). Tooling pins
-are strict: `cargo-audit 0.22.1`, `cargo-deny 0.19.4`, `zizmor 1.24.1`.
+`just <target>` (preferred) and `make <target>` (fallback). The
+gate-related targets (`gate-fast`, `gate-no-nightly`, `gate`) call into
+`scripts/local_release_gate.sh`. Tooling pins are strict:
+`cargo-audit 0.22.1`, `cargo-deny 0.19.4`, `zizmor 1.24.1`.
 
 ## When to run what
 
@@ -44,8 +46,6 @@ negative / tamper-path test, then run `just gate` before reporting done.
 ## Forbidden
 
 - Pushing directly to `main` (the ruleset blocks it).
-- Bypassing the local gate via `SKIP_LOCAL_GATE=1` without an explicit
-  human instruction tied to a specific reason.
 - Editing `Cargo.lock` by hand.
 - Adding a `.tvm` fixture under `programs/` whose name implies a model
   family it does not faithfully implement (see

@@ -25,10 +25,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-CARGO_AUDIT_VERSION="${CARGO_AUDIT_VERSION:-0.22.1}"
-CARGO_DENY_VERSION="${CARGO_DENY_VERSION:-0.19.4}"
-ZIZMOR_VERSION="${ZIZMOR_VERSION:-1.24.1}"
-NIGHTLY_TOOLCHAIN="${NIGHTLY_TOOLCHAIN:-nightly-2025-07-14}"
+readonly CARGO_AUDIT_VERSION="0.22.1"
+readonly CARGO_DENY_VERSION="0.19.4"
+readonly ZIZMOR_VERSION="1.24.1"
+readonly NIGHTLY_TOOLCHAIN="nightly-2025-07-14"
 LOCAL_GATE_VERBOSE="${LOCAL_GATE_VERBOSE:-0}"
 SKIP_NIGHTLY="${SKIP_NIGHTLY:-0}"
 
@@ -39,7 +39,6 @@ c_dim=$'\033[2m'
 c_off=$'\033[0m'
 
 step_count=0
-fail_count=0
 
 run_step() {
   local label="$1"
@@ -51,7 +50,6 @@ run_step() {
       printf '%b  ok%b\n' "$c_grn" "$c_off"
     else
       printf '%b  FAILED: %s%b\n' "$c_red" "$*" "$c_off" >&2
-      fail_count=$((fail_count + 1))
       return 1
     fi
   else
@@ -61,7 +59,6 @@ run_step() {
       local rc=$?
       printf '%b  FAILED (exit %d): %s%b\n' "$c_red" "$rc" "$*" "$c_off" >&2
       printf '%s\n' "$log_output" >&2
-      fail_count=$((fail_count + 1))
       return "$rc"
     fi
   fi
@@ -113,6 +110,13 @@ require_exact_version cargo-audit "$cargo_audit_actual" "$CARGO_AUDIT_VERSION" |
 cargo_deny_actual="$(cargo-deny --version | awk '{print $2}')"
 require_exact_version cargo-deny "$cargo_deny_actual" "$CARGO_DENY_VERSION" || exit 1
 
+if ! command -v uvx >/dev/null 2>&1 && ! command -v zizmor >/dev/null 2>&1; then
+  printf '%bmissing required command: uvx or zizmor%b\n' "$c_red" "$c_off" >&2
+  exit 127
+fi
+
+require_command shellcheck
+
 # Stable-toolchain steps.
 run_step "rustfmt --check"           cargo fmt --all --check
 run_step "lib clippy (-D warnings)"   cargo clippy --quiet --lib --no-deps -- -D warnings
@@ -133,45 +137,29 @@ run_step "dependency check suite"     bash scripts/run_dependency_audit_suite.sh
 # Workflow lint (the workflow files still exist for future re-enable).
 if command -v uvx >/dev/null 2>&1; then
   run_step "zizmor (workflow lint)"   uvx --from "zizmor==${ZIZMOR_VERSION}" zizmor .github/workflows --format plain
-elif command -v zizmor >/dev/null 2>&1; then
-  zizmor_actual="$(zizmor --version | awk '{print $2}')"
-  if [[ "$zizmor_actual" == "$ZIZMOR_VERSION" ]]; then
-    run_step "zizmor (workflow lint)" zizmor .github/workflows --format plain
-  else
-    printf '%b[gate skip] zizmor version mismatch (expected %s, found %s); install uvx to bridge%b\n' \
-      "$c_ylw" "$ZIZMOR_VERSION" "$zizmor_actual" "$c_off"
-  fi
 else
-  printf '%b[gate skip] zizmor not available; install uvx (recommended) or zizmor==%s%b\n' \
-    "$c_ylw" "$ZIZMOR_VERSION" "$c_off"
+  zizmor_actual="$(zizmor --version | awk '{print $2}')"
+  require_exact_version zizmor "$zizmor_actual" "$ZIZMOR_VERSION" || exit 1
+  run_step "zizmor (workflow lint)" zizmor .github/workflows --format plain
 fi
 
 # Shell lint.
-if command -v shellcheck >/dev/null 2>&1; then
-  run_step "shellcheck suite"         bash scripts/run_shellcheck_suite.sh
-else
-  printf '%b[gate skip] shellcheck not on PATH; install via your package manager%b\n' "$c_ylw" "$c_off"
-fi
+run_step "shellcheck suite"           bash scripts/run_shellcheck_suite.sh
 
 # Nightly-only stwo-backend smoke (matches the upstream-disabled CI smoke step).
 if [[ "$SKIP_NIGHTLY" != "1" ]]; then
-  if rustup toolchain list 2>/dev/null | grep -q "$NIGHTLY_TOOLCHAIN"; then
-    stwo_smoke=stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks
-    run_step "stwo-backend nightly smoke" \
-      cargo "+${NIGHTLY_TOOLCHAIN}" test --release --quiet \
-        --features stwo-backend --lib "$stwo_smoke" -- --exact
-  else
-    printf '%b[gate skip] %s not installed; rustup toolchain install %s --profile minimal%b\n' \
-      "$c_ylw" "$NIGHTLY_TOOLCHAIN" "$NIGHTLY_TOOLCHAIN" "$c_off"
+  require_command rustup
+  if ! rustup toolchain list 2>/dev/null | grep -q "$NIGHTLY_TOOLCHAIN"; then
+    printf '%bmissing required nightly toolchain: %s (install with rustup toolchain install %s --profile minimal)%b\n' \
+      "$c_red" "$NIGHTLY_TOOLCHAIN" "$NIGHTLY_TOOLCHAIN" "$c_off" >&2
+    exit 127
   fi
+  stwo_smoke=stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks
+  run_step "stwo-backend nightly smoke" \
+    cargo "+${NIGHTLY_TOOLCHAIN}" test --release --quiet \
+      --features stwo-backend --lib "$stwo_smoke" -- --exact
 else
   printf '%b[gate skip] SKIP_NIGHTLY=1; nightly stwo smoke not run%b\n' "$c_ylw" "$c_off"
-fi
-
-if (( fail_count > 0 )); then
-  printf '\n%blocal release gate FAILED: %d / %d steps failed%b\n' \
-    "$c_red" "$fail_count" "$step_count" "$c_off" >&2
-  exit 1
 fi
 
 printf '\n%blocal release gate passed: %d / %d steps OK%b\n' \

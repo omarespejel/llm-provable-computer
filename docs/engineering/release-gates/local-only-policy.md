@@ -28,7 +28,7 @@ itself.
 
 ## Local gate
 
-```
+```bash
 bash scripts/local_release_gate.sh
 ```
 
@@ -44,8 +44,8 @@ Steps (in order):
 8. `cargo test --release --test {assembly,e2e,interpreter,runtime,vanillastark_smoke}`
 9. `bash scripts/run_dependency_audit_suite.sh`
 10. `uvx --from "zizmor==1.24.1" zizmor .github/workflows --format plain`
-11. `bash scripts/run_shellcheck_suite.sh` (skipped if `shellcheck` is missing)
-12. `cargo +nightly-2025-07-14 test --release --features stwo-backend --lib <stwo smoke>` (skipped if nightly toolchain is not installed or `SKIP_NIGHTLY=1`)
+11. `bash scripts/run_shellcheck_suite.sh`
+12. `cargo +nightly-2025-07-14 test --release --features stwo-backend --lib <stwo smoke>` (skipped only when `SKIP_NIGHTLY=1`)
 
 Tooling pins are strict:
 
@@ -54,7 +54,7 @@ Tooling pins are strict:
 - `zizmor 1.24.1` (via `uvx` is preferred so the workstation does not need a
   matching `zizmor` install)
 
-Environment escape hatches:
+Environment controls:
 
 - `SKIP_NIGHTLY=1` — skip nightly-only steps (useful when the nightly
   toolchain is not yet installed on a fresh machine).
@@ -65,18 +65,11 @@ Environment escape hatches:
 Install the hook so every `git push` runs the local gate before contacting
 the remote:
 
-```
+```bash
 ln -sf ../../docs/engineering/release-gates/pre-push-hook.sh .git/hooks/pre-push
 ```
 
 (Symlink so future updates to the canonical hook flow through automatically.)
-
-To bypass the hook for a known-safe push (CI-skip, docs-only, etc.) without
-removing it:
-
-```
-SKIP_LOCAL_GATE=1 git push
-```
 
 ## Why workflow files are still in `.github/workflows/`
 
@@ -96,7 +89,7 @@ re-apply the ruleset.
 
 ## Re-enabling Actions later
 
-```
+```bash
 # 1. Re-enable Actions at the repository level.
 gh api -X PUT -H "Accept: application/vnd.github+json" \
   /repos/omarespejel/provable-transformer-vm/actions/permissions \

@@ -14366,7 +14366,10 @@ mod tests {
 
 #[cfg(test)]
 mod cli_dispatch_tests {
-    use super::needs_run_subcommand;
+    use super::{
+        needs_run_subcommand, CliStarkProfile, PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS,
+        PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS, PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
+    };
 
     #[test]
     fn intervalized_phase25_commands_do_not_fall_back_to_run_shorthand() {
@@ -14466,6 +14469,33 @@ mod cli_dispatch_tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-folded-repeated-multi-interval-gemma-accumulation-prototype-artifact"
         ));
+    }
+
+    #[test]
+    fn publication_v1_profile_enforces_reexecution_without_time_budget() {
+        assert!(CliStarkProfile::PublicationV1.enforces_reexecution());
+        assert_eq!(
+            CliStarkProfile::PublicationV1.min_conjectured_security_bits(),
+            PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS
+        );
+        assert_eq!(
+            CliStarkProfile::PublicationV1.target_max_proving_seconds(),
+            None
+        );
+    }
+
+    #[test]
+    fn production_v1_profile_enforces_reexecution_with_budget() {
+        assert!(CliStarkProfile::ProductionV1.enforces_reexecution());
+        assert_eq!(
+            CliStarkProfile::ProductionV1.min_conjectured_security_bits(),
+            PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS
+        );
+        assert_eq!(
+            CliStarkProfile::ProductionV1.target_max_proving_seconds(),
+            Some(PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS)
+        );
+        assert!(!CliStarkProfile::Default.enforces_reexecution());
     }
 }
 

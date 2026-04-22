@@ -22,11 +22,13 @@ so the gate runs locally on a workstation; the items below assume that posture.
 ## Dependency floors
 
 - [ ] `cargo-audit 0.22.1`, `cargo-deny 0.19.4`, `zizmor 1.24.1` pinned in
-      `scripts/run_*_suite.sh` and matching `.github/workflows/*.yml`.
+      `scripts/local_release_gate.sh`, `scripts/run_*_suite.sh`, and matching
+      `.github/workflows/*.yml`.
 - [ ] `bash scripts/run_dependency_audit_suite.sh` exits 0 on a clean checkout.
 - [ ] `uvx --from "zizmor==1.24.1" zizmor .github/workflows --format plain`
       reports `No findings to report.`
-- [ ] Each `deny.toml` ignore entry has a stated removal target.
+- [ ] Each ignore entry in both `deny.toml` and
+      `scripts/run_dependency_audit_suite.sh` has a stated removal target.
 
 ## Vanilla STARK
 

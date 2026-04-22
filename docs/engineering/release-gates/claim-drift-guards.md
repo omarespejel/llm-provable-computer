@@ -31,7 +31,7 @@ following invariants in order:
 3. `validate_proof_inputs` — the program is non-empty, attention is `average-hard`,
    no unsupported instructions are present.
 4. `validate_stark_options` — `expansion_factor` is power of two ≥ 4, q satisfies
-   `2q ≥ security_level`, no overflow, security level ≤ 128.
+   `2q ≥ security_level`, security level ≤ 128.
 5. `validate_verification_policy` — `conjectured_security_bits(options)` ≥ caller's
    `min_conjectured_security_bits`.
 6. `validate_public_state` — final state memory length matches program memory size.
@@ -41,6 +41,9 @@ following invariants in order:
    final state; **and the v1 scope requires equivalence to be present**.
 9. `validate_claim_commitments` — every commitment hash recomputes from the
    claim's own bytes; `prover_build_info` non-empty.
+10. Vanilla-backend construction (`Stark::try_new`) rejects derived-geometry
+    overflow in `4*q`, `trace_length + num_randomizers`, omicron-domain sizing,
+    and FRI-domain sizing before proof bytes are touched.
 
 The two "v1 scope requires" rows are the claim-drift guards. Without them, a
 claim could keep the v1 label while dropping the very payload that the label

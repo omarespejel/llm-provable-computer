@@ -81,7 +81,7 @@ impl Fri {
     /// tests below keep the routine exercised in the meantime.
     #[allow(dead_code)]
     pub(crate) fn sample_index_full_entropy(byte_array: &[u8], size: usize) -> usize {
-        debug_assert!(size > 0, "size must be non-zero");
+        assert!(size > 0, "size must be non-zero");
         let mut acc: u128 = 0;
         for chunk in byte_array.chunks(16) {
             let mut buf = [0u8; 16];

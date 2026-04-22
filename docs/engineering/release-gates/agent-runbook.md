@@ -11,7 +11,8 @@ and mirror its essentials.
 - GitHub Actions is **disabled** at the repository level for this project.
   No server-side check ever runs. The local release gate is the only gate.
 - The canonical interfaces are `just <target>` (preferred) and
-  `make <target>` (fallback). Both call into `scripts/local_release_gate.sh`.
+  `make <target>` (fallback). The gate-related targets (`gate-fast`,
+  `gate-no-nightly`, `gate`) call into `scripts/local_release_gate.sh`.
 - Tooling pins are strict: `cargo-audit 0.22.1`, `cargo-deny 0.19.4`,
   `zizmor 1.24.1`. The gate exits non-zero on any version drift.
 - The pre-push hook (`docs/engineering/release-gates/pre-push-hook.sh`,
@@ -62,8 +63,6 @@ automatically and that is fine; nothing depends on them.
 - Do not push directly to `main`. The ruleset requires a pull request
   before any merge into `main`; open a PR even if no review approval is
   required.
-- Do not bypass the local gate (`SKIP_LOCAL_GATE=1`) without an explicit
-  human instruction tied to a specific reason.
 - Do not edit `Cargo.lock` by hand. Use `cargo update -p <crate>`.
 - Do not change a `deny.toml` ignore entry without updating the matching
   removal target and the explanation comment in the same edit.

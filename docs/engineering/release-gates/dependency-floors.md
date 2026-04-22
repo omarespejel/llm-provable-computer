@@ -13,8 +13,9 @@ reproducible across machines.
 | `cargo-nextest`| `0.9.132`    | Test runner used by CI.                                                                                   |
 | `kani-verifier`| `0.64.0`     | Bounded model checker for the formal-contracts workflow.                                                  |
 
-Updates to any pinned version go in `scripts/run_*_suite.sh` and the matching
-`.github/workflows/*.yml`. The workflow files are kept on disk for future
+Updates to any pinned version go in `scripts/local_release_gate.sh`,
+`scripts/run_*_suite.sh`, and the matching `.github/workflows/*.yml`. The
+workflow files are kept on disk for future
 re-enable and `zizmor` lint coverage even though Actions is disabled at the
 repository level; keeping them in lockstep with the local gate prevents drift.
 

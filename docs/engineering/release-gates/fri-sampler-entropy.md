@@ -14,7 +14,7 @@ of the sampler's effective entropy versus the reference.
 
 This is pinned by a regression test:
 
-```
+```text
 vanillastark::fri::tests::legacy_sample_index_truncates_high_order_digest_bytes
 ```
 
@@ -29,7 +29,7 @@ vanillastark::fri::tests::legacy_sample_index_truncates_high_order_digest_bytes
 
 A regression test exercises the entropy improvement directly:
 
-```
+```text
 vanillastark::fri::tests::full_entropy_sample_index_distinguishes_high_order_digest_bytes
 vanillastark::fri::tests::full_entropy_sample_index_returns_in_range
 ```
@@ -61,7 +61,7 @@ therefore divergent proofs) at the boundary. The integer routine
 `stark_omicron_domain_length` replaces it with `next_power_of_two * 2` and is
 pinned by a sweep that proves equivalence on every realistic input:
 
-```
+```text
 vanillastark::stark::tests::omicron_domain_length_matches_legacy_f64_form_on_normal_inputs
 vanillastark::stark::tests::omicron_domain_length_is_always_power_of_two
 ```

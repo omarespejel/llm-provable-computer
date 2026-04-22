@@ -11,7 +11,7 @@
 # Behavior:
 #   - On every push, run the local release gate.
 #   - Refuse the push if any gated step fails.
-#   - SKIP_NIGHTLY=1 and SKIP_LOCAL_GATE=1 escape hatches honored.
+#   - `SKIP_NIGHTLY=1` still reaches the gate, but skips the nightly-only step.
 #
 # This hook is the local equivalent of the GitHub Actions checks. Because the
 # `main` branch protection no longer requires server-side status checks (Actions
@@ -19,11 +19,6 @@
 # primary mechanism that prevents broken commits from reaching the remote.
 
 set -euo pipefail
-
-if [[ "${SKIP_LOCAL_GATE:-0}" == "1" ]]; then
-  echo "pre-push: SKIP_LOCAL_GATE=1, skipping local release gate"
-  exit 0
-fi
 
 repo_root="$(git rev-parse --show-toplevel)"
 gate="$repo_root/scripts/local_release_gate.sh"
@@ -33,17 +28,21 @@ if [[ ! -x "$gate" ]]; then
   exit 1
 fi
 
-while read -r local_ref local_sha remote_ref remote_sha; do
+run_gate=0
+while read -r _ local_sha _ _; do
   if [[ -z "$local_sha" || "$local_sha" =~ ^0+$ ]]; then
     # branch deletion, nothing to gate
     continue
   fi
-  echo "pre-push: running local release gate for $local_ref -> $remote_ref"
+  run_gate=1
+done
+
+if [[ "$run_gate" == "1" ]]; then
+  echo "pre-push: running local release gate before push"
   if ! bash "$gate"; then
     echo "pre-push: local release gate failed; refusing to push" >&2
-    echo "pre-push: rerun with SKIP_LOCAL_GATE=1 only when you know what you are doing" >&2
     exit 1
   fi
-done
+fi
 
 exit 0

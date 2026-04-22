@@ -13,9 +13,10 @@ use libfuzzer_sys::fuzz_target;
 use llm_provable_computer::{
     production_v1_verification_policy, publication_v1_verification_policy,
     verify_execution_stark, verify_execution_stark_claim_only,
-    verify_execution_stark_claim_only_with_policy, verify_execution_stark_with_policy,
+    verify_execution_stark_claim_only_with_policy, verify_execution_stark_with_backend_and_policy,
+    verify_execution_stark_with_policy,
     verify_execution_stark_with_reexecution, verify_execution_stark_with_reexecution_and_policy,
-    StarkVerificationPolicy, VanillaStarkExecutionProof,
+    VanillaStarkExecutionProof,
 };
 
 const MAX_INPUT_BYTES: usize = 8 * 1024 * 1024;
@@ -34,13 +35,24 @@ fuzz_target!(|data: &[u8]| {
     if proof.claim.steps > 4096 {
         return;
     }
+    if proof.claim.options.expansion_factor > 64
+        || proof.claim.options.num_colinearity_checks > 64
+        || proof.claim.options.security_level > 128
+    {
+        return;
+    }
 
     let _ = verify_execution_stark(&proof);
     let _ = verify_execution_stark_claim_only(&proof);
     let _ = verify_execution_stark_with_policy(&proof, production_v1_verification_policy());
     let _ = verify_execution_stark_claim_only_with_policy(
         &proof,
-        StarkVerificationPolicy::default(),
+        production_v1_verification_policy(),
+    );
+    let _ = verify_execution_stark_with_backend_and_policy(
+        &proof,
+        proof.proof_backend,
+        production_v1_verification_policy(),
     );
     let _ = verify_execution_stark_with_reexecution(&proof);
     let _ = verify_execution_stark_with_reexecution_and_policy(

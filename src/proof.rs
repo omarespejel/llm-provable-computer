@@ -121,7 +121,7 @@ pub fn publication_v1_verification_policy() -> StarkVerificationPolicy {
 
 const VANILLA_STARK_FIELD_SECURITY_BITS: u32 = 128;
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StarkVerificationPolicy {
     pub min_conjectured_security_bits: u32,
 }
@@ -682,14 +682,15 @@ impl ProofBackendDriver for VanillaBackend {
     }
 
     fn prove(&self, witness: PreparedExecutionWitness) -> Result<VanillaStarkExecutionProof> {
-        let stark = Stark::new(
+        let stark = Stark::try_new(
             witness.claim.options.expansion_factor,
             witness.claim.options.num_colinearity_checks,
             witness.claim.options.security_level,
             witness.air.register_count(),
             witness.claim.steps + 1,
             witness.air.transition_degree_bound(),
-        );
+        )
+        .map_err(VmError::InvalidConfig)?;
         let proof = stark.prove(
             &witness.trace,
             &witness.air.transition_constraints(),
@@ -714,14 +715,15 @@ impl ProofBackendDriver for VanillaBackend {
             .checked_add(1)
             .ok_or_else(|| VmError::InvalidConfig("proof steps overflow".to_string()))?;
 
-        let stark = Stark::new(
+        let stark = Stark::try_new(
             proof.claim.options.expansion_factor,
             proof.claim.options.num_colinearity_checks,
             proof.claim.options.security_level,
             air.register_count(),
             trace_length,
             air.transition_degree_bound(),
-        );
+        )
+        .map_err(VmError::InvalidConfig)?;
 
         Ok(stark.verify(
             &proof.proof,
@@ -2064,11 +2066,53 @@ HALT
     fn verify_rejects_step_overflow_without_panic() {
         let mut proof = prove_program("programs/addition.tvm", 32);
         proof.claim.steps = usize::MAX;
+        let metadata = proof
+            .claim
+            .equivalence
+            .as_mut()
+            .expect("equivalence metadata");
+        metadata.checked_steps = usize::MAX;
+        metadata.transformer_fingerprint = execution_fingerprint(
+            "transformer",
+            usize::MAX,
+            usize::MAX,
+            proof.claim.final_state.halted,
+            &proof.claim.final_state,
+        );
+        metadata.native_fingerprint = execution_fingerprint(
+            "native",
+            usize::MAX,
+            usize::MAX,
+            proof.claim.final_state.halted,
+            &proof.claim.final_state,
+        );
         let err = verify_execution_stark(&proof).unwrap_err();
         let msg = err.to_string();
         assert!(
             msg.contains("proof steps overflow") || msg.contains("does not match claim steps"),
             "expected overflow or step-mismatch rejection, got: {msg}"
+        );
+    }
+
+    #[test]
+    fn verify_rejects_randomizer_overflow_without_panic() {
+        let mut proof = prove_program("programs/addition.tvm", 32);
+        proof.claim.options.num_colinearity_checks = usize::MAX / 4 + 1;
+        proof.claim.options.security_level = 8;
+        let config = proof
+            .claim
+            .transformer_config
+            .as_ref()
+            .expect("transformer config")
+            .clone();
+        proof.claim.commitments = Some(
+            build_claim_commitments(&proof.claim.program, &config, &proof.claim.options)
+                .expect("rebuild commitments"),
+        );
+        let err = verify_execution_stark(&proof).unwrap_err();
+        assert!(
+            err.to_string().contains("randomizers"),
+            "expected randomizer-overflow rejection, got: {err}"
         );
     }
 

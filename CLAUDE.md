@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 This file is the Claude-Code-specific entry point. The full agent contract
-(decision table for what to run when, signed-commits policy, MUST-NOT list)
+(decision table for what to run when, current branch-policy posture, MUST-NOT list)
 lives in `docs/engineering/release-gates/agent-runbook.md` — read it before
 the first edit. The shared "how to work here" doc is `AGENTS.md`.
 
@@ -15,9 +15,9 @@ runs locally via `just`:
 - `just gate` — canonical gate; required before push and before reporting done.
 
 Picking the right inner-loop subset for the file you just edited is in the
-agent runbook's decision table. The `main` ruleset requires a pull request
-before merge (so AI commenters fire) but does not require review approval
-or signed commits.
+agent runbook's decision table. The current `main` ruleset requires a pull
+request before merge (so AI commenters fire) but does not require review
+approval or signed commits.
 
 ## Project context
 
