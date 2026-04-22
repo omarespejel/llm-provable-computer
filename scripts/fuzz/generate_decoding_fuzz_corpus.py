@@ -13,6 +13,12 @@ CORPUS = ROOT / "fuzz" / "corpus"
 FUZZ_TOOLCHAIN_TOML = ROOT / "fuzz" / "rust-toolchain.toml"
 RUN_TIMEOUT_SECONDS = 300
 DEFAULT_RUST_TOOLCHAIN = "nightly-2025-07-14"
+PHASE113_SOURCE_FIXTURE = pathlib.Path(
+    "fuzz/corpus/phase113_richer_gemma_window_family/source_phase113.json"
+)
+PHASE113_SOURCE_SHA256 = (
+    "5793ac8268e036dd0f9f1e5bafa49814076d628c6dc4b720fdf783de93299588"
+)
 
 
 def env_flag_is_true(name: str) -> bool:
@@ -220,6 +226,46 @@ def phase29_contract_for_phase30(phase30: dict[str, object]) -> dict[str, object
     return contract
 
 
+def load_phase113_fixture(root: pathlib.Path = ROOT) -> dict[str, object]:
+    phase113_source = root / PHASE113_SOURCE_FIXTURE
+    if not phase113_source.exists():
+        raise FileNotFoundError(
+            f"missing phase113 fuzz-corpus source fixture: {phase113_source}"
+        )
+    try:
+        phase113_bytes = phase113_source.read_bytes()
+    except OSError as exc:
+        raise OSError(
+            f"failed to read phase113 fuzz-corpus source fixture {phase113_source}: {exc}"
+        ) from exc
+    try:
+        phase113_payload = json.loads(phase113_bytes.decode("utf-8"))
+    except UnicodeDecodeError as exc:
+        raise ValueError(
+            f"phase113 fuzz-corpus source fixture is not valid UTF-8: {phase113_source}: {exc}"
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"phase113 fuzz-corpus source fixture is not valid JSON: {phase113_source}: {exc}"
+        ) from exc
+    if not isinstance(phase113_payload, dict):
+        raise TypeError("phase113 fuzz-corpus source fixture must decode to a JSON object")
+    canonical_payload = json.dumps(
+        phase113_payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode("utf-8")
+    fixture_sha256 = hashlib.sha256(canonical_payload).hexdigest()
+    if fixture_sha256 != PHASE113_SOURCE_SHA256:
+        raise ValueError(
+            "phase113 fuzz-corpus source fixture digest mismatch: "
+            f"expected {PHASE113_SOURCE_SHA256}, got {fixture_sha256} "
+            f"for {phase113_source}"
+        )
+    return phase113_payload
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate curated fuzz corpus inputs for decoding-related targets."
@@ -236,6 +282,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     corpus_root = args.output_root.resolve()
+    phase113_payload = load_phase113_fixture()
 
     phase12_path = corpus_root / "phase12_decoding_manifest" / "valid_phase12.json"
     phase14_path = corpus_root / "phase14_decoding_manifest" / "valid_phase14.json"
@@ -525,6 +572,11 @@ def main() -> int:
         phase37_path,
     ):
         write_json(generated_path, json.loads(generated_path.read_text()))
+    phase113_path = (
+        corpus_root / "phase113_richer_gemma_window_family" / "valid_phase113.json"
+    )
+    phase113_path.parent.mkdir(parents=True, exist_ok=True)
+    write_json(phase113_path, phase113_payload)
     return 0
 
 

@@ -18,13 +18,17 @@ Under the repository's exact symbolic cost model, the answer is:
 
 So the strongest correct claim today is:
 
-> STARK-native systems look structurally better aligned with transformer
-> workloads, and our symbolic model quantifies that alignment, but the
-> repository does not yet prove universal practical dominance.
+> lookup-friendly proof systems look structurally better aligned with
+> transformer workloads, and our symbolic model quantifies one STARK-side
+> prediction of that alignment, but the repository does not yet prove universal
+> practical dominance or a matched STARK-over-SNARK runtime win.
 
-## Exact metrics from the current paper
+## Symbolic checkpoints from the current paper
 
-The paper's dense GPT-style model yields the following checkpoints.
+The paper's dense GPT-style model yields the following symbolic checkpoints.
+They are model outputs, not matched runtime measurements, and should be read as
+inputs to later calibration against published systems rather than as a
+standalone practical benchmark verdict.
 
 ### GPT-2-small worked example
 
@@ -309,7 +313,8 @@ The best current repository-backed answer is:
 2. **Architecturally, probably yes when the proving system treats lookup-heavy
    tensor relations directly.**
 3. **Empirically, not yet proven in this repository as a universal wall-clock
-   result.**
+   result, and not yet calibrated against the strongest published 2026
+   SNARK-side systems on matched primitive evidence.**
 
 That is why the next phases move toward:
 

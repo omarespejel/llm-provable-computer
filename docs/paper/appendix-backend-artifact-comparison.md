@@ -3,10 +3,10 @@
 Evidence snapshot: **April 6, 2026** bundle, with index material finalized April 7, 2026
 UTC.
 
-This appendix complements Appendix A and the main paper’s Section 5 by placing the two
-frozen artifact tiers side by side:
+This appendix complements Appendix A and the main paper’s Section 5 by placing one
+legacy vanilla baseline and one narrow experimental `stwo` bundle side by side:
 
-- the vanilla-backend `production-v1` reproducibility bundle, and
+- the older vanilla-backend `production-v1` reproducibility bundle, and
 - the narrow experimental `stwo-experimental-v1` bundle.
 
 These rows are **not** matched end-to-end benchmarks on identical workloads. They are
@@ -51,8 +51,8 @@ numeric values unambiguously.
 
 ## How to read this appendix
 
-- `production-v1` remains the stronger vanilla reproducibility tier and the basis of the
-  main artifact discussion.
+- `production-v1` is kept here as a legacy vanilla baseline row, not as the main
+  paper-facing artifact tier.
 - `stwo-experimental-v1` is intentionally narrower, but it now freezes one arithmetic
   proof, one lookup-backed proof envelope, one transformer-shaped fixed-shape proof,
   and one proof-carrying decoding chain on the experimental S-two path.

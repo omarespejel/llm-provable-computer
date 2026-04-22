@@ -10,13 +10,15 @@
 //! resource use, not soundness of valid proofs.
 
 use libfuzzer_sys::fuzz_target;
+use llm_provable_computer::proof::{
+    production_v1_verification_policy, publication_v1_security_floor_policy,
+    VanillaStarkExecutionProof,
+};
 use llm_provable_computer::{
-    production_v1_verification_policy, publication_v1_verification_policy,
     verify_execution_stark, verify_execution_stark_claim_only,
     verify_execution_stark_claim_only_with_policy, verify_execution_stark_with_backend_and_policy,
     verify_execution_stark_with_policy,
     verify_execution_stark_with_reexecution, verify_execution_stark_with_reexecution_and_policy,
-    VanillaStarkExecutionProof,
 };
 
 const MAX_INPUT_BYTES: usize = 8 * 1024 * 1024;
@@ -57,6 +59,6 @@ fuzz_target!(|data: &[u8]| {
     let _ = verify_execution_stark_with_reexecution(&proof);
     let _ = verify_execution_stark_with_reexecution_and_policy(
         &proof,
-        publication_v1_verification_policy(),
+        publication_v1_security_floor_policy(),
     );
 });

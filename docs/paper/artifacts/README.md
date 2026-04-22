@@ -4,9 +4,11 @@ This directory contains frozen artifact bundles plus verifier-surface indexes.
 
 ## Publication-facing cited bundles
 
-These are the bundles directly used by the current paper package:
+Read these bundles through the public artifact taxonomy in
+`docs/engineering/public-artifact-taxonomy.md`, not only through raw phase numbering.
 
-- `production-v1-2026-04-04/`
+The active paper-facing bundles are:
+
 - `stwo-experimental-v1-2026-04-06/`
 - `stwo-proof-carrying-aggregation-v1-2026-04-11/`
 - `phase63-65-proof-carrying-artifact-v1-2026-04-20/`
@@ -20,7 +22,12 @@ These are the bundles directly used by the current paper package:
 - `stwo-multi-interval-folded-gemma-v1-2026-04-21/`
 - `stwo-richer-multi-interval-gemma-v1-2026-04-21/`
 
-These are the bundles that should be treated as the paper's primary reproducibility and systems-evidence surfaces.
+These are the bundles that should be treated as the paper's primary reproducibility and
+systems-evidence surfaces.
+
+The older `production-v1-2026-04-04/` bundle is retained as a legacy vanilla local
+baseline. It is useful provenance, but it is no longer the main paper-facing artifact
+narrative.
 
 The Phase63-65 directory is a code-and-validation verifier-surface index rather than a
 new proof-output bundle. It pins the April 20 checkpoint where shared lookup identity
@@ -108,6 +115,10 @@ bytes. So the richer-family derivative is about `0.6851%` of the explicit
 source JSON size while remaining only `1,886` bytes larger than the thinner
 Phase101.5 folded prototype. This remains a verifier-bound, pre-recursive
 artifact line rather than a cryptographic accumulation claim.
+
+Later 2026-04-22 accumulation-semantics and richer-window-family outputs are
+being split into their own artifact-line PR. They are not checked in on this
+branch, so they are not listed here as active cited bundles.
 
 Later Phase81-84 translated seam surfaces remain implemented in-repo, but they are not
 yet cut as frozen publication-facing artifact directories.

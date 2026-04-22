@@ -13,17 +13,13 @@ ROOT_IGNORED_AUDIT_ADVISORIES=(
   "RUSTSEC-2024-0388"
   "RUSTSEC-2024-0436"
   "RUSTSEC-2026-0002"
-  "RUSTSEC-2026-0097"
 )
 FUZZ_IGNORED_AUDIT_ADVISORIES=(
   "RUSTSEC-2024-0388"
   "RUSTSEC-2024-0436"
   "RUSTSEC-2026-0002"
-  "RUSTSEC-2026-0097"
 )
-ROOT_IGNORED_YANKED_PACKAGES=(
-  "core2@0.4.0"
-)
+ROOT_IGNORED_YANKED_PACKAGES=()
 FUZZ_IGNORED_YANKED_PACKAGES=()
 
 require_command() {
@@ -70,12 +66,20 @@ run_cargo_audit() {
 
   case "$label" in
     root)
-      allowed_advisories=("${ROOT_IGNORED_AUDIT_ADVISORIES[@]}")
-      allowed_yanked_packages=("${ROOT_IGNORED_YANKED_PACKAGES[@]}")
+      if ((${#ROOT_IGNORED_AUDIT_ADVISORIES[@]})); then
+        allowed_advisories=("${ROOT_IGNORED_AUDIT_ADVISORIES[@]}")
+      fi
+      if ((${#ROOT_IGNORED_YANKED_PACKAGES[@]})); then
+        allowed_yanked_packages=("${ROOT_IGNORED_YANKED_PACKAGES[@]}")
+      fi
       ;;
     fuzz)
-      allowed_advisories=("${FUZZ_IGNORED_AUDIT_ADVISORIES[@]}")
-      allowed_yanked_packages=("${FUZZ_IGNORED_YANKED_PACKAGES[@]}")
+      if ((${#FUZZ_IGNORED_AUDIT_ADVISORIES[@]})); then
+        allowed_advisories=("${FUZZ_IGNORED_AUDIT_ADVISORIES[@]}")
+      fi
+      if ((${#FUZZ_IGNORED_YANKED_PACKAGES[@]})); then
+        allowed_yanked_packages=("${FUZZ_IGNORED_YANKED_PACKAGES[@]}")
+      fi
       ;;
     *)
       echo "unknown dependency-audit label: $label" >&2
@@ -94,13 +98,17 @@ run_cargo_audit() {
   fi
   check_args+=("$report_path")
 
-  for advisory_id in "${allowed_advisories[@]}"; do
-    check_args+=("--allow-advisory" "$advisory_id")
-  done
+  if ((${#allowed_advisories[@]})); then
+    for advisory_id in "${allowed_advisories[@]}"; do
+      check_args+=("--allow-advisory" "$advisory_id")
+    done
+  fi
 
-  for package_spec in "${allowed_yanked_packages[@]}"; do
-    check_args+=("--allow-yanked" "$package_spec")
-  done
+  if ((${#allowed_yanked_packages[@]})); then
+    for package_spec in "${allowed_yanked_packages[@]}"; do
+      check_args+=("--allow-yanked" "$package_spec")
+    done
+  fi
 
   if ! python3 "$ROOT_DIR/scripts/check_cargo_audit_report.py" "${check_args[@]}"; then
     rm -f "$report_path"

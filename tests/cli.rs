@@ -925,6 +925,65 @@ fn cli_stark_help_describes_profile_flags() {
 }
 
 #[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_rejects_publication_v1_with_stwo_backend() {
+    let proof_path =
+        unique_temp_dir("cli-stark-proof-publication-profile-stwo").with_extension("json");
+
+    let mut prove = tvm_command();
+    prove
+        .arg("prove-stark")
+        .arg("programs/addition.tvm")
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--stark-profile")
+        .arg("publication-v1")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "publication-v1 is reserved for cited vanilla evidence",
+        ));
+    assert!(
+        !proof_path.exists(),
+        "prove-stark should not emit an artifact on rejected publication-v1/stwo policy"
+    );
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_verify_stark_rejects_publication_v1_with_stwo_backend() {
+    let proof_path =
+        unique_temp_dir("cli-stark-proof-publication-profile-stwo-verify").with_extension("json");
+
+    let mut prove = tvm_command();
+    prove
+        .arg("prove-stark")
+        .arg("programs/addition.tvm")
+        .arg("--backend")
+        .arg("stwo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stark")
+        .arg(&proof_path)
+        .arg("--verification-profile")
+        .arg("publication-v1")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "publication-v1 verification is reserved for vanilla proofs",
+        ));
+
+    let _ = std::fs::remove_file(proof_path);
+}
+
+#[test]
 fn cli_verify_stark_publication_profile_reexecutes() {
     let proof_path = unique_temp_dir("cli-stark-proof-publication-profile").with_extension("json");
 

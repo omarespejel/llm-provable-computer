@@ -317,7 +317,7 @@ them in lockstep and fails on the first divergence.
 | **TransformerVm**     | Encode-attend-FFN loop with hull-backed memory                       | The transformer runtime  |
 | **NativeInterpreter** | Direct ISA semantics, no transformer structure                       | Semantic oracle          |
 | **BurnRuntime**       | Same compiled weights through [Burn](https://burn.dev) tensors       | Tensor-level cross-check |
-| **OnnxRuntime**       | Exported ONNX models through [Tract](https://github.com/sonos/tract) | Portable format proof    |
+| **OnnxRuntime**       | Exported ONNX models through [Tract](https://github.com/sonos/tract) | Portable format cross-check |
 
 ```bash
 # Pick an engine
