@@ -12,16 +12,16 @@ The narrow benchmark question is: once the same multi-interval transformer-shape
 
 Key frozen metrics:
 
-- shared execution proof bytes: `90432`
-- single-window multi-interval JSON bytes: `1032820`
-- explicit repeated multi-interval JSON bytes: `1034361`
-- folded repeated multi-interval prototype JSON bytes: `4740`
-- folded richer repeated multi-interval JSON bytes: `5554`
-- folded prototype / explicit ratio: `0.004583`
-- richer-family / explicit ratio: `0.005369`
+- shared execution proof bytes: `90458`
+- single-window multi-interval JSON bytes: `1033155`
+- explicit repeated multi-interval JSON bytes: `1034696`
+- folded repeated multi-interval prototype JSON bytes: `4780`
+- folded richer repeated multi-interval JSON bytes: `5594`
+- folded prototype / explicit ratio: `0.004620`
+- richer-family / explicit ratio: `0.005406`
 - richer-family overhead above folded prototype: `814` bytes
-- explicit repeated-window savings vs naive single-window duplication: `1031279` bytes
+- explicit repeated-window savings vs naive single-window duplication: `1031614` bytes
 
-`sha256sums.txt` covers the deterministic canonical artifact surface. `provenance_sha256sums.txt` covers the full emitted bundle, including the auxiliary `benchmarks.tsv` timing log.
+`sha256sums.txt` covers the deterministic canonical artifact surface. `provenance_sha256sums.txt` covers the full emitted bundle, including the auxiliary deterministic `benchmarks.tsv` stage log.
 
 This remains a verifier-bound, pre-recursive artifact line. It does not claim recursive aggregation or final cryptographic compression.

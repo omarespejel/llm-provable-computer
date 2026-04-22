@@ -7,11 +7,10 @@
   - `repo_root: .`
   - `nightly_toolchain: +nightly-2025-07-14`
   - `bundle_dir: docs/paper/artifacts/stwo-repeated-richer-multi-interval-linear-block-v1-2026-04-22`
-  - `generator_script: scripts/paper/generate_stwo_repeated_richer_multi_interval_linear-block_bundle.sh`
-  - `generator_script_sha256: 6d4c11bd49a7133024d484f11b6cd6120051dec2276cd079115075f7c6352b50`
-  - `generator_git_revision: 35b7097c9b350c075b5f9ba6ec093cc41a3a3147`
-  - `generator_git_branch: codex/phase107-repeated-richer-family`
-  - `generator_git_commit_date: 2026-04-22T01:45:44+03:00`
+  - `generator_script: scripts/paper/generate_stwo_repeated_richer_multi_interval_linear_block_bundle.sh`
+  - `generator_script_sha256: 5b91f33ff0f40354b6de53c22aa71b26a71bdd576b3e7ac7230c1f0a6bf994b2`
+  - `generator_git_revision: 5891151b7c095bf308a4911ac19f01c455879af7`
+  - `generator_git_commit_date: 2026-04-23T02:03:21+03:00`
   - `generator_worktree_state: clean`
   - `generator_allow_dirty_build: 0`
   - `linear-block_proof: linear-block-v4-with-lookup.stark.json`
@@ -36,14 +35,14 @@
 
 | Quantity | Value |
 |---|---:|
-| Shared execution proof bytes | `90432` |
-| Single-window multi-interval JSON bytes | `1032820` |
-| Explicit repeated multi-interval JSON bytes | `1034361` |
-| Folded repeated multi-interval prototype JSON bytes | `4740` |
-| Folded richer repeated multi-interval JSON bytes | `5554` |
-| Folded prototype / explicit ratio | `0.004583` |
-| Richer-family / explicit ratio | `0.005369` |
-| Explicit repeated-window vs naive duplication savings | `1031279` bytes |
+| Shared execution proof bytes | `90458` |
+| Single-window multi-interval JSON bytes | `1033155` |
+| Explicit repeated multi-interval JSON bytes | `1034696` |
+| Folded repeated multi-interval prototype JSON bytes | `4780` |
+| Folded richer repeated multi-interval JSON bytes | `5594` |
+| Folded prototype / explicit ratio | `0.004620` |
+| Richer-family / explicit ratio | `0.005406` |
+| Explicit repeated-window vs naive duplication savings | `1031614` bytes |
 | Phase106 folded group count | `1` |
 | Phase107 folded richer group count | `1` |
 

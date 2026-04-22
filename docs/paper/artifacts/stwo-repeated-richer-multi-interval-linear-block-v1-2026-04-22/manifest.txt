@@ -2,11 +2,10 @@ bundle_version: stwo-repeated-richer-multi-interval-linear-block-v1
 repo_root: .
 nightly_toolchain: +nightly-2025-07-14
 bundle_dir: docs/paper/artifacts/stwo-repeated-richer-multi-interval-linear-block-v1-2026-04-22
-generator_script: scripts/paper/generate_stwo_repeated_richer_multi_interval_linear-block_bundle.sh
-generator_script_sha256: 6d4c11bd49a7133024d484f11b6cd6120051dec2276cd079115075f7c6352b50
-generator_git_revision: 35b7097c9b350c075b5f9ba6ec093cc41a3a3147
-generator_git_branch: codex/phase107-repeated-richer-family
-generator_git_commit_date: 2026-04-22T01:45:44+03:00
+generator_script: scripts/paper/generate_stwo_repeated_richer_multi_interval_linear_block_bundle.sh
+generator_script_sha256: 5b91f33ff0f40354b6de53c22aa71b26a71bdd576b3e7ac7230c1f0a6bf994b2
+generator_git_revision: 5891151b7c095bf308a4911ac19f01c455879af7
+generator_git_commit_date: 2026-04-23T02:03:21+03:00
 generator_worktree_state: clean
 generator_allow_dirty_build: 0
 linear-block_proof: linear-block-v4-with-lookup.stark.json
