@@ -63,6 +63,34 @@ impl Fri {
         (acc % (size as u128)) as usize
     }
 
+    /// Full-digest-entropy index sampler intended for paper-grade artifacts.
+    ///
+    /// The default `sample_index` mirrors the Python stark-anatomy reference and
+    /// folds the digest into a `u128` accumulator, which silently truncates the
+    /// high-order bytes of a 64-byte Blake2b-512 digest. That keeps proof bytes
+    /// stable with the reference but caps the effective sampling entropy below
+    /// the field's nominal 128-bit security level. This sibling reads the full
+    /// digest by XOR-folding 16-byte blocks before reducing modulo `size`, so
+    /// every byte contributes uniformly to the result. For sizes that are
+    /// powers of two (the only sizes used by the vanilla STARK), the modulo
+    /// reduction is bias-free.
+    ///
+    /// Wired in by an opt-in v2 prover/verifier pair; not used by the existing
+    /// vanilla-v1 backend so frozen proofs remain bit-stable. The
+    /// `dead_code` allow stays until the v2 backend lands; the regression
+    /// tests below keep the routine exercised in the meantime.
+    #[allow(dead_code)]
+    pub(crate) fn sample_index_full_entropy(byte_array: &[u8], size: usize) -> usize {
+        debug_assert!(size > 0, "size must be non-zero");
+        let mut acc: u128 = 0;
+        for chunk in byte_array.chunks(16) {
+            let mut buf = [0u8; 16];
+            buf[..chunk.len()].copy_from_slice(chunk);
+            acc ^= u128::from_be_bytes(buf);
+        }
+        (acc % size as u128) as usize
+    }
+
     fn sample_indices(
         &self,
         seed: &[u8],
@@ -384,6 +412,75 @@ impl Fri {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn legacy_sample_index_truncates_high_order_digest_bytes() {
+        // The legacy folding shifts left by 8 each byte and XORs the next byte
+        // into the low byte. For a 64-byte digest, only the trailing 16 bytes'
+        // worth of structure survives in `acc`. Two digests that differ only in
+        // their leading 48 bytes therefore collide in the legacy sampler.
+        let mut digest_a = vec![0u8; 64];
+        let mut digest_b = vec![0u8; 64];
+        // Differ only in the leading 48 bytes; leave the trailing 16 identical.
+        for (i, byte) in digest_a.iter_mut().take(48).enumerate() {
+            *byte = 0xAA ^ (i as u8);
+        }
+        for (i, byte) in digest_b.iter_mut().take(48).enumerate() {
+            *byte = 0x55 ^ (i as u8);
+        }
+        for (a, b) in digest_a.iter_mut().skip(48).zip(digest_b.iter_mut().skip(48)) {
+            *a = 0x42;
+            *b = 0x42;
+        }
+
+        let size = 1usize << 16;
+        let legacy_a = Fri::sample_index(&digest_a, size);
+        let legacy_b = Fri::sample_index(&digest_b, size);
+        assert_eq!(
+            legacy_a, legacy_b,
+            "legacy sampler collapses leading-byte differences when only the trailing 16 bytes \
+             survive in the u128 accumulator"
+        );
+    }
+
+    #[test]
+    fn full_entropy_sample_index_distinguishes_high_order_digest_bytes() {
+        // Construct two digests that share their last 16 bytes but differ in
+        // every prior byte, with structure asymmetric enough that XOR-folding
+        // 16-byte blocks does not cancel.
+        let mut digest_a = vec![0u8; 64];
+        let mut digest_b = vec![0u8; 64];
+        for (i, byte) in digest_a.iter_mut().take(48).enumerate() {
+            *byte = 0xAA ^ (i as u8);
+        }
+        for (i, byte) in digest_b.iter_mut().take(48).enumerate() {
+            *byte = 0x55 ^ ((i.wrapping_mul(3)) as u8);
+        }
+        for (a, b) in digest_a.iter_mut().skip(48).zip(digest_b.iter_mut().skip(48)) {
+            *a = 0x42;
+            *b = 0x42;
+        }
+
+        let size = 1usize << 16;
+        let strong_a = Fri::sample_index_full_entropy(&digest_a, size);
+        let strong_b = Fri::sample_index_full_entropy(&digest_b, size);
+        assert_ne!(
+            strong_a, strong_b,
+            "full-digest sampler must distinguish digests that differ in their high-order bytes"
+        );
+    }
+
+    #[test]
+    fn full_entropy_sample_index_returns_in_range() {
+        for size_log in [4u32, 10, 16, 24] {
+            let size = 1usize << size_log;
+            for seed in 0u8..16 {
+                let digest = vec![seed; 64];
+                let idx = Fri::sample_index_full_entropy(&digest, size);
+                assert!(idx < size, "sampler returned out-of-range idx={idx} size={size}");
+            }
+        }
+    }
 
     #[test]
     fn test_fri_prove_verify() {

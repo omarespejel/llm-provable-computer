@@ -15,6 +15,34 @@ fn blake2b_hash(data: &[u8]) -> Vec<u8> {
     hasher.finalize().to_vec()
 }
 
+/// Compute the omicron-domain length for the vanilla STARK using integer-only
+/// arithmetic.
+///
+/// Returns the smallest power of two strictly greater than
+/// `randomized_trace_length * transition_constraints_degree`. The original
+/// stark-anatomy reference computes this via `ceil(log2(bits))` over `f64`,
+/// which is bit-exact on every input the existing fixtures actually use but is
+/// nondeterministic across CPU rounding modes near the power-of-two boundary
+/// `bits == 2^k`. This routine produces the same value on every platform.
+///
+/// Asserts that the inputs do not overflow `usize`. `next_power_of_two` panics
+/// on overflow, so the explicit `checked_mul` and saturating shift below give
+/// a clearer failure mode for malformed inputs.
+pub(crate) fn stark_omicron_domain_length(
+    randomized_trace_length: usize,
+    transition_constraints_degree: usize,
+) -> usize {
+    let bits = randomized_trace_length
+        .checked_mul(transition_constraints_degree)
+        .expect("randomized_trace_length * transition_constraints_degree overflows usize");
+    if bits <= 1 {
+        return 2;
+    }
+    bits.checked_next_power_of_two()
+        .and_then(|np| np.checked_mul(2))
+        .expect("omicron domain length overflows usize")
+}
+
 pub struct Stark {
     pub expansion_factor: usize,
     pub num_colinearity_checks: usize,
@@ -53,10 +81,8 @@ impl Stark {
 
         let num_randomizers = 4 * num_colinearity_checks;
         let randomized_trace_length = num_cycles + num_randomizers;
-        let omicron_domain_length = {
-            let bits = (randomized_trace_length * transition_constraints_degree) as f64;
-            1usize << (bits.log2().ceil() as usize + 1).max(1)
-        };
+        let omicron_domain_length =
+            stark_omicron_domain_length(randomized_trace_length, transition_constraints_degree);
         let fri_domain_length = omicron_domain_length * expansion_factor;
 
         let generator = FieldElement::generator();
@@ -534,6 +560,44 @@ impl Stark {
 mod tests {
     use super::super::rescue_prime::RescuePrime;
     use super::*;
+
+    #[test]
+    fn omicron_domain_length_matches_legacy_f64_form_on_normal_inputs() {
+        // Equivalence sweep: on every input the existing fixtures actually use,
+        // the integer routine must produce the same value as the legacy
+        // ceil(log2)+1 power-of-two form.
+        for randomized_trace_length in 1usize..=512 {
+            for transition_constraints_degree in 1usize..=8 {
+                let bits = (randomized_trace_length * transition_constraints_degree) as f64;
+                let legacy = 1usize << (bits.log2().ceil() as usize + 1).max(1);
+                let modern = stark_omicron_domain_length(
+                    randomized_trace_length,
+                    transition_constraints_degree,
+                );
+                assert_eq!(
+                    legacy, modern,
+                    "legacy={legacy} modern={modern} for trace_len={randomized_trace_length} degree={transition_constraints_degree}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn omicron_domain_length_is_always_power_of_two() {
+        for randomized_trace_length in [1usize, 2, 7, 16, 17, 100, 256, 1023] {
+            for transition_constraints_degree in [1usize, 2, 3, 4, 8] {
+                let n = stark_omicron_domain_length(
+                    randomized_trace_length,
+                    transition_constraints_degree,
+                );
+                assert!(n.is_power_of_two(), "n={n}");
+                assert!(
+                    n > randomized_trace_length * transition_constraints_degree,
+                    "n={n} must strictly exceed bits"
+                );
+            }
+        }
+    }
 
     #[test]
     fn test_stark_prove_verify() {
