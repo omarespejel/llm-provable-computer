@@ -1,0 +1,13 @@
+artifact_bundle: stwo-transformer-accumulation-semantics-v1-2026-04-22
+artifact_date: 2026-04-22
+generator_git_revision: 3e352f24073e6b0296fabf8e38cf298e850e5f51
+generator_worktree_state: clean
+generator_allow_dirty_build: 0
+source_bundle: docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22
+source_leaf_count: 4
+source_window_count: 8
+phase107_explicit_w8_bytes: 11343
+phase110_tree_w8_bytes: 12307
+phase112_semantics_w8_bytes: 2283
+phase112_vs_phase110_tree_ratio: 0.185504
+phase112_vs_phase107_explicit_ratio: 0.201270

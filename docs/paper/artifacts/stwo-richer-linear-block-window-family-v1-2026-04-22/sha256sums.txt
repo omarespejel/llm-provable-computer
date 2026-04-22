@@ -1,0 +1,7 @@
+182dd58a90c80f1a9a322e28bc3001346fc5e65ad2497dea49181344803733f0  ./PUBLIC_COMPARISON_NOTES.md
+567ad9ab9531174bfae6c93a8ecb73b2520203f123fbcbc605e634933988efee  ./README.md
+55337c4d15c3efc662e83414f222db5ca04aaa247286a231a59a0a34f97fb9fc  ./artifact_summary.tsv
+d5d8df7623aebf4b45d8eb590f95517de7da534998f1c080d4dcd98b0e02a393  ./commands.log
+3dc846e1033e3cfa418b4c7ea527309b11b25f5e2e6ea4e9af910fb3fe8997a6  ./comparison.tsv
+edeca8bb45e0cc6afa056a18619b34a815913fca4ecf47056ec8da811eb728d0  ./manifest.txt
+53d8dc1b283d6716c6b1ca4a18df5242784612a683db72f9dc42771ea1cef952  ./phase113-richer-linear-block-window-family-w8.stwo.json

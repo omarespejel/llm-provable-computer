@@ -1,0 +1,21 @@
+bundle_version: stwo-repeated-window-fold-tree-v1
+repo_root: .
+nightly_toolchain: +nightly-2025-07-14
+bundle_dir: docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22
+generator_script: scripts/paper/generate_stwo_repeated_window_fold_tree_bundle.sh
+generator_script_sha256: 661464ccdcf4ada31f826b49a129721466f58080ac24ca67e016a1f5636dcd27
+generator_git_revision: f90e81130299ec133cc1d20f89a34c263cff36ef
+generator_git_branch: codex/phase107-repeated-richer-family
+generator_git_commit_date: 2026-04-22T04:27:21+03:00
+generator_worktree_state: clean
+generator_allow_dirty_build: 0
+linear-block_proof: linear-block-v4-with-lookup.stark.json
+leaf_windows: 2
+pair_windows: 4
+tree_windows: 8
+intervals_per_window: 2
+interval_total_slices: 2
+token_position_stride: 1
+start_block_index: 0
+leaf_window_token_span: 4
+scope: repeated-window scaling sweep plus transformer-specific fold operator plus repeated-window fold tree over Linear-block-like repeated richer windows on one shared S-two proof surface

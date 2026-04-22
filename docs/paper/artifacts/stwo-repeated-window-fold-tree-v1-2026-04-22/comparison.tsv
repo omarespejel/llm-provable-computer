@@ -1,0 +1,3 @@
+comparison	baseline_bytes	derived_bytes	ratio
+phase109_pair_vs_phase107_w4	7484	3042	0.406467
+phase110_tree_vs_phase107_w8	11343	12307	1.084986
