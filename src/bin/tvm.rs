@@ -38,7 +38,8 @@ use llm_provable_computer::{
     load_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact,
     load_phase109_transformer_specific_fold_operator_artifact,
     load_phase10_shared_binary_step_lookup_proof, load_phase10_shared_normalization_lookup_proof,
-    load_phase110_repeated_window_fold_tree_artifact, load_phase11_decoding_chain,
+    load_phase110_repeated_window_fold_tree_artifact,
+    load_phase112_transformer_accumulation_semantics_artifact, load_phase11_decoding_chain,
     load_phase12_decoding_chain, load_phase12_shared_lookup_artifact,
     load_phase13_decoding_layout_matrix, load_phase14_decoding_chain,
     load_phase15_decoding_segment_bundle, load_phase16_decoding_segment_rollup,
@@ -82,6 +83,7 @@ use llm_provable_computer::{
     prepare_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact,
     prepare_phase109_transformer_specific_fold_operator_artifact,
     prepare_phase110_repeated_window_fold_tree_artifact,
+    prepare_phase112_transformer_accumulation_semantics_artifact,
     prepare_phase92_shared_normalization_demo_artifact,
     prepare_phase93_tensor_native_chain_demo_artifact,
     prepare_phase945_gemma_block_core_slice_artifact,
@@ -111,7 +113,8 @@ use llm_provable_computer::{
     save_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact,
     save_phase109_transformer_specific_fold_operator_artifact,
     save_phase10_shared_binary_step_lookup_proof, save_phase10_shared_normalization_lookup_proof,
-    save_phase110_repeated_window_fold_tree_artifact, save_phase11_decoding_chain,
+    save_phase110_repeated_window_fold_tree_artifact,
+    save_phase112_transformer_accumulation_semantics_artifact, save_phase11_decoding_chain,
     save_phase12_decoding_chain, save_phase12_shared_lookup_artifact,
     save_phase13_decoding_layout_matrix, save_phase14_decoding_chain,
     save_phase15_decoding_segment_bundle, save_phase16_decoding_segment_rollup,
@@ -140,6 +143,7 @@ use llm_provable_computer::{
     verify_phase10_shared_binary_step_lookup_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
     verify_phase110_repeated_window_fold_tree_artifact,
+    verify_phase112_transformer_accumulation_semantics_artifact,
     verify_phase11_decoding_chain_with_proof_checks,
     verify_phase12_decoding_chain_with_proof_checks,
     verify_phase13_decoding_layout_matrix_with_proof_checks,
@@ -183,8 +187,8 @@ use llm_provable_computer::{
     Phase106FoldedRepeatedMultiIntervalGemmaAccumulationPrototypeArtifact,
     Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact,
     Phase109TransformerSpecificFoldOperatorArtifact, Phase110RepeatedWindowFoldTreeArtifact,
-    Phase29RecursiveCompressionInputContract, Phase30DecodingStepProofEnvelopeManifest,
-    Phase31RecursiveCompressionDecodeBoundaryManifest,
+    Phase112TransformerAccumulationSemanticsArtifact, Phase29RecursiveCompressionInputContract,
+    Phase30DecodingStepProofEnvelopeManifest, Phase31RecursiveCompressionDecodeBoundaryManifest,
     Phase32RecursiveCompressionStatementContract, Phase33RecursiveCompressionPublicInputManifest,
     Phase34RecursiveCompressionSharedLookupManifest, Phase35RecursiveCompressionTargetManifest,
     Phase36RecursiveVerifierHarnessReceipt, Phase37RecursiveArtifactChainHarnessReceipt,
@@ -261,6 +265,8 @@ use llm_provable_computer::{
     STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_VERSION_PHASE92,
     STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_SCOPE_PHASE93,
     STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_VERSION_PHASE93,
+    STWO_TRANSFORMER_ACCUMULATION_SEMANTICS_ARTIFACT_SCOPE_PHASE112,
+    STWO_TRANSFORMER_ACCUMULATION_SEMANTICS_ARTIFACT_VERSION_PHASE112,
     STWO_TRANSFORMER_SPECIFIC_FOLD_OPERATOR_ARTIFACT_SCOPE_PHASE109,
     STWO_TRANSFORMER_SPECIFIC_FOLD_OPERATOR_ARTIFACT_VERSION_PHASE109,
 };
@@ -777,6 +783,25 @@ enum Command {
     /// Verify a canonical fold tree over a power-of-two family of contiguous Phase107 repeated-window artifacts.
     VerifyStwoRepeatedWindowFoldTreeArtifact {
         /// Path to the serialized Phase110 repeated-window fold tree artifact JSON file.
+        artifact: PathBuf,
+        /// Paths to the serialized Phase107 repeated-window artifact JSON files, in token order.
+        #[arg(long = "leaf", required = true)]
+        leaves: Vec<PathBuf>,
+    },
+    #[cfg(feature = "stwo-backend")]
+    /// Prepare a compact transformer-specific accumulation semantics artifact over a power-of-two family of contiguous Phase107 repeated-window artifacts.
+    PrepareStwoTransformerAccumulationSemanticsArtifact {
+        /// Paths to the serialized Phase107 repeated-window artifact JSON files, in token order.
+        #[arg(long = "leaf", required = true)]
+        leaves: Vec<PathBuf>,
+        /// File where the serialized artifact JSON will be written.
+        #[arg(short = 'o', long = "output")]
+        output: PathBuf,
+    },
+    #[cfg(feature = "stwo-backend")]
+    /// Verify a compact transformer-specific accumulation semantics artifact over a power-of-two family of contiguous Phase107 repeated-window artifacts.
+    VerifyStwoTransformerAccumulationSemanticsArtifact {
+        /// Path to the serialized Phase112 transformer accumulation semantics artifact JSON file.
         artifact: PathBuf,
         /// Paths to the serialized Phase107 repeated-window artifact JSON files, in token order.
         #[arg(long = "leaf", required = true)]
@@ -2393,6 +2418,14 @@ fn run() -> llm_provable_computer::Result<()> {
         #[cfg(feature = "stwo-backend")]
         Command::VerifyStwoRepeatedWindowFoldTreeArtifact { artifact, leaves } => {
             verify_stwo_repeated_window_fold_tree_artifact_command(&artifact, &leaves)?
+        }
+        #[cfg(feature = "stwo-backend")]
+        Command::PrepareStwoTransformerAccumulationSemanticsArtifact { leaves, output } => {
+            prepare_stwo_transformer_accumulation_semantics_artifact_command(&leaves, &output)?
+        }
+        #[cfg(feature = "stwo-backend")]
+        Command::VerifyStwoTransformerAccumulationSemanticsArtifact { artifact, leaves } => {
+            verify_stwo_transformer_accumulation_semantics_artifact_command(&artifact, &leaves)?
         }
         Command::ProveStwoDecodingDemo { output } => prove_stwo_decoding_demo_command(&output)?,
         Command::VerifyStwoDecodingDemo { proof } => verify_stwo_decoding_demo_command(&proof)?,
@@ -4700,6 +4733,54 @@ fn print_phase110_repeated_window_fold_tree_report(
     println!("final_acc_sum: {}", artifact.final_acc_sum);
 }
 
+#[cfg(feature = "stwo-backend")]
+fn print_phase112_transformer_accumulation_semantics_report(
+    artifact: &Phase112TransformerAccumulationSemanticsArtifact,
+) {
+    println!("artifact_version: {}", artifact.artifact_version);
+    println!("semantic_scope: {}", artifact.semantic_scope);
+    println!("artifact_commitment: {}", artifact.artifact_commitment);
+    println!("program_label: {}", artifact.program_label);
+    println!("total_leaf_artifacts: {}", artifact.total_leaf_artifacts);
+    println!("total_windows: {}", artifact.total_windows);
+    println!("intervals_per_window: {}", artifact.intervals_per_window);
+    println!("interval_total_slices: {}", artifact.interval_total_slices);
+    println!("token_position_start: {}", artifact.token_position_start);
+    println!(
+        "terminal_token_position: {}",
+        artifact.terminal_token_position
+    );
+    println!("token_position_stride: {}", artifact.token_position_stride);
+    println!(
+        "window_token_position_stride: {}",
+        artifact.window_token_position_stride
+    );
+    println!("start_block_index: {}", artifact.start_block_index);
+    println!("terminal_block_index: {}", artifact.terminal_block_index);
+    println!("bounded_fold_arity: {}", artifact.bounded_fold_arity);
+    println!(
+        "leaf_artifact_commitment_sequence_commitment: {}",
+        artifact.leaf_artifact_commitment_sequence_commitment
+    );
+    println!(
+        "leaf_artifact_subtree_commitment: {}",
+        artifact.leaf_artifact_subtree_commitment
+    );
+    println!(
+        "repeated_window_schedule_commitment: {}",
+        artifact.repeated_window_schedule_commitment
+    );
+    println!(
+        "accumulation_semantics_commitment: {}",
+        artifact.accumulation_semantics_commitment
+    );
+    println!("local_score_sum: {}", artifact.local_score_sum);
+    println!("global_score_sum: {}", artifact.global_score_sum);
+    println!("grouped_value_mix_sum: {}", artifact.grouped_value_mix_sum);
+    println!("residual_output_sum: {}", artifact.residual_output_sum);
+    println!("final_acc_sum: {}", artifact.final_acc_sum);
+}
+
 fn prepare_stwo_repeated_gemma_slice_accumulation_artifact_command(
     proof_path: &Path,
     total_slices: usize,
@@ -5593,6 +5674,79 @@ fn verify_stwo_repeated_window_fold_tree_artifact_command(
             "expected_semantic_scope: {STWO_REPEATED_WINDOW_FOLD_TREE_ARTIFACT_SCOPE_PHASE110}"
         );
         print_phase110_repeated_window_fold_tree_report(&artifact);
+        Ok(())
+    }
+}
+
+fn prepare_stwo_transformer_accumulation_semantics_artifact_command(
+    leaves: &[PathBuf],
+    output: &Path,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = (leaves, output);
+        return Err(VmError::UnsupportedProof(
+            "S-two transformer accumulation semantics artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two transformer accumulation semantics artifact")?;
+        let leaf_artifacts = leaves
+            .iter()
+            .map(|path| {
+                load_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact(path)
+            })
+            .collect::<llm_provable_computer::Result<Vec<_>>>()?;
+        let artifact =
+            prepare_phase112_transformer_accumulation_semantics_artifact(&leaf_artifacts)?;
+        save_phase112_transformer_accumulation_semantics_artifact(&artifact, output)?;
+
+        println!("output: {}", output.display());
+        println!("leaf_count: {}", leaves.len());
+        println!("verified_artifact: true");
+        print_phase112_transformer_accumulation_semantics_report(&artifact);
+        Ok(())
+    }
+}
+
+fn verify_stwo_transformer_accumulation_semantics_artifact_command(
+    artifact_path: &Path,
+    leaves: &[PathBuf],
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = (artifact_path, leaves);
+        return Err(VmError::UnsupportedProof(
+            "S-two transformer accumulation semantics artifact requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two transformer accumulation semantics artifact")?;
+        let leaf_artifacts = leaves
+            .iter()
+            .map(|path| {
+                load_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact(path)
+            })
+            .collect::<llm_provable_computer::Result<Vec<_>>>()?;
+        let artifact = load_phase112_transformer_accumulation_semantics_artifact(artifact_path)?;
+        verify_phase112_transformer_accumulation_semantics_artifact(&artifact, &leaf_artifacts)?;
+
+        println!("artifact: {}", artifact_path.display());
+        println!("leaf_count: {}", leaves.len());
+        println!("verified_artifact: true");
+        println!(
+            "expected_artifact_version: {STWO_TRANSFORMER_ACCUMULATION_SEMANTICS_ARTIFACT_VERSION_PHASE112}"
+        );
+        println!(
+            "expected_semantic_scope: {STWO_TRANSFORMER_ACCUMULATION_SEMANTICS_ARTIFACT_SCOPE_PHASE112}"
+        );
+        print_phase112_transformer_accumulation_semantics_report(&artifact);
         Ok(())
     }
 }
@@ -15092,6 +15246,12 @@ mod cli_dispatch_tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-repeated-window-fold-tree-artifact"
         ));
+        assert!(!needs_run_subcommand(
+            "prepare-stwo-transformer-accumulation-semantics-artifact"
+        ));
+        assert!(!needs_run_subcommand(
+            "verify-stwo-transformer-accumulation-semantics-artifact"
+        ));
     }
 }
 
@@ -15476,6 +15636,8 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-transformer-specific-fold-operator-artifact"
                 | "prepare-stwo-repeated-window-fold-tree-artifact"
                 | "verify-stwo-repeated-window-fold-tree-artifact"
+                | "prepare-stwo-transformer-accumulation-semantics-artifact"
+                | "verify-stwo-transformer-accumulation-semantics-artifact"
                 | "prove-stwo-decoding-demo"
                 | "verify-stwo-decoding-demo"
                 | "prove-stwo-decoding-family-demo"
