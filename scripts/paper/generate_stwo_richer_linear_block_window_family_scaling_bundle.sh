@@ -266,7 +266,7 @@ require_positive_integer_env() {
   local value="${!name:-}"
   case "$value" in
     ''|*[!0-9]*)
-      echo "Expected $name to be a non-negative integer byte count, got \`${value:-<empty>}\`." >&2
+      echo "Expected $name to be a positive integer byte count, got \`${value:-<empty>}\`." >&2
       exit 1
       ;;
   esac
