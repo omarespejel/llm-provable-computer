@@ -7,6 +7,7 @@ __pycache__/
 scripts/node_modules/
 .agents/
 .claude/
+# Keep local Codex workspace notes out of git; mirror shared handoff state under docs/engineering/.
 .codex/
 CLAUDE.md
 !.claude/
