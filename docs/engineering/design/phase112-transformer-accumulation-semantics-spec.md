@@ -116,16 +116,6 @@ artifact binds:
 - activation output totals:
   - primary activation output sum
   - secondary activation output sum
-- final accumulation-semantics commitment.
-  - grouped value mix sum
-  - residual output sum
-  - final accumulator sum
-- semantic extrema:
-  - primary norm min/max
-  - secondary norm min/max
-- semantic activation totals:
-  - primary activation output sum
-  - secondary activation output sum
 - one canonical accumulation-semantics commitment.
 
 ### What it must not carry
