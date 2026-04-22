@@ -27,6 +27,8 @@ pub const STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_SCOPE_PHASE93: &str =
     "stwo_tensor_native_transformer_shaped_chain_artifact";
 pub const STWO_TENSOR_NATIVE_CARRIED_STATE_VERSION_PHASE93: &str =
     "stwo-phase93-typed-carried-state-v1";
+const PHASE5_PROGRAM_LABEL: &str = "linear_block_v4_with_lookup";
+const PHASE5_PROGRAM_LABEL_LEGACY: &str = "gemma_block_v4";
 pub const STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_VERSION_PHASE945: &str =
     "stwo-phase94-5-gemma-block-core-slice-artifact-v1";
 pub const STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_SCOPE_PHASE945: &str =
@@ -997,7 +999,7 @@ pub fn prepare_phase945_gemma_block_core_slice_artifact(
         artifact_version: STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_VERSION_PHASE945.to_string(),
         semantic_scope: STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_SCOPE_PHASE945.to_string(),
         artifact_commitment,
-        program_label: "linear_block_v4_with_lookup".to_string(),
+        program_label: PHASE5_PROGRAM_LABEL.to_string(),
         chain_artifact_commitment: chain_artifact.artifact_commitment.clone(),
         execution_proof_commitment,
         normalization_row_set_commitment,
@@ -1034,7 +1036,7 @@ pub fn verify_phase945_gemma_block_core_slice_artifact(
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 94.5 program label `{}`",
             artifact.program_label
@@ -1515,7 +1517,7 @@ pub fn prepare_phase95_repeated_gemma_slice_accumulation_artifact(
             .to_string(),
         semantic_scope: STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_SCOPE_PHASE95.to_string(),
         artifact_commitment,
-        program_label: "linear_block_v4_with_lookup".to_string(),
+        program_label: PHASE5_PROGRAM_LABEL.to_string(),
         shared_primitive_artifact_commitment: shared_primitive_artifact.artifact_commitment.clone(),
         shared_table_registry_commitment: shared_primitive_artifact
             .static_table_registry_commitment
@@ -1552,7 +1554,7 @@ pub fn verify_phase95_repeated_gemma_slice_accumulation_artifact(
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 95 program label `{}`",
             artifact.program_label
@@ -1852,7 +1854,7 @@ fn validate_phase965_folded_gemma_slice_accumulation_artifact_shallow(
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 96.5 program label `{}`",
             artifact.program_label
@@ -2323,7 +2325,7 @@ fn validate_phase98_folded_gemma_richer_slice_family_artifact_shallow(
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 98 program label `{}`",
             artifact.program_label
@@ -2914,7 +2916,7 @@ fn validate_phase99_multi_interval_gemma_richer_family_accumulation_artifact_sha
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 99 program label `{}`",
             artifact.program_label
@@ -3093,7 +3095,7 @@ fn prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact_with
         semantic_scope: STWO_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ACCUMULATION_ARTIFACT_SCOPE_PHASE99
             .to_string(),
         artifact_commitment,
-        program_label: "linear_block_v4_with_lookup".to_string(),
+        program_label: PHASE5_PROGRAM_LABEL.to_string(),
         shared_primitive_artifact_commitment: shared_primitive_artifact.artifact_commitment.clone(),
         shared_table_registry_commitment: shared_primitive_artifact
             .static_table_registry_commitment
@@ -3554,7 +3556,7 @@ fn validate_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifac
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 101.5 program label `{}`",
             artifact.program_label
@@ -4135,7 +4137,7 @@ fn validate_phase102_folded_multi_interval_gemma_richer_family_artifact_shallow(
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 102 program label `{}`",
             artifact.program_label
@@ -4813,7 +4815,7 @@ fn validate_phase105_repeated_multi_interval_gemma_richer_family_artifact_shallo
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 105 program label `{}`",
             artifact.program_label
@@ -5049,7 +5051,7 @@ pub fn prepare_phase105_repeated_multi_interval_gemma_richer_family_accumulation
             semantic_scope:
                 STWO_REPEATED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_SCOPE_PHASE105.to_string(),
             artifact_commitment,
-            program_label: "linear_block_v4_with_lookup".to_string(),
+            program_label: PHASE5_PROGRAM_LABEL.to_string(),
             shared_primitive_artifact_commitment: shared_primitive_artifact
                 .artifact_commitment
                 .clone(),
@@ -5658,7 +5660,7 @@ fn validate_phase106_folded_repeated_multi_interval_gemma_accumulation_prototype
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "linear_block_v4_with_lookup" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 106 program label `{}`",
             artifact.program_label
@@ -6442,6 +6444,10 @@ fn parse_phase945_arithmetic_subset_payload(
 ) -> Result<Phase945ArithmeticSubsetProofPayload> {
     serde_json::from_slice(&execution_proof.proof)
         .map_err(|error| VmError::Serialization(error.to_string()))
+}
+
+fn is_supported_phase5_program_label(program_label: &str) -> bool {
+    program_label == PHASE5_PROGRAM_LABEL || program_label == PHASE5_PROGRAM_LABEL_LEGACY
 }
 
 fn validate_phase945_gemma_execution_proof(
@@ -8807,6 +8813,42 @@ mod tests {
     }
 
     #[test]
+    fn phase945_gemma_block_core_slice_accepts_legacy_labels() {
+        let chain_artifact = prepare_phase93_tensor_native_chain_demo_artifact()
+            .expect("prepare phase93 chain artifact");
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
+        let mut artifact =
+            prepare_phase945_gemma_block_core_slice_artifact(&chain_artifact, &execution_proof)
+                .expect("prepare phase94.5 gemma core slice artifact");
+        artifact.program_label = PHASE5_PROGRAM_LABEL_LEGACY.to_string();
+        artifact.execution_proof.proof_backend_version =
+            crate::stwo_backend::arithmetic_subset_prover::STWO_BACKEND_VERSION_PHASE5_LEGACY
+                .to_string();
+        artifact.execution_proof_backend_version =
+            artifact.execution_proof.proof_backend_version.clone();
+        artifact.execution_proof_commitment =
+            commit_phase945_execution_proof(&artifact.execution_proof)
+                .expect("recompute phase94.5 execution proof commitment");
+        artifact.artifact_commitment = commit_phase945_gemma_block_core_slice_artifact(
+            &artifact.chain_artifact,
+            &artifact.execution_proof,
+            &artifact.execution_proof_commitment,
+            &artifact.shared_normalization_statement_version,
+            &artifact.shared_normalization_scope,
+            &artifact.shared_activation_statement_version,
+            &artifact.shared_activation_scope,
+            &artifact.shared_normalization_rows,
+            &artifact.shared_activation_rows,
+            &artifact.normalization_row_set_commitment,
+            &artifact.activation_row_set_commitment,
+        )
+        .expect("recompute phase94.5 artifact commitment");
+
+        verify_phase945_gemma_block_core_slice_artifact(&artifact)
+            .expect("verify phase94.5 gemma core slice artifact with legacy labels");
+    }
+
+    #[test]
     fn phase9475_gemma_block_richer_slice_round_trips() {
         let chain_artifact = prepare_phase93_tensor_native_chain_demo_artifact()
             .expect("prepare phase93 chain artifact");
@@ -8865,6 +8907,25 @@ mod tests {
         assert_eq!(artifact.members[3].block_index, 3);
         verify_phase95_repeated_gemma_slice_accumulation_artifact(&artifact)
             .expect("verify phase95 accumulation artifact");
+    }
+
+    #[test]
+    fn phase95_repeated_gemma_slice_accumulation_accepts_legacy_program_label() {
+        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 primitive artifact");
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
+        let mut artifact = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
+            &primitive_artifact,
+            &execution_proof,
+            4,
+            0,
+            0,
+        )
+        .expect("prepare phase95 accumulation artifact");
+        artifact.program_label = PHASE5_PROGRAM_LABEL_LEGACY.to_string();
+
+        verify_phase95_repeated_gemma_slice_accumulation_artifact(&artifact)
+            .expect("verify phase95 accumulation artifact with legacy program label");
     }
 
     #[test]

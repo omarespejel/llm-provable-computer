@@ -37,7 +37,7 @@ def valid_appendix_table() -> str:
 | `dot_product` | vanilla | `production-v1` | `430s` | `5s` | `12,835,175` bytes | x |
 | `single_neuron` | vanilla | `production-v1` | `390s` | `4s` | `11,767,989` bytes | x |
 | `shared-normalization-demo` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `74,074` bytes | x |
-| `gemma_block_v4` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `751,737` bytes | x |
+| `linear_block_v4_with_lookup` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `751,737` bytes | x |
 | `decoding_demo` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `4,032,182` bytes | x |
 """
 
@@ -72,7 +72,7 @@ def valid_stwo_index() -> str:
 |---|---|---|---:|---|
 | addition.stwo.proof.json | x | arithmetic | 54563 | a |
 | shared-normalization.stwo.proof.json | x | lookup-backed component | 74074 | b |
-| gemma_block_v4.stwo.proof.json | x | transformer-shaped checksum fixture | 751737 | c |
+| linear_block_v4_with_lookup.stwo.proof.json | x | transformer-shaped checksum fixture | 751737 | c |
 | decoding.stwo.chain.json | x | proof-carrying decoding | 4032182 | d |
 
 ## Timing Summary (seconds)
@@ -82,8 +82,8 @@ def valid_stwo_index() -> str:
 | verify_addition_stwo | 1 |
 | prove_shared_normalization_stwo | 1 |
 | verify_shared_normalization_stwo | 1 |
-| prove_gemma_block_v4_stwo | 1 |
-| verify_gemma_block_v4_stwo | 1 |
+| prove_linear_block_v4_with_lookup_stwo | 1 |
+| verify_linear_block_v4_with_lookup_stwo | 1 |
 | prove_decoding_demo_stwo | 1 |
 | verify_decoding_demo_stwo | 1 |
 """

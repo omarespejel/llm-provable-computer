@@ -431,102 +431,102 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-tensor-native-chain-artifact \
   tensor-native-chain.stwo.json
 
-# Bind that chain to a real Gemma-shaped S-two proof via the core-slice artifact
+# Bind that chain to a real linear-block-shaped S-two proof via the core-slice artifact
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prove-stark programs/linear_block_v4_with_lookup.tvm -o linear-block-v4-with-lookup.stark.json \
   --backend stwo --max-steps 256
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-gemma-block-core-slice-artifact \
+  prepare-stwo-linear-block-core-slice-artifact \
   --proof linear-block-v4-with-lookup.stark.json \
   --chain tensor-native-chain.stwo.json \
-  -o gemma-block-core-slice.stwo.json
+  -o linear-block-core-slice.stwo.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-gemma-block-core-slice-artifact \
-  gemma-block-core-slice.stwo.json
+  verify-stwo-linear-block-core-slice-artifact \
+  linear-block-core-slice.stwo.json
 
-# Strengthen that Gemma-shaped line with a richer slice artifact
+# Strengthen that linear-block-shaped line with a richer slice artifact
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-gemma-block-richer-slice-artifact \
+  prepare-stwo-linear-block-richer-slice-artifact \
   --proof linear-block-v4-with-lookup.stark.json \
   --chain tensor-native-chain.stwo.json \
-  -o gemma-block-richer-slice.stwo.json
+  -o linear-block-richer-slice.stwo.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-gemma-block-richer-slice-artifact \
-  gemma-block-richer-slice.stwo.json
+  verify-stwo-linear-block-richer-slice-artifact \
+  linear-block-richer-slice.stwo.json
 
-# Accumulate repeated Gemma-like slices over one shared S-two proof
+# Accumulate repeated linear-block-like slices over one shared S-two proof
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-repeated-gemma-slice-accumulation-artifact \
+  prepare-stwo-repeated-linear-block-slice-accumulation-artifact \
   --proof linear-block-v4-with-lookup.stark.json \
   --total-slices 4 \
   --token-position 0 \
   --start-block-index 2 \
-  -o repeated-gemma-slice-accumulation.stwo.json
+  -o repeated-linear-block-slice-accumulation.stwo.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-repeated-gemma-slice-accumulation-artifact \
-  repeated-gemma-slice-accumulation.stwo.json
+  verify-stwo-repeated-linear-block-slice-accumulation-artifact \
+  repeated-linear-block-slice-accumulation.stwo.json
 
 # Derive the first compact folded repeated-slice artifact from that explicit source
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-folded-gemma-slice-accumulation-artifact \
-  --source repeated-gemma-slice-accumulation.stwo.json \
-  -o folded-gemma-slice-accumulation.stwo.json
+  prepare-stwo-folded-linear-block-slice-accumulation-artifact \
+  --source repeated-linear-block-slice-accumulation.stwo.json \
+  -o folded-linear-block-slice-accumulation.stwo.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-folded-gemma-slice-accumulation-artifact \
-  folded-gemma-slice-accumulation.stwo.json \
-  --source repeated-gemma-slice-accumulation.stwo.json
+  verify-stwo-folded-linear-block-slice-accumulation-artifact \
+  folded-linear-block-slice-accumulation.stwo.json \
+  --source repeated-linear-block-slice-accumulation.stwo.json
 
-# Extend the folded line to a richer Gemma-like family summary
+# Extend the folded line to a richer linear-block-like family summary
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-folded-gemma-richer-slice-family-artifact \
-  --source repeated-gemma-slice-accumulation.stwo.json \
-  --folded folded-gemma-slice-accumulation.stwo.json \
-  -o folded-gemma-richer-slice-family.stwo.json
+  prepare-stwo-folded-linear-block-richer-slice-family-artifact \
+  --source repeated-linear-block-slice-accumulation.stwo.json \
+  --folded folded-linear-block-slice-accumulation.stwo.json \
+  -o folded-linear-block-richer-slice-family.stwo.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-folded-gemma-richer-slice-family-artifact \
-  folded-gemma-richer-slice-family.stwo.json \
-  --source repeated-gemma-slice-accumulation.stwo.json \
-  --folded folded-gemma-slice-accumulation.stwo.json
+  verify-stwo-folded-linear-block-richer-slice-family-artifact \
+  folded-linear-block-richer-slice-family.stwo.json \
+  --source repeated-linear-block-slice-accumulation.stwo.json \
+  --folded folded-linear-block-slice-accumulation.stwo.json
 
-# Accumulate several Gemma-like interval families across token positions
+# Accumulate several linear-block-like interval families across token positions
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-multi-interval-gemma-richer-family-accumulation-artifact \
+  prepare-stwo-multi-interval-linear-block-richer-family-accumulation-artifact \
   --proof linear-block-v4-with-lookup.stark.json \
   --total-intervals 4 \
   --interval-total-slices 4 \
   --token-position-start 0 \
   --token-position-stride 1 \
   --start-block-index 2 \
-  -o multi-interval-gemma-richer-family-accumulation.stwo.json
+  -o multi-interval-linear-block-richer-family-accumulation.stwo.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-multi-interval-gemma-richer-family-accumulation-artifact \
-  multi-interval-gemma-richer-family-accumulation.stwo.json
+  verify-stwo-multi-interval-linear-block-richer-family-accumulation-artifact \
+  multi-interval-linear-block-richer-family-accumulation.stwo.json
 
 # Derive the first folded multi-interval prototype and its accumulation handoff
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact \
-  --source multi-interval-gemma-richer-family-accumulation.stwo.json \
-  -o folded-multi-interval-gemma-accumulation-prototype.stwo.json
+  prepare-stwo-folded-multi-interval-linear-block-accumulation-prototype-artifact \
+  --source multi-interval-linear-block-richer-family-accumulation.stwo.json \
+  -o folded-multi-interval-linear-block-accumulation-prototype.stwo.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact \
-  folded-multi-interval-gemma-accumulation-prototype.stwo.json \
-  --source multi-interval-gemma-richer-family-accumulation.stwo.json
+  verify-stwo-folded-multi-interval-linear-block-accumulation-prototype-artifact \
+  folded-multi-interval-linear-block-accumulation-prototype.stwo.json \
+  --source multi-interval-linear-block-richer-family-accumulation.stwo.json
 
 # Derive the richer verifier-bound family artifact on top of the folded handoff
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-folded-multi-interval-gemma-richer-family-artifact \
-  --source multi-interval-gemma-richer-family-accumulation.stwo.json \
-  --folded folded-multi-interval-gemma-accumulation-prototype.stwo.json \
-  -o folded-multi-interval-gemma-richer-family.stwo.json
+  prepare-stwo-folded-multi-interval-linear-block-richer-family-artifact \
+  --source multi-interval-linear-block-richer-family-accumulation.stwo.json \
+  --folded folded-multi-interval-linear-block-accumulation-prototype.stwo.json \
+  -o folded-multi-interval-linear-block-richer-family.stwo.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-folded-multi-interval-gemma-richer-family-artifact \
-  folded-multi-interval-gemma-richer-family.stwo.json \
-  --source multi-interval-gemma-richer-family-accumulation.stwo.json \
-  --folded folded-multi-interval-gemma-accumulation-prototype.stwo.json
+  verify-stwo-folded-multi-interval-linear-block-richer-family-artifact \
+  folded-multi-interval-linear-block-richer-family.stwo.json \
+  --source multi-interval-linear-block-richer-family-accumulation.stwo.json \
+  --folded folded-multi-interval-linear-block-accumulation-prototype.stwo.json
 
 # Lift that richer multi-interval line into repeated canonical windows
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-repeated-multi-interval-gemma-richer-family-accumulation-artifact \
+  prepare-stwo-repeated-multi-interval-linear-block-richer-family-accumulation-artifact \
   --proof linear-block-v4-with-lookup.stark.json \
   --total-windows 3 \
   --intervals-per-window 4 \
@@ -534,27 +534,27 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   --token-position-start 0 \
   --token-position-stride 1 \
   --start-block-index 2 \
-  -o repeated-multi-interval-gemma-richer-family-accumulation.stwo.json
+  -o repeated-multi-interval-linear-block-richer-family-accumulation.stwo.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-repeated-multi-interval-gemma-richer-family-accumulation-artifact \
-  repeated-multi-interval-gemma-richer-family-accumulation.stwo.json
+  verify-stwo-repeated-multi-interval-linear-block-richer-family-accumulation-artifact \
+  repeated-multi-interval-linear-block-richer-family-accumulation.stwo.json
 
 # Fold those repeated canonical windows into the first repeated-window prototype
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-folded-repeated-multi-interval-gemma-accumulation-prototype-artifact \
-  --source repeated-multi-interval-gemma-richer-family-accumulation.stwo.json \
-  -o folded-repeated-multi-interval-gemma-accumulation-prototype.stwo.json
+  prepare-stwo-folded-repeated-multi-interval-linear-block-accumulation-prototype-artifact \
+  --source repeated-multi-interval-linear-block-richer-family-accumulation.stwo.json \
+  -o folded-repeated-multi-interval-linear-block-accumulation-prototype.stwo.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-folded-repeated-multi-interval-gemma-accumulation-prototype-artifact \
-  folded-repeated-multi-interval-gemma-accumulation-prototype.stwo.json \
-  --source repeated-multi-interval-gemma-richer-family-accumulation.stwo.json
+  verify-stwo-folded-repeated-multi-interval-linear-block-accumulation-prototype-artifact \
+  folded-repeated-multi-interval-linear-block-accumulation-prototype.stwo.json \
+  --source repeated-multi-interval-linear-block-richer-family-accumulation.stwo.json
 
 # Freeze the publication-facing transformer-shaped tensor-native bundles
 bash scripts/paper/generate_stwo_tensor_native_transformer_bundle.sh
-bash scripts/paper/generate_stwo_repeated_gemma_slice_accumulation_bundle.sh
-bash scripts/paper/generate_stwo_folded_gemma_slice_bundle.sh
-bash scripts/paper/generate_stwo_multi_interval_folded_gemma_bundle.sh
-bash scripts/paper/generate_stwo_richer_multi_interval_gemma_bundle.sh
+bash scripts/paper/generate_stwo_repeated_linear_block_slice_accumulation_bundle.sh
+bash scripts/paper/generate_stwo_folded_linear_block_slice_bundle.sh
+bash scripts/paper/generate_stwo_multi_interval_folded_linear_block_bundle.sh
+bash scripts/paper/generate_stwo_richer_multi_interval_linear_block_bundle.sh
 
 # Run the minimal shared-lookup identity example
 cargo +nightly-2025-07-14 run --features stwo-backend --example shared_lookup_identity

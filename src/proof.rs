@@ -1115,6 +1115,7 @@ fn validate_backend_metadata(
         StarkProofBackend::Stwo => {
             proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE2
                 || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE5
+                || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE5_LEGACY
                 || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE11
                 || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE12
         }
@@ -1123,9 +1124,10 @@ fn validate_backend_metadata(
         let expected_versions = match requested_backend {
             StarkProofBackend::Vanilla => expected_version.to_string(),
             StarkProofBackend::Stwo => format!(
-                "{}/{}/{}/{}",
+                "{}/{}/{}/{}/{}",
                 stwo_backend::STWO_BACKEND_VERSION_PHASE2,
                 stwo_backend::STWO_BACKEND_VERSION_PHASE5,
+                stwo_backend::STWO_BACKEND_VERSION_PHASE5_LEGACY,
                 stwo_backend::STWO_BACKEND_VERSION_PHASE11,
                 stwo_backend::STWO_BACKEND_VERSION_PHASE12
             ),

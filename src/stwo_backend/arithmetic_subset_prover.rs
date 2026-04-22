@@ -58,6 +58,7 @@ use crate::proof::{
 use crate::state::MachineState;
 
 pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase10-linear-block-v4-with-lookup";
+pub const STWO_BACKEND_VERSION_PHASE5_LEGACY: &str = "stwo-phase10-gemma-block-v4";
 pub const STWO_BACKEND_VERSION_PHASE11: &str = "stwo-phase11-decoding-step-v1";
 const M31_MODULUS: u32 = (1u32 << 31) - 1;
 const GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX: usize = 13;
@@ -489,7 +490,7 @@ pub(crate) fn prove_phase5_arithmetic_subset(
 
 pub(crate) fn verify_phase5_arithmetic_subset(proof: &VanillaStarkExecutionProof) -> Result<bool> {
     let expected_backend_version = stwo_backend_version_for_program(&proof.claim.program);
-    if proof.proof_backend_version != expected_backend_version {
+    if !backend_version_matches_program(&proof.claim.program, &proof.proof_backend_version) {
         return Err(VmError::InvalidConfig(format!(
             "S-two proof backend version `{}` does not match expected `{}` for this program family",
             proof.proof_backend_version, expected_backend_version
@@ -896,7 +897,8 @@ fn verify_phase10_embedded_shared_normalization(
     })?;
     if embedded.statement_version != STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10 {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported linear_block_v4_with_lookup embedded shared normalization statement version `{}`",
+            "unsupported {} embedded shared normalization statement version `{}`",
+            shared_program_label(&proof.claim.program),
             embedded.statement_version
         )));
     }
@@ -970,7 +972,8 @@ fn verify_phase10_embedded_shared_activation_lookup(
     })?;
     if embedded.statement_version != STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10 {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported linear_block_v4_with_lookup embedded shared activation statement version `{}`",
+            "unsupported {} embedded shared activation statement version `{}`",
+            shared_program_label(&proof.claim.program),
             embedded.statement_version
         )));
     }
@@ -1000,8 +1003,12 @@ fn verify_phase10_embedded_shared_activation_lookup(
         )?;
         if activation_input != row.expected_input || activation_output != row.expected_output {
             return Err(VmError::InvalidConfig(format!(
-                "linear_block_v4_with_lookup shared activation does not match claimed final state: expected ({}, {}), got ({}, {})",
-                row.expected_input, row.expected_output, activation_input, activation_output
+                "{} does not match claimed final state: expected ({}, {}), got ({}, {})",
+                shared_activation_label(&proof.claim.program),
+                row.expected_input,
+                row.expected_output,
+                activation_input,
+                activation_output
             )));
         }
         proof_rows.push(Phase3LookupTableRow {
@@ -2005,6 +2012,17 @@ fn stwo_backend_version_for_program(program: &Program) -> &str {
         STWO_BACKEND_VERSION_PHASE11
     } else {
         STWO_BACKEND_VERSION_PHASE5
+    }
+}
+
+fn backend_version_matches_program(program: &Program, backend_version: &str) -> bool {
+    if matches_decoding_step_v2(program) {
+        backend_version == super::STWO_BACKEND_VERSION_PHASE12
+    } else if matches_decoding_step_v1(program) {
+        backend_version == STWO_BACKEND_VERSION_PHASE11
+    } else {
+        backend_version == STWO_BACKEND_VERSION_PHASE5
+            || backend_version == STWO_BACKEND_VERSION_PHASE5_LEGACY
     }
 }
 

@@ -1960,7 +1960,7 @@ fn cli_can_prepare_and_verify_stwo_gemma_block_core_slice_artifact() {
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-gemma-block-core-slice-artifact")
+        .arg("prepare-stwo-linear-block-core-slice-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--chain")
@@ -1985,7 +1985,7 @@ fn cli_can_prepare_and_verify_stwo_gemma_block_core_slice_artifact() {
     assert!(artifact_json.contains("\"program_label\": \"linear_block_v4_with_lookup\""));
 
     tvm_command()
-        .arg("verify-stwo-gemma-block-core-slice-artifact")
+        .arg("verify-stwo-linear-block-core-slice-artifact")
         .arg(&artifact_path)
         .assert()
         .success()
@@ -2031,7 +2031,7 @@ fn cli_verify_stwo_gemma_block_core_slice_artifact_rejects_tampered_normalizatio
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-gemma-block-core-slice-artifact")
+        .arg("prepare-stwo-linear-block-core-slice-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--chain")
@@ -2052,7 +2052,7 @@ fn cli_verify_stwo_gemma_block_core_slice_artifact_rejects_tampered_normalizatio
     .expect("write tampered artifact");
 
     tvm_command()
-        .arg("verify-stwo-gemma-block-core-slice-artifact")
+        .arg("verify-stwo-linear-block-core-slice-artifact")
         .arg(&artifact_path)
         .assert()
         .failure()
@@ -2096,7 +2096,7 @@ fn cli_can_prepare_and_verify_stwo_gemma_block_richer_slice_artifact() {
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-gemma-block-richer-slice-artifact")
+        .arg("prepare-stwo-linear-block-richer-slice-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--chain")
@@ -2120,7 +2120,7 @@ fn cli_can_prepare_and_verify_stwo_gemma_block_richer_slice_artifact() {
     assert!(artifact_json.contains("\"local_score\": 2"));
 
     tvm_command()
-        .arg("verify-stwo-gemma-block-richer-slice-artifact")
+        .arg("verify-stwo-linear-block-richer-slice-artifact")
         .arg(&artifact_path)
         .assert()
         .success()
@@ -2166,7 +2166,7 @@ fn cli_verify_stwo_gemma_block_richer_slice_artifact_rejects_tampered_residual()
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-gemma-block-richer-slice-artifact")
+        .arg("prepare-stwo-linear-block-richer-slice-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--chain")
@@ -2187,7 +2187,7 @@ fn cli_verify_stwo_gemma_block_richer_slice_artifact_rejects_tampered_residual()
     .expect("write tampered artifact");
 
     tvm_command()
-        .arg("verify-stwo-gemma-block-richer-slice-artifact")
+        .arg("verify-stwo-linear-block-richer-slice-artifact")
         .arg(&artifact_path)
         .assert()
         .failure()
@@ -2222,7 +2222,7 @@ fn cli_can_prepare_and_verify_stwo_repeated_gemma_slice_accumulation_artifact() 
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-repeated-gemma-slice-accumulation-artifact")
+        .arg("prepare-stwo-repeated-linear-block-slice-accumulation-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--total-slices")
@@ -2250,7 +2250,7 @@ fn cli_can_prepare_and_verify_stwo_repeated_gemma_slice_accumulation_artifact() 
     assert!(artifact_json.contains("\"block_index\": 5"));
 
     tvm_command()
-        .arg("verify-stwo-repeated-gemma-slice-accumulation-artifact")
+        .arg("verify-stwo-repeated-linear-block-slice-accumulation-artifact")
         .arg(&artifact_path)
         .assert()
         .success()
@@ -2284,7 +2284,7 @@ fn cli_verify_stwo_repeated_gemma_slice_accumulation_artifact_rejects_tampered_m
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-repeated-gemma-slice-accumulation-artifact")
+        .arg("prepare-stwo-repeated-linear-block-slice-accumulation-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--total-slices")
@@ -2305,7 +2305,7 @@ fn cli_verify_stwo_repeated_gemma_slice_accumulation_artifact_rejects_tampered_m
     .expect("write tampered artifact");
 
     tvm_command()
-        .arg("verify-stwo-repeated-gemma-slice-accumulation-artifact")
+        .arg("verify-stwo-repeated-linear-block-slice-accumulation-artifact")
         .arg(&artifact_path)
         .assert()
         .failure()
@@ -2338,7 +2338,7 @@ fn cli_prepare_stwo_repeated_gemma_slice_accumulation_artifact_rejects_oversized
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-repeated-gemma-slice-accumulation-artifact")
+        .arg("prepare-stwo-repeated-linear-block-slice-accumulation-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--total-slices")
@@ -2376,7 +2376,7 @@ fn cli_can_prepare_and_verify_stwo_folded_gemma_slice_accumulation_artifact() {
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-repeated-gemma-slice-accumulation-artifact")
+        .arg("prepare-stwo-repeated-linear-block-slice-accumulation-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--total-slices")
@@ -2389,7 +2389,7 @@ fn cli_can_prepare_and_verify_stwo_folded_gemma_slice_accumulation_artifact() {
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-folded-gemma-slice-accumulation-artifact")
+        .arg("prepare-stwo-folded-linear-block-slice-accumulation-artifact")
         .arg("--source")
         .arg(&source_path)
         .arg("-o")
@@ -2407,7 +2407,7 @@ fn cli_can_prepare_and_verify_stwo_folded_gemma_slice_accumulation_artifact() {
     assert!(artifact_json.contains("stwo-phase96-5-folded-gemma-slice-accumulation-artifact-v1"));
 
     tvm_command()
-        .arg("verify-stwo-folded-gemma-slice-accumulation-artifact")
+        .arg("verify-stwo-folded-linear-block-slice-accumulation-artifact")
         .arg(&artifact_path)
         .arg("--source")
         .arg(&source_path)
@@ -2447,7 +2447,7 @@ fn cli_verify_stwo_folded_gemma_slice_accumulation_artifact_rejects_tampered_acc
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-repeated-gemma-slice-accumulation-artifact")
+        .arg("prepare-stwo-repeated-linear-block-slice-accumulation-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--total-slices")
@@ -2458,7 +2458,7 @@ fn cli_verify_stwo_folded_gemma_slice_accumulation_artifact_rejects_tampered_acc
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-folded-gemma-slice-accumulation-artifact")
+        .arg("prepare-stwo-folded-linear-block-slice-accumulation-artifact")
         .arg("--source")
         .arg(&source_path)
         .arg("-o")
@@ -2477,7 +2477,7 @@ fn cli_verify_stwo_folded_gemma_slice_accumulation_artifact_rejects_tampered_acc
     .expect("write tampered artifact");
 
     tvm_command()
-        .arg("verify-stwo-folded-gemma-slice-accumulation-artifact")
+        .arg("verify-stwo-folded-linear-block-slice-accumulation-artifact")
         .arg(&artifact_path)
         .arg("--source")
         .arg(&source_path)
@@ -2517,7 +2517,7 @@ fn cli_can_prepare_and_verify_stwo_folded_gemma_richer_slice_family_artifact() {
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-repeated-gemma-slice-accumulation-artifact")
+        .arg("prepare-stwo-repeated-linear-block-slice-accumulation-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--total-slices")
@@ -2528,7 +2528,7 @@ fn cli_can_prepare_and_verify_stwo_folded_gemma_richer_slice_family_artifact() {
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-folded-gemma-slice-accumulation-artifact")
+        .arg("prepare-stwo-folded-linear-block-slice-accumulation-artifact")
         .arg("--source")
         .arg(&source_path)
         .arg("-o")
@@ -2537,7 +2537,7 @@ fn cli_can_prepare_and_verify_stwo_folded_gemma_richer_slice_family_artifact() {
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-folded-gemma-richer-slice-family-artifact")
+        .arg("prepare-stwo-folded-linear-block-richer-slice-family-artifact")
         .arg("--source")
         .arg(&source_path)
         .arg("--folded")
@@ -2559,7 +2559,7 @@ fn cli_can_prepare_and_verify_stwo_folded_gemma_richer_slice_family_artifact() {
     assert!(artifact_json.contains("stwo-phase98-folded-gemma-richer-slice-family-artifact-v1"));
 
     tvm_command()
-        .arg("verify-stwo-folded-gemma-richer-slice-family-artifact")
+        .arg("verify-stwo-folded-linear-block-richer-slice-family-artifact")
         .arg(&artifact_path)
         .arg("--source")
         .arg(&source_path)
@@ -2604,7 +2604,7 @@ fn cli_verify_stwo_folded_gemma_richer_slice_family_artifact_rejects_tampered_fa
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-repeated-gemma-slice-accumulation-artifact")
+        .arg("prepare-stwo-repeated-linear-block-slice-accumulation-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--total-slices")
@@ -2615,7 +2615,7 @@ fn cli_verify_stwo_folded_gemma_richer_slice_family_artifact_rejects_tampered_fa
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-folded-gemma-slice-accumulation-artifact")
+        .arg("prepare-stwo-folded-linear-block-slice-accumulation-artifact")
         .arg("--source")
         .arg(&source_path)
         .arg("-o")
@@ -2624,7 +2624,7 @@ fn cli_verify_stwo_folded_gemma_richer_slice_family_artifact_rejects_tampered_fa
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-folded-gemma-richer-slice-family-artifact")
+        .arg("prepare-stwo-folded-linear-block-richer-slice-family-artifact")
         .arg("--source")
         .arg(&source_path)
         .arg("--folded")
@@ -2645,7 +2645,7 @@ fn cli_verify_stwo_folded_gemma_richer_slice_family_artifact_rejects_tampered_fa
     .expect("write tampered artifact");
 
     tvm_command()
-        .arg("verify-stwo-folded-gemma-richer-slice-family-artifact")
+        .arg("verify-stwo-folded-linear-block-richer-slice-family-artifact")
         .arg(&artifact_path)
         .arg("--source")
         .arg(&source_path)
@@ -2684,7 +2684,7 @@ fn cli_can_prepare_and_verify_stwo_multi_interval_gemma_richer_family_accumulati
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-multi-interval-gemma-richer-family-accumulation-artifact")
+        .arg("prepare-stwo-multi-interval-linear-block-richer-family-accumulation-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--total-intervals")
@@ -2714,7 +2714,7 @@ fn cli_can_prepare_and_verify_stwo_multi_interval_gemma_richer_family_accumulati
     assert!(artifact_json.contains("\"repeated_token_position\": 7"));
 
     tvm_command()
-        .arg("verify-stwo-multi-interval-gemma-richer-family-accumulation-artifact")
+        .arg("verify-stwo-multi-interval-linear-block-richer-family-accumulation-artifact")
         .arg(&artifact_path)
         .assert()
         .success()
@@ -2750,7 +2750,7 @@ fn cli_verify_stwo_multi_interval_gemma_richer_family_accumulation_artifact_reje
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-multi-interval-gemma-richer-family-accumulation-artifact")
+        .arg("prepare-stwo-multi-interval-linear-block-richer-family-accumulation-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--total-intervals")
@@ -2773,7 +2773,7 @@ fn cli_verify_stwo_multi_interval_gemma_richer_family_accumulation_artifact_reje
     .expect("write tampered artifact");
 
     tvm_command()
-        .arg("verify-stwo-multi-interval-gemma-richer-family-accumulation-artifact")
+        .arg("verify-stwo-multi-interval-linear-block-richer-family-accumulation-artifact")
         .arg(&artifact_path)
         .assert()
         .failure()
@@ -2810,7 +2810,7 @@ fn cli_can_prepare_and_verify_stwo_folded_multi_interval_gemma_accumulation_prot
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-multi-interval-gemma-richer-family-accumulation-artifact")
+        .arg("prepare-stwo-multi-interval-linear-block-richer-family-accumulation-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--total-intervals")
@@ -2823,7 +2823,7 @@ fn cli_can_prepare_and_verify_stwo_folded_multi_interval_gemma_accumulation_prot
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact")
+        .arg("prepare-stwo-folded-multi-interval-linear-block-accumulation-prototype-artifact")
         .arg("--source")
         .arg(&source_path)
         .arg("-o")
@@ -2843,7 +2843,7 @@ fn cli_can_prepare_and_verify_stwo_folded_multi_interval_gemma_accumulation_prot
     ));
 
     tvm_command()
-        .arg("verify-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact")
+        .arg("verify-stwo-folded-multi-interval-linear-block-accumulation-prototype-artifact")
         .arg(&artifact_path)
         .arg("--source")
         .arg(&source_path)
@@ -2884,7 +2884,7 @@ fn cli_verify_stwo_folded_multi_interval_gemma_accumulation_prototype_artifact_r
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-multi-interval-gemma-richer-family-accumulation-artifact")
+        .arg("prepare-stwo-multi-interval-linear-block-richer-family-accumulation-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--total-intervals")
@@ -2897,7 +2897,7 @@ fn cli_verify_stwo_folded_multi_interval_gemma_accumulation_prototype_artifact_r
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact")
+        .arg("prepare-stwo-folded-multi-interval-linear-block-accumulation-prototype-artifact")
         .arg("--source")
         .arg(&source_path)
         .arg("-o")
@@ -2916,7 +2916,7 @@ fn cli_verify_stwo_folded_multi_interval_gemma_accumulation_prototype_artifact_r
     .expect("write tampered artifact");
 
     tvm_command()
-        .arg("verify-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact")
+        .arg("verify-stwo-folded-multi-interval-linear-block-accumulation-prototype-artifact")
         .arg(&artifact_path)
         .arg("--source")
         .arg(&source_path)
@@ -2954,7 +2954,7 @@ fn cli_can_prepare_and_verify_stwo_folded_multi_interval_gemma_richer_family_art
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-multi-interval-gemma-richer-family-accumulation-artifact")
+        .arg("prepare-stwo-multi-interval-linear-block-richer-family-accumulation-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--total-intervals")
@@ -2967,7 +2967,7 @@ fn cli_can_prepare_and_verify_stwo_folded_multi_interval_gemma_richer_family_art
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact")
+        .arg("prepare-stwo-folded-multi-interval-linear-block-accumulation-prototype-artifact")
         .arg("--source")
         .arg(&source_path)
         .arg("-o")
@@ -2976,7 +2976,7 @@ fn cli_can_prepare_and_verify_stwo_folded_multi_interval_gemma_richer_family_art
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-folded-multi-interval-gemma-richer-family-artifact")
+        .arg("prepare-stwo-folded-multi-interval-linear-block-richer-family-artifact")
         .arg("--source")
         .arg(&source_path)
         .arg("--folded")
@@ -2998,7 +2998,7 @@ fn cli_can_prepare_and_verify_stwo_folded_multi_interval_gemma_richer_family_art
         .contains("stwo-phase102-folded-multi-interval-gemma-richer-family-artifact-v1"));
 
     tvm_command()
-        .arg("verify-stwo-folded-multi-interval-gemma-richer-family-artifact")
+        .arg("verify-stwo-folded-multi-interval-linear-block-richer-family-artifact")
         .arg(&artifact_path)
         .arg("--source")
         .arg(&source_path)
@@ -3043,7 +3043,7 @@ fn cli_verify_stwo_folded_multi_interval_gemma_richer_family_artifact_rejects_se
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-multi-interval-gemma-richer-family-accumulation-artifact")
+        .arg("prepare-stwo-multi-interval-linear-block-richer-family-accumulation-artifact")
         .arg("--proof")
         .arg(&proof_path)
         .arg("--total-intervals")
@@ -3056,7 +3056,7 @@ fn cli_verify_stwo_folded_multi_interval_gemma_richer_family_artifact_rejects_se
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact")
+        .arg("prepare-stwo-folded-multi-interval-linear-block-accumulation-prototype-artifact")
         .arg("--source")
         .arg(&source_path)
         .arg("-o")
@@ -3065,7 +3065,7 @@ fn cli_verify_stwo_folded_multi_interval_gemma_richer_family_artifact_rejects_se
         .success();
 
     tvm_command()
-        .arg("prepare-stwo-folded-multi-interval-gemma-richer-family-artifact")
+        .arg("prepare-stwo-folded-multi-interval-linear-block-richer-family-artifact")
         .arg("--source")
         .arg(&source_path)
         .arg("--folded")
@@ -3087,7 +3087,7 @@ fn cli_verify_stwo_folded_multi_interval_gemma_richer_family_artifact_rejects_se
     .expect("write tampered artifact");
 
     tvm_command()
-        .arg("verify-stwo-folded-multi-interval-gemma-richer-family-artifact")
+        .arg("verify-stwo-folded-multi-interval-linear-block-richer-family-artifact")
         .arg(&artifact_path)
         .arg("--source")
         .arg(&source_path)

@@ -1093,15 +1093,15 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
         "verify_addition_stwo",
         "prove_shared_normalization_stwo",
         "verify_shared_normalization_stwo",
-        "prove_gemma_block_v4_stwo",
-        "verify_gemma_block_v4_stwo",
+        "prove_linear_block_v4_with_lookup_stwo",
+        "verify_linear_block_v4_with_lookup_stwo",
         "prove_decoding_demo_stwo",
         "verify_decoding_demo_stwo",
     ]
     required_stwo_size_keys = [
         "addition.stwo.proof.json",
         "shared-normalization.stwo.proof.json",
-        "gemma_block_v4.stwo.proof.json",
+        "linear_block_v4_with_lookup.stwo.proof.json",
         "decoding.stwo.chain.json",
     ]
 
@@ -1162,10 +1162,10 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
             stwo_timings["verify_shared_normalization_stwo"],
             stwo_sizes["shared-normalization.stwo.proof.json"],
         ),
-        ("gemma_block_v4", "stwo"): (
-            stwo_timings["prove_gemma_block_v4_stwo"],
-            stwo_timings["verify_gemma_block_v4_stwo"],
-            stwo_sizes["gemma_block_v4.stwo.proof.json"],
+        ("linear_block_v4_with_lookup", "stwo"): (
+            stwo_timings["prove_linear_block_v4_with_lookup_stwo"],
+            stwo_timings["verify_linear_block_v4_with_lookup_stwo"],
+            stwo_sizes["linear_block_v4_with_lookup.stwo.proof.json"],
         ),
         ("decoding_demo", "stwo"): (
             stwo_timings["prove_decoding_demo_stwo"],

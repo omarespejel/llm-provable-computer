@@ -48,8 +48,8 @@ if [ "$ALLOW_DIRTY_BUNDLE_BUILD" != "1" ]; then
 fi
 
 CHAIN_JSON="$BUNDLE_DIR/tensor-native-chain.stwo.json"
-GEMMA_PROOF_JSON="$BUNDLE_DIR/gemma-block-v4.stark.json"
-GEMMA_CORE_JSON="$BUNDLE_DIR/gemma-block-core-slice.stwo.json"
+LINEAR_BLOCK_PROOF_JSON="$BUNDLE_DIR/linear-block-v4-with-lookup.stark.json"
+LINEAR_BLOCK_CORE_JSON="$BUNDLE_DIR/linear-block-core-slice.stwo.json"
 MANIFEST="$BUNDLE_DIR/manifest.txt"
 BENCHMARKS="$BUNDLE_DIR/benchmarks.tsv"
 COMMANDS_LOG="$BUNDLE_DIR/commands.log"
@@ -91,9 +91,9 @@ host_platform: $(uname -srm)
 nightly_toolchain: $NIGHTLY_TOOLCHAIN
 bundle_dir: docs/paper/artifacts/$(basename "$BUNDLE_DIR")
 chain_artifact: tensor-native-chain.stwo.json
-gemma_proof: gemma-block-v4.stark.json
-gemma_core_slice_artifact: gemma-block-core-slice.stwo.json
-scope: tensor-native transformer-shaped S-two chain plus Gemma block core slice
+linear_block_proof: linear-block-v4-with-lookup.stark.json
+linear_block_core_slice_artifact: linear-block-core-slice.stwo.json
+scope: tensor-native transformer-shaped S-two chain plus linear block core slice
 MANIFEST
 
 run_timed prepare_tensor_native_chain \
@@ -106,33 +106,33 @@ run_timed verify_tensor_native_chain \
   verify-stwo-tensor-native-chain-artifact \
   "$CHAIN_JSON"
 
-run_timed prove_gemma_block_v4 \
+run_timed prove_linear_block_v4_with_lookup \
   "${CARGO_STWO[@]}" \
   prove-stark \
-  programs/gemma_block_v4.tvm \
-  -o "$GEMMA_PROOF_JSON" \
+  programs/linear_block_v4_with_lookup.tvm \
+  -o "$LINEAR_BLOCK_PROOF_JSON" \
   --backend stwo \
   --max-steps 256
 
-run_timed verify_gemma_block_v4 \
+run_timed verify_linear_block_v4_with_lookup \
   "${CARGO_STWO[@]}" \
   verify-stark \
-  "$GEMMA_PROOF_JSON" \
+  "$LINEAR_BLOCK_PROOF_JSON" \
   --reexecute
 
-run_timed prepare_gemma_block_core_slice \
+run_timed prepare_linear_block_core_slice \
   "${CARGO_STWO[@]}" \
-  prepare-stwo-gemma-block-core-slice-artifact \
-  --proof "$GEMMA_PROOF_JSON" \
+  prepare-stwo-linear-block-core-slice-artifact \
+  --proof "$LINEAR_BLOCK_PROOF_JSON" \
   --chain "$CHAIN_JSON" \
-  -o "$GEMMA_CORE_JSON"
+  -o "$LINEAR_BLOCK_CORE_JSON"
 
-run_timed verify_gemma_block_core_slice \
+run_timed verify_linear_block_core_slice \
   "${CARGO_STWO[@]}" \
-  verify-stwo-gemma-block-core-slice-artifact \
-  "$GEMMA_CORE_JSON"
+  verify-stwo-linear-block-core-slice-artifact \
+  "$LINEAR_BLOCK_CORE_JSON"
 
-python3 - "$CHAIN_JSON" "$GEMMA_PROOF_JSON" "$GEMMA_CORE_JSON" "$INDEX_MD" "$README_MD" "$BENCHMARKS" "$MANIFEST" <<'PY'
+python3 - "$CHAIN_JSON" "$LINEAR_BLOCK_PROOF_JSON" "$LINEAR_BLOCK_CORE_JSON" "$INDEX_MD" "$README_MD" "$BENCHMARKS" "$MANIFEST" <<'PY'
 import hashlib
 import json
 import sys
@@ -192,19 +192,19 @@ index_lines.extend([
     f"| Chain scope | `{chain['semantic_scope']}` |",
     f"| Chain total steps | `{chain['total_steps']}` |",
     f"| Shared proof bytes | `{len(chain['primitive_artifact']['proof_envelope']['proof'])}` |",
-    f"| Gemma proof file | `{proof_path.name}` |",
-    f"| Gemma proof size (bytes) | `{proof_path.stat().st_size}` |",
-    f"| Gemma proof SHA-256 | `{sha256(proof_path)}` |",
-    f"| Gemma proof backend version | `{proof['proof_backend_version']}` |",
-    f"| Gemma proof steps | `{proof['claim']['steps']}` |",
-    f"| Gemma core-slice file | `{core_path.name}` |",
-    f"| Gemma core-slice size (bytes) | `{core_path.stat().st_size}` |",
-    f"| Gemma core-slice SHA-256 | `{sha256(core_path)}` |",
-    f"| Gemma core-slice version | `{core['artifact_version']}` |",
-    f"| Gemma core-slice scope | `{core['semantic_scope']}` |",
-    f"| Gemma shared normalization rows | `{core['total_shared_normalization_rows']}` |",
-    f"| Gemma shared activation rows | `{core['total_shared_activation_rows']}` |",
-    f"| Gemma execution proof bytes | `{len(core['execution_proof']['proof'])}` |",
+    f"| Linear-block proof file | `{proof_path.name}` |",
+    f"| Linear-block proof size (bytes) | `{proof_path.stat().st_size}` |",
+    f"| Linear-block proof SHA-256 | `{sha256(proof_path)}` |",
+    f"| Linear-block proof backend version | `{proof['proof_backend_version']}` |",
+    f"| Linear-block proof steps | `{proof['claim']['steps']}` |",
+    f"| Linear-block core-slice file | `{core_path.name}` |",
+    f"| Linear-block core-slice size (bytes) | `{core_path.stat().st_size}` |",
+    f"| Linear-block core-slice SHA-256 | `{sha256(core_path)}` |",
+    f"| Linear-block core-slice version | `{core['artifact_version']}` |",
+    f"| Linear-block core-slice scope | `{core['semantic_scope']}` |",
+    f"| Linear-block shared normalization rows | `{core['total_shared_normalization_rows']}` |",
+    f"| Linear-block shared activation rows | `{core['total_shared_activation_rows']}` |",
+    f"| Linear-block execution proof bytes | `{len(core['execution_proof']['proof'])}` |",
     "",
     "## Timing Summary (seconds)",
     "",
@@ -217,7 +217,7 @@ index_lines.extend([
     "",
     "## Notes",
     "- The chain artifact is transformer-shaped but intentionally narrow: it proves one shared-normalization primitive template and enforces typed carried-state continuity across four local steps.",
-    "- The Gemma core-slice artifact binds that chain to a real `gemma_block_v4` S-two execution proof with embedded shared-normalization and shared-activation receipts.",
+    "- The Linear-block core-slice artifact binds that chain to a real `linear_block_v4_with_lookup` S-two execution proof with embedded shared-normalization and shared-activation receipts.",
     "- This bundle does not claim full standard-softmax transformer inference or recursive aggregation.",
 ])
 index_md.write_text("\n".join(index_lines) + "\n")
@@ -228,10 +228,10 @@ readme_lines = [
     "This directory freezes a publication-facing tensor-native `stwo` bundle built from:",
     "",
     "- one four-step transformer-shaped carried-state chain over a shared-normalization primitive template,",
-    "- one real `gemma_block_v4` S-two execution proof, and",
-    "- one Gemma core-slice artifact that binds the chain to embedded shared-normalization and shared-activation proof payloads.",
+    "- one real `linear_block_v4_with_lookup` S-two execution proof, and",
+    "- one Linear-block core-slice artifact that binds the chain to embedded shared-normalization and shared-activation proof payloads.",
     "",
-    "The public claim is still intentionally narrow: the repository now has one reproducible transformer-shaped tensor-native artifact line with explicit carried-state continuity, verifier-enforced shared-table identity, and one real Gemma-shaped core slice on the S-two path.",
+    "The public claim is still intentionally narrow: the repository now has one reproducible transformer-shaped tensor-native artifact line with explicit carried-state continuity, verifier-enforced shared-table identity, and one real linear-block-shaped core slice on the S-two path.",
     "",
     "See `APPENDIX_ARTIFACT_INDEX.md` for exact hashes, timings, and structural metrics.",
 ]
@@ -243,6 +243,6 @@ PY
   shasum -a 256 -- *.json benchmarks.tsv manifest.txt commands.log APPENDIX_ARTIFACT_INDEX.md README.md > "$SHA256S"
 )
 
-chmod 644 "$CHAIN_JSON" "$GEMMA_PROOF_JSON" "$GEMMA_CORE_JSON" "$MANIFEST" "$BENCHMARKS" "$COMMANDS_LOG" "$SHA256S" "$INDEX_MD" "$README_MD"
+chmod 644 "$CHAIN_JSON" "$LINEAR_BLOCK_PROOF_JSON" "$LINEAR_BLOCK_CORE_JSON" "$MANIFEST" "$BENCHMARKS" "$COMMANDS_LOG" "$SHA256S" "$INDEX_MD" "$README_MD"
 
 echo "Generated $BUNDLE_DIR"
