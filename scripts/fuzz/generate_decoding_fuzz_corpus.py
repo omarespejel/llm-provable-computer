@@ -525,6 +525,34 @@ def main() -> int:
         phase37_path,
     ):
         write_json(generated_path, json.loads(generated_path.read_text()))
+    phase113_source = (
+        ROOT
+        / "docs/paper/artifacts/stwo-richer-gemma-window-family-v1-2026-04-22"
+        / "phase113-richer-gemma-window-family-w8.stwo.json"
+    )
+    phase113_path = (
+        corpus_root / "phase113_richer_gemma_window_family" / "valid_phase113.json"
+    )
+    phase113_path.parent.mkdir(parents=True, exist_ok=True)
+    if not phase113_source.exists():
+        raise FileNotFoundError(
+            f"missing phase113 fuzz-corpus source fixture: {phase113_source}"
+        )
+    try:
+        phase113_payload = json.loads(phase113_source.read_text())
+    except OSError as exc:
+        raise OSError(
+            f"failed to read phase113 fuzz-corpus source fixture {phase113_source}: {exc}"
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"phase113 fuzz-corpus source fixture is not valid JSON: {phase113_source}: {exc}"
+        ) from exc
+    if not isinstance(phase113_payload, dict):
+        raise TypeError(
+            "phase113 fuzz-corpus source fixture must decode to a JSON object"
+        )
+    write_json(phase113_path, phase113_payload)
     return 0
 
 

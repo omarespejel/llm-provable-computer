@@ -20,10 +20,10 @@ use ratatui::widgets::{
 use ratatui::{Frame, Terminal};
 use sha3::{Digest, Sha3_256};
 
-use crate::proof::validate_execution_stark_support;
+use crate::proof::{validate_execution_stark_support, VanillaStarkExecutionProof};
 use crate::{
     prove_execution_stark, verify_execution_stark, Attention2DMode, DispatchInfo, ExecutionRuntime,
-    Instruction, Result, VanillaStarkExecutionProof,
+    Instruction, Result,
 };
 
 const HISTORY_LIMIT: usize = 96;

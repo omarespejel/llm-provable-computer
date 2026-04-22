@@ -43,14 +43,14 @@ cargo run --release --bin tvm -- verify-stark fib.publication.proof.json \
 ```rust
 use llm_provable_computer::{
     publication_v1_stark_options,
-    publication_v1_verification_policy,
     prove_execution_stark_with_options,
     verify_execution_stark_with_reexecution_and_policy,
 };
+use llm_provable_computer::proof::publication_v1_security_floor_policy;
 
 let proof = prove_execution_stark_with_options(&model, max_steps, publication_v1_stark_options())?;
 assert!(
-    verify_execution_stark_with_reexecution_and_policy(&proof, publication_v1_verification_policy())?
+    verify_execution_stark_with_reexecution_and_policy(&proof, publication_v1_security_floor_policy())?
 );
 ```
 

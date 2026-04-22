@@ -114,8 +114,12 @@ pub fn publication_v1_stark_options() -> VanillaStarkProofOptions {
 /// Minimum conjectured security floor expected when verifying publication-v1 proofs.
 pub const PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS: u32 = 96;
 
-/// Verification policy that pins the publication-v1 conjectured-security floor.
-pub fn publication_v1_verification_policy() -> StarkVerificationPolicy {
+/// Returns only the publication-v1 security-bit floor.
+///
+/// This helper does not encode the full CLI profile semantics. Callers that
+/// need publication-v1 parity with the CLI must also enforce reexecution at
+/// the command boundary.
+pub fn publication_v1_security_floor_policy() -> StarkVerificationPolicy {
     StarkVerificationPolicy {
         min_conjectured_security_bits: PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
     }

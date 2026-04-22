@@ -19,17 +19,18 @@ practical context ranges, the ratio rises and then approaches a finite
 architecture-dependent ceiling. These counts are symbolic proxies for prover-side work,
 not matched runtime measurements.
 
-We pair that analysis with `provable-transformer-vm` [30], a supporting artifact that
-provides a frozen vanilla reproducibility tier, a frozen narrow experimental `stwo`
-tier, and a broader proof-carrying decoding path with explicit carried-state boundaries,
-shared lookup-table identity, reusable block- and step-level proof artifacts, and a
-pre-recursive aggregation boundary. The repository does not yet provide full
-standard-softmax inference on S-two, recursive cryptographic compression/verification
-closure, recursive shared-table accumulation across decode steps as a compressed proof
-object, or production-scale zkML deployment. The narrower claim is that transformer
-workloads expose the design pressures under which STARK-native systems may compound
-advantages, while current artifacts already support a concrete bridge from execution
-traces to pre-recursive proof objects.
+We pair that analysis with `provable-transformer-vm` [30], a supporting artifact whose
+main paper-facing line now runs through `stwo` transformer-shaped and tensor-native
+bundles, while the older vanilla tier is retained as a local reproducibility baseline.
+The repository also contains a broader proof-carrying decoding path with explicit
+carried-state boundaries, shared lookup-table identity, reusable block- and step-level
+proof artifacts, and a pre-recursive aggregation boundary. The repository does not yet
+provide full standard-softmax inference on S-two, recursive cryptographic
+compression/verification closure, recursive shared-table accumulation across decode
+steps as a compressed proof object, or production-scale zkML deployment. The narrower
+claim is that transformer workloads expose the design pressures under which
+lookup-friendly proof systems may compound advantages, while current artifacts already
+support a concrete bridge from execution traces to pre-recursive proof objects.
 
 ______________________________________________________________________
 
@@ -59,14 +60,15 @@ This paper makes three claims:
    boundaries that survive statement-preserving chain, segment, interval, rollup,
    matrix, and pre-recursive aggregation layers.
 3. **Infrastructure claim.** The S-two / Starknet stack makes this direction
-   increasingly practical, even though the reference repository used here still relies
-   on the vanilla backend for its default artifact bundle and primary transformer proof
-   relation while exposing `stwo` through a narrow experimental evidence tier.
+   increasingly practical, while the reference repository exposes a stronger
+   tensor-native `stwo` artifact line and retains the vanilla backend mainly as a local
+   baseline and verifier-policy reference surface.
 
 Here a frozen tier means an immutable artifact snapshot with command logs, content
-hashes, and proof artifacts. The `production-v1` tier is the vanilla-backend
-reproducibility baseline, while `stwo-experimental-v1` is a narrow S-two evidence tier
-for representative fixtures; Section 5.4 gives the detailed artifact boundary.
+hashes, and proof artifacts. The older `production-v1` tier is retained as a vanilla
+local baseline, while the main paper-facing narrative now runs through the `stwo`
+artifact ladder and verifier-bound tensor-native bundles; Section 5.4 gives the
+detailed artifact boundary.
 
 The supporting artifact is the paper's systems hinge: it is where the symbolic pressure
 points of Section 4 are turned into explicit carried-state proof objects with frozen
@@ -498,10 +500,10 @@ compression pipeline.
 
 ### 5.3 Negative evidence
 
-The repository remains deliberately narrow in four ways. First, the default
-reproducibility tier and primary transformer relation still live on the vanilla backend,
-while the `stwo` path remains a bounded experimental tier rather than a broad production
-zkML surface. Second, the main proved transformer relation still uses `average-hard`
+The repository remains deliberately narrow in four ways. First, the tensor-native `stwo`
+path is still a bounded artifact tier rather than a broad production zkML surface, and
+the older vanilla tier remains only a local reproducibility baseline. Second, the main
+proved transformer relation still uses `average-hard`
 rather than full standard softmax. Third, the current repository already binds shared
 lookup-table identity inside public artifacts and across those Phase 62 proof-carrying
 step envelopes, but it does not yet expose recursive cross-step shared-table accumulation
@@ -520,10 +522,11 @@ rather than treating those kernels as an incidental detail [10].
 
 ### 5.4 Reproducibility tiers
 
-The vanilla `production-v1` tier is the primary reproducibility baseline. It is
-documented in an immutable artifact snapshot with command logs, hashes, and proof
+The older vanilla `production-v1` tier is retained as a local reproducibility baseline.
+It is documented in an immutable artifact snapshot with command logs, hashes, and proof
 artifacts [31]. Timings and sizes are treated as reproducibility evidence, not
-performance evidence.
+performance evidence, and newer cited vanilla evidence should use the stronger
+`publication-v1` verifier floor.
 
 The `stwo-experimental-v1` tier is the narrow S-two evidence tier. It contains command
 logs, wall-clock timings, SHA-256 hashes, and proof artifacts for four representative
@@ -615,8 +618,8 @@ around Circle STARKs over M31. The March 31, 2026 recursion update matters becau
 aggregation is required once workloads become large or modular [19].
 
 For this paper, the key distinction is: **S-two progress strengthens the roadmap, while
-the repository still keeps its default artifact bundle and primary transformer relation
-on the vanilla backend.**
+the repository still keeps the vanilla backend as a local baseline and places the main
+paper-facing transformer artifact line on `stwo`.**
 
 Verifier cost and proof size remain part of that roadmap. The frozen vanilla tier still
 produces multi-megabyte proofs for tiny fixtures, so aggregation/compression remains

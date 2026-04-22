@@ -14,6 +14,9 @@ use burn::backend::NdArray;
 use clap::{Parser, Subcommand, ValueEnum};
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::proof::load_execution_stark_proof_with_limit;
+use llm_provable_computer::proof::{
+    publication_v1_security_floor_policy, VanillaStarkExecutionProof, VanillaStarkProofOptions,
+};
 #[cfg(any(feature = "burn-model", feature = "onnx-export"))]
 use llm_provable_computer::verify_engines;
 use llm_provable_computer::{
@@ -24,10 +27,9 @@ use llm_provable_computer::{
     verify_execution_stark_with_reexecution_and_policy, verify_model_against_native,
     Attention2DMode, ExecutionResult, ExecutionRuntime, ExecutionTraceEntry, MachineState,
     NativeInterpreter, ProgramCompiler, StarkProofBackend, StarkVerificationPolicy, TransformerVm,
-    TransformerVmConfig, VanillaStarkExecutionProof, VanillaStarkProofOptions, VmError,
-    PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS, PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS,
-    PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS, STWO_RECURSION_BATCH_SCOPE_PHASE6,
-    STWO_RECURSION_BATCH_VERSION_PHASE6,
+    TransformerVmConfig, VmError, PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS,
+    PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS, PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
+    STWO_RECURSION_BATCH_SCOPE_PHASE6, STWO_RECURSION_BATCH_VERSION_PHASE6,
 };
 #[cfg(feature = "onnx-export")]
 use llm_provable_computer::{export_program_onnx, OnnxExecutionRuntime};
@@ -368,7 +370,7 @@ enum Command {
             value_parser = parse_attention_mode
         )]
         attention_mode: Attention2DMode,
-        /// Named STARK profile (recommended for repeatable proving policy).
+        /// Named STARK profile (`production-v1` for local work, `publication-v1` for cited vanilla evidence).
         #[arg(long, value_enum, default_value_t = CliStarkProfile::ProductionV1)]
         stark_profile: CliStarkProfile,
         /// STARK blowup factor (must be power of two and >= 4).
@@ -394,7 +396,7 @@ enum Command {
     VerifyStark {
         /// Path to the serialized proof JSON file.
         proof: PathBuf,
-        /// Verification policy profile.
+        /// Verification policy profile (`production-v1` for local work, `publication-v1` for cited vanilla evidence).
         #[arg(long, value_enum, default_value_t = CliStarkProfile::ProductionV1)]
         verification_profile: CliStarkProfile,
         /// Re-execute transformer/native runtimes from claim data and check equivalence metadata.
@@ -2728,6 +2730,12 @@ fn prove_stark_command(
     backend: CliProofBackend,
     stark_options: VanillaStarkProofOptions,
 ) -> llm_provable_computer::Result<()> {
+    if stark_profile == CliStarkProfile::PublicationV1 && backend != CliProofBackend::Vanilla {
+        return Err(VmError::InvalidConfig(
+            "publication-v1 is reserved for cited vanilla evidence; use --backend vanilla"
+                .to_string(),
+        ));
+    }
     let model = compile_model(program, layers, attention_mode)?;
     let profile_options = stark_profile.proof_options();
     let profile_overridden = stark_options != profile_options;
@@ -2837,10 +2845,25 @@ fn verify_stark_command(
     backend: Option<CliProofBackend>,
 ) -> llm_provable_computer::Result<()> {
     let proof = load_execution_stark_proof(proof_path)?;
+    let selected_backend = backend.unwrap_or(match proof.proof_backend {
+        StarkProofBackend::Vanilla => CliProofBackend::Vanilla,
+        StarkProofBackend::Stwo => CliProofBackend::Stwo,
+    });
+    if verification_profile == CliStarkProfile::PublicationV1
+        && selected_backend != CliProofBackend::Vanilla
+    {
+        return Err(VmError::InvalidConfig(
+            "publication-v1 verification is reserved for vanilla proofs".to_string(),
+        ));
+    }
     let policy = StarkVerificationPolicy {
         min_conjectured_security_bits: {
             let mut floor =
                 min_conjectured_security.max(verification_profile.min_conjectured_security_bits());
+            if verification_profile == CliStarkProfile::PublicationV1 {
+                floor =
+                    floor.max(publication_v1_security_floor_policy().min_conjectured_security_bits);
+            }
             if strict {
                 floor = floor.max(StarkVerificationPolicy::strict().min_conjectured_security_bits);
             }

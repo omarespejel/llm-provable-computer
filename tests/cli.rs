@@ -925,6 +925,28 @@ fn cli_stark_help_describes_profile_flags() {
 }
 
 #[test]
+fn cli_rejects_publication_v1_with_stwo_backend() {
+    let proof_path =
+        unique_temp_dir("cli-stark-proof-publication-profile-stwo").with_extension("json");
+
+    let mut prove = tvm_command();
+    prove
+        .arg("prove-stark")
+        .arg("programs/addition.tvm")
+        .arg("--backend")
+        .arg("stwo")
+        .arg("--stark-profile")
+        .arg("publication-v1")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "publication-v1 is reserved for cited vanilla evidence",
+        ));
+}
+
+#[test]
 fn cli_verify_stark_publication_profile_reexecutes() {
     let proof_path = unique_temp_dir("cli-stark-proof-publication-profile").with_extension("json");
 
