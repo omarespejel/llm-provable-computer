@@ -46,9 +46,9 @@ Meaning:
 
 Examples:
 
-- `docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/`
-- `docs/paper/artifacts/stwo-transformer-accumulation-semantics-v1-2026-04-22/`
-- `docs/paper/artifacts/stwo-richer-gemma-window-family-v1-2026-04-22/`
+- `docs/paper/artifacts/stwo-repeated-gemma-slice-accumulation-v1-2026-04-21/`
+- `docs/paper/artifacts/stwo-folded-gemma-slice-family-v1-2026-04-21/`
+- `docs/paper/artifacts/stwo-multi-interval-folded-gemma-v1-2026-04-21/`
 
 ## 5. Recursion contract
 

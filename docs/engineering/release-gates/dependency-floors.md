@@ -41,7 +41,7 @@ which keeps stale ignores from accumulating.
 | `RUSTSEC-2024-0436` (paste) | `ark-ff` 0.5.0 + `ratatui` 0.29.0   | upstream `ark-ff` / `ratatui` upgrade |
 | `RUSTSEC-2026-0002` (lru)   | `ratatui` 0.29.0 → lru 0.12.5       | upstream `ratatui` upgrade off lru 0.12 |
 | `core2@0.4.0` (yanked)      | `burn-dataset` / `image` / `ravif`   | upstream chain moves off core2 0.4.0  |
-| `RUSTSEC-2026-0097` (rand)  | `cargo-audit` only; upstream stacks still resolve affected `rand` 0.8.6 | upstream stacks move to fixed `rand` releases |
+| `RUSTSEC-2026-0105` (core2) | `cargo-audit` only; the optional Burn image/export chain still resolves `core2 0.4.0` | upstream chain moves off core2 0.4.0 |
 
 `RUSTSEC-2026-0104` (rustls-webpki) is not in the ignore list because the
 lockfile pins crate versions that carry the upstream fix. Re-introducing the

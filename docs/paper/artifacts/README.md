@@ -21,10 +21,6 @@ The active paper-facing bundles are:
 - `stwo-folded-gemma-slice-family-v1-2026-04-21/`
 - `stwo-multi-interval-folded-gemma-v1-2026-04-21/`
 - `stwo-richer-multi-interval-gemma-v1-2026-04-21/`
-- `stwo-repeated-richer-multi-interval-gemma-v1-2026-04-22/`
-- `stwo-repeated-window-fold-tree-v1-2026-04-22/`
-- `stwo-transformer-accumulation-semantics-v1-2026-04-22/`
-- `stwo-richer-gemma-window-family-v1-2026-04-22/`
 
 These are the bundles that should be treated as the paper's primary reproducibility and
 systems-evidence surfaces.
@@ -120,57 +116,9 @@ source JSON size while remaining only `1,886` bytes larger than the thinner
 Phase101.5 folded prototype. This remains a verifier-bound, pre-recursive
 artifact line rather than a cryptographic accumulation claim.
 
-The `stwo-repeated-richer-multi-interval-gemma-v1-2026-04-22` directory
-extends that line across repeated multi-interval windows. It freezes one
-single-window Phase99 baseline, one explicit Phase105 repeated-window source
-artifact, one Phase106 folded repeated-window prototype, and one Phase107
-richer repeated-window derivative. The bundle records `1,034,361` explicit
-repeated multi-interval JSON bytes, `4,740` folded repeated multi-interval JSON
-bytes, and `5,554` folded richer repeated multi-interval JSON bytes. So the
-Phase106 folded prototype is about `0.4583%` of the explicit repeated-window
-source size, while the Phase107 richer derivative is about `0.5369%` of that
-same source and only `814` bytes larger than the thinner Phase106 surface. The
-explicit repeated-window artifact also saves `1,031,279` bytes versus blind
-duplication of the single-window Phase99 baseline. This remains a verifier-bound,
-pre-recursive artifact line rather than a cryptographic accumulation claim.
-
-The `stwo-repeated-window-fold-tree-v1-2026-04-22` directory extends that
-same line with the first repeated-window scaling sweep plus the first
-transformer-specific pair-fold and repeated-window fold-tree surfaces. The
-bundle records `5,554` Phase107 bytes at `2` windows, `7,484` Phase107 bytes
-at `4` windows, and `11,343` Phase107 bytes at `8` windows. It then records a
-`3,042`-byte Phase109 pair-fold artifact against the `7,484`-byte explicit
-`4`-window Phase107 source, so the first same-tier pair fold is about
-`40.6467%` of the explicit `4`-window surface. It also records a
-`12,307`-byte Phase110 fold-tree artifact against the `11,343`-byte explicit
-`8`-window Phase107 source, so the current verifier-bound fold tree is about
-`108.4986%` of the explicit `8`-window surface. In other words: the pair fold
-already compacts the same-tier `4`-window artifact, but the current fold tree
-does not yet compress the same-tier `8`-window artifact. This remains a
-verifier-bound, pre-recursive artifact line rather than a cryptographic
-accumulation claim.
-
-The `stwo-transformer-accumulation-semantics-v1-2026-04-22` directory extends
-that same line with the first compact transformer-specific accumulation-semantics
-handoff over the frozen Phase107 `8`-window leaf family. The bundle records a
-`2,283`-byte Phase112 semantic handoff against the `12,307`-byte Phase110
-fold-tree artifact and the `11,343`-byte explicit Phase107 `8`-window source.
-So the current semantic handoff is about `18.5504%` of the Phase110 fold-tree
-surface and about `20.1270%` of the explicit Phase107 `8`-window surface. This
-remains a verifier-bound, pre-recursive semantic artifact rather than a
-cryptographic accumulation or prover-time compression claim.
-
-The `stwo-richer-gemma-window-family-v1-2026-04-22` directory extends that
-same line with the first compact richer-family derivative over the frozen
-Phase112 semantic handoff. The bundle records a `3,031`-byte Phase113 richer
-Gemma window-family artifact against the `11,343`-byte explicit Phase107
-`8`-window source, the `12,307`-byte Phase110 fold-tree artifact, and the
-`2,283`-byte Phase112 semantic handoff. So the richer-family derivative is
-about `26.7213%` of the explicit Phase107 `8`-window surface and about
-`24.6283%` of the Phase110 fold-tree surface, while costing only `748` bytes
-more than the thinner Phase112 semantics layer. This remains a verifier-bound,
-pre-recursive richer-family artifact rather than a cryptographic accumulation
-or matched public benchmark claim.
+Later 2026-04-22 accumulation-semantics and richer-window-family outputs are
+being split into their own artifact-line PR. They are not checked in on this
+branch, so they are not listed here as active cited bundles.
 
 Later Phase81-84 translated seam surfaces remain implemented in-repo, but they are not
 yet cut as frozen publication-facing artifact directories.

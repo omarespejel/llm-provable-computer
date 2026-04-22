@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import pathlib
 import sys
+import tempfile
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -28,6 +30,12 @@ def load_json(path: pathlib.Path) -> dict:
 
 
 class DecodingFuzzCorpusGeneratorTests(unittest.TestCase):
+    def write_phase113_source(self, root: pathlib.Path, raw: bytes) -> pathlib.Path:
+        fixture = root / GEN.PHASE113_SOURCE_FIXTURE
+        fixture.parent.mkdir(parents=True, exist_ok=True)
+        fixture.write_bytes(raw)
+        return fixture
+
     def test_phase29_commitment_mirror_matches_checked_in_fixture(self) -> None:
         contract = load_json(PHASE29_FIXTURE)
         self.assertEqual(
@@ -52,6 +60,50 @@ class DecodingFuzzCorpusGeneratorTests(unittest.TestCase):
             contract["input_contract_commitment"],
             GEN.commit_phase29_contract(contract),
         )
+
+    def test_load_phase113_fixture_reads_checked_in_source(self) -> None:
+        payload = GEN.load_phase113_fixture(ROOT)
+        self.assertIsInstance(payload, dict)
+        self.assertTrue(payload)
+
+    def test_load_phase113_fixture_missing_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            with self.assertRaises(FileNotFoundError):
+                GEN.load_phase113_fixture(root)
+
+    def test_load_phase113_fixture_digest_mismatch_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            self.write_phase113_source(root, b"{}")
+            with self.assertRaises(ValueError):
+                GEN.load_phase113_fixture(root)
+
+    def test_load_phase113_fixture_invalid_json_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            raw = b"{not-json"
+            self.write_phase113_source(root, raw)
+            original = GEN.PHASE113_SOURCE_SHA256
+            GEN.PHASE113_SOURCE_SHA256 = hashlib.sha256(raw).hexdigest()
+            try:
+                with self.assertRaises(ValueError):
+                    GEN.load_phase113_fixture(root)
+            finally:
+                GEN.PHASE113_SOURCE_SHA256 = original
+
+    def test_load_phase113_fixture_non_object_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            raw = b"[1,2,3]\n"
+            self.write_phase113_source(root, raw)
+            original = GEN.PHASE113_SOURCE_SHA256
+            GEN.PHASE113_SOURCE_SHA256 = hashlib.sha256(raw).hexdigest()
+            try:
+                with self.assertRaises(TypeError):
+                    GEN.load_phase113_fixture(root)
+            finally:
+                GEN.PHASE113_SOURCE_SHA256 = original
 
 
 if __name__ == "__main__":

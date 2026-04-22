@@ -133,6 +133,8 @@ The repository assumes the following are trusted at the level stated.
 - `publication-v1` for the vanilla path is a repository-level verifier floor based on the
   current conjectured-security estimator; it should be treated as stronger than
   `production-v1`, but it does not by itself prove any external conservative-bit theorem.
+- At the CLI layer, `publication-v1` is restricted to the vanilla backend; the CLI
+  rejects `publication-v1` when invoked with non-vanilla backends.
 
 ### Environment assumptions
 
@@ -201,7 +203,8 @@ Public-facing text in this repository should follow these rules.
 - Treat decode / carried-state artifacts as supporting evidence unless the verifier surface
   itself is the subject of the claim.
 - Treat `--verify-all` and related multi-engine checks as differential testing, not proof.
-- Treat the legacy vanilla bundle as a local reproducibility baseline unless a document
-  explicitly says it is using the stronger `publication-v1` vanilla tier.
+- Treat vanilla artifacts at the `production-v1` profile as the local reproducibility
+  baseline unless a document explicitly says it is using the stronger
+  `publication-v1` vanilla tier.
 - Do not describe folded, repeated-window, or accumulation-semantics artifacts as
   recursive cryptographic compression.
