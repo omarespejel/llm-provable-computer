@@ -85,29 +85,38 @@ Introduce one new artifact:
 
 - `Phase112TransformerAccumulationSemanticsArtifact`
 
-This artifact should bind only:
+At minimum, and in the current implementation in full artifact form, this
+artifact binds:
 
-- source leaf-artifact sequence commitment,
-- source leaf-subtree commitment,
-- repeated-window schedule commitment,
+- artifact version, semantic scope, artifact commitment, and program label,
+- total leaf artifacts, total windows, intervals per window, and interval total
+  slices,
+- token-position start, token-position stride, window-token-position stride,
+  start block index, terminal token position, and terminal block index,
+- bounded fold arity,
 - shared primitive artifact commitment,
 - shared table-registry commitment,
 - shared execution-proof commitment,
 - shared execution backend / statement versions,
-- total windows,
-- intervals per window,
-- interval total slices,
-- token-position start,
-- token-position stride,
-- window-token-position stride,
-- start block index,
-- terminal token position,
-- terminal block index,
+- source leaf-artifact sequence commitment,
+- source leaf-subtree commitment,
+- repeated-window schedule commitment,
 - global start boundary commitment,
 - global end boundary commitment,
+- first and terminal Phase102 artifact commitments,
 - semantic totals:
   - local score sum
   - global score sum
+  - grouped value-mix sum
+  - residual output sum
+  - final accumulator sum
+- normalization ranges:
+  - primary norm-squared min / max
+  - secondary norm-squared min / max
+- activation output totals:
+  - primary activation output sum
+  - secondary activation output sum
+- final accumulation-semantics commitment.
   - grouped value mix sum
   - residual output sum
   - final accumulator sum

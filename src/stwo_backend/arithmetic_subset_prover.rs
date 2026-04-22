@@ -88,6 +88,10 @@ const GEMMA_BLOCK_V4_SHARED_NORMALIZATION_SCOPE: &str =
     "stwo_linear_block_v4_with_lookup_execution_with_shared_normalization_lookup";
 const GEMMA_BLOCK_V4_SHARED_ACTIVATION_SCOPE: &str =
     "stwo_linear_block_v4_with_lookup_execution_with_shared_binary_step_lookup";
+const LEGACY_GEMMA_BLOCK_V4_SHARED_NORMALIZATION_SCOPE: &str =
+    "stwo_gemma_block_v4_execution_with_shared_normalization_lookup";
+const LEGACY_GEMMA_BLOCK_V4_SHARED_ACTIVATION_SCOPE: &str =
+    "stwo_gemma_block_v4_execution_with_shared_binary_step_lookup";
 const DECODING_STEP_V1_SHARED_NORMALIZATION_SCOPE: &str =
     "stwo_decoding_step_v1_execution_with_shared_normalization_lookup";
 const DECODING_STEP_V1_SHARED_ACTIVATION_SCOPE: &str =
@@ -902,11 +906,12 @@ fn verify_phase10_embedded_shared_normalization(
         )));
     }
     let expected_scope = shared_normalization_scope(&proof.claim.program);
-    if embedded.semantic_scope != expected_scope {
+    if !shared_normalization_scope_matches(&proof.claim.program, &embedded.semantic_scope) {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported {} embedded shared normalization scope `{}`",
+            "unsupported {} embedded shared normalization scope `{}` (expected `{}`)",
             shared_program_label(&proof.claim.program),
-            embedded.semantic_scope
+            embedded.semantic_scope,
+            expected_scope
         )));
     }
     let canonical_rows =
@@ -977,11 +982,12 @@ fn verify_phase10_embedded_shared_activation_lookup(
         )));
     }
     let expected_scope = shared_activation_scope(&proof.claim.program);
-    if embedded.semantic_scope != expected_scope {
+    if !shared_activation_scope_matches(&proof.claim.program, &embedded.semantic_scope) {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported {} embedded shared activation scope `{}`",
+            "unsupported {} embedded shared activation scope `{}` (expected `{}`)",
             shared_program_label(&proof.claim.program),
-            embedded.semantic_scope
+            embedded.semantic_scope,
+            expected_scope
         )));
     }
     let canonical_rows =
@@ -2052,6 +2058,33 @@ fn shared_activation_scope(program: &Program) -> &str {
         DECODING_STEP_V1_SHARED_ACTIVATION_SCOPE
     } else {
         GEMMA_BLOCK_V4_SHARED_ACTIVATION_SCOPE
+    }
+}
+
+fn shared_normalization_scope_matches(program: &Program, actual_scope: &str) -> bool {
+    if matches_decoding_step_v2(program) {
+        actual_scope == DECODING_STEP_V2_SHARED_NORMALIZATION_SCOPE
+    } else if matches_decoding_step_v1(program) {
+        actual_scope == DECODING_STEP_V1_SHARED_NORMALIZATION_SCOPE
+    } else {
+        matches!(
+            actual_scope,
+            GEMMA_BLOCK_V4_SHARED_NORMALIZATION_SCOPE
+                | LEGACY_GEMMA_BLOCK_V4_SHARED_NORMALIZATION_SCOPE
+        )
+    }
+}
+
+fn shared_activation_scope_matches(program: &Program, actual_scope: &str) -> bool {
+    if matches_decoding_step_v2(program) {
+        actual_scope == DECODING_STEP_V2_SHARED_ACTIVATION_SCOPE
+    } else if matches_decoding_step_v1(program) {
+        actual_scope == DECODING_STEP_V1_SHARED_ACTIVATION_SCOPE
+    } else {
+        matches!(
+            actual_scope,
+            GEMMA_BLOCK_V4_SHARED_ACTIVATION_SCOPE | LEGACY_GEMMA_BLOCK_V4_SHARED_ACTIVATION_SCOPE
+        )
     }
 }
 

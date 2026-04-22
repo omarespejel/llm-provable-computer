@@ -46,7 +46,7 @@ cleanup_bundle_publish() {
 }
 trap cleanup_bundle_publish EXIT
 
-GENERATOR_SCRIPT_REL="scripts/paper/generate_stwo_richer_linear-block_window_family_scaling_bundle.sh"
+GENERATOR_SCRIPT_REL="scripts/paper/generate_stwo_richer_linear_block_window_family_scaling_bundle.sh"
 GENERATOR_SCRIPT="$REPO_ROOT/$GENERATOR_SCRIPT_REL"
 GENERATOR_SCRIPT_SHA256="$(shasum -a 256 "$GENERATOR_SCRIPT" | awk '{print $1}')"
 GENERATOR_GIT_REVISION="$(git rev-parse HEAD)"
@@ -106,9 +106,8 @@ printf 'label\tseconds\n' > "$BENCHMARKS"
 run_timed() {
   local label="$1"
   shift
-  local started_ns ended_ns elapsed rendered
+  local rendered
   local -a rendered_args=()
-  started_ns="$(python3 -c 'import time; print(time.time_ns())')"
   for arg in "$@"; do
     local rendered_arg="$arg"
     case "$rendered_arg" in
@@ -134,15 +133,9 @@ run_timed() {
   printf -v rendered '%q ' "${rendered_args[@]}"
   printf '%s\n' "${rendered% }" | tee -a "$COMMANDS_LOG"
   "$@"
-  ended_ns="$(python3 -c 'import time; print(time.time_ns())')"
-  elapsed="$(python3 - "$started_ns" "$ended_ns" <<'PY'
-import sys
-started = int(sys.argv[1])
-ended = int(sys.argv[2])
-print(f"{(ended - started) / 1_000_000_000:.3f}")
-PY
-)"
-  printf '%s\t%s\n' "$label" "$elapsed" >> "$BENCHMARKS"
+  # Keep the frozen bundle deterministic: benchmark rows record stage labels,
+  # not wall-clock timings.
+  printf '%s\t%s\n' "$label" "N/A" >> "$BENCHMARKS"
 }
 
 cat > "$MANIFEST" <<MANIFEST
@@ -408,7 +401,8 @@ EOF2
 )
 
 if [ -e "$BUNDLE_FINAL_DIR" ]; then
-  BACKUP_DIR="$BUNDLE_FINAL_DIR.bak.$$"
+  BACKUP_DIR="$(mktemp -d "$CANON_EXPECTED_PREFIX/.backup.${BUNDLE_FINAL_NAME}.XXXXXX")"
+  rm -rf -- "$BACKUP_DIR"
   mv -- "$BUNDLE_FINAL_DIR" "$BACKUP_DIR"
 fi
 mv -- "$BUNDLE_DIR" "$BUNDLE_FINAL_DIR"
