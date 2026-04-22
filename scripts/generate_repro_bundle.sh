@@ -4,6 +4,7 @@
 #
 # Usage:
 #   ./scripts/generate_repro_bundle.sh
+#   STARK_PROFILE=publication-v1 ./scripts/generate_repro_bundle.sh
 #   ./scripts/generate_repro_bundle.sh /custom/output/dir
 
 set -euo pipefail

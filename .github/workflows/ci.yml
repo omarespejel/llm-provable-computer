@@ -296,7 +296,7 @@ jobs:
       - name: Export ONNX from CLI
         run: cargo run --features onnx-export --bin tvm -- export-onnx programs/fibonacci.tvm -o compiled/fibonacci
 
-      - name: Verify all engines from CLI
+      - name: Differential engine cross-check from CLI
         run: cargo run --features full --bin tvm -- run programs/fibonacci.tvm --verify-all
 
       - name: Validate exported ONNX in Python
@@ -330,6 +330,8 @@ jobs:
             corpus: fuzz/corpus/phase29_recursive_compression_input_contract
           - target: phase30_decoding_step_proof_envelope_manifest
             corpus: fuzz/corpus/phase30_decoding_step_proof_envelope_manifest
+          - target: phase113_richer_gemma_window_family
+            corpus: fuzz/corpus/phase113_richer_gemma_window_family
 
     steps:
       - name: Checkout

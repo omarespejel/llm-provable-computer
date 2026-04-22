@@ -28,11 +28,11 @@ Review and edit with extra caution:
 
 ## Handoff and continuity
 
-- Fresh agents should read `/Users/espejelomar/StarkNet/zk-ai/llm-provable-computer-codex/.codex/START_HERE.md` immediately after this file.
-- Treat `/Users/espejelomar/StarkNet/zk-ai/llm-provable-computer-codex/.codex/HANDOFF.md` as the repository-local continuity note for OS upgrades, app reinstalls, and agent reinitialization.
+- Fresh agents should read `.codex/START_HERE.md` immediately after this file.
+- Treat `.codex/HANDOFF.md` as the repository-local continuity note for OS upgrades, app reinstalls, and agent reinitialization.
 - Keep the distinction explicit between the bounded decode/carry line and the tensor-native S-two line; do not let a resume collapse them into one claim.
-- Before planned interruptions such as macOS upgrades, checkpoint current branch state into a local markdown note under `/Users/espejelomar/StarkNet/zk-ai/llm-provable-computer-codex/.codex/`.
-- For off-machine or GitHub continuity, mirror the essential handoff state into `/Users/espejelomar/StarkNet/zk-ai/llm-provable-computer-codex/docs/engineering/codex-repo-handoff-2026-04-22.md` or its successor tracked note.
+- Before planned interruptions such as macOS upgrades, checkpoint current branch state into a local markdown note under the repo-local `.codex/` directory.
+- For off-machine or GitHub continuity, mirror the essential handoff state into `docs/engineering/codex-repo-handoff-2026-04-22.md` or its successor tracked note.
 
 ## Validation expectations
 

@@ -3,9 +3,14 @@
 **A deterministic transformer runtime with a repository-backed proof stack.**
 
 This repository compiles a compact assembly language into a transformer-shaped runtime,
-executes it deterministically, records the execution trace, and proves the claimed
-computation with a transparent STARK. The same program can also run through independent
-native, Burn, and ONNX paths so semantic drift is caught before proof generation.
+executes it deterministically, records the execution trace, and exposes two proof-facing
+lines:
+
+- a tensor-native, lookup-aware `stwo` artifact stack, which is the main research route,
+- a bounded decode / verifier-boundary machine, which remains supporting evidence.
+
+The same program can also run through independent native, Burn, and ONNX paths so
+semantic drift is caught before proof generation or artifact freezing.
 
 The execution model builds on Percepta's
 [*Can LLMs Be Computers?*](https://www.percepta.ai/blog/can-llms-be-computers), then
@@ -40,62 +45,70 @@ No sampling. No stochastic output. Same input, same output, every time.
 - Compile `.tvm` assembly into a deterministic transformer-style runtime.
 - Run the same program through up to four engines and optionally fail on the first
   semantic divergence when verification paths are enabled.
-- Prove `statement-v1` native ISA execution with the in-repo vanilla STARK.
-- Exercise an experimental `stwo` backend for shipped arithmetic fixtures, shared-table
-  lookup demos, transformer-shaped fixtures, and bounded proof-carrying decoding
+- Keep a legacy vanilla STARK baseline for local arithmetic `statement-v1` proofs.
+- Exercise a tensor-native `stwo` backend for shipped arithmetic fixtures, shared-table
+  lookup proofs, transformer-shaped fixtures, and verifier-bound carried-state
   artifacts.
 - Regenerate frozen paper bundles, artifact manifests, and figure inputs from committed
   scripts.
 
 ## Proof Surfaces
 
-| Surface        | Status        | What it actually covers                                                                                                       |
-| -------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `statement-v1` | Stable        | Vanilla STARK proof of native ISA execution, plus enforced transformer/native semantic agreement checks                       |
-| `stwo-backend` | Experimental  | Narrow `statement-v1` proving surface for shipped fixtures, lookup demos, transformer-shaped fixtures, and decoding artifacts |
-| `research-v2`  | Artifact-only | Semantic agreement artifacts for transformer vs ONNX, not yet a full STARK claim                                              |
-| `research-v3`  | Artifact-only | Bounded multi-engine transformer/native/Burn/ONNX equivalence-kernel artifacts with transition relation hashes                |
+| Surface | Status | What it actually covers |
+| --- | --- | --- |
+| `stwo` tensor-native artifacts | Active research surface | Shared-table lookup proofs, transformer-shaped fixtures, repeated-window artifacts, and verifier-bound accumulation semantics |
+| Decode / carried-state machine | Supporting evidence | Proof-carrying decode, typed carried boundaries, manifest integrity, and pre-recursive packaging layers |
+| Vanilla `statement-v1` baseline | Legacy local baseline | Arithmetic native-ISA execution proofs and verifier policy plumbing used for local reproducibility and regression testing |
+| `research-v2` | Artifact-only | Semantic agreement artifacts for transformer vs ONNX, not yet a full STARK claim |
+| `research-v3` | Artifact-only | Differential multi-engine artifacts for transformer/native/Burn/ONNX agreement, not a cryptographic equivalence proof |
 
 The important boundary is explicit: this repo does **not** yet prove full
-standard-softmax transformer inference on `stwo`. The current proving boundary is native
-ISA execution with semantic agreement checks layered around the transformer runtime.
+standard-softmax transformer inference on `stwo`, and it does **not** claim matched
+public wall-clock dominance over modern SNARK-heavy zkML systems. The current value is
+that the repository makes the structural boundary, lookup pressure, and carried-state
+surfaces explicit and reproducible.
 
 Hardening and merge discipline for trusted-core work is formalized in:
 
 - [`docs/engineering/hardening-policy.md`](docs/engineering/hardening-policy.md)
 - [`docs/engineering/hardening-strategy.md`](docs/engineering/hardening-strategy.md)
 
-Current public proof surfaces:
+## Public Artifact Kinds
 
-- native-ISA `statement-v1` arithmetic proofs
-- shared-table lookup proofs
-- reusable block-shaped execution proofs
-- step-level proof-carrying decode artifacts
-- bounded multi-runtime semantic-agreement artifacts
-- pre-recursive aggregation bundles
+Internal phase numbers remain in code and frozen bundle names. Publicly, the repo now
+talks about five artifact kinds:
+
+| Kind | What it means here | Representative frozen example |
+| --- | --- | --- |
+| Execution proof | One concrete proof-carrying execution surface over a fixed relation | `docs/paper/artifacts/stwo-tensor-native-transformer-shaped-v1-2026-04-21/` |
+| Lookup proof | One shared-table or lookup-backed primitive with verifier-enforced table identity | `docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/` |
+| Decoding-step proof | One bounded decode or carried-state handoff artifact | `docs/paper/artifacts/phase70-80-proof-checked-decode-bridge-v1-2026-04-21/` |
+| Accumulation manifest | One verifier-bound repeated-structure or fold-family packaging layer | `docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/` |
+| Recursion contract | One pre-recursive bridge or source-bound recursion-adjacent contract | `docs/paper/artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/` |
 
 ## Start Here
 
-| Goal                             | Command                                                                                                                                 | Notes                                            |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| Run a program                    | `cargo run --bin tvm -- programs/fibonacci.tvm`                                                                                         | Fastest way to see the VM work                   |
-| Inspect a full trace             | `cargo run --bin tvm -- run programs/fibonacci.tvm --trace`                                                                             | Emits the full machine-state trace               |
-| Prove with the vanilla STARK     | `cargo run --bin tvm -- prove-stark programs/fibonacci.tvm -o fib.proof.json`                                                           | Stable proof path                                |
-| Verify a proof                   | `cargo run --bin tvm -- verify-stark fib.proof.json`                                                                                    | CLI default uses `production-v1` / `ProductionV1`, including lockstep semantic checks |
-| Try the experimental `stwo` path | `cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- prove-stark programs/addition.tvm -o add.proof.json --backend stwo` | Pinned nightly required                          |
-| Regenerate paper artifacts       | `./scripts/generate_repro_bundle.sh`                                                                                                    | Publication-facing bundle                        |
+| Goal | Command | Notes |
+| --- | --- | --- |
+| Run a program | `cargo run --bin tvm -- programs/fibonacci.tvm` | Fastest way to see the VM work |
+| Inspect a full trace | `cargo run --bin tvm -- run programs/fibonacci.tvm --trace` | Emits the full machine-state trace |
+| Run a local vanilla baseline proof | `cargo run --bin tvm -- prove-stark programs/fibonacci.tvm -o fib.proof.json` | Legacy local baseline; default profile is `production-v1` |
+| Verify a local vanilla baseline proof | `cargo run --bin tvm -- verify-stark fib.proof.json` | Default verifier profile is `production-v1`; `publication-v1` exists for cited vanilla evidence |
+| Try the active `stwo` path | `cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- prove-stark programs/addition.tvm -o add.proof.json --backend stwo` | Pinned nightly required |
+| Regenerate the local repro baseline | `./scripts/generate_repro_bundle.sh` | For local reproducibility and legacy baseline evidence |
 
 ## Toolchains
 
-| Task                                            | Requirement                                             |
-| ----------------------------------------------- | ------------------------------------------------------- |
-| Core runtime, vanilla STARK, default tests      | Stable Rust                                             |
-| `--features stwo-backend` compile and CLI paths | `cargo +nightly-2025-07-14`                             |
-| ONNX validation and paper figure scripts        | Python venv + `pip install -r scripts/requirements.txt` |
+| Task | Requirement |
+| --- | --- |
+| Core runtime and legacy vanilla baseline | Stable Rust |
+| `--features stwo-backend` compile and CLI paths | `cargo +nightly-2025-07-14` |
+| ONNX validation and paper figure scripts | Python venv + `pip install -r scripts/requirements.txt` |
 
-If you want the shortest successful path, start on stable Rust with the default runtime
-and vanilla STARK commands. Move to `stwo` only when you need the experimental backend
-surface.
+If you want the shortest successful path, start on stable Rust with the default runtime.
+If you want the current paper-facing proof surfaces, move to `stwo` and the frozen
+artifact commands below. The vanilla path remains useful as a local baseline, but it is
+no longer the main publication story.
 
 ______________________________________________________________________
 
@@ -195,6 +208,7 @@ For stronger proving settings in the bundle:
 
 ```bash
 STARK_PROFILE=production-v1 INCLUDE_FIBONACCI_PROOF=1 ./scripts/generate_repro_bundle.sh
+STARK_PROFILE=publication-v1 INCLUDE_FIBONACCI_PROOF=1 ./scripts/generate_repro_bundle.sh
 ```
 
 ### Example Output
@@ -309,8 +323,8 @@ ______________________________________________________________________
 
 ## Execution Engines
 
-The same compiled program runs through four independent backends. The verifier executes
-them in lockstep and fails on the first divergence.
+The same compiled program can run through four independent backends. Differential
+testing executes them in lockstep and fails on the first divergence.
 
 | Engine                | What it is                                                           | Purpose                  |
 | --------------------- | -------------------------------------------------------------------- | ------------------------ |
@@ -326,14 +340,18 @@ cargo run --bin tvm -- run programs/fibonacci.tvm --engine transformer
 cargo run --features burn-model --bin tvm -- run programs/fibonacci.tvm --engine burn
 cargo run --features onnx-export --bin tvm -- run programs/fibonacci.tvm --engine onnx
 
-# Differential verification
+# Differential testing
 cargo run --bin tvm -- run programs/fibonacci.tvm --verify-native
 cargo run --features full --bin tvm -- run programs/fibonacci.tvm --verify-all
 ```
 
 If `--verify-all` passes and `scripts/validate_onnx.py` reproduces the result from
-exported ONNX files, the computation is not trapped inside custom Rust structs. It is a
-real, portable transformer computation with independent cross-checks.
+exported ONNX files, the computation is not trapped inside custom Rust structs. That is
+useful oracle evidence, but it is **not** itself the cryptographic proof claim. Treat
+these commands as differential testing and portability checks.
+
+The differential-testing contract is documented in
+[`docs/engineering/differential-testing.md`](docs/engineering/differential-testing.md).
 
 ### ONNX Export + Python Validation
 
@@ -356,8 +374,10 @@ ______________________________________________________________________
 
 ## Proof Stack
 
-The vanilla STARK prover operates over **F_p** where p = 1 + 407 · 2^119 (a 128-bit
-prime with a large power-of-two subgroup for NTT). The in-repo implementation includes:
+The paper-facing research line is the tensor-native `stwo` stack described below. The
+vanilla STARK implementation remains in-repo as a local baseline and verifier-policy
+testbed. It operates over **F_p** where p = 1 + 407 · 2^119 (a 128-bit prime with a
+large power-of-two subgroup for NTT). The in-repo implementation includes:
 
 | Component         | What it does                                                        |
 | ----------------- | ------------------------------------------------------------------- |
@@ -381,6 +401,10 @@ cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proo
 # Prove with the named production profile (v1)
 cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proof.json \
   --stark-profile production-v1
+
+# Prove with the stronger publication profile (v1)
+cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proof.json \
+  --stark-profile publication-v1
 
 # Prove with explicit STARK options (overrides any selected profile)
 cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proof.json \
@@ -548,6 +572,62 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-folded-repeated-multi-interval-gemma-accumulation-prototype-artifact \
   folded-repeated-multi-interval-gemma-accumulation-prototype.stwo.json \
   --source repeated-multi-interval-gemma-richer-family-accumulation.stwo.json
+
+# Build and verify the first transformer-shaped repeated-window fold surfaces
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-transformer-specific-fold-operator-artifact \
+  --left docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-0.stwo.json \
+  --right docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-1.stwo.json \
+  -o phase109-transformer-specific-fold-operator-w4.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-transformer-specific-fold-operator-artifact \
+  phase109-transformer-specific-fold-operator-w4.stwo.json \
+  --left docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-0.stwo.json \
+  --right docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-1.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-repeated-window-fold-tree-artifact \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-0.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-1.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-2.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-3.stwo.json \
+  -o phase110-repeated-window-fold-tree-w8.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-repeated-window-fold-tree-artifact \
+  phase110-repeated-window-fold-tree-w8.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-0.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-1.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-2.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-3.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-transformer-accumulation-semantics-artifact \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-0.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-1.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-2.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-3.stwo.json \
+  -o phase112-transformer-accumulation-semantics-w8.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-transformer-accumulation-semantics-artifact \
+  phase112-transformer-accumulation-semantics-w8.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-0.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-1.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-2.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-3.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prepare-stwo-richer-gemma-window-family-artifact \
+  --semantics phase112-transformer-accumulation-semantics-w8.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-0.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-1.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-2.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-3.stwo.json \
+  -o phase113-richer-gemma-window-family-w8.stwo.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  verify-stwo-richer-gemma-window-family-artifact \
+  phase113-richer-gemma-window-family-w8.stwo.json \
+  --semantics phase112-transformer-accumulation-semantics-w8.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-0.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-1.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-2.stwo.json \
+  --leaf docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-leaf-3.stwo.json
 
 # Freeze the publication-facing transformer-shaped tensor-native bundles
 bash scripts/paper/generate_stwo_tensor_native_transformer_bundle.sh
@@ -768,6 +848,9 @@ cargo run --bin tvm -- verify-stark fact.proof.json --reexecute
 # Verify with the production verification profile (reexec + minimum 32 bits)
 cargo run --bin tvm -- verify-stark fact.proof.json --verification-profile production-v1
 
+# Verify with the publication verification profile (minimum 96 conjectured bits)
+cargo run --bin tvm -- verify-stark fact.proof.json --verification-profile publication-v1
+
 # Verify with a custom minimum conjectured-security policy and strict mode
 cargo run --bin tvm -- verify-stark fact.proof.json --min-conjectured-security 64
 cargo run --bin tvm -- verify-stark fact.proof.json --strict
@@ -888,27 +971,31 @@ semantics):
   SMT-backed rewrite proof, randomized opaque-kernel test suite, or cryptographic proof
   of implementation equivalence.
 
-### Production Profile (v1)
+### Named Vanilla Profiles
 
-`production-v1` is a practical local proving profile intended for routine CI/integration
-checks:
+The vanilla backend now has two named roles:
 
-- `expansion_factor = 4`
-- `num_colinearity_checks = 16`
-- `security_level = 32`
-- `conjectured_security_bits = 32`
-- target proving budget: `<= 45s` (release build, `programs/fibonacci.tvm`, 103 steps)
+- `production-v1`: local proving and routine CI/integration work
+- `publication-v1`: intentionally stronger paper-facing vanilla evidence
 
-Measured reference (local release build):
+`production-v1` remains the CLI default. `publication-v1` is available when you want a
+paper-facing vanilla verifier floor without hand-tuning individual FRI parameters.
 
-| Profile       | Settings `(expansion, q, security)` | Conjectured bits | Prove time (`fibonacci`, 103 steps) |
-| ------------- | ----------------------------------- | ---------------- | ----------------------------------- |
-| default       | `(4, 2, 2)`                         | 4                | ~7-12s                              |
-| production-v1 | `(4, 16, 32)`                       | 32               | ~29s                                |
-| heavier       | `(8, 16, 32)`                       | 48               | ~61s                                |
+| Profile | Settings `(expansion, q, security)` | Conjectured bits | Intended use |
+| --- | --- | --- | --- |
+| `default` | `(4, 2, 2)` | `4` | Fast local experiments only |
+| `production-v1` | `(4, 16, 32)` | `32` | Routine local proving, CI, and smoke verification |
+| `publication-v1` | `(4, 48, 96)` | `96` | Stronger cited vanilla evidence; slower and not part of the default local loop |
 
-Verification checks STARK validity and (for the current `statement-v1` semantic scope)
-re-executes transformer/native lockstep to enforce equivalence against claim outputs.
+Reference checkpoint on local release builds for `programs/fibonacci.tvm` (103 steps):
+
+- `default`: about `7-12s`
+- `production-v1`: about `29s`
+- `publication-v1`: intentionally stronger; run it deliberately rather than assuming it
+  belongs in the fast local path
+
+Verification checks STARK validity and, for the current `statement-v1` semantic scope,
+can re-execute transformer/native lockstep to enforce equivalence against claim outputs.
 
 The proof is transparent and public. The claim includes statement metadata
 (`statement_version`, `semantic_scope`), the program, attention mode/configuration, step
@@ -1127,7 +1214,7 @@ ______________________________________________________________________
 | `burn-model`   | Burn tensor execution engine, `--verify-burn`                                                    |
 | `onnx-export`  | ONNX export, Tract execution engine, `--verify-onnx`                                             |
 | `stwo-backend` | Experimental S-two backend seam for `prove-stark --backend stwo` / `verify-stark --backend stwo` |
-| `full`         | `burn-model` + `onnx-export`, plus `--verify-all` convenience workflows                          |
+| `full`         | `burn-model` + `onnx-export`, plus multi-engine differential-testing workflows such as `--verify-all` |
 
 ```bash
 cargo test                    # Core suite
@@ -1170,12 +1257,12 @@ src/
   interpreter.rs        # Native reference interpreter
   state.rs              # MachineState encoding (d_model = 36)
   memory.rs             # Addressed memory with write histories
-  proof.rs              # VM AIR construction, STARK integration
+  proof.rs              # VM AIR construction, backend dispatch, verifier policy
   stwo_backend/         # Experimental S-two adapter + layout seam
   verification.rs       # Lockstep multi-engine differential verification
   tui.rs                # Interactive terminal viewer
   bin/tvm.rs            # CLI (clap)
-  vanillastark/         # Field, polynomial, NTT, Merkle, FRI, STARK
+  vanillastark/         # Legacy local baseline internals (hidden from public docs)
   burn_model.rs         # Burn Module definitions (optional)
   burn_runtime.rs       # Burn execution loop (optional)
   onnx_export.rs        # ONNX graph generation (optional)
@@ -1269,7 +1356,7 @@ is well past the old “dependency seam only” stage.
 
 ### Frozen Publication Artifacts
 
-- Vanilla reproducibility bundle: generated by `./scripts/generate_repro_bundle.sh`
+- Legacy vanilla reproducibility bundle: generated by `./scripts/generate_repro_bundle.sh`
 - Frozen narrow experimental `stwo` bundle:
   `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/`
 - Frozen proof-carrying aggregation bundle:
@@ -1291,16 +1378,18 @@ is well past the old “dependency seam only” stage.
   `scripts/paper/generate_stwo_transformer_shaped_bundle.sh`
 
 Older carried-state bundle generators remain available for archival provenance and
-engineering comparison, but the current paper package cites the frozen experimental
-`stwo` bundle, the frozen proof-carrying aggregation bundle, the April 20
-Phase63-65 verifier-surface checkpoint, and the April 21 Phase66-69 hardening
-checkpoint, plus the April 21 Phase70-80 proof-checked decode-bridge checkpoint and
-the April 21 transformer-shaped `stwo` bundle. That transformer-shaped `stwo` bundle
-freezes one reproducible source-bound artifact with `28s` prepare, `9s` verify,
-`9,348,044` artifact bytes, `5` source steps, `2` translated segments, and a package
-count reduction from `5` naive per-step packages to `2` composed translated segments.
-Later Phase81-84 translated seam surfaces are implemented in-repo, but they are not
-yet frozen as publication citation bundles.
+engineering comparison, but the current paper package should be read through the public
+artifact kinds listed above rather than through raw phase numbering alone. The active
+publication story is:
+
+- lookup proof: `stwo-shared-normalization-primitive-v1-2026-04-21/`
+- execution proof: `stwo-tensor-native-transformer-shaped-v1-2026-04-21/`
+- accumulation manifest: `stwo-repeated-window-fold-tree-v1-2026-04-22/`
+- decoding-step proof: `phase70-80-proof-checked-decode-bridge-v1-2026-04-21/`
+- recursion contract / bridge checkpoint: `phase63-65-proof-carrying-artifact-v1-2026-04-20/`
+
+The older vanilla bundle remains available as a local reproducibility baseline, but it
+is no longer the main paper-facing artifact narrative.
 
 Archival provenance generators:
 

@@ -192,7 +192,7 @@ index_md.write_text("\n".join(index_lines) + "\n")
 readme_lines = [
     "# S-two Experimental Artifact Bundle V1",
     "",
-    "This directory freezes the publication-facing exploratory `stwo` evidence tier referenced by the paper. It deliberately complements the vanilla-backend `production-v1` reproducibility bundle with four narrower experimental artifacts:",
+    "This directory freezes the publication-facing exploratory `stwo` evidence tier referenced by the paper. It deliberately complements the older vanilla `production-v1` local baseline with four narrower experimental artifacts:",
     "",
     "- `addition.stwo.proof.json`: one arithmetic `statement-v1` execution proof,",
     "- `shared-normalization.stwo.proof.json`: one shared-table lookup-backed normalization proof envelope,",

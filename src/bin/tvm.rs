@@ -18,13 +18,15 @@ use llm_provable_computer::proof::load_execution_stark_proof_with_limit;
 use llm_provable_computer::verify_engines;
 use llm_provable_computer::{
     conjectured_security_bits, load_execution_stark_proof, phase6_prepare_recursion_batch,
-    production_v1_stark_options, prove_execution_stark_with_backend_and_options, run_execution_tui,
-    save_execution_stark_proof, verify_execution_stark_with_backend_and_policy,
+    production_v1_stark_options, prove_execution_stark_with_backend_and_options,
+    publication_v1_stark_options, run_execution_tui, save_execution_stark_proof,
+    verify_execution_stark_with_backend_and_policy,
     verify_execution_stark_with_reexecution_and_policy, verify_model_against_native,
     Attention2DMode, ExecutionResult, ExecutionRuntime, ExecutionTraceEntry, MachineState,
     NativeInterpreter, ProgramCompiler, StarkProofBackend, StarkVerificationPolicy, TransformerVm,
     TransformerVmConfig, VanillaStarkExecutionProof, VanillaStarkProofOptions, VmError,
     PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS, PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS,
+    PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS, PUBLICATION_V1_TARGET_MAX_PROVING_SECONDS,
     STWO_RECURSION_BATCH_SCOPE_PHASE6, STWO_RECURSION_BATCH_VERSION_PHASE6,
 };
 #[cfg(feature = "onnx-export")]
@@ -39,8 +41,8 @@ use llm_provable_computer::{
     load_phase109_transformer_specific_fold_operator_artifact,
     load_phase10_shared_binary_step_lookup_proof, load_phase10_shared_normalization_lookup_proof,
     load_phase110_repeated_window_fold_tree_artifact,
-    load_phase112_transformer_accumulation_semantics_artifact, load_phase11_decoding_chain,
-    load_phase113_richer_gemma_window_family_artifact,
+    load_phase112_transformer_accumulation_semantics_artifact,
+    load_phase113_richer_gemma_window_family_artifact, load_phase11_decoding_chain,
     load_phase12_decoding_chain, load_phase12_shared_lookup_artifact,
     load_phase13_decoding_layout_matrix, load_phase14_decoding_chain,
     load_phase15_decoding_segment_bundle, load_phase16_decoding_segment_rollup,
@@ -116,8 +118,8 @@ use llm_provable_computer::{
     save_phase109_transformer_specific_fold_operator_artifact,
     save_phase10_shared_binary_step_lookup_proof, save_phase10_shared_normalization_lookup_proof,
     save_phase110_repeated_window_fold_tree_artifact,
-    save_phase112_transformer_accumulation_semantics_artifact, save_phase11_decoding_chain,
-    save_phase113_richer_gemma_window_family_artifact,
+    save_phase112_transformer_accumulation_semantics_artifact,
+    save_phase113_richer_gemma_window_family_artifact, save_phase11_decoding_chain,
     save_phase12_decoding_chain, save_phase12_shared_lookup_artifact,
     save_phase13_decoding_layout_matrix, save_phase14_decoding_chain,
     save_phase15_decoding_segment_bundle, save_phase16_decoding_segment_rollup,
@@ -192,8 +194,8 @@ use llm_provable_computer::{
     Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact,
     Phase109TransformerSpecificFoldOperatorArtifact, Phase110RepeatedWindowFoldTreeArtifact,
     Phase112TransformerAccumulationSemanticsArtifact, Phase113RicherGemmaWindowFamilyArtifact,
-    Phase29RecursiveCompressionInputContract,
-    Phase30DecodingStepProofEnvelopeManifest, Phase31RecursiveCompressionDecodeBoundaryManifest,
+    Phase29RecursiveCompressionInputContract, Phase30DecodingStepProofEnvelopeManifest,
+    Phase31RecursiveCompressionDecodeBoundaryManifest,
     Phase32RecursiveCompressionStatementContract, Phase33RecursiveCompressionPublicInputManifest,
     Phase34RecursiveCompressionSharedLookupManifest, Phase35RecursiveCompressionTargetManifest,
     Phase36RecursiveVerifierHarnessReceipt, Phase37RecursiveArtifactChainHarnessReceipt,
@@ -202,7 +204,9 @@ use llm_provable_computer::{
     Phase95RepeatedGemmaSliceAccumulationArtifact, Phase965FoldedGemmaSliceAccumulationArtifact,
     Phase98FoldedGemmaRicherSliceFamilyArtifact,
     Phase99MultiIntervalGemmaRicherFamilyAccumulationArtifact, StwoTransformerShapedArtifactBundle,
-    MAX_PHASE105_REPEATED_MULTI_INTERVAL_TOTAL_WINDOWS, MAX_PHASE99_MULTI_INTERVAL_TOTAL_INTERVALS,
+    MAX_PHASE105_REPEATED_MULTI_INTERVAL_TOTAL_WINDOWS,
+    MAX_PHASE110_REPEATED_WINDOW_FOLD_TREE_TOTAL_LEAVES,
+    MAX_PHASE99_MULTI_INTERVAL_TOTAL_INTERVALS,
     STWO_AGGREGATED_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE28,
     STWO_BACKEND_VERSION_PHASE12,
     STWO_CHAINED_FOLDED_INTERVALIZED_DECODING_STATE_RELATION_VERSION_PHASE27,
@@ -266,14 +270,14 @@ use llm_provable_computer::{
     STWO_REPEATED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_VERSION_PHASE105,
     STWO_REPEATED_WINDOW_FOLD_TREE_ARTIFACT_SCOPE_PHASE110,
     STWO_REPEATED_WINDOW_FOLD_TREE_ARTIFACT_VERSION_PHASE110,
+    STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_SCOPE_PHASE113,
+    STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_VERSION_PHASE113,
     STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_SCOPE_PHASE92,
     STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_VERSION_PHASE92,
     STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_SCOPE_PHASE93,
     STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_VERSION_PHASE93,
     STWO_TRANSFORMER_ACCUMULATION_SEMANTICS_ARTIFACT_SCOPE_PHASE112,
     STWO_TRANSFORMER_ACCUMULATION_SEMANTICS_ARTIFACT_VERSION_PHASE112,
-    STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_SCOPE_PHASE113,
-    STWO_RICHER_GEMMA_WINDOW_FAMILY_ARTIFACT_VERSION_PHASE113,
     STWO_TRANSFORMER_SPECIFIC_FOLD_OPERATOR_ARTIFACT_SCOPE_PHASE109,
     STWO_TRANSFORMER_SPECIFIC_FOLD_OPERATOR_ARTIFACT_VERSION_PHASE109,
 };
@@ -399,7 +403,7 @@ enum Command {
             value_parser = parse_attention_mode
         )]
         attention_mode: Attention2DMode,
-        /// Named STARK profile (recommended for repeatable proving policy).
+        /// Named STARK profile (`production-v1` for local work, `publication-v1` for cited vanilla evidence).
         #[arg(long, value_enum, default_value_t = CliStarkProfile::ProductionV1)]
         stark_profile: CliStarkProfile,
         /// STARK blowup factor (must be power of two and >= 4).
@@ -425,7 +429,7 @@ enum Command {
     VerifyStark {
         /// Path to the serialized proof JSON file.
         proof: PathBuf,
-        /// Verification policy profile.
+        /// Verification policy profile (`production-v1` for local work, `publication-v1` for cited vanilla evidence).
         #[arg(long, value_enum, default_value_t = CliStarkProfile::ProductionV1)]
         verification_profile: CliStarkProfile,
         /// Re-execute transformer/native runtimes from claim data and check equivalence metadata.
@@ -1472,6 +1476,7 @@ enum CliExecutionEngine {
 enum CliStarkProfile {
     Default,
     ProductionV1,
+    PublicationV1,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
@@ -1503,6 +1508,7 @@ impl CliStarkProfile {
         match self {
             Self::Default => "default",
             Self::ProductionV1 => "production-v1",
+            Self::PublicationV1 => "publication-v1",
         }
     }
 
@@ -1510,6 +1516,7 @@ impl CliStarkProfile {
         match self {
             Self::Default => VanillaStarkProofOptions::default(),
             Self::ProductionV1 => production_v1_stark_options(),
+            Self::PublicationV1 => publication_v1_stark_options(),
         }
     }
 
@@ -1517,6 +1524,7 @@ impl CliStarkProfile {
         match self {
             Self::Default => 0,
             Self::ProductionV1 => PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS,
+            Self::PublicationV1 => PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
         }
     }
 
@@ -1524,11 +1532,12 @@ impl CliStarkProfile {
         match self {
             Self::Default => None,
             Self::ProductionV1 => Some(PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS),
+            Self::PublicationV1 => Some(PUBLICATION_V1_TARGET_MAX_PROVING_SECONDS),
         }
     }
 
     fn enforces_reexecution(self) -> bool {
-        matches!(self, Self::ProductionV1)
+        matches!(self, Self::ProductionV1 | Self::PublicationV1)
     }
 }
 
@@ -5711,6 +5720,30 @@ fn verify_stwo_transformer_specific_fold_operator_artifact_command(
     }
 }
 
+#[cfg(feature = "stwo-backend")]
+fn validate_phase110_cli_leaf_count(
+    leaves: &[PathBuf],
+    label: &str,
+) -> llm_provable_computer::Result<()> {
+    if leaves.len() < 2 {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} requires at least two --leaf artifacts"
+        )));
+    }
+    if !leaves.len().is_power_of_two() {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} currently requires a power-of-two --leaf count"
+        )));
+    }
+    if leaves.len() > MAX_PHASE110_REPEATED_WINDOW_FOLD_TREE_TOTAL_LEAVES {
+        return Err(VmError::InvalidConfig(format!(
+            "{label} supports at most {} --leaf artifacts",
+            MAX_PHASE110_REPEATED_WINDOW_FOLD_TREE_TOTAL_LEAVES
+        )));
+    }
+    Ok(())
+}
+
 fn prepare_stwo_repeated_window_fold_tree_artifact_command(
     leaves: &[PathBuf],
     output: &Path,
@@ -5727,6 +5760,7 @@ fn prepare_stwo_repeated_window_fold_tree_artifact_command(
     #[cfg(feature = "stwo-backend")]
     {
         require_stwo_backend("S-two repeated-window fold tree artifact")?;
+        validate_phase110_cli_leaf_count(leaves, "S-two repeated-window fold tree artifact")?;
         let leaf_artifacts = leaves
             .iter()
             .map(|path| {
@@ -5760,6 +5794,7 @@ fn verify_stwo_repeated_window_fold_tree_artifact_command(
     #[cfg(feature = "stwo-backend")]
     {
         require_stwo_backend("S-two repeated-window fold tree artifact")?;
+        validate_phase110_cli_leaf_count(leaves, "S-two repeated-window fold tree artifact")?;
         let leaf_artifacts = leaves
             .iter()
             .map(|path| {
@@ -5799,6 +5834,10 @@ fn prepare_stwo_transformer_accumulation_semantics_artifact_command(
     #[cfg(feature = "stwo-backend")]
     {
         require_stwo_backend("S-two transformer accumulation semantics artifact")?;
+        validate_phase110_cli_leaf_count(
+            leaves,
+            "S-two transformer accumulation semantics artifact",
+        )?;
         let leaf_artifacts = leaves
             .iter()
             .map(|path| {
@@ -5833,6 +5872,10 @@ fn verify_stwo_transformer_accumulation_semantics_artifact_command(
     #[cfg(feature = "stwo-backend")]
     {
         require_stwo_backend("S-two transformer accumulation semantics artifact")?;
+        validate_phase110_cli_leaf_count(
+            leaves,
+            "S-two transformer accumulation semantics artifact",
+        )?;
         let leaf_artifacts = leaves
             .iter()
             .map(|path| {
@@ -5873,18 +5916,16 @@ fn prepare_stwo_richer_gemma_window_family_artifact_command(
     #[cfg(feature = "stwo-backend")]
     {
         require_stwo_backend("S-two richer Gemma window family artifact")?;
-        let semantics =
-            load_phase112_transformer_accumulation_semantics_artifact(semantics_path)?;
+        validate_phase110_cli_leaf_count(leaves, "S-two richer Gemma window family artifact")?;
+        let semantics = load_phase112_transformer_accumulation_semantics_artifact(semantics_path)?;
         let leaf_artifacts = leaves
             .iter()
             .map(|path| {
                 load_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact(path)
             })
             .collect::<llm_provable_computer::Result<Vec<_>>>()?;
-        let artifact = prepare_phase113_richer_gemma_window_family_artifact(
-            &leaf_artifacts,
-            &semantics,
-        )?;
+        let artifact =
+            prepare_phase113_richer_gemma_window_family_artifact(&leaf_artifacts, &semantics)?;
         save_phase113_richer_gemma_window_family_artifact(&artifact, output)?;
 
         println!("output: {}", output.display());
@@ -5913,8 +5954,8 @@ fn verify_stwo_richer_gemma_window_family_artifact_command(
     #[cfg(feature = "stwo-backend")]
     {
         require_stwo_backend("S-two richer Gemma window family artifact")?;
-        let semantics =
-            load_phase112_transformer_accumulation_semantics_artifact(semantics_path)?;
+        validate_phase110_cli_leaf_count(leaves, "S-two richer Gemma window family artifact")?;
+        let semantics = load_phase112_transformer_accumulation_semantics_artifact(semantics_path)?;
         let leaf_artifacts = leaves
             .iter()
             .map(|path| {
@@ -15450,6 +15491,131 @@ mod cli_dispatch_tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-richer-gemma-window-family-artifact"
         ));
+    }
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+mod stwo_transformer_artifact_cli_tests {
+    use super::*;
+
+    fn repeated_window_bundle_fixture(name: &str) -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22")
+            .join(name)
+    }
+
+    fn scaling_bundle_fixture(name: &str) -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("docs/paper/artifacts/stwo-richer-gemma-window-family-scaling-v1-2026-04-22")
+            .join(name)
+    }
+
+    #[test]
+    fn repeated_window_cli_commands_reject_invalid_leaf_count_before_loading() {
+        let non_power_of_two = vec![
+            PathBuf::from("leaf-a.json"),
+            PathBuf::from("leaf-b.json"),
+            PathBuf::from("leaf-c.json"),
+        ];
+        let err = prepare_stwo_repeated_window_fold_tree_artifact_command(
+            &non_power_of_two,
+            Path::new("phase110-out.json"),
+        )
+        .expect_err("non-power-of-two leaf count should fail before loading artifacts");
+        assert!(err.to_string().contains("power-of-two --leaf count"));
+
+        let too_many = (0..(MAX_PHASE110_REPEATED_WINDOW_FOLD_TREE_TOTAL_LEAVES * 2))
+            .map(|index| PathBuf::from(format!("leaf-{index}.json")))
+            .collect::<Vec<_>>();
+        let err = verify_stwo_transformer_accumulation_semantics_artifact_command(
+            Path::new("phase112-artifact.json"),
+            &too_many,
+        )
+        .expect_err("leaf count above backend cap should fail before loading artifacts");
+        assert!(err.to_string().contains("supports at most"));
+    }
+
+    #[test]
+    fn verify_phase109_cli_rejects_swapped_children() {
+        let artifact = repeated_window_bundle_fixture(
+            "phase109-transformer-specific-fold-operator-w4.stwo.json",
+        );
+        let left = repeated_window_bundle_fixture("phase107-leaf-1.stwo.json");
+        let right = repeated_window_bundle_fixture("phase107-leaf-0.stwo.json");
+
+        let err = verify_stwo_transformer_specific_fold_operator_artifact_command(
+            &artifact, &left, &right,
+        )
+        .expect_err("swapped children should fail verification");
+        let message = err.to_string();
+        assert!(
+            message.contains("not contiguous") || message.contains("canonical fold surface"),
+            "unexpected error: {message}"
+        );
+    }
+
+    #[test]
+    fn verify_phase110_cli_rejects_leaf_order_drift() {
+        let artifact =
+            repeated_window_bundle_fixture("phase110-repeated-window-fold-tree-w8.stwo.json");
+        let leaves = vec![
+            repeated_window_bundle_fixture("phase107-leaf-0.stwo.json"),
+            repeated_window_bundle_fixture("phase107-leaf-1.stwo.json"),
+            repeated_window_bundle_fixture("phase107-leaf-3.stwo.json"),
+            repeated_window_bundle_fixture("phase107-leaf-2.stwo.json"),
+        ];
+
+        let err = verify_stwo_repeated_window_fold_tree_artifact_command(&artifact, &leaves)
+            .expect_err("reordered leaves should fail phase110 verification");
+        let message = err.to_string();
+        assert!(
+            message.contains("not contiguous") || message.contains("canonical fold tree surface"),
+            "unexpected error: {message}"
+        );
+    }
+
+    #[test]
+    fn verify_phase112_cli_rejects_leaf_order_drift() {
+        let artifact =
+            scaling_bundle_fixture("phase112-transformer-accumulation-semantics-w8.stwo.json");
+        let leaves = vec![
+            repeated_window_bundle_fixture("phase107-leaf-0.stwo.json"),
+            repeated_window_bundle_fixture("phase107-leaf-2.stwo.json"),
+            repeated_window_bundle_fixture("phase107-leaf-1.stwo.json"),
+            repeated_window_bundle_fixture("phase107-leaf-3.stwo.json"),
+        ];
+
+        let err =
+            verify_stwo_transformer_accumulation_semantics_artifact_command(&artifact, &leaves)
+                .expect_err("reordered leaves should fail phase112 verification");
+        let message = err.to_string();
+        assert!(
+            message.contains("not contiguous") || message.contains("canonical semantic surface"),
+            "unexpected error: {message}"
+        );
+    }
+
+    #[test]
+    fn verify_phase113_cli_rejects_mismatched_semantics_source() {
+        let artifact = scaling_bundle_fixture("phase113-richer-gemma-window-family-w8.stwo.json");
+        let semantics =
+            scaling_bundle_fixture("phase112-transformer-accumulation-semantics-w4.stwo.json");
+        let leaves = vec![
+            repeated_window_bundle_fixture("phase107-leaf-0.stwo.json"),
+            repeated_window_bundle_fixture("phase107-leaf-1.stwo.json"),
+            repeated_window_bundle_fixture("phase107-leaf-2.stwo.json"),
+            repeated_window_bundle_fixture("phase107-leaf-3.stwo.json"),
+        ];
+
+        let err =
+            verify_stwo_richer_gemma_window_family_artifact_command(&artifact, &semantics, &leaves)
+                .expect_err("mismatched semantics source should fail phase113 verification");
+        let message = err.to_string();
+        assert!(
+            message.contains("canonical semantic surface")
+                || message.contains("canonical richer-family surface"),
+            "unexpected error: {message}"
+        );
     }
 }
 

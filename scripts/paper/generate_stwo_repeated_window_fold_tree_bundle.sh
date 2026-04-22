@@ -39,7 +39,7 @@ esac
 
 BUNDLE_FINAL_DIR="$CANON_BUNDLE_DIR"
 BUNDLE_FINAL_NAME="$(basename "$BUNDLE_FINAL_DIR")"
-STAGING_DIR="$(mktemp -d "$CANON_EXPECTED_PREFIX/.tmp.${BUNDLE_FINAL_NAME}.XXXXXX")"
+STAGING_DIR=""
 BACKUP_DIR=""
 cleanup_bundle_publish() {
   if [ -n "${STAGING_DIR:-}" ] && [ -d "$STAGING_DIR" ]; then
@@ -50,13 +50,11 @@ cleanup_bundle_publish() {
   fi
 }
 trap cleanup_bundle_publish EXIT
-BUNDLE_DIR="$STAGING_DIR"
 
 GENERATOR_SCRIPT_REL="scripts/paper/generate_stwo_repeated_window_fold_tree_bundle.sh"
 GENERATOR_SCRIPT="$REPO_ROOT/$GENERATOR_SCRIPT_REL"
 GENERATOR_SCRIPT_SHA256="$(shasum -a 256 "$GENERATOR_SCRIPT" | awk '{print $1}')"
 GENERATOR_GIT_REVISION="$(git rev-parse HEAD)"
-GENERATOR_GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 GENERATOR_GIT_COMMIT_DATE="$(git show -s --format=%cI HEAD)"
 GENERATOR_WORKTREE_STATE="clean"
 if ! git diff --quiet --ignore-submodules -- || ! git diff --cached --quiet --ignore-submodules --; then
@@ -79,6 +77,8 @@ if [ "$ALLOW_DIRTY_BUNDLE_BUILD" != "1" ]; then
   fi
 fi
 
+STAGING_DIR="$(mktemp -d "$CANON_EXPECTED_PREFIX/.tmp.${BUNDLE_FINAL_NAME}.XXXXXX")"
+BUNDLE_DIR="$STAGING_DIR"
 mkdir -p "$BUNDLE_DIR"
 
 GEMMA_PROOF_JSON="$BUNDLE_DIR/gemma-block-v4.stark.json"
@@ -224,7 +224,6 @@ bundle_dir: docs/paper/artifacts/$BUNDLE_FINAL_NAME
 generator_script: $GENERATOR_SCRIPT_REL
 generator_script_sha256: $GENERATOR_SCRIPT_SHA256
 generator_git_revision: $GENERATOR_GIT_REVISION
-generator_git_branch: $GENERATOR_GIT_BRANCH
 generator_git_commit_date: $GENERATOR_GIT_COMMIT_DATE
 generator_worktree_state: $GENERATOR_WORKTREE_STATE
 generator_allow_dirty_build: $ALLOW_DIRTY_BUNDLE_BUILD
@@ -389,14 +388,72 @@ PY
 
 (
   cd "$BUNDLE_DIR"
-  find . -maxdepth 1 -type f ! -name 'sha256sums.txt' ! -name 'provenance_sha256sums.txt' -print0 \
-    | LC_ALL=C sort -z \
-    | xargs -0 shasum -a 256 > "$SHA256S"
-  {
-    printf '%s  %s\n' "$GENERATOR_SCRIPT_SHA256" "generator_script.sh"
-    printf '%s  %s\n' "$(shasum -a 256 manifest.txt | awk '{print $1}')" "manifest.txt"
-    printf '%s  %s\n' "$(shasum -a 256 commands.log | awk '{print $1}')" "commands.log"
-  } > "$PROVENANCE_SHA256S"
+  shasum -a 256 \
+    "$(basename "$GEMMA_PROOF_JSON")" \
+    "$(basename "$LEAF0_PHASE105")" \
+    "$(basename "$LEAF0_PHASE106")" \
+    "$(basename "$LEAF0_PHASE107")" \
+    "$(basename "$LEAF1_PHASE105")" \
+    "$(basename "$LEAF1_PHASE106")" \
+    "$(basename "$LEAF1_PHASE107")" \
+    "$(basename "$LEAF2_PHASE105")" \
+    "$(basename "$LEAF2_PHASE106")" \
+    "$(basename "$LEAF2_PHASE107")" \
+    "$(basename "$LEAF3_PHASE105")" \
+    "$(basename "$LEAF3_PHASE106")" \
+    "$(basename "$LEAF3_PHASE107")" \
+    "$(basename "$EXPLICIT4_PHASE105")" \
+    "$(basename "$EXPLICIT4_PHASE106")" \
+    "$(basename "$EXPLICIT4_PHASE107")" \
+    "$(basename "$EXPLICIT8_PHASE105")" \
+    "$(basename "$EXPLICIT8_PHASE106")" \
+    "$(basename "$EXPLICIT8_PHASE107")" \
+    "$(basename "$PHASE109_PAIR")" \
+    "$(basename "$PHASE110_TREE")" \
+    "$(basename "$MANIFEST")" \
+    "$(basename "$SCALING_TSV")" \
+    "$(basename "$COMPARISON_TSV")" \
+    "$(basename "$SUMMARY_TSV")" \
+    "$(basename "$PUBLIC_NOTES_MD")" \
+    "$(basename "$INDEX_MD")" \
+    "$(basename "$README_MD")" \
+    "$(basename "$COMMANDS_LOG")" > "$SHA256S"
+)
+
+(
+  cd "$BUNDLE_DIR"
+  shasum -a 256 \
+    "$(basename "$GEMMA_PROOF_JSON")" \
+    "$(basename "$LEAF0_PHASE105")" \
+    "$(basename "$LEAF0_PHASE106")" \
+    "$(basename "$LEAF0_PHASE107")" \
+    "$(basename "$LEAF1_PHASE105")" \
+    "$(basename "$LEAF1_PHASE106")" \
+    "$(basename "$LEAF1_PHASE107")" \
+    "$(basename "$LEAF2_PHASE105")" \
+    "$(basename "$LEAF2_PHASE106")" \
+    "$(basename "$LEAF2_PHASE107")" \
+    "$(basename "$LEAF3_PHASE105")" \
+    "$(basename "$LEAF3_PHASE106")" \
+    "$(basename "$LEAF3_PHASE107")" \
+    "$(basename "$EXPLICIT4_PHASE105")" \
+    "$(basename "$EXPLICIT4_PHASE106")" \
+    "$(basename "$EXPLICIT4_PHASE107")" \
+    "$(basename "$EXPLICIT8_PHASE105")" \
+    "$(basename "$EXPLICIT8_PHASE106")" \
+    "$(basename "$EXPLICIT8_PHASE107")" \
+    "$(basename "$PHASE109_PAIR")" \
+    "$(basename "$PHASE110_TREE")" \
+    "$(basename "$MANIFEST")" \
+    "$(basename "$SCALING_TSV")" \
+    "$(basename "$COMPARISON_TSV")" \
+    "$(basename "$SUMMARY_TSV")" \
+    "$(basename "$PUBLIC_NOTES_MD")" \
+    "$(basename "$INDEX_MD")" \
+    "$(basename "$README_MD")" \
+    "$(basename "$BENCHMARKS")" \
+    "$(basename "$COMMANDS_LOG")" \
+    "$(basename "$SHA256S")" > "$PROVENANCE_SHA256S"
 )
 
 if [ -e "$BUNDLE_FINAL_DIR" ]; then

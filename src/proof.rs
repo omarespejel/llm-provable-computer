@@ -88,6 +88,25 @@ pub const PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS: u32 = 32;
 /// Target proving-time budget for production-v1 on local release builds.
 pub const PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS: u64 = 45;
 
+/// Publication STARK profile (v1) for paper-facing vanilla evidence.
+///
+/// This profile raises the FRI query count so the repository's conjectured security
+/// estimator reaches 96 bits. It is intentionally stronger and slower than
+/// `production-v1`, and is meant for cited evidence rather than routine local CI.
+pub fn publication_v1_stark_options() -> VanillaStarkProofOptions {
+    VanillaStarkProofOptions {
+        expansion_factor: 4,
+        num_colinearity_checks: 48,
+        security_level: 96,
+    }
+}
+
+/// Minimum conjectured security floor expected when verifying publication-v1 proofs.
+pub const PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS: u32 = 96;
+
+/// Target proving-time budget for publication-v1 on local release builds.
+pub const PUBLICATION_V1_TARGET_MAX_PROVING_SECONDS: u64 = 300;
+
 const VANILLA_STARK_FIELD_SECURITY_BITS: u32 = 128;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -114,6 +133,12 @@ impl Default for StarkVerificationPolicy {
 pub fn production_v1_verification_policy() -> StarkVerificationPolicy {
     StarkVerificationPolicy {
         min_conjectured_security_bits: PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS,
+    }
+}
+
+pub fn publication_v1_verification_policy() -> StarkVerificationPolicy {
+    StarkVerificationPolicy {
+        min_conjectured_security_bits: PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
     }
 }
 
@@ -2060,6 +2085,25 @@ HALT
         );
         assert!(options.num_colinearity_checks.saturating_mul(2) >= options.security_level);
         assert!(PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS > 0);
+    }
+
+    #[test]
+    fn publication_profile_v1_is_self_consistent() {
+        let options = publication_v1_stark_options();
+        assert_eq!(
+            conjectured_security_bits(&options),
+            PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS
+        );
+        assert!(options.num_colinearity_checks.saturating_mul(2) >= options.security_level);
+        assert!(PUBLICATION_V1_TARGET_MAX_PROVING_SECONDS > 0);
+    }
+
+    #[test]
+    fn publication_profile_rejects_production_profile_proof() {
+        let proof = prove_program("programs/addition.tvm", 32);
+        let err = verify_execution_stark_with_policy(&proof, publication_v1_verification_policy())
+            .expect_err("production-v1 proof should not satisfy publication-v1 floor");
+        assert!(err.to_string().contains("below required 96 bits"));
     }
 
     #[test]

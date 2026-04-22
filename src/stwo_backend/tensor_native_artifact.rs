@@ -8284,21 +8284,30 @@ pub fn prepare_phase113_richer_gemma_window_family_artifact(
         "phase113/token-position-family-sequence",
         &leaves
             .iter()
-            .map(|leaf| leaf.token_position_sequence_commitment_sequence_commitment.clone())
+            .map(|leaf| {
+                leaf.token_position_sequence_commitment_sequence_commitment
+                    .clone()
+            })
             .collect::<Vec<_>>(),
     )?;
     let selected_memory_window_family_commitment_sequence_commitment = commit_namespace_strings(
         "phase113/selected-memory-window-family-sequence",
         &leaves
             .iter()
-            .map(|leaf| leaf.selected_memory_window_family_commitment_sequence_commitment.clone())
+            .map(|leaf| {
+                leaf.selected_memory_window_family_commitment_sequence_commitment
+                    .clone()
+            })
             .collect::<Vec<_>>(),
     )?;
     let invariant_summary_family_commitment_sequence_commitment = commit_namespace_strings(
         "phase113/invariant-summary-family-sequence",
         &leaves
             .iter()
-            .map(|leaf| leaf.invariant_summary_family_commitment_sequence_commitment.clone())
+            .map(|leaf| {
+                leaf.invariant_summary_family_commitment_sequence_commitment
+                    .clone()
+            })
             .collect::<Vec<_>>(),
     )?;
     let normalization_summary_family_commitment_sequence_commitment = commit_namespace_strings(
@@ -8419,15 +8428,15 @@ pub fn prepare_phase113_richer_gemma_window_family_artifact(
         terminal_token_position: semantics.terminal_token_position,
         terminal_block_index: semantics.terminal_block_index,
         bounded_fold_arity: semantics.bounded_fold_arity,
-        shared_primitive_artifact_commitment: semantics.shared_primitive_artifact_commitment.clone(),
+        shared_primitive_artifact_commitment: semantics
+            .shared_primitive_artifact_commitment
+            .clone(),
         shared_table_registry_commitment: semantics.shared_table_registry_commitment.clone(),
         shared_execution_proof_commitment: semantics.shared_execution_proof_commitment.clone(),
         shared_execution_proof_backend_version: semantics
             .shared_execution_proof_backend_version
             .clone(),
-        shared_execution_statement_version: semantics
-            .shared_execution_statement_version
-            .clone(),
+        shared_execution_statement_version: semantics.shared_execution_statement_version.clone(),
         leaf_artifact_commitment_sequence_commitment: semantics
             .leaf_artifact_commitment_sequence_commitment
             .clone(),
@@ -12268,14 +12277,14 @@ mod tests {
         .expect("prepare phase107 repeated window leaf")
     }
 
-    fn cached_phase113_test_leaves() -> Vec<Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact> {
+    fn cached_phase113_test_leaves(
+    ) -> Vec<Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact> {
         static LEAVES: OnceLock<Vec<Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact>> =
             OnceLock::new();
         LEAVES
             .get_or_init(|| {
-                let root = Path::new(env!("CARGO_MANIFEST_DIR")).join(
-                    "docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22",
-                );
+                let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22");
                 (0..4)
                     .map(|index| {
                         load_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact(
@@ -12288,7 +12297,8 @@ mod tests {
             .clone()
     }
 
-    fn cached_phase107_explicit_w8_artifact() -> Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact {
+    fn cached_phase107_explicit_w8_artifact(
+    ) -> Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact {
         static ARTIFACT: OnceLock<Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact> =
             OnceLock::new();
         ARTIFACT
@@ -12302,7 +12312,8 @@ mod tests {
             .clone()
     }
 
-    fn cached_phase107_explicit_w4_artifact() -> Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact {
+    fn cached_phase107_explicit_w4_artifact(
+    ) -> Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact {
         static ARTIFACT: OnceLock<Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact> =
             OnceLock::new();
         ARTIFACT
@@ -13403,10 +13414,12 @@ mod tests {
         let artifact = prepare_phase113_richer_gemma_window_family_artifact(&leaves, &semantics)
             .expect("prepare phase113 richer family artifact");
         let explicit = cached_phase107_explicit_w8_artifact();
-        let artifact_bytes =
-            serde_json::to_vec(&artifact).expect("serialize phase113 richer family").len();
-        let explicit_bytes =
-            serde_json::to_vec(&explicit).expect("serialize phase107 explicit w8").len();
+        let artifact_bytes = serde_json::to_vec(&artifact)
+            .expect("serialize phase113 richer family")
+            .len();
+        let explicit_bytes = serde_json::to_vec(&explicit)
+            .expect("serialize phase107 explicit w8")
+            .len();
         assert!(
             artifact_bytes < explicit_bytes,
             "phase113 bytes {} should stay below explicit phase107 bytes {}",
@@ -13441,8 +13454,9 @@ mod tests {
         let leaves = cached_phase113_test_leaves();
         let semantics = prepare_phase112_transformer_accumulation_semantics_artifact(&leaves)
             .expect("prepare phase112 semantics artifact");
-        let mut artifact = prepare_phase113_richer_gemma_window_family_artifact(&leaves, &semantics)
-            .expect("prepare phase113 richer family artifact");
+        let mut artifact =
+            prepare_phase113_richer_gemma_window_family_artifact(&leaves, &semantics)
+                .expect("prepare phase113 richer family artifact");
         artifact.activation_summary_family_commitment_sequence_commitment =
             "bad-activation".to_string();
         let error =
@@ -13473,18 +13487,24 @@ mod tests {
             prepare_phase113_richer_gemma_window_family_artifact(&leaves_w8, &phase112_w8)
                 .expect("prepare phase113 richer family artifact for w8");
 
-        let explicit_w4_bytes =
-            serde_json::to_vec(&explicit_w4).expect("serialize frozen phase107 explicit w4").len();
-        let explicit_w8_bytes =
-            serde_json::to_vec(&explicit_w8).expect("serialize frozen phase107 explicit w8").len();
-        let phase112_w4_bytes =
-            serde_json::to_vec(&phase112_w4).expect("serialize phase112 semantics w4").len();
-        let phase112_w8_bytes =
-            serde_json::to_vec(&phase112_w8).expect("serialize phase112 semantics w8").len();
-        let phase113_w4_bytes =
-            serde_json::to_vec(&phase113_w4).expect("serialize phase113 richer family w4").len();
-        let phase113_w8_bytes =
-            serde_json::to_vec(&phase113_w8).expect("serialize phase113 richer family w8").len();
+        let explicit_w4_bytes = serde_json::to_vec(&explicit_w4)
+            .expect("serialize frozen phase107 explicit w4")
+            .len();
+        let explicit_w8_bytes = serde_json::to_vec(&explicit_w8)
+            .expect("serialize frozen phase107 explicit w8")
+            .len();
+        let phase112_w4_bytes = serde_json::to_vec(&phase112_w4)
+            .expect("serialize phase112 semantics w4")
+            .len();
+        let phase112_w8_bytes = serde_json::to_vec(&phase112_w8)
+            .expect("serialize phase112 semantics w8")
+            .len();
+        let phase113_w4_bytes = serde_json::to_vec(&phase113_w4)
+            .expect("serialize phase113 richer family w4")
+            .len();
+        let phase113_w8_bytes = serde_json::to_vec(&phase113_w8)
+            .expect("serialize phase113 richer family w8")
+            .len();
 
         assert!(
             phase113_w4_bytes < explicit_w4_bytes,

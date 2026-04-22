@@ -909,7 +909,8 @@ fn cli_stark_help_describes_profile_flags() {
         .success()
         .stdout(predicate::str::contains("--stark-profile"))
         .stdout(predicate::str::contains("--backend"))
-        .stdout(predicate::str::contains("production-v1"));
+        .stdout(predicate::str::contains("production-v1"))
+        .stdout(predicate::str::contains("publication-v1"));
 
     let mut verify_help = tvm_command();
     verify_help
@@ -919,7 +920,8 @@ fn cli_stark_help_describes_profile_flags() {
         .success()
         .stdout(predicate::str::contains("--verification-profile"))
         .stdout(predicate::str::contains("--backend"))
-        .stdout(predicate::str::contains("production-v1"));
+        .stdout(predicate::str::contains("production-v1"))
+        .stdout(predicate::str::contains("publication-v1"));
 }
 
 #[test]

@@ -4,9 +4,11 @@ This directory contains frozen artifact bundles plus verifier-surface indexes.
 
 ## Publication-facing cited bundles
 
-These are the bundles directly used by the current paper package:
+Read these bundles through the public artifact taxonomy in
+`docs/engineering/public-artifact-taxonomy.md`, not only through raw phase numbering.
 
-- `production-v1-2026-04-04/`
+The active paper-facing bundles are:
+
 - `stwo-experimental-v1-2026-04-06/`
 - `stwo-proof-carrying-aggregation-v1-2026-04-11/`
 - `phase63-65-proof-carrying-artifact-v1-2026-04-20/`
@@ -24,7 +26,12 @@ These are the bundles directly used by the current paper package:
 - `stwo-transformer-accumulation-semantics-v1-2026-04-22/`
 - `stwo-richer-gemma-window-family-v1-2026-04-22/`
 
-These are the bundles that should be treated as the paper's primary reproducibility and systems-evidence surfaces.
+These are the bundles that should be treated as the paper's primary reproducibility and
+systems-evidence surfaces.
+
+The older `production-v1-2026-04-04/` bundle is retained as a legacy vanilla local
+baseline. It is useful provenance, but it is no longer the main paper-facing artifact
+narrative.
 
 The Phase63-65 directory is a code-and-validation verifier-surface index rather than a
 new proof-output bundle. It pins the April 20 checkpoint where shared lookup identity

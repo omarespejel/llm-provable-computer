@@ -16,6 +16,7 @@ FUZZ_TARGETS=(
   phase35_recursive_compression_target_manifest
   phase36_recursive_verifier_harness_receipt
   phase37_recursive_artifact_chain_harness_receipt
+  phase113_richer_gemma_window_family
 )
 
 if ! command -v cargo-fuzz >/dev/null 2>&1 && ! cargo fuzz --version >/dev/null 2>&1; then

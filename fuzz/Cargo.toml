@@ -104,5 +104,12 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "phase113_richer_gemma_window_family"
+path = "fuzz_targets/phase113_richer_gemma_window_family.rs"
+test = false
+doc = false
+bench = false
+
 [workspace]
 members = ["."]

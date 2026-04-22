@@ -261,6 +261,9 @@ def main() -> int:
     phase37_path = (
         corpus_root / "phase37_recursive_artifact_chain_harness_receipt" / "valid_phase37.json"
     )
+    phase113_path = (
+        corpus_root / "phase113_richer_gemma_window_family" / "valid_phase113.json"
+    )
 
     phase12_path.parent.mkdir(parents=True, exist_ok=True)
     phase14_path.parent.mkdir(parents=True, exist_ok=True)
@@ -271,6 +274,7 @@ def main() -> int:
     phase35_path.parent.mkdir(parents=True, exist_ok=True)
     phase36_path.parent.mkdir(parents=True, exist_ok=True)
     phase37_path.parent.mkdir(parents=True, exist_ok=True)
+    phase113_path.parent.mkdir(parents=True, exist_ok=True)
 
     run(
         "cargo",
@@ -525,6 +529,13 @@ def main() -> int:
         phase37_path,
     ):
         write_json(generated_path, json.loads(generated_path.read_text()))
+
+    phase113_source = (
+        ROOT
+        / "docs/paper/artifacts/stwo-richer-gemma-window-family-v1-2026-04-22"
+        / "phase113-richer-gemma-window-family-w8.stwo.json"
+    )
+    write_json(phase113_path, json.loads(phase113_source.read_text()))
     return 0
 
 

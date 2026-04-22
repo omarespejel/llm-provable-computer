@@ -53,7 +53,7 @@ record_artifact "$OUT/fibonacci_execution.txt"
 head -20 "$OUT/fibonacci_execution.txt"
 echo ""
 
-echo "--- fibonacci: verify-all (4 engines) ---"
+echo "--- fibonacci: differential verify-all (4 engines) ---"
 cargo run --features full --bin tvm -- run programs/fibonacci.tvm --verify-all 2>/dev/null \
   > "$OUT/fibonacci_verify_all.txt"
 record_artifact "$OUT/fibonacci_verify_all.txt"
