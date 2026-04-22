@@ -330,6 +330,8 @@ jobs:
             corpus: fuzz/corpus/phase29_recursive_compression_input_contract
           - target: phase30_decoding_step_proof_envelope_manifest
             corpus: fuzz/corpus/phase30_decoding_step_proof_envelope_manifest
+          - target: vanilla_stark_proof_loader
+            corpus: fuzz/corpus/vanilla_stark_proof_loader
 
     steps:
       - name: Checkout
