@@ -34451,7 +34451,7 @@ mod tests {
         let program = parse_program(program_source).expect("parse");
         VanillaStarkExecutionProof {
             proof_backend: StarkProofBackend::Stwo,
-            proof_backend_version: "stwo-phase7-gemma-block-v1".to_string(),
+            proof_backend_version: "stwo-phase7-linear-block-v1".to_string(),
             stwo_auxiliary: None,
             claim: crate::proof::VanillaStarkExecutionClaim {
                 statement_version: CLAIM_STATEMENT_VERSION_V1.to_string(),

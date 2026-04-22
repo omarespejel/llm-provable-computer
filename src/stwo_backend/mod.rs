@@ -818,7 +818,7 @@ pub use tensor_native_artifact::{
 /// Backend version label used by the experimental Phase 2 S-two seam.
 pub const STWO_BACKEND_VERSION_PHASE2: &str = "stwo-phase2";
 /// Backend version label used by the current shipped-fixture `stwo` execution-proof path.
-pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase10-gemma-block-v4";
+pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase10-linear-block-v4-with-lookup";
 /// Backend version label used by the fixed-shape proof-carrying decoding demo family.
 pub const STWO_BACKEND_VERSION_PHASE11: &str = "stwo-phase11-decoding-step-v1";
 /// Backend version label used by the parameterized proof-carrying decoding family.
