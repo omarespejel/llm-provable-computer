@@ -476,7 +476,11 @@ enum Command {
         /// Path to the serialized artifact JSON file.
         artifact: PathBuf,
     },
-    /// Prepare a Gemma block core-slice artifact bound to a real S-two execution proof.
+    /// Prepare a linear-block core-slice artifact bound to a real S-two execution proof.
+    #[command(
+        name = "prepare-stwo-linear-block-core-slice-artifact",
+        alias = "prepare-stwo-gemma-block-core-slice-artifact"
+    )]
     PrepareStwoGemmaBlockCoreSliceArtifact {
         /// Path to the serialized S-two execution proof JSON file.
         #[arg(long = "proof")]
@@ -488,12 +492,20 @@ enum Command {
         #[arg(short = 'o', long = "output")]
         output: PathBuf,
     },
-    /// Verify a Gemma block core-slice artifact.
+    /// Verify a linear-block core-slice artifact.
+    #[command(
+        name = "verify-stwo-linear-block-core-slice-artifact",
+        alias = "verify-stwo-gemma-block-core-slice-artifact"
+    )]
     VerifyStwoGemmaBlockCoreSliceArtifact {
         /// Path to the serialized artifact JSON file.
         artifact: PathBuf,
     },
-    /// Prepare a richer Gemma block slice artifact with fixed memory-window and score/mix invariants.
+    /// Prepare a richer linear-block slice artifact with fixed memory-window and score/mix invariants.
+    #[command(
+        name = "prepare-stwo-linear-block-richer-slice-artifact",
+        alias = "prepare-stwo-gemma-block-richer-slice-artifact"
+    )]
     PrepareStwoGemmaBlockRicherSliceArtifact {
         /// Path to the serialized S-two execution proof JSON file.
         #[arg(long = "proof")]
@@ -505,12 +517,20 @@ enum Command {
         #[arg(short = 'o', long = "output")]
         output: PathBuf,
     },
-    /// Verify a richer Gemma block slice artifact.
+    /// Verify a richer linear-block slice artifact.
+    #[command(
+        name = "verify-stwo-linear-block-richer-slice-artifact",
+        alias = "verify-stwo-gemma-block-richer-slice-artifact"
+    )]
     VerifyStwoGemmaBlockRicherSliceArtifact {
         /// Path to the serialized artifact JSON file.
         artifact: PathBuf,
     },
-    /// Prepare a repeated Gemma-slice accumulation artifact with shared proof reuse.
+    /// Prepare a repeated linear-block-slice accumulation artifact with shared proof reuse.
+    #[command(
+        name = "prepare-stwo-repeated-linear-block-slice-accumulation-artifact",
+        alias = "prepare-stwo-repeated-gemma-slice-accumulation-artifact"
+    )]
     PrepareStwoRepeatedGemmaSliceAccumulationArtifact {
         /// Path to the serialized S-two execution proof JSON file.
         #[arg(long = "proof")]
@@ -528,52 +548,76 @@ enum Command {
         #[arg(short = 'o', long = "output")]
         output: PathBuf,
     },
-    /// Verify a repeated Gemma-slice accumulation artifact.
+    /// Verify a repeated linear-block-slice accumulation artifact.
+    #[command(
+        name = "verify-stwo-repeated-linear-block-slice-accumulation-artifact",
+        alias = "verify-stwo-repeated-gemma-slice-accumulation-artifact"
+    )]
     VerifyStwoRepeatedGemmaSliceAccumulationArtifact {
         /// Path to the serialized artifact JSON file.
         artifact: PathBuf,
     },
-    /// Prepare a first folded Gemma-slice accumulation artifact derived from a Phase95 source artifact.
+    /// Prepare a first folded linear-block-slice accumulation artifact derived from a Phase95 source artifact.
+    #[command(
+        name = "prepare-stwo-folded-linear-block-slice-accumulation-artifact",
+        alias = "prepare-stwo-folded-gemma-slice-accumulation-artifact"
+    )]
     PrepareStwoFoldedGemmaSliceAccumulationArtifact {
-        /// Path to the serialized Phase95 repeated Gemma-slice accumulation artifact JSON file.
+        /// Path to the serialized Phase95 repeated linear-block-slice accumulation artifact JSON file.
         #[arg(long = "source")]
         source: PathBuf,
         /// File where the serialized artifact JSON will be written.
         #[arg(short = 'o', long = "output")]
         output: PathBuf,
     },
-    /// Verify a folded Gemma-slice accumulation artifact against a Phase95 source artifact.
+    /// Verify a folded linear-block-slice accumulation artifact against a Phase95 source artifact.
+    #[command(
+        name = "verify-stwo-folded-linear-block-slice-accumulation-artifact",
+        alias = "verify-stwo-folded-gemma-slice-accumulation-artifact"
+    )]
     VerifyStwoFoldedGemmaSliceAccumulationArtifact {
         /// Path to the serialized folded artifact JSON file.
         artifact: PathBuf,
-        /// Path to the serialized Phase95 repeated Gemma-slice accumulation artifact JSON file.
+        /// Path to the serialized Phase95 repeated linear-block-slice accumulation artifact JSON file.
         #[arg(long = "source")]
         source: PathBuf,
     },
-    /// Prepare a folded richer Gemma-slice family artifact from Phase95 and Phase96.5 sources.
+    /// Prepare a folded richer linear-block-slice family artifact from Phase95 and Phase96.5 sources.
+    #[command(
+        name = "prepare-stwo-folded-linear-block-richer-slice-family-artifact",
+        alias = "prepare-stwo-folded-gemma-richer-slice-family-artifact"
+    )]
     PrepareStwoFoldedGemmaRicherSliceFamilyArtifact {
-        /// Path to the serialized Phase95 repeated Gemma-slice accumulation artifact JSON file.
+        /// Path to the serialized Phase95 repeated linear-block-slice accumulation artifact JSON file.
         #[arg(long = "source")]
         source: PathBuf,
-        /// Path to the serialized Phase96.5 folded Gemma-slice accumulation artifact JSON file.
+        /// Path to the serialized Phase96.5 folded linear-block-slice accumulation artifact JSON file.
         #[arg(long = "folded")]
         folded: PathBuf,
         /// File where the serialized artifact JSON will be written.
         #[arg(short = 'o', long = "output")]
         output: PathBuf,
     },
-    /// Verify a folded richer Gemma-slice family artifact against Phase95 and Phase96.5 sources.
+    /// Verify a folded richer linear-block-slice family artifact against Phase95 and Phase96.5 sources.
+    #[command(
+        name = "verify-stwo-folded-linear-block-richer-slice-family-artifact",
+        alias = "verify-stwo-folded-gemma-richer-slice-family-artifact"
+    )]
     VerifyStwoFoldedGemmaRicherSliceFamilyArtifact {
         /// Path to the serialized Phase98 richer-family artifact JSON file.
         artifact: PathBuf,
-        /// Path to the serialized Phase95 repeated Gemma-slice accumulation artifact JSON file.
+        /// Path to the serialized Phase95 repeated linear-block-slice accumulation artifact JSON file.
         #[arg(long = "source")]
         source: PathBuf,
-        /// Path to the serialized Phase96.5 folded Gemma-slice accumulation artifact JSON file.
+        /// Path to the serialized Phase96.5 folded linear-block-slice accumulation artifact JSON file.
         #[arg(long = "folded")]
         folded: PathBuf,
     },
-    /// Prepare a multi-interval richer-family accumulation artifact across repeated token-position intervals.
+    /// Prepare a multi-interval linear-block richer-family accumulation artifact across repeated token-position intervals.
+    #[command(
+        name = "prepare-stwo-multi-interval-linear-block-richer-family-accumulation-artifact",
+        alias = "prepare-stwo-multi-interval-gemma-richer-family-accumulation-artifact"
+    )]
     PrepareStwoMultiIntervalGemmaRicherFamilyAccumulationArtifact {
         /// Path to the serialized S-two execution proof JSON file.
         #[arg(long = "proof")]
@@ -597,12 +641,20 @@ enum Command {
         #[arg(short = 'o', long = "output")]
         output: PathBuf,
     },
-    /// Verify a multi-interval richer-family accumulation artifact.
+    /// Verify a multi-interval linear-block richer-family accumulation artifact.
+    #[command(
+        name = "verify-stwo-multi-interval-linear-block-richer-family-accumulation-artifact",
+        alias = "verify-stwo-multi-interval-gemma-richer-family-accumulation-artifact"
+    )]
     VerifyStwoMultiIntervalGemmaRicherFamilyAccumulationArtifact {
         /// Path to the serialized artifact JSON file.
         artifact: PathBuf,
     },
-    /// Prepare a folded prototype over a Phase99 multi-interval richer-family accumulation artifact.
+    /// Prepare a folded prototype over a Phase99 multi-interval linear-block richer-family accumulation artifact.
+    #[command(
+        name = "prepare-stwo-folded-multi-interval-linear-block-accumulation-prototype-artifact",
+        alias = "prepare-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact"
+    )]
     PrepareStwoFoldedMultiIntervalGemmaAccumulationPrototypeArtifact {
         /// Path to the serialized Phase99 multi-interval richer-family accumulation artifact JSON file.
         #[arg(long = "source")]
@@ -611,7 +663,11 @@ enum Command {
         #[arg(short = 'o', long = "output")]
         output: PathBuf,
     },
-    /// Verify a folded prototype over a Phase99 multi-interval richer-family accumulation artifact.
+    /// Verify a folded prototype over a Phase99 multi-interval linear-block richer-family accumulation artifact.
+    #[command(
+        name = "verify-stwo-folded-multi-interval-linear-block-accumulation-prototype-artifact",
+        alias = "verify-stwo-folded-multi-interval-gemma-accumulation-prototype-artifact"
+    )]
     VerifyStwoFoldedMultiIntervalGemmaAccumulationPrototypeArtifact {
         /// Path to the serialized folded prototype artifact JSON file.
         artifact: PathBuf,
@@ -619,7 +675,11 @@ enum Command {
         #[arg(long = "source")]
         source: PathBuf,
     },
-    /// Prepare a folded richer-family artifact over a Phase99 source and Phase101.5 folded prototype.
+    /// Prepare a folded richer-family artifact over a Phase99 source and Phase101.5 folded linear-block prototype.
+    #[command(
+        name = "prepare-stwo-folded-multi-interval-linear-block-richer-family-artifact",
+        alias = "prepare-stwo-folded-multi-interval-gemma-richer-family-artifact"
+    )]
     PrepareStwoFoldedMultiIntervalGemmaRicherFamilyArtifact {
         /// Path to the serialized Phase99 multi-interval richer-family accumulation artifact JSON file.
         #[arg(long = "source")]
@@ -631,7 +691,11 @@ enum Command {
         #[arg(short = 'o', long = "output")]
         output: PathBuf,
     },
-    /// Verify a folded richer-family artifact over a Phase99 source and Phase101.5 folded prototype.
+    /// Verify a folded richer-family artifact over a Phase99 source and Phase101.5 folded linear-block prototype.
+    #[command(
+        name = "verify-stwo-folded-multi-interval-linear-block-richer-family-artifact",
+        alias = "verify-stwo-folded-multi-interval-gemma-richer-family-artifact"
+    )]
     VerifyStwoFoldedMultiIntervalGemmaRicherFamilyArtifact {
         /// Path to the serialized Phase102 richer-family artifact JSON file.
         artifact: PathBuf,
@@ -643,7 +707,11 @@ enum Command {
         folded: PathBuf,
     },
     #[cfg(feature = "stwo-backend")]
-    /// Prepare a repeated multi-window accumulation artifact over canonical Phase102 richer-family windows.
+    /// Prepare a repeated multi-window accumulation artifact over canonical Phase102 linear-block richer-family windows.
+    #[command(
+        name = "prepare-stwo-repeated-multi-interval-linear-block-richer-family-accumulation-artifact",
+        alias = "prepare-stwo-repeated-multi-interval-gemma-richer-family-accumulation-artifact"
+    )]
     PrepareStwoRepeatedMultiIntervalGemmaRicherFamilyAccumulationArtifact {
         /// Path to the serialized shared execution proof JSON file.
         #[arg(long = "proof")]
@@ -671,13 +739,21 @@ enum Command {
         output: PathBuf,
     },
     #[cfg(feature = "stwo-backend")]
-    /// Verify a repeated multi-window accumulation artifact over canonical Phase102 richer-family windows.
+    /// Verify a repeated multi-window accumulation artifact over canonical Phase102 linear-block richer-family windows.
+    #[command(
+        name = "verify-stwo-repeated-multi-interval-linear-block-richer-family-accumulation-artifact",
+        alias = "verify-stwo-repeated-multi-interval-gemma-richer-family-accumulation-artifact"
+    )]
     VerifyStwoRepeatedMultiIntervalGemmaRicherFamilyAccumulationArtifact {
         /// Path to the serialized Phase105 repeated multi-interval richer-family artifact JSON file.
         artifact: PathBuf,
     },
     #[cfg(feature = "stwo-backend")]
-    /// Prepare a folded prototype over a Phase105 repeated multi-window accumulation artifact.
+    /// Prepare a folded prototype over a Phase105 repeated multi-window linear-block accumulation artifact.
+    #[command(
+        name = "prepare-stwo-folded-repeated-multi-interval-linear-block-accumulation-prototype-artifact",
+        alias = "prepare-stwo-folded-repeated-multi-interval-gemma-accumulation-prototype-artifact"
+    )]
     PrepareStwoFoldedRepeatedMultiIntervalGemmaAccumulationPrototypeArtifact {
         /// Path to the serialized Phase105 repeated multi-interval richer-family accumulation artifact JSON file.
         #[arg(long = "source")]
@@ -687,7 +763,11 @@ enum Command {
         output: PathBuf,
     },
     #[cfg(feature = "stwo-backend")]
-    /// Verify a folded prototype over a Phase105 repeated multi-window accumulation artifact.
+    /// Verify a folded prototype over a Phase105 repeated multi-window linear-block accumulation artifact.
+    #[command(
+        name = "verify-stwo-folded-repeated-multi-interval-linear-block-accumulation-prototype-artifact",
+        alias = "verify-stwo-folded-repeated-multi-interval-gemma-accumulation-prototype-artifact"
+    )]
     VerifyStwoFoldedRepeatedMultiIntervalGemmaAccumulationPrototypeArtifact {
         /// Path to the serialized Phase106 folded repeated multi-interval prototype artifact JSON file.
         artifact: PathBuf,
@@ -3493,14 +3573,14 @@ fn prepare_stwo_gemma_block_core_slice_artifact_command(
     {
         let _ = (proof_path, chain_path, output);
         return Err(VmError::UnsupportedProof(
-            "S-two Gemma block core-slice artifact requires building with `--features stwo-backend`"
+            "S-two linear-block core-slice artifact requires building with `--features stwo-backend`"
                 .to_string(),
         ));
     }
 
     #[cfg(feature = "stwo-backend")]
     {
-        require_stwo_backend("S-two Gemma block core-slice artifact")?;
+        require_stwo_backend("S-two linear-block core-slice artifact")?;
         let execution_proof = load_execution_stark_proof(proof_path)?;
         let chain_artifact = load_phase93_tensor_native_chain_artifact(chain_path)?;
         let artifact =
@@ -3523,14 +3603,14 @@ fn verify_stwo_gemma_block_core_slice_artifact_command(
     {
         let _ = artifact_path;
         return Err(VmError::UnsupportedProof(
-            "S-two Gemma block core-slice artifact requires building with `--features stwo-backend`"
+            "S-two linear-block core-slice artifact requires building with `--features stwo-backend`"
                 .to_string(),
         ));
     }
 
     #[cfg(feature = "stwo-backend")]
     {
-        require_stwo_backend("S-two Gemma block core-slice artifact")?;
+        require_stwo_backend("S-two linear-block core-slice artifact")?;
         let artifact = load_phase945_gemma_block_core_slice_artifact(artifact_path)?;
         verify_phase945_gemma_block_core_slice_artifact(&artifact)?;
 
@@ -3613,14 +3693,14 @@ fn prepare_stwo_gemma_block_richer_slice_artifact_command(
     {
         let _ = (proof_path, chain_path, output);
         return Err(VmError::UnsupportedProof(
-            "S-two Gemma block richer slice artifact requires building with `--features stwo-backend`"
+            "S-two linear-block richer slice artifact requires building with `--features stwo-backend`"
                 .to_string(),
         ));
     }
 
     #[cfg(feature = "stwo-backend")]
     {
-        require_stwo_backend("S-two Gemma block richer slice artifact")?;
+        require_stwo_backend("S-two linear-block richer slice artifact")?;
         let execution_proof = load_execution_stark_proof(proof_path)?;
         let chain_artifact = load_phase93_tensor_native_chain_artifact(chain_path)?;
         let core_slice_artifact =
@@ -3644,14 +3724,14 @@ fn verify_stwo_gemma_block_richer_slice_artifact_command(
     {
         let _ = artifact_path;
         return Err(VmError::UnsupportedProof(
-            "S-two Gemma block richer slice artifact requires building with `--features stwo-backend`"
+            "S-two linear-block richer slice artifact requires building with `--features stwo-backend`"
                 .to_string(),
         ));
     }
 
     #[cfg(feature = "stwo-backend")]
     {
-        require_stwo_backend("S-two Gemma block richer slice artifact")?;
+        require_stwo_backend("S-two linear-block richer slice artifact")?;
         let artifact = load_phase9475_gemma_block_richer_slice_artifact(artifact_path)?;
         verify_phase9475_gemma_block_richer_slice_artifact(&artifact)?;
 
@@ -4342,17 +4422,17 @@ fn prepare_stwo_repeated_gemma_slice_accumulation_artifact_command(
             output,
         );
         return Err(VmError::UnsupportedProof(
-            "S-two repeated Gemma slice accumulation artifact requires building with `--features stwo-backend`"
+            "S-two repeated linear-block slice accumulation artifact requires building with `--features stwo-backend`"
                 .to_string(),
         ));
     }
 
     #[cfg(feature = "stwo-backend")]
     {
-        require_stwo_backend("S-two repeated Gemma slice accumulation artifact")?;
+        require_stwo_backend("S-two repeated linear-block slice accumulation artifact")?;
         if total_slices > llm_provable_computer::MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES {
             return Err(VmError::InvalidConfig(format!(
-                "S-two repeated Gemma slice accumulation supports at most {} slices",
+                "S-two repeated linear-block slice accumulation supports at most {} slices",
                 llm_provable_computer::MAX_PHASE95_REPEATED_GEMMA_TOTAL_SLICES
             )));
         }
@@ -4383,14 +4463,14 @@ fn prepare_stwo_folded_gemma_slice_accumulation_artifact_command(
     {
         let _ = (source_path, output);
         return Err(VmError::UnsupportedProof(
-            "S-two folded Gemma slice accumulation artifact requires building with `--features stwo-backend`"
+            "S-two folded linear-block slice accumulation artifact requires building with `--features stwo-backend`"
                 .to_string(),
         ));
     }
 
     #[cfg(feature = "stwo-backend")]
     {
-        require_stwo_backend("S-two folded Gemma slice accumulation artifact")?;
+        require_stwo_backend("S-two folded linear-block slice accumulation artifact")?;
         let source = load_phase95_repeated_gemma_slice_accumulation_artifact(source_path)?;
         let artifact = prepare_phase965_folded_gemma_slice_accumulation_artifact(&source)?;
         save_phase965_folded_gemma_slice_accumulation_artifact(&artifact, output)?;
@@ -4410,14 +4490,14 @@ fn verify_stwo_repeated_gemma_slice_accumulation_artifact_command(
     {
         let _ = artifact_path;
         return Err(VmError::UnsupportedProof(
-            "S-two repeated Gemma slice accumulation artifact requires building with `--features stwo-backend`"
+            "S-two repeated linear-block slice accumulation artifact requires building with `--features stwo-backend`"
                 .to_string(),
         ));
     }
 
     #[cfg(feature = "stwo-backend")]
     {
-        require_stwo_backend("S-two repeated Gemma slice accumulation artifact")?;
+        require_stwo_backend("S-two repeated linear-block slice accumulation artifact")?;
         let artifact = load_phase95_repeated_gemma_slice_accumulation_artifact(artifact_path)?;
         verify_phase95_repeated_gemma_slice_accumulation_artifact(&artifact)?;
 
@@ -4443,14 +4523,14 @@ fn verify_stwo_folded_gemma_slice_accumulation_artifact_command(
     {
         let _ = (artifact_path, source_path);
         return Err(VmError::UnsupportedProof(
-            "S-two folded Gemma slice accumulation artifact requires building with `--features stwo-backend`"
+            "S-two folded linear-block slice accumulation artifact requires building with `--features stwo-backend`"
                 .to_string(),
         ));
     }
 
     #[cfg(feature = "stwo-backend")]
     {
-        require_stwo_backend("S-two folded Gemma slice accumulation artifact")?;
+        require_stwo_backend("S-two folded linear-block slice accumulation artifact")?;
         let source = load_phase95_repeated_gemma_slice_accumulation_artifact(source_path)?;
         let artifact = load_phase965_folded_gemma_slice_accumulation_artifact(artifact_path)?;
         verify_phase965_folded_gemma_slice_accumulation_artifact(&artifact, &source)?;
@@ -4478,14 +4558,14 @@ fn prepare_stwo_folded_gemma_richer_slice_family_artifact_command(
     {
         let _ = (source_path, folded_path, output);
         return Err(VmError::UnsupportedProof(
-            "S-two folded Gemma richer slice family artifact requires building with `--features stwo-backend`"
+            "S-two folded linear-block richer slice family artifact requires building with `--features stwo-backend`"
                 .to_string(),
         ));
     }
 
     #[cfg(feature = "stwo-backend")]
     {
-        require_stwo_backend("S-two folded Gemma richer slice family artifact")?;
+        require_stwo_backend("S-two folded linear-block richer slice family artifact")?;
         let source = load_phase95_repeated_gemma_slice_accumulation_artifact(source_path)?;
         let folded = load_phase965_folded_gemma_slice_accumulation_artifact(folded_path)?;
         let artifact = prepare_phase98_folded_gemma_richer_slice_family_artifact(&source, &folded)?;
@@ -4509,14 +4589,14 @@ fn verify_stwo_folded_gemma_richer_slice_family_artifact_command(
     {
         let _ = (artifact_path, source_path, folded_path);
         return Err(VmError::UnsupportedProof(
-            "S-two folded Gemma richer slice family artifact requires building with `--features stwo-backend`"
+            "S-two folded linear-block richer slice family artifact requires building with `--features stwo-backend`"
                 .to_string(),
         ));
     }
 
     #[cfg(feature = "stwo-backend")]
     {
-        require_stwo_backend("S-two folded Gemma richer slice family artifact")?;
+        require_stwo_backend("S-two folded linear-block richer slice family artifact")?;
         let source = load_phase95_repeated_gemma_slice_accumulation_artifact(source_path)?;
         let folded = load_phase965_folded_gemma_slice_accumulation_artifact(folded_path)?;
         let artifact = load_phase98_folded_gemma_richer_slice_family_artifact(artifact_path)?;
@@ -4634,14 +4714,14 @@ fn prepare_stwo_folded_multi_interval_gemma_accumulation_prototype_artifact_comm
     {
         let _ = (source_path, output);
         return Err(VmError::UnsupportedProof(
-            "S-two folded multi-interval Gemma accumulation prototype requires building with `--features stwo-backend`"
+            "S-two folded multi-interval linear-block accumulation prototype requires building with `--features stwo-backend`"
                 .to_string(),
         ));
     }
 
     #[cfg(feature = "stwo-backend")]
     {
-        require_stwo_backend("S-two folded multi-interval Gemma accumulation prototype")?;
+        require_stwo_backend("S-two folded multi-interval linear-block accumulation prototype")?;
         let source =
             load_phase99_multi_interval_gemma_richer_family_accumulation_artifact(source_path)?;
         let artifact =
@@ -4666,14 +4746,14 @@ fn verify_stwo_folded_multi_interval_gemma_accumulation_prototype_artifact_comma
     {
         let _ = (artifact_path, source_path);
         return Err(VmError::UnsupportedProof(
-            "S-two folded multi-interval Gemma accumulation prototype requires building with `--features stwo-backend`"
+            "S-two folded multi-interval linear-block accumulation prototype requires building with `--features stwo-backend`"
                 .to_string(),
         ));
     }
 
     #[cfg(feature = "stwo-backend")]
     {
-        require_stwo_backend("S-two folded multi-interval Gemma accumulation prototype")?;
+        require_stwo_backend("S-two folded multi-interval linear-block accumulation prototype")?;
         let source =
             load_phase99_multi_interval_gemma_richer_family_accumulation_artifact(source_path)?;
         let artifact = load_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(
@@ -4706,14 +4786,14 @@ fn prepare_stwo_folded_multi_interval_gemma_richer_family_artifact_command(
     {
         let _ = (source_path, folded_path, output);
         return Err(VmError::UnsupportedProof(
-            "S-two folded multi-interval Gemma richer-family artifact requires building with `--features stwo-backend`"
+            "S-two folded multi-interval linear-block richer-family artifact requires building with `--features stwo-backend`"
                 .to_string(),
         ));
     }
 
     #[cfg(feature = "stwo-backend")]
     {
-        require_stwo_backend("S-two folded multi-interval Gemma richer-family artifact")?;
+        require_stwo_backend("S-two folded multi-interval linear-block richer-family artifact")?;
         let source =
             load_phase99_multi_interval_gemma_richer_family_accumulation_artifact(source_path)?;
         let folded = load_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(
@@ -4741,14 +4821,14 @@ fn verify_stwo_folded_multi_interval_gemma_richer_family_artifact_command(
     {
         let _ = (artifact_path, source_path, folded_path);
         return Err(VmError::UnsupportedProof(
-            "S-two folded multi-interval Gemma richer-family artifact requires building with `--features stwo-backend`"
+            "S-two folded multi-interval linear-block richer-family artifact requires building with `--features stwo-backend`"
                 .to_string(),
         ));
     }
 
     #[cfg(feature = "stwo-backend")]
     {
-        require_stwo_backend("S-two folded multi-interval Gemma richer-family artifact")?;
+        require_stwo_backend("S-two folded multi-interval linear-block richer-family artifact")?;
         let source =
             load_phase99_multi_interval_gemma_richer_family_accumulation_artifact(source_path)?;
         let folded = load_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact(
@@ -4915,14 +4995,16 @@ fn prepare_stwo_folded_repeated_multi_interval_gemma_accumulation_prototype_arti
     {
         let _ = (source_path, output);
         return Err(VmError::UnsupportedProof(
-            "S-two folded repeated multi-interval Gemma accumulation prototype requires building with `--features stwo-backend`"
+            "S-two folded repeated multi-interval linear-block accumulation prototype requires building with `--features stwo-backend`"
                 .to_string(),
         ));
     }
 
     #[cfg(feature = "stwo-backend")]
     {
-        require_stwo_backend("S-two folded repeated multi-interval Gemma accumulation prototype")?;
+        require_stwo_backend(
+            "S-two folded repeated multi-interval linear-block accumulation prototype",
+        )?;
         let source =
             load_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
                 source_path,
@@ -4953,14 +5035,16 @@ fn verify_stwo_folded_repeated_multi_interval_gemma_accumulation_prototype_artif
     {
         let _ = (artifact_path, source_path);
         return Err(VmError::UnsupportedProof(
-            "S-two folded repeated multi-interval Gemma accumulation prototype requires building with `--features stwo-backend`"
+            "S-two folded repeated multi-interval linear-block accumulation prototype requires building with `--features stwo-backend`"
                 .to_string(),
         ));
     }
 
     #[cfg(feature = "stwo-backend")]
     {
-        require_stwo_backend("S-two folded repeated multi-interval Gemma accumulation prototype")?;
+        require_stwo_backend(
+            "S-two folded repeated multi-interval linear-block accumulation prototype",
+        )?;
         let source =
             load_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
                 source_path,
@@ -14452,22 +14536,28 @@ mod cli_dispatch_tests {
             "verify-stwo-transformer-shaped-artifact"
         ));
         assert!(!needs_run_subcommand(
-            "prepare-stwo-folded-multi-interval-gemma-richer-family-artifact"
+            "prepare-stwo-folded-multi-interval-linear-block-richer-family-artifact"
         ));
         assert!(!needs_run_subcommand(
-            "verify-stwo-folded-multi-interval-gemma-richer-family-artifact"
+            "verify-stwo-folded-multi-interval-linear-block-richer-family-artifact"
         ));
         assert!(!needs_run_subcommand(
-            "prepare-stwo-repeated-multi-interval-gemma-richer-family-accumulation-artifact"
+            "prepare-stwo-repeated-multi-interval-linear-block-richer-family-accumulation-artifact"
         ));
         assert!(!needs_run_subcommand(
-            "verify-stwo-repeated-multi-interval-gemma-richer-family-accumulation-artifact"
+            "verify-stwo-repeated-multi-interval-linear-block-richer-family-accumulation-artifact"
         ));
         assert!(!needs_run_subcommand(
-            "prepare-stwo-folded-repeated-multi-interval-gemma-accumulation-prototype-artifact"
+            "prepare-stwo-folded-repeated-multi-interval-linear-block-accumulation-prototype-artifact"
         ));
         assert!(!needs_run_subcommand(
-            "verify-stwo-folded-repeated-multi-interval-gemma-accumulation-prototype-artifact"
+            "verify-stwo-folded-repeated-multi-interval-linear-block-accumulation-prototype-artifact"
+        ));
+        assert!(!needs_run_subcommand(
+            "prepare-stwo-gemma-block-core-slice-artifact"
+        ));
+        assert!(!needs_run_subcommand(
+            "verify-stwo-gemma-block-core-slice-artifact"
         ));
     }
 
@@ -14854,6 +14944,26 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-shared-normalization-primitive-artifact"
                 | "prepare-stwo-tensor-native-chain-artifact"
                 | "verify-stwo-tensor-native-chain-artifact"
+                | "prepare-stwo-linear-block-core-slice-artifact"
+                | "verify-stwo-linear-block-core-slice-artifact"
+                | "prepare-stwo-linear-block-richer-slice-artifact"
+                | "verify-stwo-linear-block-richer-slice-artifact"
+                | "prepare-stwo-repeated-linear-block-slice-accumulation-artifact"
+                | "verify-stwo-repeated-linear-block-slice-accumulation-artifact"
+                | "prepare-stwo-folded-linear-block-slice-accumulation-artifact"
+                | "verify-stwo-folded-linear-block-slice-accumulation-artifact"
+                | "prepare-stwo-folded-linear-block-richer-slice-family-artifact"
+                | "verify-stwo-folded-linear-block-richer-slice-family-artifact"
+                | "prepare-stwo-multi-interval-linear-block-richer-family-accumulation-artifact"
+                | "verify-stwo-multi-interval-linear-block-richer-family-accumulation-artifact"
+                | "prepare-stwo-folded-multi-interval-linear-block-accumulation-prototype-artifact"
+                | "verify-stwo-folded-multi-interval-linear-block-accumulation-prototype-artifact"
+                | "prepare-stwo-folded-multi-interval-linear-block-richer-family-artifact"
+                | "verify-stwo-folded-multi-interval-linear-block-richer-family-artifact"
+                | "prepare-stwo-repeated-multi-interval-linear-block-richer-family-accumulation-artifact"
+                | "verify-stwo-repeated-multi-interval-linear-block-richer-family-accumulation-artifact"
+                | "prepare-stwo-folded-repeated-multi-interval-linear-block-accumulation-prototype-artifact"
+                | "verify-stwo-folded-repeated-multi-interval-linear-block-accumulation-prototype-artifact"
                 | "prepare-stwo-gemma-block-core-slice-artifact"
                 | "verify-stwo-gemma-block-core-slice-artifact"
                 | "prepare-stwo-gemma-block-richer-slice-artifact"

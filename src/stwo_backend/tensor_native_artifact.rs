@@ -27,6 +27,8 @@ pub const STWO_TENSOR_NATIVE_CHAIN_ARTIFACT_SCOPE_PHASE93: &str =
     "stwo_tensor_native_transformer_shaped_chain_artifact";
 pub const STWO_TENSOR_NATIVE_CARRIED_STATE_VERSION_PHASE93: &str =
     "stwo-phase93-typed-carried-state-v1";
+const PHASE5_PROGRAM_LABEL: &str = "linear_block_v4_with_lookup";
+const PHASE5_PROGRAM_LABEL_LEGACY: &str = "gemma_block_v4";
 pub const STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_VERSION_PHASE945: &str =
     "stwo-phase94-5-gemma-block-core-slice-artifact-v1";
 pub const STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_SCOPE_PHASE945: &str =
@@ -935,24 +937,26 @@ pub fn prepare_phase945_gemma_block_core_slice_artifact(
     let payload = parse_phase945_arithmetic_subset_payload(execution_proof)?;
     let shared_normalization = payload.embedded_shared_normalization.ok_or_else(|| {
         VmError::InvalidConfig(
-            "gemma_block_v4 S-two proof payload is missing embedded shared normalization proof"
+            "linear_block_v4_with_lookup S-two proof payload is missing embedded shared normalization proof"
                 .to_string(),
         )
     })?;
     let shared_activation = payload.embedded_shared_activation_lookup.ok_or_else(|| {
         VmError::InvalidConfig(
-            "gemma_block_v4 S-two proof payload is missing embedded shared activation proof"
+            "linear_block_v4_with_lookup S-two proof payload is missing embedded shared activation proof"
                 .to_string(),
         )
     })?;
     if !verify_phase10_shared_normalization_lookup_envelope(&shared_normalization.proof_envelope)? {
         return Err(VmError::UnsupportedProof(
-            "gemma_block_v4 embedded shared normalization proof did not verify".to_string(),
+            "linear_block_v4_with_lookup embedded shared normalization proof did not verify"
+                .to_string(),
         ));
     }
     if !verify_phase10_shared_binary_step_lookup_envelope(&shared_activation.proof_envelope)? {
         return Err(VmError::UnsupportedProof(
-            "gemma_block_v4 embedded shared activation proof did not verify".to_string(),
+            "linear_block_v4_with_lookup embedded shared activation proof did not verify"
+                .to_string(),
         ));
     }
 
@@ -995,7 +999,7 @@ pub fn prepare_phase945_gemma_block_core_slice_artifact(
         artifact_version: STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_VERSION_PHASE945.to_string(),
         semantic_scope: STWO_GEMMA_BLOCK_CORE_SLICE_ARTIFACT_SCOPE_PHASE945.to_string(),
         artifact_commitment,
-        program_label: "gemma_block_v4".to_string(),
+        program_label: PHASE5_PROGRAM_LABEL.to_string(),
         chain_artifact_commitment: chain_artifact.artifact_commitment.clone(),
         execution_proof_commitment,
         normalization_row_set_commitment,
@@ -1032,7 +1036,7 @@ pub fn verify_phase945_gemma_block_core_slice_artifact(
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "gemma_block_v4" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 94.5 program label `{}`",
             artifact.program_label
@@ -1084,13 +1088,13 @@ pub fn verify_phase945_gemma_block_core_slice_artifact(
     let payload = parse_phase945_arithmetic_subset_payload(&artifact.execution_proof)?;
     let shared_normalization = payload.embedded_shared_normalization.ok_or_else(|| {
         VmError::InvalidConfig(
-            "gemma_block_v4 S-two proof payload is missing embedded shared normalization proof"
+            "linear_block_v4_with_lookup S-two proof payload is missing embedded shared normalization proof"
                 .to_string(),
         )
     })?;
     let shared_activation = payload.embedded_shared_activation_lookup.ok_or_else(|| {
         VmError::InvalidConfig(
-            "gemma_block_v4 S-two proof payload is missing embedded shared activation proof"
+            "linear_block_v4_with_lookup S-two proof payload is missing embedded shared activation proof"
                 .to_string(),
         )
     })?;
@@ -1513,7 +1517,7 @@ pub fn prepare_phase95_repeated_gemma_slice_accumulation_artifact(
             .to_string(),
         semantic_scope: STWO_REPEATED_GEMMA_SLICE_ACCUMULATION_ARTIFACT_SCOPE_PHASE95.to_string(),
         artifact_commitment,
-        program_label: "gemma_block_v4".to_string(),
+        program_label: PHASE5_PROGRAM_LABEL.to_string(),
         shared_primitive_artifact_commitment: shared_primitive_artifact.artifact_commitment.clone(),
         shared_table_registry_commitment: shared_primitive_artifact
             .static_table_registry_commitment
@@ -1550,7 +1554,7 @@ pub fn verify_phase95_repeated_gemma_slice_accumulation_artifact(
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "gemma_block_v4" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 95 program label `{}`",
             artifact.program_label
@@ -1850,7 +1854,7 @@ fn validate_phase965_folded_gemma_slice_accumulation_artifact_shallow(
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "gemma_block_v4" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 96.5 program label `{}`",
             artifact.program_label
@@ -2321,7 +2325,7 @@ fn validate_phase98_folded_gemma_richer_slice_family_artifact_shallow(
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "gemma_block_v4" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 98 program label `{}`",
             artifact.program_label
@@ -2912,7 +2916,7 @@ fn validate_phase99_multi_interval_gemma_richer_family_accumulation_artifact_sha
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "gemma_block_v4" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 99 program label `{}`",
             artifact.program_label
@@ -3091,7 +3095,7 @@ fn prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact_with
         semantic_scope: STWO_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ACCUMULATION_ARTIFACT_SCOPE_PHASE99
             .to_string(),
         artifact_commitment,
-        program_label: "gemma_block_v4".to_string(),
+        program_label: PHASE5_PROGRAM_LABEL.to_string(),
         shared_primitive_artifact_commitment: shared_primitive_artifact.artifact_commitment.clone(),
         shared_table_registry_commitment: shared_primitive_artifact
             .static_table_registry_commitment
@@ -3552,7 +3556,7 @@ fn validate_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifac
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "gemma_block_v4" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 101.5 program label `{}`",
             artifact.program_label
@@ -4133,7 +4137,7 @@ fn validate_phase102_folded_multi_interval_gemma_richer_family_artifact_shallow(
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "gemma_block_v4" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 102 program label `{}`",
             artifact.program_label
@@ -4811,7 +4815,7 @@ fn validate_phase105_repeated_multi_interval_gemma_richer_family_artifact_shallo
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "gemma_block_v4" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 105 program label `{}`",
             artifact.program_label
@@ -5047,7 +5051,7 @@ pub fn prepare_phase105_repeated_multi_interval_gemma_richer_family_accumulation
             semantic_scope:
                 STWO_REPEATED_MULTI_INTERVAL_GEMMA_RICHER_FAMILY_ARTIFACT_SCOPE_PHASE105.to_string(),
             artifact_commitment,
-            program_label: "gemma_block_v4".to_string(),
+            program_label: PHASE5_PROGRAM_LABEL.to_string(),
             shared_primitive_artifact_commitment: shared_primitive_artifact
                 .artifact_commitment
                 .clone(),
@@ -5656,7 +5660,7 @@ fn validate_phase106_folded_repeated_multi_interval_gemma_accumulation_prototype
             artifact.semantic_scope
         )));
     }
-    if artifact.program_label != "gemma_block_v4" {
+    if !is_supported_phase5_program_label(&artifact.program_label) {
         return Err(VmError::InvalidConfig(format!(
             "unsupported Phase 106 program label `{}`",
             artifact.program_label
@@ -6403,13 +6407,13 @@ fn phase945_normalization_rows_from_embedded(
                 inv_sqrt_q8_memory_index: row.inv_sqrt_q8_memory_index,
                 norm_sq: u16::try_from(row.expected_norm_sq).map_err(|_| {
                     VmError::InvalidConfig(format!(
-                        "gemma_block_v4 shared normalization row {} norm_sq is not a canonical u16",
+                        "linear_block_v4_with_lookup shared normalization row {} norm_sq is not a canonical u16",
                         row_index
                     ))
                 })?,
                 inv_sqrt_q8: u16::try_from(row.expected_inv_sqrt_q8).map_err(|_| {
                     VmError::InvalidConfig(format!(
-                        "gemma_block_v4 shared normalization row {} inv_sqrt_q8 is not a canonical u16",
+                        "linear_block_v4_with_lookup shared normalization row {} inv_sqrt_q8 is not a canonical u16",
                         row_index
                     ))
                 })?,
@@ -6442,6 +6446,10 @@ fn parse_phase945_arithmetic_subset_payload(
         .map_err(|error| VmError::Serialization(error.to_string()))
 }
 
+fn is_supported_phase5_program_label(program_label: &str) -> bool {
+    program_label == PHASE5_PROGRAM_LABEL || program_label == PHASE5_PROGRAM_LABEL_LEGACY
+}
+
 fn validate_phase945_gemma_execution_proof(
     execution_proof: &VanillaStarkExecutionProof,
 ) -> Result<()> {
@@ -6451,10 +6459,10 @@ fn validate_phase945_gemma_execution_proof(
             execution_proof.proof_backend
         )));
     }
-    let canonical_program = canonical_gemma_block_v4_program()?;
+    let canonical_program = canonical_linear_block_v4_with_lookup_program()?;
     if execution_proof.claim.program != canonical_program {
         return Err(VmError::InvalidConfig(
-            "Phase 94.5 Gemma core slice requires the canonical `programs/gemma_block_v4.tvm` program"
+            "Phase 94.5 Gemma core slice requires the canonical `programs/linear_block_v4_with_lookup.tvm` program"
                 .to_string(),
         ));
     }
@@ -6467,8 +6475,10 @@ fn validate_phase945_gemma_execution_proof(
     Ok(())
 }
 
-fn canonical_gemma_block_v4_program() -> Result<crate::Program> {
-    parse_program(include_str!("../../programs/gemma_block_v4.tvm"))
+fn canonical_linear_block_v4_with_lookup_program() -> Result<crate::Program> {
+    parse_program(include_str!(
+        "../../programs/linear_block_v4_with_lookup.tvm"
+    ))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -6496,7 +6506,7 @@ fn phase9475_selected_memory_window(
         .map(|memory_index| {
             let value = *memory.get(memory_index).ok_or_else(|| {
                 VmError::InvalidConfig(format!(
-                    "Phase 94.75 requires gemma_block_v4 final memory index {}",
+                    "Phase 94.75 requires linear_block_v4_with_lookup final memory index {}",
                     memory_index
                 ))
             })?;
@@ -6504,7 +6514,7 @@ fn phase9475_selected_memory_window(
                 memory_index: u8::try_from(memory_index).expect("memory window index fits in u8"),
                 value: i16::try_from(value).map_err(|_| {
                     VmError::InvalidConfig(format!(
-                        "Phase 94.75 gemma_block_v4 final memory index {} is not a canonical i16",
+                        "Phase 94.75 linear_block_v4_with_lookup final memory index {} is not a canonical i16",
                         memory_index
                     ))
                 })?,
@@ -6516,13 +6526,13 @@ fn phase9475_selected_memory_window(
 fn phase9475_memory_i16(memory: &[i16], index: usize, label: &str) -> Result<i16> {
     let value = *memory.get(index).ok_or_else(|| {
         VmError::InvalidConfig(format!(
-            "Phase 94.75 requires gemma_block_v4 final memory index {} for {}",
+            "Phase 94.75 requires linear_block_v4_with_lookup final memory index {} for {}",
             index, label
         ))
     })?;
     i16::try_from(value).map_err(|_| {
         VmError::InvalidConfig(format!(
-            "Phase 94.75 gemma_block_v4 final memory index {} for {} is not a canonical i16",
+            "Phase 94.75 linear_block_v4_with_lookup final memory index {} for {} is not a canonical i16",
             index, label
         ))
     })
@@ -6575,7 +6585,7 @@ fn phase9475_invariant_summary(memory: &[i16]) -> Result<Phase9475InvariantSumma
     )?;
     if local_score != expected_local_score {
         return Err(VmError::InvalidConfig(format!(
-            "Phase 94.75 local_score memory value {} does not match the fixed gemma_block_v4 dot-product result {}",
+            "Phase 94.75 local_score memory value {} does not match the fixed linear_block_v4_with_lookup dot-product result {}",
             local_score, expected_local_score
         )));
     }
@@ -6587,7 +6597,7 @@ fn phase9475_invariant_summary(memory: &[i16]) -> Result<Phase9475InvariantSumma
     )?;
     if global_score != expected_global_score {
         return Err(VmError::InvalidConfig(format!(
-            "Phase 94.75 global_score memory value {} does not match the fixed gemma_block_v4 dot-product result {}",
+            "Phase 94.75 global_score memory value {} does not match the fixed linear_block_v4_with_lookup dot-product result {}",
             global_score, expected_global_score
         )));
     }
@@ -6599,7 +6609,7 @@ fn phase9475_invariant_summary(memory: &[i16]) -> Result<Phase9475InvariantSumma
     )?;
     if grouped_value_mix != expected_grouped_value_mix {
         return Err(VmError::InvalidConfig(format!(
-            "Phase 94.75 grouped_value_mix memory value {} does not match the fixed gemma_block_v4 weighted value mix {}",
+            "Phase 94.75 grouped_value_mix memory value {} does not match the fixed linear_block_v4_with_lookup weighted value mix {}",
             grouped_value_mix, expected_grouped_value_mix
         )));
     }
@@ -6608,7 +6618,7 @@ fn phase9475_invariant_summary(memory: &[i16]) -> Result<Phase9475InvariantSumma
         phase9475_checked_add(grouped_value_mix, bias, "residual_output")?;
     if residual_output != expected_residual_output {
         return Err(VmError::InvalidConfig(format!(
-            "Phase 94.75 residual_output memory value {} does not match the fixed gemma_block_v4 residual projection {}",
+            "Phase 94.75 residual_output memory value {} does not match the fixed linear_block_v4_with_lookup residual projection {}",
             residual_output, expected_residual_output
         )));
     }
@@ -8716,23 +8726,23 @@ mod tests {
     };
     use crate::ProgramCompiler;
 
-    fn prove_gemma_block_v4_execution() -> VanillaStarkExecutionProof {
+    fn prove_linear_block_v4_with_lookup_execution() -> VanillaStarkExecutionProof {
         let model = ProgramCompiler
             .compile_source(
-                include_str!("../../programs/gemma_block_v4.tvm"),
+                include_str!("../../programs/linear_block_v4_with_lookup.tvm"),
                 TransformerVmConfig {
                     attention_mode: Attention2DMode::AverageHard,
                     ..TransformerVmConfig::default()
                 },
             )
-            .expect("compile gemma_block_v4");
+            .expect("compile linear_block_v4_with_lookup");
         prove_execution_stark_with_backend_and_options(
             &model,
             256,
             StarkProofBackend::Stwo,
             production_v1_stark_options(),
         )
-        .expect("prove gemma_block_v4")
+        .expect("prove linear_block_v4_with_lookup")
     }
 
     #[test]
@@ -8791,22 +8801,57 @@ mod tests {
     fn phase945_gemma_block_core_slice_round_trips() {
         let chain_artifact = prepare_phase93_tensor_native_chain_demo_artifact()
             .expect("prepare phase93 chain artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let artifact =
             prepare_phase945_gemma_block_core_slice_artifact(&chain_artifact, &execution_proof)
                 .expect("prepare phase94.5 gemma core slice artifact");
         assert_eq!(artifact.total_shared_normalization_rows, 2);
         assert_eq!(artifact.total_shared_activation_rows, 2);
-        assert_eq!(artifact.program_label, "gemma_block_v4");
+        assert_eq!(artifact.program_label, "linear_block_v4_with_lookup");
         verify_phase945_gemma_block_core_slice_artifact(&artifact)
             .expect("verify phase94.5 gemma core slice artifact");
+    }
+
+    #[test]
+    fn phase945_gemma_block_core_slice_accepts_legacy_labels() {
+        let chain_artifact = prepare_phase93_tensor_native_chain_demo_artifact()
+            .expect("prepare phase93 chain artifact");
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
+        let mut artifact =
+            prepare_phase945_gemma_block_core_slice_artifact(&chain_artifact, &execution_proof)
+                .expect("prepare phase94.5 gemma core slice artifact");
+        artifact.program_label = PHASE5_PROGRAM_LABEL_LEGACY.to_string();
+        artifact.execution_proof.proof_backend_version =
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE5_LEGACY.to_string();
+        artifact.execution_proof_backend_version =
+            artifact.execution_proof.proof_backend_version.clone();
+        artifact.execution_proof_commitment =
+            commit_phase945_execution_proof(&artifact.execution_proof)
+                .expect("recompute phase94.5 execution proof commitment");
+        artifact.artifact_commitment = commit_phase945_gemma_block_core_slice_artifact(
+            &artifact.chain_artifact,
+            &artifact.execution_proof,
+            &artifact.execution_proof_commitment,
+            &artifact.shared_normalization_statement_version,
+            &artifact.shared_normalization_scope,
+            &artifact.shared_activation_statement_version,
+            &artifact.shared_activation_scope,
+            &artifact.shared_normalization_rows,
+            &artifact.shared_activation_rows,
+            &artifact.normalization_row_set_commitment,
+            &artifact.activation_row_set_commitment,
+        )
+        .expect("recompute phase94.5 artifact commitment");
+
+        verify_phase945_gemma_block_core_slice_artifact(&artifact)
+            .expect("verify phase94.5 gemma core slice artifact with legacy labels");
     }
 
     #[test]
     fn phase9475_gemma_block_richer_slice_round_trips() {
         let chain_artifact = prepare_phase93_tensor_native_chain_demo_artifact()
             .expect("prepare phase93 chain artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let core_slice =
             prepare_phase945_gemma_block_core_slice_artifact(&chain_artifact, &execution_proof)
                 .expect("prepare phase94.5 gemma core slice artifact");
@@ -8825,7 +8870,7 @@ mod tests {
     fn phase9475_gemma_block_richer_slice_rejects_memory_window_drift() {
         let chain_artifact = prepare_phase93_tensor_native_chain_demo_artifact()
             .expect("prepare phase93 chain artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let core_slice =
             prepare_phase945_gemma_block_core_slice_artifact(&chain_artifact, &execution_proof)
                 .expect("prepare phase94.5 gemma core slice artifact");
@@ -8846,7 +8891,7 @@ mod tests {
     fn phase95_repeated_gemma_slice_accumulation_round_trips() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let artifact = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -8864,10 +8909,29 @@ mod tests {
     }
 
     #[test]
+    fn phase95_repeated_gemma_slice_accumulation_accepts_legacy_program_label() {
+        let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
+            .expect("prepare phase92 primitive artifact");
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
+        let mut artifact = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
+            &primitive_artifact,
+            &execution_proof,
+            4,
+            0,
+            0,
+        )
+        .expect("prepare phase95 accumulation artifact");
+        artifact.program_label = PHASE5_PROGRAM_LABEL_LEGACY.to_string();
+
+        verify_phase95_repeated_gemma_slice_accumulation_artifact(&artifact)
+            .expect("verify phase95 accumulation artifact with legacy program label");
+    }
+
+    #[test]
     fn phase95_repeated_gemma_slice_accumulation_rejects_member_drift() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let mut artifact = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -8888,7 +8952,7 @@ mod tests {
     fn phase95_repeated_gemma_slice_accumulation_rejects_oversized_total_slices() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let error = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -8904,7 +8968,7 @@ mod tests {
     fn phase95_repeated_gemma_slice_accumulation_rejects_block_index_overflow() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let error = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -8920,7 +8984,7 @@ mod tests {
     fn phase95_repeated_gemma_slice_accumulation_verify_rejects_terminal_overflow() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let mut artifact = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -8940,7 +9004,7 @@ mod tests {
     fn phase965_folded_gemma_slice_accumulation_round_trips() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let source = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -8970,7 +9034,7 @@ mod tests {
     fn phase965_folded_gemma_slice_accumulation_rejects_source_commitment_drift() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let source = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -8993,7 +9057,7 @@ mod tests {
     fn phase965_folded_gemma_slice_accumulation_rejects_group_drift() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let source = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -9014,7 +9078,7 @@ mod tests {
     fn phase965_folded_gemma_slice_accumulation_rejects_accumulator_drift() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let source = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -9037,7 +9101,7 @@ mod tests {
     fn phase98_folded_gemma_richer_slice_family_round_trips() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let source = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -9070,7 +9134,7 @@ mod tests {
     fn phase98_folded_gemma_richer_slice_family_rejects_memory_window_family_drift() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let source = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -9097,7 +9161,7 @@ mod tests {
     fn phase98_folded_gemma_richer_slice_family_rejects_summary_drift() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let source = prepare_phase95_repeated_gemma_slice_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -9122,7 +9186,7 @@ mod tests {
     fn phase99_multi_interval_gemma_richer_family_accumulation_round_trips() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let artifact = prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -9154,7 +9218,7 @@ mod tests {
     fn phase99_multi_interval_gemma_richer_family_accumulation_rejects_interval_member_drift() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let mut artifact =
             prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
                 &primitive_artifact,
@@ -9180,7 +9244,7 @@ mod tests {
     fn phase1015_folded_multi_interval_gemma_accumulation_prototype_round_trips() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let source = prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -9217,7 +9281,7 @@ mod tests {
     fn phase1015_folded_multi_interval_gemma_accumulation_prototype_rejects_handoff_drift() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let source = prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -9245,7 +9309,7 @@ mod tests {
     fn phase102_folded_multi_interval_gemma_richer_family_round_trips() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let source = prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -9291,7 +9355,7 @@ mod tests {
     fn phase102_folded_multi_interval_gemma_richer_family_rejects_sequence_drift() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let source = prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact(
             &primitive_artifact,
             &execution_proof,
@@ -9323,7 +9387,7 @@ mod tests {
     fn phase105_repeated_multi_interval_gemma_richer_family_round_trips() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let artifact =
             prepare_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
                 &primitive_artifact,
@@ -9359,7 +9423,7 @@ mod tests {
     fn phase105_repeated_multi_interval_gemma_richer_family_rejects_handoff_sequence_drift() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let mut artifact =
             prepare_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
                 &primitive_artifact,
@@ -9387,7 +9451,7 @@ mod tests {
     fn phase105_repeated_multi_interval_gemma_richer_family_rejects_total_window_cap_drift() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let mut artifact =
             prepare_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
                 &primitive_artifact,
@@ -9414,7 +9478,7 @@ mod tests {
     {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let mut artifact =
             prepare_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
                 &primitive_artifact,
@@ -9444,7 +9508,7 @@ mod tests {
     fn phase106_folded_repeated_multi_interval_gemma_round_trips() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let source =
             prepare_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
                 &primitive_artifact,
@@ -9486,7 +9550,7 @@ mod tests {
     fn phase106_folded_repeated_multi_interval_gemma_rejects_folded_group_sequence_drift() {
         let primitive_artifact = prepare_phase92_shared_normalization_demo_artifact()
             .expect("prepare phase92 primitive artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let source =
             prepare_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact(
                 &primitive_artifact,
@@ -9519,7 +9583,7 @@ mod tests {
     fn phase945_gemma_block_core_slice_rejects_normalization_row_set_drift() {
         let chain_artifact = prepare_phase93_tensor_native_chain_demo_artifact()
             .expect("prepare phase93 chain artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let mut artifact =
             prepare_phase945_gemma_block_core_slice_artifact(&chain_artifact, &execution_proof)
                 .expect("prepare phase94.5 gemma core slice artifact");
@@ -9538,7 +9602,7 @@ mod tests {
     fn phase945_gemma_block_core_slice_rejects_chain_drift() {
         let chain_artifact = prepare_phase93_tensor_native_chain_demo_artifact()
             .expect("prepare phase93 chain artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let mut artifact =
             prepare_phase945_gemma_block_core_slice_artifact(&chain_artifact, &execution_proof)
                 .expect("prepare phase94.5 gemma core slice artifact");
@@ -9556,7 +9620,7 @@ mod tests {
     fn phase945_gemma_block_core_slice_round_trips_on_disk() {
         let chain_artifact = prepare_phase93_tensor_native_chain_demo_artifact()
             .expect("prepare phase93 chain artifact");
-        let execution_proof = prove_gemma_block_v4_execution();
+        let execution_proof = prove_linear_block_v4_with_lookup_execution();
         let artifact =
             prepare_phase945_gemma_block_core_slice_artifact(&chain_artifact, &execution_proof)
                 .expect("prepare phase94.5 gemma core slice artifact");
@@ -9592,6 +9656,6 @@ mod tests {
             .expect_err("non-gemma proof should fail");
         assert!(error
             .to_string()
-            .contains("canonical `programs/gemma_block_v4.tvm`"));
+            .contains("canonical `programs/linear_block_v4_with_lookup.tvm`"));
     }
 }

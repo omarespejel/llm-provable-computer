@@ -67,7 +67,7 @@ cargo: $(cargo "$NIGHTLY_TOOLCHAIN" --version)
 host_platform: $(uname -srm)
 nightly_toolchain: $NIGHTLY_TOOLCHAIN
 bundle_dir: docs/paper/artifacts/$(basename "$BUNDLE_DIR")
-fixtures: addition, shared-normalization-demo, gemma_block_v4, decoding_demo
+fixtures: addition, shared-normalization-demo, linear_block_v4_with_lookup, decoding_demo
 MANIFEST
 
 run_timed prove_addition_stwo \
@@ -89,16 +89,16 @@ run_timed verify_shared_normalization_stwo \
   "${CARGO_STWO[@]}" \
   verify-stwo-shared-normalization-demo "$BUNDLE_DIR/shared-normalization.stwo.proof.json"
 
-run_timed prove_gemma_block_v4_stwo \
+run_timed prove_linear_block_v4_with_lookup_stwo \
   "${CARGO_STWO[@]}" \
-  prove-stark programs/gemma_block_v4.tvm \
+  prove-stark programs/linear_block_v4_with_lookup.tvm \
   --backend stwo \
   --max-steps 256 \
-  -o "$BUNDLE_DIR/gemma_block_v4.stwo.proof.json"
+  -o "$BUNDLE_DIR/linear_block_v4_with_lookup.stwo.proof.json"
 
-run_timed verify_gemma_block_v4_stwo \
+run_timed verify_linear_block_v4_with_lookup_stwo \
   "${CARGO_STWO[@]}" \
-  verify-stark "$BUNDLE_DIR/gemma_block_v4.stwo.proof.json"
+  verify-stark "$BUNDLE_DIR/linear_block_v4_with_lookup.stwo.proof.json"
 
 run_timed prove_decoding_demo_stwo \
   "${CARGO_STWO[@]}" \
@@ -122,7 +122,7 @@ readme_md = Path(sys.argv[3])
 artifacts = [
     ("addition.stwo.proof.json", "Experimental S-two arithmetic execution proof", "arithmetic"),
     ("shared-normalization.stwo.proof.json", "Shared-table normalization lookup proof envelope", "lookup-backed component"),
-    ("gemma_block_v4.stwo.proof.json", "Gemma-inspired fixed-shape execution proof with shared lookup bindings", "transformer-shaped checksum fixture"),
+    ("linear_block_v4_with_lookup.stwo.proof.json", "Linear-block fixed-shape execution proof with shared lookup bindings", "transformer-shaped checksum fixture"),
     ("decoding.stwo.chain.json", "Three-step proof-carrying decoding chain", "proof-carrying decoding"),
     ("manifest.txt", "Environment and commit metadata", "metadata"),
     ("benchmarks.tsv", "Wall-clock timings by command label", "metadata"),
@@ -196,7 +196,7 @@ readme_lines = [
     "",
     "- `addition.stwo.proof.json`: one arithmetic `statement-v1` execution proof,",
     "- `shared-normalization.stwo.proof.json`: one shared-table lookup-backed normalization proof envelope,",
-    "- `gemma_block_v4.stwo.proof.json`: one transformer-shaped fixed-shape `statement-v1` execution proof with shared lookup bindings, and",
+    "- `linear_block_v4_with_lookup.stwo.proof.json`: one transformer-shaped fixed-shape `statement-v1` execution proof with shared lookup bindings, and",
     "- `decoding.stwo.chain.json`: one three-step proof-carrying decoding chain over explicit carried-state commitments.",
     "",
     "These artifacts remain intentionally narrow. They do **not** prove full standard-softmax transformer inference, recursive aggregation, or production-scale decoding. Their role is to provide a frozen second evidence tier for the paper's experimental `stwo` path.",

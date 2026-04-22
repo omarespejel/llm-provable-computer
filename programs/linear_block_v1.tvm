@@ -1,4 +1,4 @@
-; Gemma-inspired fixed-shape block checksum.
+; Fixed-shape linear-block checksum.
 ; q = [1, 1]
 ; local key = [2, 0], global key = [0, 2]
 ; local value scalar = 2, global value scalar = 2

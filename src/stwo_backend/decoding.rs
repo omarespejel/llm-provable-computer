@@ -18611,7 +18611,7 @@ mod tests {
             ],
         );
         let mut manifest = phase11_prepare_decoding_chain(&[step]).expect("manifest");
-        manifest.proof_backend_version = "stwo-phase10-gemma-block-v4".to_string();
+        manifest.proof_backend_version = "stwo-phase10-linear-block-v4-with-lookup".to_string();
         let err = verify_phase11_decoding_chain(&manifest).unwrap_err();
         assert!(err
             .to_string()
