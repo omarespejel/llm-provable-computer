@@ -376,12 +376,13 @@ readme_md.write_text(
     f"- Phase109 pair-fold / explicit-4 ratio: `{pair_ratio:.4%}`\n"
     f"- Phase110 fold-tree bytes for the `8`-window surface: `{tree_bytes}`\n"
     f"- Phase110 fold-tree / explicit-8 ratio: `{tree_ratio:.4%}`\n\n"
+    "The Phase109 pair surface is smaller than the same-tier explicit `4`-window source, while the current Phase110 tree remains larger than the same-tier explicit `8`-window source because it still carries a verifier-bound node surface.\n\n"
     "These numbers remain verifier-bound artifact metrics. They do not claim recursive proving or prover-time compression.\n"
 )
 
 public_notes_md.write_text(
     "# Public Comparison Notes\n\n"
-    "Use this bundle to make a narrow claim only: repeated Gemma-like repeated-window surfaces can be folded into materially smaller verifier-bound artifacts than the corresponding explicit repeated-window richer-family surfaces.\n\n"
+    "Use this bundle to make a narrow claim only: the first transformer-specific pair fold materially shrinks the same-tier explicit `4`-window richer-family surface, while the current verifier-bound repeated-window fold tree does not yet shrink the same-tier explicit `8`-window richer-family surface.\n\n"
     "Do not describe this bundle as recursive compression, generic STARK folding, or production-scale transformer proving.\n"
 )
 PY
