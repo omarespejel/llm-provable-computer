@@ -1,5 +1,5 @@
-; Gemma-inspired fixed-shape block checksum (v2).
-; Same fixed arithmetic as gemma_block_v1, but the normalization row
+; Fixed-shape linear-block checksum (v2).
+; Same fixed arithmetic as linear_block_v1, but the normalization row
 ; is now intended to be bound inside the main serialized S-two proof payload.
 .memory 15
 .init 0 1

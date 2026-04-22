@@ -57,7 +57,7 @@ use crate::proof::{
 };
 use crate::state::MachineState;
 
-pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase10-gemma-block-v4";
+pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase10-linear-block-v4-with-lookup";
 pub const STWO_BACKEND_VERSION_PHASE11: &str = "stwo-phase11-decoding-step-v1";
 const M31_MODULUS: u32 = (1u32 << 31) - 1;
 const GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX: usize = 13;
@@ -77,17 +77,17 @@ const GEMMA_BLOCK_V4_SHARED_INV_SQRT_Q8: i16 = 128;
 const GEMMA_BLOCK_V4_SHARED_ACTIVATION_INPUT: i16 = 0;
 const GEMMA_BLOCK_V4_SHARED_ACTIVATION_OUTPUT: i16 = 1;
 const GEMMA_BLOCK_NORMALIZATION_SCOPE: &str =
-    "stwo_gemma_block_v1_execution_plus_normalization_companion";
+    "stwo_linear_block_v1_execution_plus_normalization_companion";
 const GEMMA_BLOCK_V2_NORMALIZATION_SCOPE: &str =
-    "stwo_gemma_block_v2_execution_with_embedded_normalization";
+    "stwo_linear_block_v2_execution_with_embedded_normalization";
 const GEMMA_BLOCK_V3_NORMALIZATION_SCOPE: &str =
-    "stwo_gemma_block_v3_execution_with_embedded_normalization";
+    "stwo_linear_block_v3_execution_with_embedded_normalization";
 const GEMMA_BLOCK_V3_ACTIVATION_SCOPE: &str =
-    "stwo_gemma_block_v3_execution_with_embedded_binary_step_lookup";
+    "stwo_linear_block_v3_execution_with_embedded_binary_step_lookup";
 const GEMMA_BLOCK_V4_SHARED_NORMALIZATION_SCOPE: &str =
-    "stwo_gemma_block_v4_execution_with_shared_normalization_lookup";
+    "stwo_linear_block_v4_with_lookup_execution_with_shared_normalization_lookup";
 const GEMMA_BLOCK_V4_SHARED_ACTIVATION_SCOPE: &str =
-    "stwo_gemma_block_v4_execution_with_shared_binary_step_lookup";
+    "stwo_linear_block_v4_with_lookup_execution_with_shared_binary_step_lookup";
 const DECODING_STEP_V1_SHARED_NORMALIZATION_SCOPE: &str =
     "stwo_decoding_step_v1_execution_with_shared_normalization_lookup";
 const DECODING_STEP_V1_SHARED_ACTIVATION_SCOPE: &str =
@@ -557,7 +557,7 @@ pub(crate) fn verify_phase5_arithmetic_subset(proof: &VanillaStarkExecutionProof
 fn build_phase7_auxiliary_proofs(
     claim: &VanillaStarkExecutionClaim,
 ) -> Result<Option<StwoAuxiliaryProofs>> {
-    if !matches_gemma_block_v1(&claim.program) {
+    if !matches_linear_block_v1(&claim.program) {
         return Ok(None);
     }
 
@@ -565,18 +565,18 @@ fn build_phase7_auxiliary_proofs(
     let norm_sq = *final_memory
         .get(GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX)
         .ok_or_else(|| {
-            VmError::InvalidConfig("gemma_block_v1 final state missing norm_sq cell".to_string())
+            VmError::InvalidConfig("linear_block_v1 final state missing norm_sq cell".to_string())
         })?;
     let inv_sqrt_q8 = *final_memory
         .get(GEMMA_BLOCK_INV_SQRT_MEMORY_INDEX)
         .ok_or_else(|| {
             VmError::InvalidConfig(
-                "gemma_block_v1 final state missing inv_sqrt_q8 cell".to_string(),
+                "linear_block_v1 final state missing inv_sqrt_q8 cell".to_string(),
             )
         })?;
     if norm_sq != GEMMA_BLOCK_EXPECTED_NORM_SQ || inv_sqrt_q8 != GEMMA_BLOCK_EXPECTED_INV_SQRT_Q8 {
         return Err(VmError::UnsupportedProof(format!(
-            "gemma_block_v1 normalization companion expects norm_sq={} and inv_sqrt_q8={}, got {} and {}",
+            "linear_block_v1 normalization companion expects norm_sq={} and inv_sqrt_q8={}, got {} and {}",
             GEMMA_BLOCK_EXPECTED_NORM_SQ,
             GEMMA_BLOCK_EXPECTED_INV_SQRT_Q8,
             norm_sq,
@@ -603,7 +603,7 @@ fn build_phase7_auxiliary_proofs(
 fn build_phase8_embedded_normalization(
     claim: &VanillaStarkExecutionClaim,
 ) -> Result<Option<EmbeddedNormalizationProof>> {
-    if !(matches_gemma_block_v2(&claim.program) || matches_gemma_block_v3(&claim.program)) {
+    if !(matches_linear_block_v2(&claim.program) || matches_linear_block_v3(&claim.program)) {
         return Ok(None);
     }
 
@@ -624,7 +624,7 @@ fn build_phase8_embedded_normalization(
 fn build_phase9_embedded_activation_lookup(
     claim: &VanillaStarkExecutionClaim,
 ) -> Result<Option<EmbeddedActivationLookupProof>> {
-    if !matches_gemma_block_v3(&claim.program) {
+    if !matches_linear_block_v3(&claim.program) {
         return Ok(None);
     }
 
@@ -646,7 +646,7 @@ fn build_phase9_embedded_activation_lookup(
 fn build_phase10_embedded_shared_normalization(
     claim: &VanillaStarkExecutionClaim,
 ) -> Result<Option<EmbeddedSharedNormalizationProof>> {
-    if !(matches_gemma_block_v4(&claim.program)
+    if !(matches_linear_block_v4_with_lookup(&claim.program)
         || matches_decoding_step_v1(&claim.program)
         || matches_decoding_step_v2(&claim.program))
     {
@@ -670,7 +670,7 @@ fn build_phase10_embedded_shared_normalization(
 fn build_phase10_embedded_shared_activation_lookup(
     claim: &VanillaStarkExecutionClaim,
 ) -> Result<Option<EmbeddedSharedActivationLookupProof>> {
-    if !(matches_gemma_block_v4(&claim.program)
+    if !(matches_linear_block_v4_with_lookup(&claim.program)
         || matches_decoding_step_v1(&claim.program)
         || matches_decoding_step_v2(&claim.program))
     {
@@ -695,29 +695,29 @@ fn build_phase10_embedded_shared_activation_lookup(
 }
 
 fn verify_phase7_auxiliary_proofs(proof: &VanillaStarkExecutionProof) -> Result<()> {
-    if !matches_gemma_block_v1(&proof.claim.program) {
+    if !matches_linear_block_v1(&proof.claim.program) {
         return Ok(());
     }
 
     let auxiliary = proof.stwo_auxiliary.as_ref().ok_or_else(|| {
         VmError::InvalidConfig(
-            "gemma_block_v1 S-two proof is missing its normalization companion".to_string(),
+            "linear_block_v1 S-two proof is missing its normalization companion".to_string(),
         )
     })?;
     let companion = auxiliary.normalization_companion.as_ref().ok_or_else(|| {
         VmError::InvalidConfig(
-            "gemma_block_v1 S-two proof is missing normalization companion metadata".to_string(),
+            "linear_block_v1 S-two proof is missing normalization companion metadata".to_string(),
         )
     })?;
     if companion.statement_version != STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5 {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported gemma_block_v1 normalization companion statement version `{}`",
+            "unsupported linear_block_v1 normalization companion statement version `{}`",
             companion.statement_version
         )));
     }
     if companion.semantic_scope != GEMMA_BLOCK_NORMALIZATION_SCOPE {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported gemma_block_v1 normalization companion scope `{}`",
+            "unsupported linear_block_v1 normalization companion scope `{}`",
             companion.semantic_scope
         )));
     }
@@ -726,20 +726,21 @@ fn verify_phase7_auxiliary_proofs(proof: &VanillaStarkExecutionProof) -> Result<
         .get(companion.norm_sq_memory_index as usize)
         .ok_or_else(|| {
             VmError::InvalidConfig(
-                "gemma_block_v1 normalization companion norm_sq index is out of bounds".to_string(),
+                "linear_block_v1 normalization companion norm_sq index is out of bounds"
+                    .to_string(),
             )
         })?;
     let inv_sqrt_q8 = *final_memory
         .get(companion.inv_sqrt_q8_memory_index as usize)
         .ok_or_else(|| {
             VmError::InvalidConfig(
-                "gemma_block_v1 normalization companion inv_sqrt_q8 index is out of bounds"
+                "linear_block_v1 normalization companion inv_sqrt_q8 index is out of bounds"
                     .to_string(),
             )
         })?;
     if norm_sq != companion.expected_norm_sq || inv_sqrt_q8 != companion.expected_inv_sqrt_q8 {
         return Err(VmError::InvalidConfig(format!(
-            "gemma_block_v1 normalization companion does not match claimed final state: expected ({}, {}), got ({}, {})",
+            "linear_block_v1 normalization companion does not match claimed final state: expected ({}, {}), got ({}, {})",
             companion.expected_norm_sq, companion.expected_inv_sqrt_q8, norm_sq, inv_sqrt_q8
         )));
     }
@@ -748,14 +749,14 @@ fn verify_phase7_auxiliary_proofs(proof: &VanillaStarkExecutionProof) -> Result<
         .any(|row| row.norm_sq as i16 == norm_sq && row.inv_sqrt_q8 as i16 == inv_sqrt_q8);
     if !canonical_pair_exists {
         return Err(VmError::InvalidConfig(format!(
-            "gemma_block_v1 normalization companion row ({norm_sq}, {inv_sqrt_q8}) is not present in the canonical Phase 5 lookup table"
+            "linear_block_v1 normalization companion row ({norm_sq}, {inv_sqrt_q8}) is not present in the canonical Phase 5 lookup table"
         )));
     }
     let proof_envelope = serde_json::from_value(companion.proof_envelope.clone())
         .map_err(|error| VmError::Serialization(error.to_string()))?;
     if !verify_phase5_normalization_lookup_demo_envelope(&proof_envelope)? {
         return Err(VmError::UnsupportedProof(
-            "gemma_block_v1 normalization companion proof did not verify".to_string(),
+            "linear_block_v1 normalization companion proof did not verify".to_string(),
         ));
     }
     Ok(())
@@ -765,27 +766,27 @@ fn verify_phase8_embedded_normalization(
     proof: &VanillaStarkExecutionProof,
     embedded: Option<&EmbeddedNormalizationProof>,
 ) -> Result<()> {
-    if !(matches_gemma_block_v2(&proof.claim.program)
-        || matches_gemma_block_v3(&proof.claim.program))
+    if !(matches_linear_block_v2(&proof.claim.program)
+        || matches_linear_block_v3(&proof.claim.program))
     {
         return Ok(());
     }
 
     let embedded = embedded.ok_or_else(|| {
         VmError::InvalidConfig(
-            "gemma_block_v2/v3 S-two proof is missing embedded normalization proof".to_string(),
+            "linear_block_v2/v3 S-two proof is missing embedded normalization proof".to_string(),
         )
     })?;
     if embedded.statement_version != STWO_NORMALIZATION_STATEMENT_VERSION_PHASE5 {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported gemma_block_v2/v3 embedded normalization statement version `{}`",
+            "unsupported linear_block_v2/v3 embedded normalization statement version `{}`",
             embedded.statement_version
         )));
     }
     let expected_scope = embedded_normalization_scope(&proof.claim.program);
     if embedded.semantic_scope != expected_scope {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported gemma_block_v2/v3 embedded normalization scope `{}`",
+            "unsupported linear_block_v2/v3 embedded normalization scope `{}`",
             embedded.semantic_scope
         )));
     }
@@ -793,11 +794,11 @@ fn verify_phase8_embedded_normalization(
         &proof.claim.final_state.memory,
         embedded.norm_sq_memory_index,
         embedded.inv_sqrt_q8_memory_index,
-        "gemma_block_v2/v3 embedded normalization",
+        "linear_block_v2/v3 embedded normalization",
     )?;
     if norm_sq != embedded.expected_norm_sq || inv_sqrt_q8 != embedded.expected_inv_sqrt_q8 {
         return Err(VmError::InvalidConfig(format!(
-            "gemma_block_v2/v3 embedded normalization does not match claimed final state: expected ({}, {}), got ({}, {})",
+            "linear_block_v2/v3 embedded normalization does not match claimed final state: expected ({}, {}), got ({}, {})",
             embedded.expected_norm_sq, embedded.expected_inv_sqrt_q8, norm_sq, inv_sqrt_q8
         )));
     }
@@ -806,14 +807,14 @@ fn verify_phase8_embedded_normalization(
         .any(|row| row.norm_sq as i16 == norm_sq && row.inv_sqrt_q8 as i16 == inv_sqrt_q8);
     if !canonical_pair_exists {
         return Err(VmError::InvalidConfig(format!(
-            "gemma_block_v2/v3 embedded normalization row ({norm_sq}, {inv_sqrt_q8}) is not present in the canonical Phase 5 lookup table"
+            "linear_block_v2/v3 embedded normalization row ({norm_sq}, {inv_sqrt_q8}) is not present in the canonical Phase 5 lookup table"
         )));
     }
     let proof_envelope = serde_json::from_value(embedded.proof_envelope.clone())
         .map_err(|error| VmError::Serialization(error.to_string()))?;
     if !verify_phase5_normalization_lookup_demo_envelope(&proof_envelope)? {
         return Err(VmError::UnsupportedProof(
-            "gemma_block_v2/v3 embedded normalization proof did not verify".to_string(),
+            "linear_block_v2/v3 embedded normalization proof did not verify".to_string(),
         ));
     }
     Ok(())
@@ -823,24 +824,24 @@ fn verify_phase9_embedded_activation_lookup(
     proof: &VanillaStarkExecutionProof,
     embedded: Option<&EmbeddedActivationLookupProof>,
 ) -> Result<()> {
-    if !matches_gemma_block_v3(&proof.claim.program) {
+    if !matches_linear_block_v3(&proof.claim.program) {
         return Ok(());
     }
 
     let embedded = embedded.ok_or_else(|| {
         VmError::InvalidConfig(
-            "gemma_block_v3 S-two proof is missing embedded activation lookup proof".to_string(),
+            "linear_block_v3 S-two proof is missing embedded activation lookup proof".to_string(),
         )
     })?;
     if embedded.statement_version != STWO_LOOKUP_STATEMENT_VERSION_PHASE3 {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported gemma_block_v3 embedded activation statement version `{}`",
+            "unsupported linear_block_v3 embedded activation statement version `{}`",
             embedded.statement_version
         )));
     }
     if embedded.semantic_scope != GEMMA_BLOCK_V3_ACTIVATION_SCOPE {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported gemma_block_v3 embedded activation scope `{}`",
+            "unsupported linear_block_v3 embedded activation scope `{}`",
             embedded.semantic_scope
         )));
     }
@@ -848,12 +849,12 @@ fn verify_phase9_embedded_activation_lookup(
         &proof.claim.final_state.memory,
         embedded.input_memory_index,
         embedded.output_memory_index,
-        "gemma_block_v3 embedded activation",
+        "linear_block_v3 embedded activation",
     )?;
     if activation_input != embedded.expected_input || activation_output != embedded.expected_output
     {
         return Err(VmError::InvalidConfig(format!(
-            "gemma_block_v3 embedded activation does not match claimed final state: expected ({}, {}), got ({}, {})",
+            "linear_block_v3 embedded activation does not match claimed final state: expected ({}, {}), got ({}, {})",
             embedded.expected_input, embedded.expected_output, activation_input, activation_output
         )));
     }
@@ -862,7 +863,7 @@ fn verify_phase9_embedded_activation_lookup(
         .any(|row| row.input == activation_input && row.output as i16 == activation_output);
     if !canonical_pair_exists {
         return Err(VmError::InvalidConfig(format!(
-            "gemma_block_v3 embedded activation row ({activation_input}, {activation_output}) is not present in the canonical Phase 3 lookup table"
+            "linear_block_v3 embedded activation row ({activation_input}, {activation_output}) is not present in the canonical Phase 3 lookup table"
         )));
     }
     let proof_envelope: Phase3LookupProofEnvelope =
@@ -870,7 +871,7 @@ fn verify_phase9_embedded_activation_lookup(
             .map_err(|error| VmError::Serialization(error.to_string()))?;
     if !verify_phase3_binary_step_lookup_demo_envelope(&proof_envelope)? {
         return Err(VmError::UnsupportedProof(
-            "gemma_block_v3 embedded activation proof did not verify".to_string(),
+            "linear_block_v3 embedded activation proof did not verify".to_string(),
         ));
     }
     Ok(())
@@ -880,7 +881,7 @@ fn verify_phase10_embedded_shared_normalization(
     proof: &VanillaStarkExecutionProof,
     embedded: Option<&EmbeddedSharedNormalizationProof>,
 ) -> Result<()> {
-    if !(matches_gemma_block_v4(&proof.claim.program)
+    if !(matches_linear_block_v4_with_lookup(&proof.claim.program)
         || matches_decoding_step_v1(&proof.claim.program)
         || matches_decoding_step_v2(&proof.claim.program))
     {
@@ -895,7 +896,7 @@ fn verify_phase10_embedded_shared_normalization(
     })?;
     if embedded.statement_version != STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10 {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported gemma_block_v4 embedded shared normalization statement version `{}`",
+            "unsupported linear_block_v4_with_lookup embedded shared normalization statement version `{}`",
             embedded.statement_version
         )));
     }
@@ -954,7 +955,7 @@ fn verify_phase10_embedded_shared_activation_lookup(
     proof: &VanillaStarkExecutionProof,
     embedded: Option<&EmbeddedSharedActivationLookupProof>,
 ) -> Result<()> {
-    if !(matches_gemma_block_v4(&proof.claim.program)
+    if !(matches_linear_block_v4_with_lookup(&proof.claim.program)
         || matches_decoding_step_v1(&proof.claim.program)
         || matches_decoding_step_v2(&proof.claim.program))
     {
@@ -969,7 +970,7 @@ fn verify_phase10_embedded_shared_activation_lookup(
     })?;
     if embedded.statement_version != STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10 {
         return Err(VmError::InvalidConfig(format!(
-            "unsupported gemma_block_v4 embedded shared activation statement version `{}`",
+            "unsupported linear_block_v4_with_lookup embedded shared activation statement version `{}`",
             embedded.statement_version
         )));
     }
@@ -999,7 +1000,7 @@ fn verify_phase10_embedded_shared_activation_lookup(
         )?;
         if activation_input != row.expected_input || activation_output != row.expected_output {
             return Err(VmError::InvalidConfig(format!(
-                "gemma_block_v4 shared activation does not match claimed final state: expected ({}, {}), got ({}, {})",
+                "linear_block_v4_with_lookup shared activation does not match claimed final state: expected ({}, {}), got ({}, {})",
                 row.expected_input, row.expected_output, activation_input, activation_output
             )));
         }
@@ -1548,7 +1549,7 @@ fn activation_pair_from_indices(
 }
 
 fn embedded_normalization_scope(program: &Program) -> &'static str {
-    if matches_gemma_block_v3(program) {
+    if matches_linear_block_v3(program) {
         GEMMA_BLOCK_V3_NORMALIZATION_SCOPE
     } else {
         GEMMA_BLOCK_V2_NORMALIZATION_SCOPE
@@ -1841,10 +1842,10 @@ fn validate_phase5_proven_fixture(program: &Program) -> Result<()> {
                 Instruction::LoadImmediate(1),
                 Instruction::Halt,
             ];
-    let matches_gemma_block_v1 = matches_gemma_block_v1(program);
-    let matches_gemma_block_v2 = matches_gemma_block_v2(program);
-    let matches_gemma_block_v3 = matches_gemma_block_v3(program);
-    let matches_gemma_block_v4 = matches_gemma_block_v4(program);
+    let matches_linear_block_v1 = matches_linear_block_v1(program);
+    let matches_linear_block_v2 = matches_linear_block_v2(program);
+    let matches_linear_block_v3 = matches_linear_block_v3(program);
+    let matches_linear_block_v4_with_lookup = matches_linear_block_v4_with_lookup(program);
     let matches_decoding_step_v1 = matches_decoding_step_v1(program);
     let matches_decoding_step_v2 = matches_decoding_step_v2(program);
 
@@ -1856,10 +1857,10 @@ fn validate_phase5_proven_fixture(program: &Program) -> Result<()> {
         || matches_fibonacci
         || matches_matmul_2x2
         || matches_single_neuron
-        || matches_gemma_block_v1
-        || matches_gemma_block_v2
-        || matches_gemma_block_v3
-        || matches_gemma_block_v4
+        || matches_linear_block_v1
+        || matches_linear_block_v2
+        || matches_linear_block_v3
+        || matches_linear_block_v4_with_lookup
         || matches_decoding_step_v1
         || matches_decoding_step_v2
     {
@@ -1867,12 +1868,12 @@ fn validate_phase5_proven_fixture(program: &Program) -> Result<()> {
     }
 
     Err(VmError::UnsupportedProof(
-        "S-two Phase 5 currently proves only the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`, `programs/dot_product.tvm`, `programs/fibonacci.tvm`, `programs/matmul_2x2.tvm`, `programs/single_neuron.tvm`, `programs/gemma_block_v1.tvm`, `programs/gemma_block_v2.tvm`, `programs/gemma_block_v3.tvm`, `programs/gemma_block_v4.tvm`, the `decoding_step_v1` family, and the parameterized `decoding_step_v2` family; broader arithmetic-subset AIR coverage remains internal"
+        "S-two Phase 5 currently proves only the shipped arithmetic fixtures `programs/addition.tvm`, `programs/counter.tvm`, `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`, `programs/dot_product.tvm`, `programs/fibonacci.tvm`, `programs/matmul_2x2.tvm`, `programs/single_neuron.tvm`, `programs/linear_block_v1.tvm`, `programs/linear_block_v2.tvm`, `programs/linear_block_v3.tvm`, `programs/linear_block_v4_with_lookup.tvm`, the `decoding_step_v1` family, and the parameterized `decoding_step_v2` family; broader arithmetic-subset AIR coverage remains internal"
             .to_string(),
     ))
 }
 
-fn matches_gemma_block_v1(program: &Program) -> bool {
+fn matches_linear_block_v1(program: &Program) -> bool {
     program.memory_size() == 15
         && program.initial_memory() == [1, 1, 2, 0, 0, 2, 2, -4, 0, 2, 0, 0, 0, 0, 0]
         && program.instructions()
@@ -1911,7 +1912,7 @@ fn matches_gemma_block_v1(program: &Program) -> bool {
             ]
 }
 
-fn matches_gemma_block_v2(program: &Program) -> bool {
+fn matches_linear_block_v2(program: &Program) -> bool {
     program.memory_size() == 15
         && program.initial_memory() == [1, 1, 2, 0, 0, 2, 2, -4, 0, 2, 0, 0, 0, 0, 0]
         && program.instructions()
@@ -1952,7 +1953,7 @@ fn matches_gemma_block_v2(program: &Program) -> bool {
             ]
 }
 
-fn matches_gemma_block_v3(program: &Program) -> bool {
+fn matches_linear_block_v3(program: &Program) -> bool {
     program.memory_size() == 17
         && program.initial_memory() == [1, 1, 2, 0, 0, 2, 2, -4, 0, 2, 0, 0, 0, 0, 0, 0, 0]
         && program.instructions()
@@ -2013,7 +2014,7 @@ fn shared_program_label(program: &Program) -> &str {
     } else if matches_decoding_step_v1(program) {
         "decoding_step_v1"
     } else {
-        "gemma_block_v4"
+        "linear_block_v4_with_lookup"
     }
 }
 
@@ -2043,7 +2044,7 @@ fn shared_normalization_label(program: &Program) -> &str {
     } else if matches_decoding_step_v1(program) {
         "decoding_step_v1 shared normalization"
     } else {
-        "gemma_block_v4 shared normalization"
+        "linear_block_v4_with_lookup shared normalization"
     }
 }
 
@@ -2053,7 +2054,7 @@ fn shared_activation_label(program: &Program) -> &str {
     } else if matches_decoding_step_v1(program) {
         "decoding_step_v1 shared activation"
     } else {
-        "gemma_block_v4 shared activation"
+        "linear_block_v4_with_lookup shared activation"
     }
 }
 
@@ -2065,7 +2066,7 @@ fn matches_decoding_step_v2(program: &Program) -> bool {
     matches_decoding_step_v2_family(program)
 }
 
-fn matches_gemma_block_v4(program: &Program) -> bool {
+fn matches_linear_block_v4_with_lookup(program: &Program) -> bool {
     program.memory_size() == 21
         && program.initial_memory()
             == [
@@ -2653,10 +2654,10 @@ mod tests {
             "programs/multiply.tvm",
             "programs/dot_product.tvm",
             "programs/fibonacci.tvm",
-            "programs/gemma_block_v1.tvm",
-            "programs/gemma_block_v2.tvm",
-            "programs/gemma_block_v3.tvm",
-            "programs/gemma_block_v4.tvm",
+            "programs/linear_block_v1.tvm",
+            "programs/linear_block_v2.tvm",
+            "programs/linear_block_v3.tvm",
+            "programs/linear_block_v4_with_lookup.tvm",
             "programs/matmul_2x2.tvm",
             "programs/single_neuron.tvm",
         ] {
@@ -2743,23 +2744,23 @@ mod tests {
     }
 
     #[test]
-    fn phase5_gemma_block_v1_trace_satisfies_constraints() {
-        assert_program_trace_satisfies_constraints("programs/gemma_block_v1.tvm");
+    fn phase5_linear_block_v1_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/linear_block_v1.tvm");
     }
 
     #[test]
-    fn phase5_gemma_block_v2_trace_satisfies_constraints() {
-        assert_program_trace_satisfies_constraints("programs/gemma_block_v2.tvm");
+    fn phase5_linear_block_v2_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/linear_block_v2.tvm");
     }
 
     #[test]
-    fn phase5_gemma_block_v3_trace_satisfies_constraints() {
-        assert_program_trace_satisfies_constraints("programs/gemma_block_v3.tvm");
+    fn phase5_linear_block_v3_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/linear_block_v3.tvm");
     }
 
     #[test]
-    fn phase5_gemma_block_v4_trace_satisfies_constraints() {
-        assert_program_trace_satisfies_constraints("programs/gemma_block_v4.tvm");
+    fn phase5_linear_block_v4_with_lookup_trace_satisfies_constraints() {
+        assert_program_trace_satisfies_constraints("programs/linear_block_v4_with_lookup.tvm");
     }
 
     #[test]
@@ -2844,23 +2845,23 @@ mod tests {
     }
 
     #[test]
-    fn phase5_gemma_block_v1_trace_polys_satisfy_constraints() {
-        assert_program_trace_polys_satisfy_constraints("programs/gemma_block_v1.tvm");
+    fn phase5_linear_block_v1_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/linear_block_v1.tvm");
     }
 
     #[test]
-    fn phase5_gemma_block_v2_trace_polys_satisfy_constraints() {
-        assert_program_trace_polys_satisfy_constraints("programs/gemma_block_v2.tvm");
+    fn phase5_linear_block_v2_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/linear_block_v2.tvm");
     }
 
     #[test]
-    fn phase5_gemma_block_v3_trace_polys_satisfy_constraints() {
-        assert_program_trace_polys_satisfy_constraints("programs/gemma_block_v3.tvm");
+    fn phase5_linear_block_v3_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/linear_block_v3.tvm");
     }
 
     #[test]
-    fn phase5_gemma_block_v4_trace_polys_satisfy_constraints() {
-        assert_program_trace_polys_satisfy_constraints("programs/gemma_block_v4.tvm");
+    fn phase5_linear_block_v4_with_lookup_trace_polys_satisfy_constraints() {
+        assert_program_trace_polys_satisfy_constraints("programs/linear_block_v4_with_lookup.tvm");
     }
 
     #[test]

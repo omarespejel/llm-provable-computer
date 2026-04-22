@@ -1077,10 +1077,14 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
         ("programs/multiply.tvm", "multiply", "42"),
         ("programs/dot_product.tvm", "dot", "70"),
         ("programs/fibonacci.tvm", "fibonacci", "21"),
-        ("programs/gemma_block_v1.tvm", "gemma-block-v1", "16"),
-        ("programs/gemma_block_v2.tvm", "gemma-block-v2", "16"),
-        ("programs/gemma_block_v3.tvm", "gemma-block-v3", "16"),
-        ("programs/gemma_block_v4.tvm", "gemma-block-v4", "16"),
+        ("programs/linear_block_v1.tvm", "linear-block-v1", "16"),
+        ("programs/linear_block_v2.tvm", "linear-block-v2", "16"),
+        ("programs/linear_block_v3.tvm", "linear-block-v3", "16"),
+        (
+            "programs/linear_block_v4_with_lookup.tvm",
+            "linear-block-v4-with-lookup",
+            "16",
+        ),
         ("programs/matmul_2x2.tvm", "matmul-2x2", "134"),
         ("programs/single_neuron.tvm", "single-neuron", "1"),
     ] {
@@ -1104,17 +1108,17 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
 
         let proof_json = std::fs::read_to_string(&proof_path).expect("proof json");
         assert!(proof_json.contains("\"proof_backend\": \"stwo\""));
-        assert!(proof_json.contains("stwo-phase10-gemma-block-v4"));
-        if program == "programs/gemma_block_v1.tvm" {
+        assert!(proof_json.contains("stwo-phase10-linear-block-v4-with-lookup"));
+        if program == "programs/linear_block_v1.tvm" {
             assert!(proof_json.contains("\"normalization_companion\""));
             assert!(proof_json.contains("stwo-normalization-demo-v1"));
             assert!(
-                proof_json.contains("stwo_gemma_block_v1_execution_plus_normalization_companion")
+                proof_json.contains("stwo_linear_block_v1_execution_plus_normalization_companion")
             );
         }
-        if program == "programs/gemma_block_v2.tvm"
-            || program == "programs/gemma_block_v3.tvm"
-            || program == "programs/gemma_block_v4.tvm"
+        if program == "programs/linear_block_v2.tvm"
+            || program == "programs/linear_block_v3.tvm"
+            || program == "programs/linear_block_v4_with_lookup.tvm"
         {
             let proof_value: serde_json::Value =
                 serde_json::from_str(&proof_json).expect("proof value");
@@ -1127,39 +1131,40 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
             let payload: serde_json::Value =
                 serde_json::from_slice(&proof_bytes).expect("payload json");
             assert!(!proof_json.contains("\"stwo_auxiliary\""));
-            if program == "programs/gemma_block_v2.tvm" || program == "programs/gemma_block_v3.tvm"
+            if program == "programs/linear_block_v2.tvm"
+                || program == "programs/linear_block_v3.tvm"
             {
                 assert_eq!(
                     payload["embedded_normalization"]["statement_version"],
                     "stwo-normalization-demo-v1"
                 );
-                let expected_norm_scope = if program == "programs/gemma_block_v3.tvm" {
-                    "stwo_gemma_block_v3_execution_with_embedded_normalization"
+                let expected_norm_scope = if program == "programs/linear_block_v3.tvm" {
+                    "stwo_linear_block_v3_execution_with_embedded_normalization"
                 } else {
-                    "stwo_gemma_block_v2_execution_with_embedded_normalization"
+                    "stwo_linear_block_v2_execution_with_embedded_normalization"
                 };
                 assert_eq!(
                     payload["embedded_normalization"]["semantic_scope"],
                     expected_norm_scope
                 );
             }
-            if program == "programs/gemma_block_v3.tvm" {
+            if program == "programs/linear_block_v3.tvm" {
                 assert_eq!(
                     payload["embedded_activation_lookup"]["statement_version"],
                     "stwo-binary-step-lookup-demo-v1"
                 );
                 assert_eq!(
                     payload["embedded_activation_lookup"]["semantic_scope"],
-                    "stwo_gemma_block_v3_execution_with_embedded_binary_step_lookup"
+                    "stwo_linear_block_v3_execution_with_embedded_binary_step_lookup"
                 );
-            } else if program == "programs/gemma_block_v4.tvm" {
+            } else if program == "programs/linear_block_v4_with_lookup.tvm" {
                 assert_eq!(
                     payload["embedded_shared_normalization"]["statement_version"],
                     "stwo-shared-normalization-lookup-v1"
                 );
                 assert_eq!(
                     payload["embedded_shared_normalization"]["semantic_scope"],
-                    "stwo_gemma_block_v4_execution_with_shared_normalization_lookup"
+                    "stwo_linear_block_v4_with_lookup_execution_with_shared_normalization_lookup"
                 );
                 assert_eq!(
                     payload["embedded_shared_activation_lookup"]["statement_version"],
@@ -1167,7 +1172,7 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
                 );
                 assert_eq!(
                     payload["embedded_shared_activation_lookup"]["semantic_scope"],
-                    "stwo_gemma_block_v4_execution_with_shared_binary_step_lookup"
+                    "stwo_linear_block_v4_with_lookup_execution_with_shared_binary_step_lookup"
                 );
                 assert_eq!(
                     payload["embedded_shared_normalization"]["claimed_rows"]
@@ -1195,7 +1200,7 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
             .success()
             .stdout(predicate::str::contains("proof_backend: stwo"))
             .stdout(predicate::str::contains(
-                "proof_backend_version: stwo-phase10-gemma-block-v4",
+                "proof_backend_version: stwo-phase10-linear-block-v4-with-lookup",
             ))
             .stdout(predicate::str::contains("verified_stark: true"))
             .stdout(predicate::str::contains("reexecuted_equivalence: true"))
@@ -1215,7 +1220,7 @@ fn cli_verify_stark_rejects_tampered_gemma_block_normalization_companion() {
     let mut prove = tvm_command();
     prove
         .arg("prove-stark")
-        .arg("programs/gemma_block_v1.tvm")
+        .arg("programs/linear_block_v1.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -1243,7 +1248,7 @@ fn cli_verify_stark_rejects_tampered_gemma_block_normalization_companion() {
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "gemma_block_v1 normalization companion does not match claimed final state",
+            "linear_block_v1 normalization companion does not match claimed final state",
         ));
 
     let _ = std::fs::remove_file(proof_path);
@@ -1252,15 +1257,15 @@ fn cli_verify_stark_rejects_tampered_gemma_block_normalization_companion() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
-fn cli_verify_stark_rejects_tampered_gemma_block_v2_embedded_normalization() {
-    let proof_path = unique_temp_dir("cli-stwo-gemma-block-v2-proof").with_extension("json");
+fn cli_verify_stark_rejects_tampered_linear_block_v2_embedded_normalization() {
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v2-proof").with_extension("json");
     let invalid_path =
-        unique_temp_dir("cli-stwo-gemma-block-v2-proof-tampered").with_extension("json");
+        unique_temp_dir("cli-stwo-linear-block-v2-proof-tampered").with_extension("json");
 
     let mut prove = tvm_command();
     prove
         .arg("prove-stark")
-        .arg("programs/gemma_block_v2.tvm")
+        .arg("programs/linear_block_v2.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -1301,7 +1306,7 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v2_embedded_normalization() {
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "gemma_block_v2/v3 embedded normalization does not match claimed final state",
+            "linear_block_v2/v3 embedded normalization does not match claimed final state",
         ));
 
     let _ = std::fs::remove_file(proof_path);
@@ -1310,15 +1315,15 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v2_embedded_normalization() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
-fn cli_verify_stark_rejects_tampered_gemma_block_v3_embedded_activation() {
-    let proof_path = unique_temp_dir("cli-stwo-gemma-block-v3-proof").with_extension("json");
+fn cli_verify_stark_rejects_tampered_linear_block_v3_embedded_activation() {
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v3-proof").with_extension("json");
     let invalid_path =
-        unique_temp_dir("cli-stwo-gemma-block-v3-proof-tampered").with_extension("json");
+        unique_temp_dir("cli-stwo-linear-block-v3-proof-tampered").with_extension("json");
 
     let mut prove = tvm_command();
     prove
         .arg("prove-stark")
-        .arg("programs/gemma_block_v3.tvm")
+        .arg("programs/linear_block_v3.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -1359,7 +1364,7 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v3_embedded_activation() {
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "gemma_block_v3 embedded activation does not match claimed final state",
+            "linear_block_v3 embedded activation does not match claimed final state",
         ));
 
     let _ = std::fs::remove_file(proof_path);
@@ -1368,15 +1373,16 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v3_embedded_activation() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
-fn cli_verify_stark_rejects_tampered_gemma_block_v4_shared_normalization() {
-    let proof_path = unique_temp_dir("cli-stwo-gemma-block-v4-proof").with_extension("json");
-    let invalid_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-proof-tampered-norm").with_extension("json");
+fn cli_verify_stark_rejects_tampered_linear_block_v4_with_lookup_shared_normalization() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-proof").with_extension("json");
+    let invalid_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-proof-tampered-norm")
+        .with_extension("json");
 
     let mut prove = tvm_command();
     prove
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -1418,7 +1424,7 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v4_shared_normalization() {
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "gemma_block_v4 shared normalization embedded claimed rows do not match the canonical final-state rows",
+            "linear_block_v4_with_lookup shared normalization embedded claimed rows do not match the canonical final-state rows",
         ));
 
     let _ = std::fs::remove_file(proof_path);
@@ -1427,15 +1433,16 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v4_shared_normalization() {
 
 #[test]
 #[cfg(feature = "stwo-backend")]
-fn cli_verify_stark_rejects_tampered_gemma_block_v4_shared_activation() {
-    let proof_path = unique_temp_dir("cli-stwo-gemma-block-v4-proof").with_extension("json");
-    let invalid_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-proof-tampered-act").with_extension("json");
+fn cli_verify_stark_rejects_tampered_linear_block_v4_with_lookup_shared_activation() {
+    let proof_path =
+        unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-proof").with_extension("json");
+    let invalid_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-proof-tampered-act")
+        .with_extension("json");
 
     let mut prove = tvm_command();
     prove
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -1478,10 +1485,10 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v4_shared_activation() {
         .failure()
         .stderr(
             predicate::str::contains(
-                "gemma_block_v4 shared activation embedded claimed rows do not match the canonical final-state rows",
+                "linear_block_v4_with_lookup shared activation embedded claimed rows do not match the canonical final-state rows",
             )
             .or(predicate::str::contains(
-                "gemma_block_v4 shared activation does not match claimed final state",
+                "linear_block_v4_with_lookup shared activation does not match claimed final state",
             )),
         );
 
@@ -1492,14 +1499,15 @@ fn cli_verify_stark_rejects_tampered_gemma_block_v4_shared_activation() {
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_verify_stark_rejects_mismatched_stwo_backend_version_for_program_family() {
-    let proof_path = unique_temp_dir("cli-stwo-gemma-block-v4-proof").with_extension("json");
-    let invalid_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-proof-bad-version").with_extension("json");
+    let proof_path =
+        unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-proof").with_extension("json");
+    let invalid_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-proof-bad-version")
+        .with_extension("json");
 
     let mut prove = tvm_command();
     prove
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -1527,7 +1535,7 @@ fn cli_verify_stark_rejects_mismatched_stwo_backend_version_for_program_family()
         .assert()
         .failure()
         .stderr(predicate::str::contains(
-            "does not match expected `stwo-phase10-gemma-block-v4`",
+            "does not match expected `stwo-phase10-linear-block-v4-with-lookup`",
         ));
 
     let _ = std::fs::remove_file(proof_path);
@@ -1889,16 +1897,16 @@ fn cli_verify_stwo_tensor_native_chain_artifact_rejects_tampered_boundary() {
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_can_prepare_and_verify_stwo_gemma_block_core_slice_artifact() {
-    let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase945-proof").with_extension("json");
-    let chain_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase945-chain").with_extension("json");
-    let artifact_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase945-artifact").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase945-proof")
+        .with_extension("json");
+    let chain_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase945-chain")
+        .with_extension("json");
+    let artifact_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase945-artifact")
+        .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -1928,7 +1936,9 @@ fn cli_can_prepare_and_verify_stwo_gemma_block_core_slice_artifact() {
         .stdout(predicate::str::contains(
             "artifact_version: stwo-phase94-5-gemma-block-core-slice-artifact-v1",
         ))
-        .stdout(predicate::str::contains("program_label: gemma_block_v4"))
+        .stdout(predicate::str::contains(
+            "program_label: linear_block_v4_with_lookup",
+        ))
         .stdout(predicate::str::contains(
             "total_shared_normalization_rows: 2",
         ))
@@ -1936,7 +1946,7 @@ fn cli_can_prepare_and_verify_stwo_gemma_block_core_slice_artifact() {
 
     let artifact_json = std::fs::read_to_string(&artifact_path).expect("artifact json");
     assert!(artifact_json.contains("stwo-phase94-5-gemma-block-core-slice-artifact-v1"));
-    assert!(artifact_json.contains("\"program_label\": \"gemma_block_v4\""));
+    assert!(artifact_json.contains("\"program_label\": \"linear_block_v4_with_lookup\""));
 
     tvm_command()
         .arg("verify-stwo-gemma-block-core-slice-artifact")
@@ -1957,16 +1967,17 @@ fn cli_can_prepare_and_verify_stwo_gemma_block_core_slice_artifact() {
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_verify_stwo_gemma_block_core_slice_artifact_rejects_tampered_normalization_rows() {
-    let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase945-proof").with_extension("json");
-    let chain_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase945-chain").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase945-proof")
+        .with_extension("json");
+    let chain_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase945-chain")
+        .with_extension("json");
     let artifact_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase945-artifact-bad").with_extension("json");
+        unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase945-artifact-bad")
+            .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -2022,16 +2033,16 @@ fn cli_verify_stwo_gemma_block_core_slice_artifact_rejects_tampered_normalizatio
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_can_prepare_and_verify_stwo_gemma_block_richer_slice_artifact() {
-    let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase9475-proof").with_extension("json");
-    let chain_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase9475-chain").with_extension("json");
-    let artifact_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase9475-artifact").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase9475-proof")
+        .with_extension("json");
+    let chain_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase9475-chain")
+        .with_extension("json");
+    let artifact_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase9475-artifact")
+        .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -2091,16 +2102,17 @@ fn cli_can_prepare_and_verify_stwo_gemma_block_richer_slice_artifact() {
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_verify_stwo_gemma_block_richer_slice_artifact_rejects_tampered_residual() {
-    let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase9475-proof").with_extension("json");
-    let chain_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase9475-chain").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase9475-proof")
+        .with_extension("json");
+    let chain_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase9475-chain")
+        .with_extension("json");
     let artifact_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase9475-artifact-bad").with_extension("json");
+        unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase9475-artifact-bad")
+            .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -2156,14 +2168,14 @@ fn cli_verify_stwo_gemma_block_richer_slice_artifact_rejects_tampered_residual()
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_can_prepare_and_verify_stwo_repeated_gemma_slice_accumulation_artifact() {
-    let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase95-proof").with_extension("json");
-    let artifact_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase95-artifact").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase95-proof")
+        .with_extension("json");
+    let artifact_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase95-artifact")
+        .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -2217,14 +2229,15 @@ fn cli_can_prepare_and_verify_stwo_repeated_gemma_slice_accumulation_artifact() 
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_verify_stwo_repeated_gemma_slice_accumulation_artifact_rejects_tampered_member() {
-    let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase95-proof").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase95-proof")
+        .with_extension("json");
     let artifact_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase95-artifact-bad").with_extension("json");
+        unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase95-artifact-bad")
+            .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -2270,13 +2283,15 @@ fn cli_verify_stwo_repeated_gemma_slice_accumulation_artifact_rejects_tampered_m
 #[cfg(feature = "stwo-backend")]
 fn cli_prepare_stwo_repeated_gemma_slice_accumulation_artifact_rejects_oversized_total_slices() {
     let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase95-proof-oversized").with_extension("json");
-    let artifact_path = unique_temp_dir("cli-stwo-gemma-block-v4-phase95-artifact-oversized")
-        .with_extension("json");
+        unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase95-proof-oversized")
+            .with_extension("json");
+    let artifact_path =
+        unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase95-artifact-oversized")
+            .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -2305,16 +2320,16 @@ fn cli_prepare_stwo_repeated_gemma_slice_accumulation_artifact_rejects_oversized
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_can_prepare_and_verify_stwo_folded_gemma_slice_accumulation_artifact() {
-    let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase965-proof").with_extension("json");
-    let source_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase965-source").with_extension("json");
-    let artifact_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase965-artifact").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase965-proof")
+        .with_extension("json");
+    let source_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase965-source")
+        .with_extension("json");
+    let artifact_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase965-artifact")
+        .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -2375,16 +2390,17 @@ fn cli_can_prepare_and_verify_stwo_folded_gemma_slice_accumulation_artifact() {
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_verify_stwo_folded_gemma_slice_accumulation_artifact_rejects_tampered_accumulator() {
-    let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase965-proof-bad").with_extension("json");
-    let source_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase965-source-bad").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase965-proof-bad")
+        .with_extension("json");
+    let source_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase965-source-bad")
+        .with_extension("json");
     let artifact_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase965-artifact-bad").with_extension("json");
+        unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase965-artifact-bad")
+            .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -2443,18 +2459,18 @@ fn cli_verify_stwo_folded_gemma_slice_accumulation_artifact_rejects_tampered_acc
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_can_prepare_and_verify_stwo_folded_gemma_richer_slice_family_artifact() {
-    let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase98-proof").with_extension("json");
-    let source_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase98-source").with_extension("json");
-    let folded_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase98-folded").with_extension("json");
-    let artifact_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase98-artifact").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase98-proof")
+        .with_extension("json");
+    let source_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase98-source")
+        .with_extension("json");
+    let folded_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase98-folded")
+        .with_extension("json");
+    let artifact_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase98-artifact")
+        .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -2529,18 +2545,19 @@ fn cli_can_prepare_and_verify_stwo_folded_gemma_richer_slice_family_artifact() {
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_verify_stwo_folded_gemma_richer_slice_family_artifact_rejects_tampered_family_commitment() {
-    let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase98-proof-bad").with_extension("json");
-    let source_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase98-source-bad").with_extension("json");
-    let folded_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase98-folded-bad").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase98-proof-bad")
+        .with_extension("json");
+    let source_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase98-source-bad")
+        .with_extension("json");
+    let folded_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase98-folded-bad")
+        .with_extension("json");
     let artifact_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase98-artifact-bad").with_extension("json");
+        unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase98-artifact-bad")
+            .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -2613,14 +2630,14 @@ fn cli_verify_stwo_folded_gemma_richer_slice_family_artifact_rejects_tampered_fa
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_can_prepare_and_verify_stwo_multi_interval_gemma_richer_family_accumulation_artifact() {
-    let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase99-proof").with_extension("json");
-    let artifact_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase99-artifact").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase99-proof")
+        .with_extension("json");
+    let artifact_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase99-artifact")
+        .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -2678,14 +2695,15 @@ fn cli_can_prepare_and_verify_stwo_multi_interval_gemma_richer_family_accumulati
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_verify_stwo_multi_interval_gemma_richer_family_accumulation_artifact_rejects_member_drift() {
-    let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase99-proof-bad").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase99-proof-bad")
+        .with_extension("json");
     let artifact_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase99-artifact-bad").with_extension("json");
+        unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase99-artifact-bad")
+            .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -2736,16 +2754,16 @@ fn cli_verify_stwo_multi_interval_gemma_richer_family_accumulation_artifact_reje
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_can_prepare_and_verify_stwo_folded_multi_interval_gemma_accumulation_prototype_artifact() {
-    let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase1015-proof").with_extension("json");
-    let source_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase1015-source").with_extension("json");
-    let artifact_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase1015-artifact").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase1015-proof")
+        .with_extension("json");
+    let source_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase1015-source")
+        .with_extension("json");
+    let artifact_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase1015-artifact")
+        .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -2809,16 +2827,17 @@ fn cli_can_prepare_and_verify_stwo_folded_multi_interval_gemma_accumulation_prot
 #[cfg(feature = "stwo-backend")]
 fn cli_verify_stwo_folded_multi_interval_gemma_accumulation_prototype_artifact_rejects_handoff_drift(
 ) {
-    let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase1015-proof-bad").with_extension("json");
-    let source_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase1015-source-bad").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase1015-proof-bad")
+        .with_extension("json");
+    let source_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase1015-source-bad")
+        .with_extension("json");
     let artifact_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase1015-artifact-bad").with_extension("json");
+        unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase1015-artifact-bad")
+            .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -2877,18 +2896,18 @@ fn cli_verify_stwo_folded_multi_interval_gemma_accumulation_prototype_artifact_r
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_can_prepare_and_verify_stwo_folded_multi_interval_gemma_richer_family_artifact() {
-    let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase102-proof").with_extension("json");
-    let source_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase102-source").with_extension("json");
-    let folded_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase102-folded").with_extension("json");
-    let artifact_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase102-artifact").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase102-proof")
+        .with_extension("json");
+    let source_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase102-source")
+        .with_extension("json");
+    let folded_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase102-folded")
+        .with_extension("json");
+    let artifact_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase102-artifact")
+        .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")
@@ -2965,18 +2984,19 @@ fn cli_can_prepare_and_verify_stwo_folded_multi_interval_gemma_richer_family_art
 #[test]
 #[cfg(feature = "stwo-backend")]
 fn cli_verify_stwo_folded_multi_interval_gemma_richer_family_artifact_rejects_sequence_drift() {
-    let proof_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase102-proof-bad").with_extension("json");
-    let source_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase102-source-bad").with_extension("json");
-    let folded_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase102-folded-bad").with_extension("json");
+    let proof_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase102-proof-bad")
+        .with_extension("json");
+    let source_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase102-source-bad")
+        .with_extension("json");
+    let folded_path = unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase102-folded-bad")
+        .with_extension("json");
     let artifact_path =
-        unique_temp_dir("cli-stwo-gemma-block-v4-phase102-artifact-bad").with_extension("json");
+        unique_temp_dir("cli-stwo-linear-block-v4-with-lookup-phase102-artifact-bad")
+            .with_extension("json");
 
     tvm_command()
         .arg("prove-stark")
-        .arg("programs/gemma_block_v4.tvm")
+        .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
         .arg("--backend")

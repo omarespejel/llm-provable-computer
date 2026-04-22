@@ -433,11 +433,11 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 
 # Bind that chain to a real Gemma-shaped S-two proof via the core-slice artifact
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prove-stark programs/gemma_block_v4.tvm -o gemma-block-v4.stark.json \
+  prove-stark programs/linear_block_v4_with_lookup.tvm -o linear-block-v4-with-lookup.stark.json \
   --backend stwo --max-steps 256
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-gemma-block-core-slice-artifact \
-  --proof gemma-block-v4.stark.json \
+  --proof linear-block-v4-with-lookup.stark.json \
   --chain tensor-native-chain.stwo.json \
   -o gemma-block-core-slice.stwo.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
@@ -447,7 +447,7 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 # Strengthen that Gemma-shaped line with a richer slice artifact
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-gemma-block-richer-slice-artifact \
-  --proof gemma-block-v4.stark.json \
+  --proof linear-block-v4-with-lookup.stark.json \
   --chain tensor-native-chain.stwo.json \
   -o gemma-block-richer-slice.stwo.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
@@ -457,7 +457,7 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 # Accumulate repeated Gemma-like slices over one shared S-two proof
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-repeated-gemma-slice-accumulation-artifact \
-  --proof gemma-block-v4.stark.json \
+  --proof linear-block-v4-with-lookup.stark.json \
   --total-slices 4 \
   --token-position 0 \
   --start-block-index 2 \
@@ -491,7 +491,7 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 # Accumulate several Gemma-like interval families across token positions
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-multi-interval-gemma-richer-family-accumulation-artifact \
-  --proof gemma-block-v4.stark.json \
+  --proof linear-block-v4-with-lookup.stark.json \
   --total-intervals 4 \
   --interval-total-slices 4 \
   --token-position-start 0 \
@@ -527,7 +527,7 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 # Lift that richer multi-interval line into repeated canonical windows
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-repeated-multi-interval-gemma-richer-family-accumulation-artifact \
-  --proof gemma-block-v4.stark.json \
+  --proof linear-block-v4-with-lookup.stark.json \
   --total-windows 3 \
   --intervals-per-window 4 \
   --interval-total-slices 4 \
@@ -803,9 +803,9 @@ under `statement-v1`:
 - arithmetic fixtures: `programs/addition.tvm`, `programs/counter.tvm`,
   `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`, `programs/dot_product.tvm`,
   `programs/fibonacci.tvm`, `programs/matmul_2x2.tvm`, `programs/single_neuron.tvm`
-- transformer-shaped fixtures: `programs/gemma_block_v1.tvm`,
-  `programs/gemma_block_v2.tvm`, `programs/gemma_block_v3.tvm`,
-  `programs/gemma_block_v4.tvm`
+- transformer-shaped fixtures: `programs/linear_block_v1.tvm`,
+  `programs/linear_block_v2.tvm`, `programs/linear_block_v3.tvm`,
+  `programs/linear_block_v4_with_lookup.tvm`
 
 Broader arithmetic-subset AIR coverage exists beyond those fixtures, but that surface is
 not yet exposed as a public end-to-end proving path.
@@ -1251,9 +1251,9 @@ under `statement-v1`:
 - arithmetic fixtures: `programs/addition.tvm`, `programs/counter.tvm`,
   `programs/memory_roundtrip.tvm`, `programs/multiply.tvm`, `programs/dot_product.tvm`,
   `programs/fibonacci.tvm`, `programs/matmul_2x2.tvm`, `programs/single_neuron.tvm`
-- transformer-shaped fixtures: `programs/gemma_block_v1.tvm`,
-  `programs/gemma_block_v2.tvm`, `programs/gemma_block_v3.tvm`,
-  `programs/gemma_block_v4.tvm`
+- transformer-shaped fixtures: `programs/linear_block_v1.tvm`,
+  `programs/linear_block_v2.tvm`, `programs/linear_block_v3.tvm`,
+  `programs/linear_block_v4_with_lookup.tvm`
 - decoding families: fixed-shape `decoding_step_v1` and parameterized `decoding_step_v2`
 
 The broader Phase 2 arithmetic subset (`NOP`, `LOADI`, `LOAD`, `STORE`, `ADD`, `ADDM`,
