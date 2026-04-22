@@ -4,3 +4,14 @@ approval_policy = "on-request"
 sandbox_mode = "workspace-write"
 web_search = "cached"
 personality = "pragmatic"
+
+# Project notes for Codex sessions:
+# - GitHub Actions is disabled at the repository level; the local release
+#   gate (just gate / make gate / scripts/local_release_gate.sh) is the
+#   only authoritative gate.
+# - The agent decision table for "what to run when" is in
+#   docs/engineering/release-gates/agent-runbook.md. Read it before edits.
+# - The shared agent contract is AGENTS.md.
+# - Pinned tooling: cargo-audit 0.22.1, cargo-deny 0.19.4, zizmor 1.24.1.
+# - The main branch ruleset requires signed commits; use `just sign-commits`
+#   before pushing or surface the missing key to the human.

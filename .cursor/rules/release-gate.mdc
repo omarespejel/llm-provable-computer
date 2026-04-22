@@ -1,0 +1,64 @@
+---
+description: Local release gate, signed commits, and per-scope test invocations for provable-transformer-vm
+alwaysApply: true
+---
+
+# Release-gate rule
+
+GitHub Actions is **disabled** at the repository level for this project.
+The local release gate is the only gate. The canonical interfaces are
+`just <target>` (preferred) and `make <target>` (fallback). Tooling pins
+are strict: `cargo-audit 0.22.1`, `cargo-deny 0.19.4`, `zizmor 1.24.1`.
+
+## When to run what
+
+Pick the smallest sufficient check from this table for the inner edit-test
+loop. The full `just gate` is mandatory before push and before reporting
+work as done.
+
+| Edit scope                                                  | Inner-loop                                              |
+| ----------------------------------------------------------- | ------------------------------------------------------- |
+| Pure docs (`*.md`, `docs/**`)                               | none (run `just gate-fast` before commit)               |
+| `src/proof.rs`                                              | `just proof-tests`                                      |
+| `src/vanillastark/**`                                       | `just vanillastark-tests`                               |
+| `src/stwo_backend/**`                                       | `just lib`                                              |
+| `src/bin/tvm.rs`                                            | `just gate-fast` then `just integration`                |
+| `tests/**`                                                  | `cargo test --release --test <touched-name>`            |
+| `programs/**` (`.tvm`)                                      | `just integration`                                      |
+| `Cargo.toml` / `Cargo.lock` / `deny.toml` / `vendor/**`     | `just deps`                                             |
+| `scripts/**.sh`                                             | `just shellcheck`                                       |
+| `.github/workflows/**`                                      | `just zizmor`                                           |
+| `Justfile` / `Makefile` / `scripts/local_release_gate.sh`   | `just gate-no-nightly`                                  |
+
+For any change that touches the proof-system surface (claim metadata, AIR,
+FRI, Merkle, transcript, or Stwo wiring), also add or update at least one
+negative / tamper-path test, then run `just gate` before reporting done.
+
+## Required before push
+
+1. `just gate` exits 0.
+2. Every commit on the branch is signed (`just sign-commits` if a key is
+   configured, otherwise surface to the human).
+
+## Forbidden
+
+- Pushing directly to `main` (the ruleset blocks it).
+- Bypassing the local gate via `SKIP_LOCAL_GATE=1` without an explicit
+  human instruction tied to a specific reason.
+- Editing `Cargo.lock` by hand.
+- Adding a `.tvm` fixture under `programs/` whose name implies a model
+  family it does not faithfully implement (see
+  `docs/engineering/release-gates/naming-honesty.md`).
+- Re-enabling a workflow under `.github/workflows/` without first
+  re-enabling Actions per
+  `docs/engineering/release-gates/local-only-policy.md`.
+
+## References
+
+- `docs/engineering/release-gates/agent-runbook.md` — the canonical agent
+  decision table (this rule mirrors its essentials).
+- `docs/engineering/release-gates/local-only-policy.md` — what enforces
+  what under the no-Actions posture.
+- `docs/engineering/release-gates/release-checklist.md` — full release
+  gate checklist.
+- `AGENTS.md`, `CLAUDE.md` — agent-shared and Claude-Code entry points.

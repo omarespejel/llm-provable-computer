@@ -1,0 +1,70 @@
+---
+description: Proof-system review and edit discipline for STARK / FRI / Stwo paths
+globs: ["src/proof.rs", "src/vanillastark/**", "src/stwo_backend/**", "tests/**"]
+alwaysApply: false
+---
+
+# Proof-system discipline
+
+This rule auto-attaches whenever the agent reads or edits a file under
+`src/proof.rs`, `src/vanillastark/**`, `src/stwo_backend/**`, or `tests/**`.
+
+## Hard invariants
+
+- The `statement-v1` semantic scope literally names a transformer/native
+  equivalence check. Every public verification entry point in `src/proof.rs`
+  must reject any v1-scoped claim that drops `claim.equivalence` or
+  `claim.transformer_config`. Do not relax `validate_equivalence_metadata`
+  or `validate_transformer_config` for the v1 scope.
+- `cargo clippy --lib --no-deps -- -D warnings` is currently green for the
+  lib target. New code must keep it green.
+- Frozen artifact bundles under `docs/paper/artifacts/` cite specific byte
+  hashes. Do not change FRI sampler behavior, omicron-domain construction,
+  Merkle leaf encoding, or any other proof-byte-affecting code on the
+  vanilla-v1 backend without an explicit `proof_backend_version` bump and
+  a coordinated bundle regeneration. The `Fri::sample_index_full_entropy`
+  helper is staged but intentionally unwired for this reason.
+- The `production-v1` STARK profile is a CI smoke profile, not a
+  cryptographic claim (32 conjectured bits, 16 conservative). For any
+  publication-cited proof use `publication-v1` (96 conjectured, 48
+  conservative). See
+  `docs/engineering/release-gates/publication-profile.md`.
+
+## Required test coverage
+
+When the touched code path includes any of:
+
+- a verifier invariant in `src/proof.rs` or `src/vanillastark/stark.rs`,
+- the FRI commit / verify / sample paths,
+- a Merkle commit / open / verify path,
+- the Stwo carried-state, manifest, or backend-version surface,
+- any `*_VERSION_*`, `*_SCOPE_*`, or claim-commitment constant,
+
+the change MUST add or update at least one of:
+
+- a negative test that constructs a malformed input and asserts the new
+  invariant rejects it,
+- a tamper-path test that mutates a known-good artifact byte and asserts
+  rejection,
+- a regression test that pins the new behavior under all public entry
+  points (loop over `verify_execution_stark`, `_claim_only`, `_with_policy`,
+  `_with_reexecution`, etc.).
+
+After adding the test, run `just proof-tests` (for proof.rs / vanillastark
+edits) or `just lib` (for stwo_backend edits), then `just gate` before
+reporting work as done.
+
+## Spec-sync
+
+`spec/statement-v1.json` and the `CLAIM_*_V1` constants in `src/proof.rs`
+are pinned together by the
+`statement_spec_contract_is_synced_with_constants` test. If you change one,
+change the other in the same edit.
+
+## Naming honesty
+
+Do not introduce or rename a `.tvm` fixture under `programs/` whose name
+implies a model family the program does not faithfully implement. The
+existing `programs/gemma_block_*.tvm` fixtures are tracked for rename in
+`docs/engineering/release-gates/naming-honesty.md`. If you touch them,
+follow the rename plan there.
