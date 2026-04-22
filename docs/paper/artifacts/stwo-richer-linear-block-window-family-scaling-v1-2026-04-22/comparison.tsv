@@ -1,4 +1,4 @@
 comparison	left_value	right_value	note
-phase113_ratio_improves_from_w4_to_w8	0.404730	0.267213	lower is better; richer-family bytes stay near-flat while explicit source grows
-phase113_overhead_above_phase112_stability	1.327926	1.327639	overhead stays effectively stable across supported scaling points
-phase113_absolute_growth_w4_to_w8	3029	3031	Phase113 grows by only 2 bytes from w4 to w8 on this frozen source family
+phase113_ratio_improves_from_w4_to_w8	0.407895	0.269788	lower is better; richer-family bytes stay near-flat while explicit source grows
+phase113_overhead_above_phase112_stability	1.330299	1.330013	overhead stays effectively stable across supported scaling points
+phase113_absolute_growth_w4_to_w8	3069	3071	Phase113 grows by only 2 bytes from w4 to w8 on this frozen source family
