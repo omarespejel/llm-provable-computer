@@ -15,8 +15,9 @@ gate-related targets (`gate-fast`, `gate-no-nightly`, `gate`) call into
 ## When to run what
 
 Pick the smallest sufficient check from this table for the inner edit-test
-loop. The full `just gate` is mandatory before push and before reporting
-work as done.
+loop. Before push and before reporting work as done, follow the stronger of
+this table's pre-push requirement and the canonical
+`docs/engineering/release-gates/agent-runbook.md` rule for the touched scope.
 
 | Edit scope                                                  | Inner-loop                                              |
 | ----------------------------------------------------------- | ------------------------------------------------------- |

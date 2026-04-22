@@ -15,6 +15,11 @@ fn blake2b_hash(data: &[u8]) -> Vec<u8> {
     hasher.finalize().to_vec()
 }
 
+pub const MAX_STARK_EXPANSION_FACTOR: usize = 64;
+pub const MAX_STARK_NUM_COLINEARITY_CHECKS: usize = 64;
+pub const MAX_STARK_OMICRON_DOMAIN_LENGTH: usize = 1 << 20;
+pub const MAX_STARK_FRI_DOMAIN_LENGTH: usize = 1 << 22;
+
 /// Compute the omicron-domain length for the vanilla STARK using integer-only
 /// arithmetic.
 ///
@@ -68,6 +73,16 @@ impl Stark {
         if expansion_factor < 4 {
             return Err("expansion factor must be 4 or greater".to_string());
         }
+        if expansion_factor > MAX_STARK_EXPANSION_FACTOR {
+            return Err(format!(
+                "expansion factor exceeds verifier cap {MAX_STARK_EXPANSION_FACTOR}"
+            ));
+        }
+        if num_colinearity_checks > MAX_STARK_NUM_COLINEARITY_CHECKS {
+            return Err(format!(
+                "number of colinearity checks exceeds verifier cap {MAX_STARK_NUM_COLINEARITY_CHECKS}"
+            ));
+        }
         let security_queries = num_colinearity_checks
             .checked_mul(2)
             .ok_or_else(|| "number of colinearity checks overflows security bound".to_string())?;
@@ -86,9 +101,19 @@ impl Stark {
         let omicron_domain_length =
             stark_omicron_domain_length(randomized_trace_length, transition_constraints_degree)
                 .ok_or_else(|| "omicron domain length overflows usize".to_string())?;
+        if omicron_domain_length > MAX_STARK_OMICRON_DOMAIN_LENGTH {
+            return Err(format!(
+                "omicron domain length exceeds verifier cap {MAX_STARK_OMICRON_DOMAIN_LENGTH}"
+            ));
+        }
         let fri_domain_length = omicron_domain_length
             .checked_mul(expansion_factor)
             .ok_or_else(|| "fri domain length overflows usize".to_string())?;
+        if fri_domain_length > MAX_STARK_FRI_DOMAIN_LENGTH {
+            return Err(format!(
+                "fri domain length exceeds verifier cap {MAX_STARK_FRI_DOMAIN_LENGTH}"
+            ));
+        }
 
         let generator = FieldElement::generator();
         let omega = FieldElement::primitive_nth_root(fri_domain_length as u128);
@@ -702,6 +727,38 @@ mod tests {
         let err = Stark::try_new(4, usize::MAX / 4 + 1, 8, 4, 8, 2)
             .err()
             .expect("overflowing geometry should fail");
-        assert!(err.contains("randomizers"), "unexpected error: {err}");
+        assert!(
+            err.contains("randomizers") || err.contains("verifier cap"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn try_new_rejects_excessive_expansion_factor() {
+        let err = Stark::try_new(128, 2, 2, 2, 32, 2)
+            .err()
+            .expect("expansion factor above verifier cap must fail");
+        assert!(err.contains("expansion factor exceeds verifier cap"));
+    }
+
+    #[test]
+    fn try_new_rejects_excessive_colinearity_checks() {
+        let err = Stark::try_new(4, MAX_STARK_NUM_COLINEARITY_CHECKS + 1, 2, 2, 32, 2)
+            .err()
+            .expect("colinearity checks above verifier cap must fail");
+        assert!(err.contains("number of colinearity checks exceeds verifier cap"));
+    }
+
+    #[test]
+    fn try_new_rejects_oversized_fri_domain_before_allocation() {
+        let err = Stark::try_new(16, 24, 48, 2, 200_000, 2)
+            .err()
+            .expect("oversized domain geometry must fail");
+        assert!(err.contains("fri domain length exceeds verifier cap"));
+    }
+
+    #[test]
+    fn omicron_domain_length_reports_overflow() {
+        assert!(stark_omicron_domain_length(usize::MAX, 2).is_none());
     }
 }

@@ -12,8 +12,8 @@ reasons. The full policy lives in `local-only-policy.md`. The short version:
 - A pre-push hook (`pre-push-hook.sh` in this directory) refuses any push
   whose local gate fails.
 - Server-side enforcement on `main` is reduced to repo policy that does not
-  consume Actions minutes: pull-request-only merges, linear history, no
-  force-push, no deletion.
+  consume Actions minutes: a pull request must be opened before any merge,
+  linear history, no force-push, no deletion.
 - AI commenters (CodeRabbit, Greptile, pr-agent) run via webhooks and are
   unaffected.
 

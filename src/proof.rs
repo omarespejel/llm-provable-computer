@@ -16,7 +16,9 @@ use crate::model::TransformerVm;
 use crate::runtime::ExecutionRuntime;
 use crate::state::MachineState;
 use crate::stwo_backend;
-use crate::vanillastark::{FieldElement, MPolynomial, Stark};
+use crate::vanillastark::{
+    FieldElement, MPolynomial, Stark, MAX_STARK_EXPANSION_FACTOR, MAX_STARK_NUM_COLINEARITY_CHECKS,
+};
 use crate::verification::verify_model_against_native;
 
 const PC: usize = 0;
@@ -980,10 +982,22 @@ fn validate_stark_options(options: &VanillaStarkProofOptions) -> Result<()> {
             options.expansion_factor
         )));
     }
+    if options.expansion_factor > MAX_STARK_EXPANSION_FACTOR {
+        return Err(VmError::InvalidConfig(format!(
+            "stark expansion_factor {} exceeds verifier cap {}",
+            options.expansion_factor, MAX_STARK_EXPANSION_FACTOR
+        )));
+    }
     if options.num_colinearity_checks == 0 {
         return Err(VmError::InvalidConfig(
             "stark num_colinearity_checks must be greater than zero".to_string(),
         ));
+    }
+    if options.num_colinearity_checks > MAX_STARK_NUM_COLINEARITY_CHECKS {
+        return Err(VmError::InvalidConfig(format!(
+            "stark num_colinearity_checks {} exceeds verifier cap {}",
+            options.num_colinearity_checks, MAX_STARK_NUM_COLINEARITY_CHECKS
+        )));
     }
     if options.security_level == 0 {
         return Err(VmError::InvalidConfig(
@@ -2111,8 +2125,66 @@ HALT
         );
         let err = verify_execution_stark(&proof).unwrap_err();
         assert!(
-            err.to_string().contains("randomizers"),
+            err.to_string().contains("randomizers")
+                || err.to_string().contains("num_colinearity_checks")
+                    && err.to_string().contains("verifier cap"),
             "expected randomizer-overflow rejection, got: {err}"
+        );
+    }
+
+    #[test]
+    fn verify_rejects_excessive_colinearity_checks_without_panic() {
+        let mut proof = prove_program("programs/addition.tvm", 32);
+        proof.claim.options.num_colinearity_checks = MAX_STARK_NUM_COLINEARITY_CHECKS + 1;
+        proof.claim.options.security_level = 8;
+        let config = proof
+            .claim
+            .transformer_config
+            .as_ref()
+            .expect("transformer config")
+            .clone();
+        proof.claim.commitments = Some(
+            build_claim_commitments(&proof.claim.program, &config, &proof.claim.options)
+                .expect("rebuild commitments"),
+        );
+        let err = verify_execution_stark(&proof).unwrap_err();
+        assert!(
+            err.to_string().contains("num_colinearity_checks")
+                && err.to_string().contains("verifier cap"),
+            "expected verifier-cap rejection, got: {err}"
+        );
+    }
+
+    #[test]
+    fn verify_rejects_oversized_domain_geometry_without_panic() {
+        let mut proof = prove_program("programs/addition.tvm", 32);
+        let oversized_steps = crate::vanillastark::MAX_STARK_OMICRON_DOMAIN_LENGTH;
+        proof.claim.steps = oversized_steps;
+        let metadata = proof
+            .claim
+            .equivalence
+            .as_mut()
+            .expect("equivalence metadata");
+        metadata.checked_steps = oversized_steps;
+        metadata.transformer_fingerprint = execution_fingerprint(
+            "transformer",
+            oversized_steps,
+            oversized_steps,
+            proof.claim.final_state.halted,
+            &proof.claim.final_state,
+        );
+        metadata.native_fingerprint = execution_fingerprint(
+            "native",
+            oversized_steps,
+            oversized_steps,
+            proof.claim.final_state.halted,
+            &proof.claim.final_state,
+        );
+        let err = verify_execution_stark(&proof).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("domain length exceeds verifier cap"),
+            "expected domain-cap rejection, got: {msg}"
         );
     }
 

@@ -17,4 +17,7 @@ pub use multivariate::MPolynomial;
 pub use polynomial::Polynomial;
 pub use proof_stream::{ProofObject, ProofStream};
 pub use rescue_prime::RescuePrime;
-pub use stark::Stark;
+pub use stark::{
+    Stark, MAX_STARK_EXPANSION_FACTOR, MAX_STARK_FRI_DOMAIN_LENGTH,
+    MAX_STARK_NUM_COLINEARITY_CHECKS, MAX_STARK_OMICRON_DOMAIN_LENGTH,
+};
