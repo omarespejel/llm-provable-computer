@@ -14553,6 +14553,12 @@ mod cli_dispatch_tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-folded-repeated-multi-interval-linear-block-accumulation-prototype-artifact"
         ));
+        assert!(!needs_run_subcommand(
+            "prepare-stwo-gemma-block-core-slice-artifact"
+        ));
+        assert!(!needs_run_subcommand(
+            "verify-stwo-gemma-block-core-slice-artifact"
+        ));
     }
 
     #[test]

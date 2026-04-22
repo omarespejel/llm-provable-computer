@@ -58,7 +58,6 @@ use crate::proof::{
 use crate::state::MachineState;
 
 pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase10-linear-block-v4-with-lookup";
-pub const STWO_BACKEND_VERSION_PHASE5_LEGACY: &str = "stwo-phase10-gemma-block-v4";
 pub const STWO_BACKEND_VERSION_PHASE11: &str = "stwo-phase11-decoding-step-v1";
 const M31_MODULUS: u32 = (1u32 << 31) - 1;
 const GEMMA_BLOCK_NORM_SQ_MEMORY_INDEX: usize = 13;
@@ -2022,7 +2021,7 @@ fn backend_version_matches_program(program: &Program, backend_version: &str) -> 
         backend_version == STWO_BACKEND_VERSION_PHASE11
     } else {
         backend_version == STWO_BACKEND_VERSION_PHASE5
-            || backend_version == STWO_BACKEND_VERSION_PHASE5_LEGACY
+            || backend_version == super::STWO_BACKEND_VERSION_PHASE5_LEGACY
     }
 }
 

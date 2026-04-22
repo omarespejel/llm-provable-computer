@@ -8822,8 +8822,7 @@ mod tests {
                 .expect("prepare phase94.5 gemma core slice artifact");
         artifact.program_label = PHASE5_PROGRAM_LABEL_LEGACY.to_string();
         artifact.execution_proof.proof_backend_version =
-            crate::stwo_backend::arithmetic_subset_prover::STWO_BACKEND_VERSION_PHASE5_LEGACY
-                .to_string();
+            crate::stwo_backend::STWO_BACKEND_VERSION_PHASE5_LEGACY.to_string();
         artifact.execution_proof_backend_version =
             artifact.execution_proof.proof_backend_version.clone();
         artifact.execution_proof_commitment =
