@@ -12302,6 +12302,20 @@ mod tests {
             .clone()
     }
 
+    fn cached_phase107_explicit_w4_artifact() -> Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact {
+        static ARTIFACT: OnceLock<Phase107FoldedRepeatedMultiIntervalGemmaRicherFamilyArtifact> =
+            OnceLock::new();
+        ARTIFACT
+            .get_or_init(|| {
+                let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(
+                    "docs/paper/artifacts/stwo-repeated-window-fold-tree-v1-2026-04-22/phase107-explicit-w4.stwo.json",
+                );
+                load_phase107_folded_repeated_multi_interval_gemma_richer_family_artifact(&path)
+                    .expect("load frozen phase107 explicit w4 artifact")
+            })
+            .clone()
+    }
+
     #[test]
     fn phase93_tensor_native_chain_round_trips() {
         let artifact = prepare_phase93_tensor_native_chain_demo_artifact()
@@ -13437,6 +13451,71 @@ mod tests {
         assert!(error
             .to_string()
             .contains("richer Gemma window family artifact does not match"));
+    }
+
+    #[test]
+    fn phase115_richer_gemma_window_family_scaling_stays_below_supported_explicit_sources() {
+        let all_leaves = cached_phase113_test_leaves();
+        let explicit_w4 = cached_phase107_explicit_w4_artifact();
+        let explicit_w8 = cached_phase107_explicit_w8_artifact();
+
+        let leaves_w4 = all_leaves[..2].to_vec();
+        let phase112_w4 = prepare_phase112_transformer_accumulation_semantics_artifact(&leaves_w4)
+            .expect("prepare phase112 semantics artifact for w4");
+        let phase113_w4 =
+            prepare_phase113_richer_gemma_window_family_artifact(&leaves_w4, &phase112_w4)
+                .expect("prepare phase113 richer family artifact for w4");
+
+        let leaves_w8 = all_leaves[..4].to_vec();
+        let phase112_w8 = prepare_phase112_transformer_accumulation_semantics_artifact(&leaves_w8)
+            .expect("prepare phase112 semantics artifact for w8");
+        let phase113_w8 =
+            prepare_phase113_richer_gemma_window_family_artifact(&leaves_w8, &phase112_w8)
+                .expect("prepare phase113 richer family artifact for w8");
+
+        let explicit_w4_bytes =
+            serde_json::to_vec(&explicit_w4).expect("serialize frozen phase107 explicit w4").len();
+        let explicit_w8_bytes =
+            serde_json::to_vec(&explicit_w8).expect("serialize frozen phase107 explicit w8").len();
+        let phase112_w4_bytes =
+            serde_json::to_vec(&phase112_w4).expect("serialize phase112 semantics w4").len();
+        let phase112_w8_bytes =
+            serde_json::to_vec(&phase112_w8).expect("serialize phase112 semantics w8").len();
+        let phase113_w4_bytes =
+            serde_json::to_vec(&phase113_w4).expect("serialize phase113 richer family w4").len();
+        let phase113_w8_bytes =
+            serde_json::to_vec(&phase113_w8).expect("serialize phase113 richer family w8").len();
+
+        assert!(
+            phase113_w4_bytes < explicit_w4_bytes,
+            "phase113 w4 bytes {} should stay below explicit w4 bytes {}",
+            phase113_w4_bytes,
+            explicit_w4_bytes
+        );
+        assert!(
+            phase113_w8_bytes < explicit_w8_bytes,
+            "phase113 w8 bytes {} should stay below explicit w8 bytes {}",
+            phase113_w8_bytes,
+            explicit_w8_bytes
+        );
+
+        let richer_over_semantics_w4 = phase113_w4_bytes as f64 / phase112_w4_bytes as f64;
+        let richer_over_semantics_w8 = phase113_w8_bytes as f64 / phase112_w8_bytes as f64;
+        assert!(
+            (richer_over_semantics_w4 - richer_over_semantics_w8).abs() < 0.01,
+            "phase113 overhead above phase112 should stay stable across supported window counts: w4={}, w8={}",
+            richer_over_semantics_w4,
+            richer_over_semantics_w8
+        );
+
+        let richer_vs_explicit_w4 = phase113_w4_bytes as f64 / explicit_w4_bytes as f64;
+        let richer_vs_explicit_w8 = phase113_w8_bytes as f64 / explicit_w8_bytes as f64;
+        assert!(
+            richer_vs_explicit_w8 < richer_vs_explicit_w4,
+            "phase113 richer-family ratio should improve as explicit repeated windows grow: w4={}, w8={}",
+            richer_vs_explicit_w4,
+            richer_vs_explicit_w8
+        );
     }
 
     #[test]
