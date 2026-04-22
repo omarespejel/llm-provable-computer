@@ -20,6 +20,7 @@ These are the bundles directly used by the current paper package:
 - `stwo-multi-interval-folded-gemma-v1-2026-04-21/`
 - `stwo-richer-multi-interval-gemma-v1-2026-04-21/`
 - `stwo-repeated-richer-multi-interval-gemma-v1-2026-04-22/`
+- `stwo-repeated-window-fold-tree-v1-2026-04-22/`
 
 These are the bundles that should be treated as the paper's primary reproducibility and systems-evidence surfaces.
 
@@ -123,6 +124,22 @@ same source and only `814` bytes larger than the thinner Phase106 surface. The
 explicit repeated-window artifact also saves `1,031,279` bytes versus blind
 duplication of the single-window Phase99 baseline. This remains a verifier-bound,
 pre-recursive artifact line rather than a cryptographic accumulation claim.
+
+The `stwo-repeated-window-fold-tree-v1-2026-04-22` directory extends that
+same line with the first repeated-window scaling sweep plus the first
+transformer-specific pair-fold and repeated-window fold-tree surfaces. The
+bundle records `5,554` Phase107 bytes at `2` windows, `7,484` Phase107 bytes
+at `4` windows, and `11,343` Phase107 bytes at `8` windows. It then records a
+`3,042`-byte Phase109 pair-fold artifact against the `7,484`-byte explicit
+`4`-window Phase107 source, so the first same-tier pair fold is about
+`40.6467%` of the explicit `4`-window surface. It also records a
+`12,307`-byte Phase110 fold-tree artifact against the `11,343`-byte explicit
+`8`-window Phase107 source, so the current verifier-bound fold tree is about
+`108.4986%` of the explicit `8`-window surface. In other words: the pair fold
+already compacts the same-tier `4`-window artifact, but the current fold tree
+does not yet compress the same-tier `8`-window artifact. This remains a
+verifier-bound, pre-recursive artifact line rather than a cryptographic
+accumulation claim.
 
 Later Phase81-84 translated seam surfaces remain implemented in-repo, but they are not
 yet cut as frozen publication-facing artifact directories.
