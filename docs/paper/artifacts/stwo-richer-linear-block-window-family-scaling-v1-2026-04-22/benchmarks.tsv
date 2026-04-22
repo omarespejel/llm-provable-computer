@@ -1,9 +1,9 @@
 label	seconds
-prepare_phase112_w4	110.905
-verify_phase112_w4	7.226
-prepare_phase113_w4	1.689
-verify_phase113_w4	1.385
-prepare_phase112_w8	1.541
-verify_phase112_w8	1.079
-prepare_phase113_w8	1.264
-verify_phase113_w8	1.228
+prepare_phase112_w4	N/A
+verify_phase112_w4	N/A
+prepare_phase113_w4	N/A
+verify_phase113_w4	N/A
+prepare_phase112_w8	N/A
+verify_phase112_w8	N/A
+prepare_phase113_w8	N/A
+verify_phase113_w8	N/A
