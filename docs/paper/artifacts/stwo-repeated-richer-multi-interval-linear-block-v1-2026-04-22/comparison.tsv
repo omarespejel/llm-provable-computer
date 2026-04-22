@@ -1,10 +1,10 @@
 system	comparison_class	metric	value	note
-provable-transformer-vm	internal-artifact	shared_execution_proof_bytes	90432	same frozen Linear-block proof reused across the repeated-window Phase105, Phase106, and Phase107 surfaces
-provable-transformer-vm	internal-artifact	phase105_explicit_repeated_multi_interval_json_bytes	1034361	explicit repeated-window source artifact
-provable-transformer-vm	internal-artifact	phase106_folded_repeated_multi_interval_json_bytes	4740	first folded repeated-window prototype
-provable-transformer-vm	internal-artifact	phase107_folded_richer_repeated_multi_interval_json_bytes	5554	richer verifier-bound repeated-window artifact on top of the folded handoff
-provable-transformer-vm	internal-artifact	phase106_folded_ratio_vs_explicit	0.004583	folded / explicit JSON-size ratio on the repeated-window surface
-provable-transformer-vm	internal-artifact	phase107_richer_ratio_vs_explicit	0.005369	richer-family / explicit JSON-size ratio on the repeated-window surface
+provable-transformer-vm	internal-artifact	shared_execution_proof_bytes	90458	same frozen Linear-block proof reused across the repeated-window Phase105, Phase106, and Phase107 surfaces
+provable-transformer-vm	internal-artifact	phase105_explicit_repeated_multi_interval_json_bytes	1034696	explicit repeated-window source artifact
+provable-transformer-vm	internal-artifact	phase106_folded_repeated_multi_interval_json_bytes	4780	first folded repeated-window prototype
+provable-transformer-vm	internal-artifact	phase107_folded_richer_repeated_multi_interval_json_bytes	5594	richer verifier-bound repeated-window artifact on top of the folded handoff
+provable-transformer-vm	internal-artifact	phase106_folded_ratio_vs_explicit	0.004620	folded / explicit JSON-size ratio on the repeated-window surface
+provable-transformer-vm	internal-artifact	phase107_richer_ratio_vs_explicit	0.005406	richer-family / explicit JSON-size ratio on the repeated-window surface
 zkLLM	public-paper-context	proving_shape	tlookup + zkAttn	specialized lookup treatment for non-arithmetic tensor ops and attention; not a matched benchmark row
 Jolt Atlas	public-paper-context	proving_shape	lookup-centric ONNX/tensor proving	supports direct tensor/operator relations rather than VM emulation; not a matched benchmark row
 NANOZK	public-paper-context	proving_shape	layerwise transformer proving	supports layerwise/tensor-native direction; not a matched benchmark row
