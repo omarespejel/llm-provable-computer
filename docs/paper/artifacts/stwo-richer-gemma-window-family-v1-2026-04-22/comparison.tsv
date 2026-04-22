@@ -1,0 +1,5 @@
+comparison	baseline_bytes	derived_bytes	ratio
+phase113_vs_phase107_explicit_w8	11343	3031	0.267213
+phase113_vs_phase110_tree_w8	12307	3031	0.246283
+phase113_vs_phase112_semantics_w8	2283	3031	1.327639
+phase113_over_phase112_bytes	2283	3031	748

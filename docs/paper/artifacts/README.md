@@ -22,6 +22,7 @@ These are the bundles directly used by the current paper package:
 - `stwo-repeated-richer-multi-interval-gemma-v1-2026-04-22/`
 - `stwo-repeated-window-fold-tree-v1-2026-04-22/`
 - `stwo-transformer-accumulation-semantics-v1-2026-04-22/`
+- `stwo-richer-gemma-window-family-v1-2026-04-22/`
 
 These are the bundles that should be treated as the paper's primary reproducibility and systems-evidence surfaces.
 
@@ -151,6 +152,18 @@ So the current semantic handoff is about `18.5504%` of the Phase110 fold-tree
 surface and about `20.1270%` of the explicit Phase107 `8`-window surface. This
 remains a verifier-bound, pre-recursive semantic artifact rather than a
 cryptographic accumulation or prover-time compression claim.
+
+The `stwo-richer-gemma-window-family-v1-2026-04-22` directory extends that
+same line with the first compact richer-family derivative over the frozen
+Phase112 semantic handoff. The bundle records a `3,031`-byte Phase113 richer
+Gemma window-family artifact against the `11,343`-byte explicit Phase107
+`8`-window source, the `12,307`-byte Phase110 fold-tree artifact, and the
+`2,283`-byte Phase112 semantic handoff. So the richer-family derivative is
+about `26.7213%` of the explicit Phase107 `8`-window surface and about
+`24.6283%` of the Phase110 fold-tree surface, while costing only `748` bytes
+more than the thinner Phase112 semantics layer. This remains a verifier-bound,
+pre-recursive richer-family artifact rather than a cryptographic accumulation
+or matched public benchmark claim.
 
 Later Phase81-84 translated seam surfaces remain implemented in-repo, but they are not
 yet cut as frozen publication-facing artifact directories.
