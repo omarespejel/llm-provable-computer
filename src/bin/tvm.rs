@@ -15308,12 +15308,13 @@ mod tests {
 
 #[cfg(test)]
 mod cli_dispatch_tests {
+    #[cfg(feature = "stwo-backend")]
+    use super::{load_phase107_leaf_family, MAX_PHASE110_REPEATED_WINDOW_FOLD_TREE_TOTAL_LEAVES};
     use super::{
-        load_phase107_leaf_family, needs_run_subcommand, CliStarkProfile,
-        MAX_PHASE110_REPEATED_WINDOW_FOLD_TREE_TOTAL_LEAVES,
-        PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS, PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS,
-        PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
+        needs_run_subcommand, CliStarkProfile, PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS,
+        PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS, PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
     };
+    #[cfg(feature = "stwo-backend")]
     use std::path::PathBuf;
 
     #[test]

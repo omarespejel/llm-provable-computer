@@ -2615,6 +2615,27 @@ mod tests {
             .clone()
     }
 
+    fn prove_linear_block_v4_with_lookup_stwo() -> VanillaStarkExecutionProof {
+        let program = compile_program("programs/linear_block_v4_with_lookup.tvm");
+        let model = ProgramCompiler
+            .compile_program(
+                program,
+                TransformerVmConfig {
+                    num_layers: 1,
+                    attention_mode: Attention2DMode::AverageHard,
+                    ..TransformerVmConfig::default()
+                },
+            )
+            .expect("compile model");
+        prove_execution_stark_with_backend_and_options(
+            &model,
+            128,
+            StarkProofBackend::Stwo,
+            production_v1_stark_options(),
+        )
+        .expect("real stwo proof")
+    }
+
     fn assert_trace_satisfies_constraints_for_program(program: Program) {
         let mut runtime =
             NativeInterpreter::new(program.clone(), Attention2DMode::AverageHard, 256);
@@ -2977,6 +2998,72 @@ mod tests {
 
         let err = verify_phase5_arithmetic_subset(&proof).expect_err("oversized payload");
         assert!(err.to_string().contains("exceeding the limit"));
+    }
+
+    #[test]
+    fn phase10_verify_phase5_accepts_legacy_shared_normalization_scope_for_linear_block_v4() {
+        let mut proof = prove_linear_block_v4_with_lookup_stwo();
+        let mut payload: Phase5ArithmeticSubsetProofPayload =
+            serde_json::from_slice(&proof.proof).expect("proof payload");
+        payload
+            .embedded_shared_normalization
+            .as_mut()
+            .expect("shared normalization")
+            .semantic_scope = LEGACY_GEMMA_BLOCK_V4_SHARED_NORMALIZATION_SCOPE.to_string();
+        proof.proof = serde_json::to_vec(&payload).expect("encode payload");
+
+        assert!(verify_phase5_arithmetic_subset(&proof).expect("legacy scope should verify"));
+    }
+
+    #[test]
+    fn phase10_verify_phase5_rejects_invalid_shared_normalization_scope_for_linear_block_v4() {
+        let mut proof = prove_linear_block_v4_with_lookup_stwo();
+        let mut payload: Phase5ArithmeticSubsetProofPayload =
+            serde_json::from_slice(&proof.proof).expect("proof payload");
+        payload
+            .embedded_shared_normalization
+            .as_mut()
+            .expect("shared normalization")
+            .semantic_scope = "invalid-scope".to_string();
+        proof.proof = serde_json::to_vec(&payload).expect("encode payload");
+
+        let err = verify_phase5_arithmetic_subset(&proof).expect_err("invalid scope should fail");
+        assert!(err.to_string().contains(
+            "unsupported linear_block_v4_with_lookup embedded shared normalization scope `invalid-scope`"
+        ));
+    }
+
+    #[test]
+    fn phase10_verify_phase5_accepts_legacy_shared_activation_scope_for_linear_block_v4() {
+        let mut proof = prove_linear_block_v4_with_lookup_stwo();
+        let mut payload: Phase5ArithmeticSubsetProofPayload =
+            serde_json::from_slice(&proof.proof).expect("proof payload");
+        payload
+            .embedded_shared_activation_lookup
+            .as_mut()
+            .expect("shared activation")
+            .semantic_scope = LEGACY_GEMMA_BLOCK_V4_SHARED_ACTIVATION_SCOPE.to_string();
+        proof.proof = serde_json::to_vec(&payload).expect("encode payload");
+
+        assert!(verify_phase5_arithmetic_subset(&proof).expect("legacy scope should verify"));
+    }
+
+    #[test]
+    fn phase10_verify_phase5_rejects_invalid_shared_activation_scope_for_linear_block_v4() {
+        let mut proof = prove_linear_block_v4_with_lookup_stwo();
+        let mut payload: Phase5ArithmeticSubsetProofPayload =
+            serde_json::from_slice(&proof.proof).expect("proof payload");
+        payload
+            .embedded_shared_activation_lookup
+            .as_mut()
+            .expect("shared activation")
+            .semantic_scope = "invalid-scope".to_string();
+        proof.proof = serde_json::to_vec(&payload).expect("encode payload");
+
+        let err = verify_phase5_arithmetic_subset(&proof).expect_err("invalid scope should fail");
+        assert!(err.to_string().contains(
+            "unsupported linear_block_v4_with_lookup embedded shared activation scope `invalid-scope`"
+        ));
     }
 
     #[test]

@@ -84,6 +84,26 @@ EXPLICIT_W4="$SOURCE_BUNDLE/phase107-explicit-w4.stwo.json"
 EXPLICIT_W8="$SOURCE_BUNDLE/phase107-explicit-w8.stwo.json"
 SHARED_PROOF="$SOURCE_BUNDLE/linear-block-v4-with-lookup.stark.json"
 
+[ -d "$SOURCE_BUNDLE" ] || {
+  echo "Required source bundle is missing: $SOURCE_BUNDLE_REL" >&2
+  echo "Run scripts/paper/generate_stwo_repeated_window_fold_tree_bundle.sh first." >&2
+  exit 1
+}
+for required_file in \
+  "$LEAF0" \
+  "$LEAF1" \
+  "$LEAF2" \
+  "$LEAF3" \
+  "$EXPLICIT_W4" \
+  "$EXPLICIT_W8" \
+  "$SHARED_PROOF"; do
+  [ -f "$required_file" ] || {
+    echo "Required source artifact is missing: ${required_file#"$REPO_ROOT"/}" >&2
+    echo "Expected frozen inputs from $SOURCE_BUNDLE_REL before generating this bundle." >&2
+    exit 1
+  }
+done
+
 PHASE112_W4="$BUNDLE_DIR/phase112-transformer-accumulation-semantics-w4.stwo.json"
 PHASE113_W4="$BUNDLE_DIR/phase113-richer-linear-block-window-family-w4.stwo.json"
 PHASE112_W8="$BUNDLE_DIR/phase112-transformer-accumulation-semantics-w8.stwo.json"
