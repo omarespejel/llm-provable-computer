@@ -21,6 +21,7 @@ These are the bundles directly used by the current paper package:
 - `stwo-richer-multi-interval-gemma-v1-2026-04-21/`
 - `stwo-repeated-richer-multi-interval-gemma-v1-2026-04-22/`
 - `stwo-repeated-window-fold-tree-v1-2026-04-22/`
+- `stwo-transformer-accumulation-semantics-v1-2026-04-22/`
 
 These are the bundles that should be treated as the paper's primary reproducibility and systems-evidence surfaces.
 
@@ -140,6 +141,16 @@ already compacts the same-tier `4`-window artifact, but the current fold tree
 does not yet compress the same-tier `8`-window artifact. This remains a
 verifier-bound, pre-recursive artifact line rather than a cryptographic
 accumulation claim.
+
+The `stwo-transformer-accumulation-semantics-v1-2026-04-22` directory extends
+that same line with the first compact transformer-specific accumulation-semantics
+handoff over the frozen Phase107 `8`-window leaf family. The bundle records a
+`2,283`-byte Phase112 semantic handoff against the `12,307`-byte Phase110
+fold-tree artifact and the `11,343`-byte explicit Phase107 `8`-window source.
+So the current semantic handoff is about `18.5504%` of the Phase110 fold-tree
+surface and about `20.1270%` of the explicit Phase107 `8`-window surface. This
+remains a verifier-bound, pre-recursive semantic artifact rather than a
+cryptographic accumulation or prover-time compression claim.
 
 Later Phase81-84 translated seam surfaces remain implemented in-repo, but they are not
 yet cut as frozen publication-facing artifact directories.
