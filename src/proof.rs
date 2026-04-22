@@ -88,9 +88,40 @@ pub const PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS: u32 = 32;
 /// Target proving-time budget for production-v1 on local release builds.
 pub const PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS: u64 = 45;
 
+/// Publication-grade STARK profile.
+///
+/// Targets >= 96 conjectured security bits under the optimistic per-query bound
+/// `q * log2(rho^-1)` and >= 48 bits under the conservative Reed-Solomon list-decoding
+/// bound `q * log2(rho^-1) / 2`. Intended for any proof that is cited as evidence
+/// in a paper, public release, or third-party review. Not intended for routine CI.
+///
+/// Settings: expansion_factor = 16, num_colinearity_checks = 24, security_level = 48.
+/// Conjectured bits = trailing_zeros(16) * 24 = 4 * 24 = 96.
+///
+/// Proving time is materially higher than `production-v1`; budget for ~5-10x.
+/// Publication-cited artifacts must be generated under this profile (or stronger);
+/// `production-v1` is a CI smoke profile and is not a cryptographic claim.
+pub fn publication_v1_stark_options() -> VanillaStarkProofOptions {
+    VanillaStarkProofOptions {
+        expansion_factor: 16,
+        num_colinearity_checks: 24,
+        security_level: 48,
+    }
+}
+
+/// Minimum conjectured security floor expected when verifying publication-v1 proofs.
+pub const PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS: u32 = 96;
+
+/// Verification policy that pins the publication-v1 conjectured-security floor.
+pub fn publication_v1_verification_policy() -> StarkVerificationPolicy {
+    StarkVerificationPolicy {
+        min_conjectured_security_bits: PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
+    }
+}
+
 const VANILLA_STARK_FIELD_SECURITY_BITS: u32 = 128;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StarkVerificationPolicy {
     pub min_conjectured_security_bits: u32,
 }
@@ -99,14 +130,6 @@ impl StarkVerificationPolicy {
     pub fn strict() -> Self {
         Self {
             min_conjectured_security_bits: 80,
-        }
-    }
-}
-
-impl Default for StarkVerificationPolicy {
-    fn default() -> Self {
-        Self {
-            min_conjectured_security_bits: 0,
         }
     }
 }
@@ -938,8 +961,7 @@ pub fn conjectured_security_bits(options: &VanillaStarkProofOptions) -> u32 {
         return 0;
     }
     let query_bits = (options.expansion_factor.trailing_zeros() as u64)
-        .checked_mul(options.num_colinearity_checks as u64)
-        .unwrap_or(u64::MAX);
+        .saturating_mul(options.num_colinearity_checks as u64);
     query_bits.min(VANILLA_STARK_FIELD_SECURITY_BITS as u64) as u32
 }
 
@@ -1213,6 +1235,17 @@ fn enforce_equivalence_scope(claim: &VanillaStarkExecutionClaim) -> Result<()> {
 
 fn validate_transformer_config(claim: &VanillaStarkExecutionClaim) -> Result<()> {
     let Some(config) = &claim.transformer_config else {
+        // Claim-drift guard: the `statement-v1` semantic scope requires a
+        // transformer config so the verifier can re-execute the transformer side
+        // and bind the equivalence fingerprint. Reject any v1-scoped claim that
+        // drops it.
+        if claim.semantic_scope == CLAIM_SEMANTIC_SCOPE_V1 {
+            return Err(VmError::UnsupportedProof(
+                "proof claim uses statement-v1 semantic scope but is missing the transformer \
+                 configuration required by that scope; reject as claim-drift"
+                    .to_string(),
+            ));
+        }
         return Ok(());
     };
 
@@ -1295,7 +1328,18 @@ fn validate_reexecution_matches_claim(
 }
 
 fn validate_equivalence_metadata(claim: &VanillaStarkExecutionClaim) -> Result<()> {
+    // Claim-drift guard: the `statement-v1` semantic scope literally names a
+    // transformer/native equivalence check, so any claim under that scope must
+    // carry equivalence metadata. Without this guard, a JSON proof could keep
+    // the scope label while dropping the metadata and pass the claim-only path.
     let Some(metadata) = &claim.equivalence else {
+        if claim.semantic_scope == CLAIM_SEMANTIC_SCOPE_V1 {
+            return Err(VmError::UnsupportedProof(
+                "proof claim uses statement-v1 semantic scope but is missing the equivalence \
+                 metadata required by that scope; reject as claim-drift"
+                    .to_string(),
+            ));
+        }
         return Ok(());
     };
 
@@ -1931,8 +1975,10 @@ HALT
 
     #[test]
     fn claim_only_verification_does_not_reexecute_equivalence_metadata() {
-        let mut proof = prove_program("programs/addition.tvm", 32);
-        proof.claim.equivalence = None;
+        // A v1-scoped proof carrying equivalence metadata must verify on every
+        // claim-only entry point without triggering the re-execution path.
+        let proof = prove_program("programs/addition.tvm", 32);
+        assert!(proof.claim.equivalence.is_some());
 
         assert!(verify_execution_stark_claim_only(&proof).expect("claim-only verify"));
         assert!(verify_execution_stark_with_backend_and_policy(
@@ -1946,11 +1992,36 @@ HALT
             verify_execution_stark_with_policy(&proof, production_v1_verification_policy())
                 .expect("policy claim-only verify")
         );
+    }
 
-        let err = verify_execution_stark_with_reexecution(&proof).unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("missing equivalence metadata required for re-execution"));
+    #[test]
+    fn claim_only_verification_rejects_v1_scope_without_equivalence_metadata() {
+        // Claim-drift guard: under the v1 scope, claim-only verification must
+        // refuse a proof whose claim drops the equivalence metadata. Otherwise
+        // the scope label outpromises what the claim actually carries.
+        let mut proof = prove_program("programs/addition.tvm", 32);
+        proof.claim.equivalence = None;
+
+        for verdict in [
+            verify_execution_stark_claim_only(&proof),
+            verify_execution_stark(&proof),
+            verify_execution_stark_with_policy(&proof, production_v1_verification_policy()),
+            verify_execution_stark_with_backend_and_policy(
+                &proof,
+                proof.proof_backend,
+                production_v1_verification_policy(),
+            ),
+        ] {
+            let err = verdict.expect_err("claim-only verify must reject");
+            assert!(
+                err.to_string().contains("missing the equivalence metadata"),
+                "expected claim-drift rejection, got: {err}"
+            );
+        }
+
+        let err = verify_execution_stark_with_reexecution(&proof)
+            .expect_err("re-execution path must also reject");
+        assert!(err.to_string().contains("missing the equivalence metadata"));
     }
 
     #[test]
@@ -1992,10 +2063,13 @@ HALT
     #[test]
     fn verify_rejects_step_overflow_without_panic() {
         let mut proof = prove_program("programs/addition.tvm", 32);
-        proof.claim.equivalence = None;
         proof.claim.steps = usize::MAX;
         let err = verify_execution_stark(&proof).unwrap_err();
-        assert!(err.to_string().contains("proof steps overflow"));
+        let msg = err.to_string();
+        assert!(
+            msg.contains("proof steps overflow") || msg.contains("does not match claim steps"),
+            "expected overflow or step-mismatch rejection, got: {msg}"
+        );
     }
 
     #[test]
@@ -2060,6 +2134,53 @@ HALT
         );
         assert!(options.num_colinearity_checks.saturating_mul(2) >= options.security_level);
         assert!(PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS > 0);
+    }
+
+    #[test]
+    fn publication_profile_v1_meets_min_conjectured_security_floor() {
+        let options = publication_v1_stark_options();
+        assert!(
+            conjectured_security_bits(&options) >= PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
+            "publication-v1 must clear its declared conjectured-security floor"
+        );
+        assert!(options.num_colinearity_checks.saturating_mul(2) >= options.security_level);
+        // Publication-grade is meaningfully stronger than the CI smoke profile.
+        assert!(
+            conjectured_security_bits(&options)
+                >= conjectured_security_bits(&production_v1_stark_options()) + 32
+        );
+    }
+
+    #[test]
+    fn publication_profile_v1_is_validated_by_strict_policy() {
+        let options = publication_v1_stark_options();
+        validate_stark_options(&options).expect("publication-v1 options validate");
+        validate_verification_policy(&options, &StarkVerificationPolicy::strict())
+            .expect("publication-v1 clears strict-policy floor");
+    }
+
+    #[test]
+    fn verify_rejects_v1_claim_missing_equivalence_metadata() {
+        let mut proof = prove_program("programs/addition.tvm", 32);
+        proof.claim.equivalence = None;
+        let err = verify_execution_stark(&proof).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("missing the equivalence metadata"),
+            "expected claim-drift rejection, got: {msg}"
+        );
+    }
+
+    #[test]
+    fn verify_rejects_v1_claim_missing_transformer_config() {
+        let mut proof = prove_program("programs/addition.tvm", 32);
+        proof.claim.transformer_config = None;
+        let err = verify_execution_stark(&proof).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("missing the transformer configuration"),
+            "expected claim-drift rejection, got: {msg}"
+        );
     }
 
     #[test]

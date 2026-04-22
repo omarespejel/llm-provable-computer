@@ -51,17 +51,19 @@ pub use onnx_export::{
 pub use onnx_runtime::OnnxExecutionRuntime;
 pub use proof::{
     conjectured_security_bits, load_execution_stark_proof, production_v1_stark_options,
-    prove_execution_stark, prove_execution_stark_with_backend_and_options,
-    prove_execution_stark_with_options, save_execution_stark_proof, verify_execution_stark,
-    verify_execution_stark_claim_only, verify_execution_stark_claim_only_with_policy,
-    verify_execution_stark_with_backend_and_policy, verify_execution_stark_with_policy,
-    verify_execution_stark_with_reexecution, verify_execution_stark_with_reexecution_and_policy,
-    ExecutionClaimCommitments, ExecutionEquivalenceMetadata, StarkProofBackend,
-    StarkVerificationPolicy, StwoAuxiliaryProofs, StwoNormalizationCompanion,
-    VanillaStarkExecutionClaim, VanillaStarkExecutionProof, VanillaStarkProofOptions,
-    CLAIM_COMMITMENT_HASH_FUNCTION_V1, CLAIM_COMMITMENT_SCHEME_VERSION_V1, CLAIM_SEMANTIC_SCOPE_V1,
-    CLAIM_STATEMENT_VERSION_V1, PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS,
-    PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS,
+    production_v1_verification_policy, prove_execution_stark,
+    prove_execution_stark_with_backend_and_options, prove_execution_stark_with_options,
+    publication_v1_stark_options, publication_v1_verification_policy,
+    save_execution_stark_proof, verify_execution_stark, verify_execution_stark_claim_only,
+    verify_execution_stark_claim_only_with_policy, verify_execution_stark_with_backend_and_policy,
+    verify_execution_stark_with_policy, verify_execution_stark_with_reexecution,
+    verify_execution_stark_with_reexecution_and_policy, ExecutionClaimCommitments,
+    ExecutionEquivalenceMetadata, StarkProofBackend, StarkVerificationPolicy, StwoAuxiliaryProofs,
+    StwoNormalizationCompanion, VanillaStarkExecutionClaim, VanillaStarkExecutionProof,
+    VanillaStarkProofOptions, CLAIM_COMMITMENT_HASH_FUNCTION_V1,
+    CLAIM_COMMITMENT_SCHEME_VERSION_V1, CLAIM_SEMANTIC_SCOPE_V1, CLAIM_STATEMENT_VERSION_V1,
+    PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS, PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS,
+    PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
 };
 pub use runtime::ExecutionRuntime;
 pub use state::{decode_state, encode_state, MachineState, MIN_D_MODEL};
