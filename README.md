@@ -1141,10 +1141,41 @@ features.
 
 ## Development Checks
 
+GitHub Actions is disabled at the repository level for cost reasons; the
+release gate runs locally. The canonical entry point is `just` (preferred)
+or `make` (fallback):
+
+```bash
+just gate              # full local release gate (~60s release-cached)
+just gate-no-nightly   # full gate minus the nightly stwo smoke
+just gate-fast         # inner-loop check (fmt + lib clippy + lib build)
+just install-hook      # install .git/hooks/pre-push so push runs the gate
+```
+
+Per-scope subsets (use these in the inner edit-test loop):
+
+```bash
+just lib                # cargo test --release --lib
+just proof-tests        # cargo test --release --lib proof::tests
+just vanillastark-tests # cargo test --release --lib vanillastark::
+just integration        # the 5 integration test crates
+just deps               # cargo-audit + cargo-deny suite
+just zizmor             # workflow-file lint
+just shellcheck         # shellcheck on tracked shell scripts
+just stwo-smoke         # nightly stwo backend smoke
+```
+
+The full agent decision table for AI coding tools (Codex, Claude Code,
+Cursor, Aider) is in `docs/engineering/release-gates/agent-runbook.md`. The
+release-gate policy is in `docs/engineering/release-gates/local-only-policy.md`.
+
+Underlying invocations (if you prefer not to use `just` / `make`):
+
 ```bash
 cargo fmt --all --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-features
+cargo clippy --lib --no-deps -- -D warnings
+cargo test --release --lib
+bash scripts/local_release_gate.sh
 ```
 
 The CLI is self-documenting:

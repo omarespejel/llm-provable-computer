@@ -18,14 +18,16 @@ use llm_provable_computer::proof::load_execution_stark_proof_with_limit;
 use llm_provable_computer::verify_engines;
 use llm_provable_computer::{
     conjectured_security_bits, load_execution_stark_proof, phase6_prepare_recursion_batch,
-    production_v1_stark_options, prove_execution_stark_with_backend_and_options, run_execution_tui,
-    save_execution_stark_proof, verify_execution_stark_with_backend_and_policy,
+    production_v1_stark_options, prove_execution_stark_with_backend_and_options,
+    publication_v1_stark_options, run_execution_tui, save_execution_stark_proof,
+    verify_execution_stark_with_backend_and_policy,
     verify_execution_stark_with_reexecution_and_policy, verify_model_against_native,
     Attention2DMode, ExecutionResult, ExecutionRuntime, ExecutionTraceEntry, MachineState,
     NativeInterpreter, ProgramCompiler, StarkProofBackend, StarkVerificationPolicy, TransformerVm,
     TransformerVmConfig, VanillaStarkExecutionProof, VanillaStarkProofOptions, VmError,
     PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS, PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS,
-    STWO_RECURSION_BATCH_SCOPE_PHASE6, STWO_RECURSION_BATCH_VERSION_PHASE6,
+    PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS, STWO_RECURSION_BATCH_SCOPE_PHASE6,
+    STWO_RECURSION_BATCH_VERSION_PHASE6,
 };
 #[cfg(feature = "onnx-export")]
 use llm_provable_computer::{export_program_onnx, OnnxExecutionRuntime};
@@ -1326,6 +1328,7 @@ enum CliExecutionEngine {
 enum CliStarkProfile {
     Default,
     ProductionV1,
+    PublicationV1,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
@@ -1357,6 +1360,7 @@ impl CliStarkProfile {
         match self {
             Self::Default => "default",
             Self::ProductionV1 => "production-v1",
+            Self::PublicationV1 => "publication-v1",
         }
     }
 
@@ -1364,6 +1368,7 @@ impl CliStarkProfile {
         match self {
             Self::Default => VanillaStarkProofOptions::default(),
             Self::ProductionV1 => production_v1_stark_options(),
+            Self::PublicationV1 => publication_v1_stark_options(),
         }
     }
 
@@ -1371,6 +1376,7 @@ impl CliStarkProfile {
         match self {
             Self::Default => 0,
             Self::ProductionV1 => PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS,
+            Self::PublicationV1 => PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
         }
     }
 
@@ -1378,11 +1384,14 @@ impl CliStarkProfile {
         match self {
             Self::Default => None,
             Self::ProductionV1 => Some(PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS),
+            // publication-v1 deliberately has no proving-time budget; it is the
+            // honest profile for paper-cited artifacts and may take 5-10x as long.
+            Self::PublicationV1 => None,
         }
     }
 
     fn enforces_reexecution(self) -> bool {
-        matches!(self, Self::ProductionV1)
+        matches!(self, Self::ProductionV1 | Self::PublicationV1)
     }
 }
 
@@ -14357,7 +14366,10 @@ mod tests {
 
 #[cfg(test)]
 mod cli_dispatch_tests {
-    use super::needs_run_subcommand;
+    use super::{
+        needs_run_subcommand, CliStarkProfile, PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS,
+        PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS, PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
+    };
 
     #[test]
     fn intervalized_phase25_commands_do_not_fall_back_to_run_shorthand() {
@@ -14457,6 +14469,33 @@ mod cli_dispatch_tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-folded-repeated-multi-interval-gemma-accumulation-prototype-artifact"
         ));
+    }
+
+    #[test]
+    fn publication_v1_profile_enforces_reexecution_without_time_budget() {
+        assert!(CliStarkProfile::PublicationV1.enforces_reexecution());
+        assert_eq!(
+            CliStarkProfile::PublicationV1.min_conjectured_security_bits(),
+            PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS
+        );
+        assert_eq!(
+            CliStarkProfile::PublicationV1.target_max_proving_seconds(),
+            None
+        );
+    }
+
+    #[test]
+    fn production_v1_profile_enforces_reexecution_with_budget() {
+        assert!(CliStarkProfile::ProductionV1.enforces_reexecution());
+        assert_eq!(
+            CliStarkProfile::ProductionV1.min_conjectured_security_bits(),
+            PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS
+        );
+        assert_eq!(
+            CliStarkProfile::ProductionV1.target_max_proving_seconds(),
+            Some(PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS)
+        );
+        assert!(!CliStarkProfile::Default.enforces_reexecution());
     }
 }
 

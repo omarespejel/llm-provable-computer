@@ -15,6 +15,35 @@ fn blake2b_hash(data: &[u8]) -> Vec<u8> {
     hasher.finalize().to_vec()
 }
 
+pub const MAX_STARK_EXPANSION_FACTOR: usize = 64;
+pub const MAX_STARK_NUM_COLINEARITY_CHECKS: usize = 64;
+pub const MAX_STARK_OMICRON_DOMAIN_LENGTH: usize = 1 << 20;
+pub const MAX_STARK_FRI_DOMAIN_LENGTH: usize = 1 << 22;
+
+/// Compute the omicron-domain length for the vanilla STARK using integer-only
+/// arithmetic.
+///
+/// Returns `2 * next_power_of_two(randomized_trace_length *
+/// transition_constraints_degree)` when the intermediate arithmetic fits in
+/// `usize`. The original
+/// stark-anatomy reference computes this via `ceil(log2(bits))` over `f64`,
+/// which is bit-exact on every input the existing fixtures actually use but is
+/// nondeterministic across CPU rounding modes near the power-of-two boundary
+/// `bits == 2^k`. This routine produces the same value on every platform.
+///
+/// Returns `None` when the intermediate arithmetic would overflow `usize`.
+pub(crate) fn stark_omicron_domain_length(
+    randomized_trace_length: usize,
+    transition_constraints_degree: usize,
+) -> Option<usize> {
+    let bits = randomized_trace_length.checked_mul(transition_constraints_degree)?;
+    if bits <= 1 {
+        return Some(2);
+    }
+    bits.checked_next_power_of_two()
+        .and_then(|np| np.checked_mul(2))
+}
+
 pub struct Stark {
     pub expansion_factor: usize,
     pub num_colinearity_checks: usize,
@@ -30,34 +59,61 @@ pub struct Stark {
 }
 
 impl Stark {
-    pub fn new(
+    pub fn try_new(
         expansion_factor: usize,
         num_colinearity_checks: usize,
         security_level: usize,
         num_registers: usize,
         num_cycles: usize,
         transition_constraints_degree: usize,
-    ) -> Self {
-        assert!(
-            expansion_factor.is_power_of_two(),
-            "expansion factor must be a power of 2"
-        );
-        assert!(
-            expansion_factor >= 4,
-            "expansion factor must be 4 or greater"
-        );
-        assert!(
-            num_colinearity_checks * 2 >= security_level,
-            "number of colinearity checks must be at least half of security level"
-        );
+    ) -> Result<Self, String> {
+        if !expansion_factor.is_power_of_two() {
+            return Err("expansion factor must be a power of 2".to_string());
+        }
+        if expansion_factor < 4 {
+            return Err("expansion factor must be 4 or greater".to_string());
+        }
+        if expansion_factor > MAX_STARK_EXPANSION_FACTOR {
+            return Err(format!(
+                "expansion factor exceeds verifier cap {MAX_STARK_EXPANSION_FACTOR}"
+            ));
+        }
+        if num_colinearity_checks > MAX_STARK_NUM_COLINEARITY_CHECKS {
+            return Err(format!(
+                "number of colinearity checks exceeds verifier cap {MAX_STARK_NUM_COLINEARITY_CHECKS}"
+            ));
+        }
+        let security_queries = num_colinearity_checks
+            .checked_mul(2)
+            .ok_or_else(|| "number of colinearity checks overflows security bound".to_string())?;
+        if security_queries < security_level {
+            return Err(
+                "number of colinearity checks must be at least half of security level".to_string(),
+            );
+        }
 
-        let num_randomizers = 4 * num_colinearity_checks;
-        let randomized_trace_length = num_cycles + num_randomizers;
-        let omicron_domain_length = {
-            let bits = (randomized_trace_length * transition_constraints_degree) as f64;
-            1usize << (bits.log2().ceil() as usize + 1).max(1)
-        };
-        let fri_domain_length = omicron_domain_length * expansion_factor;
+        let num_randomizers = num_colinearity_checks
+            .checked_mul(4)
+            .ok_or_else(|| "number of randomizers overflows usize".to_string())?;
+        let randomized_trace_length = num_cycles
+            .checked_add(num_randomizers)
+            .ok_or_else(|| "randomized trace length overflows usize".to_string())?;
+        let omicron_domain_length =
+            stark_omicron_domain_length(randomized_trace_length, transition_constraints_degree)
+                .ok_or_else(|| "omicron domain length overflows usize".to_string())?;
+        if omicron_domain_length > MAX_STARK_OMICRON_DOMAIN_LENGTH {
+            return Err(format!(
+                "omicron domain length exceeds verifier cap {MAX_STARK_OMICRON_DOMAIN_LENGTH}"
+            ));
+        }
+        let fri_domain_length = omicron_domain_length
+            .checked_mul(expansion_factor)
+            .ok_or_else(|| "fri domain length overflows usize".to_string())?;
+        if fri_domain_length > MAX_STARK_FRI_DOMAIN_LENGTH {
+            return Err(format!(
+                "fri domain length exceeds verifier cap {MAX_STARK_FRI_DOMAIN_LENGTH}"
+            ));
+        }
 
         let generator = FieldElement::generator();
         let omega = FieldElement::primitive_nth_root(fri_domain_length as u128);
@@ -74,7 +130,7 @@ impl Stark {
             num_colinearity_checks,
         );
 
-        Stark {
+        Ok(Stark {
             expansion_factor,
             num_colinearity_checks,
             security_level,
@@ -86,7 +142,26 @@ impl Stark {
             omicron,
             omicron_domain,
             fri,
-        }
+        })
+    }
+
+    pub fn new(
+        expansion_factor: usize,
+        num_colinearity_checks: usize,
+        security_level: usize,
+        num_registers: usize,
+        num_cycles: usize,
+        transition_constraints_degree: usize,
+    ) -> Self {
+        Self::try_new(
+            expansion_factor,
+            num_colinearity_checks,
+            security_level,
+            num_registers,
+            num_cycles,
+            transition_constraints_degree,
+        )
+        .expect("invalid STARK parameters")
     }
 
     fn transition_degree_bounds(&self, transition_constraints: &[MPolynomial]) -> Vec<isize> {
@@ -536,6 +611,46 @@ mod tests {
     use super::*;
 
     #[test]
+    fn omicron_domain_length_matches_legacy_f64_form_on_normal_inputs() {
+        // Equivalence sweep: on every input the existing fixtures actually use,
+        // the integer routine must produce the same value as the legacy
+        // ceil(log2)+1 power-of-two form.
+        for randomized_trace_length in 1usize..=512 {
+            for transition_constraints_degree in 1usize..=8 {
+                let bits = (randomized_trace_length * transition_constraints_degree) as f64;
+                let legacy = 1usize << (bits.log2().ceil() as usize + 1).max(1);
+                let modern = stark_omicron_domain_length(
+                    randomized_trace_length,
+                    transition_constraints_degree,
+                )
+                .expect("normal-input sweep should not overflow");
+                assert_eq!(
+                    legacy, modern,
+                    "legacy={legacy} modern={modern} for trace_len={randomized_trace_length} degree={transition_constraints_degree}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn omicron_domain_length_is_always_power_of_two() {
+        for randomized_trace_length in [1usize, 2, 7, 16, 17, 100, 256, 1023] {
+            for transition_constraints_degree in [1usize, 2, 3, 4, 8] {
+                let n = stark_omicron_domain_length(
+                    randomized_trace_length,
+                    transition_constraints_degree,
+                )
+                .expect("normal-input sweep should not overflow");
+                assert!(n.is_power_of_two(), "n={n}");
+                assert!(
+                    n > randomized_trace_length * transition_constraints_degree,
+                    "n={n} must strictly exceed bits"
+                );
+            }
+        }
+    }
+
+    #[test]
     fn test_stark_prove_verify() {
         let expansion_factor = 4;
         let num_colinearity_checks = 2;
@@ -605,5 +720,45 @@ mod tests {
 
         let verdict = stark.verify(&tampered, &air, &boundary);
         assert!(!verdict, "proof with trailing objects should not verify");
+    }
+
+    #[test]
+    fn try_new_rejects_overflowing_randomizer_geometry() {
+        let err = Stark::try_new(4, usize::MAX / 4 + 1, 8, 4, 8, 2)
+            .err()
+            .expect("overflowing geometry should fail");
+        assert!(
+            err.contains("randomizers") || err.contains("verifier cap"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn try_new_rejects_excessive_expansion_factor() {
+        let err = Stark::try_new(128, 2, 2, 2, 32, 2)
+            .err()
+            .expect("expansion factor above verifier cap must fail");
+        assert!(err.contains("expansion factor exceeds verifier cap"));
+    }
+
+    #[test]
+    fn try_new_rejects_excessive_colinearity_checks() {
+        let err = Stark::try_new(4, MAX_STARK_NUM_COLINEARITY_CHECKS + 1, 2, 2, 32, 2)
+            .err()
+            .expect("colinearity checks above verifier cap must fail");
+        assert!(err.contains("number of colinearity checks exceeds verifier cap"));
+    }
+
+    #[test]
+    fn try_new_rejects_oversized_fri_domain_before_allocation() {
+        let err = Stark::try_new(16, 24, 48, 2, 200_000, 2)
+            .err()
+            .expect("oversized domain geometry must fail");
+        assert!(err.contains("fri domain length exceeds verifier cap"));
+    }
+
+    #[test]
+    fn omicron_domain_length_reports_overflow() {
+        assert!(stark_omicron_domain_length(usize::MAX, 2).is_none());
     }
 }

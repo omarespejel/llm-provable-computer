@@ -10,11 +10,18 @@ feature-depth = 1
 
 [advisories]
 yanked = "deny"
+# Keep this list aligned with scripts/run_dependency_audit_suite.sh
+# (ROOT_IGNORED_AUDIT_ADVISORIES) and docs/engineering/dependency-audit-exceptions.md.
+# Each ignore entry MUST carry a rationale and a removal target (upstream issue or
+# version bound). When upstream publishes a fix, the entry must be removed; CI
+# surfaces stale ignores via cargo-deny's `yanked-not-detected` /
+# `advisory-not-detected` warnings (treated as errors in 0.20.x+).
 ignore = [
   { crate = "core2@0.4.0", reason = "burn-dataset/image/ravif still pin the only currently-compatible yanked core2 release; remove this once the upstream chain moves off core2 0.4.0." },
   { id = "RUSTSEC-2025-0141", reason = "burn 0.20.1 still depends on bincode 2.0.1; no compatible patch release is available and the burn-model surface remains optional." },
   { id = "RUSTSEC-2024-0388", reason = "stwo 2.2.0 transitively depends on derivative 2.2.0 via starknet-ff 0.3.7; no compatible patch release is available." },
   { id = "RUSTSEC-2024-0436", reason = "paste 1.0.15 remains in the ark-ff 0.5.0 and ratatui 0.29.0 dependency chains; no compatible patch release is available." },
+  { id = "RUSTSEC-2026-0002", reason = "lru 0.12.5 IterMut Stacked-Borrows soundness issue is reachable only via ratatui 0.29.0; the TUI surface is not used in proving paths and Miri suite covers the proving paths. Remove when ratatui upgrades to lru >= 0.13." },
 ]
 
 [licenses]

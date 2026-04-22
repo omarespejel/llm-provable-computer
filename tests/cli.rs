@@ -909,7 +909,8 @@ fn cli_stark_help_describes_profile_flags() {
         .success()
         .stdout(predicate::str::contains("--stark-profile"))
         .stdout(predicate::str::contains("--backend"))
-        .stdout(predicate::str::contains("production-v1"));
+        .stdout(predicate::str::contains("production-v1"))
+        .stdout(predicate::str::contains("publication-v1"));
 
     let mut verify_help = tvm_command();
     verify_help
@@ -919,7 +920,42 @@ fn cli_stark_help_describes_profile_flags() {
         .success()
         .stdout(predicate::str::contains("--verification-profile"))
         .stdout(predicate::str::contains("--backend"))
-        .stdout(predicate::str::contains("production-v1"));
+        .stdout(predicate::str::contains("production-v1"))
+        .stdout(predicate::str::contains("publication-v1"));
+}
+
+#[test]
+fn cli_verify_stark_publication_profile_reexecutes() {
+    let proof_path = unique_temp_dir("cli-stark-proof-publication-profile").with_extension("json");
+
+    let mut prove = tvm_command();
+    prove
+        .arg("prove-stark")
+        .arg("programs/addition.tvm")
+        .arg("--stark-profile")
+        .arg("publication-v1")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .success();
+
+    let mut verify = tvm_command();
+    verify
+        .arg("verify-stark")
+        .arg(&proof_path)
+        .arg("--verification-profile")
+        .arg("publication-v1")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "verification_profile: publication-v1",
+        ))
+        .stdout(predicate::str::contains(
+            "required_conjectured_security_bits: 96",
+        ))
+        .stdout(predicate::str::contains("reexecuted_equivalence: true"));
+
+    let _ = std::fs::remove_file(proof_path);
 }
 
 #[test]

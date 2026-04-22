@@ -104,5 +104,12 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "vanilla_stark_proof_loader"
+path = "fuzz_targets/vanilla_stark_proof_loader.rs"
+test = false
+doc = false
+bench = false
+
 [workspace]
 members = ["."]

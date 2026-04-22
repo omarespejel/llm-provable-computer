@@ -1,5 +1,30 @@
 # AGENTS.md
 
+This file is the universal "how to work in this repository" contract for
+AI coding agents (Codex, Claude Code, Cursor, Aider, and any tool that
+reads `AGENTS.md`). The detailed runbook for which checks to run when lives
+in `docs/engineering/release-gates/agent-runbook.md`; treat it as required
+reading before making any edit.
+
+## Local release gate (read this first)
+
+GitHub Actions is **disabled** at the repository level for this project.
+The local release gate is the only gate. Use `just` (preferred) or `make`:
+
+- `just gate-fast` — inner-loop check (fmt + lib clippy + lib build).
+- `just gate-no-nightly` — full gate without the nightly stwo smoke step.
+- `just gate` — the canonical full gate; required before push and before
+  declaring any non-trivial change done.
+- `just install-hook` — install `.git/hooks/pre-push` so every push runs
+  the gate automatically.
+
+The decision table that maps "what did I edit" to "what must I run" is in
+`docs/engineering/release-gates/agent-runbook.md`. Follow it.
+
+The current `main` branch ruleset requires a pull request before any merge
+into `main` (so AI commenters fire) but does not require review approval or
+signed commits. Open a PR; let the bots comment; merge when ready.
+
 ## Repository map
 
 - `src/stwo_backend/`: experimental `stwo-backend` proving, verification, carried-state, and artifact-binding code.
@@ -29,7 +54,8 @@ Review and edit with extra caution:
 ## Validation expectations
 
 - If proof semantics, carried-state structure, manifest schemas, version constants, or backend routing change, add or update at least one negative, tamper-path, or compatibility test.
-- Start with the narrowest relevant test or workflow surface first, then expand only as needed.
+- Start with the narrowest relevant test or workflow surface first, then expand only as needed (`docs/engineering/release-gates/agent-runbook.md` lists the per-scope inner-loop subsets).
+- Always end with `just gate` (or `just gate-no-nightly` if no nightly toolchain is installed) before reporting work as done.
 - For trusted-core changes, consult `docs/engineering/hardening-policy.md` and `docs/security/threat-model.md` before widening claims.
 
 ## Review priorities

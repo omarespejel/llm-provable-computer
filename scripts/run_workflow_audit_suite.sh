@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-ZIZMOR_VERSION="${ZIZMOR_VERSION:-1.23.1}"
+ZIZMOR_VERSION="${ZIZMOR_VERSION:-1.24.1}"
 ZIZMOR_SPEC="${ZIZMOR_SPEC:-zizmor==${ZIZMOR_VERSION}}"
 
 if command -v zizmor >/dev/null 2>&1; then

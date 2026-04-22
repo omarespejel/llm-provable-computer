@@ -4,9 +4,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-CARGO_AUDIT_VERSION="${CARGO_AUDIT_VERSION:-0.22.1}"
-CARGO_DENY_VERSION="${CARGO_DENY_VERSION:-0.19.0}"
-# Keep this list aligned with docs/engineering/dependency-audit-exceptions.md.
+readonly CARGO_AUDIT_VERSION="0.22.1"
+readonly CARGO_DENY_VERSION="0.19.4"
+# Keep this list aligned with deny.toml and
+# docs/engineering/release-gates/dependency-floors.md.
 ROOT_IGNORED_AUDIT_ADVISORIES=(
   "RUSTSEC-2025-0141"
   "RUSTSEC-2024-0388"

@@ -96,7 +96,7 @@ jobs:
           fi
           audit_root="$RUNNER_TEMP/dependency-audit-tools"
           cargo install --locked cargo-audit --version 0.22.1 --root "$audit_root"
-          cargo install --locked cargo-deny --version 0.19.0 --root "$audit_root"
+          cargo install --locked cargo-deny --version 0.19.4 --root "$audit_root"
           export PATH="$audit_root/bin:$PATH"
           bash scripts/run_dependency_audit_suite.sh
 
@@ -124,7 +124,7 @@ jobs:
         run: |
           audit_root="$RUNNER_TEMP/dependency-audit-tools"
           cargo install --locked cargo-audit --version 0.22.1 --root "$audit_root"
-          cargo install --locked cargo-deny --version 0.19.0 --root "$audit_root"
+          cargo install --locked cargo-deny --version 0.19.4 --root "$audit_root"
           export PATH="$audit_root/bin:$PATH"
           bash scripts/run_dependency_audit_suite.sh
 
@@ -330,6 +330,8 @@ jobs:
             corpus: fuzz/corpus/phase29_recursive_compression_input_contract
           - target: phase30_decoding_step_proof_envelope_manifest
             corpus: fuzz/corpus/phase30_decoding_step_proof_envelope_manifest
+          - target: vanilla_stark_proof_loader
+            corpus: fuzz/corpus/vanilla_stark_proof_loader
 
     steps:
       - name: Checkout
