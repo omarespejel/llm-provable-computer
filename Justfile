@@ -127,8 +127,9 @@ publication-proof program="programs/fibonacci.tvm" out="fib.publication.proof.js
     cargo run --release --bin tvm -- verify-stark {{out}} \
         --verification-profile publication-v1
 
-# Sign every unsigned commit on the current branch back to origin/main using
-# the configured signing key. Required before merging into `main` (the ruleset
-# enforces signed commits).
+# Optional helper: sign every unsigned commit on the current branch back to
+# origin/main using the configured signing key. The `main` branch ruleset
+# does NOT require signed commits, so this is purely opt-in for the day
+# signing becomes useful (external collaborators, hardened release builds).
 sign-commits:
     git rebase --exec 'git commit --amend --no-edit -S' -i origin/main

@@ -47,26 +47,21 @@ Stwo wiring), the agent MUST also:
 2. Run `just gate` (full, including nightly) before reporting done.
 3. Confirm `cargo audit` and `cargo deny` still exit 0 (`just deps`).
 
-## Signed commits
+## Commit signing (optional)
 
-The `main` branch ruleset requires signed commits. Every commit an agent
-creates locally for human review must either be signed at creation time
-(`git -c commit.gpgsign=true commit ...` if a key is configured) or
-batch-signed before push:
-
-```
-just sign-commits
-```
-
-`sign-commits` runs `git rebase --exec 'git commit --amend --no-edit -S' -i origin/main`,
-which re-signs every commit on the current branch back to the merge base.
-If no signing key is configured, the agent must surface that fact to the
-human rather than try to bypass the rule.
+The `main` branch ruleset does NOT require signed commits. The
+`just sign-commits` / `make sign-commits` target is left in place as an
+optional helper for the day signing becomes useful (external
+collaborators, hardened release builds), but agents do not need to sign
+commits as part of normal work. If a signing key happens to be configured
+locally and `commit.gpgsign = true`, signatures will be applied
+automatically and that is fine; nothing depends on them.
 
 ## What an agent MUST NOT do
 
-- Do not push directly to `main`. The ruleset blocks it; opening a PR is
-  mandatory.
+- Do not push directly to `main`. The ruleset requires a pull request
+  before any merge into `main`; open a PR even if no review approval is
+  required.
 - Do not bypass the local gate (`SKIP_LOCAL_GATE=1`) without an explicit
   human instruction tied to a specific reason.
 - Do not edit `Cargo.lock` by hand. Use `cargo update -p <crate>`.

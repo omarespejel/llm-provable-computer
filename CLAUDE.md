@@ -15,8 +15,9 @@ runs locally via `just`:
 - `just gate` — canonical gate; required before push and before reporting done.
 
 Picking the right inner-loop subset for the file you just edited is in the
-agent runbook's decision table. The `main` ruleset requires signed commits;
-use `just sign-commits` before push.
+agent runbook's decision table. The `main` ruleset requires a pull request
+before merge (so AI commenters fire) but does not require review approval
+or signed commits.
 
 ## Project context
 

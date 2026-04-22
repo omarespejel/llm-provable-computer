@@ -37,8 +37,9 @@ negative / tamper-path test, then run `just gate` before reporting done.
 ## Required before push
 
 1. `just gate` exits 0.
-2. Every commit on the branch is signed (`just sign-commits` if a key is
-   configured, otherwise surface to the human).
+2. The change is on a feature branch (not directly on `main`); a pull
+   request will be opened before merge so AI commenters fire. Review
+   approval and signed commits are not required.
 
 ## Forbidden
 

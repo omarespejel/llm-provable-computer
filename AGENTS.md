@@ -21,8 +21,9 @@ The local release gate is the only gate. Use `just` (preferred) or `make`:
 The decision table that maps "what did I edit" to "what must I run" is in
 `docs/engineering/release-gates/agent-runbook.md`. Follow it.
 
-The `main` branch ruleset requires signed commits. Run `just sign-commits`
-before push, or surface to the human that no signing key is configured.
+The `main` branch ruleset requires a pull request before any merge into
+`main` (so AI commenters fire) but does not require review approval or
+signed commits. Open a PR; let the bots comment; merge when ready.
 
 ## Repository map
 

@@ -98,6 +98,8 @@ install-hook:
 	@echo "installed .git/hooks/pre-push -> docs/engineering/release-gates/pre-push-hook.sh"
 
 sign-commits:
+	# Optional helper. The main ruleset does NOT require signed commits;
+	# use this only for opt-in signing.
 	git rebase --exec 'git commit --amend --no-edit -S' -i origin/main
 
 publication-proof:

@@ -3,8 +3,11 @@
 GitHub Actions is intentionally disabled at the repository level for cost
 reasons. The release gate runs entirely on a workstation. Server-side
 enforcement is reduced to repository policy that does not consume Actions
-minutes: pull request review, signed commits, linear history, no force-push
-and no deletion of `main`.
+minutes: a pull request must exist before a merge into `main`, the merge
+must be a fast-forward / linear-history merge, and the branch cannot be
+deleted or rewritten. Review approval and signed commits are intentionally
+NOT required because this is a solo-maintainer repository where requiring
+either would block every merge without adding meaningful security.
 
 ## What enforces what
 
@@ -14,8 +17,7 @@ and no deletion of `main`.
 | pre-push refuse on local gate failure        | `docs/engineering/release-gates/pre-push-hook.sh`            |
 | no force-push or deletion on `main`          | `main` ruleset                                                |
 | linear history                               | `main` ruleset                                                |
-| signed commits                               | `main` ruleset                                                |
-| PR with review + thread resolution           | `main` ruleset                                                |
+| pull request required before merge           | `main` ruleset (review approval not required)                 |
 | Dependabot security alerts                   | repository security & analysis settings                       |
 | AI commenter pre-merge review                | CodeRabbit, Greptile, pr-agent webhooks (do not use Actions) |
 

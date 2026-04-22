@@ -51,9 +51,12 @@ The ruleset enforces:
 - no deletion of `main`
 - no force-push / non-fast-forward updates
 - linear history
-- signed commits
-- required pull request before merge, with review-thread resolution
+- a pull request must be opened before any merge into `main` (so AI
+  commenters fire), but no review approval is required to merge
 
-`required_status_checks` is intentionally NOT in the ruleset right now because
-Actions is disabled. If Actions is re-enabled later, restore the rule per
-`local-only-policy.md` and re-apply the ruleset.
+`required_status_checks` and `required_signatures` are intentionally NOT in
+the ruleset. Status checks would block on the now-disabled Actions; signed
+commits would block every merge on a solo repo without adding meaningful
+security. Both are easy to re-introduce later if the project picks up
+external collaborators or re-enables Actions; the change is one rule entry
+plus a re-apply of the JSON.
