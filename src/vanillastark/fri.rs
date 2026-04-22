@@ -428,7 +428,11 @@ mod tests {
         for (i, byte) in digest_b.iter_mut().take(48).enumerate() {
             *byte = 0x55 ^ (i as u8);
         }
-        for (a, b) in digest_a.iter_mut().skip(48).zip(digest_b.iter_mut().skip(48)) {
+        for (a, b) in digest_a
+            .iter_mut()
+            .skip(48)
+            .zip(digest_b.iter_mut().skip(48))
+        {
             *a = 0x42;
             *b = 0x42;
         }
@@ -456,7 +460,11 @@ mod tests {
         for (i, byte) in digest_b.iter_mut().take(48).enumerate() {
             *byte = 0x55 ^ ((i.wrapping_mul(3)) as u8);
         }
-        for (a, b) in digest_a.iter_mut().skip(48).zip(digest_b.iter_mut().skip(48)) {
+        for (a, b) in digest_a
+            .iter_mut()
+            .skip(48)
+            .zip(digest_b.iter_mut().skip(48))
+        {
             *a = 0x42;
             *b = 0x42;
         }
@@ -477,7 +485,10 @@ mod tests {
             for seed in 0u8..16 {
                 let digest = vec![seed; 64];
                 let idx = Fri::sample_index_full_entropy(&digest, size);
-                assert!(idx < size, "sampler returned out-of-range idx={idx} size={size}");
+                assert!(
+                    idx < size,
+                    "sampler returned out-of-range idx={idx} size={size}"
+                );
             }
         }
     }

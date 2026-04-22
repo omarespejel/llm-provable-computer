@@ -13,9 +13,10 @@ reproducible across machines.
 | `cargo-nextest`| `0.9.132`    | Test runner used by CI.                                                                                   |
 | `kani-verifier`| `0.64.0`     | Bounded model checker for the formal-contracts workflow.                                                  |
 
-Updates to any pinned version go in two places: the relevant `scripts/run_*_suite.sh`
-and the matching `.github/workflows/*.yml`. The `pr-smoke` workflow rejects PRs
-that change one without the other.
+Updates to any pinned version go in `scripts/run_*_suite.sh` and the matching
+`.github/workflows/*.yml`. The workflow files are kept on disk for future
+re-enable and `zizmor` lint coverage even though Actions is disabled at the
+repository level; keeping them in lockstep with the local gate prevents drift.
 
 ## Active ignores
 
@@ -42,9 +43,10 @@ in the ignore list because the lockfile pins crate versions that carry the
 upstream fix. Both stay resolved at the lock level rather than via allowlist;
 re-introducing the unfixed versions would re-introduce the entries.
 
-## What CI runs
+## What the local gate runs
 
-`scripts/run_dependency_audit_suite.sh` runs:
+`scripts/run_dependency_audit_suite.sh` runs (invoked from
+`scripts/local_release_gate.sh`):
 
 1. `cargo audit --json` against `Cargo.lock`, then
    `scripts/check_cargo_audit_report.py` against an explicit allow-list.

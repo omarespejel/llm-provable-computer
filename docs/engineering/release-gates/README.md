@@ -5,10 +5,22 @@ publication-grade release gate. None of the files here ship in the published
 artifact; they exist to make the policy reviewable in code review and replayable
 on any new fork.
 
+GitHub Actions is intentionally disabled at the repository level for cost
+reasons. The full policy lives in `local-only-policy.md`. The short version:
+
+- The release gate runs locally via `scripts/local_release_gate.sh`.
+- A pre-push hook (`pre-push-hook.sh` in this directory) refuses any push
+  whose local gate fails.
+- Server-side enforcement on `main` is reduced to repo policy that does not
+  consume Actions minutes: PR review, signed commits, linear history, no
+  force-push, no deletion.
+- AI commenters (CodeRabbit, Greptile, pr-agent) run via webhooks and are
+  unaffected.
+
 ## Branch-protection ruleset
 
 `branch-protection-ruleset.json` is the GitHub Repository Ruleset that the
-`main` branch is governed by. Apply or update it with:
+`main` branch is governed by. Create the ruleset with:
 
 ```bash
 gh api \
@@ -18,11 +30,20 @@ gh api \
   --input docs/engineering/release-gates/branch-protection-ruleset.json
 ```
 
+Update an existing ruleset (this repo uses id `15398447`):
+
+```bash
+gh api \
+  --method PUT \
+  -H "Accept: application/vnd.github+json" \
+  /repos/omarespejel/provable-transformer-vm/rulesets/15398447 \
+  --input docs/engineering/release-gates/branch-protection-ruleset.json
+```
+
 After applying, confirm with:
 
 ```bash
 gh api /repos/omarespejel/provable-transformer-vm/rulesets
-gh api /repos/omarespejel/provable-transformer-vm/rules/branches/main
 ```
 
 The ruleset enforces:
@@ -32,8 +53,7 @@ The ruleset enforces:
 - linear history
 - signed commits
 - required pull request before merge, with review-thread resolution
-- required status checks: `lightweight PR lib smoke`, `hardening contract`,
-  and `paper preflight`
 
-If a check name in `.github/workflows/` changes, update both the workflow and
-this file in the same commit so the ruleset stays in lockstep with CI.
+`required_status_checks` is intentionally NOT in the ruleset right now because
+Actions is disabled. If Actions is re-enabled later, restore the rule per
+`local-only-policy.md` and re-apply the ruleset.

@@ -5,12 +5,17 @@ public repository announcement, third-party review). Every item is required;
 unchecked items must be documented as "deferred to v.next" with a tracking
 issue.
 
+GitHub Actions is disabled at the repository level (see `local-only-policy.md`),
+so the gate runs locally on a workstation; the items below assume that posture.
+
 ## Repository hygiene
 
 - [ ] `main` ruleset applied per `branch-protection-ruleset.json`; verified
       with `gh api /repos/<owner>/<repo>/rulesets`.
 - [ ] Dependabot security updates enabled at the repository level.
 - [ ] Secret scanning push-protection enabled.
+- [ ] Pre-push hook installed (`docs/engineering/release-gates/pre-push-hook.sh`).
+- [ ] `bash scripts/local_release_gate.sh` exits 0 on a clean checkout.
 - [ ] No `*.tvm` fixture name advertises a model family the program does not
       implement (see `naming-honesty.md`).
 
