@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render a dependency-free SVG/PNG/PDF figure for matched S-two primitive measurements."""
+"""Render an SVG figure and optional PNG/PDF companions for matched S-two primitive measurements."""
 
 from __future__ import annotations
 
@@ -37,11 +37,30 @@ BAR_WIDTH = 120
 BAR_GAP = 36
 BASELINE_Y = PANEL_TOP + 370
 MAX_BAR_HEIGHT = 240
+REQUIRED_COLUMNS = {
+    "primitive",
+    "backend_variant",
+    "relation",
+    "claimed_rows",
+    "proof_bytes",
+    "prove_ms",
+    "verify_ms",
+    "verified",
+    "note",
+}
 
 
 def read_rows(path: Path) -> list[dict[str, str]]:
     with path.open(newline="", encoding="utf-8") as f:
-        return list(csv.DictReader(f, delimiter="\t"))
+        reader = csv.DictReader(f, delimiter="\t")
+        actual_columns = set(reader.fieldnames or [])
+        missing = sorted(REQUIRED_COLUMNS - actual_columns)
+        if missing:
+            raise ValueError(
+                f"{path} is missing required TSV columns {missing}; "
+                f"found {sorted(actual_columns)}"
+            )
+        return list(reader)
 
 
 def slug(row: dict[str, str]) -> str:
@@ -143,7 +162,7 @@ def render_svg(rows: list[dict[str, str]]) -> str:
         x0=LEFT_X,
         title="Proof size",
         metric_key="proof_bytes",
-        metric_label="Bytes per proved primitive relation",
+        metric_label="Estimated raw STARK proof bytes",
         formatter=lambda value, axis=False: f"{int(value):,}" if not axis else f"{int(value):,}",
     )
     prove_panel = draw_panel(
@@ -183,9 +202,7 @@ def render_svg(rows: list[dict[str, str]]) -> str:
 """
 
 
-def write_optional_rasters(svg_path: Path) -> None:
-    png_path = svg_path.with_suffix(".png")
-    pdf_path = svg_path.with_suffix(".pdf")
+def write_optional_rasters(svg_path: Path, png_path: Path, pdf_path: Path) -> None:
     rsvg = subprocess.run(
         ["rsvg-convert", "-f", "png", "-o", str(png_path), str(svg_path)],
         check=False,
@@ -212,6 +229,13 @@ def write_optional_rasters(svg_path: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-tsv", type=Path, default=DEFAULT_TSV)
+    parser.add_argument(
+        "--output-svg",
+        type=Path,
+        default=OUTDIR / "stwo-primitive-lookup-vs-naive-2026-04.svg",
+    )
+    parser.add_argument("--output-png", type=Path, default=None)
+    parser.add_argument("--output-pdf", type=Path, default=None)
     args = parser.parse_args()
 
     rows = read_rows(args.input_tsv)
@@ -219,10 +243,13 @@ def main() -> None:
         raise SystemExit(f"no rows found in {args.input_tsv}")
 
     svg = render_svg(rows)
-    svg_path = OUTDIR / "stwo-primitive-lookup-vs-naive-2026-04.svg"
+    svg_path = args.output_svg
+    svg_path.parent.mkdir(parents=True, exist_ok=True)
     svg_path.write_text(svg, encoding="utf-8")
     print(f"wrote {svg_path}")
-    write_optional_rasters(svg_path)
+    png_path = args.output_png or svg_path.with_suffix(".png")
+    pdf_path = args.output_pdf or svg_path.with_suffix(".pdf")
+    write_optional_rasters(svg_path, png_path, pdf_path)
 
 
 if __name__ == "__main__":

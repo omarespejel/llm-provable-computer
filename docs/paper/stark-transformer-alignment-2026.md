@@ -307,14 +307,18 @@ The repository now also contains a first matched within-S-two primitive benchmar
 proof paths over the current codebase: RMSNorm `lookup_logup` versus
 `naive_selector_arithmetic`, and `softmax_exp_q8` `lookup_logup` versus
 `polynomial_interpolation`. The point of this measurement is calibration, not a
-dominance claim. On these tiny fixed-shape slices, the lookup-backed paths are currently
+dominance claim. The quoted timings are representative values from one checked local run,
+and the checked-in TSV is the canonical source for this branch; those millisecond values
+will drift with host hardware and implementation changes even when the semantic relation
+stays the same. On these tiny fixed-shape slices, the lookup-backed paths are currently
 somewhat larger and somewhat slower than the naive arithmetic alternatives: RMSNorm
-records `9,136` proof bytes / `16 ms` prove / `3 ms` verify for the lookup side versus
-`6,671` bytes / `9 ms` / `1 ms` for selector arithmetic; the softmax-exp slice records
-`9,188` bytes / `8 ms` / `2 ms` versus `4,783` bytes / `7 ms` / `1 ms` for degree-2
-polynomial interpolation. That does not overturn the symbolic model; it identifies where
-a small matched empirical anchor and a long-context symbolic stress model are describing
-different regimes.
+records `2,684` proof bytes / `19 ms` prove / `2 ms` verify for the lookup side versus
+`1,892` bytes / `9 ms` / `1 ms` for selector arithmetic; the softmax-exp slice records
+`2,684` bytes / `7 ms` / `1 ms` versus `1,352` bytes / `6 ms` / `1 ms` for degree-2
+polynomial interpolation. Here, "proof bytes" means the estimated raw STARK proof size,
+not the enclosing JSON wrapper. That does not overturn the symbolic model; it identifies
+where a small matched empirical anchor and a long-context symbolic stress model are
+describing different regimes.
 
 ### 4.5 Inference layer versus settlement layer
 

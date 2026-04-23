@@ -80,6 +80,12 @@ struct PrimitiveBenchmarkProofPayload {
     canonical_rows: Vec<(u16, u16)>,
 }
 
+#[derive(Serialize, Deserialize)]
+struct SharedNormalizationProofPayload {
+    stark_proof: StarkProof<Blake2sM31MerkleHasher>,
+    canonical_table_rows: Vec<(u16, u16)>,
+}
+
 #[derive(Clone)]
 struct Row2Bundle {
     log_size: u32,
@@ -109,7 +115,8 @@ impl FrameworkEval for SoftmaxExpLookupEval {
         let selector = eval.next_trace_mask();
         let table_score_delta_q4 =
             eval.get_preprocessed_column(column_id("primitive/softmax_exp/table_score_delta_q4"));
-        let table_exp_q8 = eval.get_preprocessed_column(column_id("primitive/softmax_exp/table_exp_q8"));
+        let table_exp_q8 =
+            eval.get_preprocessed_column(column_id("primitive/softmax_exp/table_exp_q8"));
         let one = E::F::from(BaseField::from(1u32));
 
         eval.add_constraint(selector.clone() * (selector.clone() - one));
@@ -263,7 +270,7 @@ fn measure_rmsnorm_lookup() -> Result<StwoPrimitiveBenchmarkMeasurement> {
     let prove_start = Instant::now();
     let envelope = prove_phase10_shared_normalization_lookup_envelope(&claimed_rows)?;
     let prove_ms = prove_start.elapsed().as_millis();
-    let proof_bytes = envelope.proof.len();
+    let proof_bytes = shared_normalization_stark_proof_size(&envelope.proof)?;
     let verify_start = Instant::now();
     let verified = verify_phase10_shared_normalization_lookup_envelope(&envelope)?;
     let verify_ms = verify_start.elapsed().as_millis();
@@ -285,7 +292,7 @@ fn measure_rmsnorm_selector_arithmetic() -> Result<StwoPrimitiveBenchmarkMeasure
     let prove_start = Instant::now();
     let proof = prove_rmsnorm_selector_arithmetic(&claimed_rows)?;
     let prove_ms = prove_start.elapsed().as_millis();
-    let proof_bytes = proof.len();
+    let proof_bytes = primitive_benchmark_stark_proof_size(&proof)?;
     let verify_start = Instant::now();
     let verified = verify_rmsnorm_selector_arithmetic(&claimed_rows, &proof)?;
     let verify_ms = verify_start.elapsed().as_millis();
@@ -298,7 +305,8 @@ fn measure_rmsnorm_selector_arithmetic() -> Result<StwoPrimitiveBenchmarkMeasure
         prove_ms,
         verify_ms,
         verified,
-        note: "actual S-two arithmetic proof; no LogUp relation, no lookup table argument".to_string(),
+        note: "actual S-two arithmetic proof; no LogUp relation, no lookup table argument"
+            .to_string(),
     })
 }
 
@@ -307,7 +315,7 @@ fn measure_softmax_exp_lookup() -> Result<StwoPrimitiveBenchmarkMeasurement> {
     let prove_start = Instant::now();
     let proof = prove_softmax_exp_lookup(&claimed_rows)?;
     let prove_ms = prove_start.elapsed().as_millis();
-    let proof_bytes = proof.len();
+    let proof_bytes = primitive_benchmark_stark_proof_size(&proof)?;
     let verify_start = Instant::now();
     let verified = verify_softmax_exp_lookup(&claimed_rows, &proof)?;
     let verify_ms = verify_start.elapsed().as_millis();
@@ -320,7 +328,8 @@ fn measure_softmax_exp_lookup() -> Result<StwoPrimitiveBenchmarkMeasurement> {
         prove_ms,
         verify_ms,
         verified,
-        note: "actual S-two LogUp proof for the exp-table part of softmax, not full softmax".to_string(),
+        note: "actual S-two LogUp proof for the exp-table part of softmax, not full softmax"
+            .to_string(),
     })
 }
 
@@ -329,7 +338,7 @@ fn measure_softmax_exp_polynomial() -> Result<StwoPrimitiveBenchmarkMeasurement>
     let prove_start = Instant::now();
     let proof = prove_softmax_exp_polynomial(&claimed_rows)?;
     let prove_ms = prove_start.elapsed().as_millis();
-    let proof_bytes = proof.len();
+    let proof_bytes = primitive_benchmark_stark_proof_size(&proof)?;
     let verify_start = Instant::now();
     let verified = verify_softmax_exp_polynomial(&claimed_rows, &proof)?;
     let verify_ms = verify_start.elapsed().as_millis();
@@ -342,14 +351,19 @@ fn measure_softmax_exp_polynomial() -> Result<StwoPrimitiveBenchmarkMeasurement>
         prove_ms,
         verify_ms,
         verified,
-        note: "actual S-two arithmetic proof for a sampled exp-table slice, not full softmax".to_string(),
+        note: "actual S-two arithmetic proof for a sampled exp-table slice, not full softmax"
+            .to_string(),
     })
 }
 
 fn prove_rmsnorm_selector_arithmetic(claimed_rows: &[(u16, u16)]) -> Result<Vec<u8>> {
     let bundle = build_rmsnorm_bundle(claimed_rows)?;
     let component = rmsnorm_selector_arithmetic_component(bundle.log_size);
-    prove_base_only(component, rmsnorm_selector_base_trace(&bundle), &bundle.canonical_rows)
+    prove_base_only(
+        component,
+        rmsnorm_selector_base_trace(&bundle),
+        &bundle.canonical_rows,
+    )
 }
 
 fn verify_rmsnorm_selector_arithmetic(claimed_rows: &[(u16, u16)], proof: &[u8]) -> Result<bool> {
@@ -361,7 +375,11 @@ fn verify_rmsnorm_selector_arithmetic(claimed_rows: &[(u16, u16)], proof: &[u8])
 fn prove_softmax_exp_polynomial(claimed_rows: &[(u16, u16)]) -> Result<Vec<u8>> {
     let bundle = build_softmax_bundle(claimed_rows)?;
     let component = softmax_exp_polynomial_component(bundle.log_size);
-    prove_base_only(component, polynomial_base_trace(&bundle), &bundle.canonical_rows)
+    prove_base_only(
+        component,
+        polynomial_base_trace(&bundle),
+        &bundle.canonical_rows,
+    )
 }
 
 fn verify_softmax_exp_polynomial(claimed_rows: &[(u16, u16)], proof: &[u8]) -> Result<bool> {
@@ -392,7 +410,10 @@ fn prove_softmax_exp_lookup(claimed_rows: &[(u16, u16)]) -> Result<Vec<u8>> {
     commitment_scheme.set_store_polynomials_coefficients();
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(row2_preprocessed_trace(bundle.log_size, &bundle.canonical_rows));
+    tree_builder.extend_evals(row2_preprocessed_trace(
+        bundle.log_size,
+        &bundle.canonical_rows,
+    ));
     tree_builder.commit(channel);
 
     let mut tree_builder = commitment_scheme.tree_builder();
@@ -456,7 +477,8 @@ fn verify_softmax_exp_lookup(claimed_rows: &[(u16, u16)], proof: &[u8]) -> Resul
     commitment_scheme.commit(stark_proof.commitments[1], &sizes[1], channel);
     mix_claimed_rows(channel, &bundle.claimed_rows);
     let lookup_elements = SoftmaxExpLookupElements::draw(channel);
-    let component = softmax_exp_lookup_component(bundle.log_size, lookup_elements, SecureField::zero());
+    let component =
+        softmax_exp_lookup_component(bundle.log_size, lookup_elements, SecureField::zero());
     commitment_scheme.commit(stark_proof.commitments[2], &sizes[2], channel);
     Ok(verify(&[&component], channel, commitment_scheme, stark_proof).is_ok())
 }
@@ -491,7 +513,9 @@ where
 
     let stark_proof =
         prove::<SimdBackend, Blake2sM31MerkleChannel>(&[&component], channel, commitment_scheme)
-            .map_err(|error| VmError::UnsupportedProof(format!("S-two primitive proving failed: {error}")))?;
+            .map_err(|error| {
+                VmError::UnsupportedProof(format!("S-two primitive proving failed: {error}"))
+            })?;
     serde_json::to_vec(&PrimitiveBenchmarkProofPayload {
         stark_proof,
         canonical_rows: canonical_rows.to_vec(),
@@ -537,7 +561,10 @@ fn build_softmax_bundle(claimed_rows: &[(u16, u16)]) -> Result<Row2Bundle> {
     build_row2_bundle(SOFTMAX_EXP_TABLE.to_vec(), claimed_rows)
 }
 
-fn build_row2_bundle(canonical_rows: Vec<(u16, u16)>, claimed_rows: &[(u16, u16)]) -> Result<Row2Bundle> {
+fn build_row2_bundle(
+    canonical_rows: Vec<(u16, u16)>,
+    claimed_rows: &[(u16, u16)],
+) -> Result<Row2Bundle> {
     if claimed_rows.is_empty() {
         return Err(VmError::InvalidConfig(
             "primitive benchmark requires at least one claimed row".to_string(),
@@ -590,16 +617,15 @@ fn lookup_base_trace(
     let domain = CanonicCoset::new(bundle.log_size).circle_domain();
     let lhs = BaseColumn::from_iter(padded.iter().map(|row| BaseField::from(row.0 as u32)));
     let rhs = BaseColumn::from_iter(padded.iter().map(|row| BaseField::from(row.1 as u32)));
-    let selector = BaseColumn::from_iter(
-        padded
-            .iter()
-            .enumerate()
-            .map(|(index, _)| BaseField::from(u32::from(bundle.selected_positions.contains(&index)))),
-    );
+    let selector =
+        BaseColumn::from_iter(padded.iter().enumerate().map(|(index, _)| {
+            BaseField::from(u32::from(bundle.selected_positions.contains(&index)))
+        }));
     vec![
         CircleEvaluation::<SimdBackend, BaseField, NaturalOrder>::new(domain, lhs).bit_reverse(),
         CircleEvaluation::<SimdBackend, BaseField, NaturalOrder>::new(domain, rhs).bit_reverse(),
-        CircleEvaluation::<SimdBackend, BaseField, NaturalOrder>::new(domain, selector).bit_reverse(),
+        CircleEvaluation::<SimdBackend, BaseField, NaturalOrder>::new(domain, selector)
+            .bit_reverse(),
     ]
 }
 
@@ -721,6 +747,18 @@ fn claimed_rows_to_arrays(rows: &[(u16, u16)]) -> Vec<[u16; 2]> {
     rows.iter().map(|row| [row.0, row.1]).collect()
 }
 
+fn primitive_benchmark_stark_proof_size(proof: &[u8]) -> Result<usize> {
+    let payload: PrimitiveBenchmarkProofPayload =
+        serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
+    Ok(payload.stark_proof.size_estimate())
+}
+
+fn shared_normalization_stark_proof_size(proof: &[u8]) -> Result<usize> {
+    let payload: SharedNormalizationProofPayload =
+        serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
+    Ok(payload.stark_proof.size_estimate())
+}
+
 fn column_id(id: &str) -> stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId {
     stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId { id: id.to_string() }
 }
@@ -735,15 +773,16 @@ mod tests {
 
     #[test]
     fn primitive_benchmark_runs_all_matched_paths() {
-        let report = run_stwo_primitive_lookup_vs_naive_benchmark()
-            .expect("primitive benchmark should run");
+        let report =
+            run_stwo_primitive_lookup_vs_naive_benchmark().expect("primitive benchmark should run");
         assert_eq!(report.rows.len(), 4);
         assert!(report.rows.iter().all(|row| row.verified));
         assert!(report.rows.iter().all(|row| row.proof_bytes > 0));
         assert!(report
             .rows
             .iter()
-            .any(|row| row.backend_variant == "lookup_logup" && row.primitive == "rmsnorm_q8_inv_sqrt"));
+            .any(|row| row.backend_variant == "lookup_logup"
+                && row.primitive == "rmsnorm_q8_inv_sqrt"));
         assert!(report.rows.iter().any(|row| {
             row.backend_variant == "polynomial_interpolation" && row.primitive == "softmax_exp_q8"
         }));
@@ -754,5 +793,50 @@ mod tests {
         let error = prove_softmax_exp_lookup(&[(9, 3)])
             .expect_err("non-canonical softmax row must be rejected");
         assert!(error.to_string().contains("non-canonical row"));
+    }
+
+    #[test]
+    fn primitive_benchmark_rejects_duplicate_rows() {
+        let error = prove_softmax_exp_lookup(&[(0, 256), (0, 256)])
+            .expect_err("duplicate rows must be rejected");
+        assert!(error.to_string().contains("duplicate row"));
+    }
+
+    #[test]
+    fn primitive_benchmark_rejects_malformed_softmax_lookup_proof() {
+        let error = verify_softmax_exp_lookup(&SOFTMAX_EXP_ROWS, b"{")
+            .expect_err("malformed proof JSON must fail");
+        assert!(matches!(error, VmError::Serialization(_)));
+    }
+
+    #[test]
+    fn primitive_benchmark_rejects_tampered_softmax_lookup_rows() {
+        let proof = prove_softmax_exp_lookup(&SOFTMAX_EXP_ROWS).expect("softmax proof");
+        let mut payload: PrimitiveBenchmarkProofPayload =
+            serde_json::from_slice(&proof).expect("deserialize proof payload");
+        payload.canonical_rows.reverse();
+        let tampered = serde_json::to_vec(&payload).expect("serialize tampered payload");
+
+        let error = verify_softmax_exp_lookup(&SOFTMAX_EXP_ROWS, &tampered)
+            .expect_err("tampered canonical rows must be rejected");
+        assert!(error
+            .to_string()
+            .contains("softmax-exp lookup proof uses non-canonical table rows"));
+    }
+
+    #[test]
+    fn primitive_benchmark_rejects_tampered_arithmetic_rows() {
+        let proof =
+            prove_rmsnorm_selector_arithmetic(&RMSNORM_ROWS).expect("arithmetic benchmark proof");
+        let mut payload: PrimitiveBenchmarkProofPayload =
+            serde_json::from_slice(&proof).expect("deserialize proof payload");
+        payload.canonical_rows.reverse();
+        let tampered = serde_json::to_vec(&payload).expect("serialize tampered payload");
+
+        let error = verify_rmsnorm_selector_arithmetic(&RMSNORM_ROWS, &tampered)
+            .expect_err("tampered arithmetic proof must be rejected");
+        assert!(error
+            .to_string()
+            .contains("primitive arithmetic proof uses non-canonical rows"));
     }
 }
