@@ -2170,7 +2170,9 @@ pub fn phase12_prepare_decoding_chain(
     })
 }
 
-pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) -> Result<()> {
+pub fn verify_phase12_decoding_chain_structure(
+    manifest: &Phase12DecodingChainManifest,
+) -> Result<()> {
     manifest.layout.validate()?;
     let expected_layout_commitment = commit_phase12_layout(&manifest.layout);
     let latest_cached_range = manifest.layout.latest_cached_pair_range()?;
@@ -2375,10 +2377,14 @@ pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) ->
     validate_phase12_chain_steps(&manifest.layout, &manifest.steps)
 }
 
+pub fn verify_phase12_decoding_chain(manifest: &Phase12DecodingChainManifest) -> Result<()> {
+    verify_phase12_decoding_chain_with_proof_checks(manifest)
+}
+
 pub fn verify_phase12_decoding_chain_with_proof_checks(
     manifest: &Phase12DecodingChainManifest,
 ) -> Result<()> {
-    verify_phase12_decoding_chain(manifest)?;
+    verify_phase12_decoding_chain_structure(manifest)?;
     for (step_index, step) in manifest.steps.iter().enumerate() {
         if !verify_execution_stark(&step.proof)? {
             return Err(VmError::UnsupportedProof(format!(
@@ -2795,7 +2801,7 @@ pub fn verify_phase13_decoding_layout_matrix(
                 chain.statement_version, manifest.statement_version
             )));
         }
-        verify_phase12_decoding_chain(chain)?;
+        verify_phase12_decoding_chain_structure(chain)?;
     }
     Ok(())
 }
@@ -12778,6 +12784,7 @@ fn write_phase12_noncanonical_lookup_seed(memory: &mut [i16], lookup: std::ops::
     }
 }
 
+#[cfg(test)]
 pub(crate) fn phase12_demo_initial_memories(
     layout: &Phase12DecodingLayout,
 ) -> Result<Vec<Vec<i16>>> {
@@ -19549,6 +19556,30 @@ mod tests {
         let manifest =
             phase30_prepare_decoding_step_proof_envelope_manifest(&chain).expect("envelopes");
         (chain, manifest)
+    }
+
+    #[test]
+    fn phase30_prepare_manifest_rejects_tampered_execution_proof_bytes() {
+        let layout = phase12_default_decoding_layout();
+        let memories = phase12_demo_initial_memories(&layout).expect("memories");
+        let proofs = memories
+            .into_iter()
+            .map(|memory| sample_phase12_step_proof(&layout, memory))
+            .collect::<Vec<_>>();
+        let mut chain = phase12_prepare_decoding_chain(&layout, &proofs).expect("chain");
+        chain.steps[0].proof.proof[0] ^= 1;
+
+        let err = phase30_prepare_decoding_step_proof_envelope_manifest(&chain)
+            .expect_err("tampered proof bytes must fail before Phase30 preparation");
+        let message = err.to_string();
+        assert!(
+            message.contains("execution proof did not verify")
+                || message.contains("failed to deserialize")
+                || message.contains("serialization error")
+                || message.contains("deserial")
+                || message.contains("proof"),
+            "unexpected error: {message}"
+        );
     }
 
     #[test]

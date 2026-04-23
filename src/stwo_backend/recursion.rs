@@ -7803,7 +7803,7 @@ pub fn phase42_prepare_boundary_preimage_evidence(
     contract: &Phase29RecursiveCompressionInputContract,
     phase30: &Phase30DecodingStepProofEnvelopeManifest,
 ) -> Result<Phase42BoundaryPreimageEvidence> {
-    phase42_verify_source_stack(chain, phase28, contract, phase30)?;
+    phase42_verify_source_stack_with_proof_checks(chain, phase28, contract, phase30)?;
     let first_step = chain.steps.first().ok_or_else(|| {
         VmError::InvalidConfig(
             "Phase 42 boundary preimage evidence requires a Phase 12 chain with at least one step"
@@ -7887,7 +7887,7 @@ pub fn verify_phase42_boundary_preimage_evidence_against_sources(
     phase30: &Phase30DecodingStepProofEnvelopeManifest,
 ) -> Result<()> {
     verify_phase42_boundary_preimage_evidence(evidence)?;
-    phase42_verify_source_stack(chain, phase28, contract, phase30)?;
+    phase42_verify_source_stack_with_proof_checks(chain, phase28, contract, phase30)?;
 
     let first_step = chain.steps.first().ok_or_else(|| {
         VmError::InvalidConfig(
@@ -8059,7 +8059,7 @@ pub fn phase42_prepare_boundary_history_equivalence_witness(
     contract: &Phase29RecursiveCompressionInputContract,
     phase30: &Phase30DecodingStepProofEnvelopeManifest,
 ) -> Result<Phase42BoundaryHistoryEquivalenceWitness> {
-    phase42_verify_source_stack(chain, phase28, contract, phase30)?;
+    phase42_verify_source_stack_with_proof_checks(chain, phase28, contract, phase30)?;
 
     let first_step = chain.steps.first().ok_or_else(|| {
         VmError::InvalidConfig(
@@ -32332,13 +32332,13 @@ fn phase43_json_error(error: serde_json::Error) -> VmError {
 }
 
 #[cfg(feature = "stwo-backend")]
-fn phase42_verify_source_stack(
+fn phase42_verify_source_stack_with_proof_checks(
     chain: &Phase12DecodingChainManifest,
     phase28: &Phase28AggregatedChainedFoldedIntervalizedDecodingStateRelationManifest,
     contract: &Phase29RecursiveCompressionInputContract,
     phase30: &Phase30DecodingStepProofEnvelopeManifest,
 ) -> Result<()> {
-    verify_phase12_decoding_chain(chain)?;
+    verify_phase12_decoding_chain_with_proof_checks(chain)?;
     verify_phase28_aggregated_chained_folded_intervalized_decoding_state_relation(phase28)?;
     verify_phase29_recursive_compression_input_contract(contract)?;
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain(phase30, chain)?;
