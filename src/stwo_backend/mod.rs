@@ -297,8 +297,8 @@ pub use normalization_prover::{
 #[cfg(feature = "stwo-backend")]
 pub use primitive_benchmark::{
     run_stwo_primitive_lookup_vs_naive_benchmark, run_stwo_shared_table_reuse_benchmark,
-    save_stwo_primitive_benchmark_report_json, save_stwo_primitive_benchmark_report_tsv,
-    save_stwo_shared_table_reuse_benchmark_report_json,
+    run_stwo_shared_table_reuse_benchmark_with_options, save_stwo_primitive_benchmark_report_json,
+    save_stwo_primitive_benchmark_report_tsv, save_stwo_shared_table_reuse_benchmark_report_json,
     save_stwo_shared_table_reuse_benchmark_report_tsv, StwoPrimitiveBenchmarkMeasurement,
     StwoPrimitiveBenchmarkReport, StwoSharedTableReuseBenchmarkMeasurement,
     StwoSharedTableReuseBenchmarkReport, STWO_PRIMITIVE_BENCHMARK_SCOPE,

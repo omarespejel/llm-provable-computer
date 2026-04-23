@@ -617,6 +617,7 @@ pub use stwo_backend::{
     prove_phase3_binary_step_lookup_demo, prove_phase3_binary_step_lookup_demo_envelope,
     prove_phase5_normalization_lookup_demo, prove_phase5_normalization_lookup_demo_envelope,
     run_stwo_primitive_lookup_vs_naive_benchmark, run_stwo_shared_table_reuse_benchmark,
+    run_stwo_shared_table_reuse_benchmark_with_options,
     save_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact,
     save_phase102_folded_multi_interval_gemma_richer_family_artifact,
     save_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact,
