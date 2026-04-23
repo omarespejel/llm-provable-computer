@@ -260,6 +260,10 @@ PHASE113_W8_BYTES="$(wc -c < "$PHASE113_W8" | tr -d ' ')"
 export PHASE113_W8_BYTES
 SHARED_PROOF_BYTES="$(wc -c < "$SHARED_PROOF" | tr -d ' ')"
 export SHARED_PROOF_BYTES
+PHASE113_OVERHEAD_STABILITY_MAX_DELTA="${PHASE113_OVERHEAD_STABILITY_MAX_DELTA:-0.010000}"
+export PHASE113_OVERHEAD_STABILITY_MAX_DELTA
+PHASE113_W8_MINUS_W4_MAX_BYTES="${PHASE113_W8_MINUS_W4_MAX_BYTES:-$((EXPLICIT_W8_BYTES - EXPLICIT_W4_BYTES))}"
+export PHASE113_W8_MINUS_W4_MAX_BYTES
 
 require_positive_integer_env() {
   local name="$1"
@@ -304,6 +308,62 @@ PY
 PHASE113_W4_OVERHEAD=$((PHASE113_W4_BYTES - PHASE112_W4_BYTES))
 PHASE113_W8_OVERHEAD=$((PHASE113_W8_BYTES - PHASE112_W8_BYTES))
 PHASE113_W8_MINUS_W4=$((PHASE113_W8_BYTES - PHASE113_W4_BYTES))
+
+export PHASE113_W4_RATIO
+export PHASE113_W8_RATIO
+export PHASE113_W4_OVER_PHASE112
+export PHASE113_W8_OVER_PHASE112
+export PHASE113_W8_MINUS_W4
+
+python3 - <<'PY'
+import os
+import sys
+from decimal import Decimal
+
+explicit_w4 = int(os.environ["EXPLICIT_W4_BYTES"])
+explicit_w8 = int(os.environ["EXPLICIT_W8_BYTES"])
+phase113_w4 = int(os.environ["PHASE113_W4_BYTES"])
+phase113_w8 = int(os.environ["PHASE113_W8_BYTES"])
+phase113_w4_ratio = Decimal(os.environ["PHASE113_W4_RATIO"])
+phase113_w8_ratio = Decimal(os.environ["PHASE113_W8_RATIO"])
+phase113_w4_over_phase112 = Decimal(os.environ["PHASE113_W4_OVER_PHASE112"])
+phase113_w8_over_phase112 = Decimal(os.environ["PHASE113_W8_OVER_PHASE112"])
+phase113_w8_minus_w4 = int(os.environ["PHASE113_W8_MINUS_W4"])
+phase113_w8_minus_w4_max = int(os.environ["PHASE113_W8_MINUS_W4_MAX_BYTES"])
+stability_delta = Decimal(os.environ["PHASE113_OVERHEAD_STABILITY_MAX_DELTA"])
+
+failures = []
+if not phase113_w4 < explicit_w4:
+    failures.append(
+        f"expected PHASE113_W4_BYTES < EXPLICIT_W4_BYTES, got {phase113_w4} >= {explicit_w4}"
+    )
+if not phase113_w8 < explicit_w8:
+    failures.append(
+        f"expected PHASE113_W8_BYTES < EXPLICIT_W8_BYTES, got {phase113_w8} >= {explicit_w8}"
+    )
+if not phase113_w8_ratio < phase113_w4_ratio:
+    failures.append(
+        "expected PHASE113_W8_RATIO < PHASE113_W4_RATIO, "
+        f"got {phase113_w8_ratio} >= {phase113_w4_ratio}"
+    )
+if abs(phase113_w8_over_phase112 - phase113_w4_over_phase112) > stability_delta:
+    failures.append(
+        "expected overhead stability between PHASE113_W4_OVER_PHASE112 and "
+        "PHASE113_W8_OVER_PHASE112 within "
+        f"{stability_delta}, got "
+        f"{abs(phase113_w8_over_phase112 - phase113_w4_over_phase112)}"
+    )
+if phase113_w8_minus_w4 > phase113_w8_minus_w4_max:
+    failures.append(
+        "expected PHASE113_W8_MINUS_W4 <= PHASE113_W8_MINUS_W4_MAX_BYTES, "
+        f"got {phase113_w8_minus_w4} > {phase113_w8_minus_w4_max}"
+    )
+
+if failures:
+    for failure in failures:
+        print(failure, file=sys.stderr)
+    sys.exit(1)
+PY
 
 cat > "$SCALING_TSV" <<EOF2
 windows	explicit_phase107_bytes	phase112_semantics_bytes	phase113_richer_family_bytes	phase113_vs_explicit	phase113_over_phase112	phase113_over_phase112_bytes
@@ -420,6 +480,7 @@ EOF2
     "$(basename "$README_MD")" \
     "$(basename "$PUBLIC_NOTES_MD")" \
     "$(basename "$INDEX_MD")" \
+    "$(basename "$BENCHMARKS")" \
     "$(basename "$COMMANDS_LOG")" > "$SHA256S"
 )
 
