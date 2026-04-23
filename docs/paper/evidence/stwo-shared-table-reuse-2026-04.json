@@ -16,7 +16,7 @@
       ],
       "proof_bytes": 2508,
       "serialized_bytes": 27577,
-      "prove_ms": 18,
+      "prove_ms": 22,
       "verify_ms": 4,
       "verified": true,
       "note": "one shared proof artifact binds all claimed rows to one canonical normalization table identity"
@@ -34,8 +34,8 @@
       ],
       "proof_bytes": 2508,
       "serialized_bytes": 26506,
-      "prove_ms": 10,
-      "verify_ms": 1,
+      "prove_ms": 15,
+      "verify_ms": 2,
       "verified": true,
       "note": "one lookup proof envelope per step over the same canonical normalization table"
     },
@@ -52,8 +52,8 @@
       ],
       "proof_bytes": 1780,
       "serialized_bytes": 5297,
-      "prove_ms": 5,
-      "verify_ms": 1,
+      "prove_ms": 6,
+      "verify_ms": 2,
       "verified": true,
       "note": "one arithmetic proof per step without shared lookup reuse"
     },
@@ -74,8 +74,8 @@
       ],
       "proof_bytes": 2508,
       "serialized_bytes": 27625,
-      "prove_ms": 8,
-      "verify_ms": 3,
+      "prove_ms": 10,
+      "verify_ms": 4,
       "verified": true,
       "note": "one shared proof artifact binds all claimed rows to one canonical normalization table identity"
     },
@@ -96,8 +96,8 @@
       ],
       "proof_bytes": 4760,
       "serialized_bytes": 50429,
-      "prove_ms": 18,
-      "verify_ms": 2,
+      "prove_ms": 21,
+      "verify_ms": 4,
       "verified": true,
       "note": "one lookup proof envelope per step over the same canonical normalization table"
     },
@@ -118,7 +118,7 @@
       ],
       "proof_bytes": 3272,
       "serialized_bytes": 9742,
-      "prove_ms": 8,
+      "prove_ms": 10,
       "verify_ms": 2,
       "verified": true,
       "note": "one arithmetic proof per step without shared lookup reuse"
@@ -148,8 +148,8 @@
       ],
       "proof_bytes": 2508,
       "serialized_bytes": 27788,
-      "prove_ms": 8,
-      "verify_ms": 3,
+      "prove_ms": 11,
+      "verify_ms": 4,
       "verified": true,
       "note": "one shared proof artifact binds all claimed rows to one canonical normalization table identity"
     },
@@ -178,8 +178,8 @@
       ],
       "proof_bytes": 10128,
       "serialized_bytes": 107058,
-      "prove_ms": 31,
-      "verify_ms": 4,
+      "prove_ms": 41,
+      "verify_ms": 10,
       "verified": true,
       "note": "one lookup proof envelope per step over the same canonical normalization table"
     },
@@ -208,7 +208,7 @@
       ],
       "proof_bytes": 6672,
       "serialized_bytes": 19850,
-      "prove_ms": 26,
+      "prove_ms": 35,
       "verify_ms": 4,
       "verified": true,
       "note": "one arithmetic proof per step without shared lookup reuse"
@@ -242,7 +242,7 @@
       ],
       "proof_bytes": 2140,
       "serialized_bytes": 24047,
-      "prove_ms": 9,
+      "prove_ms": 11,
       "verify_ms": 3,
       "verified": true,
       "note": "one shared proof artifact binds all claimed rows to one canonical normalization table identity"
@@ -276,8 +276,8 @@
       ],
       "proof_bytes": 12812,
       "serialized_bytes": 135259,
-      "prove_ms": 43,
-      "verify_ms": 5,
+      "prove_ms": 59,
+      "verify_ms": 8,
       "verified": true,
       "note": "one lookup proof envelope per step over the same canonical normalization table"
     },
@@ -310,7 +310,7 @@
       ],
       "proof_bytes": 8292,
       "serialized_bytes": 24675,
-      "prove_ms": 39,
+      "prove_ms": 48,
       "verify_ms": 5,
       "verified": true,
       "note": "one arithmetic proof per step without shared lookup reuse"
@@ -328,8 +328,8 @@
       ],
       "proof_bytes": 2684,
       "serialized_bytes": 9170,
-      "prove_ms": 8,
-      "verify_ms": 1,
+      "prove_ms": 10,
+      "verify_ms": 2,
       "verified": true,
       "note": "one lookup proof binds multiple selected rows to the canonical softmax exp table"
     },
@@ -346,8 +346,8 @@
       ],
       "proof_bytes": 2684,
       "serialized_bytes": 9170,
-      "prove_ms": 8,
-      "verify_ms": 1,
+      "prove_ms": 13,
+      "verify_ms": 2,
       "verified": true,
       "note": "one lookup proof per step against the canonical softmax exp table"
     },
@@ -364,7 +364,7 @@
       ],
       "proof_bytes": 1976,
       "serialized_bytes": 5742,
-      "prove_ms": 3,
+      "prove_ms": 4,
       "verify_ms": 1,
       "verified": true,
       "note": "one selector-arithmetic proof per step without shared lookup reuse"
@@ -386,7 +386,7 @@
       ],
       "proof_bytes": 2284,
       "serialized_bytes": 7808,
-      "prove_ms": 13,
+      "prove_ms": 15,
       "verify_ms": 1,
       "verified": true,
       "note": "one lookup proof binds multiple selected rows to the canonical softmax exp table"
@@ -408,8 +408,8 @@
       ],
       "proof_bytes": 5368,
       "serialized_bytes": 18316,
-      "prove_ms": 13,
-      "verify_ms": 2,
+      "prove_ms": 18,
+      "verify_ms": 3,
       "verified": true,
       "note": "one lookup proof per step against the canonical softmax exp table"
     },
@@ -430,7 +430,7 @@
       ],
       "proof_bytes": 3560,
       "serialized_bytes": 10483,
-      "prove_ms": 7,
+      "prove_ms": 9,
       "verify_ms": 2,
       "verified": true,
       "note": "one selector-arithmetic proof per step without shared lookup reuse"
@@ -461,7 +461,7 @@
       "proof_bytes": 2684,
       "serialized_bytes": 9160,
       "prove_ms": 19,
-      "verify_ms": 1,
+      "verify_ms": 2,
       "verified": true,
       "note": "one lookup proof binds multiple selected rows to the canonical softmax exp table"
     },
@@ -490,7 +490,7 @@
       ],
       "proof_bytes": 10192,
       "serialized_bytes": 34787,
-      "prove_ms": 25,
+      "prove_ms": 29,
       "verify_ms": 4,
       "verified": true,
       "note": "one lookup proof per step against the canonical softmax exp table"
@@ -520,7 +520,7 @@
       ],
       "proof_bytes": 7208,
       "serialized_bytes": 21030,
-      "prove_ms": 16,
+      "prove_ms": 18,
       "verify_ms": 4,
       "verified": true,
       "note": "one selector-arithmetic proof per step without shared lookup reuse"
@@ -566,8 +566,8 @@
       ],
       "proof_bytes": 2284,
       "serialized_bytes": 7525,
-      "prove_ms": 6,
-      "verify_ms": 1,
+      "prove_ms": 7,
+      "verify_ms": 2,
       "verified": true,
       "note": "one lookup proof binds multiple selected rows to the canonical softmax exp table"
     },
@@ -612,8 +612,8 @@
       ],
       "proof_bytes": 19552,
       "serialized_bytes": 66852,
-      "prove_ms": 50,
-      "verify_ms": 8,
+      "prove_ms": 57,
+      "verify_ms": 9,
       "verified": true,
       "note": "one lookup proof per step against the canonical softmax exp table"
     },
@@ -658,8 +658,206 @@
       ],
       "proof_bytes": 14216,
       "serialized_bytes": 41569,
-      "prove_ms": 33,
+      "prove_ms": 40,
       "verify_ms": 8,
+      "verified": true,
+      "note": "one selector-arithmetic proof per step without shared lookup reuse"
+    },
+    {
+      "primitive": "binary_step_activation",
+      "backend_variant": "shared_table_lookup_reuse",
+      "steps": 1,
+      "relation": "single proof over multiple canonical activation rows",
+      "claimed_rows": [
+        [
+          -1,
+          0
+        ]
+      ],
+      "proof_bytes": 2508,
+      "serialized_bytes": 26618,
+      "prove_ms": 8,
+      "verify_ms": 2,
+      "verified": true,
+      "note": "one lookup proof binds multiple selected rows to the canonical binary-step activation table"
+    },
+    {
+      "primitive": "binary_step_activation",
+      "backend_variant": "independent_lookup",
+      "steps": 1,
+      "relation": "independent binary-step activation lookup proofs",
+      "claimed_rows": [
+        [
+          -1,
+          0
+        ]
+      ],
+      "proof_bytes": 2508,
+      "serialized_bytes": 26618,
+      "prove_ms": 8,
+      "verify_ms": 2,
+      "verified": true,
+      "note": "one lookup proof envelope per step against the canonical binary-step activation table"
+    },
+    {
+      "primitive": "binary_step_activation",
+      "backend_variant": "independent_selector_arithmetic",
+      "steps": 1,
+      "relation": "independent selector-arithmetic proofs",
+      "claimed_rows": [
+        [
+          -1,
+          0
+        ]
+      ],
+      "proof_bytes": 1724,
+      "serialized_bytes": 5218,
+      "prove_ms": 5,
+      "verify_ms": 1,
+      "verified": true,
+      "note": "one selector-arithmetic proof per step without shared lookup reuse"
+    },
+    {
+      "primitive": "binary_step_activation",
+      "backend_variant": "shared_table_lookup_reuse",
+      "steps": 2,
+      "relation": "single proof over multiple canonical activation rows",
+      "claimed_rows": [
+        [
+          -1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "proof_bytes": 2508,
+      "serialized_bytes": 26719,
+      "prove_ms": 10,
+      "verify_ms": 1,
+      "verified": true,
+      "note": "one lookup proof binds multiple selected rows to the canonical binary-step activation table"
+    },
+    {
+      "primitive": "binary_step_activation",
+      "backend_variant": "independent_lookup",
+      "steps": 2,
+      "relation": "independent binary-step activation lookup proofs",
+      "claimed_rows": [
+        [
+          -1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "proof_bytes": 5016,
+      "serialized_bytes": 53220,
+      "prove_ms": 13,
+      "verify_ms": 2,
+      "verified": true,
+      "note": "one lookup proof envelope per step against the canonical binary-step activation table"
+    },
+    {
+      "primitive": "binary_step_activation",
+      "backend_variant": "independent_selector_arithmetic",
+      "steps": 2,
+      "relation": "independent selector-arithmetic proofs",
+      "claimed_rows": [
+        [
+          -1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "proof_bytes": 3448,
+      "serialized_bytes": 10454,
+      "prove_ms": 12,
+      "verify_ms": 2,
+      "verified": true,
+      "note": "one selector-arithmetic proof per step without shared lookup reuse"
+    },
+    {
+      "primitive": "binary_step_activation",
+      "backend_variant": "shared_table_lookup_reuse",
+      "steps": 3,
+      "relation": "single proof over multiple canonical activation rows",
+      "claimed_rows": [
+        [
+          -1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "proof_bytes": 2684,
+      "serialized_bytes": 28407,
+      "prove_ms": 5,
+      "verify_ms": 2,
+      "verified": true,
+      "note": "one lookup proof binds multiple selected rows to the canonical binary-step activation table"
+    },
+    {
+      "primitive": "binary_step_activation",
+      "backend_variant": "independent_lookup",
+      "steps": 3,
+      "relation": "independent binary-step activation lookup proofs",
+      "claimed_rows": [
+        [
+          -1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "proof_bytes": 7380,
+      "serialized_bytes": 78310,
+      "prove_ms": 18,
+      "verify_ms": 4,
+      "verified": true,
+      "note": "one lookup proof envelope per step against the canonical binary-step activation table"
+    },
+    {
+      "primitive": "binary_step_activation",
+      "backend_variant": "independent_selector_arithmetic",
+      "steps": 3,
+      "relation": "independent selector-arithmetic proofs",
+      "claimed_rows": [
+        [
+          -1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "proof_bytes": 5172,
+      "serialized_bytes": 15677,
+      "prove_ms": 18,
+      "verify_ms": 3,
       "verified": true,
       "note": "one selector-arithmetic proof per step without shared lookup reuse"
     }

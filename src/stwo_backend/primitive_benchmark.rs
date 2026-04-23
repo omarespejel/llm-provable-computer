@@ -26,6 +26,11 @@ use stwo_constraint_framework::{
     RelationEntry, TraceLocationAllocator,
 };
 
+use super::lookup_component::{phase3_lookup_table_rows, Phase3LookupTableRow};
+use super::lookup_prover::{
+    prove_phase10_shared_binary_step_lookup_envelope,
+    verify_phase10_shared_binary_step_lookup_envelope,
+};
 use super::normalization_component::phase5_normalization_table_rows;
 use super::normalization_prover::{
     prepare_phase92_shared_normalization_primitive_artifact,
@@ -62,6 +67,7 @@ const SOFTMAX_EXP_TABLE: [(u16, u16); 8] = [
 const SOFTMAX_EXP_POLY_COEFFS: [u32; 3] = [256, 536_870_805, 1_879_048_204];
 const RMSNORM_REUSE_STEP_COUNTS: [usize; 4] = [1, 2, 4, 5];
 const SOFTMAX_REUSE_STEP_COUNTS: [usize; 4] = [1, 2, 4, 8];
+const ACTIVATION_REUSE_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StwoPrimitiveBenchmarkMeasurement {
@@ -89,7 +95,7 @@ pub struct StwoSharedTableReuseBenchmarkMeasurement {
     pub backend_variant: String,
     pub steps: usize,
     pub relation: String,
-    pub claimed_rows: Vec<[u16; 2]>,
+    pub claimed_rows: Vec<[i16; 2]>,
     pub proof_bytes: usize,
     pub serialized_bytes: usize,
     pub prove_ms: u128,
@@ -117,12 +123,31 @@ struct SharedNormalizationProofPayload {
     canonical_table_rows: Vec<(u16, u16)>,
 }
 
+#[derive(Serialize, Deserialize)]
+struct SharedActivationProofPayload {
+    stark_proof: StarkProof<Blake2sM31MerkleHasher>,
+    canonical_table_rows: Vec<Phase3LookupTableRow>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct SignedPrimitiveBenchmarkProofPayload {
+    stark_proof: StarkProof<Blake2sM31MerkleHasher>,
+    canonical_rows: Vec<[i16; 2]>,
+}
+
 #[derive(Clone)]
 struct Row2Bundle {
     log_size: u32,
     canonical_rows: Vec<(u16, u16)>,
     claimed_rows: Vec<(u16, u16)>,
     selected_positions: Vec<usize>,
+}
+
+#[derive(Clone)]
+struct ActivationBundle {
+    log_size: u32,
+    canonical_rows: Vec<Phase3LookupTableRow>,
+    claimed_rows: Vec<Phase3LookupTableRow>,
 }
 
 #[derive(Clone)]
@@ -285,6 +310,52 @@ impl FrameworkEval for SoftmaxExpPolynomialEval {
     }
 }
 
+#[derive(Clone)]
+struct ActivationSelectorArithmeticEval {
+    log_size: u32,
+}
+
+impl FrameworkEval for ActivationSelectorArithmeticEval {
+    fn log_size(&self) -> u32 {
+        self.log_size
+    }
+
+    fn max_constraint_log_degree_bound(&self) -> u32 {
+        self.log_size.saturating_add(1)
+    }
+
+    fn evaluate<E: EvalAtRow>(&self, mut eval: E) -> E {
+        let activation_input = eval.next_trace_mask();
+        let activation_output = eval.next_trace_mask();
+        let selectors: Vec<_> = (0..phase3_lookup_table_rows().len())
+            .map(|_| eval.next_trace_mask())
+            .collect();
+        let one = E::F::from(BaseField::from(1u32));
+
+        let mut selector_sum = selectors[0].clone();
+        for selector in &selectors {
+            eval.add_constraint(selector.clone() * (selector.clone() - one.clone()));
+        }
+        for selector in selectors.iter().skip(1) {
+            selector_sum = selector_sum + selector.clone();
+        }
+        eval.add_constraint(selector_sum - one);
+
+        let table = phase3_lookup_table_rows();
+        let mut expected_input = selectors[0].clone() * const_signed_f::<E>(table[0].input);
+        let mut expected_output =
+            selectors[0].clone() * const_signed_f::<E>(table[0].output as i16);
+        for (selector, row) in selectors.iter().zip(table.iter()).skip(1) {
+            expected_input = expected_input + selector.clone() * const_signed_f::<E>(row.input);
+            expected_output =
+                expected_output + selector.clone() * const_signed_f::<E>(row.output as i16);
+        }
+        eval.add_constraint(activation_input - expected_input);
+        eval.add_constraint(activation_output - expected_output);
+        eval
+    }
+}
+
 pub fn run_stwo_primitive_lookup_vs_naive_benchmark() -> Result<StwoPrimitiveBenchmarkReport> {
     let mut rows = Vec::new();
     rows.push(measure_rmsnorm_lookup()?);
@@ -308,6 +379,7 @@ pub fn run_stwo_shared_table_reuse_benchmark() -> Result<StwoSharedTableReuseBen
     run_stwo_shared_table_reuse_benchmark_for_step_counts(
         &RMSNORM_REUSE_STEP_COUNTS,
         &SOFTMAX_REUSE_STEP_COUNTS,
+        &ACTIVATION_REUSE_STEP_COUNTS,
         false,
     )
 }
@@ -318,6 +390,7 @@ pub fn run_stwo_shared_table_reuse_benchmark_with_options(
     run_stwo_shared_table_reuse_benchmark_for_step_counts(
         &RMSNORM_REUSE_STEP_COUNTS,
         &SOFTMAX_REUSE_STEP_COUNTS,
+        &ACTIVATION_REUSE_STEP_COUNTS,
         capture_timings,
     )
 }
@@ -325,6 +398,7 @@ pub fn run_stwo_shared_table_reuse_benchmark_with_options(
 fn run_stwo_shared_table_reuse_benchmark_for_step_counts(
     rmsnorm_step_counts: &[usize],
     softmax_step_counts: &[usize],
+    activation_step_counts: &[usize],
     capture_timings: bool,
 ) -> Result<StwoSharedTableReuseBenchmarkReport> {
     let mut rows = Vec::new();
@@ -358,6 +432,23 @@ fn run_stwo_shared_table_reuse_benchmark_for_step_counts(
             capture_timings,
         )?);
         rows.push(measure_softmax_independent_naive(
+            &claimed_rows,
+            capture_timings,
+        )?);
+    }
+
+    let activation_rows = activation_canonical_rows();
+    for &steps in activation_step_counts {
+        let claimed_rows = activation_claimed_row_prefix(&activation_rows, steps)?;
+        rows.push(measure_activation_shared_lookup_reuse(
+            &claimed_rows,
+            capture_timings,
+        )?);
+        rows.push(measure_activation_independent_lookup(
+            &claimed_rows,
+            capture_timings,
+        )?);
+        rows.push(measure_activation_independent_naive(
             &claimed_rows,
             capture_timings,
         )?);
@@ -585,7 +676,7 @@ fn measure_rmsnorm_shared_lookup_reuse(
         backend_variant: "shared_table_lookup_reuse".to_string(),
         steps: claimed_rows.len(),
         relation: "Phase92 shared-normalization primitive artifact".to_string(),
-        claimed_rows: claimed_rows_to_arrays(claimed_rows),
+        claimed_rows: claimed_rows_to_signed_arrays(claimed_rows),
         proof_bytes,
         serialized_bytes,
         prove_ms,
@@ -632,7 +723,7 @@ fn measure_rmsnorm_independent_lookup(
         backend_variant: "independent_lookup".to_string(),
         steps: claimed_rows.len(),
         relation: "independent Phase10 shared-normalization lookup proofs".to_string(),
-        claimed_rows: claimed_rows_to_arrays(claimed_rows),
+        claimed_rows: claimed_rows_to_signed_arrays(claimed_rows),
         proof_bytes,
         serialized_bytes,
         prove_ms,
@@ -678,7 +769,7 @@ fn measure_rmsnorm_independent_naive(
         backend_variant: "independent_selector_arithmetic".to_string(),
         steps: claimed_rows.len(),
         relation: "independent selector-arithmetic proofs".to_string(),
-        claimed_rows: claimed_rows_to_arrays(claimed_rows),
+        claimed_rows: claimed_rows_to_signed_arrays(claimed_rows),
         proof_bytes,
         serialized_bytes,
         prove_ms,
@@ -709,7 +800,7 @@ fn measure_softmax_shared_lookup_reuse(
         backend_variant: "shared_table_lookup_reuse".to_string(),
         steps: claimed_rows.len(),
         relation: "single proof over multiple canonical exp-table rows".to_string(),
-        claimed_rows: claimed_rows_to_arrays(claimed_rows),
+        claimed_rows: claimed_rows_to_signed_arrays(claimed_rows),
         proof_bytes,
         serialized_bytes,
         prove_ms,
@@ -754,7 +845,7 @@ fn measure_softmax_independent_lookup(
         backend_variant: "independent_lookup".to_string(),
         steps: claimed_rows.len(),
         relation: "independent softmax-exp table lookup proofs".to_string(),
-        claimed_rows: claimed_rows_to_arrays(claimed_rows),
+        claimed_rows: claimed_rows_to_signed_arrays(claimed_rows),
         proof_bytes,
         serialized_bytes,
         prove_ms,
@@ -799,7 +890,135 @@ fn measure_softmax_independent_naive(
         backend_variant: "independent_selector_arithmetic".to_string(),
         steps: claimed_rows.len(),
         relation: "independent selector-arithmetic proofs".to_string(),
-        claimed_rows: claimed_rows_to_arrays(claimed_rows),
+        claimed_rows: claimed_rows_to_signed_arrays(claimed_rows),
+        proof_bytes,
+        serialized_bytes,
+        prove_ms,
+        verify_ms,
+        verified: true,
+        note: "one selector-arithmetic proof per step without shared lookup reuse".to_string(),
+    })
+}
+
+fn measure_activation_shared_lookup_reuse(
+    claimed_rows: &[Phase3LookupTableRow],
+    capture_timings: bool,
+) -> Result<StwoSharedTableReuseBenchmarkMeasurement> {
+    let (envelope, prove_ms) = measure_elapsed_ms(capture_timings, || {
+        prove_phase10_shared_binary_step_lookup_envelope(claimed_rows)
+    })?;
+    let proof_bytes = shared_activation_stark_proof_size(&envelope.proof)?;
+    let serialized_bytes = serde_json::to_vec(&envelope)
+        .map_err(|error| VmError::Serialization(error.to_string()))?
+        .len();
+    let (verified, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_phase10_shared_binary_step_lookup_envelope(&envelope)
+    })?;
+    if !verified {
+        return Err(VmError::UnsupportedProof(
+            "shared activation lookup proof did not verify".to_string(),
+        ));
+    }
+    Ok(StwoSharedTableReuseBenchmarkMeasurement {
+        primitive: "binary_step_activation".to_string(),
+        backend_variant: "shared_table_lookup_reuse".to_string(),
+        steps: claimed_rows.len(),
+        relation: "single proof over multiple canonical activation rows".to_string(),
+        claimed_rows: activation_rows_to_arrays(claimed_rows),
+        proof_bytes,
+        serialized_bytes,
+        prove_ms,
+        verify_ms,
+        verified: true,
+        note: "one lookup proof binds multiple selected rows to the canonical binary-step activation table".to_string(),
+    })
+}
+
+fn measure_activation_independent_lookup(
+    claimed_rows: &[Phase3LookupTableRow],
+    capture_timings: bool,
+) -> Result<StwoSharedTableReuseBenchmarkMeasurement> {
+    let mut prove_ms = 0;
+    let mut verify_ms = 0;
+    let mut proof_bytes = 0usize;
+    let mut serialized_bytes = 0usize;
+    let mut proofs = Vec::with_capacity(claimed_rows.len());
+    for row in claimed_rows {
+        let step_rows = [row.clone()];
+        let (envelope, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            prove_phase10_shared_binary_step_lookup_envelope(&step_rows)
+        })?;
+        prove_ms += elapsed_ms;
+        proof_bytes += shared_activation_stark_proof_size(&envelope.proof)?;
+        serialized_bytes += serde_json::to_vec(&envelope)
+            .map_err(|error| VmError::Serialization(error.to_string()))?
+            .len();
+        proofs.push(envelope);
+    }
+    for envelope in &proofs {
+        let (verified, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            verify_phase10_shared_binary_step_lookup_envelope(envelope)
+        })?;
+        if !verified {
+            return Err(VmError::UnsupportedProof(
+                "independent activation lookup proof did not verify".to_string(),
+            ));
+        }
+        verify_ms += elapsed_ms;
+    }
+    Ok(StwoSharedTableReuseBenchmarkMeasurement {
+        primitive: "binary_step_activation".to_string(),
+        backend_variant: "independent_lookup".to_string(),
+        steps: claimed_rows.len(),
+        relation: "independent binary-step activation lookup proofs".to_string(),
+        claimed_rows: activation_rows_to_arrays(claimed_rows),
+        proof_bytes,
+        serialized_bytes,
+        prove_ms,
+        verify_ms,
+        verified: true,
+        note:
+            "one lookup proof envelope per step against the canonical binary-step activation table"
+                .to_string(),
+    })
+}
+
+fn measure_activation_independent_naive(
+    claimed_rows: &[Phase3LookupTableRow],
+    capture_timings: bool,
+) -> Result<StwoSharedTableReuseBenchmarkMeasurement> {
+    let mut prove_ms = 0;
+    let mut verify_ms = 0;
+    let mut proof_bytes = 0usize;
+    let mut serialized_bytes = 0usize;
+    let mut proofs = Vec::with_capacity(claimed_rows.len());
+    for row in claimed_rows {
+        let step_rows = [row.clone()];
+        let (proof, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            prove_activation_selector_arithmetic(&step_rows)
+        })?;
+        prove_ms += elapsed_ms;
+        proof_bytes += signed_primitive_benchmark_stark_proof_size(&proof)?;
+        serialized_bytes += proof.len();
+        proofs.push((step_rows, proof));
+    }
+    for (step_rows, proof) in &proofs {
+        let (verified, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            verify_activation_selector_arithmetic(step_rows, proof)
+        })?;
+        if !verified {
+            return Err(VmError::UnsupportedProof(
+                "independent activation arithmetic proof did not verify".to_string(),
+            ));
+        }
+        verify_ms += elapsed_ms;
+    }
+    Ok(StwoSharedTableReuseBenchmarkMeasurement {
+        primitive: "binary_step_activation".to_string(),
+        backend_variant: "independent_selector_arithmetic".to_string(),
+        steps: claimed_rows.len(),
+        relation: "independent selector-arithmetic proofs".to_string(),
+        claimed_rows: activation_rows_to_arrays(claimed_rows),
         proof_bytes,
         serialized_bytes,
         prove_ms,
@@ -817,6 +1036,10 @@ fn softmax_canonical_rows() -> Vec<(u16, u16)> {
     SOFTMAX_EXP_TABLE.to_vec()
 }
 
+fn activation_canonical_rows() -> Vec<Phase3LookupTableRow> {
+    phase3_lookup_table_rows()
+}
+
 fn claimed_row_prefix(
     canonical_rows: &[(u16, u16)],
     step_count: usize,
@@ -829,6 +1052,19 @@ fn claimed_row_prefix(
         )));
     }
     Ok(canonical_rows.iter().copied().take(step_count).collect())
+}
+
+fn activation_claimed_row_prefix(
+    canonical_rows: &[Phase3LookupTableRow],
+    step_count: usize,
+) -> Result<Vec<Phase3LookupTableRow>> {
+    if step_count == 0 || step_count > canonical_rows.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "binary_step_activation shared-table reuse benchmark requested {step_count} steps but only {} canonical rows are available",
+            canonical_rows.len()
+        )));
+    }
+    Ok(canonical_rows.iter().take(step_count).cloned().collect())
 }
 
 fn shared_normalization_steps_from_rows(
@@ -1017,6 +1253,81 @@ fn verify_softmax_exp_lookup(claimed_rows: &[(u16, u16)], proof: &[u8]) -> Resul
         })
 }
 
+fn prove_activation_selector_arithmetic(claimed_rows: &[Phase3LookupTableRow]) -> Result<Vec<u8>> {
+    let bundle = build_activation_bundle(claimed_rows)?;
+    let component = activation_selector_arithmetic_component(bundle.log_size);
+    let config = PcsConfig::default();
+    let twiddles = SimdBackend::precompute_twiddles(
+        CanonicCoset::new(
+            component.max_constraint_log_degree_bound() + config.fri_config.log_blowup_factor + 1,
+        )
+        .circle_domain()
+        .half_coset,
+    );
+    let channel = &mut Blake2sM31Channel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<SimdBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
+    commitment_scheme.set_store_polynomials_coefficients();
+
+    let tree_builder = commitment_scheme.tree_builder();
+    tree_builder.commit(channel);
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(activation_selector_base_trace(&bundle));
+    tree_builder.commit(channel);
+    mix_activation_claimed_rows(channel, &bundle.claimed_rows);
+
+    let stark_proof =
+        prove::<SimdBackend, Blake2sM31MerkleChannel>(&[&component], channel, commitment_scheme)
+            .map_err(|error| {
+                VmError::UnsupportedProof(format!(
+                    "S-two activation arithmetic proving failed: {error}"
+                ))
+            })?;
+    serde_json::to_vec(&SignedPrimitiveBenchmarkProofPayload {
+        stark_proof,
+        canonical_rows: activation_rows_to_arrays(&bundle.canonical_rows),
+    })
+    .map_err(|error| VmError::Serialization(error.to_string()))
+}
+
+fn verify_activation_selector_arithmetic(
+    claimed_rows: &[Phase3LookupTableRow],
+    proof: &[u8],
+) -> Result<bool> {
+    let bundle = build_activation_bundle(claimed_rows)?;
+    let payload: SignedPrimitiveBenchmarkProofPayload =
+        serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
+    if payload.canonical_rows != activation_rows_to_arrays(&bundle.canonical_rows) {
+        return Err(VmError::UnsupportedProof(
+            "activation arithmetic proof uses non-canonical rows".to_string(),
+        ));
+    }
+    let stark_proof = payload.stark_proof;
+    let pcs_config = stark_proof.config;
+    let channel = &mut Blake2sM31Channel::default();
+    let commitment_scheme =
+        &mut CommitmentSchemeVerifier::<Blake2sM31MerkleChannel>::new(pcs_config);
+    let component = activation_selector_arithmetic_component(bundle.log_size);
+    let sizes = component.trace_log_degree_bounds();
+    if stark_proof.commitments.len() < sizes.len() {
+        return Err(VmError::UnsupportedProof(
+            "activation arithmetic proof uses a malformed or tampered commitment payload"
+                .to_string(),
+        ));
+    }
+    commitment_scheme.commit(stark_proof.commitments[0], &sizes[0], channel);
+    commitment_scheme.commit(stark_proof.commitments[1], &sizes[1], channel);
+    mix_activation_claimed_rows(channel, &bundle.claimed_rows);
+    verify(&[&component], channel, commitment_scheme, stark_proof)
+        .map(|_| true)
+        .map_err(|error| {
+            VmError::UnsupportedProof(format!(
+                "S-two activation arithmetic verification failed: {error}"
+            ))
+        })
+}
+
 fn prove_base_only<E>(
     component: FrameworkComponent<E>,
     base_trace: ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
@@ -1107,6 +1418,42 @@ fn build_rmsnorm_bundle(claimed_rows: &[(u16, u16)]) -> Result<Row2Bundle> {
 
 fn build_softmax_bundle(claimed_rows: &[(u16, u16)]) -> Result<Row2Bundle> {
     build_row2_bundle(SOFTMAX_EXP_TABLE.to_vec(), claimed_rows)
+}
+
+fn build_activation_bundle(claimed_rows: &[Phase3LookupTableRow]) -> Result<ActivationBundle> {
+    if claimed_rows.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "binary-step activation benchmark requires at least one claimed row".to_string(),
+        ));
+    }
+    let canonical_rows = phase3_lookup_table_rows();
+    let mut selected_positions = Vec::with_capacity(claimed_rows.len());
+    for row in claimed_rows {
+        let Some(position) = canonical_rows.iter().position(|candidate| candidate == row) else {
+            return Err(VmError::InvalidConfig(format!(
+                "binary-step activation benchmark received non-canonical row ({}, {})",
+                row.input, row.output
+            )));
+        };
+        if selected_positions.contains(&position) {
+            return Err(VmError::InvalidConfig(format!(
+                "binary-step activation benchmark received duplicate row ({}, {})",
+                row.input, row.output
+            )));
+        }
+        selected_positions.push(position);
+    }
+    let required_log_size = canonical_rows
+        .len()
+        .next_power_of_two()
+        .trailing_zeros()
+        .max(LOG_N_LANES)
+        .max(4);
+    Ok(ActivationBundle {
+        log_size: required_log_size,
+        canonical_rows,
+        claimed_rows: claimed_rows.to_vec(),
+    })
 }
 
 fn build_row2_bundle(
@@ -1225,6 +1572,36 @@ fn softmax_selector_base_trace(
     columns
 }
 
+fn activation_selector_base_trace(
+    bundle: &ActivationBundle,
+) -> ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>> {
+    let padded = padded_activation_rows(bundle.log_size, &bundle.claimed_rows);
+    let table = bundle.canonical_rows.clone();
+    let domain = CanonicCoset::new(bundle.log_size).circle_domain();
+    let input = BaseColumn::from_iter(
+        padded
+            .iter()
+            .map(|row| BaseField::from((row.input as i32).rem_euclid(1 << 31) as u32)),
+    );
+    let output = BaseColumn::from_iter(padded.iter().map(|row| BaseField::from(row.output as u32)));
+    let mut columns = vec![
+        CircleEvaluation::<SimdBackend, BaseField, NaturalOrder>::new(domain, input).bit_reverse(),
+        CircleEvaluation::<SimdBackend, BaseField, NaturalOrder>::new(domain, output).bit_reverse(),
+    ];
+    for table_row in &table {
+        let selector = BaseColumn::from_iter(
+            padded
+                .iter()
+                .map(|row| BaseField::from(u32::from(row == table_row))),
+        );
+        columns.push(
+            CircleEvaluation::<SimdBackend, BaseField, NaturalOrder>::new(domain, selector)
+                .bit_reverse(),
+        );
+    }
+    columns
+}
+
 fn polynomial_base_trace(
     bundle: &Row2Bundle,
 ) -> ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>> {
@@ -1320,6 +1697,16 @@ fn softmax_exp_lookup_component(
     )
 }
 
+fn activation_selector_arithmetic_component(
+    log_size: u32,
+) -> FrameworkComponent<ActivationSelectorArithmeticEval> {
+    FrameworkComponent::new(
+        &mut TraceLocationAllocator::default(),
+        ActivationSelectorArithmeticEval { log_size },
+        SecureField::zero(),
+    )
+}
+
 fn mix_claimed_rows(channel: &mut Blake2sM31Channel, claimed_rows: &[(u16, u16)]) {
     channel.mix_u64(claimed_rows.len() as u64);
     for row in claimed_rows {
@@ -1328,8 +1715,31 @@ fn mix_claimed_rows(channel: &mut Blake2sM31Channel, claimed_rows: &[(u16, u16)]
     }
 }
 
+fn mix_activation_claimed_rows(
+    channel: &mut Blake2sM31Channel,
+    claimed_rows: &[Phase3LookupTableRow],
+) {
+    channel.mix_u64(claimed_rows.len() as u64);
+    for row in claimed_rows {
+        channel.mix_u64((row.input as i32).rem_euclid(1 << 31) as u64);
+        channel.mix_u64(row.output as u64);
+    }
+}
+
 fn claimed_rows_to_arrays(rows: &[(u16, u16)]) -> Vec<[u16; 2]> {
     rows.iter().map(|row| [row.0, row.1]).collect()
+}
+
+fn claimed_rows_to_signed_arrays(rows: &[(u16, u16)]) -> Vec<[i16; 2]> {
+    rows.iter()
+        .map(|row| [row.0 as i16, row.1 as i16])
+        .collect()
+}
+
+fn activation_rows_to_arrays(rows: &[Phase3LookupTableRow]) -> Vec<[i16; 2]> {
+    rows.iter()
+        .map(|row| [row.input, row.output as i16])
+        .collect()
 }
 
 fn primitive_benchmark_stark_proof_size(proof: &[u8]) -> Result<usize> {
@@ -1344,12 +1754,39 @@ fn shared_normalization_stark_proof_size(proof: &[u8]) -> Result<usize> {
     Ok(payload.stark_proof.size_estimate())
 }
 
+fn shared_activation_stark_proof_size(proof: &[u8]) -> Result<usize> {
+    let payload: SharedActivationProofPayload =
+        serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
+    Ok(payload.stark_proof.size_estimate())
+}
+
+fn signed_primitive_benchmark_stark_proof_size(proof: &[u8]) -> Result<usize> {
+    let payload: SignedPrimitiveBenchmarkProofPayload =
+        serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
+    Ok(payload.stark_proof.size_estimate())
+}
+
 fn column_id(id: &str) -> stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId {
     stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId { id: id.to_string() }
 }
 
 fn const_f<E: EvalAtRow>(value: u32) -> E::F {
     E::F::from(BaseField::from(value))
+}
+
+fn const_signed_f<E: EvalAtRow>(value: i16) -> E::F {
+    E::F::from(BaseField::from((value as i32).rem_euclid(1 << 31) as u32))
+}
+
+fn padded_activation_rows(
+    log_size: u32,
+    rows: &[Phase3LookupTableRow],
+) -> Vec<Phase3LookupTableRow> {
+    let row_count = 1usize << log_size;
+    let mut padded = rows.to_vec();
+    let pad = padded.last().cloned().expect("non-empty activation rows");
+    padded.resize(row_count, pad);
+    padded
 }
 
 #[cfg(test)]
@@ -1503,7 +1940,7 @@ mod tests {
     fn shared_table_reuse_benchmark_runs_all_modes() {
         let report = run_stwo_shared_table_reuse_benchmark_with_options(false)
             .expect("shared-table reuse benchmark should run");
-        assert_eq!(report.rows.len(), 24);
+        assert_eq!(report.rows.len(), 33);
         assert!(report.rows.iter().all(|row| row.verified));
         assert!(report.rows.iter().all(|row| row.proof_bytes > 0));
         assert!(report
@@ -1520,13 +1957,18 @@ mod tests {
                 && row.backend_variant == "shared_table_lookup_reuse"
                 && row.steps == 8
         }));
+        assert!(report.rows.iter().any(|row| {
+            row.primitive == "binary_step_activation"
+                && row.backend_variant == "shared_table_lookup_reuse"
+                && row.steps == 3
+        }));
     }
 
     #[test]
     fn shared_table_reuse_benchmark_smoke_paths_verify_without_timings() {
-        let report = run_stwo_shared_table_reuse_benchmark_for_step_counts(&[1], &[1], false)
+        let report = run_stwo_shared_table_reuse_benchmark_for_step_counts(&[1], &[1], &[1], false)
             .expect("shared-table reuse smoke benchmark should run");
-        assert_eq!(report.rows.len(), 6);
+        assert_eq!(report.rows.len(), 9);
         assert!(report.rows.iter().all(|row| row.verified));
         assert!(report.rows.iter().all(|row| row.proof_bytes > 0));
         assert!(report.rows.iter().all(|row| row.prove_ms == 0));
@@ -1540,6 +1982,15 @@ mod tests {
         assert!(err
             .to_string()
             .contains("only 8 canonical rows are available"));
+    }
+
+    #[test]
+    fn shared_table_reuse_activation_rejects_out_of_range_step_count() {
+        let err = activation_claimed_row_prefix(&activation_canonical_rows(), 4)
+            .expect_err("activation step count beyond canonical table must fail");
+        assert!(err
+            .to_string()
+            .contains("only 3 canonical rows are available"));
     }
 
     #[test]
