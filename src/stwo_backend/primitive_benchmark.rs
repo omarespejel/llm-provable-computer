@@ -629,8 +629,14 @@ fn build_row2_bundle(
         }
         selected_positions.push(position);
     }
+    let required_log_size = canonical_rows
+        .len()
+        .next_power_of_two()
+        .trailing_zeros()
+        .max(LOG_N_LANES)
+        .max(4);
     Ok(Row2Bundle {
-        log_size: LOG_N_LANES.max(4),
+        log_size: required_log_size,
         canonical_rows,
         claimed_rows: claimed_rows.to_vec(),
         selected_positions,
@@ -933,5 +939,15 @@ mod tests {
         assert!(error
             .to_string()
             .contains("S-two primitive verification failed"));
+    }
+
+    #[test]
+    fn primitive_benchmark_rejects_lookup_proof_for_different_claimed_rows() {
+        let proof = prove_softmax_exp_lookup(&[(0, 256), (2, 94)]).expect("lookup proof");
+        let error = verify_softmax_exp_lookup(&[(0, 256), (4, 35)], &proof)
+            .expect_err("lookup claimed_rows mismatch must fail verification");
+        assert!(error
+            .to_string()
+            .contains("S-two softmax-exp lookup verification failed"));
     }
 }
