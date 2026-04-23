@@ -1,6 +1,6 @@
 # Gemma Block V2 Artifact
 
-This directory freezes a `statement-v1` S-two execution proof for `programs/gemma_block_v2.tvm` together with `research-v2` semantic agreement artifacts for the same fixed-shape block fixture. The fixture is still not a full Gemma block and does not claim standard-softmax proving. The difference from `gemma_block_v1` is narrower and more important: the canonical normalization row is no longer attached through `stwo_auxiliary` sidecar metadata. It is bound inside the main serialized `prove-stark --backend stwo` proof payload consumed by `verify-stark`.
+This directory freezes a `statement-v1` S-two execution proof for `programs/gemma_block_v2.tvm` together with `research-v2` semantic agreement artifacts for the same fixed-shape block fixture. The fixture is still not a full Gemma block and does not claim standard-softmax proving. The difference from `gemma_block_v1` is narrower and more important: the canonical normalization row is no longer attached through `stwo_auxiliary` sidecar metadata. It is bound inside the main serialized `prove-stark` proof payload consumed by `verify-stark`.
 
 This package therefore keeps three layers of evidence together:
 
@@ -15,8 +15,7 @@ Reproduce:
 ```bash
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prove-stark programs/gemma_block_v2.tvm \
-  --backend stwo \
-  --max-steps 256 \
+    --max-steps 256 \
   -o docs/paper/artifacts/gemma-block-v2/stwo-execution-proof.json
 
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \

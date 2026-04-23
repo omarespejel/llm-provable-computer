@@ -13,8 +13,7 @@ Reproduce:
 ```bash
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prove-stark programs/gemma_block_v1.tvm \
-  --backend stwo \
-  --max-steps 256 \
+    --max-steps 256 \
   -o docs/paper/artifacts/gemma-block-v1/stwo-execution-proof.json
 
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
