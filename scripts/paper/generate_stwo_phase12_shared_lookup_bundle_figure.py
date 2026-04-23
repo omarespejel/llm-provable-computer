@@ -286,6 +286,7 @@ def write_optional_rasters(
     fail_closed: bool,
 ) -> None:
     if png_path is not None:
+        png_path.parent.mkdir(parents=True, exist_ok=True)
         tmp_png = png_path.with_suffix(png_path.suffix + ".tmp")
         try:
             rsvg = subprocess.run(
@@ -316,6 +317,7 @@ def write_optional_rasters(
                 )
 
     if pdf_path is not None:
+        pdf_path.parent.mkdir(parents=True, exist_ok=True)
         tmp_pdf = pdf_path.with_suffix(pdf_path.suffix + ".tmp")
         try:
             rsvg_pdf = subprocess.run(
@@ -365,6 +367,7 @@ def main() -> None:
     rows = read_rows(args.input_tsv)
     validate_rows(rows, source=args.input_tsv)
     svg = render_svg(rows, bench_runs=args.bench_runs)
+    args.output_svg.parent.mkdir(parents=True, exist_ok=True)
     args.output_svg.write_text(svg, encoding="utf-8")
 
     if args.output_png is not None or args.output_pdf is not None:
