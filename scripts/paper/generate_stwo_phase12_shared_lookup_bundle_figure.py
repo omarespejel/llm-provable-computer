@@ -252,15 +252,24 @@ def render_legend(x: int, y: int) -> str:
 
 def render_svg(rows: list[dict[str, str]], *, bench_runs: int) -> str:
     grouped = group_rows(rows)
+    timings_captured = any(
+        int(row["prove_ms"]) > 0 or int(row["verify_ms"]) > 0 for row in rows
+    )
     subtitle = (
         "A richer two-table kernel: one shared normalization artifact plus one shared activation "
         "lookup proof, bound together under one static table registry commitment."
     )
-    footnote_lines = [
-        "Measured locally from real S-two proof generation and verification. "
-        f"Timings are medians over {bench_runs} runs.",
-        "The shared bundle is not recursive compression; it is a verifier-bound composition of two shared lookup-bearing proof surfaces.",
-    ]
+    if timings_captured:
+        footnote_lines = [
+            "Measured locally from real S-two proof generation and verification. "
+            f"Timings are medians over {bench_runs} runs.",
+            "The shared bundle is not recursive compression; it is a verifier-bound composition of two shared lookup-bearing proof surfaces.",
+        ]
+    else:
+        footnote_lines = [
+            "Timing capture was disabled for this render; prove and verify columns are intentionally zeroed for deterministic regeneration.",
+            "The shared bundle is not recursive compression; it is a verifier-bound composition of two shared lookup-bearing proof surfaces.",
+        ]
     legend = render_legend(140, 178)
     left_panel = render_panel(
         grouped=grouped,

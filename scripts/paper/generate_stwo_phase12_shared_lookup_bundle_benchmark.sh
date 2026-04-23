@@ -9,7 +9,7 @@ cd "$REPO_ROOT"
 
 NIGHTLY_TOOLCHAIN="${NIGHTLY_TOOLCHAIN:-+nightly-2025-07-14}"
 BENCH_RUNS="${BENCH_RUNS:-5}"
-CAPTURE_TIMINGS="${CAPTURE_TIMINGS:-1}"
+CAPTURE_TIMINGS="${CAPTURE_TIMINGS:-0}"
 TSV_OUT="${TSV_OUT:-$REPO_ROOT/docs/paper/evidence/stwo-phase12-shared-lookup-bundle-reuse-2026-04.tsv}"
 JSON_OUT="${JSON_OUT:-$REPO_ROOT/docs/paper/evidence/stwo-phase12-shared-lookup-bundle-reuse-2026-04.json}"
 SVG_OUT="${SVG_OUT:-$REPO_ROOT/docs/paper/figures/stwo-phase12-shared-lookup-bundle-reuse-2026-04.svg}"
