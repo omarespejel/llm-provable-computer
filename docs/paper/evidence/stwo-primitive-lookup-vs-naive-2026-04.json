@@ -37,7 +37,7 @@
         ]
       ],
       "proof_bytes": 1428,
-      "prove_ms": 4,
+      "prove_ms": 3,
       "verify_ms": 1,
       "verified": true,
       "note": "actual S-two arithmetic proof; no LogUp relation, no lookup table argument"
