@@ -2145,8 +2145,7 @@ fn commit_phase12_shared_lookup_bundle_benchmark_step_claims(
     let steps_bytes = encode_phase12_shared_lookup_bundle_benchmark_step_claims(steps)?;
     hasher.update(STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_VERSION.as_bytes());
     hasher.update(b"step-claims");
-    hasher.update(&(steps_bytes.len() as u64).to_le_bytes());
-    hasher.update(&steps_bytes);
+    append_len_prefixed_bytes_to_hasher(&mut hasher, &steps_bytes)?;
     let mut out = [0u8; 32];
     hasher
         .finalize_variable(&mut out)
@@ -2174,17 +2173,13 @@ fn commit_phase12_shared_lookup_bundle_benchmark_artifact(
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_VERSION.as_bytes());
     hasher.update(STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_SCOPE.as_bytes());
-    hasher.update(&(steps_bytes.len() as u64).to_le_bytes());
-    hasher.update(&steps_bytes);
+    append_len_prefixed_bytes_to_hasher(&mut hasher, &steps_bytes)?;
     hasher.update(STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12.as_bytes());
     hasher.update(STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12.as_bytes());
     append_len_prefixed_bytes_to_hasher(&mut hasher, static_table_registry_commitment.as_bytes())?;
-    hasher.update(&(static_table_commitments_bytes.len() as u64).to_le_bytes());
-    hasher.update(&static_table_commitments_bytes);
-    hasher.update(&(normalization_bytes.len() as u64).to_le_bytes());
-    hasher.update(&normalization_bytes);
-    hasher.update(&(activation_bytes.len() as u64).to_le_bytes());
-    hasher.update(&activation_bytes);
+    append_len_prefixed_bytes_to_hasher(&mut hasher, &static_table_commitments_bytes)?;
+    append_len_prefixed_bytes_to_hasher(&mut hasher, &normalization_bytes)?;
+    append_len_prefixed_bytes_to_hasher(&mut hasher, &activation_bytes)?;
     let mut out = [0u8; 32];
     hasher
         .finalize_variable(&mut out)
