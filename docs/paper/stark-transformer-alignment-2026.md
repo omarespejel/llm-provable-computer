@@ -153,7 +153,7 @@ T^2H + 6Td
 ```
 
 The `8Td^2` feedforward term is the GPT-2-style dense-MLP case (`4d` expansion); Section
-4.5 switches to the Gemma/GeGLU-style form `3Tdm`.
+4.6 switches to the Gemma/GeGLU-style form `3Tdm`.
 
 ______________________________________________________________________
 
@@ -302,6 +302,38 @@ These caveats do not remove the structural result; they bound its interpretation
 this paper, symbolic counts are used to locate architectural pressure points, not to
 predict wall-clock performance for any one deployed prover stack.
 
+### 4.5 Inference layer versus settlement layer
+
+The right 2026 architecture is not necessarily "prove every transformer operation as
+one flat AIR." Modern zkML systems increasingly separate the inference proof layer from
+the settlement layer. GKR/sumcheck-style protocols are attractive for layered tensor
+computation because they can verify large structured arithmetic relations without
+committing to every intermediate state in the same way a flat trace-oriented view would
+suggest [7, 50]. STARKs then remain valuable as the transparent, recursion-friendly, and
+onchain-verifiable settlement layer: a verifier can check that the inference proof or
+its verifier execution was accepted, while the public statement stays small and
+field-native for Starknet/S-two deployment [19, 20, 51].
+
+This distinction sharpens rather than weakens the paper's claim. The symbolic model
+above should be read as a pressure model for the non-arithmetic and settlement-facing
+parts of transformer proving, not as a mandate that every production implementation
+must be a pure all-STARK tensor prover. The production-relevant question is a layered
+one:
+
+```text
+inference proof layer:      tensor arithmetic, GKR/sumcheck, lookup-heavy kernels
+settlement proof layer:     transparent STARK, recursion/compression, public verifier
+```
+
+Under that reading, a STARK-native direction is compelling when it makes the settlement
+layer simple, transparent, recursive, and cheap to verify while preserving the
+lookup-heavy tensor semantics produced by the inference layer. BitSage's public
+recursive-STARK design states the same pattern directly: the GKR verifier becomes the
+STARK witness, and the onchain verifier checks the resulting STARK rather than
+replaying the full GKR proof [51]. This repository does not implement that recursive
+closure; it provides the smaller cost-model and artifact baseline needed to state that
+future comparison honestly.
+
 Figure 1 makes the symbolic-work decomposition behind that sensitivity visible for both
 the GPT-2-small worked example and a wider dense reference.
 
@@ -313,7 +345,7 @@ paired SNARK and STARK stacked bars using the exact dense formulas from Sections
 obvious, while the Llama-2-7B-style bars show the narrower short-context regime and the
 later widening discussed in Appendix B2.
 
-### 4.5 Analytic extension to released Gemma 3 architectures
+### 4.6 Analytic extension to released Gemma 3 architectures
 
 GPT-2-small keeps the algebra transparent, but newer deployments motivate a sparse
 long-context extension. Public materials report Gemma-3-class requirements including
@@ -710,34 +742,55 @@ It does **not** support stronger claims such as “STARKs have conclusively beat
 SNARKs,” full standard-softmax end-to-end inference in this repository, or
 production-scale LLM proving evidence.
 
-### 8.2 Highest-leverage next step
+### 8.2 TEEs and zkML are complements, not substitutes
 
-Given the parameterized decoding bridge and the pre-recursive carried-state aggregation
-ladder, the highest-leverage next result is **recursive cryptographic carried-state
-compression and accumulation** over the existing decode relation.
+The strongest practical alternative to zkML is not another proof system; it is trusted
+execution. NVIDIA's public materials now position confidential computing for AI models
+on Hopper, Blackwell, and Rubin-class systems, with device attestation and
+near-unencrypted performance as central product claims [52]. NVIDIA's zero-trust AI
+factory architecture frames the infrastructure owner, model owner, and data owner as
+mutually distrustful parties and uses hardware-backed TEEs plus attestation to protect
+model weights and data during execution [53].
 
-The methodological reason is simple: the statement boundary is already explicit. The
-cleanest next paper is therefore one that keeps the same decode relation and
-carried-state commitments while improving proof-size and verifier-cost behavior through
-accumulation/compression, rather than changing the execution relation and the
-aggregation mechanism at the same time.
+That matters for this paper because TEE-based verifiable AI and zkML answer different
+trust questions. A TEE can make private inference practical under a hardware-rooted
+trust model. A proof system gives a public verifier a cryptographic statement about a
+declared computation without trusting the inference host in the same way. The likely
+production architecture is therefore hybrid: TEEs handle fast private execution and
+deployment confidentiality, while zkML/STARK settlement handles public auditability,
+dispute resolution, onchain verification, and long-lived evidence.
+
+This is another reason not to frame the contribution as "STARKs replace every other
+verification mechanism." The narrower claim is more durable: trace-native STARKs are a
+strong settlement and reproducibility layer for transformer-shaped proof systems,
+especially when the inference layer itself may be GKR/sumcheck-heavy or TEE-assisted.
+
+### 8.3 Highest-leverage next step
+
+Given the current artifact boundary and the external landscape, the highest-leverage
+near-term result is a **matched within-S-two lookup-vs-naive primitive measurement**.
+The first targets should be RMSNorm and softmax because they directly exercise the
+normalization and non-arithmetic paths emphasized by the model.
+
+The methodological reason is simple: the symbolic model is already explicit, but it
+still needs a matched empirical anchor inside the same backend. A single TSV that
+reports prove time, verify time, proof bytes, and model-predicted ratio for lookup-backed
+RMSNorm/softmax versus naive arithmetized alternatives is more useful for this paper
+than another pre-recursive packaging layer. It turns the paper's strongest analytic
+claim into a falsifiable measurement without pretending to beat NANOZK, Jolt Atlas, or
+BitSage on whole-model wall-clock numbers.
 
 More generic folding and recursive-argument frameworks already cover much of the broad
 abstraction space [41, 43, 44, 45]. The sharper contribution available here is
-transformer-specific carried-state accumulation over a fixed decode relation. Within
-that boundary, the most credible near-term strengthening is to keep the public decode
-relation unchanged while making the carried-state kernels more reusable: stable shared
-lookup-table identity and reuse across decode artifacts, explicit block and step proof
-envelopes with machine-readable carried-state and lookup boundaries, bounded
-multi-runtime semantic-agreement kernels over fixed operator surfaces, and continued
-verifier hardening on the experimental `stwo` route all sharpen the same fixed relation
-rather than replacing it [38, 39, 42, 47, 48]. A supplementary appendix maps those
-external influences to the current repository realization and the explicit future-work
-boundary they motivate.
+transformer-specific measurement and then, later, transformer-specific accumulation over
+a fixed relation. Within that boundary, the credible sequencing is: first measure one
+lookup-backed primitive against a naive alternative; then extend to softmax; then use
+those numbers to decide whether recursive carried-state accumulation is the next paper's
+main result or only a supporting layer [38, 39, 42, 47, 48].
 
-That direction keeps the next contribution transformer-specific and technically
-attributable: gains can be read as accumulation/compression gains over a fixed public
-boundary, not as a consequence of moving the underlying claim.
+That direction keeps the next contribution technically attributable: near-term gains
+can be read as lookup-vs-naive primitive gains inside one backend, while later gains can
+be read as accumulation/compression gains over a fixed public boundary.
 
 ______________________________________________________________________
 
@@ -913,3 +966,14 @@ ______________________________________________________________________
     `4f89f0b607210e0cd42034d0e622696411f2a1c2`, at
     `docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md`.
     <https://github.com/omarespejel/provable-transformer-vm/blob/4f89f0b607210e0cd42034d0e622696411f2a1c2/docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md>
+50. Vitalik Buterin. “A GKR Tutorial.” *vitalik.eth.limo*, October 19, 2025.
+    Accessed April 23, 2026. <https://vitalik.eth.limo/general/2025/10/19/gkr.html>
+51. BitSage Network. “Recursive STARK Composition.” GitHub documentation file in
+    *obelyzk.rs*. Accessed April 23, 2026.
+    <https://github.com/Bitsage-Network/obelyzk.rs/blob/main/engine/docs/RECURSIVE_STARK.md>
+52. NVIDIA. “NVIDIA Confidential Computing.” Official product documentation. Accessed
+    April 23, 2026.
+    <https://www.nvidia.com/en-us/data-center/solutions/confidential-computing/>
+53. NVIDIA. “Building a Zero-Trust Architecture for Confidential AI Factories.”
+    *NVIDIA Technical Blog*. Accessed April 23, 2026.
+    <https://developer.nvidia.com/blog/building-a-zero-trust-architecture-for-confidential-ai-factories/>
