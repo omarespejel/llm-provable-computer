@@ -22,7 +22,7 @@ Phase112 exists to cut that excess.
 
 ## Public claim
 
-Given a verified ordered family of Phase107 repeated-window richer artifacts,
+Given a verified ordered family of Phase107 repeated-window artifacts,
 the repository can derive one smaller accumulation-semantics artifact that
 binds:
 
