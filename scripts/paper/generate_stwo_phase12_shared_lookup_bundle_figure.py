@@ -32,6 +32,8 @@ VARIANT_ORDER = [
     "independent_selector_arithmetic_pairs",
 ]
 REQUIRED_COLUMNS = {
+    "benchmark_version",
+    "semantic_scope",
     "primitive",
     "backend_variant",
     "steps",
@@ -45,6 +47,8 @@ REQUIRED_COLUMNS = {
     "verified",
     "note",
 }
+EXPECTED_BENCHMARK_VERSION = "stwo-phase12-shared-lookup-bundle-reuse-benchmark-v1"
+EXPECTED_SEMANTIC_SCOPE = "phase12_style_combined_shared_lookup_bundle_calibration"
 
 WIDTH = 1700
 HEIGHT = 900
@@ -75,6 +79,14 @@ def read_rows(path: Path) -> list[dict[str, str]]:
 def validate_rows(rows: list[dict[str, str]], *, source: Path) -> None:
     seen: set[tuple[str, str, int]] = set()
     for row in rows:
+        if row["benchmark_version"] != EXPECTED_BENCHMARK_VERSION:
+            raise SystemExit(
+                f"unexpected benchmark_version in {source}: {row['benchmark_version']}"
+            )
+        if row["semantic_scope"] != EXPECTED_SEMANTIC_SCOPE:
+            raise SystemExit(
+                f"unexpected semantic_scope in {source}: {row['semantic_scope']}"
+            )
         key = (row["primitive"], row["backend_variant"], int(row["steps"]))
         if key in seen:
             raise SystemExit(f"duplicate benchmark row in {source}: {key}")

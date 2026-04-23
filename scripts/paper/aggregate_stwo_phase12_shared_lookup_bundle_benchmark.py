@@ -112,7 +112,7 @@ def main() -> None:
     args.output_json.write_text(json.dumps(output_payload, indent=2) + "\n", encoding="utf-8")
 
     lines = [
-        "primitive\tbackend_variant\tsteps\trelation\tnormalization_rows\tactivation_rows\tproof_bytes\tserialized_bytes\tprove_ms\tverify_ms\tverified\tnote"
+        "benchmark_version\tsemantic_scope\tprimitive\tbackend_variant\tsteps\trelation\tnormalization_rows\tactivation_rows\tproof_bytes\tserialized_bytes\tprove_ms\tverify_ms\tverified\tnote"
     ]
     for row in aggregated_rows:
         normalization_rows = ",".join(
@@ -124,6 +124,8 @@ def main() -> None:
         lines.append(
             "\t".join(
                 [
+                    str(benchmark_version),
+                    str(semantic_scope),
                     row["primitive"],
                     row["backend_variant"],
                     str(row["steps"]),
