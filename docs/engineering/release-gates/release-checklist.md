@@ -35,7 +35,7 @@ so the gate runs locally on a workstation; the items below assume that posture.
 - [ ] All artifacts that will be cited externally are generated under
       `publication-v1` (`docs/engineering/release-gates/publication-profile.md`).
 - [ ] Every published bundle's `claim.options` matches `publication_v1_stark_options()`.
-- [ ] `cargo test --release --lib proof::` exits 0.
+- [ ] `cargo +nightly-2025-07-14 test --release --features stwo-backend --lib proof::` exits 0.
 - [ ] No artifact label or wrapper script overstates the proof's semantic
       scope. Use `statement-v1` only when the v1 metadata invariants hold.
 

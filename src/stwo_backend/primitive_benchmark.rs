@@ -2336,7 +2336,6 @@ fn encode_phase12_static_lookup_table_commitments(
 
 fn encode_stark_proof_backend(backend: StarkProofBackend) -> u8 {
     match backend {
-        StarkProofBackend::Vanilla => 0,
         StarkProofBackend::Stwo => 1,
     }
 }
