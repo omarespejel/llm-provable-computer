@@ -326,11 +326,11 @@ branch and records the median of five repeated local runs; the millisecond value
 host-dependent representative timings rather than portable wall-clock guarantees. Here
 the qualitative picture changes. For RMSNorm
 at five shared rows, the shared-table path records `2,140` raw proof bytes and `9 ms`
-of proving, versus `12,812` bytes and `44 ms` for five independent lookup envelopes and
-`8,292` bytes and `40 ms` for five independent selector-arithmetic proofs. For the
+of proving, versus `12,812` bytes and `43 ms` for five independent lookup envelopes and
+`8,292` bytes and `39 ms` for five independent selector-arithmetic proofs. For the
 softmax exp-table slice at eight shared rows, the shared-table path records `2,284`
 bytes and `6 ms`, versus `19,552` bytes and `50 ms` for independent lookup proofs and
-`14,216` bytes and `36 ms` for independent selector-arithmetic proofs. This is still
+`14,216` bytes and `33 ms` for independent selector-arithmetic proofs. This is still
 not a full attention-kernel or recursive-compression result, but it is the reuse-aware
 regime the symbolic model was trying to isolate: once one canonical table identity is
 made verifier-visible across repeated steps, proof growth can flatten sharply instead of

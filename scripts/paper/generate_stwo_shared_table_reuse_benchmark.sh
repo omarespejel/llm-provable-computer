@@ -82,7 +82,8 @@ python3 scripts/paper/generate_stwo_shared_table_reuse_figure.py \
   --input-tsv "$TMP_TSV" \
   --output-svg "$TMP_SVG" \
   --output-png "$TMP_PNG" \
-  --output-pdf "$TMP_PDF"
+  --output-pdf "$TMP_PDF" \
+  --fail-closed-rasters
 
 mv "$TMP_TSV" "$TSV_OUT"
 mv "$TMP_JSON" "$JSON_OUT"
