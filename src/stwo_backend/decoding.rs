@@ -19576,8 +19576,7 @@ mod tests {
             message.contains("execution proof did not verify")
                 || message.contains("failed to deserialize")
                 || message.contains("serialization error")
-                || message.contains("deserial")
-                || message.contains("proof"),
+                || message.contains("deserial"),
             "unexpected error: {message}"
         );
     }
