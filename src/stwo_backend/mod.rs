@@ -296,12 +296,20 @@ pub use normalization_prover::{
 };
 #[cfg(feature = "stwo-backend")]
 pub use primitive_benchmark::{
+    run_stwo_phase12_shared_lookup_bundle_benchmark,
+    run_stwo_phase12_shared_lookup_bundle_benchmark_with_options,
     run_stwo_primitive_lookup_vs_naive_benchmark, run_stwo_shared_table_reuse_benchmark,
-    run_stwo_shared_table_reuse_benchmark_with_options, save_stwo_primitive_benchmark_report_json,
-    save_stwo_primitive_benchmark_report_tsv, save_stwo_shared_table_reuse_benchmark_report_json,
-    save_stwo_shared_table_reuse_benchmark_report_tsv, StwoPrimitiveBenchmarkMeasurement,
+    run_stwo_shared_table_reuse_benchmark_with_options,
+    save_stwo_phase12_shared_lookup_bundle_benchmark_report_json,
+    save_stwo_phase12_shared_lookup_bundle_benchmark_report_tsv,
+    save_stwo_primitive_benchmark_report_json, save_stwo_primitive_benchmark_report_tsv,
+    save_stwo_shared_table_reuse_benchmark_report_json,
+    save_stwo_shared_table_reuse_benchmark_report_tsv,
+    StwoPhase12SharedLookupBundleBenchmarkMeasurement,
+    StwoPhase12SharedLookupBundleBenchmarkReport, StwoPrimitiveBenchmarkMeasurement,
     StwoPrimitiveBenchmarkReport, StwoSharedTableReuseBenchmarkMeasurement,
-    StwoSharedTableReuseBenchmarkReport, STWO_PRIMITIVE_BENCHMARK_SCOPE,
+    StwoSharedTableReuseBenchmarkReport, STWO_PHASE12_SHARED_LOOKUP_BUNDLE_BENCHMARK_SCOPE,
+    STWO_PHASE12_SHARED_LOOKUP_BUNDLE_BENCHMARK_VERSION, STWO_PRIMITIVE_BENCHMARK_SCOPE,
     STWO_PRIMITIVE_BENCHMARK_VERSION, STWO_SHARED_TABLE_REUSE_BENCHMARK_SCOPE,
     STWO_SHARED_TABLE_REUSE_BENCHMARK_VERSION,
 };

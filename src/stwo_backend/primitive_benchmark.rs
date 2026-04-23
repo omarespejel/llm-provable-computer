@@ -1,4 +1,6 @@
 use ark_ff::Zero;
+use blake2::digest::{Update, VariableOutput};
+use blake2::Blake2bVar;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -37,7 +39,12 @@ use super::normalization_prover::{
     prove_phase10_shared_normalization_lookup_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
     verify_phase92_shared_normalization_primitive_artifact,
-    Phase92SharedNormalizationPrimitiveStep,
+    Phase92SharedNormalizationPrimitiveArtifact, Phase92SharedNormalizationPrimitiveStep,
+};
+use super::shared_lookup_artifact::{
+    phase12_static_lookup_table_registry_from_envelopes, Phase12StaticLookupTableCommitment,
+    STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12,
+    STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12,
 };
 use crate::error::{Result, VmError};
 
@@ -47,6 +54,14 @@ pub const STWO_PRIMITIVE_BENCHMARK_SCOPE: &str =
 pub const STWO_SHARED_TABLE_REUSE_BENCHMARK_VERSION: &str = "stwo-shared-table-reuse-benchmark-v1";
 pub const STWO_SHARED_TABLE_REUSE_BENCHMARK_SCOPE: &str =
     "shared_table_reuse_calibration_over_transformer_primitives";
+pub const STWO_PHASE12_SHARED_LOOKUP_BUNDLE_BENCHMARK_VERSION: &str =
+    "stwo-phase12-shared-lookup-bundle-reuse-benchmark-v1";
+pub const STWO_PHASE12_SHARED_LOOKUP_BUNDLE_BENCHMARK_SCOPE: &str =
+    "phase12_style_combined_shared_lookup_bundle_calibration";
+const STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_VERSION: &str =
+    "stwo-phase12-style-shared-lookup-bundle-benchmark-artifact-v1";
+const STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_SCOPE: &str =
+    "phase12_style_combined_shared_lookup_bundle_benchmark_artifact";
 
 relation!(SoftmaxExpLookupRelation, 2);
 type SoftmaxExpLookupElements = SoftmaxExpLookupRelation;
@@ -68,6 +83,7 @@ const SOFTMAX_EXP_POLY_COEFFS: [u32; 3] = [256, 536_870_805, 1_879_048_204];
 const RMSNORM_REUSE_STEP_COUNTS: [usize; 4] = [1, 2, 4, 5];
 const SOFTMAX_REUSE_STEP_COUNTS: [usize; 4] = [1, 2, 4, 8];
 const ACTIVATION_REUSE_STEP_COUNTS: [usize; 3] = [1, 2, 3];
+const PHASE12_SHARED_LOOKUP_BUNDLE_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StwoPrimitiveBenchmarkMeasurement {
@@ -111,6 +127,29 @@ pub struct StwoSharedTableReuseBenchmarkReport {
     pub rows: Vec<StwoSharedTableReuseBenchmarkMeasurement>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StwoPhase12SharedLookupBundleBenchmarkMeasurement {
+    pub primitive: String,
+    pub backend_variant: String,
+    pub steps: usize,
+    pub relation: String,
+    pub normalization_rows: Vec<[u16; 2]>,
+    pub activation_rows: Vec<[i16; 2]>,
+    pub proof_bytes: usize,
+    pub serialized_bytes: usize,
+    pub prove_ms: u128,
+    pub verify_ms: u128,
+    pub verified: bool,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StwoPhase12SharedLookupBundleBenchmarkReport {
+    pub benchmark_version: String,
+    pub semantic_scope: String,
+    pub rows: Vec<StwoPhase12SharedLookupBundleBenchmarkMeasurement>,
+}
+
 #[derive(Serialize, Deserialize)]
 struct PrimitiveBenchmarkProofPayload {
     stark_proof: StarkProof<Blake2sM31MerkleHasher>,
@@ -133,6 +172,29 @@ struct SharedActivationProofPayload {
 struct SignedPrimitiveBenchmarkProofPayload {
     stark_proof: StarkProof<Blake2sM31MerkleHasher>,
     canonical_rows: Vec<[i16; 2]>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+struct Phase12SharedLookupBundleBenchmarkStepClaim {
+    step_index: usize,
+    normalization_row: [u16; 2],
+    activation_row: [i16; 2],
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+struct Phase12SharedLookupBundleBenchmarkArtifact {
+    artifact_version: String,
+    semantic_scope: String,
+    artifact_commitment: String,
+    step_claims_commitment: String,
+    static_table_registry_version: String,
+    static_table_registry_scope: String,
+    static_table_registry_commitment: String,
+    static_table_commitments: Vec<Phase12StaticLookupTableCommitment>,
+    total_steps: usize,
+    steps: Vec<Phase12SharedLookupBundleBenchmarkStepClaim>,
+    normalization_artifact: Phase92SharedNormalizationPrimitiveArtifact,
+    activation_proof_envelope: super::lookup_prover::Phase10SharedLookupProofEnvelope,
 }
 
 #[derive(Clone)]
@@ -468,6 +530,71 @@ fn run_stwo_shared_table_reuse_benchmark_for_step_counts(
     })
 }
 
+pub fn run_stwo_phase12_shared_lookup_bundle_benchmark(
+) -> Result<StwoPhase12SharedLookupBundleBenchmarkReport> {
+    run_stwo_phase12_shared_lookup_bundle_benchmark_with_options(false)
+}
+
+pub fn run_stwo_phase12_shared_lookup_bundle_benchmark_with_options(
+    capture_timings: bool,
+) -> Result<StwoPhase12SharedLookupBundleBenchmarkReport> {
+    let normalization_rows = claimed_row_prefix(
+        &rmsnorm_canonical_rows(),
+        *PHASE12_SHARED_LOOKUP_BUNDLE_STEP_COUNTS
+            .last()
+            .expect("phase12 bundle step counts"),
+        "phase12_shared_lookup_bundle",
+    )?;
+    let activation_rows = activation_claimed_row_prefix(
+        &activation_canonical_rows(),
+        *PHASE12_SHARED_LOOKUP_BUNDLE_STEP_COUNTS
+            .last()
+            .expect("phase12 bundle step counts"),
+    )?;
+
+    let mut rows = Vec::new();
+    for &steps in &PHASE12_SHARED_LOOKUP_BUNDLE_STEP_COUNTS {
+        let normalization_prefix = normalization_rows
+            .iter()
+            .copied()
+            .take(steps)
+            .collect::<Vec<_>>();
+        let activation_prefix = activation_rows
+            .iter()
+            .take(steps)
+            .cloned()
+            .collect::<Vec<_>>();
+        rows.push(measure_phase12_shared_lookup_bundle_shared(
+            &normalization_prefix,
+            &activation_prefix,
+            capture_timings,
+        )?);
+        rows.push(measure_phase12_shared_lookup_bundle_independent_lookup(
+            &normalization_prefix,
+            &activation_prefix,
+            capture_timings,
+        )?);
+        rows.push(measure_phase12_shared_lookup_bundle_independent_arithmetic(
+            &normalization_prefix,
+            &activation_prefix,
+            capture_timings,
+        )?);
+    }
+
+    if let Some(failed) = rows.iter().find(|row| !row.verified) {
+        return Err(VmError::UnsupportedProof(format!(
+            "phase12 shared lookup bundle benchmark row {} / {} / {} steps did not verify",
+            failed.primitive, failed.backend_variant, failed.steps
+        )));
+    }
+
+    Ok(StwoPhase12SharedLookupBundleBenchmarkReport {
+        benchmark_version: STWO_PHASE12_SHARED_LOOKUP_BUNDLE_BENCHMARK_VERSION.to_string(),
+        semantic_scope: STWO_PHASE12_SHARED_LOOKUP_BUNDLE_BENCHMARK_SCOPE.to_string(),
+        rows,
+    })
+}
+
 fn measure_elapsed_ms<T, F>(capture_timings: bool, op: F) -> Result<(T, u128)>
 where
     F: FnOnce() -> Result<T>,
@@ -553,6 +680,56 @@ pub fn save_stwo_shared_table_reuse_benchmark_report_tsv(
             row.steps,
             row.relation,
             claimed_rows,
+            row.proof_bytes,
+            row.serialized_bytes,
+            row.prove_ms,
+            row.verify_ms,
+            row.verified,
+            row.note.replace('\t', " ")
+        ));
+    }
+    fs::write(path, out)?;
+    Ok(())
+}
+
+pub fn save_stwo_phase12_shared_lookup_bundle_benchmark_report_json(
+    report: &StwoPhase12SharedLookupBundleBenchmarkReport,
+    path: &Path,
+) -> Result<()> {
+    let json = serde_json::to_string_pretty(report)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    fs::write(path, json)?;
+    Ok(())
+}
+
+pub fn save_stwo_phase12_shared_lookup_bundle_benchmark_report_tsv(
+    report: &StwoPhase12SharedLookupBundleBenchmarkReport,
+    path: &Path,
+) -> Result<()> {
+    let mut out = String::from(
+        "primitive\tbackend_variant\tsteps\trelation\tnormalization_rows\tactivation_rows\tproof_bytes\tserialized_bytes\tprove_ms\tverify_ms\tverified\tnote\n",
+    );
+    for row in &report.rows {
+        let normalization_rows = row
+            .normalization_rows
+            .iter()
+            .map(|pair| format!("{}:{}", pair[0], pair[1]))
+            .collect::<Vec<_>>()
+            .join(",");
+        let activation_rows = row
+            .activation_rows
+            .iter()
+            .map(|pair| format!("{}:{}", pair[0], pair[1]))
+            .collect::<Vec<_>>()
+            .join(",");
+        out.push_str(&format!(
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            row.primitive,
+            row.backend_variant,
+            row.steps,
+            row.relation,
+            normalization_rows,
+            activation_rows,
             row.proof_bytes,
             row.serialized_bytes,
             row.prove_ms,
@@ -1025,6 +1202,184 @@ fn measure_activation_independent_naive(
         verify_ms,
         verified: true,
         note: "one selector-arithmetic proof per step without shared lookup reuse".to_string(),
+    })
+}
+
+fn measure_phase12_shared_lookup_bundle_shared(
+    normalization_rows: &[(u16, u16)],
+    activation_rows: &[Phase3LookupTableRow],
+    capture_timings: bool,
+) -> Result<StwoPhase12SharedLookupBundleBenchmarkMeasurement> {
+    let (artifact, prove_ms) = measure_elapsed_ms(capture_timings, || {
+        prepare_phase12_shared_lookup_bundle_benchmark_artifact(normalization_rows, activation_rows)
+    })?;
+    let proof_bytes = phase12_shared_lookup_bundle_proof_bytes(&artifact)?;
+    let serialized_bytes = serde_json::to_vec(&artifact)
+        .map_err(|error| VmError::Serialization(error.to_string()))?
+        .len();
+    let ((), verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_phase12_shared_lookup_bundle_benchmark_artifact(&artifact)
+    })?;
+
+    Ok(StwoPhase12SharedLookupBundleBenchmarkMeasurement {
+        primitive: "phase12_shared_lookup_bundle".to_string(),
+        backend_variant: "shared_bundle_lookup_reuse".to_string(),
+        steps: artifact.total_steps,
+        relation: "Phase12-style combined normalization+activation shared bundle".to_string(),
+        normalization_rows: claimed_rows_to_arrays(normalization_rows),
+        activation_rows: activation_rows_to_arrays(activation_rows),
+        proof_bytes,
+        serialized_bytes,
+        prove_ms,
+        verify_ms,
+        verified: true,
+        note: "one verifier-bound bundle combines a shared normalization artifact, a shared activation lookup proof, and one static table registry commitment".to_string(),
+    })
+}
+
+fn measure_phase12_shared_lookup_bundle_independent_lookup(
+    normalization_rows: &[(u16, u16)],
+    activation_rows: &[Phase3LookupTableRow],
+    capture_timings: bool,
+) -> Result<StwoPhase12SharedLookupBundleBenchmarkMeasurement> {
+    ensure_phase12_bundle_row_counts(normalization_rows, activation_rows)?;
+    let mut prove_ms = 0;
+    let mut verify_ms = 0;
+    let mut proof_bytes = 0usize;
+    let mut serialized_bytes = 0usize;
+    let mut normalization_proofs = Vec::with_capacity(normalization_rows.len());
+    let mut activation_proofs = Vec::with_capacity(activation_rows.len());
+
+    for normalization_row in normalization_rows {
+        let (envelope, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            prove_phase10_shared_normalization_lookup_envelope(&[*normalization_row])
+        })?;
+        prove_ms += elapsed_ms;
+        proof_bytes += shared_normalization_stark_proof_size(&envelope.proof)?;
+        serialized_bytes += serde_json::to_vec(&envelope)
+            .map_err(|error| VmError::Serialization(error.to_string()))?
+            .len();
+        normalization_proofs.push(envelope);
+    }
+    for activation_row in activation_rows {
+        let (envelope, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            prove_phase10_shared_binary_step_lookup_envelope(&[activation_row.clone()])
+        })?;
+        prove_ms += elapsed_ms;
+        proof_bytes += shared_activation_stark_proof_size(&envelope.proof)?;
+        serialized_bytes += serde_json::to_vec(&envelope)
+            .map_err(|error| VmError::Serialization(error.to_string()))?
+            .len();
+        activation_proofs.push(envelope);
+    }
+
+    for envelope in &normalization_proofs {
+        let (verified, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            verify_phase10_shared_normalization_lookup_envelope(envelope)
+        })?;
+        if !verified {
+            return Err(VmError::UnsupportedProof(
+                "independent Phase12 normalization lookup proof did not verify".to_string(),
+            ));
+        }
+        verify_ms += elapsed_ms;
+    }
+    for envelope in &activation_proofs {
+        let (verified, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            verify_phase10_shared_binary_step_lookup_envelope(envelope)
+        })?;
+        if !verified {
+            return Err(VmError::UnsupportedProof(
+                "independent Phase12 activation lookup proof did not verify".to_string(),
+            ));
+        }
+        verify_ms += elapsed_ms;
+    }
+
+    Ok(StwoPhase12SharedLookupBundleBenchmarkMeasurement {
+        primitive: "phase12_shared_lookup_bundle".to_string(),
+        backend_variant: "independent_lookup_pairs".to_string(),
+        steps: normalization_rows.len(),
+        relation: "independent normalization+activation lookup proofs".to_string(),
+        normalization_rows: claimed_rows_to_arrays(normalization_rows),
+        activation_rows: activation_rows_to_arrays(activation_rows),
+        proof_bytes,
+        serialized_bytes,
+        prove_ms,
+        verify_ms,
+        verified: true,
+        note: "each step proves its normalization row and activation row independently against the canonical tables".to_string(),
+    })
+}
+
+fn measure_phase12_shared_lookup_bundle_independent_arithmetic(
+    normalization_rows: &[(u16, u16)],
+    activation_rows: &[Phase3LookupTableRow],
+    capture_timings: bool,
+) -> Result<StwoPhase12SharedLookupBundleBenchmarkMeasurement> {
+    ensure_phase12_bundle_row_counts(normalization_rows, activation_rows)?;
+    let mut prove_ms = 0;
+    let mut verify_ms = 0;
+    let mut proof_bytes = 0usize;
+    let mut serialized_bytes = 0usize;
+    let mut normalization_proofs = Vec::with_capacity(normalization_rows.len());
+    let mut activation_proofs = Vec::with_capacity(activation_rows.len());
+
+    for normalization_row in normalization_rows {
+        let (proof, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            prove_rmsnorm_selector_arithmetic(&[*normalization_row])
+        })?;
+        prove_ms += elapsed_ms;
+        proof_bytes += primitive_benchmark_stark_proof_size(&proof)?;
+        serialized_bytes += proof.len();
+        normalization_proofs.push((*normalization_row, proof));
+    }
+    for activation_row in activation_rows {
+        let (proof, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            prove_activation_selector_arithmetic(&[activation_row.clone()])
+        })?;
+        prove_ms += elapsed_ms;
+        proof_bytes += signed_primitive_benchmark_stark_proof_size(&proof)?;
+        serialized_bytes += proof.len();
+        activation_proofs.push((activation_row.clone(), proof));
+    }
+
+    for (normalization_row, proof) in &normalization_proofs {
+        let (verified, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            verify_rmsnorm_selector_arithmetic(&[*normalization_row], proof)
+        })?;
+        if !verified {
+            return Err(VmError::UnsupportedProof(
+                "independent Phase12 normalization arithmetic proof did not verify".to_string(),
+            ));
+        }
+        verify_ms += elapsed_ms;
+    }
+    for (activation_row, proof) in &activation_proofs {
+        let (verified, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            verify_activation_selector_arithmetic(std::slice::from_ref(activation_row), proof)
+        })?;
+        if !verified {
+            return Err(VmError::UnsupportedProof(
+                "independent Phase12 activation arithmetic proof did not verify".to_string(),
+            ));
+        }
+        verify_ms += elapsed_ms;
+    }
+
+    Ok(StwoPhase12SharedLookupBundleBenchmarkMeasurement {
+        primitive: "phase12_shared_lookup_bundle".to_string(),
+        backend_variant: "independent_selector_arithmetic_pairs".to_string(),
+        steps: normalization_rows.len(),
+        relation: "independent normalization+activation arithmetic proofs".to_string(),
+        normalization_rows: claimed_rows_to_arrays(normalization_rows),
+        activation_rows: activation_rows_to_arrays(activation_rows),
+        proof_bytes,
+        serialized_bytes,
+        prove_ms,
+        verify_ms,
+        verified: true,
+        note: "each step reproves its normalization row and activation row without shared lookup reuse".to_string(),
     })
 }
 
@@ -1742,6 +2097,308 @@ fn activation_rows_to_arrays(rows: &[Phase3LookupTableRow]) -> Vec<[i16; 2]> {
         .collect()
 }
 
+fn ensure_phase12_bundle_row_counts(
+    normalization_rows: &[(u16, u16)],
+    activation_rows: &[Phase3LookupTableRow],
+) -> Result<()> {
+    if normalization_rows.is_empty() || activation_rows.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "phase12 shared lookup bundle benchmark requires at least one claimed row".to_string(),
+        ));
+    }
+    if normalization_rows.len() != activation_rows.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "phase12 shared lookup bundle benchmark requires matching row counts, got normalization={} activation={}",
+            normalization_rows.len(),
+            activation_rows.len()
+        )));
+    }
+    Ok(())
+}
+
+fn phase12_bundle_step_claims(
+    normalization_rows: &[(u16, u16)],
+    activation_rows: &[Phase3LookupTableRow],
+) -> Result<Vec<Phase12SharedLookupBundleBenchmarkStepClaim>> {
+    ensure_phase12_bundle_row_counts(normalization_rows, activation_rows)?;
+    Ok(normalization_rows
+        .iter()
+        .copied()
+        .zip(activation_rows.iter().cloned())
+        .enumerate()
+        .map(|(step_index, (normalization_row, activation_row))| {
+            Phase12SharedLookupBundleBenchmarkStepClaim {
+                step_index,
+                normalization_row: [normalization_row.0, normalization_row.1],
+                activation_row: [activation_row.input, i16::from(activation_row.output)],
+            }
+        })
+        .collect())
+}
+
+fn commit_phase12_shared_lookup_bundle_benchmark_step_claims(
+    steps: &[Phase12SharedLookupBundleBenchmarkStepClaim],
+) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    let steps_json =
+        serde_json::to_vec(steps).map_err(|error| VmError::Serialization(error.to_string()))?;
+    hasher.update(STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_VERSION.as_bytes());
+    hasher.update(b"step-claims");
+    hasher.update(&(steps_json.len() as u64).to_le_bytes());
+    hasher.update(&steps_json);
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn commit_phase12_shared_lookup_bundle_benchmark_artifact(
+    steps: &[Phase12SharedLookupBundleBenchmarkStepClaim],
+    normalization_artifact: &Phase92SharedNormalizationPrimitiveArtifact,
+    activation_proof_envelope: &super::lookup_prover::Phase10SharedLookupProofEnvelope,
+) -> Result<String> {
+    let (static_table_commitments, static_table_registry_commitment) =
+        phase12_static_lookup_table_registry_from_envelopes(
+            &normalization_artifact.proof_envelope,
+            activation_proof_envelope,
+        )?;
+    let steps_json =
+        serde_json::to_vec(steps).map_err(|error| VmError::Serialization(error.to_string()))?;
+    let static_table_commitments_json = serde_json::to_vec(&static_table_commitments)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    let normalization_json = serde_json::to_vec(normalization_artifact)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    let activation_json = serde_json::to_vec(activation_proof_envelope)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+
+    let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
+    hasher.update(STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_VERSION.as_bytes());
+    hasher.update(STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_SCOPE.as_bytes());
+    hasher.update(&(steps_json.len() as u64).to_le_bytes());
+    hasher.update(&steps_json);
+    hasher.update(STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12.as_bytes());
+    hasher.update(STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12.as_bytes());
+    hasher.update(static_table_registry_commitment.as_bytes());
+    hasher.update(&(static_table_commitments_json.len() as u64).to_le_bytes());
+    hasher.update(&static_table_commitments_json);
+    hasher.update(&(normalization_json.len() as u64).to_le_bytes());
+    hasher.update(&normalization_json);
+    hasher.update(&(activation_json.len() as u64).to_le_bytes());
+    hasher.update(&activation_json);
+    let mut out = [0u8; 32];
+    hasher
+        .finalize_variable(&mut out)
+        .expect("blake2b finalize");
+    Ok(lower_hex(&out))
+}
+
+fn prepare_phase12_shared_lookup_bundle_benchmark_artifact(
+    normalization_rows: &[(u16, u16)],
+    activation_rows: &[Phase3LookupTableRow],
+) -> Result<Phase12SharedLookupBundleBenchmarkArtifact> {
+    let steps = phase12_bundle_step_claims(normalization_rows, activation_rows)?;
+    let normalization_artifact = prepare_phase92_shared_normalization_primitive_artifact(
+        &shared_normalization_steps_from_rows(normalization_rows),
+    )?;
+    let activation_proof_envelope =
+        prove_phase10_shared_binary_step_lookup_envelope(activation_rows)?;
+    let (static_table_commitments, static_table_registry_commitment) =
+        phase12_static_lookup_table_registry_from_envelopes(
+            &normalization_artifact.proof_envelope,
+            &activation_proof_envelope,
+        )?;
+    let step_claims_commitment = commit_phase12_shared_lookup_bundle_benchmark_step_claims(&steps)?;
+    let artifact_commitment = commit_phase12_shared_lookup_bundle_benchmark_artifact(
+        &steps,
+        &normalization_artifact,
+        &activation_proof_envelope,
+    )?;
+    Ok(Phase12SharedLookupBundleBenchmarkArtifact {
+        artifact_version: STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_VERSION.to_string(),
+        semantic_scope: STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_SCOPE.to_string(),
+        artifact_commitment,
+        step_claims_commitment,
+        static_table_registry_version: STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12
+            .to_string(),
+        static_table_registry_scope: STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12
+            .to_string(),
+        static_table_registry_commitment,
+        static_table_commitments,
+        total_steps: steps.len(),
+        steps,
+        normalization_artifact,
+        activation_proof_envelope,
+    })
+}
+
+fn verify_phase12_shared_lookup_bundle_benchmark_artifact(
+    artifact: &Phase12SharedLookupBundleBenchmarkArtifact,
+) -> Result<()> {
+    if artifact.artifact_version != STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_VERSION {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported phase12 shared lookup bundle benchmark artifact version `{}`",
+            artifact.artifact_version
+        )));
+    }
+    if artifact.semantic_scope != STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_SCOPE {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported phase12 shared lookup bundle benchmark artifact scope `{}`",
+            artifact.semantic_scope
+        )));
+    }
+    if artifact.static_table_registry_version
+        != STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported phase12 shared lookup bundle static registry version `{}`",
+            artifact.static_table_registry_version
+        )));
+    }
+    if artifact.static_table_registry_scope
+        != STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12
+    {
+        return Err(VmError::InvalidConfig(format!(
+            "unsupported phase12 shared lookup bundle static registry scope `{}`",
+            artifact.static_table_registry_scope
+        )));
+    }
+    if artifact.total_steps == 0 || artifact.total_steps != artifact.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "phase12 shared lookup bundle total_steps={} does not match steps.len()={}",
+            artifact.total_steps,
+            artifact.steps.len()
+        )));
+    }
+    let expected_step_claims_commitment =
+        commit_phase12_shared_lookup_bundle_benchmark_step_claims(&artifact.steps)?;
+    if artifact.step_claims_commitment != expected_step_claims_commitment {
+        return Err(VmError::InvalidConfig(
+            "phase12 shared lookup bundle step_claims_commitment does not match the step rows"
+                .to_string(),
+        ));
+    }
+    verify_phase92_shared_normalization_primitive_artifact(&artifact.normalization_artifact)?;
+    if !verify_phase10_shared_binary_step_lookup_envelope(&artifact.activation_proof_envelope)? {
+        return Err(VmError::UnsupportedProof(
+            "phase12 shared lookup bundle activation proof did not verify".to_string(),
+        ));
+    }
+    if artifact.normalization_artifact.total_steps != artifact.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "phase12 shared lookup bundle normalization artifact total_steps={} does not match bundle total_steps={}",
+            artifact.normalization_artifact.total_steps,
+            artifact.total_steps
+        )));
+    }
+    if artifact.activation_proof_envelope.claimed_rows.len() != artifact.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "phase12 shared lookup bundle activation claimed_rows={} does not match bundle total_steps={}",
+            artifact.activation_proof_envelope.claimed_rows.len(),
+            artifact.total_steps
+        )));
+    }
+
+    for (index, step) in artifact.steps.iter().enumerate() {
+        if step.step_index != index {
+            return Err(VmError::InvalidConfig(format!(
+                "phase12 shared lookup bundle step at position {index} records step_index={}",
+                step.step_index
+            )));
+        }
+        let normalization_step = artifact
+            .normalization_artifact
+            .steps
+            .get(index)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "phase12 shared lookup bundle normalization artifact is missing step {index}"
+                ))
+            })?;
+        if normalization_step.step_index != index {
+            return Err(VmError::InvalidConfig(format!(
+                "phase12 shared lookup bundle normalization step {index} records step_index={}",
+                normalization_step.step_index
+            )));
+        }
+        if normalization_step.claimed_rows.len() != 1 {
+            return Err(VmError::InvalidConfig(format!(
+                "phase12 shared lookup bundle normalization step {index} must contain exactly one claimed row"
+            )));
+        }
+        let normalization_row = normalization_step.claimed_rows[0];
+        if step.normalization_row != [normalization_row.0, normalization_row.1] {
+            return Err(VmError::InvalidConfig(format!(
+                "phase12 shared lookup bundle step {index} normalization row does not match the embedded normalization artifact"
+            )));
+        }
+        let activation_row = artifact
+            .activation_proof_envelope
+            .claimed_rows
+            .get(index)
+            .ok_or_else(|| {
+                VmError::InvalidConfig(format!(
+                    "phase12 shared lookup bundle activation proof is missing step {index}"
+                ))
+            })?;
+        if step.activation_row != [activation_row.input, i16::from(activation_row.output)] {
+            return Err(VmError::InvalidConfig(format!(
+                "phase12 shared lookup bundle step {index} activation row does not match the embedded activation proof"
+            )));
+        }
+    }
+
+    let (expected_static_table_commitments, expected_static_table_registry_commitment) =
+        phase12_static_lookup_table_registry_from_envelopes(
+            &artifact.normalization_artifact.proof_envelope,
+            &artifact.activation_proof_envelope,
+        )?;
+    if artifact.static_table_commitments != expected_static_table_commitments {
+        return Err(VmError::InvalidConfig(
+            "phase12 shared lookup bundle static table commitments do not match the nested proof envelopes"
+                .to_string(),
+        ));
+    }
+    if artifact.static_table_registry_commitment != expected_static_table_registry_commitment {
+        return Err(VmError::InvalidConfig(
+            "phase12 shared lookup bundle static registry commitment does not match the nested proof envelopes"
+                .to_string(),
+        ));
+    }
+
+    let expected_artifact_commitment = commit_phase12_shared_lookup_bundle_benchmark_artifact(
+        &artifact.steps,
+        &artifact.normalization_artifact,
+        &artifact.activation_proof_envelope,
+    )?;
+    if artifact.artifact_commitment != expected_artifact_commitment {
+        return Err(VmError::InvalidConfig(
+            "phase12 shared lookup bundle artifact commitment does not match its serialized contents"
+                .to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+fn phase12_shared_lookup_bundle_proof_bytes(
+    artifact: &Phase12SharedLookupBundleBenchmarkArtifact,
+) -> Result<usize> {
+    Ok(shared_normalization_stark_proof_size(
+        &artifact.normalization_artifact.proof_envelope.proof,
+    )? + shared_activation_stark_proof_size(&artifact.activation_proof_envelope.proof)?)
+}
+
+fn lower_hex(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut out = String::with_capacity(bytes.len() * 2);
+    for &byte in bytes {
+        out.push(HEX[(byte >> 4) as usize] as char);
+        out.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+    out
+}
+
 fn primitive_benchmark_stark_proof_size(proof: &[u8]) -> Result<usize> {
     let payload: PrimitiveBenchmarkProofPayload =
         serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
@@ -2006,5 +2663,66 @@ mod tests {
                 row
             );
         }
+    }
+
+    #[test]
+    #[ignore = "expensive phase12 shared lookup bundle benchmark"]
+    fn phase12_shared_lookup_bundle_benchmark_runs_all_modes() {
+        let report = run_stwo_phase12_shared_lookup_bundle_benchmark_with_options(false)
+            .expect("phase12 shared lookup bundle benchmark should run");
+        assert_eq!(report.rows.len(), 9);
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().all(|row| row.proof_bytes > 0));
+        assert!(report
+            .rows
+            .iter()
+            .all(|row| row.serialized_bytes >= row.proof_bytes));
+        assert!(report
+            .rows
+            .iter()
+            .any(|row| { row.backend_variant == "shared_bundle_lookup_reuse" && row.steps == 3 }));
+    }
+
+    #[test]
+    fn phase12_shared_lookup_bundle_benchmark_smoke_paths_verify_without_timings() {
+        let report = run_stwo_phase12_shared_lookup_bundle_benchmark()
+            .expect("phase12 shared lookup bundle benchmark should run");
+        assert_eq!(report.rows.len(), 9);
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().all(|row| row.proof_bytes > 0));
+        assert!(report.rows.iter().all(|row| row.prove_ms == 0));
+        assert!(report.rows.iter().all(|row| row.verify_ms == 0));
+    }
+
+    #[test]
+    fn phase12_shared_lookup_bundle_benchmark_rejects_tampered_step_claims() {
+        let normalization_rows = claimed_row_prefix(&rmsnorm_canonical_rows(), 2, "phase12")
+            .expect("normalization rows");
+        let activation_rows = activation_claimed_row_prefix(&activation_canonical_rows(), 2)
+            .expect("activation rows");
+        let mut artifact = prepare_phase12_shared_lookup_bundle_benchmark_artifact(
+            &normalization_rows,
+            &activation_rows,
+        )
+        .expect("phase12 shared lookup bundle artifact");
+        artifact.steps[0].activation_row[0] += 1;
+        let error = verify_phase12_shared_lookup_bundle_benchmark_artifact(&artifact)
+            .expect_err("tampered step claim must fail verification");
+        assert!(error
+            .to_string()
+            .contains("step_claims_commitment does not match"));
+    }
+
+    #[test]
+    fn phase12_shared_lookup_bundle_benchmark_rejects_mismatched_row_counts() {
+        let error = prepare_phase12_shared_lookup_bundle_benchmark_artifact(
+            &[(1, 256), (2, 181)],
+            &[Phase3LookupTableRow {
+                input: -1,
+                output: 0,
+            }],
+        )
+        .expect_err("mismatched row counts must fail");
+        assert!(error.to_string().contains("requires matching row counts"));
     }
 }

@@ -511,7 +511,7 @@ pub fn load_phase12_shared_lookup_artifact(
     Ok(artifact)
 }
 
-fn phase12_static_lookup_table_registry_from_envelopes(
+pub(crate) fn phase12_static_lookup_table_registry_from_envelopes(
     normalization_envelope: &Phase10SharedNormalizationLookupProofEnvelope,
     activation_envelope: &Phase10SharedLookupProofEnvelope,
 ) -> Result<(Vec<Phase12StaticLookupTableCommitment>, String)> {
