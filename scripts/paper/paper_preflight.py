@@ -14,6 +14,7 @@ Checks:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import pathlib
 import re
 import sys
@@ -1020,6 +1021,8 @@ def parse_index_field_values(index_text: str) -> dict[str, str]:
                 out["artifact_file"] = value
             elif normalized_field == "artifact size (bytes)":
                 out["artifact_size_bytes"] = value
+            elif normalized_field in {"sha-256", "sha256"}:
+                out["sha_256"] = value
     return out
 
 
@@ -1121,6 +1124,7 @@ def _validate_table_c1_consistency(
     appendix_rows: dict[tuple[str, str], tuple[int, int, int]],
     prod_timings: dict[str, int],
     prod_sizes: dict[str, int],
+    prod_index_path: pathlib.Path,
     appendix_path: pathlib.Path,
     findings: Findings,
 ) -> bool:
@@ -1142,12 +1146,12 @@ def _validate_table_c1_consistency(
     missing_prod_sizes = sorted(k for k in required_prod_size_keys if k not in prod_sizes)
     if missing_prod_timing:
         findings.error(
-            f"{appendix_path}: production-v1 index is missing timing keys required "
+            f"{prod_index_path}: production-v1 index is missing timing keys required "
             f"for Appendix C consistency check: {missing_prod_timing}"
         )
     if missing_prod_sizes:
         findings.error(
-            f"{appendix_path}: production-v1 index is missing artifact-size keys "
+            f"{prod_index_path}: production-v1 index is missing artifact-size keys "
             f"required for Appendix C consistency check: {missing_prod_sizes}"
         )
     if missing_prod_timing or missing_prod_sizes:
@@ -1202,6 +1206,7 @@ def _validate_table_c2_consistency(
     transformer_rows: dict[tuple[str, str], tuple[int, int, int]],
     transformer_timings: dict[str, int],
     transformer_fields: dict[str, str],
+    transformer_index_path: pathlib.Path,
     appendix_path: pathlib.Path,
     findings: Findings,
 ) -> bool:
@@ -1222,12 +1227,12 @@ def _validate_table_c2_consistency(
     )
     if missing_transformer_timing:
         findings.error(
-            f"{appendix_path}: transformer-shaped index is missing timing keys "
+            f"{transformer_index_path}: transformer-shaped index is missing timing keys "
             f"required for Appendix C consistency check: {missing_transformer_timing}"
         )
     if missing_transformer_fields:
         findings.error(
-            f"{appendix_path}: transformer-shaped index is missing artifact-summary "
+            f"{transformer_index_path}: transformer-shaped index is missing artifact-summary "
             f"fields required for Appendix C consistency check: {missing_transformer_fields}"
         )
     if missing_transformer_timing or missing_transformer_fields:
@@ -1238,13 +1243,13 @@ def _validate_table_c2_consistency(
     )
     if not transformer_artifact_size_digits:
         findings.error(
-            f"{appendix_path}: malformed transformer-shaped artifact-summary field "
+            f"{transformer_index_path}: malformed transformer-shaped artifact-summary field "
             "'Artifact size (bytes)'; expected at least one digit."
         )
         return False
     if transformer_fields.get("artifact_file") != "transformer_shaped.stwo.bundle.json":
         findings.error(
-            f"{appendix_path}: transformer-shaped index artifact file mismatch: "
+            f"{transformer_index_path}: transformer-shaped index artifact file mismatch: "
             f"found {transformer_fields.get('artifact_file')!r}, expected "
             "'transformer_shaped.stwo.bundle.json'."
         )
@@ -1281,6 +1286,86 @@ def _validate_table_c2_consistency(
     return not findings.errors
 
 
+def _validate_shared_normalization_primitive_index(
+    primitive_index_path: pathlib.Path,
+    primitive_timings: dict[str, int],
+    primitive_fields: dict[str, str],
+    findings: Findings,
+) -> bool:
+    required_primitive_timing_keys = [
+        "prepare_shared_normalization_primitive",
+        "verify_shared_normalization_primitive",
+    ]
+    required_primitive_field_keys = [
+        "artifact_file",
+        "artifact_size_bytes",
+        "sha_256",
+    ]
+
+    missing_primitive_timing = sorted(
+        k for k in required_primitive_timing_keys if k not in primitive_timings
+    )
+    missing_primitive_fields = sorted(
+        k for k in required_primitive_field_keys if k not in primitive_fields
+    )
+    if missing_primitive_timing:
+        findings.error(
+            f"{primitive_index_path}: shared-normalization primitive index is missing timing keys "
+            f"required for publication consistency checks: {missing_primitive_timing}"
+        )
+    if missing_primitive_fields:
+        findings.error(
+            f"{primitive_index_path}: shared-normalization primitive index is missing artifact-summary "
+            f"fields required for publication consistency checks: {missing_primitive_fields}"
+        )
+    if missing_primitive_timing or missing_primitive_fields:
+        return False
+
+    artifact_file = primitive_fields.get("artifact_file")
+    if artifact_file != "shared-normalization-primitive.stwo.json":
+        findings.error(
+            f"{primitive_index_path}: shared-normalization primitive artifact file mismatch: "
+            f"found {artifact_file!r}, expected 'shared-normalization-primitive.stwo.json'."
+        )
+        return False
+
+    artifact_size_digits = re.sub(r"[^0-9]", "", primitive_fields.get("artifact_size_bytes", ""))
+    if not artifact_size_digits:
+        findings.error(
+            f"{primitive_index_path}: malformed shared-normalization primitive artifact-summary field "
+            "'Artifact size (bytes)'; expected at least one digit."
+        )
+        return False
+
+    artifact_path = primitive_index_path.parent / artifact_file
+    if not artifact_path.exists():
+        findings.error(
+            f"{artifact_path}: missing cited shared-normalization primitive artifact referenced by "
+            f"{primitive_index_path}."
+        )
+        return False
+
+    expected_size = int(artifact_size_digits)
+    actual_size = artifact_path.stat().st_size
+    if actual_size != expected_size:
+        findings.error(
+            f"{primitive_index_path}: shared-normalization primitive artifact size mismatch: "
+            f"index={expected_size}, actual={actual_size} at {artifact_path}."
+        )
+        return False
+
+    actual_sha = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+    expected_sha = primitive_fields.get("sha_256", "").lower()
+    if actual_sha != expected_sha:
+        findings.error(
+            f"{primitive_index_path}: shared-normalization primitive SHA-256 mismatch: "
+            f"index={expected_sha!r}, actual={actual_sha!r} for {artifact_path}."
+        )
+        return False
+
+    return True
+
+
 def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findings) -> None:
     appendix_path = repo_root / "docs/paper/appendix-backend-artifact-comparison.md"
     prod_index_path = (
@@ -1291,8 +1376,17 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
         repo_root
         / "docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md"
     )
+    primitive_index_path = (
+        repo_root
+        / "docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md"
+    )
 
-    for required_path in (appendix_path, prod_index_path, transformer_index_path):
+    for required_path in (
+        appendix_path,
+        prod_index_path,
+        transformer_index_path,
+        primitive_index_path,
+    ):
         if not required_path.exists():
             findings.error(
                 f"{required_path}: missing required file for backend artifact consistency check."
@@ -1303,10 +1397,11 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
         appendix_text = appendix_path.read_text(encoding="utf-8")
         prod_text = prod_index_path.read_text(encoding="utf-8")
         transformer_text = transformer_index_path.read_text(encoding="utf-8")
+        primitive_text = primitive_index_path.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as exc:
         findings.error(
             "failed to read backend artifact consistency inputs "
-            f"({appendix_path}, {prod_index_path}, {transformer_index_path}): {exc}"
+            f"({appendix_path}, {prod_index_path}, {transformer_index_path}, {primitive_index_path}): {exc}"
         )
         return
 
@@ -1327,11 +1422,14 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
     prod_timings = parse_index_timings(prod_text)
     transformer_timings = parse_index_timings(transformer_text)
     transformer_fields = parse_index_field_values(transformer_text)
+    primitive_timings = parse_index_timings(primitive_text)
+    primitive_fields = parse_index_field_values(primitive_text)
 
     table_c1_ok = _validate_table_c1_consistency(
         appendix_rows,
         prod_timings,
         prod_sizes,
+        prod_index_path,
         appendix_path,
         findings,
     )
@@ -1339,10 +1437,17 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
         transformer_rows,
         transformer_timings,
         transformer_fields,
+        transformer_index_path,
         appendix_path,
         findings,
     )
-    if not (table_c1_ok and table_c2_ok):
+    primitive_ok = _validate_shared_normalization_primitive_index(
+        primitive_index_path,
+        primitive_timings,
+        primitive_fields,
+        findings,
+    )
+    if not (table_c1_ok and table_c2_ok and primitive_ok):
         return
 
 
