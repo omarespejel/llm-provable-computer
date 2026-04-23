@@ -31,10 +31,9 @@ default:
 gate:
     bash scripts/local_release_gate.sh
 
-# Full release gate but skip the nightly stwo-backend smoke step. Useful on
-# machines that do not have nightly-2025-07-14 installed.
+# Full release gate alias. Kept for compatibility with older local workflows.
 gate-no-nightly:
-    SKIP_NIGHTLY=1 bash scripts/local_release_gate.sh
+    bash scripts/local_release_gate.sh
 
 # Verbose gate: stream tool output instead of buffering. Use when debugging.
 gate-verbose:

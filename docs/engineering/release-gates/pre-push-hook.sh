@@ -11,7 +11,6 @@
 # Behavior:
 #   - On every push, run the local release gate.
 #   - Refuse the push if any gated step fails.
-#   - `SKIP_NIGHTLY=1` still reaches the gate, but skips the nightly-only step.
 #
 # This hook is the local equivalent of the GitHub Actions checks. Because the
 # `main` branch protection no longer requires server-side status checks (Actions

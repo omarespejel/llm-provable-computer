@@ -36,7 +36,7 @@ gate:
 	bash scripts/local_release_gate.sh
 
 gate-no-nightly:
-	SKIP_NIGHTLY=1 bash scripts/local_release_gate.sh
+	bash scripts/local_release_gate.sh
 
 gate-verbose:
 	LOCAL_GATE_VERBOSE=1 bash scripts/local_release_gate.sh

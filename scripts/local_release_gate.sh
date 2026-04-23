@@ -9,8 +9,7 @@
 #
 # Usage:
 #
-#     bash scripts/local_release_gate.sh                # full gate
-#     SKIP_NIGHTLY=1 bash scripts/local_release_gate.sh # skip nightly-only steps
+#     bash scripts/local_release_gate.sh
 #     LOCAL_GATE_VERBOSE=1 bash scripts/local_release_gate.sh
 #
 # Exit codes:
@@ -30,7 +29,6 @@ readonly CARGO_DENY_VERSION="0.19.4"
 readonly ZIZMOR_VERSION="1.24.1"
 readonly NIGHTLY_TOOLCHAIN="nightly-2025-07-14"
 LOCAL_GATE_VERBOSE="${LOCAL_GATE_VERBOSE:-0}"
-SKIP_NIGHTLY="${SKIP_NIGHTLY:-0}"
 
 c_red=$'\033[31m'
 c_grn=$'\033[32m'
@@ -87,8 +85,7 @@ printf '%bLocal release gate%b (root=%s)\n' "$c_dim" "$c_off" "$ROOT_DIR"
 printf '  cargo-audit pin: %s\n' "$CARGO_AUDIT_VERSION"
 printf '  cargo-deny pin:  %s\n' "$CARGO_DENY_VERSION"
 printf '  zizmor pin:      %s\n' "$ZIZMOR_VERSION"
-printf '  nightly:         %s%s\n' "$NIGHTLY_TOOLCHAIN" \
-  "$( [[ "$SKIP_NIGHTLY" == "1" ]] && echo " (skipped)" || true )"
+printf '  nightly:         %s\n' "$NIGHTLY_TOOLCHAIN"
 
 require_command cargo
 require_command rustc
@@ -116,15 +113,12 @@ if ! command -v uvx >/dev/null 2>&1 && ! command -v zizmor >/dev/null 2>&1; then
 fi
 
 require_command shellcheck
+require_command rustup
 
-if [[ "$SKIP_NIGHTLY" != "1" ]]; then
-  require_command rustup
-
-  if ! rustup toolchain list 2>/dev/null | grep -q "$NIGHTLY_TOOLCHAIN"; then
-    printf '%bmissing required nightly toolchain: %s (install with rustup toolchain install %s --profile minimal)%b\n' \
-      "$c_red" "$NIGHTLY_TOOLCHAIN" "$NIGHTLY_TOOLCHAIN" "$c_off" >&2
-    exit 127
-  fi
+if ! rustup toolchain list 2>/dev/null | grep -q "$NIGHTLY_TOOLCHAIN"; then
+  printf '%bmissing required nightly toolchain: %s (install with rustup toolchain install %s --profile minimal)%b\n' \
+    "$c_red" "$NIGHTLY_TOOLCHAIN" "$NIGHTLY_TOOLCHAIN" "$c_off" >&2
+  exit 127
 fi
 
 # Stable-toolchain steps.
@@ -133,11 +127,7 @@ run_step "lib clippy (-D warnings)"   cargo clippy --quiet --lib --no-deps -- -D
 run_step "lib build"                  cargo build --quiet --lib
 run_step "tvm bin build"              cargo build --quiet --bin tvm
 run_step "lib statement-spec sync"    cargo test --release --quiet --lib statement_spec_contract_is_synced_with_constants
-if [[ "$SKIP_NIGHTLY" != "1" ]]; then
-  run_step "lib proof::tests"         cargo "+${NIGHTLY_TOOLCHAIN}" test --release --quiet --features stwo-backend --lib -- --test-threads=4 proof::tests
-else
-  printf '%b[gate skip] SKIP_NIGHTLY=1; nightly proof::tests not run%b\n' "$c_ylw" "$c_off"
-fi
+run_step "lib proof::tests"           cargo "+${NIGHTLY_TOOLCHAIN}" test --release --quiet --features stwo-backend --lib -- --test-threads=4 proof::tests
 run_step "test/assembly"              cargo test --release --quiet --test assembly
 run_step "test/e2e"                   cargo test --release --quiet --test e2e
 run_step "test/interpreter"           cargo test --release --quiet --test interpreter
@@ -159,14 +149,10 @@ fi
 run_step "shellcheck suite"           bash scripts/run_shellcheck_suite.sh
 
 # Nightly-only stwo-backend smoke (matches the upstream-disabled CI smoke step).
-if [[ "$SKIP_NIGHTLY" != "1" ]]; then
-  stwo_smoke=stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks
-  run_step "stwo-backend nightly smoke" \
-    cargo "+${NIGHTLY_TOOLCHAIN}" test --release --quiet \
-      --features stwo-backend --lib "$stwo_smoke" -- --exact
-else
-  printf '%b[gate skip] SKIP_NIGHTLY=1; nightly stwo smoke not run%b\n' "$c_ylw" "$c_off"
-fi
+stwo_smoke=stwo_backend::decoding::tests::phase28_aggregated_chained_folded_intervalized_state_relation_rejects_header_mismatch_before_nested_checks
+run_step "stwo-backend nightly smoke" \
+  cargo "+${NIGHTLY_TOOLCHAIN}" test --release --quiet \
+    --features stwo-backend --lib "$stwo_smoke" -- --exact
 
 printf '\n%blocal release gate passed: %d / %d steps OK%b\n' \
   "$c_grn" "$step_count" "$step_count" "$c_off"

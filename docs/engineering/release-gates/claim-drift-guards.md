@@ -40,9 +40,6 @@ following invariants in order:
    final state; **and the v1 scope requires equivalence to be present**.
 9. `validate_claim_commitments` — every commitment hash recomputes from the
    claim's own bytes; `prover_build_info` non-empty.
-10. The S-two backend label and backend-version family are checked before proof bytes
-    are accepted by the verifier.
-
 The two "v1 scope requires" rows are the claim-drift guards. Without them, a
 claim could keep the v1 label while dropping the very payload that the label
 promises to a verifier.
