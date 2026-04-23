@@ -13,6 +13,7 @@ MAX_WAIT_SECONDS="${MERGE_GATE_MAX_WAIT_SECONDS:-1800}"
 WAIT_STARTED_AT="${MERGE_GATE_WAIT_STARTED_AT:-}"
 EVIDENCE_DIR="${MERGE_GATE_EVIDENCE_DIR:-target/local-hardening}"
 LOG_DIR=""
+readonly NIGHTLY_TOOLCHAIN="nightly-2025-07-14"
 MERGE=0
 WAIT=0
 RUN_LOCAL=1
@@ -622,7 +623,7 @@ run_stwo_smoke_targets() {
   local stwo_smoke label
   for stwo_smoke in "${stwo_smoke_targets[@]}"; do
     label="${stwo_smoke##*::}"
-    run_logged "stwo-backend-smoke-${label}" cargo +nightly-2025-07-14 test -q \
+    run_logged "stwo-backend-smoke-${label}" cargo "+${NIGHTLY_TOOLCHAIN}" test -q \
       --features stwo-backend \
       --lib "$stwo_smoke" \
       -- \
@@ -656,12 +657,12 @@ run_tvm_bin_smoke_targets() {
 run_stwo_cli_smoke_targets() {
   local stwo_cli_smoke
   local tvm_test_binary
-  run_logged stwo-backend-cli-build cargo +nightly-2025-07-14 build -q \
+  run_logged stwo-backend-cli-build cargo "+${NIGHTLY_TOOLCHAIN}" build -q \
     --features stwo-backend \
     --bin tvm
   tvm_test_binary="$(resolve_tvm_test_binary_path)"
   for stwo_cli_smoke in "${stwo_cli_smoke_targets[@]}"; do
-    run_logged "stwo-backend-cli-smoke-${stwo_cli_smoke}" env TVM_TEST_BINARY="$tvm_test_binary" cargo +nightly-2025-07-14 test -q \
+    run_logged "stwo-backend-cli-smoke-${stwo_cli_smoke}" env TVM_TEST_BINARY="$tvm_test_binary" cargo "+${NIGHTLY_TOOLCHAIN}" test -q \
       --features stwo-backend \
       --test cli "$stwo_cli_smoke" \
       -- \
@@ -849,11 +850,11 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
   run_logged cargo-fmt-check cargo fmt --check
   run_conditional_quick_audits
-  run_logged cargo-lib-tests env RUST_TEST_THREADS=1 cargo +nightly-2025-07-14 test -q --features stwo-backend --lib
+  run_logged cargo-lib-tests env RUST_TEST_THREADS=1 cargo "+${NIGHTLY_TOOLCHAIN}" test -q --features stwo-backend --lib
   run_logged cargo-build-tvm-stable cargo build -q --bin tvm
-  run_logged cargo-build-tvm cargo +nightly-2025-07-14 build -q --features stwo-backend --bin tvm
+  run_logged cargo-build-tvm cargo "+${NIGHTLY_TOOLCHAIN}" build -q --features stwo-backend --bin tvm
   tvm_test_binary="$(resolve_tvm_test_binary_path)"
-  run_logged cargo-lib-and-integration-tests env RUST_TEST_THREADS=1 TVM_TEST_BINARY="$tvm_test_binary" cargo +nightly-2025-07-14 test -q --features stwo-backend --lib --tests
+  run_logged cargo-lib-and-integration-tests env RUST_TEST_THREADS=1 TVM_TEST_BINARY="$tvm_test_binary" cargo "+${NIGHTLY_TOOLCHAIN}" test -q --features stwo-backend --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
   if changed_path_is_onnx_surface; then
     run_onnx_smoke_targets
@@ -883,11 +884,11 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged git-diff-check git diff --check "$diff_range"
   run_logged cargo-fmt-check cargo fmt --check
   run_conditional_quick_audits
-  run_logged cargo-lib-tests env RUST_TEST_THREADS=1 cargo +nightly-2025-07-14 test -q --features stwo-backend --lib
+  run_logged cargo-lib-tests env RUST_TEST_THREADS=1 cargo "+${NIGHTLY_TOOLCHAIN}" test -q --features stwo-backend --lib
   run_logged cargo-build-tvm-stable cargo build -q --bin tvm
-  run_logged cargo-build-tvm cargo +nightly-2025-07-14 build -q --features stwo-backend --bin tvm
+  run_logged cargo-build-tvm cargo "+${NIGHTLY_TOOLCHAIN}" build -q --features stwo-backend --bin tvm
   tvm_test_binary="$(resolve_tvm_test_binary_path)"
-  run_logged cargo-lib-and-integration-tests env RUST_TEST_THREADS=1 TVM_TEST_BINARY="$tvm_test_binary" cargo +nightly-2025-07-14 test -q --features stwo-backend --lib --tests
+  run_logged cargo-lib-and-integration-tests env RUST_TEST_THREADS=1 TVM_TEST_BINARY="$tvm_test_binary" cargo "+${NIGHTLY_TOOLCHAIN}" test -q --features stwo-backend --lib --tests
   run_logged cargo-doc-tests cargo test -q --workspace --doc
   if changed_path_is_onnx_surface; then
     run_onnx_smoke_targets
@@ -913,9 +914,9 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_mutation_survivor_tracking_if_needed
   run_conditional_mutation_check
   run_logged fuzz-smoke env FUZZ_TIME_PER_TARGET=20 scripts/run_fuzz_smoke_suite.sh
-  run_logged ub-checks env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_ub_checks_suite.sh
-  run_logged asan env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_asan_suite.sh
-  run_logged miri env HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_miri_suite.sh
+  run_logged ub-checks env HARDENING_TOOLCHAIN="$NIGHTLY_TOOLCHAIN" scripts/run_ub_checks_suite.sh
+  run_logged asan env HARDENING_TOOLCHAIN="$NIGHTLY_TOOLCHAIN" scripts/run_asan_suite.sh
+  run_logged miri env HARDENING_TOOLCHAIN="$NIGHTLY_TOOLCHAIN" scripts/run_miri_suite.sh
   run_logged formal-contracts scripts/run_formal_contract_suite.sh
   completed_local_mode="$RUN_MODE"
 elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "none" ]]; then
