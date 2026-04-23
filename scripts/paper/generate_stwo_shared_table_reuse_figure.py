@@ -27,10 +27,12 @@ LABELS = {
 PRIMITIVE_TITLES = {
     "rmsnorm_q8_inv_sqrt": "RMSNorm inverse-sqrt table",
     "softmax_exp_q8": "Softmax exp-table slice",
+    "binary_step_activation": "Binary-step activation table",
 }
 EXPECTED_STEPS = {
     "rmsnorm_q8_inv_sqrt": [1, 2, 4, 5],
     "softmax_exp_q8": [1, 2, 4, 8],
+    "binary_step_activation": [1, 2, 3],
 }
 VARIANT_ORDER = [
     "shared_table_lookup_reuse",
@@ -52,13 +54,14 @@ REQUIRED_COLUMNS = {
 }
 
 WIDTH = 1700
-HEIGHT = 1225
+HEIGHT = 1645
 PANEL_W = 720
 PANEL_H = 360
 LEFT_X = 90
 RIGHT_X = 890
 TOP_Y = 190
-BOTTOM_Y = 610
+MIDDLE_Y = 610
+BOTTOM_Y = 1030
 PLOT_X_PAD = 92
 PLOT_RIGHT_PAD = 34
 PLOT_TOP_PAD = 72
@@ -287,11 +290,27 @@ def render_svg(rows: list[dict[str, str]]) -> str:
             metric_key="proof_bytes",
             metric_label="Estimated raw STARK proof bytes",
             panel_x=LEFT_X,
-            panel_y=BOTTOM_Y,
+            panel_y=MIDDLE_Y,
         ),
         render_panel(
             grouped=grouped["softmax_exp_q8"],
             primitive="softmax_exp_q8",
+            metric_key="prove_ms",
+            metric_label="Local prove time (ms)",
+            panel_x=RIGHT_X,
+            panel_y=MIDDLE_Y,
+        ),
+        render_panel(
+            grouped=grouped["binary_step_activation"],
+            primitive="binary_step_activation",
+            metric_key="proof_bytes",
+            metric_label="Estimated raw STARK proof bytes",
+            panel_x=LEFT_X,
+            panel_y=BOTTOM_Y,
+        ),
+        render_panel(
+            grouped=grouped["binary_step_activation"],
+            primitive="binary_step_activation",
             metric_key="prove_ms",
             metric_label="Local prove time (ms)",
             panel_x=RIGHT_X,

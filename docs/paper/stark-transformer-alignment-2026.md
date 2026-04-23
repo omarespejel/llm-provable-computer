@@ -325,16 +325,30 @@ table identity across several steps. The checked TSV is the canonical source for
 branch and records the median of five repeated local runs; the millisecond values remain
 host-dependent representative timings rather than portable wall-clock guarantees. Here
 the qualitative picture changes. For RMSNorm
-at five shared rows, the shared-table path records `2,140` raw proof bytes and `9 ms`
-of proving, versus `12,812` bytes and `43 ms` for five independent lookup envelopes and
-`8,292` bytes and `39 ms` for five independent selector-arithmetic proofs. For the
+at five shared rows, the shared-table path records `2,140` raw proof bytes and `11 ms`
+of proving, versus `12,812` bytes and `59 ms` for five independent lookup envelopes and
+`8,292` bytes and `48 ms` for five independent selector-arithmetic proofs. For the
 softmax exp-table slice at eight shared rows, the shared-table path records `2,284`
-bytes and `6 ms`, versus `19,552` bytes and `50 ms` for independent lookup proofs and
-`14,216` bytes and `33 ms` for independent selector-arithmetic proofs. This is still
-not a full attention-kernel or recursive-compression result, but it is the reuse-aware
-regime the symbolic model was trying to isolate: once one canonical table identity is
-made verifier-visible across repeated steps, proof growth can flatten sharply instead of
+bytes and `7 ms`, versus `19,552` bytes and `57 ms` for independent lookup proofs and
+`14,216` bytes and `40 ms` for independent selector-arithmetic proofs. The same pattern
+now appears on the next slice widened under this exact standard: for the binary-step
+activation table at three shared rows, the shared-table path records `2,684` bytes and
+`5 ms`, versus `7,380` bytes and `18 ms` for independent lookup proofs and `5,172`
+bytes and `18 ms` for independent selector-arithmetic proofs. This is still not a full
+attention-kernel or recursive-compression result, but it is the reuse-aware regime the
+symbolic model was trying to isolate: once one canonical table identity is made
+verifier-visible across repeated steps, proof growth can flatten sharply instead of
 scaling with the number of independent envelopes.
+
+Read together, Figures 3 and 4 give the external-calibration boundary the paper should
+actually claim. Figure 3 is the honest one-shot anchor: on tiny isolated primitive
+proofs, the current lookup-backed paths are still somewhat larger and slower than the
+arithmetic baselines. Figure 4 is the reuse-sensitive anchor: once the verifier-visible
+statement carries one canonical table identity across repeated rows, the shared-table
+path can flatten sharply while the independent baselines continue to scale with `N`.
+External comparisons should therefore track regime, not backend branding. The one-shot
+rows calibrate current implementation constants; the repeated-step rows calibrate the
+architectural claim about carried lookup identity.
 
 ### 4.5 Inference layer versus settlement layer
 
@@ -454,15 +468,18 @@ wall-clock dominance.
 Figure 4 visualizes the complementary reuse-sensitive benchmark directly from the
 checked TSV.
 
-![Figure 4. Shared-table reuse benchmark inside S-two over repeated RMSNorm and softmax-exp rows.](figures/stwo-shared-table-reuse-2026-04.svg)
+![Figure 4. Shared-table reuse benchmark inside S-two over repeated RMSNorm, softmax-exp, and binary-step activation rows.](figures/stwo-shared-table-reuse-2026-04.svg)
 
 **Figure 4.** Shared-table reuse benchmark from
 `docs/paper/evidence/stwo-shared-table-reuse-2026-04.tsv`. The blue rows are single
 shared proof objects that bind multiple selected rows to one canonical table identity,
 while the orange and green baselines reprove the same steps independently. The point is
 not that every one-shot lookup is already cheaper than every arithmetic alternative. The
-point is that the lookup path begins to flatten once reuse is made verifier-visible. The
-timing rows in this figure are medians over five repeated local runs.
+point is that the lookup path begins to flatten once reuse is made verifier-visible.
+Figure 4 now widens that comparison across three table families: RMSNorm inverse-sqrt,
+the softmax exp-table slice, and the binary-step activation table already used by the
+decode-side shared activation proofs. The timing rows in this figure are medians over
+five repeated local runs.
 
 ______________________________________________________________________
 
@@ -519,10 +536,10 @@ relevant reuse axis directly. Its evidence files
 `docs/paper/evidence/stwo-shared-table-reuse-2026-04.tsv`,
 `docs/paper/evidence/stwo-shared-table-reuse-2026-04.json`, and Figure 4 compare one
 shared proof over `N` selected rows against `N` independent lookup or arithmetic proofs
-over the same canonical RMSNorm and softmax-exp tables. Unlike the one-shot calibration
-rows in Figure 3, these rows already show the reuse-sensitive behavior the paper claims
-matters: proof bytes and prove time on the shared-table path stay nearly flat while the
-independent baselines scale roughly linearly with `N`.
+over the same canonical RMSNorm, softmax-exp, and binary-step activation tables. Unlike
+the one-shot calibration rows in Figure 3, these rows already show the reuse-sensitive
+behavior the paper claims matters: proof bytes and prove time on the shared-table path
+stay nearly flat while the independent baselines scale roughly linearly with `N`.
 
 That timing capture is opt-in on purpose. The default shared-table benchmark report keeps
 `prove_ms` and `verify_ms` at `0`, so the deterministic report surface and the
@@ -883,12 +900,14 @@ checked CLI paths `bench-stwo-primitive-lookup-vs-naive` and
 The next step is to lift that same measurement discipline from fixed table slices to a
 richer transformer kernel while keeping reuse explicit. Methodologically, the symbolic
 model now has one isolated calibration anchor and one reuse-sensitive anchor inside the
-same backend. The right follow-on work is therefore to preserve strict statement binding,
-add more adversarial and nested-proof checks, investigate resource-bound regressions as
-the kernel grows, and keep the paper's prose and checked artifacts aligned as those
-measured surfaces widen. After that, the obvious expansion is to move from these fixed
-RMSNorm and exp-table slices toward richer attention and normalization kernels, while
-keeping the same explicit shared-proof-versus-independent-envelope comparison frame.
+same backend, and that reuse-sensitive anchor now spans normalization, softmax-exp, and
+activation instead of just one table family. The right follow-on work is therefore to
+preserve strict statement binding, add more adversarial and nested-proof checks,
+investigate resource-bound regressions as the kernel grows, and keep the paper's prose
+and checked artifacts aligned as those measured surfaces widen. After that, the obvious
+expansion is to move from these fixed RMSNorm, activation, and exp-table slices toward
+richer attention and normalization kernels, while keeping the same explicit
+shared-proof-versus-independent-envelope comparison frame.
 
 More generic folding and recursive-argument frameworks already cover much of the broad
 abstraction space [41, 43, 44, 45]. The sharper contribution available here is
@@ -913,9 +932,10 @@ systems may compound advantages.
 
 The checked empirical surface now makes that narrower claim more precise. One-shot matched
 primitive rows remain an honest calibration anchor rather than a dominance claim, but the
-shared-table reuse benchmark shows that once one canonical lookup identity is carried
-across repeated rows inside the verifier-visible statement, proof growth can flatten
-substantially inside the current S-two surface.
+shared-table reuse benchmark now shows the same carried-identity effect across
+normalization, softmax-exp, and activation slices: once one canonical lookup identity is
+carried across repeated rows inside the verifier-visible statement, proof growth can
+flatten substantially inside the current S-two surface.
 
 The repository contributes evidence at two layers: trace semantics and pre-recursive
 carried state. It shows direct proving of transformer-relevant traces, semantic checks
