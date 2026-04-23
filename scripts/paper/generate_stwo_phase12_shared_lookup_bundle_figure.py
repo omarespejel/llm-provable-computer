@@ -376,11 +376,6 @@ def main() -> None:
     parser.add_argument("--output-pdf", type=Path)
     parser.add_argument("--bench-runs", type=int, default=DEFAULT_BENCH_RUNS)
     parser.add_argument(
-        "--fail-closed-rasters",
-        action="store_true",
-        help="fail when raster generation cannot complete (default when raster outputs are requested)",
-    )
-    parser.add_argument(
         "--allow-missing-rasters",
         action="store_true",
         help="skip missing or failed PNG/PDF generation instead of failing the command",
@@ -388,11 +383,6 @@ def main() -> None:
     args = parser.parse_args()
     if args.bench_runs <= 0:
         raise SystemExit("--bench-runs must be positive")
-    if args.fail_closed_rasters and args.allow_missing_rasters:
-        raise SystemExit(
-            "--fail-closed-rasters and --allow-missing-rasters are mutually exclusive"
-        )
-
     rows = read_rows(args.input_tsv)
     validate_rows(rows, source=args.input_tsv)
     svg = render_svg(rows, bench_runs=args.bench_runs)

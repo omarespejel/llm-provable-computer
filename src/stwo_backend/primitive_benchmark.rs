@@ -567,15 +567,32 @@ fn run_stwo_phase12_shared_lookup_bundle_benchmark_for_step_counts(
     step_counts: &[usize],
     capture_timings: bool,
 ) -> Result<StwoPhase12SharedLookupBundleBenchmarkReport> {
+    if step_counts.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "phase12 shared lookup bundle benchmark requires at least one step count".to_string(),
+        ));
+    }
+    if step_counts.iter().any(|&steps| steps == 0) {
+        return Err(VmError::InvalidConfig(
+            "phase12 shared lookup bundle benchmark step counts must be positive".to_string(),
+        ));
+    }
+    if !step_counts.windows(2).all(|window| window[0] < window[1]) {
+        return Err(VmError::InvalidConfig(
+            "phase12 shared lookup bundle benchmark step counts must be strictly increasing"
+                .to_string(),
+        ));
+    }
+
+    let max_steps = *step_counts
+        .last()
+        .expect("phase12 step counts checked to be non-empty");
     let normalization_rows = claimed_row_prefix(
         &rmsnorm_canonical_rows(),
-        *step_counts.last().expect("phase12 bundle step counts"),
+        max_steps,
         "phase12_shared_lookup_bundle",
     )?;
-    let activation_rows = activation_claimed_row_prefix(
-        &activation_canonical_rows(),
-        *step_counts.last().expect("phase12 bundle step counts"),
-    )?;
+    let activation_rows = activation_claimed_row_prefix(&activation_canonical_rows(), max_steps)?;
 
     let mut rows = Vec::new();
     for &steps in step_counts {
@@ -2946,6 +2963,30 @@ mod tests {
         assert!(error
             .to_string()
             .contains("step_claims_commitment does not match"));
+    }
+
+    #[test]
+    fn phase12_shared_lookup_bundle_benchmark_rejects_empty_step_counts() {
+        let error = run_stwo_phase12_shared_lookup_bundle_benchmark_for_step_counts(&[], false)
+            .expect_err("empty step counts must fail");
+        assert!(error
+            .to_string()
+            .contains("requires at least one step count"));
+    }
+
+    #[test]
+    fn phase12_shared_lookup_bundle_benchmark_rejects_non_monotonic_step_counts() {
+        let error =
+            run_stwo_phase12_shared_lookup_bundle_benchmark_for_step_counts(&[1, 3, 2], false)
+                .expect_err("unsorted step counts must fail");
+        assert!(error.to_string().contains("must be strictly increasing"));
+    }
+
+    #[test]
+    fn phase12_shared_lookup_bundle_benchmark_rejects_zero_step_count() {
+        let error = run_stwo_phase12_shared_lookup_bundle_benchmark_for_step_counts(&[0], false)
+            .expect_err("zero step count must fail");
+        assert!(error.to_string().contains("must be positive"));
     }
 
     #[test]

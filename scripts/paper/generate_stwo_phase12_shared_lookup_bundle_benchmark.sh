@@ -118,6 +118,15 @@ fi
 
 python3 scripts/paper/generate_stwo_phase12_shared_lookup_bundle_figure.py "${FIGURE_ARGS[@]}"
 
+if [[ -n "$PNG_OUT" && ! -f "$TMP_PNG" ]]; then
+  echo "phase12 figure generation did not produce requested PNG output: $PNG_OUT" >&2
+  exit 1
+fi
+if [[ -n "$PDF_OUT" && ! -f "$TMP_PDF" ]]; then
+  echo "phase12 figure generation did not produce requested PDF output: $PDF_OUT" >&2
+  exit 1
+fi
+
 mv "$TMP_TSV" "$TSV_OUT"
 mv "$TMP_JSON" "$JSON_OUT"
 mv "$TMP_SVG" "$SVG_OUT"

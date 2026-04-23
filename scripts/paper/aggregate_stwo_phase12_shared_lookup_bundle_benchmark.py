@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import statistics
 from pathlib import Path
 from typing import Any
@@ -37,6 +38,17 @@ def build_row_map(
     return row_map
 
 
+def output_paths_conflict(lhs: Path, rhs: Path) -> bool:
+    if lhs.resolve() == rhs.resolve():
+        return True
+    try:
+        return os.path.samefile(lhs, rhs)
+    except FileNotFoundError:
+        return False
+    except OSError:
+        return False
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--inputs", nargs="+", required=True, type=Path)
@@ -44,7 +56,7 @@ def main() -> None:
     parser.add_argument("--output-tsv", required=True, type=Path)
     args = parser.parse_args()
 
-    if args.output_json.resolve() == args.output_tsv.resolve():
+    if output_paths_conflict(args.output_json, args.output_tsv):
         parser.error("--output-json and --output-tsv must be distinct paths")
 
     if len(args.inputs) < 3:
