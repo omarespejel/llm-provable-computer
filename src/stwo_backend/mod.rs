@@ -298,8 +298,7 @@ pub use normalization_prover::{
 pub use primitive_benchmark::{
     run_stwo_primitive_lookup_vs_naive_benchmark, save_stwo_primitive_benchmark_report_json,
     save_stwo_primitive_benchmark_report_tsv, StwoPrimitiveBenchmarkMeasurement,
-    StwoPrimitiveBenchmarkReport, STWO_PRIMITIVE_BENCHMARK_SCOPE,
-    STWO_PRIMITIVE_BENCHMARK_VERSION,
+    StwoPrimitiveBenchmarkReport, STWO_PRIMITIVE_BENCHMARK_SCOPE, STWO_PRIMITIVE_BENCHMARK_VERSION,
 };
 #[cfg(feature = "stwo-backend")]
 pub use recursion::{

@@ -1,5 +1,5 @@
 primitive	backend_variant	relation	claimed_rows	proof_bytes	prove_ms	verify_ms	verified	note
-rmsnorm_q8_inv_sqrt	lookup_logup	Phase10 shared-normalization lookup	4:128,16:64	9136	16	3	true	actual S-two LogUp proof over the canonical Phase 5 normalization table
-rmsnorm_q8_inv_sqrt	naive_selector_arithmetic	one-hot arithmetized table selection	4:128,16:64	6671	9	1	true	actual S-two arithmetic proof; no LogUp relation, no lookup table argument
-softmax_exp_q8	lookup_logup	softmax-exp table lookup	0:256,2:94,4:35	9188	8	2	true	actual S-two LogUp proof for the exp-table part of softmax, not full softmax
-softmax_exp_q8	polynomial_interpolation	degree-2 exp-table interpolation over sampled points	0:256,2:94,4:35	4783	7	1	true	actual S-two arithmetic proof for a sampled exp-table slice, not full softmax
+rmsnorm_q8_inv_sqrt	lookup_logup	Phase10 shared-normalization lookup	4:128,16:64	2684	19	2	true	actual S-two LogUp proof over the canonical Phase 5 normalization table
+rmsnorm_q8_inv_sqrt	naive_selector_arithmetic	one-hot arithmetized table selection	4:128,16:64	1892	9	1	true	actual S-two arithmetic proof; no LogUp relation, no lookup table argument
+softmax_exp_q8	lookup_logup	softmax-exp table lookup	0:256,2:94,4:35	2684	7	1	true	actual S-two LogUp proof for the exp-table part of softmax, not full softmax
+softmax_exp_q8	polynomial_interpolation	degree-2 exp-table interpolation over sampled points	0:256,2:94,4:35	1352	6	1	true	actual S-two arithmetic proof for a sampled exp-table slice, not full softmax

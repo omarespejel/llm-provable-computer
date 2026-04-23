@@ -99,7 +99,6 @@ use llm_provable_computer::{
     prepare_phase98_folded_gemma_richer_slice_family_artifact,
     prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact,
     prepare_stwo_transformer_shaped_artifact_bundle,
-    run_stwo_primitive_lookup_vs_naive_benchmark,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
     prove_phase12_decoding_demo, prove_phase13_decoding_layout_matrix_demo,
@@ -113,6 +112,7 @@ use llm_provable_computer::{
     prove_phase27_chained_folded_intervalized_decoding_state_relation_demo,
     prove_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_demo,
     prove_phase3_binary_step_lookup_demo_envelope, prove_phase5_normalization_lookup_demo_envelope,
+    run_stwo_primitive_lookup_vs_naive_benchmark,
     save_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact,
     save_phase102_folded_multi_interval_gemma_richer_family_artifact,
     save_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact,
@@ -3692,6 +3692,7 @@ fn bench_stwo_primitive_lookup_vs_naive_command(
     #[cfg(feature = "stwo-backend")]
     {
         require_stwo_backend("S-two primitive lookup-vs-naive benchmark")?;
+        validate_distinct_benchmark_output_paths(output_tsv, output_json)?;
         if let Some(parent) = output_tsv.parent() {
             fs::create_dir_all(parent)?;
         }
@@ -3722,6 +3723,18 @@ fn bench_stwo_primitive_lookup_vs_naive_command(
         }
         Ok(())
     }
+}
+
+fn validate_distinct_benchmark_output_paths(
+    output_tsv: &Path,
+    output_json: Option<&Path>,
+) -> llm_provable_computer::Result<()> {
+    if matches!(output_json, Some(path) if path == output_tsv) {
+        return Err(VmError::InvalidConfig(
+            "`--output-json` must differ from `--output-tsv`".to_string(),
+        ));
+    }
+    Ok(())
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -15465,16 +15478,22 @@ mod tests {
 
 #[cfg(test)]
 mod cli_dispatch_tests {
+    #[cfg(not(feature = "stwo-backend"))]
+    use super::prepare_stwo_transformer_accumulation_semantics_artifact_command;
     #[cfg(feature = "stwo-backend")]
     use super::{load_phase107_leaf_family, MAX_PHASE110_REPEATED_WINDOW_FOLD_TREE_TOTAL_LEAVES};
     use super::{
-        needs_run_subcommand, CliStarkProfile, PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS,
+        needs_run_subcommand, normalize_args, validate_distinct_benchmark_output_paths,
+        CliStarkProfile, PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS,
         PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS, PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
     };
     #[cfg(not(feature = "stwo-backend"))]
-    use super::{prepare_stwo_transformer_accumulation_semantics_artifact_command, Cli, Command};
+    use super::{Cli, Command};
     #[cfg(not(feature = "stwo-backend"))]
     use clap::Parser;
+    use std::ffi::OsString;
+    #[cfg(feature = "stwo-backend")]
+    use std::path::Path;
     #[cfg(feature = "stwo-backend")]
     use std::path::PathBuf;
     #[cfg(not(feature = "stwo-backend"))]
@@ -15626,6 +15645,46 @@ mod cli_dispatch_tests {
         assert!(!needs_run_subcommand(
             "verify-stwo-gemma-block-core-slice-artifact"
         ));
+    }
+
+    #[test]
+    fn primitive_benchmark_command_parses_directly_and_is_not_run_shorthand() {
+        assert!(!needs_run_subcommand(
+            "bench-stwo-primitive-lookup-vs-naive"
+        ));
+        let normalized = normalize_args(
+            [
+                "tvm",
+                "bench-stwo-primitive-lookup-vs-naive",
+                "--output-tsv",
+                "evidence.tsv",
+                "--output-json",
+                "evidence.json",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        );
+        assert_eq!(
+            normalized,
+            vec![
+                OsString::from("tvm"),
+                OsString::from("bench-stwo-primitive-lookup-vs-naive"),
+                OsString::from("--output-tsv"),
+                OsString::from("evidence.tsv"),
+                OsString::from("--output-json"),
+                OsString::from("evidence.json"),
+            ]
+        );
+    }
+
+    #[test]
+    fn primitive_benchmark_rejects_identical_output_paths() {
+        let output = Path::new("same-output.tsv");
+        let err = validate_distinct_benchmark_output_paths(output, Some(output))
+            .expect_err("identical output paths must fail");
+        assert!(err
+            .to_string()
+            .contains("`--output-json` must differ from `--output-tsv`"));
     }
 
     #[test]
