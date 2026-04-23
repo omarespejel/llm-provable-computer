@@ -325,12 +325,12 @@ table identity across several steps. The checked TSV is the canonical source for
 branch and records the median of five repeated local runs; the millisecond values remain
 host-dependent representative timings rather than portable wall-clock guarantees. Here
 the qualitative picture changes. For RMSNorm
-at five shared rows, the shared-table path records `2,140` raw proof bytes and `10 ms`
-of proving, versus `12,812` bytes and `46 ms` for five independent lookup envelopes and
-`8,292` bytes and `48 ms` for five independent selector-arithmetic proofs. For the
+at five shared rows, the shared-table path records `2,140` raw proof bytes and `9 ms`
+of proving, versus `12,812` bytes and `44 ms` for five independent lookup envelopes and
+`8,292` bytes and `40 ms` for five independent selector-arithmetic proofs. For the
 softmax exp-table slice at eight shared rows, the shared-table path records `2,284`
-bytes and `8 ms`, versus `19,552` bytes and `58 ms` for independent lookup proofs and
-`14,216` bytes and `42 ms` for independent selector-arithmetic proofs. This is still
+bytes and `6 ms`, versus `19,552` bytes and `50 ms` for independent lookup proofs and
+`14,216` bytes and `36 ms` for independent selector-arithmetic proofs. This is still
 not a full attention-kernel or recursive-compression result, but it is the reuse-aware
 regime the symbolic model was trying to isolate: once one canonical table identity is
 made verifier-visible across repeated steps, proof growth can flatten sharply instead of
@@ -514,7 +514,7 @@ measured softmax row is an exp-table slice, not a full attention kernel, and the
 benchmark does not compare against external SNARK systems. But it is no longer a
 hypothetical next step.
 
-The next checked CLI path, `bench-stwo-shared-table-reuse`, measures the production-
+The next checked CLI path, `bench-stwo-shared-table-reuse --capture-timings`, measures the production-
 relevant reuse axis directly. Its evidence files
 `docs/paper/evidence/stwo-shared-table-reuse-2026-04.tsv`,
 `docs/paper/evidence/stwo-shared-table-reuse-2026-04.json`, and Figure 4 compare one
@@ -524,6 +524,10 @@ rows in Figure 3, these rows already show the reuse-sensitive behavior the paper
 matters: proof bytes and prove time on the shared-table path stay nearly flat while the
 independent baselines scale roughly linearly with `N`.
 
+That timing capture is opt-in on purpose. The default shared-table benchmark report keeps
+`prove_ms` and `verify_ms` at `0`, so the deterministic report surface and the
+host-dependent measurement surface remain distinct.
+
 #### Threat model and soundness boundary
 
 The paper's adversary is a probabilistic polynomial-time prover or artifact producer who
@@ -531,10 +535,12 @@ can choose arbitrary serialized inputs, reorder claimed rows, swap table identit
 splice stale nested artifacts, and relabel backend or version metadata. For the direct
 S-two proof rows in Figures 3 and 4, acceptance means the upstream S-two proof object
 verifies under the implemented relation and the repository-local verifier checks the
-declared semantic scope plus the canonical-table and claimed-row binding required by that
-surface. For the Phase 92 shared-normalization artifact, that includes the static lookup
-registry commitment and the ordered claimed-row list; for the softmax-exp shared proof,
-it includes the canonical exp-table rows and the selected-row witness. This is a concrete
+canonical-table and claimed-row binding required by that surface. The benchmark report's
+declared semantic scope and benchmark version are checked at the report layer, not by the
+direct proof verifiers themselves. For the Phase 92 shared-normalization artifact, the
+proof surface additionally checks the static lookup registry commitment and the ordered
+claimed-row list; for the softmax-exp shared proof, it checks the canonical exp-table
+rows and the selected-row witness. This is a concrete
 soundness boundary, not a new asymptotic theorem: the paper relies on upstream S-two
 cryptographic assumptions for proof soundness and on deterministic repository-local
 checks for metadata, table identity, and source-bound artifact structure. It does not

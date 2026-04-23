@@ -24,6 +24,18 @@ def key_for(row: dict[str, Any]) -> tuple[str, str, int]:
     return (str(row["primitive"]), str(row["backend_variant"]), int(row["steps"]))
 
 
+def build_row_map(
+    rows: list[dict[str, Any]], *, source: Path
+) -> dict[tuple[str, str, int], dict[str, Any]]:
+    row_map: dict[tuple[str, str, int], dict[str, Any]] = {}
+    for row in rows:
+        key = key_for(row)
+        if key in row_map:
+            raise SystemExit(f"duplicate row key in {source}: {key}")
+        row_map[key] = row
+    return row_map
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--inputs", nargs="+", required=True, type=Path)
@@ -33,6 +45,8 @@ def main() -> None:
 
     if len(args.inputs) < 3:
         raise SystemExit("expected at least 3 repeated benchmark runs for aggregation")
+    if len(args.inputs) % 2 == 0:
+        raise SystemExit("expected an odd number of repeated benchmark runs for aggregation")
 
     benchmark_version = None
     semantic_scope = None
@@ -45,6 +59,7 @@ def main() -> None:
             benchmark_version = payload["benchmark_version"]
             semantic_scope = payload["semantic_scope"]
             canonical_rows = payload["rows"]
+            build_row_map(canonical_rows, source=input_path)
             for row in canonical_rows:
                 timing_samples[key_for(row)] = {"prove_ms": [], "verify_ms": []}
         else:
@@ -61,7 +76,7 @@ def main() -> None:
                     f"row-count mismatch in {input_path}: {len(payload['rows'])} != {len(canonical_rows or [])}"
                 )
 
-        row_map = {key_for(row): row for row in payload["rows"]}
+        row_map = build_row_map(payload["rows"], source=input_path)
         if set(row_map) != set(timing_samples):
             missing = sorted(set(timing_samples) - set(row_map))
             extra = sorted(set(row_map) - set(timing_samples))

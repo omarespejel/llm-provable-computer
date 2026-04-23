@@ -113,6 +113,7 @@ use llm_provable_computer::{
     prove_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_demo,
     prove_phase3_binary_step_lookup_demo_envelope, prove_phase5_normalization_lookup_demo_envelope,
     run_stwo_primitive_lookup_vs_naive_benchmark, run_stwo_shared_table_reuse_benchmark,
+    run_stwo_shared_table_reuse_benchmark_with_options,
     save_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact,
     save_phase102_folded_multi_interval_gemma_richer_family_artifact,
     save_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact,
@@ -523,6 +524,9 @@ enum Command {
         /// Optional file where the benchmark JSON will be written.
         #[arg(long = "output-json")]
         output_json: Option<PathBuf>,
+        /// Capture host-dependent wall-clock timings in the report output.
+        #[arg(long = "capture-timings", default_value_t = false)]
+        capture_timings: bool,
     },
     /// Prepare a transformer-shaped tensor-native chain artifact over fixed primitive templates.
     PrepareStwoTensorNativeChainArtifact {
@@ -2391,7 +2395,12 @@ fn run() -> llm_provable_computer::Result<()> {
         Command::BenchStwoSharedTableReuse {
             output_tsv,
             output_json,
-        } => bench_stwo_shared_table_reuse_command(&output_tsv, output_json.as_deref())?,
+            capture_timings,
+        } => bench_stwo_shared_table_reuse_command(
+            &output_tsv,
+            output_json.as_deref(),
+            capture_timings,
+        )?,
         Command::PrepareStwoTensorNativeChainArtifact { output } => {
             prepare_stwo_tensor_native_chain_artifact_command(&output)?
         }
@@ -3747,11 +3756,13 @@ fn bench_stwo_primitive_lookup_vs_naive_command(
 fn bench_stwo_shared_table_reuse_command(
     output_tsv: &Path,
     output_json: Option<&Path>,
+    capture_timings: bool,
 ) -> llm_provable_computer::Result<()> {
     #[cfg(not(feature = "stwo-backend"))]
     {
         let _ = output_tsv;
         let _ = output_json;
+        let _ = capture_timings;
         return Err(VmError::UnsupportedProof(
             "S-two shared-table reuse benchmark requires building with `--features stwo-backend`"
                 .to_string(),
@@ -3774,7 +3785,11 @@ fn bench_stwo_shared_table_reuse_command(
                 }
             }
         }
-        let report = run_stwo_shared_table_reuse_benchmark()?;
+        let report = if capture_timings {
+            run_stwo_shared_table_reuse_benchmark_with_options(true)?
+        } else {
+            run_stwo_shared_table_reuse_benchmark()?
+        };
         save_stwo_shared_table_reuse_benchmark_report_tsv(&report, output_tsv)?;
         if let Some(path) = output_json {
             save_stwo_shared_table_reuse_benchmark_report_json(&report, path)?;
@@ -3833,6 +3848,30 @@ fn normalize_output_path(path: &Path) -> llm_provable_computer::Result<PathBuf> 
     Ok(normalized)
 }
 
+#[cfg(unix)]
+fn symlink_target_conflicts(
+    path: &Path,
+    other_normalized: &Path,
+) -> llm_provable_computer::Result<bool> {
+    let metadata = match fs::symlink_metadata(path) {
+        Ok(metadata) => metadata,
+        Err(_) => return Ok(false),
+    };
+    if !metadata.file_type().is_symlink() {
+        return Ok(false);
+    }
+
+    let target = fs::read_link(path)?;
+    let resolved_target = if target.is_absolute() {
+        target
+    } else if let Some(parent) = path.parent() {
+        parent.join(target)
+    } else {
+        target
+    };
+    Ok(normalize_output_path(&resolved_target)? == other_normalized)
+}
+
 fn benchmark_output_paths_conflict(
     output_tsv: &Path,
     output_json: &Path,
@@ -3841,6 +3880,15 @@ fn benchmark_output_paths_conflict(
     let normalized_json = normalize_output_path(output_json)?;
     if normalized_json == normalized_tsv {
         return Ok(true);
+    }
+
+    #[cfg(unix)]
+    {
+        if symlink_target_conflicts(output_json, &normalized_tsv)?
+            || symlink_target_conflicts(output_tsv, &normalized_json)?
+        {
+            return Ok(true);
+        }
     }
 
     if let (Ok(canonical_tsv), Ok(canonical_json)) = (
@@ -15838,6 +15886,31 @@ mod cli_dispatch_tests {
     }
 
     #[test]
+    fn shared_table_reuse_benchmark_command_preserves_capture_timings_flag() {
+        let normalized = normalize_args(
+            [
+                "tvm",
+                "bench-stwo-shared-table-reuse",
+                "--capture-timings",
+                "--output-tsv",
+                "reuse.tsv",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        );
+        assert_eq!(
+            normalized,
+            vec![
+                OsString::from("tvm"),
+                OsString::from("bench-stwo-shared-table-reuse"),
+                OsString::from("--capture-timings"),
+                OsString::from("--output-tsv"),
+                OsString::from("reuse.tsv"),
+            ]
+        );
+    }
+
+    #[test]
     fn primitive_benchmark_rejects_identical_output_paths() {
         let output = Path::new("same-output.tsv");
         let err = validate_distinct_benchmark_output_paths(output, Some(output))
@@ -15878,6 +15951,23 @@ mod cli_dispatch_tests {
     }
 
     #[test]
+    #[cfg(unix)]
+    fn primitive_benchmark_rejects_dangling_symlink_output_paths() {
+        use std::os::unix::fs::symlink;
+
+        let tempdir = tempfile::tempdir().expect("tempdir");
+        let target = tempdir.path().join("benchmark.tsv");
+        let alias = tempdir.path().join("benchmark-link.tsv");
+        symlink(&target, &alias).expect("create dangling symlink");
+
+        let err = validate_distinct_benchmark_output_paths(&target, Some(&alias))
+            .expect_err("dangling symlinked output paths must fail");
+        assert!(err
+            .to_string()
+            .contains("`--output-json` must differ from `--output-tsv`"));
+    }
+
+    #[test]
     fn shared_table_reuse_benchmark_rejects_identical_output_paths() {
         let output = Path::new("same-reuse-output.tsv");
         let err = validate_distinct_benchmark_output_paths(output, Some(output))
@@ -15912,6 +16002,23 @@ mod cli_dispatch_tests {
 
         let err = validate_distinct_benchmark_output_paths(&target, Some(&alias))
             .expect_err("symlinked output paths must fail");
+        assert!(err
+            .to_string()
+            .contains("`--output-json` must differ from `--output-tsv`"));
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn shared_table_reuse_benchmark_rejects_dangling_symlink_output_paths() {
+        use std::os::unix::fs::symlink;
+
+        let tempdir = tempfile::tempdir().expect("tempdir");
+        let target = tempdir.path().join("reuse.tsv");
+        let alias = tempdir.path().join("reuse-link.tsv");
+        symlink(&target, &alias).expect("create dangling symlink");
+
+        let err = validate_distinct_benchmark_output_paths(&target, Some(&alias))
+            .expect_err("dangling symlinked output paths must fail");
         assert!(err
             .to_string()
             .contains("`--output-json` must differ from `--output-tsv`"));

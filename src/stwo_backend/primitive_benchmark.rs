@@ -47,6 +47,7 @@ relation!(SoftmaxExpLookupRelation, 2);
 type SoftmaxExpLookupElements = SoftmaxExpLookupRelation;
 
 const RMSNORM_ROWS: [(u16, u16); 2] = [(4, 128), (16, 64)];
+const RMSNORM_REUSE_ROWS: [(u16, u16); 5] = [(1, 256), (2, 181), (4, 128), (8, 91), (16, 64)];
 const SOFTMAX_EXP_ROWS: [(u16, u16); 3] = [(0, 256), (2, 94), (4, 35)];
 const SOFTMAX_EXP_TABLE: [(u16, u16); 8] = [
     (0, 256),
@@ -304,22 +305,62 @@ pub fn run_stwo_primitive_lookup_vs_naive_benchmark() -> Result<StwoPrimitiveBen
 }
 
 pub fn run_stwo_shared_table_reuse_benchmark() -> Result<StwoSharedTableReuseBenchmarkReport> {
+    run_stwo_shared_table_reuse_benchmark_for_step_counts(
+        &RMSNORM_REUSE_STEP_COUNTS,
+        &SOFTMAX_REUSE_STEP_COUNTS,
+        false,
+    )
+}
+
+pub fn run_stwo_shared_table_reuse_benchmark_with_options(
+    capture_timings: bool,
+) -> Result<StwoSharedTableReuseBenchmarkReport> {
+    run_stwo_shared_table_reuse_benchmark_for_step_counts(
+        &RMSNORM_REUSE_STEP_COUNTS,
+        &SOFTMAX_REUSE_STEP_COUNTS,
+        capture_timings,
+    )
+}
+
+fn run_stwo_shared_table_reuse_benchmark_for_step_counts(
+    rmsnorm_step_counts: &[usize],
+    softmax_step_counts: &[usize],
+    capture_timings: bool,
+) -> Result<StwoSharedTableReuseBenchmarkReport> {
     let mut rows = Vec::new();
 
     let rmsnorm_rows = rmsnorm_canonical_rows();
-    for steps in RMSNORM_REUSE_STEP_COUNTS {
+    for &steps in rmsnorm_step_counts {
         let claimed_rows = claimed_row_prefix(&rmsnorm_rows, steps, "rmsnorm_q8_inv_sqrt")?;
-        rows.push(measure_rmsnorm_shared_lookup_reuse(&claimed_rows)?);
-        rows.push(measure_rmsnorm_independent_lookup(&claimed_rows)?);
-        rows.push(measure_rmsnorm_independent_naive(&claimed_rows)?);
+        rows.push(measure_rmsnorm_shared_lookup_reuse(
+            &claimed_rows,
+            capture_timings,
+        )?);
+        rows.push(measure_rmsnorm_independent_lookup(
+            &claimed_rows,
+            capture_timings,
+        )?);
+        rows.push(measure_rmsnorm_independent_naive(
+            &claimed_rows,
+            capture_timings,
+        )?);
     }
 
     let softmax_rows = softmax_canonical_rows();
-    for steps in SOFTMAX_REUSE_STEP_COUNTS {
+    for &steps in softmax_step_counts {
         let claimed_rows = claimed_row_prefix(&softmax_rows, steps, "softmax_exp_q8")?;
-        rows.push(measure_softmax_shared_lookup_reuse(&claimed_rows)?);
-        rows.push(measure_softmax_independent_lookup(&claimed_rows)?);
-        rows.push(measure_softmax_independent_naive(&claimed_rows)?);
+        rows.push(measure_softmax_shared_lookup_reuse(
+            &claimed_rows,
+            capture_timings,
+        )?);
+        rows.push(measure_softmax_independent_lookup(
+            &claimed_rows,
+            capture_timings,
+        )?);
+        rows.push(measure_softmax_independent_naive(
+            &claimed_rows,
+            capture_timings,
+        )?);
     }
 
     if let Some(failed) = rows.iter().find(|row| !row.verified) {
@@ -334,6 +375,19 @@ pub fn run_stwo_shared_table_reuse_benchmark() -> Result<StwoSharedTableReuseBen
         semantic_scope: STWO_SHARED_TABLE_REUSE_BENCHMARK_SCOPE.to_string(),
         rows,
     })
+}
+
+fn measure_elapsed_ms<T, F>(capture_timings: bool, op: F) -> Result<(T, u128)>
+where
+    F: FnOnce() -> Result<T>,
+{
+    if capture_timings {
+        let start = Instant::now();
+        let value = op()?;
+        Ok((value, start.elapsed().as_millis()))
+    } else {
+        Ok((op()?, 0))
+    }
 }
 
 pub fn save_stwo_primitive_benchmark_report_json(
@@ -513,18 +567,19 @@ fn measure_softmax_exp_polynomial() -> Result<StwoPrimitiveBenchmarkMeasurement>
 
 fn measure_rmsnorm_shared_lookup_reuse(
     claimed_rows: &[(u16, u16)],
+    capture_timings: bool,
 ) -> Result<StwoSharedTableReuseBenchmarkMeasurement> {
     let steps = shared_normalization_steps_from_rows(claimed_rows);
-    let prove_start = Instant::now();
-    let artifact = prepare_phase92_shared_normalization_primitive_artifact(&steps)?;
-    let prove_ms = prove_start.elapsed().as_millis();
+    let (artifact, prove_ms) = measure_elapsed_ms(capture_timings, || {
+        prepare_phase92_shared_normalization_primitive_artifact(&steps)
+    })?;
     let proof_bytes = shared_normalization_stark_proof_size(&artifact.proof_envelope.proof)?;
     let serialized_bytes = serde_json::to_vec(&artifact)
         .map_err(|error| VmError::Serialization(error.to_string()))?
         .len();
-    let verify_start = Instant::now();
-    verify_phase92_shared_normalization_primitive_artifact(&artifact)?;
-    let verify_ms = verify_start.elapsed().as_millis();
+    let (_verified_unit, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_phase92_shared_normalization_primitive_artifact(&artifact)
+    })?;
     Ok(StwoSharedTableReuseBenchmarkMeasurement {
         primitive: "rmsnorm_q8_inv_sqrt".to_string(),
         backend_variant: "shared_table_lookup_reuse".to_string(),
@@ -542,6 +597,7 @@ fn measure_rmsnorm_shared_lookup_reuse(
 
 fn measure_rmsnorm_independent_lookup(
     claimed_rows: &[(u16, u16)],
+    capture_timings: bool,
 ) -> Result<StwoSharedTableReuseBenchmarkMeasurement> {
     let mut prove_ms = 0;
     let mut verify_ms = 0;
@@ -550,9 +606,10 @@ fn measure_rmsnorm_independent_lookup(
     let mut proofs = Vec::with_capacity(claimed_rows.len());
     for row in claimed_rows {
         let step_rows = [*row];
-        let prove_start = Instant::now();
-        let envelope = prove_phase10_shared_normalization_lookup_envelope(&step_rows)?;
-        prove_ms += prove_start.elapsed().as_millis();
+        let (envelope, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            prove_phase10_shared_normalization_lookup_envelope(&step_rows)
+        })?;
+        prove_ms += elapsed_ms;
         proof_bytes += shared_normalization_stark_proof_size(&envelope.proof)?;
         serialized_bytes += serde_json::to_vec(&envelope)
             .map_err(|error| VmError::Serialization(error.to_string()))?
@@ -560,13 +617,15 @@ fn measure_rmsnorm_independent_lookup(
         proofs.push(envelope);
     }
     for envelope in &proofs {
-        let verify_start = Instant::now();
-        if !verify_phase10_shared_normalization_lookup_envelope(envelope)? {
+        let (verified, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            verify_phase10_shared_normalization_lookup_envelope(envelope)
+        })?;
+        if !verified {
             return Err(VmError::UnsupportedProof(
                 "independent shared-normalization lookup proof did not verify".to_string(),
             ));
         }
-        verify_ms += verify_start.elapsed().as_millis();
+        verify_ms += elapsed_ms;
     }
     Ok(StwoSharedTableReuseBenchmarkMeasurement {
         primitive: "rmsnorm_q8_inv_sqrt".to_string(),
@@ -586,6 +645,7 @@ fn measure_rmsnorm_independent_lookup(
 
 fn measure_rmsnorm_independent_naive(
     claimed_rows: &[(u16, u16)],
+    capture_timings: bool,
 ) -> Result<StwoSharedTableReuseBenchmarkMeasurement> {
     let mut prove_ms = 0;
     let mut verify_ms = 0;
@@ -594,21 +654,24 @@ fn measure_rmsnorm_independent_naive(
     let mut proofs = Vec::with_capacity(claimed_rows.len());
     for row in claimed_rows {
         let step_rows = [*row];
-        let prove_start = Instant::now();
-        let proof = prove_rmsnorm_selector_arithmetic(&step_rows)?;
-        prove_ms += prove_start.elapsed().as_millis();
+        let (proof, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            prove_rmsnorm_selector_arithmetic(&step_rows)
+        })?;
+        prove_ms += elapsed_ms;
         proof_bytes += primitive_benchmark_stark_proof_size(&proof)?;
         serialized_bytes += proof.len();
         proofs.push((step_rows, proof));
     }
     for (step_rows, proof) in &proofs {
-        let verify_start = Instant::now();
-        if !verify_rmsnorm_selector_arithmetic(step_rows, proof)? {
+        let (verified, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            verify_rmsnorm_selector_arithmetic(step_rows, proof)
+        })?;
+        if !verified {
             return Err(VmError::UnsupportedProof(
                 "independent RMSNorm arithmetic proof did not verify".to_string(),
             ));
         }
-        verify_ms += verify_start.elapsed().as_millis();
+        verify_ms += elapsed_ms;
     }
     Ok(StwoSharedTableReuseBenchmarkMeasurement {
         primitive: "rmsnorm_q8_inv_sqrt".to_string(),
@@ -627,19 +690,20 @@ fn measure_rmsnorm_independent_naive(
 
 fn measure_softmax_shared_lookup_reuse(
     claimed_rows: &[(u16, u16)],
+    capture_timings: bool,
 ) -> Result<StwoSharedTableReuseBenchmarkMeasurement> {
-    let prove_start = Instant::now();
-    let proof = prove_softmax_exp_lookup(claimed_rows)?;
-    let prove_ms = prove_start.elapsed().as_millis();
+    let (proof, prove_ms) =
+        measure_elapsed_ms(capture_timings, || prove_softmax_exp_lookup(claimed_rows))?;
     let proof_bytes = primitive_benchmark_stark_proof_size(&proof)?;
     let serialized_bytes = proof.len();
-    let verify_start = Instant::now();
-    if !verify_softmax_exp_lookup(claimed_rows, &proof)? {
+    let (verified, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_softmax_exp_lookup(claimed_rows, &proof)
+    })?;
+    if !verified {
         return Err(VmError::UnsupportedProof(
             "shared softmax lookup proof did not verify".to_string(),
         ));
     }
-    let verify_ms = verify_start.elapsed().as_millis();
     Ok(StwoSharedTableReuseBenchmarkMeasurement {
         primitive: "softmax_exp_q8".to_string(),
         backend_variant: "shared_table_lookup_reuse".to_string(),
@@ -658,6 +722,7 @@ fn measure_softmax_shared_lookup_reuse(
 
 fn measure_softmax_independent_lookup(
     claimed_rows: &[(u16, u16)],
+    capture_timings: bool,
 ) -> Result<StwoSharedTableReuseBenchmarkMeasurement> {
     let mut prove_ms = 0;
     let mut verify_ms = 0;
@@ -666,21 +731,23 @@ fn measure_softmax_independent_lookup(
     let mut proofs = Vec::with_capacity(claimed_rows.len());
     for row in claimed_rows {
         let step_rows = [*row];
-        let prove_start = Instant::now();
-        let proof = prove_softmax_exp_lookup(&step_rows)?;
-        prove_ms += prove_start.elapsed().as_millis();
+        let (proof, elapsed_ms) =
+            measure_elapsed_ms(capture_timings, || prove_softmax_exp_lookup(&step_rows))?;
+        prove_ms += elapsed_ms;
         proof_bytes += primitive_benchmark_stark_proof_size(&proof)?;
         serialized_bytes += proof.len();
         proofs.push((step_rows, proof));
     }
     for (step_rows, proof) in &proofs {
-        let verify_start = Instant::now();
-        if !verify_softmax_exp_lookup(step_rows, proof)? {
+        let (verified, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            verify_softmax_exp_lookup(step_rows, proof)
+        })?;
+        if !verified {
             return Err(VmError::UnsupportedProof(
                 "independent softmax lookup proof did not verify".to_string(),
             ));
         }
-        verify_ms += verify_start.elapsed().as_millis();
+        verify_ms += elapsed_ms;
     }
     Ok(StwoSharedTableReuseBenchmarkMeasurement {
         primitive: "softmax_exp_q8".to_string(),
@@ -699,6 +766,7 @@ fn measure_softmax_independent_lookup(
 
 fn measure_softmax_independent_naive(
     claimed_rows: &[(u16, u16)],
+    capture_timings: bool,
 ) -> Result<StwoSharedTableReuseBenchmarkMeasurement> {
     let mut prove_ms = 0;
     let mut verify_ms = 0;
@@ -707,21 +775,24 @@ fn measure_softmax_independent_naive(
     let mut proofs = Vec::with_capacity(claimed_rows.len());
     for row in claimed_rows {
         let step_rows = [*row];
-        let prove_start = Instant::now();
-        let proof = prove_softmax_selector_arithmetic(&step_rows)?;
-        prove_ms += prove_start.elapsed().as_millis();
+        let (proof, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            prove_softmax_selector_arithmetic(&step_rows)
+        })?;
+        prove_ms += elapsed_ms;
         proof_bytes += primitive_benchmark_stark_proof_size(&proof)?;
         serialized_bytes += proof.len();
         proofs.push((step_rows, proof));
     }
     for (step_rows, proof) in &proofs {
-        let verify_start = Instant::now();
-        if !verify_softmax_selector_arithmetic(step_rows, proof)? {
+        let (verified, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
+            verify_softmax_selector_arithmetic(step_rows, proof)
+        })?;
+        if !verified {
             return Err(VmError::UnsupportedProof(
                 "independent softmax arithmetic proof did not verify".to_string(),
             ));
         }
-        verify_ms += verify_start.elapsed().as_millis();
+        verify_ms += elapsed_ms;
     }
     Ok(StwoSharedTableReuseBenchmarkMeasurement {
         primitive: "softmax_exp_q8".to_string(),
@@ -739,10 +810,7 @@ fn measure_softmax_independent_naive(
 }
 
 fn rmsnorm_canonical_rows() -> Vec<(u16, u16)> {
-    phase5_normalization_table_rows()
-        .into_iter()
-        .map(|row| (row.norm_sq, row.inv_sqrt_q8))
-        .collect()
+    RMSNORM_REUSE_ROWS.to_vec()
 }
 
 fn softmax_canonical_rows() -> Vec<(u16, u16)> {
@@ -1431,8 +1499,9 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "expensive shared-table reuse benchmark"]
     fn shared_table_reuse_benchmark_runs_all_modes() {
-        let report = run_stwo_shared_table_reuse_benchmark()
+        let report = run_stwo_shared_table_reuse_benchmark_with_options(false)
             .expect("shared-table reuse benchmark should run");
         assert_eq!(report.rows.len(), 24);
         assert!(report.rows.iter().all(|row| row.verified));
@@ -1454,11 +1523,37 @@ mod tests {
     }
 
     #[test]
+    fn shared_table_reuse_benchmark_smoke_paths_verify_without_timings() {
+        let report = run_stwo_shared_table_reuse_benchmark_for_step_counts(&[1], &[1], false)
+            .expect("shared-table reuse smoke benchmark should run");
+        assert_eq!(report.rows.len(), 6);
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().all(|row| row.proof_bytes > 0));
+        assert!(report.rows.iter().all(|row| row.prove_ms == 0));
+        assert!(report.rows.iter().all(|row| row.verify_ms == 0));
+    }
+
+    #[test]
     fn shared_table_reuse_benchmark_rejects_out_of_range_step_count() {
         let err = claimed_row_prefix(&softmax_canonical_rows(), 9, "softmax_exp_q8")
             .expect_err("step count beyond canonical table must fail");
         assert!(err
             .to_string()
             .contains("only 8 canonical rows are available"));
+    }
+
+    #[test]
+    fn shared_table_reuse_rmsnorm_rows_remain_in_phase5_table() {
+        let live_rows: std::collections::BTreeSet<_> = phase5_normalization_table_rows()
+            .into_iter()
+            .map(|row| (row.norm_sq, row.inv_sqrt_q8))
+            .collect();
+        for row in RMSNORM_REUSE_ROWS {
+            assert!(
+                live_rows.contains(&row),
+                "pinned shared-table RMSNorm row {:?} must remain in the Phase 5 table",
+                row
+            );
+        }
     }
 }
