@@ -217,6 +217,12 @@ pub fn run_stwo_primitive_lookup_vs_naive_benchmark() -> Result<StwoPrimitiveBen
     rows.push(measure_rmsnorm_selector_arithmetic()?);
     rows.push(measure_softmax_exp_lookup()?);
     rows.push(measure_softmax_exp_polynomial()?);
+    if let Some(failed) = rows.iter().find(|row| !row.verified) {
+        return Err(VmError::UnsupportedProof(format!(
+            "primitive benchmark row {} / {} did not verify",
+            failed.primitive, failed.backend_variant
+        )));
+    }
     Ok(StwoPrimitiveBenchmarkReport {
         benchmark_version: STWO_PRIMITIVE_BENCHMARK_VERSION.to_string(),
         semantic_scope: STWO_PRIMITIVE_BENCHMARK_SCOPE.to_string(),
@@ -473,6 +479,11 @@ fn verify_softmax_exp_lookup(claimed_rows: &[(u16, u16)], proof: &[u8]) -> Resul
         SecureField::zero(),
     );
     let sizes = placeholder_component.trace_log_degree_bounds();
+    if stark_proof.commitments.len() < sizes.len() {
+        return Err(VmError::UnsupportedProof(
+            "softmax-exp lookup proof uses a malformed or tampered commitment payload".to_string(),
+        ));
+    }
     commitment_scheme.commit(stark_proof.commitments[0], &sizes[0], channel);
     commitment_scheme.commit(stark_proof.commitments[1], &sizes[1], channel);
     mix_claimed_rows(channel, &bundle.claimed_rows);
@@ -544,6 +555,12 @@ where
     let commitment_scheme =
         &mut CommitmentSchemeVerifier::<Blake2sM31MerkleChannel>::new(pcs_config);
     let sizes = component.trace_log_degree_bounds();
+    if stark_proof.commitments.len() < sizes.len() {
+        return Err(VmError::UnsupportedProof(
+            "primitive arithmetic proof uses a malformed or tampered commitment payload"
+                .to_string(),
+        ));
+    }
     commitment_scheme.commit(stark_proof.commitments[0], &sizes[0], channel);
     commitment_scheme.commit(stark_proof.commitments[1], &sizes[1], channel);
     Ok(verify(&[&component], channel, commitment_scheme, stark_proof).is_ok())
@@ -825,6 +842,21 @@ mod tests {
     }
 
     #[test]
+    fn primitive_benchmark_rejects_tampered_softmax_lookup_shape() {
+        let proof = prove_softmax_exp_lookup(&SOFTMAX_EXP_ROWS).expect("softmax proof");
+        let mut payload: PrimitiveBenchmarkProofPayload =
+            serde_json::from_slice(&proof).expect("deserialize proof payload");
+        payload.stark_proof.0.commitments.clear();
+        let tampered = serde_json::to_vec(&payload).expect("serialize tampered payload");
+
+        let error = verify_softmax_exp_lookup(&SOFTMAX_EXP_ROWS, &tampered)
+            .expect_err("shortened commitment payload must be rejected");
+        assert!(error
+            .to_string()
+            .contains("softmax-exp lookup proof uses a malformed or tampered commitment payload"));
+    }
+
+    #[test]
     fn primitive_benchmark_rejects_tampered_arithmetic_rows() {
         let proof =
             prove_rmsnorm_selector_arithmetic(&RMSNORM_ROWS).expect("arithmetic benchmark proof");
@@ -838,5 +870,21 @@ mod tests {
         assert!(error
             .to_string()
             .contains("primitive arithmetic proof uses non-canonical rows"));
+    }
+
+    #[test]
+    fn primitive_benchmark_rejects_tampered_arithmetic_shape() {
+        let proof =
+            prove_rmsnorm_selector_arithmetic(&RMSNORM_ROWS).expect("arithmetic benchmark proof");
+        let mut payload: PrimitiveBenchmarkProofPayload =
+            serde_json::from_slice(&proof).expect("deserialize proof payload");
+        payload.stark_proof.0.commitments.clear();
+        let tampered = serde_json::to_vec(&payload).expect("serialize tampered payload");
+
+        let error = verify_rmsnorm_selector_arithmetic(&RMSNORM_ROWS, &tampered)
+            .expect_err("shortened arithmetic commitment payload must be rejected");
+        assert!(error.to_string().contains(
+            "primitive arithmetic proof uses a malformed or tampered commitment payload"
+        ));
     }
 }

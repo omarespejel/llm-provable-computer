@@ -3694,11 +3694,15 @@ fn bench_stwo_primitive_lookup_vs_naive_command(
         require_stwo_backend("S-two primitive lookup-vs-naive benchmark")?;
         validate_distinct_benchmark_output_paths(output_tsv, output_json)?;
         if let Some(parent) = output_tsv.parent() {
-            fs::create_dir_all(parent)?;
+            if !parent.as_os_str().is_empty() {
+                fs::create_dir_all(parent)?;
+            }
         }
         if let Some(path) = output_json {
             if let Some(parent) = path.parent() {
-                fs::create_dir_all(parent)?;
+                if !parent.as_os_str().is_empty() {
+                    fs::create_dir_all(parent)?;
+                }
             }
         }
         let report = run_stwo_primitive_lookup_vs_naive_benchmark()?;
