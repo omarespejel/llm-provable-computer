@@ -44,19 +44,23 @@ python3 scripts/paper/generate_stwo_primitive_lookup_vs_naive_figure.py \
 mv "$TMP_TSV" "$TSV_OUT"
 mv "$TMP_JSON" "$JSON_OUT"
 mv "$TMP_SVG" "$SVG_OUT"
+WROTE_PNG=0
+WROTE_PDF=0
 if [[ -f "$TMP_PNG" ]]; then
   mv "$TMP_PNG" "$PNG_OUT"
+  WROTE_PNG=1
 fi
 if [[ -f "$TMP_PDF" ]]; then
   mv "$TMP_PDF" "$PDF_OUT"
+  WROTE_PDF=1
 fi
 
 echo "wrote $TSV_OUT"
 echo "wrote $JSON_OUT"
 echo "wrote $SVG_OUT"
-if [[ -f "$PNG_OUT" ]]; then
+if [[ "$WROTE_PNG" -eq 1 ]]; then
   echo "wrote $PNG_OUT"
 fi
-if [[ -f "$PDF_OUT" ]]; then
+if [[ "$WROTE_PDF" -eq 1 ]]; then
   echo "wrote $PDF_OUT"
 fi

@@ -313,9 +313,9 @@ and the checked-in TSV is the canonical source for this branch; that TSV was gen
 drift with host hardware and implementation changes even when the semantic relation stays
 the same. On these tiny fixed-shape slices, the lookup-backed paths are currently somewhat
 larger and somewhat slower than the naive arithmetic alternatives: RMSNorm
-records `2,684` proof bytes / `14 ms` prove / `2 ms` verify for the lookup side versus
-`1,892` bytes / `8 ms` / `1 ms` for selector arithmetic; the softmax-exp slice records
-`2,684` bytes / `8 ms` / `2 ms` versus `1,352` bytes / `6 ms` / `1 ms` for degree-2
+records `2,684` proof bytes / `13 ms` prove / `1 ms` verify for the lookup side versus
+`1,428` bytes / `3 ms` / `1 ms` for selector arithmetic; the softmax-exp slice records
+`2,684` bytes / `7 ms` / `1 ms` versus `1,240` bytes / `3 ms` / `0 ms` for degree-2
 polynomial interpolation. Here, "proof bytes" means the estimated raw STARK proof size,
 not the enclosing JSON wrapper. That does not overturn the symbolic model; it identifies
 where a small matched empirical anchor and a long-context symbolic stress model are
@@ -812,29 +812,31 @@ especially when the inference layer itself may be GKR/sumcheck-heavy or TEE-assi
 ### 8.3 Highest-leverage next step
 
 Given the current artifact boundary and the external landscape, the highest-leverage
-near-term result is a **matched within-S-two lookup-vs-naive primitive measurement**.
-The first targets should be RMSNorm and softmax because they directly exercise the
-normalization and non-arithmetic paths emphasized by the model.
+near-term result is no longer to create a matched within-S-two primitive benchmark from
+scratch. That benchmark already exists on the checked CLI path
+`bench-stwo-primitive-lookup-vs-naive`, with the checked evidence files
+`docs/paper/evidence/stwo-primitive-lookup-vs-naive-2026-04.tsv` and
+`docs/paper/evidence/stwo-primitive-lookup-vs-naive-2026-04.json`.
 
-The methodological reason is simple: the symbolic model is already explicit, but it
-still needs a matched empirical anchor inside the same backend. A single TSV that
-reports prove time, verify time, proof bytes, and model-predicted ratio for lookup-backed
-RMSNorm/softmax versus naive arithmetized alternatives is more useful for this paper
-than another pre-recursive packaging layer. It turns the paper's strongest analytic
-claim into a falsifiable measurement without pretending to beat NANOZK, Jolt Atlas, or
-BitSage on whole-model wall-clock numbers.
+The next step is to tighten and extend that measured surface. Methodologically, the
+symbolic model now has one concrete anchor inside the same backend, so the right follow-on
+work is to preserve strict statement binding, add more adversarial and nested-proof checks,
+investigate resource-bound regressions as the primitive grows, and keep the paper's prose
+and checked artifacts aligned as the benchmark evolves. After that, the obvious expansion
+is to move from this exp-table slice toward richer attention and normalization kernels,
+while keeping the same explicit lookup-vs-naive comparison frame.
 
 More generic folding and recursive-argument frameworks already cover much of the broad
 abstraction space [41, 43, 44, 45]. The sharper contribution available here is
 transformer-specific measurement and then, later, transformer-specific accumulation over
-a fixed relation. Within that boundary, the credible sequencing is: first measure one
-lookup-backed primitive against a naive alternative; then extend to softmax; then use
-those numbers to decide whether recursive carried-state accumulation is the next paper's
-main result or only a supporting layer [38, 39, 42, 47, 48].
+a fixed relation. Within that boundary, the credible sequencing is: first harden the
+measured primitive benchmark so the verifier conditions are fully explicit; then widen the
+primitive family; then use those measurements to decide whether recursive carried-state
+accumulation is the next paper's main result or only a supporting layer [38, 39, 42, 47, 48].
 
-That direction keeps the next contribution technically attributable: near-term gains
-can be read as lookup-vs-naive primitive gains inside one backend, while later gains can
-be read as accumulation/compression gains over a fixed public boundary.
+That direction keeps the next contribution technically attributable: near-term gains can
+be read as better-specified lookup-vs-naive primitive evidence inside one backend, while
+later gains can be read as accumulation/compression gains over a fixed public boundary.
 
 ______________________________________________________________________
 

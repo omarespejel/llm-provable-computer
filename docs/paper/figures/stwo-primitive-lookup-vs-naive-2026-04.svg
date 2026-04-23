@@ -24,16 +24,16 @@
 <text x="222.0" y="286.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">2,684</text>
 <text x="222.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">rmsnorm LogUp</text>
 <text x="222.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">lookup</text>
-<rect x="318" y="370.8" width="120" height="169.2" rx="18" fill="#D97706" opacity="0.95"/>
-<text x="378.0" y="356.8" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">1,892</text>
+<rect x="318" y="412.3" width="120" height="127.7" rx="18" fill="#D97706" opacity="0.95"/>
+<text x="378.0" y="398.3" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">1,428</text>
 <text x="378.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">rmsnorm Selector</text>
 <text x="378.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">arithmetic</text>
 <rect x="474" y="300.0" width="120" height="240.0" rx="18" fill="#2563EB" opacity="0.95"/>
 <text x="534.0" y="286.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">2,684</text>
 <text x="534.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">softmax exp</text>
 <text x="534.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">LogUp lookup</text>
-<rect x="630" y="419.1" width="120" height="120.9" rx="18" fill="#059669" opacity="0.95"/>
-<text x="690.0" y="405.1" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">1,352</text>
+<rect x="630" y="429.1" width="120" height="110.9" rx="18" fill="#059669" opacity="0.95"/>
+<text x="690.0" y="415.1" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">1,240</text>
 <text x="690.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">softmax exp</text>
 <text x="690.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">Polynomial</text>
 <text x="690.0" y="622.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">arithmetic</text>
@@ -44,25 +44,25 @@
 <line x1="856" y1="480.0" x2="1474" y2="480.0" stroke="#E5E7EB" stroke-width="1.5"/>
 <text x="848" y="486.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" fill="#6B7280">3</text>
 <line x1="856" y1="420.0" x2="1474" y2="420.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="848" y="426.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" fill="#6B7280">7</text>
+<text x="848" y="426.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" fill="#6B7280">6</text>
 <line x1="856" y1="360.0" x2="1474" y2="360.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="848" y="366.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" fill="#6B7280">10</text>
+<text x="848" y="366.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" fill="#6B7280">9</text>
 <line x1="856" y1="300.0" x2="1474" y2="300.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="848" y="306.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" fill="#6B7280">14</text>
+<text x="848" y="306.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" fill="#6B7280">13</text>
 <rect x="892" y="300.0" width="120" height="240.0" rx="18" fill="#2563EB" opacity="0.95"/>
-<text x="952.0" y="286.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">14 ms</text>
+<text x="952.0" y="286.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">13 ms</text>
 <text x="952.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">rmsnorm LogUp</text>
 <text x="952.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">lookup</text>
-<rect x="1048" y="402.9" width="120" height="137.1" rx="18" fill="#D97706" opacity="0.95"/>
-<text x="1108.0" y="388.9" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">8 ms</text>
+<rect x="1048" y="484.6" width="120" height="55.4" rx="18" fill="#D97706" opacity="0.95"/>
+<text x="1108.0" y="470.6" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">3 ms</text>
 <text x="1108.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">rmsnorm Selector</text>
 <text x="1108.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">arithmetic</text>
-<rect x="1204" y="402.9" width="120" height="137.1" rx="18" fill="#2563EB" opacity="0.95"/>
-<text x="1264.0" y="388.9" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">8 ms</text>
+<rect x="1204" y="410.8" width="120" height="129.2" rx="18" fill="#2563EB" opacity="0.95"/>
+<text x="1264.0" y="396.8" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">7 ms</text>
 <text x="1264.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">softmax exp</text>
 <text x="1264.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">LogUp lookup</text>
-<rect x="1360" y="437.1" width="120" height="102.9" rx="18" fill="#059669" opacity="0.95"/>
-<text x="1420.0" y="423.1" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">6 ms</text>
+<rect x="1360" y="484.6" width="120" height="55.4" rx="18" fill="#059669" opacity="0.95"/>
+<text x="1420.0" y="470.6" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">3 ms</text>
 <text x="1420.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">softmax exp</text>
 <text x="1420.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">Polynomial</text>
 <text x="1420.0" y="622.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">arithmetic</text>
