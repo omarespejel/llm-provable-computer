@@ -1140,8 +1140,8 @@ just install-hook      # install .git/hooks/pre-push so push runs the gate
 Per-scope subsets (use these in the inner edit-test loop):
 
 ```bash
-just lib                # cargo test --release --lib
-just proof-tests        # cargo test --release --lib proof::tests
+just lib                # cargo +nightly-2025-07-14 test --release --features stwo-backend --lib
+just proof-tests        # cargo +nightly-2025-07-14 test --release --features stwo-backend --lib proof::tests
 just integration        # the 4 integration test crates
 just deps               # cargo-audit + cargo-deny suite
 just zizmor             # workflow-file lint
@@ -1158,7 +1158,7 @@ Underlying invocations (if you prefer not to use `just` / `make`):
 ```bash
 cargo fmt --all --check
 cargo clippy --lib --no-deps -- -D warnings
-cargo test --release --lib
+cargo +nightly-2025-07-14 test --release --features stwo-backend --lib
 bash scripts/local_release_gate.sh
 ```
 
@@ -1213,8 +1213,7 @@ correctly, not to look broad.
 | --------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------- |
 | Compact ISA + deterministic transformer runtime     | Implemented         | Arithmetic, memory, stack, and control flow                                             |
 | Lockstep multi-engine execution                     | Implemented         | Transformer, native, Burn, and ONNX surfaces                                            |
-| Vanilla STARK proving                               | Implemented         | Stable `statement-v1` path                                                              |
-| Experimental `stwo` proving                         | Implemented, narrow | Shipped fixtures, lookup demos, transformer-shaped fixtures, bounded decoding artifacts |
+| `stwo` proving                                      | Implemented, narrow | Stable `statement-v1` path, shipped fixtures, lookup demos, and bounded decoding artifacts |
 | Full standard-softmax transformer proving on `stwo` | Not implemented     | Still outside the current claim boundary                                                |
 | Zero-knowledge hiding                               | Not implemented     | Current proofs are transparent, not hiding                                              |
 | Full-ISA STARK AIR for bitwise/compare              | Not implemented     | Broader subset exists, but not full public proof coverage                               |

@@ -817,7 +817,7 @@ if (( RUN_LOCAL )) && [[ "$RUN_MODE" == "smoke" ]]; then
   run_logged cargo-fmt-check cargo fmt --check
   run_conditional_quick_audits
   run_logged lib-contract cargo test -q --lib statement_spec_contract_is_synced_with_constants
-  smoke_targets=(assembly e2e interpreter runtime vanillastark_smoke)
+  smoke_targets=(assembly e2e interpreter runtime)
   for test_target in "${smoke_targets[@]}"; do
     run_logged "integration-${test_target}" cargo test -q --test "$test_target"
   done

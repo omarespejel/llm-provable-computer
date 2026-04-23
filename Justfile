@@ -5,7 +5,7 @@
 #   just gate           # full local release gate (mirrors what CI used to run)
 #   just gate-fast      # quick gate: fmt + lib clippy + lib build only
 #   just gate-no-nightly# full gate but skip nightly stwo smoke
-#   just lib            # cargo test --release --lib (touched modules)
+#   just lib            # cargo +nightly-2025-07-14 test --release --features stwo-backend --lib
 #   just fmt            # cargo fmt --all
 #   just clippy         # cargo clippy --lib --no-deps -- -D warnings
 #   just deps           # dependency check suite (cargo-audit + cargo-deny)
@@ -60,11 +60,11 @@ clippy:
 # Library tests (release; release is much faster on the proving paths).
 # Use this for the inner loop when changing src/proof.rs or src/stwo_backend/.
 lib:
-    cargo test --release --lib
+    cargo +nightly-2025-07-14 test --release --features stwo-backend --lib
 
 # The two test groups touched by ongoing release-gate work.
 proof-tests:
-    cargo test --release --lib -- --test-threads=4 proof::tests
+    cargo +nightly-2025-07-14 test --release --features stwo-backend --lib -- --test-threads=4 proof::tests
 
 # CI-equivalent integration tests (assembly / e2e / interpreter / runtime).
 # Each test binary boots in <1s release-cached.

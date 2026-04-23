@@ -20,8 +20,8 @@ help:
 	@echo "  gate-verbose      # full gate with streaming output"
 	@echo "  fmt               # cargo fmt --all"
 	@echo "  clippy            # cargo clippy --lib --no-deps -- -D warnings"
-	@echo "  lib               # cargo test --release --lib"
-	@echo "  proof-tests       # cargo test --release --lib proof::tests"
+	@echo "  lib               # cargo +nightly-2025-07-14 test --release --features stwo-backend --lib"
+	@echo "  proof-tests       # cargo +nightly-2025-07-14 test --release --features stwo-backend --lib proof::tests"
 	@echo "  integration       # the 4 integration test crates"
 	@echo "  spec-sync         # statement-spec contract sync test"
 	@echo "  deps              # cargo-audit + cargo-deny suite"
@@ -53,10 +53,10 @@ clippy:
 	cargo clippy --lib --no-deps -- -D warnings
 
 lib:
-	cargo test --release --lib
+	cargo +nightly-2025-07-14 test --release --features stwo-backend --lib
 
 proof-tests:
-	cargo test --release --lib -- --test-threads=4 proof::tests
+	cargo +nightly-2025-07-14 test --release --features stwo-backend --lib -- --test-threads=4 proof::tests
 
 integration:
 	cargo test --release --test assembly
