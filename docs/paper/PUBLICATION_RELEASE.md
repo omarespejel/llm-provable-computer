@@ -97,8 +97,6 @@ one monolithic benchmark claim.
   - validate with `cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase63 -- --nocapture`
   - validate with `cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase64 -- --nocapture`
   - validate with `cargo +nightly-2025-07-14 test -q --features stwo-backend --lib phase65 -- --nocapture`
-- Transformer-shaped `stwo` bundle:
-  - `./scripts/paper/generate_stwo_transformer_shaped_bundle.sh`
 - Archived web evidence:
   - `python3 scripts/paper/archive_supporting_web_evidence.py`
 - Gemma config extracts:

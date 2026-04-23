@@ -264,6 +264,37 @@ class PaperPreflightTests(unittest.TestCase):
                 findings.errors,
             )
 
+    def test_check_backend_consistency_reports_malformed_transformer_size_without_exception(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_text(
+                repo / "docs/paper/appendix-backend-artifact-comparison.md",
+                valid_appendix_table(),
+            )
+            write_text(
+                repo / "docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md",
+                valid_prod_index(),
+            )
+            broken_stwo = valid_transformer_index().replace(
+                "| Artifact size (bytes) | `9348044` |\n",
+                "| Artifact size (bytes) | `N/A` |\n",
+            )
+            write_text(
+                repo / "docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md",
+                broken_stwo,
+            )
+            findings = MOD.Findings()
+            MOD.check_backend_appendix_consistency(repo, findings)
+            self.assertTrue(findings.errors)
+            self.assertTrue(
+                any(
+                    "malformed transformer-shaped artifact-summary field 'Artifact size (bytes)'"
+                    in msg
+                    for msg in findings.errors
+                ),
+                findings.errors,
+            )
+
     def test_publication_snapshot_placeholders_fail_by_default(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp)
