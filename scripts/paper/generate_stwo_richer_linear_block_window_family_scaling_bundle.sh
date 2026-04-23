@@ -318,19 +318,22 @@ export PHASE113_W8_MINUS_W4
 python3 - <<'PY'
 import os
 import sys
-from decimal import Decimal
+from decimal import Decimal, getcontext
 
+getcontext().prec = 28
 explicit_w4 = int(os.environ["EXPLICIT_W4_BYTES"])
 explicit_w8 = int(os.environ["EXPLICIT_W8_BYTES"])
+phase112_w4 = int(os.environ["PHASE112_W4_BYTES"])
+phase112_w8 = int(os.environ["PHASE112_W8_BYTES"])
 phase113_w4 = int(os.environ["PHASE113_W4_BYTES"])
 phase113_w8 = int(os.environ["PHASE113_W8_BYTES"])
-phase113_w4_ratio = Decimal(os.environ["PHASE113_W4_RATIO"])
-phase113_w8_ratio = Decimal(os.environ["PHASE113_W8_RATIO"])
-phase113_w4_over_phase112 = Decimal(os.environ["PHASE113_W4_OVER_PHASE112"])
-phase113_w8_over_phase112 = Decimal(os.environ["PHASE113_W8_OVER_PHASE112"])
 phase113_w8_minus_w4 = int(os.environ["PHASE113_W8_MINUS_W4"])
 phase113_w8_minus_w4_max = int(os.environ["PHASE113_W8_MINUS_W4_MAX_BYTES"])
 stability_delta = Decimal(os.environ["PHASE113_OVERHEAD_STABILITY_MAX_DELTA"])
+phase113_w4_ratio = Decimal(phase113_w4) / Decimal(explicit_w4)
+phase113_w8_ratio = Decimal(phase113_w8) / Decimal(explicit_w8)
+phase113_w4_over_phase112 = Decimal(phase113_w4) / Decimal(phase112_w4)
+phase113_w8_over_phase112 = Decimal(phase113_w8) / Decimal(phase112_w8)
 
 failures = []
 if not phase113_w4 < explicit_w4:
