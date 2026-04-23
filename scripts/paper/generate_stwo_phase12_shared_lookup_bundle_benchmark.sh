@@ -127,13 +127,13 @@ if [[ -f "$TMP_PNG" ]]; then
   mv "$TMP_PNG" "$PNG_OUT"
   WROTE_PNG=1
 elif [[ -n "$PNG_OUT" ]]; then
-  rm -f "$PNG_OUT"
+  echo "skipped $PNG_OUT (raster not generated; keeping existing file if present)"
 fi
 if [[ -f "$TMP_PDF" ]]; then
   mv "$TMP_PDF" "$PDF_OUT"
   WROTE_PDF=1
 elif [[ -n "$PDF_OUT" ]]; then
-  rm -f "$PDF_OUT"
+  echo "skipped $PDF_OUT (raster not generated; keeping existing file if present)"
 fi
 
 echo "wrote $TSV_OUT"

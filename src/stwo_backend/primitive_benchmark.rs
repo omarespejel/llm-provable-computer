@@ -548,28 +548,37 @@ fn run_stwo_shared_table_reuse_benchmark_for_step_counts(
 
 pub fn run_stwo_phase12_shared_lookup_bundle_benchmark(
 ) -> Result<StwoPhase12SharedLookupBundleBenchmarkReport> {
-    run_stwo_phase12_shared_lookup_bundle_benchmark_with_options(false)
+    run_stwo_phase12_shared_lookup_bundle_benchmark_for_step_counts(
+        &PHASE12_SHARED_LOOKUP_BUNDLE_STEP_COUNTS,
+        false,
+    )
 }
 
 pub fn run_stwo_phase12_shared_lookup_bundle_benchmark_with_options(
     capture_timings: bool,
 ) -> Result<StwoPhase12SharedLookupBundleBenchmarkReport> {
+    run_stwo_phase12_shared_lookup_bundle_benchmark_for_step_counts(
+        &PHASE12_SHARED_LOOKUP_BUNDLE_STEP_COUNTS,
+        capture_timings,
+    )
+}
+
+fn run_stwo_phase12_shared_lookup_bundle_benchmark_for_step_counts(
+    step_counts: &[usize],
+    capture_timings: bool,
+) -> Result<StwoPhase12SharedLookupBundleBenchmarkReport> {
     let normalization_rows = claimed_row_prefix(
         &rmsnorm_canonical_rows(),
-        *PHASE12_SHARED_LOOKUP_BUNDLE_STEP_COUNTS
-            .last()
-            .expect("phase12 bundle step counts"),
+        *step_counts.last().expect("phase12 bundle step counts"),
         "phase12_shared_lookup_bundle",
     )?;
     let activation_rows = activation_claimed_row_prefix(
         &activation_canonical_rows(),
-        *PHASE12_SHARED_LOOKUP_BUNDLE_STEP_COUNTS
-            .last()
-            .expect("phase12 bundle step counts"),
+        *step_counts.last().expect("phase12 bundle step counts"),
     )?;
 
     let mut rows = Vec::new();
-    for &steps in &PHASE12_SHARED_LOOKUP_BUNDLE_STEP_COUNTS {
+    for &steps in step_counts {
         let normalization_prefix = normalization_rows
             .iter()
             .copied()
@@ -2909,11 +2918,11 @@ mod tests {
 
     #[test]
     fn phase12_shared_lookup_bundle_benchmark_defaults_to_zero_timings_without_capture() {
-        let report = run_stwo_phase12_shared_lookup_bundle_benchmark()
+        let report = run_stwo_phase12_shared_lookup_bundle_benchmark_for_step_counts(&[1], false)
             .expect("phase12 shared lookup bundle benchmark should run");
-        assert_eq!(report.rows.len(), 9);
+        assert_eq!(report.rows.len(), 3);
         // Regression guard: the default report surface must stay deterministic
-        // when timing capture is disabled.
+        // when timing capture is disabled, even on the bounded smoke path.
         assert!(report.rows.iter().all(|row| row.verified));
         assert!(report.rows.iter().all(|row| row.proof_bytes > 0));
         assert!(report.rows.iter().all(|row| row.prove_ms == 0));

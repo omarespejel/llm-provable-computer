@@ -44,6 +44,9 @@ def main() -> None:
     parser.add_argument("--output-tsv", required=True, type=Path)
     args = parser.parse_args()
 
+    if args.output_json.resolve() == args.output_tsv.resolve():
+        parser.error("--output-json and --output-tsv must be distinct paths")
+
     if len(args.inputs) < 3:
         raise SystemExit("expected at least 3 repeated benchmark runs for aggregation")
     if len(args.inputs) % 2 == 0:
