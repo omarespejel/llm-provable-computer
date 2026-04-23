@@ -1,6 +1,6 @@
 # Publication-grade STARK profile
 
-The vanilla STARK exposes three named option profiles. Use the right one for
+The execution-proof surface exposes three named option profiles. Use the right one for
 the right context.
 
 | Profile          | `(expansion, q, security)` | Conjectured bits ( `q · log2(rho⁻¹)` ) | Conservative bits ( `q · log2(rho⁻¹) / 2` ) | Intended use                                           |

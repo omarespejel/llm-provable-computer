@@ -40,8 +40,8 @@ No sampling. No stochastic output. Same input, same output, every time.
 - Compile `.tvm` assembly into a deterministic transformer-style runtime.
 - Run the same program through up to four engines and optionally fail on the first
   semantic divergence when verification paths are enabled.
-- Prove `statement-v1` native ISA execution with the in-repo vanilla STARK.
-- Exercise an experimental `stwo` backend for shipped arithmetic fixtures, shared-table
+- Prove `statement-v1` native ISA execution with the active S-two proving path.
+- Exercise the S-two backend for shipped arithmetic fixtures, shared-table
   lookup demos, transformer-shaped fixtures, and bounded proof-carrying decoding
   artifacts.
 - Regenerate frozen paper bundles, artifact manifests, and figure inputs from committed
@@ -51,8 +51,8 @@ No sampling. No stochastic output. Same input, same output, every time.
 
 | Surface        | Status        | What it actually covers                                                                                                       |
 | -------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `statement-v1` | Stable        | Vanilla STARK proof of native ISA execution, plus enforced transformer/native semantic agreement checks                       |
-| `stwo-backend` | Experimental  | Narrow `statement-v1` proving surface for shipped fixtures, lookup demos, transformer-shaped fixtures, and decoding artifacts |
+| `statement-v1` | Stable        | S-two proof of native ISA execution, plus enforced transformer/native semantic agreement checks                               |
+| `stwo-backend` | Stable        | Narrow `statement-v1` proving surface for shipped fixtures, lookup demos, transformer-shaped fixtures, and decoding artifacts |
 | `research-v2`  | Artifact-only | Semantic agreement artifacts for transformer vs ONNX, not yet a full STARK claim                                              |
 | `research-v3`  | Artifact-only | Bounded multi-engine transformer/native/Burn/ONNX equivalence-kernel artifacts with transition relation hashes                |
 
@@ -80,22 +80,20 @@ Current public proof surfaces:
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | Run a program                    | `cargo run --bin tvm -- programs/fibonacci.tvm`                                                                                         | Fastest way to see the VM work                   |
 | Inspect a full trace             | `cargo run --bin tvm -- run programs/fibonacci.tvm --trace`                                                                             | Emits the full machine-state trace               |
-| Prove with the vanilla STARK     | `cargo run --bin tvm -- prove-stark programs/fibonacci.tvm -o fib.proof.json`                                                           | Stable proof path                                |
+| Prove execution                  | `cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- prove-stark programs/fibonacci.tvm -o fib.proof.json`              | Active proof path                                |
 | Verify a proof                   | `cargo run --bin tvm -- verify-stark fib.proof.json`                                                                                    | CLI default uses `production-v1` / `ProductionV1`, including lockstep semantic checks |
-| Try the experimental `stwo` path | `cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- prove-stark programs/addition.tvm -o add.proof.json --backend stwo` | Pinned nightly required                          |
 | Regenerate paper artifacts       | `./scripts/generate_repro_bundle.sh`                                                                                                    | Publication-facing bundle                        |
 
 ## Toolchains
 
 | Task                                            | Requirement                                             |
 | ----------------------------------------------- | ------------------------------------------------------- |
-| Core runtime, vanilla STARK, default tests      | Stable Rust                                             |
+| Core runtime and non-proof paths                | Stable Rust                                             |
 | `--features stwo-backend` compile and CLI paths | `cargo +nightly-2025-07-14`                             |
 | ONNX validation and paper figure scripts        | Python venv + `pip install -r scripts/requirements.txt` |
 
-If you want the shortest successful path, start on stable Rust with the default runtime
-and vanilla STARK commands. Move to `stwo` only when you need the experimental backend
-surface.
+If you want the shortest successful proof path, use the pinned nightly toolchain with
+`--features stwo-backend`.
 
 ______________________________________________________________________
 
@@ -165,17 +163,18 @@ cargo run --bin tvm -- programs/fibonacci.tvm
 # Full execution trace
 cargo run --bin tvm -- run programs/fibonacci.tvm --trace
 
-# Prove execution with a vanilla STARK
-cargo run --bin tvm -- prove-stark programs/fibonacci.tvm -o fib.proof.json
+# Prove execution with the active S-two path
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  prove-stark programs/fibonacci.tvm -o fib.proof.json
 
 # Verify (statement-v1 includes lockstep re-execution)
 cargo run --bin tvm -- verify-stark fib.proof.json
 
-# Exercise the experimental S-two backend (nightly-only upstream toolchain)
+# Exercise the active S-two backend (nightly-only upstream toolchain)
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prove-stark programs/addition.tvm -o add.proof.json --backend stwo
+  prove-stark programs/addition.tvm -o add.proof.json
 
-# The experimental `stwo` path requires the pinned nightly toolchain both to
+# The `stwo` path requires the pinned nightly toolchain both to
 # compile `--features stwo-backend` and to run its CLI commands.
 
 # Verify transformer matches native interpreter (lockstep)
@@ -356,23 +355,9 @@ ______________________________________________________________________
 
 ## Proof Stack
 
-The vanilla STARK prover operates over **F_p** where p = 1 + 407 · 2^119 (a 128-bit
-prime with a large power-of-two subgroup for NTT). The in-repo implementation includes:
-
-| Component         | What it does                                                        |
-| ----------------- | ------------------------------------------------------------------- |
-| `field.rs`        | Montgomery-form arithmetic via `ark-ff`                             |
-| `polynomial.rs`   | Univariate polynomial ops, Lagrange interpolation                   |
-| `ntt.rs`          | Number-theoretic transform for O(n log n) polynomial multiplication |
-| `multivariate.rs` | Multivariate polynomial representation for AIR constraints          |
-| `merkle.rs`       | Blake2b Merkle trees for commitment                                 |
-| `fri.rs`          | FRI protocol for low-degree testing                                 |
-| `stark.rs`        | STARK prover and verifier                                           |
-| `proof.rs`        | VM-specific AIR: transition constraints from instruction semantics  |
-
-The AIR encodes each supported instruction as polynomial transition constraints over the
-trace columns `(PC, ACC, SP, zero_flag, carry_flag, halted, MEM[0..n])`. The boundary
-constraints pin the initial and final machine states.
+The active proof stack is the S-two backend. `src/proof.rs` builds the
+`statement-v1` claim surface and the deterministic execution witness; the
+backend-specific proving logic lives under `src/stwo_backend/`.
 
 ```bash
 # Prove
@@ -389,11 +374,11 @@ cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proo
 
 # Exercise the experimental S-two backend on the shipped arithmetic fixtures
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prove-stark programs/addition.tvm -o addition.stwo.proof.json --backend stwo
+  prove-stark programs/addition.tvm -o addition.stwo.proof.json
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prove-stark programs/dot_product.tvm -o dot.stwo.proof.json --backend stwo --max-steps 256
+  prove-stark programs/dot_product.tvm -o dot.stwo.proof.json --max-steps 256
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prove-stark programs/fibonacci.tvm -o fibonacci.stwo.proof.json --backend stwo --max-steps 256
+  prove-stark programs/fibonacci.tvm -o fibonacci.stwo.proof.json --max-steps 256
 
 # Produce and verify the binary-step lookup and normalization demos on the same CLI surface
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
@@ -434,7 +419,7 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 # Bind that chain to a real linear-block-shaped S-two proof via the core-slice artifact
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prove-stark programs/linear_block_v4_with_lookup.tvm -o linear-block-v4-with-lookup.stark.json \
-  --backend stwo --max-steps 256
+  --max-steps 256
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-linear-block-core-slice-artifact \
   --proof linear-block-v4-with-lookup.stark.json \
@@ -1123,10 +1108,10 @@ ______________________________________________________________________
 
 | Flag           | Enables                                                                                          |
 | -------------- | ------------------------------------------------------------------------------------------------ |
-| *(default)*    | Transformer runtime, native interpreter, TUI, STARK prover                                       |
+| *(default)*    | Transformer runtime, native interpreter, TUI                                                    |
 | `burn-model`   | Burn tensor execution engine, `--verify-burn`                                                    |
 | `onnx-export`  | ONNX export, Tract execution engine, `--verify-onnx`                                             |
-| `stwo-backend` | Experimental S-two backend seam for `prove-stark --backend stwo` / `verify-stark --backend stwo` |
+| `stwo-backend` | Active S-two proving surface for `prove-stark` / `verify-stark`                                 |
 | `full`         | `burn-model` + `onnx-export`, plus `--verify-all` convenience workflows                          |
 
 ```bash
@@ -1157,8 +1142,7 @@ Per-scope subsets (use these in the inner edit-test loop):
 ```bash
 just lib                # cargo test --release --lib
 just proof-tests        # cargo test --release --lib proof::tests
-just vanillastark-tests # cargo test --release --lib vanillastark::
-just integration        # the 5 integration test crates
+just integration        # the 4 integration test crates
 just deps               # cargo-audit + cargo-deny suite
 just zizmor             # workflow-file lint
 just shellcheck         # shellcheck on tracked shell scripts
@@ -1206,7 +1190,6 @@ src/
   verification.rs       # Lockstep multi-engine differential verification
   tui.rs                # Interactive terminal viewer
   bin/tvm.rs            # CLI (clap)
-  vanillastark/         # Field, polynomial, NTT, Merkle, FRI, STARK
   burn_model.rs         # Burn Module definitions (optional)
   burn_runtime.rs       # Burn execution loop (optional)
   onnx_export.rs        # ONNX graph generation (optional)
@@ -1300,7 +1283,7 @@ is well past the old “dependency seam only” stage.
 
 ### Frozen Publication Artifacts
 
-- Vanilla reproducibility bundle: generated by `./scripts/generate_repro_bundle.sh`
+- Local reproducibility bundle: generated by `./scripts/generate_repro_bundle.sh`
 - Frozen transformer-shaped `stwo` bundle with concrete metrics:
   `docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/`
 - Frozen tensor-native `stwo` primitive bundle:

@@ -30,7 +30,6 @@ substitute for the full gate.
 | ----------------------------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------- |
 | Pure docs (`*.md`, `docs/**`)                                     | none                                              | `just gate-fast`                                     |
 | `src/proof.rs` only                                               | `just proof-tests`                                | `just gate-no-nightly`                               |
-| `src/vanillastark/**`                                             | `just vanillastark-tests`                         | `just gate-no-nightly`                               |
 | `src/stwo_backend/**`                                             | `just lib`                                        | `just gate` (includes nightly stwo smoke)            |
 | `src/bin/tvm.rs`                                                  | `just gate-fast` then `just integration`          | `just gate`                                          |
 | `tests/**`                                                        | run the touched test crate directly with `cargo test --release --test <name>` | `just gate-no-nightly`            |

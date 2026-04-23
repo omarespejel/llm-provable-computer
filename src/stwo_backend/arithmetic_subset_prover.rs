@@ -1657,10 +1657,14 @@ fn validate_phase5_subset_witness(
         ));
     }
 
-    if steps + 1 != states.len() && states.len() != 1 {
+    let expected_trace_len = steps.checked_add(1).ok_or_else(|| {
+        VmError::UnsupportedProof("S-two arithmetic subset pilot proof steps overflow".to_string())
+    })?;
+
+    if expected_trace_len != states.len() && states.len() != 1 {
         return Err(VmError::UnsupportedProof(format!(
             "S-two arithmetic subset pilot expected state trace length {} for {steps} steps, got {}",
-            steps + 1,
+            expected_trace_len,
             states.len()
         )));
     }

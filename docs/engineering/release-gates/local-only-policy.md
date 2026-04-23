@@ -40,12 +40,11 @@ Steps (in order):
 4. `cargo build --quiet --bin tvm`
 5. `cargo test --release --lib statement_spec_contract_is_synced_with_constants`
 6. `cargo test --release --lib proof::tests`
-7. `cargo test --release --lib vanillastark::`
-8. `cargo test --release --test {assembly,e2e,interpreter,runtime,vanillastark_smoke}`
-9. `bash scripts/run_dependency_audit_suite.sh`
-10. `uvx --from "zizmor==1.24.1" zizmor .github/workflows --format plain`
-11. `bash scripts/run_shellcheck_suite.sh`
-12. `cargo +nightly-2025-07-14 test --release --features stwo-backend --lib <stwo smoke>` (skipped only when `SKIP_NIGHTLY=1`)
+7. `cargo test --release --test {assembly,e2e,interpreter,runtime}`
+8. `bash scripts/run_dependency_audit_suite.sh`
+9. `uvx --from "zizmor==1.24.1" zizmor .github/workflows --format plain`
+10. `bash scripts/run_shellcheck_suite.sh`
+11. `cargo +nightly-2025-07-14 test --release --features stwo-backend --lib <stwo smoke>` (skipped only when `SKIP_NIGHTLY=1`)
 
 Tooling pins are strict:
 

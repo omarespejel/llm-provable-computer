@@ -57,7 +57,3 @@ onnx-protobuf = { path = "vendor/onnx-protobuf" }
 [[bench]]
 name = "hull_benchmark"
 harness = false
-
-[[bench]]
-name = "vanillastark_benchmark"
-harness = false

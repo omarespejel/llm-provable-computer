@@ -1,8 +1,8 @@
 # Naming honesty for fixtures and bundles
 
-The vanilla STARK proves a 25-instruction VM. The Stwo backend proves the
-same VM under a Stwo-side AIR with shared lookup and decoding manifests
-layered on top. Neither path proves a transformer in any standard sense.
+The active S-two proof surface proves a 25-instruction VM under a Stwo-side
+AIR with shared lookup and decoding manifests layered on top. It does not
+prove a transformer in any standard sense.
 
 The tensor-shaped frontend (`src/model.rs`) compiles each `.tvm` instruction
 into a deterministic FFN block; the public verifier checks that this frontend

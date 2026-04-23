@@ -42,7 +42,6 @@ one monolithic benchmark claim.
 - Supporting appendices:
   - `docs/paper/appendix-system-comparison.md`
   - `docs/paper/appendix-scaling-companion.md`
-  - `docs/paper/appendix-backend-artifact-comparison.md`
   - `docs/paper/appendix-influence-realization.md`
 - Frozen artifact bundles:
   - `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/`
@@ -61,9 +60,6 @@ one monolithic benchmark claim.
 
 ## Claim posture
 
-- The older `production-v1` vanilla bundle is retained as a legacy local reproducibility
-  baseline, not the main paper-facing artifact narrative.
-- New cited vanilla evidence should use the stronger `publication-v1` verifier floor.
 - `stwo-transformer-shaped-v1` and `stwo-shared-normalization-primitive-v1` are the
   current narrow evidence tiers for the experimental S-two path.
 - Post-freeze commit-pinned evidence now includes the merged pre-recursive carried-state
@@ -84,7 +80,7 @@ one monolithic benchmark claim.
 
 ## Regeneration
 
-- Vanilla bundle:
+- Local reproducibility bundle:
   - `./scripts/generate_repro_bundle.sh`
   - optional stronger profile: `STARK_PROFILE=publication-v1 ./scripts/generate_repro_bundle.sh`
 - Transformer-shaped `stwo` bundle:

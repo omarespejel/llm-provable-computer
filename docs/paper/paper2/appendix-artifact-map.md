@@ -29,7 +29,6 @@ surfaces.
 | `research-v3-equivalence` | bounded multi-runtime semantic-agreement artifact | operational evidence; not part of the proof relation |
 | HF provenance manifest | release-provenance manifest for model and artifact identity | reproducibility guardrail; not part of the proof relation |
 | `stwo-transformer-shaped-v1` frozen bundle | current transformer-shaped S-two evidence tier | evidence tier, not a broad production claim |
-| vanilla `production-v1` bundle | frozen local reproducibility baseline | retained provenance tier; not the main paper-facing artifact line |
 
 ## D3. Why this map matters
 

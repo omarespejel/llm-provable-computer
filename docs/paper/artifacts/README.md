@@ -24,10 +24,6 @@ The active paper-facing bundles are:
 These are the bundles that should be treated as the paper's primary reproducibility and
 systems-evidence surfaces.
 
-The older `production-v1-2026-04-04/` bundle is retained as a legacy vanilla local
-baseline. It is useful provenance, but it is no longer the main paper-facing artifact
-narrative.
-
 The Phase63-65 directory is a code-and-validation verifier-surface index rather than a
 new proof-output bundle. It pins the April 20 checkpoint where shared lookup identity
 and typed carried state became verifier-visible across the transformer-shaped

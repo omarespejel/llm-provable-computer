@@ -2123,7 +2123,7 @@ fn proof_action_hint(runtime: &ExecutionRuntime, viewer: &ViewerState) -> &'stat
     } else if proof_can_start(runtime) {
         "press enter or p to launch the end-to-end attestation workflow"
     } else {
-        "the current program shape is outside the supported vanilla STARK scope"
+        "the current program shape is outside the supported proof surface"
     }
 }
 

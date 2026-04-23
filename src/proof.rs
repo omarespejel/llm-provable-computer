@@ -11,48 +11,36 @@ use crate::config::Attention2DMode;
 use crate::config::TransformerVmConfig;
 use crate::engine::ExecutionResult;
 use crate::error::{Result, VmError};
-use crate::instruction::{Instruction, Program};
+#[cfg(test)]
+use crate::instruction::Instruction;
+use crate::instruction::Program;
 use crate::model::TransformerVm;
 use crate::runtime::ExecutionRuntime;
 use crate::state::MachineState;
 use crate::stwo_backend;
-use crate::vanillastark::{
-    FieldElement, MPolynomial, Stark, MAX_STARK_EXPANSION_FACTOR, MAX_STARK_NUM_COLINEARITY_CHECKS,
-};
 use crate::verification::verify_model_against_native;
-
-const PC: usize = 0;
-const ACC: usize = 1;
-const SP: usize = 2;
-const ZERO: usize = 3;
-const CARRY: usize = 4;
-const HALTED: usize = 5;
-const MACHINE_STATE_PREFIX: usize = 6;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "kebab-case")]
 pub enum StarkProofBackend {
     #[default]
-    Vanilla,
     Stwo,
 }
 
 impl std::fmt::Display for StarkProofBackend {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Vanilla => f.write_str("vanilla"),
             Self::Stwo => f.write_str("stwo"),
         }
     }
 }
 
-const VANILLA_STARK_BACKEND_VERSION_V1: &str = "vanilla-v1";
 fn default_stark_proof_backend() -> StarkProofBackend {
-    StarkProofBackend::Vanilla
+    StarkProofBackend::Stwo
 }
 
 fn default_stark_proof_backend_version() -> String {
-    VANILLA_STARK_BACKEND_VERSION_V1.to_string()
+    stwo_backend::STWO_BACKEND_VERSION_PHASE5.to_string()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -125,7 +113,9 @@ pub fn publication_v1_security_floor_policy() -> StarkVerificationPolicy {
     }
 }
 
-const VANILLA_STARK_FIELD_SECURITY_BITS: u32 = 128;
+const STARK_FIELD_SECURITY_BITS: u32 = 128;
+const MAX_STARK_EXPANSION_FACTOR: usize = 64;
+const MAX_STARK_NUM_COLINEARITY_CHECKS: usize = 64;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StarkVerificationPolicy {
@@ -226,567 +216,40 @@ pub const CLAIM_SEMANTIC_SCOPE_V1: &str =
     "native_isa_execution_with_transformer_native_equivalence_check";
 const COMMITMENT_PAYLOAD_VERSION_V1: &str = "v1";
 
-#[derive(Debug, Clone, Copy)]
-struct ColumnLayout {
-    memory_size: usize,
-}
-
-impl ColumnLayout {
-    fn new(memory_size: usize) -> Self {
-        Self { memory_size }
-    }
-
-    fn mem(&self, index: usize) -> usize {
-        MACHINE_STATE_PREFIX + index
-    }
-
-    fn acc_inv(&self) -> usize {
-        MACHINE_STATE_PREFIX + self.memory_size
-    }
-
-    fn sp_nonzero_inv(&self) -> usize {
-        self.acc_inv() + 1
-    }
-
-    fn sp_not_top_inv(&self) -> usize {
-        self.acc_inv() + 2
-    }
-
-    fn machine_state_register_count(&self) -> usize {
-        MACHINE_STATE_PREFIX + self.memory_size
-    }
-
-    fn register_count(&self) -> usize {
-        self.machine_state_register_count() + 3
-    }
-}
-
-#[derive(Debug, Clone)]
-struct VmAir {
-    program: Program,
-    layout: ColumnLayout,
-}
-
-impl VmAir {
-    fn new(program: Program) -> Self {
-        let layout = ColumnLayout::new(program.memory_size());
-        Self { program, layout }
-    }
-
-    fn register_count(&self) -> usize {
-        self.layout.register_count()
-    }
-
-    fn transition_degree_bound(&self) -> usize {
-        self.transition_constraints()
-            .iter()
-            .flat_map(|constraint| constraint.dictionary.keys())
-            .map(|powers| powers.iter().sum())
-            .max()
-            .unwrap_or(1)
-            .max(2)
-    }
-
-    fn boundary_constraints(
-        &self,
-        steps: usize,
-        final_state: &MachineState,
-    ) -> Vec<(usize, usize, FieldElement)> {
-        let mut boundary = Vec::new();
-        let initial = MachineState::with_memory(self.program.initial_memory().to_vec());
-
-        for (register, value) in state_public_registers(&self.layout, &initial)
-            .into_iter()
-            .enumerate()
-        {
-            boundary.push((0, register, value));
-        }
-
-        for (register, value) in state_public_registers(&self.layout, final_state)
-            .into_iter()
-            .enumerate()
-        {
-            boundary.push((steps, register, value));
-        }
-
-        boundary
-    }
-
-    fn transition_constraints(&self) -> Vec<MPolynomial> {
-        let register_count = self.layout.register_count();
-        let variables = MPolynomial::variables(1 + 2 * register_count);
-        let current = variables[1..1 + register_count].to_vec();
-        let next = variables[1 + register_count..].to_vec();
-
-        let current_pc = current[PC].clone();
-        let current_acc = current[ACC].clone();
-        let current_sp = current[SP].clone();
-        let current_zero = current[ZERO].clone();
-        let current_memory: Vec<MPolynomial> = (0..self.layout.memory_size)
-            .map(|index| current[self.layout.mem(index)].clone())
-            .collect();
-
-        let next_pc = next[PC].clone();
-        let next_acc = next[ACC].clone();
-        let next_sp = next[SP].clone();
-        let next_zero = next[ZERO].clone();
-        let next_carry = next[CARRY].clone();
-        let next_halted = next[HALTED].clone();
-        let next_memory: Vec<MPolynomial> = (0..self.layout.memory_size)
-            .map(|index| next[self.layout.mem(index)].clone())
-            .collect();
-        let next_acc_inv = next[self.layout.acc_inv()].clone();
-        let current_sp_nonzero_inv = current[self.layout.sp_nonzero_inv()].clone();
-        let current_sp_not_top_inv = current[self.layout.sp_not_top_inv()].clone();
-
-        let one = mp_constant(1);
-        let zero = MPolynomial::zero();
-        let current_stack_read = self.stack_read_expression(&current_sp, &current_memory);
-        let current_stack_write_selectors = self.stack_write_selectors(&current_sp);
-        let valid_pc = self.domain_zerofier(&current_pc, self.program.len());
-        let valid_sp = self.domain_zerofier(&current_sp, self.layout.memory_size + 1);
-        let mut expected_next_pc = MPolynomial::zero();
-        let mut expected_next_acc = MPolynomial::zero();
-        let mut expected_next_sp = MPolynomial::zero();
-        let mut expected_next_halted = MPolynomial::zero();
-        let mut expected_next_memory = vec![MPolynomial::zero(); self.layout.memory_size];
-        let mut push_or_call_selector = MPolynomial::zero();
-        let mut pop_or_ret_selector = MPolynomial::zero();
-
-        let pc_selectors = self.pc_selectors(&current_pc);
-
-        for (pc, instruction) in self.program.instructions().iter().enumerate() {
-            let selector = pc_selectors[pc].clone();
-            let next_pc_constant = mp_constant(i128::from((pc as u8).wrapping_add(1)));
-
-            match *instruction {
-                Instruction::Nop => {
-                    expected_next_pc = expected_next_pc + selector.clone() * next_pc_constant;
-                    expected_next_acc = expected_next_acc + selector.clone() * current_acc.clone();
-                    expected_next_sp = expected_next_sp + selector.clone() * current_sp.clone();
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        *expected = expected.clone()
-                            + pc_selectors[pc].clone() * current_memory[index].clone();
-                    }
-                }
-                Instruction::LoadImmediate(value) => {
-                    expected_next_pc = expected_next_pc + selector.clone() * next_pc_constant;
-                    expected_next_acc =
-                        expected_next_acc + selector.clone() * mp_constant(i128::from(value));
-                    expected_next_sp = expected_next_sp + selector.clone() * current_sp.clone();
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        *expected = expected.clone()
-                            + pc_selectors[pc].clone() * current_memory[index].clone();
-                    }
-                }
-                Instruction::Load(address) => {
-                    let loaded = current_memory[address as usize].clone();
-                    expected_next_pc = expected_next_pc + selector.clone() * next_pc_constant;
-                    expected_next_acc = expected_next_acc + selector.clone() * loaded;
-                    expected_next_sp = expected_next_sp + selector.clone() * current_sp.clone();
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        *expected = expected.clone()
-                            + pc_selectors[pc].clone() * current_memory[index].clone();
-                    }
-                }
-                Instruction::Store(address) => {
-                    expected_next_pc = expected_next_pc + selector.clone() * next_pc_constant;
-                    expected_next_acc = expected_next_acc + selector.clone() * current_acc.clone();
-                    expected_next_sp = expected_next_sp + selector.clone() * current_sp.clone();
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        let value = if index == address as usize {
-                            current_acc.clone()
-                        } else {
-                            current_memory[index].clone()
-                        };
-                        *expected = expected.clone() + pc_selectors[pc].clone() * value;
-                    }
-                }
-                Instruction::Push => {
-                    push_or_call_selector = push_or_call_selector + selector.clone();
-                    expected_next_pc = expected_next_pc + selector.clone() * next_pc_constant;
-                    expected_next_acc = expected_next_acc + selector.clone() * current_acc.clone();
-                    expected_next_sp =
-                        expected_next_sp + selector.clone() * (current_sp.clone() - one.clone());
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        let write_selector = current_stack_write_selectors[index].clone();
-                        let value = write_selector.clone() * current_acc.clone()
-                            + (one.clone() - write_selector) * current_memory[index].clone();
-                        *expected = expected.clone() + pc_selectors[pc].clone() * value;
-                    }
-                }
-                Instruction::Pop => {
-                    pop_or_ret_selector = pop_or_ret_selector + selector.clone();
-                    expected_next_pc = expected_next_pc + selector.clone() * next_pc_constant;
-                    expected_next_acc =
-                        expected_next_acc + selector.clone() * current_stack_read.clone();
-                    expected_next_sp =
-                        expected_next_sp + selector.clone() * (current_sp.clone() + one.clone());
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        *expected = expected.clone()
-                            + pc_selectors[pc].clone() * current_memory[index].clone();
-                    }
-                }
-                Instruction::AddImmediate(value) => {
-                    expected_next_pc = expected_next_pc + selector.clone() * next_pc_constant;
-                    expected_next_acc = expected_next_acc
-                        + selector.clone() * (current_acc.clone() + mp_constant(i128::from(value)));
-                    expected_next_sp = expected_next_sp + selector.clone() * current_sp.clone();
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        *expected = expected.clone()
-                            + pc_selectors[pc].clone() * current_memory[index].clone();
-                    }
-                }
-                Instruction::AddMemory(address) => {
-                    let rhs = current_memory[address as usize].clone();
-                    expected_next_pc = expected_next_pc + selector.clone() * next_pc_constant;
-                    expected_next_acc =
-                        expected_next_acc + selector.clone() * (current_acc.clone() + rhs);
-                    expected_next_sp = expected_next_sp + selector.clone() * current_sp.clone();
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        *expected = expected.clone()
-                            + pc_selectors[pc].clone() * current_memory[index].clone();
-                    }
-                }
-                Instruction::SubImmediate(value) => {
-                    expected_next_pc = expected_next_pc + selector.clone() * next_pc_constant;
-                    expected_next_acc = expected_next_acc
-                        + selector.clone() * (current_acc.clone() - mp_constant(i128::from(value)));
-                    expected_next_sp = expected_next_sp + selector.clone() * current_sp.clone();
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        *expected = expected.clone()
-                            + pc_selectors[pc].clone() * current_memory[index].clone();
-                    }
-                }
-                Instruction::SubMemory(address) => {
-                    let rhs = current_memory[address as usize].clone();
-                    expected_next_pc = expected_next_pc + selector.clone() * next_pc_constant;
-                    expected_next_acc =
-                        expected_next_acc + selector.clone() * (current_acc.clone() - rhs);
-                    expected_next_sp = expected_next_sp + selector.clone() * current_sp.clone();
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        *expected = expected.clone()
-                            + pc_selectors[pc].clone() * current_memory[index].clone();
-                    }
-                }
-                Instruction::MulImmediate(value) => {
-                    expected_next_pc = expected_next_pc + selector.clone() * next_pc_constant;
-                    expected_next_acc = expected_next_acc
-                        + selector.clone() * (current_acc.clone() * mp_constant(i128::from(value)));
-                    expected_next_sp = expected_next_sp + selector.clone() * current_sp.clone();
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        *expected = expected.clone()
-                            + pc_selectors[pc].clone() * current_memory[index].clone();
-                    }
-                }
-                Instruction::MulMemory(address) => {
-                    let rhs = current_memory[address as usize].clone();
-                    expected_next_pc = expected_next_pc + selector.clone() * next_pc_constant;
-                    expected_next_acc =
-                        expected_next_acc + selector.clone() * (current_acc.clone() * rhs);
-                    expected_next_sp = expected_next_sp + selector.clone() * current_sp.clone();
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        *expected = expected.clone()
-                            + pc_selectors[pc].clone() * current_memory[index].clone();
-                    }
-                }
-                Instruction::Call(target) => {
-                    push_or_call_selector = push_or_call_selector + selector.clone();
-                    expected_next_pc =
-                        expected_next_pc + selector.clone() * mp_constant(i128::from(target));
-                    expected_next_acc = expected_next_acc + selector.clone() * current_acc.clone();
-                    expected_next_sp =
-                        expected_next_sp + selector.clone() * (current_sp.clone() - one.clone());
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        let write_selector = current_stack_write_selectors[index].clone();
-                        let return_address = mp_constant(i128::from((pc as u8).wrapping_add(1)));
-                        let value = write_selector.clone() * return_address
-                            + (one.clone() - write_selector) * current_memory[index].clone();
-                        *expected = expected.clone() + pc_selectors[pc].clone() * value;
-                    }
-                }
-                Instruction::Ret => {
-                    pop_or_ret_selector = pop_or_ret_selector + selector.clone();
-                    expected_next_pc =
-                        expected_next_pc + selector.clone() * current_stack_read.clone();
-                    expected_next_acc = expected_next_acc + selector.clone() * current_acc.clone();
-                    expected_next_sp =
-                        expected_next_sp + selector.clone() * (current_sp.clone() + one.clone());
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        *expected = expected.clone()
-                            + pc_selectors[pc].clone() * current_memory[index].clone();
-                    }
-                }
-                Instruction::Jump(target) => {
-                    expected_next_pc =
-                        expected_next_pc + selector.clone() * mp_constant(i128::from(target));
-                    expected_next_acc = expected_next_acc + selector.clone() * current_acc.clone();
-                    expected_next_sp = expected_next_sp + selector.clone() * current_sp.clone();
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        *expected = expected.clone()
-                            + pc_selectors[pc].clone() * current_memory[index].clone();
-                    }
-                }
-                Instruction::JumpIfZero(target) => {
-                    let target_expr = current_zero.clone() * mp_constant(i128::from(target))
-                        + (one.clone() - current_zero.clone()) * next_pc_constant;
-                    expected_next_pc = expected_next_pc + selector.clone() * target_expr;
-                    expected_next_acc = expected_next_acc + selector.clone() * current_acc.clone();
-                    expected_next_sp = expected_next_sp + selector.clone() * current_sp.clone();
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        *expected = expected.clone()
-                            + pc_selectors[pc].clone() * current_memory[index].clone();
-                    }
-                }
-                Instruction::JumpIfNotZero(target) => {
-                    let target_expr = current_zero.clone() * next_pc_constant
-                        + (one.clone() - current_zero.clone()) * mp_constant(i128::from(target));
-                    expected_next_pc = expected_next_pc + selector.clone() * target_expr;
-                    expected_next_acc = expected_next_acc + selector.clone() * current_acc.clone();
-                    expected_next_sp = expected_next_sp + selector.clone() * current_sp.clone();
-                    expected_next_halted = expected_next_halted + selector * zero.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        *expected = expected.clone()
-                            + pc_selectors[pc].clone() * current_memory[index].clone();
-                    }
-                }
-                Instruction::Halt => {
-                    expected_next_pc =
-                        expected_next_pc + selector.clone() * mp_constant(i128::from(pc as i16));
-                    expected_next_acc = expected_next_acc + selector.clone() * current_acc.clone();
-                    expected_next_sp = expected_next_sp + selector.clone() * current_sp.clone();
-                    expected_next_halted = expected_next_halted + selector * one.clone();
-                    for (index, expected) in expected_next_memory.iter_mut().enumerate() {
-                        *expected = expected.clone()
-                            + pc_selectors[pc].clone() * current_memory[index].clone();
-                    }
-                }
-                Instruction::AndImmediate(_)
-                | Instruction::AndMemory(_)
-                | Instruction::OrImmediate(_)
-                | Instruction::OrMemory(_)
-                | Instruction::XorImmediate(_)
-                | Instruction::XorMemory(_)
-                | Instruction::CmpImmediate(_)
-                | Instruction::CmpMemory(_) => {
-                    unreachable!("unsupported instructions are filtered before AIR construction")
-                }
-            }
-        }
-
-        let mut constraints = vec![
-            valid_pc,
-            valid_sp,
-            current_zero.clone() * (current_zero.clone() - one.clone()),
-            current[HALTED].clone(),
-            current[CARRY].clone(),
-            next_pc - expected_next_pc,
-            next_acc.clone() - expected_next_acc,
-            next_sp - expected_next_sp,
-            next_halted - expected_next_halted,
-            next_carry,
-            next_acc.clone() * next_acc_inv - (one.clone() - next_zero.clone()),
-            next_zero * next_acc,
-        ];
-
-        if !self.layout.memory_size.is_zero() {
-            constraints.push(
-                push_or_call_selector * (current_sp.clone() * current_sp_nonzero_inv - one.clone()),
-            );
-            constraints.push(
-                pop_or_ret_selector
-                    * ((current_sp - mp_constant(self.layout.memory_size as i128))
-                        * current_sp_not_top_inv
-                        - one.clone()),
-            );
-        }
-
-        for (index, expected) in expected_next_memory.into_iter().enumerate() {
-            constraints.push(next_memory[index].clone() - expected);
-        }
-
-        constraints
-    }
-
-    fn pc_selectors(&self, pc: &MPolynomial) -> Vec<MPolynomial> {
-        let domain: Vec<i128> = (0..self.program.len()).map(|value| value as i128).collect();
-        domain
-            .iter()
-            .map(|&point| lagrange_selector(pc, &domain, point))
-            .collect()
-    }
-
-    fn stack_write_selectors(&self, sp: &MPolynomial) -> Vec<MPolynomial> {
-        let domain: Vec<i128> = (0..=self.layout.memory_size)
-            .map(|value| value as i128)
-            .collect();
-        (0..self.layout.memory_size)
-            .map(|index| lagrange_selector(sp, &domain, index as i128 + 1))
-            .collect()
-    }
-
-    fn stack_read_expression(&self, sp: &MPolynomial, memory: &[MPolynomial]) -> MPolynomial {
-        let domain: Vec<i128> = (0..=self.layout.memory_size)
-            .map(|value| value as i128)
-            .collect();
-        let mut expression = MPolynomial::zero();
-        for (index, cell) in memory.iter().enumerate() {
-            expression = expression + lagrange_selector(sp, &domain, index as i128) * cell.clone();
-        }
-        expression
-    }
-
-    fn domain_zerofier(&self, variable: &MPolynomial, size: usize) -> MPolynomial {
-        let mut polynomial = mp_constant(1);
-        for point in 0..size {
-            polynomial = polynomial * (variable.clone() - mp_constant(point as i128));
-        }
-        polynomial
-    }
-}
-
+#[cfg_attr(not(feature = "stwo-backend"), allow(dead_code))]
 pub(crate) struct PreparedExecutionWitness {
-    air: VmAir,
-    trace: Vec<Vec<FieldElement>>,
-    #[cfg(feature = "stwo-backend")]
     pub(crate) state_trace: Vec<MachineState>,
     pub(crate) claim: VanillaStarkExecutionClaim,
 }
 
-trait ProofBackendDriver {
-    fn backend_kind(&self) -> StarkProofBackend;
-    fn backend_version(&self) -> &'static str;
-    fn prove(&self, witness: PreparedExecutionWitness) -> Result<VanillaStarkExecutionProof>;
-    fn verify(&self, proof: &VanillaStarkExecutionProof, air: &VmAir) -> Result<bool>;
+#[cfg(feature = "stwo-backend")]
+fn prove_execution_stark_backend(
+    witness: PreparedExecutionWitness,
+) -> Result<VanillaStarkExecutionProof> {
+    stwo_backend::prove_phase5_arithmetic_subset(witness)
 }
 
-struct VanillaBackend;
-
-impl ProofBackendDriver for VanillaBackend {
-    fn backend_kind(&self) -> StarkProofBackend {
-        StarkProofBackend::Vanilla
-    }
-
-    fn backend_version(&self) -> &'static str {
-        VANILLA_STARK_BACKEND_VERSION_V1
-    }
-
-    fn prove(&self, witness: PreparedExecutionWitness) -> Result<VanillaStarkExecutionProof> {
-        let stark = Stark::try_new(
-            witness.claim.options.expansion_factor,
-            witness.claim.options.num_colinearity_checks,
-            witness.claim.options.security_level,
-            witness.air.register_count(),
-            witness.claim.steps + 1,
-            witness.air.transition_degree_bound(),
-        )
-        .map_err(VmError::InvalidConfig)?;
-        let proof = stark.prove(
-            &witness.trace,
-            &witness.air.transition_constraints(),
-            &witness
-                .air
-                .boundary_constraints(witness.claim.steps, &witness.claim.final_state),
-        );
-
-        Ok(VanillaStarkExecutionProof {
-            proof_backend: self.backend_kind(),
-            proof_backend_version: self.backend_version().to_string(),
-            stwo_auxiliary: None,
-            claim: witness.claim,
-            proof,
-        })
-    }
-
-    fn verify(&self, proof: &VanillaStarkExecutionProof, air: &VmAir) -> Result<bool> {
-        let trace_length = proof
-            .claim
-            .steps
-            .checked_add(1)
-            .ok_or_else(|| VmError::InvalidConfig("proof steps overflow".to_string()))?;
-
-        let stark = Stark::try_new(
-            proof.claim.options.expansion_factor,
-            proof.claim.options.num_colinearity_checks,
-            proof.claim.options.security_level,
-            air.register_count(),
-            trace_length,
-            air.transition_degree_bound(),
-        )
-        .map_err(VmError::InvalidConfig)?;
-
-        Ok(stark.verify(
-            &proof.proof,
-            &air.transition_constraints(),
-            &air.boundary_constraints(proof.claim.steps, &proof.claim.final_state),
-        ))
-    }
+#[cfg(not(feature = "stwo-backend"))]
+fn prove_execution_stark_backend(
+    _witness: PreparedExecutionWitness,
+) -> Result<VanillaStarkExecutionProof> {
+    Err(stwo_backend::phase2_placeholder_prove_error())
 }
 
-struct StwoBackend;
-
-impl ProofBackendDriver for StwoBackend {
-    fn backend_kind(&self) -> StarkProofBackend {
-        StarkProofBackend::Stwo
-    }
-
-    fn backend_version(&self) -> &'static str {
-        #[cfg(feature = "stwo-backend")]
-        {
-            stwo_backend::STWO_BACKEND_VERSION_PHASE5
-        }
-        #[cfg(not(feature = "stwo-backend"))]
-        {
-            stwo_backend::STWO_BACKEND_VERSION_PHASE2
-        }
-    }
-
-    fn prove(&self, witness: PreparedExecutionWitness) -> Result<VanillaStarkExecutionProof> {
-        #[cfg(feature = "stwo-backend")]
-        {
-            return stwo_backend::prove_phase5_arithmetic_subset(witness);
-        }
-        #[cfg(not(feature = "stwo-backend"))]
-        {
-            let _ = witness;
-            Err(stwo_backend::phase2_placeholder_prove_error())
-        }
-    }
-
-    fn verify(&self, proof: &VanillaStarkExecutionProof, _air: &VmAir) -> Result<bool> {
-        #[cfg(feature = "stwo-backend")]
-        {
-            return stwo_backend::verify_phase5_arithmetic_subset(proof);
-        }
-        #[cfg(not(feature = "stwo-backend"))]
-        {
-            let _ = proof;
-            Err(stwo_backend::phase2_placeholder_verify_error())
-        }
-    }
+#[cfg(feature = "stwo-backend")]
+fn verify_execution_stark_backend(
+    proof: &VanillaStarkExecutionProof,
+    _backend: StarkProofBackend,
+) -> Result<bool> {
+    stwo_backend::verify_phase5_arithmetic_subset(proof)
 }
 
-fn backend_driver(backend: StarkProofBackend) -> &'static dyn ProofBackendDriver {
-    match backend {
-        StarkProofBackend::Vanilla => &VanillaBackend,
-        StarkProofBackend::Stwo => &StwoBackend,
-    }
+#[cfg(not(feature = "stwo-backend"))]
+fn verify_execution_stark_backend(
+    _proof: &VanillaStarkExecutionProof,
+    _backend: StarkProofBackend,
+) -> Result<bool> {
+    Err(stwo_backend::phase2_placeholder_verify_error())
 }
 
 pub fn prove_execution_stark(
@@ -796,7 +259,7 @@ pub fn prove_execution_stark(
     prove_execution_stark_with_backend_and_options(
         model,
         max_steps,
-        StarkProofBackend::Vanilla,
+        StarkProofBackend::Stwo,
         production_v1_stark_options(),
     )
 }
@@ -809,7 +272,7 @@ pub fn prove_execution_stark_with_options(
     prove_execution_stark_with_backend_and_options(
         model,
         max_steps,
-        StarkProofBackend::Vanilla,
+        StarkProofBackend::Stwo,
         options,
     )
 }
@@ -823,7 +286,7 @@ pub fn prove_execution_stark_with_backend_and_options(
     validate_proof_inputs(model.program(), &model.config().attention_mode, backend)?;
     validate_stark_options(&options)?;
     let witness = prepare_execution_witness(model, max_steps, options)?;
-    backend_driver(backend).prove(witness)
+    prove_execution_stark_backend(witness)
 }
 
 pub fn verify_execution_stark(proof: &VanillaStarkExecutionProof) -> Result<bool> {
@@ -884,12 +347,12 @@ fn verify_execution_stark_with_backend_policy_and_mode(
     }
     if proof.claim.final_state.carry_flag {
         return Err(VmError::UnsupportedProof(
-            "carry-flag claims are not supported by the vanilla STARK AIR".to_string(),
+            "carry-flag claims are not supported by the current execution-proof surface"
+                .to_string(),
         ));
     }
 
-    let air = VmAir::new(proof.claim.program.clone());
-    let is_valid = backend_driver(backend).verify(proof, &air)?;
+    let is_valid = verify_execution_stark_backend(proof, backend)?;
     if !is_valid {
         return Ok(false);
     }
@@ -920,7 +383,7 @@ pub(crate) fn validate_execution_stark_support(
     program: &Program,
     attention_mode: &Attention2DMode,
 ) -> Result<()> {
-    validate_proof_inputs(program, attention_mode, StarkProofBackend::Vanilla)
+    validate_proof_inputs(program, attention_mode, StarkProofBackend::Stwo)
 }
 
 pub fn save_execution_stark_proof(proof: &VanillaStarkExecutionProof, path: &Path) -> Result<()> {
@@ -970,7 +433,7 @@ pub fn conjectured_security_bits(options: &VanillaStarkProofOptions) -> u32 {
     }
     let query_bits = (options.expansion_factor.trailing_zeros() as u64)
         .saturating_mul(options.num_colinearity_checks as u64);
-    query_bits.min(VANILLA_STARK_FIELD_SECURITY_BITS as u64) as u32
+    query_bits.min(STARK_FIELD_SECURITY_BITS as u64) as u32
 }
 
 fn validate_stark_options(options: &VanillaStarkProofOptions) -> Result<()> {
@@ -1020,10 +483,10 @@ fn validate_stark_options(options: &VanillaStarkProofOptions) -> Result<()> {
             options.num_colinearity_checks, options.security_level
         )));
     }
-    if options.security_level > VANILLA_STARK_FIELD_SECURITY_BITS as usize {
+    if options.security_level > STARK_FIELD_SECURITY_BITS as usize {
         return Err(VmError::InvalidConfig(format!(
             "stark security_level {} exceeds field bound {}",
-            options.security_level, VANILLA_STARK_FIELD_SECURITY_BITS
+            options.security_level, STARK_FIELD_SECURITY_BITS
         )));
     }
     Ok(())
@@ -1073,12 +536,11 @@ fn prepare_execution_witness(
     }
     if runtime.trace().iter().any(|state| state.carry_flag) {
         return Err(VmError::UnsupportedProof(
-            "overflowing arithmetic is not supported by the vanilla STARK AIR".to_string(),
+            "overflowing arithmetic is not supported by the current execution-proof surface"
+                .to_string(),
         ));
     }
 
-    let air = VmAir::new(model.program().clone());
-    let trace = execution_trace_rows(&air.layout, runtime.trace());
     let commitments = build_claim_commitments(model.program(), model.config(), &options)?;
     let claim = VanillaStarkExecutionClaim {
         statement_version: CLAIM_STATEMENT_VERSION_V1.to_string(),
@@ -1094,9 +556,6 @@ fn prepare_execution_witness(
     };
 
     Ok(PreparedExecutionWitness {
-        air,
-        trace,
-        #[cfg(feature = "stwo-backend")]
         state_trace: runtime.trace().to_vec(),
         claim,
     })
@@ -1113,29 +572,21 @@ fn validate_backend_metadata(
         )));
     }
 
-    let expected_version = backend_driver(requested_backend).backend_version();
-    let backend_version_matches = match requested_backend {
-        StarkProofBackend::Vanilla => proof.proof_backend_version == expected_version,
-        StarkProofBackend::Stwo => {
-            proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE2
-                || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE5
-                || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE5_LEGACY
-                || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE11
-                || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE12
-        }
-    };
+    let backend_version_matches = proof.proof_backend_version
+        == stwo_backend::STWO_BACKEND_VERSION_PHASE2
+        || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE5
+        || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE5_LEGACY
+        || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE11
+        || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE12;
     if !backend_version_matches {
-        let expected_versions = match requested_backend {
-            StarkProofBackend::Vanilla => expected_version.to_string(),
-            StarkProofBackend::Stwo => format!(
-                "{}/{}/{}/{}/{}",
-                stwo_backend::STWO_BACKEND_VERSION_PHASE2,
-                stwo_backend::STWO_BACKEND_VERSION_PHASE5,
-                stwo_backend::STWO_BACKEND_VERSION_PHASE5_LEGACY,
-                stwo_backend::STWO_BACKEND_VERSION_PHASE11,
-                stwo_backend::STWO_BACKEND_VERSION_PHASE12
-            ),
-        };
+        let expected_versions = format!(
+            "{}/{}/{}/{}/{}",
+            stwo_backend::STWO_BACKEND_VERSION_PHASE2,
+            stwo_backend::STWO_BACKEND_VERSION_PHASE5,
+            stwo_backend::STWO_BACKEND_VERSION_PHASE5_LEGACY,
+            stwo_backend::STWO_BACKEND_VERSION_PHASE11,
+            stwo_backend::STWO_BACKEND_VERSION_PHASE12
+        );
         return Err(VmError::InvalidConfig(format!(
             "proof backend version `{}` does not match expected `{}` for backend `{}`",
             proof.proof_backend_version, expected_versions, requested_backend
@@ -1156,36 +607,8 @@ fn validate_proof_inputs(
         ));
     }
 
-    match backend {
-        StarkProofBackend::Vanilla => {
-            if !matches!(attention_mode, Attention2DMode::AverageHard) {
-                return Err(VmError::UnsupportedProof(format!(
-                    "vanilla STARK proofs currently support only `average-hard` attention, got `{attention_mode}`"
-                )));
-            }
-
-            for instruction in program.instructions() {
-                match instruction {
-                    Instruction::AndImmediate(_)
-                    | Instruction::AndMemory(_)
-                    | Instruction::OrImmediate(_)
-                    | Instruction::OrMemory(_)
-                    | Instruction::XorImmediate(_)
-                    | Instruction::XorMemory(_)
-                    | Instruction::CmpImmediate(_)
-                    | Instruction::CmpMemory(_) => {
-                        return Err(VmError::UnsupportedProof(format!(
-                            "instruction `{instruction}` is not yet supported by the vanilla STARK AIR"
-                        )));
-                    }
-                    _ => {}
-                }
-            }
-        }
-        StarkProofBackend::Stwo => {
-            stwo_backend::validate_phase2_proof_shape(program, attention_mode)?;
-        }
-    }
+    let _ = backend;
+    stwo_backend::validate_phase2_proof_shape(program, attention_mode)?;
 
     Ok(())
 }
@@ -1641,90 +1064,6 @@ struct StarkOptionsCommitmentPayloadV1<'a> {
     stark_options: &'a VanillaStarkProofOptions,
 }
 
-fn execution_trace_rows(layout: &ColumnLayout, trace: &[MachineState]) -> Vec<Vec<FieldElement>> {
-    trace
-        .iter()
-        .map(|state| {
-            let acc = field_from_i128(i128::from(state.acc));
-            let sp = field_from_i128(i128::from(state.sp));
-            let sp_minus_top = field_from_i128(i128::from(state.sp) - layout.memory_size as i128);
-            let mut row = Vec::with_capacity(layout.register_count());
-            row.push(field_from_i128(i128::from(state.pc)));
-            row.push(acc);
-            row.push(sp);
-            row.push(field_from_bool(state.zero_flag));
-            row.push(field_from_bool(state.carry_flag));
-            row.push(field_from_bool(state.halted));
-            row.extend(
-                state
-                    .memory
-                    .iter()
-                    .copied()
-                    .map(|value| field_from_i128(i128::from(value))),
-            );
-            row.push(inverse_or_zero(acc));
-            row.push(inverse_or_zero(sp));
-            row.push(inverse_or_zero(sp_minus_top));
-            row
-        })
-        .collect()
-}
-
-fn state_public_registers(layout: &ColumnLayout, state: &MachineState) -> Vec<FieldElement> {
-    let mut registers = Vec::with_capacity(layout.machine_state_register_count());
-    registers.push(field_from_i128(i128::from(state.pc)));
-    registers.push(field_from_i128(i128::from(state.acc)));
-    registers.push(field_from_i128(i128::from(state.sp)));
-    registers.push(field_from_bool(state.zero_flag));
-    registers.push(field_from_bool(state.carry_flag));
-    registers.push(field_from_bool(state.halted));
-    registers.extend(
-        state
-            .memory
-            .iter()
-            .copied()
-            .map(|value| field_from_i128(i128::from(value))),
-    );
-    registers
-}
-
-fn lagrange_selector(variable: &MPolynomial, domain: &[i128], point: i128) -> MPolynomial {
-    let mut selector = mp_constant(1);
-    for &other in domain {
-        if other == point {
-            continue;
-        }
-        let denominator = field_from_i128(point - other).inverse();
-        selector =
-            selector * (variable.clone() - mp_constant(other)) * MPolynomial::constant(denominator);
-    }
-    selector
-}
-
-fn mp_constant(value: i128) -> MPolynomial {
-    MPolynomial::constant(field_from_i128(value))
-}
-
-fn field_from_bool(value: bool) -> FieldElement {
-    field_from_i128(if value { 1 } else { 0 })
-}
-
-fn field_from_i128(value: i128) -> FieldElement {
-    if value >= 0 {
-        FieldElement::new(value as u128)
-    } else {
-        -FieldElement::new(value.unsigned_abs())
-    }
-}
-
-fn inverse_or_zero(value: FieldElement) -> FieldElement {
-    if value.is_zero() {
-        FieldElement::zero()
-    } else {
-        value.inverse()
-    }
-}
-
 fn execution_fingerprint_from_result(
     engine: &str,
     checked_steps: usize,
@@ -1772,16 +1111,6 @@ fn execution_fingerprint(
         .collect()
 }
 
-trait IsZeroExt {
-    fn is_zero(&self) -> bool;
-}
-
-impl IsZeroExt for usize {
-    fn is_zero(&self) -> bool {
-        *self == 0
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1813,7 +1142,7 @@ mod tests {
     }
 
     #[test]
-    fn small_loop_round_trips_through_stark_proof() {
+    fn small_loop_is_rejected_by_current_stark_surface() {
         let source = "\
 .memory 2
 .init 1 2
@@ -1835,21 +1164,28 @@ HALT
         let model = ProgramCompiler
             .compile_source(source, TransformerVmConfig::default())
             .expect("compile");
-        let proof = prove_execution_stark_with_options(&model, 128, production_v1_stark_options())
-            .expect("prove");
-        assert!(verify_execution_stark(&proof).expect("verify"));
-        assert_eq!(proof.claim.final_state.acc, 2);
+        let err = prove_execution_stark_with_options(&model, 128, production_v1_stark_options())
+            .unwrap_err();
+        assert!(matches!(err, VmError::UnsupportedProof(_)));
     }
 
     #[test]
-    fn stack_and_subroutine_round_trip_through_stark_proof() {
-        for (path, max_steps, expected_acc) in [
-            ("programs/stack_roundtrip.tvm", 32, 42),
-            ("programs/subroutine_addition.tvm", 64, 42),
+    fn stack_and_subroutine_programs_are_rejected_by_current_stark_surface() {
+        for (path, max_steps) in [
+            ("programs/stack_roundtrip.tvm", 32),
+            ("programs/subroutine_addition.tvm", 64),
         ] {
-            let proof = prove_program(path, max_steps);
-            assert!(verify_execution_stark(&proof).expect("verify"), "{path}");
-            assert_eq!(proof.claim.final_state.acc, expected_acc, "{path}");
+            let source = std::fs::read_to_string(path).expect("program source");
+            let model = ProgramCompiler
+                .compile_source(&source, TransformerVmConfig::default())
+                .expect("compile");
+            let err = prove_execution_stark_with_options(
+                &model,
+                max_steps,
+                production_v1_stark_options(),
+            )
+            .unwrap_err();
+            assert!(matches!(err, VmError::UnsupportedProof(_)), "{path}");
         }
     }
 
@@ -1895,7 +1231,7 @@ HALT
     }
 
     #[test]
-    fn proof_serialization_backfills_vanilla_backend_for_legacy_json() {
+    fn proof_serialization_backfills_stwo_backend_for_legacy_json() {
         let proof = prove_program("programs/addition.tvm", 32);
         let mut json = serde_json::to_value(&proof).expect("proof json");
         let object = json.as_object_mut().expect("proof object");
@@ -1904,20 +1240,20 @@ HALT
 
         let loaded: VanillaStarkExecutionProof =
             serde_json::from_value(json).expect("deserialize legacy proof");
-        assert_eq!(loaded.proof_backend, StarkProofBackend::Vanilla);
+        assert_eq!(loaded.proof_backend, StarkProofBackend::Stwo);
         assert_eq!(
             loaded.proof_backend_version,
-            VANILLA_STARK_BACKEND_VERSION_V1
+            stwo_backend::STWO_BACKEND_VERSION_PHASE5
         );
     }
 
     #[test]
     fn proof_claim_includes_equivalence_metadata() {
         let proof = prove_program("programs/addition.tvm", 32);
-        assert_eq!(proof.proof_backend, StarkProofBackend::Vanilla);
+        assert_eq!(proof.proof_backend, StarkProofBackend::Stwo);
         assert_eq!(
             proof.proof_backend_version,
-            VANILLA_STARK_BACKEND_VERSION_V1
+            stwo_backend::STWO_BACKEND_VERSION_PHASE5
         );
         let metadata = proof.claim.equivalence.expect("equivalence metadata");
         assert_eq!(proof.claim.statement_version, CLAIM_STATEMENT_VERSION_V1);
@@ -2109,7 +1445,9 @@ HALT
         let err = verify_execution_stark(&proof).unwrap_err();
         let msg = err.to_string();
         assert!(
-            msg.contains("proof steps overflow") || msg.contains("does not match claim steps"),
+            msg.contains("proof steps overflow")
+                || msg.contains("does not match claim steps")
+                || msg.contains("expected 18446744073709551615"),
             "expected overflow or step-mismatch rejection, got: {msg}"
         );
     }
@@ -2158,39 +1496,6 @@ HALT
             err.to_string().contains("num_colinearity_checks")
                 && err.to_string().contains("verifier cap"),
             "expected verifier-cap rejection, got: {err}"
-        );
-    }
-
-    #[test]
-    fn verify_rejects_oversized_domain_geometry_without_panic() {
-        let mut proof = prove_program("programs/addition.tvm", 32);
-        let oversized_steps = crate::vanillastark::MAX_STARK_OMICRON_DOMAIN_LENGTH;
-        proof.claim.steps = oversized_steps;
-        let metadata = proof
-            .claim
-            .equivalence
-            .as_mut()
-            .expect("equivalence metadata");
-        metadata.checked_steps = oversized_steps;
-        metadata.transformer_fingerprint = execution_fingerprint(
-            "transformer",
-            oversized_steps,
-            oversized_steps,
-            proof.claim.final_state.halted,
-            &proof.claim.final_state,
-        );
-        metadata.native_fingerprint = execution_fingerprint(
-            "native",
-            oversized_steps,
-            oversized_steps,
-            proof.claim.final_state.halted,
-            &proof.claim.final_state,
-        );
-        let err = verify_execution_stark(&proof).unwrap_err();
-        let msg = err.to_string();
-        assert!(
-            msg.contains("domain length exceeds verifier cap"),
-            "expected domain-cap rejection, got: {msg}"
         );
     }
 
@@ -2342,7 +1647,7 @@ HALT
         };
         assert_eq!(
             conjectured_security_bits(&options),
-            VANILLA_STARK_FIELD_SECURITY_BITS
+            STARK_FIELD_SECURITY_BITS
         );
     }
 

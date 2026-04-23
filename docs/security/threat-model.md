@@ -7,7 +7,6 @@ The scope is intentionally narrow. The repository exposes:
 
 - tensor-native `stwo` lookup and transformer-shaped artifacts,
 - decode / carried-state / manifest-binding artifacts,
-- a legacy vanilla `statement-v1` proving baseline,
 - differential-testing surfaces across transformer/native/Burn/ONNX engines.
 
 These surfaces do **not** all make the same kind of claim. This document keeps that
@@ -46,7 +45,7 @@ Crosswalk to `docs/engineering/public-artifact-taxonomy.md`:
 
 Examples:
 
-- vanilla `statement-v1` execution proofs,
+- `statement-v1` execution proofs,
 - direct `stwo` lookup proofs,
 - direct fixed-shape `stwo` execution proofs.
 
@@ -127,10 +126,6 @@ serialized proof, public inputs, backend identifier, backend version, statement 
 and semantic scope satisfy the implemented backend relation, except with the residual
 soundness error of the selected backend and security profile.
 
-For vanilla artifacts generated under `publication-v1`, the repository treats the target
-floor as `96` conjectured security bits for publication packaging. That is a
-repository-level profile target, not an independent theorem about the teaching backend.
-
 For `stwo` artifacts, this repository relies on the upstream S-two/STWO backend
 assumptions for the cryptographic proof layer, then adds repository-local checks around
 statement metadata, shared-table identity, carried-state continuity, and source-bound
@@ -147,7 +142,7 @@ object for that stronger claim.
 
 - `malformed artifact producer`: emits structurally invalid manifests, payloads, or nested proof envelopes.
 - `oversized input producer`: attempts denial-of-service via large JSON, nested payloads, or excessive member counts.
-- `backend confusion attacker`: mixes vanilla and `stwo` artifacts, versions, or proof families.
+- `backend confusion attacker`: mixes incompatible proof families, versions, or proof surfaces.
 - `scope drift attacker`: rewrites statement version, semantic scope, or proof-family labels without matching source changes.
 - `shared-table substitution attacker`: swaps the intended lookup table or registry while preserving surrounding structure.
 - `carried-state splice attacker`: stitches together artifacts whose boundaries do not legitimately line up.
@@ -162,14 +157,11 @@ The repository assumes the following are trusted at the level stated.
 
 ### Backend assumptions
 
-- The vanilla backend and the upstream `stwo` stack are assumed sound only within their
-  implemented and declared scope.
+- The upstream `stwo` stack is assumed sound only within its implemented and declared scope.
 - The repository does **not** claim to re-prove backend soundness.
-- `publication-v1` for the vanilla path is a repository-level verifier floor based on the
-  current conjectured-security estimator; it should be treated as stronger than
-  `production-v1`, but it does not by itself prove any external conservative-bit theorem.
-- At the CLI layer, `publication-v1` is restricted to the vanilla backend; the CLI
-  rejects `publication-v1` when invoked with non-vanilla backends.
+- `publication-v1` is a repository-level verifier floor based on the current
+  conjectured-security estimator; it should be treated as stronger than `production-v1`,
+  but it does not by itself prove any external conservative-bit theorem.
 
 ### Environment assumptions
 
@@ -238,8 +230,5 @@ Public-facing text in this repository should follow these rules.
 - Treat decode / carried-state artifacts as supporting evidence unless the verifier surface
   itself is the subject of the claim.
 - Treat `--verify-all` and related multi-engine checks as differential testing, not proof.
-- Treat vanilla artifacts at the `production-v1` profile as the local reproducibility
-  baseline unless a document explicitly says it is using the stronger
-  `publication-v1` vanilla tier.
 - Do not describe folded, repeated-window, or accumulation-semantics artifacts as
   recursive cryptographic compression.

@@ -911,7 +911,7 @@ pub fn validate_phase2_proof_shape(
     layout::validate_phase2_instruction_subset(program)
 }
 
-/// Returns the placeholder error emitted by `prove-stark --backend stwo` in Phase 2.
+/// Returns the placeholder error emitted by `prove-stark` when the S-two feature is absent.
 pub fn phase2_placeholder_prove_error() -> VmError {
     if !is_enabled() {
         return feature_gate_error();
@@ -929,7 +929,7 @@ pub fn phase2_placeholder_prove_error() -> VmError {
     ))
 }
 
-/// Returns the placeholder error emitted by `verify-stark --backend stwo` in Phase 2.
+/// Returns the placeholder error emitted by `verify-stark` when the S-two feature is absent.
 pub fn phase2_placeholder_verify_error() -> VmError {
     if !is_enabled() {
         return feature_gate_error();

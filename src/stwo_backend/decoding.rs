@@ -21203,13 +21203,11 @@ mod tests {
     #[test]
     fn phase23_cross_step_lookup_accumulator_rejects_header_mismatch_before_nested_checks() {
         let mut manifest = sample_phase23_cross_step_lookup_accumulator_manifest();
-        manifest.proof_backend = StarkProofBackend::Vanilla;
+        manifest.proof_backend_version = "unsupported-backend-version".to_string();
         manifest.members[0].accumulator.matrices.clear();
 
         let err = verify_phase23_decoding_cross_step_lookup_accumulator(&manifest).unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("decoding cross-step lookup accumulator backend `vanilla` is not `stwo`"));
+        assert!(err.to_string().contains("proof backend version"));
     }
 
     #[test]
