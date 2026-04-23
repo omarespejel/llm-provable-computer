@@ -116,12 +116,15 @@ if ! command -v uvx >/dev/null 2>&1 && ! command -v zizmor >/dev/null 2>&1; then
 fi
 
 require_command shellcheck
-require_command rustup
 
-if ! rustup toolchain list 2>/dev/null | grep -q "$NIGHTLY_TOOLCHAIN"; then
-  printf '%bmissing required nightly toolchain: %s (install with rustup toolchain install %s --profile minimal)%b\n' \
-    "$c_red" "$NIGHTLY_TOOLCHAIN" "$NIGHTLY_TOOLCHAIN" "$c_off" >&2
-  exit 127
+if [[ "$SKIP_NIGHTLY" != "1" ]]; then
+  require_command rustup
+
+  if ! rustup toolchain list 2>/dev/null | grep -q "$NIGHTLY_TOOLCHAIN"; then
+    printf '%bmissing required nightly toolchain: %s (install with rustup toolchain install %s --profile minimal)%b\n' \
+      "$c_red" "$NIGHTLY_TOOLCHAIN" "$NIGHTLY_TOOLCHAIN" "$c_off" >&2
+    exit 127
+  fi
 fi
 
 # Stable-toolchain steps.
@@ -130,7 +133,11 @@ run_step "lib clippy (-D warnings)"   cargo clippy --quiet --lib --no-deps -- -D
 run_step "lib build"                  cargo build --quiet --lib
 run_step "tvm bin build"              cargo build --quiet --bin tvm
 run_step "lib statement-spec sync"    cargo test --release --quiet --lib statement_spec_contract_is_synced_with_constants
-run_step "lib proof::tests"           cargo "+${NIGHTLY_TOOLCHAIN}" test --release --quiet --features stwo-backend --lib -- --test-threads=4 proof::tests
+if [[ "$SKIP_NIGHTLY" != "1" ]]; then
+  run_step "lib proof::tests"         cargo "+${NIGHTLY_TOOLCHAIN}" test --release --quiet --features stwo-backend --lib -- --test-threads=4 proof::tests
+else
+  printf '%b[gate skip] SKIP_NIGHTLY=1; nightly proof::tests not run%b\n' "$c_ylw" "$c_off"
+fi
 run_step "test/assembly"              cargo test --release --quiet --test assembly
 run_step "test/e2e"                   cargo test --release --quiet --test e2e
 run_step "test/interpreter"           cargo test --release --quiet --test interpreter

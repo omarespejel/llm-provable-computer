@@ -940,7 +940,29 @@ fn cli_accepts_publication_v1_on_active_backend() {
         .success()
         .stdout(predicate::str::contains("stark_profile: publication-v1"))
         .stdout(predicate::str::contains("proof_backend: stwo"));
+    assert!(
+        proof_path.exists(),
+        "prove-stark did not emit the requested proof artifact"
+    );
     let _ = std::fs::remove_file(proof_path);
+}
+
+#[test]
+#[cfg(feature = "stwo-backend")]
+fn cli_prove_stark_rejects_removed_backend_flag() {
+    let proof_path = unique_temp_dir("cli-stark-proof-removed-backend-flag").with_extension("json");
+
+    let mut prove = tvm_command();
+    prove
+        .arg("prove-stark")
+        .arg("programs/addition.tvm")
+        .arg("--backend")
+        .arg("stwo")
+        .arg("-o")
+        .arg(&proof_path)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("--backend"));
 }
 
 #[test]

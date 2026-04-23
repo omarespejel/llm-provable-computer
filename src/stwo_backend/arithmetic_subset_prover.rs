@@ -2648,6 +2648,26 @@ mod tests {
             .clone()
     }
 
+    #[test]
+    fn phase5_validate_subset_witness_rejects_steps_overflow() {
+        let program = compile_program("programs/addition.tvm");
+        let mut final_state = MachineState::with_memory(program.initial_memory().to_vec());
+        final_state.halted = true;
+        final_state.sp = program.memory_size() as u8;
+
+        let err = validate_phase5_subset_witness(
+            &program,
+            std::slice::from_ref(&final_state),
+            usize::MAX,
+        )
+        .expect_err("overflowing steps should be rejected");
+
+        assert!(matches!(
+            err,
+            VmError::UnsupportedProof(message) if message.contains("steps overflow")
+        ));
+    }
+
     fn assert_trace_satisfies_constraints_for_program(program: Program) {
         let mut runtime =
             NativeInterpreter::new(program.clone(), Attention2DMode::AverageHard, 256);

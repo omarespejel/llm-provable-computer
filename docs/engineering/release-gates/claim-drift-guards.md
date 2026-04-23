@@ -54,8 +54,8 @@ promises to a verifier.
 - `proof::tests::claim_only_verification_rejects_v1_scope_without_equivalence_metadata`
 - `proof::tests::claim_only_verification_does_not_reexecute_equivalence_metadata`
 
-The verification tests exercise every public verification entry point so that no
-malformed claim can panic the verifier or escape these invariants.
+The verification tests exercise the public verification entry points listed in
+this gate and are maintained to prevent malformed claims from bypassing these invariants.
 
 ## Lockstep with the spec file
 

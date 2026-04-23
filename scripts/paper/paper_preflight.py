@@ -1216,6 +1216,7 @@ def _validate_table_c2_consistency(
     required_transformer_field_keys = [
         "artifact_file",
         "artifact_size_bytes",
+        "sha_256",
     ]
 
     missing_transformer_timing = sorted(
@@ -1305,7 +1306,7 @@ def _validate_shared_normalization_primitive_index(
         k for k in required_primitive_timing_keys if k not in primitive_timings
     )
     missing_primitive_fields = sorted(
-        k for k in required_primitive_field_keys if k not in primitive_fields
+        k for k in required_primitive_field_keys if not primitive_fields.get(k, "").strip()
     )
     if missing_primitive_timing:
         findings.error(
@@ -1378,13 +1379,14 @@ def _validate_transformer_bundle_index(
     required_transformer_field_keys = [
         "artifact_file",
         "artifact_size_bytes",
+        "sha_256",
     ]
 
     missing_transformer_timing = sorted(
         k for k in required_transformer_timing_keys if k not in transformer_timings
     )
     missing_transformer_fields = sorted(
-        k for k in required_transformer_field_keys if k not in transformer_fields
+        k for k in required_transformer_field_keys if not transformer_fields.get(k, "").strip()
     )
     if missing_transformer_timing:
         findings.error(
@@ -1431,6 +1433,15 @@ def _validate_transformer_bundle_index(
         findings.error(
             f"{transformer_index_path}: transformer-shaped artifact size mismatch: "
             f"index={expected_size}, actual={actual_size} at {artifact_path}."
+        )
+        return False
+
+    actual_sha = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+    expected_sha = transformer_fields.get("sha_256", "").lower()
+    if actual_sha != expected_sha:
+        findings.error(
+            f"{transformer_index_path}: transformer-shaped SHA-256 mismatch: "
+            f"index={expected_sha!r}, actual={actual_sha!r} for {artifact_path}."
         )
         return False
 

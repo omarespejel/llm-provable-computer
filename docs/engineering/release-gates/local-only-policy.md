@@ -39,7 +39,7 @@ Steps (in order):
 3. `cargo build --quiet --lib`
 4. `cargo build --quiet --bin tvm`
 5. `cargo test --release --lib statement_spec_contract_is_synced_with_constants`
-6. `cargo +nightly-2025-07-14 test --release --features stwo-backend --lib proof::tests`
+6. `cargo +nightly-2025-07-14 test --release --features stwo-backend --lib proof::tests` (skipped only when `SKIP_NIGHTLY=1`)
 7. `cargo test --release --test {assembly,e2e,interpreter,runtime}`
 8. `bash scripts/run_dependency_audit_suite.sh`
 9. `uvx --from "zizmor==1.24.1" zizmor .github/workflows --format plain`
