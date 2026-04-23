@@ -5,14 +5,13 @@ from __future__ import annotations
 
 import argparse
 import csv
-import os
 import subprocess
 from pathlib import Path
 from xml.sax.saxutils import escape
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TSV = ROOT / "docs" / "paper" / "evidence" / "stwo-phase12-shared-lookup-bundle-reuse-2026-04.tsv"
-DEFAULT_BENCH_RUNS = int(os.environ.get("BENCH_RUNS", "5"))
+DEFAULT_BENCH_RUNS = 5
 OUTDIR = ROOT / "docs" / "paper" / "figures"
 OUTDIR.mkdir(parents=True, exist_ok=True)
 
@@ -301,6 +300,7 @@ def write_optional_rasters(
                 raise SystemExit(
                     f"rsvg-convert is required to render {png_path} from {svg_path}"
                 ) from None
+            png_path.unlink(missing_ok=True)
             print(f"skipped {png_path} (rsvg-convert not found)")
         else:
             if rsvg.returncode == 0:
@@ -312,6 +312,7 @@ def write_optional_rasters(
                     raise SystemExit(
                         f"rsvg-convert png failed for {png_path}: {rsvg.stderr.strip()}"
                     )
+                png_path.unlink(missing_ok=True)
                 print(
                     f"skipped {png_path} (rsvg-convert png failed: {rsvg.stderr.strip()})"
                 )
@@ -332,6 +333,7 @@ def write_optional_rasters(
                 raise SystemExit(
                     f"rsvg-convert is required to render {pdf_path} from {svg_path}"
                 ) from None
+            pdf_path.unlink(missing_ok=True)
             print(f"skipped {pdf_path} (rsvg-convert not found)")
         else:
             if rsvg_pdf.returncode == 0:
@@ -343,6 +345,7 @@ def write_optional_rasters(
                     raise SystemExit(
                         f"rsvg-convert pdf failed for {pdf_path}: {rsvg_pdf.stderr.strip()}"
                     )
+                pdf_path.unlink(missing_ok=True)
                 print(
                     f"skipped {pdf_path} (rsvg-convert pdf failed: {rsvg_pdf.stderr.strip()})"
                 )
