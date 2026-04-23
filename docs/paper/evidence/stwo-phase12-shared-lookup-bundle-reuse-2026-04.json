@@ -22,8 +22,8 @@
       ],
       "proof_bytes": 5016,
       "serialized_bytes": 55592,
-      "prove_ms": 32,
-      "verify_ms": 9,
+      "prove_ms": 35,
+      "verify_ms": 6,
       "verified": true,
       "note": "one verifier-bound bundle combines a shared normalization artifact, a shared activation lookup proof, and one static table registry commitment"
     },
@@ -46,7 +46,7 @@
       ],
       "proof_bytes": 5016,
       "serialized_bytes": 53124,
-      "prove_ms": 18,
+      "prove_ms": 19,
       "verify_ms": 3,
       "verified": true,
       "note": "each step proves its normalization row and activation row independently against the canonical tables"
@@ -102,8 +102,8 @@
       ],
       "proof_bytes": 5016,
       "serialized_bytes": 55809,
-      "prove_ms": 21,
-      "verify_ms": 9,
+      "prove_ms": 19,
+      "verify_ms": 7,
       "verified": true,
       "note": "one verifier-bound bundle combines a shared normalization artifact, a shared activation lookup proof, and one static table registry commitment"
     },
@@ -134,7 +134,7 @@
       ],
       "proof_bytes": 9776,
       "serialized_bytes": 103649,
-      "prove_ms": 31,
+      "prove_ms": 32,
       "verify_ms": 4,
       "verified": true,
       "note": "each step proves its normalization row and activation row independently against the canonical tables"
@@ -206,8 +206,8 @@
       ],
       "proof_bytes": 4968,
       "serialized_bytes": 55294,
-      "prove_ms": 16,
-      "verify_ms": 8,
+      "prove_ms": 14,
+      "verify_ms": 6,
       "verified": true,
       "note": "one verifier-bound bundle combines a shared normalization artifact, a shared activation lookup proof, and one static table registry commitment"
     },
@@ -246,8 +246,8 @@
       ],
       "proof_bytes": 14824,
       "serialized_bytes": 157087,
-      "prove_ms": 39,
-      "verify_ms": 6,
+      "prove_ms": 41,
+      "verify_ms": 7,
       "verified": true,
       "note": "each step proves its normalization row and activation row independently against the canonical tables"
     },
@@ -286,7 +286,7 @@
       ],
       "proof_bytes": 10064,
       "serialized_bytes": 30226,
-      "prove_ms": 34,
+      "prove_ms": 35,
       "verify_ms": 6,
       "verified": true,
       "note": "each step reproves its normalization row and activation row without shared lookup reuse"

@@ -533,6 +533,7 @@ enum Command {
         capture_timings: bool,
     },
     /// Run a richer Phase12-style shared lookup bundle benchmark over shared normalization and activation proofs.
+    #[cfg_attr(not(feature = "stwo-backend"), command(hide = true))]
     BenchStwoPhase12SharedLookupBundleReuse {
         /// File where the benchmark TSV will be written.
         #[arg(long = "output-tsv")]
@@ -15754,10 +15755,11 @@ mod cli_dispatch_tests {
         CliStarkProfile, PRODUCTION_V1_MIN_CONJECTURED_SECURITY_BITS,
         PRODUCTION_V1_TARGET_MAX_PROVING_SECONDS, PUBLICATION_V1_MIN_CONJECTURED_SECURITY_BITS,
     };
-    #[cfg(not(feature = "stwo-backend"))]
     use super::{Cli, Command};
-    #[cfg(not(feature = "stwo-backend"))]
+    #[cfg(feature = "stwo-backend")]
     use clap::Parser;
+    #[cfg(not(feature = "stwo-backend"))]
+    use clap::{CommandFactory, Parser};
     use std::ffi::OsString;
     #[cfg(feature = "stwo-backend")]
     use std::path::Path;
@@ -15997,6 +15999,7 @@ mod cli_dispatch_tests {
         );
     }
 
+    #[cfg(feature = "stwo-backend")]
     #[test]
     fn phase12_shared_lookup_bundle_benchmark_command_parses_directly_and_is_not_run_shorthand() {
         assert!(!needs_run_subcommand(
@@ -16027,6 +16030,7 @@ mod cli_dispatch_tests {
         );
     }
 
+    #[cfg(feature = "stwo-backend")]
     #[test]
     fn phase12_shared_lookup_bundle_benchmark_command_preserves_capture_timings_flag() {
         let normalized = normalize_args(
@@ -16050,6 +16054,13 @@ mod cli_dispatch_tests {
                 OsString::from("phase12.tsv"),
             ]
         );
+    }
+
+    #[cfg(not(feature = "stwo-backend"))]
+    #[test]
+    fn phase12_shared_lookup_bundle_benchmark_command_is_hidden_without_stwo_backend() {
+        let help = Cli::command().render_long_help().to_string();
+        assert!(!help.contains("bench-stwo-phase12-shared-lookup-bundle-reuse"));
     }
 
     #[test]
@@ -16090,6 +16101,51 @@ mod cli_dispatch_tests {
         assert!(err
             .to_string()
             .contains("`--output-json` must differ from `--output-tsv`"));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    #[test]
+    fn phase12_shared_lookup_bundle_benchmark_command_rejects_identical_output_paths_before_run() {
+        std::thread::Builder::new()
+            .name("phase12-shared-lookup-cli-negative".to_string())
+            .stack_size(8 * 1024 * 1024)
+            .spawn(|| {
+                let cli = Cli::try_parse_from(normalize_args(
+                    [
+                        "tvm",
+                        "bench-stwo-phase12-shared-lookup-bundle-reuse",
+                        "--output-tsv",
+                        "same.path",
+                        "--output-json",
+                        "same.path",
+                    ]
+                    .into_iter()
+                    .map(OsString::from),
+                ))
+                .expect("phase12 shared lookup bundle command should parse");
+
+                let Command::BenchStwoPhase12SharedLookupBundleReuse {
+                    output_tsv,
+                    output_json,
+                    capture_timings,
+                } = cli.command
+                else {
+                    panic!("expected phase12 shared lookup bundle benchmark command");
+                };
+
+                let err = super::bench_stwo_phase12_shared_lookup_bundle_reuse_command(
+                    &output_tsv,
+                    output_json.as_deref(),
+                    capture_timings,
+                )
+                .expect_err("identical output paths must fail before benchmark execution");
+                assert!(err
+                    .to_string()
+                    .contains("`--output-json` must differ from `--output-tsv`"));
+            })
+            .expect("spawn phase12 negative-path test thread")
+            .join()
+            .expect("phase12 negative-path test thread should not panic");
     }
 
     #[test]

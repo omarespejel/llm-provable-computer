@@ -31,7 +31,7 @@ use stwo_constraint_framework::{
 use super::lookup_component::{phase3_lookup_table_rows, Phase3LookupTableRow};
 use super::lookup_prover::{
     prove_phase10_shared_binary_step_lookup_envelope,
-    verify_phase10_shared_binary_step_lookup_envelope,
+    verify_phase10_shared_binary_step_lookup_envelope, Phase10SharedLookupProofEnvelope,
 };
 use super::normalization_component::phase5_normalization_table_rows;
 use super::normalization_prover::{
@@ -39,7 +39,8 @@ use super::normalization_prover::{
     prove_phase10_shared_normalization_lookup_envelope,
     verify_phase10_shared_normalization_lookup_envelope,
     verify_phase92_shared_normalization_primitive_artifact,
-    Phase92SharedNormalizationPrimitiveArtifact, Phase92SharedNormalizationPrimitiveStep,
+    Phase10SharedNormalizationLookupProofEnvelope, Phase92SharedNormalizationPrimitiveArtifact,
+    Phase92SharedNormalizationPrimitiveStep,
 };
 use super::shared_lookup_artifact::{
     phase12_static_lookup_table_registry_from_envelopes, Phase12StaticLookupTableCommitment,
@@ -47,6 +48,7 @@ use super::shared_lookup_artifact::{
     STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12,
 };
 use crate::error::{Result, VmError};
+use crate::proof::StarkProofBackend;
 
 pub const STWO_PRIMITIVE_BENCHMARK_VERSION: &str = "stwo-primitive-lookup-vs-naive-benchmark-v1";
 pub const STWO_PRIMITIVE_BENCHMARK_SCOPE: &str =
@@ -2140,12 +2142,11 @@ fn commit_phase12_shared_lookup_bundle_benchmark_step_claims(
     steps: &[Phase12SharedLookupBundleBenchmarkStepClaim],
 ) -> Result<String> {
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
-    let steps_json =
-        serde_json::to_vec(steps).map_err(|error| VmError::Serialization(error.to_string()))?;
+    let steps_bytes = encode_phase12_shared_lookup_bundle_benchmark_step_claims(steps)?;
     hasher.update(STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_VERSION.as_bytes());
     hasher.update(b"step-claims");
-    hasher.update(&(steps_json.len() as u64).to_le_bytes());
-    hasher.update(&steps_json);
+    hasher.update(&(steps_bytes.len() as u64).to_le_bytes());
+    hasher.update(&steps_bytes);
     let mut out = [0u8; 32];
     hasher
         .finalize_variable(&mut out)
@@ -2163,34 +2164,227 @@ fn commit_phase12_shared_lookup_bundle_benchmark_artifact(
             &normalization_artifact.proof_envelope,
             activation_proof_envelope,
         )?;
-    let steps_json =
-        serde_json::to_vec(steps).map_err(|error| VmError::Serialization(error.to_string()))?;
-    let static_table_commitments_json = serde_json::to_vec(&static_table_commitments)
-        .map_err(|error| VmError::Serialization(error.to_string()))?;
-    let normalization_json = serde_json::to_vec(normalization_artifact)
-        .map_err(|error| VmError::Serialization(error.to_string()))?;
-    let activation_json = serde_json::to_vec(activation_proof_envelope)
-        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    let steps_bytes = encode_phase12_shared_lookup_bundle_benchmark_step_claims(steps)?;
+    let static_table_commitments_bytes =
+        encode_phase12_static_lookup_table_commitments(&static_table_commitments)?;
+    let normalization_bytes =
+        encode_phase92_shared_normalization_primitive_artifact(normalization_artifact)?;
+    let activation_bytes = encode_phase10_shared_lookup_proof_envelope(activation_proof_envelope)?;
 
     let mut hasher = Blake2bVar::new(32).expect("blake2b-256");
     hasher.update(STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_VERSION.as_bytes());
     hasher.update(STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_SCOPE.as_bytes());
-    hasher.update(&(steps_json.len() as u64).to_le_bytes());
-    hasher.update(&steps_json);
+    hasher.update(&(steps_bytes.len() as u64).to_le_bytes());
+    hasher.update(&steps_bytes);
     hasher.update(STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_VERSION_PHASE12.as_bytes());
     hasher.update(STWO_SHARED_STATIC_LOOKUP_TABLE_REGISTRY_SCOPE_PHASE12.as_bytes());
-    hasher.update(static_table_registry_commitment.as_bytes());
-    hasher.update(&(static_table_commitments_json.len() as u64).to_le_bytes());
-    hasher.update(&static_table_commitments_json);
-    hasher.update(&(normalization_json.len() as u64).to_le_bytes());
-    hasher.update(&normalization_json);
-    hasher.update(&(activation_json.len() as u64).to_le_bytes());
-    hasher.update(&activation_json);
+    append_len_prefixed_bytes_to_hasher(&mut hasher, static_table_registry_commitment.as_bytes())?;
+    hasher.update(&(static_table_commitments_bytes.len() as u64).to_le_bytes());
+    hasher.update(&static_table_commitments_bytes);
+    hasher.update(&(normalization_bytes.len() as u64).to_le_bytes());
+    hasher.update(&normalization_bytes);
+    hasher.update(&(activation_bytes.len() as u64).to_le_bytes());
+    hasher.update(&activation_bytes);
     let mut out = [0u8; 32];
     hasher
         .finalize_variable(&mut out)
         .expect("blake2b finalize");
     Ok(lower_hex(&out))
+}
+
+fn append_u64(bytes: &mut Vec<u8>, value: u64) {
+    bytes.extend_from_slice(&value.to_le_bytes());
+}
+
+fn append_len_prefixed_bytes(bytes: &mut Vec<u8>, value: &[u8]) -> Result<()> {
+    append_u64(
+        bytes,
+        u64::try_from(value.len()).map_err(|_| {
+            VmError::InvalidConfig("canonical encoding length does not fit in u64".to_string())
+        })?,
+    );
+    bytes.extend_from_slice(value);
+    Ok(())
+}
+
+fn append_len_prefixed_bytes_to_hasher(hasher: &mut Blake2bVar, value: &[u8]) -> Result<()> {
+    hasher.update(
+        &u64::try_from(value.len())
+            .map_err(|_| {
+                VmError::InvalidConfig("canonical encoding length does not fit in u64".to_string())
+            })?
+            .to_le_bytes(),
+    );
+    hasher.update(value);
+    Ok(())
+}
+
+fn append_string(bytes: &mut Vec<u8>, value: &str) -> Result<()> {
+    append_len_prefixed_bytes(bytes, value.as_bytes())
+}
+
+fn append_usize(bytes: &mut Vec<u8>, value: usize) -> Result<()> {
+    append_u64(
+        bytes,
+        u64::try_from(value).map_err(|_| {
+            VmError::InvalidConfig("canonical usize value does not fit in u64".to_string())
+        })?,
+    );
+    Ok(())
+}
+
+fn append_phase3_lookup_table_row(bytes: &mut Vec<u8>, row: &Phase3LookupTableRow) {
+    bytes.extend_from_slice(&row.input.to_le_bytes());
+    bytes.push(row.output);
+}
+
+fn append_phase12_shared_lookup_bundle_step_claim(
+    bytes: &mut Vec<u8>,
+    step: &Phase12SharedLookupBundleBenchmarkStepClaim,
+) -> Result<()> {
+    append_usize(bytes, step.step_index)?;
+    bytes.extend_from_slice(&step.normalization_row[0].to_le_bytes());
+    bytes.extend_from_slice(&step.normalization_row[1].to_le_bytes());
+    bytes.extend_from_slice(&step.activation_row[0].to_le_bytes());
+    bytes.extend_from_slice(&step.activation_row[1].to_le_bytes());
+    Ok(())
+}
+
+fn encode_phase12_shared_lookup_bundle_benchmark_step_claims(
+    steps: &[Phase12SharedLookupBundleBenchmarkStepClaim],
+) -> Result<Vec<u8>> {
+    let mut bytes = Vec::new();
+    append_usize(&mut bytes, steps.len())?;
+    for step in steps {
+        append_phase12_shared_lookup_bundle_step_claim(&mut bytes, step)?;
+    }
+    Ok(bytes)
+}
+
+fn encode_phase12_static_lookup_table_commitments(
+    table_commitments: &[Phase12StaticLookupTableCommitment],
+) -> Result<Vec<u8>> {
+    let mut canonical = table_commitments.to_vec();
+    canonical.sort_by(|left, right| {
+        (
+            &left.table_id,
+            &left.statement_version,
+            &left.semantic_scope,
+            &left.table_commitment,
+            left.row_count,
+            left.row_width,
+        )
+            .cmp(&(
+                &right.table_id,
+                &right.statement_version,
+                &right.semantic_scope,
+                &right.table_commitment,
+                right.row_count,
+                right.row_width,
+            ))
+    });
+
+    let mut bytes = Vec::new();
+    append_usize(&mut bytes, canonical.len())?;
+    for commitment in &canonical {
+        append_string(&mut bytes, &commitment.table_id)?;
+        append_string(&mut bytes, &commitment.statement_version)?;
+        append_string(&mut bytes, &commitment.semantic_scope)?;
+        append_string(&mut bytes, &commitment.table_commitment)?;
+        append_u64(&mut bytes, commitment.row_count);
+        append_u64(&mut bytes, commitment.row_width);
+    }
+    Ok(bytes)
+}
+
+fn encode_stark_proof_backend(backend: StarkProofBackend) -> u8 {
+    match backend {
+        StarkProofBackend::Vanilla => 0,
+        StarkProofBackend::Stwo => 1,
+    }
+}
+
+fn encode_phase10_shared_normalization_lookup_proof_envelope(
+    envelope: &Phase10SharedNormalizationLookupProofEnvelope,
+) -> Result<Vec<u8>> {
+    let mut bytes = Vec::new();
+    bytes.push(encode_stark_proof_backend(envelope.proof_backend));
+    append_string(&mut bytes, &envelope.proof_backend_version)?;
+    append_string(&mut bytes, &envelope.statement_version)?;
+    append_string(&mut bytes, &envelope.semantic_scope)?;
+    append_usize(&mut bytes, envelope.canonical_table_rows.len())?;
+    for row in &envelope.canonical_table_rows {
+        bytes.extend_from_slice(&row.0.to_le_bytes());
+        bytes.extend_from_slice(&row.1.to_le_bytes());
+    }
+    append_usize(&mut bytes, envelope.claimed_rows.len())?;
+    for row in &envelope.claimed_rows {
+        bytes.extend_from_slice(&row.0.to_le_bytes());
+        bytes.extend_from_slice(&row.1.to_le_bytes());
+    }
+    append_len_prefixed_bytes(&mut bytes, &envelope.proof)?;
+    Ok(bytes)
+}
+
+fn encode_phase10_shared_lookup_proof_envelope(
+    envelope: &Phase10SharedLookupProofEnvelope,
+) -> Result<Vec<u8>> {
+    let mut bytes = Vec::new();
+    bytes.push(encode_stark_proof_backend(envelope.proof_backend));
+    append_string(&mut bytes, &envelope.proof_backend_version)?;
+    append_string(&mut bytes, &envelope.statement_version)?;
+    append_string(&mut bytes, &envelope.semantic_scope)?;
+    append_usize(&mut bytes, envelope.canonical_table_rows.len())?;
+    for row in &envelope.canonical_table_rows {
+        append_phase3_lookup_table_row(&mut bytes, row);
+    }
+    append_usize(&mut bytes, envelope.claimed_rows.len())?;
+    for row in &envelope.claimed_rows {
+        append_phase3_lookup_table_row(&mut bytes, row);
+    }
+    append_len_prefixed_bytes(&mut bytes, &envelope.proof)?;
+    Ok(bytes)
+}
+
+fn encode_phase92_shared_normalization_primitive_artifact(
+    artifact: &Phase92SharedNormalizationPrimitiveArtifact,
+) -> Result<Vec<u8>> {
+    let mut bytes = Vec::new();
+    append_string(&mut bytes, &artifact.artifact_version)?;
+    append_string(&mut bytes, &artifact.semantic_scope)?;
+    append_string(&mut bytes, &artifact.artifact_commitment)?;
+    append_string(&mut bytes, &artifact.step_claims_commitment)?;
+    append_string(&mut bytes, &artifact.static_table_registry_version)?;
+    append_string(&mut bytes, &artifact.static_table_registry_scope)?;
+    append_string(&mut bytes, &artifact.static_table_registry_commitment)?;
+    append_string(&mut bytes, &artifact.static_table_commitment.table_id)?;
+    append_string(
+        &mut bytes,
+        &artifact.static_table_commitment.statement_version,
+    )?;
+    append_string(&mut bytes, &artifact.static_table_commitment.semantic_scope)?;
+    append_string(
+        &mut bytes,
+        &artifact.static_table_commitment.table_commitment,
+    )?;
+    append_u64(&mut bytes, artifact.static_table_commitment.row_count);
+    append_u64(&mut bytes, artifact.static_table_commitment.row_width);
+    append_usize(&mut bytes, artifact.total_steps)?;
+    append_usize(&mut bytes, artifact.total_claimed_rows)?;
+    append_usize(&mut bytes, artifact.steps.len())?;
+    for step in &artifact.steps {
+        append_usize(&mut bytes, step.step_index)?;
+        append_string(&mut bytes, &step.step_label)?;
+        append_usize(&mut bytes, step.claimed_rows.len())?;
+        for row in &step.claimed_rows {
+            bytes.extend_from_slice(&row.0.to_le_bytes());
+            bytes.extend_from_slice(&row.1.to_le_bytes());
+        }
+    }
+    let proof_envelope_bytes =
+        encode_phase10_shared_normalization_lookup_proof_envelope(&artifact.proof_envelope)?;
+    append_len_prefixed_bytes(&mut bytes, &proof_envelope_bytes)?;
+    Ok(bytes)
 }
 
 fn prepare_phase12_shared_lookup_bundle_benchmark_artifact(

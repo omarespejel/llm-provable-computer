@@ -83,6 +83,7 @@ python3 scripts/paper/generate_stwo_phase12_shared_lookup_bundle_figure.py \
   --output-svg "$TMP_SVG" \
   --output-png "$TMP_PNG" \
   --output-pdf "$TMP_PDF" \
+  --bench-runs "$BENCH_RUNS" \
   --fail-closed-rasters
 
 mv "$TMP_TSV" "$TSV_OUT"
