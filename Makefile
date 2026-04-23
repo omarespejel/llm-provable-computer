@@ -9,7 +9,7 @@
 # file plus the Justfile are the only places that run gates and tests.
 
 .PHONY: help gate gate-fast gate-no-nightly gate-verbose fmt clippy lib \
-    proof-tests vanillastark-tests integration spec-sync deps zizmor \
+    proof-tests integration spec-sync deps zizmor \
     shellcheck stwo-smoke install-hook sign-commits publication-proof
 
 help:
@@ -22,8 +22,7 @@ help:
 	@echo "  clippy            # cargo clippy --lib --no-deps -- -D warnings"
 	@echo "  lib               # cargo test --release --lib"
 	@echo "  proof-tests       # cargo test --release --lib proof::tests"
-	@echo "  vanillastark-tests# cargo test --release --lib vanillastark::"
-	@echo "  integration       # the 5 integration test crates"
+	@echo "  integration       # the 4 integration test crates"
 	@echo "  spec-sync         # statement-spec contract sync test"
 	@echo "  deps              # cargo-audit + cargo-deny suite"
 	@echo "  zizmor            # workflow-file lint (uvx zizmor 1.24.1)"
@@ -59,15 +58,11 @@ lib:
 proof-tests:
 	cargo test --release --lib -- --test-threads=4 proof::tests
 
-vanillastark-tests:
-	cargo test --release --lib -- --test-threads=4 vanillastark::
-
 integration:
 	cargo test --release --test assembly
 	cargo test --release --test e2e
 	cargo test --release --test interpreter
 	cargo test --release --test runtime
-	cargo test --release --test vanillastark_smoke
 
 spec-sync:
 	cargo test --release --lib statement_spec_contract_is_synced_with_constants

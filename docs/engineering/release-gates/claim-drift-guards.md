@@ -1,6 +1,6 @@
 # Claim-drift guards
 
-The vanilla STARK exposes a small number of public verification entry points:
+The active execution-proof surface exposes a small number of public verification entry points:
 
 - `verify_execution_stark` (default; claim-only)
 - `verify_execution_stark_claim_only` / `_with_policy`
@@ -28,8 +28,7 @@ following invariants in order:
 1. `validate_backend_metadata` — proof backend label matches the requested backend.
 2. `validate_statement_metadata` — `statement_version` and `semantic_scope` match
    the v1 constants exactly; commitment scheme/version + hash function match.
-3. `validate_proof_inputs` — the program is non-empty, attention is `average-hard`,
-   no unsupported instructions are present.
+3. `validate_proof_inputs` — the program is non-empty and matches the shipped S-two proof shape.
 4. `validate_stark_options` — `expansion_factor` is power of two ≥ 4, q satisfies
    `2q ≥ security_level`, security level ≤ 128.
 5. `validate_verification_policy` — `conjectured_security_bits(options)` ≥ caller's
@@ -41,9 +40,8 @@ following invariants in order:
    final state; **and the v1 scope requires equivalence to be present**.
 9. `validate_claim_commitments` — every commitment hash recomputes from the
    claim's own bytes; `prover_build_info` non-empty.
-10. Vanilla-backend construction (`Stark::try_new`) rejects derived-geometry
-    overflow in `4*q`, `trace_length + num_randomizers`, omicron-domain sizing,
-    and FRI-domain sizing before proof bytes are touched.
+10. The S-two backend label and backend-version family are checked before proof bytes
+    are accepted by the verifier.
 
 The two "v1 scope requires" rows are the claim-drift guards. Without them, a
 claim could keep the v1 label while dropping the very payload that the label
@@ -56,8 +54,7 @@ promises to a verifier.
 - `proof::tests::claim_only_verification_rejects_v1_scope_without_equivalence_metadata`
 - `proof::tests::claim_only_verification_does_not_reexecute_equivalence_metadata`
 
-The fuzz target `fuzz/fuzz_targets/vanilla_stark_proof_loader.rs` exercises
-every public verification entry point under arbitrary JSON input so that no
+The verification tests exercise every public verification entry point so that no
 malformed claim can panic the verifier or escape these invariants.
 
 ## Lockstep with the spec file

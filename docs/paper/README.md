@@ -9,7 +9,6 @@ Primary files:
 - `stark-transformer-alignment-2026.md`
 - `appendix-system-comparison.md`
 - `appendix-scaling-companion.md`
-- `appendix-backend-artifact-comparison.md`
 - `appendix-influence-realization.md`
 - `PUBLICATION_RELEASE.md`
 

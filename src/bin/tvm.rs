@@ -414,7 +414,7 @@ enum Command {
             value_parser = parse_attention_mode
         )]
         attention_mode: Attention2DMode,
-        /// Named STARK profile (`production-v1` for local work, `publication-v1` for cited vanilla evidence).
+        /// Named STARK profile (`production-v1` for local work, `publication-v1` for cited artifacts).
         #[arg(long, value_enum, default_value_t = CliStarkProfile::ProductionV1)]
         stark_profile: CliStarkProfile,
         /// STARK blowup factor (must be power of two and >= 4).
@@ -432,15 +432,12 @@ enum Command {
         /// Overrides the selected profile.
         #[arg(long)]
         stark_security_level: Option<usize>,
-        /// Proof backend to use.
-        #[arg(long, value_enum, default_value_t = CliProofBackend::Vanilla)]
-        backend: CliProofBackend,
     },
     /// Verify a previously generated STARK proof.
     VerifyStark {
         /// Path to the serialized proof JSON file.
         proof: PathBuf,
-        /// Verification policy profile (`production-v1` for local work, `publication-v1` for cited vanilla evidence).
+        /// Verification policy profile (`production-v1` for local work, `publication-v1` for cited artifacts).
         #[arg(long, value_enum, default_value_t = CliStarkProfile::ProductionV1)]
         verification_profile: CliStarkProfile,
         /// Re-execute transformer/native runtimes from claim data and check equivalence metadata.
@@ -452,9 +449,6 @@ enum Command {
         /// Apply strict verifier policy (enforces at least 80-bit conjectured security and reexecution).
         #[arg(long)]
         strict: bool,
-        /// Optional backend override. When omitted, verification uses the backend encoded in the proof.
-        #[arg(long, value_enum)]
-        backend: Option<CliProofBackend>,
     },
     /// Produce a serialized S-two normalization lookup demo proof.
     ProveStwoLookupDemo {
@@ -1608,30 +1602,6 @@ enum CliStarkProfile {
     PublicationV1,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
-enum CliProofBackend {
-    Vanilla,
-    Stwo,
-}
-
-impl CliProofBackend {
-    fn backend(self) -> StarkProofBackend {
-        match self {
-            Self::Vanilla => StarkProofBackend::Vanilla,
-            Self::Stwo => StarkProofBackend::Stwo,
-        }
-    }
-}
-
-impl std::fmt::Display for CliProofBackend {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Vanilla => f.write_str("vanilla"),
-            Self::Stwo => f.write_str("stwo"),
-        }
-    }
-}
-
 impl CliStarkProfile {
     fn as_str(self) -> &'static str {
         match self {
@@ -2341,7 +2311,6 @@ fn run() -> llm_provable_computer::Result<()> {
             stark_expansion_factor,
             stark_num_colinearity_checks,
             stark_security_level,
-            backend,
         } => {
             let mut options = stark_profile.proof_options();
             if let Some(value) = stark_expansion_factor {
@@ -2360,7 +2329,6 @@ fn run() -> llm_provable_computer::Result<()> {
                 layers,
                 attention_mode,
                 stark_profile,
-                backend,
                 options,
             )?
         }
@@ -2370,14 +2338,12 @@ fn run() -> llm_provable_computer::Result<()> {
             reexecute,
             min_conjectured_security,
             strict,
-            backend,
         } => verify_stark_command(
             &proof,
             verification_profile,
             reexecute,
             min_conjectured_security,
             strict,
-            backend,
         )?,
         Command::ProveStwoLookupDemo { output } => prove_stwo_lookup_demo_command(&output)?,
         Command::VerifyStwoLookupDemo { proof } => verify_stwo_lookup_demo_command(&proof)?,
@@ -3076,22 +3042,15 @@ fn prove_stark_command(
     layers: usize,
     attention_mode: Attention2DMode,
     stark_profile: CliStarkProfile,
-    backend: CliProofBackend,
     stark_options: VanillaStarkProofOptions,
 ) -> llm_provable_computer::Result<()> {
-    if stark_profile == CliStarkProfile::PublicationV1 && backend != CliProofBackend::Vanilla {
-        return Err(VmError::InvalidConfig(
-            "publication-v1 is reserved for cited vanilla evidence; use --backend vanilla"
-                .to_string(),
-        ));
-    }
     let model = compile_model(program, layers, attention_mode)?;
     let profile_options = stark_profile.proof_options();
     let profile_overridden = stark_options != profile_options;
     let proof = prove_execution_stark_with_backend_and_options(
         &model,
         max_steps,
-        backend.backend(),
+        StarkProofBackend::Stwo,
         stark_options,
     )?;
     let equivalence = proof.claim.equivalence.as_ref().ok_or_else(|| {
@@ -3191,20 +3150,8 @@ fn verify_stark_command(
     reexecute: bool,
     min_conjectured_security: u32,
     strict: bool,
-    backend: Option<CliProofBackend>,
 ) -> llm_provable_computer::Result<()> {
     let proof = load_execution_stark_proof(proof_path)?;
-    let selected_backend = backend.unwrap_or(match proof.proof_backend {
-        StarkProofBackend::Vanilla => CliProofBackend::Vanilla,
-        StarkProofBackend::Stwo => CliProofBackend::Stwo,
-    });
-    if verification_profile == CliStarkProfile::PublicationV1
-        && selected_backend != CliProofBackend::Vanilla
-    {
-        return Err(VmError::InvalidConfig(
-            "publication-v1 verification is reserved for vanilla proofs".to_string(),
-        ));
-    }
     let policy = StarkVerificationPolicy {
         min_conjectured_security_bits: {
             let mut floor =
@@ -3220,19 +3167,10 @@ fn verify_stark_command(
         },
     };
     let effective_reexecute = reexecute || strict || verification_profile.enforces_reexecution();
-    let backend = backend
-        .map(CliProofBackend::backend)
-        .unwrap_or(proof.proof_backend);
     let verified = if effective_reexecute {
-        if backend != proof.proof_backend {
-            return Err(VmError::InvalidConfig(format!(
-                "proof backend override `{backend}` does not match encoded proof backend `{}`",
-                proof.proof_backend
-            )));
-        }
         verify_execution_stark_with_reexecution_and_policy(&proof, policy)?
     } else {
-        verify_execution_stark_with_backend_and_policy(&proof, backend, policy)?
+        verify_execution_stark_with_backend_and_policy(&proof, proof.proof_backend, policy)?
     };
     if !verified {
         return Err(VmError::InvalidConfig(format!(

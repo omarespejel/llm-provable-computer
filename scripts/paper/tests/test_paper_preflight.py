@@ -66,20 +66,25 @@ def valid_prod_index() -> str:
 
 
 def valid_transformer_index() -> str:
+    artifact_bytes = valid_transformer_artifact_json().encode("utf-8")
     return """# Appendix Artifact Index (S-two Transformer-Shaped V1)
 
 ## Artifact Summary
 | Field | Value |
 |---|---|
 | Artifact file | `transformer_shaped.stwo.bundle.json` |
-| Artifact size (bytes) | `9348044` |
+| Artifact size (bytes) | `{artifact_size}` |
 
 ## Timing Summary (seconds)
 | Label | Seconds |
 |---|---:|
 | prepare_transformer_shaped_bundle | 28 |
 | verify_transformer_shaped_bundle | 9 |
-"""
+""".format(artifact_size=len(artifact_bytes))
+
+
+def valid_transformer_artifact_json() -> str:
+    return '{"artifact":"transformer-shaped-bundle","version":1}\n'
 
 
 def valid_shared_normalization_primitive_json() -> str:
@@ -109,23 +114,19 @@ def valid_shared_normalization_primitive_index() -> str:
 def write_valid_backend_fixture(
     repo: pathlib.Path,
     *,
-    appendix_text: str | None = None,
-    prod_text: str | None = None,
     transformer_text: str | None = None,
+    transformer_artifact_text: str | None = None,
     primitive_index_text: str | None = None,
     primitive_artifact_text: str | None = None,
 ) -> None:
     write_text(
-        repo / "docs/paper/appendix-backend-artifact-comparison.md",
-        appendix_text or valid_appendix_table(),
-    )
-    write_text(
-        repo / "docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md",
-        prod_text or valid_prod_index(),
-    )
-    write_text(
         repo / "docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md",
         transformer_text or valid_transformer_index(),
+    )
+    write_text(
+        repo
+        / "docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/transformer_shaped.stwo.bundle.json",
+        transformer_artifact_text or valid_transformer_artifact_json(),
     )
     write_text(
         repo
@@ -162,11 +163,12 @@ class PaperPreflightTests(unittest.TestCase):
             MOD.check_backend_appendix_consistency(repo, findings)
             self.assertTrue(findings.errors)
             expected_missing = (
-                repo / "docs/paper/appendix-backend-artifact-comparison.md"
+                repo
+                / "docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md"
             )
             self.assertEqual(
                 findings.errors[0],
-                f"{expected_missing}: missing required file for backend artifact consistency check.",
+                f"{expected_missing}: missing required file for active bundle consistency check.",
             )
 
     def test_check_backend_consistency_reports_read_failures_without_exception(self):
@@ -177,7 +179,7 @@ class PaperPreflightTests(unittest.TestCase):
             with mock.patch.object(pathlib.Path, "read_text", side_effect=OSError("boom")):
                 MOD.check_backend_appendix_consistency(repo, findings)
             self.assertTrue(findings.errors)
-            self.assertIn("failed to read backend artifact consistency inputs", findings.errors[0])
+            self.assertIn("failed to read active bundle consistency inputs", findings.errors[0])
             self.assertIn("boom", findings.errors[0])
 
     def test_check_backend_consistency_reports_decode_failures_without_exception(self):
@@ -193,7 +195,7 @@ class PaperPreflightTests(unittest.TestCase):
             findings = MOD.Findings()
             MOD.check_backend_appendix_consistency(repo, findings)
             self.assertTrue(findings.errors)
-            self.assertIn("failed to read backend artifact consistency inputs", findings.errors[0])
+            self.assertIn("failed to read active bundle consistency inputs", findings.errors[0])
 
     def test_check_backend_consistency_passes_for_valid_fixture_files(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -202,43 +204,6 @@ class PaperPreflightTests(unittest.TestCase):
             findings = MOD.Findings()
             MOD.check_backend_appendix_consistency(repo, findings)
             self.assertEqual(findings.errors, [])
-
-    def test_check_backend_consistency_reports_table_value_mismatch(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            repo = pathlib.Path(tmp)
-            tampered_appendix = valid_appendix_table().replace(
-                "| `addition` | vanilla | `production-v1` | `71s` | `2s` | `7,644,769` bytes | x |\n",
-                "| `addition` | vanilla | `production-v1` | `72s` | `2s` | `7,644,769` bytes | x |\n",
-            )
-            write_valid_backend_fixture(repo, appendix_text=tampered_appendix)
-            findings = MOD.Findings()
-            MOD.check_backend_appendix_consistency(repo, findings)
-            self.assertTrue(
-                any("Table C1 mismatch for ('addition', 'vanilla')" in msg for msg in findings.errors),
-                findings.errors,
-            )
-
-    def test_check_backend_consistency_reports_unexpected_table_row(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            repo = pathlib.Path(tmp)
-            tampered_appendix = valid_appendix_table().replace(
-                "\n## Table C2. Frozen transformer-shaped `stwo` bundle\n",
-                (
-                    "| `unexpected_artifact` | vanilla | `production-v1` | `1s` | `1s` | `1,111` bytes | x |\n"
-                    "\n## Table C2. Frozen transformer-shaped `stwo` bundle\n"
-                ),
-            )
-            write_valid_backend_fixture(repo, appendix_text=tampered_appendix)
-            findings = MOD.Findings()
-            MOD.check_backend_appendix_consistency(repo, findings)
-            self.assertTrue(
-                any(
-                    "unexpected Table C1 row for artifact/backend ('unexpected_artifact', 'vanilla')"
-                    in msg
-                    for msg in findings.errors
-                ),
-                findings.errors,
-            )
 
     def test_check_backend_consistency_reports_missing_timing_keys_without_exception(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -266,7 +231,8 @@ class PaperPreflightTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp)
             broken_stwo = valid_transformer_index().replace(
-                "| Artifact size (bytes) | `9348044` |\n", ""
+                f"| Artifact size (bytes) | `{len(valid_transformer_artifact_json().encode('utf-8'))}` |\n",
+                "",
             )
             write_valid_backend_fixture(repo, transformer_text=broken_stwo)
             findings = MOD.Findings()
@@ -281,7 +247,7 @@ class PaperPreflightTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp)
             broken_stwo = valid_transformer_index().replace(
-                "| Artifact size (bytes) | `9348044` |\n",
+                f"| Artifact size (bytes) | `{len(valid_transformer_artifact_json().encode('utf-8'))}` |\n",
                 "| Artifact size (bytes) | `N/A` |\n",
             )
             write_valid_backend_fixture(repo, transformer_text=broken_stwo)
@@ -310,6 +276,21 @@ class PaperPreflightTests(unittest.TestCase):
             self.assertTrue(findings.errors)
             self.assertTrue(
                 any("transformer-shaped index artifact file mismatch" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_check_backend_consistency_reports_transformer_artifact_size_mismatch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_valid_backend_fixture(
+                repo,
+                transformer_artifact_text='{"artifact":"too-small"}\n',
+            )
+            findings = MOD.Findings()
+            MOD.check_backend_appendix_consistency(repo, findings)
+            self.assertTrue(findings.errors)
+            self.assertTrue(
+                any("transformer-shaped artifact size mismatch" in msg for msg in findings.errors),
                 findings.errors,
             )
 
@@ -351,7 +332,10 @@ class PaperPreflightTests(unittest.TestCase):
     def test_parse_index_field_values_exposes_canonical_artifact_keys(self):
         fields = MOD.parse_index_field_values(valid_transformer_index())
         self.assertEqual(fields["artifact_file"], "transformer_shaped.stwo.bundle.json")
-        self.assertEqual(fields["artifact_size_bytes"], "9348044")
+        self.assertEqual(
+            fields["artifact_size_bytes"],
+            str(len(valid_transformer_artifact_json().encode("utf-8"))),
+        )
         primitive_fields = MOD.parse_index_field_values(valid_shared_normalization_primitive_index())
         self.assertEqual(
             primitive_fields["artifact_file"], "shared-normalization-primitive.stwo.json"

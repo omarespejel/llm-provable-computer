@@ -6,7 +6,7 @@ Checks:
 2) immutable-link policy for this repository's GitHub links (commit-pinned only),
 3) figure/link cross-reference existence for local file links,
 4) source-note presence in appendix-system-comparison,
-5) backend appendix timing/size consistency against frozen artifact indices,
+5) active S-two bundle timing/size consistency against frozen artifact indices,
 6) unresolved publication snapshot placeholder detection,
 7) paper-2 claim evidence matrix completeness.
 """
@@ -32,7 +32,6 @@ PAPER_FILES = [
     "docs/paper/stark-transformer-alignment-2026.md",
     "docs/paper/appendix-system-comparison.md",
     "docs/paper/appendix-scaling-companion.md",
-    "docs/paper/appendix-backend-artifact-comparison.md",
     "docs/paper/appendix-influence-realization.md",
     *PUBLICATION_METADATA_FILES,
 ]
@@ -1366,12 +1365,79 @@ def _validate_shared_normalization_primitive_index(
     return True
 
 
-def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findings) -> None:
-    appendix_path = repo_root / "docs/paper/appendix-backend-artifact-comparison.md"
-    prod_index_path = (
-        repo_root
-        / "docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md"
+def _validate_transformer_bundle_index(
+    transformer_index_path: pathlib.Path,
+    transformer_timings: dict[str, int],
+    transformer_fields: dict[str, str],
+    findings: Findings,
+) -> bool:
+    required_transformer_timing_keys = [
+        "prepare_transformer_shaped_bundle",
+        "verify_transformer_shaped_bundle",
+    ]
+    required_transformer_field_keys = [
+        "artifact_file",
+        "artifact_size_bytes",
+    ]
+
+    missing_transformer_timing = sorted(
+        k for k in required_transformer_timing_keys if k not in transformer_timings
     )
+    missing_transformer_fields = sorted(
+        k for k in required_transformer_field_keys if k not in transformer_fields
+    )
+    if missing_transformer_timing:
+        findings.error(
+            f"{transformer_index_path}: transformer-shaped index is missing timing keys "
+            f"required for publication consistency checks: {missing_transformer_timing}"
+        )
+    if missing_transformer_fields:
+        findings.error(
+            f"{transformer_index_path}: transformer-shaped index is missing artifact-summary "
+            f"fields required for publication consistency checks: {missing_transformer_fields}"
+        )
+    if missing_transformer_timing or missing_transformer_fields:
+        return False
+
+    artifact_file = transformer_fields.get("artifact_file")
+    if artifact_file != "transformer_shaped.stwo.bundle.json":
+        findings.error(
+            f"{transformer_index_path}: transformer-shaped index artifact file mismatch: "
+            f"found {artifact_file!r}, expected 'transformer_shaped.stwo.bundle.json'."
+        )
+        return False
+
+    artifact_size_digits = re.sub(
+        r"[^0-9]", "", transformer_fields.get("artifact_size_bytes", "")
+    )
+    if not artifact_size_digits:
+        findings.error(
+            f"{transformer_index_path}: malformed transformer-shaped artifact-summary field "
+            "'Artifact size (bytes)'; expected at least one digit."
+        )
+        return False
+
+    artifact_path = transformer_index_path.parent / artifact_file
+    if not artifact_path.exists():
+        findings.error(
+            f"{artifact_path}: missing cited transformer-shaped artifact referenced by "
+            f"{transformer_index_path}."
+        )
+        return False
+
+    expected_size = int(artifact_size_digits)
+    actual_size = artifact_path.stat().st_size
+    if actual_size != expected_size:
+        findings.error(
+            f"{transformer_index_path}: transformer-shaped artifact size mismatch: "
+            f"index={expected_size}, actual={actual_size} at {artifact_path}."
+        )
+        return False
+
+    return True
+
+
+def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findings) -> None:
     transformer_index_path = (
         repo_root
         / "docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md"
@@ -1381,64 +1447,32 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
         / "docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md"
     )
 
-    for required_path in (
-        appendix_path,
-        prod_index_path,
-        transformer_index_path,
-        primitive_index_path,
-    ):
+    for required_path in (transformer_index_path, primitive_index_path):
         if not required_path.exists():
             findings.error(
-                f"{required_path}: missing required file for backend artifact consistency check."
+                f"{required_path}: missing required file for active bundle consistency check."
             )
             return
 
     try:
-        appendix_text = appendix_path.read_text(encoding="utf-8")
-        prod_text = prod_index_path.read_text(encoding="utf-8")
         transformer_text = transformer_index_path.read_text(encoding="utf-8")
         primitive_text = primitive_index_path.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as exc:
         findings.error(
-            "failed to read backend artifact consistency inputs "
-            f"({appendix_path}, {prod_index_path}, {transformer_index_path}, {primitive_index_path}): {exc}"
+            "failed to read active bundle consistency inputs "
+            f"({transformer_index_path}, {primitive_index_path}): {exc}"
         )
         return
 
-    appendix_rows = parse_appendix_backend_rows(appendix_text)
-    if not appendix_rows:
-        findings.error(
-            f"{appendix_path}: failed to parse Table C1 rows for backend artifact consistency checks."
-        )
-        return
-    transformer_rows = parse_appendix_transformer_bundle_rows(appendix_text)
-    if not transformer_rows:
-        findings.error(
-            f"{appendix_path}: failed to parse Table C2 rows for transformer-shaped artifact consistency checks."
-        )
-        return
-
-    prod_sizes = parse_index_sizes(prod_text)
-    prod_timings = parse_index_timings(prod_text)
     transformer_timings = parse_index_timings(transformer_text)
     transformer_fields = parse_index_field_values(transformer_text)
     primitive_timings = parse_index_timings(primitive_text)
     primitive_fields = parse_index_field_values(primitive_text)
 
-    table_c1_ok = _validate_table_c1_consistency(
-        appendix_rows,
-        prod_timings,
-        prod_sizes,
-        prod_index_path,
-        appendix_path,
-        findings,
-    )
-    table_c2_ok = _validate_table_c2_consistency(
-        transformer_rows,
+    transformer_ok = _validate_transformer_bundle_index(
+        transformer_index_path,
         transformer_timings,
         transformer_fields,
-        transformer_index_path,
-        appendix_path,
         findings,
     )
     primitive_ok = _validate_shared_normalization_primitive_index(
@@ -1447,7 +1481,7 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
         primitive_fields,
         findings,
     )
-    if not (table_c1_ok and table_c2_ok and primitive_ok):
+    if not (transformer_ok and primitive_ok):
         return
 
 

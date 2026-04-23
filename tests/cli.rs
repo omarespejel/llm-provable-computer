@@ -908,7 +908,6 @@ fn cli_stark_help_describes_profile_flags() {
         .assert()
         .success()
         .stdout(predicate::str::contains("--stark-profile"))
-        .stdout(predicate::str::contains("--backend"))
         .stdout(predicate::str::contains("production-v1"))
         .stdout(predicate::str::contains("publication-v1"));
 
@@ -919,14 +918,13 @@ fn cli_stark_help_describes_profile_flags() {
         .assert()
         .success()
         .stdout(predicate::str::contains("--verification-profile"))
-        .stdout(predicate::str::contains("--backend"))
         .stdout(predicate::str::contains("production-v1"))
         .stdout(predicate::str::contains("publication-v1"));
 }
 
 #[test]
 #[cfg(feature = "stwo-backend")]
-fn cli_rejects_publication_v1_with_stwo_backend() {
+fn cli_accepts_publication_v1_on_active_backend() {
     let proof_path =
         unique_temp_dir("cli-stark-proof-publication-profile-stwo").with_extension("json");
 
@@ -934,26 +932,20 @@ fn cli_rejects_publication_v1_with_stwo_backend() {
     prove
         .arg("prove-stark")
         .arg("programs/addition.tvm")
-        .arg("--backend")
-        .arg("stwo")
         .arg("--stark-profile")
         .arg("publication-v1")
         .arg("-o")
         .arg(&proof_path)
         .assert()
-        .failure()
-        .stderr(predicate::str::contains(
-            "publication-v1 is reserved for cited vanilla evidence",
-        ));
-    assert!(
-        !proof_path.exists(),
-        "prove-stark should not emit an artifact on rejected publication-v1/stwo policy"
-    );
+        .success()
+        .stdout(predicate::str::contains("stark_profile: publication-v1"))
+        .stdout(predicate::str::contains("proof_backend: stwo"));
+    let _ = std::fs::remove_file(proof_path);
 }
 
 #[test]
 #[cfg(feature = "stwo-backend")]
-fn cli_verify_stark_rejects_publication_v1_with_stwo_backend() {
+fn cli_verify_stark_accepts_publication_v1_on_active_backend() {
     let proof_path =
         unique_temp_dir("cli-stark-proof-publication-profile-stwo-verify").with_extension("json");
 
@@ -961,8 +953,8 @@ fn cli_verify_stark_rejects_publication_v1_with_stwo_backend() {
     prove
         .arg("prove-stark")
         .arg("programs/addition.tvm")
-        .arg("--backend")
-        .arg("stwo")
+        .arg("--stark-profile")
+        .arg("publication-v1")
         .arg("-o")
         .arg(&proof_path)
         .assert()
@@ -975,9 +967,9 @@ fn cli_verify_stark_rejects_publication_v1_with_stwo_backend() {
         .arg("--verification-profile")
         .arg("publication-v1")
         .assert()
-        .failure()
-        .stderr(predicate::str::contains(
-            "publication-v1 verification is reserved for vanilla proofs",
+        .success()
+        .stdout(predicate::str::contains(
+            "verification_profile: publication-v1",
         ));
 
     let _ = std::fs::remove_file(proof_path);
@@ -1104,9 +1096,9 @@ fn cli_can_prove_and_verify_stark_execution() {
         .arg(&proof_path)
         .assert()
         .success()
-        .stdout(predicate::str::contains("proof_backend: vanilla"))
+        .stdout(predicate::str::contains("proof_backend: stwo"))
         .stdout(predicate::str::contains(
-            "proof_backend_version: vanilla-v1",
+            "proof_backend_version: stwo-phase10-linear-block-v4-with-lookup",
         ))
         .stdout(predicate::str::contains("statement_version: statement-v1"))
         .stdout(predicate::str::contains(
@@ -1127,9 +1119,9 @@ fn cli_can_prove_and_verify_stark_execution() {
         .arg("--reexecute")
         .assert()
         .success()
-        .stdout(predicate::str::contains("proof_backend: vanilla"))
+        .stdout(predicate::str::contains("proof_backend: stwo"))
         .stdout(predicate::str::contains(
-            "proof_backend_version: vanilla-v1",
+            "proof_backend_version: stwo-phase10-linear-block-v4-with-lookup",
         ))
         .stdout(predicate::str::contains("statement_version: statement-v1"))
         .stdout(predicate::str::contains("commitment_program_hash:"))
@@ -1153,8 +1145,6 @@ fn cli_prove_stark_requires_stwo_feature_flag() {
         .arg("programs/addition.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .assert()
         .failure()
         .stderr(predicate::str::contains(
@@ -1192,8 +1182,6 @@ fn cli_can_prove_and_verify_stwo_phase5_shipped_arithmetic_fixtures() {
             .arg(program)
             .arg("-o")
             .arg(&proof_path)
-            .arg("--backend")
-            .arg("stwo")
             .arg("--max-steps")
             .arg("256")
             .assert()
@@ -1318,8 +1306,6 @@ fn cli_verify_stark_rejects_tampered_gemma_block_normalization_companion() {
         .arg("programs/linear_block_v1.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -1363,8 +1349,6 @@ fn cli_verify_stark_rejects_tampered_linear_block_v2_embedded_normalization() {
         .arg("programs/linear_block_v2.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -1421,8 +1405,6 @@ fn cli_verify_stark_rejects_tampered_linear_block_v3_embedded_activation() {
         .arg("programs/linear_block_v3.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -1480,8 +1462,6 @@ fn cli_verify_stark_rejects_tampered_linear_block_v4_with_lookup_shared_normaliz
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -1540,8 +1520,6 @@ fn cli_verify_stark_rejects_tampered_linear_block_v4_with_lookup_shared_activati
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -1605,8 +1583,6 @@ fn cli_verify_stark_rejects_mismatched_stwo_backend_version_for_program_family()
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -1648,8 +1624,6 @@ fn cli_prove_stark_rejects_program_outside_stwo_phase2_subset() {
         .arg("programs/subroutine_addition.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .assert()
         .failure()
         .stderr(predicate::str::contains(
@@ -1671,8 +1645,6 @@ fn cli_prove_stark_rejects_phase5_programs_outside_shipped_fixtures() {
         .arg(&program_path)
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .assert()
         .failure()
         .stderr(predicate::str::contains(
@@ -2004,8 +1976,6 @@ fn cli_can_prepare_and_verify_stwo_gemma_block_core_slice_artifact() {
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -2075,8 +2045,6 @@ fn cli_verify_stwo_gemma_block_core_slice_artifact_rejects_tampered_normalizatio
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -2140,8 +2108,6 @@ fn cli_can_prepare_and_verify_stwo_gemma_block_richer_slice_artifact() {
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -2210,8 +2176,6 @@ fn cli_verify_stwo_gemma_block_richer_slice_artifact_rejects_tampered_residual()
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -2273,8 +2237,6 @@ fn cli_can_prepare_and_verify_stwo_repeated_gemma_slice_accumulation_artifact() 
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -2335,8 +2297,6 @@ fn cli_verify_stwo_repeated_gemma_slice_accumulation_artifact_rejects_tampered_m
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -2389,8 +2349,6 @@ fn cli_prepare_stwo_repeated_gemma_slice_accumulation_artifact_rejects_oversized
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -2427,8 +2385,6 @@ fn cli_can_prepare_and_verify_stwo_folded_gemma_slice_accumulation_artifact() {
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -2498,8 +2454,6 @@ fn cli_verify_stwo_folded_gemma_slice_accumulation_artifact_rejects_tampered_acc
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -2568,8 +2522,6 @@ fn cli_can_prepare_and_verify_stwo_folded_gemma_richer_slice_family_artifact() {
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -2655,8 +2607,6 @@ fn cli_verify_stwo_folded_gemma_richer_slice_family_artifact_rejects_tampered_fa
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -2735,8 +2685,6 @@ fn cli_can_prepare_and_verify_stwo_multi_interval_gemma_richer_family_accumulati
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -2801,8 +2749,6 @@ fn cli_verify_stwo_multi_interval_gemma_richer_family_accumulation_artifact_reje
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -2861,8 +2807,6 @@ fn cli_can_prepare_and_verify_stwo_folded_multi_interval_gemma_accumulation_prot
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -2935,8 +2879,6 @@ fn cli_verify_stwo_folded_multi_interval_gemma_accumulation_prototype_artifact_r
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -3005,8 +2947,6 @@ fn cli_can_prepare_and_verify_stwo_folded_multi_interval_gemma_richer_family_art
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -3094,8 +3034,6 @@ fn cli_verify_stwo_folded_multi_interval_gemma_richer_family_artifact_rejects_se
         .arg("programs/linear_block_v4_with_lookup.tvm")
         .arg("-o")
         .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -8552,8 +8490,6 @@ fn cli_can_prepare_stwo_recursion_batch_manifest() {
         .arg("programs/addition.tvm")
         .arg("-o")
         .arg(&proof_a)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -8565,8 +8501,6 @@ fn cli_can_prepare_stwo_recursion_batch_manifest() {
         .arg("programs/counter.tvm")
         .arg("-o")
         .arg(&proof_b)
-        .arg("--backend")
-        .arg("stwo")
         .arg("--max-steps")
         .arg("256")
         .assert()
@@ -8596,34 +8530,6 @@ fn cli_can_prepare_stwo_recursion_batch_manifest() {
     let _ = std::fs::remove_file(proof_a);
     let _ = std::fs::remove_file(proof_b);
     let _ = std::fs::remove_file(manifest_path);
-}
-
-#[test]
-fn cli_verify_stark_rejects_backend_override_mismatch() {
-    let proof_path = unique_temp_dir("cli-stark-proof-backend-mismatch").with_extension("json");
-
-    let mut prove = tvm_command();
-    prove
-        .arg("prove-stark")
-        .arg("programs/addition.tvm")
-        .arg("-o")
-        .arg(&proof_path)
-        .assert()
-        .success();
-
-    let mut verify = tvm_command();
-    verify
-        .arg("verify-stark")
-        .arg(&proof_path)
-        .arg("--backend")
-        .arg("stwo")
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains(
-            "proof backend override `stwo` does not match encoded proof backend `vanilla`",
-        ));
-
-    let _ = std::fs::remove_file(proof_path);
 }
 
 #[test]

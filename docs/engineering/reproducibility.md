@@ -12,8 +12,7 @@ For the publication-facing paper package, start with:
 
 ## Tooling notes
 
-- The default vanilla STARK path builds on stable Rust.
-- The experimental `stwo` path is different: compiling or running anything with
+- The active proving path is `stwo`: compiling or running anything with
   `--features stwo-backend` currently requires the pinned nightly toolchain
   `cargo +nightly-2025-07-14`, because the upstream `stwo` stack is still
   nightly-only.
@@ -56,7 +55,7 @@ STARK_PROFILE=publication-v1 INCLUDE_FIBONACCI_PROOF=1 ./scripts/generate_repro_
 ```
 
 - `STARK_PROFILE`: `default` (fast), `production-v1` (local stronger profile), or
-  `publication-v1` (paper-facing stronger vanilla profile)
+  `publication-v1` (paper-facing stronger proof profile)
 - `PROOF_MAX_STEPS`: max steps for `prove-stark` runs (default `256`)
 - `INCLUDE_FIBONACCI_PROOF`: `1` to include a fibonacci proof in the bundle
 
@@ -94,7 +93,7 @@ bundle-looking directory unless that override is set. Its outputs are:
 ## Intended Use
 
 - Use the generated manifests, benchmarks, and hashes as engineering evidence inputs.
-  The older vanilla reproducibility bundle is retained as a legacy local baseline, while
+  The older reproducibility bundle is retained as a legacy local baseline, while
   the current paper-facing artifact story is centered on the frozen `stwo` and
   verifier-bound tensor-native bundles under `docs/paper/artifacts/`.
 - Link generated `research-v2` / `research-v3` artifacts as evidence for semantic-equivalence

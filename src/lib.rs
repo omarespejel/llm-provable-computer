@@ -21,8 +21,6 @@ pub mod runtime;
 pub mod state;
 pub mod stwo_backend;
 pub mod tui;
-#[doc(hidden)]
-pub mod vanillastark;
 pub mod verification;
 
 pub use assembly::parse_program;

@@ -57,8 +57,8 @@ fmt:
 clippy:
     cargo clippy --lib --no-deps -- -D warnings
 
-# Library tests (release; release is much faster on the FRI/STARK paths).
-# Use this for the inner loop when changing src/proof.rs or src/vanillastark/.
+# Library tests (release; release is much faster on the proving paths).
+# Use this for the inner loop when changing src/proof.rs or src/stwo_backend/.
 lib:
     cargo test --release --lib
 
@@ -66,17 +66,13 @@ lib:
 proof-tests:
     cargo test --release --lib -- --test-threads=4 proof::tests
 
-vanillastark-tests:
-    cargo test --release --lib -- --test-threads=4 vanillastark::
-
-# CI-equivalent integration tests (assembly / e2e / interpreter / runtime /
-# vanillastark_smoke). Each test binary boots in <1s release-cached.
+# CI-equivalent integration tests (assembly / e2e / interpreter / runtime).
+# Each test binary boots in <1s release-cached.
 integration:
     cargo test --release --test assembly
     cargo test --release --test e2e
     cargo test --release --test interpreter
     cargo test --release --test runtime
-    cargo test --release --test vanillastark_smoke
 
 # Statement-spec / claim-commitment sync test.
 spec-sync:

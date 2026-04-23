@@ -54,14 +54,12 @@ This paper makes three claims:
    boundaries that survive statement-preserving chain, segment, interval, rollup,
    matrix, and pre-recursive aggregation layers.
 3. **Infrastructure claim.** The S-two / Starknet stack makes this direction
-   increasingly practical, while the reference repository exposes a stronger
-   tensor-native `stwo` artifact line and retains the vanilla backend mainly as a local
-   baseline and verifier-policy reference surface.
+   increasingly practical, while the reference repository now exposes a narrower
+   S-two-only artifact line centered on tensor-native and repeated-reuse surfaces.
 
 Here a frozen tier means an immutable artifact snapshot with command logs, content
-hashes, and proof artifacts. The older `production-v1` tier is retained as a vanilla
-local baseline, while the main paper-facing narrative now runs through the `stwo`
-artifact ladder and verifier-bound tensor-native bundles; Section 5.4 gives the
+hashes, and proof artifacts. The main paper-facing narrative now runs through the
+`stwo` artifact ladder and verifier-bound tensor-native bundles; Section 5.4 gives the
 detailed artifact boundary.
 
 The supporting artifact is the paper's systems hinge: it is where the symbolic pressure
@@ -508,8 +506,8 @@ current repository surfaces.
 The artifact provides:
 
 - a deterministic transformer-shaped VM with a statement-versioned proof claim,
-- two frozen evidence tiers: a vanilla reproducibility tier and a narrow experimental
-  `stwo` tier,
+- frozen `stwo` evidence tiers spanning transformer-shaped bundles, tensor-native
+  primitive bundles, and proof-carrying verifier surfaces,
 - a parameterized proof-carrying decode relation,
 - statement-preserving pre-recursive packaging objects over that same decode relation,
 - a bounded multi-runtime semantic-agreement artifact together with hardened verifier
@@ -681,9 +679,8 @@ compression pipeline.
 ### 5.3 Negative evidence
 
 The repository remains deliberately narrow in four ways. First, the tensor-native `stwo`
-path is still a bounded artifact tier rather than a broad production zkML surface, and
-the older vanilla tier remains only a local reproducibility baseline. Second, the main
-proved transformer relation still uses `average-hard`
+path is still a bounded artifact tier rather than a broad production zkML surface.
+Second, the main proved transformer relation still uses `average-hard`
 rather than full standard softmax. Third, the current repository already binds shared
 lookup-table identity inside public artifacts and across those Phase 62 proof-carrying
 step envelopes, and Figures 4 and 4B show that this can flatten proof growth across
@@ -703,21 +700,15 @@ rather than treating those kernels as an incidental detail [10].
 
 ### 5.4 Reproducibility tiers
 
-The older vanilla `production-v1` tier is retained as a local reproducibility baseline.
-It is documented in an immutable artifact snapshot with command logs, hashes, and proof
-artifacts [31]. Timings and sizes are treated as reproducibility evidence, not
-performance evidence, and newer cited vanilla evidence should use the stronger
-`publication-v1` verifier floor.
-
-The current S-two evidence tier is no longer the older April 6 experimental bundle. The
-paper-facing path now cites the later transformer-shaped and tensor-native bundles: a
-shared-normalization primitive with verifier-enforced table identity [40], a
-transformer-shaped translated-composition bundle with concrete prepare/verify/artifact
-metrics [49], and the surrounding proof-carrying aggregation bundles. This keeps the
-publication surface aligned with the repository's current naming and scope discipline:
-current rows use the `linear_block`/transformer-shaped framing rather than the earlier
-Gemma-inspired placeholder terminology. Appendix C compares the retained vanilla
-baseline against the current transformer-shaped S-two bundle.
+The publication-facing reproducibility surface now runs through the later
+transformer-shaped and tensor-native `stwo` bundles: a shared-normalization primitive
+with verifier-enforced table identity [40], a transformer-shaped
+translated-composition bundle with concrete prepare/verify/artifact metrics [49], and
+the surrounding proof-carrying aggregation bundles. This keeps the publication surface
+aligned with the repository's current naming and scope discipline: current rows use the
+`linear_block`/transformer-shaped framing rather than the earlier Gemma-inspired
+placeholder terminology. Older April snapshots remain archival provenance [31], not the
+active paper-facing comparison surface.
 
 Finally, a post-freeze April 20 verifier-surface index records the Phase 63-65
 proof-carrying bridge merged at checkpoint `03cc77f371275c8d9ef5f4244a23d3e35c98a41b`.
@@ -797,11 +788,11 @@ around Circle STARKs over M31. The March 31, 2026 recursion update matters becau
 aggregation is required once workloads become large or modular [19].
 
 For this paper, the key distinction is: **S-two progress strengthens the roadmap, while
-the repository still keeps the vanilla backend as a local baseline and places the main
-paper-facing transformer artifact line on `stwo`.**
+the repository now collapses its public proof surface to the `stwo` artifact line
+discussed in Section 5.**
 
-Verifier cost and proof size remain part of that roadmap. The frozen vanilla tier still
-produces multi-megabyte proofs for tiny fixtures, so aggregation/compression remains
+Verifier cost and proof size remain part of that roadmap. Earlier local proof objects
+were still multi-megabyte on tiny fixtures, so aggregation/compression remains
 necessary for practical onchain use [19, 34].
 
 The supporting artifact nevertheless exposes meaningful S-two evidence through a narrow
@@ -1072,7 +1063,7 @@ ______________________________________________________________________
     <https://github.com/omarespejel/provable-transformer-vm/tree/03cc77f371275c8d9ef5f4244a23d3e35c98a41b>
 31. `omarespejel/provable-transformer-vm`. “Appendix Artifact Index (Production V1).”
     GitHub artifact snapshot, commit `8d435d540b8e3cf33ec4381bb820a00b6fe7aae6`, with
-    command logs, hashes, and proof artifacts for the vanilla reproducibility tier.
+    command logs, hashes, and proof artifacts for the archived `production-v1` reproducibility snapshot.
     <https://github.com/omarespejel/provable-transformer-vm/blob/8d435d540b8e3cf33ec4381bb820a00b6fe7aae6/docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md>
 32. Starknet Docs. “Accounts.” *Starknet Documentation*. Accessed April 5, 2026.
     <https://docs.starknet.io/architecture/accounts>
