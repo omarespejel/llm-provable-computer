@@ -312,14 +312,11 @@ and the checked-in TSV is the canonical source for this branch; that TSV was gen
 2026-04-23 on an arm64 macOS 26.4.1 development host, and those millisecond values will
 drift with host hardware and implementation changes even when the semantic relation stays
 the same. On these tiny fixed-shape slices, the lookup-backed paths are currently somewhat
-larger and somewhat slower than the naive arithmetic alternatives: RMSNorm
-records `2,684` proof bytes / `13 ms` prove / `1 ms` verify for the lookup side versus
-`1,428` bytes / `3 ms` / `1 ms` for selector arithmetic; the softmax-exp slice records
-`2,684` bytes / `7 ms` / `1 ms` versus `1,240` bytes / `3 ms` / `0 ms` for degree-2
-polynomial interpolation. Here, "proof bytes" means the estimated raw STARK proof size,
-not the enclosing JSON wrapper. That does not overturn the symbolic model; it identifies
-where a small matched empirical anchor and a long-context symbolic stress model are
-describing different regimes.
+larger and somewhat slower than the naive arithmetic alternatives for both measured
+primitive pairs, as recorded in the canonical TSV and Figure 3. Here, "proof bytes" means
+the estimated raw STARK proof size, not the enclosing JSON wrapper. That does not
+overturn the symbolic model; it identifies where a small matched empirical anchor and a
+long-context symbolic stress model are describing different regimes.
 
 ### 4.5 Inference layer versus settlement layer
 

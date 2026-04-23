@@ -17,8 +17,8 @@
         ]
       ],
       "proof_bytes": 2684,
-      "prove_ms": 13,
-      "verify_ms": 1,
+      "prove_ms": 14,
+      "verify_ms": 2,
       "verified": true,
       "note": "actual S-two LogUp proof over the canonical Phase 5 normalization table"
     },
@@ -37,7 +37,7 @@
         ]
       ],
       "proof_bytes": 1428,
-      "prove_ms": 3,
+      "prove_ms": 4,
       "verify_ms": 1,
       "verified": true,
       "note": "actual S-two arithmetic proof; no LogUp relation, no lookup table argument"
@@ -61,8 +61,8 @@
         ]
       ],
       "proof_bytes": 2684,
-      "prove_ms": 7,
-      "verify_ms": 1,
+      "prove_ms": 8,
+      "verify_ms": 2,
       "verified": true,
       "note": "actual S-two LogUp proof for the exp-table part of softmax, not full softmax"
     },
@@ -86,7 +86,7 @@
       ],
       "proof_bytes": 1240,
       "prove_ms": 3,
-      "verify_ms": 0,
+      "verify_ms": 1,
       "verified": true,
       "note": "actual S-two arithmetic proof for a sampled exp-table slice, not full softmax"
     }
