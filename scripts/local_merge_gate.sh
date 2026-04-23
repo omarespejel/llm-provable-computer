@@ -850,6 +850,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "full" ]]; then
   run_logged cargo-fmt-check cargo fmt --check
   run_conditional_quick_audits
   run_logged cargo-lib-tests env RUST_TEST_THREADS=1 cargo +nightly-2025-07-14 test -q --features stwo-backend --lib
+  run_logged cargo-build-tvm-stable cargo build -q --bin tvm
   run_logged cargo-build-tvm cargo +nightly-2025-07-14 build -q --features stwo-backend --bin tvm
   tvm_test_binary="$(resolve_tvm_test_binary_path)"
   run_logged cargo-lib-and-integration-tests env RUST_TEST_THREADS=1 TVM_TEST_BINARY="$tvm_test_binary" cargo +nightly-2025-07-14 test -q --features stwo-backend --lib --tests
@@ -883,6 +884,7 @@ elif (( RUN_LOCAL )) && [[ "$RUN_MODE" == "hardening" ]]; then
   run_logged cargo-fmt-check cargo fmt --check
   run_conditional_quick_audits
   run_logged cargo-lib-tests env RUST_TEST_THREADS=1 cargo +nightly-2025-07-14 test -q --features stwo-backend --lib
+  run_logged cargo-build-tvm-stable cargo build -q --bin tvm
   run_logged cargo-build-tvm cargo +nightly-2025-07-14 build -q --features stwo-backend --bin tvm
   tvm_test_binary="$(resolve_tvm_test_binary_path)"
   run_logged cargo-lib-and-integration-tests env RUST_TEST_THREADS=1 TVM_TEST_BINARY="$tvm_test_binary" cargo +nightly-2025-07-14 test -q --features stwo-backend --lib --tests
