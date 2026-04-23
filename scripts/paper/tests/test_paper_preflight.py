@@ -29,16 +29,17 @@ def write_text(path: pathlib.Path, text: str) -> None:
 def valid_appendix_table() -> str:
     return """# Appendix: Frozen Backend Artifact Comparison
 
-## Table C1. Frozen artifact comparison by backend and scope
+## Table C1. Frozen vanilla baseline by scope
 | Artifact | Backend | Bundle | Prove | Verify | Proof size | Semantic scope |
 |---|---|---|---:|---:|---:|---|
 | `addition` | vanilla | `production-v1` | `71s` | `2s` | `7,644,769` bytes | x |
-| `addition` | `stwo` | `stwo-experimental-v1` | `2s` | `1s` | `54,563` bytes | x |
 | `dot_product` | vanilla | `production-v1` | `430s` | `5s` | `12,835,175` bytes | x |
 | `single_neuron` | vanilla | `production-v1` | `390s` | `4s` | `11,767,989` bytes | x |
-| `shared-normalization-demo` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `74,074` bytes | x |
-| `linear_block_v4_with_lookup` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `751,737` bytes | x |
-| `decoding_demo` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `4,032,182` bytes | x |
+
+## Table C2. Frozen transformer-shaped `stwo` bundle
+| Bundle | Backend | Prepare | Verify | Artifact size | Structural metrics | Semantic scope |
+|---|---|---:|---:|---:|---|---|
+| `stwo-transformer-shaped-v1` | `stwo` | `28s` | `9s` | `9,348,044` bytes | x | x |
 """
 
 
@@ -64,28 +65,20 @@ def valid_prod_index() -> str:
 """
 
 
-def valid_stwo_index() -> str:
-    return """# Appendix Artifact Index (S-two Experimental V1)
+def valid_transformer_index() -> str:
+    return """# Appendix Artifact Index (S-two Transformer-Shaped V1)
 
-## Primary Artifacts
-| Artifact | Purpose | Semantic scope | Size (bytes) | SHA-256 |
-|---|---|---|---:|---|
-| addition.stwo.proof.json | x | arithmetic | 54563 | a |
-| shared-normalization.stwo.proof.json | x | lookup-backed component | 74074 | b |
-| linear_block_v4_with_lookup.stwo.proof.json | x | transformer-shaped checksum fixture | 751737 | c |
-| decoding.stwo.chain.json | x | proof-carrying decoding | 4032182 | d |
+## Artifact Summary
+| Field | Value |
+|---|---|
+| Artifact file | `transformer_shaped.stwo.bundle.json` |
+| Artifact size (bytes) | `9348044` |
 
 ## Timing Summary (seconds)
 | Label | Seconds |
 |---|---:|
-| prove_addition_stwo | 2 |
-| verify_addition_stwo | 1 |
-| prove_shared_normalization_stwo | 1 |
-| verify_shared_normalization_stwo | 1 |
-| prove_linear_block_v4_with_lookup_stwo | 1 |
-| verify_linear_block_v4_with_lookup_stwo | 1 |
-| prove_decoding_demo_stwo | 1 |
-| verify_decoding_demo_stwo | 1 |
+| prepare_transformer_shaped_bundle | 28 |
+| verify_transformer_shaped_bundle | 9 |
 """
 
 
@@ -97,7 +90,7 @@ class PaperPreflightTests(unittest.TestCase):
             ("Size (bytes)", "ARTIFACT", "BACKEND"),
         ]
         for size_header, artifact_header, backend_header in variants:
-            text = f"""## Table C1. Frozen artifact comparison by backend and scope
+            text = f"""## Table C1. Frozen vanilla baseline by scope
 | {backend_header} | {artifact_header} | Verify | Prove | Semantic Scope | {size_header} | Bundle |
 |---|---|---:|---:|---|---:|---|
 | vanilla | `addition` | `2s` | `71s` | x | `7,644,769` bytes | production-v1 |
@@ -131,8 +124,8 @@ class PaperPreflightTests(unittest.TestCase):
                 valid_prod_index(),
             )
             write_text(
-                repo / "docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md",
-                valid_stwo_index(),
+                repo / "docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md",
+                valid_transformer_index(),
             )
             findings = MOD.Findings()
             with mock.patch.object(pathlib.Path, "read_text", side_effect=OSError("boom")):
@@ -153,8 +146,8 @@ class PaperPreflightTests(unittest.TestCase):
                 valid_prod_index(),
             )
             write_text(
-                repo / "docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md",
-                valid_stwo_index(),
+                repo / "docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md",
+                valid_transformer_index(),
             )
             findings = MOD.Findings()
             MOD.check_backend_appendix_consistency(repo, findings)
@@ -164,8 +157,8 @@ class PaperPreflightTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp)
             tampered_appendix = valid_appendix_table().replace(
-                "| `addition` | `stwo` | `stwo-experimental-v1` | `2s` | `1s` | `54,563` bytes | x |\n",
-                "| `addition` | `stwo` | `stwo-experimental-v1` | `52s` | `2s` | `54,563` bytes | x |\n",
+                "| `addition` | vanilla | `production-v1` | `71s` | `2s` | `7,644,769` bytes | x |\n",
+                "| `addition` | vanilla | `production-v1` | `72s` | `2s` | `7,644,769` bytes | x |\n",
             )
             write_text(
                 repo / "docs/paper/appendix-backend-artifact-comparison.md",
@@ -176,21 +169,25 @@ class PaperPreflightTests(unittest.TestCase):
                 valid_prod_index(),
             )
             write_text(
-                repo / "docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md",
-                valid_stwo_index(),
+                repo / "docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md",
+                valid_transformer_index(),
             )
             findings = MOD.Findings()
             MOD.check_backend_appendix_consistency(repo, findings)
             self.assertTrue(
-                any("Table C1 mismatch for ('addition', 'stwo')" in msg for msg in findings.errors),
+                any("Table C1 mismatch for ('addition', 'vanilla')" in msg for msg in findings.errors),
                 findings.errors,
             )
 
     def test_check_backend_consistency_reports_unexpected_table_row(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp)
-            tampered_appendix = valid_appendix_table() + (
-                "| `unexpected_artifact` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `1,111` bytes | x |\n"
+            tampered_appendix = valid_appendix_table().replace(
+                "\n## Table C2. Frozen transformer-shaped `stwo` bundle\n",
+                (
+                    "| `unexpected_artifact` | vanilla | `production-v1` | `1s` | `1s` | `1,111` bytes | x |\n"
+                    "\n## Table C2. Frozen transformer-shaped `stwo` bundle\n"
+                ),
             )
             write_text(
                 repo / "docs/paper/appendix-backend-artifact-comparison.md",
@@ -201,14 +198,14 @@ class PaperPreflightTests(unittest.TestCase):
                 valid_prod_index(),
             )
             write_text(
-                repo / "docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md",
-                valid_stwo_index(),
+                repo / "docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md",
+                valid_transformer_index(),
             )
             findings = MOD.Findings()
             MOD.check_backend_appendix_consistency(repo, findings)
             self.assertTrue(
                 any(
-                    "unexpected Table C1 row for artifact/backend ('unexpected_artifact', 'stwo')"
+                    "unexpected Table C1 row for artifact/backend ('unexpected_artifact', 'vanilla')"
                     in msg
                     for msg in findings.errors
                 ),
@@ -226,9 +223,11 @@ class PaperPreflightTests(unittest.TestCase):
                 repo / "docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md",
                 valid_prod_index(),
             )
-            broken_stwo = valid_stwo_index().replace("| verify_decoding_demo_stwo | 1 |\n", "")
+            broken_stwo = valid_transformer_index().replace(
+                "| verify_transformer_shaped_bundle | 9 |\n", ""
+            )
             write_text(
-                repo / "docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md",
+                repo / "docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md",
                 broken_stwo,
             )
             findings = MOD.Findings()
@@ -250,19 +249,18 @@ class PaperPreflightTests(unittest.TestCase):
                 repo / "docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md",
                 valid_prod_index(),
             )
-            broken_stwo = valid_stwo_index().replace(
-                "| addition.stwo.proof.json | x | arithmetic | 54563 | a |\n",
-                "",
+            broken_stwo = valid_transformer_index().replace(
+                "| Artifact size (bytes) | `9348044` |\n", ""
             )
             write_text(
-                repo / "docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md",
+                repo / "docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md",
                 broken_stwo,
             )
             findings = MOD.Findings()
             MOD.check_backend_appendix_consistency(repo, findings)
             self.assertTrue(findings.errors)
             self.assertTrue(
-                any("missing artifact-size keys" in msg for msg in findings.errors),
+                any("missing artifact-summary fields" in msg for msg in findings.errors),
                 findings.errors,
             )
 

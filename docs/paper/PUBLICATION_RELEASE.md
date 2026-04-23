@@ -45,10 +45,10 @@ one monolithic benchmark claim.
   - `docs/paper/appendix-backend-artifact-comparison.md`
   - `docs/paper/appendix-influence-realization.md`
 - Frozen artifact bundles:
-  - `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/`
   - `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/`
   - `docs/paper/artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/`
   - `docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/`
+  - `docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/`
 - Figure sources:
   - `docs/paper/figures/section4-ratio-vs-context.tsv`
   - `docs/paper/figures/section4-decomposition-vs-context.tsv`
@@ -64,8 +64,8 @@ one monolithic benchmark claim.
 - The older `production-v1` vanilla bundle is retained as a legacy local reproducibility
   baseline, not the main paper-facing artifact narrative.
 - New cited vanilla evidence should use the stronger `publication-v1` verifier floor.
-- `stwo-experimental-v1` is the frozen narrow evidence tier for the experimental S-two
-  path.
+- `stwo-transformer-shaped-v1` and `stwo-shared-normalization-primitive-v1` are the
+  current narrow evidence tiers for the experimental S-two path.
 - Post-freeze commit-pinned evidence now includes the merged pre-recursive carried-state
   aggregation bundle, including proof-carrying outer aggregation over chained artifacts.
 - The April 20 Phase63-65 verifier-surface index pins the current paper's stronger
@@ -87,8 +87,10 @@ one monolithic benchmark claim.
 - Vanilla bundle:
   - `./scripts/generate_repro_bundle.sh`
   - optional stronger profile: `STARK_PROFILE=publication-v1 ./scripts/generate_repro_bundle.sh`
-- Experimental `stwo` bundle:
-  - `./scripts/paper/generate_stwo_publication_bundle.sh`
+- Transformer-shaped `stwo` bundle:
+  - `./scripts/paper/generate_stwo_transformer_shaped_bundle.sh`
+- Tensor-native shared-normalization primitive bundle:
+  - `./scripts/paper/generate_stwo_shared_normalization_primitive_bundle.sh`
 - Proof-carrying aggregation bundle:
   - `./scripts/paper/generate_stwo_proof_carrying_aggregation_bundle.sh`
 - Phase63-65 verifier-surface checkpoint:

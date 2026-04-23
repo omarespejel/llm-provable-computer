@@ -16,7 +16,7 @@ Supporting inputs reused from the main paper package:
 
 - `../figures/section5-carried-state-ladder.svg`
 - `../artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/`
-- `../artifacts/stwo-experimental-v1-2026-04-06/`
+- `../artifacts/stwo-transformer-shaped-v1-2026-04-21/`
 - `../../engineering/hardening-policy.md`
 - `../../engineering/hardening-strategy.md`
 

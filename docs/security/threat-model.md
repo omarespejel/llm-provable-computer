@@ -120,6 +120,29 @@ The adversary cannot break the underlying hash functions, finite-field arithmeti
 backend soundness assumptions outright, except with the residual error budget admitted by
 those systems.
 
+## Soundness Statement
+
+For artifacts classified as `Cryptographic proof`, an accepting verifier means the
+serialized proof, public inputs, backend identifier, backend version, statement version,
+and semantic scope satisfy the implemented backend relation, except with the residual
+soundness error of the selected backend and security profile.
+
+For vanilla artifacts generated under `publication-v1`, the repository treats the target
+floor as `96` conjectured security bits for publication packaging. That is a
+repository-level profile target, not an independent theorem about the teaching backend.
+
+For `stwo` artifacts, this repository relies on the upstream S-two/STWO backend
+assumptions for the cryptographic proof layer, then adds repository-local checks around
+statement metadata, shared-table identity, carried-state continuity, and source-bound
+artifact packaging. Those repository-local checks are deterministic consistency checks;
+they do not reduce to a separate asymptotic proof-system theorem.
+
+For artifacts classified as `Verifier-bound artifact`, acceptance means the verifier
+recomputed the stated commitments and structural relations from the supplied fields. It
+does **not** imply recursive cryptographic compression, zero-knowledge hiding, or full
+model-inference soundness unless the artifact explicitly contains and verifies a proof
+object for that stronger claim.
+
 ## In-Scope Adversaries
 
 - `malformed artifact producer`: emits structurally invalid manifests, payloads, or nested proof envelopes.

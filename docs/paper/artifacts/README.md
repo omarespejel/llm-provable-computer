@@ -9,7 +9,6 @@ Read these bundles through the public artifact taxonomy in
 
 The active paper-facing bundles are:
 
-- `stwo-experimental-v1-2026-04-06/`
 - `stwo-proof-carrying-aggregation-v1-2026-04-11/`
 - `phase63-65-proof-carrying-artifact-v1-2026-04-20/`
 - `phase66-69-proof-carrying-hardening-v1-2026-04-21/`
