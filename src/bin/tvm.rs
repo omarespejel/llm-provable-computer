@@ -99,6 +99,7 @@ use llm_provable_computer::{
     prepare_phase98_folded_gemma_richer_slice_family_artifact,
     prepare_phase99_multi_interval_gemma_richer_family_accumulation_artifact,
     prepare_stwo_transformer_shaped_artifact_bundle,
+    run_stwo_primitive_lookup_vs_naive_benchmark,
     prove_phase10_shared_binary_step_lookup_envelope,
     prove_phase10_shared_normalization_lookup_envelope, prove_phase11_decoding_demo,
     prove_phase12_decoding_demo, prove_phase13_decoding_layout_matrix_demo,
@@ -140,6 +141,7 @@ use llm_provable_computer::{
     save_phase965_folded_gemma_slice_accumulation_artifact,
     save_phase98_folded_gemma_richer_slice_family_artifact,
     save_phase99_multi_interval_gemma_richer_family_accumulation_artifact,
+    save_stwo_primitive_benchmark_report_json, save_stwo_primitive_benchmark_report_tsv,
     save_stwo_transformer_shaped_artifact_bundle, stwo_backend_enabled,
     verify_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact,
     verify_phase102_folded_multi_interval_gemma_richer_family_artifact,
@@ -501,6 +503,15 @@ enum Command {
     VerifyStwoSharedNormalizationPrimitiveArtifact {
         /// Path to the serialized artifact JSON file.
         artifact: PathBuf,
+    },
+    /// Run matched S-two lookup-vs-naive primitive benchmarks and write TSV/JSON outputs.
+    BenchStwoPrimitiveLookupVsNaive {
+        /// File where the benchmark TSV will be written.
+        #[arg(long = "output-tsv")]
+        output_tsv: PathBuf,
+        /// Optional file where the benchmark JSON will be written.
+        #[arg(long = "output-json")]
+        output_json: Option<PathBuf>,
     },
     /// Prepare a transformer-shaped tensor-native chain artifact over fixed primitive templates.
     PrepareStwoTensorNativeChainArtifact {
@@ -2362,6 +2373,10 @@ fn run() -> llm_provable_computer::Result<()> {
         Command::VerifyStwoSharedNormalizationPrimitiveArtifact { artifact } => {
             verify_stwo_shared_normalization_primitive_artifact_command(&artifact)?
         }
+        Command::BenchStwoPrimitiveLookupVsNaive {
+            output_tsv,
+            output_json,
+        } => bench_stwo_primitive_lookup_vs_naive_command(&output_tsv, output_json.as_deref())?,
         Command::PrepareStwoTensorNativeChainArtifact { output } => {
             prepare_stwo_tensor_native_chain_artifact_command(&output)?
         }
@@ -3656,6 +3671,55 @@ fn verify_stwo_shared_normalization_primitive_artifact_command(
             "expected_semantic_scope: {STWO_SHARED_NORMALIZATION_PRIMITIVE_ARTIFACT_SCOPE_PHASE92}"
         );
         print_phase92_shared_normalization_primitive_report(&artifact);
+        Ok(())
+    }
+}
+
+fn bench_stwo_primitive_lookup_vs_naive_command(
+    output_tsv: &Path,
+    output_json: Option<&Path>,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output_tsv;
+        let _ = output_json;
+        return Err(VmError::UnsupportedProof(
+            "S-two primitive lookup-vs-naive benchmark requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two primitive lookup-vs-naive benchmark")?;
+        if let Some(parent) = output_tsv.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        if let Some(path) = output_json {
+            if let Some(parent) = path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+        }
+        let report = run_stwo_primitive_lookup_vs_naive_benchmark()?;
+        save_stwo_primitive_benchmark_report_tsv(&report, output_tsv)?;
+        if let Some(path) = output_json {
+            save_stwo_primitive_benchmark_report_json(&report, path)?;
+            println!("output_json: {}", path.display());
+        }
+        println!("output_tsv: {}", output_tsv.display());
+        println!("benchmark_version: {}", report.benchmark_version);
+        println!("semantic_scope: {}", report.semantic_scope);
+        for row in &report.rows {
+            println!(
+                "primitive_benchmark: {} {} proof_bytes={} prove_ms={} verify_ms={} verified={}",
+                row.primitive,
+                row.backend_variant,
+                row.proof_bytes,
+                row.prove_ms,
+                row.verify_ms,
+                row.verified
+            );
+        }
         Ok(())
     }
 }
@@ -16074,6 +16138,7 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-shared-normalization-demo"
                 | "prepare-stwo-shared-normalization-primitive-artifact"
                 | "verify-stwo-shared-normalization-primitive-artifact"
+                | "bench-stwo-primitive-lookup-vs-naive"
                 | "prepare-stwo-tensor-native-chain-artifact"
                 | "verify-stwo-tensor-native-chain-artifact"
                 | "prepare-stwo-linear-block-core-slice-artifact"

@@ -302,6 +302,20 @@ These caveats do not remove the structural result; they bound its interpretation
 this paper, symbolic counts are used to locate architectural pressure points, not to
 predict wall-clock performance for any one deployed prover stack.
 
+The repository now also contains a first matched within-S-two primitive benchmark at
+`docs/paper/evidence/stwo-primitive-lookup-vs-naive-2026-04.tsv`. It measures four real
+proof paths over the current codebase: RMSNorm `lookup_logup` versus
+`naive_selector_arithmetic`, and `softmax_exp_q8` `lookup_logup` versus
+`polynomial_interpolation`. The point of this measurement is calibration, not a
+dominance claim. On these tiny fixed-shape slices, the lookup-backed paths are currently
+somewhat larger and somewhat slower than the naive arithmetic alternatives: RMSNorm
+records `9,136` proof bytes / `16 ms` prove / `3 ms` verify for the lookup side versus
+`6,671` bytes / `9 ms` / `1 ms` for selector arithmetic; the softmax-exp slice records
+`9,188` bytes / `8 ms` / `2 ms` versus `4,783` bytes / `7 ms` / `1 ms` for degree-2
+polynomial interpolation. That does not overturn the symbolic model; it identifies where
+a small matched empirical anchor and a long-context symbolic stress model are describing
+different regimes.
+
 ### 4.5 Inference layer versus settlement layer
 
 The right 2026 architecture is not necessarily "prove every transformer operation as
@@ -403,6 +417,20 @@ below shows which parts of that structure already survive a real proof workflow 
 reproducible carried-state proof objects, and which parts still remain pre-recursive
 engineering boundaries rather than cryptographic compression layers.
 
+Figure 3 visualizes that measured anchor directly from the checked TSV.
+
+![Figure 3. Matched S-two primitive measurements for lookup and naive arithmetic baselines.](figures/stwo-primitive-lookup-vs-naive-2026-04.svg)
+
+**Figure 3.** Matched S-two primitive measurements from
+`docs/paper/evidence/stwo-primitive-lookup-vs-naive-2026-04.tsv`. All four rows are
+real proof-generation and verification runs on this repository, not symbolic estimates.
+The RMSNorm pair compares the existing shared-normalization LogUp proof against a one-hot
+selector-arithmetic proof over the same fixed table rows. The softmax pair is narrower:
+it measures the exp-table slice of softmax rather than full standard-softmax inference.
+These results are intentionally used as a calibration anchor for the paper’s symbolic
+model, not as a claim that the current implementation already demonstrates lookup-backed
+wall-clock dominance.
+
 ______________________________________________________________________
 
 ## 5. Repository Artifact: Evidence Boundary
@@ -441,6 +469,17 @@ underlying public boundary semantics. In concrete terms, the repository already 
 reusable block-shaped execution proofs and, on its experimental `stwo` tooling surface,
 step-level proof artifacts whose public boundary schema and statement semantics remain
 stable across those richer artifact layers.
+
+That experimental `stwo` surface now also has one measured primitive-benchmark artifact
+family rather than only narrative intent. The benchmark files
+`docs/paper/evidence/stwo-primitive-lookup-vs-naive-2026-04.tsv`,
+`docs/paper/evidence/stwo-primitive-lookup-vs-naive-2026-04.json`, and Figure 3 are
+generated from the checked CLI path `bench-stwo-primitive-lookup-vs-naive`. This matters
+because it gives the paper one reproducible bridge between the symbolic model in Section
+4 and a concrete local measurement surface inside S-two itself. It is still narrow: the
+measured softmax row is an exp-table slice, not a full attention kernel, and the
+benchmark does not compare against external SNARK systems. But it is no longer a
+hypothetical next step.
 
 For shared lookup evidence, the artifact binds normalization and activation table
 identity into a static lookup-table registry commitment inside the shared lookup
@@ -512,11 +551,11 @@ nested members and rejects non-contiguous or template-incompatible boundaries. I
 over the ordered members gives the same start-to-end relation for the packaged object.
 This is a statement-preservation invariant, not a recursive proof-compression theorem.
 
-Figure 3 summarizes the object flow and the two carried commitment lanes.
+Figure 4 summarizes the object flow and the two carried commitment lanes.
 
-![Figure 3. Carried-state packaging ladder over the parameterized decode relation.](figures/section5-carried-state-ladder.svg)
+![Figure 4. Carried-state packaging ladder over the parameterized decode relation.](figures/section5-carried-state-ladder.svg)
 
-**Figure 3.** Carried-state packaging ladder over the parameterized decode relation. A
+**Figure 4.** Carried-state packaging ladder over the parameterized decode relation. A
 verified `decoding_step_v2` chain is packaged into segments, interval bundles, rollups,
 a multi-layout matrix, and a pre-recursive aggregation boundary. The two carried lanes
 represent the KV-side cumulative/frontier commitments and the lookup-side
