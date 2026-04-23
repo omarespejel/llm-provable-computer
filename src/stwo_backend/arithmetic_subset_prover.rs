@@ -2602,6 +2602,7 @@ mod tests {
     use crate::{production_v1_stark_options, prove_execution_stark_with_backend_and_options};
     use crate::{ProgramCompiler, TransformerVmConfig};
     use std::panic::{catch_unwind, AssertUnwindSafe};
+    use std::sync::OnceLock;
     use stwo::core::pcs::utils::TreeVec;
     use stwo::prover::backend::Column;
     use stwo_constraint_framework::{assert_constraints_on_polys, assert_constraints_on_trace};
@@ -2634,6 +2635,13 @@ mod tests {
             production_v1_stark_options(),
         )
         .expect("real stwo proof")
+    }
+
+    fn cached_linear_block_v4_with_lookup_stwo() -> VanillaStarkExecutionProof {
+        static PROOF: OnceLock<VanillaStarkExecutionProof> = OnceLock::new();
+        PROOF
+            .get_or_init(prove_linear_block_v4_with_lookup_stwo)
+            .clone()
     }
 
     fn assert_trace_satisfies_constraints_for_program(program: Program) {
@@ -3002,7 +3010,7 @@ mod tests {
 
     #[test]
     fn phase10_verify_phase5_accepts_legacy_shared_normalization_scope_for_linear_block_v4() {
-        let mut proof = prove_linear_block_v4_with_lookup_stwo();
+        let mut proof = cached_linear_block_v4_with_lookup_stwo();
         let mut payload: Phase5ArithmeticSubsetProofPayload =
             serde_json::from_slice(&proof.proof).expect("proof payload");
         payload
@@ -3017,7 +3025,7 @@ mod tests {
 
     #[test]
     fn phase10_verify_phase5_rejects_invalid_shared_normalization_scope_for_linear_block_v4() {
-        let mut proof = prove_linear_block_v4_with_lookup_stwo();
+        let mut proof = cached_linear_block_v4_with_lookup_stwo();
         let mut payload: Phase5ArithmeticSubsetProofPayload =
             serde_json::from_slice(&proof.proof).expect("proof payload");
         payload
@@ -3035,7 +3043,7 @@ mod tests {
 
     #[test]
     fn phase10_verify_phase5_accepts_legacy_shared_activation_scope_for_linear_block_v4() {
-        let mut proof = prove_linear_block_v4_with_lookup_stwo();
+        let mut proof = cached_linear_block_v4_with_lookup_stwo();
         let mut payload: Phase5ArithmeticSubsetProofPayload =
             serde_json::from_slice(&proof.proof).expect("proof payload");
         payload
@@ -3050,7 +3058,7 @@ mod tests {
 
     #[test]
     fn phase10_verify_phase5_rejects_invalid_shared_activation_scope_for_linear_block_v4() {
-        let mut proof = prove_linear_block_v4_with_lookup_stwo();
+        let mut proof = cached_linear_block_v4_with_lookup_stwo();
         let mut payload: Phase5ArithmeticSubsetProofPayload =
             serde_json::from_slice(&proof.proof).expect("proof payload");
         payload

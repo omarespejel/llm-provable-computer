@@ -48,7 +48,7 @@ contract that requires at least `2` leaves.
 
 Introduce one new publication-facing bundle:
 
-- `stwo-richer-linear-block-window-family-scaling-v1-2026-04-22/`
+- `docs/paper/artifacts/stwo-richer-linear-block-window-family-scaling-v1-2026-04-22/`
 
 It should contain:
 
