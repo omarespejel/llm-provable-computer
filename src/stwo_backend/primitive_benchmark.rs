@@ -70,6 +70,20 @@ type SoftmaxExpLookupElements = SoftmaxExpLookupRelation;
 
 const RMSNORM_ROWS: [(u16, u16); 2] = [(4, 128), (16, 64)];
 const RMSNORM_REUSE_ROWS: [(u16, u16); 5] = [(1, 256), (2, 181), (4, 128), (8, 91), (16, 64)];
+const ACTIVATION_REUSE_ROWS: [Phase3LookupTableRow; 3] = [
+    Phase3LookupTableRow {
+        input: -1,
+        output: 0,
+    },
+    Phase3LookupTableRow {
+        input: 0,
+        output: 1,
+    },
+    Phase3LookupTableRow {
+        input: 1,
+        output: 1,
+    },
+];
 const SOFTMAX_EXP_ROWS: [(u16, u16); 3] = [(0, 256), (2, 94), (4, 35)];
 const SOFTMAX_EXP_TABLE: [(u16, u16); 8] = [
     (0, 256),
@@ -709,7 +723,7 @@ pub fn save_stwo_phase12_shared_lookup_bundle_benchmark_report_tsv(
     path: &Path,
 ) -> Result<()> {
     let mut out = String::from(
-        "primitive\tbackend_variant\tsteps\trelation\tnormalization_rows\tactivation_rows\tproof_bytes\tserialized_bytes\tprove_ms\tverify_ms\tverified\tnote\n",
+        "benchmark_version\tsemantic_scope\tprimitive\tbackend_variant\tsteps\trelation\tnormalization_rows\tactivation_rows\tproof_bytes\tserialized_bytes\tprove_ms\tverify_ms\tverified\tnote\n",
     );
     for row in &report.rows {
         let normalization_rows = row
@@ -725,7 +739,9 @@ pub fn save_stwo_phase12_shared_lookup_bundle_benchmark_report_tsv(
             .collect::<Vec<_>>()
             .join(",");
         out.push_str(&format!(
-            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            report.benchmark_version,
+            report.semantic_scope,
             row.primitive,
             row.backend_variant,
             row.steps,
@@ -1394,7 +1410,7 @@ fn softmax_canonical_rows() -> Vec<(u16, u16)> {
 }
 
 fn activation_canonical_rows() -> Vec<Phase3LookupTableRow> {
-    phase3_lookup_table_rows()
+    ACTIVATION_REUSE_ROWS.to_vec()
 }
 
 fn claimed_row_prefix(
@@ -2811,10 +2827,12 @@ mod tests {
     }
 
     #[test]
-    fn shared_table_reuse_benchmark_smoke_paths_verify_without_timings() {
+    fn shared_table_reuse_benchmark_defaults_to_zero_timings_without_capture() {
         let report = run_stwo_shared_table_reuse_benchmark_for_step_counts(&[1], &[1], &[1], false)
             .expect("shared-table reuse smoke benchmark should run");
         assert_eq!(report.rows.len(), 9);
+        // Regression guard: the default report surface must stay deterministic
+        // when timing capture is disabled.
         assert!(report.rows.iter().all(|row| row.verified));
         assert!(report.rows.iter().all(|row| row.proof_bytes > 0));
         assert!(report.rows.iter().all(|row| row.prove_ms == 0));
@@ -2855,11 +2873,28 @@ mod tests {
     }
 
     #[test]
+    fn shared_table_reuse_activation_rows_remain_in_phase3_table() {
+        let live_rows: std::collections::BTreeSet<_> = phase3_lookup_table_rows()
+            .into_iter()
+            .map(|row| (row.input, row.output))
+            .collect();
+        for row in ACTIVATION_REUSE_ROWS {
+            assert!(
+                live_rows.contains(&(row.input, row.output)),
+                "pinned shared-table activation row {:?} must remain in the Phase 3 table",
+                row
+            );
+        }
+    }
+
+    #[test]
     #[ignore = "expensive phase12 shared lookup bundle benchmark"]
-    fn phase12_shared_lookup_bundle_benchmark_runs_all_modes() {
+    fn phase12_shared_lookup_bundle_benchmark_preserves_expected_row_shape() {
         let report = run_stwo_phase12_shared_lookup_bundle_benchmark_with_options(false)
             .expect("phase12 shared lookup bundle benchmark should run");
         assert_eq!(report.rows.len(), 9);
+        // Compatibility guard: this benchmark must continue to emit the full
+        // shared/independent row family across the pinned step counts.
         assert!(report.rows.iter().all(|row| row.verified));
         assert!(report.rows.iter().all(|row| row.proof_bytes > 0));
         assert!(report
@@ -2873,10 +2908,12 @@ mod tests {
     }
 
     #[test]
-    fn phase12_shared_lookup_bundle_benchmark_smoke_paths_verify_without_timings() {
+    fn phase12_shared_lookup_bundle_benchmark_defaults_to_zero_timings_without_capture() {
         let report = run_stwo_phase12_shared_lookup_bundle_benchmark()
             .expect("phase12 shared lookup bundle benchmark should run");
         assert_eq!(report.rows.len(), 9);
+        // Regression guard: the default report surface must stay deterministic
+        // when timing capture is disabled.
         assert!(report.rows.iter().all(|row| row.verified));
         assert!(report.rows.iter().all(|row| row.proof_bytes > 0));
         assert!(report.rows.iter().all(|row| row.prove_ms == 0));

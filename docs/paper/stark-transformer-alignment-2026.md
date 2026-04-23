@@ -558,8 +558,8 @@ It is narrower and cleaner: both nested proofs still verify, and the verifier st
 checks the shared registry commitment rather than merely reusing JSON bytes. The first
 paired row is pure overhead, but the reuse-sensitive crossover is already visible by the
 second and third rows. At three paired rows the shared bundle remains at `4,968` raw
-proof bytes and `14 ms`, versus `14,824` and `41 ms` for independent lookup pairs and
-`10,064` and `35 ms` for independent arithmetic pairs. So the current evidence now says
+proof bytes and `13 ms`, versus `14,824` and `39 ms` for independent lookup pairs and
+`10,064` and `33 ms` for independent arithmetic pairs. So the current evidence now says
 something more precise than “shared tables help”: the win survives when the proof surface
 moves from one table to a verifier-bound two-table bundle closer to the Phase12
 shared-lookup artifact family.
@@ -586,8 +586,10 @@ canonical-table and claimed-row binding required by that surface. The benchmark 
 declared semantic scope and benchmark version are checked at the report layer, not by the
 direct proof verifiers themselves. For the Phase 92 shared-normalization artifact, the
 proof surface additionally checks the static lookup registry commitment and the ordered
-claimed-row list; for the softmax-exp shared proof, it checks the canonical exp-table
-rows and the selected-row witness. This is a concrete
+claimed-row list; for Figure 4B's Phase12-style shared bundle, the second nested proof
+surface is the binary-step activation lookup envelope paired with that Phase 92 artifact,
+and the verifier checks the canonical activation rows, the shared static-table registry
+commitment, and the ordered step-claim list for the combined bundle. This is a concrete
 soundness boundary, not a new asymptotic theorem: the paper relies on upstream S-two
 cryptographic assumptions for proof soundness and on deterministic repository-local
 checks for metadata, table identity, and source-bound artifact structure. It does not
