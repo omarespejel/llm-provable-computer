@@ -3733,12 +3733,35 @@ fn validate_distinct_benchmark_output_paths(
     output_tsv: &Path,
     output_json: Option<&Path>,
 ) -> llm_provable_computer::Result<()> {
-    if matches!(output_json, Some(path) if path == output_tsv) {
-        return Err(VmError::InvalidConfig(
-            "`--output-json` must differ from `--output-tsv`".to_string(),
-        ));
+    if let Some(path) = output_json {
+        let normalized_tsv = normalize_output_path(output_tsv)?;
+        let normalized_json = normalize_output_path(path)?;
+        if normalized_json == normalized_tsv {
+            return Err(VmError::InvalidConfig(
+                "`--output-json` must differ from `--output-tsv`".to_string(),
+            ));
+        }
     }
     Ok(())
+}
+
+fn normalize_output_path(path: &Path) -> llm_provable_computer::Result<PathBuf> {
+    let absolute = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        std::env::current_dir()?.join(path)
+    };
+    let mut normalized = PathBuf::new();
+    for component in absolute.components() {
+        match component {
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                normalized.pop();
+            }
+            _ => normalized.push(component.as_os_str()),
+        }
+    }
+    Ok(normalized)
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -15686,6 +15709,18 @@ mod cli_dispatch_tests {
         let output = Path::new("same-output.tsv");
         let err = validate_distinct_benchmark_output_paths(output, Some(output))
             .expect_err("identical output paths must fail");
+        assert!(err
+            .to_string()
+            .contains("`--output-json` must differ from `--output-tsv`"));
+    }
+
+    #[test]
+    fn primitive_benchmark_rejects_alias_output_paths() {
+        let err = validate_distinct_benchmark_output_paths(
+            Path::new("same-output.tsv"),
+            Some(Path::new("./same-output.tsv")),
+        )
+        .expect_err("aliased output paths must fail");
         assert!(err
             .to_string()
             .contains("`--output-json` must differ from `--output-tsv`"));

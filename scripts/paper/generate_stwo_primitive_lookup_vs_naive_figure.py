@@ -211,11 +211,13 @@ def write_optional_rasters(svg_path: Path, png_path: Path, pdf_path: Path) -> No
             text=True,
         )
     except FileNotFoundError:
+        png_path.unlink(missing_ok=True)
         print(f"skipped {png_path} (rsvg-convert not found)")
         rsvg = None
     if rsvg is not None and rsvg.returncode == 0:
         print(f"wrote {png_path}")
     elif rsvg is not None:
+        png_path.unlink(missing_ok=True)
         print(f"skipped {png_path} (rsvg-convert png failed: {rsvg.stderr.strip()})")
 
     try:
@@ -226,11 +228,13 @@ def write_optional_rasters(svg_path: Path, png_path: Path, pdf_path: Path) -> No
             text=True,
         )
     except FileNotFoundError:
+        pdf_path.unlink(missing_ok=True)
         print(f"skipped {pdf_path} (rsvg-convert not found)")
         rsvg_pdf = None
     if rsvg_pdf is not None and rsvg_pdf.returncode == 0:
         print(f"wrote {pdf_path}")
     elif rsvg_pdf is not None:
+        pdf_path.unlink(missing_ok=True)
         print(f"skipped {pdf_path} (rsvg-convert pdf failed: {rsvg_pdf.stderr.strip()})")
 
 

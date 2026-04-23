@@ -369,13 +369,19 @@ fn prove_rmsnorm_selector_arithmetic(claimed_rows: &[(u16, u16)]) -> Result<Vec<
         component,
         rmsnorm_selector_base_trace(&bundle),
         &bundle.canonical_rows,
+        &bundle.claimed_rows,
     )
 }
 
 fn verify_rmsnorm_selector_arithmetic(claimed_rows: &[(u16, u16)], proof: &[u8]) -> Result<bool> {
     let bundle = build_rmsnorm_bundle(claimed_rows)?;
     let component = rmsnorm_selector_arithmetic_component(bundle.log_size);
-    verify_base_only(component, proof, &bundle.canonical_rows)
+    verify_base_only(
+        component,
+        proof,
+        &bundle.canonical_rows,
+        &bundle.claimed_rows,
+    )
 }
 
 fn prove_softmax_exp_polynomial(claimed_rows: &[(u16, u16)]) -> Result<Vec<u8>> {
@@ -385,13 +391,19 @@ fn prove_softmax_exp_polynomial(claimed_rows: &[(u16, u16)]) -> Result<Vec<u8>> 
         component,
         polynomial_base_trace(&bundle),
         &bundle.canonical_rows,
+        &bundle.claimed_rows,
     )
 }
 
 fn verify_softmax_exp_polynomial(claimed_rows: &[(u16, u16)], proof: &[u8]) -> Result<bool> {
     let bundle = build_softmax_bundle(claimed_rows)?;
     let component = softmax_exp_polynomial_component(bundle.log_size);
-    verify_base_only(component, proof, &bundle.canonical_rows)
+    verify_base_only(
+        component,
+        proof,
+        &bundle.canonical_rows,
+        &bundle.claimed_rows,
+    )
 }
 
 fn prove_softmax_exp_lookup(claimed_rows: &[(u16, u16)]) -> Result<Vec<u8>> {
@@ -491,13 +503,20 @@ fn verify_softmax_exp_lookup(claimed_rows: &[(u16, u16)], proof: &[u8]) -> Resul
     let component =
         softmax_exp_lookup_component(bundle.log_size, lookup_elements, SecureField::zero());
     commitment_scheme.commit(stark_proof.commitments[2], &sizes[2], channel);
-    Ok(verify(&[&component], channel, commitment_scheme, stark_proof).is_ok())
+    verify(&[&component], channel, commitment_scheme, stark_proof)
+        .map(|_| true)
+        .map_err(|error| {
+            VmError::UnsupportedProof(format!(
+                "S-two softmax-exp lookup verification failed: {error}"
+            ))
+        })
 }
 
 fn prove_base_only<E>(
     component: FrameworkComponent<E>,
     base_trace: ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
     canonical_rows: &[(u16, u16)],
+    claimed_rows: &[(u16, u16)],
 ) -> Result<Vec<u8>>
 where
     E: FrameworkEval + Sync,
@@ -521,6 +540,7 @@ where
     let mut tree_builder = commitment_scheme.tree_builder();
     tree_builder.extend_evals(base_trace);
     tree_builder.commit(channel);
+    mix_claimed_rows(channel, claimed_rows);
 
     let stark_proof =
         prove::<SimdBackend, Blake2sM31MerkleChannel>(&[&component], channel, commitment_scheme)
@@ -538,6 +558,7 @@ fn verify_base_only<E>(
     component: FrameworkComponent<E>,
     proof: &[u8],
     canonical_rows: &[(u16, u16)],
+    claimed_rows: &[(u16, u16)],
 ) -> Result<bool>
 where
     E: FrameworkEval + Sync,
@@ -563,7 +584,12 @@ where
     }
     commitment_scheme.commit(stark_proof.commitments[0], &sizes[0], channel);
     commitment_scheme.commit(stark_proof.commitments[1], &sizes[1], channel);
-    Ok(verify(&[&component], channel, commitment_scheme, stark_proof).is_ok())
+    mix_claimed_rows(channel, claimed_rows);
+    verify(&[&component], channel, commitment_scheme, stark_proof)
+        .map(|_| true)
+        .map_err(|error| {
+            VmError::UnsupportedProof(format!("S-two primitive verification failed: {error}"))
+        })
 }
 
 fn build_rmsnorm_bundle(claimed_rows: &[(u16, u16)]) -> Result<Row2Bundle> {
@@ -886,5 +912,26 @@ mod tests {
         assert!(error.to_string().contains(
             "primitive arithmetic proof uses a malformed or tampered commitment payload"
         ));
+    }
+
+    #[test]
+    fn primitive_benchmark_rejects_arithmetic_proof_for_different_claimed_rows() {
+        let proof =
+            prove_rmsnorm_selector_arithmetic(&[(4, 128)]).expect("arithmetic benchmark proof");
+        let error = verify_rmsnorm_selector_arithmetic(&[(16, 64)], &proof)
+            .expect_err("claimed_rows mismatch must fail verification");
+        assert!(error
+            .to_string()
+            .contains("S-two primitive verification failed"));
+    }
+
+    #[test]
+    fn primitive_benchmark_rejects_polynomial_proof_for_different_claimed_rows() {
+        let proof = prove_softmax_exp_polynomial(&[(0, 256), (2, 94)]).expect("polynomial proof");
+        let error = verify_softmax_exp_polynomial(&[(0, 256), (4, 35)], &proof)
+            .expect_err("polynomial claimed_rows mismatch must fail verification");
+        assert!(error
+            .to_string()
+            .contains("S-two primitive verification failed"));
     }
 }
