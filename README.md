@@ -1320,18 +1320,16 @@ is well past the old “dependency seam only” stage.
   `scripts/paper/generate_stwo_transformer_shaped_bundle.sh`
 - Tensor-native shared-normalization primitive regeneration script:
   `scripts/paper/generate_stwo_shared_normalization_primitive_bundle.sh`
-- Transformer-shaped `stwo` bundle regeneration script:
-  `scripts/paper/generate_stwo_transformer_shaped_bundle.sh`
 
 Older carried-state bundle generators remain available for archival provenance and
-engineering comparison, but the current paper package cites the frozen experimental
-`stwo` bundle, the frozen proof-carrying aggregation bundle, the April 20
-Phase63-65 verifier-surface checkpoint, and the April 21 Phase66-69 hardening
-checkpoint, plus the April 21 Phase70-80 proof-checked decode-bridge checkpoint and
-the April 21 transformer-shaped `stwo` bundle. That transformer-shaped `stwo` bundle
-freezes one reproducible source-bound artifact with `28s` prepare, `9s` verify,
-`9,348,044` artifact bytes, `5` source steps, `2` translated segments, and a package
-count reduction from `5` naive per-step packages to `2` composed translated segments.
+engineering comparison, but the current paper package cites the frozen
+transformer-shaped `stwo` bundle, the tensor-native shared-normalization primitive,
+the frozen proof-carrying aggregation bundle, the April 20 Phase63-65 verifier-surface
+checkpoint, the April 21 Phase66-69 hardening checkpoint, and the April 21 Phase70-80
+proof-checked decode-bridge checkpoint. The transformer-shaped `stwo` bundle freezes
+one reproducible source-bound artifact with `28s` prepare, `9s` verify, `9,348,044`
+artifact bytes, `5` source steps, `2` translated segments, and a package count
+reduction from `5` naive per-step packages to `2` composed translated segments.
 Later Phase81-84 translated seam surfaces are implemented in-repo, but they are not
 yet frozen as publication citation bundles.
 

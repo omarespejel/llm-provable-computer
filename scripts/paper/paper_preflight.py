@@ -1111,6 +1111,162 @@ def parse_appendix_transformer_bundle_rows(
     return out
 
 
+def _validate_table_c1_consistency(
+    appendix_rows: dict[tuple[str, str], tuple[int, int, int]],
+    prod_timings: dict[str, int],
+    prod_sizes: dict[str, int],
+    appendix_path: pathlib.Path,
+    findings: Findings,
+) -> bool:
+    required_prod_timing_keys = [
+        "prove_addition",
+        "verify_addition",
+        "prove_dot_product",
+        "verify_dot_product",
+        "prove_single_neuron",
+        "verify_single_neuron",
+    ]
+    required_prod_size_keys = [
+        "addition.proof.json",
+        "dot_product.proof.json",
+        "single_neuron.proof.json",
+    ]
+
+    missing_prod_timing = sorted(k for k in required_prod_timing_keys if k not in prod_timings)
+    missing_prod_sizes = sorted(k for k in required_prod_size_keys if k not in prod_sizes)
+    if missing_prod_timing:
+        findings.error(
+            f"{appendix_path}: production-v1 index is missing timing keys required "
+            f"for Appendix C consistency check: {missing_prod_timing}"
+        )
+    if missing_prod_sizes:
+        findings.error(
+            f"{appendix_path}: production-v1 index is missing artifact-size keys "
+            f"required for Appendix C consistency check: {missing_prod_sizes}"
+        )
+    if missing_prod_timing or missing_prod_sizes:
+        return False
+
+    # NOTE: This mapping is intentionally strict for frozen-artifact validation.
+    # Table C1 artifact/backend labels (after backtick stripping) and frozen index
+    # timing/size keys must match these entries exactly. If naming conventions or
+    # compared artifact rows change, update this mapping explicitly.
+    expected: dict[tuple[str, str], tuple[int, int, int]] = {
+        ("addition", "vanilla"): (
+            prod_timings["prove_addition"],
+            prod_timings["verify_addition"],
+            prod_sizes["addition.proof.json"],
+        ),
+        ("dot_product", "vanilla"): (
+            prod_timings["prove_dot_product"],
+            prod_timings["verify_dot_product"],
+            prod_sizes["dot_product.proof.json"],
+        ),
+        ("single_neuron", "vanilla"): (
+            prod_timings["prove_single_neuron"],
+            prod_timings["verify_single_neuron"],
+            prod_sizes["single_neuron.proof.json"],
+        ),
+    }
+
+    for key, expected_values in expected.items():
+        if key not in appendix_rows:
+            findings.error(
+                f"{appendix_path}: missing Table C1 row for artifact/backend {key!r}."
+            )
+            continue
+        found_values = appendix_rows[key]
+        if found_values != expected_values:
+            findings.error(
+                f"{appendix_path}: Table C1 mismatch for {key!r}: found prove/verify/size={found_values}, "
+                f"expected={expected_values} from frozen artifact indices."
+            )
+
+    unexpected_keys = sorted(set(appendix_rows) - set(expected))
+    for key in unexpected_keys:
+        findings.error(
+            f"{appendix_path}: unexpected Table C1 row for artifact/backend {key!r}; "
+            "no matching frozen artifact index entry."
+        )
+
+    return not findings.errors
+
+
+def _validate_table_c2_consistency(
+    transformer_rows: dict[tuple[str, str], tuple[int, int, int]],
+    transformer_timings: dict[str, int],
+    transformer_fields: dict[str, str],
+    appendix_path: pathlib.Path,
+    findings: Findings,
+) -> bool:
+    required_transformer_timing_keys = [
+        "prepare_transformer_shaped_bundle",
+        "verify_transformer_shaped_bundle",
+    ]
+    required_transformer_field_keys = [
+        "Artifact size (bytes)",
+    ]
+
+    missing_transformer_timing = sorted(
+        k for k in required_transformer_timing_keys if k not in transformer_timings
+    )
+    missing_transformer_fields = sorted(
+        k for k in required_transformer_field_keys if k not in transformer_fields
+    )
+    if missing_transformer_timing:
+        findings.error(
+            f"{appendix_path}: transformer-shaped index is missing timing keys "
+            f"required for Appendix C consistency check: {missing_transformer_timing}"
+        )
+    if missing_transformer_fields:
+        findings.error(
+            f"{appendix_path}: transformer-shaped index is missing artifact-summary "
+            f"fields required for Appendix C consistency check: {missing_transformer_fields}"
+        )
+    if missing_transformer_timing or missing_transformer_fields:
+        return False
+
+    transformer_artifact_size_digits = re.sub(
+        r"[^0-9]", "", transformer_fields.get("Artifact size (bytes)", "")
+    )
+    if not transformer_artifact_size_digits:
+        findings.error(
+            f"{appendix_path}: malformed transformer-shaped artifact-summary field "
+            "'Artifact size (bytes)'; expected at least one digit."
+        )
+        return False
+
+    expected_transformer: dict[tuple[str, str], tuple[int, int, int]] = {
+        ("stwo-transformer-shaped-v1", "stwo"): (
+            transformer_timings["prepare_transformer_shaped_bundle"],
+            transformer_timings["verify_transformer_shaped_bundle"],
+            int(transformer_artifact_size_digits),
+        ),
+    }
+
+    for key, expected_values in expected_transformer.items():
+        if key not in transformer_rows:
+            findings.error(
+                f"{appendix_path}: missing Table C2 row for bundle/backend {key!r}."
+            )
+            continue
+        found_values = transformer_rows[key]
+        if found_values != expected_values:
+            findings.error(
+                f"{appendix_path}: Table C2 mismatch for {key!r}: found prepare/verify/size={found_values}, "
+                f"expected={expected_values} from frozen artifact indices."
+            )
+
+    unexpected_transformer_keys = sorted(set(transformer_rows) - set(expected_transformer))
+    for key in unexpected_transformer_keys:
+        findings.error(
+            f"{appendix_path}: unexpected Table C2 row for bundle/backend {key!r}; "
+            "no matching frozen artifact index entry."
+        )
+
+    return not findings.errors
+
+
 def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findings) -> None:
     appendix_path = repo_root / "docs/paper/appendix-backend-artifact-comparison.md"
     prod_index_path = (
@@ -1158,132 +1314,22 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
     transformer_timings = parse_index_timings(transformer_text)
     transformer_fields = parse_index_field_values(transformer_text)
 
-    required_prod_timing_keys = [
-        "prove_addition",
-        "verify_addition",
-        "prove_dot_product",
-        "verify_dot_product",
-        "prove_single_neuron",
-        "verify_single_neuron",
-    ]
-    required_prod_size_keys = [
-        "addition.proof.json",
-        "dot_product.proof.json",
-        "single_neuron.proof.json",
-    ]
-    required_transformer_timing_keys = [
-        "prepare_transformer_shaped_bundle",
-        "verify_transformer_shaped_bundle",
-    ]
-    required_transformer_field_keys = [
-        "Artifact size (bytes)",
-    ]
-
-    missing_prod_timing = sorted(k for k in required_prod_timing_keys if k not in prod_timings)
-    missing_prod_sizes = sorted(k for k in required_prod_size_keys if k not in prod_sizes)
-    missing_transformer_timing = sorted(
-        k for k in required_transformer_timing_keys if k not in transformer_timings
+    table_c1_ok = _validate_table_c1_consistency(
+        appendix_rows,
+        prod_timings,
+        prod_sizes,
+        appendix_path,
+        findings,
     )
-    missing_transformer_fields = sorted(
-        k for k in required_transformer_field_keys if k not in transformer_fields
+    table_c2_ok = _validate_table_c2_consistency(
+        transformer_rows,
+        transformer_timings,
+        transformer_fields,
+        appendix_path,
+        findings,
     )
-    if missing_prod_timing:
-        findings.error(
-            f"{prod_index_path}: missing timing keys required for Appendix C consistency check: "
-            f"{missing_prod_timing}"
-        )
-    if missing_prod_sizes:
-        findings.error(
-            f"{prod_index_path}: missing artifact-size keys required for Appendix C consistency check: "
-            f"{missing_prod_sizes}"
-        )
-    if missing_transformer_timing:
-        findings.error(
-            f"{transformer_index_path}: missing timing keys required for Appendix C consistency check: "
-            f"{missing_transformer_timing}"
-        )
-    if missing_transformer_fields:
-        findings.error(
-            f"{transformer_index_path}: missing artifact-summary fields required for Appendix C consistency check: "
-            f"{missing_transformer_fields}"
-        )
-    if (
-        missing_prod_timing
-        or missing_prod_sizes
-        or missing_transformer_timing
-        or missing_transformer_fields
-    ):
+    if not (table_c1_ok and table_c2_ok):
         return
-
-    # NOTE: This mapping is intentionally strict for frozen-artifact validation.
-    # Table C1 artifact/backend labels (after backtick stripping) and frozen index
-    # timing/size keys must match these entries exactly. If naming conventions or
-    # compared artifact rows change, update this mapping explicitly.
-    expected: dict[tuple[str, str], tuple[int, int, int]] = {
-        ("addition", "vanilla"): (
-            prod_timings["prove_addition"],
-            prod_timings["verify_addition"],
-            prod_sizes["addition.proof.json"],
-        ),
-        ("dot_product", "vanilla"): (
-            prod_timings["prove_dot_product"],
-            prod_timings["verify_dot_product"],
-            prod_sizes["dot_product.proof.json"],
-        ),
-        ("single_neuron", "vanilla"): (
-            prod_timings["prove_single_neuron"],
-            prod_timings["verify_single_neuron"],
-            prod_sizes["single_neuron.proof.json"],
-        ),
-    }
-
-    for key, expected_values in expected.items():
-        if key not in appendix_rows:
-            findings.error(
-                f"{appendix_path}: missing Table C1 row for artifact/backend {key!r}."
-            )
-            continue
-        found_values = appendix_rows[key]
-        if found_values != expected_values:
-            findings.error(
-                f"{appendix_path}: Table C1 mismatch for {key!r}: found prove/verify/size={found_values}, "
-                f"expected={expected_values} from frozen artifact indices."
-            )
-
-    unexpected_keys = sorted(set(appendix_rows) - set(expected))
-    for key in unexpected_keys:
-        findings.error(
-            f"{appendix_path}: unexpected Table C1 row for artifact/backend {key!r}; "
-            "no matching frozen artifact index entry."
-        )
-
-    expected_transformer: dict[tuple[str, str], tuple[int, int, int]] = {
-        ("stwo-transformer-shaped-v1", "stwo"): (
-            transformer_timings["prepare_transformer_shaped_bundle"],
-            transformer_timings["verify_transformer_shaped_bundle"],
-            int(re.sub(r"[^0-9]", "", transformer_fields["Artifact size (bytes)"])),
-        ),
-    }
-
-    for key, expected_values in expected_transformer.items():
-        if key not in transformer_rows:
-            findings.error(
-                f"{appendix_path}: missing Table C2 row for bundle/backend {key!r}."
-            )
-            continue
-        found_values = transformer_rows[key]
-        if found_values != expected_values:
-            findings.error(
-                f"{appendix_path}: Table C2 mismatch for {key!r}: found prepare/verify/size={found_values}, "
-                f"expected={expected_values} from frozen artifact indices."
-            )
-
-    unexpected_transformer_keys = sorted(set(transformer_rows) - set(expected_transformer))
-    for key in unexpected_transformer_keys:
-        findings.error(
-            f"{appendix_path}: unexpected Table C2 row for bundle/backend {key!r}; "
-            "no matching frozen artifact index entry."
-        )
 
 
 def main() -> int:
