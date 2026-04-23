@@ -322,7 +322,9 @@ def render_svg(rows: list[dict[str, str]]) -> str:
 '''
 
 
-def write_optional_rasters(svg_path: Path, png_path: Path, pdf_path: Path) -> None:
+def write_optional_rasters(
+    svg_path: Path, png_path: Path, pdf_path: Path, *, fail_closed: bool
+) -> None:
     png_path.parent.mkdir(parents=True, exist_ok=True)
     pdf_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -336,7 +338,8 @@ def write_optional_rasters(svg_path: Path, png_path: Path, pdf_path: Path) -> No
         )
     except FileNotFoundError:
         tmp_png.unlink(missing_ok=True)
-        png_path.unlink(missing_ok=True)
+        if fail_closed:
+            png_path.unlink(missing_ok=True)
         print(f"skipped {png_path} (rsvg-convert not found)")
         rsvg = None
     if rsvg is not None and rsvg.returncode == 0:
@@ -344,7 +347,8 @@ def write_optional_rasters(svg_path: Path, png_path: Path, pdf_path: Path) -> No
         print(f"wrote {png_path}")
     elif rsvg is not None:
         tmp_png.unlink(missing_ok=True)
-        png_path.unlink(missing_ok=True)
+        if fail_closed:
+            png_path.unlink(missing_ok=True)
         print(f"skipped {png_path} (rsvg-convert png failed: {rsvg.stderr.strip()})")
 
     tmp_pdf = pdf_path.with_suffix(pdf_path.suffix + ".tmp")
@@ -357,7 +361,8 @@ def write_optional_rasters(svg_path: Path, png_path: Path, pdf_path: Path) -> No
         )
     except FileNotFoundError:
         tmp_pdf.unlink(missing_ok=True)
-        pdf_path.unlink(missing_ok=True)
+        if fail_closed:
+            pdf_path.unlink(missing_ok=True)
         print(f"skipped {pdf_path} (rsvg-convert not found)")
         rsvg_pdf = None
     if rsvg_pdf is not None and rsvg_pdf.returncode == 0:
@@ -365,7 +370,8 @@ def write_optional_rasters(svg_path: Path, png_path: Path, pdf_path: Path) -> No
         print(f"wrote {pdf_path}")
     elif rsvg_pdf is not None:
         tmp_pdf.unlink(missing_ok=True)
-        pdf_path.unlink(missing_ok=True)
+        if fail_closed:
+            pdf_path.unlink(missing_ok=True)
         print(f"skipped {pdf_path} (rsvg-convert pdf failed: {rsvg_pdf.stderr.strip()})")
 
 
@@ -379,6 +385,11 @@ def main() -> None:
     )
     parser.add_argument("--output-png", type=Path, default=None)
     parser.add_argument("--output-pdf", type=Path, default=None)
+    parser.add_argument(
+        "--fail-closed-rasters",
+        action="store_true",
+        help="delete target PNG/PDF outputs if raster generation fails",
+    )
     args = parser.parse_args()
 
     rows = read_rows(args.input_tsv)
@@ -393,7 +404,12 @@ def main() -> None:
     print(f"wrote {svg_path}")
     png_path = args.output_png or svg_path.with_suffix(".png")
     pdf_path = args.output_pdf or svg_path.with_suffix(".pdf")
-    write_optional_rasters(svg_path, png_path, pdf_path)
+    write_optional_rasters(
+        svg_path,
+        png_path,
+        pdf_path,
+        fail_closed=args.fail_closed_rasters,
+    )
 
 
 if __name__ == "__main__":
