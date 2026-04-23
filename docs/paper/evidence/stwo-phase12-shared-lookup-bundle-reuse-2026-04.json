@@ -25,8 +25,8 @@
       ],
       "proof_bytes": 5016,
       "serialized_bytes": 55592,
-      "prove_ms": 32.235,
-      "verify_ms": 6.444,
+      "prove_ms": 28.065,
+      "verify_ms": 7.164,
       "verified": true,
       "note": "one verifier-bound bundle combines a shared normalization artifact, a shared activation lookup proof, and one static table registry commitment"
     },
@@ -49,8 +49,8 @@
       ],
       "proof_bytes": 5016,
       "serialized_bytes": 53124,
-      "prove_ms": 18.509,
-      "verify_ms": 3.598,
+      "prove_ms": 19.762,
+      "verify_ms": 4.315,
       "verified": true,
       "note": "each step proves its normalization row and activation row independently against the canonical tables"
     },
@@ -73,8 +73,8 @@
       ],
       "proof_bytes": 3504,
       "serialized_bytes": 10515,
-      "prove_ms": 9.715,
-      "verify_ms": 2.639,
+      "prove_ms": 11.205,
+      "verify_ms": 3.113,
       "verified": true,
       "note": "each step reproves its normalization row and activation row without shared lookup reuse"
     },
@@ -105,8 +105,8 @@
       ],
       "proof_bytes": 5016,
       "serialized_bytes": 55809,
-      "prove_ms": 18.219,
-      "verify_ms": 6.22,
+      "prove_ms": 20.013,
+      "verify_ms": 6.887,
       "verified": true,
       "note": "one verifier-bound bundle combines a shared normalization artifact, a shared activation lookup proof, and one static table registry commitment"
     },
@@ -137,8 +137,8 @@
       ],
       "proof_bytes": 9776,
       "serialized_bytes": 103649,
-      "prove_ms": 30.679,
-      "verify_ms": 6.835,
+      "prove_ms": 35.86,
+      "verify_ms": 8.408,
       "verified": true,
       "note": "each step proves its normalization row and activation row independently against the canonical tables"
     },
@@ -169,8 +169,8 @@
       ],
       "proof_bytes": 6720,
       "serialized_bytes": 20196,
-      "prove_ms": 19.368,
-      "verify_ms": 5.038,
+      "prove_ms": 22.112,
+      "verify_ms": 5.349,
       "verified": true,
       "note": "each step reproves its normalization row and activation row without shared lookup reuse"
     },
@@ -209,8 +209,8 @@
       ],
       "proof_bytes": 4968,
       "serialized_bytes": 55294,
-      "prove_ms": 13.001,
-      "verify_ms": 6.046,
+      "prove_ms": 14.939,
+      "verify_ms": 6.745,
       "verified": true,
       "note": "one verifier-bound bundle combines a shared normalization artifact, a shared activation lookup proof, and one static table registry commitment"
     },
@@ -249,8 +249,8 @@
       ],
       "proof_bytes": 14824,
       "serialized_bytes": 157087,
-      "prove_ms": 40.582,
-      "verify_ms": 10.273,
+      "prove_ms": 46.551,
+      "verify_ms": 11.943,
       "verified": true,
       "note": "each step proves its normalization row and activation row independently against the canonical tables"
     },
@@ -289,8 +289,8 @@
       ],
       "proof_bytes": 10064,
       "serialized_bytes": 30226,
-      "prove_ms": 35.901,
-      "verify_ms": 7.45,
+      "prove_ms": 42.776,
+      "verify_ms": 8.756,
       "verified": true,
       "note": "each step reproves its normalization row and activation row without shared lookup reuse"
     }

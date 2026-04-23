@@ -2832,6 +2832,17 @@ mod tests {
     }
 
     #[test]
+    fn measure_elapsed_ms_propagates_operation_error_when_capture_enabled() {
+        let error = measure_elapsed_ms(true, || -> Result<()> {
+            Err(VmError::InvalidConfig(
+                "synthetic timing failure".to_string(),
+            ))
+        })
+        .expect_err("captured timing path must propagate operation failures");
+        assert!(matches!(error, VmError::InvalidConfig(_)));
+    }
+
+    #[test]
     fn primitive_benchmark_rejects_noncanonical_rows() {
         let error = prove_softmax_exp_lookup(&[(9, 3)])
             .expect_err("non-canonical softmax row must be rejected");

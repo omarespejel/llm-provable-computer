@@ -48,13 +48,13 @@
   <rect x="890" y="220" width="720" height="390" rx="28" fill="white" stroke="#D7DDE6" stroke-width="2"/>
 <text x="1250.0" y="266.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="26" font-weight="600" fill="#1F2937">Local prove time (ms)</text>
 <line x1="982" y1="465.5" x2="1576" y2="465.5" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="972.0" y="471.5" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">10.1</text>
+<text x="972.0" y="471.5" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">11.6</text>
 <line x1="982" y1="409.0" x2="1576" y2="409.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="972.0" y="415.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">20.3</text>
+<text x="972.0" y="415.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">23.3</text>
 <line x1="982" y1="352.5" x2="1576" y2="352.5" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="972.0" y="358.5" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">30.4</text>
+<text x="972.0" y="358.5" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">34.9</text>
 <line x1="982" y1="296.0" x2="1576" y2="296.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="972.0" y="302.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">40.6</text>
+<text x="972.0" y="302.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">46.6</text>
 <line x1="982" y1="522" x2="1576" y2="522" stroke="#A9B3C0" stroke-width="2"/>
 <line x1="982" y1="296" x2="982" y2="522" stroke="#A9B3C0" stroke-width="2"/>
 <line x1="982.0" y1="522" x2="982.0" y2="530" stroke="#A9B3C0" stroke-width="2"/>
@@ -64,21 +64,21 @@
 <line x1="1576.0" y1="522" x2="1576.0" y2="530" stroke="#A9B3C0" stroke-width="2"/>
 <text x="1576.0" y="556.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">3</text>
 <text x="1279.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">Paired shared rows / steps</text>
-<path d="M 982.0 342.5 L 1279.0 420.5 L 1576.0 449.6" fill="none" stroke="#2563EB" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="982.0" cy="342.5" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
-<circle cx="1279.0" cy="420.5" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
-<circle cx="1576.0" cy="449.6" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
-<text x="1570.0" y="437.6" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#2563EB">13 ms</text>
-<path d="M 982.0 418.9 L 1279.0 351.1 L 1576.0 296.0" fill="none" stroke="#D97706" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="982.0" cy="418.9" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
-<circle cx="1279.0" cy="351.1" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<path d="M 982.0 385.7 L 1279.0 424.8 L 1576.0 449.5" fill="none" stroke="#2563EB" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="385.7" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="1279.0" cy="424.8" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="1576.0" cy="449.5" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<text x="1570.0" y="437.5" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#2563EB">14.9 ms</text>
+<path d="M 982.0 426.1 L 1279.0 347.9 L 1576.0 296.0" fill="none" stroke="#D97706" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="426.1" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<circle cx="1279.0" cy="347.9" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
 <circle cx="1576.0" cy="296.0" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
-<text x="1570.0" y="284.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#D97706">40.6 ms</text>
-<path d="M 982.0 467.9 L 1279.0 414.1 L 1576.0 322.1" fill="none" stroke="#059669" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="982.0" cy="467.9" r="7" fill="white" stroke="#059669" stroke-width="3"/>
-<circle cx="1279.0" cy="414.1" r="7" fill="white" stroke="#059669" stroke-width="3"/>
-<circle cx="1576.0" cy="322.1" r="7" fill="white" stroke="#059669" stroke-width="3"/>
-<text x="1570.0" y="310.1" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#059669">35.9 ms</text>
+<text x="1570.0" y="284.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#D97706">46.6 ms</text>
+<path d="M 982.0 467.6 L 1279.0 414.6 L 1576.0 314.3" fill="none" stroke="#059669" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="467.6" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<circle cx="1279.0" cy="414.6" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<circle cx="1576.0" cy="314.3" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<text x="1570.0" y="302.3" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#059669">42.8 ms</text>
   <text x="95.0" y="830.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">Measured locally from real S-two proof generation and verification. Timings are medians over 5 runs from microsecond capture.</text>
   <text x="95.0" y="858.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">The shared bundle is not recursive compression; it is a verifier-bound composition of two shared lookup-bearing proof surfaces.</text>
 </svg>

@@ -34,6 +34,8 @@ VARIANT_ORDER = [
 REQUIRED_COLUMNS = {
     "benchmark_version",
     "semantic_scope",
+    "timing_mode",
+    "timing_runs",
     "primitive",
     "backend_variant",
     "steps",
@@ -120,6 +122,26 @@ def group_rows(rows: list[dict[str, str]]) -> dict[str, list[dict[str, str]]]:
         if actual_steps != EXPECTED_STEPS:
             raise SystemExit(f"unexpected steps for {variant}: {actual_steps} != {EXPECTED_STEPS}")
     return grouped
+
+
+def timing_metadata(rows: list[dict[str, str]], *, fallback_runs: int) -> tuple[bool, int]:
+    first = rows[0]
+    mode = first.get("timing_mode", "").strip()
+    runs_raw = first.get("timing_runs", "").strip()
+    if not mode:
+        return False, fallback_runs
+    for row in rows[1:]:
+        if row.get("timing_mode", "").strip() != mode or row.get("timing_runs", "").strip() != runs_raw:
+            raise SystemExit("inconsistent timing metadata across phase12 benchmark rows")
+    if mode == "deterministic_zeroed":
+        return False, 0
+    if mode in {"measured_single_run", "measured_median"}:
+        try:
+            runs = int(runs_raw)
+        except ValueError as exc:
+            raise SystemExit(f"invalid timing_runs value in phase12 benchmark rows: {runs_raw!r}") from exc
+        return True, runs
+    raise SystemExit(f"unsupported timing_mode in phase12 benchmark rows: {mode!r}")
 
 
 def render_text(x: float, y: float, text: str, *, size: int, anchor: str = "middle",
@@ -263,9 +285,7 @@ def render_legend(x: int, y: int) -> str:
 
 def render_svg(rows: list[dict[str, str]], *, bench_runs: int) -> str:
     grouped = group_rows(rows)
-    timings_captured = any(
-        float(row["prove_ms"]) > 0.0 or float(row["verify_ms"]) > 0.0 for row in rows
-    )
+    timings_captured, timing_runs = timing_metadata(rows, fallback_runs=bench_runs)
     subtitle = (
         "A richer two-table kernel: one shared normalization artifact plus one shared activation "
         "lookup proof, bound together under one static table registry commitment."
@@ -273,7 +293,7 @@ def render_svg(rows: list[dict[str, str]], *, bench_runs: int) -> str:
     if timings_captured:
         footnote_lines = [
             "Measured locally from real S-two proof generation and verification. "
-            f"Timings are medians over {bench_runs} runs from microsecond capture.",
+            f"Timings are medians over {timing_runs} runs from microsecond capture.",
             "The shared bundle is not recursive compression; it is a verifier-bound composition of two shared lookup-bearing proof surfaces.",
         ]
     else:

@@ -9,7 +9,7 @@ cd "$REPO_ROOT"
 
 NIGHTLY_TOOLCHAIN="${NIGHTLY_TOOLCHAIN:-+nightly-2025-07-14}"
 BENCH_RUNS="${BENCH_RUNS:-5}"
-CAPTURE_TIMINGS="${CAPTURE_TIMINGS:-1}"
+CAPTURE_TIMINGS="${CAPTURE_TIMINGS:-0}"
 TSV_OUT="${TSV_OUT:-$REPO_ROOT/docs/paper/evidence/stwo-primitive-lookup-vs-naive-2026-04.tsv}"
 JSON_OUT="${JSON_OUT:-$REPO_ROOT/docs/paper/evidence/stwo-primitive-lookup-vs-naive-2026-04.json}"
 SVG_OUT="${SVG_OUT:-$REPO_ROOT/docs/paper/figures/stwo-primitive-lookup-vs-naive-2026-04.svg}"
@@ -31,7 +31,10 @@ if [[ "$CAPTURE_TIMINGS" == "1" ]]; then
   fi
 fi
 
-mapfile -t NORMALIZED_OUTPUTS < <(python3 - "$TSV_OUT" "$JSON_OUT" "$SVG_OUT" "$PNG_OUT" "$PDF_OUT" <<'PY'
+NORMALIZED_OUTPUTS=()
+while IFS= read -r normalized_path; do
+  NORMALIZED_OUTPUTS+=("$normalized_path")
+done < <(python3 - "$TSV_OUT" "$JSON_OUT" "$SVG_OUT" "$PNG_OUT" "$PDF_OUT" <<'PY'
 import os
 import sys
 
@@ -83,7 +86,7 @@ if [[ "$CAPTURE_TIMINGS" == "1" ]]; then
     --output-json "$TMP_JSON" \
     --output-tsv "$TMP_TSV"
 else
-  cargo "$NIGHTLY_TOOLCHAIN" run --features stwo-backend --bin tvm -- \
+  STWO_PRIMITIVE_BENCHMARK_CAPTURE_TIMINGS=0 cargo "$NIGHTLY_TOOLCHAIN" run --features stwo-backend --bin tvm -- \
     bench-stwo-primitive-lookup-vs-naive \
     --output-tsv "$TMP_TSV" \
     --output-json "$TMP_JSON"
