@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render an SVG figure and optional PNG/PDF companions for matched S-two primitive measurements."""
+"""Render an SVG figure plus optional PNG/PDF companions for matched S-two primitive measurements."""
 
 from __future__ import annotations
 
@@ -48,6 +48,12 @@ REQUIRED_COLUMNS = {
     "verified",
     "note",
 }
+EXPECTED_SLUGS = {
+    "rmsnorm_q8_inv_sqrt::lookup_logup",
+    "rmsnorm_q8_inv_sqrt::naive_selector_arithmetic",
+    "softmax_exp_q8::lookup_logup",
+    "softmax_exp_q8::polynomial_interpolation",
+}
 
 
 def read_rows(path: Path) -> list[dict[str, str]]:
@@ -65,6 +71,26 @@ def read_rows(path: Path) -> list[dict[str, str]]:
 
 def slug(row: dict[str, str]) -> str:
     return f"{row['primitive']}::{row['backend_variant']}"
+
+
+def validate_rows(rows: list[dict[str, str]], *, source: Path) -> None:
+    seen: set[str] = set()
+    unverified: list[str] = []
+    for row in rows:
+        key = slug(row)
+        if key in seen:
+            raise SystemExit(f"duplicate benchmark row in {source}: {key}")
+        seen.add(key)
+        if row["verified"].strip().lower() != "true":
+            unverified.append(key)
+    if unverified:
+        raise SystemExit(f"unverified benchmark rows in {source}: {sorted(unverified)}")
+    missing = sorted(EXPECTED_SLUGS - seen)
+    extra = sorted(seen - EXPECTED_SLUGS)
+    if missing or extra:
+        raise SystemExit(
+            f"unexpected benchmark row set in {source}; missing={missing} extra={extra}"
+        )
 
 
 def wrap_label(text: str, width: int = 18) -> list[str]:
@@ -253,6 +279,7 @@ def main() -> None:
     rows = read_rows(args.input_tsv)
     if not rows:
         raise SystemExit(f"no rows found in {args.input_tsv}")
+    validate_rows(rows, source=args.input_tsv)
 
     svg = render_svg(rows)
     svg_path = args.output_svg
