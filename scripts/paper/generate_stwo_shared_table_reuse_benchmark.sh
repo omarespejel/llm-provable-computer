@@ -9,19 +9,26 @@ cd "$REPO_ROOT"
 
 NIGHTLY_TOOLCHAIN="${NIGHTLY_TOOLCHAIN:-+nightly-2025-07-14}"
 BENCH_RUNS="${BENCH_RUNS:-5}"
+CAPTURE_TIMINGS="${CAPTURE_TIMINGS:-1}"
 TSV_OUT="${TSV_OUT:-$REPO_ROOT/docs/paper/evidence/stwo-shared-table-reuse-2026-04.tsv}"
 JSON_OUT="${JSON_OUT:-$REPO_ROOT/docs/paper/evidence/stwo-shared-table-reuse-2026-04.json}"
 SVG_OUT="${SVG_OUT:-$REPO_ROOT/docs/paper/figures/stwo-shared-table-reuse-2026-04.svg}"
 PNG_OUT="${PNG_OUT:-$REPO_ROOT/docs/paper/figures/stwo-shared-table-reuse-2026-04.png}"
 PDF_OUT="${PDF_OUT:-$REPO_ROOT/docs/paper/figures/stwo-shared-table-reuse-2026-04.pdf}"
 
-if ! [[ "$BENCH_RUNS" =~ ^[1-9][0-9]*$ ]]; then
-  echo "BENCH_RUNS must be a positive odd integer" >&2
+if [[ "$CAPTURE_TIMINGS" != "0" && "$CAPTURE_TIMINGS" != "1" ]]; then
+  echo "CAPTURE_TIMINGS must be 0 or 1" >&2
   exit 1
 fi
-if [[ $((BENCH_RUNS % 2)) -eq 0 || "$BENCH_RUNS" -lt 3 ]]; then
-  echo "BENCH_RUNS must be an odd integer >= 3" >&2
-  exit 1
+if [[ "$CAPTURE_TIMINGS" == "1" ]]; then
+  if ! [[ "$BENCH_RUNS" =~ ^[1-9][0-9]*$ ]]; then
+    echo "BENCH_RUNS must be a positive odd integer" >&2
+    exit 1
+  fi
+  if [[ $((BENCH_RUNS % 2)) -eq 0 || "$BENCH_RUNS" -lt 3 ]]; then
+    echo "BENCH_RUNS must be an odd integer >= 3" >&2
+    exit 1
+  fi
 fi
 
 mapfile -t NORMALIZED_OUTPUTS < <(python3 - "$TSV_OUT" "$JSON_OUT" "$SVG_OUT" "$PNG_OUT" "$PDF_OUT" <<'PY'
@@ -59,30 +66,37 @@ TMP_SVG="$TMP_FIGURE_DIR/$(basename "$SVG_OUT")"
 TMP_PNG="$TMP_FIGURE_DIR/$(basename "$PNG_OUT")"
 TMP_PDF="$TMP_FIGURE_DIR/$(basename "$PDF_OUT")"
 RUN_DIR="$TMP_JSON_DIR/runs"
-mkdir -p "$RUN_DIR"
+if [[ "$CAPTURE_TIMINGS" == "1" ]]; then
+  mkdir -p "$RUN_DIR"
+  RUN_INPUTS=()
+  for run_index in $(seq 1 "$BENCH_RUNS"); do
+    run_json="$RUN_DIR/run-$run_index.json"
+    run_tsv="$RUN_DIR/run-$run_index.tsv"
+    cargo "$NIGHTLY_TOOLCHAIN" run --features stwo-backend --bin tvm -- \
+      bench-stwo-shared-table-reuse \
+      --capture-timings \
+      --output-tsv "$run_tsv" \
+      --output-json "$run_json"
+    RUN_INPUTS+=("$run_json")
+  done
 
-RUN_INPUTS=()
-for run_index in $(seq 1 "$BENCH_RUNS"); do
-  run_json="$RUN_DIR/run-$run_index.json"
-  run_tsv="$RUN_DIR/run-$run_index.tsv"
+  python3 scripts/paper/aggregate_stwo_shared_table_reuse_benchmark.py \
+    --inputs "${RUN_INPUTS[@]}" \
+    --output-json "$TMP_JSON" \
+    --output-tsv "$TMP_TSV"
+else
   cargo "$NIGHTLY_TOOLCHAIN" run --features stwo-backend --bin tvm -- \
     bench-stwo-shared-table-reuse \
-    --capture-timings \
-    --output-tsv "$run_tsv" \
-    --output-json "$run_json"
-  RUN_INPUTS+=("$run_json")
-done
-
-python3 scripts/paper/aggregate_stwo_shared_table_reuse_benchmark.py \
-  --inputs "${RUN_INPUTS[@]}" \
-  --output-json "$TMP_JSON" \
-  --output-tsv "$TMP_TSV"
+    --output-tsv "$TMP_TSV" \
+    --output-json "$TMP_JSON"
+fi
 
 python3 scripts/paper/generate_stwo_shared_table_reuse_figure.py \
   --input-tsv "$TMP_TSV" \
   --output-svg "$TMP_SVG" \
   --output-png "$TMP_PNG" \
   --output-pdf "$TMP_PDF" \
+  --bench-runs "$BENCH_RUNS" \
   --fail-closed-rasters
 
 mv "$TMP_TSV" "$TSV_OUT"

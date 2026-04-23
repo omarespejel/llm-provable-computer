@@ -60,13 +60,13 @@
 <text x="1250.0" y="232.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="28" font-weight="600" fill="#1F2937">RMSNorm inverse-sqrt table</text>
 <text x="1250.0" y="262.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">Local prove time (ms)</text>
 <line x1="982" y1="412.0" x2="1576" y2="412.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="972.0" y="418.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">14</text>
+<text x="972.0" y="418.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">11.3</text>
 <line x1="982" y1="362.0" x2="1576" y2="362.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="972.0" y="368.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">29</text>
+<text x="972.0" y="368.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">22.7</text>
 <line x1="982" y1="312.0" x2="1576" y2="312.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="972.0" y="318.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">44</text>
+<text x="972.0" y="318.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">34</text>
 <line x1="982" y1="262.0" x2="1576" y2="262.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="972.0" y="268.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">59</text>
+<text x="972.0" y="268.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">45.4</text>
 <line x1="982" y1="462" x2="1576" y2="462" stroke="#A9B3C0" stroke-width="2"/>
 <line x1="982" y1="262" x2="982" y2="462" stroke="#A9B3C0" stroke-width="2"/>
 <line x1="982.0" y1="462" x2="982.0" y2="470" stroke="#A9B3C0" stroke-width="2"/>
@@ -78,24 +78,24 @@
 <line x1="1576.0" y1="462" x2="1576.0" y2="470" stroke="#A9B3C0" stroke-width="2"/>
 <text x="1576.0" y="496.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">5</text>
 <text x="1279.0" y="522.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">Shared rows / steps</text>
-<path d="M 982.0 387.4 L 1180.0 428.1 L 1378.0 424.7 L 1576.0 424.7" fill="none" stroke="#2563EB" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="982.0" cy="387.4" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
-<circle cx="1180.0" cy="428.1" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
-<circle cx="1378.0" cy="424.7" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
-<circle cx="1576.0" cy="424.7" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
-<text x="1572.0" y="412.7" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#2563EB">11 ms</text>
-<path d="M 982.0 411.2 L 1180.0 390.8 L 1378.0 323.0 L 1576.0 262.0" fill="none" stroke="#D97706" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="982.0" cy="411.2" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
-<circle cx="1180.0" cy="390.8" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
-<circle cx="1378.0" cy="323.0" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<path d="M 982.0 382.0 L 1180.0 428.0 L 1378.0 425.6 L 1576.0 419.2" fill="none" stroke="#2563EB" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="382.0" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="1180.0" cy="428.0" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="1378.0" cy="425.6" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="1576.0" cy="419.2" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<text x="1572.0" y="407.2" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#2563EB">9.718 ms</text>
+<path d="M 982.0 415.3 L 1180.0 383.4 L 1378.0 316.2 L 1576.0 262.0" fill="none" stroke="#D97706" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="415.3" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<circle cx="1180.0" cy="383.4" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<circle cx="1378.0" cy="316.2" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
 <circle cx="1576.0" cy="262.0" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
-<text x="1572.0" y="250.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#D97706">59 ms</text>
-<path d="M 982.0 441.7 L 1180.0 428.1 L 1378.0 343.4 L 1576.0 299.3" fill="none" stroke="#059669" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="982.0" cy="441.7" r="7" fill="white" stroke="#059669" stroke-width="3"/>
-<circle cx="1180.0" cy="428.1" r="7" fill="white" stroke="#059669" stroke-width="3"/>
-<circle cx="1378.0" cy="343.4" r="7" fill="white" stroke="#059669" stroke-width="3"/>
-<circle cx="1576.0" cy="299.3" r="7" fill="white" stroke="#059669" stroke-width="3"/>
-<text x="1572.0" y="287.3" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#059669">48 ms</text><rect x="90" y="610" width="720" height="360" rx="28" fill="white" stroke="#D7DDE6" stroke-width="2"/>
+<text x="1572.0" y="250.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#D97706">45.4 ms</text>
+<path d="M 982.0 440.3 L 1180.0 425.3 L 1378.0 335.3 L 1576.0 277.0" fill="none" stroke="#059669" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="440.3" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<circle cx="1180.0" cy="425.3" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<circle cx="1378.0" cy="335.3" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<circle cx="1576.0" cy="277.0" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<text x="1572.0" y="265.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#059669">42 ms</text><rect x="90" y="610" width="720" height="360" rx="28" fill="white" stroke="#D7DDE6" stroke-width="2"/>
 <text x="450.0" y="652.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="28" font-weight="600" fill="#1F2937">Softmax exp-table slice</text>
 <text x="450.0" y="682.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">Estimated raw STARK proof bytes</text>
 <line x1="182" y1="832.0" x2="776" y2="832.0" stroke="#E5E7EB" stroke-width="1.5"/>
@@ -138,13 +138,13 @@
 <text x="1250.0" y="652.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="28" font-weight="600" fill="#1F2937">Softmax exp-table slice</text>
 <text x="1250.0" y="682.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">Local prove time (ms)</text>
 <line x1="982" y1="832.0" x2="1576" y2="832.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="972.0" y="838.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">14</text>
+<text x="972.0" y="838.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">13.4</text>
 <line x1="982" y1="782.0" x2="1576" y2="782.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="972.0" y="788.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">28</text>
+<text x="972.0" y="788.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">26.7</text>
 <line x1="982" y1="732.0" x2="1576" y2="732.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="972.0" y="738.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">42</text>
+<text x="972.0" y="738.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">40.1</text>
 <line x1="982" y1="682.0" x2="1576" y2="682.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="972.0" y="688.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">57</text>
+<text x="972.0" y="688.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">53.5</text>
 <line x1="982" y1="882" x2="1576" y2="882" stroke="#A9B3C0" stroke-width="2"/>
 <line x1="982" y1="682" x2="982" y2="882" stroke="#A9B3C0" stroke-width="2"/>
 <line x1="982.0" y1="882" x2="982.0" y2="890" stroke="#A9B3C0" stroke-width="2"/>
@@ -156,24 +156,24 @@
 <line x1="1576.0" y1="882" x2="1576.0" y2="890" stroke="#A9B3C0" stroke-width="2"/>
 <text x="1576.0" y="916.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">8</text>
 <text x="1279.0" y="942.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">Shared rows / steps</text>
-<path d="M 982.0 846.9 L 1180.0 829.4 L 1378.0 815.3 L 1576.0 857.4" fill="none" stroke="#2563EB" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="982.0" cy="846.9" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
-<circle cx="1180.0" cy="829.4" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
-<circle cx="1378.0" cy="815.3" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
-<circle cx="1576.0" cy="857.4" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
-<text x="1572.0" y="845.4" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#2563EB">7 ms</text>
-<path d="M 982.0 836.4 L 1180.0 818.8 L 1378.0 780.2 L 1576.0 682.0" fill="none" stroke="#D97706" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="982.0" cy="836.4" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
-<circle cx="1180.0" cy="818.8" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
-<circle cx="1378.0" cy="780.2" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<path d="M 982.0 848.2 L 1180.0 829.3 L 1378.0 810.8 L 1576.0 857.7" fill="none" stroke="#2563EB" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="848.2" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="1180.0" cy="829.3" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="1378.0" cy="810.8" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="1576.0" cy="857.7" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<text x="1572.0" y="845.7" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#2563EB">6.507 ms</text>
+<path d="M 982.0 849.2 L 1180.0 831.0 L 1378.0 780.8 L 1576.0 682.0" fill="none" stroke="#D97706" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="849.2" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<circle cx="1180.0" cy="831.0" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<circle cx="1378.0" cy="780.8" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
 <circle cx="1576.0" cy="682.0" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
-<text x="1572.0" y="670.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#D97706">57 ms</text>
-<path d="M 982.0 868.0 L 1180.0 850.4 L 1378.0 818.8 L 1576.0 741.6" fill="none" stroke="#059669" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="982.0" cy="868.0" r="7" fill="white" stroke="#059669" stroke-width="3"/>
-<circle cx="1180.0" cy="850.4" r="7" fill="white" stroke="#059669" stroke-width="3"/>
-<circle cx="1378.0" cy="818.8" r="7" fill="white" stroke="#059669" stroke-width="3"/>
-<circle cx="1576.0" cy="741.6" r="7" fill="white" stroke="#059669" stroke-width="3"/>
-<text x="1572.0" y="729.6" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#059669">40 ms</text><rect x="90" y="1030" width="720" height="360" rx="28" fill="white" stroke="#D7DDE6" stroke-width="2"/>
+<text x="1572.0" y="670.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#D97706">53.5 ms</text>
+<path d="M 982.0 868.7 L 1180.0 851.1 L 1378.0 815.7 L 1576.0 742.5" fill="none" stroke="#059669" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="868.7" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<circle cx="1180.0" cy="851.1" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<circle cx="1378.0" cy="815.7" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<circle cx="1576.0" cy="742.5" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<text x="1572.0" y="730.5" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#059669">37.3 ms</text><rect x="90" y="1030" width="720" height="360" rx="28" fill="white" stroke="#D7DDE6" stroke-width="2"/>
 <text x="450.0" y="1072.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="28" font-weight="600" fill="#1F2937">Binary-step activation table</text>
 <text x="450.0" y="1102.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">Estimated raw STARK proof bytes</text>
 <line x1="182" y1="1252.0" x2="776" y2="1252.0" stroke="#E5E7EB" stroke-width="1.5"/>
@@ -211,13 +211,13 @@
 <text x="1250.0" y="1072.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="28" font-weight="600" fill="#1F2937">Binary-step activation table</text>
 <text x="1250.0" y="1102.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">Local prove time (ms)</text>
 <line x1="982" y1="1252.0" x2="1576" y2="1252.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="972.0" y="1258.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">4</text>
+<text x="972.0" y="1258.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">4.229</text>
 <line x1="982" y1="1202.0" x2="1576" y2="1202.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="972.0" y="1208.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">9</text>
+<text x="972.0" y="1208.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">8.457</text>
 <line x1="982" y1="1152.0" x2="1576" y2="1152.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="972.0" y="1158.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">13</text>
+<text x="972.0" y="1158.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">12.7</text>
 <line x1="982" y1="1102.0" x2="1576" y2="1102.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="972.0" y="1108.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">18</text>
+<text x="972.0" y="1108.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">16.9</text>
 <line x1="982" y1="1302" x2="1576" y2="1302" stroke="#A9B3C0" stroke-width="2"/>
 <line x1="982" y1="1102" x2="982" y2="1302" stroke="#A9B3C0" stroke-width="2"/>
 <line x1="982.0" y1="1302" x2="982.0" y2="1310" stroke="#A9B3C0" stroke-width="2"/>
@@ -227,24 +227,24 @@
 <line x1="1576.0" y1="1302" x2="1576.0" y2="1310" stroke="#A9B3C0" stroke-width="2"/>
 <text x="1576.0" y="1336.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">3</text>
 <text x="1279.0" y="1362.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">Shared rows / steps</text>
-<path d="M 982.0 1213.1 L 1279.0 1190.9 L 1576.0 1246.4" fill="none" stroke="#2563EB" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="982.0" cy="1213.1" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
-<circle cx="1279.0" cy="1190.9" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
-<circle cx="1576.0" cy="1246.4" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
-<text x="1572.0" y="1234.4" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#2563EB">5 ms</text>
-<path d="M 982.0 1213.1 L 1279.0 1157.6 L 1576.0 1102.0" fill="none" stroke="#D97706" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="982.0" cy="1213.1" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
-<circle cx="1279.0" cy="1157.6" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<path d="M 982.0 1208.9 L 1279.0 1193.4 L 1576.0 1247.2" fill="none" stroke="#2563EB" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="1208.9" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="1279.0" cy="1193.4" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="1576.0" cy="1247.2" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<text x="1572.0" y="1235.2" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#2563EB">4.635 ms</text>
+<path d="M 982.0 1210.5 L 1279.0 1156.2 L 1576.0 1102.0" fill="none" stroke="#D97706" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="1210.5" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<circle cx="1279.0" cy="1156.2" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
 <circle cx="1576.0" cy="1102.0" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
-<text x="1572.0" y="1090.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#D97706">18 ms</text>
-<path d="M 982.0 1246.4 L 1279.0 1168.7 L 1576.0 1102.0" fill="none" stroke="#059669" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="982.0" cy="1246.4" r="7" fill="white" stroke="#059669" stroke-width="3"/>
-<circle cx="1279.0" cy="1168.7" r="7" fill="white" stroke="#059669" stroke-width="3"/>
-<circle cx="1576.0" cy="1102.0" r="7" fill="white" stroke="#059669" stroke-width="3"/>
-<text x="1572.0" y="1090.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#059669">18 ms</text>
+<text x="1572.0" y="1090.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#D97706">16.9 ms</text>
+<path d="M 982.0 1247.5 L 1279.0 1173.4 L 1576.0 1110.1" fill="none" stroke="#059669" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="1247.5" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<circle cx="1279.0" cy="1173.4" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<circle cx="1576.0" cy="1110.1" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<text x="1572.0" y="1098.1" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#059669">16.2 ms</text>
   <text x="850.0" y="1591" text-anchor="middle"
         font-family="STIX Two Text, Georgia, serif" font-size="20" fill="#6B7280">
-    Measured locally from real S-two proof generation and verification. Timing rows are medians over five runs.
+    Measured locally from real S-two proof generation and verification. Timing rows are medians over 5 runs from microsecond capture.
   </text>
   <text x="850.0" y="1621" text-anchor="middle"
         font-family="STIX Two Text, Georgia, serif" font-size="20" fill="#6B7280">

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Aggregate repeated shared-table reuse benchmark runs using median timings."""
+"""Aggregate repeated primitive benchmark runs using median timings."""
 
 from __future__ import annotations
 
@@ -10,25 +10,24 @@ import statistics
 from pathlib import Path
 from typing import Any
 
-KEY_FIELDS = ("primitive", "backend_variant", "steps")
+KEY_FIELDS = ("primitive", "backend_variant")
 DETERMINISTIC_FIELDS = (
     "relation",
     "claimed_rows",
     "proof_bytes",
-    "serialized_bytes",
     "verified",
     "note",
 )
 
 
-def key_for(row: dict[str, Any]) -> tuple[str, str, int]:
-    return (str(row["primitive"]), str(row["backend_variant"]), int(row["steps"]))
+def key_for(row: dict[str, Any]) -> tuple[str, str]:
+    return (str(row["primitive"]), str(row["backend_variant"]))
 
 
 def build_row_map(
     rows: list[dict[str, Any]], *, source: Path
-) -> dict[tuple[str, str, int], dict[str, Any]]:
-    row_map: dict[tuple[str, str, int], dict[str, Any]] = {}
+) -> dict[tuple[str, str], dict[str, Any]]:
+    row_map: dict[tuple[str, str], dict[str, Any]] = {}
     for row in rows:
         key = key_for(row)
         if key in row_map:
@@ -74,7 +73,7 @@ def main() -> None:
     semantic_scope = None
     timing_unit = None
     canonical_rows: list[dict[str, Any]] | None = None
-    timing_samples: dict[tuple[str, str, int], dict[str, list[float]]] = {}
+    timing_samples: dict[tuple[str, str], dict[str, list[float]]] = {}
 
     for input_path in args.inputs:
         payload = json.loads(input_path.read_text(encoding="utf-8"))
@@ -86,6 +85,7 @@ def main() -> None:
             raise SystemExit(
                 f"{input_path} must report timing_runs == 1; got {payload.get('timing_runs')!r}"
             )
+
         if benchmark_version is None:
             benchmark_version = payload["benchmark_version"]
             semantic_scope = payload["semantic_scope"]
@@ -133,11 +133,13 @@ def main() -> None:
     aggregated_rows: list[dict[str, Any]] = []
     for row in canonical_rows:
         key = key_for(row)
-        prove_samples = timing_samples[key]["prove_ms"]
-        verify_samples = timing_samples[key]["verify_ms"]
         aggregated = dict(row)
-        aggregated["prove_ms"] = round_milliseconds(statistics.median(prove_samples))
-        aggregated["verify_ms"] = round_milliseconds(statistics.median(verify_samples))
+        aggregated["prove_ms"] = round_milliseconds(
+            statistics.median(timing_samples[key]["prove_ms"])
+        )
+        aggregated["verify_ms"] = round_milliseconds(
+            statistics.median(timing_samples[key]["verify_ms"])
+        )
         aggregated_rows.append(aggregated)
 
     timing_policy = f"median_of_{len(args.inputs)}_runs_from_microsecond_capture"
@@ -153,7 +155,7 @@ def main() -> None:
     args.output_json.write_text(json.dumps(output_payload, indent=2) + "\n", encoding="utf-8")
 
     lines = [
-        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tprimitive\tbackend_variant\tsteps\trelation\tclaimed_rows\tproof_bytes\tserialized_bytes\tprove_ms\tverify_ms\tverified\tnote"
+        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tprimitive\tbackend_variant\trelation\tclaimed_rows\tproof_bytes\tprove_ms\tverify_ms\tverified\tnote"
     ]
     for row in aggregated_rows:
         claimed_rows = ",".join(f"{pair[0]}:{pair[1]}" for pair in row["claimed_rows"])
@@ -168,11 +170,9 @@ def main() -> None:
                     str(len(args.inputs)),
                     row["primitive"],
                     row["backend_variant"],
-                    str(row["steps"]),
                     row["relation"],
                     claimed_rows,
                     str(row["proof_bytes"]),
-                    str(row["serialized_bytes"]),
                     format_milliseconds(float(row["prove_ms"])),
                     format_milliseconds(float(row["verify_ms"])),
                     str(row["verified"]).lower(),

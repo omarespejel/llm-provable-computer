@@ -11,6 +11,7 @@ from xml.sax.saxutils import escape
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TSV = ROOT / "docs" / "paper" / "evidence" / "stwo-shared-table-reuse-2026-04.tsv"
+DEFAULT_BENCH_RUNS = 5
 OUTDIR = ROOT / "docs" / "paper" / "figures"
 OUTDIR.mkdir(parents=True, exist_ok=True)
 
@@ -136,16 +137,27 @@ def render_text(x: float, y: float, text: str, *, size: int, anchor: str = "midd
     )
 
 
+def format_milliseconds(value: float, *, axis: bool = False) -> str:
+    rounded = round(value, 3)
+    if abs(rounded - round(rounded)) < 1e-9:
+        rendered = str(int(round(rounded)))
+    elif rounded >= 10:
+        rendered = f"{rounded:.1f}".rstrip("0").rstrip(".")
+    else:
+        rendered = f"{rounded:.3f}".rstrip("0").rstrip(".")
+    return rendered if axis else f"{rendered} ms"
+
+
 def axis_label(value: float, metric_key: str) -> str:
     if metric_key == "proof_bytes":
         return f"{int(value):,}"
-    return f"{int(value)}"
+    return format_milliseconds(value, axis=True)
 
 
 def point_label(value: float, metric_key: str) -> str:
     if metric_key == "proof_bytes":
         return f"{int(value):,} B"
-    return f"{int(value)} ms"
+    return format_milliseconds(value)
 
 
 def render_panel(*, grouped: dict[str, list[dict[str, str]]], primitive: str, metric_key: str,
@@ -258,13 +270,25 @@ def render_legend(x: int, y: int) -> str:
     return "\n".join(parts)
 
 
-def render_svg(rows: list[dict[str, str]]) -> str:
+def render_svg(rows: list[dict[str, str]], *, bench_runs: int) -> str:
     grouped = group_rows(rows)
+    timings_captured = any(
+        float(row["prove_ms"]) > 0.0 or float(row["verify_ms"]) > 0.0 for row in rows
+    )
     subtitle = (
         "One shared proof over N selected rows with one canonical table identity versus N "
         "independent proof envelopes over the same transformer-relevant primitive rows."
     )
-    footnote_1 = "Measured locally from real S-two proof generation and verification. Timing rows are medians over five runs."
+    if timings_captured:
+        footnote_1 = (
+            "Measured locally from real S-two proof generation and verification. "
+            f"Timing rows are medians over {bench_runs} runs from microsecond capture."
+        )
+    else:
+        footnote_1 = (
+            "Timing capture was disabled for this render; prove and verify columns are "
+            "intentionally zeroed for deterministic regeneration."
+        )
     footnote_2 = "Blue lines show the shared-table path; orange and green lines reprove each step independently."
     legend = render_legend(180, 138)
     panels = [
@@ -404,6 +428,7 @@ def main() -> None:
     )
     parser.add_argument("--output-png", type=Path, default=None)
     parser.add_argument("--output-pdf", type=Path, default=None)
+    parser.add_argument("--bench-runs", type=int, default=DEFAULT_BENCH_RUNS)
     parser.add_argument(
         "--fail-closed-rasters",
         action="store_true",
@@ -416,7 +441,7 @@ def main() -> None:
         raise SystemExit(f"no rows found in {args.input_tsv}")
     validate_rows(rows, source=args.input_tsv)
 
-    svg = render_svg(rows)
+    svg = render_svg(rows, bench_runs=args.bench_runs)
     svg_path = args.output_svg
     svg_path.parent.mkdir(parents=True, exist_ok=True)
     svg_path.write_text(svg, encoding="utf-8")
