@@ -3734,9 +3734,7 @@ fn validate_distinct_benchmark_output_paths(
     output_json: Option<&Path>,
 ) -> llm_provable_computer::Result<()> {
     if let Some(path) = output_json {
-        let normalized_tsv = normalize_output_path(output_tsv)?;
-        let normalized_json = normalize_output_path(path)?;
-        if normalized_json == normalized_tsv {
+        if benchmark_output_paths_conflict(output_tsv, path)? {
             return Err(VmError::InvalidConfig(
                 "`--output-json` must differ from `--output-tsv`".to_string(),
             ));
@@ -3762,6 +3760,42 @@ fn normalize_output_path(path: &Path) -> llm_provable_computer::Result<PathBuf> 
         }
     }
     Ok(normalized)
+}
+
+fn benchmark_output_paths_conflict(
+    output_tsv: &Path,
+    output_json: &Path,
+) -> llm_provable_computer::Result<bool> {
+    let normalized_tsv = normalize_output_path(output_tsv)?;
+    let normalized_json = normalize_output_path(output_json)?;
+    if normalized_json == normalized_tsv {
+        return Ok(true);
+    }
+
+    if let (Ok(canonical_tsv), Ok(canonical_json)) = (
+        std::fs::canonicalize(output_tsv),
+        std::fs::canonicalize(output_json),
+    ) {
+        if canonical_tsv == canonical_json {
+            return Ok(true);
+        }
+    }
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+
+        if let (Ok(tsv_meta), Ok(json_meta)) = (
+            std::fs::metadata(output_tsv),
+            std::fs::metadata(output_json),
+        ) {
+            if tsv_meta.dev() == json_meta.dev() && tsv_meta.ino() == json_meta.ino() {
+                return Ok(true);
+            }
+        }
+    }
+
+    Ok(false)
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -15721,6 +15755,24 @@ mod cli_dispatch_tests {
             Some(Path::new("./same-output.tsv")),
         )
         .expect_err("aliased output paths must fail");
+        assert!(err
+            .to_string()
+            .contains("`--output-json` must differ from `--output-tsv`"));
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn primitive_benchmark_rejects_symlink_output_paths() {
+        use std::os::unix::fs::symlink;
+
+        let tempdir = tempfile::tempdir().expect("tempdir");
+        let target = tempdir.path().join("benchmark.tsv");
+        let alias = tempdir.path().join("benchmark-link.tsv");
+        std::fs::write(&target, "placeholder").expect("write target");
+        symlink(&target, &alias).expect("create symlink");
+
+        let err = validate_distinct_benchmark_output_paths(&target, Some(&alias))
+            .expect_err("symlinked output paths must fail");
         assert!(err
             .to_string()
             .contains("`--output-json` must differ from `--output-tsv`"));

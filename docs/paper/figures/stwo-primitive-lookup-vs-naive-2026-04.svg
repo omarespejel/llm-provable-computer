@@ -42,27 +42,27 @@
 <text x="854.0" y="266.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="20" font-weight="400" fill="#6B7280">Local prove time (ms)</text>
 <line x1="856" y1="540" x2="1474" y2="540" stroke="#A9B3C0" stroke-width="2"/>
 <line x1="856" y1="480.0" x2="1474" y2="480.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="848" y="486.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" fill="#6B7280">3</text>
+<text x="848" y="486.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" fill="#6B7280">5</text>
 <line x1="856" y1="420.0" x2="1474" y2="420.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="848" y="426.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" fill="#6B7280">7</text>
+<text x="848" y="426.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" fill="#6B7280">10</text>
 <line x1="856" y1="360.0" x2="1474" y2="360.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="848" y="366.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" fill="#6B7280">10</text>
+<text x="848" y="366.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" fill="#6B7280">15</text>
 <line x1="856" y1="300.0" x2="1474" y2="300.0" stroke="#E5E7EB" stroke-width="1.5"/>
-<text x="848" y="306.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" fill="#6B7280">14</text>
+<text x="848" y="306.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" fill="#6B7280">21</text>
 <rect x="892" y="300.0" width="120" height="240.0" rx="18" fill="#2563EB" opacity="0.95"/>
-<text x="952.0" y="286.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">14 ms</text>
+<text x="952.0" y="286.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">21 ms</text>
 <text x="952.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">rmsnorm LogUp</text>
 <text x="952.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">lookup</text>
-<rect x="1048" y="488.6" width="120" height="51.4" rx="18" fill="#D97706" opacity="0.95"/>
-<text x="1108.0" y="474.6" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">3 ms</text>
+<rect x="1048" y="494.3" width="120" height="45.7" rx="18" fill="#D97706" opacity="0.95"/>
+<text x="1108.0" y="480.3" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">4 ms</text>
 <text x="1108.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">rmsnorm Selector</text>
 <text x="1108.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">arithmetic</text>
-<rect x="1204" y="402.9" width="120" height="137.1" rx="18" fill="#2563EB" opacity="0.95"/>
-<text x="1264.0" y="388.9" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">8 ms</text>
+<rect x="1204" y="322.9" width="120" height="217.1" rx="18" fill="#2563EB" opacity="0.95"/>
+<text x="1264.0" y="308.9" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">19 ms</text>
 <text x="1264.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">softmax exp</text>
 <text x="1264.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">LogUp lookup</text>
-<rect x="1360" y="488.6" width="120" height="51.4" rx="18" fill="#059669" opacity="0.95"/>
-<text x="1420.0" y="474.6" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">3 ms</text>
+<rect x="1360" y="460.0" width="120" height="80.0" rx="18" fill="#059669" opacity="0.95"/>
+<text x="1420.0" y="446.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">7 ms</text>
 <text x="1420.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">softmax exp</text>
 <text x="1420.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">Polynomial</text>
 <text x="1420.0" y="622.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">arithmetic</text>
