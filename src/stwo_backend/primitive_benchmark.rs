@@ -2,9 +2,10 @@ use ark_ff::Zero;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
 use serde::{Deserialize, Serialize};
+use std::env;
 use std::fs;
 use std::path::Path;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use stwo::core::air::Component;
 use stwo::core::channel::Blake2sM31Channel;
 use stwo::core::channel::Channel;
@@ -64,6 +65,14 @@ const STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_VERSION: &str =
     "stwo-phase12-style-shared-lookup-bundle-benchmark-artifact-v1";
 const STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_SCOPE: &str =
     "phase12_style_combined_shared_lookup_bundle_benchmark_artifact";
+const STWO_PRIMITIVE_BENCHMARK_CAPTURE_TIMINGS_ENV: &str =
+    "STWO_PRIMITIVE_BENCHMARK_CAPTURE_TIMINGS";
+const BENCHMARK_TIMING_UNIT_MILLISECONDS: &str = "milliseconds";
+const BENCHMARK_TIMING_MODE_DETERMINISTIC: &str = "deterministic_zeroed";
+const BENCHMARK_TIMING_MODE_SINGLE_RUN: &str = "measured_single_run";
+const BENCHMARK_TIMING_POLICY_ZEROED: &str = "zero_when_capture_disabled";
+const BENCHMARK_TIMING_POLICY_SINGLE_RUN_MICROSECOND_CAPTURE: &str =
+    "single_run_from_microsecond_capture";
 
 relation!(SoftmaxExpLookupRelation, 2);
 type SoftmaxExpLookupElements = SoftmaxExpLookupRelation;
@@ -101,27 +110,31 @@ const SOFTMAX_REUSE_STEP_COUNTS: [usize; 4] = [1, 2, 4, 8];
 const ACTIVATION_REUSE_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 const PHASE12_SHARED_LOOKUP_BUNDLE_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StwoPrimitiveBenchmarkMeasurement {
     pub primitive: String,
     pub backend_variant: String,
     pub relation: String,
     pub claimed_rows: Vec<[u16; 2]>,
     pub proof_bytes: usize,
-    pub prove_ms: u128,
-    pub verify_ms: u128,
+    pub prove_ms: f64,
+    pub verify_ms: f64,
     pub verified: bool,
     pub note: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StwoPrimitiveBenchmarkReport {
     pub benchmark_version: String,
     pub semantic_scope: String,
+    pub timing_mode: String,
+    pub timing_policy: String,
+    pub timing_unit: String,
+    pub timing_runs: usize,
     pub rows: Vec<StwoPrimitiveBenchmarkMeasurement>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StwoSharedTableReuseBenchmarkMeasurement {
     pub primitive: String,
     pub backend_variant: String,
@@ -130,20 +143,24 @@ pub struct StwoSharedTableReuseBenchmarkMeasurement {
     pub claimed_rows: Vec<[i16; 2]>,
     pub proof_bytes: usize,
     pub serialized_bytes: usize,
-    pub prove_ms: u128,
-    pub verify_ms: u128,
+    pub prove_ms: f64,
+    pub verify_ms: f64,
     pub verified: bool,
     pub note: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StwoSharedTableReuseBenchmarkReport {
     pub benchmark_version: String,
     pub semantic_scope: String,
+    pub timing_mode: String,
+    pub timing_policy: String,
+    pub timing_unit: String,
+    pub timing_runs: usize,
     pub rows: Vec<StwoSharedTableReuseBenchmarkMeasurement>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StwoPhase12SharedLookupBundleBenchmarkMeasurement {
     pub primitive: String,
     pub backend_variant: String,
@@ -153,16 +170,20 @@ pub struct StwoPhase12SharedLookupBundleBenchmarkMeasurement {
     pub activation_rows: Vec<[i16; 2]>,
     pub proof_bytes: usize,
     pub serialized_bytes: usize,
-    pub prove_ms: u128,
-    pub verify_ms: u128,
+    pub prove_ms: f64,
+    pub verify_ms: f64,
     pub verified: bool,
     pub note: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StwoPhase12SharedLookupBundleBenchmarkReport {
     pub benchmark_version: String,
     pub semantic_scope: String,
+    pub timing_mode: String,
+    pub timing_policy: String,
+    pub timing_unit: String,
+    pub timing_runs: usize,
     pub rows: Vec<StwoPhase12SharedLookupBundleBenchmarkMeasurement>,
 }
 
@@ -435,20 +456,33 @@ impl FrameworkEval for ActivationSelectorArithmeticEval {
 }
 
 pub fn run_stwo_primitive_lookup_vs_naive_benchmark() -> Result<StwoPrimitiveBenchmarkReport> {
+    run_stwo_primitive_lookup_vs_naive_benchmark_with_options(
+        primitive_benchmark_capture_timings_from_env(),
+    )
+}
+
+pub fn run_stwo_primitive_lookup_vs_naive_benchmark_with_options(
+    capture_timings: bool,
+) -> Result<StwoPrimitiveBenchmarkReport> {
     let mut rows = Vec::new();
-    rows.push(measure_rmsnorm_lookup()?);
-    rows.push(measure_rmsnorm_selector_arithmetic()?);
-    rows.push(measure_softmax_exp_lookup()?);
-    rows.push(measure_softmax_exp_polynomial()?);
+    rows.push(measure_rmsnorm_lookup(capture_timings)?);
+    rows.push(measure_rmsnorm_selector_arithmetic(capture_timings)?);
+    rows.push(measure_softmax_exp_lookup(capture_timings)?);
+    rows.push(measure_softmax_exp_polynomial(capture_timings)?);
     if let Some(failed) = rows.iter().find(|row| !row.verified) {
         return Err(VmError::UnsupportedProof(format!(
             "primitive benchmark row {} / {} did not verify",
             failed.primitive, failed.backend_variant
         )));
     }
+    let timing_surface = timing_surface(capture_timings);
     Ok(StwoPrimitiveBenchmarkReport {
         benchmark_version: STWO_PRIMITIVE_BENCHMARK_VERSION.to_string(),
         semantic_scope: STWO_PRIMITIVE_BENCHMARK_SCOPE.to_string(),
+        timing_mode: timing_surface.mode.to_string(),
+        timing_policy: timing_surface.policy.to_string(),
+        timing_unit: BENCHMARK_TIMING_UNIT_MILLISECONDS.to_string(),
+        timing_runs: timing_surface.runs,
         rows,
     })
 }
@@ -539,9 +573,14 @@ fn run_stwo_shared_table_reuse_benchmark_for_step_counts(
         )));
     }
 
+    let timing_surface = timing_surface(capture_timings);
     Ok(StwoSharedTableReuseBenchmarkReport {
         benchmark_version: STWO_SHARED_TABLE_REUSE_BENCHMARK_VERSION.to_string(),
         semantic_scope: STWO_SHARED_TABLE_REUSE_BENCHMARK_SCOPE.to_string(),
+        timing_mode: timing_surface.mode.to_string(),
+        timing_policy: timing_surface.policy.to_string(),
+        timing_unit: BENCHMARK_TIMING_UNIT_MILLISECONDS.to_string(),
+        timing_runs: timing_surface.runs,
         rows,
     })
 }
@@ -630,23 +669,72 @@ fn run_stwo_phase12_shared_lookup_bundle_benchmark_for_step_counts(
         )));
     }
 
+    let timing_surface = timing_surface(capture_timings);
     Ok(StwoPhase12SharedLookupBundleBenchmarkReport {
         benchmark_version: STWO_PHASE12_SHARED_LOOKUP_BUNDLE_BENCHMARK_VERSION.to_string(),
         semantic_scope: STWO_PHASE12_SHARED_LOOKUP_BUNDLE_BENCHMARK_SCOPE.to_string(),
+        timing_mode: timing_surface.mode.to_string(),
+        timing_policy: timing_surface.policy.to_string(),
+        timing_unit: BENCHMARK_TIMING_UNIT_MILLISECONDS.to_string(),
+        timing_runs: timing_surface.runs,
         rows,
     })
 }
 
-fn measure_elapsed_ms<T, F>(capture_timings: bool, op: F) -> Result<(T, u128)>
+struct BenchmarkTimingSurface {
+    mode: &'static str,
+    policy: &'static str,
+    runs: usize,
+}
+
+fn timing_surface(capture_timings: bool) -> BenchmarkTimingSurface {
+    if capture_timings {
+        BenchmarkTimingSurface {
+            mode: BENCHMARK_TIMING_MODE_SINGLE_RUN,
+            policy: BENCHMARK_TIMING_POLICY_SINGLE_RUN_MICROSECOND_CAPTURE,
+            runs: 1,
+        }
+    } else {
+        BenchmarkTimingSurface {
+            mode: BENCHMARK_TIMING_MODE_DETERMINISTIC,
+            policy: BENCHMARK_TIMING_POLICY_ZEROED,
+            runs: 0,
+        }
+    }
+}
+
+fn primitive_benchmark_capture_timings_from_env() -> bool {
+    match env::var(STWO_PRIMITIVE_BENCHMARK_CAPTURE_TIMINGS_ENV) {
+        Ok(value) => matches!(
+            value.trim().to_ascii_lowercase().as_str(),
+            "1" | "true" | "yes" | "on"
+        ),
+        Err(_) => false,
+    }
+}
+
+fn round_milliseconds(value: f64) -> f64 {
+    (value * 1000.0).round() / 1000.0
+}
+
+fn duration_to_milliseconds(elapsed: Duration) -> f64 {
+    round_milliseconds(elapsed.as_micros() as f64 / 1000.0)
+}
+
+fn format_timing_ms(value: f64) -> String {
+    format!("{value:.3}")
+}
+
+fn measure_elapsed_ms<T, F>(capture_timings: bool, op: F) -> Result<(T, f64)>
 where
     F: FnOnce() -> Result<T>,
 {
     if capture_timings {
         let start = Instant::now();
         let value = op()?;
-        Ok((value, start.elapsed().as_millis()))
+        Ok((value, duration_to_milliseconds(start.elapsed())))
     } else {
-        Ok((op()?, 0))
+        Ok((op()?, 0.0))
     }
 }
 
@@ -665,7 +753,7 @@ pub fn save_stwo_primitive_benchmark_report_tsv(
     path: &Path,
 ) -> Result<()> {
     let mut out = String::from(
-        "primitive\tbackend_variant\trelation\tclaimed_rows\tproof_bytes\tprove_ms\tverify_ms\tverified\tnote\n",
+        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tprimitive\tbackend_variant\trelation\tclaimed_rows\tproof_bytes\tprove_ms\tverify_ms\tverified\tnote\n",
     );
     for row in &report.rows {
         let claimed_rows = row
@@ -675,14 +763,20 @@ pub fn save_stwo_primitive_benchmark_report_tsv(
             .collect::<Vec<_>>()
             .join(",");
         out.push_str(&format!(
-            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            report.benchmark_version,
+            report.semantic_scope,
+            report.timing_mode,
+            report.timing_policy,
+            report.timing_unit,
+            report.timing_runs,
             row.primitive,
             row.backend_variant,
             row.relation,
             claimed_rows,
             row.proof_bytes,
-            row.prove_ms,
-            row.verify_ms,
+            format_timing_ms(row.prove_ms),
+            format_timing_ms(row.verify_ms),
             row.verified,
             row.note.replace('\t', " ")
         ));
@@ -706,7 +800,7 @@ pub fn save_stwo_shared_table_reuse_benchmark_report_tsv(
     path: &Path,
 ) -> Result<()> {
     let mut out = String::from(
-        "primitive\tbackend_variant\tsteps\trelation\tclaimed_rows\tproof_bytes\tserialized_bytes\tprove_ms\tverify_ms\tverified\tnote\n",
+        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tprimitive\tbackend_variant\tsteps\trelation\tclaimed_rows\tproof_bytes\tserialized_bytes\tprove_ms\tverify_ms\tverified\tnote\n",
     );
     for row in &report.rows {
         let claimed_rows = row
@@ -716,7 +810,13 @@ pub fn save_stwo_shared_table_reuse_benchmark_report_tsv(
             .collect::<Vec<_>>()
             .join(",");
         out.push_str(&format!(
-            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            report.benchmark_version,
+            report.semantic_scope,
+            report.timing_mode,
+            report.timing_policy,
+            report.timing_unit,
+            report.timing_runs,
             row.primitive,
             row.backend_variant,
             row.steps,
@@ -724,8 +824,8 @@ pub fn save_stwo_shared_table_reuse_benchmark_report_tsv(
             claimed_rows,
             row.proof_bytes,
             row.serialized_bytes,
-            row.prove_ms,
-            row.verify_ms,
+            format_timing_ms(row.prove_ms),
+            format_timing_ms(row.verify_ms),
             row.verified,
             row.note.replace('\t', " ")
         ));
@@ -749,7 +849,7 @@ pub fn save_stwo_phase12_shared_lookup_bundle_benchmark_report_tsv(
     path: &Path,
 ) -> Result<()> {
     let mut out = String::from(
-        "benchmark_version\tsemantic_scope\tprimitive\tbackend_variant\tsteps\trelation\tnormalization_rows\tactivation_rows\tproof_bytes\tserialized_bytes\tprove_ms\tverify_ms\tverified\tnote\n",
+        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tprimitive\tbackend_variant\tsteps\trelation\tnormalization_rows\tactivation_rows\tproof_bytes\tserialized_bytes\tprove_ms\tverify_ms\tverified\tnote\n",
     );
     for row in &report.rows {
         let normalization_rows = row
@@ -765,9 +865,13 @@ pub fn save_stwo_phase12_shared_lookup_bundle_benchmark_report_tsv(
             .collect::<Vec<_>>()
             .join(",");
         out.push_str(&format!(
-            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
             report.benchmark_version,
             report.semantic_scope,
+            report.timing_mode,
+            report.timing_policy,
+            report.timing_unit,
+            report.timing_runs,
             row.primitive,
             row.backend_variant,
             row.steps,
@@ -776,8 +880,8 @@ pub fn save_stwo_phase12_shared_lookup_bundle_benchmark_report_tsv(
             activation_rows,
             row.proof_bytes,
             row.serialized_bytes,
-            row.prove_ms,
-            row.verify_ms,
+            format_timing_ms(row.prove_ms),
+            format_timing_ms(row.verify_ms),
             row.verified,
             row.note.replace('\t', " ")
         ));
@@ -786,15 +890,15 @@ pub fn save_stwo_phase12_shared_lookup_bundle_benchmark_report_tsv(
     Ok(())
 }
 
-fn measure_rmsnorm_lookup() -> Result<StwoPrimitiveBenchmarkMeasurement> {
+fn measure_rmsnorm_lookup(capture_timings: bool) -> Result<StwoPrimitiveBenchmarkMeasurement> {
     let claimed_rows = RMSNORM_ROWS.to_vec();
-    let prove_start = Instant::now();
-    let envelope = prove_phase10_shared_normalization_lookup_envelope(&claimed_rows)?;
-    let prove_ms = prove_start.elapsed().as_millis();
+    let (envelope, prove_ms) = measure_elapsed_ms(capture_timings, || {
+        prove_phase10_shared_normalization_lookup_envelope(&claimed_rows)
+    })?;
     let proof_bytes = shared_normalization_stark_proof_size(&envelope.proof)?;
-    let verify_start = Instant::now();
-    let verified = verify_phase10_shared_normalization_lookup_envelope(&envelope)?;
-    let verify_ms = verify_start.elapsed().as_millis();
+    let (verified, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_phase10_shared_normalization_lookup_envelope(&envelope)
+    })?;
     Ok(StwoPrimitiveBenchmarkMeasurement {
         primitive: "rmsnorm_q8_inv_sqrt".to_string(),
         backend_variant: "lookup_logup".to_string(),
@@ -808,15 +912,17 @@ fn measure_rmsnorm_lookup() -> Result<StwoPrimitiveBenchmarkMeasurement> {
     })
 }
 
-fn measure_rmsnorm_selector_arithmetic() -> Result<StwoPrimitiveBenchmarkMeasurement> {
+fn measure_rmsnorm_selector_arithmetic(
+    capture_timings: bool,
+) -> Result<StwoPrimitiveBenchmarkMeasurement> {
     let claimed_rows = RMSNORM_ROWS.to_vec();
-    let prove_start = Instant::now();
-    let proof = prove_rmsnorm_selector_arithmetic(&claimed_rows)?;
-    let prove_ms = prove_start.elapsed().as_millis();
+    let (proof, prove_ms) = measure_elapsed_ms(capture_timings, || {
+        prove_rmsnorm_selector_arithmetic(&claimed_rows)
+    })?;
     let proof_bytes = primitive_benchmark_stark_proof_size(&proof)?;
-    let verify_start = Instant::now();
-    let verified = verify_rmsnorm_selector_arithmetic(&claimed_rows, &proof)?;
-    let verify_ms = verify_start.elapsed().as_millis();
+    let (verified, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_rmsnorm_selector_arithmetic(&claimed_rows, &proof)
+    })?;
     Ok(StwoPrimitiveBenchmarkMeasurement {
         primitive: "rmsnorm_q8_inv_sqrt".to_string(),
         backend_variant: "naive_selector_arithmetic".to_string(),
@@ -831,15 +937,14 @@ fn measure_rmsnorm_selector_arithmetic() -> Result<StwoPrimitiveBenchmarkMeasure
     })
 }
 
-fn measure_softmax_exp_lookup() -> Result<StwoPrimitiveBenchmarkMeasurement> {
+fn measure_softmax_exp_lookup(capture_timings: bool) -> Result<StwoPrimitiveBenchmarkMeasurement> {
     let claimed_rows = SOFTMAX_EXP_ROWS.to_vec();
-    let prove_start = Instant::now();
-    let proof = prove_softmax_exp_lookup(&claimed_rows)?;
-    let prove_ms = prove_start.elapsed().as_millis();
+    let (proof, prove_ms) =
+        measure_elapsed_ms(capture_timings, || prove_softmax_exp_lookup(&claimed_rows))?;
     let proof_bytes = primitive_benchmark_stark_proof_size(&proof)?;
-    let verify_start = Instant::now();
-    let verified = verify_softmax_exp_lookup(&claimed_rows, &proof)?;
-    let verify_ms = verify_start.elapsed().as_millis();
+    let (verified, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_softmax_exp_lookup(&claimed_rows, &proof)
+    })?;
     Ok(StwoPrimitiveBenchmarkMeasurement {
         primitive: "softmax_exp_q8".to_string(),
         backend_variant: "lookup_logup".to_string(),
@@ -854,15 +959,17 @@ fn measure_softmax_exp_lookup() -> Result<StwoPrimitiveBenchmarkMeasurement> {
     })
 }
 
-fn measure_softmax_exp_polynomial() -> Result<StwoPrimitiveBenchmarkMeasurement> {
+fn measure_softmax_exp_polynomial(
+    capture_timings: bool,
+) -> Result<StwoPrimitiveBenchmarkMeasurement> {
     let claimed_rows = SOFTMAX_EXP_ROWS.to_vec();
-    let prove_start = Instant::now();
-    let proof = prove_softmax_exp_polynomial(&claimed_rows)?;
-    let prove_ms = prove_start.elapsed().as_millis();
+    let (proof, prove_ms) = measure_elapsed_ms(capture_timings, || {
+        prove_softmax_exp_polynomial(&claimed_rows)
+    })?;
     let proof_bytes = primitive_benchmark_stark_proof_size(&proof)?;
-    let verify_start = Instant::now();
-    let verified = verify_softmax_exp_polynomial(&claimed_rows, &proof)?;
-    let verify_ms = verify_start.elapsed().as_millis();
+    let (verified, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_softmax_exp_polynomial(&claimed_rows, &proof)
+    })?;
     Ok(StwoPrimitiveBenchmarkMeasurement {
         primitive: "softmax_exp_q8".to_string(),
         backend_variant: "polynomial_interpolation".to_string(),
@@ -911,8 +1018,8 @@ fn measure_rmsnorm_independent_lookup(
     claimed_rows: &[(u16, u16)],
     capture_timings: bool,
 ) -> Result<StwoSharedTableReuseBenchmarkMeasurement> {
-    let mut prove_ms = 0;
-    let mut verify_ms = 0;
+    let mut prove_ms = 0.0_f64;
+    let mut verify_ms = 0.0_f64;
     let mut proof_bytes = 0usize;
     let mut serialized_bytes = 0usize;
     let mut proofs = Vec::with_capacity(claimed_rows.len());
@@ -921,7 +1028,7 @@ fn measure_rmsnorm_independent_lookup(
         let (envelope, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
             prove_phase10_shared_normalization_lookup_envelope(&step_rows)
         })?;
-        prove_ms += elapsed_ms;
+        prove_ms = round_milliseconds(prove_ms + elapsed_ms);
         proof_bytes += shared_normalization_stark_proof_size(&envelope.proof)?;
         serialized_bytes += serde_json::to_vec(&envelope)
             .map_err(|error| VmError::Serialization(error.to_string()))?
@@ -937,7 +1044,7 @@ fn measure_rmsnorm_independent_lookup(
                 "independent shared-normalization lookup proof did not verify".to_string(),
             ));
         }
-        verify_ms += elapsed_ms;
+        verify_ms = round_milliseconds(verify_ms + elapsed_ms);
     }
     Ok(StwoSharedTableReuseBenchmarkMeasurement {
         primitive: "rmsnorm_q8_inv_sqrt".to_string(),
@@ -959,8 +1066,8 @@ fn measure_rmsnorm_independent_naive(
     claimed_rows: &[(u16, u16)],
     capture_timings: bool,
 ) -> Result<StwoSharedTableReuseBenchmarkMeasurement> {
-    let mut prove_ms = 0;
-    let mut verify_ms = 0;
+    let mut prove_ms = 0.0_f64;
+    let mut verify_ms = 0.0_f64;
     let mut proof_bytes = 0usize;
     let mut serialized_bytes = 0usize;
     let mut proofs = Vec::with_capacity(claimed_rows.len());
@@ -969,7 +1076,7 @@ fn measure_rmsnorm_independent_naive(
         let (proof, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
             prove_rmsnorm_selector_arithmetic(&step_rows)
         })?;
-        prove_ms += elapsed_ms;
+        prove_ms = round_milliseconds(prove_ms + elapsed_ms);
         proof_bytes += primitive_benchmark_stark_proof_size(&proof)?;
         serialized_bytes += proof.len();
         proofs.push((step_rows, proof));
@@ -983,7 +1090,7 @@ fn measure_rmsnorm_independent_naive(
                 "independent RMSNorm arithmetic proof did not verify".to_string(),
             ));
         }
-        verify_ms += elapsed_ms;
+        verify_ms = round_milliseconds(verify_ms + elapsed_ms);
     }
     Ok(StwoSharedTableReuseBenchmarkMeasurement {
         primitive: "rmsnorm_q8_inv_sqrt".to_string(),
@@ -1036,8 +1143,8 @@ fn measure_softmax_independent_lookup(
     claimed_rows: &[(u16, u16)],
     capture_timings: bool,
 ) -> Result<StwoSharedTableReuseBenchmarkMeasurement> {
-    let mut prove_ms = 0;
-    let mut verify_ms = 0;
+    let mut prove_ms = 0.0_f64;
+    let mut verify_ms = 0.0_f64;
     let mut proof_bytes = 0usize;
     let mut serialized_bytes = 0usize;
     let mut proofs = Vec::with_capacity(claimed_rows.len());
@@ -1045,7 +1152,7 @@ fn measure_softmax_independent_lookup(
         let step_rows = [*row];
         let (proof, elapsed_ms) =
             measure_elapsed_ms(capture_timings, || prove_softmax_exp_lookup(&step_rows))?;
-        prove_ms += elapsed_ms;
+        prove_ms = round_milliseconds(prove_ms + elapsed_ms);
         proof_bytes += primitive_benchmark_stark_proof_size(&proof)?;
         serialized_bytes += proof.len();
         proofs.push((step_rows, proof));
@@ -1059,7 +1166,7 @@ fn measure_softmax_independent_lookup(
                 "independent softmax lookup proof did not verify".to_string(),
             ));
         }
-        verify_ms += elapsed_ms;
+        verify_ms = round_milliseconds(verify_ms + elapsed_ms);
     }
     Ok(StwoSharedTableReuseBenchmarkMeasurement {
         primitive: "softmax_exp_q8".to_string(),
@@ -1080,8 +1187,8 @@ fn measure_softmax_independent_naive(
     claimed_rows: &[(u16, u16)],
     capture_timings: bool,
 ) -> Result<StwoSharedTableReuseBenchmarkMeasurement> {
-    let mut prove_ms = 0;
-    let mut verify_ms = 0;
+    let mut prove_ms = 0.0_f64;
+    let mut verify_ms = 0.0_f64;
     let mut proof_bytes = 0usize;
     let mut serialized_bytes = 0usize;
     let mut proofs = Vec::with_capacity(claimed_rows.len());
@@ -1090,7 +1197,7 @@ fn measure_softmax_independent_naive(
         let (proof, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
             prove_softmax_selector_arithmetic(&step_rows)
         })?;
-        prove_ms += elapsed_ms;
+        prove_ms = round_milliseconds(prove_ms + elapsed_ms);
         proof_bytes += primitive_benchmark_stark_proof_size(&proof)?;
         serialized_bytes += proof.len();
         proofs.push((step_rows, proof));
@@ -1104,7 +1211,7 @@ fn measure_softmax_independent_naive(
                 "independent softmax arithmetic proof did not verify".to_string(),
             ));
         }
-        verify_ms += elapsed_ms;
+        verify_ms = round_milliseconds(verify_ms + elapsed_ms);
     }
     Ok(StwoSharedTableReuseBenchmarkMeasurement {
         primitive: "softmax_exp_q8".to_string(),
@@ -1159,8 +1266,8 @@ fn measure_activation_independent_lookup(
     claimed_rows: &[Phase3LookupTableRow],
     capture_timings: bool,
 ) -> Result<StwoSharedTableReuseBenchmarkMeasurement> {
-    let mut prove_ms = 0;
-    let mut verify_ms = 0;
+    let mut prove_ms = 0.0_f64;
+    let mut verify_ms = 0.0_f64;
     let mut proof_bytes = 0usize;
     let mut serialized_bytes = 0usize;
     let mut proofs = Vec::with_capacity(claimed_rows.len());
@@ -1169,7 +1276,7 @@ fn measure_activation_independent_lookup(
         let (envelope, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
             prove_phase10_shared_binary_step_lookup_envelope(&step_rows)
         })?;
-        prove_ms += elapsed_ms;
+        prove_ms = round_milliseconds(prove_ms + elapsed_ms);
         proof_bytes += shared_activation_stark_proof_size(&envelope.proof)?;
         serialized_bytes += serde_json::to_vec(&envelope)
             .map_err(|error| VmError::Serialization(error.to_string()))?
@@ -1185,7 +1292,7 @@ fn measure_activation_independent_lookup(
                 "independent activation lookup proof did not verify".to_string(),
             ));
         }
-        verify_ms += elapsed_ms;
+        verify_ms = round_milliseconds(verify_ms + elapsed_ms);
     }
     Ok(StwoSharedTableReuseBenchmarkMeasurement {
         primitive: "binary_step_activation".to_string(),
@@ -1208,8 +1315,8 @@ fn measure_activation_independent_naive(
     claimed_rows: &[Phase3LookupTableRow],
     capture_timings: bool,
 ) -> Result<StwoSharedTableReuseBenchmarkMeasurement> {
-    let mut prove_ms = 0;
-    let mut verify_ms = 0;
+    let mut prove_ms = 0.0_f64;
+    let mut verify_ms = 0.0_f64;
     let mut proof_bytes = 0usize;
     let mut serialized_bytes = 0usize;
     let mut proofs = Vec::with_capacity(claimed_rows.len());
@@ -1218,7 +1325,7 @@ fn measure_activation_independent_naive(
         let (proof, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
             prove_activation_selector_arithmetic(&step_rows)
         })?;
-        prove_ms += elapsed_ms;
+        prove_ms = round_milliseconds(prove_ms + elapsed_ms);
         proof_bytes += signed_primitive_benchmark_stark_proof_size(&proof)?;
         serialized_bytes += proof.len();
         proofs.push((step_rows, proof));
@@ -1232,7 +1339,7 @@ fn measure_activation_independent_naive(
                 "independent activation arithmetic proof did not verify".to_string(),
             ));
         }
-        verify_ms += elapsed_ms;
+        verify_ms = round_milliseconds(verify_ms + elapsed_ms);
     }
     Ok(StwoSharedTableReuseBenchmarkMeasurement {
         primitive: "binary_step_activation".to_string(),
@@ -1287,8 +1394,8 @@ fn measure_phase12_shared_lookup_bundle_independent_lookup(
     capture_timings: bool,
 ) -> Result<StwoPhase12SharedLookupBundleBenchmarkMeasurement> {
     ensure_phase12_bundle_row_counts(normalization_rows, activation_rows)?;
-    let mut prove_ms = 0;
-    let mut verify_ms = 0;
+    let mut prove_ms = 0.0_f64;
+    let mut verify_ms = 0.0_f64;
     let mut proof_bytes = 0usize;
     let mut serialized_bytes = 0usize;
     let mut normalization_proofs = Vec::with_capacity(normalization_rows.len());
@@ -1298,7 +1405,7 @@ fn measure_phase12_shared_lookup_bundle_independent_lookup(
         let (envelope, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
             prove_phase10_shared_normalization_lookup_envelope(&[*normalization_row])
         })?;
-        prove_ms += elapsed_ms;
+        prove_ms = round_milliseconds(prove_ms + elapsed_ms);
         proof_bytes += shared_normalization_stark_proof_size(&envelope.proof)?;
         serialized_bytes += serde_json::to_vec(&envelope)
             .map_err(|error| VmError::Serialization(error.to_string()))?
@@ -1309,7 +1416,7 @@ fn measure_phase12_shared_lookup_bundle_independent_lookup(
         let (envelope, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
             prove_phase10_shared_binary_step_lookup_envelope(&[activation_row.clone()])
         })?;
-        prove_ms += elapsed_ms;
+        prove_ms = round_milliseconds(prove_ms + elapsed_ms);
         proof_bytes += shared_activation_stark_proof_size(&envelope.proof)?;
         serialized_bytes += serde_json::to_vec(&envelope)
             .map_err(|error| VmError::Serialization(error.to_string()))?
@@ -1326,7 +1433,7 @@ fn measure_phase12_shared_lookup_bundle_independent_lookup(
                 "independent Phase12 normalization lookup proof did not verify".to_string(),
             ));
         }
-        verify_ms += elapsed_ms;
+        verify_ms = round_milliseconds(verify_ms + elapsed_ms);
     }
     for envelope in &activation_proofs {
         let (verified, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
@@ -1337,7 +1444,7 @@ fn measure_phase12_shared_lookup_bundle_independent_lookup(
                 "independent Phase12 activation lookup proof did not verify".to_string(),
             ));
         }
-        verify_ms += elapsed_ms;
+        verify_ms = round_milliseconds(verify_ms + elapsed_ms);
     }
 
     Ok(StwoPhase12SharedLookupBundleBenchmarkMeasurement {
@@ -1362,8 +1469,8 @@ fn measure_phase12_shared_lookup_bundle_independent_arithmetic(
     capture_timings: bool,
 ) -> Result<StwoPhase12SharedLookupBundleBenchmarkMeasurement> {
     ensure_phase12_bundle_row_counts(normalization_rows, activation_rows)?;
-    let mut prove_ms = 0;
-    let mut verify_ms = 0;
+    let mut prove_ms = 0.0_f64;
+    let mut verify_ms = 0.0_f64;
     let mut proof_bytes = 0usize;
     let mut serialized_bytes = 0usize;
     let mut normalization_proofs = Vec::with_capacity(normalization_rows.len());
@@ -1373,7 +1480,7 @@ fn measure_phase12_shared_lookup_bundle_independent_arithmetic(
         let (proof, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
             prove_rmsnorm_selector_arithmetic(&[*normalization_row])
         })?;
-        prove_ms += elapsed_ms;
+        prove_ms = round_milliseconds(prove_ms + elapsed_ms);
         proof_bytes += primitive_benchmark_stark_proof_size(&proof)?;
         serialized_bytes += proof.len();
         normalization_proofs.push((*normalization_row, proof));
@@ -1382,7 +1489,7 @@ fn measure_phase12_shared_lookup_bundle_independent_arithmetic(
         let (proof, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
             prove_activation_selector_arithmetic(&[activation_row.clone()])
         })?;
-        prove_ms += elapsed_ms;
+        prove_ms = round_milliseconds(prove_ms + elapsed_ms);
         proof_bytes += signed_primitive_benchmark_stark_proof_size(&proof)?;
         serialized_bytes += proof.len();
         activation_proofs.push((activation_row.clone(), proof));
@@ -1397,7 +1504,7 @@ fn measure_phase12_shared_lookup_bundle_independent_arithmetic(
                 "independent Phase12 normalization arithmetic proof did not verify".to_string(),
             ));
         }
-        verify_ms += elapsed_ms;
+        verify_ms = round_milliseconds(verify_ms + elapsed_ms);
     }
     for (activation_row, proof) in &activation_proofs {
         let (verified, elapsed_ms) = measure_elapsed_ms(capture_timings, || {
@@ -1408,7 +1515,7 @@ fn measure_phase12_shared_lookup_bundle_independent_arithmetic(
                 "independent Phase12 activation arithmetic proof did not verify".to_string(),
             ));
         }
-        verify_ms += elapsed_ms;
+        verify_ms = round_milliseconds(verify_ms + elapsed_ms);
     }
 
     Ok(StwoPhase12SharedLookupBundleBenchmarkMeasurement {
@@ -2682,11 +2789,17 @@ mod tests {
 
     #[test]
     fn primitive_benchmark_runs_all_matched_paths() {
-        let report =
-            run_stwo_primitive_lookup_vs_naive_benchmark().expect("primitive benchmark should run");
+        let report = run_stwo_primitive_lookup_vs_naive_benchmark_with_options(false)
+            .expect("primitive benchmark should run");
         assert_eq!(report.rows.len(), 4);
+        assert_eq!(report.timing_mode, BENCHMARK_TIMING_MODE_DETERMINISTIC);
+        assert_eq!(report.timing_policy, BENCHMARK_TIMING_POLICY_ZEROED);
+        assert_eq!(report.timing_unit, BENCHMARK_TIMING_UNIT_MILLISECONDS);
+        assert_eq!(report.timing_runs, 0);
         assert!(report.rows.iter().all(|row| row.verified));
         assert!(report.rows.iter().all(|row| row.proof_bytes > 0));
+        assert!(report.rows.iter().all(|row| row.prove_ms == 0.0));
+        assert!(report.rows.iter().all(|row| row.verify_ms == 0.0));
         assert!(report
             .rows
             .iter()
@@ -2695,6 +2808,27 @@ mod tests {
         assert!(report.rows.iter().any(|row| {
             row.backend_variant == "polynomial_interpolation" && row.primitive == "softmax_exp_q8"
         }));
+    }
+
+    #[test]
+    fn primitive_benchmark_measured_mode_reports_single_run_timings() {
+        let report = run_stwo_primitive_lookup_vs_naive_benchmark_with_options(true)
+            .expect("primitive benchmark measured mode should run");
+        assert_eq!(report.timing_mode, BENCHMARK_TIMING_MODE_SINGLE_RUN);
+        assert_eq!(
+            report.timing_policy,
+            BENCHMARK_TIMING_POLICY_SINGLE_RUN_MICROSECOND_CAPTURE
+        );
+        assert_eq!(report.timing_unit, BENCHMARK_TIMING_UNIT_MILLISECONDS);
+        assert_eq!(report.timing_runs, 1);
+        assert!(report
+            .rows
+            .iter()
+            .all(|row| row.prove_ms >= 0.0 && row.verify_ms >= 0.0));
+        assert!(report
+            .rows
+            .iter()
+            .any(|row| row.prove_ms > 0.0 || row.verify_ms > 0.0));
     }
 
     #[test]
@@ -2858,10 +2992,14 @@ mod tests {
         assert_eq!(report.rows.len(), 9);
         // Regression guard: the default report surface must stay deterministic
         // when timing capture is disabled.
+        assert_eq!(report.timing_mode, BENCHMARK_TIMING_MODE_DETERMINISTIC);
+        assert_eq!(report.timing_policy, BENCHMARK_TIMING_POLICY_ZEROED);
+        assert_eq!(report.timing_unit, BENCHMARK_TIMING_UNIT_MILLISECONDS);
+        assert_eq!(report.timing_runs, 0);
         assert!(report.rows.iter().all(|row| row.verified));
         assert!(report.rows.iter().all(|row| row.proof_bytes > 0));
-        assert!(report.rows.iter().all(|row| row.prove_ms == 0));
-        assert!(report.rows.iter().all(|row| row.verify_ms == 0));
+        assert!(report.rows.iter().all(|row| row.prove_ms == 0.0));
+        assert!(report.rows.iter().all(|row| row.verify_ms == 0.0));
     }
 
     #[test]
@@ -2939,10 +3077,14 @@ mod tests {
         assert_eq!(report.rows.len(), 3);
         // Regression guard: the default report surface must stay deterministic
         // when timing capture is disabled, even on the bounded smoke path.
+        assert_eq!(report.timing_mode, BENCHMARK_TIMING_MODE_DETERMINISTIC);
+        assert_eq!(report.timing_policy, BENCHMARK_TIMING_POLICY_ZEROED);
+        assert_eq!(report.timing_unit, BENCHMARK_TIMING_UNIT_MILLISECONDS);
+        assert_eq!(report.timing_runs, 0);
         assert!(report.rows.iter().all(|row| row.verified));
         assert!(report.rows.iter().all(|row| row.proof_bytes > 0));
-        assert!(report.rows.iter().all(|row| row.prove_ms == 0));
-        assert!(report.rows.iter().all(|row| row.verify_ms == 0));
+        assert!(report.rows.iter().all(|row| row.prove_ms == 0.0));
+        assert!(report.rows.iter().all(|row| row.verify_ms == 0.0));
     }
 
     #[test]

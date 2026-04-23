@@ -1,6 +1,10 @@
 {
   "benchmark_version": "stwo-primitive-lookup-vs-naive-benchmark-v1",
   "semantic_scope": "matched_stwo_lookup_vs_naive_transformer_primitive_measurement",
+  "timing_mode": "measured_median",
+  "timing_policy": "median_of_5_runs_from_microsecond_capture",
+  "timing_unit": "milliseconds",
+  "timing_runs": 5,
   "rows": [
     {
       "primitive": "rmsnorm_q8_inv_sqrt",
@@ -17,8 +21,8 @@
         ]
       ],
       "proof_bytes": 2684,
-      "prove_ms": 21,
-      "verify_ms": 4,
+      "prove_ms": 14.621,
+      "verify_ms": 2.166,
       "verified": true,
       "note": "actual S-two LogUp proof over the canonical Phase 5 normalization table"
     },
@@ -37,8 +41,8 @@
         ]
       ],
       "proof_bytes": 1428,
-      "prove_ms": 4,
-      "verify_ms": 2,
+      "prove_ms": 3.963,
+      "verify_ms": 1.176,
       "verified": true,
       "note": "actual S-two arithmetic proof; no LogUp relation, no lookup table argument"
     },
@@ -61,8 +65,8 @@
         ]
       ],
       "proof_bytes": 2684,
-      "prove_ms": 19,
-      "verify_ms": 2,
+      "prove_ms": 7.848,
+      "verify_ms": 1.999,
       "verified": true,
       "note": "actual S-two LogUp proof for the exp-table part of softmax, not full softmax"
     },
@@ -85,8 +89,8 @@
         ]
       ],
       "proof_bytes": 1240,
-      "prove_ms": 7,
-      "verify_ms": 2,
+      "prove_ms": 3.545,
+      "verify_ms": 1.078,
       "verified": true,
       "note": "actual S-two arithmetic proof for a sampled exp-table slice, not full softmax"
     }

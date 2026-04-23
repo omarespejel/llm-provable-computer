@@ -12,6 +12,7 @@ from xml.sax.saxutils import escape
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TSV = ROOT / "docs" / "paper" / "evidence" / "stwo-primitive-lookup-vs-naive-2026-04.tsv"
+DEFAULT_BENCH_RUNS = 5
 OUTDIR = ROOT / "docs" / "paper" / "figures"
 OUTDIR.mkdir(parents=True, exist_ok=True)
 
@@ -124,6 +125,17 @@ def render_text_lines(x: float, y: float, lines: list[str], *, size: int, anchor
     return "\n".join(out)
 
 
+def format_milliseconds(value: float, *, axis: bool = False) -> str:
+    rounded = round(value, 3)
+    if abs(rounded - round(rounded)) < 1e-9:
+        rendered = str(int(round(rounded)))
+    elif rounded >= 10:
+        rendered = f"{rounded:.1f}".rstrip("0").rstrip(".")
+    else:
+        rendered = f"{rounded:.3f}".rstrip("0").rstrip(".")
+    return rendered if axis else f"{rendered} ms"
+
+
 def draw_panel(rows: list[dict[str, str]], *, x0: int, title: str, metric_key: str,
                metric_label: str, formatter) -> str:
     values = [float(row[metric_key]) for row in rows]
@@ -182,7 +194,10 @@ def draw_panel(rows: list[dict[str, str]], *, x0: int, title: str, metric_key: s
     return "\n".join(svg)
 
 
-def render_svg(rows: list[dict[str, str]]) -> str:
+def render_svg(rows: list[dict[str, str]], *, bench_runs: int) -> str:
+    timings_captured = any(
+        float(row["prove_ms"]) > 0.0 or float(row["verify_ms"]) > 0.0 for row in rows
+    )
     proof_panel = draw_panel(
         rows,
         x0=LEFT_X,
@@ -197,17 +212,25 @@ def render_svg(rows: list[dict[str, str]]) -> str:
         title="Prove time",
         metric_key="prove_ms",
         metric_label="Local prove time (ms)",
-        formatter=lambda value, axis=False: f"{int(value)} ms" if not axis else f"{int(value)}",
+        formatter=lambda value, axis=False: format_milliseconds(value, axis=axis),
     )
 
     subtitle = (
         "Measured on this repo with actual S-two proof generation and verification. "
         "Softmax rows cover the exp-table slice only, not full standard softmax."
     )
-    footnote = (
-        "Blue bars are lookup-backed proofs. Orange and green bars are arithmetic baselines "
-        "over the same fixed-shape primitive slices."
-    )
+    if timings_captured:
+        footnote = (
+            "Blue bars are lookup-backed proofs. Orange and green bars are arithmetic baselines "
+            f"over the same fixed-shape primitive slices. Timings are medians over {bench_runs} "
+            "runs from microsecond capture, reported in milliseconds."
+        )
+    else:
+        footnote = (
+            "Blue bars are lookup-backed proofs. Orange and green bars are arithmetic baselines "
+            "over the same fixed-shape primitive slices. Timing capture was disabled and the "
+            "prove/verify values are intentionally zeroed for deterministic regeneration."
+        )
     return f"""<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{HEIGHT}" viewBox="0 0 {WIDTH} {HEIGHT}">
   <rect width="100%" height="100%" fill="white"/>
   <text x="{WIDTH/2:.1f}" y="72" text-anchor="middle"
@@ -278,6 +301,7 @@ def main() -> None:
     )
     parser.add_argument("--output-png", type=Path, default=None)
     parser.add_argument("--output-pdf", type=Path, default=None)
+    parser.add_argument("--bench-runs", type=int, default=DEFAULT_BENCH_RUNS)
     args = parser.parse_args()
 
     rows = read_rows(args.input_tsv)
@@ -285,7 +309,7 @@ def main() -> None:
         raise SystemExit(f"no rows found in {args.input_tsv}")
     validate_rows(rows, source=args.input_tsv)
 
-    svg = render_svg(rows)
+    svg = render_svg(rows, bench_runs=args.bench_runs)
     svg_path = args.output_svg
     svg_path.parent.mkdir(parents=True, exist_ok=True)
     svg_path.write_text(svg, encoding="utf-8")

@@ -49,6 +49,14 @@ def output_paths_conflict(lhs: Path, rhs: Path) -> bool:
         return False
 
 
+def round_milliseconds(value: float) -> float:
+    return round(value, 3)
+
+
+def format_milliseconds(value: float) -> str:
+    return f"{value:.3f}"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--inputs", nargs="+", required=True, type=Path)
@@ -66,14 +74,24 @@ def main() -> None:
 
     benchmark_version = None
     semantic_scope = None
+    timing_unit = None
     canonical_rows: list[dict[str, Any]] | None = None
-    timing_samples: dict[tuple[str, str, int], dict[str, list[int]]] = {}
+    timing_samples: dict[tuple[str, str, int], dict[str, list[float]]] = {}
 
     for input_path in args.inputs:
         payload = json.loads(input_path.read_text(encoding="utf-8"))
+        if payload.get("timing_mode") != "measured_single_run":
+            raise SystemExit(
+                f"{input_path} must be a measured single-run benchmark payload; got {payload.get('timing_mode')!r}"
+            )
+        if payload.get("timing_runs") != 1:
+            raise SystemExit(
+                f"{input_path} must report timing_runs == 1; got {payload.get('timing_runs')!r}"
+            )
         if benchmark_version is None:
             benchmark_version = payload["benchmark_version"]
             semantic_scope = payload["semantic_scope"]
+            timing_unit = payload.get("timing_unit", "milliseconds")
             canonical_rows = payload["rows"]
             build_row_map(canonical_rows, source=input_path)
             for row in canonical_rows:
@@ -86,6 +104,10 @@ def main() -> None:
             if payload["semantic_scope"] != semantic_scope:
                 raise SystemExit(
                     f"semantic_scope mismatch in {input_path}: {payload['semantic_scope']} != {semantic_scope}"
+                )
+            if payload.get("timing_unit", "milliseconds") != timing_unit:
+                raise SystemExit(
+                    f"timing_unit mismatch in {input_path}: {payload.get('timing_unit')!r} != {timing_unit!r}"
                 )
             if len(payload["rows"]) != len(canonical_rows or []):
                 raise SystemExit(
@@ -106,28 +128,36 @@ def main() -> None:
                     raise SystemExit(
                         f"deterministic field mismatch for {key} field {field} in {input_path}: {current[field]!r} != {row[field]!r}"
                     )
-            timing_samples[key]["prove_ms"].append(int(current["prove_ms"]))
-            timing_samples[key]["verify_ms"].append(int(current["verify_ms"]))
+            timing_samples[key]["prove_ms"].append(float(current["prove_ms"]))
+            timing_samples[key]["verify_ms"].append(float(current["verify_ms"]))
 
     assert canonical_rows is not None
     aggregated_rows: list[dict[str, Any]] = []
     for row in canonical_rows:
         key = key_for(row)
         aggregated = dict(row)
-        aggregated["prove_ms"] = int(statistics.median(timing_samples[key]["prove_ms"]))
-        aggregated["verify_ms"] = int(statistics.median(timing_samples[key]["verify_ms"]))
+        aggregated["prove_ms"] = round_milliseconds(
+            statistics.median(timing_samples[key]["prove_ms"])
+        )
+        aggregated["verify_ms"] = round_milliseconds(
+            statistics.median(timing_samples[key]["verify_ms"])
+        )
         aggregated_rows.append(aggregated)
 
+    timing_policy = f"median_of_{len(args.inputs)}_runs_from_microsecond_capture"
     output_payload = {
         "benchmark_version": benchmark_version,
         "semantic_scope": semantic_scope,
-        "timing_policy": f"median_of_{len(args.inputs)}_runs",
+        "timing_mode": "measured_median",
+        "timing_policy": timing_policy,
+        "timing_unit": timing_unit,
+        "timing_runs": len(args.inputs),
         "rows": aggregated_rows,
     }
     args.output_json.write_text(json.dumps(output_payload, indent=2) + "\n", encoding="utf-8")
 
     lines = [
-        "benchmark_version\tsemantic_scope\tprimitive\tbackend_variant\tsteps\trelation\tnormalization_rows\tactivation_rows\tproof_bytes\tserialized_bytes\tprove_ms\tverify_ms\tverified\tnote"
+        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tprimitive\tbackend_variant\tsteps\trelation\tnormalization_rows\tactivation_rows\tproof_bytes\tserialized_bytes\tprove_ms\tverify_ms\tverified\tnote"
     ]
     for row in aggregated_rows:
         normalization_rows = ",".join(
@@ -141,6 +171,10 @@ def main() -> None:
                 [
                     str(benchmark_version),
                     str(semantic_scope),
+                    "measured_median",
+                    timing_policy,
+                    str(timing_unit),
+                    str(len(args.inputs)),
                     row["primitive"],
                     row["backend_variant"],
                     str(row["steps"]),
@@ -149,8 +183,8 @@ def main() -> None:
                     activation_rows,
                     str(row["proof_bytes"]),
                     str(row["serialized_bytes"]),
-                    str(row["prove_ms"]),
-                    str(row["verify_ms"]),
+                    format_milliseconds(float(row["prove_ms"])),
+                    format_milliseconds(float(row["verify_ms"])),
                     str(row["verified"]).lower(),
                     str(row["note"]).replace("\t", " "),
                 ]

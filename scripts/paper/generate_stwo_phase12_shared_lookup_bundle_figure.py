@@ -131,16 +131,27 @@ def render_text(x: float, y: float, text: str, *, size: int, anchor: str = "midd
     )
 
 
+def format_milliseconds(value: float, *, axis: bool = False) -> str:
+    rounded = round(value, 3)
+    if abs(rounded - round(rounded)) < 1e-9:
+        rendered = str(int(round(rounded)))
+    elif rounded >= 10:
+        rendered = f"{rounded:.1f}".rstrip("0").rstrip(".")
+    else:
+        rendered = f"{rounded:.3f}".rstrip("0").rstrip(".")
+    return rendered if axis else f"{rendered} ms"
+
+
 def axis_label(value: float, metric_key: str) -> str:
     if metric_key in {"proof_bytes", "serialized_bytes"}:
         return f"{int(value):,}"
-    return f"{int(value)}"
+    return format_milliseconds(value, axis=True)
 
 
 def point_label(value: float, metric_key: str) -> str:
     if metric_key in {"proof_bytes", "serialized_bytes"}:
         return f"{int(value):,} B"
-    return f"{int(value)} ms"
+    return format_milliseconds(value)
 
 
 def render_panel(*, grouped: dict[str, list[dict[str, str]]], metric_key: str,
@@ -253,7 +264,7 @@ def render_legend(x: int, y: int) -> str:
 def render_svg(rows: list[dict[str, str]], *, bench_runs: int) -> str:
     grouped = group_rows(rows)
     timings_captured = any(
-        int(row["prove_ms"]) > 0 or int(row["verify_ms"]) > 0 for row in rows
+        float(row["prove_ms"]) > 0.0 or float(row["verify_ms"]) > 0.0 for row in rows
     )
     subtitle = (
         "A richer two-table kernel: one shared normalization artifact plus one shared activation "
@@ -262,7 +273,7 @@ def render_svg(rows: list[dict[str, str]], *, bench_runs: int) -> str:
     if timings_captured:
         footnote_lines = [
             "Measured locally from real S-two proof generation and verification. "
-            f"Timings are medians over {bench_runs} runs.",
+            f"Timings are medians over {bench_runs} runs from microsecond capture.",
             "The shared bundle is not recursive compression; it is a verifier-bound composition of two shared lookup-bearing proof surfaces.",
         ]
     else:
