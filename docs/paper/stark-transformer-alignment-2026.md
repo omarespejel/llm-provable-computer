@@ -558,8 +558,8 @@ It is narrower and cleaner: both nested proofs still verify, and the verifier st
 checks the shared registry commitment rather than merely reusing JSON bytes. The first
 paired row is pure overhead, but the reuse-sensitive crossover is already visible by the
 second and third rows. At three paired rows the shared bundle remains at `4,968` raw
-proof bytes and `16 ms`, versus `14,824` and `39 ms` for independent lookup pairs and
-`10,064` and `34 ms` for independent arithmetic pairs. So the current evidence now says
+proof bytes and `14 ms`, versus `14,824` and `41 ms` for independent lookup pairs and
+`10,064` and `35 ms` for independent arithmetic pairs. So the current evidence now says
 something more precise than “shared tables help”: the win survives when the proof surface
 moves from one table to a verifier-bound two-table bundle closer to the Phase12
 shared-lookup artifact family.

@@ -5,12 +5,14 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
 import subprocess
 from pathlib import Path
 from xml.sax.saxutils import escape
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TSV = ROOT / "docs" / "paper" / "evidence" / "stwo-phase12-shared-lookup-bundle-reuse-2026-04.tsv"
+DEFAULT_BENCH_RUNS = int(os.environ.get("BENCH_RUNS", "5"))
 OUTDIR = ROOT / "docs" / "paper" / "figures"
 OUTDIR.mkdir(parents=True, exist_ok=True)
 
@@ -237,14 +239,15 @@ def render_legend(x: int, y: int) -> str:
     return "\n".join(parts)
 
 
-def render_svg(rows: list[dict[str, str]]) -> str:
+def render_svg(rows: list[dict[str, str]], *, bench_runs: int) -> str:
     grouped = group_rows(rows)
     subtitle = (
         "A richer two-table kernel: one shared normalization artifact plus one shared activation "
         "lookup proof, bound together under one static table registry commitment."
     )
     footnote_lines = [
-        "Measured locally from real S-two proof generation and verification. Timings are medians over five runs.",
+        "Measured locally from real S-two proof generation and verification. "
+        f"Timings are medians over {bench_runs} runs.",
         "The shared bundle is not recursive compression; it is a verifier-bound composition of two shared lookup-bearing proof surfaces.",
     ]
     legend = render_legend(140, 178)
@@ -275,56 +278,72 @@ def render_svg(rows: list[dict[str, str]]) -> str:
 '''
 
 
-def write_optional_rasters(svg_path: Path, png_path: Path, pdf_path: Path, *, fail_closed: bool) -> None:
-    tmp_png = png_path.with_suffix(png_path.suffix + ".tmp")
-    try:
-        rsvg = subprocess.run(
-            ["rsvg-convert", "-f", "png", "-o", str(tmp_png), str(svg_path)],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-    except FileNotFoundError:
-        tmp_png.unlink(missing_ok=True)
-        if fail_closed:
-            raise SystemExit(f"rsvg-convert is required to render {png_path} from {svg_path}")
-        print(f"skipped {png_path} (rsvg-convert not found)")
-        rsvg = None
-    if rsvg is not None and rsvg.returncode == 0:
-        tmp_png.replace(png_path)
-        print(f"wrote {png_path}")
-    elif rsvg is not None:
-        tmp_png.unlink(missing_ok=True)
-        if fail_closed:
-            raise SystemExit(
-                f"rsvg-convert png failed for {png_path}: {rsvg.stderr.strip()}"
+def write_optional_rasters(
+    svg_path: Path,
+    png_path: Path | None,
+    pdf_path: Path | None,
+    *,
+    fail_closed: bool,
+) -> None:
+    if png_path is not None:
+        tmp_png = png_path.with_suffix(png_path.suffix + ".tmp")
+        try:
+            rsvg = subprocess.run(
+                ["rsvg-convert", "-f", "png", "-o", str(tmp_png), str(svg_path)],
+                check=False,
+                capture_output=True,
+                text=True,
             )
-        print(f"skipped {png_path} (rsvg-convert png failed: {rsvg.stderr.strip()})")
+        except FileNotFoundError:
+            tmp_png.unlink(missing_ok=True)
+            if fail_closed:
+                raise SystemExit(
+                    f"rsvg-convert is required to render {png_path} from {svg_path}"
+                ) from None
+            print(f"skipped {png_path} (rsvg-convert not found)")
+        else:
+            if rsvg.returncode == 0:
+                tmp_png.replace(png_path)
+                print(f"wrote {png_path}")
+            else:
+                tmp_png.unlink(missing_ok=True)
+                if fail_closed:
+                    raise SystemExit(
+                        f"rsvg-convert png failed for {png_path}: {rsvg.stderr.strip()}"
+                    )
+                print(
+                    f"skipped {png_path} (rsvg-convert png failed: {rsvg.stderr.strip()})"
+                )
 
-    tmp_pdf = pdf_path.with_suffix(pdf_path.suffix + ".tmp")
-    try:
-        rsvg_pdf = subprocess.run(
-            ["rsvg-convert", "-f", "pdf", "-o", str(tmp_pdf), str(svg_path)],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-    except FileNotFoundError:
-        tmp_pdf.unlink(missing_ok=True)
-        if fail_closed:
-            raise SystemExit(f"rsvg-convert is required to render {pdf_path} from {svg_path}")
-        print(f"skipped {pdf_path} (rsvg-convert not found)")
-        rsvg_pdf = None
-    if rsvg_pdf is not None and rsvg_pdf.returncode == 0:
-        tmp_pdf.replace(pdf_path)
-        print(f"wrote {pdf_path}")
-    elif rsvg_pdf is not None:
-        tmp_pdf.unlink(missing_ok=True)
-        if fail_closed:
-            raise SystemExit(
-                f"rsvg-convert pdf failed for {pdf_path}: {rsvg_pdf.stderr.strip()}"
+    if pdf_path is not None:
+        tmp_pdf = pdf_path.with_suffix(pdf_path.suffix + ".tmp")
+        try:
+            rsvg_pdf = subprocess.run(
+                ["rsvg-convert", "-f", "pdf", "-o", str(tmp_pdf), str(svg_path)],
+                check=False,
+                capture_output=True,
+                text=True,
             )
-        print(f"skipped {pdf_path} (rsvg-convert pdf failed: {rsvg_pdf.stderr.strip()})")
+        except FileNotFoundError:
+            tmp_pdf.unlink(missing_ok=True)
+            if fail_closed:
+                raise SystemExit(
+                    f"rsvg-convert is required to render {pdf_path} from {svg_path}"
+                ) from None
+            print(f"skipped {pdf_path} (rsvg-convert not found)")
+        else:
+            if rsvg_pdf.returncode == 0:
+                tmp_pdf.replace(pdf_path)
+                print(f"wrote {pdf_path}")
+            else:
+                tmp_pdf.unlink(missing_ok=True)
+                if fail_closed:
+                    raise SystemExit(
+                        f"rsvg-convert pdf failed for {pdf_path}: {rsvg_pdf.stderr.strip()}"
+                    )
+                print(
+                    f"skipped {pdf_path} (rsvg-convert pdf failed: {rsvg_pdf.stderr.strip()})"
+                )
 
 
 def main() -> None:
@@ -333,19 +352,22 @@ def main() -> None:
     parser.add_argument("--output-svg", type=Path, required=True)
     parser.add_argument("--output-png", type=Path)
     parser.add_argument("--output-pdf", type=Path)
+    parser.add_argument("--bench-runs", type=int, default=DEFAULT_BENCH_RUNS)
     parser.add_argument(
         "--fail-closed-rasters",
         action="store_true",
-        help="fail instead of skipping PNG/PDF generation when Inkscape is unavailable",
+        help="fail instead of skipping PNG/PDF generation when rsvg-convert is unavailable",
     )
     args = parser.parse_args()
+    if args.bench_runs <= 0:
+        raise SystemExit("--bench-runs must be positive")
 
     rows = read_rows(args.input_tsv)
     validate_rows(rows, source=args.input_tsv)
-    svg = render_svg(rows)
+    svg = render_svg(rows, bench_runs=args.bench_runs)
     args.output_svg.write_text(svg, encoding="utf-8")
 
-    if args.output_png is not None and args.output_pdf is not None:
+    if args.output_png is not None or args.output_pdf is not None:
         write_optional_rasters(
             args.output_svg,
             args.output_png,
