@@ -318,6 +318,24 @@ the estimated raw STARK proof size, not the enclosing JSON wrapper. That does no
 overturn the symbolic model; it identifies where a small matched empirical anchor and a
 long-context symbolic stress model are describing different regimes.
 
+The complementary benchmark now checked at
+`docs/paper/evidence/stwo-shared-table-reuse-2026-04.tsv` measures the regime the
+paper actually attributes to lookup-friendly STARKs: repeated reuse of one canonical
+table identity across several steps. The checked TSV is the canonical source for this
+branch and records the median of five repeated local runs; the millisecond values remain
+host-dependent representative timings rather than portable wall-clock guarantees. Here
+the qualitative picture changes. For RMSNorm
+at five shared rows, the shared-table path records `2,140` raw proof bytes and `10 ms`
+of proving, versus `12,812` bytes and `46 ms` for five independent lookup envelopes and
+`8,292` bytes and `48 ms` for five independent selector-arithmetic proofs. For the
+softmax exp-table slice at eight shared rows, the shared-table path records `2,284`
+bytes and `8 ms`, versus `19,552` bytes and `58 ms` for independent lookup proofs and
+`14,216` bytes and `42 ms` for independent selector-arithmetic proofs. This is still
+not a full attention-kernel or recursive-compression result, but it is the reuse-aware
+regime the symbolic model was trying to isolate: once one canonical table identity is
+made verifier-visible across repeated steps, proof growth can flatten sharply instead of
+scaling with the number of independent envelopes.
+
 ### 4.5 Inference layer versus settlement layer
 
 The right 2026 architecture is not necessarily "prove every transformer operation as
@@ -433,6 +451,19 @@ These results are intentionally used as a calibration anchor for the paper’s s
 model, not as a claim that the current implementation already demonstrates lookup-backed
 wall-clock dominance.
 
+Figure 4 visualizes the complementary reuse-sensitive benchmark directly from the
+checked TSV.
+
+![Figure 4. Shared-table reuse benchmark inside S-two over repeated RMSNorm and softmax-exp rows.](figures/stwo-shared-table-reuse-2026-04.svg)
+
+**Figure 4.** Shared-table reuse benchmark from
+`docs/paper/evidence/stwo-shared-table-reuse-2026-04.tsv`. The blue rows are single
+shared proof objects that bind multiple selected rows to one canonical table identity,
+while the orange and green baselines reprove the same steps independently. The point is
+not that every one-shot lookup is already cheaper than every arithmetic alternative. The
+point is that the lookup path begins to flatten once reuse is made verifier-visible. The
+timing rows in this figure are medians over five repeated local runs.
+
 ______________________________________________________________________
 
 ## 5. Repository Artifact: Evidence Boundary
@@ -482,6 +513,33 @@ because it gives the paper one reproducible bridge between the symbolic model in
 measured softmax row is an exp-table slice, not a full attention kernel, and the
 benchmark does not compare against external SNARK systems. But it is no longer a
 hypothetical next step.
+
+The next checked CLI path, `bench-stwo-shared-table-reuse`, measures the production-
+relevant reuse axis directly. Its evidence files
+`docs/paper/evidence/stwo-shared-table-reuse-2026-04.tsv`,
+`docs/paper/evidence/stwo-shared-table-reuse-2026-04.json`, and Figure 4 compare one
+shared proof over `N` selected rows against `N` independent lookup or arithmetic proofs
+over the same canonical RMSNorm and softmax-exp tables. Unlike the one-shot calibration
+rows in Figure 3, these rows already show the reuse-sensitive behavior the paper claims
+matters: proof bytes and prove time on the shared-table path stay nearly flat while the
+independent baselines scale roughly linearly with `N`.
+
+#### Threat model and soundness boundary
+
+The paper's adversary is a probabilistic polynomial-time prover or artifact producer who
+can choose arbitrary serialized inputs, reorder claimed rows, swap table identities,
+splice stale nested artifacts, and relabel backend or version metadata. For the direct
+S-two proof rows in Figures 3 and 4, acceptance means the upstream S-two proof object
+verifies under the implemented relation and the repository-local verifier checks the
+declared semantic scope plus the canonical-table and claimed-row binding required by that
+surface. For the Phase 92 shared-normalization artifact, that includes the static lookup
+registry commitment and the ordered claimed-row list; for the softmax-exp shared proof,
+it includes the canonical exp-table rows and the selected-row witness. This is a concrete
+soundness boundary, not a new asymptotic theorem: the paper relies on upstream S-two
+cryptographic assumptions for proof soundness and on deterministic repository-local
+checks for metadata, table identity, and source-bound artifact structure. It does not
+claim recursive compression, full standard-softmax inference soundness, or a universal
+security theorem for every row in the experimental S-two tier.
 
 For shared lookup evidence, the artifact binds normalization and activation table
 identity into a static lookup-table registry commitment inside the shared lookup
@@ -553,11 +611,11 @@ nested members and rejects non-contiguous or template-incompatible boundaries. I
 over the ordered members gives the same start-to-end relation for the packaged object.
 This is a statement-preservation invariant, not a recursive proof-compression theorem.
 
-Figure 4 summarizes the object flow and the two carried commitment lanes.
+Figure 5 summarizes the object flow and the two carried commitment lanes.
 
-![Figure 4. Carried-state packaging ladder over the parameterized decode relation.](figures/section5-carried-state-ladder.svg)
+![Figure 5. Carried-state packaging ladder over the parameterized decode relation.](figures/section5-carried-state-ladder.svg)
 
-**Figure 4.** Carried-state packaging ladder over the parameterized decode relation. A
+**Figure 5.** Carried-state packaging ladder over the parameterized decode relation. A
 verified `decoding_step_v2` chain is packaged into segments, interval bundles, rollups,
 a multi-layout matrix, and a pre-recursive aggregation boundary. The two carried lanes
 represent the KV-side cumulative/frontier commitments and the lookup-side
@@ -573,8 +631,9 @@ the older vanilla tier remains only a local reproducibility baseline. Second, th
 proved transformer relation still uses `average-hard`
 rather than full standard softmax. Third, the current repository already binds shared
 lookup-table identity inside public artifacts and across those Phase 62 proof-carrying
-step envelopes, but it does not yet expose recursive cross-step shared-table accumulation
-as a compressed proof object. Fourth, the decode overlays, semantic-agreement artifacts,
+step envelopes, and Figure 4 shows that this can flatten proof growth across repeated
+selected rows, but it still does not yet expose recursive cross-step shared-table
+accumulation as a compressed proof object. Fourth, the decode overlays, semantic-agreement artifacts,
 and pre-recursive
 aggregation boundaries are
 statement-preserving packaging layers, not recursive cryptographic wrappers, SMT-backed
@@ -809,19 +868,21 @@ especially when the inference layer itself may be GKR/sumcheck-heavy or TEE-assi
 ### 8.3 Highest-leverage next step
 
 Given the current artifact boundary and the external landscape, the highest-leverage
-near-term result is no longer to create a matched within-S-two primitive benchmark from
-scratch. That benchmark already exists on the checked CLI path
-`bench-stwo-primitive-lookup-vs-naive`, with the checked evidence files
-`docs/paper/evidence/stwo-primitive-lookup-vs-naive-2026-04.tsv` and
-`docs/paper/evidence/stwo-primitive-lookup-vs-naive-2026-04.json`.
+near-term result is no longer to create either the first matched within-S-two primitive
+benchmark or the first shared-table reuse benchmark from scratch. Both now exist on the
+checked CLI paths `bench-stwo-primitive-lookup-vs-naive` and
+`bench-stwo-shared-table-reuse`, with checked evidence files under
+`docs/paper/evidence/` and Figures 3-4.
 
-The next step is to tighten and extend that measured surface. Methodologically, the
-symbolic model now has one concrete anchor inside the same backend, so the right follow-on
-work is to preserve strict statement binding, add more adversarial and nested-proof checks,
-investigate resource-bound regressions as the primitive grows, and keep the paper's prose
-and checked artifacts aligned as the benchmark evolves. After that, the obvious expansion
-is to move from this exp-table slice toward richer attention and normalization kernels,
-while keeping the same explicit lookup-vs-naive comparison frame.
+The next step is to lift that same measurement discipline from fixed table slices to a
+richer transformer kernel while keeping reuse explicit. Methodologically, the symbolic
+model now has one isolated calibration anchor and one reuse-sensitive anchor inside the
+same backend. The right follow-on work is therefore to preserve strict statement binding,
+add more adversarial and nested-proof checks, investigate resource-bound regressions as
+the kernel grows, and keep the paper's prose and checked artifacts aligned as those
+measured surfaces widen. After that, the obvious expansion is to move from these fixed
+RMSNorm and exp-table slices toward richer attention and normalization kernels, while
+keeping the same explicit shared-proof-versus-independent-envelope comparison frame.
 
 More generic folding and recursive-argument frameworks already cover much of the broad
 abstraction space [41, 43, 44, 45]. The sharper contribution available here is
@@ -843,6 +904,12 @@ This paper does not argue that SNARKs cannot prove transformers or that STARKs h
 already won. It argues a narrower point: transformer workloads emphasize lookup-heavy
 nonlinearities, recursion, and field/commitment design choices where STARK-native
 systems may compound advantages.
+
+The checked empirical surface now makes that narrower claim more precise. One-shot matched
+primitive rows remain an honest calibration anchor rather than a dominance claim, but the
+shared-table reuse benchmark shows that once one canonical lookup identity is carried
+across repeated rows inside the verifier-visible statement, proof growth can flatten
+substantially inside the current S-two surface.
 
 The repository contributes evidence at two layers: trace semantics and pre-recursive
 carried state. It shows direct proving of transformer-relevant traces, semantic checks
