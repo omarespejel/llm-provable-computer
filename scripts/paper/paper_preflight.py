@@ -990,11 +990,38 @@ def parse_index_timings(index_text: str) -> dict[str, int]:
     return out
 
 
+def parse_index_field_values(index_text: str) -> dict[str, str]:
+    out: dict[str, str] = {}
+    try:
+        rows = parse_markdown_table_after_heading(index_text, "## Artifact Summary")
+    except ValueError:
+        return out
+    if len(rows) < 3:
+        return out
+    header_map = {
+        normalize_table_header(name): idx for idx, name in enumerate(rows[0])
+    }
+    try:
+        field_idx = header_map["field"]
+        value_idx = header_map["value"]
+    except KeyError:
+        return out
+    # Skip header + separator.
+    for row in rows[2:]:
+        if len(row) <= max(field_idx, value_idx):
+            continue
+        field = row[field_idx].strip().strip("`")
+        value = row[value_idx].strip().strip("`")
+        if field:
+            out[field] = value
+    return out
+
+
 def parse_appendix_backend_rows(appendix_text: str) -> dict[tuple[str, str], tuple[int, int, int]]:
     out: dict[tuple[str, str], tuple[int, int, int]] = {}
     try:
         rows = parse_markdown_table_after_heading(
-            appendix_text, "## Table C1. Frozen artifact comparison by backend and scope"
+            appendix_text, "## Table C1. Frozen vanilla baseline by scope"
         )
     except ValueError:
         return out
@@ -1034,18 +1061,68 @@ def parse_appendix_backend_rows(appendix_text: str) -> dict[tuple[str, str], tup
     return out
 
 
+def parse_appendix_transformer_bundle_rows(
+    appendix_text: str,
+) -> dict[tuple[str, str], tuple[int, int, int]]:
+    out: dict[tuple[str, str], tuple[int, int, int]] = {}
+    try:
+        rows = parse_markdown_table_after_heading(
+            appendix_text, "## Table C2. Frozen transformer-shaped `stwo` bundle"
+        )
+    except ValueError:
+        return out
+    if len(rows) < 3:
+        return out
+    header_map = {
+        normalize_table_header(name): idx for idx, name in enumerate(rows[0])
+    }
+
+    def first_matching_header(*aliases: str) -> int:
+        for alias in aliases:
+            key = normalize_table_header(alias)
+            if key in header_map:
+                return header_map[key]
+        raise KeyError(aliases[0])
+
+    try:
+        bundle_idx = first_matching_header("Bundle")
+        backend_idx = first_matching_header("Backend")
+        prepare_idx = first_matching_header("Prepare")
+        verify_idx = first_matching_header("Verify")
+        size_idx = first_matching_header("Artifact size", "Artifact size (bytes)", "Size (bytes)")
+    except KeyError:
+        return out
+    # Skip header + separator.
+    for row in rows[2:]:
+        if len(row) <= max(bundle_idx, backend_idx, prepare_idx, verify_idx, size_idx):
+            continue
+        bundle = row[bundle_idx].strip().strip("`")
+        backend = row[backend_idx].strip().strip("`")
+        prepare_digits = re.sub(r"[^0-9]", "", row[prepare_idx])
+        verify_digits = re.sub(r"[^0-9]", "", row[verify_idx])
+        size_digits = re.sub(r"[^0-9]", "", row[size_idx])
+        if not (prepare_digits and verify_digits and size_digits):
+            continue
+        out[(bundle, backend)] = (
+            int(prepare_digits),
+            int(verify_digits),
+            int(size_digits),
+        )
+    return out
+
+
 def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findings) -> None:
     appendix_path = repo_root / "docs/paper/appendix-backend-artifact-comparison.md"
     prod_index_path = (
         repo_root
         / "docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md"
     )
-    stwo_index_path = (
+    transformer_index_path = (
         repo_root
-        / "docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md"
+        / "docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md"
     )
 
-    for required_path in (appendix_path, prod_index_path, stwo_index_path):
+    for required_path in (appendix_path, prod_index_path, transformer_index_path):
         if not required_path.exists():
             findings.error(
                 f"{required_path}: missing required file for backend artifact consistency check."
@@ -1055,11 +1132,11 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
     try:
         appendix_text = appendix_path.read_text(encoding="utf-8")
         prod_text = prod_index_path.read_text(encoding="utf-8")
-        stwo_text = stwo_index_path.read_text(encoding="utf-8")
+        transformer_text = transformer_index_path.read_text(encoding="utf-8")
     except OSError as exc:
         findings.error(
             "failed to read backend artifact consistency inputs "
-            f"({appendix_path}, {prod_index_path}, {stwo_index_path}): {exc}"
+            f"({appendix_path}, {prod_index_path}, {transformer_index_path}): {exc}"
         )
         return
 
@@ -1069,11 +1146,17 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
             f"{appendix_path}: failed to parse Table C1 rows for backend artifact consistency checks."
         )
         return
+    transformer_rows = parse_appendix_transformer_bundle_rows(appendix_text)
+    if not transformer_rows:
+        findings.error(
+            f"{appendix_path}: failed to parse Table C2 rows for transformer-shaped artifact consistency checks."
+        )
+        return
 
     prod_sizes = parse_index_sizes(prod_text)
     prod_timings = parse_index_timings(prod_text)
-    stwo_sizes = parse_index_sizes(stwo_text)
-    stwo_timings = parse_index_timings(stwo_text)
+    transformer_timings = parse_index_timings(transformer_text)
+    transformer_fields = parse_index_field_values(transformer_text)
 
     required_prod_timing_keys = [
         "prove_addition",
@@ -1088,27 +1171,22 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
         "dot_product.proof.json",
         "single_neuron.proof.json",
     ]
-    required_stwo_timing_keys = [
-        "prove_addition_stwo",
-        "verify_addition_stwo",
-        "prove_shared_normalization_stwo",
-        "verify_shared_normalization_stwo",
-        "prove_linear_block_v4_with_lookup_stwo",
-        "verify_linear_block_v4_with_lookup_stwo",
-        "prove_decoding_demo_stwo",
-        "verify_decoding_demo_stwo",
+    required_transformer_timing_keys = [
+        "prepare_transformer_shaped_bundle",
+        "verify_transformer_shaped_bundle",
     ]
-    required_stwo_size_keys = [
-        "addition.stwo.proof.json",
-        "shared-normalization.stwo.proof.json",
-        "linear_block_v4_with_lookup.stwo.proof.json",
-        "decoding.stwo.chain.json",
+    required_transformer_field_keys = [
+        "Artifact size (bytes)",
     ]
 
     missing_prod_timing = sorted(k for k in required_prod_timing_keys if k not in prod_timings)
     missing_prod_sizes = sorted(k for k in required_prod_size_keys if k not in prod_sizes)
-    missing_stwo_timing = sorted(k for k in required_stwo_timing_keys if k not in stwo_timings)
-    missing_stwo_sizes = sorted(k for k in required_stwo_size_keys if k not in stwo_sizes)
+    missing_transformer_timing = sorted(
+        k for k in required_transformer_timing_keys if k not in transformer_timings
+    )
+    missing_transformer_fields = sorted(
+        k for k in required_transformer_field_keys if k not in transformer_fields
+    )
     if missing_prod_timing:
         findings.error(
             f"{prod_index_path}: missing timing keys required for Appendix C consistency check: "
@@ -1119,17 +1197,22 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
             f"{prod_index_path}: missing artifact-size keys required for Appendix C consistency check: "
             f"{missing_prod_sizes}"
         )
-    if missing_stwo_timing:
+    if missing_transformer_timing:
         findings.error(
-            f"{stwo_index_path}: missing timing keys required for Appendix C consistency check: "
-            f"{missing_stwo_timing}"
+            f"{transformer_index_path}: missing timing keys required for Appendix C consistency check: "
+            f"{missing_transformer_timing}"
         )
-    if missing_stwo_sizes:
+    if missing_transformer_fields:
         findings.error(
-            f"{stwo_index_path}: missing artifact-size keys required for Appendix C consistency check: "
-            f"{missing_stwo_sizes}"
+            f"{transformer_index_path}: missing artifact-summary fields required for Appendix C consistency check: "
+            f"{missing_transformer_fields}"
         )
-    if missing_prod_timing or missing_prod_sizes or missing_stwo_timing or missing_stwo_sizes:
+    if (
+        missing_prod_timing
+        or missing_prod_sizes
+        or missing_transformer_timing
+        or missing_transformer_fields
+    ):
         return
 
     # NOTE: This mapping is intentionally strict for frozen-artifact validation.
@@ -1152,26 +1235,6 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
             prod_timings["verify_single_neuron"],
             prod_sizes["single_neuron.proof.json"],
         ),
-        ("addition", "stwo"): (
-            stwo_timings["prove_addition_stwo"],
-            stwo_timings["verify_addition_stwo"],
-            stwo_sizes["addition.stwo.proof.json"],
-        ),
-        ("shared-normalization-demo", "stwo"): (
-            stwo_timings["prove_shared_normalization_stwo"],
-            stwo_timings["verify_shared_normalization_stwo"],
-            stwo_sizes["shared-normalization.stwo.proof.json"],
-        ),
-        ("linear_block_v4_with_lookup", "stwo"): (
-            stwo_timings["prove_linear_block_v4_with_lookup_stwo"],
-            stwo_timings["verify_linear_block_v4_with_lookup_stwo"],
-            stwo_sizes["linear_block_v4_with_lookup.stwo.proof.json"],
-        ),
-        ("decoding_demo", "stwo"): (
-            stwo_timings["prove_decoding_demo_stwo"],
-            stwo_timings["verify_decoding_demo_stwo"],
-            stwo_sizes["decoding.stwo.chain.json"],
-        ),
     }
 
     for key, expected_values in expected.items():
@@ -1191,6 +1254,34 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
     for key in unexpected_keys:
         findings.error(
             f"{appendix_path}: unexpected Table C1 row for artifact/backend {key!r}; "
+            "no matching frozen artifact index entry."
+        )
+
+    expected_transformer: dict[tuple[str, str], tuple[int, int, int]] = {
+        ("stwo-transformer-shaped-v1", "stwo"): (
+            transformer_timings["prepare_transformer_shaped_bundle"],
+            transformer_timings["verify_transformer_shaped_bundle"],
+            int(re.sub(r"[^0-9]", "", transformer_fields["Artifact size (bytes)"])),
+        ),
+    }
+
+    for key, expected_values in expected_transformer.items():
+        if key not in transformer_rows:
+            findings.error(
+                f"{appendix_path}: missing Table C2 row for bundle/backend {key!r}."
+            )
+            continue
+        found_values = transformer_rows[key]
+        if found_values != expected_values:
+            findings.error(
+                f"{appendix_path}: Table C2 mismatch for {key!r}: found prepare/verify/size={found_values}, "
+                f"expected={expected_values} from frozen artifact indices."
+            )
+
+    unexpected_transformer_keys = sorted(set(transformer_rows) - set(expected_transformer))
+    for key in unexpected_transformer_keys:
+        findings.error(
+            f"{appendix_path}: unexpected Table C2 row for bundle/backend {key!r}; "
             "no matching frozen artifact index entry."
         )
 

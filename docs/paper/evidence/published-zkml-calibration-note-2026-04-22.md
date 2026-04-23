@@ -29,6 +29,9 @@ published numbers make three boundaries explicit:
   `~0.25M`-parameter `nanoGPT` model, and `~38s` end-to-end for `GPT-2 (125M)`.
 - `EZKL`, as quoted by `Jolt Atlas` on the same `nanoGPT` workload, reports
   `237s` proof time and `0.34s` verify time.
+- `BitSage obelyzk.rs` reports a `41.4s` warm-cache proof for one
+  `Qwen2.5-14B` token on `H100`; this is the closest public STARK-native
+  comparator row, but it is repo-reported and not a matched benchmark.
 - the current repository's strongest checked-in `stwo` artifact row is still a
   transformer-shaped fixed fixture (`linear_block_v4_with_lookup`), not a full
   transformer model.

@@ -46,8 +46,10 @@ Paper title:
 
 - Production frozen bundle index:
   - `docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md`
-- Experimental `stwo` frozen bundle index:
-  - `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md`
+- Current transformer-shaped `stwo` bundle index:
+  - `docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md`
+- Current tensor-native primitive `stwo` bundle index:
+  - `docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md`
 - Proof-carrying aggregation bundle index:
   - `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/APPENDIX_ARTIFACT_INDEX.md`
   - Citation commit: `6bb8cab99092203217d64951c3af61488aa2c58e`

@@ -94,9 +94,13 @@ Primary frozen bundle index:
 
 - `docs/paper/artifacts/production-v1-2026-04-04/APPENDIX_ARTIFACT_INDEX.md`
 
-Frozen experimental `stwo` bundle index:
+Current transformer-shaped `stwo` bundle index:
 
-- `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md`
+- `docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md`
+
+Current tensor-native primitive `stwo` bundle index:
+
+- `docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md`
 
 Proof-carrying aggregation bundle index:
 

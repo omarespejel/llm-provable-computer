@@ -1,18 +1,22 @@
 # Appendix: Frozen Backend Artifact Comparison
 
-Evidence snapshot: **April 6, 2026** bundle, with index material finalized April 7, 2026
-UTC.
+Evidence snapshot: **April 2026** publication surface.
 
-This appendix complements Appendix A and the main paper’s Section 5 by placing one
-legacy vanilla baseline and one narrow experimental `stwo` bundle side by side:
+This appendix complements Appendix A and the main paper's Section 5 by keeping two
+artifact tiers distinct:
 
-- the older vanilla-backend `production-v1` reproducibility bundle, and
-- the narrow experimental `stwo-experimental-v1` bundle.
+- Table C1 records the retained legacy vanilla `production-v1` reproducibility baseline.
+- Table C2 records the current paper-facing transformer-shaped `stwo` bundle.
 
-These rows are **not** matched end-to-end benchmarks on identical workloads. They are
-frozen artifact facts drawn from the committed bundle indices under
-`docs/paper/artifacts/production-v1-2026-04-04/` and
-`docs/paper/artifacts/stwo-experimental-v1-2026-04-06/`.
+The retired April 6 experimental bundle is no longer part of the v5 publication
+surface. It was a useful early S-two evidence tier, but the paper now cites newer
+transformer-shaped and tensor-native bundles with cleaner naming and stronger statement
+boundaries.
+
+These rows are **not** matched end-to-end backend benchmarks. They are frozen artifact
+facts drawn from committed bundle indices. The vanilla rows remain local reproducibility
+provenance; the `stwo` row is a narrow source-bound systems artifact, not a claim of
+full standard-softmax inference, recursive verification, or cryptographic compression.
 
 The repository also contains
 `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/`, a proof-carrying
@@ -25,50 +29,37 @@ verifier-surface checkpoint rather than a proof-output timing bundle. It records
 Phase 63-65 bridge in which shared lookup identity and typed carried state are
 source-bound across a transformer-shaped proof-carrying artifact line.
 
-The newer
-`docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/` directory freezes one
-reproducible transformer-shaped `stwo` bundle built from a five-step source chain, two
-real translated segment manifests, and a source-bound translated composition surface.
-It is systems evidence for one reproducible transformer-shaped `stwo` artifact with concrete
-metrics, not a normalized backend benchmark row.
-
-## Table C1. Frozen artifact comparison by backend and scope
+## Table C1. Frozen vanilla baseline by scope
 
 | Artifact | Backend | Bundle | Prove | Verify | Proof size | Semantic scope |
 |---|---|---|---:|---:|---:|---|
 | `addition` | vanilla | `production-v1` | `71s` | `2s` | `7,644,769` bytes | arithmetic `statement-v1` execution proof |
-| `addition` | `stwo` | `stwo-experimental-v1` | `2s` | `1s` | `54,563` bytes | arithmetic `statement-v1` execution proof |
 | `dot_product` | vanilla | `production-v1` | `430s` | `5s` | `12,835,175` bytes | neural-style arithmetic `statement-v1` execution proof |
 | `single_neuron` | vanilla | `production-v1` | `390s` | `4s` | `11,767,989` bytes | neural-style arithmetic `statement-v1` execution proof |
-| `shared-normalization-demo` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `74,074` bytes | shared-table normalization lookup proof envelope (instance-bound; no cross-step shared-table accumulation) |
-| `gemma_block_v4` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `751,737` bytes | fixed-shape Gemma-inspired `statement-v1` proof with shared lookup bindings (instance-bound; no cross-step shared-table accumulation) |
-| `decoding_demo` | `stwo` | `stwo-experimental-v1` | `1s` | `1s` | `4,032,182` bytes | three-step proof-carrying decoding chain (instance-bound; no cross-step shared-table accumulation) |
 
-Table C1 values are enforced against the frozen artifact indices named above.
-Detailed command labels and artifact row names remain in those indices rather
-than inside timing or size cells, so the publication preflight can parse the
-numeric values unambiguously.
-
-## How to read this appendix
-
-- `production-v1` is kept here as a legacy vanilla baseline row, not as the main
-  paper-facing artifact tier.
-- `stwo-experimental-v1` is intentionally narrower, but it now freezes one arithmetic
-  proof, one lookup-backed proof envelope, one transformer-shaped fixed-shape proof,
-  and one proof-carrying decoding chain on the experimental S-two path.
-- The table is useful as artifact evidence, not as a normalized backend-performance
-  study. In particular, the `stwo-experimental-v1` timing rows come from warmed local
-  bundle runs rather than a cold-build or matched-hardware benchmark harness.
+Table C1 values are enforced against the frozen artifact index under
+`docs/paper/artifacts/production-v1-2026-04-04/`. Detailed command labels and artifact
+row names remain in that index rather than inside timing or size cells, so the
+publication preflight can parse the numeric values unambiguously.
 
 ## Table C2. Frozen transformer-shaped `stwo` bundle
 
 | Bundle | Backend | Prepare | Verify | Artifact size | Structural metrics | Semantic scope |
 |---|---|---:|---:|---:|---|---|
-| `stwo-transformer-shaped-v1` | `stwo` | `28s` | `9s` | `9,348,044` bytes | `5` total steps; `2` translated segments; package count `5 -> 2` (`Δ = 3`) | source-bound translated composition bundle with verifier-enforced carried-state continuity and shared lookup identity |
+| `stwo-transformer-shaped-v1` | `stwo` | `28s` | `9s` | `9,348,044` bytes | `5` total steps; `2` translated segments; package count `5 -> 2` (`delta = 3`) | source-bound translated composition bundle with verifier-enforced carried-state continuity and shared lookup identity |
 
-Table C2 is drawn from the frozen index under
+Table C2 is enforced against the frozen index under
 `docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/`. The bundle is
 deliberately narrow: it does **not** claim full standard-softmax inference, recursive
 verification, or cryptographic compression. Its value is that one transformer-shaped
 `stwo` artifact now exists as a reproducible, source-bound object rather than as prose
 only.
+
+## How to read this appendix
+
+- `production-v1` is kept here as a legacy vanilla baseline row, not as the main
+  paper-facing artifact tier.
+- `stwo-transformer-shaped-v1` is the current paper-facing S-two systems row.
+- The table is useful as artifact evidence, not as a normalized backend-performance
+  study. Timing rows come from local bundle runs rather than a cold-build or
+  matched-hardware benchmark harness.

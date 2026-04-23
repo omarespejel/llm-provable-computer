@@ -10,27 +10,21 @@ Starknet Foundation</p>
 
 ## Abstract
 
-This paper studies the structural fit between transformer workloads and STARK proof
-systems using a symbolic cost model together with a repository-backed proof artifact.
-Under a worked example with `C_exp = 300`, `C_norm = 30`, and `C_nonlin = 150`, GPT-2
-small (`d = 768`, `T = 1024`, `H = 12`, `L = 12`) yields about `157.8B` symbolic SNARK
-constraints versus `106.5B` symbolic STARK rows across 12 layers (`1.48x`); over
-practical context ranges, the ratio rises and then approaches a finite
-architecture-dependent ceiling. These counts are symbolic proxies for prover-side work,
-not matched runtime measurements.
+This paper studies why transformer workloads are structurally legible to trace-based
+proof systems, and where that fit may matter for zkML. We give a closed-form symbolic
+model that separates dense arithmetic from lookup-like non-arithmetic terms. In a
+GPT-2-small worked example (`d = 768`, `T = 1024`, `H = 12`, `L = 12`), the model gives
+about `157.8B` symbolic SNARK constraints versus `106.5B` symbolic STARK rows (`1.48x`)
+and shows that the dense-context ratio approaches a finite architecture-dependent
+ceiling. These are symbolic predictions, not wall-clock dominance claims.
 
-We pair that analysis with `provable-transformer-vm` [30], a supporting artifact whose
-main paper-facing line now runs through `stwo` transformer-shaped and tensor-native
-bundles, while the older vanilla tier is retained as a local reproducibility baseline.
-The repository also contains a broader proof-carrying decoding path with explicit
-carried-state boundaries, shared lookup-table identity, reusable block- and step-level
-proof artifacts, and a pre-recursive aggregation boundary. The repository does not yet
-provide full standard-softmax inference on S-two, recursive cryptographic
-compression/verification closure, recursive shared-table accumulation across decode
-steps as a compressed proof object, or production-scale zkML deployment. The narrower
-claim is that transformer workloads expose the design pressures under which
-lookup-friendly proof systems may compound advantages, while current artifacts already
-support a concrete bridge from execution traces to pre-recursive proof objects.
+We pair the model with `provable-transformer-vm` [30], a reproducible artifact corpus
+whose paper-facing line now runs through S-two transformer-shaped and tensor-native
+bundles. The artifacts expose carried-state boundaries, shared lookup-table identity,
+and pre-recursive proof-carrying packaging on narrow relations. They do not prove full
+standard-softmax inference, recursive cryptographic compression, recursive shared-table
+accumulation, or production-scale zkML deployment. The contribution is therefore a
+cost-model-and-artifact baseline for the STARK side, with explicit non-claims.
 
 ______________________________________________________________________
 
@@ -528,17 +522,15 @@ artifacts [31]. Timings and sizes are treated as reproducibility evidence, not
 performance evidence, and newer cited vanilla evidence should use the stronger
 `publication-v1` verifier floor.
 
-The `stwo-experimental-v1` tier is the narrow S-two evidence tier. It contains command
-logs, wall-clock timings, SHA-256 hashes, and proof artifacts for four representative
-outputs: an arithmetic `statement-v1` proof (`addition`), a shared-table normalization
-lookup proof envelope, a Gemma-inspired fixed-shape proof (`gemma_block_v4`) with shared
-lookup bindings, and a three-step proof-carrying decoding chain [40]. Taken together,
-these four artifacts illustrate representative proof outputs across the repository's
-current public artifact inventory: a `statement-v1` arithmetic proof, a shared-table
-lookup proof envelope, a block-shaped execution proof, and a carried-state decode chain.
-The broader repository artifact inventory also includes bounded multi-runtime
-semantic-agreement artifacts and pre-recursive aggregation bundles. Appendix C1 compares
-the two backend-facing tiers.
+The current S-two evidence tier is no longer the older April 6 experimental bundle. The
+paper-facing path now cites the later transformer-shaped and tensor-native bundles: a
+shared-normalization primitive with verifier-enforced table identity [40], a
+transformer-shaped translated-composition bundle with concrete prepare/verify/artifact
+metrics [49], and the surrounding proof-carrying aggregation bundles. This keeps the
+publication surface aligned with the repository's current naming and scope discipline:
+current rows use the `linear_block`/transformer-shaped framing rather than the earlier
+Gemma-inspired placeholder terminology. Appendix C compares the retained vanilla
+baseline against the current transformer-shaped S-two bundle.
 
 Finally, a post-freeze April 20 verifier-surface index records the Phase 63-65
 proof-carrying bridge merged at checkpoint `03cc77f371275c8d9ef5f4244a23d3e35c98a41b`.
@@ -678,9 +670,10 @@ According to current project-reported public materials, it combines
 GKR/sumcheck/LogUp-style machinery on an S-two/STWO path with Starknet verification
 paths, including a single-transaction recursive STARK verification claim for a 30-layer
 SmolLM2-135M proof and a six-step streaming verification path for a Qwen2-0.5B one-layer
-model [26, 27]. These remain project-reported evidence, not normalized benchmarks, and
-the same public materials still show uneven component maturity (`Attention` remains
-listed as `Prover only`).
+model [26, 27]. Its README also reports a warm-cache `41.4s` proof for one
+`Qwen2.5-14B` token on `H100` [26]. These remain project-reported evidence, not
+normalized benchmarks, and the same public materials still show uneven component
+maturity (`Attention` remains listed as `Prover only`).
 
 ### 7.5 LuminAIR and the custom-AIR path
 
@@ -884,11 +877,12 @@ ______________________________________________________________________
 39. Zhaohui Geoffrey Wang. “NANOZK: Layerwise Zero-Knowledge Proofs for Verifiable Large
     Language Model Inference.” *arXiv preprint* arXiv:2603.18046, 2026.
     <https://arxiv.org/abs/2603.18046>
-40. `omarespejel/provable-transformer-vm`. “Appendix Artifact Index (S-two Experimental
-    V1).” GitHub artifact snapshot, commit `3970277d964a0a9a5326b0db364cf16822c1ccd4`,
+40. `omarespejel/provable-transformer-vm`. “Appendix Artifact Index (S-two
+    Shared-Normalization Primitive V1).” GitHub artifact snapshot, commit
+    `56ebe51f40095916522e7f04dc0e187f1e90f4b6`,
     at
-    `docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md`.
-    <https://github.com/omarespejel/provable-transformer-vm/blob/3970277d964a0a9a5326b0db364cf16822c1ccd4/docs/paper/artifacts/stwo-experimental-v1-2026-04-06/APPENDIX_ARTIFACT_INDEX.md>
+    `docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md`.
+    <https://github.com/omarespejel/provable-transformer-vm/blob/56ebe51f40095916522e7f04dc0e187f1e90f4b6/docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/APPENDIX_ARTIFACT_INDEX.md>
 41. Wilson Nguyen and Srinath Setty. “Neo: Lattice-based folding scheme for CCS over
     small fields and pay-per-bit commitments.” *IACR Cryptology ePrint Archive*, Paper
     2025/294, 2025. <https://eprint.iacr.org/2025/294>
