@@ -1014,6 +1014,12 @@ def parse_index_field_values(index_text: str) -> dict[str, str]:
         value = row[value_idx].strip().strip("`")
         if field:
             out[field] = value
+            normalized_field = normalize_table_header(field)
+            out[normalized_field] = value
+            if normalized_field == "artifact file":
+                out["artifact_file"] = value
+            elif normalized_field == "artifact size (bytes)":
+                out["artifact_size_bytes"] = value
     return out
 
 
@@ -1204,7 +1210,8 @@ def _validate_table_c2_consistency(
         "verify_transformer_shaped_bundle",
     ]
     required_transformer_field_keys = [
-        "Artifact size (bytes)",
+        "artifact_file",
+        "artifact_size_bytes",
     ]
 
     missing_transformer_timing = sorted(
@@ -1227,12 +1234,19 @@ def _validate_table_c2_consistency(
         return False
 
     transformer_artifact_size_digits = re.sub(
-        r"[^0-9]", "", transformer_fields.get("Artifact size (bytes)", "")
+        r"[^0-9]", "", transformer_fields.get("artifact_size_bytes", "")
     )
     if not transformer_artifact_size_digits:
         findings.error(
             f"{appendix_path}: malformed transformer-shaped artifact-summary field "
             "'Artifact size (bytes)'; expected at least one digit."
+        )
+        return False
+    if transformer_fields.get("artifact_file") != "transformer_shaped.stwo.bundle.json":
+        findings.error(
+            f"{appendix_path}: transformer-shaped index artifact file mismatch: "
+            f"found {transformer_fields.get('artifact_file')!r}, expected "
+            "'transformer_shaped.stwo.bundle.json'."
         )
         return False
 
@@ -1289,7 +1303,7 @@ def check_backend_appendix_consistency(repo_root: pathlib.Path, findings: Findin
         appendix_text = appendix_path.read_text(encoding="utf-8")
         prod_text = prod_index_path.read_text(encoding="utf-8")
         transformer_text = transformer_index_path.read_text(encoding="utf-8")
-    except OSError as exc:
+    except (OSError, UnicodeError) as exc:
         findings.error(
             "failed to read backend artifact consistency inputs "
             f"({appendix_path}, {prod_index_path}, {transformer_index_path}): {exc}"
