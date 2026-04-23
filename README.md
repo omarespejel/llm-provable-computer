@@ -1330,6 +1330,11 @@ proof-checked decode-bridge checkpoint. The transformer-shaped `stwo` bundle fre
 one reproducible source-bound artifact with `28s` prepare, `9s` verify, `9,348,044`
 artifact bytes, `5` source steps, `2` translated segments, and a package count
 reduction from `5` naive per-step packages to `2` composed translated segments.
+The tensor-native shared-normalization primitive bundle freezes a different
+measurement surface: `1s` prepare, `1s` verify, `93,819` artifact bytes, `2`
+primitive steps, `2` claimed rows, `5` canonical table rows, and `9,136` shared
+proof bytes. Translated segment and package-count metrics are not applicable to
+that primitive bundle because it is not a composition package.
 Later Phase81-84 translated seam surfaces are implemented in-repo, but they are not
 yet frozen as publication citation bundles.
 
