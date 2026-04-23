@@ -382,11 +382,20 @@ def main() -> None:
     parser.add_argument(
         "--fail-closed-rasters",
         action="store_true",
-        help="fail instead of skipping PNG/PDF generation when rsvg-convert is unavailable",
+        help="fail when raster generation cannot complete (default when raster outputs are requested)",
+    )
+    parser.add_argument(
+        "--allow-missing-rasters",
+        action="store_true",
+        help="skip missing or failed PNG/PDF generation instead of failing the command",
     )
     args = parser.parse_args()
     if args.bench_runs <= 0:
         raise SystemExit("--bench-runs must be positive")
+    if args.fail_closed_rasters and args.allow_missing_rasters:
+        raise SystemExit(
+            "--fail-closed-rasters and --allow-missing-rasters are mutually exclusive"
+        )
 
     rows = read_rows(args.input_tsv)
     validate_rows(rows, source=args.input_tsv)
@@ -399,7 +408,7 @@ def main() -> None:
             args.output_svg,
             args.output_png,
             args.output_pdf,
-            fail_closed=args.fail_closed_rasters,
+            fail_closed=not args.allow_missing_rasters,
         )
 
 

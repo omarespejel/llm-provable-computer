@@ -115,9 +115,6 @@ fi
 if [[ -n "$PDF_OUT" ]]; then
   FIGURE_ARGS+=(--output-pdf "$TMP_PDF")
 fi
-if [[ -n "$PNG_OUT" && -n "$PDF_OUT" ]]; then
-  FIGURE_ARGS+=(--fail-closed-rasters)
-fi
 
 python3 scripts/paper/generate_stwo_phase12_shared_lookup_bundle_figure.py "${FIGURE_ARGS[@]}"
 
