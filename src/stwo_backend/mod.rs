@@ -16,6 +16,8 @@ mod lookup_prover;
 mod normalization_component;
 #[cfg(feature = "stwo-backend")]
 mod normalization_prover;
+#[cfg(feature = "stwo-backend")]
+mod primitive_benchmark;
 mod recursion;
 #[cfg(feature = "stwo-backend")]
 mod shared_lookup_artifact;
@@ -291,6 +293,13 @@ pub use normalization_prover::{
     STWO_SHARED_NORMALIZATION_PROOF_VERSION_PHASE10,
     STWO_SHARED_NORMALIZATION_SEMANTIC_SCOPE_PHASE10,
     STWO_SHARED_NORMALIZATION_STATEMENT_VERSION_PHASE10,
+};
+#[cfg(feature = "stwo-backend")]
+pub use primitive_benchmark::{
+    run_stwo_primitive_lookup_vs_naive_benchmark, save_stwo_primitive_benchmark_report_json,
+    save_stwo_primitive_benchmark_report_tsv, StwoPrimitiveBenchmarkMeasurement,
+    StwoPrimitiveBenchmarkReport, STWO_PRIMITIVE_BENCHMARK_SCOPE,
+    STWO_PRIMITIVE_BENCHMARK_VERSION,
 };
 #[cfg(feature = "stwo-backend")]
 pub use recursion::{

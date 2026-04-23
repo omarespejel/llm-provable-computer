@@ -1,0 +1,94 @@
+{
+  "benchmark_version": "stwo-primitive-lookup-vs-naive-benchmark-v1",
+  "semantic_scope": "matched_stwo_lookup_vs_naive_transformer_primitive_measurement",
+  "rows": [
+    {
+      "primitive": "rmsnorm_q8_inv_sqrt",
+      "backend_variant": "lookup_logup",
+      "relation": "Phase10 shared-normalization lookup",
+      "claimed_rows": [
+        [
+          4,
+          128
+        ],
+        [
+          16,
+          64
+        ]
+      ],
+      "proof_bytes": 9136,
+      "prove_ms": 16,
+      "verify_ms": 3,
+      "verified": true,
+      "note": "actual S-two LogUp proof over the canonical Phase 5 normalization table"
+    },
+    {
+      "primitive": "rmsnorm_q8_inv_sqrt",
+      "backend_variant": "naive_selector_arithmetic",
+      "relation": "one-hot arithmetized table selection",
+      "claimed_rows": [
+        [
+          4,
+          128
+        ],
+        [
+          16,
+          64
+        ]
+      ],
+      "proof_bytes": 6671,
+      "prove_ms": 9,
+      "verify_ms": 1,
+      "verified": true,
+      "note": "actual S-two arithmetic proof; no LogUp relation, no lookup table argument"
+    },
+    {
+      "primitive": "softmax_exp_q8",
+      "backend_variant": "lookup_logup",
+      "relation": "softmax-exp table lookup",
+      "claimed_rows": [
+        [
+          0,
+          256
+        ],
+        [
+          2,
+          94
+        ],
+        [
+          4,
+          35
+        ]
+      ],
+      "proof_bytes": 9188,
+      "prove_ms": 8,
+      "verify_ms": 2,
+      "verified": true,
+      "note": "actual S-two LogUp proof for the exp-table part of softmax, not full softmax"
+    },
+    {
+      "primitive": "softmax_exp_q8",
+      "backend_variant": "polynomial_interpolation",
+      "relation": "degree-2 exp-table interpolation over sampled points",
+      "claimed_rows": [
+        [
+          0,
+          256
+        ],
+        [
+          2,
+          94
+        ],
+        [
+          4,
+          35
+        ]
+      ],
+      "proof_bytes": 4783,
+      "prove_ms": 7,
+      "verify_ms": 1,
+      "verified": true,
+      "note": "actual S-two arithmetic proof for a sampled exp-table slice, not full softmax"
+    }
+  ]
+}
