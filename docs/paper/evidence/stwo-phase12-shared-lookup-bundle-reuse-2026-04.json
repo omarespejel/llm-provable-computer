@@ -1,0 +1,295 @@
+{
+  "benchmark_version": "stwo-phase12-shared-lookup-bundle-reuse-benchmark-v1",
+  "semantic_scope": "phase12_style_combined_shared_lookup_bundle_calibration",
+  "timing_policy": "median_of_5_runs",
+  "rows": [
+    {
+      "primitive": "phase12_shared_lookup_bundle",
+      "backend_variant": "shared_bundle_lookup_reuse",
+      "steps": 1,
+      "relation": "Phase12-style combined normalization+activation shared bundle",
+      "normalization_rows": [
+        [
+          1,
+          256
+        ]
+      ],
+      "activation_rows": [
+        [
+          -1,
+          0
+        ]
+      ],
+      "proof_bytes": 5016,
+      "serialized_bytes": 55592,
+      "prove_ms": 32,
+      "verify_ms": 9,
+      "verified": true,
+      "note": "one verifier-bound bundle combines a shared normalization artifact, a shared activation lookup proof, and one static table registry commitment"
+    },
+    {
+      "primitive": "phase12_shared_lookup_bundle",
+      "backend_variant": "independent_lookup_pairs",
+      "steps": 1,
+      "relation": "independent normalization+activation lookup proofs",
+      "normalization_rows": [
+        [
+          1,
+          256
+        ]
+      ],
+      "activation_rows": [
+        [
+          -1,
+          0
+        ]
+      ],
+      "proof_bytes": 5016,
+      "serialized_bytes": 53124,
+      "prove_ms": 18,
+      "verify_ms": 3,
+      "verified": true,
+      "note": "each step proves its normalization row and activation row independently against the canonical tables"
+    },
+    {
+      "primitive": "phase12_shared_lookup_bundle",
+      "backend_variant": "independent_selector_arithmetic_pairs",
+      "steps": 1,
+      "relation": "independent normalization+activation arithmetic proofs",
+      "normalization_rows": [
+        [
+          1,
+          256
+        ]
+      ],
+      "activation_rows": [
+        [
+          -1,
+          0
+        ]
+      ],
+      "proof_bytes": 3504,
+      "serialized_bytes": 10515,
+      "prove_ms": 9,
+      "verify_ms": 2,
+      "verified": true,
+      "note": "each step reproves its normalization row and activation row without shared lookup reuse"
+    },
+    {
+      "primitive": "phase12_shared_lookup_bundle",
+      "backend_variant": "shared_bundle_lookup_reuse",
+      "steps": 2,
+      "relation": "Phase12-style combined normalization+activation shared bundle",
+      "normalization_rows": [
+        [
+          1,
+          256
+        ],
+        [
+          2,
+          181
+        ]
+      ],
+      "activation_rows": [
+        [
+          -1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "proof_bytes": 5016,
+      "serialized_bytes": 55809,
+      "prove_ms": 21,
+      "verify_ms": 9,
+      "verified": true,
+      "note": "one verifier-bound bundle combines a shared normalization artifact, a shared activation lookup proof, and one static table registry commitment"
+    },
+    {
+      "primitive": "phase12_shared_lookup_bundle",
+      "backend_variant": "independent_lookup_pairs",
+      "steps": 2,
+      "relation": "independent normalization+activation lookup proofs",
+      "normalization_rows": [
+        [
+          1,
+          256
+        ],
+        [
+          2,
+          181
+        ]
+      ],
+      "activation_rows": [
+        [
+          -1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "proof_bytes": 9776,
+      "serialized_bytes": 103649,
+      "prove_ms": 31,
+      "verify_ms": 4,
+      "verified": true,
+      "note": "each step proves its normalization row and activation row independently against the canonical tables"
+    },
+    {
+      "primitive": "phase12_shared_lookup_bundle",
+      "backend_variant": "independent_selector_arithmetic_pairs",
+      "steps": 2,
+      "relation": "independent normalization+activation arithmetic proofs",
+      "normalization_rows": [
+        [
+          1,
+          256
+        ],
+        [
+          2,
+          181
+        ]
+      ],
+      "activation_rows": [
+        [
+          -1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "proof_bytes": 6720,
+      "serialized_bytes": 20196,
+      "prove_ms": 18,
+      "verify_ms": 4,
+      "verified": true,
+      "note": "each step reproves its normalization row and activation row without shared lookup reuse"
+    },
+    {
+      "primitive": "phase12_shared_lookup_bundle",
+      "backend_variant": "shared_bundle_lookup_reuse",
+      "steps": 3,
+      "relation": "Phase12-style combined normalization+activation shared bundle",
+      "normalization_rows": [
+        [
+          1,
+          256
+        ],
+        [
+          2,
+          181
+        ],
+        [
+          4,
+          128
+        ]
+      ],
+      "activation_rows": [
+        [
+          -1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "proof_bytes": 4968,
+      "serialized_bytes": 55294,
+      "prove_ms": 16,
+      "verify_ms": 8,
+      "verified": true,
+      "note": "one verifier-bound bundle combines a shared normalization artifact, a shared activation lookup proof, and one static table registry commitment"
+    },
+    {
+      "primitive": "phase12_shared_lookup_bundle",
+      "backend_variant": "independent_lookup_pairs",
+      "steps": 3,
+      "relation": "independent normalization+activation lookup proofs",
+      "normalization_rows": [
+        [
+          1,
+          256
+        ],
+        [
+          2,
+          181
+        ],
+        [
+          4,
+          128
+        ]
+      ],
+      "activation_rows": [
+        [
+          -1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "proof_bytes": 14824,
+      "serialized_bytes": 157087,
+      "prove_ms": 39,
+      "verify_ms": 6,
+      "verified": true,
+      "note": "each step proves its normalization row and activation row independently against the canonical tables"
+    },
+    {
+      "primitive": "phase12_shared_lookup_bundle",
+      "backend_variant": "independent_selector_arithmetic_pairs",
+      "steps": 3,
+      "relation": "independent normalization+activation arithmetic proofs",
+      "normalization_rows": [
+        [
+          1,
+          256
+        ],
+        [
+          2,
+          181
+        ],
+        [
+          4,
+          128
+        ]
+      ],
+      "activation_rows": [
+        [
+          -1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "proof_bytes": 10064,
+      "serialized_bytes": 30226,
+      "prove_ms": 34,
+      "verify_ms": 6,
+      "verified": true,
+      "note": "each step reproves its normalization row and activation row without shared lookup reuse"
+    }
+  ]
+}

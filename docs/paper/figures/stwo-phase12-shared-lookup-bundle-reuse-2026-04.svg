@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="900" viewBox="0 0 1700 900">
+  <rect width="1700" height="900" fill="white"/>
+  <text x="95.0" y="82.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="44" font-weight="700" fill="#1F2937">Phase12-Style Shared Lookup Bundle</text>
+  <text x="95.0" y="122.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="400" fill="#6B7280">A richer two-table kernel: one shared normalization artifact plus one shared activation lookup proof, bound together under one static table registry commitment.</text>
+  <line x1="140" y1="178" x2="176" y2="178" stroke="#2563EB" stroke-width="5" stroke-linecap="round"/>
+<circle cx="158" cy="178" r="6" fill="white" stroke="#2563EB" stroke-width="3"/>
+<text x="192.0" y="184.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="400" fill="#1F2937">Shared Phase12-style bundle</text>
+<line x1="570" y1="178" x2="606" y2="178" stroke="#D97706" stroke-width="5" stroke-linecap="round"/>
+<circle cx="588" cy="178" r="6" fill="white" stroke="#D97706" stroke-width="3"/>
+<text x="622.0" y="184.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="400" fill="#1F2937">Independent lookup pairs</text>
+<line x1="1000" y1="178" x2="1036" y2="178" stroke="#059669" stroke-width="5" stroke-linecap="round"/>
+<circle cx="1018" cy="178" r="6" fill="white" stroke="#059669" stroke-width="3"/>
+<text x="1052.0" y="184.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="400" fill="#1F2937">Independent arithmetic pairs</text>
+  <rect x="90" y="220" width="720" height="390" rx="28" fill="white" stroke="#D7DDE6" stroke-width="2"/>
+<text x="450.0" y="266.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="26" font-weight="600" fill="#1F2937">Estimated raw STARK proof bytes</text>
+<line x1="182" y1="465.5" x2="776" y2="465.5" stroke="#E5E7EB" stroke-width="1.5"/>
+<text x="172.0" y="471.5" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">3,706</text>
+<line x1="182" y1="409.0" x2="776" y2="409.0" stroke="#E5E7EB" stroke-width="1.5"/>
+<text x="172.0" y="415.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">7,412</text>
+<line x1="182" y1="352.5" x2="776" y2="352.5" stroke="#E5E7EB" stroke-width="1.5"/>
+<text x="172.0" y="358.5" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">11,118</text>
+<line x1="182" y1="296.0" x2="776" y2="296.0" stroke="#E5E7EB" stroke-width="1.5"/>
+<text x="172.0" y="302.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">14,824</text>
+<line x1="182" y1="522" x2="776" y2="522" stroke="#A9B3C0" stroke-width="2"/>
+<line x1="182" y1="296" x2="182" y2="522" stroke="#A9B3C0" stroke-width="2"/>
+<line x1="182.0" y1="522" x2="182.0" y2="530" stroke="#A9B3C0" stroke-width="2"/>
+<text x="182.0" y="556.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">1</text>
+<line x1="479.0" y1="522" x2="479.0" y2="530" stroke="#A9B3C0" stroke-width="2"/>
+<text x="479.0" y="556.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">2</text>
+<line x1="776.0" y1="522" x2="776.0" y2="530" stroke="#A9B3C0" stroke-width="2"/>
+<text x="776.0" y="556.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">3</text>
+<text x="479.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">Paired shared rows / steps</text>
+<path d="M 182.0 445.5 L 479.0 445.5 L 776.0 446.3" fill="none" stroke="#2563EB" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="182.0" cy="445.5" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="479.0" cy="445.5" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="776.0" cy="446.3" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<text x="770.0" y="434.3" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#2563EB">4,968 B</text>
+<path d="M 182.0 445.5 L 479.0 373.0 L 776.0 296.0" fill="none" stroke="#D97706" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="182.0" cy="445.5" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<circle cx="479.0" cy="373.0" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<circle cx="776.0" cy="296.0" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<text x="770.0" y="284.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#D97706">14,824 B</text>
+<path d="M 182.0 468.6 L 479.0 419.5 L 776.0 368.6" fill="none" stroke="#059669" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="182.0" cy="468.6" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<circle cx="479.0" cy="419.5" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<circle cx="776.0" cy="368.6" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<text x="770.0" y="356.6" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#059669">10,064 B</text>
+  <rect x="890" y="220" width="720" height="390" rx="28" fill="white" stroke="#D7DDE6" stroke-width="2"/>
+<text x="1250.0" y="266.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="26" font-weight="600" fill="#1F2937">Local prove time (ms)</text>
+<line x1="982" y1="465.5" x2="1576" y2="465.5" stroke="#E5E7EB" stroke-width="1.5"/>
+<text x="972.0" y="471.5" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">9</text>
+<line x1="982" y1="409.0" x2="1576" y2="409.0" stroke="#E5E7EB" stroke-width="1.5"/>
+<text x="972.0" y="415.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">19</text>
+<line x1="982" y1="352.5" x2="1576" y2="352.5" stroke="#E5E7EB" stroke-width="1.5"/>
+<text x="972.0" y="358.5" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">29</text>
+<line x1="982" y1="296.0" x2="1576" y2="296.0" stroke="#E5E7EB" stroke-width="1.5"/>
+<text x="972.0" y="302.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">39</text>
+<line x1="982" y1="522" x2="1576" y2="522" stroke="#A9B3C0" stroke-width="2"/>
+<line x1="982" y1="296" x2="982" y2="522" stroke="#A9B3C0" stroke-width="2"/>
+<line x1="982.0" y1="522" x2="982.0" y2="530" stroke="#A9B3C0" stroke-width="2"/>
+<text x="982.0" y="556.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">1</text>
+<line x1="1279.0" y1="522" x2="1279.0" y2="530" stroke="#A9B3C0" stroke-width="2"/>
+<text x="1279.0" y="556.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">2</text>
+<line x1="1576.0" y1="522" x2="1576.0" y2="530" stroke="#A9B3C0" stroke-width="2"/>
+<text x="1576.0" y="556.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">3</text>
+<text x="1279.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">Paired shared rows / steps</text>
+<path d="M 982.0 336.6 L 1279.0 400.3 L 1576.0 429.3" fill="none" stroke="#2563EB" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="336.6" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="1279.0" cy="400.3" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="1576.0" cy="429.3" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<text x="1570.0" y="417.3" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#2563EB">16 ms</text>
+<path d="M 982.0 417.7 L 1279.0 342.4 L 1576.0 296.0" fill="none" stroke="#D97706" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="417.7" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<circle cx="1279.0" cy="342.4" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<circle cx="1576.0" cy="296.0" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<text x="1570.0" y="284.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#D97706">39 ms</text>
+<path d="M 982.0 469.8 L 1279.0 417.7 L 1576.0 325.0" fill="none" stroke="#059669" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="469.8" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<circle cx="1279.0" cy="417.7" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<circle cx="1576.0" cy="325.0" r="7" fill="white" stroke="#059669" stroke-width="3"/>
+<text x="1570.0" y="313.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="600" fill="#059669">34 ms</text>
+  <text x="95.0" y="830.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">Measured locally from real S-two proof generation and verification. Timings are medians over five runs.</text>
+  <text x="95.0" y="858.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">The shared bundle is not recursive compression; it is a verifier-bound composition of two shared lookup-bearing proof surfaces.</text>
+</svg>

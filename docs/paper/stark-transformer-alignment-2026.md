@@ -340,15 +340,17 @@ symbolic model was trying to isolate: once one canonical table identity is made
 verifier-visible across repeated steps, proof growth can flatten sharply instead of
 scaling with the number of independent envelopes.
 
-Read together, Figures 3 and 4 give the external-calibration boundary the paper should
-actually claim. Figure 3 is the honest one-shot anchor: on tiny isolated primitive
-proofs, the current lookup-backed paths are still somewhat larger and slower than the
-arithmetic baselines. Figure 4 is the reuse-sensitive anchor: once the verifier-visible
-statement carries one canonical table identity across repeated rows, the shared-table
-path can flatten sharply while the independent baselines continue to scale with `N`.
-External comparisons should therefore track regime, not backend branding. The one-shot
-rows calibrate current implementation constants; the repeated-step rows calibrate the
-architectural claim about carried lookup identity.
+Read together, Figures 3, 4, and 4B give the external-calibration boundary the paper
+should actually claim. Figure 3 is the honest one-shot anchor: on tiny isolated
+primitive proofs, the current lookup-backed paths are still somewhat larger and slower
+than the arithmetic baselines. Figure 4 is the reuse-sensitive single-table anchor:
+once the verifier-visible statement carries one canonical table identity across repeated
+rows, the shared-table path can flatten sharply while the independent baselines
+continue to scale with `N`. Figure 4B shows that the same reuse-sensitive behavior
+survives in a verifier-bound two-table bundle. External comparisons should therefore
+track regime, not backend branding. The one-shot rows calibrate current implementation
+constants; the repeated-step rows calibrate the architectural claim about carried
+lookup identity.
 
 ### 4.5 Inference layer versus settlement layer
 
@@ -545,12 +547,40 @@ That timing capture is opt-in on purpose. The default shared-table benchmark rep
 `prove_ms` and `verify_ms` at `0`, so the deterministic report surface and the
 host-dependent measurement surface remain distinct.
 
+The next checked CLI path, `bench-stwo-phase12-shared-lookup-bundle-reuse --capture-timings`,
+lifts the same measurement one level up to a richer two-table kernel. Its evidence files
+`docs/paper/evidence/stwo-phase12-shared-lookup-bundle-reuse-2026-04.tsv`,
+`docs/paper/evidence/stwo-phase12-shared-lookup-bundle-reuse-2026-04.json`, and Figure 4B
+track a Phase12-style shared bundle that combines one shared normalization artifact and
+one shared activation lookup proof under the same static lookup-table registry
+commitment. This is still not recursive accumulation or a full decode-step proof object.
+It is narrower and cleaner: both nested proofs still verify, and the verifier still
+checks the shared registry commitment rather than merely reusing JSON bytes. The first
+paired row is pure overhead, but the reuse-sensitive crossover is already visible by the
+second and third rows. At three paired rows the shared bundle remains at `4,968` raw
+proof bytes and `16 ms`, versus `14,824` and `39 ms` for independent lookup pairs and
+`10,064` and `34 ms` for independent arithmetic pairs. So the current evidence now says
+something more precise than “shared tables help”: the win survives when the proof surface
+moves from one table to a verifier-bound two-table bundle closer to the Phase12
+shared-lookup artifact family.
+
+![Figure 4B. Phase12-style shared lookup bundle benchmark inside S-two over repeated normalization and activation row pairs.](figures/stwo-phase12-shared-lookup-bundle-reuse-2026-04.svg)
+
+**Figure 4B.** Phase12-style shared lookup bundle benchmark from
+`docs/paper/evidence/stwo-phase12-shared-lookup-bundle-reuse-2026-04.tsv`. The blue line
+is one verifier-bound bundle combining a shared normalization artifact, a shared
+activation lookup proof, and one static table registry commitment. The orange and green
+lines reprove the same normalization-plus-activation pairs independently. The useful
+regime only starts after the first pair: once the shared bundle carries more than one
+paired row, raw proof bytes flatten sharply, and by three paired rows local prove time
+beats both independent baselines.
+
 #### Threat model and soundness boundary
 
 The paper's adversary is a probabilistic polynomial-time prover or artifact producer who
 can choose arbitrary serialized inputs, reorder claimed rows, swap table identities,
 splice stale nested artifacts, and relabel backend or version metadata. For the direct
-S-two proof rows in Figures 3 and 4, acceptance means the upstream S-two proof object
+S-two proof rows in Figures 3, 4, and 4B, acceptance means the upstream S-two proof object
 verifies under the implemented relation and the repository-local verifier checks the
 canonical-table and claimed-row binding required by that surface. The benchmark report's
 declared semantic scope and benchmark version are checked at the report layer, not by the
@@ -654,8 +684,8 @@ the older vanilla tier remains only a local reproducibility baseline. Second, th
 proved transformer relation still uses `average-hard`
 rather than full standard softmax. Third, the current repository already binds shared
 lookup-table identity inside public artifacts and across those Phase 62 proof-carrying
-step envelopes, and Figure 4 shows that this can flatten proof growth across repeated
-selected rows, but it still does not yet expose recursive cross-step shared-table
+step envelopes, and Figures 4 and 4B show that this can flatten proof growth across
+repeated selected rows and a richer two-table bundle, but it still does not yet expose recursive cross-step shared-table
 accumulation as a compressed proof object. Fourth, the decode overlays, semantic-agreement artifacts,
 and pre-recursive
 aggregation boundaries are

@@ -112,6 +112,8 @@ use llm_provable_computer::{
     prove_phase27_chained_folded_intervalized_decoding_state_relation_demo,
     prove_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_demo,
     prove_phase3_binary_step_lookup_demo_envelope, prove_phase5_normalization_lookup_demo_envelope,
+    run_stwo_phase12_shared_lookup_bundle_benchmark,
+    run_stwo_phase12_shared_lookup_bundle_benchmark_with_options,
     run_stwo_primitive_lookup_vs_naive_benchmark, run_stwo_shared_table_reuse_benchmark,
     run_stwo_shared_table_reuse_benchmark_with_options,
     save_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact,
@@ -142,6 +144,8 @@ use llm_provable_computer::{
     save_phase965_folded_gemma_slice_accumulation_artifact,
     save_phase98_folded_gemma_richer_slice_family_artifact,
     save_phase99_multi_interval_gemma_richer_family_accumulation_artifact,
+    save_stwo_phase12_shared_lookup_bundle_benchmark_report_json,
+    save_stwo_phase12_shared_lookup_bundle_benchmark_report_tsv,
     save_stwo_primitive_benchmark_report_json, save_stwo_primitive_benchmark_report_tsv,
     save_stwo_shared_table_reuse_benchmark_report_json,
     save_stwo_shared_table_reuse_benchmark_report_tsv,
@@ -518,6 +522,18 @@ enum Command {
     },
     /// Run shared-table reuse benchmarks over normalization and softmax-exp lookup primitives.
     BenchStwoSharedTableReuse {
+        /// File where the benchmark TSV will be written.
+        #[arg(long = "output-tsv")]
+        output_tsv: PathBuf,
+        /// Optional file where the benchmark JSON will be written.
+        #[arg(long = "output-json")]
+        output_json: Option<PathBuf>,
+        /// Capture host-dependent wall-clock timings in the report output.
+        #[arg(long = "capture-timings", default_value_t = false)]
+        capture_timings: bool,
+    },
+    /// Run a richer Phase12-style shared lookup bundle benchmark over shared normalization and activation proofs.
+    BenchStwoPhase12SharedLookupBundleReuse {
         /// File where the benchmark TSV will be written.
         #[arg(long = "output-tsv")]
         output_tsv: PathBuf,
@@ -2401,6 +2417,15 @@ fn run() -> llm_provable_computer::Result<()> {
             output_json.as_deref(),
             capture_timings,
         )?,
+        Command::BenchStwoPhase12SharedLookupBundleReuse {
+            output_tsv,
+            output_json,
+            capture_timings,
+        } => bench_stwo_phase12_shared_lookup_bundle_reuse_command(
+            &output_tsv,
+            output_json.as_deref(),
+            capture_timings,
+        )?,
         Command::PrepareStwoTensorNativeChainArtifact { output } => {
             prepare_stwo_tensor_native_chain_artifact_command(&output)?
         }
@@ -3801,6 +3826,68 @@ fn bench_stwo_shared_table_reuse_command(
         for row in &report.rows {
             println!(
                 "shared_table_reuse_benchmark: {} {} steps={} proof_bytes={} serialized_bytes={} prove_ms={} verify_ms={} verified={}",
+                row.primitive,
+                row.backend_variant,
+                row.steps,
+                row.proof_bytes,
+                row.serialized_bytes,
+                row.prove_ms,
+                row.verify_ms,
+                row.verified
+            );
+        }
+        Ok(())
+    }
+}
+
+fn bench_stwo_phase12_shared_lookup_bundle_reuse_command(
+    output_tsv: &Path,
+    output_json: Option<&Path>,
+    capture_timings: bool,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output_tsv;
+        let _ = output_json;
+        let _ = capture_timings;
+        return Err(VmError::UnsupportedProof(
+            "S-two Phase12 shared lookup bundle benchmark requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two Phase12 shared lookup bundle benchmark")?;
+        validate_distinct_benchmark_output_paths(output_tsv, output_json)?;
+        if let Some(parent) = output_tsv.parent() {
+            if !parent.as_os_str().is_empty() {
+                fs::create_dir_all(parent)?;
+            }
+        }
+        if let Some(path) = output_json {
+            if let Some(parent) = path.parent() {
+                if !parent.as_os_str().is_empty() {
+                    fs::create_dir_all(parent)?;
+                }
+            }
+        }
+        let report = if capture_timings {
+            run_stwo_phase12_shared_lookup_bundle_benchmark_with_options(true)?
+        } else {
+            run_stwo_phase12_shared_lookup_bundle_benchmark()?
+        };
+        save_stwo_phase12_shared_lookup_bundle_benchmark_report_tsv(&report, output_tsv)?;
+        if let Some(path) = output_json {
+            save_stwo_phase12_shared_lookup_bundle_benchmark_report_json(&report, path)?;
+            println!("output_json: {}", path.display());
+        }
+        println!("output_tsv: {}", output_tsv.display());
+        println!("benchmark_version: {}", report.benchmark_version);
+        println!("semantic_scope: {}", report.semantic_scope);
+        for row in &report.rows {
+            println!(
+                "phase12_shared_lookup_bundle_benchmark: {} {} steps={} proof_bytes={} serialized_bytes={} prove_ms={} verify_ms={} verified={}",
                 row.primitive,
                 row.backend_variant,
                 row.steps,
@@ -15911,6 +15998,61 @@ mod cli_dispatch_tests {
     }
 
     #[test]
+    fn phase12_shared_lookup_bundle_benchmark_command_parses_directly_and_is_not_run_shorthand() {
+        assert!(!needs_run_subcommand(
+            "bench-stwo-phase12-shared-lookup-bundle-reuse"
+        ));
+        let normalized = normalize_args(
+            [
+                "tvm",
+                "bench-stwo-phase12-shared-lookup-bundle-reuse",
+                "--output-tsv",
+                "phase12.tsv",
+                "--output-json",
+                "phase12.json",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        );
+        assert_eq!(
+            normalized,
+            vec![
+                OsString::from("tvm"),
+                OsString::from("bench-stwo-phase12-shared-lookup-bundle-reuse"),
+                OsString::from("--output-tsv"),
+                OsString::from("phase12.tsv"),
+                OsString::from("--output-json"),
+                OsString::from("phase12.json"),
+            ]
+        );
+    }
+
+    #[test]
+    fn phase12_shared_lookup_bundle_benchmark_command_preserves_capture_timings_flag() {
+        let normalized = normalize_args(
+            [
+                "tvm",
+                "bench-stwo-phase12-shared-lookup-bundle-reuse",
+                "--capture-timings",
+                "--output-tsv",
+                "phase12.tsv",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        );
+        assert_eq!(
+            normalized,
+            vec![
+                OsString::from("tvm"),
+                OsString::from("bench-stwo-phase12-shared-lookup-bundle-reuse"),
+                OsString::from("--capture-timings"),
+                OsString::from("--output-tsv"),
+                OsString::from("phase12.tsv"),
+            ]
+        );
+    }
+
+    #[test]
     fn primitive_benchmark_rejects_identical_output_paths() {
         let output = Path::new("same-output.tsv");
         let err = validate_distinct_benchmark_output_paths(output, Some(output))
@@ -16536,6 +16678,7 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "verify-stwo-shared-normalization-primitive-artifact"
                 | "bench-stwo-primitive-lookup-vs-naive"
                 | "bench-stwo-shared-table-reuse"
+                | "bench-stwo-phase12-shared-lookup-bundle-reuse"
                 | "prepare-stwo-tensor-native-chain-artifact"
                 | "verify-stwo-tensor-native-chain-artifact"
                 | "prepare-stwo-linear-block-core-slice-artifact"
