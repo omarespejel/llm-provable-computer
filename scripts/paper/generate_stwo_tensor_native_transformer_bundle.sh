@@ -111,7 +111,6 @@ run_timed prove_linear_block_v4_with_lookup \
   prove-stark \
   programs/linear_block_v4_with_lookup.tvm \
   -o "$LINEAR_BLOCK_PROOF_JSON" \
-  --backend stwo \
   --max-steps 256
 
 run_timed verify_linear_block_v4_with_lookup \
