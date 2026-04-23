@@ -53,8 +53,8 @@
 <text x="952.0" y="286.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">14 ms</text>
 <text x="952.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">rmsnorm LogUp</text>
 <text x="952.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">lookup</text>
-<rect x="1048" y="471.4" width="120" height="68.6" rx="18" fill="#D97706" opacity="0.95"/>
-<text x="1108.0" y="457.4" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">4 ms</text>
+<rect x="1048" y="488.6" width="120" height="51.4" rx="18" fill="#D97706" opacity="0.95"/>
+<text x="1108.0" y="474.6" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="22" font-weight="600" fill="#1F2937">3 ms</text>
 <text x="1108.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">rmsnorm Selector</text>
 <text x="1108.0" y="602.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#1F2937">arithmetic</text>
 <rect x="1204" y="402.9" width="120" height="137.1" rx="18" fill="#2563EB" opacity="0.95"/>

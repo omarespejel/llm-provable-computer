@@ -229,38 +229,42 @@ def render_svg(rows: list[dict[str, str]]) -> str:
 
 
 def write_optional_rasters(svg_path: Path, png_path: Path, pdf_path: Path) -> None:
+    tmp_png = png_path.with_suffix(png_path.suffix + ".tmp")
     try:
         rsvg = subprocess.run(
-            ["rsvg-convert", "-f", "png", "-o", str(png_path), str(svg_path)],
+            ["rsvg-convert", "-f", "png", "-o", str(tmp_png), str(svg_path)],
             check=False,
             capture_output=True,
             text=True,
         )
     except FileNotFoundError:
-        png_path.unlink(missing_ok=True)
+        tmp_png.unlink(missing_ok=True)
         print(f"skipped {png_path} (rsvg-convert not found)")
         rsvg = None
     if rsvg is not None and rsvg.returncode == 0:
+        tmp_png.replace(png_path)
         print(f"wrote {png_path}")
     elif rsvg is not None:
-        png_path.unlink(missing_ok=True)
+        tmp_png.unlink(missing_ok=True)
         print(f"skipped {png_path} (rsvg-convert png failed: {rsvg.stderr.strip()})")
 
+    tmp_pdf = pdf_path.with_suffix(pdf_path.suffix + ".tmp")
     try:
         rsvg_pdf = subprocess.run(
-            ["rsvg-convert", "-f", "pdf", "-o", str(pdf_path), str(svg_path)],
+            ["rsvg-convert", "-f", "pdf", "-o", str(tmp_pdf), str(svg_path)],
             check=False,
             capture_output=True,
             text=True,
         )
     except FileNotFoundError:
-        pdf_path.unlink(missing_ok=True)
+        tmp_pdf.unlink(missing_ok=True)
         print(f"skipped {pdf_path} (rsvg-convert not found)")
         rsvg_pdf = None
     if rsvg_pdf is not None and rsvg_pdf.returncode == 0:
+        tmp_pdf.replace(pdf_path)
         print(f"wrote {pdf_path}")
     elif rsvg_pdf is not None:
-        pdf_path.unlink(missing_ok=True)
+        tmp_pdf.unlink(missing_ok=True)
         print(f"skipped {pdf_path} (rsvg-convert pdf failed: {rsvg_pdf.stderr.strip()})")
 
 
