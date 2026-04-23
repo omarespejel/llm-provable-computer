@@ -1,0 +1,667 @@
+{
+  "benchmark_version": "stwo-shared-table-reuse-benchmark-v1",
+  "semantic_scope": "shared_table_reuse_calibration_over_transformer_primitives",
+  "timing_policy": "median_of_5_runs",
+  "rows": [
+    {
+      "primitive": "rmsnorm_q8_inv_sqrt",
+      "backend_variant": "shared_table_lookup_reuse",
+      "steps": 1,
+      "relation": "Phase92 shared-normalization primitive artifact",
+      "claimed_rows": [
+        [
+          1,
+          256
+        ]
+      ],
+      "proof_bytes": 2508,
+      "serialized_bytes": 27577,
+      "prove_ms": 17,
+      "verify_ms": 4,
+      "verified": true,
+      "note": "one shared proof artifact binds all claimed rows to one canonical normalization table identity"
+    },
+    {
+      "primitive": "rmsnorm_q8_inv_sqrt",
+      "backend_variant": "independent_lookup",
+      "steps": 1,
+      "relation": "independent Phase10 shared-normalization lookup proofs",
+      "claimed_rows": [
+        [
+          1,
+          256
+        ]
+      ],
+      "proof_bytes": 2508,
+      "serialized_bytes": 26506,
+      "prove_ms": 11,
+      "verify_ms": 2,
+      "verified": true,
+      "note": "one lookup proof envelope per step over the same canonical normalization table"
+    },
+    {
+      "primitive": "rmsnorm_q8_inv_sqrt",
+      "backend_variant": "independent_selector_arithmetic",
+      "steps": 1,
+      "relation": "independent selector-arithmetic proofs",
+      "claimed_rows": [
+        [
+          1,
+          256
+        ]
+      ],
+      "proof_bytes": 1780,
+      "serialized_bytes": 5297,
+      "prove_ms": 5,
+      "verify_ms": 1,
+      "verified": true,
+      "note": "one arithmetic proof per step without shared lookup reuse"
+    },
+    {
+      "primitive": "rmsnorm_q8_inv_sqrt",
+      "backend_variant": "shared_table_lookup_reuse",
+      "steps": 2,
+      "relation": "Phase92 shared-normalization primitive artifact",
+      "claimed_rows": [
+        [
+          1,
+          256
+        ],
+        [
+          2,
+          181
+        ]
+      ],
+      "proof_bytes": 2508,
+      "serialized_bytes": 27625,
+      "prove_ms": 8,
+      "verify_ms": 3,
+      "verified": true,
+      "note": "one shared proof artifact binds all claimed rows to one canonical normalization table identity"
+    },
+    {
+      "primitive": "rmsnorm_q8_inv_sqrt",
+      "backend_variant": "independent_lookup",
+      "steps": 2,
+      "relation": "independent Phase10 shared-normalization lookup proofs",
+      "claimed_rows": [
+        [
+          1,
+          256
+        ],
+        [
+          2,
+          181
+        ]
+      ],
+      "proof_bytes": 4760,
+      "serialized_bytes": 50429,
+      "prove_ms": 18,
+      "verify_ms": 3,
+      "verified": true,
+      "note": "one lookup proof envelope per step over the same canonical normalization table"
+    },
+    {
+      "primitive": "rmsnorm_q8_inv_sqrt",
+      "backend_variant": "independent_selector_arithmetic",
+      "steps": 2,
+      "relation": "independent selector-arithmetic proofs",
+      "claimed_rows": [
+        [
+          1,
+          256
+        ],
+        [
+          2,
+          181
+        ]
+      ],
+      "proof_bytes": 3272,
+      "serialized_bytes": 9742,
+      "prove_ms": 8,
+      "verify_ms": 2,
+      "verified": true,
+      "note": "one arithmetic proof per step without shared lookup reuse"
+    },
+    {
+      "primitive": "rmsnorm_q8_inv_sqrt",
+      "backend_variant": "shared_table_lookup_reuse",
+      "steps": 4,
+      "relation": "Phase92 shared-normalization primitive artifact",
+      "claimed_rows": [
+        [
+          1,
+          256
+        ],
+        [
+          2,
+          181
+        ],
+        [
+          4,
+          128
+        ],
+        [
+          8,
+          91
+        ]
+      ],
+      "proof_bytes": 2508,
+      "serialized_bytes": 27788,
+      "prove_ms": 8,
+      "verify_ms": 3,
+      "verified": true,
+      "note": "one shared proof artifact binds all claimed rows to one canonical normalization table identity"
+    },
+    {
+      "primitive": "rmsnorm_q8_inv_sqrt",
+      "backend_variant": "independent_lookup",
+      "steps": 4,
+      "relation": "independent Phase10 shared-normalization lookup proofs",
+      "claimed_rows": [
+        [
+          1,
+          256
+        ],
+        [
+          2,
+          181
+        ],
+        [
+          4,
+          128
+        ],
+        [
+          8,
+          91
+        ]
+      ],
+      "proof_bytes": 10128,
+      "serialized_bytes": 107058,
+      "prove_ms": 36,
+      "verify_ms": 6,
+      "verified": true,
+      "note": "one lookup proof envelope per step over the same canonical normalization table"
+    },
+    {
+      "primitive": "rmsnorm_q8_inv_sqrt",
+      "backend_variant": "independent_selector_arithmetic",
+      "steps": 4,
+      "relation": "independent selector-arithmetic proofs",
+      "claimed_rows": [
+        [
+          1,
+          256
+        ],
+        [
+          2,
+          181
+        ],
+        [
+          4,
+          128
+        ],
+        [
+          8,
+          91
+        ]
+      ],
+      "proof_bytes": 6672,
+      "serialized_bytes": 19850,
+      "prove_ms": 31,
+      "verify_ms": 5,
+      "verified": true,
+      "note": "one arithmetic proof per step without shared lookup reuse"
+    },
+    {
+      "primitive": "rmsnorm_q8_inv_sqrt",
+      "backend_variant": "shared_table_lookup_reuse",
+      "steps": 5,
+      "relation": "Phase92 shared-normalization primitive artifact",
+      "claimed_rows": [
+        [
+          1,
+          256
+        ],
+        [
+          2,
+          181
+        ],
+        [
+          4,
+          128
+        ],
+        [
+          8,
+          91
+        ],
+        [
+          16,
+          64
+        ]
+      ],
+      "proof_bytes": 2140,
+      "serialized_bytes": 24047,
+      "prove_ms": 10,
+      "verify_ms": 3,
+      "verified": true,
+      "note": "one shared proof artifact binds all claimed rows to one canonical normalization table identity"
+    },
+    {
+      "primitive": "rmsnorm_q8_inv_sqrt",
+      "backend_variant": "independent_lookup",
+      "steps": 5,
+      "relation": "independent Phase10 shared-normalization lookup proofs",
+      "claimed_rows": [
+        [
+          1,
+          256
+        ],
+        [
+          2,
+          181
+        ],
+        [
+          4,
+          128
+        ],
+        [
+          8,
+          91
+        ],
+        [
+          16,
+          64
+        ]
+      ],
+      "proof_bytes": 12812,
+      "serialized_bytes": 135259,
+      "prove_ms": 46,
+      "verify_ms": 7,
+      "verified": true,
+      "note": "one lookup proof envelope per step over the same canonical normalization table"
+    },
+    {
+      "primitive": "rmsnorm_q8_inv_sqrt",
+      "backend_variant": "independent_selector_arithmetic",
+      "steps": 5,
+      "relation": "independent selector-arithmetic proofs",
+      "claimed_rows": [
+        [
+          1,
+          256
+        ],
+        [
+          2,
+          181
+        ],
+        [
+          4,
+          128
+        ],
+        [
+          8,
+          91
+        ],
+        [
+          16,
+          64
+        ]
+      ],
+      "proof_bytes": 8292,
+      "serialized_bytes": 24675,
+      "prove_ms": 48,
+      "verify_ms": 5,
+      "verified": true,
+      "note": "one arithmetic proof per step without shared lookup reuse"
+    },
+    {
+      "primitive": "softmax_exp_q8",
+      "backend_variant": "shared_table_lookup_reuse",
+      "steps": 1,
+      "relation": "single proof over multiple canonical exp-table rows",
+      "claimed_rows": [
+        [
+          0,
+          256
+        ]
+      ],
+      "proof_bytes": 2684,
+      "serialized_bytes": 9170,
+      "prove_ms": 9,
+      "verify_ms": 2,
+      "verified": true,
+      "note": "one lookup proof binds multiple selected rows to the canonical softmax exp table"
+    },
+    {
+      "primitive": "softmax_exp_q8",
+      "backend_variant": "independent_lookup",
+      "steps": 1,
+      "relation": "independent softmax-exp table lookup proofs",
+      "claimed_rows": [
+        [
+          0,
+          256
+        ]
+      ],
+      "proof_bytes": 2684,
+      "serialized_bytes": 9170,
+      "prove_ms": 10,
+      "verify_ms": 2,
+      "verified": true,
+      "note": "one lookup proof per step against the canonical softmax exp table"
+    },
+    {
+      "primitive": "softmax_exp_q8",
+      "backend_variant": "independent_selector_arithmetic",
+      "steps": 1,
+      "relation": "independent selector-arithmetic proofs",
+      "claimed_rows": [
+        [
+          0,
+          256
+        ]
+      ],
+      "proof_bytes": 1976,
+      "serialized_bytes": 5742,
+      "prove_ms": 3,
+      "verify_ms": 1,
+      "verified": true,
+      "note": "one selector-arithmetic proof per step without shared lookup reuse"
+    },
+    {
+      "primitive": "softmax_exp_q8",
+      "backend_variant": "shared_table_lookup_reuse",
+      "steps": 2,
+      "relation": "single proof over multiple canonical exp-table rows",
+      "claimed_rows": [
+        [
+          0,
+          256
+        ],
+        [
+          1,
+          155
+        ]
+      ],
+      "proof_bytes": 2284,
+      "serialized_bytes": 7808,
+      "prove_ms": 16,
+      "verify_ms": 1,
+      "verified": true,
+      "note": "one lookup proof binds multiple selected rows to the canonical softmax exp table"
+    },
+    {
+      "primitive": "softmax_exp_q8",
+      "backend_variant": "independent_lookup",
+      "steps": 2,
+      "relation": "independent softmax-exp table lookup proofs",
+      "claimed_rows": [
+        [
+          0,
+          256
+        ],
+        [
+          1,
+          155
+        ]
+      ],
+      "proof_bytes": 5368,
+      "serialized_bytes": 18316,
+      "prove_ms": 15,
+      "verify_ms": 3,
+      "verified": true,
+      "note": "one lookup proof per step against the canonical softmax exp table"
+    },
+    {
+      "primitive": "softmax_exp_q8",
+      "backend_variant": "independent_selector_arithmetic",
+      "steps": 2,
+      "relation": "independent selector-arithmetic proofs",
+      "claimed_rows": [
+        [
+          0,
+          256
+        ],
+        [
+          1,
+          155
+        ]
+      ],
+      "proof_bytes": 3560,
+      "serialized_bytes": 10483,
+      "prove_ms": 9,
+      "verify_ms": 2,
+      "verified": true,
+      "note": "one selector-arithmetic proof per step without shared lookup reuse"
+    },
+    {
+      "primitive": "softmax_exp_q8",
+      "backend_variant": "shared_table_lookup_reuse",
+      "steps": 4,
+      "relation": "single proof over multiple canonical exp-table rows",
+      "claimed_rows": [
+        [
+          0,
+          256
+        ],
+        [
+          1,
+          155
+        ],
+        [
+          2,
+          94
+        ],
+        [
+          3,
+          57
+        ]
+      ],
+      "proof_bytes": 2684,
+      "serialized_bytes": 9160,
+      "prove_ms": 20,
+      "verify_ms": 2,
+      "verified": true,
+      "note": "one lookup proof binds multiple selected rows to the canonical softmax exp table"
+    },
+    {
+      "primitive": "softmax_exp_q8",
+      "backend_variant": "independent_lookup",
+      "steps": 4,
+      "relation": "independent softmax-exp table lookup proofs",
+      "claimed_rows": [
+        [
+          0,
+          256
+        ],
+        [
+          1,
+          155
+        ],
+        [
+          2,
+          94
+        ],
+        [
+          3,
+          57
+        ]
+      ],
+      "proof_bytes": 10192,
+      "serialized_bytes": 34787,
+      "prove_ms": 31,
+      "verify_ms": 5,
+      "verified": true,
+      "note": "one lookup proof per step against the canonical softmax exp table"
+    },
+    {
+      "primitive": "softmax_exp_q8",
+      "backend_variant": "independent_selector_arithmetic",
+      "steps": 4,
+      "relation": "independent selector-arithmetic proofs",
+      "claimed_rows": [
+        [
+          0,
+          256
+        ],
+        [
+          1,
+          155
+        ],
+        [
+          2,
+          94
+        ],
+        [
+          3,
+          57
+        ]
+      ],
+      "proof_bytes": 7208,
+      "serialized_bytes": 21030,
+      "prove_ms": 20,
+      "verify_ms": 4,
+      "verified": true,
+      "note": "one selector-arithmetic proof per step without shared lookup reuse"
+    },
+    {
+      "primitive": "softmax_exp_q8",
+      "backend_variant": "shared_table_lookup_reuse",
+      "steps": 8,
+      "relation": "single proof over multiple canonical exp-table rows",
+      "claimed_rows": [
+        [
+          0,
+          256
+        ],
+        [
+          1,
+          155
+        ],
+        [
+          2,
+          94
+        ],
+        [
+          3,
+          57
+        ],
+        [
+          4,
+          35
+        ],
+        [
+          5,
+          21
+        ],
+        [
+          6,
+          13
+        ],
+        [
+          7,
+          8
+        ]
+      ],
+      "proof_bytes": 2284,
+      "serialized_bytes": 7525,
+      "prove_ms": 8,
+      "verify_ms": 2,
+      "verified": true,
+      "note": "one lookup proof binds multiple selected rows to the canonical softmax exp table"
+    },
+    {
+      "primitive": "softmax_exp_q8",
+      "backend_variant": "independent_lookup",
+      "steps": 8,
+      "relation": "independent softmax-exp table lookup proofs",
+      "claimed_rows": [
+        [
+          0,
+          256
+        ],
+        [
+          1,
+          155
+        ],
+        [
+          2,
+          94
+        ],
+        [
+          3,
+          57
+        ],
+        [
+          4,
+          35
+        ],
+        [
+          5,
+          21
+        ],
+        [
+          6,
+          13
+        ],
+        [
+          7,
+          8
+        ]
+      ],
+      "proof_bytes": 19552,
+      "serialized_bytes": 66852,
+      "prove_ms": 58,
+      "verify_ms": 9,
+      "verified": true,
+      "note": "one lookup proof per step against the canonical softmax exp table"
+    },
+    {
+      "primitive": "softmax_exp_q8",
+      "backend_variant": "independent_selector_arithmetic",
+      "steps": 8,
+      "relation": "independent selector-arithmetic proofs",
+      "claimed_rows": [
+        [
+          0,
+          256
+        ],
+        [
+          1,
+          155
+        ],
+        [
+          2,
+          94
+        ],
+        [
+          3,
+          57
+        ],
+        [
+          4,
+          35
+        ],
+        [
+          5,
+          21
+        ],
+        [
+          6,
+          13
+        ],
+        [
+          7,
+          8
+        ]
+      ],
+      "proof_bytes": 14216,
+      "serialized_bytes": 41569,
+      "prove_ms": 42,
+      "verify_ms": 8,
+      "verified": true,
+      "note": "one selector-arithmetic proof per step without shared lookup reuse"
+    }
+  ]
+}

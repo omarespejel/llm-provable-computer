@@ -112,7 +112,7 @@ use llm_provable_computer::{
     prove_phase27_chained_folded_intervalized_decoding_state_relation_demo,
     prove_phase28_aggregated_chained_folded_intervalized_decoding_state_relation_demo,
     prove_phase3_binary_step_lookup_demo_envelope, prove_phase5_normalization_lookup_demo_envelope,
-    run_stwo_primitive_lookup_vs_naive_benchmark,
+    run_stwo_primitive_lookup_vs_naive_benchmark, run_stwo_shared_table_reuse_benchmark,
     save_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact,
     save_phase102_folded_multi_interval_gemma_richer_family_artifact,
     save_phase105_repeated_multi_interval_gemma_richer_family_accumulation_artifact,
@@ -142,6 +142,8 @@ use llm_provable_computer::{
     save_phase98_folded_gemma_richer_slice_family_artifact,
     save_phase99_multi_interval_gemma_richer_family_accumulation_artifact,
     save_stwo_primitive_benchmark_report_json, save_stwo_primitive_benchmark_report_tsv,
+    save_stwo_shared_table_reuse_benchmark_report_json,
+    save_stwo_shared_table_reuse_benchmark_report_tsv,
     save_stwo_transformer_shaped_artifact_bundle, stwo_backend_enabled,
     verify_phase1015_folded_multi_interval_gemma_accumulation_prototype_artifact,
     verify_phase102_folded_multi_interval_gemma_richer_family_artifact,
@@ -506,6 +508,15 @@ enum Command {
     },
     /// Run matched S-two lookup-vs-naive primitive benchmarks and write TSV/JSON outputs.
     BenchStwoPrimitiveLookupVsNaive {
+        /// File where the benchmark TSV will be written.
+        #[arg(long = "output-tsv")]
+        output_tsv: PathBuf,
+        /// Optional file where the benchmark JSON will be written.
+        #[arg(long = "output-json")]
+        output_json: Option<PathBuf>,
+    },
+    /// Run shared-table reuse benchmarks over normalization and softmax-exp lookup primitives.
+    BenchStwoSharedTableReuse {
         /// File where the benchmark TSV will be written.
         #[arg(long = "output-tsv")]
         output_tsv: PathBuf,
@@ -2377,6 +2388,10 @@ fn run() -> llm_provable_computer::Result<()> {
             output_tsv,
             output_json,
         } => bench_stwo_primitive_lookup_vs_naive_command(&output_tsv, output_json.as_deref())?,
+        Command::BenchStwoSharedTableReuse {
+            output_tsv,
+            output_json,
+        } => bench_stwo_shared_table_reuse_command(&output_tsv, output_json.as_deref())?,
         Command::PrepareStwoTensorNativeChainArtifact { output } => {
             prepare_stwo_tensor_native_chain_artifact_command(&output)?
         }
@@ -3720,6 +3735,62 @@ fn bench_stwo_primitive_lookup_vs_naive_command(
                 row.primitive,
                 row.backend_variant,
                 row.proof_bytes,
+                row.prove_ms,
+                row.verify_ms,
+                row.verified
+            );
+        }
+        Ok(())
+    }
+}
+
+fn bench_stwo_shared_table_reuse_command(
+    output_tsv: &Path,
+    output_json: Option<&Path>,
+) -> llm_provable_computer::Result<()> {
+    #[cfg(not(feature = "stwo-backend"))]
+    {
+        let _ = output_tsv;
+        let _ = output_json;
+        return Err(VmError::UnsupportedProof(
+            "S-two shared-table reuse benchmark requires building with `--features stwo-backend`"
+                .to_string(),
+        ));
+    }
+
+    #[cfg(feature = "stwo-backend")]
+    {
+        require_stwo_backend("S-two shared-table reuse benchmark")?;
+        validate_distinct_benchmark_output_paths(output_tsv, output_json)?;
+        if let Some(parent) = output_tsv.parent() {
+            if !parent.as_os_str().is_empty() {
+                fs::create_dir_all(parent)?;
+            }
+        }
+        if let Some(path) = output_json {
+            if let Some(parent) = path.parent() {
+                if !parent.as_os_str().is_empty() {
+                    fs::create_dir_all(parent)?;
+                }
+            }
+        }
+        let report = run_stwo_shared_table_reuse_benchmark()?;
+        save_stwo_shared_table_reuse_benchmark_report_tsv(&report, output_tsv)?;
+        if let Some(path) = output_json {
+            save_stwo_shared_table_reuse_benchmark_report_json(&report, path)?;
+            println!("output_json: {}", path.display());
+        }
+        println!("output_tsv: {}", output_tsv.display());
+        println!("benchmark_version: {}", report.benchmark_version);
+        println!("semantic_scope: {}", report.semantic_scope);
+        for row in &report.rows {
+            println!(
+                "shared_table_reuse_benchmark: {} {} steps={} proof_bytes={} serialized_bytes={} prove_ms={} verify_ms={} verified={}",
+                row.primitive,
+                row.backend_variant,
+                row.steps,
+                row.proof_bytes,
+                row.serialized_bytes,
                 row.prove_ms,
                 row.verify_ms,
                 row.verified
@@ -15739,6 +15810,34 @@ mod cli_dispatch_tests {
     }
 
     #[test]
+    fn shared_table_reuse_benchmark_command_parses_directly_and_is_not_run_shorthand() {
+        assert!(!needs_run_subcommand("bench-stwo-shared-table-reuse"));
+        let normalized = normalize_args(
+            [
+                "tvm",
+                "bench-stwo-shared-table-reuse",
+                "--output-tsv",
+                "reuse.tsv",
+                "--output-json",
+                "reuse.json",
+            ]
+            .into_iter()
+            .map(OsString::from),
+        );
+        assert_eq!(
+            normalized,
+            vec![
+                OsString::from("tvm"),
+                OsString::from("bench-stwo-shared-table-reuse"),
+                OsString::from("--output-tsv"),
+                OsString::from("reuse.tsv"),
+                OsString::from("--output-json"),
+                OsString::from("reuse.json"),
+            ]
+        );
+    }
+
+    #[test]
     fn primitive_benchmark_rejects_identical_output_paths() {
         let output = Path::new("same-output.tsv");
         let err = validate_distinct_benchmark_output_paths(output, Some(output))
@@ -15768,6 +15867,46 @@ mod cli_dispatch_tests {
         let tempdir = tempfile::tempdir().expect("tempdir");
         let target = tempdir.path().join("benchmark.tsv");
         let alias = tempdir.path().join("benchmark-link.tsv");
+        std::fs::write(&target, "placeholder").expect("write target");
+        symlink(&target, &alias).expect("create symlink");
+
+        let err = validate_distinct_benchmark_output_paths(&target, Some(&alias))
+            .expect_err("symlinked output paths must fail");
+        assert!(err
+            .to_string()
+            .contains("`--output-json` must differ from `--output-tsv`"));
+    }
+
+    #[test]
+    fn shared_table_reuse_benchmark_rejects_identical_output_paths() {
+        let output = Path::new("same-reuse-output.tsv");
+        let err = validate_distinct_benchmark_output_paths(output, Some(output))
+            .expect_err("identical output paths must fail");
+        assert!(err
+            .to_string()
+            .contains("`--output-json` must differ from `--output-tsv`"));
+    }
+
+    #[test]
+    fn shared_table_reuse_benchmark_rejects_alias_output_paths() {
+        let err = validate_distinct_benchmark_output_paths(
+            Path::new("same-reuse-output.tsv"),
+            Some(Path::new("./same-reuse-output.tsv")),
+        )
+        .expect_err("aliased output paths must fail");
+        assert!(err
+            .to_string()
+            .contains("`--output-json` must differ from `--output-tsv`"));
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn shared_table_reuse_benchmark_rejects_symlink_output_paths() {
+        use std::os::unix::fs::symlink;
+
+        let tempdir = tempfile::tempdir().expect("tempdir");
+        let target = tempdir.path().join("reuse.tsv");
+        let alias = tempdir.path().join("reuse-link.tsv");
         std::fs::write(&target, "placeholder").expect("write target");
         symlink(&target, &alias).expect("create symlink");
 
@@ -16289,6 +16428,7 @@ fn needs_run_subcommand(first_arg: &str) -> bool {
                 | "prepare-stwo-shared-normalization-primitive-artifact"
                 | "verify-stwo-shared-normalization-primitive-artifact"
                 | "bench-stwo-primitive-lookup-vs-naive"
+                | "bench-stwo-shared-table-reuse"
                 | "prepare-stwo-tensor-native-chain-artifact"
                 | "verify-stwo-tensor-native-chain-artifact"
                 | "prepare-stwo-linear-block-core-slice-artifact"
