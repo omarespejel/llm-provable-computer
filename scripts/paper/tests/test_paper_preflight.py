@@ -67,6 +67,7 @@ def valid_prod_index() -> str:
 
 def valid_transformer_index() -> str:
     artifact_bytes = valid_transformer_artifact_json().encode("utf-8")
+    artifact_sha = MOD.hashlib.sha256(artifact_bytes).hexdigest()
     return """# Appendix Artifact Index (S-two Transformer-Shaped V1)
 
 ## Artifact Summary
@@ -74,13 +75,14 @@ def valid_transformer_index() -> str:
 |---|---|
 | Artifact file | `transformer_shaped.stwo.bundle.json` |
 | Artifact size (bytes) | `{artifact_size}` |
+| SHA-256 | `{artifact_sha}` |
 
 ## Timing Summary (seconds)
 | Label | Seconds |
 |---|---:|
 | prepare_transformer_shaped_bundle | 28 |
 | verify_transformer_shaped_bundle | 9 |
-""".format(artifact_size=len(artifact_bytes))
+""".format(artifact_size=len(artifact_bytes), artifact_sha=artifact_sha)
 
 
 def valid_transformer_artifact_json() -> str:
@@ -294,6 +296,42 @@ class PaperPreflightTests(unittest.TestCase):
                 findings.errors,
             )
 
+    def test_check_backend_consistency_reports_transformer_artifact_hash_mismatch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            write_valid_backend_fixture(
+                repo,
+                transformer_text=valid_transformer_index().replace(
+                    MOD.hashlib.sha256(
+                        valid_transformer_artifact_json().encode("utf-8")
+                    ).hexdigest(),
+                    "0" * 64,
+                ),
+            )
+            findings = MOD.Findings()
+            MOD.check_backend_appendix_consistency(repo, findings)
+            self.assertTrue(findings.errors)
+            self.assertTrue(
+                any("transformer-shaped SHA-256 mismatch" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
+    def test_check_backend_consistency_reports_transformer_missing_summary_field(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = pathlib.Path(tmp)
+            broken_stwo = valid_transformer_index().replace(
+                f"| SHA-256 | `{MOD.hashlib.sha256(valid_transformer_artifact_json().encode('utf-8')).hexdigest()}` |\n",
+                "",
+            )
+            write_valid_backend_fixture(repo, transformer_text=broken_stwo)
+            findings = MOD.Findings()
+            MOD.check_backend_appendix_consistency(repo, findings)
+            self.assertTrue(findings.errors)
+            self.assertTrue(
+                any("transformer-shaped index is missing artifact-summary fields" in msg for msg in findings.errors),
+                findings.errors,
+            )
+
     def test_check_backend_consistency_reports_primitive_artifact_hash_mismatch(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = pathlib.Path(tmp)
@@ -336,6 +374,7 @@ class PaperPreflightTests(unittest.TestCase):
             fields["artifact_size_bytes"],
             str(len(valid_transformer_artifact_json().encode("utf-8"))),
         )
+        self.assertIn("sha_256", fields)
         primitive_fields = MOD.parse_index_field_values(valid_shared_normalization_primitive_index())
         self.assertEqual(
             primitive_fields["artifact_file"], "shared-normalization-primitive.stwo.json"

@@ -81,7 +81,7 @@ Current public proof surfaces:
 | Run a program                    | `cargo run --bin tvm -- programs/fibonacci.tvm`                                                                                         | Fastest way to see the VM work                   |
 | Inspect a full trace             | `cargo run --bin tvm -- run programs/fibonacci.tvm --trace`                                                                             | Emits the full machine-state trace               |
 | Prove execution                  | `cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- prove-stark programs/fibonacci.tvm -o fib.proof.json`              | Active proof path                                |
-| Verify a proof                   | `cargo run --bin tvm -- verify-stark fib.proof.json`                                                                                    | CLI default uses `production-v1` / `ProductionV1`, including lockstep semantic checks |
+| Verify a proof                   | `cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- verify-stark fib.proof.json`                                                                                    | CLI default uses `production-v1` / `ProductionV1`, including lockstep semantic checks |
 | Regenerate paper artifacts       | `./scripts/generate_repro_bundle.sh`                                                                                                    | Publication-facing bundle                        |
 
 ## Toolchains
@@ -168,7 +168,7 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prove-stark programs/fibonacci.tvm -o fib.proof.json
 
 # Verify (statement-v1 includes lockstep re-execution)
-cargo run --bin tvm -- verify-stark fib.proof.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- verify-stark fib.proof.json
 
 # Exercise the active S-two backend (nightly-only upstream toolchain)
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
@@ -361,14 +361,14 @@ backend-specific proving logic lives under `src/stwo_backend/`.
 
 ```bash
 # Prove
-cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proof.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proof.json
 
 # Prove with the named production profile (v1)
-cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proof.json \
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proof.json \
   --stark-profile production-v1
 
 # Prove with explicit STARK options (overrides any selected profile)
-cargo run --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proof.json \
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- prove-stark programs/factorial_recursive.tvm -o fact.proof.json \
   --stark-profile production-v1 \
   --stark-expansion-factor 8 --stark-num-colinearity-checks 16 --stark-security-level 32
 
@@ -741,21 +741,21 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   -o recursion-batch.json
 
 # Verify with the default production profile (includes lockstep re-execution)
-cargo run --bin tvm -- verify-stark fact.proof.json
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- verify-stark fact.proof.json
 
 # Select the weaker named `Default` profile, not the CLI default `ProductionV1`:
 # claim/proof boundary only, without forced transformer/native re-execution.
-cargo run --bin tvm -- verify-stark fact.proof.json --verification-profile default
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- verify-stark fact.proof.json --verification-profile default
 
 # Verify and re-execute transformer/native runtimes from claim data
-cargo run --bin tvm -- verify-stark fact.proof.json --reexecute
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- verify-stark fact.proof.json --reexecute
 
 # Verify with the production verification profile (reexec + minimum 32 bits)
-cargo run --bin tvm -- verify-stark fact.proof.json --verification-profile production-v1
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- verify-stark fact.proof.json --verification-profile production-v1
 
 # Verify with a custom minimum conjectured-security policy and strict mode
-cargo run --bin tvm -- verify-stark fact.proof.json --min-conjectured-security 64
-cargo run --bin tvm -- verify-stark fact.proof.json --strict
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- verify-stark fact.proof.json --min-conjectured-security 64
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- verify-stark fact.proof.json --strict
 ```
 
 `prove-stark` first runs transformer/native lockstep verification and aborts on any

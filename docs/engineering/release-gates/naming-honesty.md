@@ -1,6 +1,6 @@
 # Naming honesty for fixtures and bundles
 
-The active S-two proof surface proves a 25-instruction VM under a Stwo-side
+The active S-two proof surface proves a 26-instruction VM under a Stwo-side
 AIR with shared lookup and decoding manifests layered on top. It does not
 prove a transformer in any standard sense.
 
