@@ -23,7 +23,7 @@ This repository currently has two live lanes.
 
 2. Experimental core-proving lane
    - The carry-aware backend `stwo-phase12-decoding-family-v10-carry-aware-experimental` is the active upside research lane.
-   - It clears the honest `8`-step Phase12 family and the experimental Phase44D scaling sweep through `2,4,8,16,32,64,128,256`.
+   - It clears the honest `8`-step Phase12 family and the experimental Phase44D scaling sweep through `2,4,8,16,32,64,128,256,512`.
 
 Do not collapse these two lanes into one claim.
 
@@ -31,13 +31,13 @@ Do not collapse these two lanes into one claim.
 
 The experimental carry-aware lane now has one real higher-layer scaling result:
 
-- Phase44D typed source-chain public-output boundary reuse clears `2,4,8,16,32,64,128,256`.
-- At `256` steps, the typed Phase44D boundary plus compact proof verifies in `122.157 ms` versus `33300.796 ms` for the Phase30 replay baseline under the same experimental backend.
+- Phase44D typed source-chain public-output boundary reuse clears `2,4,8,16,32,64,128,256,512`.
+- At `512` steps, the typed Phase44D boundary plus compact proof verifies in `236.107 ms` versus `77016.043 ms` for the Phase30 replay baseline under the same experimental backend.
 - This evidence is engineering-facing and now recorded under a `measured_median` timing policy (`median_of_5_runs_from_microsecond_capture`), not a paper-grade promotion into `docs/paper/`.
 
 ## Next likely technical steps
 
-1. Raise the Phase43/Phase44D experimental ceiling beyond `256`.
+1. Raise the Phase43/Phase44D experimental ceiling beyond `512`.
 2. Keep the experimental backend isolated from the default/publication lane until it survives broader review.
 3. Only then decide whether any piece of the experimental lane is mature enough for explicit promotion work.
 

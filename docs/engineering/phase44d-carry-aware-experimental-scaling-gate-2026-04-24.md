@@ -8,7 +8,7 @@ experimental carry-aware Phase12 execution-proof surface added in PR #233.
 - Source family: default Phase12 decoding family seeds
 - Execution backend: `stwo-phase12-decoding-family-v10-carry-aware-experimental`
 - Higher layer: Phase44D typed source-chain public-output boundary
-- Sweep: `steps = 2, 4, 8, 16, 32, 64, 128, 256`
+- Sweep: `steps = 2, 4, 8, 16, 32, 64, 128, 256, 512`
 - Timing mode: `measured_median`
 - Timing policy: `median_of_5_runs_from_microsecond_capture`
 
@@ -27,7 +27,7 @@ The hard gate cleared and the higher-layer frontier moved materially.
 1. The honest default `8`-step Phase12 family proves and verifies on the
    experimental carry-aware backend.
 2. The Phase44D experimental benchmark clears not only `8`, but the full
-   current benchmark cap at `256` honest steps.
+   current benchmark cap at `512` honest steps.
 3. The main higher-layer result is no longer blocked by the old Phase12 carry
    barrier.
 
@@ -43,14 +43,15 @@ The hard gate cleared and the higher-layer frontier moved materially.
 | 64 | `43.616 ms`, `104,182` bytes | `8,322.397 ms`, `180,875` bytes | `190.8x` |
 | 128 | `69.231 ms`, `115,939` bytes | `16,579.145 ms`, `274,695` bytes | `239.5x` |
 | 256 | `122.157 ms`, `112,088` bytes | `33,300.796 ms`, `435,066` bytes | `272.6x` |
+| 512 | `236.107 ms`, `141,738` bytes | `77,016.043 ms`, `793,166` bytes | `326.2x` |
 
 ## Causal read
 
 The causal decomposition rows explain why the gap opens:
 
-- At `256` steps, the compact Phase43 proof alone verifies in `25.644 ms`.
-- The typed Phase44D boundary binding alone verifies in `75.963 ms`.
-- The Phase30 manifest replay alone costs `33,509.051 ms`.
+- At `512` steps, the compact Phase43 proof alone verifies in `50.521 ms`.
+- The typed Phase44D boundary binding alone verifies in `190.275 ms`.
+- The Phase30 manifest replay alone costs `103,854.450 ms`.
 
 So the experimental shared path behaves like:
 
@@ -79,7 +80,7 @@ surface from verifier work.
      paper-facing promotion.
 
 3. The current frontier ends at the benchmark cap, not a proven asymptote.
-   - `256` is the current `PHASE44D_SOURCE_EMISSION_MAX_STEPS` cap.
+   - `512` is the current `PHASE44D_SOURCE_EMISSION_MAX_STEPS` cap.
    - The next blocker is now the higher-layer prototype ceiling, not the old
      Phase12 carry barrier.
 
@@ -91,7 +92,7 @@ speculative extension.
 The honest next step is no longer “see whether `8` clears.” That question is
 answered. The next step is:
 
-1. raise the Phase43/Phase44D prototype ceiling beyond `256`
+1. raise the Phase43/Phase44D prototype ceiling beyond `512`
 2. keep the experimental backend isolated from the publication lane
 3. only consider broader backend replacement after this higher-layer result is
    replicated under broader proof-surface review and a deliberate promotion pass
