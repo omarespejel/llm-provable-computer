@@ -1,11 +1,11 @@
 # Publication Release Package
 
-Snapshot date: **April 20, 2026**
+Snapshot date: **April 24, 2026**
 
-Planned publication tag after repository transfer: `paper-publication-v5-2026-04-20`
+Planned publication tag after repository transfer: `paper-publication-v6-2026-04-24`
 
-Canonical publication snapshot after transfer: The canonical v5 publication snapshot is
-the release tag `paper-publication-v5-2026-04-20` once cut in the final publication
+Canonical publication snapshot after transfer: The canonical v6 publication snapshot is
+the release tag `paper-publication-v6-2026-04-24` once cut in the final publication
 repository. Until that transfer and tag cut happen, the paper keeps Reference `[30]`
 pointed at the staging commit-pinned snapshot below. The final publication tag
 intentionally need not match the pinned carried-state evidence commit used by the
@@ -52,11 +52,19 @@ one monolithic benchmark claim.
   - `docs/paper/figures/section4-ratio-vs-context.tsv`
   - `docs/paper/figures/section4-decomposition-vs-context.tsv`
   - `docs/paper/figures/section5-carried-state-ladder.svg`
+  - `docs/paper/figures/stwo-phase44d-source-emission-2026-04.svg`
+  - `docs/paper/figures/stwo-phase71-handoff-receipt-2026-04.svg`
   - `scripts/paper/generate_section4_ratio_figure.py`
   - `scripts/paper/generate_section4_decomposition_figure.py`
+  - `scripts/paper/generate_stwo_phase44d_source_emission_benchmark.sh`
+  - `scripts/paper/generate_stwo_phase44d_source_emission_figure.py`
+  - `scripts/paper/generate_stwo_phase71_handoff_receipt_benchmark.sh`
+  - `scripts/paper/generate_stwo_phase71_handoff_receipt_figure.py`
 - External evidence snapshots:
   - `docs/paper/evidence/web-2026-04-06/`
   - `docs/paper/evidence/gemma-config-snapshots/`
+  - `docs/paper/evidence/published-zkml-numbers-2026-04.tsv`
+  - `docs/paper/evidence/published-zkml-calibration-note-2026-04-24.md`
 
 ## Claim posture
 
@@ -70,6 +78,13 @@ one monolithic benchmark claim.
 - The April 21 `stwo-transformer-shaped-v1` bundle freezes one reproducible
   transformer-shaped `stwo` artifact with `28s` prepare, `9s` verify, `9,348,044`
   artifact bytes, a five-step source chain, and two translated segment manifests.
+- The April 24 evidence set adds two higher-layer verifier-bound calibration rows:
+  a Phase44D typed source-emission boundary that wins on local verification latency
+  but not serialized bytes, and a Phase71 handoff receipt that wins on serialized
+  surface but not on verification time.
+- The April 24 literature-facing calibration snapshot now records three distinct
+  local regimes rather than one catch-all internal row: the Phase12 proving bundle,
+  the Phase44D typed-boundary latency row, and the Phase71 handoff-receipt size row.
 - Older carried-state artifact bundles are retained as archival provenance; see
   `docs/paper/artifacts/README.md`. The proof-carrying aggregation bundle is the
   publication-facing artifact bundle for the carried-state aggregation line.
@@ -99,6 +114,9 @@ one monolithic benchmark claim.
   - `python3 scripts/paper/extract_gemma_config_snapshots.py`
 - Paper preflight checks:
   - `python3 scripts/paper/paper_preflight.py --repo-root .`
+- Higher-layer benchmark evidence:
+  - `BENCH_RUNS=5 CAPTURE_TIMINGS=1 ALLOW_HOST_DEPENDENT_OUTPUTS=1 PNG_OUT= PDF_OUT= ./scripts/paper/generate_stwo_phase44d_source_emission_benchmark.sh`
+  - `BENCH_RUNS=5 CAPTURE_TIMINGS=1 ALLOW_HOST_DEPENDENT_OUTPUTS=1 PNG_OUT= PDF_OUT= ./scripts/paper/generate_stwo_phase71_handoff_receipt_benchmark.sh`
 
 ## Publication check
 
@@ -109,9 +127,9 @@ Before cutting a release tag, verify:
 2. the main paper and appendices refer to the same repo state and evidence tiers,
 3. the design note matches the current experimental `stwo` status,
 4. no stale top-level README language still describes S-two as merely prospective,
-5. Reference `[30]` remains commit-pinned until the repository transfer and v5
+5. Reference `[30]` remains commit-pinned until the repository transfer and v6
    publication tag exist; after that tag is cut in the final publication repository,
-   update `[30]` to the v5 publication tag while keeping the aggregation bundle directly
+   update `[30]` to the v6 publication tag while keeping the aggregation bundle directly
    pinned by Reference `[46]`,
 6. the formal author line and affiliation text are confirmed before public release,
 7. `paper preflight` passes (citation integrity, immutable local repo links, figure/link

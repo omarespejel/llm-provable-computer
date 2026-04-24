@@ -25,6 +25,16 @@ Current paper-freeze addendum:
 - `artifacts/phase66-69-proof-carrying-hardening-v1-2026-04-21/`
 - `artifacts/phase70-80-proof-checked-decode-bridge-v1-2026-04-21/`
 - `artifacts/stwo-transformer-shaped-v1-2026-04-21/`
+- `figures/stwo-phase44d-source-emission-2026-04.svg`
+- `figures/stwo-phase71-handoff-receipt-2026-04.svg`
+- `evidence/stwo-phase44d-source-emission-2026-04.tsv`
+- `evidence/stwo-phase71-handoff-receipt-2026-04.tsv`
+- `evidence/published-zkml-numbers-2026-04.tsv`
+- `evidence/published-zkml-calibration-note-2026-04-24.md`
+
+This April 24 freeze extends the earlier carried-state publication package with the
+two higher-layer verifier-bound reuse calibrations and the refreshed workload-scope
+external calibration snapshot.
 
 Later bridge work remains implemented in-repo but is not yet part of the frozen
 publication-facing artifact bundle:
