@@ -140,8 +140,9 @@ const STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_INDEPENDENT_VIEW_SCOPE: &str =
     "phase12_shared_lookup_artifact_independent_view";
 const PHASE30_SOURCE_BOUND_MANIFEST_REUSE_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 const PHASE44D_SOURCE_EMISSION_STEP_COUNTS: [usize; 1] = [2];
-const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_STEP_COUNTS: [usize; 6] = [2, 4, 8, 16, 32, 64];
-const PHASE44D_SOURCE_EMISSION_MAX_STEPS: usize = 64;
+const PHASE44D_SOURCE_EMISSION_EXPERIMENTAL_STEP_COUNTS: [usize; 8] =
+    [2, 4, 8, 16, 32, 64, 128, 256];
+const PHASE44D_SOURCE_EMISSION_MAX_STEPS: usize = 256;
 const PHASE71_HANDOFF_RECEIPT_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 const PHASE12_ARITHMETIC_BUDGET_MAP_MAX_STEPS: usize = 64;
 const PHASE44D_RESCALED_EXPLORATORY_STEP_COUNTS: [usize; 6] = [2, 4, 8, 16, 32, 64];
@@ -5553,9 +5554,9 @@ mod tests {
 
     #[test]
     fn phase44d_source_emission_benchmark_rejects_oversized_step_counts() {
-        let error = run_stwo_phase44d_source_emission_benchmark_for_step_counts(&[2, 128], false)
+        let error = run_stwo_phase44d_source_emission_benchmark_for_step_counts(&[2, 512], false)
             .expect_err("oversized step counts must fail");
-        assert!(error.to_string().contains("supports at most 64 steps"));
+        assert!(error.to_string().contains("supports at most 256 steps"));
     }
 
     #[test]
@@ -5660,6 +5661,32 @@ mod tests {
     }
 
     #[test]
+    fn phase44d_source_emission_experimental_benchmark_clears_honest_one_twenty_eight_steps() {
+        let report =
+            run_stwo_phase44d_source_emission_experimental_benchmark_for_steps(&[128], false)
+                .expect("experimental phase44d source emission benchmark should clear 128 steps");
+        assert_eq!(report.rows.len(), 5);
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().any(|row| {
+            row.backend_variant == "typed_source_boundary_plus_compact_projection"
+                && row.steps == 128
+        }));
+    }
+
+    #[test]
+    fn phase44d_source_emission_experimental_benchmark_clears_honest_two_fifty_six_steps() {
+        let report =
+            run_stwo_phase44d_source_emission_experimental_benchmark_for_steps(&[256], false)
+                .expect("experimental phase44d source emission benchmark should clear 256 steps");
+        assert_eq!(report.rows.len(), 5);
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().any(|row| {
+            row.backend_variant == "typed_source_boundary_plus_compact_projection"
+                && row.steps == 256
+        }));
+    }
+
+    #[test]
     #[ignore = "expensive experimental phase44d full sweep"]
     fn phase44d_source_emission_experimental_benchmark_preserves_expected_row_shape() {
         let report = run_stwo_phase44d_source_emission_experimental_benchmark_with_options(false)
@@ -5673,7 +5700,7 @@ mod tests {
         assert!(report.rows.iter().all(|row| row.emit_ms >= 0.0));
         assert!(report.rows.iter().any(|row| {
             row.backend_variant == "typed_source_boundary_plus_compact_projection"
-                && row.steps == 64
+                && row.steps == 256
         }));
     }
 

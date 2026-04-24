@@ -29,9 +29,9 @@ This repository now has two live lanes.
 
 - Backend version: `stwo-phase12-decoding-family-v10-carry-aware-experimental`
 - The honest default `4`-step seed and honest `8`-step family clear on this backend.
-- The experimental Phase44D typed-boundary sweep clears `2,4,8,16,32,64`.
-- At `64` steps, the experimental shared path records `43.146 ms` verification versus
-  `8482.732 ms` for the Phase30 replay baseline, with `104,182` bytes versus `180,875` bytes.
+- The experimental Phase44D typed-boundary sweep clears `2,4,8,16,32,64,128,256`.
+- At `256` steps, the experimental shared path records `122.157 ms` verification versus
+  `33300.796 ms` for the Phase30 replay baseline, with `112,088` bytes versus `435,066` bytes.
 
 That result is real, but it is still engineering evidence under a median-of-5 timing policy, not a paper-facing promotion.
 
@@ -52,6 +52,6 @@ That result is real, but it is still engineering evidence under a median-of-5 ti
 
 ## Next sensible moves
 
-1. Raise the experimental Phase43/Phase44D ceiling beyond `64`.
+1. Raise the experimental Phase43/Phase44D ceiling beyond `256`.
 2. Broaden review of the experimental backend before making any promotion decision.
 3. Only after those steps decide whether any part of the experimental lane should be promoted toward the paper/publication surface.
