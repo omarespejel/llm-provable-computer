@@ -339,17 +339,19 @@ symbolic model was trying to isolate: once one canonical table identity is made
 verifier-visible across repeated steps, proof growth can flatten sharply instead of
 scaling with the number of independent envelopes.
 
-Read together, Figures 3, 4, and 4B give the external-calibration boundary the paper
-should actually claim. Figure 3 is the honest one-shot anchor: on tiny isolated
+Read together, Figures 3, 4, 4B, 4E, and 4F give the external-calibration boundary the
+paper should actually claim. Figure 3 is the honest one-shot anchor: on tiny isolated
 primitive proofs, the current lookup-backed paths are still somewhat larger and slower
 than the arithmetic baselines. Figure 4 is the reuse-sensitive single-table anchor:
 once the verifier-visible statement carries one canonical table identity across repeated
 rows, the shared-table path can flatten sharply while the independent baselines
 continue to scale with `N`. Figure 4B shows that the same reuse-sensitive behavior
-survives in a verifier-bound two-table bundle. External comparisons should therefore
-track regime, not backend branding. The one-shot rows calibrate current implementation
-constants; the repeated-step rows calibrate the architectural claim about carried
-lookup identity.
+survives in a verifier-bound two-table bundle. Figures 4E and 4F then sharpen the
+higher-layer story: the typed Phase44D boundary helps local verification latency, while
+the Phase71 handoff receipt helps serialized handoff size. External comparisons should
+therefore track regime, not backend branding. The one-shot rows calibrate current
+implementation constants; the repeated-step rows calibrate the architectural claim about
+carried lookup identity and higher-layer packaging tradeoffs.
 
 ### 4.5 Inference layer versus settlement layer
 
