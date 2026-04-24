@@ -55,7 +55,7 @@ import os
 import sys
 
 for raw_path in sys.argv[1:]:
-    print(os.path.normpath(os.path.abspath(raw_path)))
+    print(os.path.realpath(os.path.abspath(raw_path)))
 PY
 )
 for ((i = 0; i < ${#NORMALIZED_OUTPUTS[@]}; i++)); do
@@ -91,7 +91,7 @@ import os
 import sys
 
 for raw_path in sys.argv[1:]:
-    print(os.path.normpath(os.path.abspath(raw_path)))
+    print(os.path.realpath(os.path.abspath(raw_path)))
 PY
   )
   for output_path in "${NORMALIZED_OUTPUTS[@]}"; do

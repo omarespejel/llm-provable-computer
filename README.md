@@ -420,10 +420,20 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   bench-stwo-phase12-shared-lookup-bundle-reuse --capture-timings
 
+# Measure the higher-layer typed Phase44D source-emission boundary
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  bench-stwo-phase44d-source-emission-reuse --capture-timings
+
+# Measure the higher-layer Phase71 handoff receipt surface
+cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
+  bench-stwo-phase71-handoff-receipt-reuse --capture-timings
+
 # Freeze the publication-facing benchmark evidence
 bash scripts/paper/generate_stwo_primitive_lookup_vs_naive_benchmark.sh
 bash scripts/paper/generate_stwo_shared_table_reuse_benchmark.sh
 bash scripts/paper/generate_stwo_phase12_shared_lookup_bundle_benchmark.sh
+bash scripts/paper/generate_stwo_phase44d_source_emission_benchmark.sh
+bash scripts/paper/generate_stwo_phase71_handoff_receipt_benchmark.sh
 
 # Run the minimal shared-lookup identity example
 cargo +nightly-2025-07-14 run --features stwo-backend --example shared_lookup_identity
