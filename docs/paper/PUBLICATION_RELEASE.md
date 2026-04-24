@@ -80,8 +80,9 @@ one monolithic benchmark claim.
   artifact bytes, a five-step source chain, and two translated segment manifests.
 - The April 24 evidence set adds two higher-layer verifier-bound calibration rows:
   a Phase44D typed source-emission boundary that wins on local verification latency
-  but not serialized bytes, and a Phase71 handoff receipt that wins on serialized
-  surface but not on verification time.
+  but not serialized bytes, now with causal decomposition and an explicit `4+` step
+  overflow barrier on the current execution-proof surface, and a Phase71 handoff
+  receipt that wins on serialized surface but not on verification time.
 - The April 24 literature-facing calibration snapshot now records three distinct
   local regimes rather than one catch-all internal row: the Phase12 proving bundle,
   the Phase44D typed-boundary latency row, and the Phase71 handoff-receipt size row.

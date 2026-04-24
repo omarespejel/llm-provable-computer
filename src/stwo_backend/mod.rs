@@ -302,6 +302,7 @@ pub use primitive_benchmark::{
     run_stwo_phase30_source_bound_manifest_reuse_benchmark,
     run_stwo_phase30_source_bound_manifest_reuse_benchmark_with_options,
     run_stwo_phase44d_source_emission_benchmark,
+    run_stwo_phase44d_source_emission_benchmark_for_steps,
     run_stwo_phase44d_source_emission_benchmark_with_options,
     run_stwo_phase71_handoff_receipt_benchmark,
     run_stwo_phase71_handoff_receipt_benchmark_with_options,

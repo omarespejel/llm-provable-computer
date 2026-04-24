@@ -638,15 +638,21 @@ currently support. Its evidence files
 `docs/paper/evidence/stwo-phase44d-source-emission-2026-04.json`, and Figure 4E compare
 one `Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary` against the lower
 source-bound baseline of verifying the same compact Phase43 projection proof and then
-replaying the ordered Phase30 manifest. This is not a fake curve. The current compact
-projection surface honestly gives us one checked power-of-two point at two steps, so the
-figure is a bar comparison rather than a line. That single point is still useful because
-the result is sharp and asymmetric: the typed boundary is slightly larger (`61,238`
-serialized bytes versus `58,382` for the lower-layer baseline), but median verification
-latency collapses from `16.717 ms` to `0.978 ms`. So the Phase44D source-emission layer
-is not a byte win. It is a local **verification-latency win** at the checked point,
-because it avoids replaying the ordered Phase30 verifier surface while preserving the
-same compact source-root claim.
+replaying the ordered Phase30 manifest. This is still not a fake curve. The benchmark now
+includes a causal decomposition row and separate boundary-emission timing, but the current
+execution-proof surface honestly gives us only one checked power-of-two point at two steps:
+at four steps and above, the proof-checked source chain aborts with `overflowing arithmetic
+is not supported by the current execution-proof surface`. That means Figure 4E remains a
+single-point calibration rather than a scaling line. The point is still useful because the
+cause is now explicit. The typed boundary is slightly larger (`61,238` serialized bytes
+versus `58,382` for the lower-layer baseline), but median verification latency collapses
+from `16.688 ms` to `0.957 ms`, while boundary emission itself costs `1.034 ms`. The
+causal subrows show where the baseline spends time: the compact Phase43 proof alone is
+`0.456 ms`, the ordered Phase30 manifest replay alone is `15.856 ms`, and typed boundary
+binding after prior compact-proof verification is only `0.399 ms`. So the Phase44D
+source-emission layer is not a byte win. It is a local **verification-latency win** at
+the checked point, because it removes manifest replay from the verifier-facing surface
+while preserving the same compact source-root claim.
 
 ![Figure 4E. Phase44D typed source-emission boundary calibration over the compact projection line.](figures/stwo-phase44d-source-emission-2026-04.svg)
 
@@ -655,9 +661,11 @@ same compact source-root claim.
 typed `Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary` accepted against
 the real compact Phase43 projection proof. The orange bar is the lower-layer baseline
 that verifies that same compact proof and then replays the ordered Phase30 manifest
-against the proof-checked Phase12 chain. The current checked point is only two steps,
-but it shows a real higher-layer split: slightly larger serialized surface in exchange
-for sharply lower verification latency.
+against the proof-checked Phase12 chain. The gray, amber, and green causal rows isolate
+compact-proof verification, manifest replay, and typed-boundary binding respectively.
+The current checked point is still only two steps, and the figure now makes the
+restriction explicit: this benchmark does not currently scale past two steps because the
+underlying execution-proof surface overflows at four.
 
 The next checked calibration row moves one layer higher again, from the typed
 source-emission boundary to the actual Phase71 handoff receipt surface. Its evidence

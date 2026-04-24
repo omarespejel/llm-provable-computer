@@ -44,8 +44,12 @@ published numbers make three boundaries explicit:
     `4,968` raw proof bytes, `14.939 ms` prove, and `6.745 ms` verify from
     `docs/paper/evidence/stwo-phase12-shared-lookup-bundle-reuse-2026-04.tsv`;
   - the checked Phase44D typed source-emission boundary at the current two-step
-    power-of-two point: `61,238` serialized bytes and `0.978 ms` verify from
-    `docs/paper/evidence/stwo-phase44d-source-emission-2026-04.tsv`;
+    power-of-two point: `61,238` serialized bytes, `1.034 ms` boundary emission,
+    and `0.957 ms` verify from
+    `docs/paper/evidence/stwo-phase44d-source-emission-2026-04.tsv`; the same
+    evidence file also records the causal split showing `0.456 ms` for the compact
+    Phase43 proof alone, `15.856 ms` for ordered Phase30 manifest replay alone,
+    and `0.399 ms` for typed-boundary binding after prior compact-proof verification;
   - the checked Phase71 handoff receipt at three steps: `1,533` serialized bytes and
     `34.613 ms` verify from
     `docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.tsv`.

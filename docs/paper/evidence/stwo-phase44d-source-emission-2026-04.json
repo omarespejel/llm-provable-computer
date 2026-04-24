@@ -1,6 +1,6 @@
 {
-  "benchmark_version": "stwo-phase44d-source-emission-benchmark-v1",
-  "semantic_scope": "phase44d_typed_source_emission_boundary_calibration",
+  "benchmark_version": "stwo-phase44d-source-emission-benchmark-v2",
+  "semantic_scope": "phase44d_typed_source_emission_boundary_scaling_calibration",
   "timing_mode": "measured_median",
   "timing_policy": "median_of_5_runs_from_microsecond_capture",
   "timing_unit": "milliseconds",
@@ -12,9 +12,10 @@
       "steps": 2,
       "relation": "one typed Phase44D source-emission boundary plus one compact Phase43 projection proof",
       "serialized_bytes": 61238,
-      "verify_ms": 0.978,
+      "emit_ms": 1.034,
+      "verify_ms": 0.957,
       "verified": true,
-      "note": "the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest verifier surface"
+      "note": "the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest verifier surface; emit_ms reports boundary construction cost separately"
     },
     {
       "primitive": "phase44d_source_chain_public_output_boundary",
@@ -22,9 +23,43 @@
       "steps": 2,
       "relation": "ordered Phase30 manifest plus one compact Phase43 projection proof",
       "serialized_bytes": 58382,
-      "verify_ms": 16.717,
+      "emit_ms": 0.0,
+      "verify_ms": 16.688,
       "verified": true,
       "note": "the same replayed source root is checked by verifying the real compact Phase43 proof envelope and then replaying the ordered Phase30 manifest against the proof-checked Phase12 chain as a lower-layer baseline"
+    },
+    {
+      "primitive": "phase43_compact_projection_proof",
+      "backend_variant": "compact_phase43_projection_proof_only",
+      "steps": 2,
+      "relation": "one compact Phase43 projection proof envelope",
+      "serialized_bytes": 54939,
+      "emit_ms": 0.0,
+      "verify_ms": 0.456,
+      "verified": true,
+      "note": "causal decomposition row: verifies only the compact Phase43 proof envelope that both higher-layer variants already depend on"
+    },
+    {
+      "primitive": "phase30_source_bound_manifest_replay",
+      "backend_variant": "phase30_manifest_replay_only",
+      "steps": 2,
+      "relation": "ordered Phase30 manifest replay against the proof-checked Phase12 chain",
+      "serialized_bytes": 3443,
+      "emit_ms": 0.0,
+      "verify_ms": 15.856,
+      "verified": true,
+      "note": "causal decomposition row: isolates the ordered Phase30 manifest replay that the lower-layer baseline pays after compact proof verification"
+    },
+    {
+      "primitive": "phase44d_source_chain_public_output_boundary",
+      "backend_variant": "phase44d_typed_boundary_binding_only",
+      "steps": 2,
+      "relation": "typed Phase44D source-emission boundary binding after prior compact Phase43 proof verification",
+      "serialized_bytes": 6299,
+      "emit_ms": 1.034,
+      "verify_ms": 0.399,
+      "verified": true,
+      "note": "causal decomposition row: assumes the compact Phase43 proof was already verified and measures only the typed Phase44D boundary acceptance and source-root binding surface"
     }
   ]
 }

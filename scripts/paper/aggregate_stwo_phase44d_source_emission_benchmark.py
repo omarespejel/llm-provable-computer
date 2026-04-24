@@ -77,7 +77,7 @@ def main() -> None:
     semantic_scope: Optional[str] = None
     timing_unit: Optional[str] = None
     canonical_rows: Optional[List[Dict[str, Any]]] = None
-    timing_samples: Dict[Tuple[str, str, int], List[float]] = {}
+    timing_samples: Dict[Tuple[str, str, int], List[Dict[str, float]]] = {}
 
     for input_path in args.inputs:
         payload = json.loads(input_path.read_text(encoding="utf-8"))
@@ -136,14 +136,24 @@ def main() -> None:
                     raise SystemExit(
                         f"deterministic field mismatch for {key} field {field} in {input_path}: {current[field]!r} != {row[field]!r}"
                     )
-            timing_samples[key].append(float(current["verify_ms"]))
+            timing_samples[key].append(
+                {
+                    "emit_ms": float(current["emit_ms"]),
+                    "verify_ms": float(current["verify_ms"]),
+                }
+            )
 
     assert canonical_rows is not None
     aggregated_rows: List[Dict[str, Any]] = []
     for row in canonical_rows:
         key = key_for(row)
         aggregated = dict(row)
-        aggregated["verify_ms"] = round_milliseconds(statistics.median(timing_samples[key]))
+        aggregated["emit_ms"] = round_milliseconds(
+            statistics.median(sample["emit_ms"] for sample in timing_samples[key])
+        )
+        aggregated["verify_ms"] = round_milliseconds(
+            statistics.median(sample["verify_ms"] for sample in timing_samples[key])
+        )
         aggregated_rows.append(aggregated)
 
     timing_policy = f"median_of_{len(args.inputs)}_runs_from_microsecond_capture"
@@ -159,7 +169,7 @@ def main() -> None:
     args.output_json.write_text(json.dumps(output_payload, indent=2) + "\n", encoding="utf-8")
 
     lines = [
-        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tprimitive\tbackend_variant\tsteps\trelation\tserialized_bytes\tverify_ms\tverified\tnote"
+        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tprimitive\tbackend_variant\tsteps\trelation\tserialized_bytes\temit_ms\tverify_ms\tverified\tnote"
     ]
     for row in aggregated_rows:
         lines.append(
@@ -176,6 +186,7 @@ def main() -> None:
                     str(row["steps"]),
                     row["relation"],
                     str(row["serialized_bytes"]),
+                    format_milliseconds(float(row["emit_ms"])),
                     format_milliseconds(float(row["verify_ms"])),
                     str(row["verified"]).lower(),
                     str(row["note"]).replace("\t", " "),

@@ -14,6 +14,7 @@ fi
 BENCH_RUNS="${BENCH_RUNS:-5}"
 CAPTURE_TIMINGS="${CAPTURE_TIMINGS:-0}"
 ALLOW_HOST_DEPENDENT_OUTPUTS="${ALLOW_HOST_DEPENDENT_OUTPUTS:-0}"
+STEP_COUNTS="${STEP_COUNTS:-}"
 TSV_OUT="${TSV_OUT:-$REPO_ROOT/docs/paper/evidence/stwo-phase44d-source-emission-2026-04.tsv}"
 JSON_OUT="${JSON_OUT:-$REPO_ROOT/docs/paper/evidence/stwo-phase44d-source-emission-2026-04.json}"
 SVG_OUT="${SVG_OUT:-$REPO_ROOT/docs/paper/figures/stwo-phase44d-source-emission-2026-04.svg}"
@@ -38,6 +39,10 @@ fi
 if [[ "$ALLOW_HOST_DEPENDENT_OUTPUTS" != "0" && "$ALLOW_HOST_DEPENDENT_OUTPUTS" != "1" ]]; then
   echo "ALLOW_HOST_DEPENDENT_OUTPUTS must be 0 or 1" >&2
   exit 1
+fi
+BENCH_ARGS=()
+if [[ -n "$STEP_COUNTS" ]]; then
+  BENCH_ARGS+=(--step-counts "$STEP_COUNTS")
 fi
 
 OUTPUT_PATH_ARGS=("$TSV_OUT" "$JSON_OUT" "$SVG_OUT")
@@ -141,6 +146,7 @@ if [[ "$CAPTURE_TIMINGS" == "1" ]]; then
     run_tsv="$RUN_DIR/run-$run_index.tsv"
     cargo "$NIGHTLY_TOOLCHAIN" run --release --features stwo-backend --bin tvm -- \
       bench-stwo-phase44d-source-emission-reuse \
+      "${BENCH_ARGS[@]}" \
       --capture-timings \
       --output-tsv "$run_tsv" \
       --output-json "$run_json"
@@ -154,6 +160,7 @@ if [[ "$CAPTURE_TIMINGS" == "1" ]]; then
 else
   cargo "$NIGHTLY_TOOLCHAIN" run --release --features stwo-backend --bin tvm -- \
     bench-stwo-phase44d-source-emission-reuse \
+    "${BENCH_ARGS[@]}" \
     --output-tsv "$TMP_TSV" \
     --output-json "$TMP_JSON"
 fi
