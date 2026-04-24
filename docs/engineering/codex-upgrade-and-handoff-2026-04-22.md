@@ -69,7 +69,7 @@ That file is the tracked mirror of the local `.codex` handoff state.
 Fresh agents must not lose the difference between:
 
 - the bounded decode / carried-state supporting line, and
-- the tensor-native, lookup-aware S-two breakthrough line.
+- the shared-table / repeated-reuse S-two empirical line.
 
 That distinction must be present in both the local and tracked handoff layers.
 

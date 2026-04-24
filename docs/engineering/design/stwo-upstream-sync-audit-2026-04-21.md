@@ -113,8 +113,8 @@ The experimental backend in `provable-transformer-vm` is pinned to published
    - treat `proving-utils` and `scarb prove` as the live Cairo-facing route,
    - treat `fold_step`, leaf packing, precomputed twiddles/trees, and memory
      pool entry points as real upstream signals for later custom-AIR work.
-3. The refreshed clones strengthen the case for moving the main breakthrough
-   route toward tensor-native, lookup-aware S-two proofs rather than adding more
+3. The refreshed clones strengthen the case for moving the main empirical
+   route toward shared-table, lookup-aware S-two proofs rather than adding more
    VM-manifest wrapper layers.
 
 ## Audit conclusion
@@ -126,7 +126,7 @@ The experimental backend in `provable-transformer-vm` is pinned to published
    inspection clones now match upstream `main` at `01eb5d607`.
 3. Update repository-facing assumptions and docs to reflect the removal of the
    old `cairo-prove` path in upstream `stwo-cairo`.
-4. Do not block tensor-native phase work on unreleased generic recursion APIs.
+4. Do not block the repeated-reuse measurement line on unreleased generic recursion APIs.
    The meaningful live upstream signal is improved lookup/preprocessing/prover
    plumbing, not public custom-recursion closure.
 5. Treat this note as a narrow engineering audit, not as a benchmark or proof
@@ -140,5 +140,5 @@ facts correctly:
 - latest published `stwo` crates: still `2.2.0`,
 - active upstream `stwo` development branch: `dev`,
 - meaningful clone drift and capability movement: `stwo-cairo main`,
-- next engineering priority: tensor-native, lookup-aware S-two work on top of
+- next engineering priority: shared-table, lookup-aware S-two work on top of
   the current crate line.

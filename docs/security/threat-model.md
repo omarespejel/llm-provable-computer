@@ -5,7 +5,7 @@ artifact surfaces as of April 22, 2026.
 
 The scope is intentionally narrow. The repository exposes:
 
-- tensor-native `stwo` lookup and transformer-shaped artifacts,
+- shared-table `stwo` lookup artifacts and transformer-shaped carried-state artifacts,
 - decode / carried-state / manifest-binding artifacts,
 - differential-testing surfaces across transformer/native/Burn/ONNX engines.
 
@@ -29,18 +29,6 @@ For the surfaces treated as cryptographic or verifier-bound, the repository aims
 
 The repository exposes four distinct claim classes.
 
-Crosswalk to `docs/engineering/public-artifact-taxonomy.md`:
-
-- `Execution proof` and `Lookup proof` usually map to `Cryptographic proof`
-  claims.
-- `Decoding-step artifact`, `Accumulation manifest`, and `Recursion contract`
-  usually map to `Verifier-bound artifact` claims unless a document explicitly
-  states a narrower or stronger contract.
-- `--verify-all`, `--verify-native`, `research-v2`, and `research-v3` remain
-  `Differential-testing artifact` claims.
-- Frozen directories under `docs/paper/artifacts/` remain `Publication evidence
-  bundle` containers whose contents inherit the narrower underlying claim class.
-
 ### 1. Cryptographic proof
 
 Examples:
@@ -60,10 +48,8 @@ Meaning:
 
 Examples:
 
-- tensor-native chain artifacts,
 - shared-table identity artifacts,
-- repeated-window fold artifacts,
-- accumulation-semantics artifacts,
+- shared lookup bundles,
 - bounded decode / carried-state artifacts.
 
 Meaning:
@@ -226,9 +212,8 @@ The main residual risks are:
 
 Public-facing text in this repository should follow these rules.
 
-- Treat tensor-native `stwo` artifacts as the main research line.
+- Treat repeated-reuse and shared-table `stwo` artifacts as the main empirical line.
 - Treat decode / carried-state artifacts as supporting evidence unless the verifier surface
   itself is the subject of the claim.
 - Treat `--verify-all` and related multi-engine checks as differential testing, not proof.
-- Do not describe folded, repeated-window, or accumulation-semantics artifacts as
-  recursive cryptographic compression.
+- Do not describe verifier-bound packaging artifacts as recursive cryptographic compression.

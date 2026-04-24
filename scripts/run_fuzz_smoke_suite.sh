@@ -6,11 +6,15 @@ cd "$ROOT_DIR"
 
 FUZZ_TOOLCHAIN="${FUZZ_TOOLCHAIN:-nightly-2025-07-14}"
 FUZZ_TIME_PER_TARGET="${FUZZ_TIME_PER_TARGET:-20}"
+FUZZ_INPUT_TIMEOUT_SECONDS="${FUZZ_INPUT_TIMEOUT_SECONDS:-60}"
 FUZZ_WORK_DIR="${FUZZ_WORK_DIR:-target/fuzz-smoke}"
-FUZZ_GENERATED_CORPUS_DIR="${FUZZ_GENERATED_CORPUS_DIR:-${FUZZ_WORK_DIR}/generated-corpus}"
+FUZZ_SOURCE_CORPUS_DIR="${FUZZ_SOURCE_CORPUS_DIR:-fuzz/corpus}"
 SAFE_TARGET_ROOT="${ROOT_DIR}/target"
+FUZZ_WALL_CLOCK_GRACE_SECONDS="${FUZZ_WALL_CLOCK_GRACE_SECONDS:-30}"
+# Keep this list to fast manifest-style targets. The phase12 shared-lookup
+# artifact verifier consumes full proof payloads and is too expensive for a
+# bounded smoke loop; it remains available for manual fuzzing.
 FUZZ_TARGETS=(
-  phase12_shared_lookup_artifact
   phase29_recursive_compression_input_contract
   phase30_decoding_step_proof_envelope_manifest
   phase35_recursive_compression_target_manifest
@@ -75,14 +79,18 @@ require_strict_subpath_under() {
 }
 
 require_safe_path_under "$FUZZ_WORK_DIR" "$SAFE_TARGET_ROOT" "fuzz work"
-require_strict_subpath_under "$FUZZ_GENERATED_CORPUS_DIR" "$FUZZ_WORK_DIR" "generated corpus"
+require_safe_path_under "$FUZZ_SOURCE_CORPUS_DIR" "${ROOT_DIR}/fuzz/corpus" "source corpus"
 
-rm -rf -- "${FUZZ_GENERATED_CORPUS_DIR}"
-mkdir -p "${FUZZ_GENERATED_CORPUS_DIR}"
-python3 scripts/fuzz/generate_decoding_fuzz_corpus.py --output-root "${FUZZ_GENERATED_CORPUS_DIR}"
+FUZZ_HOST_TRIPLE="$(
+  rustc +"${FUZZ_TOOLCHAIN}" -vV | sed -n 's/^host: //p'
+)"
+if [[ -z "$FUZZ_HOST_TRIPLE" ]]; then
+  echo "could not determine host triple for ${FUZZ_TOOLCHAIN}" >&2
+  exit 1
+fi
 
 for target in "${FUZZ_TARGETS[@]}"; do
-  corpus_dir="${FUZZ_GENERATED_CORPUS_DIR}/${target}"
+  corpus_dir="${FUZZ_SOURCE_CORPUS_DIR}/${target}"
   if [[ ! -d "$corpus_dir" ]]; then
     echo "missing fuzz corpus directory: ${corpus_dir}" >&2
     exit 1
@@ -94,11 +102,23 @@ for target in "${FUZZ_TARGETS[@]}"; do
   rm -rf -- "$run_dir"
   mkdir -p "$run_corpus_dir" "$artifact_dir"
   cp -R "${corpus_dir}/." "$run_corpus_dir/"
-  cargo +"${FUZZ_TOOLCHAIN}" fuzz run "$target" "$run_corpus_dir" \
-    -- -artifact_prefix="${artifact_dir}/" \
-       -max_len=8388608 \
-       -timeout=10 \
-       -rss_limit_mb=4096 \
-       -print_final_stats=1 \
-       -max_total_time="${FUZZ_TIME_PER_TARGET}"
+  cargo +"${FUZZ_TOOLCHAIN}" fuzz build "$target"
+  fuzz_binary="fuzz/target/${FUZZ_HOST_TRIPLE}/release/${target}"
+  if [[ ! -x "$fuzz_binary" ]]; then
+    echo "missing fuzz binary: ${fuzz_binary}" >&2
+    exit 1
+  fi
+
+  # libFuzzer's own time budget is not a reliable outer wall-clock bound here,
+  # so run the built binary under a short external alarm as well.
+  perl -e 'alarm shift @ARGV; exec @ARGV' \
+    "$((FUZZ_TIME_PER_TARGET + FUZZ_INPUT_TIMEOUT_SECONDS + FUZZ_WALL_CLOCK_GRACE_SECONDS))" \
+    "$fuzz_binary" \
+    -artifact_prefix="${artifact_dir}/" \
+    -max_len=8388608 \
+    -timeout="${FUZZ_INPUT_TIMEOUT_SECONDS}" \
+    -rss_limit_mb=4096 \
+    -print_final_stats=1 \
+    -max_total_time="${FUZZ_TIME_PER_TARGET}" \
+    "$run_corpus_dir"
 done

@@ -362,14 +362,6 @@ jobs:
           FUZZ_TOOLCHAIN: ${{ steps.fuzz-toolchain.outputs.channel }}
         run: cargo +"$FUZZ_TOOLCHAIN" install cargo-fuzz --version 0.13.1 --locked
 
-      - name: Install Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
-        with:
-          python-version: "3.11"
-
-      - name: Regenerate fuzz corpus
-        run: python3 scripts/fuzz/generate_decoding_fuzz_corpus.py
-
       - name: Run fuzz smoke
         env:
           FUZZ_TOOLCHAIN: ${{ steps.fuzz-toolchain.outputs.channel }}

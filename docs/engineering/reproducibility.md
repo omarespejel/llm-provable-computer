@@ -95,7 +95,8 @@ bundle-looking directory unless that override is set. Its outputs are:
 - Use the generated manifests, benchmarks, and hashes as engineering evidence inputs.
   The older reproducibility bundle is retained as a legacy local baseline, while
   the current paper-facing artifact story is centered on the frozen `stwo` and
-  verifier-bound tensor-native bundles under `docs/paper/artifacts/`.
+  verifier-bound carried-state plus repeated-reuse bundles under
+  `docs/paper/artifacts/` and `docs/paper/evidence/`.
 - Link generated `research-v2` / `research-v3` artifacts as evidence for semantic-equivalence
   claims.
 - Link generated `*.proof.json` files for statement-v1 proof demonstrations.

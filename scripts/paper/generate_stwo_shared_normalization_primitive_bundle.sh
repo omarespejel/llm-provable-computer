@@ -69,7 +69,7 @@ host_platform: $(uname -srm)
 nightly_toolchain: $NIGHTLY_TOOLCHAIN
 bundle_dir: docs/paper/artifacts/$(basename "$BUNDLE_DIR")
 artifact: shared-normalization-primitive.stwo.json
-scope: tensor-native shared-normalization primitive with verifier-enforced shared-table identity
+scope: shared-normalization primitive with verifier-enforced shared-table identity
 MANIFEST
 
 run_timed prepare_shared_normalization_primitive \
@@ -160,7 +160,7 @@ for label, seconds in benchmarks.items():
 index_lines.extend([
     "",
     "## Notes",
-    "- This bundle freezes one tensor-native `stwo` primitive artifact rather than a VM-composition wrapper.",
+    "- This bundle freezes one shared-normalization `stwo` primitive artifact rather than a VM-composition wrapper.",
     "- The verifier binds one canonical normalization table identity, one table-registry commitment, and one direct shared-normalization proof across two fixed primitive steps.",
     "- The artifact remains intentionally narrow: it does not claim full standard-softmax inference, recursive aggregation, or cross-step multiplicity-aware lookup reuse.",
 ])
@@ -169,7 +169,7 @@ index_md.write_text("\n".join(index_lines) + "\n")
 readme_lines = [
     "# S-two Shared-Normalization Primitive Bundle V1",
     "",
-    "This directory freezes one direct tensor-native `stwo` primitive artifact built from:",
+    "This directory freezes one direct shared-normalization `stwo` primitive artifact built from:",
     "",
     "- one canonical Phase 5 normalization lookup table,",
     "- two fixed primitive-step claims,",
