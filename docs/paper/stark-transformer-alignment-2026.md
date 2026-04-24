@@ -1004,7 +1004,7 @@ That snapshot now includes three local rows on different internal surfaces: a Ph
 proving-bundle row, a Phase44D typed-boundary latency row, and a Phase71 handoff-receipt
 size row. If one narrower external comparator is forced, the best current choice is the
 compact verifier-object regime: `NANOZK` reports a `5.5 KB`, `24 ms` layer proof for
-transformer models up to `d = 128` in its abstract [24], while the current closest local
+transformer models up to `d = 128` in its abstract [39], while the current closest local
 row is the `Phase71` handoff receipt at `1,533` serialized bytes and `34.613 ms`
 verification. That is not a matched workload, but it is still informative: the local
 receipt surface is smaller, while the public `NANOZK` compact proof verifies faster.
