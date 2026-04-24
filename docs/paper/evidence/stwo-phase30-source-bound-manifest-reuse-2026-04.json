@@ -14,7 +14,7 @@
       "envelopes": 1,
       "relation": "one ordered Phase30 decoding-step manifest",
       "serialized_bytes": 2188,
-      "verify_ms": 263.441,
+      "verify_ms": 12.375,
       "verified": true,
       "note": "one ordered Phase30 manifest is verified once against the proof-checked Phase12 chain, preserving shared source-chain, layout, and boundary continuity in a single source-bound check"
     },
@@ -26,7 +26,7 @@
       "envelopes": 1,
       "relation": "independent one-step Phase30 manifests",
       "serialized_bytes": 2188,
-      "verify_ms": 205.876,
+      "verify_ms": 12.71,
       "verified": true,
       "note": "each step range is verified as its own one-step Phase30 manifest against the same proof-checked Phase12 chain; every source-bound check recomputes the full-chain source commitment"
     },
@@ -38,7 +38,7 @@
       "envelopes": 2,
       "relation": "one ordered Phase30 decoding-step manifest",
       "serialized_bytes": 3443,
-      "verify_ms": 440.121,
+      "verify_ms": 24.824,
       "verified": true,
       "note": "one ordered Phase30 manifest is verified once against the proof-checked Phase12 chain, preserving shared source-chain, layout, and boundary continuity in a single source-bound check"
     },
@@ -50,7 +50,7 @@
       "envelopes": 2,
       "relation": "independent one-step Phase30 manifests",
       "serialized_bytes": 4376,
-      "verify_ms": 774.959,
+      "verify_ms": 41.992,
       "verified": true,
       "note": "each step range is verified as its own one-step Phase30 manifest against the same proof-checked Phase12 chain; every source-bound check recomputes the full-chain source commitment"
     },
@@ -62,7 +62,7 @@
       "envelopes": 3,
       "relation": "one ordered Phase30 decoding-step manifest",
       "serialized_bytes": 4698,
-      "verify_ms": 529.686,
+      "verify_ms": 36.763,
       "verified": true,
       "note": "one ordered Phase30 manifest is verified once against the proof-checked Phase12 chain, preserving shared source-chain, layout, and boundary continuity in a single source-bound check"
     },
@@ -74,7 +74,7 @@
       "envelopes": 3,
       "relation": "independent one-step Phase30 manifests",
       "serialized_bytes": 6564,
-      "verify_ms": 1265.941,
+      "verify_ms": 86.495,
       "verified": true,
       "note": "each step range is verified as its own one-step Phase30 manifest against the same proof-checked Phase12 chain; every source-bound check recomputes the full-chain source commitment"
     }

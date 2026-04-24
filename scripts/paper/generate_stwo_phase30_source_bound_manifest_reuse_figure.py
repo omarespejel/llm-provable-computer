@@ -38,6 +38,8 @@ REQUIRED_COLUMNS = {
     "benchmark_version",
     "semantic_scope",
     "timing_mode",
+    "timing_policy",
+    "timing_unit",
     "timing_runs",
     "primitive",
     "backend_variant",

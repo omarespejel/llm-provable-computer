@@ -18,7 +18,8 @@ use crate::instruction::{Instruction, Program};
 use crate::interpreter::NativeInterpreter;
 use crate::proof::{
     production_v1_stark_options, prove_execution_stark_with_backend_and_options,
-    verify_execution_stark, StarkProofBackend, VanillaStarkExecutionProof, CLAIM_SEMANTIC_SCOPE_V1,
+    publication_v1_stark_options, verify_execution_stark, StarkProofBackend,
+    VanillaStarkExecutionProof, CLAIM_SEMANTIC_SCOPE_V1,
 };
 use crate::stwo_backend::{
     arithmetic_subset_prover::{
@@ -9986,9 +9987,32 @@ pub fn prove_phase12_decoding_demo_for_layout(
     prove_phase12_decoding_demo_for_layout_steps(layout, 3)
 }
 
+pub(crate) fn prove_phase12_decoding_demo_for_layout_steps_publication(
+    layout: &Phase12DecodingLayout,
+    total_steps: usize,
+) -> Result<Phase12DecodingChainManifest> {
+    prove_phase12_decoding_demo_for_layout_steps_with_stark_options(
+        layout,
+        total_steps,
+        publication_v1_stark_options(),
+    )
+}
+
 pub fn prove_phase12_decoding_demo_for_layout_steps(
     layout: &Phase12DecodingLayout,
     total_steps: usize,
+) -> Result<Phase12DecodingChainManifest> {
+    prove_phase12_decoding_demo_for_layout_steps_with_stark_options(
+        layout,
+        total_steps,
+        production_v1_stark_options(),
+    )
+}
+
+fn prove_phase12_decoding_demo_for_layout_steps_with_stark_options(
+    layout: &Phase12DecodingLayout,
+    total_steps: usize,
+    stark_options: crate::proof::VanillaStarkProofOptions,
 ) -> Result<Phase12DecodingChainManifest> {
     if total_steps == 0 {
         return Err(VmError::InvalidConfig(
@@ -10013,7 +10037,7 @@ pub fn prove_phase12_decoding_demo_for_layout_steps(
             &model,
             128,
             StarkProofBackend::Stwo,
-            production_v1_stark_options(),
+            stark_options.clone(),
         )?;
         proofs.push(proof);
     }
