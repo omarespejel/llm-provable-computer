@@ -639,9 +639,9 @@ source-bound baseline of verifying the same compact Phase43 projection proof and
 replaying the ordered Phase30 manifest. This is not a fake curve. The current compact
 projection surface honestly gives us one checked power-of-two point at two steps, so the
 figure is a bar comparison rather than a line. That single point is still useful because
-the result is sharp and asymmetric: the typed boundary is slightly larger (`60,089`
-serialized bytes versus `57,237` for the lower-layer baseline), but median verification
-latency collapses from `16.570 ms` to `0.992 ms`. So the Phase44D source-emission layer
+the result is sharp and asymmetric: the typed boundary is slightly larger (`61,238`
+serialized bytes versus `58,382` for the lower-layer baseline), but median verification
+latency collapses from `16.717 ms` to `0.978 ms`. So the Phase44D source-emission layer
 is not a byte win. It is a local **verification-latency win** at the checked point,
 because it avoids replaying the ordered Phase30 verifier surface while preserving the
 same compact source-root claim.
@@ -666,8 +666,8 @@ Phase30 manifest over the same proof-checked Phase12 chain. This benchmark gives
 mirror image of Figure 4E. The handoff receipt wins clearly on serialized surface and
 keeps that surface flat across repeated steps (`1,533` bytes at one, two, and three
 steps, versus `2,188`, `3,443`, and `4,698` for the manifest baseline). But the receipt
-does **not** win on verification time: by three steps it verifies in `34.396 ms` versus
-`23.663 ms` for the direct Phase30 replay baseline. So the Phase71 layer is not a local
+does **not** win on verification time: by three steps it verifies in `34.613 ms` versus
+`23.795 ms` for the direct Phase30 replay baseline. So the Phase71 layer is not a local
 latency win. It is a **receipt-size win** that preserves a smaller source-bound handoff
 surface while still paying more verification work than the lower layer on the current
 path.
