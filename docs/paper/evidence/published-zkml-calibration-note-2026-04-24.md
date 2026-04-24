@@ -28,6 +28,9 @@ published numbers make three boundaries explicit:
 
 - `NANOZK` reports `6.3s` prove time, `23ms` verify time, and `6.9 KB` proof
   size for a GPT-2-scale transformer block at `d = 768`.
+- `NANOZK` also gives one narrower public verifier-object row directly in the
+  abstract: for transformer models up to `d = 128`, it reports a `5.5 KB`
+  layer proof with `24 ms` verification time.
 - `Jolt Atlas` reports `14s` prove time and `0.517s` verify time for a
   `~0.25M`-parameter `nanoGPT` model, and `~38s` end-to-end for `GPT-2 (125M)`.
 - `EZKL`, as quoted by `Jolt Atlas` on the same `nanoGPT` workload, reports
@@ -49,6 +52,28 @@ published numbers make three boundaries explicit:
   These are still not full transformer benchmarks, but they now cover a proving-surface
   row, a latency-oriented typed boundary row, and a size-oriented receipt row rather than
   a single local artifact line.
+
+## One narrow external comparator that is actually useful
+
+If the paper needs exactly one narrower external comparator rather than another
+full-model row, the best current choice is the compact verifier-object regime:
+
+- external row: `NANOZK` abstract layer proof at `d <= 128` -> `5.5 KB`, `24 ms`
+  verification;
+- closest local row: `Phase71` handoff receipt at three steps ->
+  `1,533` serialized bytes, `34.613 ms` verification from
+  `docs/paper/evidence/stwo-phase71-handoff-receipt-2026-04.tsv`.
+
+That comparison is interesting because it splits cleanly:
+
+- the current local `Phase71` object is **smaller** than the public `NANOZK`
+  compact proof object, but
+- it is **slower to verify** on the current path.
+
+This is still not a matched benchmark. The workloads and proof objects differ.
+But it is the most honest narrow comparator now available in public sources,
+and it reinforces the paper's actual position: different verifier-facing layers
+improve different costs.
 
 ## Immediate consequence for paper positioning
 

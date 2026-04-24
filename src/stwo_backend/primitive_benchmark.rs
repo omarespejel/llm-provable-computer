@@ -34,8 +34,8 @@ use super::decoding::{
     commit_phase12_layout, commit_phase23_boundary_state, phase12_default_decoding_layout,
     phase14_prepare_decoding_chain, phase30_prepare_decoding_step_proof_envelope_manifest,
     phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range,
-    prove_phase12_decoding_demo_for_layout_steps_publication,
-    verify_phase14_decoding_chain, verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
+    prove_phase12_decoding_demo_for_layout_steps_publication, verify_phase14_decoding_chain,
+    verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range,
     Phase12DecodingChainManifest, Phase30DecodingStepProofEnvelopeManifest,
 };
