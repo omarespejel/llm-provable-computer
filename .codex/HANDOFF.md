@@ -27,10 +27,10 @@ The active split is now:
 
 At `64` steps, the experimental shared path records:
 
-- typed Phase44D boundary + compact proof: `43.409 ms`, `104,182` bytes
-- Phase30 replay baseline + compact proof: `9145.760 ms`, `180,875` bytes
+- typed Phase44D boundary + compact proof: `43.146 ms`, `104,182` bytes
+- Phase30 replay baseline + compact proof: `8482.732 ms`, `180,875` bytes
 
-This is a real research result, but it is still engineering evidence with a single-run timing policy.
+This is a real research result, but it is still engineering evidence under a median-of-5 timing policy, not a paper-facing promotion.
 
 ## Source-of-truth documents
 
@@ -57,13 +57,13 @@ Use these in order of authority for current state:
 - Separate publication claims from exploratory claims.
 - When a frontier moves, check in the gate note, evidence files, figure assets when they add signal, and the exact validation commands.
 - If the result is blocked or partial, state the barrier explicitly.
-- Single-run engineering timing is acceptable for internal decision gates. Promotion into `docs/paper/` requires a stronger timing policy.
+- Median-of-5 engineering timing is acceptable for internal decision gates. Promotion into `docs/paper/` still requires an explicit promotion pass and stricter publication review.
 
 ## Next sensible moves
 
 1. Raise the experimental Phase43/Phase44D ceiling beyond `64`.
-2. Upgrade the experimental Phase44D timing policy from single-run to a stronger repeated-run capture.
-3. Only after those two steps decide whether any part of the experimental lane should be promoted toward the paper/publication surface.
+2. Broaden review of the experimental backend before making any promotion decisions.
+3. Only after those steps decide whether any part of the experimental lane should be promoted toward the paper/publication surface.
 
 ## Resume protocol
 
