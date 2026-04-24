@@ -30,10 +30,10 @@ This repository now has two live lanes.
 - Backend version: `stwo-phase12-decoding-family-v10-carry-aware-experimental`
 - The honest default `4`-step seed and honest `8`-step family clear on this backend.
 - The experimental Phase44D typed-boundary sweep clears `2,4,8,16,32,64`.
-- At `64` steps, the experimental shared path records `43.409 ms` verification versus
-  `9145.760 ms` for the Phase30 replay baseline, with `104,182` bytes versus `180,875` bytes.
+- At `64` steps, the experimental shared path records `43.146 ms` verification versus
+  `8482.732 ms` for the Phase30 replay baseline, with `104,182` bytes versus `180,875` bytes.
 
-That result is real, but it is still engineering evidence under a single-run timing policy.
+That result is real, but it is still engineering evidence under a median-of-5 timing policy, not a paper-facing promotion.
 
 ## Merge and review culture
 
@@ -48,10 +48,10 @@ That result is real, but it is still engineering evidence under a single-run tim
 - Keep publication claims and exploratory claims explicitly separate.
 - Frontier-moving changes should land with a gate note, evidence files, exact validation commands, and figures when they help.
 - If a result is blocked or partial, write down the barrier instead of smoothing it over.
-- Promotion from engineering evidence into `docs/paper/` requires a stronger timing policy and an explicit promotion pass.
+- Promotion from engineering evidence into `docs/paper/` still requires an explicit promotion pass and stricter publication review, even after repeated-run timing upgrades.
 
 ## Next sensible moves
 
 1. Raise the experimental Phase43/Phase44D ceiling beyond `64`.
-2. Upgrade the experimental timing policy from single-run to repeated-run capture.
+2. Broaden review of the experimental backend before making any promotion decision.
 3. Only after those steps decide whether any part of the experimental lane should be promoted toward the paper/publication surface.

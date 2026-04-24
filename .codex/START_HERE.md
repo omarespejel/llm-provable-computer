@@ -32,14 +32,14 @@ Do not collapse these two lanes into one claim.
 The experimental carry-aware lane now has one real higher-layer scaling result:
 
 - Phase44D typed source-chain public-output boundary reuse clears `2,4,8,16,32,64`.
-- At `64` steps, the typed Phase44D boundary plus compact proof verifies in `43.409 ms` versus `9145.760 ms` for the Phase30 replay baseline under the same experimental backend.
-- This evidence is engineering-facing and currently recorded under a single-run timing policy, not a paper-grade timing policy.
+- At `64` steps, the typed Phase44D boundary plus compact proof verifies in `43.146 ms` versus `8482.732 ms` for the Phase30 replay baseline under the same experimental backend.
+- This evidence is engineering-facing and now recorded under a `measured_median` timing policy (`median_of_5_runs_from_microsecond_capture`), not a paper-grade promotion into `docs/paper/`.
 
 ## Next likely technical steps
 
 1. Raise the Phase43/Phase44D experimental ceiling beyond `64`.
-2. Rerun the experimental sweep under a stronger timing policy before treating it as publication-ready evidence.
-3. Keep the experimental backend isolated from the default/publication lane until it survives broader review.
+2. Keep the experimental backend isolated from the default/publication lane until it survives broader review.
+3. Only then decide whether any piece of the experimental lane is mature enough for explicit promotion work.
 
 ## What not to do
 

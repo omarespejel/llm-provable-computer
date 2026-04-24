@@ -49,6 +49,11 @@ LABELS = {
     "phase44d_typed_boundary_binding_only": "Phase44D boundary binding only",
 }
 
+
+def strip_svg_trailing_whitespace(path: Path) -> None:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    path.write_text("\n".join(line.rstrip() for line in lines) + "\n", encoding="utf-8")
+
 plt.style.use("tableau-colorblind10")
 plt.rcParams.update(
     {
@@ -75,6 +80,7 @@ plt.rcParams.update(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-tsv", type=Path, default=DEFAULT_INPUT)
+    parser.add_argument("--bench-runs", type=int, default=5)
     parser.add_argument(
         "--output-prefix",
         type=Path,
@@ -89,6 +95,77 @@ def read_rows(path: Path) -> list[dict[str, str]]:
     if not rows:
         raise SystemExit(f"no rows found in {path}")
     return rows
+
+
+def timing_metadata(rows: list[dict[str, str]], *, fallback_runs: int) -> tuple[str, int]:
+    first = rows[0]
+    mode = first.get("timing_mode", "").strip()
+    policy = first.get("timing_policy", "").strip()
+    unit = first.get("timing_unit", "").strip()
+    runs_raw = first.get("timing_runs", "").strip()
+    if not mode:
+        raise SystemExit("phase44d engineering benchmark rows must include timing_mode")
+    if not policy:
+        raise SystemExit("phase44d engineering benchmark rows must include timing_policy")
+    if unit != "milliseconds":
+        raise SystemExit(f"unsupported timing_unit in phase44d engineering rows: {unit!r}")
+    for row in rows[1:]:
+        if (
+            row.get("timing_mode", "").strip() != mode
+            or row.get("timing_policy", "").strip() != policy
+            or row.get("timing_unit", "").strip() != unit
+            or row.get("timing_runs", "").strip() != runs_raw
+        ):
+            raise SystemExit("inconsistent timing metadata across phase44d engineering rows")
+    runs = int(runs_raw)
+    if mode == "deterministic_zeroed":
+        if policy != "zero_when_capture_disabled":
+            raise SystemExit(
+                f"unexpected timing_policy for deterministic phase44d engineering rows: {policy!r}"
+            )
+        if runs != 0:
+            raise SystemExit(
+                f"deterministic phase44d engineering rows must report timing_runs == 0; got {runs}"
+            )
+        return mode, runs
+    if mode == "measured_single_run":
+        if policy != "single_run_from_microsecond_capture":
+            raise SystemExit(
+                f"unexpected timing_policy for measured_single_run phase44d engineering rows: {policy!r}"
+            )
+        if runs != 1:
+            raise SystemExit(
+                f"measured_single_run phase44d engineering rows must report timing_runs == 1; got {runs}"
+            )
+        return mode, runs
+    if mode == "measured_median":
+        if not policy.startswith("median_of_") or not policy.endswith(
+            "_runs_from_microsecond_capture"
+        ):
+            raise SystemExit(
+                f"unexpected timing_policy for measured_median phase44d engineering rows: {policy!r}"
+            )
+        policy_runs = int(
+            policy.removeprefix("median_of_").removesuffix(
+                "_runs_from_microsecond_capture"
+            )
+        )
+        if runs != policy_runs:
+            raise SystemExit(
+                "measured_median phase44d engineering rows must keep timing_runs aligned with timing_policy; "
+                f"got timing_runs={runs} and timing_policy={policy!r}"
+            )
+        if runs < 3 or runs % 2 == 0:
+            raise SystemExit(
+                f"measured_median phase44d engineering rows must report an odd timing_runs >= 3; got {runs}"
+            )
+        if fallback_runs and runs != fallback_runs:
+            raise SystemExit(
+                "phase44d engineering figure bench-runs override disagrees with embedded timing metadata; "
+                f"got bench_runs={fallback_runs} and timing_runs={runs}"
+            )
+        return mode, runs
+    raise SystemExit(f"unsupported timing_mode in phase44d engineering rows: {mode!r}")
 
 
 def validate_rows(rows: list[dict[str, str]], *, source: Path) -> list[int]:
@@ -139,6 +216,7 @@ def rows_by_variant(rows: list[dict[str, str]]) -> dict[str, list[dict[str, str]
 def main() -> None:
     args = parse_args()
     rows = read_rows(args.input_tsv)
+    timing_mode, timing_runs = timing_metadata(rows, fallback_runs=args.bench_runs)
     steps = validate_rows(rows, source=args.input_tsv)
     grouped = rows_by_variant(rows)
 
@@ -212,6 +290,22 @@ def main() -> None:
     bytes_ax.spines["top"].set_visible(False)
     bytes_ax.spines["right"].set_visible(False)
 
+    if timing_mode == "measured_median":
+        subtitle = f"Verification timings are medians over {timing_runs} runs from microsecond capture."
+    elif timing_mode == "measured_single_run":
+        subtitle = "Verification timings are measured from one host run using microsecond capture."
+    else:
+        subtitle = "Timing capture disabled; timing fields are intentionally zeroed."
+    fig.text(
+        0.5,
+        0.01,
+        subtitle,
+        ha="center",
+        va="bottom",
+        fontsize=7,
+        color="#4B5563",
+    )
+
     handles, labels = verify_ax.get_legend_handles_labels()
     fig.legend(
         handles,
@@ -219,7 +313,7 @@ def main() -> None:
         loc="upper center",
         ncol=2,
         frameon=False,
-        bbox_to_anchor=(0.5, 1.08),
+        bbox_to_anchor=(0.5, 1.10),
     )
 
     args.output_prefix.parent.mkdir(parents=True, exist_ok=True)
@@ -227,6 +321,7 @@ def main() -> None:
     png_path = args.output_prefix.with_suffix(".png")
     pdf_path = args.output_prefix.with_suffix(".pdf")
     fig.savefig(svg_path)
+    strip_svg_trailing_whitespace(svg_path)
     fig.savefig(png_path, dpi=300)
     fig.savefig(pdf_path)
     print(f"wrote {svg_path}")
