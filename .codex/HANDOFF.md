@@ -23,12 +23,12 @@ The active split is now:
 - Backend version: `stwo-phase12-decoding-family-v10-carry-aware-experimental`
 - Gate 1: the honest default `4`-step Phase12 seed now proves and verifies on the experimental backend.
 - Gate 2: the honest default `8`-step Phase12 family clears on the same backend.
-- Gate 3: the experimental Phase44D typed-boundary reuse sweep clears `2,4,8,16,32,64,128,256`.
+- Gate 3: the experimental Phase44D typed-boundary reuse sweep clears `2,4,8,16,32,64,128,256,512`.
 
-At `256` steps, the experimental shared path records:
+At `512` steps, the experimental shared path records:
 
-- typed Phase44D boundary + compact proof: `122.157 ms`, `112,088` bytes
-- Phase30 replay baseline + compact proof: `33300.796 ms`, `435,066` bytes
+- typed Phase44D boundary + compact proof: `236.107 ms`, `141,738` bytes
+- Phase30 replay baseline + compact proof: `77016.043 ms`, `793,166` bytes
 
 This is a real research result, but it is still engineering evidence under a median-of-5 timing policy, not a paper-facing promotion.
 
@@ -61,7 +61,7 @@ Use these in order of authority for current state:
 
 ## Next sensible moves
 
-1. Raise the experimental Phase43/Phase44D ceiling beyond `256`.
+1. Raise the experimental Phase43/Phase44D ceiling beyond `512`.
 2. Broaden review of the experimental backend before making any promotion decisions.
 3. Only after those steps decide whether any part of the experimental lane should be promoted toward the paper/publication surface.
 
