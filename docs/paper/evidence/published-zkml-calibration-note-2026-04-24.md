@@ -1,7 +1,8 @@
-# Published zkML Calibration Note (2026-04-22)
+# Published zkML Calibration Note (2026-04-24)
 
-This note records the first literature-facing calibration pass for the repository's
-STARK-vs-SNARK transformer positioning.
+This note records the current literature-facing calibration pass for the repository's
+STARK-vs-SNARK transformer positioning after the checked one-shot, shared-table, and
+Phase12-style shared-bundle rows landed in the paper evidence set.
 
 Primary-source table:
 
@@ -9,7 +10,8 @@ Primary-source table:
 
 ## What this table is for
 
-It is a ground-truth extraction pass, not a claim of matched benchmarking.
+It is a ground-truth extraction pass and workload-scope snapshot, not a claim of
+matched benchmarking.
 
 The repository's symbolic model is still useful as a structural model, but these
 published numbers make three boundaries explicit:
@@ -32,9 +34,12 @@ published numbers make three boundaries explicit:
 - `BitSage obelyzk.rs` reports a `41.4s` warm-cache proof for one
   `Qwen2.5-14B` token on `H100`; this is the closest public STARK-native
   comparator row, but it is repo-reported and not a matched benchmark.
-- the current repository's strongest checked-in `stwo` artifact row is still a
-  transformer-shaped fixed fixture (`linear_block_v4_with_lookup`), not a full
-  transformer model.
+- the current repository's strongest literature-facing local row is now the checked
+  Phase12-style shared lookup bundle at three paired rows: `4,968` raw proof bytes,
+  `14.939 ms` prove time, and `6.745 ms` verify time from
+  `docs/paper/evidence/stwo-phase12-shared-lookup-bundle-reuse-2026-04.tsv`.
+  That is still not a full transformer benchmark, but it is a verifier-bound,
+  multi-table reuse row rather than a deleted fixed-fixture artifact.
 
 ## Immediate consequence for paper positioning
 
@@ -44,9 +49,10 @@ transformers.”
 The current defensible claim is:
 
 - lookup-friendly proof systems align with transformer non-arithmetic pressure,
-- the repository provides a `stwo`-side artifact baseline and symbolic model for
-  that pressure, and
-- empirical calibration against published systems is still ongoing.
+- the repository now provides one-shot and reuse-sensitive `stwo` calibration rows,
+  including a verifier-bound two-table bundle row, and
+- external calibration should be read by workload regime, not as a matched wall-clock
+  race.
 
 ## What remains to calibrate
 
@@ -59,8 +65,11 @@ This table is necessary but not sufficient. It does not normalize:
 - setup/keygen amortization,
 - approximation strategy for non-arithmetic operations.
 
-The next calibration step must therefore be repository-local and controlled:
+The next calibration step must therefore preserve the same standard:
 
-1. one within-`stwo` lookup-vs-naive benchmark over the same primitive,
-2. explicit artifact metrics for prove time, verify time, and proof bytes,
-3. only then a narrower external comparison against the published rows above.
+1. keep adding only verifier-bound local rows whose reuse claim is enforced by the
+   proof statement rather than by artifact deduplication,
+2. widen that reuse-sensitive measurement discipline to richer kernels before making
+   the headline broader, and
+3. add narrower external comparator rows only when workload boundary, hardware, and
+   proof object are explicit enough to avoid backend-slogan comparisons.
