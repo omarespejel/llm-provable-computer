@@ -411,8 +411,7 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 # Measure the one-shot primitive calibration surface
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   bench-stwo-primitive-lookup-vs-naive \
-  --output-tsv /tmp/stwo-primitive-lookup-vs-naive.tsv \
-  --capture-timings
+  --output-tsv /tmp/stwo-primitive-lookup-vs-naive.tsv
 
 # Measure repeated shared-table reuse directly
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
