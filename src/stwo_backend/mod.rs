@@ -37,8 +37,13 @@ pub use arithmetic_component::{
 };
 #[cfg(feature = "stwo-backend")]
 pub(crate) use arithmetic_subset_prover::{
-    prove_phase5_arithmetic_subset, verify_phase5_arithmetic_subset,
+    prove_phase12_carry_aware_arithmetic_subset_experimental, prove_phase5_arithmetic_subset,
+    verify_phase12_carry_aware_arithmetic_subset_experimental, verify_phase5_arithmetic_subset,
 };
+#[cfg(all(feature = "stwo-backend", test))]
+pub(crate) use arithmetic_subset_prover::collect_carry_aware_arithmetic_subset_prototype_rows;
+#[cfg(all(feature = "stwo-backend", test))]
+pub(crate) use decoding::phase12_demo_initial_memories_for_steps;
 #[cfg(feature = "stwo-backend")]
 pub use decoding::{
     decoding_step_v1_program_with_initial_memory, decoding_step_v1_template_program,
@@ -802,6 +807,9 @@ pub const STWO_BACKEND_VERSION_PHASE5: &str = "stwo-phase10-linear-block-v4-with
 pub const STWO_BACKEND_VERSION_PHASE11: &str = "stwo-phase11-decoding-step-v1";
 /// Backend version label used by the parameterized proof-carrying decoding family.
 pub const STWO_BACKEND_VERSION_PHASE12: &str = "stwo-phase12-decoding-family-v9";
+/// Experimental backend version label for carry-aware Phase12 proving on honest overflow traces.
+pub const STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL: &str =
+    "stwo-phase12-decoding-family-v10-carry-aware-experimental";
 /// Cargo feature that enables the experimental S-two backend seam.
 pub const STWO_BACKEND_FEATURE_NAME: &str = "stwo-backend";
 

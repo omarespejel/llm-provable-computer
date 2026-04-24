@@ -252,6 +252,66 @@ fn verify_execution_stark_backend(
     Err(stwo_backend::phase2_placeholder_verify_error())
 }
 
+#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(feature = "stwo-backend")]
+pub(crate) fn prove_execution_stark_phase12_carry_aware_experimental_with_options(
+    model: &TransformerVm,
+    max_steps: usize,
+    options: VanillaStarkProofOptions,
+) -> Result<VanillaStarkExecutionProof> {
+    let witness = prepare_execution_witness_internal(model, max_steps, options, true)?;
+    stwo_backend::prove_phase12_carry_aware_arithmetic_subset_experimental(witness)
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(not(feature = "stwo-backend"))]
+pub(crate) fn prove_execution_stark_phase12_carry_aware_experimental_with_options(
+    _model: &TransformerVm,
+    _max_steps: usize,
+    _options: VanillaStarkProofOptions,
+) -> Result<VanillaStarkExecutionProof> {
+    Err(stwo_backend::phase2_placeholder_prove_error())
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(feature = "stwo-backend")]
+pub(crate) fn verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(
+    proof: &VanillaStarkExecutionProof,
+) -> Result<bool> {
+    validate_backend_metadata(proof, StarkProofBackend::Stwo)?;
+    validate_statement_metadata(&proof.claim)?;
+    validate_proof_inputs(
+        &proof.claim.program,
+        &proof.claim.attention_mode,
+        StarkProofBackend::Stwo,
+    )?;
+    validate_stark_options(&proof.claim.options)?;
+    validate_verification_policy(&proof.claim.options, &production_v1_verification_policy())?;
+    validate_public_state(&proof.claim.program, &proof.claim.final_state)?;
+    validate_transformer_config(&proof.claim)?;
+    validate_equivalence_metadata(&proof.claim)?;
+    validate_claim_commitments(&proof.claim)?;
+    if !proof.claim.final_state.halted {
+        return Err(VmError::UnsupportedProof(
+            "the public claim must end in a halted state".to_string(),
+        ));
+    }
+    let is_valid = stwo_backend::verify_phase12_carry_aware_arithmetic_subset_experimental(proof)?;
+    if !is_valid {
+        return Ok(false);
+    }
+    enforce_equivalence_scope(&proof.claim)?;
+    Ok(true)
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(not(feature = "stwo-backend"))]
+pub(crate) fn verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(
+    _proof: &VanillaStarkExecutionProof,
+) -> Result<bool> {
+    Err(stwo_backend::phase2_placeholder_verify_error())
+}
+
 pub fn prove_execution_stark(
     model: &TransformerVm,
     max_steps: usize,
@@ -285,7 +345,7 @@ pub fn prove_execution_stark_with_backend_and_options(
 ) -> Result<VanillaStarkExecutionProof> {
     validate_proof_inputs(model.program(), &model.config().attention_mode, backend)?;
     validate_stark_options(&options)?;
-    let witness = prepare_execution_witness(model, max_steps, options)?;
+    let witness = prepare_execution_witness_internal(model, max_steps, options, false)?;
     prove_execution_stark_backend(witness)
 }
 
@@ -506,10 +566,11 @@ fn validate_verification_policy(
     Ok(())
 }
 
-fn prepare_execution_witness(
+fn prepare_execution_witness_internal(
     model: &TransformerVm,
     max_steps: usize,
     options: VanillaStarkProofOptions,
+    allow_carry_traces: bool,
 ) -> Result<PreparedExecutionWitness> {
     let comparison = verify_model_against_native(model.clone(), max_steps)?;
     let equivalence = ExecutionEquivalenceMetadata {
@@ -534,7 +595,7 @@ fn prepare_execution_witness(
             result.steps
         )));
     }
-    if runtime.trace().iter().any(|state| state.carry_flag) {
+    if !allow_carry_traces && runtime.trace().iter().any(|state| state.carry_flag) {
         return Err(VmError::UnsupportedProof(
             "overflowing arithmetic is not supported by the current execution-proof surface"
                 .to_string(),
@@ -577,15 +638,18 @@ fn validate_backend_metadata(
         || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE5
         || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE5_LEGACY
         || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE11
-        || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE12;
+        || proof.proof_backend_version == stwo_backend::STWO_BACKEND_VERSION_PHASE12
+        || proof.proof_backend_version
+            == stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL;
     if !backend_version_matches {
         let expected_versions = format!(
-            "{}/{}/{}/{}/{}",
+            "{}/{}/{}/{}/{}/{}",
             stwo_backend::STWO_BACKEND_VERSION_PHASE2,
             stwo_backend::STWO_BACKEND_VERSION_PHASE5,
             stwo_backend::STWO_BACKEND_VERSION_PHASE5_LEGACY,
             stwo_backend::STWO_BACKEND_VERSION_PHASE11,
-            stwo_backend::STWO_BACKEND_VERSION_PHASE12
+            stwo_backend::STWO_BACKEND_VERSION_PHASE12,
+            stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL
         );
         return Err(VmError::InvalidConfig(format!(
             "proof backend version `{}` does not match expected `{}` for backend `{}`",
@@ -1114,6 +1178,10 @@ fn execution_fingerprint(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::stwo_backend::{
+        decoding_step_v2_program_with_initial_memory, phase12_default_decoding_layout,
+        phase12_demo_initial_memories_for_steps,
+    };
     use crate::{ProgramCompiler, TransformerVmConfig};
     use serde::Deserialize;
 
@@ -1132,6 +1200,27 @@ mod tests {
             .expect("compile");
         prove_execution_stark_with_options(&model, max_steps, production_v1_stark_options())
             .expect("prove")
+    }
+
+    fn phase12_four_step_overflow_model() -> crate::model::TransformerVm {
+        let layout = phase12_default_decoding_layout();
+        let initial_memory = phase12_demo_initial_memories_for_steps(&layout, 4)
+            .expect("memories")
+            .into_iter()
+            .nth(3)
+            .expect("overflowing fourth seed");
+        let program =
+            decoding_step_v2_program_with_initial_memory(&layout, initial_memory).expect("program");
+        ProgramCompiler
+            .compile_program(
+                program,
+                TransformerVmConfig {
+                    num_layers: 1,
+                    attention_mode: Attention2DMode::AverageHard,
+                    ..TransformerVmConfig::default()
+                },
+            )
+            .expect("compile model")
     }
 
     #[test]
@@ -1204,6 +1293,86 @@ HALT
 
         let err = prove_execution_stark(&model, 32).unwrap_err();
         assert!(matches!(err, VmError::UnsupportedProof(_)));
+    }
+
+    #[test]
+    fn legacy_execution_surface_rejects_honest_phase12_four_step_overflow_seed() {
+        let model = phase12_four_step_overflow_model();
+        let err = prove_execution_stark_with_options(&model, 256, production_v1_stark_options())
+            .expect_err("legacy proving should reject carry-bearing trace");
+        assert!(err
+            .to_string()
+            .contains("overflowing arithmetic is not supported by the current execution-proof surface"));
+    }
+
+    #[test]
+    fn experimental_phase12_carry_aware_surface_proves_honest_four_step_seed() {
+        let model = phase12_four_step_overflow_model();
+        let proof = prove_execution_stark_phase12_carry_aware_experimental_with_options(
+            &model,
+            256,
+            production_v1_stark_options(),
+        )
+        .expect("experimental carry-aware proof");
+        assert_eq!(
+            proof.proof_backend_version,
+            stwo_backend::STWO_BACKEND_VERSION_PHASE12_CARRY_AWARE_EXPERIMENTAL
+        );
+        assert!(proof.claim.final_state.halted);
+        let mut runtime = crate::interpreter::NativeInterpreter::new(
+            proof.claim.program.clone(),
+            proof.claim.attention_mode.clone(),
+            proof.claim.steps,
+        );
+        let result = runtime.run().expect("re-run claim");
+        assert_eq!(result.final_state, proof.claim.final_state);
+        let overflow_rows = stwo_backend::collect_carry_aware_arithmetic_subset_prototype_rows(
+            &proof.claim.program,
+            runtime.trace(),
+        )
+        .expect("prototype rows");
+        assert!(
+            overflow_rows.iter().any(|row| row.carry_after),
+            "honest four-step seed should contain at least one carry-bearing transition"
+        );
+        assert!(
+            verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(&proof)
+                .expect("experimental verification")
+        );
+    }
+
+    #[test]
+    fn legacy_verifier_rejects_experimental_phase12_carry_aware_proof() {
+        let model = phase12_four_step_overflow_model();
+        let proof = prove_execution_stark_phase12_carry_aware_experimental_with_options(
+            &model,
+            256,
+            production_v1_stark_options(),
+        )
+        .expect("experimental carry-aware proof");
+
+        let err = verify_execution_stark(&proof).expect_err("legacy verifier should reject");
+        assert!(err
+            .to_string()
+            .contains("does not match expected `stwo-phase12-decoding-family-v9`"));
+    }
+
+    #[test]
+    fn experimental_verifier_rejects_tampered_backend_version() {
+        let model = phase12_four_step_overflow_model();
+        let mut proof = prove_execution_stark_phase12_carry_aware_experimental_with_options(
+            &model,
+            256,
+            production_v1_stark_options(),
+        )
+        .expect("experimental carry-aware proof");
+        proof.proof_backend_version = stwo_backend::STWO_BACKEND_VERSION_PHASE12.to_string();
+
+        let err = verify_execution_stark_phase12_carry_aware_experimental_with_reexecution(&proof)
+            .expect_err("tampered backend version should fail");
+        assert!(err
+            .to_string()
+            .contains("experimental Phase12 carry-aware proof backend version"));
     }
 
     #[test]
