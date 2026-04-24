@@ -31,14 +31,22 @@ use stwo_constraint_framework::{
 
 use super::arithmetic_subset_prover::phase12_shared_lookup_artifact_from_proof_payload;
 use super::decoding::{
-    commit_phase12_layout, phase12_default_decoding_layout,
-    phase30_prepare_decoding_step_proof_envelope_manifest,
+    commit_phase12_layout, commit_phase23_boundary_state, phase12_default_decoding_layout,
+    phase14_prepare_decoding_chain, phase30_prepare_decoding_step_proof_envelope_manifest,
     phase30_prepare_decoding_step_proof_envelope_manifest_for_step_range,
     prove_phase12_decoding_demo_for_layout_steps,
-    prove_phase12_decoding_demo_for_layout_steps_publication,
+    prove_phase12_decoding_demo_for_layout_steps_publication, verify_phase14_decoding_chain,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain,
     verify_phase30_decoding_step_proof_envelope_manifest_against_chain_range,
     Phase12DecodingChainManifest, Phase30DecodingStepProofEnvelopeManifest,
+};
+use super::history_replay_projection_prover::{
+    emit_phase44d_history_replay_projection_source_chain_public_output_boundary,
+    prove_phase43_history_replay_projection_compact_claim_envelope,
+    verify_phase43_history_replay_projection_compact_claim_envelope,
+    verify_phase44d_history_replay_projection_source_chain_public_output_boundary_acceptance,
+    Phase43HistoryReplayProjectionCompactProofEnvelope,
+    Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
 };
 use super::lookup_component::{phase3_lookup_table_rows, Phase3LookupTableRow};
 use super::lookup_prover::{
@@ -53,6 +61,13 @@ use super::normalization_prover::{
     verify_phase92_shared_normalization_primitive_artifact,
     Phase10SharedNormalizationLookupProofEnvelope, Phase92SharedNormalizationPrimitiveArtifact,
     Phase92SharedNormalizationPrimitiveStep,
+};
+use super::recursion::{
+    commit_phase43_history_replay_trace, phase71_prepare_actual_stwo_step_envelope_handoff_receipt,
+    verify_phase43_history_replay_trace,
+    verify_phase71_actual_stwo_step_envelope_handoff_receipt_against_sources,
+    Phase43HistoryReplayTrace, Phase43HistoryReplayTraceRow,
+    Phase71ActualStwoStepEnvelopeHandoffReceipt,
 };
 use super::shared_lookup_artifact::{
     phase12_static_lookup_table_registry_from_envelopes, verify_phase12_shared_lookup_artifact,
@@ -81,6 +96,14 @@ pub const STWO_PHASE30_SOURCE_BOUND_MANIFEST_REUSE_BENCHMARK_VERSION: &str =
     "stwo-phase30-source-bound-manifest-reuse-benchmark-v1";
 pub const STWO_PHASE30_SOURCE_BOUND_MANIFEST_REUSE_BENCHMARK_SCOPE: &str =
     "phase30_source_bound_ordered_manifest_reuse_calibration";
+pub const STWO_PHASE44D_SOURCE_EMISSION_BENCHMARK_VERSION: &str =
+    "stwo-phase44d-source-emission-benchmark-v1";
+pub const STWO_PHASE44D_SOURCE_EMISSION_BENCHMARK_SCOPE: &str =
+    "phase44d_typed_source_emission_boundary_calibration";
+pub const STWO_PHASE71_HANDOFF_RECEIPT_BENCHMARK_VERSION: &str =
+    "stwo-phase71-handoff-receipt-benchmark-v1";
+pub const STWO_PHASE71_HANDOFF_RECEIPT_BENCHMARK_SCOPE: &str =
+    "phase71_actual_stwo_step_envelope_handoff_receipt_calibration";
 const STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_VERSION: &str =
     "stwo-phase12-style-shared-lookup-bundle-benchmark-artifact-v1";
 const STWO_PHASE12_SHARED_LOOKUP_BUNDLE_ARTIFACT_SCOPE: &str =
@@ -94,6 +117,8 @@ const STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_INDEPENDENT_VIEW_VERSION: &str =
 const STWO_PHASE12_SHARED_LOOKUP_ARTIFACT_INDEPENDENT_VIEW_SCOPE: &str =
     "phase12_shared_lookup_artifact_independent_view";
 const PHASE30_SOURCE_BOUND_MANIFEST_REUSE_STEP_COUNTS: [usize; 3] = [1, 2, 3];
+const PHASE44D_SOURCE_EMISSION_STEP_COUNTS: [usize; 1] = [2];
+const PHASE71_HANDOFF_RECEIPT_STEP_COUNTS: [usize; 3] = [1, 2, 3];
 const STWO_PRIMITIVE_BENCHMARK_CAPTURE_TIMINGS_ENV: &str =
     "STWO_PRIMITIVE_BENCHMARK_CAPTURE_TIMINGS";
 const BENCHMARK_TIMING_UNIT_MILLISECONDS: &str = "milliseconds";
@@ -267,6 +292,52 @@ pub struct StwoPhase30SourceBoundManifestReuseBenchmarkReport {
     pub rows: Vec<StwoPhase30SourceBoundManifestReuseBenchmarkMeasurement>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StwoPhase44DSourceEmissionBenchmarkMeasurement {
+    pub primitive: String,
+    pub backend_variant: String,
+    pub steps: usize,
+    pub relation: String,
+    pub serialized_bytes: usize,
+    pub verify_ms: f64,
+    pub verified: bool,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StwoPhase44DSourceEmissionBenchmarkReport {
+    pub benchmark_version: String,
+    pub semantic_scope: String,
+    pub timing_mode: String,
+    pub timing_policy: String,
+    pub timing_unit: String,
+    pub timing_runs: usize,
+    pub rows: Vec<StwoPhase44DSourceEmissionBenchmarkMeasurement>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StwoPhase71HandoffReceiptBenchmarkMeasurement {
+    pub primitive: String,
+    pub backend_variant: String,
+    pub steps: usize,
+    pub relation: String,
+    pub serialized_bytes: usize,
+    pub verify_ms: f64,
+    pub verified: bool,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StwoPhase71HandoffReceiptBenchmarkReport {
+    pub benchmark_version: String,
+    pub semantic_scope: String,
+    pub timing_mode: String,
+    pub timing_policy: String,
+    pub timing_unit: String,
+    pub timing_runs: usize,
+    pub rows: Vec<StwoPhase71HandoffReceiptBenchmarkMeasurement>,
+}
+
 #[derive(Serialize, Deserialize)]
 struct PrimitiveBenchmarkProofPayload {
     stark_proof: StarkProof<Blake2sM31MerkleHasher>,
@@ -358,6 +429,22 @@ struct Phase30SourceBoundManifestBenchmarkInput {
     total_steps: usize,
     shared_manifest: Phase30DecodingStepProofEnvelopeManifest,
     step_manifests: Vec<Phase30DecodingStepProofEnvelopeManifest>,
+}
+
+#[derive(Clone)]
+struct Phase44DSourceEmissionBenchmarkInput {
+    total_steps: usize,
+    shared_manifest: Phase30DecodingStepProofEnvelopeManifest,
+    phase43_trace: Phase43HistoryReplayTrace,
+    compact_envelope: Phase43HistoryReplayProjectionCompactProofEnvelope,
+    boundary: Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
+}
+
+#[derive(Clone)]
+struct Phase71HandoffReceiptBenchmarkInput {
+    total_steps: usize,
+    shared_manifest: Phase30DecodingStepProofEnvelopeManifest,
+    receipt: Phase71ActualStwoStepEnvelopeHandoffReceipt,
 }
 
 #[derive(Clone)]
@@ -835,7 +922,7 @@ fn run_stwo_phase12_shared_lookup_artifact_reuse_benchmark_for_step_counts(
     let layout = phase12_default_decoding_layout();
     let mut rows = Vec::new();
     for &steps in step_counts {
-        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, steps)?;
+        let chain = prove_phase12_decoding_demo_for_layout_steps_publication(&layout, steps)?;
         let benchmark_input = phase12_shared_lookup_artifact_benchmark_input(&chain)?;
         rows.push(measure_phase12_shared_lookup_artifact_registry_reuse(
             &layout,
@@ -938,6 +1025,154 @@ fn run_stwo_phase30_source_bound_manifest_reuse_benchmark_for_step_counts(
     Ok(StwoPhase30SourceBoundManifestReuseBenchmarkReport {
         benchmark_version: STWO_PHASE30_SOURCE_BOUND_MANIFEST_REUSE_BENCHMARK_VERSION.to_string(),
         semantic_scope: STWO_PHASE30_SOURCE_BOUND_MANIFEST_REUSE_BENCHMARK_SCOPE.to_string(),
+        timing_mode: timing_surface.mode.to_string(),
+        timing_policy: timing_surface.policy.to_string(),
+        timing_unit: BENCHMARK_TIMING_UNIT_MILLISECONDS.to_string(),
+        timing_runs: timing_surface.runs,
+        rows,
+    })
+}
+
+pub fn run_stwo_phase44d_source_emission_benchmark(
+) -> Result<StwoPhase44DSourceEmissionBenchmarkReport> {
+    run_stwo_phase44d_source_emission_benchmark_for_step_counts(
+        &PHASE44D_SOURCE_EMISSION_STEP_COUNTS,
+        false,
+    )
+}
+
+pub fn run_stwo_phase44d_source_emission_benchmark_with_options(
+    capture_timings: bool,
+) -> Result<StwoPhase44DSourceEmissionBenchmarkReport> {
+    run_stwo_phase44d_source_emission_benchmark_for_step_counts(
+        &PHASE44D_SOURCE_EMISSION_STEP_COUNTS,
+        capture_timings,
+    )
+}
+
+fn run_stwo_phase44d_source_emission_benchmark_for_step_counts(
+    step_counts: &[usize],
+    capture_timings: bool,
+) -> Result<StwoPhase44DSourceEmissionBenchmarkReport> {
+    if step_counts.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "phase44d source emission benchmark requires at least one step count".to_string(),
+        ));
+    }
+    if step_counts.iter().any(|&steps| steps < 2) {
+        return Err(VmError::InvalidConfig(
+            "phase44d source emission benchmark requires step counts >= 2".to_string(),
+        ));
+    }
+    if !step_counts.windows(2).all(|window| window[0] < window[1]) {
+        return Err(VmError::InvalidConfig(
+            "phase44d source emission benchmark step counts must be strictly increasing"
+                .to_string(),
+        ));
+    }
+
+    let layout = phase12_default_decoding_layout();
+    let mut rows = Vec::new();
+    for &steps in step_counts {
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, steps)?;
+        let benchmark_input = phase44d_source_emission_benchmark_input(&chain)?;
+        rows.push(measure_phase44d_source_emission_shared(
+            &benchmark_input,
+            capture_timings,
+        )?);
+        rows.push(
+            measure_phase44d_source_emission_manifest_plus_compact_baseline(
+                &chain,
+                &benchmark_input,
+                capture_timings,
+            )?,
+        );
+    }
+
+    if let Some(failed) = rows.iter().find(|row| !row.verified) {
+        return Err(VmError::UnsupportedProof(format!(
+            "phase44d source emission benchmark row {} / {} / {} steps did not verify",
+            failed.primitive, failed.backend_variant, failed.steps
+        )));
+    }
+
+    let timing_surface = timing_surface(capture_timings);
+    Ok(StwoPhase44DSourceEmissionBenchmarkReport {
+        benchmark_version: STWO_PHASE44D_SOURCE_EMISSION_BENCHMARK_VERSION.to_string(),
+        semantic_scope: STWO_PHASE44D_SOURCE_EMISSION_BENCHMARK_SCOPE.to_string(),
+        timing_mode: timing_surface.mode.to_string(),
+        timing_policy: timing_surface.policy.to_string(),
+        timing_unit: BENCHMARK_TIMING_UNIT_MILLISECONDS.to_string(),
+        timing_runs: timing_surface.runs,
+        rows,
+    })
+}
+
+pub fn run_stwo_phase71_handoff_receipt_benchmark(
+) -> Result<StwoPhase71HandoffReceiptBenchmarkReport> {
+    run_stwo_phase71_handoff_receipt_benchmark_for_step_counts(
+        &PHASE71_HANDOFF_RECEIPT_STEP_COUNTS,
+        false,
+    )
+}
+
+pub fn run_stwo_phase71_handoff_receipt_benchmark_with_options(
+    capture_timings: bool,
+) -> Result<StwoPhase71HandoffReceiptBenchmarkReport> {
+    run_stwo_phase71_handoff_receipt_benchmark_for_step_counts(
+        &PHASE71_HANDOFF_RECEIPT_STEP_COUNTS,
+        capture_timings,
+    )
+}
+
+fn run_stwo_phase71_handoff_receipt_benchmark_for_step_counts(
+    step_counts: &[usize],
+    capture_timings: bool,
+) -> Result<StwoPhase71HandoffReceiptBenchmarkReport> {
+    if step_counts.is_empty() {
+        return Err(VmError::InvalidConfig(
+            "phase71 handoff receipt benchmark requires at least one step count".to_string(),
+        ));
+    }
+    if step_counts.iter().any(|&steps| steps == 0) {
+        return Err(VmError::InvalidConfig(
+            "phase71 handoff receipt benchmark step counts must be positive".to_string(),
+        ));
+    }
+    if !step_counts.windows(2).all(|window| window[0] < window[1]) {
+        return Err(VmError::InvalidConfig(
+            "phase71 handoff receipt benchmark step counts must be strictly increasing".to_string(),
+        ));
+    }
+
+    let layout = phase12_default_decoding_layout();
+    let mut rows = Vec::new();
+    for &steps in step_counts {
+        let chain = prove_phase12_decoding_demo_for_layout_steps_publication(&layout, steps)?;
+        let benchmark_input = phase71_handoff_receipt_benchmark_input(&chain)?;
+        rows.push(measure_phase71_handoff_receipt_shared(
+            &chain,
+            &benchmark_input,
+            capture_timings,
+        )?);
+        rows.push(measure_phase71_handoff_receipt_manifest_baseline(
+            &chain,
+            &benchmark_input,
+            capture_timings,
+        )?);
+    }
+
+    if let Some(failed) = rows.iter().find(|row| !row.verified) {
+        return Err(VmError::UnsupportedProof(format!(
+            "phase71 handoff receipt benchmark row {} / {} / {} steps did not verify",
+            failed.primitive, failed.backend_variant, failed.steps
+        )));
+    }
+
+    let timing_surface = timing_surface(capture_timings);
+    Ok(StwoPhase71HandoffReceiptBenchmarkReport {
+        benchmark_version: STWO_PHASE71_HANDOFF_RECEIPT_BENCHMARK_VERSION.to_string(),
+        semantic_scope: STWO_PHASE71_HANDOFF_RECEIPT_BENCHMARK_SCOPE.to_string(),
         timing_mode: timing_surface.mode.to_string(),
         timing_policy: timing_surface.policy.to_string(),
         timing_unit: BENCHMARK_TIMING_UNIT_MILLISECONDS.to_string(),
@@ -1228,6 +1463,86 @@ pub fn save_stwo_phase30_source_bound_manifest_reuse_benchmark_report_tsv(
             row.steps,
             row.manifests,
             row.envelopes,
+            row.relation,
+            row.serialized_bytes,
+            format_timing_ms(row.verify_ms),
+            row.verified,
+            row.note.replace('\t', " ")
+        ));
+    }
+    fs::write(path, out)?;
+    Ok(())
+}
+
+pub fn save_stwo_phase44d_source_emission_benchmark_report_json(
+    report: &StwoPhase44DSourceEmissionBenchmarkReport,
+    path: &Path,
+) -> Result<()> {
+    let json = serde_json::to_string_pretty(report)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    fs::write(path, json)?;
+    Ok(())
+}
+
+pub fn save_stwo_phase44d_source_emission_benchmark_report_tsv(
+    report: &StwoPhase44DSourceEmissionBenchmarkReport,
+    path: &Path,
+) -> Result<()> {
+    let mut out = String::from(
+        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tprimitive\tbackend_variant\tsteps\trelation\tserialized_bytes\tverify_ms\tverified\tnote\n",
+    );
+    for row in &report.rows {
+        out.push_str(&format!(
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            report.benchmark_version,
+            report.semantic_scope,
+            report.timing_mode,
+            report.timing_policy,
+            report.timing_unit,
+            report.timing_runs,
+            row.primitive,
+            row.backend_variant,
+            row.steps,
+            row.relation,
+            row.serialized_bytes,
+            format_timing_ms(row.verify_ms),
+            row.verified,
+            row.note.replace('\t', " ")
+        ));
+    }
+    fs::write(path, out)?;
+    Ok(())
+}
+
+pub fn save_stwo_phase71_handoff_receipt_benchmark_report_json(
+    report: &StwoPhase71HandoffReceiptBenchmarkReport,
+    path: &Path,
+) -> Result<()> {
+    let json = serde_json::to_string_pretty(report)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    fs::write(path, json)?;
+    Ok(())
+}
+
+pub fn save_stwo_phase71_handoff_receipt_benchmark_report_tsv(
+    report: &StwoPhase71HandoffReceiptBenchmarkReport,
+    path: &Path,
+) -> Result<()> {
+    let mut out = String::from(
+        "benchmark_version\tsemantic_scope\ttiming_mode\ttiming_policy\ttiming_unit\ttiming_runs\tprimitive\tbackend_variant\tsteps\trelation\tserialized_bytes\tverify_ms\tverified\tnote\n",
+    );
+    for row in &report.rows {
+        out.push_str(&format!(
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            report.benchmark_version,
+            report.semantic_scope,
+            report.timing_mode,
+            report.timing_policy,
+            report.timing_unit,
+            report.timing_runs,
+            row.primitive,
+            row.backend_variant,
+            row.steps,
             row.relation,
             row.serialized_bytes,
             format_timing_ms(row.verify_ms),
@@ -1950,6 +2265,454 @@ fn measure_phase30_source_bound_manifest_independent(
         verify_ms,
         verified: true,
         note: "each step range is verified as its own one-step Phase30 manifest against the same proof-checked Phase12 chain; every source-bound check recomputes the full-chain source commitment".to_string(),
+    })
+}
+
+fn benchmark_update_len_prefixed(hasher: &mut Blake2bVar, bytes: &[u8]) {
+    benchmark_update_usize(hasher, bytes.len());
+    hasher.update(bytes);
+}
+
+fn benchmark_update_usize(hasher: &mut Blake2bVar, value: usize) {
+    hasher.update(&(value as u128).to_le_bytes());
+}
+
+fn benchmark_lower_hex(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut out = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        out.push(HEX[(byte >> 4) as usize] as char);
+        out.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+    out
+}
+
+fn benchmark_hash32(domain: &str, parts: &[&[u8]]) -> Result<String> {
+    let mut hasher = Blake2bVar::new(32).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to initialize benchmark hash `{domain}`: {err}"
+        ))
+    })?;
+    benchmark_update_len_prefixed(&mut hasher, b"stwo-benchmark-surface");
+    benchmark_update_len_prefixed(&mut hasher, domain.as_bytes());
+    for part in parts {
+        benchmark_update_len_prefixed(&mut hasher, part);
+    }
+    let mut out = [0u8; 32];
+    hasher.finalize_variable(&mut out).map_err(|err| {
+        VmError::InvalidConfig(format!(
+            "failed to finalize benchmark hash `{domain}`: {err}"
+        ))
+    })?;
+    Ok(benchmark_lower_hex(&out))
+}
+
+fn phase44d_prepare_benchmark_trace_from_sources(
+    chain: &Phase12DecodingChainManifest,
+    phase30: &Phase30DecodingStepProofEnvelopeManifest,
+) -> Result<Phase43HistoryReplayTrace> {
+    if phase30.total_steps != chain.total_steps || phase30.envelopes.len() != chain.total_steps {
+        return Err(VmError::InvalidConfig(format!(
+            "phase44d benchmark expected shared manifest total_steps={} envelopes={} to match chain total_steps={}",
+            phase30.total_steps,
+            phase30.envelopes.len(),
+            chain.total_steps
+        )));
+    }
+    if phase30.chain_start_boundary_commitment
+        != chain
+            .steps
+            .first()
+            .ok_or_else(|| {
+                VmError::InvalidConfig(
+                    "phase44d benchmark requires at least one Phase12 step".to_string(),
+                )
+            })?
+            .from_state
+            .public_state_commitment
+        || phase30.chain_end_boundary_commitment
+            != chain
+                .steps
+                .last()
+                .ok_or_else(|| {
+                    VmError::InvalidConfig(
+                        "phase44d benchmark requires at least one Phase12 step".to_string(),
+                    )
+                })?
+                .to_state
+                .public_state_commitment
+    {
+        return Err(VmError::InvalidConfig(
+            "phase44d benchmark Phase30 boundary commitments drifted from the Phase12 chain"
+                .to_string(),
+        ));
+    }
+
+    let replayed_phase14 = phase14_prepare_decoding_chain(chain)?;
+    verify_phase14_decoding_chain(&replayed_phase14)?;
+    if replayed_phase14.steps.len() != chain.steps.len() {
+        return Err(VmError::InvalidConfig(format!(
+            "phase44d benchmark expected {} replayed Phase14 steps, got {}",
+            chain.steps.len(),
+            replayed_phase14.steps.len()
+        )));
+    }
+
+    let latest_cached_pair_range = chain.layout.latest_cached_pair_range()?;
+    let mut rows = Vec::with_capacity(chain.steps.len());
+    for (step_index, ((phase12_step, phase14_step), phase30_envelope)) in chain
+        .steps
+        .iter()
+        .zip(replayed_phase14.steps.iter())
+        .zip(phase30.envelopes.iter())
+        .enumerate()
+    {
+        if phase30_envelope.step_index != step_index {
+            return Err(VmError::InvalidConfig(format!(
+                "phase44d benchmark Phase30 envelope at row {step_index} has step_index {}",
+                phase30_envelope.step_index
+            )));
+        }
+        rows.push(Phase43HistoryReplayTraceRow {
+            step_index,
+            appended_pair: phase12_step.proof.claim.final_state.memory
+                [latest_cached_pair_range.clone()]
+            .to_vec(),
+            input_lookup_rows_commitment: phase12_step.from_state.lookup_rows_commitment.clone(),
+            output_lookup_rows_commitment: phase12_step.to_state.lookup_rows_commitment.clone(),
+            phase30_step_envelope_commitment: phase30_envelope.envelope_commitment.clone(),
+            phase12_from_state: phase12_step.from_state.clone(),
+            phase12_to_state: phase12_step.to_state.clone(),
+            phase14_from_state: phase14_step.from_state.clone(),
+            phase14_to_state: phase14_step.to_state.clone(),
+        });
+    }
+
+    let (appended_pairs_commitment, appended_pair_count) = {
+        let mut hasher = Blake2bVar::new(32).map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to initialize phase44d benchmark appended-pairs hash: {err}"
+            ))
+        })?;
+        benchmark_update_len_prefixed(&mut hasher, b"phase42-source-appended-pairs");
+        benchmark_update_len_prefixed(
+            &mut hasher,
+            chain
+                .steps
+                .first()
+                .expect("checked non-empty above")
+                .from_state
+                .layout_commitment
+                .as_bytes(),
+        );
+        benchmark_update_usize(&mut hasher, chain.layout.pair_width);
+        benchmark_update_usize(&mut hasher, chain.steps.len());
+        for (step_index, step) in chain.steps.iter().enumerate() {
+            let pair = &step.proof.claim.final_state.memory[latest_cached_pair_range.clone()];
+            if pair.len() != chain.layout.pair_width {
+                return Err(VmError::InvalidConfig(format!(
+                    "phase44d benchmark appended-pair width drift at step {step_index}: expected {}, got {}",
+                    chain.layout.pair_width,
+                    pair.len()
+                )));
+            }
+            benchmark_update_usize(&mut hasher, step_index);
+            for value in pair {
+                hasher.update(&value.to_le_bytes());
+            }
+        }
+        let mut out = [0u8; 32];
+        hasher.finalize_variable(&mut out).map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to finalize phase44d benchmark appended-pairs hash: {err}"
+            ))
+        })?;
+        (benchmark_lower_hex(&out), chain.steps.len())
+    };
+
+    let (lookup_rows_commitments_commitment, lookup_row_count) = {
+        let mut commitments = Vec::with_capacity(chain.steps.len() + 1);
+        commitments.push(
+            chain
+                .steps
+                .first()
+                .expect("checked non-empty above")
+                .from_state
+                .lookup_rows_commitment
+                .as_str(),
+        );
+        for step in &chain.steps {
+            commitments.push(step.to_state.lookup_rows_commitment.as_str());
+        }
+        let mut hasher = Blake2bVar::new(32).map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to initialize phase44d benchmark lookup-row hash: {err}"
+            ))
+        })?;
+        benchmark_update_len_prefixed(&mut hasher, b"phase42-source-lookup-rows");
+        benchmark_update_len_prefixed(
+            &mut hasher,
+            chain
+                .steps
+                .first()
+                .expect("checked non-empty above")
+                .from_state
+                .layout_commitment
+                .as_bytes(),
+        );
+        benchmark_update_usize(&mut hasher, commitments.len());
+        for (index, commitment) in commitments.iter().enumerate() {
+            benchmark_update_usize(&mut hasher, index);
+            benchmark_update_len_prefixed(&mut hasher, commitment.as_bytes());
+        }
+        let mut out = [0u8; 32];
+        hasher.finalize_variable(&mut out).map_err(|err| {
+            VmError::InvalidConfig(format!(
+                "failed to finalize phase44d benchmark lookup-row hash: {err}"
+            ))
+        })?;
+        (benchmark_lower_hex(&out), commitments.len())
+    };
+
+    if appended_pair_count != rows.len() || lookup_row_count != rows.len() + 1 {
+        return Err(VmError::InvalidConfig(
+            "phase44d benchmark history row accounting drift".to_string(),
+        ));
+    }
+
+    let first = rows.first().ok_or_else(|| {
+        VmError::InvalidConfig(
+            "phase44d benchmark requires at least one history replay row".to_string(),
+        )
+    })?;
+    let last = rows.last().expect("checked non-empty above");
+    let total_steps_string = chain.total_steps.to_string();
+    let mut trace = Phase43HistoryReplayTrace {
+        issue: super::recursion::STWO_BOUNDARY_PREIMAGE_ISSUE_PHASE42,
+        trace_version: super::recursion::STWO_HISTORY_REPLAY_TRACE_VERSION_PHASE43.to_string(),
+        relation_outcome: super::recursion::STWO_HISTORY_REPLAY_TRACE_RELATION_PHASE43.to_string(),
+        transform_rule: super::recursion::STWO_HISTORY_REPLAY_TRACE_RULE_PHASE43.to_string(),
+        proof_backend: StarkProofBackend::Stwo,
+        proof_backend_version: chain.proof_backend_version.clone(),
+        statement_version: chain.statement_version.clone(),
+        phase42_witness_commitment: benchmark_hash32(
+            "phase44d-benchmark-phase42-witness",
+            &[
+                phase30.source_chain_commitment.as_bytes(),
+                phase30.step_envelopes_commitment.as_bytes(),
+                total_steps_string.as_bytes(),
+            ],
+        )?,
+        phase29_contract_commitment: benchmark_hash32(
+            "phase44d-benchmark-phase29-contract",
+            &[
+                phase30.source_chain_commitment.as_bytes(),
+                phase30.chain_start_boundary_commitment.as_bytes(),
+                phase30.chain_end_boundary_commitment.as_bytes(),
+            ],
+        )?,
+        phase28_aggregate_commitment: benchmark_hash32(
+            "phase44d-benchmark-phase28-aggregate",
+            &[
+                phase30.source_chain_commitment.as_bytes(),
+                phase30.step_envelopes_commitment.as_bytes(),
+                total_steps_string.as_bytes(),
+            ],
+        )?,
+        phase30_source_chain_commitment: phase30.source_chain_commitment.clone(),
+        phase30_step_envelopes_commitment: phase30.step_envelopes_commitment.clone(),
+        total_steps: rows.len(),
+        layout_commitment: first.phase12_from_state.layout_commitment.clone(),
+        rolling_kv_pairs: chain.layout.rolling_kv_pairs,
+        pair_width: chain.layout.pair_width,
+        phase12_start_public_state_commitment: first
+            .phase12_from_state
+            .public_state_commitment
+            .clone(),
+        phase12_end_public_state_commitment: last.phase12_to_state.public_state_commitment.clone(),
+        phase14_start_boundary_commitment: commit_phase23_boundary_state(&first.phase14_from_state),
+        phase14_end_boundary_commitment: commit_phase23_boundary_state(&last.phase14_to_state),
+        phase12_start_history_commitment: first.phase12_from_state.kv_history_commitment.clone(),
+        phase12_end_history_commitment: last.phase12_to_state.kv_history_commitment.clone(),
+        phase14_start_history_commitment: first.phase14_from_state.kv_history_commitment.clone(),
+        phase14_end_history_commitment: last.phase14_to_state.kv_history_commitment.clone(),
+        initial_kv_cache_commitment: first.phase12_from_state.kv_cache_commitment.clone(),
+        appended_pairs_commitment,
+        lookup_rows_commitments_commitment,
+        rows,
+        full_history_replay_required: true,
+        cryptographic_compression_claimed: false,
+        stwo_air_proof_claimed: false,
+        trace_commitment: String::new(),
+    };
+    trace.trace_commitment = commit_phase43_history_replay_trace(&trace)?;
+    verify_phase43_history_replay_trace(&trace)?;
+    Ok(trace)
+}
+
+fn phase44d_source_emission_benchmark_input(
+    chain: &Phase12DecodingChainManifest,
+) -> Result<Phase44DSourceEmissionBenchmarkInput> {
+    let shared_manifest = phase30_prepare_decoding_step_proof_envelope_manifest(chain)?;
+    let phase43_trace = phase44d_prepare_benchmark_trace_from_sources(chain, &shared_manifest)?;
+    let compact_envelope =
+        prove_phase43_history_replay_projection_compact_claim_envelope(&phase43_trace)?;
+    let boundary = emit_phase44d_history_replay_projection_source_chain_public_output_boundary(
+        &phase43_trace,
+        &shared_manifest,
+    )?;
+    Ok(Phase44DSourceEmissionBenchmarkInput {
+        total_steps: chain.total_steps,
+        shared_manifest,
+        phase43_trace,
+        compact_envelope,
+        boundary,
+    })
+}
+
+fn phase44d_source_emission_serialized_bytes(
+    boundary: &Phase44DHistoryReplayProjectionSourceChainPublicOutputBoundary,
+    compact_envelope: &Phase43HistoryReplayProjectionCompactProofEnvelope,
+) -> Result<usize> {
+    Ok(serde_json::to_vec(boundary)
+        .map_err(|error| VmError::Serialization(error.to_string()))?
+        .len()
+        + serde_json::to_vec(compact_envelope)
+            .map_err(|error| VmError::Serialization(error.to_string()))?
+            .len())
+}
+
+fn measure_phase44d_source_emission_shared(
+    input: &Phase44DSourceEmissionBenchmarkInput,
+    capture_timings: bool,
+) -> Result<StwoPhase44DSourceEmissionBenchmarkMeasurement> {
+    debug_assert_eq!(input.phase43_trace.total_steps, input.total_steps);
+    let serialized_bytes =
+        phase44d_source_emission_serialized_bytes(&input.boundary, &input.compact_envelope)?;
+    let (acceptance, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_phase44d_history_replay_projection_source_chain_public_output_boundary_acceptance(
+            &input.boundary,
+            &input.compact_envelope,
+        )
+    })?;
+    let verified = acceptance.final_useful_compression_boundary;
+    Ok(StwoPhase44DSourceEmissionBenchmarkMeasurement {
+        primitive: "phase44d_source_chain_public_output_boundary".to_string(),
+        backend_variant: "typed_source_boundary_plus_compact_projection".to_string(),
+        steps: input.total_steps,
+        relation: "one typed Phase44D source-emission boundary plus one compact Phase43 projection proof".to_string(),
+        serialized_bytes,
+        verify_ms,
+        verified,
+        note: "the typed Phase44D source-chain public-output boundary is accepted against the same real compact Phase43 proof envelope it embeds, without replaying the ordered Phase30 manifest verifier surface".to_string(),
+    })
+}
+
+fn measure_phase44d_source_emission_manifest_plus_compact_baseline(
+    chain: &Phase12DecodingChainManifest,
+    input: &Phase44DSourceEmissionBenchmarkInput,
+    capture_timings: bool,
+) -> Result<StwoPhase44DSourceEmissionBenchmarkMeasurement> {
+    debug_assert_eq!(input.phase43_trace.total_steps, input.total_steps);
+    let serialized_bytes = phase30_manifest_serialized_bytes(&input.shared_manifest)?
+        + serde_json::to_vec(&input.compact_envelope)
+            .map_err(|error| VmError::Serialization(error.to_string()))?
+            .len();
+    let (verified, verify_ms) = measure_elapsed_ms(capture_timings, || {
+        let compact_ok = verify_phase43_history_replay_projection_compact_claim_envelope(
+            &input.compact_envelope.claim,
+            &input.compact_envelope.proof,
+        )?;
+        if !compact_ok {
+            return Err(VmError::UnsupportedProof(
+                "phase44d benchmark compact projection verification returned false".to_string(),
+            ));
+        }
+        verify_phase30_decoding_step_proof_envelope_manifest_against_chain(
+            &input.shared_manifest,
+            chain,
+        )?;
+        Ok(true)
+    })?;
+    Ok(StwoPhase44DSourceEmissionBenchmarkMeasurement {
+        primitive: "phase44d_source_chain_public_output_boundary".to_string(),
+        backend_variant: "phase30_manifest_plus_compact_projection_baseline".to_string(),
+        steps: input.total_steps,
+        relation: "ordered Phase30 manifest plus one compact Phase43 projection proof".to_string(),
+        serialized_bytes,
+        verify_ms,
+        verified,
+        note: "the same replayed source root is checked by verifying the real compact Phase43 proof envelope and then replaying the ordered Phase30 manifest against the proof-checked Phase12 chain as a lower-layer baseline".to_string(),
+    })
+}
+
+fn phase71_handoff_receipt_benchmark_input(
+    chain: &Phase12DecodingChainManifest,
+) -> Result<Phase71HandoffReceiptBenchmarkInput> {
+    let shared_manifest = phase30_prepare_decoding_step_proof_envelope_manifest(chain)?;
+    let receipt =
+        phase71_prepare_actual_stwo_step_envelope_handoff_receipt(chain, &shared_manifest)?;
+    Ok(Phase71HandoffReceiptBenchmarkInput {
+        total_steps: chain.total_steps,
+        shared_manifest,
+        receipt,
+    })
+}
+
+fn phase71_handoff_receipt_serialized_bytes(
+    receipt: &Phase71ActualStwoStepEnvelopeHandoffReceipt,
+) -> Result<usize> {
+    Ok(serde_json::to_vec(receipt)
+        .map_err(|error| VmError::Serialization(error.to_string()))?
+        .len())
+}
+
+fn measure_phase71_handoff_receipt_shared(
+    chain: &Phase12DecodingChainManifest,
+    input: &Phase71HandoffReceiptBenchmarkInput,
+    capture_timings: bool,
+) -> Result<StwoPhase71HandoffReceiptBenchmarkMeasurement> {
+    let serialized_bytes = phase71_handoff_receipt_serialized_bytes(&input.receipt)?;
+    let ((), verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_phase71_actual_stwo_step_envelope_handoff_receipt_against_sources(
+            &input.receipt,
+            chain,
+            &input.shared_manifest,
+        )
+    })?;
+    Ok(StwoPhase71HandoffReceiptBenchmarkMeasurement {
+        primitive: "phase71_actual_stwo_step_envelope_handoff_receipt".to_string(),
+        backend_variant: "shared_handoff_receipt".to_string(),
+        steps: input.total_steps,
+        relation: "one Phase71 actual S-two step-envelope handoff receipt".to_string(),
+        serialized_bytes,
+        verify_ms,
+        verified: true,
+        note: "one compact Phase71 receipt is verified against the proof-checked Phase12 chain and its ordered Phase30 manifest, preserving the source-bound handoff summary without shipping every envelope field directly".to_string(),
+    })
+}
+
+fn measure_phase71_handoff_receipt_manifest_baseline(
+    chain: &Phase12DecodingChainManifest,
+    input: &Phase71HandoffReceiptBenchmarkInput,
+    capture_timings: bool,
+) -> Result<StwoPhase71HandoffReceiptBenchmarkMeasurement> {
+    let serialized_bytes = phase30_manifest_serialized_bytes(&input.shared_manifest)?;
+    let ((), verify_ms) = measure_elapsed_ms(capture_timings, || {
+        verify_phase30_decoding_step_proof_envelope_manifest_against_chain(
+            &input.shared_manifest,
+            chain,
+        )
+    })?;
+    Ok(StwoPhase71HandoffReceiptBenchmarkMeasurement {
+        primitive: "phase71_actual_stwo_step_envelope_handoff_receipt".to_string(),
+        backend_variant: "phase30_manifest_baseline".to_string(),
+        steps: input.total_steps,
+        relation: "ordered Phase30 manifest replay baseline".to_string(),
+        serialized_bytes,
+        verify_ms,
+        verified: true,
+        note: "the lower-layer baseline verifies the full ordered Phase30 manifest against the same proof-checked Phase12 chain, without collapsing it into the smaller Phase71 handoff receipt surface".to_string(),
     })
 }
 
@@ -3938,5 +4701,166 @@ mod tests {
         assert!(error
             .to_string()
             .contains("does not match the derived Phase 12 chain"));
+    }
+
+    #[test]
+    #[ignore = "expensive phase44d source emission benchmark"]
+    fn phase44d_source_emission_benchmark_preserves_expected_row_shape() {
+        let report = run_stwo_phase44d_source_emission_benchmark_with_options(false)
+            .expect("phase44d source emission benchmark should run");
+        assert_eq!(report.rows.len(), 2);
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().all(|row| row.serialized_bytes > 0));
+        assert!(report.rows.iter().any(|row| {
+            row.backend_variant == "typed_source_boundary_plus_compact_projection" && row.steps == 2
+        }));
+    }
+
+    #[test]
+    fn phase44d_source_emission_benchmark_defaults_to_zero_timings_without_capture() {
+        let report = run_stwo_phase44d_source_emission_benchmark_for_step_counts(&[2], false)
+            .expect("phase44d source emission benchmark should run");
+        assert_eq!(report.rows.len(), 2);
+        assert_eq!(report.timing_mode, BENCHMARK_TIMING_MODE_DETERMINISTIC);
+        assert_eq!(report.timing_policy, BENCHMARK_TIMING_POLICY_ZEROED);
+        assert_eq!(report.timing_unit, BENCHMARK_TIMING_UNIT_MILLISECONDS);
+        assert_eq!(report.timing_runs, 0);
+        assert!(report.rows.iter().all(|row| row.verify_ms == 0.0));
+        assert!(report.rows.iter().all(|row| row.verified));
+    }
+
+    #[test]
+    fn phase44d_source_emission_benchmark_rejects_empty_step_counts() {
+        let error = run_stwo_phase44d_source_emission_benchmark_for_step_counts(&[], false)
+            .expect_err("empty step counts must fail");
+        assert!(error
+            .to_string()
+            .contains("requires at least one step count"));
+    }
+
+    #[test]
+    fn phase44d_source_emission_benchmark_rejects_non_monotonic_step_counts() {
+        let error = run_stwo_phase44d_source_emission_benchmark_for_step_counts(&[2, 4, 3], false)
+            .expect_err("unsorted step counts must fail");
+        assert!(error.to_string().contains("must be strictly increasing"));
+    }
+
+    #[test]
+    fn phase44d_source_emission_benchmark_rejects_single_step_count() {
+        let error = run_stwo_phase44d_source_emission_benchmark_for_step_counts(&[1], false)
+            .expect_err("single-step count must fail");
+        assert!(error.to_string().contains("requires step counts >= 2"));
+    }
+
+    #[test]
+    fn phase44d_source_emission_benchmark_uses_publication_profile() {
+        let layout = phase12_default_decoding_layout();
+        let chain = prove_phase12_decoding_demo_for_layout_steps_publication(&layout, 2)
+            .expect("phase12 decoding family demo");
+        let input = phase44d_source_emission_benchmark_input(&chain).expect("benchmark input");
+        assert_eq!(
+            chain.steps[0].proof.claim.options,
+            crate::proof::publication_v1_stark_options()
+        );
+        assert_eq!(input.phase43_trace.total_steps, input.total_steps);
+        assert_eq!(input.shared_manifest.total_steps, input.total_steps);
+    }
+
+    #[test]
+    fn phase44d_source_emission_benchmark_rejects_tampered_compact_proof() {
+        let layout = phase12_default_decoding_layout();
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 2)
+            .expect("phase12 decoding family demo");
+        let mut input = phase44d_source_emission_benchmark_input(&chain).expect("benchmark input");
+        input.compact_envelope.proof[0] ^= 0x01;
+        let error = measure_phase44d_source_emission_shared(&input, false)
+            .expect_err("tampered compact proof must fail");
+        assert!(!error.to_string().is_empty());
+    }
+
+    #[test]
+    #[ignore = "expensive phase71 handoff receipt benchmark"]
+    fn phase71_handoff_receipt_benchmark_preserves_expected_row_shape() {
+        let report = run_stwo_phase71_handoff_receipt_benchmark_with_options(false)
+            .expect("phase71 handoff receipt benchmark should run");
+        assert_eq!(report.rows.len(), 6);
+        assert!(report.rows.iter().all(|row| row.verified));
+        assert!(report.rows.iter().all(|row| row.serialized_bytes > 0));
+        assert!(report
+            .rows
+            .iter()
+            .any(|row| row.backend_variant == "shared_handoff_receipt" && row.steps == 3));
+    }
+
+    #[test]
+    fn phase71_handoff_receipt_benchmark_defaults_to_zero_timings_without_capture() {
+        let report = run_stwo_phase71_handoff_receipt_benchmark_for_step_counts(&[1], false)
+            .expect("phase71 handoff receipt benchmark should run");
+        assert_eq!(report.rows.len(), 2);
+        assert_eq!(report.timing_mode, BENCHMARK_TIMING_MODE_DETERMINISTIC);
+        assert_eq!(report.timing_policy, BENCHMARK_TIMING_POLICY_ZEROED);
+        assert_eq!(report.timing_unit, BENCHMARK_TIMING_UNIT_MILLISECONDS);
+        assert_eq!(report.timing_runs, 0);
+        assert!(report.rows.iter().all(|row| row.verify_ms == 0.0));
+        assert!(report.rows.iter().all(|row| row.verified));
+    }
+
+    #[test]
+    fn phase71_handoff_receipt_benchmark_rejects_empty_step_counts() {
+        let error = run_stwo_phase71_handoff_receipt_benchmark_for_step_counts(&[], false)
+            .expect_err("empty step counts must fail");
+        assert!(error
+            .to_string()
+            .contains("requires at least one step count"));
+    }
+
+    #[test]
+    fn phase71_handoff_receipt_benchmark_rejects_non_monotonic_step_counts() {
+        let error = run_stwo_phase71_handoff_receipt_benchmark_for_step_counts(&[1, 4, 2], false)
+            .expect_err("unsorted step counts must fail");
+        assert!(error.to_string().contains("must be strictly increasing"));
+    }
+
+    #[test]
+    fn phase71_handoff_receipt_benchmark_rejects_zero_step_count() {
+        let error = run_stwo_phase71_handoff_receipt_benchmark_for_step_counts(&[0], false)
+            .expect_err("zero step count must fail");
+        assert!(error.to_string().contains("must be positive"));
+    }
+
+    #[test]
+    fn phase71_handoff_receipt_benchmark_receipt_surface_is_smaller_than_manifest_surface() {
+        let layout = phase12_default_decoding_layout();
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 3)
+            .expect("phase12 decoding family demo");
+        let input = phase71_handoff_receipt_benchmark_input(&chain).expect("benchmark input");
+        let shared_row =
+            measure_phase71_handoff_receipt_shared(&chain, &input, false).expect("shared row");
+        let baseline_row = measure_phase71_handoff_receipt_manifest_baseline(&chain, &input, false)
+            .expect("baseline row");
+        assert!(baseline_row.serialized_bytes > shared_row.serialized_bytes);
+    }
+
+    #[test]
+    fn phase71_handoff_receipt_benchmark_uses_publication_profile() {
+        let layout = phase12_default_decoding_layout();
+        let chain = prove_phase12_decoding_demo_for_layout_steps_publication(&layout, 1)
+            .expect("phase12 decoding family demo");
+        assert_eq!(
+            chain.steps[0].proof.claim.options,
+            crate::proof::publication_v1_stark_options()
+        );
+    }
+
+    #[test]
+    fn phase71_handoff_receipt_benchmark_rejects_tampered_receipt_binding() {
+        let layout = phase12_default_decoding_layout();
+        let chain = prove_phase12_decoding_demo_for_layout_steps(&layout, 2)
+            .expect("phase12 decoding family demo");
+        let mut input = phase71_handoff_receipt_benchmark_input(&chain).expect("benchmark input");
+        input.receipt.source_phase30_source_chain_commitment = "00".repeat(32);
+        let error = measure_phase71_handoff_receipt_shared(&chain, &input, false)
+            .expect_err("tampered receipt binding must fail");
+        assert!(error.to_string().contains("source drift"));
     }
 }

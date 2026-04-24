@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="900" viewBox="0 0 1700 900">
+<rect width="100%" height="100%" fill="#F5F1E8"/>
+<text x="850.0" y="72.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="38" font-weight="700" fill="#1F2937">Phase71 Handoff Receipt Calibration</text>
+<text x="850.0" y="108.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="21" font-weight="400" fill="#4B5563">One compact handoff receipt versus the lower-layer ordered Phase30 manifest replay surface</text>
+<text x="850.0" y="136.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">Median of 5 measured runs. Verification time compares one Phase71 receipt against replaying the full ordered Phase30 manifest.</text>
+<line x1="180" y1="150" x2="228" y2="150" stroke="#2563EB" stroke-width="5" stroke-linecap="round"/>
+<circle cx="204" cy="150" r="6" fill="white" stroke="#2563EB" stroke-width="3"/>
+<text x="242.0" y="156.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="21" font-weight="400" fill="#374151">One Phase71 handoff receipt</text>
+<line x1="500" y1="150" x2="548" y2="150" stroke="#D97706" stroke-width="5" stroke-linecap="round"/>
+<circle cx="524" cy="150" r="6" fill="white" stroke="#D97706" stroke-width="3"/>
+<text x="562.0" y="156.0" text-anchor="start" font-family="STIX Two Text, Georgia, serif" font-size="21" font-weight="400" fill="#374151">Ordered Phase30 manifest baseline</text>
+<rect x="90" y="220" width="720" height="390" rx="28" fill="white" stroke="#D7DDE6" stroke-width="2"/>
+<text x="450.0" y="266.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="26" font-weight="600" fill="#1F2937">Serialized Artifact Bytes</text>
+<line x1="182.0" y1="465.5" x2="776.0" y2="465.5" stroke="#E5E7EB" stroke-width="1.5"/>
+<text x="172.0" y="471.5" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">1,174</text>
+<line x1="182.0" y1="409.0" x2="776.0" y2="409.0" stroke="#E5E7EB" stroke-width="1.5"/>
+<text x="172.0" y="415.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">2,349</text>
+<line x1="182.0" y1="352.5" x2="776.0" y2="352.5" stroke="#E5E7EB" stroke-width="1.5"/>
+<text x="172.0" y="358.5" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">3,524</text>
+<line x1="182.0" y1="296.0" x2="776.0" y2="296.0" stroke="#E5E7EB" stroke-width="1.5"/>
+<text x="172.0" y="302.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">4,698</text>
+<line x1="182.0" y1="522.0" x2="776.0" y2="522.0" stroke="#A9B3C0" stroke-width="2"/>
+<line x1="182.0" y1="296.0" x2="182.0" y2="522.0" stroke="#A9B3C0" stroke-width="2"/>
+<line x1="182.0" y1="522.0" x2="182.0" y2="530.0" stroke="#A9B3C0" stroke-width="2"/>
+<text x="182.0" y="556.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">1</text>
+<line x1="479.0" y1="522.0" x2="479.0" y2="530.0" stroke="#A9B3C0" stroke-width="2"/>
+<text x="479.0" y="556.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">2</text>
+<line x1="776.0" y1="522.0" x2="776.0" y2="530.0" stroke="#A9B3C0" stroke-width="2"/>
+<text x="776.0" y="556.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">3</text>
+<text x="479.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">Repeated decode steps</text>
+<path d="M 182.0 448.3 L 479.0 448.3 L 776.0 448.3" fill="none" stroke="#2563EB" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="182.0" cy="448.3" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="479.0" cy="448.3" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="776.0" cy="448.3" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<text x="770.0" y="436.3" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="600" fill="#2563EB">1,533 B</text>
+<path d="M 182.0 416.7 L 479.0 356.4 L 776.0 296.0" fill="none" stroke="#D97706" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="182.0" cy="416.7" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<circle cx="479.0" cy="356.4" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<circle cx="776.0" cy="296.0" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<text x="770.0" y="284.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="600" fill="#D97706">4,698 B</text>
+<rect x="890" y="220" width="720" height="390" rx="28" fill="white" stroke="#D7DDE6" stroke-width="2"/>
+<text x="1250.0" y="266.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="26" font-weight="600" fill="#1F2937">Verification Time</text>
+<line x1="982.0" y1="465.5" x2="1576.0" y2="465.5" stroke="#E5E7EB" stroke-width="1.5"/>
+<text x="972.0" y="471.5" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">8.599</text>
+<line x1="982.0" y1="409.0" x2="1576.0" y2="409.0" stroke="#E5E7EB" stroke-width="1.5"/>
+<text x="972.0" y="415.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">17.2</text>
+<line x1="982.0" y1="352.5" x2="1576.0" y2="352.5" stroke="#E5E7EB" stroke-width="1.5"/>
+<text x="972.0" y="358.5" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">25.8</text>
+<line x1="982.0" y1="296.0" x2="1576.0" y2="296.0" stroke="#E5E7EB" stroke-width="1.5"/>
+<text x="972.0" y="302.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="17" font-weight="400" fill="#6B7280">34.4</text>
+<line x1="982.0" y1="522.0" x2="1576.0" y2="522.0" stroke="#A9B3C0" stroke-width="2"/>
+<line x1="982.0" y1="296.0" x2="982.0" y2="522.0" stroke="#A9B3C0" stroke-width="2"/>
+<line x1="982.0" y1="522.0" x2="982.0" y2="530.0" stroke="#A9B3C0" stroke-width="2"/>
+<text x="982.0" y="556.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">1</text>
+<line x1="1279.0" y1="522.0" x2="1279.0" y2="530.0" stroke="#A9B3C0" stroke-width="2"/>
+<text x="1279.0" y="556.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">2</text>
+<line x1="1576.0" y1="522.0" x2="1576.0" y2="530.0" stroke="#A9B3C0" stroke-width="2"/>
+<text x="1576.0" y="556.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#374151">3</text>
+<text x="1279.0" y="582.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">Repeated decode steps</text>
+<path d="M 982.0 444.7 L 1279.0 370.7 L 1576.0 296.0" fill="none" stroke="#2563EB" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="444.7" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="1279.0" cy="370.7" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<circle cx="1576.0" cy="296.0" r="7" fill="white" stroke="#2563EB" stroke-width="3"/>
+<text x="1570.0" y="284.0" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="600" fill="#2563EB">34.4 ms</text>
+<path d="M 982.0 468.2 L 1279.0 417.5 L 1576.0 366.5" fill="none" stroke="#D97706" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="982.0" cy="468.2" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<circle cx="1279.0" cy="417.5" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<circle cx="1576.0" cy="366.5" r="7" fill="white" stroke="#D97706" stroke-width="3"/>
+<text x="1570.0" y="354.5" text-anchor="end" font-family="STIX Two Text, Georgia, serif" font-size="16" font-weight="600" fill="#D97706">23.7 ms</text>
+<text x="850.0" y="842.0" text-anchor="middle" font-family="STIX Two Text, Georgia, serif" font-size="18" font-weight="400" fill="#6B7280">This is a source-bound receipt-layer calibration only. The compact Phase71 surface flattens artifact size across repeated steps, but current verification still costs more than replaying the ordered Phase30 manifest directly on this path.</text>
+</svg>
