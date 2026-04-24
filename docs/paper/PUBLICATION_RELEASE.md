@@ -115,8 +115,10 @@ one monolithic benchmark claim.
 - Paper preflight checks:
   - `python3 scripts/paper/paper_preflight.py --repo-root .`
 - Higher-layer benchmark evidence:
-  - `BENCH_RUNS=5 CAPTURE_TIMINGS=1 ALLOW_HOST_DEPENDENT_OUTPUTS=1 PNG_OUT= PDF_OUT= ./scripts/paper/generate_stwo_phase44d_source_emission_benchmark.sh`
-  - `BENCH_RUNS=5 CAPTURE_TIMINGS=1 ALLOW_HOST_DEPENDENT_OUTPUTS=1 PNG_OUT= PDF_OUT= ./scripts/paper/generate_stwo_phase71_handoff_receipt_benchmark.sh`
+  - `mkdir -p ./out/paper-bench`
+  - `BENCH_RUNS=5 CAPTURE_TIMINGS=1 TSV_OUT=./out/paper-bench/stwo-phase44d-source-emission-2026-04.tsv JSON_OUT=./out/paper-bench/stwo-phase44d-source-emission-2026-04.json SVG_OUT=./out/paper-bench/stwo-phase44d-source-emission-2026-04.svg PNG_OUT= PDF_OUT= ./scripts/paper/generate_stwo_phase44d_source_emission_benchmark.sh`
+  - `BENCH_RUNS=5 CAPTURE_TIMINGS=1 TSV_OUT=./out/paper-bench/stwo-phase71-handoff-receipt-2026-04.tsv JSON_OUT=./out/paper-bench/stwo-phase71-handoff-receipt-2026-04.json SVG_OUT=./out/paper-bench/stwo-phase71-handoff-receipt-2026-04.svg PNG_OUT= PDF_OUT= ./scripts/paper/generate_stwo_phase71_handoff_receipt_benchmark.sh`
+  - `ALLOW_HOST_DEPENDENT_OUTPUTS` stays unset here on purpose so scratch captures cannot overwrite the frozen tracked evidence under `docs/paper/`.
 
 ## Publication check
 
