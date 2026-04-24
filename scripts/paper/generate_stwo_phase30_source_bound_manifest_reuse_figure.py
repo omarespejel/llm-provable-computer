@@ -154,6 +154,16 @@ def timing_metadata(rows: list[dict[str, str]], *, fallback_runs: int) -> tuple[
             raise SystemExit(
                 f"unexpected timing_policy for deterministic phase30 manifest rows: {policy!r}"
             )
+        try:
+            runs = int(runs_raw)
+        except ValueError as exc:
+            raise SystemExit(
+                f"invalid timing_runs value in deterministic phase30 manifest rows: {runs_raw!r}"
+            ) from exc
+        if runs != 0:
+            raise SystemExit(
+                f"deterministic phase30 manifest rows must report timing_runs == 0; got {runs}"
+            )
         return False, 0
     if mode in {"measured_single_run", "measured_median"}:
         if mode == "measured_single_run" and policy != "single_run_from_microsecond_capture":
@@ -173,6 +183,35 @@ def timing_metadata(rows: list[dict[str, str]], *, fallback_runs: int) -> tuple[
             raise SystemExit(
                 f"invalid timing_runs value in phase30 manifest benchmark rows: {runs_raw!r}"
             ) from exc
+        if mode == "measured_single_run":
+            if runs != 1:
+                raise SystemExit(
+                    f"measured_single_run phase30 manifest rows must report timing_runs == 1; got {runs}"
+                )
+            return True, runs
+        policy_runs_raw = policy.removeprefix("median_of_").removesuffix(
+            "_runs_from_microsecond_capture"
+        )
+        try:
+            policy_runs = int(policy_runs_raw)
+        except ValueError as exc:
+            raise SystemExit(
+                f"invalid median timing_policy run count in phase30 manifest rows: {policy!r}"
+            ) from exc
+        if runs != policy_runs:
+            raise SystemExit(
+                "measured_median phase30 manifest rows must keep timing_runs aligned with "
+                f"timing_policy; got timing_runs={runs} and timing_policy={policy!r}"
+            )
+        if runs < 3 or runs % 2 == 0:
+            raise SystemExit(
+                f"measured_median phase30 manifest rows must report an odd timing_runs >= 3; got {runs}"
+            )
+        if fallback_runs and runs != fallback_runs:
+            raise SystemExit(
+                "phase30 manifest figure bench-runs override disagrees with embedded timing metadata; "
+                f"got bench_runs={fallback_runs} and timing_runs={runs}"
+            )
         return True, runs
     raise SystemExit(
         f"unsupported timing_mode in phase30 manifest benchmark rows: {mode!r}"

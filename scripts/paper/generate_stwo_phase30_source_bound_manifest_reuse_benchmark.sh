@@ -97,7 +97,7 @@ PY
   for output_path in "${NORMALIZED_OUTPUTS[@]}"; do
     for canonical_path in "${NORMALIZED_CANONICAL_PATHS[@]}"; do
       if [[ "$output_path" == "$canonical_path" ]]; then
-        echo "CAPTURE_TIMINGS=1 with canonical tracked outputs requires ALLOW_HOST_DEPENDENT_OUTPUTS=1 or explicit noncanonical TSV_OUT/JSON_OUT/SVG_OUT overrides" >&2
+        echo "CAPTURE_TIMINGS=1 cannot write host-dependent timings to canonical tracked outputs ($output_path); set ALLOW_HOST_DEPENDENT_OUTPUTS=1 or override TSV_OUT/JSON_OUT/SVG_OUT and disable or redirect any enabled PNG_OUT/PDF_OUT paths" >&2
         exit 1
       fi
     done
