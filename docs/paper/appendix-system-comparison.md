@@ -43,6 +43,6 @@ stronger qualifications in the main text:
   proof-architecture artifact with reproducible evidence and an explicit pre-recursive
   aggregation boundary.
 - If you need one narrow verifier-object comparison rather than another full-model row,
-  use `NANOZK`'s abstract `d <= 128` layer-proof row (`5.5 KB`, `24 ms` verify) against
-  this repo's `Phase71` handoff-receipt row (`1,533` serialized bytes, `34.613 ms`
-  verify) as a compact-object calibration only, not a matched benchmark.
+  use the pinned snapshot's `NANOZK` abstract `d <= 128` layer-proof row against this
+  repo's `Phase71` handoff-receipt row as a compact-object calibration only, not a
+  matched benchmark.
