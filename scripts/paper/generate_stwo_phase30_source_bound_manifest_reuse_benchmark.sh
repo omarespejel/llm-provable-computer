@@ -27,7 +27,7 @@ if [[ "$CAPTURE_TIMINGS" != "0" && "$CAPTURE_TIMINGS" != "1" ]]; then
 fi
 if [[ "$CAPTURE_TIMINGS" == "1" ]]; then
   if ! [[ "$BENCH_RUNS" =~ ^[1-9][0-9]*$ ]]; then
-    echo "BENCH_RUNS must be a positive odd integer >= 3 when CAPTURE_TIMINGS=1" >&2
+    echo "BENCH_RUNS must be a positive integer when CAPTURE_TIMINGS=1" >&2
     exit 1
   fi
   if [[ $((BENCH_RUNS % 2)) -eq 0 || "$BENCH_RUNS" -lt 3 ]]; then
