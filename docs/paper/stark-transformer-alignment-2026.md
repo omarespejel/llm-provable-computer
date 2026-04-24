@@ -998,6 +998,9 @@ evidenced. A supplementary appendix summarizes comparison details.
 The compact literature-facing snapshot is also pinned in
 `docs/paper/evidence/published-zkml-numbers-2026-04.tsv`; it should be read as
 workload-scope calibration, not as a matched primitive or end-to-end benchmark table.
+That snapshot now includes three local rows on different internal surfaces: a Phase12
+proving-bundle row, a Phase44D typed-boundary latency row, and a Phase71 handoff-receipt
+size row.
 
 Against that external landscape, the remaining question is practical sequencing: which
 engineering steps most directly strengthen the next paper without diluting scope
