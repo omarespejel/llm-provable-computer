@@ -400,7 +400,7 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-shared-normalization-demo shared-normalization.stwo.proof.json
 
-# Prepare and verify the first tensor-native shared-normalization primitive artifact
+# Prepare and verify the shared-normalization primitive artifact
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   prepare-stwo-shared-normalization-primitive-artifact \
   -o shared-normalization-primitive.stwo.json
@@ -408,138 +408,22 @@ cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
   verify-stwo-shared-normalization-primitive-artifact \
   shared-normalization-primitive.stwo.json
 
-# Prepare and verify the first transformer-shaped tensor-native chain artifact
+# Measure the one-shot primitive calibration surface
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-tensor-native-chain-artifact \
-  -o tensor-native-chain.stwo.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-tensor-native-chain-artifact \
-  tensor-native-chain.stwo.json
+  bench-stwo-primitive-lookup-vs-naive --capture-timings
 
-# Bind that chain to a real linear-block-shaped S-two proof via the core-slice artifact
+# Measure repeated shared-table reuse directly
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prove-stark programs/linear_block_v4_with_lookup.tvm -o linear-block-v4-with-lookup.stark.json \
-  --max-steps 256
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-linear-block-core-slice-artifact \
-  --proof linear-block-v4-with-lookup.stark.json \
-  --chain tensor-native-chain.stwo.json \
-  -o linear-block-core-slice.stwo.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-linear-block-core-slice-artifact \
-  linear-block-core-slice.stwo.json
+  bench-stwo-shared-table-reuse --capture-timings
 
-# Strengthen that linear-block-shaped line with a richer slice artifact
+# Measure the richer Phase12-style shared normalization + activation bundle
 cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-linear-block-richer-slice-artifact \
-  --proof linear-block-v4-with-lookup.stark.json \
-  --chain tensor-native-chain.stwo.json \
-  -o linear-block-richer-slice.stwo.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-linear-block-richer-slice-artifact \
-  linear-block-richer-slice.stwo.json
+  bench-stwo-phase12-shared-lookup-bundle-reuse --capture-timings
 
-# Accumulate repeated linear-block-like slices over one shared S-two proof
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-repeated-linear-block-slice-accumulation-artifact \
-  --proof linear-block-v4-with-lookup.stark.json \
-  --total-slices 4 \
-  --token-position 0 \
-  --start-block-index 2 \
-  -o repeated-linear-block-slice-accumulation.stwo.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-repeated-linear-block-slice-accumulation-artifact \
-  repeated-linear-block-slice-accumulation.stwo.json
-
-# Derive the first compact folded repeated-slice artifact from that explicit source
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-folded-linear-block-slice-accumulation-artifact \
-  --source repeated-linear-block-slice-accumulation.stwo.json \
-  -o folded-linear-block-slice-accumulation.stwo.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-folded-linear-block-slice-accumulation-artifact \
-  folded-linear-block-slice-accumulation.stwo.json \
-  --source repeated-linear-block-slice-accumulation.stwo.json
-
-# Extend the folded line to a richer linear-block-like family summary
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-folded-linear-block-richer-slice-family-artifact \
-  --source repeated-linear-block-slice-accumulation.stwo.json \
-  --folded folded-linear-block-slice-accumulation.stwo.json \
-  -o folded-linear-block-richer-slice-family.stwo.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-folded-linear-block-richer-slice-family-artifact \
-  folded-linear-block-richer-slice-family.stwo.json \
-  --source repeated-linear-block-slice-accumulation.stwo.json \
-  --folded folded-linear-block-slice-accumulation.stwo.json
-
-# Accumulate several linear-block-like interval families across token positions
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-multi-interval-linear-block-richer-family-accumulation-artifact \
-  --proof linear-block-v4-with-lookup.stark.json \
-  --total-intervals 4 \
-  --interval-total-slices 4 \
-  --token-position-start 0 \
-  --token-position-stride 1 \
-  --start-block-index 2 \
-  -o multi-interval-linear-block-richer-family-accumulation.stwo.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-multi-interval-linear-block-richer-family-accumulation-artifact \
-  multi-interval-linear-block-richer-family-accumulation.stwo.json
-
-# Derive the first folded multi-interval prototype and its accumulation handoff
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-folded-multi-interval-linear-block-accumulation-prototype-artifact \
-  --source multi-interval-linear-block-richer-family-accumulation.stwo.json \
-  -o folded-multi-interval-linear-block-accumulation-prototype.stwo.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-folded-multi-interval-linear-block-accumulation-prototype-artifact \
-  folded-multi-interval-linear-block-accumulation-prototype.stwo.json \
-  --source multi-interval-linear-block-richer-family-accumulation.stwo.json
-
-# Derive the richer verifier-bound family artifact on top of the folded handoff
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-folded-multi-interval-linear-block-richer-family-artifact \
-  --source multi-interval-linear-block-richer-family-accumulation.stwo.json \
-  --folded folded-multi-interval-linear-block-accumulation-prototype.stwo.json \
-  -o folded-multi-interval-linear-block-richer-family.stwo.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-folded-multi-interval-linear-block-richer-family-artifact \
-  folded-multi-interval-linear-block-richer-family.stwo.json \
-  --source multi-interval-linear-block-richer-family-accumulation.stwo.json \
-  --folded folded-multi-interval-linear-block-accumulation-prototype.stwo.json
-
-# Lift that richer multi-interval line into repeated canonical windows
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-repeated-multi-interval-linear-block-richer-family-accumulation-artifact \
-  --proof linear-block-v4-with-lookup.stark.json \
-  --total-windows 3 \
-  --intervals-per-window 4 \
-  --interval-total-slices 4 \
-  --token-position-start 0 \
-  --token-position-stride 1 \
-  --start-block-index 2 \
-  -o repeated-multi-interval-linear-block-richer-family-accumulation.stwo.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-repeated-multi-interval-linear-block-richer-family-accumulation-artifact \
-  repeated-multi-interval-linear-block-richer-family-accumulation.stwo.json
-
-# Fold those repeated canonical windows into the first repeated-window prototype
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  prepare-stwo-folded-repeated-multi-interval-linear-block-accumulation-prototype-artifact \
-  --source repeated-multi-interval-linear-block-richer-family-accumulation.stwo.json \
-  -o folded-repeated-multi-interval-linear-block-accumulation-prototype.stwo.json
-cargo +nightly-2025-07-14 run --features stwo-backend --bin tvm -- \
-  verify-stwo-folded-repeated-multi-interval-linear-block-accumulation-prototype-artifact \
-  folded-repeated-multi-interval-linear-block-accumulation-prototype.stwo.json \
-  --source repeated-multi-interval-linear-block-richer-family-accumulation.stwo.json
-
-# Freeze the publication-facing transformer-shaped tensor-native bundles
-bash scripts/paper/generate_stwo_tensor_native_transformer_bundle.sh
-bash scripts/paper/generate_stwo_repeated_linear_block_slice_accumulation_bundle.sh
-bash scripts/paper/generate_stwo_folded_linear_block_slice_bundle.sh
-bash scripts/paper/generate_stwo_multi_interval_folded_linear_block_bundle.sh
-bash scripts/paper/generate_stwo_richer_multi_interval_linear_block_bundle.sh
+# Freeze the publication-facing benchmark evidence
+bash scripts/paper/generate_stwo_primitive_lookup_vs_naive_benchmark.sh
+bash scripts/paper/generate_stwo_shared_table_reuse_benchmark.sh
+bash scripts/paper/generate_stwo_phase12_shared_lookup_bundle_benchmark.sh
 
 # Run the minimal shared-lookup identity example
 cargo +nightly-2025-07-14 run --features stwo-backend --example shared_lookup_identity
@@ -1285,7 +1169,7 @@ is well past the old “dependency seam only” stage.
 - Local reproducibility bundle: generated by `./scripts/generate_repro_bundle.sh`
 - Frozen transformer-shaped `stwo` bundle with concrete metrics:
   `docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/`
-- Frozen tensor-native `stwo` primitive bundle:
+- Frozen shared-normalization primitive `stwo` bundle:
   `docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/`
 - Frozen proof-carrying aggregation bundle:
   `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/`
@@ -1300,19 +1184,19 @@ is well past the old “dependency seam only” stage.
   `scripts/paper/generate_stwo_proof_carrying_aggregation_bundle.sh`
 - Transformer-shaped `stwo` bundle regeneration script:
   `scripts/paper/generate_stwo_transformer_shaped_bundle.sh`
-- Tensor-native shared-normalization primitive regeneration script:
+- Shared-normalization primitive regeneration script:
   `scripts/paper/generate_stwo_shared_normalization_primitive_bundle.sh`
 
 Older carried-state bundle generators remain available for archival provenance and
 engineering comparison, but the current paper package cites the frozen
-transformer-shaped `stwo` bundle, the tensor-native shared-normalization primitive,
+transformer-shaped `stwo` bundle, the shared-normalization primitive,
 the frozen proof-carrying aggregation bundle, the April 20 Phase63-65 verifier-surface
 checkpoint, the April 21 Phase66-69 hardening checkpoint, and the April 21 Phase70-80
 proof-checked decode-bridge checkpoint. The transformer-shaped `stwo` bundle freezes
 one reproducible source-bound artifact with `28s` prepare, `9s` verify, `9,348,044`
 artifact bytes, `5` source steps, `2` translated segments, and a package count
 reduction from `5` naive per-step packages to `2` composed translated segments.
-The tensor-native shared-normalization primitive bundle freezes a different
+The shared-normalization primitive bundle freezes a different
 measurement surface: `1s` prepare, `1s` verify, `93,819` artifact bytes, `2`
 primitive steps, `2` claimed rows, `5` canonical table rows, and `9,136` shared
 proof bytes. Translated segment and package-count metrics are not applicable to

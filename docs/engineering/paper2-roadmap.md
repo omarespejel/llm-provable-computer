@@ -206,10 +206,8 @@ Phase70-80.
 ## Post-freeze handoff
 
 The bounded decode line is now strong enough to serve as supporting evidence.
-The main breakthrough route should move to the tensor-native roadmap recorded in:
-
-- `docs/engineering/tensor-native-phase89-95-roadmap.md`
-
-That roadmap keeps the decode/carry machine as a semantics and continuity
-substrate, but it stops extending VM-manifest composition as though it were the
-main cost breakthrough path for transformer proving.
+The main empirical route should stay on the shared-table and Phase12-style
+bundle measurements now checked under `docs/paper/evidence/`. That keeps the
+decode/carry machine as a semantics and continuity substrate without extending
+VM-manifest composition as though it were the main cost breakthrough path for
+transformer proving.

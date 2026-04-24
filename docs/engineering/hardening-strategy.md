@@ -119,7 +119,6 @@ Minimum rule:
 
 Use:
 
-- `python3 scripts/fuzz/generate_decoding_fuzz_corpus.py`
 - `FUZZ_TIME_PER_TARGET=20 scripts/run_fuzz_smoke_suite.sh`
 
 ### 5. UB and sanitizer checks

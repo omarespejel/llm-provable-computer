@@ -19,12 +19,13 @@ and shows that the dense-context ratio approaches a finite architecture-dependen
 ceiling. These are symbolic predictions, not wall-clock dominance claims.
 
 We pair the model with `provable-transformer-vm` [30], a reproducible artifact corpus
-whose paper-facing line now runs through S-two transformer-shaped and tensor-native
-bundles. The artifacts expose carried-state boundaries, shared lookup-table identity,
-and pre-recursive proof-carrying packaging on narrow relations. They do not prove full
-standard-softmax inference, recursive cryptographic compression, recursive shared-table
-accumulation, or production-scale zkML deployment. The contribution is therefore a
-cost-model-and-artifact baseline for the STARK side, with explicit non-claims.
+whose paper-facing line now runs through S-two transformer-shaped bundles, verifier-bound
+carried-state checkpoints, and repeated-reuse benchmark surfaces. The artifacts expose
+carried-state boundaries, shared lookup-table identity, and pre-recursive
+proof-carrying packaging on narrow relations. They do not prove full standard-softmax
+inference, recursive cryptographic compression, recursive shared-table accumulation, or
+production-scale zkML deployment. The contribution is therefore a cost-model-and-artifact
+baseline for the STARK side, with explicit non-claims.
 
 ______________________________________________________________________
 
@@ -55,12 +56,12 @@ This paper makes three claims:
    matrix, and pre-recursive aggregation layers.
 3. **Infrastructure claim.** The S-two / Starknet stack makes this direction
    increasingly practical, while the reference repository now exposes a narrower
-   S-two-only artifact line centered on tensor-native and repeated-reuse surfaces.
+   S-two-only artifact line centered on carried-state and repeated-reuse surfaces.
 
 Here a frozen tier means an immutable artifact snapshot with command logs, content
 hashes, and proof artifacts. The main paper-facing narrative now runs through the
-`stwo` artifact ladder and verifier-bound tensor-native bundles; Section 5.4 gives the
-detailed artifact boundary.
+`stwo` artifact ladder, verifier-bound carried-state bundles, and repeated-reuse
+benchmark evidence; Section 5.4 gives the detailed artifact boundary.
 
 The supporting artifact is the paper's systems hinge: it is where the symbolic pressure
 points of Section 4 are turned into explicit carried-state proof objects with frozen
@@ -506,7 +507,7 @@ current repository surfaces.
 The artifact provides:
 
 - a deterministic transformer-shaped VM with a statement-versioned proof claim,
-- frozen `stwo` evidence tiers spanning transformer-shaped bundles, tensor-native
+- frozen `stwo` evidence tiers spanning transformer-shaped bundles, shared-table
   primitive bundles, and proof-carrying verifier surfaces,
 - a parameterized proof-carrying decode relation,
 - statement-preserving pre-recursive packaging objects over that same decode relation,
@@ -678,9 +679,9 @@ compression pipeline.
 
 ### 5.3 Negative evidence
 
-The repository remains deliberately narrow in four ways. First, the tensor-native `stwo`
-path is still a bounded artifact tier rather than a broad production zkML surface.
-Second, the main proved transformer relation still uses `average-hard`
+The repository remains deliberately narrow in four ways. First, the current experimental
+`stwo` path is still a bounded artifact tier rather than a broad production zkML
+surface. Second, the main proved transformer relation still uses `average-hard`
 rather than full standard softmax. Third, the current repository already binds shared
 lookup-table identity inside public artifacts and across those Phase 62 proof-carrying
 step envelopes, and Figures 4 and 4B show that this can flatten proof growth across
@@ -701,7 +702,7 @@ rather than treating those kernels as an incidental detail [10].
 ### 5.4 Reproducibility tiers
 
 The publication-facing reproducibility surface now runs through the later
-transformer-shaped and tensor-native `stwo` bundles: a shared-normalization primitive
+transformer-shaped and repeated-reuse `stwo` bundles: a shared-normalization primitive
 with verifier-enforced table identity [40], a transformer-shaped
 translated-composition bundle with concrete prepare/verify/artifact metrics [49], and
 the surrounding proof-carrying aggregation bundles. This keeps the publication surface

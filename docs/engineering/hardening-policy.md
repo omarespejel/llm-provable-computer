@@ -56,7 +56,6 @@ git diff --check
 scripts/run_shellcheck_suite.sh
 scripts/run_workflow_audit_suite.sh
 scripts/run_dependency_audit_suite.sh
-python3 scripts/fuzz/generate_decoding_fuzz_corpus.py
 FUZZ_TIME_PER_TARGET=20 scripts/run_fuzz_smoke_suite.sh
 scripts/run_known_bad_phase_artifact_corpus.sh
 scripts/run_paper_preflight_suite.sh
@@ -69,10 +68,9 @@ HARDENING_TOOLCHAIN=nightly-2025-07-14 scripts/run_asan_suite.sh
 scripts/run_formal_contract_suite.sh
 ```
 
-`scripts/fuzz/generate_decoding_fuzz_corpus.py` refreshes the tracked curated
-corpus. `scripts/run_fuzz_smoke_suite.sh` generates its own temporary corpus
-under `target/fuzz-smoke/generated-corpus` so the hardening gate does not
-rewrite tracked fuzz seeds as a side effect.
+`scripts/run_fuzz_smoke_suite.sh` copies the tracked curated corpora under
+`fuzz/corpus/` into `target/fuzz-smoke/` so the hardening gate does not rewrite
+checked-in fuzz seeds as a side effect.
 
 `scripts/run_known_bad_phase_artifact_corpus.sh` runs the manifest-driven Phase
 29-37 known-bad artifact corpus. It derives valid artifacts in memory, mutates

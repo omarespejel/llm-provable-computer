@@ -17,7 +17,7 @@ so the gate runs locally on a workstation; the items below assume that posture.
 - [ ] Pre-push hook installed (`docs/engineering/release-gates/pre-push-hook.sh`).
 - [ ] `bash scripts/local_release_gate.sh` exits 0 on a clean checkout.
 - [ ] No `*.tvm` fixture name advertises a model family the program does not
-      implement (see `naming-honesty.md`).
+      implement.
 
 ## Dependency floors
 

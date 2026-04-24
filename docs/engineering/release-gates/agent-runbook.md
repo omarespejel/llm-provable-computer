@@ -66,8 +66,7 @@ automatically and that is fine; nothing depends on them.
 - Do not change a `deny.toml` ignore entry without updating the matching
   removal target and the explanation comment in the same edit.
 - Do not introduce a new `.tvm` fixture under `programs/` whose name
-  references a model family it does not faithfully implement (see
-  `naming-honesty.md`).
+  references a model family it does not faithfully implement.
 - Do not change a verifier invariant in `src/proof.rs` without (a) updating
   `spec/statement-v1.json` if the invariant is contract-bearing and (b)
   adding a regression test that exercises the new invariant from each public

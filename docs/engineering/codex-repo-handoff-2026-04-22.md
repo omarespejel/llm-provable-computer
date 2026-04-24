@@ -13,11 +13,10 @@ resume surface.
 
 1. `AGENTS.md`
 2. `docs/engineering/codex-repo-handoff-2026-04-22.md`
-3. `docs/engineering/tensor-native-phase89-95-roadmap.md`
-4. `docs/engineering/paper2-roadmap.md`
-5. `docs/engineering/stark-vs-snark-transformer-answer-2026-04-21.md`
-6. the newest specs under `docs/engineering/design/`
-7. `git status --short --branch` in the local checkout
+3. `docs/engineering/paper2-roadmap.md`
+4. `docs/engineering/reproducibility.md`
+5. the newest specs under `docs/engineering/design/`
+6. `git status --short --branch` in the local checkout
 
 ## Current research split
 
@@ -31,15 +30,18 @@ This line gives the repo:
 - manifest and provenance hardening,
 - verifier-bound continuity checks,
 - negative and tamper-path tests, and
-- a bounded paper-2 artifact story.
+- a bounded proof-carrying artifact story.
 
 It is supporting evidence. It is not the same as cheap full transformer
 proving.
 
-### 2. Tensor-native, lookup-aware S-two line
+### 2. Shared-table / repeated-reuse S-two line
 
-This is the main breakthrough route. It proves more transformer-shaped relations
-directly and keeps shared-table plus carried-state boundaries narrow.
+This is the main empirical line now tracked in the paper package. It measures:
+
+- one-shot primitive lookup vs arithmetic calibration,
+- repeated shared-table reuse,
+- a richer Phase12-style shared normalization + activation bundle.
 
 Fresh agents must not collapse these two lines into one claim.
 
@@ -56,34 +58,19 @@ with local head:
 Treat that snapshot as historical context, not as a guarantee that a later local
 checkout still points to the same commit. Always re-run `git status` locally.
 
-## Current artifact ladder
+## Current paper-facing artifact ladder
 
 Read these from older to newer if you need the narrative:
 
-1. `docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/`
-2. `docs/paper/artifacts/stwo-tensor-native-transformer-shaped-v1-2026-04-21/`
-3. `docs/paper/artifacts/stwo-repeated-gemma-slice-accumulation-v1-2026-04-21/`
-4. `docs/paper/artifacts/stwo-multi-interval-folded-gemma-v1-2026-04-21/`
-
-## What the current line means
-
-The active tensor-native line is no longer at the early Phase 89-95 bootstrap
-point.
-
-On this branch's tracked citation surface, it already includes:
-
-- the first tensor-native primitive,
-- the transformer-shaped chain,
-- repeated-slice accumulation,
-- folded multi-interval derivatives.
-
-Local notes may mention richer repeated multi-interval packaging and
-window-family derivatives that were explored on machine-local branches. Do not
-treat those as tracked citation targets on this branch unless the corresponding
-directories are checked in under `docs/paper/artifacts/`.
-
-If you resume as though the repository still only needs a first primitive, you
-are starting from stale state.
+1. `docs/paper/artifacts/stwo-proof-carrying-aggregation-v1-2026-04-11/`
+2. `docs/paper/artifacts/phase63-65-proof-carrying-artifact-v1-2026-04-20/`
+3. `docs/paper/artifacts/phase66-69-proof-carrying-hardening-v1-2026-04-21/`
+4. `docs/paper/artifacts/phase70-80-proof-checked-decode-bridge-v1-2026-04-21/`
+5. `docs/paper/artifacts/stwo-transformer-shaped-v1-2026-04-21/`
+6. `docs/paper/artifacts/stwo-shared-normalization-primitive-v1-2026-04-21/`
+7. `docs/paper/evidence/stwo-primitive-lookup-vs-naive-2026-04.tsv`
+8. `docs/paper/evidence/stwo-shared-table-reuse-2026-04.tsv`
+9. `docs/paper/evidence/stwo-phase12-shared-lookup-bundle-reuse-2026-04.tsv`
 
 ## What not to overclaim
 
@@ -94,12 +81,5 @@ Do not describe the current artifacts as:
 - production-ready custom S-two recursion for arbitrary AIRs, or
 - matched benchmark wins against public systems.
 
-The right claim boundary is: structured, verifier-bound, source-bound, and
-reproducible.
-
-## Older local-only snapshot note
-
-An older handoff snapshot referenced additional 2026-04-22 artifact directories
-such as repeated-window fold trees, accumulation semantics, and richer
-window-family bundles. Those directories are not checked in on this branch, so
-do not treat them as tracked citation targets here.
+The right claim boundary is: structured, verifier-bound, source-bound,
+reproducible, and locally measured on narrow repeated-reuse surfaces.
